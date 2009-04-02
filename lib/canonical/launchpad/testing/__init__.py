@@ -276,11 +276,6 @@ class TestCase(unittest.TestCase):
             lower_bound < variable < upper_bound,
             "%r < %r < %r" % (lower_bound, variable, upper_bound))
 
-    def assertInString(self, needle, haystack):
-        """Assert that string 'needle' is found in in string 'haystack'."""
-        self.assertNotEqual(haystack.find(needle), -1,
-            "'%s' is not found in '%s'" % (needle, haystack))
-
     def pushConfig(self, section, **kwargs):
         """Push some key-value pairs into a section of the config.
 

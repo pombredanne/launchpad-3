@@ -8,6 +8,8 @@ provisions to handle Bazaar branches.
 
 __metaclass__ = type
 
+import os
+
 from unittest import TestLoader
 
 from bzrlib.revision import NULL_REVISION
@@ -15,6 +17,7 @@ from canonical.testing import ZopelessAppServerLayer
 import transaction
 from zope.component import getUtility
 
+from canonical.config import config
 from canonical.launchpad.database.branchjob import RosettaUploadJob
 from canonical.launchpad.interfaces.translations import (
     TranslationsBranchImportMode)
@@ -35,12 +38,8 @@ class TestRosettaBranchesScript(TestCaseWithFactory):
         for entry in entries:
             queue.remove(entry)
 
-    def test_rosetta_branches_script(self):
-        # If a job exists it will be executed and the template file will
-        # be put into the import queue with status "Approved".
-        self._clear_import_queue()
+    def _setup_series_branch(self, pot_path):
         self.useTempBzrHome()
-        pot_path = self.factory.getUniqueString() + ".pot"
         pot_content = self.factory.getUniqueString()
         branch, tree = self.createMirroredBranchAndTree()
         tree.bzrdir.root_transport.put_bytes(pot_path, pot_content)
@@ -52,20 +51,45 @@ class TestRosettaBranchesScript(TestCaseWithFactory):
         series.branch = branch
         series.translations_autoimport_mode = (
             TranslationsBranchImportMode.IMPORT_TEMPLATES)
+        return branch
+
+    def test_rosetta_branches_script(self):
+        # If a job exists it will be executed and the template file will
+        # be put into the import queue with status "Approved".
+        self._clear_import_queue()
+        pot_path = self.factory.getUniqueString() + ".pot"
+        branch = self._setup_series_branch(pot_path)
         job = RosettaUploadJob.create(branch, NULL_REVISION)
         transaction.commit()
 
         return_code, stdout, stderr = run_script(
             'cronscripts/rosetta-branches.py', [])
         self.assertEqual(0, return_code)
-        self.assertEqual("", stdout)
-        self.assertInString("Ran 1 RosettaBranchJobs", stderr)
 
         queue = getUtility(ITranslationImportQueue)
         self.assertEqual(1, queue.entryCount())
         entry = list(queue)[0]
         self.assertEqual(RosettaImportStatus.APPROVED, entry.status)
         self.assertEqual(pot_path, entry.path)
+
+    def test_rosetta_branches_script_oops(self):
+        # A bogus revision in the job will trigger an OOPS.
+        # The OOPS is stored in a subdirectory of the configured error_dir.
+        self._clear_import_queue()
+        os.system("rm -rf " + config.rosettabranches.error_dir)
+        pot_path = self.factory.getUniqueString() + ".pot"
+        branch = self._setup_series_branch(pot_path)
+        job = RosettaUploadJob.create(branch, self.factory.getUniqueString())
+        transaction.commit()
+
+        return_code, stdout, stderr = run_script(
+            'cronscripts/rosetta-branches.py', [])
+        self.assertEqual(0, return_code)
+
+        queue = getUtility(ITranslationImportQueue)
+        self.assertEqual(0, queue.entryCount())
+
+        self.assertEqual(1, len(os.listdir(config.rosettabranches.error_dir)))
 
 
 def test_suite():
