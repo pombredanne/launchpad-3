@@ -17,14 +17,12 @@ import os
 
 from twisted.application import service
 from twisted.internet import reactor, utils, defer
-from twisted.internet.threads import deferToThread
 from twisted.protocols.policies import TimeoutMixin
 from twisted.python import log
 from twisted.python.failure import Failure
 from twisted.web import xmlrpc
 
 from zope.component import getUtility
-from zope.security.management import endInteraction, newInteraction
 
 from canonical.buildd.utils import notes
 from canonical.config import config
@@ -232,7 +230,7 @@ class BuilddManager(service.Service):
         # Ensure there are no previous annotation from the previous cycle.
         notes.notes = {}
 
-        d = deferToThread(self.scan)
+        d = defer.maybeDeferred(self.scan)
         d.addCallback(self.resumeAndDispatch)
         d.addErrback(self.scanFailed)
 
@@ -317,9 +315,6 @@ class BuilddManager(service.Service):
         """
         recording_slaves = []
 
-        # Setup a new interaction since it's running in a separate thread.
-        newInteraction()
-
         builder_set = getUtility(IBuilderSet)
 
         # Use FakeZTM to avoid partial commits.
@@ -348,7 +343,6 @@ class BuilddManager(service.Service):
             builder.dispatchBuildCandidate(candidate)
             recording_slaves.append(slave)
 
-        endInteraction()
         return recording_slaves
 
     def checkResume(self, response, slave):
