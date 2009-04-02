@@ -10,7 +10,10 @@ __all__ = [
     'BugDescriptionChange',
     'BugTagsChange',
     'BugTaskAdded',
-    'BugTaskAttributeChange',
+    'BugTaskBugWatchChange',
+    'BugTaskImportanceChange',
+    'BugTaskMilestoneChange',
+    'BugTaskStatusChange',
     'BugTaskTargetChange',
     'BugTitleChange',
     'BugVisibilityChange',
@@ -516,44 +519,51 @@ class CveUnlinkedFromBug(BugChangeBase):
 
 
 class BugTaskAttributeChange(AttributeChange):
-    """Used to represent a change in a BugTask's attributes."""
+    """Used to represent a change in a BugTask's attributes.
 
-    display_label_map = {
-        'bugwatch': 'remote watch',
-        }
+    This is a base class. Implementations should define
+    `display_attribute` and optionally override
+    `display_activity_label` and/or `display_notification_label`.
 
-    display_attribute_map = {
-        'status': 'title',
-        'importance': 'title',
-        'milestone': 'name',
-        'bugwatch': 'title',
-        }
+    `display_attribute` is the name of an attribute on the value
+    objects that, when fetched, is usable when recording activity and
+    sending notifications.
+    """
 
     def __init__(self, bug_task, when, person, what_changed, old_value,
                  new_value):
         super(BugTaskAttributeChange, self).__init__(
             when, person, what_changed, old_value, new_value)
-
         self.bug_task = bug_task
-        display_attribute = self.display_attribute_map[self.what_changed]
 
         if self.old_value is None:
             self.display_old_value = None
         else:
             self.display_old_value = getattr(
-                self.old_value, display_attribute)
+                self.old_value, self.display_attribute)
 
         if self.new_value is None:
             self.display_new_value = None
         else:
             self.display_new_value = getattr(
-                self.new_value, display_attribute)
+                self.new_value, self.display_attribute)
 
     @property
-    def display_label(self):
-        """Return a label to use for activity and notifications."""
-        return self.display_label_map.get(
-            self.what_changed, self.what_changed)
+    def display_activity_label(self):
+        """The label to use when recording activity.
+
+        By default, it is the same as attribute that changed.
+        """
+        return self.what_changed
+
+    @property
+    def display_notification_label(self):
+        """The label to use for notifications.
+
+        By default, it is the same as the attribute that changed,
+        capitalized.
+        """
+        return self.what_changed.capitalize()
 
     def getBugActivity(self):
         """Return the bug activity data for this change as a dict.
@@ -561,11 +571,9 @@ class BugTaskAttributeChange(AttributeChange):
         The `whatchanged` value of the dict refers to the `BugTask`'s
         target so as to make it clear in which task the change was made.
         """
-        what_changed = '%s: %s' % (
-            self.bug_task.bugtargetname, self.display_label)
-
         return {
-            'whatchanged': what_changed,
+            'whatchanged': '%s: %s' % (
+                self.bug_task.bugtargetname, self.display_activity_label),
             'oldvalue': self.display_old_value,
             'newvalue': self.display_new_value,
             }
@@ -580,12 +588,44 @@ class BugTaskAttributeChange(AttributeChange):
             u"** Changed in: %(bug_target_name)s\n"
             "%(label)13s: %(oldval)s => %(newval)s\n" % {
                 'bug_target_name': self.bug_task.bugtargetname,
-                'label' : self.display_label.capitalize(),
+                'label' : self.display_notification_label,
                 'oldval' : self.display_old_value,
                 'newval' : self.display_new_value,
             })
 
         return {'text': text.rstrip()}
+
+
+class BugTaskImportanceChange(BugTaskAttributeChange):
+    """Represents a change in BugTask.importance."""
+
+    # Use `importance.title` in activity records and notifications.
+    display_attribute = 'title'
+
+
+class BugTaskStatusChange(BugTaskAttributeChange):
+    """Represents a change in BugTask.status."""
+
+    # Use `status.title` in activity records and notifications.
+    display_attribute = 'title'
+
+
+class BugTaskMilestoneChange(BugTaskAttributeChange):
+    """Represents a change in BugTask.milestone."""
+
+    # Use `milestone.name` in activity records and notifications.
+    display_attribute = 'name'
+
+
+class BugTaskBugWatchChange(BugTaskAttributeChange):
+    """Represents a change in BugTask.bugwatch."""
+
+    # Use the term "remote watch" as this is used in the UI.
+    display_activity_label = 'remote watch'
+    display_notification_label = 'Remote watch'
+
+    # Use `bugwatch.title` in activity records and notifications.
+    display_attribute = 'title'
 
 
 class BugTaskTargetChange(AttributeChange):
@@ -629,9 +669,9 @@ BUG_CHANGE_LOOKUP = {
 
 
 BUGTASK_CHANGE_LOOKUP = {
-    'importance': BugTaskAttributeChange,
-    'status': BugTaskAttributeChange,
+    'importance': BugTaskImportanceChange,
+    'status': BugTaskStatusChange,
     'target': BugTaskTargetChange,
-    'milestone': BugTaskAttributeChange,
-    'bugwatch': BugTaskAttributeChange,
+    'milestone': BugTaskMilestoneChange,
+    'bugwatch': BugTaskBugWatchChange,
     }
