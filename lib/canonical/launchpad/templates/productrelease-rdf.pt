@@ -15,9 +15,9 @@
         <lp:shortDescription tal:content="context/summary">
             Short Description
         </lp:shortDescription>
-        <lp:description tal:content="context/description">
-            Description
-        </lp:description>
+        <lp:releaseNotes tal:content="context/release_notes">
+            Release notes
+        </lp:releaseNotes>
         <lp:changelog tal:condition="context/changelog"
                       tal:content="context/changelog">
             Changelog

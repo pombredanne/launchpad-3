@@ -64,7 +64,9 @@ class TacTestSetup:
         start = time.time()
         while True:
             if time.time() > start + 10:
-                raise TacException('Unable to start %s' % (self.tacfile,))
+                raise TacException(
+                    'Unable to start %s. Check %s.'
+                    % (self.tacfile, self.logfile))
             if os.path.exists(self.logfile):
                 if LOG_MAGIC in open(self.logfile, 'r').read():
                     break

@@ -21,6 +21,7 @@ from canonical.launchpad.interfaces.archivedependency import *
 from canonical.launchpad.interfaces.archivepermission import *
 from canonical.launchpad.interfaces.announcement import *
 from canonical.launchpad.interfaces.authserver import *
+from canonical.launchpad.interfaces.authtoken import *
 from canonical.launchpad.interfaces.binarypackagerelease import *
 from canonical.launchpad.interfaces.binarypackagename import *
 from canonical.launchpad.interfaces.bounty import *
@@ -100,6 +101,7 @@ from canonical.launchpad.interfaces.launchpadstatistic import *
 from canonical.launchpad.interfaces.librarian import *
 from canonical.launchpad.interfaces.location import *
 from canonical.launchpad.interfaces.logintoken import *
+from canonical.launchpad.interfaces.lpstorm import *
 from canonical.launchpad.interfaces.mail import *
 from canonical.launchpad.interfaces.mailbox import *
 from canonical.launchpad.interfaces.mailinglist import *
@@ -108,6 +110,7 @@ from canonical.launchpad.interfaces.mentoringoffer import *
 from canonical.launchpad.interfaces.message import *
 from canonical.launchpad.interfaces.milestone import *
 from canonical.launchpad.interfaces.oauth import *
+from canonical.launchpad.interfaces.openidconsumer import *
 from canonical.launchpad.interfaces.openidserver import *
 from canonical.launchpad.interfaces.package import *
 from canonical.launchpad.interfaces.packagerelationship import *

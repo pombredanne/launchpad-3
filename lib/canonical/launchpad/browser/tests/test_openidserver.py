@@ -22,20 +22,42 @@ from canonical.launchpad.ftests import ANONYMOUS, login, logout
 from canonical.launchpad.database.openidserver import OpenIDAuthorization
 from canonical.launchpad.interfaces.person import IPersonSet
 from canonical.launchpad.interfaces.openidserver import IOpenIDRPConfigSet
-from canonical.launchpad.testing import TestCaseWithFactory
+from canonical.launchpad.interfaces.shipit import IShipitAccount
+from canonical.launchpad.testing import TestCase, TestCaseWithFactory
 from canonical.launchpad.testing.systemdocs import (
     LayeredDocFileSuite, setUp, tearDown)
 from canonical.launchpad.testing.pages import setupBrowser
+from canonical.launchpad.webapp.dbpolicy import SSODatabasePolicy
+from canonical.launchpad.webapp.interfaces import IStoreSelector
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing import DatabaseFunctionalLayer
 
 
-class SimpleRegistrationTestCase(unittest.TestCase):
+class SSODatabasePolicyTestCase(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(SSODatabasePolicyTestCase, self).setUp()
+        getUtility(IStoreSelector).push(SSODatabasePolicy())
+
+    def tearDown(self):
+        getUtility(IStoreSelector).pop()
+        super(SSODatabasePolicyTestCase, self).tearDown()
+
+
+class SimpleRegistrationTestCase(TestCase):
     """Tests for Simple Registration helpers in OpenIDMixin"""
+
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
         login(ANONYMOUS)
+        super(SimpleRegistrationTestCase, self).setUp()
+
+    def tearDown(self):
+        super(SimpleRegistrationTestCase, self).tearDown()
+        logout()
 
     def test_sreg_field_names(self):
         # Test that sreg_field_names returns an appropriate value
@@ -61,7 +83,8 @@ class SimpleRegistrationTestCase(unittest.TestCase):
     def test_sreg_fields(self):
         # Test that user details are extracted correctly.
         class FieldValueTest(OpenIDMixin):
-            account = getUtility(IPersonSet).getByEmail('david@canonical.com')
+            account = getUtility(IPersonSet).getByEmail(
+                'david@canonical.com').account
             sreg_field_names = [
                 'fullname', 'nickname', 'email', 'timezone',
                 'x_address1', 'x_address2', 'x_city', 'x_province',
@@ -84,7 +107,8 @@ class SimpleRegistrationTestCase(unittest.TestCase):
         # Test that user details are extracted correctly when there is
         # no previous successful shipit request.
         person = getUtility(IPersonSet).getByEmail('no-priv@canonical.com')
-        self.assertEqual(person.lastShippedRequest(), None)
+        self.assertEqual(
+            IShipitAccount(person.account).lastShippedRequest(), None)
         class FieldValueTest(OpenIDMixin):
             account = person.account
             sreg_field_names = [
@@ -99,8 +123,9 @@ class SimpleRegistrationTestCase(unittest.TestCase):
             ('timezone', u'Europe/Paris')])
 
 
-class PreAuthorizeRPViewTestCase(unittest.TestCase):
+class PreAuthorizeRPViewTestCase(TestCase):
     """Test for the PreAuthorizeRPView."""
+
     layer = DatabaseFunctionalLayer
 
     def test_pre_authorize_works_with_slave_store(self):
@@ -122,9 +147,14 @@ class PreAuthorizeRPViewTestCase(unittest.TestCase):
 
         # We do not use the isAuthorized API because we don't know the client
         # id used by browser, since no cookie were used.
-        self.failUnless(OpenIDAuthorization.selectOneBy(
-            accountID=no_priv.accountID, trust_root='http://launchpad.dev/'),
-            "Pre-authorization record wasn't created.")
+        getUtility(IStoreSelector).push(SSODatabasePolicy())
+        try:
+            self.failUnless(OpenIDAuthorization.selectOneBy(
+                accountID=no_priv.accountID,
+                trust_root='http://launchpad.dev/'),
+                "Pre-authorization record wasn't created.")
+        finally:
+            getUtility(IStoreSelector).pop()
 
 
 class FakeOpenIdRequest:
@@ -147,10 +177,8 @@ class FakeOpenIdRequest:
         return self.args
 
 
-class OpenIDMixin_shouldReauthenticate_TestCase(unittest.TestCase):
+class OpenIDMixin_shouldReauthenticate_TestCase(SSODatabasePolicyTestCase):
     """Test cases for the shouldReauthenticate() period."""
-
-    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         """Sets up a very simple openid_mixin with a FakeOpenIdRequest.

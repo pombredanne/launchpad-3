@@ -39,7 +39,7 @@ Find all product release files for trunk.
 
 Pick the first release from the set.
 
-    >>> rel = releases[0]
+    >>> rel = list(releases)[0]
     >>> files = rel.files
     >>> print files.count()
     1
@@ -144,20 +144,6 @@ Deleting files via a GET method is not allowed.
      ...
     UnsafeFormGetSubmissionError: Delete Files
 
-The `is_milestone` method can be used to determine if a series and
-release pair are a milestone.
-
-    >>> trunk = firefox.getSeries('trunk')
-    >>> ms = trunk.newMilestone('0.9.2')
-    >>> release = trunk.getRelease('0.9.2')
-    >>> request = LaunchpadTestRequest(
-    ...     environ={'REQUEST_METHOD': 'GET'},
-    ...     form=dict())
-    >>> view = getMultiAdapter((firefox,request), name='+download')
-    >>> view.initialize()
-    >>> print view.is_milestone(trunk, release)
-    True
-
 There a convenience method for getting all of the releases for a list
 of series.  The releases are returned sorted by release date in
 reverse order.
@@ -205,12 +191,14 @@ Only the product owner can create a new release.
 
     >>> owner_email = firefox.owner.preferredemail.email
     >>> login(ANONYMOUS)
-    >>> trunk.addRelease('7.0', firefox.owner)
+    >>> trunk.milestones[0].createProductRelease(firefox.owner, now)
     Traceback (most recent call last):
     ...
-    Unauthorized: (<ProductSeries at ...>, 'addRelease', 'launchpad.Edit')
+    Unauthorized: (<Milestone ...>, 'createProductRelease', 'launchpad.Edit')
     >>> login(owner_email)
-    >>> trunk.addRelease('8.0', firefox.owner)
+    >>> milestone = trunk.newMilestone('8.0', code_name='ralph')
+    >>> milestone.createProductRelease(firefox.owner, now,
+    ...                                changelog='New in v2')
     <ProductRelease at ...>
     >>> for release in release_set.getReleasesForSerieses(series):
     ...     print release.version

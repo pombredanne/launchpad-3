@@ -3,6 +3,13 @@
 An Account is used by someone to Authenticate with the Launchpad login
 service.
 
+Many operations on Account and related tables are available only to
+the SSO Server.
+
+    >>> from canonical.launchpad.webapp.interfaces import IStoreSelector
+    >>> from canonical.launchpad.webapp.dbpolicy import SSODatabasePolicy
+    >>> getUtility(IStoreSelector).push(SSODatabasePolicy())
+
 
 = AccountSet =
 
@@ -264,6 +271,12 @@ If the account is deactivated, it won't be considered valid any more:
 From a newly created account which has no person associated with, it is
 possible to create a new person that will be associated with it.
 
+We need to change database policy here again, as the SSO Server cannot
+modify tables in the lpmain replication set.
+
+    >>> from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
+    >>> getUtility(IStoreSelector).push(MasterDatabasePolicy())
+
     >>> from canonical.launchpad.interfaces.person import (
     ...     PersonCreationRationale)
     >>> fresh_account, email = account_set.createAccountAndEmail(
@@ -277,6 +290,8 @@ possible to create a new person that will be associated with it.
 
     >>> person = fresh_account.createPerson(
     ...     PersonCreationRationale.OWNER_CREATED_LAUNCHPAD)
+    >>> import transaction
+    >>> transaction.commit()
     >>> person.account == fresh_account
     True
     >>> IPerson(fresh_account) == person
@@ -303,6 +318,8 @@ address, a new Person cannot be created.
     Traceback (most recent call last):
     ...
     AssertionError: Can't create a Person for an account which has no email.
+
+    >>> db_policy = getUtility(IStoreSelector).pop()
 
 
 == OpenID identifiers ==
@@ -399,6 +416,8 @@ random token for a mnemonic has been used in the past.
     ...     openid_identifier='http://id.launchpad.dev/000/non-unique',
     ...     trust_root='http://blog.org/')
 
+    >>> import transaction
+    >>> transaction.commit()
     >>> account_set.createOpenIDIdentifier('non-unique')
     Traceback (most recent call last):
      ...
@@ -427,7 +446,13 @@ date.
     >>> summary = getUtility(IOpenIDRPSummarySet).record(
     ...     fresh_account, 'http://blog.example.com/',
     ...     date_used=two_thousand_and_seven)
+    >>> transaction.commit()
 
     >>> [summary.date_last_used.strftime('%Y-%m-%d')
     ...  for summary in fresh_account.recently_authenticated_rps]
     ['2008-01-01', '2007-01-01']
+
+
+== Cleanup ==
+
+    >>> db_policy = getUtility(IStoreSelector).pop()

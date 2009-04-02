@@ -27,6 +27,23 @@ external connections.
     DEBUG...No watches to update on http://bugs.debian.org
     DEBUG...No watches to update on http://bugzilla.gnome.org/bugs
 
+If a bug tracker is disabled checkwatches won't try to update it.
+
+    >>> from canonical.config import config
+    >>> from canonical.testing import LaunchpadZopelessLayer
+    >>> from canonical.launchpad.testing import LaunchpadObjectFactory
+
+    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+    >>> login('foo.bar@canonical.com')
+    >>> bug_tracker = LaunchpadObjectFactory().makeBugTracker(
+    ...     'http://example.com')
+    >>> bug_tracker.active = False
+    >>> transaction.commit()
+    >>> LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
+
+    >>> updater.updateBugTrackers([bug_tracker.name])
+    DEBUG...Updates are disabled for bug tracker at http://example.com
+
 This functionality can also be used with the checkwatches cronscript,
 allowing a user to pass a list of bugtrackers to check at the command
 line.

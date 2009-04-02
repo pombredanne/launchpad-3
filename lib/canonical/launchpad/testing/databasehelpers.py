@@ -14,7 +14,7 @@ def remove_all_sample_data_branches():
     c = cursor()
     c.execute('delete from bugbranch')
     c.execute('delete from specificationbranch')
-    c.execute('update productseries set user_branch=NULL, import_branch=NULL')
+    c.execute('update productseries set branch=NULL')
     c.execute('delete from branchrevision')
     c.execute('delete from branchsubscription')
     c.execute('delete from codeimportjob')

@@ -283,10 +283,6 @@ class ArchiveContextMenu(ContextMenu):
         if not self.context.private:
             link.enabled = False
 
-        # XXX: noodles 2009-03-10 bug=340405. This link is disabled until
-        # the cron-job supporting private archive subscriptions is enabled.
-        link.enabled = False
-
         return link
 
     @enabled_with_permission('launchpad.Edit')
@@ -845,8 +841,9 @@ class ArchivePackageCopyingView(ArchiveSourceSelectionFormView):
             if self.can_copy_to_context_ppa and self.context == ppa:
                 required = False
                 continue
+            token = '%s/%s' % (ppa.owner.name, ppa.name)
             terms.append(
-                SimpleTerm(ppa, str(ppa.owner.name), ppa.displayname))
+                SimpleTerm(ppa, token, ppa.displayname))
 
         return form.Fields(
             Choice(__name__='destination_archive',
@@ -1056,8 +1053,10 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
                 continue
             dependency_label = '<a href="%s">%s</a>' % (
                 canonical_url(dependency), archive_dependency.title)
+            dependency_token = '%s/%s' % (
+                dependency.owner.name, dependency.name)
             term = SimpleTerm(
-                dependency, dependency.owner.name, dependency_label)
+                dependency, dependency_token, dependency_label)
             terms.append(term)
         return form.Fields(
             List(__name__='selected_dependencies',
@@ -1330,45 +1329,77 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
 
 
 class ArchiveActivateView(LaunchpadFormView):
-    """PPA activation view class.
-
-    Ensure user has accepted the PPA Terms of Use by clicking in the
-    'accepted' checkbox.
-
-    It redirects to PPA page when PPA is already activated.
-    """
+    """PPA activation view class."""
 
     schema = IPPAActivateForm
     custom_widget('description', TextAreaWidget, height=3)
 
-    def initialize(self):
-        """Redirects user to the PPA page if it is already activated."""
-        LaunchpadFormView.initialize(self)
-        self.distribution = getUtility(ILaunchpadCelebrities).ubuntu
+    def setUpFields(self):
+        """Override `LaunchpadFormView`.
+
+        Reorder the fields in a way the make more sense to users and also
+        omit 'name' and present a checkbox for acknowledging the PPA-ToS
+        if the user is creating his first PPA.
+        """
+        LaunchpadFormView.setUpFields(self)
+
         if self.context.archive is not None:
-            self.request.response.redirect(
-                canonical_url(self.context.archive))
+            self.form_fields = self.form_fields.select(
+                'name', 'description')
+        else:
+            self.form_fields = self.form_fields.select(
+                'accepted', 'description')
 
     def validate(self, data):
         """Ensure user has checked the 'accepted' checkbox."""
-        if len(self.errors) == 0:
-            if not data.get('accepted'):
-                self.addError(
-                    "PPA Terms of Service must be accepted to activate "
-                    "your PPA.")
+        if len(self.errors) > 0:
+            return
+
+        default_ppa = self.context.archive
+
+        proposed_name = data.get('name')
+        if proposed_name is None and default_ppa is not None:
+            self.addError(
+                'The default PPA is already activated. Please specify a '
+                'name for the new PPA and resubmit the form.')
+
+        # XXX cprov 2009-03-27 bug=188564: We currently only create PPAs
+        # for Ubuntu distribution. This check should be revisited when we
+        # start supporting PPAs for other distribution (debian, mainly).
+        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        if proposed_name is not None and proposed_name == ubuntu.name:
+            self.setFieldError(
+                'name',
+                "Archives cannot have the same name as its distribution.")
+
+        if self.context.getPPAByName(proposed_name):
+            self.setFieldError(
+                'name',
+                "You already have a PPA named '%s'." % proposed_name)
+
+        if default_ppa is None and not data.get('accepted'):
+            self.setFieldError(
+                'accepted',
+                "PPA Terms of Service must be accepted to activate a PPA.")
 
     @action(_("Activate"), name="activate")
     def action_save(self, action, data):
-        """Activate PPA and moves to its page."""
-        if self.context.archive is None:
-            getUtility(IArchiveSet).new(
-                owner=self.context, purpose=ArchivePurpose.PPA,
-                description=data['description'], distribution=None)
-        self.next_url = canonical_url(self.context.archive)
+        """Activate a PPA and moves to its page."""
 
-    @action(_("Cancel"), name="cancel", validator='validate_cancel')
-    def action_cancel(self, action, data):
-        self.next_url = canonical_url(self.context)
+        # 'name' field is omitted from the form data for default PPAs and
+        # it's dealt with by IArchive.new(), which will use the default
+        # PPA name.
+        name = data.get('name', None)
+
+        # XXX cprov 2009-03-27 bug=188564: We currently only create PPAs
+        # for Ubuntu distribution. PPA creation should be revisited when we
+        # start supporting other distribution (debian, mainly).
+        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+
+        ppa = getUtility(IArchiveSet).new(
+            owner=self.context, purpose=ArchivePurpose.PPA,
+            distribution=ubuntu, name=name, description=data['description'])
+        self.next_url = canonical_url(ppa)
 
 
 class ArchiveBuildsView(ArchiveViewBase, BuildRecordsView):
