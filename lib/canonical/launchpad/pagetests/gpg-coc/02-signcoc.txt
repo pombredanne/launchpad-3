@@ -9,12 +9,9 @@
 
   First we define a helper function
 
-  >>> import canonical.launchpad
   >>> import os.path
   >>> def filename_path(filename):
-  ...   return os.path.join(
-  ...   os.path.dirname(canonical.launchpad.__file__),
-  ...   'pagetests/gpg-coc/%s' % filename)
+  ...   return os.path.join(os.path.dirname(__file__), filename)
   ...
 
   Then we try to register a code of conduct with a truncated CoC:

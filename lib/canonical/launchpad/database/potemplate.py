@@ -31,7 +31,7 @@ from canonical.database.sqlbase import (
 from canonical.launchpad import helpers
 from canonical.launchpad.components.rosettastats import RosettaStats
 from canonical.launchpad.database.language import Language
-from canonical.launchpad.validators.person import validate_public_person
+from canonical.launchpad.interfaces.person import validate_public_person
 from canonical.launchpad.database.pofile import POFile, DummyPOFile
 from canonical.launchpad.database.pomsgid import POMsgID
 from canonical.launchpad.database.potmsgset import POTMsgSet

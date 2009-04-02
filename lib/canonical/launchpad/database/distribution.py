@@ -102,7 +102,7 @@ from canonical.launchpad.interfaces.translationgroup import (
     TranslationPermission)
 from canonical.launchpad.validators.name import sanitize_name, valid_name
 from canonical.launchpad.webapp.interfaces import NotFoundError
-from canonical.launchpad.validators.person import validate_public_person
+from canonical.launchpad.interfaces.person import validate_public_person
 from canonical.launchpad.webapp.url import urlparse
 
 from lp.answers.model.question import (

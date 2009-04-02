@@ -22,7 +22,7 @@ from canonical.launchpad.interfaces import (
     IProductRelease, IProductReleaseFile, IProductReleaseSet,
     NotFoundError, UpstreamFileType)
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.launchpad.validators.person import validate_public_person
+from canonical.launchpad.interfaces.person import validate_public_person
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE)
 

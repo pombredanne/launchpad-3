@@ -19,7 +19,7 @@ from sqlobject import (
     BoolCol, ForeignKey, IntCol, StringCol, SQLObjectNotFound,
     SQLMultipleJoin)
 
-from canonical.database.constants import DEFAULT, UTC_NOW
+from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import quote, SQLBase, sqlvalues
 
@@ -33,7 +33,7 @@ from canonical.launchpad.interfaces.project import IProject
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.webapp.interfaces import (
         IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
-from canonical.launchpad.validators.person import validate_public_person
+from canonical.launchpad.interfaces.person import validate_public_person
 
 
 class Revision(SQLBase):

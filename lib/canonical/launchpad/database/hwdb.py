@@ -61,7 +61,7 @@ from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.interfaces.person import IPersonSet
 from canonical.launchpad.interfaces.product import License
-from canonical.launchpad.validators.person import validate_public_person
+from canonical.launchpad.interfaces.person import validate_public_person
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE)
 from canonical.launchpad.components.decoratedresultset import (

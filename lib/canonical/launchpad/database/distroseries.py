@@ -103,7 +103,7 @@ from canonical.launchpad.interfaces.specification import (
 from canonical.launchpad.interfaces.structuralsubscription import (
     IStructuralSubscriptionTarget)
 from canonical.launchpad.mail import signed_message_from_string
-from canonical.launchpad.validators.person import validate_public_person
+from canonical.launchpad.interfaces.person import validate_public_person
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, NotFoundError, SLAVE_FLAVOR,
     TranslationUnavailable)

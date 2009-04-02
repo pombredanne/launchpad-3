@@ -44,7 +44,7 @@ from canonical.launchpad.interfaces.message import (
     IDirectEmailAuthorization, IMessage, IMessageChunk, IMessageJob,
     IMessageSet, IUserToUserEmail, InvalidEmailMessage)
 from canonical.launchpad.mail import signed_message_from_string
-from canonical.launchpad.validators.person import validate_public_person
+from canonical.launchpad.interfaces.person import validate_public_person
 from lazr.config import as_timedelta
 
 from canonical.database.sqlbase import SQLBase

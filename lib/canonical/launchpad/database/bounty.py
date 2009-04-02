@@ -25,7 +25,7 @@ from canonical.database.enumcol import EnumCol
 from canonical.launchpad.database.message import Message, MessageChunk
 from canonical.launchpad.database.bountymessage import BountyMessage
 from canonical.launchpad.database.bountysubscription import BountySubscription
-from canonical.launchpad.validators.person import validate_public_person
+from canonical.launchpad.interfaces.person import validate_public_person
 
 
 class Bounty(SQLBase):

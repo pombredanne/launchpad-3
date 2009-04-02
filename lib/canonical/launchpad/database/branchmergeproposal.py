@@ -66,7 +66,7 @@ from canonical.launchpad.interfaces.person import IPerson
 from canonical.launchpad.interfaces.product import IProduct
 from canonical.launchpad.mailout.branch import RecipientReason
 from canonical.launchpad.mailout.branchmergeproposal import BMPMailer
-from canonical.launchpad.validators.person import validate_public_person
+from canonical.launchpad.interfaces.person import validate_public_person
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR, IPlacelessAuthUtility, IStoreSelector, MAIN_STORE,
     MASTER_FLAVOR)

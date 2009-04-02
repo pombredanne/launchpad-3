@@ -22,13 +22,12 @@ from zope.interface import Interface
 from zope.component import getUtility
 from lazr.enum import DBEnumeratedType, DBItem
 
+from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.validators.version import sane_version
-from canonical.launchpad.validators.productrelease import (
-    productrelease_file_size_constraint,
-    productrelease_signature_size_constraint)
 from canonical.launchpad.fields import ContentNameField
 from canonical.launchpad.interfaces.person import IPerson
+from canonical.launchpad.validators import LaunchpadValidationError
 
 from canonical.lazr.fields import CollectionField, Reference, ReferenceChoice
 from canonical.lazr.interface import copy_field
@@ -36,6 +35,33 @@ from canonical.lazr.rest.declarations import (
     REQUEST_USER, call_with, export_as_webservice_entry,
     export_factory_operation, export_operation_as, export_write_operation,
     exported, operation_parameters)
+
+
+def file_size_constraint(value, max_size):
+    """Check constraints.
+
+    The file cannot be empty and must be <= max_size.
+    """
+    size = len(value)
+    if size == 0:
+        raise LaunchpadValidationError(u'Cannot upload empty file.')
+    elif max_size > 0 and size > max_size:
+        raise LaunchpadValidationError(
+            u'Cannot upload files larger than %i bytes' % max_size)
+    else:
+        return True
+
+
+def productrelease_file_size_constraint(value):
+    """Constraint for a product release file's size."""
+    max_size = config.launchpad.max_productrelease_file_size
+    return file_size_constraint(value, max_size)
+
+
+def productrelease_signature_size_constraint(value):
+    """Constraint for a product release signature's size."""
+    max_size = config.launchpad.max_productrelease_signature_size
+    return file_size_constraint(value, max_size)
 
 
 class UpstreamFileType(DBEnumeratedType):

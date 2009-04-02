@@ -55,7 +55,7 @@ from lp.answers.model.question import QuestionTargetSearch
 from canonical.launchpad.database.structuralsubscription import (
     StructuralSubscriptionTargetMixin)
 from canonical.launchpad.helpers import shortlist
-from canonical.launchpad.validators.person import validate_public_person
+from canonical.launchpad.interfaces.person import validate_public_person
 
 
 class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,

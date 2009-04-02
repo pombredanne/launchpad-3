@@ -37,7 +37,7 @@ from canonical.launchpad.interfaces.branchnamespace import (
     get_branch_namespace)
 from canonical.launchpad.interfaces.codeimport import RevisionControlSystems
 from canonical.launchpad.mailout.codeimport import code_import_updated
-from canonical.launchpad.validators.person import validate_public_person
+from canonical.launchpad.interfaces.person import validate_public_person
 
 
 class CodeImport(SQLBase):

@@ -43,7 +43,7 @@ from canonical.launchpad.interfaces import (
     QuestionPriority, QuestionSort, QuestionStatus)
 from canonical.launchpad.interfaces.sourcepackagename import (
     ISourcePackageNameSet)
-from canonical.launchpad.validators.person import validate_public_person
+from canonical.launchpad.interfaces.person import validate_public_person
 
 from canonical.database.sqlbase import cursor, quote, SQLBase, sqlvalues
 from canonical.database.constants import DEFAULT, UTC_NOW

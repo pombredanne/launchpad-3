@@ -25,7 +25,7 @@ from canonical.launchpad.interfaces.project import IProject
 from canonical.launchpad.interfaces.branchvisibilitypolicy import (
     BranchVisibilityRule, IBranchVisibilityTeamPolicy,
     InvalidVisibilityPolicy)
-from canonical.launchpad.validators.person import validate_public_person
+from canonical.launchpad.interfaces.person import validate_public_person
 
 
 class BranchVisibilityTeamPolicy(SQLBase):

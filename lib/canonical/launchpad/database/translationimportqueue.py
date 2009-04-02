@@ -35,7 +35,7 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.translationformat.gettext_po_importer import (
     GettextPOImporter)
 from canonical.librarian.interfaces import ILibrarianClient
-from canonical.launchpad.validators.person import validate_public_person
+from canonical.launchpad.interfaces.person import validate_public_person
 
 
 # Number of days when the DELETED and IMPORTED entries are removed from the

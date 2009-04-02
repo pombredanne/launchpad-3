@@ -17,7 +17,7 @@ from canonical.launchpad.interfaces import (
     CodeReviewNotificationLevel, IBranchSubscription)
 from canonical.launchpad.interfaces.branch import IBranchNavigationMenu
 from canonical.launchpad.interfaces.branchtarget import IHasBranchTarget
-from canonical.launchpad.validators.person import validate_public_person
+from canonical.launchpad.interfaces.person import validate_public_person
 
 
 class BranchSubscription(SQLBase):

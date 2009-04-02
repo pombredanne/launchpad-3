@@ -74,7 +74,7 @@ from canonical.launchpad.interfaces.sourcepackagename import (
     ISourcePackageNameSet)
 from canonical.launchpad.searchbuilder import (
     all, any, greater_than, NULL, not_equals)
-from canonical.launchpad.validators.person import validate_public_person
+from canonical.launchpad.interfaces.person import validate_public_person
 from canonical.launchpad.webapp.interfaces import (
         IStoreSelector, DEFAULT_FLAVOR, MAIN_STORE, NotFoundError)
 

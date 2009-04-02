@@ -14,7 +14,7 @@ from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad.interfaces import (
     IPOExportRequestSet, IPOExportRequest, IPOTemplate, TranslationFileFormat)
-from canonical.launchpad.validators.person import validate_public_person
+from canonical.launchpad.interfaces.person import validate_public_person
 
 
 class POExportRequestSet:

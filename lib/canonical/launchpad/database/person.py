@@ -60,7 +60,6 @@ from canonical.launchpad.database.karma import KarmaCategory
 from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.oauth import (
     OAuthAccessToken, OAuthRequestToken)
-from canonical.launchpad.database.openidserver import OpenIDRPSummary
 from canonical.launchpad.database.personlocation import PersonLocation
 from canonical.launchpad.database.structuralsubscription import (
     StructuralSubscription)
@@ -115,7 +114,6 @@ from canonical.launchpad.interfaces.project import IProject
 from canonical.launchpad.interfaces.revision import IRevisionSet
 from canonical.launchpad.interfaces.salesforce import (
     ISalesforceVoucherProxy, VOUCHER_STATUSES)
-from canonical.launchpad.interfaces.shipit import ShippingRequestStatus
 from canonical.launchpad.interfaces.specification import (
     SpecificationDefinitionStatus, SpecificationFilter,
     SpecificationImplementationStatus, SpecificationSort)
@@ -153,7 +151,7 @@ from lp.answers.model.question import QuestionPersonSearch
 
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.validators.name import sanitize_name, valid_name
-from canonical.launchpad.validators.person import validate_public_person
+from canonical.launchpad.interfaces.person import validate_public_person
 
 from lp.answers.interfaces.questioncollection import (
     QUESTION_STATUS_DEFAULT_SEARCH)

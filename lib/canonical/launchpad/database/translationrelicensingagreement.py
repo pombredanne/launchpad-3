@@ -13,7 +13,7 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.interfaces.translationrelicensingagreement import (
     ITranslationRelicensingAgreement)
-from canonical.launchpad.validators.person import validate_public_person
+from canonical.launchpad.interfaces.person import validate_public_person
 
 
 class TranslationRelicensingAgreement(SQLBase):

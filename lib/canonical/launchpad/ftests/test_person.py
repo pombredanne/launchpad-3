@@ -22,7 +22,7 @@ from canonical.launchpad.database import (
     AnswerContact, Bug, BugTask, BugSubscription, Person, Specification)
 from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.launchpad.testing.systemdocs import create_initialized_view
-from canonical.launchpad.validators.person import PrivatePersonLinkageError
+from canonical.launchpad.interfaces.person import PrivatePersonLinkageError
 from canonical.testing.layers import (
     DatabaseFunctionalLayer, LaunchpadFunctionalLayer)
 

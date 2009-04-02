@@ -29,7 +29,7 @@ from canonical.launchpad.database.bugtask import BugTask
 from canonical.launchpad.database.milestone import (
     HasMilestonesMixin, Milestone)
 from canonical.launchpad.database.packaging import Packaging
-from canonical.launchpad.validators.person import validate_public_person
+from canonical.launchpad.interfaces.person import validate_public_person
 from canonical.launchpad.database.potemplate import POTemplate
 from canonical.launchpad.database.productrelease import ProductRelease
 from canonical.launchpad.database.specification import (

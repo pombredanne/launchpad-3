@@ -15,7 +15,7 @@ from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.interfaces import (
     CodeImportResultStatus, ICodeImportResult, ICodeImportResultSet)
-from canonical.launchpad.validators.person import validate_public_person
+from canonical.launchpad.interfaces.person import validate_public_person
 
 class CodeImportResult(SQLBase):
     """See `ICodeImportResult`."""

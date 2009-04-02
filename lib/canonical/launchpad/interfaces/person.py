@@ -31,10 +31,12 @@ __all__ = [
     'PersonCreationRationale',
     'PersonVisibility',
     'PersonalStanding',
+    'PrivatePersonLinkageError',
     'PRIVATE_TEAM_PREFIX',
     'TeamContactMethod',
     'TeamMembershipRenewalPolicy',
     'TeamSubscriptionPolicy',
+    'validate_public_person',
     ]
 
 
@@ -59,8 +61,10 @@ from canonical.lazr.fields import CollectionField, Reference
 
 from canonical.launchpad import _
 
+from canonical.database.sqlbase import block_implicit_flushes
 from canonical.launchpad.fields import (
-    BlacklistableContentNameField, IconImageUpload, LogoImageUpload,
+    BlacklistableContentNameField, IconImageUpload,
+    is_valid_public_person_link, LogoImageUpload,
     MugshotImageUpload, PasswordField, PublicPersonChoice, StrippedTextLine)
 from canonical.launchpad.interfaces.account import AccountStatus, IAccount
 from canonical.launchpad.interfaces.emailaddress import IEmailAddress
@@ -91,6 +95,28 @@ from lp.answers.interfaces.questioncollection import (
     IQuestionCollection, QUESTION_STATUS_DEFAULT_SEARCH)
 
 PRIVATE_TEAM_PREFIX = 'private-'
+
+
+class PrivatePersonLinkageError(ValueError):
+    """An attempt was made to link a private person/team to something."""
+
+
+@block_implicit_flushes
+def validate_public_person(obj, attr, value):
+    """Validate that the person identified by value is public."""
+    if value is None:
+        return None
+    assert isinstance(value, (int, long)), (
+        "Expected int for Person foreign key reference, got %r" % type(value))
+
+    from canonical.launchpad.database.person import Person
+    person = Person.get(value)
+    if not is_valid_public_person_link(person, obj):
+        raise PrivatePersonLinkageError(
+            "Cannot link person (name=%s, visibility=%s) to %s (name=%s)"
+            % (person.name, person.visibility.name,
+               obj, getattr(obj, 'name', None)))
+    return value
 
 
 class PersonalStanding(DBEnumeratedType):

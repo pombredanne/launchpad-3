@@ -31,7 +31,7 @@ from canonical.launchpad.mail import format_address, simple_sendmail
 from canonical.launchpad.mailnotification import MailWrapper
 from canonical.launchpad.helpers import (
     get_contact_email_addresses, get_email_template)
-from canonical.launchpad.validators.person import validate_public_person
+from canonical.launchpad.interfaces.person import validate_public_person
 from canonical.launchpad.interfaces import (
     CyclicalTeamMembershipError, DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT,
     ILaunchpadCelebrities, IPersonSet, ITeamMembership, ITeamMembershipSet,

@@ -44,7 +44,7 @@ from canonical.launchpad.interfaces import (
     PackagePublishingStatus, pocketsuffix, PROBE_INTERVAL,
     SourcePackageFileType)
 from canonical.launchpad.mail import simple_sendmail, format_address
-from canonical.launchpad.validators.person import validate_public_person
+from canonical.launchpad.interfaces.person import validate_public_person
 from canonical.launchpad.webapp import urlappend, canonical_url
 from canonical.launchpad.webapp.interfaces import (
         IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)

@@ -47,7 +47,7 @@ from canonical.launchpad.interfaces.translationimportqueue import (
 from canonical.launchpad.database.build import Build
 from canonical.launchpad.database.files import SourcePackageReleaseFile
 from canonical.launchpad.database.packagediff import PackageDiff
-from canonical.launchpad.validators.person import validate_public_person
+from canonical.launchpad.interfaces.person import validate_public_person
 from canonical.launchpad.database.publishing import (
     SourcePackagePublishingHistory)
 from canonical.launchpad.database.queue import PackageUpload

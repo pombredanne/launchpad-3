@@ -51,7 +51,7 @@ from lp.answers.model.faq import FAQ, FAQSearch
 from canonical.launchpad.database.mentoringoffer import MentoringOffer
 from canonical.launchpad.database.milestone import (
     HasMilestonesMixin, Milestone)
-from canonical.launchpad.validators.person import validate_public_person
+from canonical.launchpad.interfaces.person import validate_public_person
 from canonical.launchpad.database.announcement import MakesAnnouncements
 from canonical.launchpad.database.packaging import Packaging
 from canonical.launchpad.database.pillar import HasAliasMixin

@@ -37,7 +37,7 @@ from canonical.launchpad.interfaces.bugtrackerperson import (
 from canonical.launchpad.database.bug import Bug
 from canonical.launchpad.database.bugmessage import BugMessage
 from canonical.launchpad.database.bugwatch import BugWatch
-from canonical.launchpad.validators.person import validate_public_person
+from canonical.launchpad.interfaces.person import validate_public_person
 from canonical.launchpad.interfaces import NotFoundError
 from canonical.launchpad.interfaces.bugtracker import (
     BugTrackerType, IBugTracker, IBugTrackerAlias, IBugTrackerAliasSet,

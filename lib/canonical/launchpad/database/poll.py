@@ -32,7 +32,7 @@ from canonical.launchpad.interfaces import (
     IPoll, IPollSet, IPollOption, IPollOptionSet, IVote, IVoteCast,
     PollStatus, IVoteCastSet, IVoteSet, PollAlgorithm, PollSecrecy,
     OptionIsNotFromSimplePoll)
-from canonical.launchpad.validators.person import validate_public_person
+from canonical.launchpad.interfaces.person import validate_public_person
 
 
 class Poll(SQLBase):

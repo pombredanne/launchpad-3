@@ -94,7 +94,7 @@ from canonical.launchpad.database.mentoringoffer import MentoringOffer
 from canonical.launchpad.database.person import Person, ValidPersonCache
 from canonical.launchpad.database.pillar import pillar_sort_key
 from canonical.launchpad.validators import LaunchpadValidationError
-from canonical.launchpad.validators.person import validate_public_person
+from canonical.launchpad.interfaces.person import validate_public_person
 from canonical.launchpad.mailnotification import BugNotificationRecipients
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, DEFAULT_FLAVOR, MAIN_STORE, NotFoundError)

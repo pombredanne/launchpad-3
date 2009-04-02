@@ -82,7 +82,7 @@ from canonical.launchpad.webapp.interfaces import (
         IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from canonical.launchpad.webapp.url import urlappend
 from canonical.launchpad.validators.name import valid_name
-from canonical.launchpad.validators.person import validate_public_person
+from canonical.launchpad.interfaces.person import validate_public_person
 
 
 class Archive(SQLBase):
