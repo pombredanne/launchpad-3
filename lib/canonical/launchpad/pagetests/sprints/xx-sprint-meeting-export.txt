@@ -28,7 +28,7 @@ element name:
     >>> print document.documentElement.nodeName
     schedule
 
-Ensure the list of attendees is included.
+The attendees element contains a list of person elements.
 
     >>> from BeautifulSoup import BeautifulStoneSoup as BSS
     >>> import operator
