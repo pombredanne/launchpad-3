@@ -19,7 +19,7 @@ from canonical.launchpad.database.openidconsumer import OpenIDConsumerNonce
 from canonical.launchpad.interfaces import IMasterStore
 from canonical.launchpad.interfaces.looptuner import ITunableLoop
 from canonical.launchpad.scripts.base import LaunchpadCronScript
-from canonical.launchpad.utilities.looptuner import LoopTuner
+from canonical.launchpad.utilities.looptuner import DBLoopTuner
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
 
@@ -35,9 +35,9 @@ class TunableLoop:
     maximum_chunk_size = None # Override
     cooldown_time = 0
 
-    def run(self):
+    def run(self, loop_tuner=DBLoopTuner):
         assert self.maximum_chunk_size is not None, "Did not override."
-        LoopTuner(
+        loop_tuner(
             self, self.goal_seconds,
             minimum_chunk_size = self.minimum_chunk_size,
             maximum_chunk_size = self.maximum_chunk_size,
@@ -173,6 +173,7 @@ class HourlyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         OAuthNoncePruner,
         OpenIDConsumerNoncePruner,
         ]
+
 
 class DailyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
     script_name = 'garbo-daily'
