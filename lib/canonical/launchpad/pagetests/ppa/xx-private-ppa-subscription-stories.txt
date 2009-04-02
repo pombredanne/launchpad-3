@@ -39,6 +39,19 @@ Given a private PPA for Celso,
 
 and a browser for Celso currently navigated to the Manage Subscriptions page,
 
+XXX: noodles 2009-03-10 bug=340405. The the +subscriptions traversal
+will require launchpad.Admin until the backend .htaccess update
+machinery is in-place and tested:
+
+    >>> from canonical.launchpad.interfaces.person import IPersonSet
+    >>> from zope.component import getUtility
+    >>> login('foo.bar@canonical.com')
+    >>> cprov = getUtility(IPersonSet).getByName('cprov')
+    >>> foobar = getUtility(IPersonSet).getByName('name16')
+    >>> admins = getUtility(IPersonSet).getByName('admins')
+    >>> admins.addMember(cprov, foobar)
+    >>> logout()
+
     >>> cprov_browser = setupBrowser(
     ...     auth="Basic celso.providelo@canonical.com:cprov")
     >>> cprov_browser.open(
@@ -186,20 +199,25 @@ cancellation is displayed.
 === Scenario 1: A user activates a personal subscription ===
 
 Given a subscription for Celso's private PPA for Joe Smith, when
-Joe visits his profile and clicks 'Change details' and then
-'Private PPA subscriptions', then he'll see a list of his current
-subscriptions.
+Joe visits his private archive subscriptions page, then he sees
+a list of all his subscriptions.
 
+XXX: noodles 2009-03-10 bug=340405. The +archivesubscriptions traversal
+will require launchpad.Admin until the backend .htaccess update
+machinery is in-place and tested:
+
+    >>> login('foo.bar@canonical.com')
+    >>> admins.addMember(client, foobar)
+    >>> logout()
     >>> joe_browser = setupBrowser(auth="Basic joe@example.com:test")
     >>> joe_browser.open(
-    ...     "http://launchpad.dev/~joesmith")
-    >>> joe_browser.getLink('View your private PPA subscriptions').click()
+    ...     "http://launchpad.dev/~joesmith/+archivesubscriptions")
     >>> print_subscriptions_for_person(joe_browser.contents)
     Archive                             Subscription description Status
     PPA for Celso Providelo     Joe is my friend         Pending
         Confirm
 
-When Joe clicks on the 'Confirm' link for Celso's PPA then the
+When Joe clicks on the 'Activate now' link for Celso's PPA then the
 details of the subscription are displayed with a request to confirm the
 subscription.
 
