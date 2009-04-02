@@ -1294,9 +1294,20 @@ class IPersonViewRestricted(Interface):
     mapped_participants = CollectionField(
         title=_("List of participants with coordinates."),
         value_type=Reference(schema=Interface))
+    mapped_participants_count = Attribute(
+        "The number of mapped participants")
     unmapped_participants = CollectionField(
         title=_("List of participants with no coordinates recorded."),
         value_type=Reference(schema=Interface))
+    unmapped_participants_count = Attribute(
+        "The number of unmapped participants")
+
+    def getMappedParticipantsBounds():
+        """Return a dict of the bounding longitudes latitudes, and centers.
+
+        :return: a dict containing: min_lat, min_lng, max_lat, max_lng,
+            center_lat, and center_lng
+        """
 
     def getMembersWithPreferredEmails(include_teams=False):
         """Returns a result set of persons with precached addresses.

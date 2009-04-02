@@ -161,6 +161,34 @@ twice, for obvious reasons.
     >>> len(view.times)
     2
 
+The view provides the count of mapped and unmapped members. The counts
+are cached to improve performance.
+
+    >>> view = create_view(context, '+map')
+    >>> view.mapped_participants_count
+    3
+    >>> view.unmapped_participants_count
+    1
+
+The template can ask if the team has mapped members, so that it does not
+need to work with counts or the list of members.
+
+    >>> view.has_mapped_participants
+    True
+
+The cached bounds of the mapped members of the team can be used to define
+the scale of a map.
+
+    >>> bounds = view.bounds
+    >>> for key in sorted(bounds):
+    ...     print "%s: %s" % (key, bounds[key])
+    center_lat: 13...
+    center_lng: -23...
+    max_lat: 51...
+    max_lng: -0...
+    min_lat: -23...
+    min_lng: -46...
+
 
 == Contacting the team ==
 

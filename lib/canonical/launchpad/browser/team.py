@@ -911,7 +911,7 @@ class TeamMapView(LaunchpadView):
     def initialize(self):
         # Tell our main-template to include Google's gmap2 javascript so that
         # we can render the map.
-        if len(self.mapped_participants) > 0:
+        if self.mapped_participants_count > 0:
             self.request.needs_gmap2 = True
 
     @cachedproperty
@@ -922,7 +922,12 @@ class TeamMapView(LaunchpadView):
     @cachedproperty
     def mapped_participants_count(self):
         """Count of participants with locations."""
-        return len(self.mapped_participants)
+        return self.context.mapped_participants_count
+
+    @property
+    def has_mapped_participants(self):
+        """Does the team have any mapped participants?"""
+        return self.mapped_participants_count > 0
 
     @cachedproperty
     def unmapped_participants(self):
@@ -932,7 +937,7 @@ class TeamMapView(LaunchpadView):
     @cachedproperty
     def unmapped_participants_count(self):
         """Count of participants with no recorded locations."""
-        return len(self.unmapped_participants)
+        return self.context.unmapped_participants_count
 
     @cachedproperty
     def times(self):
@@ -947,33 +952,10 @@ class TeamMapView(LaunchpadView):
 
     @cachedproperty
     def bounds(self):
-        """A dictionary with the bounds and center of the map.
-
-        We look at the set of latitudes and longitudes for the people who
-        have coordinates, start out with a maximum minimum, and vice
-        versa, so each coordinate we examine should expand the area.
-        """
-        max_lat = -90.0
-        min_lat = 90.0
-        max_lng = -180.0
-        min_lng = 180.0
-        latitudes = sorted(
-            participant.latitude for participant in self.mapped_participants)
-        if latitudes[-1] > max_lat:
-            max_lat = latitudes[-1]
-        if latitudes[0] < min_lat:
-            min_lat = latitudes[0]
-        longitudes = sorted(
-            participant.longitude for participant in self.mapped_participants)
-        if longitudes[-1] > max_lng:
-            max_lng = longitudes[-1]
-        if longitudes[0] < min_lng:
-            min_lng = longitudes[0]
-        center_lat = (max_lat + min_lat) / 2.0
-        center_lng = (max_lng + min_lng) / 2.0
-        return dict(
-            min_lat=min_lat, min_lng=min_lng, max_lat=max_lat,
-            max_lng=max_lng, center_lat=center_lat, center_lng=center_lng)
+        """A dictionary with the bounds and center of the map, or None"""
+        if self.has_mapped_participants:
+            return self.context.getMappedParticipantsBounds()
+        return None
 
     @property
     def map_html(self):
