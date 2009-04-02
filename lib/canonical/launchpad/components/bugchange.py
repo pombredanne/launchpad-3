@@ -11,6 +11,7 @@ __all__ = [
     'BugTagsChange',
     'BugTaskAdded',
     'BugTaskAttributeChange',
+    'BugTaskAttributeNotification',
     'BugTaskTargetChange',
     'BugTitleChange',
     'BugVisibilityChange',
@@ -522,6 +523,7 @@ class BugTaskAttributeChange(AttributeChange):
         'status': 'title',
         'importance': 'title',
         'milestone': 'name',
+        'bugwatch': 'title',
         }
 
     def __init__(self, bug_task, when, person, what_changed, old_value,
@@ -577,6 +579,14 @@ class BugTaskAttributeChange(AttributeChange):
         return {'text': text.rstrip()}
 
 
+class BugTaskAttributeNotification(BugTaskAttributeChange):
+    """Represents a notification about a BugTask attribute change."""
+
+    def getBugActivity(self):
+        """Do not record activity."""
+        return None
+
+
 class BugTaskTargetChange(AttributeChange):
     """Used to represent a change in a BugTask's target."""
 
@@ -622,4 +632,5 @@ BUGTASK_CHANGE_LOOKUP = {
     'status': BugTaskAttributeChange,
     'target': BugTaskTargetChange,
     'milestone': BugTaskAttributeChange,
+    'bugwatch': BugTaskAttributeNotification,
     }

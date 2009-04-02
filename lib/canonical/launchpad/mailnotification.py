@@ -616,7 +616,7 @@ def get_bug_edit_notification_texts(bug_delta):
             bugtask_deltas = [bugtask_deltas]
 
         bugtask_change_field_names = [
-            'target', 'importance', 'status', 'milestone',
+            'target', 'importance', 'status', 'milestone', 'bugwatch',
             ]
         for bugtask_delta in bugtask_deltas:
             for field_name in bugtask_change_field_names:
@@ -642,14 +642,6 @@ def get_bug_edit_notification_texts(bug_delta):
         #     moving to the BugChange API.
         for bugtask_delta in bugtask_deltas:
             change_info = u''
-
-            for fieldname, displayattrname in [("bugwatch", "title")]:
-                change = getattr(bugtask_delta, fieldname)
-                if change:
-                    oldval_display, newval_display = _get_task_change_values(
-                        change, displayattrname)
-                    change_info += _get_task_change_row(
-                        fieldname, oldval_display, newval_display)
 
             if bugtask_delta.assignee is not None:
                 oldval_display = u"(unassigned)"
