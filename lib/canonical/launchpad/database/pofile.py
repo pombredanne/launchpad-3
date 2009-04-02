@@ -48,6 +48,8 @@ from canonical.launchpad.interfaces.translationimportqueue import (
     RosettaImportStatus)
 from canonical.launchpad.interfaces.translationmessage import (
     TranslationValidationStatus)
+from canonical.launchpad.interfaces.translationsperson import (
+    ITranslationsPerson)
 from canonical.launchpad.interfaces.translations import TranslationConstants
 from canonical.launchpad.interfaces.vpoexport import IVPOExportSet
 from canonical.launchpad.translationformat.translation_common_format import (
@@ -107,8 +109,9 @@ def _check_translation_perms(permission, translators, person):
 
 def _person_has_not_licensed_translations(person):
     """Whether a person has declined to BSD-license their translations."""
-    if (person.translations_relicensing_agreement is not None and
-        person.translations_relicensing_agreement is False):
+    t_p = ITranslationsPerson(person)
+    if (t_p.translations_relicensing_agreement is not None and
+        t_p.translations_relicensing_agreement is False):
         return True
     else:
         return False

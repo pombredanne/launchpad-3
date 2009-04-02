@@ -109,4 +109,14 @@
     layer="canonical.launchpad.layers.TranslationsLayer"
     />
 
+  <!-- ITranslationsPerson -->
+  <class class="canonical.launchpad.database.TranslationsPerson">
+      <allow interface="canonical.launchpad.interfaces.ITranslationsPerson" />
+  </class>
+
+  <adapter for="canonical.launchpad.interfaces.IPerson"
+    provides="canonical.launchpad.interfaces.ITranslationsPerson"
+    factory="canonical.launchpad.database.TranslationsPerson"
+    />
+
 </configure>

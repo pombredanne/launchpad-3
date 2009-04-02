@@ -166,6 +166,7 @@ from canonical.launchpad.interfaces.translationimporter import *
 from canonical.launchpad.interfaces.translationmessage import *
 from canonical.launchpad.interfaces.translations import *
 from canonical.launchpad.interfaces.translationsoverview import *
+from canonical.launchpad.interfaces.translationsperson import *
 from canonical.launchpad.interfaces.translationtemplateitem import *
 from canonical.launchpad.interfaces.translationcommonformat import *
 from canonical.launchpad.interfaces.translationgroup import *

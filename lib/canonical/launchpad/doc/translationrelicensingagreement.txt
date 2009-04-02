@@ -9,15 +9,19 @@ under BSD or not.
     >>> from canonical.launchpad.database.translationrelicensingagreement \
     ...     import TranslationRelicensingAgreement
     >>> from canonical.launchpad.interfaces.person import IPersonSet
+    >>> from canonical.launchpad.interfaces.translationsperson import (
+    ...     ITranslationsPerson)
     >>> from canonical.launchpad.interfaces.translationrelicensingagreement \
     ...     import ITranslationRelicensingAgreement
-    >>> person_set = getUtility(IPersonSet)
     >>> login('karl@canonical.com')
-    >>> person = person_set.getByName('karl')
+    >>> person = getUtility(IPersonSet).getByName('karl')
+    >>> translations_person = ITranslationsPerson(person)
+    >>> verifyObject(ITranslationsPerson, translations_person)
+    True
 
 When Karl has not made his selection yet, it is marked as None.
 
-    >>> print person.translations_relicensing_agreement
+    >>> print translations_person.translations_relicensing_agreement
     None
     >>> choice = TranslationRelicensingAgreement.selectOneBy(person=person)
     >>> print choice
@@ -26,8 +30,8 @@ When Karl has not made his selection yet, it is marked as None.
 Setting a value will create a new TranslationRelicensingAgreement
 object.
 
-    >>> person.translations_relicensing_agreement = True
-    >>> print person.translations_relicensing_agreement
+    >>> translations_person.translations_relicensing_agreement = True
+    >>> print translations_person.translations_relicensing_agreement
     True
     >>> choice = TranslationRelicensingAgreement.selectOneBy(person=person)
     >>> print choice.allow_relicensing
@@ -40,8 +44,8 @@ A `choice` implements ITranslationRelicensingAgreement interface:
 
 A translator can also change their mind later.
 
-    >>> person.translations_relicensing_agreement = False
-    >>> print person.translations_relicensing_agreement
+    >>> translations_person.translations_relicensing_agreement = False
+    >>> print translations_person.translations_relicensing_agreement
     False
     >>> choice = TranslationRelicensingAgreement.selectOneBy(person=person)
     >>> print choice.allow_relicensing
