@@ -17,7 +17,7 @@
         <allow
             interface="lp.registry.interfaces.teammembership.ITeamMembershipSet"/>
     </securedutility>
-    
+
     <!-- XXX: Guilherme Salgado 2008-02-15: Need to refactor ITeamMembership
                                                         into specific interfaces for each persmission. -->
 
@@ -76,9 +76,9 @@
             attributes="
                 __call__"/>
     </class>
-    
+
     <!-- Location -->
-    
+
     <class
         class="canonical.launchpad.database.PersonLocation">
         <require
@@ -116,7 +116,7 @@
         <require
             permission="launchpad.LanguagePacksAdmin"
             set_attributes="language_pack_base language_pack_delta                                                                                                 language_pack_proposed                                                                                                 language_pack_full_export_requested"/>
-        
+
         <!-- NB: check with SABDFL before modifying these, there is potential to
                                  make a huge mess if these get changed and Soyuz has to republish
                                  shedloads of data. -->
@@ -124,7 +124,7 @@
         <require
             permission="launchpad.Edit"
             set_attributes="displayname title summary description driver"/>
-        
+
         <!-- NB: check with SABDFL before modifying these, there is potential to
                                  make a huge mess if these get changed and Soyuz has to republish
                                  shedloads of data. -->
@@ -132,9 +132,9 @@
         <require
             permission="launchpad.Admin"
             set_attributes="version name status owner nominatedarchindep                                                                                                 changeslist datereleased"/>
-        
+
         <!-- IStructuralSubscriptionTarget -->
-        
+
         <allow
             attributes="
                 bug_subscriptions
@@ -166,7 +166,7 @@
         for="lp.registry.interfaces.distroseries.IDistroSeries"
         factory="lp.registry.browser.distroseries.DistroSeriesBreadcrumbBuilder"
         permission="zope.Public"/>
-    
+
     <!-- NB DO NOT CHANGE WITHOUT THINKING
                          Do not allow people to change the details of the distro series that
                          will affect the way Soyuz publishes the distroseries. Check with
@@ -174,9 +174,9 @@
 
     <facet
         facet="overview">
-        
+
         <!-- CodeofConduct -->
-        
+
         <class
             class="canonical.launchpad.database.CodeOfConduct">
             <allow
@@ -185,27 +185,27 @@
                 permission="launchpad.AnyPerson"
                 set_schema="lp.registry.interfaces.codeofconduct.ICodeOfConduct"/>
         </class>
-        
+
         <!-- CodeOfConductConf -->
-        
+
         <securedutility
             class="canonical.launchpad.database.CodeOfConductConf"
             provides="lp.registry.interfaces.codeofconduct.ICodeOfConductConf">
             <allow
                 interface="lp.registry.interfaces.codeofconduct.ICodeOfConductConf"/>
         </securedutility>
-        
+
         <!-- CodeOfConductSet -->
-        
+
         <securedutility
             class="canonical.launchpad.database.CodeOfConductSet"
             provides="lp.registry.interfaces.codeofconduct.ICodeOfConductSet">
             <allow
                 interface="lp.registry.interfaces.codeofconduct.ICodeOfConductSet"/>
         </securedutility>
-        
+
         <!-- SignedCodeofConduct -->
-        
+
         <class
             class="canonical.launchpad.database.SignedCodeOfConduct">
             <allow
@@ -214,9 +214,9 @@
                 permission="launchpad.AnyPerson"
                 set_schema="lp.registry.interfaces.codeofconduct.ISignedCodeOfConduct"/>
         </class>
-        
+
         <!-- SignedCodeOfConductSet -->
-        
+
         <class
             class="canonical.launchpad.database.SignedCodeOfConductSet">
             <allow
@@ -228,9 +228,9 @@
             <allow
                 interface="lp.registry.interfaces.codeofconduct.ISignedCodeOfConductSet"/>
         </securedutility>
-        
+
         <!-- string:${id} because id is an int -->
-        
+
     </facet>
     <class
         class="canonical.launchpad.database.IrcID">
@@ -259,9 +259,9 @@
         <allow
             interface="canonical.launchpad.interfaces.IIrcIDSet"/>
     </securedutility>
-    
+
     <!-- Project -->
-    
+
     <class
         class="canonical.launchpad.database.Project">
         <allow
@@ -273,9 +273,9 @@
         <require
             permission="launchpad.Edit"
             set_schema="lp.registry.interfaces.project.IProject"/>
-        
+
         <!-- IStructuralSubscriptionTarget -->
-        
+
         <allow
             attributes="
                 bug_subscriptions
@@ -293,9 +293,9 @@
         <require
             permission="launchpad.Admin"
             set_attributes="registrant"/>
-        
+
         <!-- IHasAliases -->
-        
+
         <allow
             attributes="
                 aliases"/>
@@ -318,15 +318,15 @@
         for="lp.registry.interfaces.project.IProjectSet"
         factory="lp.registry.browser.project.ProjectSetBreadcrumbBuilder"
         permission="zope.Public"/>
-    
+
     <!-- The bounty system is kept maintained but not available for users.
                 This is achieved by putting it on the PageTestLayer. -->
 
     <facet
         facet="answers"/>
-    
+
     <!-- ProjectSet-->
-    
+
     <class
         class="canonical.launchpad.database.ProjectSet">
         <allow
@@ -338,17 +338,17 @@
         <allow
             interface="lp.registry.interfaces.project.IProjectSet"/>
     </securedutility>
-    
+
     <!-- ProjectSeries -->
-    
+
     <class
         class="canonical.launchpad.database.ProjectSeries">
         <allow
             interface="lp.registry.interfaces.project.IProjectSeries"/>
     </class>
-    
+
     <!-- DistributionSourcePackage -->
-    
+
     <class
         class="canonical.launchpad.database.DistributionSourcePackage">
         <allow
@@ -402,9 +402,9 @@
                 addBugSubscription
                 removeBugSubscription
                 createBug"/>
-        
+
         <!-- IQuestionTarget -->
-        
+
         <allow
             attributes="
                 getQuestion
@@ -436,9 +436,9 @@
         for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
         factory="lp.registry.browser.distributionsourcepackage.DistributionSourcePackageBreadcrumbBuilder"
         permission="zope.Public"/>
-    
+
     <!-- CommercialSubscription -->
-    
+
     <class
         class="canonical.launchpad.database.CommercialSubscription">
         <require
@@ -514,17 +514,17 @@
         <allow
             interface="canonical.launchpad.webapp.interfaces.ICanonicalUrlData"/>
     </securedutility>
-    
+
     <!-- SourcePackageName -->
-    
+
     <class
         class="canonical.launchpad.database.SourcePackageName">
         <allow
             interface="lp.registry.interfaces.sourcepackagename.ISourcePackageName"/>
     </class>
-    
+
     <!-- SourcePackageNameSet -->
-    
+
     <securedutility
         class="canonical.launchpad.database.SourcePackageNameSet"
         provides="lp.registry.interfaces.sourcepackagename.ISourcePackageNameSet">
@@ -542,33 +542,33 @@
         provides="zope.schema.interfaces.IVocabularyFactory"/>
     <facet
         facet="overview">
-        
+
         <!-- Karma -->
-        
+
         <class
             class="canonical.launchpad.database.Karma">
             <allow
                 interface="lp.registry.interfaces.karma.IKarma"/>
         </class>
-        
+
         <!-- KarmaCache -->
-        
+
         <class
             class="canonical.launchpad.database.KarmaCache">
             <allow
                 interface="lp.registry.interfaces.karma.IKarmaCache"/>
         </class>
-        
+
         <!-- KarmaTotalCache -->
-        
+
         <class
             class="canonical.launchpad.database.KarmaTotalCache">
             <allow
                 interface="lp.registry.interfaces.karma.IKarmaTotalCache"/>
         </class>
-        
+
         <!-- KarmaCategory -->
-        
+
         <class
             class="canonical.launchpad.database.KarmaCategory">
             <allow
@@ -577,9 +577,9 @@
                 permission="launchpad.Admin"
                 set_schema="lp.registry.interfaces.karma.IKarmaCategory"/>
         </class>
-        
+
         <!-- KarmaAction -->
-        
+
         <class
             class="canonical.launchpad.database.KarmaAction">
             <allow
@@ -588,9 +588,9 @@
                 permission="launchpad.Admin"
                 set_schema="lp.registry.interfaces.karma.IKarmaAction"/>
         </class>
-        
+
         <!-- KarmaCacheManager -->
-        
+
         <class
             class="canonical.launchpad.database.KarmaCacheManager">
             <allow
@@ -602,9 +602,9 @@
             <allow
                 interface="lp.registry.interfaces.karma.IKarmaCacheManager"/>
         </securedutility>
-        
+
         <!-- KarmaActionSet -->
-        
+
         <class
             class="canonical.launchpad.database.KarmaActionSet">
             <allow
@@ -619,9 +619,9 @@
     </facet>
     <facet
         facet="overview">
-        
+
         <!-- Poll -->
-        
+
         <class
             class="canonical.launchpad.database.Poll">
             <allow
@@ -630,9 +630,9 @@
                 permission="launchpad.Edit"
                 set_schema="lp.registry.interfaces.poll.IPoll"/>
         </class>
-        
+
         <!-- PollOption -->
-        
+
         <class
             class="canonical.launchpad.database.PollOption">
             <allow
@@ -641,10 +641,10 @@
                 permission="launchpad.Edit"
                 set_schema="lp.registry.interfaces.poll.IPollOption"/>
         </class>
-        
+
         <!-- Vote -->
-        
-        
+
+
         <!-- Can't require launchpad.Edit to set_attributes because in most cases
                 the vote won't be associated with a person, and thus we can't check it
                 against the logged in user. -->
@@ -657,17 +657,17 @@
                 permission="zope.Public"
                 set_attributes="option preference"/>
         </class>
-        
+
         <!-- VoteCast -->
-        
+
         <class
             class="canonical.launchpad.database.VoteCast">
             <allow
                 interface="lp.registry.interfaces.poll.IVoteCast"/>
         </class>
-        
+
         <!-- PollSet -->
-        
+
         <class
             class="canonical.launchpad.database.PollSet">
             <allow
@@ -679,17 +679,17 @@
             <allow
                 interface="lp.registry.interfaces.poll.IPollSet"/>
         </securedutility>
-        
+
         <!-- PollSubset -->
-        
+
         <adapter
             for="canonical.launchpad.interfaces.ITeam"
             provides="lp.registry.interfaces.poll.IPollSubset"
             factory="lp.registry.adapters.poll.PollSubset"
             permission="zope.Public"/>
-        
+
         <!-- PollOptionSet -->
-        
+
         <class
             class="canonical.launchpad.database.PollOptionSet">
             <allow
@@ -714,9 +714,9 @@
                 interface="lp.registry.interfaces.poll.IVoteCastSet"/>
         </securedutility>
     </facet>
-    
+
     <!-- Announcement -->
-    
+
     <class
         class="canonical.launchpad.database.Announcement">
         <allow
@@ -743,9 +743,9 @@
                 set_publication_date
                 destroySelf"/>
     </class>
-    
+
     <!-- AnnouncementSet -->
-    
+
     <securedutility
         class="canonical.launchpad.database.AnnouncementSet"
         provides="lp.registry.interfaces.announcement.IAnnouncementSet">
@@ -754,9 +754,9 @@
     </securedutility>
     <facet
         facet="overview">
-        
+
         <!-- Person -->
-        
+
         <adapter
             provides="canonical.lazr.interfaces.IObjectPrivacy"
             for="lp.registry.interfaces.person.ITeam"
@@ -777,12 +777,12 @@
             for="lp.registry.interfaces.person.ITeam"
             factory="lp.registry.browser.person.TeamBreadcrumbBuilder"
             permission="zope.Public"/>
-        
+
         <!-- Using
-                     
+
     permission="Public" here causes some tests to fail
         (https://pastebin.canonical.com/13975/), so we use
-     
+
     trusted="yes" here. -->
 
         <adapter
@@ -823,23 +823,23 @@
                 permission="launchpad.Edit"
                 set_schema="lp.registry.interfaces.person.IHasStanding"/>
         </class>
-        
+
         <!-- The bounty system is kept maintained but not available for users.
         This is achieved by putting it on the PageTestLayer. -->
 
-        
+
         <!-- Adding SSH keys is the only possibly harmful thing that can be done
         without the user's password, so we use a special permission here to make
         sure only the user (and not launchpad admins) will be able to edit her own
         ssh keys. Another option would be to require the user's password on this
         page. GuilhermeSalgado 25/08/2005 -->
 
-        
+
         <!-- Team Views -->
-        
-        
+
+
         <!-- PersonSet -->
-        
+
         <class
             class="canonical.launchpad.database.PersonSet">
             <allow
@@ -864,9 +864,9 @@
         for="canonical.launchpad.webapp.interfaces.ILaunchpadPrincipal"
         provides="lp.registry.interfaces.person.IPerson"
         factory="lp.registry.adapters.person.personFromPrincipal"/>
-    
+
     <!-- Milestone -->
-    
+
     <class
         class="canonical.launchpad.database.Milestone">
         <allow
@@ -898,9 +898,9 @@
         <require
             permission="launchpad.Edit"
             set_attributes="name dateexpected summary active                                                                                                                 product_release productseries distroseries"/>
-        
+
         <!-- IStructuralSubscriptionTarget -->
-        
+
         <allow
             attributes="
                 bug_subscriptions
@@ -916,18 +916,18 @@
                 addBugSubscription
                 removeBugSubscription"/>
     </class>
-    
+
     <!-- IMilestoneSet -->
-    
+
     <securedutility
         class="canonical.launchpad.database.MilestoneSet"
         provides="lp.registry.interfaces.milestone.IMilestoneSet">
         <allow
             interface="lp.registry.interfaces.milestone.IMilestoneSet"/>
     </securedutility>
-    
+
     <!-- ProjectMilestone -->
-    
+
     <class
         class="lp.registry.model.milestone.ProjectMilestone">
         <allow
@@ -977,9 +977,9 @@
         interface="lp.registry.interfaces.mailinglist.IMailingListAPIView"
         class="canonical.launchpad.xmlrpc.MailingListAPIView"
         permission="zope.Public"/>
-    
+
     <!-- Helper page for held message approval -->
-    
+
     <subscriber
         for="lp.registry.interfaces.mailinglist.IMailingList         lazr.lifecycle.interfaces.IObjectModifiedEvent"
         handler="canonical.launchpad.mailnotification.notify_mailinglist_activated"/>
@@ -1022,9 +1022,9 @@
             permission="launchpad.Edit"
             set_attributes="active can_encrypt"/>
     </class>
-    
+
     <!-- GPGKeySet -->
-    
+
     <class
         class="canonical.launchpad.database.GPGKeySet">
         <allow
@@ -1036,9 +1036,9 @@
         <allow
             interface="canonical.launchpad.interfaces.IGPGKeySet"/>
     </securedutility>
-    
+
     <!-- Product -->
-    
+
     <class
         class="canonical.launchpad.database.Product">
         <allow
@@ -1051,7 +1051,7 @@
         <require
             permission="launchpad.Edit"
             set_attributes="displayname title summary description driver                                                                                         owner project security_contact                                                                                         homepageurl wikiurl screenshotsurl                                                                                         downloadurl programminglang                                                                                         sourceforgeproject freshmeatproject                                                                                         translationgroup translationpermission                                                                                         official_blueprints official_malone official_answers                                                                                         official_codehosting                                                                                         enable_bug_expiration                                                                                         releaseroot development_focus bugtracker                                                                                         homepage_content icon logo mugshot                                                                                         license_info licenses                                                                                         bug_reporting_guidelines                                                                                         commercial_subscription redeemSubscriptionVoucher                                                                                         remote_product official_bug_tags"/>
-        
+
         <!-- sabdfl 2006-04-10 I put "name" in the admin group because
                         with Bazaar now in place, lots of people can have personal
                         data published at product name-based locations (personal
@@ -1059,7 +1059,7 @@
                         name has to change. It should require RegistryAdmin
                         intervention to rename a product now. -->
 
-        
+
         <!-- https://lists.ubuntu.com/mailman/private/launchpad/2007-April/015189.html
                         for further discussion - stub 20070411 -->
 
@@ -1079,16 +1079,16 @@
                 license_approved"
             set_schema="lp.registry.interfaces.product.IProductCommercialRestricted"
             set_attributes="active private_bugs "/>
-        
+
         <!-- Changes to official_rosetta must be available to Launchpad
                                  Translations admins so we need its own permission. -->
 
         <require
             permission="launchpad.TranslationsAdmin"
             set_attributes="official_rosetta"/>
-        
+
         <!-- IHasAliases -->
-        
+
         <allow
             attributes="
                 aliases"/>
@@ -1096,9 +1096,9 @@
             permission="launchpad.Admin"
             attributes="
                 setAliases"/>
-        
+
         <!-- IQuestionTarget -->
-        
+
         <allow
             attributes="
                 getQuestion
@@ -1117,9 +1117,9 @@
                 createQuestionFromBug
                 addAnswerContact
                 removeAnswerContact"/>
-        
+
         <!-- IFAQTarget -->
-        
+
         <allow
             interface="canonical.launchpad.interfaces.IFAQCollection"
             attributes="
@@ -1128,9 +1128,9 @@
             permission="launchpad.Moderate"
             attributes="
                 newFAQ"/>
-        
+
         <!-- IStructuralSubscriptionTarget -->
-        
+
         <allow
             attributes="
                 bug_subscriptions
@@ -1145,9 +1145,9 @@
                 addSubscription
                 addBugSubscription
                 removeBugSubscription"/>
-        
+
         <!-- IHasBugSupervisor -->
-        
+
         <allow
             attributes="
                 bug_supervisor"/>
@@ -1156,7 +1156,7 @@
             attributes="
                 setBugSupervisor"/>
     </class>
-    
+
     <!-- ProductWithLicenses
                                 This is a decorator for IProduct that eliminates an additional query
                                 for the product licenses.
@@ -1181,17 +1181,17 @@
         for="lp.registry.interfaces.product.IProductSet"
         factory="lp.registry.browser.product.ProductSetBreadcrumbBuilder"
         permission="zope.Public"/>
-    
+
     <!-- XXX: Steve Alexander 2005-09-21:
                                                 ProductBugsMenu undeclared until layout bug is fixed -->
 
-    
+
     <!-- The bounty system is kept maintained but not available for users.
         This is achieved by putting it on the PageTestLayer. -->
 
-    
+
     <!-- ProductSet-->
-    
+
     <class
         class="canonical.launchpad.database.ProductSet">
         <allow
@@ -1226,9 +1226,9 @@
             attributes="
                 forReview"/>
     </securedutility>
-    
+
     <!-- SSHKey -->
-    
+
     <class
         class="canonical.launchpad.database.SSHKey">
         <allow
@@ -1237,9 +1237,9 @@
             permission="launchpad.Edit"
             set_attributes="keytext comment"/>
     </class>
-    
+
     <!-- SSHKeySet -->
-    
+
     <class
         class="canonical.launchpad.database.SSHKeySet">
         <allow
@@ -1257,9 +1257,9 @@
     <subscriber
         for="canonical.launchpad.event.interfaces.ITeamInvitationEvent"
         handler="canonical.launchpad.mailnotification.notify_invitation_to_join_team"/>
-    
+
     <!-- This is class ProductSeries -->
-    
+
     <class
         class="canonical.launchpad.database.ProductSeries">
         <allow
@@ -1277,9 +1277,9 @@
         <require
             permission="launchpad.AnyPerson"
             set_attributes="importstatus rcstype cvsroot cvsmodule                                                                 cvstarfileurl cvsbranch svnrepository"/>
-        
+
         <!-- IStructuralSubscriptionTarget -->
-        
+
         <allow
             attributes="
                 bug_subscriptions
@@ -1310,9 +1310,9 @@
         for="lp.registry.interfaces.productseries.IProductSeries"
         factory="lp.registry.browser.productseries.ProductSeriesBreadcrumbBuilder"
         permission="zope.Public"/>
-    
+
     <!-- ProductSeriesSet -->
-    
+
     <class
         class="canonical.launchpad.database.ProductSeriesSet">
         <allow
@@ -1324,9 +1324,9 @@
         <allow
             interface="lp.registry.interfaces.productseries.IProductSeriesSet"/>
     </securedutility>
-    
+
     <!-- Distribution -->
-    
+
     <class
         class="canonical.launchpad.database.Distribution">
         <allow
@@ -1342,9 +1342,9 @@
         <require
             permission="launchpad.TranslationsAdmin"
             set_attributes="language_pack_admin"/>
-        
+
         <!-- IHasAliases -->
-        
+
         <allow
             attributes="
                 aliases"/>
@@ -1352,9 +1352,9 @@
             permission="launchpad.Admin"
             attributes="
                 setAliases"/>
-        
+
         <!-- IQuestionTarget -->
-        
+
         <allow
             attributes="
                 getQuestion
@@ -1373,9 +1373,9 @@
                 createQuestionFromBug
                 addAnswerContact
                 removeAnswerContact"/>
-        
+
         <!-- IFAQTarget -->
-        
+
         <allow
             interface="canonical.launchpad.interfaces.IFAQCollection"
             attributes="
@@ -1384,9 +1384,9 @@
             permission="launchpad.Moderate"
             attributes="
                 newFAQ"/>
-        
+
         <!-- IStructuralSubscriptionTarget -->
-        
+
         <allow
             attributes="
                 bug_subscriptions
@@ -1401,9 +1401,9 @@
                 addSubscription
                 addBugSubscription
                 removeBugSubscription"/>
-        
+
         <!-- IHasBugSupervisor -->
-        
+
         <allow
             attributes="
                 bug_supervisor"/>
@@ -1426,13 +1426,13 @@
         for="lp.registry.interfaces.distribution.IDistributionSet"
         factory="lp.registry.browser.distribution.DistributionSetBreadcrumbBuilder"
         permission="zope.Public"/>
-    
+
     <!-- The bounty system is kept maintained but not available for users.
         This is achieved by putting it on the PageTestLayer. -->
 
-    
+
     <!-- DistributionSet -->
-    
+
     <class
         class="canonical.launchpad.database.DistributionSet">
         <allow
@@ -1444,9 +1444,9 @@
         <allow
             interface="lp.registry.interfaces.distribution.IDistributionSet"/>
     </securedutility>
-    
+
     <!-- SourcePackage -->
-    
+
     <class
         class="canonical.launchpad.database.SourcePackage">
         <allow
@@ -1457,9 +1457,9 @@
             interface="canonical.launchpad.interfaces.IHasTranslationImports"/>
         <allow
             interface="canonical.launchpad.interfaces.IHasTranslationTemplates"/>
-        
+
         <!-- IQuestionTarget -->
-        
+
         <allow
             attributes="
                 getQuestion
@@ -1490,7 +1490,7 @@
         for="lp.registry.interfaces.sourcepackage.ISourcePackage"
         factory="lp.registry.browser.sourcepackage.SourcePackageBreadcrumbBuilder"
         permission="zope.Public"/>
-    
+
     <!--
                 XXX CarlosPerelloMarin 2007-08-12: This redirect is only useful until all
                 supported Ubuntu distro series stop pointing to
@@ -1500,9 +1500,9 @@
                 more details.
                 -->
 
-    
+
     <!-- This is class ProductReleaseSet -->
-    
+
     <class
         class="canonical.launchpad.database.ProductReleaseSet">
         <allow
@@ -1517,9 +1517,9 @@
         <allow
             interface="lp.registry.interfaces.productrelease.IProductReleaseSet"/>
     </securedutility>
-    
+
     <!-- This is class ProductRelease -->
-    
+
     <class
         class="canonical.launchpad.database.ProductRelease">
         <allow
@@ -1531,9 +1531,9 @@
             permission="zope.Public"
             set_schema="lp.registry.interfaces.productrelease.IProductRelease"/>
     </class>
-    
+
     <!-- This is class ProductReleaseFile -->
-    
+
     <class
         class="canonical.launchpad.database.ProductReleaseFile">
         <allow
@@ -1551,9 +1551,9 @@
             permission="launchpad.Admin"
             set_schema="lp.registry.interfaces.entitlement.IEntitlement"/>
     </class>
-    
+
     <!-- EntitlementSet -->
-    
+
     <class
         class="canonical.launchpad.database.EntitlementSet">
         <allow

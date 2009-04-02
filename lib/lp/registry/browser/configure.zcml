@@ -464,9 +464,9 @@
             name="+milestones"
             facet="overview"
             template="../templates/object-milestones.pt"/>
-        
+
         <!-- Projects portlets -->
-        
+
         <browser:page
             name="+portlet-bounties"
             facet="bounties"
@@ -746,9 +746,9 @@
             name="+publishinghistory"
             facet="overview"
             template="../templates/distributionsourcepackage-publishinghistory.pt"/>
-        
+
         <!-- DistributionSourcePackage Portlets -->
-        
+
         <browser:page
             name="+portlet-details"
             facet="overview"
@@ -1154,7 +1154,7 @@
             <browser:page
                 name="+ppas-list"
                 template="../templates/person-ppas.pt"/>
-            
+
             <!-- this should be on IPerson because we don't always know if it is a
                 team or a person -->
 
@@ -1914,9 +1914,9 @@
         <browser:page
             name="+listing-detailed"
             template="../templates/product-listing-detailed.pt"/>
-        
+
         <!-- Products Portlets -->
-        
+
         <browser:page
             name="+portlet-requires-subscription"
             facet="overview"
@@ -2931,9 +2931,9 @@
         for="lp.registry.interfaces.productrelease.IProductRelease"
         facet="overview"
         permission="zope.Public">
-        
+
         <!-- ProductReleases Portlets -->
-        
+
         <browser:page
             name="+portlet-details"
             template="../templates/productrelease-portlet-details.pt"/>
