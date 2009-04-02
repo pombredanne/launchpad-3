@@ -9,15 +9,41 @@ __all__ = [
     'IGPGKey',
     'IGPGKeySet',
     'GPGKeyAlgorithm',
+    'valid_keyid',
+    'valid_fingerprint',
     ]
+
+
+import re
 
 from zope.schema import Bool, Int, TextLine, Choice
 from zope.interface import Interface, Attribute
+
 from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.launchpad import IHasOwner
-from canonical.launchpad.validators.gpg import valid_fingerprint, valid_keyid
+
+
+def valid_fingerprint(fingerprint):
+    """Is the fingerprint of valid form."""
+    # Fingerprints of v3 keys are md5, fingerprints of v4 keys are sha1;
+    # accordingly, fingerprints of v3 keys are 128 bit, those of v4 keys
+    # 160. Check therefore for strings of hex characters that are 32
+    # (4 * 32 == 128) or 40 characters long (4 * 40 = 160).
+    if len(fingerprint) not in (32, 40):
+        return False
+    if re.match(r"^[\dA-F]+$", fingerprint) is None:
+        return False
+    return True
+
+
+def valid_keyid(keyid):
+    """Is the key of valid form."""
+    if re.match(r"^[\dA-F]{8}$", keyid) is not None:
+        return True
+    else:
+        return False
 
 
 # XXX: cprov 2004-10-04:
