@@ -15,9 +15,8 @@ from zope.testing.cleanup import cleanUp
 
 from canonical.config import config
 from canonical.database.sqlbase import (
-    commit, flush_database_updates, ISOLATION_LEVEL_READ_COMMITTED)
+    commit, ISOLATION_LEVEL_READ_COMMITTED)
 from canonical.launchpad.ftests import ANONYMOUS, login, logout
-from lp.registry.tests import mailinglists_helper
 from canonical.launchpad.interfaces import (
     CreateBugParams, IBugTaskSet, IDistributionSet, ILanguageSet,
     IPersonSet)

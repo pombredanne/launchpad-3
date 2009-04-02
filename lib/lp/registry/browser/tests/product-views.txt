@@ -16,8 +16,6 @@ if one exists.  If the product does not have a driver, then the driver
 for the project is returned.  If the product has no project or the
 project has no driver then None is returned.
 
-    >>> from zope.component import getMultiAdapter
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> from lp.registry.interfaces.product import IProductSet
     >>> from lp.registry.interfaces.project import IProjectSet
     >>> from lp.registry.interfaces.person import IPersonSet

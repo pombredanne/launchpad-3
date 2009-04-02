@@ -10,9 +10,7 @@ __all__ = [
     ]
 
 import os
-import base64
 import ftplib
-import logging
 import socket
 import urllib2
 from urllib import unquote_plus
@@ -20,7 +18,7 @@ from urlparse import urlsplit, urljoin
 
 from BeautifulSoup import BeautifulSoup
 
-from cscvs.dircompare.path import as_dir, subdir, under_only
+from cscvs.dircompare.path import as_dir, subdir
 from lazr.uri import URI, InvalidURIError
 from canonical.launchpad.webapp.url import urlappend
 from lp.registry.scripts.productreleasefinder import log
@@ -106,18 +104,18 @@ class WalkerBase:
 
         subdirs = [self.path]
         while len(subdirs):
-            subdir = subdirs.pop(0)
+            sub_dir = subdirs.pop(0)
 
             try:
-                (dirnames, filenames) = self.list(subdir)
+                (dirnames, filenames) = self.list(sub_dir)
             except WalkerError, exc:
                 self.log.exception('could not retrieve directory '
-                                   'listing for %s', subdir)
+                                   'listing for %s', sub_dir)
                 continue
-            yield (subdir, dirnames, filenames)
+            yield (sub_dir, dirnames, filenames)
 
             for dirname in dirnames:
-                subdirs.append(urljoin(subdir, as_dir(dirname)))
+                subdirs.append(urljoin(sub_dir, as_dir(dirname)))
 
         self.close()
 

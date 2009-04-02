@@ -18,7 +18,7 @@ __all__ = [
 
 from zope.component import getUtility
 
-from canonical.launchpad.webapp import canonical_url, urlappend, urlparse
+from canonical.launchpad.webapp import canonical_url, urlappend
 from lp.registry.interfaces.announcement import IAnnouncementSet, IHasAnnouncements
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.product import IProduct

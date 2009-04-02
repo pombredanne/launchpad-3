@@ -7,7 +7,6 @@ __all__ = [
     'SourceForgeRemoteProductFinder',
     ]
 
-import re
 import urllib
 
 from BeautifulSoup import BeautifulSoup

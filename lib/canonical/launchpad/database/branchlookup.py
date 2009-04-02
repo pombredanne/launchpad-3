@@ -36,7 +36,6 @@ from lp.registry.interfaces.product import (
     InvalidProductName, IProduct, NoSuchProduct)
 from lp.registry.interfaces.productseries import (
     IProductSeries, NoSuchProductSeries)
-from canonical.launchpad.interfaces.publishing import PackagePublishingPocket
 from lp.registry.interfaces.sourcepackagename import (
     NoSuchSourcePackageName)
 from canonical.launchpad.validators.name import valid_name

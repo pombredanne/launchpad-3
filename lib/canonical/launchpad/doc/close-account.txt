@@ -8,7 +8,6 @@ See Bug #120506 for more details.
 
 
 Get Mark's account and person entries.
->>> from canonical.launchpad.interfaces.account import IAccountSet
 >>> from lp.registry.interfaces.person import IPersonSet
 >>> from zope.security.proxy import removeSecurityProxy
 >>> mark_person = getUtility(IPersonSet).getByEmail('mark@hbd.com')

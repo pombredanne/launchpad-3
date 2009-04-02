@@ -15,7 +15,6 @@ from zope.interface import implements
 
 from canonical.launchpad.interfaces.bugmessage import (
     IBugComment, IBugMessageSet)
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.person import IPersonSet
 from canonical.launchpad.webapp import canonical_url, LaunchpadView
 from canonical.launchpad.webapp.interfaces import ILaunchBag

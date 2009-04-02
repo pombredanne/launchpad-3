@@ -7,8 +7,9 @@ __all__ = ['process_team']
 
 from zope.component import getUtility
 
-from canonical.lp import initZopeless
 from lp.registry.interfaces.person import IPersonSet
+
+
 OUTPUT_TEMPLATES = {
    'simple': '%(name)s, %(email)s',
    'email': '%(email)s',

@@ -4,7 +4,6 @@ __metaclass__ = type
 
 from zope.testing.doctestunit import DocTestSuite
 from zope.component import getUtility
-from canonical.launchpad.ftests.harness import LaunchpadFunctionalTestSetup
 from canonical.launchpad.ftests import login, ANONYMOUS
 from canonical.testing.layers import LaunchpadFunctionalLayer
 

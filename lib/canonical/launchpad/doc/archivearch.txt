@@ -4,13 +4,11 @@ packages in a certain archives will be built for.
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces.archive import (
-    ...     ArchivePurpose, IArchiveSet, IArchive)
+    ...     ArchivePurpose, IArchiveSet)
     >>> from canonical.launchpad.interfaces.archivearch import (
     ...     IArchiveArchSet)
     >>> from lp.registry.interfaces.distribution import (
     ...     IDistributionSet)
-    >>> from lp.registry.interfaces.person import (
-    ...     IPersonSet)
     >>> from canonical.launchpad.interfaces.processor import (
     ...     IProcessorFamilySet)
 

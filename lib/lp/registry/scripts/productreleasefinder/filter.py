@@ -12,9 +12,7 @@ __all__ = [
 
 import fnmatch
 import itertools
-import os
 import re
-import urlparse
 
 from lp.registry.scripts.productreleasefinder import log
 

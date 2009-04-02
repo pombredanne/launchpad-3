@@ -9,7 +9,6 @@ __all__ = [
     'BugTrackerPersonAlreadyExists',
     ]
 
-from zope.interface import Interface
 from zope.schema import Datetime, Object, Text
 
 from canonical.launchpad import _

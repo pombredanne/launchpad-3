@@ -436,7 +436,7 @@ date.
 
     >>> from canonical.launchpad.interfaces.openidserver import (
     ...     IOpenIDRPSummarySet)
-    >>> from datetime import datetime, timedelta
+    >>> from datetime import datetime
     >>> import pytz
     >>> two_thousand_and_seven = datetime(2007, 1, 1, tzinfo=pytz.UTC)
     >>> two_thousand_and_eight = datetime(2008, 1, 1, tzinfo=pytz.UTC)
