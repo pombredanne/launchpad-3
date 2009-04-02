@@ -202,7 +202,7 @@ For fields it knows about, it will return a more suitable class.
 get_bug_change_class will also work for BugTasks.
 
     >>> get_bug_change_class(example_bug.bugtasks[0], 'importance')
-    <class '...BugTaskAttributeChange'>
+    <class '...BugTaskImportanceChange'>
 
 See component/ftests/test_bugchange.py for some sanity checks.
 
@@ -500,7 +500,8 @@ Or remove one.
 == BugTaskAttributeChange ==
 
 BugTaskAttributeChange is a generic BugChange that can be used to
-represent a change in the attributes of one of a Bug's BugTasks.
+represent a change in the attributes of one of a Bug's BugTasks. It is
+intended to be subclassed.
 
     >>> from canonical.launchpad.interfaces.bugtask import (
     ...     BugTaskStatus, BugTaskImportance)
@@ -511,13 +512,27 @@ BugTaskAttributeChange takes an instance of BugTask. It uses this to
 work out how to describe to the user which BugTask's attributes have
 changed.
 
+Subclasses must at least define `display_attribute`.
+
+    >>> class ExampleBugTaskAttributeChange(BugTaskAttributeChange):
+    ...     display_attribute = 'title'
+
     >>> example_bug_task = example_bug.bugtasks[0]
-    >>> task_attribute_change = BugTaskAttributeChange(
+    >>> task_attribute_change = ExampleBugTaskAttributeChange(
     ...     when=nowish, person=example_person,
     ...     what_changed='status',
     ...     old_value=BugTaskStatus.NEW,
     ...     new_value=BugTaskStatus.FIXRELEASED,
     ...     bug_task=example_bug_task)
+
+    >>> print task_attribute_change.display_activity_label
+    status
+    >>> print task_attribute_change.display_notification_label
+    Status
+    >>> print task_attribute_change.display_old_value
+    New
+    >>> print task_attribute_change.display_new_value
+    Fix Released
 
 Several types of attribute change can be handled by
 BugTaskAttributeChange.
@@ -528,7 +543,10 @@ BugTaskAttributeChange.
 Status changes use a BugTaskStatus's `title` attribute to describe to
 the user what has changed.
 
-    >>> status_change = BugTaskAttributeChange(
+    >>> from canonical.launchpad.components.bugchange import (
+    ...     BugTaskStatusChange)
+
+    >>> status_change = BugTaskStatusChange(
     ...     bug_task=example_bug_task, when=nowish, person=example_person,
     ...     what_changed='status', old_value=BugTaskStatus.NEW,
     ...     new_value=BugTaskStatus.FIXRELEASED)
@@ -545,10 +563,13 @@ the user what has changed.
 
 === Importance changes ===
 
-Importance changes use a BugTaskImportance's `title` attribute to describe to
-the user what has changed.
+Importance changes use a BugTaskImportance's `title` attribute to
+describe to the user what has changed.
 
-    >>> importance_change = BugTaskAttributeChange(
+    >>> from canonical.launchpad.components.bugchange import (
+    ...     BugTaskImportanceChange)
+
+    >>> importance_change = BugTaskImportanceChange(
     ...     bug_task=example_bug_task, when=nowish, person=example_person,
     ...     what_changed='importance',
     ...     old_value=BugTaskImportance.UNDECIDED,
