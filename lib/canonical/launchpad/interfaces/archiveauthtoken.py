@@ -48,10 +48,15 @@ class IArchiveAuthTokenView(Interface):
         description=_(
             "External archive URL including basic auth for this person"))
 
-class IArchiveAuthTokenEdit(Interface):
-    """Interface for Archive Auth Tokens requiring launchpad.Edit."""
     def deactivate(self):
         """Deactivate the token by setting date_deactivated to UTC_NOW."""
+
+
+class IArchiveAuthTokenEdit(Interface):
+    """Interface for Archive Auth Tokens requiring launchpad.Edit.
+
+    Users can set all the attributes in IArchiveAuthTokenView.
+    """
 
 
 class IArchiveAuthToken(IArchiveAuthTokenView, IArchiveAuthTokenEdit):

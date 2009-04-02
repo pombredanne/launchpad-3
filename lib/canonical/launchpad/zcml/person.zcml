@@ -924,7 +924,7 @@
     name="+archivesubscriptions"
     for="canonical.launchpad.interfaces.IPerson"
     class="canonical.launchpad.browser.archivesubscription.PersonArchiveSubscriptionsView"
-    permission="launchpad.Admin"
+    permission="launchpad.Edit"
     template="../templates/person-archive-subscriptions.pt"
     />
 
