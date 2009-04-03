@@ -644,8 +644,8 @@ user what has changed.
 
 === Assignee changes ===
 
-Assignee changes use the assignee's `title` attribute to describe to
-the user what has changed.
+Assignee changes use the assignee's `unique_displayname` attribute to
+describe to the user what has changed.
 
     >>> from canonical.launchpad.components.bugchange import (
     ...     BugTaskAssigneeChange)
@@ -655,7 +655,7 @@ the user what has changed.
     ...     person=example_person, what_changed='assignee',
     ...     old_value=None, new_value=example_person)
     >>> print pretty(assignee_change.getBugActivity())
-    {'newvalue': u'ford-prefect',
+    {'newvalue': u'Ford Prefect (ford-prefect)',
      'oldvalue': None,
      'whatchanged': u'heart-of-gold: assignee'}
 

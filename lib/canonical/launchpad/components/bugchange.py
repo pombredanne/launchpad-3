@@ -689,7 +689,7 @@ class BugTaskAssigneeChange(AttributeChange):
             if assignee is None:
                 return None
             else:
-                return assignee.name
+                return assignee.unique_displayname
 
         return {
             'whatchanged': '%s: assignee' % self.bug_task.bugtargetname,

@@ -969,7 +969,7 @@ class TestBugChanges(unittest.TestCase):
             'person': self.user,
             'whatchanged': '%s: assignee' % self.bug_task.bugtargetname,
             'oldvalue': None,
-            'newvalue': self.user.name,
+            'newvalue': self.user.unique_displayname,
             'message': None,
             }
 
@@ -1005,7 +1005,7 @@ class TestBugChanges(unittest.TestCase):
         expected_activity = {
             'person': self.user,
             'whatchanged': '%s: assignee' % self.bug_task.bugtargetname,
-            'oldvalue': old_assignee.name,
+            'oldvalue': old_assignee.unique_displayname,
             'newvalue': None,
             'message': None,
             }
