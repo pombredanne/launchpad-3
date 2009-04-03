@@ -366,7 +366,7 @@ class PersonNavigation(BranchTraversalMixin, Navigation):
     def traverse_email(self, email):
         """Traverse to this person's emails on the webservice layer."""
         email = getUtility(IEmailAddressSet).getByEmail(email)
-        if email is None or email.person != self.context:
+        if email is None or email.personID != self.context.id:
             return None
         return email
 
@@ -869,8 +869,7 @@ class CommonMenuLinks:
         text = 'Create a new PPA'
         summary = ('Acknowledge terms of service for Launchpad Personal '
                    'Package Archive and create a new PPA.')
-        enabled = not bool(self.context.archive)
-        return Link(target, text, summary, icon='add', enabled=enabled)
+        return Link(target, text, summary, icon='add')
 
 
 class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
@@ -1437,7 +1436,7 @@ class PersonClaimView(LaunchpadFormView):
                      "generated based on the email address it's "
                      "associated with."
                      % self.context.name)
-        elif email.person != self.context:
+        elif email.personID != self.context.id:
             if email.person.is_valid_person:
                 error = structured(
                          "This email address is associated with yet another "
@@ -1679,7 +1678,8 @@ class PersonAccountAdministerView(LaunchpadEditFormView):
         super(PersonAccountAdministerView, self).__init__(context, request)
         # Only the IPerson can be traversed to, so it provides the IAccount.
         self.person = self.context
-        self.context = self.context.account
+        from canonical.launchpad.interfaces import IMasterObject
+        self.context = IMasterObject(self.context.account)
 
     @property
     def is_viewing_person(self):
@@ -2941,7 +2941,7 @@ class PersonIndexView(XRDSContentNegotiationMixin, PersonView):
     def has_visible_location(self):
         """Does the person have latitude and a visible location."""
         if self.context.is_team:
-            return len(self.context.mapped_participants) > 0
+            return self.context.mapped_participants_count > 0
         else:
             return (check_permission('launchpad.View', self.context.location)
                 and self.context.latitude is not None)
@@ -4167,7 +4167,7 @@ class PersonEditEmailsView(LaunchpadFormView):
         token = getUtility(ILoginTokenSet).new(
                     self.context, getUtility(ILaunchBag).login, email,
                     LoginTokenType.VALIDATEEMAIL)
-        token.sendEmailValidationRequest(self.request.getApplicationURL())
+        token.sendEmailValidationRequest()
         self.request.response.addInfoNotification(
             "An e-mail message was sent to '%s' with "
             "instructions on how to confirm that "
@@ -4260,7 +4260,7 @@ class PersonEditEmailsView(LaunchpadFormView):
         token = logintokenset.new(
                     self.context, getUtility(ILaunchBag).login, newemail,
                     LoginTokenType.VALIDATEEMAIL)
-        token.sendEmailValidationRequest(self.request.getApplicationURL())
+        token.sendEmailValidationRequest()
 
         self.request.response.addInfoNotification(
                 "A confirmation message has been sent to '%s'. "

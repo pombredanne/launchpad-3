@@ -1,4 +1,4 @@
-= Private PPA Subscriptions =
+= PPA Subscriptions =
 
 Note: This file contains all the pagetests for functionality that is not
 part of the stories in xx-private-ppa-subscription-stories.txt.
@@ -72,7 +72,7 @@ with a message:
 
     >>> main_content = find_main_content(cprov_browser.contents)
     >>> print extract_text(main_content.find('h1'))
-    Manage subscriptions for Private PPA for Celso Providelo
+    Manage subscriptions for PPA for Celso Providelo
 
     >>> print extract_text(find_tag_by_id(cprov_browser.contents,
     ...     'no-subscribers'))
@@ -155,9 +155,9 @@ listed in the current subscriptions area:
     ...                               'archive-subscription-row'):
     ...     print extract_text(row)
     Archive                            Subscription description  Status
-    Private PPA for Mark Shuttleworth  Joe is also my friend     Pending
+    PPA for Mark Shuttleworth  Joe is also my friend     Pending
         Confirm
-    Private PPA for Celso Providelo    Joe is my friend          Pending
+    PPA for Celso Providelo    Joe is my friend          Pending
         Confirm
 
 == Confirming a subscription ==
@@ -172,7 +172,7 @@ displaying the subscription and requesting their confirmation.
     >>> print(extract_text(sources_list))
     Custom sources.list entries
     ...
-    # Personal subscription of Joe Smith to Private PPA for Mark Shuttleworth
+    # Personal subscription of Joe Smith to PPA for Mark Shuttleworth
     deb http://joesmith:...@private-ppa.launchpad.dev/sabdfl/ppa/ubuntu hoary
         main
     deb-src http://joesmith:...@private-ppa.launchpad.dev/sabdfl/ppa/ubuntu
@@ -194,7 +194,7 @@ has a signing key:
     >>> print(extract_text(sources_list))
     Custom sources.list entries
     ...
-    # Personal subscription of Joe Smith to Private PPA for Mark Shuttleworth
+    # Personal subscription of Joe Smith to PPA for Mark Shuttleworth
     deb http://joesmith:...@private-ppa.launchpad.dev/sabdfl/ppa/ubuntu hoary
         main
     deb-src http://joesmith:...@private-ppa.launchpad.dev/sabdfl/ppa/ubuntu

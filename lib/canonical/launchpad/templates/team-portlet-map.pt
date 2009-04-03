@@ -15,7 +15,7 @@
       have not  set their location. <a tal:attributes="href link/target">Do
       it for them!</a>
     </div>
-    <div style="width: 400px;" tal:condition="view/mapped_participants">
+    <div style="width: 400px;" tal:condition="view/has_mapped_participants">
       <div id="team_map_actions"
         style="position:relative; z-index: 9999;
                float:right; width: 8.5em; margin: 2px;
@@ -28,7 +28,7 @@
       </div>
     </div>
 
-    <tal:no-map tal:condition="not: view/mapped_participants">
+    <tal:no-map tal:condition="not: view/has_mapped_participants">
       <a tal:attributes="href link/target"
         ><img src="/+icing/portlet-map-unknown.png" /></a>
 

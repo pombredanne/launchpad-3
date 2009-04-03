@@ -112,7 +112,7 @@ class DistroSeriesStatus(DBEnumeratedType):
 class IDistroSeriesEditRestricted(Interface):
     """IDistroSeries properties which require launchpad.Edit."""
 
-    def newMilestone(name, dateexpected=None, description=None):
+    def newMilestone(name, dateexpected=None, summary=None):
         """Create a new milestone for this DistroSeries."""
 
 

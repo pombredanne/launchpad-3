@@ -1,0 +1,12 @@
+= Not found pages =
+
+When the requested page doesn't exist, we render a nice page explaining the
+page doesn't exist.
+
+    >>> result = http(r"""
+    ... GET /non-existent HTTP/1.1
+    ... Host: shipit.ubuntu.dev
+    ... """)
+    >>> print str(result)
+    HTTP/1.1 404 Not Found
+    ...<title>Error: Page not found</title>...

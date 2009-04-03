@@ -26,7 +26,7 @@
        tal:condition="context/series_target"
        tal:attributes="href context/series_target/fmt:url">Hoary</a>
     <br />
-	
+
   </div>
 
 </div>

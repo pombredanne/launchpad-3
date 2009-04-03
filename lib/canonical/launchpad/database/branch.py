@@ -332,7 +332,7 @@ class Branch(SQLBase):
         # XXX: JonathanLange 2009-03-19 spec=package-branches bug=345740: This
         # should not dispatch on product is None.
         if self.product is not None:
-            series_branch = self.product.development_focus.series_branch
+            series_branch = self.product.development_focus.branch
             is_dev_focus = (series_branch == self)
         else:
             is_dev_focus = False
@@ -489,8 +489,7 @@ class Branch(SQLBase):
         from canonical.launchpad.database.productseries import ProductSeries
         return Store.of(self).find(
             ProductSeries,
-            Or(ProductSeries.user_branch == self,
-               ProductSeries.import_branch == self))
+            ProductSeries.branch == self)
 
     # subscriptions
     def subscribe(self, person, notification_level, max_diff_lines,
@@ -813,10 +812,8 @@ class ClearSeriesBranch(DeletionOperation):
         self.branch = branch
 
     def __call__(self):
-        if self.affected_object.user_branch == self.branch:
-            self.affected_object.user_branch = None
-        if self.affected_object.import_branch == self.branch:
-            self.affected_object.import_branch = None
+        if self.affected_object.branch == self.branch:
+            self.affected_object.branch = None
         self.affected_object.syncUpdate()
 
 
@@ -853,9 +850,10 @@ class BranchSet:
         branches = all_branches.visibleByUser(
             visible_by_user).withLifecycleStatus(*lifecycle_statuses)
         branches = branches.withBranchType(
-            BranchType.HOSTED, BranchType.MIRRORED).scanned().getBranches()
+            BranchType.HOSTED, BranchType.MIRRORED).scanned().getBranches(
+            join_owner=False, join_product=False)
         branches.order_by(
-            Desc(Branch.last_scanned), Desc(Branch.id))
+            Desc(Branch.date_last_modified), Desc(Branch.id))
         if branch_count is not None:
             branches.config(limit=branch_count)
         return branches
@@ -869,9 +867,10 @@ class BranchSet:
         branches = all_branches.visibleByUser(
             visible_by_user).withLifecycleStatus(*lifecycle_statuses)
         branches = branches.withBranchType(
-            BranchType.IMPORTED).scanned().getBranches()
+            BranchType.IMPORTED).scanned().getBranches(
+            join_owner=False, join_product=False)
         branches.order_by(
-            Desc(Branch.last_scanned), Desc(Branch.id))
+            Desc(Branch.date_last_modified), Desc(Branch.id))
         if branch_count is not None:
             branches.config(limit=branch_count)
         return branches
@@ -883,7 +882,8 @@ class BranchSet:
         """See `IBranchSet`."""
         all_branches = getUtility(IAllBranches)
         branches = all_branches.withLifecycleStatus(
-            *lifecycle_statuses).visibleByUser(visible_by_user).getBranches()
+            *lifecycle_statuses).visibleByUser(visible_by_user).getBranches(
+            join_owner=False, join_product=False)
         branches.order_by(
             Desc(Branch.date_created), Desc(Branch.id))
         if branch_count is not None:

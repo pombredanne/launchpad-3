@@ -27,7 +27,6 @@ import pytz
 import random
 import re
 
-from zope.error.interfaces import IErrorReportingUtility
 from zope.lifecycleevent import ObjectCreatedEvent
 from zope.interface import alsoProvides, implementer, implements
 from zope.component import adapter, getUtility
@@ -38,8 +37,8 @@ from sqlobject import (
     BoolCol, ForeignKey, IntCol, SQLMultipleJoin, SQLObjectNotFound,
     SQLRelatedJoin, StringCol)
 from sqlobject.sqlbuilder import AND, OR, SQLConstant
-from storm.store import Store
-from storm.expr import And, Join
+from storm.store import EmptyResultSet, Store
+from storm.expr import And, Join, Lower
 from storm.info import ClassAlias
 
 from canonical.config import config
@@ -71,12 +70,14 @@ from canonical.launchpad.event.team import JoinTeamEvent, TeamInvitationEvent
 from canonical.launchpad.helpers import (
     get_contact_email_addresses, get_email_template, shortlist)
 
+from canonical.launchpad.interfaces import IMasterObject, IMasterStore
 from canonical.launchpad.interfaces.account import (
     AccountCreationRationale, AccountStatus, IAccount, IAccountSet,
     INACTIVE_ACCOUNT_STATUSES)
 from canonical.launchpad.interfaces.archive import ArchivePurpose
 from canonical.launchpad.interfaces.archivepermission import (
     IArchivePermissionSet)
+from canonical.launchpad.interfaces.authtoken import LoginTokenType
 from canonical.launchpad.interfaces.branchmergeproposal import (
     BranchMergeProposalStatus, IBranchMergeProposalGetter)
 from canonical.launchpad.interfaces.bugtask import (
@@ -95,8 +96,7 @@ from canonical.launchpad.interfaces.launchpad import (
     IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities)
 from canonical.launchpad.interfaces.launchpadstatistic import (
     ILaunchpadStatisticSet)
-from canonical.launchpad.interfaces.logintoken import (
-    ILoginTokenSet, LoginTokenType)
+from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
 from canonical.launchpad.interfaces.mailinglist import (
     IMailingListSet, MailingListStatus, PostedMessageStatus)
 from canonical.launchpad.interfaces.mailinglistsubscription import (
@@ -114,11 +114,10 @@ from canonical.launchpad.interfaces.project import IProject
 from canonical.launchpad.interfaces.revision import IRevisionSet
 from canonical.launchpad.interfaces.salesforce import (
     ISalesforceVoucherProxy, VOUCHER_STATUSES)
-from canonical.launchpad.interfaces.shipit import (
-    ShipItConstants, ShippingRequestStatus)
 from canonical.launchpad.interfaces.specification import (
     SpecificationDefinitionStatus, SpecificationFilter,
     SpecificationImplementationStatus, SpecificationSort)
+from canonical.launchpad.interfaces import IStore
 from canonical.launchpad.interfaces.ssh import ISSHKey, ISSHKeySet, SSHKeyType
 from canonical.launchpad.interfaces.teammembership import (
     TeamMembershipStatus)
@@ -126,7 +125,8 @@ from canonical.launchpad.interfaces.translationgroup import (
     ITranslationGroupSet)
 from canonical.launchpad.interfaces.translator import ITranslatorSet
 from canonical.launchpad.interfaces.wikiname import IWikiName, IWikiNameSet
-from canonical.launchpad.webapp.interfaces import ILaunchBag
+from canonical.launchpad.webapp.interfaces import (
+    ILaunchBag, IStoreSelector, AUTH_STORE, MASTER_FLAVOR)
 
 from canonical.launchpad.database.archive import Archive
 from canonical.launchpad.database.codeofconduct import SignedCodeOfConduct
@@ -139,7 +139,6 @@ from canonical.launchpad.database.pillar import PillarName
 from canonical.launchpad.database.pofiletranslator import POFileTranslator
 from canonical.launchpad.database.karma import KarmaAction, Karma
 from canonical.launchpad.database.mentoringoffer import MentoringOffer
-from canonical.launchpad.database.shipit import ShippingRequest
 from canonical.launchpad.database.sourcepackagerelease import (
     SourcePackageRelease)
 from canonical.launchpad.database.specification import (
@@ -156,9 +155,6 @@ from canonical.launchpad.validators.person import validate_public_person
 
 from lp.answers.interfaces.questioncollection import (
     QUESTION_STATUS_DEFAULT_SEARCH)
-
-MIN_KARMA_ENTRIES_TO_BE_TRUSTED_ON_SHIPIT = 10
-
 
 class ValidPersonCache(SQLBase):
     """Flags if a Person is active and usable in Launchpad.
@@ -243,8 +239,12 @@ class Person(
         We can't do this in a DB trigger as soon the Account table will
         in a separate database to the Person table.
         """
-        if self.account is not None and self.account.displayname != value:
-            self.account.displayname = value
+        if self.accountID is not None:
+            auth_store = getUtility(IStoreSelector).get(
+                AUTH_STORE, MASTER_FLAVOR)
+            account = auth_store.get(Account, self.accountID)
+            if account.displayname != value:
+                account.displayname = value
         return value
 
     displayname = StringCol(dbName='displayname', notNull=True,
@@ -261,7 +261,7 @@ class Person(
 
     # XXX StuartBishop 2008-05-13 bug=237280: The password,
     # account_status and account_status_comment properties should go. Note
-    # that they override # the current strict controls on Account, allowing
+    # that they override the current strict controls on Account, allowing
     # access via Person to use the less strict controls on that interface.
     # Part of the process of removing these methods from Person will be
     # loosening the permissions on Account or fixing the callsites.
@@ -269,35 +269,49 @@ class Person(
         # We have to remove the security proxy because the password is
         # needed before we are authenticated. I'm not overly worried because
         # this method is scheduled for demolition -- StuartBishop 20080514
-        if self.account is not None:
-            return removeSecurityProxy(self.account).password
+        from canonical.launchpad.database.account import AccountPassword
+        password = IStore(AccountPassword).find(
+            AccountPassword, accountID=self.accountID).one()
+        if password is None:
+            return None
+        else:
+            return password.password
 
     def _set_password(self, value):
-        assert self.account is not None, 'No account for this Person'
-        removeSecurityProxy(self.account).password = value
+        account = IMasterStore(Account).get(Account, self.accountID)
+        assert account is not None, 'No account for this Person.'
+        account.password = value
 
     password = property(_get_password, _set_password)
 
     def _get_account_status(self):
-        if self.account is not None:
-            return removeSecurityProxy(self.account).status
+        account = IStore(Account).get(Account, self.accountID)
+        if account is not None:
+            return account.status
         else:
             return AccountStatus.NOACCOUNT
 
     def _set_account_status(self, value):
-        assert self.account is not None, 'No account for this Person'
-        removeSecurityProxy(self.account).status = value
+        assert self.accountID is not None, 'No account for this Person'
+        account = IMasterStore(Account).get(Account, self.accountID)
+        account.status = value
 
+    # Deprecated - this value has moved to the Account table.
+    # We provide this shim for backwards compatibility.
     account_status = property(_get_account_status, _set_account_status)
 
     def _get_account_status_comment(self):
-        if self.account is not None:
-            return removeSecurityProxy(self.account).status_comment
+        account = IStore(Account).get(Account, self.accountID)
+        if account is not None:
+            return account.status_comment
 
     def _set_account_status_comment(self, value):
-        assert self.account is not None, 'No account for this Person'
-        removeSecurityProxy(self.account).status_comment = value
+        assert self.accountID is not None, 'No account for this Person'
+        account = IMasterStore(Account).get(Account, self.accountID)
+        account.status_comment = value
 
+    # Deprecated - this value has moved to the Account table.
+    # We provide this shim for backwards compatibility.
     account_status_comment = property(
             _get_account_status_comment, _set_account_status_comment)
 
@@ -947,70 +961,6 @@ class Person(
         """See `IPerson`."""
         return getUtility(IMailingListSet).get(self.name)
 
-    @cachedproperty
-    def is_trusted_on_shipit(self):
-        """See `IPerson`."""
-        min_entries = MIN_KARMA_ENTRIES_TO_BE_TRUSTED_ON_SHIPIT
-        if Karma.selectBy(person=self).count() >= min_entries:
-            return True
-        ubuntu_members = Person.selectOneBy(name='ubuntumembers')
-        if ubuntu_members is None:
-            error = AssertionError(
-                "No team named 'ubuntumembers' found; it's likely it has "
-                "been renamed.")
-            info = (error.__class__, error, None)
-            globalErrorUtility = getUtility(IErrorReportingUtility)
-            globalErrorUtility.raising(info)
-            return False
-        return self.inTeam(ubuntu_members)
-
-    def shippedShipItRequestsOfCurrentSeries(self):
-        """See `IPerson`."""
-        query = '''
-            ShippingRequest.recipient = %s
-            AND ShippingRequest.id = RequestedCDs.request
-            AND RequestedCDs.distroseries = %s
-            AND ShippingRequest.shipment IS NOT NULL
-            ''' % sqlvalues(self.id, ShipItConstants.current_distroseries)
-        return ShippingRequest.select(
-            query, clauseTables=['RequestedCDs'], distinct=True,
-            orderBy='-daterequested')
-
-    def lastShippedRequest(self):
-        """See `IPerson`."""
-        query = ("recipient = %s AND status = %s"
-                 % sqlvalues(self.id, ShippingRequestStatus.SHIPPED))
-        return ShippingRequest.selectFirst(query, orderBy=['-daterequested'])
-
-    def pastShipItRequests(self):
-        """See `IPerson`."""
-        query = """
-            recipient = %(id)s AND (
-                status IN (%(denied)s, %(cancelled)s, %(shipped)s))
-            """ % sqlvalues(id=self.id, denied=ShippingRequestStatus.DENIED,
-                            cancelled=ShippingRequestStatus.CANCELLED,
-                            shipped=ShippingRequestStatus.SHIPPED)
-        return ShippingRequest.select(query, orderBy=['id'])
-
-    def currentShipItRequest(self):
-        """See `IPerson`."""
-        query = """
-            recipient = %(id)s
-            AND status NOT IN (%(denied)s, %(cancelled)s, %(shipped)s)
-            """ % sqlvalues(id=self.id, denied=ShippingRequestStatus.DENIED,
-                            cancelled=ShippingRequestStatus.CANCELLED,
-                            shipped=ShippingRequestStatus.SHIPPED)
-        results = shortlist(
-            ShippingRequest.select(query, orderBy=['id'], limit=2))
-        count = len(results)
-        assert (self == getUtility(ILaunchpadCelebrities).shipit_admin or
-                count <= 1), ("Only the shipit-admins team is allowed to "
-                              "have more than one open shipit request")
-        if count == 1:
-            return results[0]
-        else:
-            return None
-
     def _customizeSearchParams(self, search_params):
         """No-op, to satisfy a requirement of HasBugsBase."""
         pass
@@ -1539,9 +1489,10 @@ class Person(
             query, clauseTables=['TeamMembership'], orderBy=orderBy)
 
     def _getEmailsByStatus(self, status):
-        query = AND(EmailAddress.q.personID==self.id,
-                    EmailAddress.q.status==status)
-        return EmailAddress.select(query)
+        return Store.of(self).find(
+            EmailAddress,
+            EmailAddress.personID == self.id,
+            EmailAddress.status == status)
 
     @property
     def wiki_names(self):
@@ -1697,10 +1648,9 @@ class Person(
             clauseTables=['Person'],
             orderBy=Person.sortingColumns)
 
-    @property
-    def mapped_participants(self):
+    def _mapped_participants_locations(self):
         """See `IPersonViewRestricted`."""
-        locations = PersonLocation.select("""
+        return PersonLocation.select("""
             PersonLocation.person = TeamParticipation.person AND
             TeamParticipation.team = %s AND
             -- We only need to check for a latitude here because there's a DB
@@ -1712,11 +1662,16 @@ class Person(
             """ % sqlvalues(self.id),
             clauseTables=['TeamParticipation', 'Person'],
             prejoins=['person',])
+
+    @property
+    def mapped_participants(self):
+        """See `IPersonViewRestricted`."""
         # Pre-cache this location against its person.  Since we'll always
         # iterate over all persons returned by this property (to build the map
         # of team members), it becomes more important to cache their locations
         # than to return a lazy SelectResults (or similar) object that only
         # fetches the rows when they're needed.
+        locations = self._mapped_participants_locations()
         for location in locations:
             location.person._location = location
         participants = set(location.person for location in locations)
@@ -1725,6 +1680,38 @@ class Person(
             sql = "id IN (%s)" % ",".join(sqlvalues(*participants))
             list(ValidPersonCache.select(sql))
         return list(participants)
+
+    @property
+    def mapped_participants_count(self):
+        """See `IPersonViewRestricted`."""
+        return self._mapped_participants_locations().count()
+
+    def getMappedParticipantsBounds(self):
+        """See `IPersonViewRestricted`."""
+        max_lat = -90.0
+        min_lat = 90.0
+        max_lng = -180.0
+        min_lng = 180.0
+        locations = self._mapped_participants_locations()
+        if self.mapped_participants_count == 0:
+            raise AssertionError, (
+                'This method cannot be called when '
+                'mapped_participants_count == 0.')
+        latitudes = sorted(location.latitude for location in locations)
+        if latitudes[-1] > max_lat:
+            max_lat = latitudes[-1]
+        if latitudes[0] < min_lat:
+            min_lat = latitudes[0]
+        longitudes = sorted(location.longitude for location in locations)
+        if longitudes[-1] > max_lng:
+            max_lng = longitudes[-1]
+        if longitudes[0] < min_lng:
+            min_lng = longitudes[0]
+        center_lat = (max_lat + min_lat) / 2.0
+        center_lng = (max_lng + min_lng) / 2.0
+        return dict(
+            min_lat=min_lat, min_lng=min_lng, max_lat=max_lat,
+            max_lng=max_lng, center_lat=center_lat, center_lng=center_lng)
 
     @property
     def unmapped_participants(self):
@@ -1741,6 +1728,11 @@ class Person(
             Person.teamowner IS NULL
             """ % sqlvalues(self.id, self.id),
             clauseTables=['TeamParticipation'])
+
+    @property
+    def unmapped_participants_count(self):
+        """See `IPersonViewRestricted`."""
+        return self.unmapped_participants.count()
 
     @property
     def open_membership_invitations(self):
@@ -1763,13 +1755,15 @@ class Person(
         if self.is_team:
             raise AssertionError(
                 "Teams cannot be activated with this method.")
-        self.account.status = AccountStatus.ACTIVE
-        self.account.status_comment = comment
-        self.password = password
+        account = IMasterStore(Account).get(Account, self.accountID)
+        account.status = AccountStatus.ACTIVE
+        account.status_comment = comment
+        account.password = password
         if preferred_email is not None:
-            self.validateAndEnsurePreferredEmail(preferred_email)
+            self.validateAndEnsurePreferredEmail(
+                IMasterObject(preferred_email))
         # sync so validpersoncache updates.
-        self.account.sync()
+        account.sync()
 
     def deactivateAccount(self, comment):
         """See `IPersonSpecialRestricted`."""
@@ -1837,7 +1831,7 @@ class Person(
         # Update the account's status, preferred email and name.
         self.account_status = AccountStatus.DEACTIVATED
         self.account_status_comment = comment
-        self.preferredemail.status = EmailAddressStatus.NEW
+        IMasterObject(self.preferredemail).status = EmailAddressStatus.NEW
         self._preferredemail_cached = None
         base_new_name = self.name + '-deactivatedaccount'
         self.name = self._ensureNewName(base_new_name)
@@ -2079,6 +2073,7 @@ class Person(
 
     def validateAndEnsurePreferredEmail(self, email):
         """See `IPerson`."""
+        email = IMasterObject(email)
         assert not self.is_team, "This method must not be used for teams."
         if not IEmailAddress.providedBy(email):
             raise TypeError, (
@@ -2086,15 +2081,24 @@ class Person(
                 "interface. %s doesn't." % email)
         # XXX Steve Alexander 2005-07-05:
         # This is here because of an SQLobject comparison oddity.
-        assert email.person.id == self.id, 'Wrong person! %r, %r' % (
-            email.person, self)
+        assert email.personID == self.id, 'Wrong person! %r, %r' % (
+            email.personID, self.id)
 
+        # We need the preferred email address. This method is called
+        # recursively, however, and the email address may have just been
+        # created. So we have to explicitly pull it from the master store
+        # until we rewrite this 'icky mess.
+        preferred_email = IMasterStore(EmailAddress).find(
+            EmailAddress,
+            EmailAddress.personID == self.id,
+            EmailAddress.status == EmailAddressStatus.PREFERRED).one()
+        
         # This email is already validated and is this person's preferred
         # email, so we have nothing to do.
-        if self.preferredemail == email:
+        if preferred_email == email:
             return
 
-        if self.preferredemail is None:
+        if preferred_email is None:
             # This branch will be executed only in the first time a person
             # uses Launchpad. Either when creating a new account or when
             # resetting the password of an automatically created one.
@@ -2102,7 +2106,7 @@ class Person(
         else:
             email.status = EmailAddressStatus.VALIDATED
             # Automated processes need access to set the account().
-            removeSecurityProxy(email).account = email.person.account
+            removeSecurityProxy(email).accountID = self.accountID
             getUtility(IHWSubmissionSet).setOwnership(email)
         # Now that we have validated the email, see if this can be
         # matched to an existing RevisionAuthor.
@@ -2119,8 +2123,10 @@ class Person(
 
     def _unsetPreferredEmail(self):
         """Change the preferred email address to VALIDATED."""
-        if self.preferredemail is not None:
-            email_address = self.preferredemail
+        email_address = IMasterStore(EmailAddress).find(
+            EmailAddress, personID=self.id,
+            status=EmailAddressStatus.PREFERRED).one()
+        if email_address is not None:
             email_address.status = EmailAddressStatus.VALIDATED
             email_address.syncUpdate()
         self._preferredemail_cached = None
@@ -2143,7 +2149,7 @@ class Person(
                 preferred_email=email)
         # Anonymous users may claim their profile; remove the proxy
         # to set the account.
-        removeSecurityProxy(email).account = self.account
+        removeSecurityProxy(email).accountID = self.accountID
         self._setPreferredEmail(email)
 
     def _setPreferredEmail(self, email):
@@ -2159,22 +2165,21 @@ class Person(
             raise TypeError, (
                 "Any person's email address must provide the IEmailAddress "
                 "interface. %s doesn't." % email)
-        assert email.person.id == self.id
+        assert email.personID == self.id
 
-        if self.preferredemail is not None:
-            self.preferredemail.status = EmailAddressStatus.VALIDATED
-            # We need to flush updates, because we don't know what order
-            # SQLObject will issue the changes and we can't set the new
-            # address to PREFERRED until the old one has been set to VALIDATED
-            self.preferredemail.syncUpdate()
+        existing_preferred_email = IMasterStore(EmailAddress).find(
+            EmailAddress, personID=self.id,
+            status=EmailAddressStatus.PREFERRED).one()
 
-        # Get the non-proxied EmailAddress object, so we can call
-        # syncUpdate() on it.
+        if existing_preferred_email is not None:
+            existing_preferred_email.status = EmailAddressStatus.VALIDATED
+
         email = removeSecurityProxy(email)
-        email.status = EmailAddressStatus.PREFERRED
-        email.syncUpdate()
+        IMasterObject(email).status = EmailAddressStatus.PREFERRED
+
         getUtility(IHWSubmissionSet).setOwnership(email)
-        # Now we update our cache of the preferredemail
+
+        # Now we update our cache of the preferredemail.
         self._preferredemail_cached = email
 
     @cachedproperty('_preferredemail_cached')
@@ -2509,6 +2514,8 @@ class PersonSet:
         email = getUtility(IEmailAddressSet).new(
                 email, person, account=account)
 
+        assert email.accountID is not None, (
+            'Failed to link EmailAddress to Account')
         return person, email
 
     def createPersonWithoutEmail(
@@ -2538,8 +2545,12 @@ class PersonSet:
         if not displayname:
             displayname = name.capitalize()
 
+        if account is None:
+            account_id = None
+        else:
+            account_id = account.id
         person = Person(
-            name=name, displayname=displayname, account=account,
+            name=name, displayname=displayname, accountID=account_id,
             creation_rationale=rationale, creation_comment=comment,
             hide_email_addresses=hide_email_addresses, registrant=registrant)
         return person
@@ -2590,7 +2601,7 @@ class PersonSet:
         """See `IPersonSet`."""
         if not text:
             # Return an empty result set.
-            return Person.select("1 = 2")
+            return EmptyResultSet()
         if orderBy is None:
             orderBy = Person._sortingColumnsForSetOperations
         text = text.lower()
@@ -2715,11 +2726,18 @@ class PersonSet:
 
     def getByEmail(self, email):
         """See `IPersonSet`."""
-        emailaddress = getUtility(IEmailAddressSet).getByEmail(email)
-        if emailaddress is None:
+        # We lookup the EmailAddress in the auth store so we can
+        # lookup a Person by EmailAddress in the same transaction
+        # that the Person or EmailAddress was created. This is not
+        # optimal for production as it requires two database lookups,
+        # but is required by much of the test suite.
+        conditions = (Lower(EmailAddress.email) == email.lower().strip())
+        email_address = IStore(EmailAddress).find(
+            EmailAddress, conditions).one()
+        if email_address is None:
             return None
-        assert emailaddress.person is not None
-        return emailaddress.person
+        else:
+            return IStore(Person).get(Person, email_address.personID)
 
     def getPOFileContributors(self, pofile):
         """See `IPersonSet`."""
@@ -2913,45 +2931,6 @@ class PersonSet:
             'UPDATE GPGKey SET owner=%(to_id)d WHERE owner=%(from_id)d'
             % vars())
         skip.append(('gpgkey','owner'))
-
-        # Update shipit shipments.
-        cur.execute('''
-            UPDATE ShippingRequest SET recipient=%(to_id)s
-            WHERE recipient = %(from_id)s AND (
-                shipment IS NOT NULL
-                OR status IN (%(cancelled)s, %(denied)s)
-                OR NOT EXISTS (
-                    SELECT TRUE FROM ShippingRequest
-                    WHERE recipient = %(to_id)s
-                        AND status = %(shipped)s
-                    LIMIT 1
-                    )
-                )
-            ''' % sqlvalues(to_id=to_id, from_id=from_id,
-                            cancelled=ShippingRequestStatus.CANCELLED,
-                            denied=ShippingRequestStatus.DENIED,
-                            shipped=ShippingRequestStatus.SHIPPED))
-        # Technically, we don't need the not cancelled nor denied
-        # filter, as these rows should have already been dealt with.
-        # I'm using it anyway for added paranoia.
-        cur.execute('''
-            DELETE FROM RequestedCDs USING ShippingRequest
-            WHERE RequestedCDs.request = ShippingRequest.id
-                AND recipient = %(from_id)s
-                AND status NOT IN (%(cancelled)s, %(denied)s, %(shipped)s)
-            ''' % sqlvalues(from_id=from_id,
-                            cancelled=ShippingRequestStatus.CANCELLED,
-                            denied=ShippingRequestStatus.DENIED,
-                            shipped=ShippingRequestStatus.SHIPPED))
-        cur.execute('''
-            DELETE FROM ShippingRequest
-            WHERE recipient = %(from_id)s
-                AND status NOT IN (%(cancelled)s, %(denied)s, %(shipped)s)
-            ''' % sqlvalues(from_id=from_id,
-                            cancelled=ShippingRequestStatus.CANCELLED,
-                            denied=ShippingRequestStatus.DENIED,
-                            shipped=ShippingRequestStatus.SHIPPED))
-        skip.append(('shippingrequest', 'recipient'))
 
         # Update the Branches that will not conflict, and fudge the names of
         # ones that *do* conflict.
@@ -3411,22 +3390,9 @@ class PersonSet:
                     'DELETE FROM TeamParticipation WHERE person = %s AND '
                     'team = %s' % sqlvalues(from_person, team_id))
 
-        # Transfer the OpenIDRPSummaries to the new account.
-        cur.execute("""
-            UPDATE OpenIDRPSummary
-            SET account = %s
-            WHERE account = %s
-            """ % sqlvalues(to_person.account, from_person.account))
-
-        # Flag the account as merged
+        # Flag the person as merged
         cur.execute('''
             UPDATE Person SET merged=%(to_id)d WHERE id=%(from_id)d
-            ''' % vars())
-
-        # And nuke any referencing Account
-        cur.execute('''
-            DELETE FROM Account USING Person
-            WHERE Person.account = Account.id AND Person.id=%(from_id)d
             ''' % vars())
 
         # Append a -merged suffix to the account's name.
@@ -3808,7 +3774,8 @@ def person_from_account(account):
     """Adapt an IAccount into an IPerson."""
     # The IAccount interface does not publish the account.person reference.
     naked_account = removeSecurityProxy(account)
-    person = ProxyFactory(naked_account.person)
+    person = ProxyFactory(IStore(Person).find(
+        Person, accountID=naked_account.id).one())
     if person is None:
         raise ComponentLookupError
     return person
