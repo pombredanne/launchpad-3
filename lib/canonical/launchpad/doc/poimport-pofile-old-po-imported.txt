@@ -130,14 +130,14 @@ We do the import.
 
     >>> (subject, message) = pofile.importFromQueue(entry)
 
-This fails because the file's time stamp was not updated.
+This fails because the file's timestamp was not updated.
 
     >>> entry.status == RosettaImportStatus.FAILED
     True
 
     >>> print entry.error_output
     Outdated translation.  The last imported version of this file was dated
-    2005-05-03 20:41:00+01:00; the time stamp in the file you uploaded is
+    2005-05-03 20:41:00+01:00; the timestamp in the file you uploaded is
     2005-05-03 19:41:00+01:00.
 
 We can see that the header remains unchanged
@@ -159,10 +159,10 @@ The code also generated an email about the error we produced.
     Launchpad.
     <BLANKLINE>
     We were unable to import your translations because you did not update
-    the time stamp in its header to state when you added your translations.
+    the timestamp in its header to state when you added your translations.
     <BLANKLINE>
     The last imported version of this file was dated
-    2005-05-03 20:41:00+01:00; the time stamp in the file you uploaded is
+    2005-05-03 20:41:00+01:00; the timestamp in the file you uploaded is
     2005-05-03 19:41:00+01:00.
     <BLANKLINE>
     To fix this problem, please upload the file again, but with the

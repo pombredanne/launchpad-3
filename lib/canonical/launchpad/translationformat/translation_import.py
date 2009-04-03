@@ -633,7 +633,7 @@ class POFileImporter(FileImporter):
                     self.translation_file.header.translation_revision_date)
                 raise OutdatedTranslationError(
                     'The last imported version of this file was dated %s; '
-                    'the time stamp in the file you uploaded is %s.' % (
+                    'the timestamp in the file you uploaded is %s.' % (
                         pofile_timestamp, upload_timestamp))
 
             # Get the timestamp when this file was exported from
