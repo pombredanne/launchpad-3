@@ -155,12 +155,13 @@ def listdir(path):
 os.listdir = listdir
 
 
-# XXX: jml
-from canonical.testing.customresult import patch_zope_testresult
-#from bzrlib.tests import VerboseTestResult
+from canonical.testing.customresult import (
+    list_tests,
+    patch_find_tests,
+    patch_zope_testresult,
+    )
+from subunit import TestProtocolClient
 from twisted.trial.reporter import TreeReporter
-
-patch_zope_testresult(TreeReporter())
 
 
 if __name__ == '__main__':
@@ -178,6 +179,19 @@ if __name__ == '__main__':
         args.insert(0, sys.argv[0])
     else:
         args = sys.argv
+
+    if '--list' in args:
+        args.remove('--list')
+        patch_find_tests(list_tests)
+
+    if '--subunit' in args:
+        args.remove('--subunit')
+        patch_zope_testresult(TestProtocolClient(sys.stdout))
+    else:
+        # XXX: provide a decent way of allowing the default result object.
+        # XXX: the summary for this is not being called.
+        patch_zope_testresult(TreeReporter())
+
     options = testrunner.get_options(args=args, defaults=defaults)
 
     # Turn on Layer profiling if requested.

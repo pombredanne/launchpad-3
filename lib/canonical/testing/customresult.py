@@ -44,6 +44,24 @@ class Anything:
         return lambda *args, **kwargs: None
 
 
+
+def patch_find_tests(hook):
+    """Add a post-processing hook to zope.testing.testrunner.find_tests."""
+    from zope.testing import testrunner
+    real_find_tests = testrunner.find_tests
+    def find_tests(*args):
+        return hook(real_find_tests(*args))
+    testrunner.find_tests = find_tests
+
+
+def list_tests(tests_by_layer_name):
+    from testtools import iterate_tests
+    for suite in tests_by_layer_name.itervalues():
+        for test in iterate_tests(suite):
+            print test.id()
+    return {}
+
+
 def patch_zope_testresult(result):
     """Patch the Zope test result factory so that our test result is used.
 
