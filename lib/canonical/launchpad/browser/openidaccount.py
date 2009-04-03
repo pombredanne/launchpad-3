@@ -225,7 +225,7 @@ class AccountEditEmailsView(LaunchpadFormView):
         The guessed emails will be EmailAddress objects, and the
         unvalidated emails will be unicode strings.
         """
-        emailset = set(self.context.unvalidated_emails)
+        emailset = set(self.context.getUnvalidatedEmails())
         emailset = emailset.union(
             [guessed for guessed in self.context.guessed_emails
              if not guessed.email in emailset])
