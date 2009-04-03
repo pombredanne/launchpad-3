@@ -328,7 +328,6 @@ We use a BugTaskDelta to represent changes to a BugTask.
     ...     if IBugChange.providedBy(text_representation):
     ...         text_representation = (
     ...             text_representation.getBugNotification()['text'])
-    ...
     ...     print text_representation #doctest: -NORMALIZE_WHITESPACE
     ...     print "-----------------------------"
     ** Changed in: tomcat
@@ -354,6 +353,9 @@ edited:
     ...     user=sample_person,
     ...     bugtask_deltas=bugtask_delta)
     >>> for text_representation in get_bug_edit_notification_texts(bug_delta):
+    ...     if IBugChange.providedBy(text_representation):
+    ...         text_representation = (
+    ...             text_representation.getBugNotification()['text'])
     ...     print text_representation #doctest: -NORMALIZE_WHITESPACE
     ...     print "-----------------------------"
     ** Changed in: mozilla-firefox (Debian)
