@@ -1898,7 +1898,7 @@ class DistributionOrProductVocabulary(PillarVocabularyBase):
     displayname = 'Select a project'
     _filter = """
         -- An active product/distro.
-        (active IS TRUE
+        ((active IS TRUE
          AND (product IS NOT NULL OR distribution IS NOT NULL)
         )
         OR
@@ -1907,7 +1907,7 @@ class DistributionOrProductVocabulary(PillarVocabularyBase):
             SELECT id FROM PillarName
             WHERE active IS TRUE AND
                 (product IS NOT NULL OR distribution IS NOT NULL))
-        )
+        ))
         """
 
     def __contains__(self, obj):

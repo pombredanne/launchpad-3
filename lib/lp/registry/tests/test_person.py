@@ -316,6 +316,19 @@ class TestPersonSet(unittest.TestCase):
         self.failUnless(self.person_set.isNameBlacklisted('foo'))
         self.failIf(self.person_set.isNameBlacklisted('bar'))
 
+    def test_getByEmail_ignores_case_and_whitespace(self):
+        person1_email = 'foo.bar@canonical.com'
+        person1 = self.person_set.getByEmail(person1_email)
+        self.failIf(
+            person1 is None,
+            "PersonSet.getByEmail() could not find %r" % person1_email)
+
+        person2 = self.person_set.getByEmail('  foo.BAR@canonICAL.com  ')
+        self.failIf(
+            person2 is None,
+            "PersonSet.getByEmail() should ignore case and whitespace.")
+        self.assertEqual(person1, person2)
+
 
 class TestCreatePersonAndEmail(unittest.TestCase):
     """Test `IPersonSet`.createPersonAndEmail()."""

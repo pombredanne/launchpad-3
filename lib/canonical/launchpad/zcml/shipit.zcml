@@ -63,7 +63,7 @@
         name="index.html"
         permission="zope.Public"
         template="../templates/shipit-notfound.pt"
-        class="zope.app.exception.browser.notfound.NotFound" />
+        class="canonical.launchpad.browser.shipit.ShipitNotFoundView" />
 
     <browser:page
         layer="canonical.launchpad.layers.ShipItLayer"

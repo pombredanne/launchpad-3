@@ -38,7 +38,7 @@ from sqlobject import (
     SQLRelatedJoin, StringCol)
 from sqlobject.sqlbuilder import AND, OR, SQLConstant
 from storm.store import EmptyResultSet, Store
-from storm.expr import And, Join
+from storm.expr import And, Join, Lower
 from storm.info import ClassAlias
 
 from canonical.config import config
@@ -2690,8 +2690,9 @@ class PersonSet:
         # that the Person or EmailAddress was created. This is not
         # optimal for production as it requires two database lookups,
         # but is required by much of the test suite.
+        conditions = (Lower(EmailAddress.email) == email.lower().strip())
         email_address = IStore(EmailAddress).find(
-            EmailAddress, email=email).one()
+            EmailAddress, conditions).one()
         if email_address is None:
             return None
         else:

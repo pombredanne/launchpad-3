@@ -132,6 +132,8 @@ from canonical.launchpad.interfaces.account import IAccount
 from canonical.launchpad.interfaces.archivesubscriber import (
     IArchiveSubscriberSet)
 from canonical.launchpad.interfaces.account import AccountStatus
+from canonical.launchpad.interfaces.archivesubscriber import (
+    IArchiveSubscriberSet)
 from canonical.launchpad.interfaces.authtoken import LoginTokenType
 from canonical.launchpad.interfaces.bugtask import (
     BugTaskSearchParams, BugTaskStatus, UNRESOLVED_BUGTASK_STATUSES)
@@ -901,8 +903,7 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
              'editircnicknames', 'editjabberids', 'editpassword',
              'editsshkeys', 'editpgpkeys', 'editlocation', 'memberships',
              'mentoringoffers', 'codesofconduct', 'karma', 'common_packages',
-             'administer', 'related_projects', 'activate_ppa',
-             'view_ppa_subscriptions']
+             'administer', 'related_projects', 'activate_ppa']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -1006,20 +1007,6 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
         target = '+review'
         text = 'Administer'
         return Link(target, text, icon='edit')
-
-    @enabled_with_permission('launchpad.Edit')
-    def view_ppa_subscriptions(self):
-        target = "+archivesubscriptions"
-        text = "View your private PPA subscriptions"
-        summary = ('View your personal PPA subscriptions and set yourself '
-                   'up to download your software')
-
-        # Only enable the link if the person has some subscriptions.
-        subscriptions = getUtility(IArchiveSubscriberSet).getBySubscriber(
-            self.context)
-        enabled = subscriptions.count() > 0
-
-        return Link(target, text, summary, enabled=enabled, icon='info')
 
 
 class IPersonEditMenu(Interface):

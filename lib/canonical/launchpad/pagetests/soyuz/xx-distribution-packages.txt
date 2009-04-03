@@ -106,8 +106,8 @@ text is not mentioned in anything else that is indexed.
     >>> texts.sort()
     >>> for text in texts:
     ...    print text.encode('ascii', 'backslashreplace')
-    \...libstdc++... source package in Test Distro
-    \...pmount... source package in Test Distro
+    \...libstdc++... source package in Ubuntu
+    \...pmount... source package in Ubuntu
 
 
 == Distribution package change summary ==
@@ -120,7 +120,7 @@ and version.
 
     >>> browser.open("http://launchpad.dev/ubuntu/+source/netapplet/")
     >>> print extract_text(find_tag_by_id(browser.contents, 'packaging'))
-            Test Distro version                  Upstream version
+    Ubuntu version                            Upstream version
     hoary development main release 1.0-1      NetApplet Series: trunk
     warty current     main release 0.99.6-1   NetApplet Series: trunk
 
@@ -214,4 +214,62 @@ displayed:
 
     >>> user_browser.open("http://launchpad.dev/ubuntu/+source/a52dec")
     >>> print extract_text(find_tag_by_id(user_browser.contents, 'packaging'))
-            Test Distro version                  Upstream version
+    Ubuntu version                  Upstream version
+
+
+== Recent activity ==
+
+The sourcepackage activity in a distribution is presented as the last
+5 distinct sourcepackage releases and their corresponding changelogs
+as mentioned above.
+
+    >>> def print_displayed_versions(contents):
+    ...     version_headers = find_tags_by_class(
+    ...         contents, 'boardCommentDetails')
+    ...     for section in version_headers:
+    ...         print extract_text(section.div)
+
+    >>> anon_browser.open(
+    ...     "http://launchpad.dev/ubuntu/+source/alsa-utils/")
+
+    >>> print_displayed_versions(anon_browser.contents)
+    1.0.9a-4ubuntu1
+    1.0.9a-4
+    1.0.8-1ubuntu1
+
+We will create 4 new versions of 'alsa-utils' sourcepackages.
+
+    >>> sourcename = 'alsa-utils'
+    >>> versions = ['2.0', '2.1', '2.2', '2.3']
+
+    >>> from zope.component import getUtility
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from canonical.launchpad.ftests import login, logout
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from canonical.launchpad.tests.test_publishing import (
+    ...      SoyuzTestPublisher)
+
+    >>> login("foo.bar@canonical.com")
+
+    >>> test_publisher = SoyuzTestPublisher()
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> hoary = ubuntu.getSeries('hoary')
+    >>> unused = test_publisher.setUpDefaultDistroSeries(hoary)
+
+    >>> for version in versions:
+    ...     unused = test_publisher.getPubSource(
+    ...         sourcename=sourcename, version=version)
+
+    >>> flush_database_updates()
+    >>> logout()
+
+When the page is reload only the most recent 5 version are presented.
+
+    >>> anon_browser.reload()
+
+    >>> print_displayed_versions(anon_browser.contents)
+    2.3
+    2.2
+    2.1
+    2.0
+    1.0.9a-4ubuntu1
