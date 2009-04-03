@@ -629,24 +629,45 @@ class BugTaskBugWatchChange(BugTaskAttributeChange):
     display_attribute = 'title'
 
 
-class BugTaskAssigneeChange(BugTaskAttributeChange):
+class BugTaskAssigneeChange(AttributeChange):
     """Represents a change in BugTask.assignee."""
 
-    # Use `person.displayname` in notifications.
-    display_attribute = 'unique_displayname'
+    def __init__(self, bug_task, when, person,
+                 what_changed, old_value, new_value):
+        super(BugTaskAssigneeChange, self).__init__(
+            when, person, what_changed, old_value, new_value)
+        self.bug_task = bug_task
 
     def getBugActivity(self):
-        """See `BugTaskAttributeChange`.
+        """See `IBugChange`."""
+        def assignee_for_display(assignee):
+            if assignee is None:
+                return None
+            else:
+                return assignee.name
 
-        This returns a slightly customised version of the activity
-        record, using `person.name`.
-        """
-        activity = super(BugTaskAssigneeChange, self).getBugActivity()
-        if self.old_value is not None:
-            activity['oldvalue'] = self.old_value.name
-        if self.new_value is not None:
-            activity['newvalue'] = self.new_value.name
-        return activity
+        return {
+            'whatchanged': '%s: assignee' % self.bug_task.bugtargetname,
+            'oldvalue': assignee_for_display(self.old_value),
+            'newvalue': assignee_for_display(self.new_value),
+            }
+
+    def getBugNotification(self):
+        """See `IBugChange`."""
+        def assignee_for_display(assignee):
+            if assignee is None:
+                return "(unassigned)"
+            else:
+                return assignee.unique_displayname
+
+        return {
+            'text': (
+                u"** Changed in: %s\n"
+                u"     Assignee: %s => %s" % (
+                    self.bug_task.bugtargetname,
+                    assignee_for_display(self.old_value),
+                    assignee_for_display(self.new_value))),
+            }
 
 
 class BugTaskTargetChange(AttributeChange):
