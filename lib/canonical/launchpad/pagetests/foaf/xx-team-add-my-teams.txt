@@ -34,7 +34,7 @@ We'll now propose Launchpad Administrators as a member of Ubuntu Team.
     [u'Launchpad Administrators has been proposed to this team.']
     >>> print extract_text(
     ...     find_tag_by_id(browser.contents, 'recently-applied'))
-    Recently applied:
+    Recently applied
     Launchpad Administrators (admins)
     ...
 
@@ -57,7 +57,7 @@ members.
     [u'Rosetta Administrators has been added to this team.']
     >>> print extract_text(
     ...     find_tag_by_id(browser.contents, 'recently-approved'))
-    Recently approved:
+    Recently approved
     Rosetta Administrators (rosetta-admins)
     ...
 
@@ -70,6 +70,12 @@ your teams as members.
     >>> admin_browser.getControl('Save').click()
     >>> admin_browser.title
     'Ubuntu Team in Launchpad'
+
+    >>> browser.open('http://launchpad.dev/~ubuntu-team')
+    >>> browser.getLink('Add one of my teams')
+    Traceback (most recent call last):
+     ...
+    LinkNotFoundError
 
     >>> browser.open('http://launchpad.dev/~ubuntu-team/+add-my-teams')
     >>> print extract_text(find_tag_by_id(browser.contents, 'maincontent'))
