@@ -1648,10 +1648,9 @@ class Person(
             clauseTables=['Person'],
             orderBy=Person.sortingColumns)
 
-    @property
-    def mapped_participants(self):
+    def _mapped_participants_locations(self):
         """See `IPersonViewRestricted`."""
-        locations = PersonLocation.select("""
+        return PersonLocation.select("""
             PersonLocation.person = TeamParticipation.person AND
             TeamParticipation.team = %s AND
             -- We only need to check for a latitude here because there's a DB
@@ -1663,11 +1662,16 @@ class Person(
             """ % sqlvalues(self.id),
             clauseTables=['TeamParticipation', 'Person'],
             prejoins=['person',])
+
+    @property
+    def mapped_participants(self):
+        """See `IPersonViewRestricted`."""
         # Pre-cache this location against its person.  Since we'll always
         # iterate over all persons returned by this property (to build the map
         # of team members), it becomes more important to cache their locations
         # than to return a lazy SelectResults (or similar) object that only
         # fetches the rows when they're needed.
+        locations = self._mapped_participants_locations()
         for location in locations:
             location.person._location = location
         participants = set(location.person for location in locations)
@@ -1676,6 +1680,38 @@ class Person(
             sql = "id IN (%s)" % ",".join(sqlvalues(*participants))
             list(ValidPersonCache.select(sql))
         return list(participants)
+
+    @property
+    def mapped_participants_count(self):
+        """See `IPersonViewRestricted`."""
+        return self._mapped_participants_locations().count()
+
+    def getMappedParticipantsBounds(self):
+        """See `IPersonViewRestricted`."""
+        max_lat = -90.0
+        min_lat = 90.0
+        max_lng = -180.0
+        min_lng = 180.0
+        locations = self._mapped_participants_locations()
+        if self.mapped_participants_count == 0:
+            raise AssertionError, (
+                'This method cannot be called when '
+                'mapped_participants_count == 0.')
+        latitudes = sorted(location.latitude for location in locations)
+        if latitudes[-1] > max_lat:
+            max_lat = latitudes[-1]
+        if latitudes[0] < min_lat:
+            min_lat = latitudes[0]
+        longitudes = sorted(location.longitude for location in locations)
+        if longitudes[-1] > max_lng:
+            max_lng = longitudes[-1]
+        if longitudes[0] < min_lng:
+            min_lng = longitudes[0]
+        center_lat = (max_lat + min_lat) / 2.0
+        center_lng = (max_lng + min_lng) / 2.0
+        return dict(
+            min_lat=min_lat, min_lng=min_lng, max_lat=max_lat,
+            max_lng=max_lng, center_lat=center_lat, center_lng=center_lng)
 
     @property
     def unmapped_participants(self):
@@ -1692,6 +1728,11 @@ class Person(
             Person.teamowner IS NULL
             """ % sqlvalues(self.id, self.id),
             clauseTables=['TeamParticipation'])
+
+    @property
+    def unmapped_participants_count(self):
+        """See `IPersonViewRestricted`."""
+        return self.unmapped_participants.count()
 
     @property
     def open_membership_invitations(self):

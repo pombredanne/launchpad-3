@@ -2941,7 +2941,7 @@ class PersonIndexView(XRDSContentNegotiationMixin, PersonView):
     def has_visible_location(self):
         """Does the person have latitude and a visible location."""
         if self.context.is_team:
-            return len(self.context.mapped_participants) > 0
+            return self.context.mapped_participants_count > 0
         else:
             return (check_permission('launchpad.View', self.context.location)
                 and self.context.latitude is not None)

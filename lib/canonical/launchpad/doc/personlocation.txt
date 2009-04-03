@@ -170,6 +170,36 @@ access a person's .location property.
     ...     if not verifyObject(IPersonLocation, mapped._location):
     ...         print 'No cached location on %s' % mapped.name
 
+The count of mapped and unmapped members can also be retrieved, which is
+faster than getting the resultset of members.
+
+    >>> guadamen.mapped_participants_count
+    2
+    >>> guadamen.unmapped_participants_count
+    7
+
+The bounds of the mapped members can be retrieved. It is a dict that contains
+the minimum maximum, and central longitudes and latitudes.
+
+    >>> bounds = guadamen.getMappedParticipantsBounds()
+    >>> for key in sorted(bounds):
+    ...     print "%s: %s" % (key, bounds[key])
+    center_lat: 4...
+    center_lng: -30...
+    max_lat: 52...
+    max_lng: 0...
+    min_lat: -43...
+    min_lng: -62...
+
+Calling getMappedParticipantsBounds() on a team without members is an error.
+
+    >>> unmapped_team = factory.makeTeam()
+    >>> unmapped_team.getMappedParticipantsBounds()
+    Traceback (most recent call last):
+     ...
+    AssertionError: This method cannot be called when
+                    mapped_participants_count == 0.
+
 
 == Location visibility ==
 
