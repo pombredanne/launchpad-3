@@ -841,7 +841,11 @@ class BugTaskView(LaunchpadView, CanBeMentoredView, FeedsMixin):
             # Check to see if there are any activities for this
             # comment's datecreated.
             activity_for_comment = []
-            for activity_dict in activity_by_date:
+
+            # Loop over a copy of activity_by_date to ensure that we
+            # don't break the looping by removing things from the list
+            # over which we're iterating.
+            for activity_dict in list(activity_by_date):
                 if activity_dict['date'] == comment.datecreated:
                     activity_for_comment.extend(activity_dict['activity'])
 
