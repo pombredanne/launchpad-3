@@ -188,6 +188,8 @@ class TestResultWrapper:
     def addError(self, test_case, exc_info):
         if not isinstance(exc_info[1], (TestSkipped, TestNotApplicable)):
             self.result.addError(test_case, exc_info)
+        else:
+            self.result.addSuccess(test_case)
 
     def addFailure(self, test_case, exc_info):
         self.result.addFailure(test_case, exc_info)

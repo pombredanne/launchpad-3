@@ -156,7 +156,7 @@ os.listdir = listdir
 
 # XXX: jml
 from canonical.testing.customresult import patch_zope_testresult
-from bzrlib.tests import TextTestResult
+#from bzrlib.tests import VerboseTestResult
 from twisted.trial.reporter import TreeReporter
 
 patch_zope_testresult(TreeReporter())

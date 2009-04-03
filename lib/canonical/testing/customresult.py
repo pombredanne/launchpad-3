@@ -38,10 +38,17 @@ class MultiTestResult(TestResult):
         self._dispatch('addSuccess', test)
 
 
+class Anything:
+
+    def __getattr__(self, name):
+        return lambda *args, **kwargs: None
+
+
 def patch_zope_testresult(result):
     from zope.testing import testrunner
     old_zope_factory = testrunner.TestResult
     def zope_result_factory(options, tests, layer_name=None):
         zope_result = old_zope_factory(options, tests, layer_name=layer_name)
+        zope_result.options.output = Anything()
         return MultiTestResult(result, zope_result)
     testrunner.TestResult = zope_result_factory
