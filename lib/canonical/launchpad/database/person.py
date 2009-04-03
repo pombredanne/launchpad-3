@@ -38,7 +38,7 @@ from sqlobject import (
     SQLRelatedJoin, StringCol)
 from sqlobject.sqlbuilder import AND, OR, SQLConstant
 from storm.store import EmptyResultSet, Store
-from storm.expr import And, Join
+from storm.expr import And, Join, Lower
 from storm.info import ClassAlias
 
 from canonical.config import config
@@ -60,7 +60,6 @@ from canonical.launchpad.database.karma import KarmaCategory
 from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.oauth import (
     OAuthAccessToken, OAuthRequestToken)
-from canonical.launchpad.database.openidserver import OpenIDRPSummary
 from canonical.launchpad.database.personlocation import PersonLocation
 from canonical.launchpad.database.structuralsubscription import (
     StructuralSubscription)
@@ -115,7 +114,6 @@ from canonical.launchpad.interfaces.project import IProject
 from canonical.launchpad.interfaces.revision import IRevisionSet
 from canonical.launchpad.interfaces.salesforce import (
     ISalesforceVoucherProxy, VOUCHER_STATUSES)
-from canonical.launchpad.interfaces.shipit import ShippingRequestStatus
 from canonical.launchpad.interfaces.specification import (
     SpecificationDefinitionStatus, SpecificationFilter,
     SpecificationImplementationStatus, SpecificationSort)
@@ -2692,8 +2690,9 @@ class PersonSet:
         # that the Person or EmailAddress was created. This is not
         # optimal for production as it requires two database lookups,
         # but is required by much of the test suite.
+        conditions = (Lower(EmailAddress.email) == email.lower().strip())
         email_address = IStore(EmailAddress).find(
-            EmailAddress, email=email).one()
+            EmailAddress, conditions).one()
         if email_address is None:
             return None
         else:

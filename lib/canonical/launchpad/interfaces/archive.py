@@ -823,7 +823,7 @@ class IPPAActivateForm(Interface):
     """Schema used to activate PPAs."""
 
     name = TextLine(
-        title=_("PPA name"), required=True,
+        title=_("PPA name"), required=True, constraint=name_validator,
         description=_("A unique name used to identify this PPA."))
 
     description = Text(
