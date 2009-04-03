@@ -45,6 +45,14 @@ class Anything:
 
 
 def patch_zope_testresult(result):
+    """Patch the Zope test result factory so that our test result is used.
+
+    We need to keep using the Zope test result object since it does all sorts
+    of crazy things to make layers work. So that the output of our result
+    object is used, we disable the output of the Zope test result object.
+
+    :param result: A TestResult instance.
+    """
     from zope.testing import testrunner
     old_zope_factory = testrunner.TestResult
     def zope_result_factory(options, tests, layer_name=None):
