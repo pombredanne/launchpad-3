@@ -617,6 +617,7 @@ def get_bug_edit_notification_texts(bug_delta):
 
         bugtask_change_field_names = [
             'target', 'importance', 'status', 'milestone', 'bugwatch',
+            'assignee',
             ]
         for bugtask_delta in bugtask_deltas:
             for field_name in bugtask_change_field_names:
@@ -631,38 +632,6 @@ def get_bug_edit_notification_texts(bug_delta):
                         old_value=field_delta['old'],
                         new_value=field_delta['new'])
                     changes.append(change)
-
-        # XXX 2009-03-20 gmb [bug=344125]
-        #     There are two loops over bugtask_deltas here because we
-        #     have two completely unrelated ways of handling certain
-        #     fields as we transition over to the BugChange API. Trying
-        #     to do both in one loop is fraught with pain and
-        #     suffering. The second, eventually-to-be-redundant, loop
-        #     should be removed as part of the final cleanup work on
-        #     moving to the BugChange API.
-        for bugtask_delta in bugtask_deltas:
-            change_info = u''
-
-            if bugtask_delta.assignee is not None:
-                oldval_display = u"(unassigned)"
-                newval_display = u"(unassigned)"
-                if bugtask_delta.assignee.get('old'):
-                    oldval_display = (
-                        bugtask_delta.assignee['old'].unique_displayname)
-                if bugtask_delta.assignee.get('new'):
-                    newval_display = (
-                        bugtask_delta.assignee['new'].unique_displayname)
-
-                changerow = (
-                    u"%(label)13s: %(oldval)s => %(newval)s\n" % {
-                    'label' : u"Assignee", 'oldval' : oldval_display,
-                    'newval' : newval_display})
-                change_info += changerow
-
-            if len(change_info) > 0:
-                change_info = u"** Changed in: %s\n%s" % (
-                    bugtask_delta.bugtask.bugtargetname, change_info)
-                changes.append(change_info.rstrip())
 
     return changes
 
