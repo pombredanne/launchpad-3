@@ -241,8 +241,9 @@ class PersonMappingTestCase(unittest.TestCase):
         person = getUtility(IPersonSet).ensurePerson(
             'foo@users.sourceforge.net', None,
             PersonCreationRationale.OWNER_CREATED_LAUNCHPAD)
-        email = getUtility(IEmailAddressSet).new('foo@example.com', person)
         transaction.commit()
+        email = getUtility(IEmailAddressSet).new(
+            'foo@example.com', person, account=person.account)
         person.setPreferredEmail(email)
         transaction.commit()
         self.assertEqual(person.preferredemail.email, 'foo@example.com')
