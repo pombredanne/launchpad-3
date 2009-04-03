@@ -1023,7 +1023,9 @@ class AnswersBrowserRequest(LaunchpadBrowserRequest):
 class IdPublication(LaunchpadBrowserPublication):
     """The publication used for OpenID requests."""
 
-    root_object_interface = IOpenIDApplication
+    def getApplication(self, request):
+        """Return the `IOpenIDApplication`."""
+        return getUtility(IOpenIDApplication)
 
     def getPrincipal(self, request):
         """Return the authenticated principal for this request.

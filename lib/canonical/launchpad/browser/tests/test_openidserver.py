@@ -13,13 +13,21 @@ import unittest
 from openid.message import Message, OPENID2_NS
 from openid.server.server import OpenIDResponse
 
-from zope.component import getUtility
+from zope.component import adapts, getUtility, getSiteManager
+from zope.interface import implements
+from zope.publisher.interfaces.browser import (
+    IBrowserPublisher, IBrowserRequest)
+from zope.security.checker import NamesChecker
+from zope.security.interfaces import Unauthorized
 from zope.session.interfaces import ISession
 from zope.testing import doctest
+
+from zope.app.testing.functional import HTTPCaller
 
 from canonical.launchpad.browser.openidserver import OpenIDMixin
 from canonical.launchpad.ftests import ANONYMOUS, login, logout
 from canonical.launchpad.database.openidserver import OpenIDAuthorization
+from canonical.launchpad.interfaces.launchpad import IOpenIDApplication
 from canonical.launchpad.interfaces.person import IPersonSet
 from canonical.launchpad.interfaces.openidserver import IOpenIDRPConfigSet
 from canonical.launchpad.interfaces.shipit import IShipitAccount
@@ -288,6 +296,62 @@ class OpenIDMixin_checkTeamMembership_TestCase(TestCaseWithFactory):
             self.openid_response.fields.args,
             {('http://ns.launchpad.net/2007/openid-teams', 'is_member'):
                 'admins'})
+
+
+class RaiseUnauthorizedView:
+    """Simple view that raises an Unauthorized exception."""
+    implements(IBrowserPublisher)
+    adapts(IOpenIDApplication, IBrowserRequest)
+
+    __Security_checker__ = NamesChecker(
+        tuple(IBrowserPublisher.names()) + ('__call__', ))
+
+    def __init__(self, context, request):
+        pass
+
+    def __call__(self):
+        raise Unauthorized('Test')
+
+    def publishTraverse(self, request, name):
+        return self
+
+    def browserDefault(self, request):
+        return self, ()
+
+
+class OpenIDPlusLoginTestCase(unittest.TestCase):
+    """Test cases for the +login behaviour on login.launchpad.dev."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        self.http = HTTPCaller()
+        getSiteManager().registerAdapter(
+            RaiseUnauthorizedView, name='+raise-unauthorized')
+
+    def tearDown(self):
+        getSiteManager().unregisterAdapter(
+            RaiseUnauthorizedView, name='+raise-unauthorized')
+
+    def test_plus_login_should_404(self):
+        """The +login page shouldn't be available on the OpenID server."""
+
+        result = self.http(
+            'GET /+login HTTP/1.0\n'
+            'Host: openid.launchpad.dev\n\n'
+            ).getOutput()
+        self.failUnless(
+            result.startswith('HTTP/1.0 404'),
+            'Expected 404 status:\n' + result)
+
+    def test_Unauthorized_should_500(self):
+        """An Unauthorized error should be treated as a 500 on the SSO."""
+        result = self.http(
+            'GET /+raise-unauthorized HTTP/1.0\n'
+            'Host: openid.launchpad.dev\n\n').getOutput()
+        self.failUnless(
+            result.startswith('HTTP/1.0 500'),
+            'Expected 500 status:\n' + result)
 
 
 def test_suite():

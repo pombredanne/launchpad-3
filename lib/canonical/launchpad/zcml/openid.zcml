@@ -98,6 +98,24 @@
         attribute="__call__"
         />
 
+  <browser:page
+      for="canonical.launchpad.interfaces.launchpad.IOpenIDApplication"
+      layer="canonical.launchpad.layers.OpenIDLayer"
+      class="canonical.launchpad.browser.launchpad.DoesNotExistView"
+      permission="zope.Public"
+      name="+login"
+      />
+
+  <!-- Unauthorized is a regular 500 on the SSO -->
+  <browser:page
+      for="zope.exceptions.IUnauthorized"
+      layer="canonical.launchpad.layers.OpenIDLayer"
+      name="index.html"
+      permission="zope.Public"
+      template="../templates/oops.pt"
+      class="canonical.launchpad.webapp.error.SystemErrorView"
+      />
+
     <!-- OpenID persistent identity URLs -->
     <class
         class="canonical.launchpad.components.openidserver.OpenIDPersistentIdentity">
