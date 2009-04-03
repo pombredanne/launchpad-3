@@ -23,8 +23,6 @@ from canonical.launchpad.database.translationrelicensingagreement import (
     TranslationRelicensingAgreement)
 
 
-# XXX: Would it make sense to drop the translation_ prefix from the attributes
-# below?
 class TranslationsPerson:
     """See `ITranslationsPerson`."""
     implements(ITranslationsPerson)
