@@ -43,10 +43,20 @@
         software from a private archive</a> for more detailed instructions.
       </p>
       <pre id="sources-list-entries" tal:content="view/private_ppa_sources_list" />
-      <p style="clear:both">Next you need to follow these instructions to
-         <a href="https://help.launchpad.net/Packaging/PPA#keys">
-           add this archives security key to your computer
-         </a>.
+      <div id="signing-key"
+           tal:define="signing_key context/archive/signing_key"
+           tal:condition="signing_key">
+        <p>This repository is signed with
+          <a tal:attributes="href signing_key/keyserverURL">
+            <code tal:content="signing_key/displayname">
+              1024R/23456789
+            </code></a> OpenPGP key.
+        </p>
+      </div> <!-- signing-key -->
+      <p style="clear:both">Next you need to follow the instructions to
+        <a href="https://help.launchpad.net/Packaging/PPA#keys">
+         add this archives security key to your computer
+        </a>.
       </p>
     </div>
     <div id="regenerate_token">
