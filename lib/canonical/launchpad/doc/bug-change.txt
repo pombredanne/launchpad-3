@@ -12,7 +12,8 @@ The base class for BugChanges doesn't actually implement anything.
     ...     LaunchpadObjectFactory)
     >>> factory = LaunchpadObjectFactory()
     >>> login("test@canonical.com")
-    >>> example_person = factory.makePerson(displayname="Ford Prefect")
+    >>> example_person = factory.makePerson(
+    ...     name="ford-prefect", displayname="Ford Prefect")
 
     >>> nowish = datetime(2009, 3, 13, 10, 9, tzinfo=pytz.timezone('UTC'))
     >>> base_instance = BugChangeBase(when=nowish, person=example_person)
@@ -639,6 +640,29 @@ user what has changed.
     >>> print notification_text #doctest: -NORMALIZE_WHITESPACE
     ** Changed in: heart-of-gold
      Remote watch: None => bugs.example.com/ #1245
+
+
+=== Assignee changes ===
+
+Assignee changes use the assignee's `title` attribute to describe to
+the user what has changed.
+
+    >>> from canonical.launchpad.components.bugchange import (
+    ...     BugTaskAssigneeChange)
+
+    >>> assignee_change = BugTaskAssigneeChange(
+    ...     bug_task=example_bug_task, when=nowish,
+    ...     person=example_person, what_changed='assignee',
+    ...     old_value=None, new_value=example_person)
+    >>> print pretty(assignee_change.getBugActivity())
+    {'newvalue': u'ford-prefect',
+     'oldvalue': None,
+     'whatchanged': u'heart-of-gold: assignee'}
+
+    >>> notification_text = assignee_change.getBugNotification()['text']
+    >>> print notification_text #doctest: -NORMALIZE_WHITESPACE
+    ** Changed in: heart-of-gold
+         Assignee: None => Ford Prefect
 
 
 === Target (Affects) changes ===

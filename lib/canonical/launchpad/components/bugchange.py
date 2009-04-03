@@ -10,6 +10,7 @@ __all__ = [
     'BugDescriptionChange',
     'BugTagsChange',
     'BugTaskAdded',
+    'BugTaskAssigneeChange',
     'BugTaskBugWatchChange',
     'BugTaskImportanceChange',
     'BugTaskMilestoneChange',
@@ -628,6 +629,26 @@ class BugTaskBugWatchChange(BugTaskAttributeChange):
     display_attribute = 'title'
 
 
+class BugTaskAssigneeChange(BugTaskAttributeChange):
+    """Represents a change in BugTask.assignee."""
+
+    # Use `person.displayname` in notifications.
+    display_attribute = 'displayname'
+
+    def getBugActivity(self):
+        """See `BugTaskAttributeChange`.
+
+        This returns a slightly customised version of the activity
+        record, using `person.name` instead of `person.displayname`.
+        """
+        activity = super(BugTaskAssigneeChange, self).getBugActivity()
+        if self.old_value is not None:
+            activity['oldvalue'] = self.old_value.name
+        if self.new_value is not None:
+            activity['newvalue'] = self.new_value.name
+        return activity
+
+
 class BugTaskTargetChange(AttributeChange):
     """Used to represent a change in a BugTask's target."""
 
@@ -674,4 +695,5 @@ BUGTASK_CHANGE_LOOKUP = {
     'target': BugTaskTargetChange,
     'milestone': BugTaskMilestoneChange,
     'bugwatch': BugTaskBugWatchChange,
+    'assignee': BugTaskAssigneeChange,
     }
