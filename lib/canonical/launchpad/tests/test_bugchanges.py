@@ -975,10 +975,10 @@ class TestBugChanges(unittest.TestCase):
 
         expected_notification = {
             'text': (
-                u'** Changed in: %s\n     Assignee: (unassigned) => '
-                '%s (%s)' % (
-                self.bug_task.bugtargetname, self.user.displayname,
-                self.user.name)),
+                u'** Changed in: %s\n'
+                u'     Assignee: (unassigned) => %s' % (
+                    self.bug_task.bugtargetname,
+                    self.user.unique_displayname)),
             'person': self.user,
             }
 
@@ -1017,10 +1017,10 @@ class TestBugChanges(unittest.TestCase):
 
         expected_notification = {
             'text': (
-                u'** Changed in: %s\n     Assignee: %s (%s) => '
-                '(unassigned)' % (
-                self.bug_task.bugtargetname, old_assignee.displayname,
-                old_assignee.name)),
+                u'** Changed in: %s\n'
+                u'     Assignee: %s => (unassigned)' % (
+                    self.bug_task.bugtargetname,
+                    old_assignee.unique_displayname)),
             'person': self.user,
             'recipients': expected_recipients,
             }
