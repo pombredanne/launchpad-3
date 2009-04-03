@@ -61,15 +61,17 @@ class TestGarbo(TestCase):
         self.runDaily()
         self.runHourly()
 
-    def runDaily(self):
+    def runDaily(self, maximum_chunk_size=2):
         LaunchpadZopelessLayer.switchDbUser('garbo_daily')
         collector = DailyDatabaseGarbageCollector(test_args=[])
+        collector._maximum_chunk_size = maximum_chunk_size
         collector.logger = QuietFakeLogger()
         collector.main()
 
-    def runHourly(self):
+    def runHourly(self, maximum_chunk_size=2):
         LaunchpadZopelessLayer.switchDbUser('garbo_hourly')
         collector = HourlyDatabaseGarbageCollector(test_args=[])
+        collector._maximum_chunk_size = maximum_chunk_size
         collector.logger = QuietFakeLogger()
         collector.main()
 
@@ -97,7 +99,7 @@ class TestGarbo(TestCase):
         # Make sure we have 4 nonces now.
         self.failUnlessEqual(store.find(OAuthNonce).count(), 4)
 
-        self.runHourly()
+        self.runHourly(maximum_chunk_size=60) # 1 minute maximum chunk size
 
         store = IMasterStore(OAuthNonce)
 
@@ -143,7 +145,7 @@ class TestGarbo(TestCase):
         self.failUnlessEqual(store.find(OpenIDConsumerNonce).count(), 4)
 
         # Run the garbage collector.
-        self.runHourly()
+        self.runHourly(maximum_chunk_size=60) # 1 minute maximum chunks.
 
         store = IMasterStore(OpenIDConsumerNonce)
 
