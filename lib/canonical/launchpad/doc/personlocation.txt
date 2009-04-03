@@ -193,8 +193,8 @@ the minimum maximum, and central longitudes and latitudes.
 
 Calling getMappedParticipantsBounds() on a team without members is an error.
 
-    unmapped_team = factory.makeTeam()
-    unmapped_team.getMappedParticipantsBounds()
+    >>> unmapped_team = factory.makeTeam()
+    >>> unmapped_team.getMappedParticipantsBounds()
     Traceback (most recent call last):
      ...
     AssertionError: This method cannot be called when

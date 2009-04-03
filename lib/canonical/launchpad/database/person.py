@@ -1697,7 +1697,7 @@ class Person(
             clauseTables=['Person'],
             orderBy=Person.sortingColumns)
 
-    def _mapped_participants(self):
+    def _mapped_participants_locations(self):
         """See `IPersonViewRestricted`."""
         return PersonLocation.select("""
             PersonLocation.person = TeamParticipation.person AND
@@ -1712,7 +1712,7 @@ class Person(
             clauseTables=['TeamParticipation', 'Person'],
             prejoins=['person',])
 
-    @cachedproperty('_mapped_participants_cache')
+    @property
     def mapped_participants(self):
         """See `IPersonViewRestricted`."""
         # Pre-cache this location against its person.  Since we'll always
@@ -1720,7 +1720,7 @@ class Person(
         # of team members), it becomes more important to cache their locations
         # than to return a lazy SelectResults (or similar) object that only
         # fetches the rows when they're needed.
-        locations = self._mapped_participants()
+        locations = self._mapped_participants_locations()
         for location in locations:
             location.person._location = location
         participants = set(location.person for location in locations)
@@ -1730,10 +1730,10 @@ class Person(
             list(ValidPersonCache.select(sql))
         return list(participants)
 
-    @cachedproperty('_mapped_participants_count_cache')
+    @property
     def mapped_participants_count(self):
         """See `IPersonViewRestricted`."""
-        return self._mapped_participants().count()
+        return self._mapped_participants_locations().count()
 
     def getMappedParticipantsBounds(self):
         """See `IPersonViewRestricted`."""
@@ -1741,11 +1741,11 @@ class Person(
         min_lat = 90.0
         max_lng = -180.0
         min_lng = 180.0
+        locations = self._mapped_participants_locations()
         if self.mapped_participants_count == 0:
             raise AssertionError, (
                 'This method cannot be called when '
                 'mapped_participants_count == 0.')
-        locations = self._mapped_participants()
         latitudes = sorted(location.latitude for location in locations)
         if latitudes[-1] > max_lat:
             max_lat = latitudes[-1]
@@ -1778,7 +1778,7 @@ class Person(
             """ % sqlvalues(self.id, self.id),
             clauseTables=['TeamParticipation'])
 
-    @cachedproperty('_unmapped_participants_count_cache')
+    @property
     def unmapped_participants_count(self):
         """See `IPersonViewRestricted`."""
         return self.unmapped_participants.count()
