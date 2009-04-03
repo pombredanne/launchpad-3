@@ -27,7 +27,21 @@ class TestStormExpressions(TestCaseWithFactory):
         selector = getUtility(IStoreSelector)
         self.store = selector.get(MAIN_STORE, MASTER_FLAVOR)
 
-    def test_StartsWith(self):
+    def test_StartsWith_SQLGeneration(self):
+        from storm.databases.postgres import compile
+
+        # Show that the SQL generated uses LIKE with the '!' as the escape
+        # character.
+        expr = StartsWith("name", "value")
+        sql = compile(expr)
+        self.assertEqual(sql, "? LIKE ? ESCAPE '!'")
+
+        # Unlike Storm's Like, StartsWith does not accept a case_sensitive
+        # flag.
+        self.assertRaises(TypeError, StartsWith, "name", "value",
+                          case_sensitive=False)
+
+    def test_StartsWithUse(self):
         """StartWith correctly performs searches."""
 
         person1 = self.factory.makePerson(name='aa', displayname="John Doe")
@@ -56,7 +70,8 @@ class TestStormExpressions(TestCaseWithFactory):
         results.order_by('name')
         self.assertEqual([person1, person2, person3], [p for p in results])
 
-        # Wildcards are properly escaped.  No need for quote_like or equivalent.
+        # Wildcards are properly escaped.  No need for quote_like or
+        # equivalent.
         expr = StartsWith(Person.displayname, 'Joh%n')
         results = self.store.find(Person, expr)
         self.assertEqual([person3], [p for p in results])
@@ -76,7 +91,7 @@ class TestStormExpressions(TestCaseWithFactory):
         results = self.store.find(Person, expr)
         self.assertEqual([person1], [p for p in results])
 
-        #
+
 
 def test_suite():
     return TestLoader().loadTestsFromName(__name__)

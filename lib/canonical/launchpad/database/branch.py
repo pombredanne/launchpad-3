@@ -53,7 +53,7 @@ from canonical.launchpad.interfaces.branchpuller import IBranchPuller
 from canonical.launchpad.interfaces.branchtarget import IBranchTarget
 from canonical.launchpad.mailnotification import NotificationRecipientSet
 from canonical.launchpad.validators.person import (
-    validate_person, validate_public_person)
+    validate_person_not_private_membership, validate_public_person)
 from canonical.launchpad.webapp import urlappend
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, SLAVE_FLAVOR)
@@ -87,7 +87,7 @@ class Branch(SQLBase):
         storm_validator=validate_public_person, notNull=True)
     owner = ForeignKey(
         dbName='owner', foreignKey='Person',
-        storm_validator=validate_person, notNull=True)
+        storm_validator=validate_person_not_private_membership, notNull=True)
     reviewer = ForeignKey(
         dbName='reviewer', foreignKey='Person',
         storm_validator=validate_public_person, default=None)

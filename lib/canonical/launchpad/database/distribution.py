@@ -103,7 +103,7 @@ from canonical.launchpad.interfaces.translationgroup import (
 from canonical.launchpad.validators.name import sanitize_name, valid_name
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from canonical.launchpad.validators.person import (
-    validate_person, validate_public_person)
+    validate_person_not_private_membership, validate_public_person)
 from canonical.launchpad.webapp.url import urlparse
 
 from lp.answers.model.question import (
@@ -146,7 +146,8 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         storm_validator=validate_public_person, notNull=True)
     bug_supervisor = ForeignKey(
         dbName='bug_supervisor', foreignKey='Person',
-        storm_validator=validate_person, notNull=False, default=None)
+        storm_validator=validate_person_not_private_membership, notNull=False,
+        default=None)
     bug_reporting_guidelines = StringCol(default=None)
     security_contact = ForeignKey(
         dbName='security_contact', foreignKey='Person',

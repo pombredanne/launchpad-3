@@ -327,9 +327,8 @@ class BugWatchSet(BugSetBase):
             if bug.getBugWatch(bugtracker, remotebug) is None:
                 # This bug doesn't have such a bug watch, let's create
                 # one.
-                bugwatch = BugWatch(
-                    bugtracker=bugtracker, bug=bug, remotebug=remotebug,
-                    owner=owner)
+                bugwatch = bug.addWatch(
+                    bugtracker=bugtracker, remotebug=remotebug, owner=owner)
                 newwatches.append(bugwatch)
 
         return newwatches

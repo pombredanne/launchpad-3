@@ -1346,6 +1346,7 @@ Searching for all teams, which requires monkey-patching the
     >>> sorted(person.name for person in vocab.search(''))
     [...u'private-team'...]
 
+
 A search for 'support' will give us only the persons which have support
 as part of their name or displayname, or the beginning of
 one of its email addresses.

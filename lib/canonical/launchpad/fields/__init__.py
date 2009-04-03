@@ -34,14 +34,14 @@ __all__ = [
     'IURIField',
     'IWhiteboard',
     'IconImageUpload',
-    'is_not_private_membership_person',
+    'is_private_membership',
     'is_valid_public_person',
     'KEEP_SAME_IMAGE',
     'LogoImageUpload',
     'MugshotImageUpload',
     'LocationField',
+    'ParticipatingPersonChoice',
     'PasswordField',
-    'PersonChoice',
     'PillarAliases',
     'PillarNameField',
     'ProductBugTracker',
@@ -71,7 +71,6 @@ import re
 from StringIO import StringIO
 from textwrap import dedent
 
-from zope.app.form.interfaces import ConversionError
 from zope.component import getUtility
 from zope.schema import (
     Bool, Bytes, Choice, Datetime, Field, Float, Int, Password, Text,
@@ -818,21 +817,21 @@ def is_valid_public_person(person):
         return False
 
 
-def is_not_private_membership_person(person):
-    """Return True if the person is public."""
+def is_private_membership(person):
+    """True if the person/team has private membership visibility."""
     from canonical.launchpad.interfaces import IPerson, PersonVisibility
     if not IPerson.providedBy(person):
         raise ConstraintNotSatisfied("Expected a person.")
-    if person.visibility == PersonVisibility.PUBLIC:
+    if person.visibility == PersonVisibility.PRIVATE_MEMBERSHIP:
         return True
-    elif person.visibility == PersonVisibility.PRIVATE:
-        return True
-    else:
         # PRIVATE_MEMBERSHIP.
+    else:
+        # PUBLIC or PRIVATE.
         return False
 
 
 class PublicPersonChoice(Choice):
+    """A person or team who is public."""
     implements(IReferenceChoice)
     schema = IObject    # Will be set to IPerson once IPerson is defined.
 
@@ -840,9 +839,16 @@ class PublicPersonChoice(Choice):
         return is_valid_public_person(value)
 
 
-class PersonChoice(Choice):
+class ParticipatingPersonChoice(Choice):
+    """A person or team who is not a private membership team.
+
+    A person can participate in all contexts.  A PRIVATE team can participate
+    in many contexts, depending up on the permissions of the logged in
+    user.  A PRIVATE MEMBERSHIP team is severely limited in the roles in which
+    it can participate.
+    """
     implements(IReferenceChoice)
     schema = IObject    # Will be set to IPerson once IPerson is defined.
 
     def constraint(self, value):
-        return is_not_private_membership_person(value)
+        return not is_private_membership(value)

@@ -61,8 +61,8 @@ from canonical.launchpad import _
 
 from canonical.launchpad.fields import (
     BlacklistableContentNameField, IconImageUpload, LogoImageUpload,
-    MugshotImageUpload, PasswordField, PersonChoice, PublicPersonChoice,
-    StrippedTextLine)
+    MugshotImageUpload, ParticipatingPersonChoice, PasswordField,
+    PublicPersonChoice, StrippedTextLine)
 from canonical.launchpad.interfaces.account import AccountStatus, IAccount
 from canonical.launchpad.interfaces.emailaddress import IEmailAddress
 from canonical.launchpad.interfaces.irc import IIrcID
@@ -1519,9 +1519,10 @@ class IPerson(IPersonPublic, IPersonViewRestricted, IPersonEditRestricted,
     export_as_webservice_entry(plural_name='people')
 
 
-# Set the PublicPersonChoice schema to the newly defined interface.
+# Set the schemas to the newly defined interface for classes that deferred
+# doing so when defined.
 PublicPersonChoice.schema = IPerson
-PersonChoice.schema = IPerson
+ParticipatingPersonChoice.schema = IPerson
 
 
 class INewPersonForm(IPerson):

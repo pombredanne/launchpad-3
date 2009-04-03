@@ -52,7 +52,7 @@ from canonical.launchpad.database.mentoringoffer import MentoringOffer
 from canonical.launchpad.database.milestone import (
     HasMilestonesMixin, Milestone)
 from canonical.launchpad.validators.person import (
-    validate_person, validate_public_person)
+    validate_person_not_private_membership, validate_public_person)
 from canonical.launchpad.database.announcement import MakesAnnouncements
 from canonical.launchpad.database.packaging import Packaging
 from canonical.launchpad.database.pillar import HasAliasMixin
@@ -186,7 +186,8 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         notNull=True)
     bug_supervisor = ForeignKey(
         dbName='bug_supervisor', foreignKey='Person',
-        storm_validator=validate_person, notNull=False, default=None)
+        storm_validator=validate_person_not_private_membership, notNull=False,
+        default=None)
     security_contact = ForeignKey(
         dbName='security_contact', foreignKey='Person',
         storm_validator=validate_public_person, notNull=False,
