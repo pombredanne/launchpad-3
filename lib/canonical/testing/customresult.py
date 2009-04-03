@@ -7,7 +7,7 @@ __all__ = [
     'patch_zope_testresult',
     ]
 
-from unittest import TestResult
+from unittest import TestResult, TestSuite
 
 
 # XXX: JonathanLange 2009-03-09: Copied and hacked from testtools.
@@ -60,6 +60,22 @@ def list_tests(tests_by_layer_name):
         for test in iterate_tests(suite):
             print test.id()
     return {}
+
+
+def filter_tests(list_name):
+    from testtools import iterate_tests
+    def do_filter(tests_by_layer_name):
+        tests = set(line.strip() for line in open(list_name, 'rb'))
+        result = {}
+        for layer_name, suite in tests_by_layer_name.iteritems():
+            new_suite = TestSuite()
+            for test in iterate_tests(suite):
+                if test.id() in tests:
+                    new_suite.addTest(test)
+            if new_suite.countTestCases():
+                result[layer_name] = new_suite
+        return result
+    return do_filter
 
 
 def patch_zope_testresult(result):

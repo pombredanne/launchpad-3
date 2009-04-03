@@ -156,6 +156,7 @@ os.listdir = listdir
 
 
 from canonical.testing.customresult import (
+    filter_tests,
     list_tests,
     patch_find_tests,
     patch_zope_testresult,
@@ -179,6 +180,12 @@ if __name__ == '__main__':
         args.insert(0, sys.argv[0])
     else:
         args = sys.argv
+
+    if '--load-list' in args:
+        position = args.index('--load-list')
+        list_name = args[position + 1]
+        del args[position:position+2]
+        patch_find_tests(filter_tests(list_name))
 
     if '--list' in args:
         args.remove('--list')
