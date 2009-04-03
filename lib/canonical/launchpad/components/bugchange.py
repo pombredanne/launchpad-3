@@ -25,11 +25,13 @@ __all__ = [
     'SeriesNominated',
     'UnsubscribedFromBug',
     'get_bug_change_class',
+    'get_bug_changes',
     ]
 
 from textwrap import dedent
 
 from zope.interface import implements
+from zope.security.proxy import isinstance as zope_isinstance
 
 from canonical.launchpad.interfaces.bugchange import IBugChange
 from canonical.launchpad.interfaces.bugtask import IBugTask
@@ -55,6 +57,49 @@ def get_bug_change_class(obj, field_name):
         raise NoBugChangeFoundError(
             "Unable to find a suitable BugChange for field '%s' on object "
             "%s" % (field_name, obj))
+
+
+def get_bug_changes(bug_delta):
+    """Generate `IBugChange` objects describing an `IBugDelta`."""
+    # The order of the field names in this list is important; this is
+    # the order in which changes will appear both in the bug activity
+    # log and in notification emails.
+    bug_change_field_names = [
+        'duplicateof', 'title', 'description', 'private', 'security_related',
+        'tags', 'attachment',
+        ]
+    for field_name in bug_change_field_names:
+        field_delta = getattr(bug_delta, field_name)
+        if field_delta is not None:
+            bug_change_class = get_bug_change_class(bug_delta.bug, field_name)
+            yield bug_change_class(
+                when=None, person=bug_delta.user, what_changed=field_name,
+                old_value=field_delta['old'], new_value=field_delta['new'])
+
+    if bug_delta.bugtask_deltas is not None:
+        bugtask_deltas = bug_delta.bugtask_deltas
+        # Use zope_isinstance, to ensure that this Just Works with
+        # security-proxied objects.
+        if not zope_isinstance(bugtask_deltas, (list, tuple)):
+            bugtask_deltas = [bugtask_deltas]
+
+        # The order here is important; see bug_change_field_names.
+        bugtask_change_field_names = [
+            'target', 'importance', 'status', 'milestone', 'bugwatch',
+            'assignee',
+            ]
+        for bugtask_delta in bugtask_deltas:
+            for field_name in bugtask_change_field_names:
+                field_delta = getattr(bugtask_delta, field_name)
+                if field_delta is not None:
+                    bug_change_class = get_bug_change_class(
+                        bugtask_delta.bugtask, field_name)
+                    yield bug_change_class(
+                        bug_task=bugtask_delta.bugtask,
+                        when=None, person=bug_delta.user,
+                        what_changed=field_name,
+                        old_value=field_delta['old'],
+                        new_value=field_delta['new'])
 
 
 class BugChangeBase:

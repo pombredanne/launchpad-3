@@ -17,8 +17,10 @@ To avoid having one gargantuan super function that formats any kind of
 object it gets passed, the formatting logic has been cut into two
 pieces: get_bug_changes and generate_bug_add_email.
 
+    >>> from canonical.launchpad.components.bugchange import (
+    ...     get_bug_changes)
     >>> from canonical.launchpad.mailnotification import (
-    ...     generate_bug_add_email, get_bug_changes)
+    ...     generate_bug_add_email)
 
 Let's demonstrate what the bugmails will look like, by going through
 the various events that can happen that would cause a notification to
