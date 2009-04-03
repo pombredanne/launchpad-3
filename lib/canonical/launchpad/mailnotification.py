@@ -584,10 +584,6 @@ def get_unified_diff(old_text, new_text, text_width):
 
 def get_bug_changes(bug_delta):
     """Generate `IBugChange` objects describing an `IBugDelta`."""
-    # figure out what's been changed; add that information to the
-    # list as appropriate
-    changes = []
-
     # The order of the field names in this list is important; this is
     # the order in which changes will appear both in the bug activity
     # log and in notification emails.
@@ -599,10 +595,9 @@ def get_bug_changes(bug_delta):
         field_delta = getattr(bug_delta, field_name)
         if field_delta is not None:
             bug_change_class = get_bug_change_class(bug_delta.bug, field_name)
-            change_info = bug_change_class(
+            yield bug_change_class(
                 when=None, person=bug_delta.user, what_changed=field_name,
                 old_value=field_delta['old'], new_value=field_delta['new'])
-            changes.append(change_info)
 
     if bug_delta.bugtask_deltas is not None:
         bugtask_deltas = bug_delta.bugtask_deltas
@@ -621,15 +616,12 @@ def get_bug_changes(bug_delta):
                 if field_delta is not None:
                     bug_change_class = get_bug_change_class(
                         bugtask_delta.bugtask, field_name)
-                    change = bug_change_class(
+                    yield bug_change_class(
                         bug_task=bugtask_delta.bugtask,
                         when=None, person=bug_delta.user,
                         what_changed=field_name,
                         old_value=field_delta['old'],
                         new_value=field_delta['new'])
-                    changes.append(change)
-
-    return changes
 
 
 def _get_task_change_row(label, oldval_display, newval_display):
