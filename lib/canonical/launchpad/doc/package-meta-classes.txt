@@ -54,3 +54,81 @@ Combining DistroSeries and SourcePackageRelease:
 
  >>> drspr.displayname
  u'pmount 0.1-1'
+
+
+DistroSeriesSourcePackageRelease
+--------------------------------
+
+The DistroSeriesSourcePackageRelease class has a builds() method which
+returns all the builds for the source package 
+
+First, publish a build in the main archive of ubuntutest.
+
+    >>> from canonical.launchpad.interfaces.distribution import (
+    ...     IDistributionSet)
+    >>> from canonical.launchpad.interfaces.publishing import (
+    ...     PackagePublishingStatus)
+    >>> from canonical.launchpad.tests.test_publishing import (
+    ...      SoyuzTestPublisher)
+    >>> login('foo.bar@canonical.com')
+    >>> ubuntutest = getUtility(IDistributionSet)['ubuntutest']
+    >>> test_publisher = SoyuzTestPublisher()
+    >>> test_publisher.prepareBreezyAutotest()
+    >>> source_pub = test_publisher.getPubSource(
+    ...     status=PackagePublishingStatus.PUBLISHED,
+    ...     sourcename='foo',
+    ...     archive=ubuntutest.main_archive)
+    >>> [build] = source_pub.createMissingBuilds()
+
+Next we create our DistroSeriesSourcePackageRelease.
+
+    >>> breezy_autotest = ubuntutest['breezy-autotest']
+    >>> breezytest_dsspr_foo = DistroSeriesSourcePackageRelease(
+    ...     breezy_autotest, source_pub.sourcepackagerelease)
+
+Create a helper for printing builds:
+
+    >>> def print_builds(builds):
+    ...     for build in builds:
+    ...         print "%s in %s" % (build.sourcepackagerelease.name,
+    ...                             build.archive.displayname)
+
+Now we can query the builds:
+
+    >>> print_builds(breezytest_dsspr_foo.builds)
+    foo in Primary Archive for Ubuntu Test
+
+If we add a build to the partner archive, it is included in the
+results as well.
+
+    >>> partner_pub = source_pub.copyTo(breezy_autotest, source_pub.pocket,
+    ...     ubuntutest.all_distro_archives[1])
+    >>> [partner_build] = partner_pub.createMissingBuilds()
+    >>> print_builds(breezytest_dsspr_foo.builds)
+    foo in Partner Archive for Ubuntu Test
+    foo in Primary Archive for Ubuntu Test
+
+But if we publish in a PPA,
+
+    >>> from canonical.launchpad.interfaces.person import IPersonSet
+    >>> cprov = getUtility(IPersonSet).getByName('cprov')
+    >>> source_pub = test_publisher.getPubSource(
+    ...     status=PackagePublishingStatus.PUBLISHED,
+    ...     sourcename='bar',
+    ...     archive=cprov.archive)
+    >>> [build] = source_pub.createMissingBuilds()
+    >>> breezytest_dsspr_bar = DistroSeriesSourcePackageRelease(
+    ...     breezy_autotest, source_pub.sourcepackagerelease)
+
+the build will not be returned.
+
+    >>> print_builds(breezytest_dsspr_bar.builds)
+
+But if the package is copied into the main archive, it will then be included
+in the results.
+
+    >>> main_pub = source_pub.copyTo(breezy_autotest, source_pub.pocket,
+    ...     ubuntutest.main_archive)
+    >>> print_builds(breezytest_dsspr_bar.builds)
+    bar in PPA for Celso Providelo
+
