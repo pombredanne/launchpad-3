@@ -15,10 +15,10 @@ You need to be logged in to edit bugs in Malone, so let's get started:
 
 To avoid having one gargantuan super function that formats any kind of
 object it gets passed, the formatting logic has been cut into two
-pieces: get_bug_edit_notification_texts and generate_bug_add_email.
+pieces: get_bug_changes and generate_bug_add_email.
 
     >>> from canonical.launchpad.mailnotification import (
-    ...     generate_bug_add_email, get_bug_edit_notification_texts)
+    ...     generate_bug_add_email, get_bug_changes)
 
 Let's demonstrate what the bugmails will look like, by going through
 the various events that can happen that would cause a notification to
@@ -27,8 +27,7 @@ examples that follow:
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces import (
-    ...     IBugDelta, IBugSet, IPersonSet, IBugTaskSet,
-    ...     IEmailAddressSet)
+    ...     IBugDelta, IBugSet, IEmailAddressSet, IPersonSet)
     >>> from canonical.launchpad.components.bug import BugDelta
 
 = Filing a bug =
@@ -110,16 +109,8 @@ But of course, security related bugs are private by default:
 
 = Editing a bug =
 
-get_bug_edit_notification_texts() accepts an object that provides
-IBugDelta, and returns a list of the changes made to the bug. The list
-will contain a mix of IBugChange objects and strings, depending on how
-get_bug_edit_notification_texts() handles the change internally.
-
-
-    # XXX 2009-03-17 gmb [bug=344125]:
-    #     Returning strings is deprecated for future additions to
-    #     get_bug_edit_notification_texts() but will remain in place
-    #     until the transition to the IBugChange API is complete.
+get_bug_changes() accepts an object that provides IBugDelta, and
+generates IBugChange objects that describe the changes to the bug.
 
     >>> sample_person = getUtility(IPersonSet).get(12)
     >>> edited_bug = getUtility(IBugSet).get(2)
@@ -144,17 +135,14 @@ get_bug_edit_notification_texts() handles the change internally.
     >>> IBugDelta.providedBy(bug_delta)
     True
 
-The change representations for changes to the title and description of
-the bug will be IBugChange objects.
-
     >>> from canonical.launchpad.interfaces.bugchange import IBugChange
-    >>> changes = get_bug_edit_notification_texts(bug_delta)
+    >>> changes = get_bug_changes(bug_delta)
     >>> for change in changes:
     ...     IBugChange.providedBy(change)
     True
     True
 
-    >>> for change in get_bug_edit_notification_texts(bug_delta):
+    >>> for change in get_bug_changes(bug_delta):
     ...     notification = change.getBugNotification()
     ...     print notification['text'] #doctest: -NORMALIZE_WHITESPACE
     ...     print "-----------------------------"
@@ -172,7 +160,6 @@ the bug will be IBugChange objects.
       There is no undo or ability to recover the deleted file. Help!
     -----------------------------
 
-
 Another edit, this time a long description, showing that the description
 is wrapped properly:
 
@@ -186,7 +173,7 @@ is wrapped properly:
     ...     user=sample_person,
     ...     description={'new': edited_bug.description,
     ...                  'old': old_description})
-    >>> for change in get_bug_edit_notification_texts(bug_delta):
+    >>> for change in get_bug_changes(bug_delta):
     ...     notification = change.getBugNotification()
     ...     print notification['text'] #doctest: -NORMALIZE_WHITESPACE
     ...     print "-----------------------------"
@@ -204,7 +191,6 @@ is wrapped properly:
     + it's also smart enough to preserve whitespace, finally!
     -----------------------------
 
-
 Let's make the bug security-related, and private (we need to switch
 logins to a user that is explicitly subscribed to this bug):
 
@@ -220,23 +206,13 @@ logins to a user that is explicitly subscribed to this bug):
     ...     private={'old': False, 'new': edited_bug.private},
     ...     security_related={'old': False, 'new': edited_bug.security_related})
 
-Both the privacy and security-related change representations provide
-IBugChange.
-
-    >>> for change in get_bug_edit_notification_texts(bug_delta):
-    ...     if IBugChange.providedBy(change):
-    ...         notification = change.getBugNotification()
-    ...         text_representation = notification['text']
-    ...     else:
-    ...         text_representation = change
-    ...
-    ...     print IBugChange.providedBy(change)
+    >>> for change in get_bug_changes(bug_delta):
+    ...     notification = change.getBugNotification()
+    ...     text_representation = notification['text']
     ...     print text_representation #doctest: -NORMALIZE_WHITESPACE
     ...     print "-----------------------------"
-    True
     ** Visibility changed to: Private
     -----------------------------
-    True
     ** This bug has been flagged as a security vulnerability
     -----------------------------
 
@@ -252,7 +228,7 @@ e-mail sent changed as well.
     ...     user=sample_person,
     ...     private={'old': True, 'new': edited_bug.private},
     ...     security_related={'old': True, 'new': edited_bug.security_related})
-    >>> for change in get_bug_edit_notification_texts(bug_delta):
+    >>> for change in get_bug_changes(bug_delta):
     ...     notification = change.getBugNotification()
     ...     print notification['text'] #doctest: -NORMALIZE_WHITESPACE
     ...     print "-----------------------------"
@@ -270,7 +246,7 @@ Let's add some tags to a bug:
     ...     bugurl="http://www.example.com/bugs/2",
     ...     user=sample_person,
     ...     tags={'old': old_tags, 'new': edited_bug.tags})
-    >>> for change in get_bug_edit_notification_texts(bug_delta):
+    >>> for change in get_bug_changes(bug_delta):
     ...     notification = change.getBugNotification()
     ...     print notification['text'] #doctest: -NORMALIZE_WHITESPACE
     ...     print "-----------------------------"
@@ -286,7 +262,7 @@ If we change one tag, it's basically removing one and adding another:
     ...     bugurl="http://www.example.com/bugs/2",
     ...     user=sample_person,
     ...     tags={'old': old_tags, 'new': edited_bug.tags})
-    >>> for change in get_bug_edit_notification_texts(bug_delta):
+    >>> for change in get_bug_changes(bug_delta):
     ...     notification = change.getBugNotification()
     ...     print notification['text'] #doctest: -NORMALIZE_WHITESPACE
     ...     print "-----------------------------"
@@ -297,7 +273,7 @@ If we change one tag, it's basically removing one and adding another:
 
 = Editing a bug task =
 
-As you might expect, get_bug_edit_notification_texts handles generating the
+As you might expect, get_bug_changes handles generating the
 text representations of the changes when a bug task is edited.
 
 We use a BugTaskDelta to represent changes to a BugTask.
@@ -324,11 +300,9 @@ We use a BugTaskDelta to represent changes to a BugTask.
     ...     bugurl="http://www.example.com/bugs/2",
     ...     user=sample_person,
     ...     bugtask_deltas=bugtask_delta)
-    >>> for text_representation in get_bug_edit_notification_texts(bug_delta):
-    ...     if IBugChange.providedBy(text_representation):
-    ...         text_representation = (
-    ...             text_representation.getBugNotification()['text'])
-    ...     print text_representation #doctest: -NORMALIZE_WHITESPACE
+    >>> for change in get_bug_changes(bug_delta):
+    ...     notification = change.getBugNotification()
+    ...     print notification['text'] #doctest: -NORMALIZE_WHITESPACE
     ...     print "-----------------------------"
     ** Changed in: tomcat
            Status: New => Confirmed
@@ -352,11 +326,9 @@ edited:
     ...     bugurl="http://www.example.com/bugs/2",
     ...     user=sample_person,
     ...     bugtask_deltas=bugtask_delta)
-    >>> for text_representation in get_bug_edit_notification_texts(bug_delta):
-    ...     if IBugChange.providedBy(text_representation):
-    ...         text_representation = (
-    ...             text_representation.getBugNotification()['text'])
-    ...     print text_representation #doctest: -NORMALIZE_WHITESPACE
+    >>> for change in get_bug_changes(bug_delta):
+    ...     notification = change.getBugNotification()
+    ...     print notification['text'] #doctest: -NORMALIZE_WHITESPACE
     ...     print "-----------------------------"
     ** Changed in: mozilla-firefox (Debian)
          Assignee: Sample Person (name12) => (unassigned)
@@ -383,7 +355,7 @@ Adding an attachment will generate a notification that looks as follows:
     ...     bugurl="http://www.example.com/bugs/2",
     ...     user=sample_person,
     ...     attachment={'new' : attachment, 'old': None})
-    >>> for change in get_bug_edit_notification_texts(bug_delta):
+    >>> for change in get_bug_changes(bug_delta):
     ...     notification = change.getBugNotification()
     ...     print notification['text'] #doctest: -NORMALIZE_WHITESPACE
     ...     print "-----------------------------"
@@ -398,7 +370,7 @@ Removing an attachment generates a notification, too.
     ...     bugurl="http://www.example.com/bugs/2",
     ...     user=sample_person,
     ...     attachment={'old' : attachment, 'new': None})
-    >>> for change in get_bug_edit_notification_texts(bug_delta):
+    >>> for change in get_bug_changes(bug_delta):
     ...     notification = change.getBugNotification()
     ...     print notification['text'] #doctest: -NORMALIZE_WHITESPACE
     ...     print "-----------------------------"

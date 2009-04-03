@@ -582,12 +582,8 @@ def get_unified_diff(old_text, new_text, text_width):
     return text_diff
 
 
-def get_bug_edit_notification_texts(bug_delta):
-    """Generate a list of edit notification texts based on the bug_delta.
-
-    bug_delta is an object that provides IBugDelta. The return value
-    is a list of unicode strings.
-    """
+def get_bug_changes(bug_delta):
+    """Generate `IBugChange` objects describing an `IBugDelta`."""
     # figure out what's been changed; add that information to the
     # list as appropriate
     changes = []
@@ -761,7 +757,7 @@ def get_bugtask_indirect_subscribers(bugtask, recipients=None, level=None):
 
 def add_bug_change_notifications(bug_delta, old_bugtask=None):
     """Generate bug notifications and add them to the bug."""
-    changes = get_bug_edit_notification_texts(bug_delta)
+    changes = get_bug_changes(bug_delta)
     recipients = bug_delta.bug.getBugNotificationRecipients(
         old_bug=bug_delta.bug_before_modification,
         level=BugNotificationLevel.METADATA)
