@@ -1712,7 +1712,7 @@ class Person(
             clauseTables=['TeamParticipation', 'Person'],
             prejoins=['person',])
 
-    @property
+    @cachedproperty('_mapped_participants_cache')
     def mapped_participants(self):
         """See `IPersonViewRestricted`."""
         # Pre-cache this location against its person.  Since we'll always
@@ -1730,7 +1730,7 @@ class Person(
             list(ValidPersonCache.select(sql))
         return list(participants)
 
-    @property
+    @cachedproperty('_mapped_participants_count_cache')
     def mapped_participants_count(self):
         """See `IPersonViewRestricted`."""
         return self._mapped_participants().count()
@@ -1741,6 +1741,10 @@ class Person(
         min_lat = 90.0
         max_lng = -180.0
         min_lng = 180.0
+        if self.mapped_participants_count == 0:
+            raise AssertionError, (
+                'This method cannot be called when '
+                'mapped_participants_count == 0.')
         locations = self._mapped_participants()
         latitudes = sorted(location.latitude for location in locations)
         if latitudes[-1] > max_lat:
@@ -1774,7 +1778,7 @@ class Person(
             """ % sqlvalues(self.id, self.id),
             clauseTables=['TeamParticipation'])
 
-    @property
+    @cachedproperty('_unmapped_participants_count_cache')
     def unmapped_participants_count(self):
         """See `IPersonViewRestricted`."""
         return self.unmapped_participants.count()

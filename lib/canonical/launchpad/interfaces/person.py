@@ -1305,6 +1305,8 @@ class IPersonViewRestricted(Interface):
     def getMappedParticipantsBounds():
         """Return a dict of the bounding longitudes latitudes, and centers.
 
+        This method cannot be called if there are no mapped participants.
+
         :return: a dict containing: min_lat, min_lng, max_lat, max_lng,
             center_lat, and center_lng
         """

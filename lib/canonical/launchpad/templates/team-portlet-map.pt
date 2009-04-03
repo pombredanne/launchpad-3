@@ -9,7 +9,7 @@
   <tal:can_view condition="context/required:launchpad.View"
                 define="link context/menu:overview/map">
     <div
-      tal:define="unmapped_count view/unmapped_participants_count"
+      tal:define="unmapped_count view/context/unmapped_participants_count"
       tal:condition="unmapped_count">
       <strong><tal:count replace="unmapped_count" /> member(s)</strong>
       have not  set their location. <a tal:attributes="href link/target">Do

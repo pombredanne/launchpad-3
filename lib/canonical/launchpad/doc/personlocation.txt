@@ -178,7 +178,7 @@ faster than getting the resultset of members.
     >>> guadamen.unmapped_participants_count
     7
 
-The bounds of the mapped members can retrieved. It is a dict that contains
+The bounds of the mapped members can be retrieved. It is a dict that contains
 the minimum maximum, and central longitudes and latitudes.
 
     >>> bounds = guadamen.getMappedParticipantsBounds()
@@ -190,6 +190,15 @@ the minimum maximum, and central longitudes and latitudes.
     max_lng: 0...
     min_lat: -43...
     min_lng: -62...
+
+Calling getMappedParticipantsBounds() on a team without members is an error.
+
+    unmapped_team = factory.makeTeam()
+    unmapped_team.getMappedParticipantsBounds()
+    Traceback (most recent call last):
+     ...
+    AssertionError: This method cannot be called when
+                    mapped_participants_count == 0.
 
 
 == Location visibility ==
