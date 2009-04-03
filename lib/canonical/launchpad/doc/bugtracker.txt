@@ -497,6 +497,18 @@ that the returned URL is valid.
     bug_filing_url: ...?product=%40test%26&short_desc=%25%26&long_desc=%28%29
     bug_search_url: ...?product=%40test%26&short_desc=%25%26
 
+getBugFilingAndSearchLinks() will also handle unicode values in the
+summary and description correctly. It won't attempt to escape them since
+that could lead to garbage data being inserted in the upstream bug
+tracker.
+
+    >>> links = mozilla_bugzilla.getBugFilingAndSearchLinks(
+    ...     remote_product='test', summary=u"\xabHi\xa9",
+    ...     description=u"\xa8\xa7")
+    >>> print_links(links)
+    bug_filing_url: ...&short_desc=%C2%ABHi%C2%A9&long_desc=%C2%A8%C2%A7
+    bug_search_url: ...?product=test&short_desc=%C2%ABHi%C2%A9
+
 
 == BugTracker.multi_product ==
 

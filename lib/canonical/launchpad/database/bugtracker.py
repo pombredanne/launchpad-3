@@ -258,6 +258,12 @@ class BugTracker(SQLBase):
         if description is None:
             description = ''
 
+        # UTF-8 encode the description and summary so that quote()
+        # doesn't break if they contain unicode characters it doesn't
+        # understand.
+        summary = summary.encode('utf-8')
+        description = description.encode('utf-8')
+
         if self.bugtrackertype == BugTrackerType.SOURCEFORGE:
             # SourceForge bug trackers use a group ID and an ATID to
             # file a bug, rather than a product name. remote_product
