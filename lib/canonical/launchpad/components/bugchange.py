@@ -633,13 +633,13 @@ class BugTaskAssigneeChange(BugTaskAttributeChange):
     """Represents a change in BugTask.assignee."""
 
     # Use `person.displayname` in notifications.
-    display_attribute = 'displayname'
+    display_attribute = 'unique_displayname'
 
     def getBugActivity(self):
         """See `BugTaskAttributeChange`.
 
         This returns a slightly customised version of the activity
-        record, using `person.name` instead of `person.displayname`.
+        record, using `person.name`.
         """
         activity = super(BugTaskAssigneeChange, self).getBugActivity()
         if self.old_value is not None:

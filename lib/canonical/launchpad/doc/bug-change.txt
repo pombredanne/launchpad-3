@@ -662,7 +662,7 @@ the user what has changed.
     >>> notification_text = assignee_change.getBugNotification()['text']
     >>> print notification_text #doctest: -NORMALIZE_WHITESPACE
     ** Changed in: heart-of-gold
-         Assignee: None => Ford Prefect
+         Assignee: None => Ford Prefect (ford-prefect)
 
 
 === Target (Affects) changes ===
