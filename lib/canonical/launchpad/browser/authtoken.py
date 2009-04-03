@@ -302,7 +302,14 @@ class ValidateEmailView(BaseAuthTokenView, LaunchpadFormView):
         If the requester is a team, the team's contact address is removed (if
         any) and this becomes the team's contact address.
         """
-        self.next_url = canonical_url(self.context.requester)
+        if self.context.redirection_url is not None:
+            self.next_url = self.context.redirection_url
+        elif self.context.requester is not None:
+            self.next_url = canonical_url(self.context.requester)
+        else:
+            assert self.has_openid_request, (
+                'No redirection URL specified and this is not part of an '
+                'OpenID authentication.')
 
         email = self._ensureEmail()
         self.markEmailAsValid(email)
@@ -327,7 +334,7 @@ class ValidateEmailView(BaseAuthTokenView, LaunchpadFormView):
 
     def markEmailAsValid(self, email):
         """Mark the given email address as valid."""
-        self.context.requester.validateAndEnsurePreferredEmail(email)
+        self.context.requester_account.validateAndEnsurePreferredEmail(email)
 
 
 class NewAccountView(BaseAuthTokenView, LaunchpadFormView):

@@ -1,0 +1,105 @@
+= Managing Email Addresses =
+
+Single sign on users can manage the email addresses associated with
+their account through the web.  First lets create a user:
+
+    >>> browser = setupBrowser()
+    >>> browser.open('http://openid.launchpad.dev')
+    >>> browser.getControl(name='field.email').value = 'new-user@example.com'
+    >>> browser.getControl('No, I want to create an account now').click()
+    >>> browser.getControl('Continue').click()
+    >>> soup = find_main_content(browser.contents)
+    >>> print soup.find('h1').renderContents()
+    Registration mail sent
+
+    >>> from canonical.launchpad.mail import stub
+    >>> from canonical.launchpad.ftests.logintoken import (
+    ...     get_token_url_from_email)
+    >>> from_addr, to_addr, msg = stub.test_emails.pop()
+    >>> token_url = get_token_url_from_email(msg)
+    >>> browser.open(token_url)
+    >>> print browser.url
+    http://openid.launchpad.dev/token/.../+newaccount
+
+    >>> browser.getControl('Name').value = 'New User'
+    >>> browser.getControl('Create password').value = 'test'
+    >>> browser.getControl(name='field.password_dupe').value = 'test'
+    >>> browser.getControl('Continue').click()
+
+The user will now be on the front page, which includes a list of the
+email addresses associated with their account:
+
+    >>> print browser.url
+    http://openid.launchpad.dev
+    >>> print extract_text(find_tag_by_id(browser.contents, 'maincontent'))
+    Logged in as New User (edit)
+    Emails:
+    new-user@example.com
+
+
+== Adding a new email address ==
+
+The user can manage the email addresses associated with their account
+with the edit emails form:
+
+    >>> browser.open('http://openid.launchpad.dev/+edit-emails')
+    >>> print extract_text(find_tag_by_id(browser.contents, 'maincontent'))
+    Change your e-mail settings
+    Your e-mail addresses
+      Your preferred contact address for all Launchpad e-mail is:
+        new-user@example.com
+      These addresses are confirmed as being yours:
+        new-user@example.com
+    Add a new address:
+    ...
+
+The user can add a new email address with this form:
+
+    >>> browser.getControl('Add a new address').value = (
+    ...     'second-email@example.com')
+    >>> browser.getControl('Add', index=1).click()
+    >>> print browser.url
+    http://openid.launchpad.dev/+edit-emails
+    >>> for msg in get_feedback_messages(browser.contents):
+    ...     print msg
+    A confirmation message has been sent to...
+
+The new email address is now listed on the form, but not confirmed as
+belonging to the user:
+
+    >>> print extract_text(find_tag_by_id(browser.contents, 'maincontent'))
+    Change your e-mail settings
+    Your e-mail addresses
+      Your preferred contact address for all Launchpad e-mail is:
+        new-user@example.com
+      These addresses are confirmed as being yours:
+        new-user@example.com
+      These addresses may also be yours:
+        second-email@example.com
+    Add a new address:
+    ...
+
+To validate the new address, the user will need to respond to the
+email confirmation:
+
+    >>> from_addr, to_addr, msg = stub.test_emails.pop()
+    >>> token_url = get_token_url_from_email(msg)
+    >>> browser.open(token_url)
+    >>> print browser.url
+    http://openid.launchpad.dev/token/.../+validateemail
+
+    >>> browser.getControl('Continue').click()
+    >>> print browser.url
+    http://openid.launchpad.dev/
+    >>> for msg in get_feedback_messages(browser.contents):
+    ...     print msg
+    Email address successfully confirmed.
+
+We can now see that the user owns the new address:
+
+    >>> print extract_text(find_tag_by_id(browser.contents, 'maincontent'))
+    Logged in as New User (edit)
+    Emails:
+    new-user@example.com
+    second-email@example.com
+

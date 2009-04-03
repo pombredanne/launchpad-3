@@ -2113,6 +2113,18 @@ class ViewEmailAddress(AuthorizationBase):
                 or user.inTeam(celebrities.admin))
 
 
+class EditEmailAddress(EditByOwnersOrAdmins):
+    permission = 'launchpad.Edit'
+    usedfor = IEmailAddress
+
+    def checkAccountAuthenticated(self, account):
+        # Always allow users to see their own email addresses.
+        if self.obj.account == account:
+            return True
+        return super(EditEmailAddress, self).checkAccountAuthenticated(
+            account)
+
+
 class EditArchivePermissionSet(AuthorizationBase):
     permission = 'launchpad.Edit'
     usedfor = IArchivePermissionSet
