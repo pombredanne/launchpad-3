@@ -56,7 +56,7 @@
 
   <tal:diffs replace="structure context/sourcepackagerelease/@@+diffs" />
 
-  <div tal:replace="structure context/sourcepackagerelease/@@+portlet-builds" />
+  <div tal:replace="structure context/@@+portlet-builds" />
 
   <h2>Publishing history</h2>
   <div id="publishing_history">

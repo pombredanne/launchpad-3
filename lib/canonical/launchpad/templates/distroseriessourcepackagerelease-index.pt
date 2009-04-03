@@ -17,7 +17,7 @@
 
 <metal:rightportlets fill-slot="portlets_two">
   <div tal:replace="structure context/sourcepackagerelease/@@+portlet-distroseries" />
-  <div tal:replace="structure context/sourcepackagerelease/@@+portlet-builds" />
+  <div tal:replace="structure context/@@+portlet-builds" />
 </metal:rightportlets>
 
 <div metal:fill-slot="main">
