@@ -116,10 +116,15 @@
     <allow interface=".interfaces.questionmessage.IQuestionMessage"/>
   </class>
 
+  <class class=".model.questionsperson.QuestionsPerson">
+    <allow interface=".interfaces.questionsperson.IQuestionsPerson"/>
+  </class>
+
   <adapter
     for="canonical.launchpad.interfaces.person.IPerson"
     provides=".interfaces.questionsperson.IQuestionsPerson"
     factory=".model.questionsperson.QuestionsPerson"
+    trusted="yes"
     />
   <adapter
     for=".interfaces.question.IQuestion"
