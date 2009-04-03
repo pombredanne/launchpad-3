@@ -5,6 +5,11 @@
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
 
+    <utility
+        factory="canonical.launchpad.rest.configuration.LaunchpadWebServiceConfiguration"
+        provides="canonical.lazr.interfaces.rest.IWebServiceConfiguration">
+    </utility>
+
     <securedutility
         class="canonical.launchpad.systemhomes.WebServiceApplication"
         provides="canonical.launchpad.interfaces.IWebServiceApplication">
@@ -35,19 +40,6 @@
         provides="zope.publisher.interfaces.browser.IBrowserPublisher"
         />
 
-    <!--
-    XXX flacoste 2008/05/09 bug=185958:
-    Ideally, we would use webservice_error() to register the view,
-    but cyclic imports prevents us from doing so. This should be fixed once we
-    move webapp stuff into LAZR.
-    -->
-    <view
-        for="canonical.launchpad.webapp.interfaces.InvalidBatchSizeError"
-        type="canonical.launchpad.layers.WebServiceLayer"
-        factory="canonical.lazr.rest.error.WebServiceExceptionView"
-        name="index.html"
-        />
-
     <adapter
         for="canonical.launchpad.interfaces.IBugComment"
         provides="canonical.lazr.interfaces.rest.IEntry"
@@ -55,6 +47,14 @@
         />
 
    <webservice:register module="canonical.launchpad.interfaces" />
+
+   <adapter
+       for="zope.schema.interfaces.IChoice
+            zope.publisher.interfaces.http.IHTTPRequest
+            canonical.launchpad.webapp.vocabulary.SQLObjectVocabularyBase"
+       provides="canonical.lazr.interfaces.IFieldMarshaller"
+       factory="canonical.lazr.rest.marshallers.ObjectLookupFieldMarshaller"
+       />
 
    <!-- The API documentation -->
     <browser:page

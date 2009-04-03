@@ -64,8 +64,8 @@ imports appear again.
 
 If we create a lot of imports, the listing view will be batched.
 
-    >>> from canonical.launchpad.ftests import ANONYMOUS, login, logout
-    >>> login(ANONYMOUS)
+    >>> from canonical.launchpad.ftests import login, logout
+    >>> login('test@canonical.com')
     >>> for i in range(10):
     ...     new_import = factory.makeCodeImport()
 

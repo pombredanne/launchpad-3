@@ -375,7 +375,7 @@ When an anonymous submitter later registers a Launchpad account, the field
 
 If somebody has a Launchpad account, but submits HWDB test data using
 an email address which he has not added to his account, the submission
-will have the the `owner` field set to None.
+will have the `owner` field set to None.
 
     >>> submission = hw_submission_set.createSubmission(
     ...     date_created=date_created,
@@ -398,8 +398,10 @@ the field `owner` is updated.
 
     >>> email = getUtility(IEmailAddressSet).new(
     ...     u'beeblebrox@beeblebrox.net', user)
+    >>> transaction.commit()
     >>> login_person(user)
     >>> user.validateAndEnsurePreferredEmail(email)
+    >>> transaction.commit()
     >>> submission = hw_submission_set.getBySubmissionKey(u'unique-id-2')
     >>> print submission.owner.displayname
     Beeblebrox
@@ -548,6 +550,7 @@ Links between a bug and a submission must be unique.
     IntegrityError: ... violates unique constraint
     "hwsubmissionbug__submission__bug__key"
 
+    >>> transaction.abort()
 
 == General Search Method ==
 
@@ -674,3 +677,11 @@ And we can also search for submissions from a particular user.
     >>> set(submission.owner.name for submission
     ...     in hw_submission_set.search(owner=owner))
     set([u'name12'])
+
+Alternatively, we can get the same result by looking at
+IPerson.hardware_submissions.
+
+    >>> set(submission.owner.name for submission
+    ...     in owner.hardware_submissions)
+    set([u'name12'])
+

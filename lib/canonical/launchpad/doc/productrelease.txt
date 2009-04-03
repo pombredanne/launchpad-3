@@ -1,17 +1,22 @@
-== ProductRelease ==
+== Release series ==
 
 A product series can have any number of releases associated with it.
-These are created with the addRelease() method of IProductSeries.
+These are created with the createProductRelease() method on
+IMilestone.
 
-    >>> from canonical.launchpad.interfaces.productseries import (
-    ...     IProductSeriesSet)
-    >>> from canonical.launchpad.interfaces.productrelease import (
-    ...     IProductRelease)
-
-    >>> firefox_1_0 = getUtility(IProductSeriesSet).get(2)
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces import IProductSet
+    >>> productset = getUtility(IProductSet)
+    >>> firefox = productset['firefox']
+    >>> firefox_1_0 = firefox.getSeries('1.0')
     >>> owner = firefox_1_0.owner
     >>> login_person(owner)
-    >>> firefox_109 = firefox_1_0.addRelease('1.0.9', owner)
+    >>> milestone = firefox_1_0.newMilestone('1.0.9')
+    >>> from datetime import datetime
+    >>> from pytz import UTC
+    >>> firefox_109 = milestone.createProductRelease(owner, datetime.now(UTC))
+    >>> from canonical.launchpad.interfaces.productrelease import (
+    ...     IProductRelease)
     >>> verifyObject(IProductRelease, firefox_109)
     True
 
@@ -27,13 +32,14 @@ as it doesn't have any IProductReleaseFiles associated with it.
 If a product release has files associated with it, though, it can't be
 deleted.
 
-    >>> firefox_1010 = firefox_1_0.addRelease('1.0.10', owner)
+    >>> milestone = firefox_1_0.newMilestone('1.0.10')
+    >>> firefox_1010 = milestone.createProductRelease(owner,
+    ...                                               datetime.now(UTC))
     >>> firefox_1010.addReleaseFile('test', 'test', 'text/plain', owner)
     <ProductReleaseFile...
     >>> firefox_1010.destroySelf()
     Traceback (most recent call last):
     ...
-    AssertionError: You can't delete a product release which has files
-                    associated with it.
+    AssertionError:...
     >>> firefox_1_0.getRelease('1.0.10')
     <ProductRelease...

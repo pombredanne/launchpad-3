@@ -17,18 +17,22 @@ __all__ = [
 from zope.schema import Bool, Choice, Datetime, Text, TextLine
 from zope.interface import Attribute, Interface
 
+from canonical.lazr.fields import CollectionField, Reference
+from canonical.lazr.interface import copy_field
 from canonical.lazr.rest.declarations import (
    collection_default_content, export_as_webservice_collection,
    export_as_webservice_entry, export_operation_as,
    export_read_operation, exported, operation_parameters,
-   operation_returns_collection_of, operation_returns_entry)
+   operation_returns_collection_of, operation_returns_entry,
+   rename_parameters_as)
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
     Description, PublicPersonChoice, Summary, Title)
 from canonical.launchpad.interfaces.announcement import IMakesAnnouncements
 from canonical.launchpad.interfaces.archive import IArchive
-from canonical.launchpad.interfaces.bugtarget import IBugTarget
+from canonical.launchpad.interfaces.bugtarget import (
+    IBugTarget, IOfficialBugTagTargetPublic, IOfficialBugTagTargetRestricted)
 from canonical.launchpad.interfaces.buildrecords import IHasBuildRecords
 from canonical.launchpad.interfaces.karma import IKarmaContext
 from canonical.launchpad.interfaces.launchpad import (
@@ -48,7 +52,7 @@ from canonical.launchpad.webapp.interfaces import NameLookupFailed
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.fields import (
     IconImageUpload, LogoImageUpload, MugshotImageUpload, PillarNameField)
-from canonical.lazr.fields import CollectionField, Reference
+
 
 
 class IDistributionMirrorMenuMarker(Interface):
@@ -63,7 +67,7 @@ class DistributionNameField(PillarNameField):
         return IDistribution
 
 
-class IDistributionEditRestricted(Interface):
+class IDistributionEditRestricted(IOfficialBugTagTargetRestricted):
     """IDistribution properties requiring launchpad.Edit permission."""
 
     def newSeries(name, displayname, title, summary, description,
@@ -72,10 +76,11 @@ class IDistributionEditRestricted(Interface):
 
 
 class IDistributionPublic(
-    IBugTarget, ICanGetMilestonesDirectly, IHasAppointedDriver, IHasDrivers,
-    IHasMentoringOffers, IHasMilestones, IHasOwner, IHasSecurityContact,
-    IHasSprints, IHasTranslationGroup, IKarmaContext, ILaunchpadUsage,
-    IMakesAnnouncements, IPillar, ISpecificationTarget, IHasBuildRecords):
+    IBugTarget, ICanGetMilestonesDirectly, IHasAppointedDriver,
+    IHasBuildRecords, IHasDrivers, IHasMentoringOffers, IHasMilestones,
+    IHasOwner, IHasSecurityContact, IHasSprints, IHasTranslationGroup,
+    IKarmaContext, ILaunchpadUsage, IMakesAnnouncements,
+    IOfficialBugTagTargetPublic, IPillar, ISpecificationTarget):
     """Public IDistribution properties."""
 
     id = Attribute("The distro's unique number.")
@@ -367,10 +372,40 @@ class IDistributionPublic(
         'log' is required and only prints debug level information.
         """
 
+    @rename_parameters_as(text="source_match")
+    @operation_parameters(
+        text=TextLine(title=_("Source package name substring match"),
+                      required=True))
+    # Really returns IDistributionSourcePackage, see below.
+    @operation_returns_collection_of(Interface)
+    @export_read_operation()
     def searchSourcePackages(text):
         """Search for source packages that correspond to the given text.
         Returns a list of DistributionSourcePackage objects, in order of
         matching.
+        """
+
+    def searchBinaryPackages(package_name, exact_match=False):
+        """Search for binary packages in this distribution.
+
+        :param package_name: The binary package name to match.
+        :param exact_match: If False, substring matches are done on the
+            binary package names; if True only a full string match is
+            returned.
+        :return: A result set containing appropriate DistributionSourcePackage
+            objects for the matching source.
+
+        The returned results will consist of source packages that match
+        (a substring of) their binary package names.
+        """
+
+    def searchBinaryPackagesFTI(package_name):
+        """Do an FTI search on binary packages.
+
+        :param package_name: The binary package name to search for.
+        :return: A result set containing DistributionSourcePackageCache
+            objects for the matching binaries found via an FTI search on
+            DistroSeriesPackageCache.
         """
 
     def getFileByName(filename, archive=None, source=True, binary=True):
@@ -468,6 +503,13 @@ class IDistribution(IDistributionEditRestricted, IDistributionPublic):
 # We are forced to define this now to avoid circular import problems.
 IMessage['distribution'].schema = IDistribution
 
+# Patch the official_bug_tags field to make sure that it's
+# writable from the API, and not readonly like its definition
+# in IHasBugs.
+writable_obt_field = copy_field(IDistribution['official_bug_tags'])
+writable_obt_field.readonly = False
+IDistribution._v_attrs['official_bug_tags'] = writable_obt_field
+
 
 class IDistributionSet(Interface):
     """Interface for DistrosSet"""
@@ -514,17 +556,22 @@ class NoSuchDistribution(NameLookupFailed):
 
 
 # Monkey patching to fix circular imports.
+from canonical.launchpad.components.apihelpers import (
+    patch_entry_return_type, patch_collection_return_type,
+    patch_reference_property)
+
 from canonical.launchpad.interfaces.distroseries import IDistroSeries
 IDistribution['serieses'].value_type.schema = IDistroSeries
-IDistribution['currentseries'].schema = IDistroSeries
-IDistribution['getSeries'].queryTaggedValue(
-    'lazr.webservice.exported')[
-    'return_type'].schema = IDistroSeries
-IDistribution['getDevelopmentSerieses'].queryTaggedValue(
-    'lazr.webservice.exported')[
-    'return_type'].value_type.schema = IDistroSeries
+patch_reference_property(
+    IDistribution, 'currentseries', IDistroSeries)
+patch_entry_return_type(
+    IDistribution, 'getSeries', IDistroSeries)
+patch_collection_return_type(
+    IDistribution, 'getDevelopmentSerieses', IDistroSeries)
+
 from canonical.launchpad.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage)
-IDistribution['getSourcePackage'].queryTaggedValue(
-    'lazr.webservice.exported')[
-    'return_type'].schema = IDistributionSourcePackage
+patch_entry_return_type(
+    IDistribution, 'getSourcePackage', IDistributionSourcePackage)
+patch_collection_return_type(
+    IDistribution, 'searchSourcePackages', IDistributionSourcePackage)

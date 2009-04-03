@@ -2,6 +2,10 @@
     xmlns="http://namespaces.zope.org/zope"
     i18n_domain="lazr">
 
+    <class class="canonical.lazr.rest.RedirectResource">
+        <allow interface='canonical.lazr.interfaces.IHTTPResource' />
+    </class>
+
     <class class="canonical.lazr.rest.CollectionResource">
         <allow interface='canonical.lazr.interfaces.ICollectionResource' />
     </class>
@@ -15,17 +19,22 @@
         <allow interface='canonical.lazr.interfaces.IJSONPublishable' />
     </class>
 
-    <adapter
-        for="zope.publisher.interfaces.browser.IBrowserRequest"
-        provides="canonical.lazr.interfaces.rest.WebServiceLayer"
-        factory="canonical.launchpad.webapp.servers.website_request_to_web_service_request"
+    <!--
+    XXX flacoste 2008/05/09 bug=185958:
+    Ideally, we would use webservice_error() to register the view,
+    but InvalidBatchSizeError is in lazr.batchnavigator and webservice_error()
+    can only be called from within a class definition.
+    -->
+    <view
+        for="lazr.batchnavigator.interfaces.InvalidBatchSizeError"
+        type="canonical.lazr.interfaces.rest.IWebServiceLayer"
+        factory="canonical.lazr.rest.error.WebServiceExceptionView"
+        name="index.html"
         />
 
-    <adapter
-        for="zope.publisher.interfaces.browser.IBrowserRequest"
-        provides="canonical.lazr.interfaces.rest.IJSONRequestCache"
-        factory="canonical.lazr.rest.jsoncache.JSONRequestCache"
-        />
+    <adapter factory="canonical.lazr.rest.publisher.browser_request_to_web_service_request" />
+
+    <adapter factory="canonical.lazr.rest.jsoncache.JSONRequestCache" />
 
     <!-- TALES namespace for web service functions available through the
          website. -->
@@ -37,12 +46,9 @@
         />
 
     <adapter
-        for="zope.publisher.interfaces.browser.IBrowserRequest"
-        provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.lazr.rest.tales.WebServiceRequestAPI"
         name="webservicerequest"
         />
-
 
     <!-- TALES namespaces for WADL generation -->
     <adapter
@@ -123,17 +129,9 @@
         />
 
     <!-- Generic adapter for scoped collection -->
-    <adapter
-        for="* *"
-        provides="canonical.lazr.interfaces.IScopedCollection"
-        factory="canonical.lazr.rest.ScopedCollection"
-        />
+    <adapter factory="canonical.lazr.rest.ScopedCollection" />
 
-    <adapter
-        for="lazr.enum.BaseItem"
-        provides="canonical.lazr.interfaces.IJSONPublishable"
-        factory="canonical.lazr.rest.JSONItem"
-        />
+    <adapter factory="canonical.lazr.rest.JSONItem" />
 
     <!-- Field resources -->
     <adapter
@@ -243,14 +241,6 @@
         />
 
     <adapter
-        for="zope.schema.interfaces.IChoice
-             zope.publisher.interfaces.http.IHTTPRequest
-             canonical.launchpad.webapp.vocabulary.SQLObjectVocabularyBase"
-        provides="canonical.lazr.interfaces.IFieldMarshaller"
-        factory="canonical.lazr.rest.marshallers.ObjectLookupFieldMarshaller"
-        />
-
-    <adapter
         for="zope.schema.interfaces.IObject
              zope.publisher.interfaces.http.IHTTPRequest"
         provides="canonical.lazr.interfaces.IFieldMarshaller"
@@ -280,7 +270,7 @@
 
     <view
         for="zope.interface.Interface"
-        type="canonical.lazr.interfaces.rest.WebServiceLayer"
+        type="canonical.lazr.interfaces.rest.IWebServiceClientRequest"
         factory="canonical.lazr.rest.resource.EntryHTMLView"
         name="canonical.lazr.rest.resource.EntryResource"
         />
@@ -290,7 +280,7 @@
     <!-- System Errors -->
     <view
         for="zope.interface.common.interfaces.IException"
-        type="canonical.lazr.interfaces.rest.WebServiceLayer"
+        type="canonical.lazr.interfaces.rest.IWebServiceLayer"
         factory="canonical.lazr.rest.error.SystemErrorView"
         name="index.html"
         />
@@ -298,7 +288,7 @@
     <!-- Unauthorized -->
     <view
         for="zope.exceptions.IUnauthorized"
-        type="canonical.lazr.interfaces.rest.WebServiceLayer"
+        type="canonical.lazr.interfaces.rest.IWebServiceLayer"
         factory="canonical.lazr.rest.error.UnauthorizedView"
         name="index.html"
         />
@@ -306,7 +296,7 @@
     <!-- NotFound -->
     <view
         for="zope.publisher.interfaces.NotFound"
-        type="canonical.lazr.interfaces.rest.WebServiceLayer"
+        type="canonical.lazr.interfaces.rest.IWebServiceLayer"
         factory="canonical.lazr.rest.error.NotFoundView"
         name="index.html"
         />
@@ -318,7 +308,7 @@
     -->
     <view
         for="canonical.database.interfaces.IRequestExpired"
-        type="canonical.lazr.interfaces.rest.WebServiceLayer"
+        type="canonical.lazr.interfaces.rest.IWebServiceLayer"
         factory="canonical.lazr.rest.error.RequestExpiredView"
         name="index.html"
         />
@@ -326,7 +316,7 @@
     <!-- TimeoutError -->
     <view
         for="canonical.lazr.timeout.TimeoutError"
-        type="canonical.lazr.interfaces.rest.WebServiceLayer"
+        type="canonical.lazr.interfaces.rest.IWebServiceLayer"
         factory="canonical.lazr.rest.error.RequestExpiredView"
         name="index.html"
         />

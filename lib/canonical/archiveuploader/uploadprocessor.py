@@ -50,6 +50,7 @@ __metaclass__ = type
 import os
 import shutil
 import stat
+import sys
 
 from zope.component import getUtility
 
@@ -57,12 +58,18 @@ from canonical.archiveuploader.nascentupload import (
     NascentUpload, FatalUploadError, EarlyReturnUploadError)
 from canonical.archiveuploader.uploadpolicy import (
     findPolicyByOptions, UploadPolicyError)
-from canonical.launchpad.interfaces import (
-    ArchivePurpose, IDistributionSet, IPersonSet, NotFoundError)
+from canonical.launchpad.interfaces.distribution import IDistributionSet
+from canonical.launchpad.interfaces.person import IPersonSet
+from canonical.launchpad.webapp.errorlog import (
+    ErrorReportingUtility, ScriptRequest)
+from canonical.launchpad.webapp.interfaces import NotFoundError
 
 from contrib.glock import GlobalLock
 
-__all__ = ['UploadProcessor']
+__all__ = [
+    'UploadProcessor',
+    'parse_upload_path',
+    ]
 
 
 class UploadStatusEnum:
@@ -162,9 +169,14 @@ class UploadProcessor:
             except (KeyboardInterrupt, SystemExit):
                 raise
             except:
-                self.log.error(
-                    "Unhandled exception from processing an upload",
-                    exc_info=True)
+                info = sys.exc_info()
+                message = (
+                    'Exception while processing upload %s' % upload_path)
+                properties = [('error-explanation', message)]
+                request = ScriptRequest(properties)
+                error_utility = ErrorReportingUtility()
+                error_utility.raising(info, request)
+                self.log.error('%s (%s)' % (message, request.oopsid))
                 some_failed = True
 
         if some_failed:
@@ -252,7 +264,7 @@ class UploadProcessor:
         error = None
         try:
             (distribution, suite_name,
-             archive) = self.getDistributionAndArchive(relative_path)
+             archive) = parse_upload_path(relative_path)
         except UploadPathError, e:
             # pick some defaults to create the NascentUploap() object.
             # We will be rejecting the upload so it doesn matter much.
@@ -403,124 +415,131 @@ class UploadProcessor:
 
         return sorted(fnames, key=sourceFirst)
 
-    def getDistributionAndArchive(self, relative_path):
-        """Locate the distribution and archive for the upload.
 
-        We do this by analysing the path to which the user has uploaded,
-        ie. the relative path within the upload folder to the changes file.
+def _getDistributionAndSuite(parts, exc_type):
+    """Return an `IDistribution` and a valid suite name for the given path.
 
-        The valid paths are:
-        '' - default distro, ubuntu
-        '<distroname>' - given distribution
-        '~<personname>[/ppa_name]/<distroname>[/distroseriesname]' - given ppa,
-          distribution and optionally a distroseries.  If ppa_name is not
-          specified it will default to the one referenced by IPerson.archive.
 
-        I raises UploadPathError if something was wrong when parsing it.
+    Helper function used within `parse_upload_path` for extracting and
+    verifying the part of the upload path targeting a existing distribution
+    and optionally one of its suite.
 
-        On success it returns a tuple of IDistribution, suite-name,
-        IArchive for the given path, where the second field can be None.
-        """
-        parts = relative_path.split(os.path.sep)
-        first_path = parts[0]
+    It will fail with `AssertionError` if the given `parts` is not a list
+    with one or two elements.
 
-        # Empty distroseries override by default.
-        suite_name = None
+    :param parts: a list of path parts to be processed.
+    :param exc_type: a specific Exception type that should be raised on
+        errors.
 
-        # Distribution name only, or nothing
-        if len(parts) == 1:
-            distribution_name = first_path
-            # fallback to ubuntu
-            if not distribution_name:
-                distribution_name = 'ubuntu'
+    :return: a tuple containing a `IDistribution` and a suite name if it's
+        appropriate. The suite name will be None if it wasn't present in the
+        given path parts.
 
-            distribution = getUtility(IDistributionSet).getByName(
-                distribution_name)
-            if not distribution:
-                raise UploadPathError(
-                    "Could not find distribution '%s'" % distribution_name)
-            archive = distribution.main_archive
+    :raises: the given `exc_type` if the corresponding distribution or suite
+        could not be found.
+    """
+    assert len(parts) > 0 and len(parts) <= 2, (
+        "'%s' does not correspond to a <distribution>[/suite]." % parts)
 
-        # PPA upload (~<person>/<ppa_name>/<distro>[/distroseries])
-        elif len(parts) <= 4:
-            if not first_path.startswith('~'):
-                raise PPAUploadPathError(
-                    "PPA upload path must start with '~'.")
+    distribution = getUtility(IDistributionSet).getByName(parts[0])
+    if distribution is None:
+        raise exc_type("Could not find distribution '%s'" % parts[0])
 
-            # Skip over ~
-            person_name = first_path[1:]
-            person = getUtility(IPersonSet).getByName(person_name)
-            if person is None:
-                raise PPAUploadPathError(
-                    "Could not find person '%s'" % person_name)
+    if len(parts) == 1:
+        return (distribution, None)
 
-            # For now, only a ppa_name of "ppa" is allowed.  If it's
-            # anything else we assume it's a distroseries name,
-            # unless there's >3 parts in which case the upload path
-            # is invalid.
-            #
-            # When we switch off the parallel run of old and new
-            # paths, this check can disappear and distroseries
-            # overrides will always appear in the 4th part.
+    suite_name = parts[1]
+    try:
+        suite = distribution.getDistroSeriesAndPocket(suite_name)
+    except NotFoundError:
+        raise exc_type("Could not find suite '%s'" % suite_name)
 
-            if parts[1] == "ppa" and len(parts) >= 3:
-                # ppa_name and distro have been specified.
-                distribution_name = parts[2]
+    return (distribution, suite_name)
 
-            if parts[1] == "ppa" and len(parts) == 2:
-                # ppa_name but no distro supplied, bail out.
-                raise UploadPathError(
-                    "Path mismatch '%s'. "
-                    "Use ~<person>/<ppa_name>/<distro>[/distroseries]/"
-                    "[files] for PPAs and <distro>/[files] for normal "
-                    "uploads."
-                    % (relative_path))
 
-            if parts[1] != "ppa":
-                distribution_name = parts[1]
+def parse_upload_path(relative_path):
+    """Locate the distribution and archive for the upload.
 
-            distribution = getUtility(IDistributionSet).getByName(
-                distribution_name)
-            if distribution is None:
-                raise PPAUploadPathError(
-                    "Could not find distribution '%s'" % distribution_name)
+    We do this by analysing the path to which the user has uploaded,
+    ie. the relative path within the upload folder to the changes file.
 
-            archive = person.archive
-            if archive is None:
-                raise PPAUploadPathError(
-                    "Could not find PPA for '%s'" % person_name)
+    The valid paths are:
+    '' - default distro, ubuntu
+    '<distroname>' - given distribution
+    '~<personname>[/ppa_name]/<distroname>[/distroseriesname]' - given ppa,
+    distribution and optionally a distroseries.  If ppa_name is not
+    specified it will default to the one referenced by IPerson.archive.
 
-            if not archive.enabled:
-                raise PPAUploadPathError(
-                    "%s is disabled" % archive.title)
+    I raises UploadPathError if something was wrong when parsing it.
 
-            if archive.distribution != distribution:
-                raise PPAUploadPathError(
-                    "%s only supports uploads to '%s'"
-                    % (archive.title, archive.distribution.name))
+    On success it returns a tuple of IDistribution, suite-name,
+    IArchive for the given path, where the second field can be None.
+    """
+    parts = relative_path.split(os.path.sep)
 
-            if len(parts) > 2:
-                if parts[1] != "ppa":
-                    suite_name = parts[2]
-                if parts[1] == "ppa" and len(parts) > 3:
-                    # parts[1] is the ppa name, so get the suite name
-                    # again from the last part of the path.
-                    suite_name = parts[3]
+    first_path = parts[0]
 
-            if suite_name is not None:
-                # Check if the given suite name is valid.
-                # We will return the suite_name string simply.
-                try:
-                    suite = distribution.getDistroSeriesAndPocket(suite_name)
-                except NotFoundError:
-                    raise PPAUploadPathError(
-                        "Could not find suite '%s'" % suite_name)
+    # Root upload, defaults to 'ubuntu' primary archive, nothing else to
+    # check, return the default upload location.
+    if first_path is '':
+        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+        return (ubuntu, None, ubuntu.main_archive)
+
+    if not first_path.startswith('~') and len(parts) <= 2:
+        # Distribution upload (<distro>[/distroseries]). Always targeted to
+        # the corresponding primary archive.
+        distribution, suite_name = _getDistributionAndSuite(
+            parts, UploadPathError)
+        archive = distribution.main_archive
+
+    elif (first_path.startswith('~') and
+          len(parts) >= 2 and
+          len(parts) <= 4):
+        # PPA upload (~<person>[/ppa_name]/<distro>[/distroseries]).
+
+        # Skip over '~' from the person name.
+        person_name = first_path[1:]
+        person = getUtility(IPersonSet).getByName(person_name)
+        if person is None:
+            raise PPAUploadPathError(
+                "Could not find person '%s'" % person_name)
+
+        ppa_name = parts[1]
+
+        # Compatibilty feature for allowing unamed-PPA upload paths
+        # for a certain period of time.
+        if ppa_name == 'ubuntu':
+            ppa_name = 'ppa'
+            distribution_and_suite = parts[1:]
         else:
-            raise UploadPathError(
-                "Path mismatch '%s'. "
-                "Use ~<person>/<ppa_name>/<distro>[/distroseries]/"
-                "[files] for PPAs and <distro>/[files] for normal uploads."
-                % (relative_path))
+            distribution_and_suite = parts[2:]
 
-        return (distribution, suite_name, archive)
+        archive = person.getPPAByName(ppa_name)
+        if archive is None:
+            raise PPAUploadPathError(
+                "Could not find PPA named '%s' for '%s'"
+                % (ppa_name, person_name))
+
+        if not archive.enabled:
+            raise PPAUploadPathError(
+                "%s is disabled" % archive.displayname)
+
+        distribution, suite_name = _getDistributionAndSuite(
+            distribution_and_suite, PPAUploadPathError)
+
+        if archive.distribution != distribution:
+            raise PPAUploadPathError(
+                "%s only supports uploads to '%s'"
+                % (archive.displayname, archive.distribution.name))
+
+    else:
+        # Upload path does not match anything we support.
+        raise UploadPathError(
+            "Path mismatch '%s'. "
+            "Use ~<person>/<ppa_name>/<distro>[/distroseries]/"
+            "[files] for PPAs and <distro>/[files] for normal uploads."
+            % (relative_path))
+
+    return (distribution, suite_name, archive)
+
 

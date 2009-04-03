@@ -25,7 +25,7 @@ __all__ = [
 
 from zope.interface import Attribute, Interface
 from zope.schema import (
-    Bytes, Choice, Datetime, Int, List, Object, Text, TextLine)
+    Bytes, Choice, Datetime, Int, Object, Text, TextLine)
 from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
@@ -325,8 +325,12 @@ class IBranchMergeProposal(Interface):
 
 
     # Cannot specify value type without creating a circular dependency
-    votes = List(
-        title=_('The votes cast or expected for this proposal'),
+    votes = exported(
+        CollectionField(
+            title=_('The votes cast or expected for this proposal'),
+            value_type=Reference(schema=Interface), #ICodeReviewVoteReference
+            readonly=True
+            )
         )
 
     def isValidTransition(next_state, user=None):
@@ -561,26 +565,6 @@ class IBranchMergeProposalGetter(Interface):
         """Return BranchMergeProposals associated with the context.
 
         :param context: Either an `IPerson` or `IProduct`.
-        :param status: An iterable of queue_status of the proposals to return.
-            If None is specified, all the proposals of all possible states
-            are returned.
-        :param visible_by_user: If a person is not supplied, only merge
-            proposals based on public branches are returned.  If a person is
-            supplied, merge proposals based on both public branches, and the
-            private branches that the person is entitled to see are returned.
-            Private branches are only visible to the owner and subscribers of
-            the branch, and to LP admins.
-        :raises BadBranchMergeProposalSearchContext: If the context is not
-            understood.
-        """
-
-    def getProposalsForReviewer(reviewer, status=None, visible_by_user=None):
-        """Return BranchMergeProposals that have the given reviewer.
-
-        That is, all merge proposals that 'reviewer' has voted on or has been
-        invited to vote on.
-
-        :param reviewer: An `IPerson` who is a reviewer.
         :param status: An iterable of queue_status of the proposals to return.
             If None is specified, all the proposals of all possible states
             are returned.

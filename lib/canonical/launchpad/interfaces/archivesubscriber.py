@@ -7,14 +7,20 @@ __metaclass__ = type
 
 __all__ = [
     'ArchiveSubscriberStatus',
+    'ArchiveSubscriptionError',
     'IArchiveSubscriber',
+    'IArchiveSubscriberUI',
+    'IArchiveSubscriptionForOwner',
+    'IArchiveSubscriptionForSubscriber',
+    'IArchiveSubscriberSet'
     ]
 
 from zope.interface import Interface
-from zope.schema import Datetime, Choice, Int, Text
+from zope.schema import Choice, Date, Datetime, Int, Text, TextLine
 from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
+from canonical.launchpad.fields import PublicPersonChoice
 from canonical.launchpad.interfaces.archive import IArchive
 from canonical.launchpad.interfaces.person import IPerson
 from canonical.lazr.fields import Reference
@@ -23,10 +29,10 @@ from canonical.lazr.fields import Reference
 class ArchiveSubscriberStatus(DBEnumeratedType):
     """The status of an `ArchiveSubscriber`."""
 
-    ACTIVE = DBItem(1, """
+    CURRENT = DBItem(1, """
         Active
 
-        The subscription is active.
+        The subscription is current.
         """)
 
     EXPIRED = DBItem(2, """
@@ -40,6 +46,11 @@ class ArchiveSubscriberStatus(DBEnumeratedType):
 
         The subscription was cancelled.
         """)
+
+
+class ArchiveSubscriptionError(Exception):
+    """Raised for various errors when creating and activating subscriptions.
+    """
 
 
 class IArchiveSubscriberView(Interface):
@@ -59,8 +70,8 @@ class IArchiveSubscriberView(Interface):
         title=_("Date Created"), required=True,
         description=_("The timestamp when the subscription was created."))
 
-    subscriber = Reference(
-        IPerson, title=_("Subscriber"), required=True,
+    subscriber = PublicPersonChoice(
+        title=_("Subscriber"), required=True, vocabulary='ValidPersonOrTeam',
         description=_("The person who is subscribed."))
 
     date_expires = Datetime(
@@ -84,6 +95,9 @@ class IArchiveSubscriberView(Interface):
         IPerson, title=_("Cancelled By"), required=False,
         description=_("The person who cancelled the subscription."))
 
+    displayname = TextLine(title=_("Subscription displayname"),
+        required=False)
+
 
 class IArchiveSubscriberEdit(Interface):
     """An interface for launchpad.Edit ops on archive subscribers."""
@@ -102,19 +116,68 @@ class IArchiveSubscriber(IArchiveSubscriberView, IArchiveSubscriberEdit):
     """An interface for archive subscribers."""
 
 
+class IArchiveSubscriptionForOwner(IArchiveSubscriber):
+    """Marker interface so traversal works differently for PPA owners."""
+
+class IArchiveSubscriptionForSubscriber(IArchiveSubscriber):
+    """Marker interface so traversal works differently for PPA subscribers."""
+
+
 class IArchiveSubscriberSet(Interface):
     """An interface for the set of all archive subscribers."""
 
-    def getBySubscriber(subscriber):
+    def getBySubscriber(subscriber, archive=None, current_only=True):
         """Return all the subscriptions for a person.
 
         :param subscriber: An `IPerson` for whom to return all
             `ArchiveSubscriber` records.
+        :param archive: An optional `IArchive` which restricts
+            the results to that particular archive.
+        :param current_only: Whether the result should only include current
+            subscriptions (which is the default).
+        :param return_tokens: Indicates whether the tokens for the given
+            subscribers subscriptions should be included in the resultset.
+            By default the tokens are not included in the resultset.
         """
 
-    def getByArchive(archive):
+    def getBySubscriberWithActiveToken(subscriber, archive=None):
+        """Return all the subscriptions for a person with the correspending
+        token for each subscription.
+
+        :param subscriber: An `IPerson` for whom to return all
+            `ArchiveSubscriber` records.
+        :param archive: An optional `IArchive` which restricts
+            the results to that particular archive.
+        :return: a storm `ResultSet` of
+            (`IArchiveSubscriber`, `IArchiveAuthToken` or None) tuples.
+        """
+
+    def getByArchive(archive, current_only=True):
         """Return all the subscripions for an archive.
 
         :param archive: An `IArchive` for which to return all
             `ArchiveSubscriber` records.
+        :param current_only: Whether the result should only include current
+            subscriptions (which is the default).
         """
+
+
+class IArchiveSubscriberUI(Interface):
+    """A custom interface for user interaction with archive subscriptions.
+
+    IArchiveSubscriber uses a datetime field for date_expires, whereas
+    we simply want to use a date field when users create or edit new
+    subscriptions.
+    """
+    subscriber = PublicPersonChoice(
+        title=_("Subscriber"), required=True, vocabulary='ValidPersonOrTeam',
+        description=_("The person or team to subscribe."))
+
+    date_expires = Date(
+        title=_("Date of Expiration"), required=False,
+        description=_("The date when the subscription will expire."))
+
+    description = Text(
+        title=_("Description"), required=False,
+        description=_("Optional notes about this subscription."))
+

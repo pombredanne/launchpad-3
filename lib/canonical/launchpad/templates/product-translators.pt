@@ -15,7 +15,7 @@
 
       <div metal:use-macro="context/@@launchpad_form/form">
 
-        <p metal:fill-slot="extra_info">
+        <p metal:fill-slot="extra_info" id="form_extra_info">
           Select the translation group that will be managing the
           translations for
           <tal:product replace="context/title">Launchpad</tal:product>.

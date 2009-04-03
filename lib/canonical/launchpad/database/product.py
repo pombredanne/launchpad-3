@@ -17,11 +17,11 @@ import calendar
 import pytz
 import sets
 from sqlobject import (
-    ForeignKey, StringCol, BoolCol, SQLMultipleJoin, SQLRelatedJoin,
-    SQLObjectNotFound, AND)
-from storm.expr import And
-from storm.locals import Unicode
+    BoolCol, ForeignKey, SQLMultipleJoin, SQLObjectNotFound, SQLRelatedJoin,
+    StringCol)
 from storm.store import Store
+from storm.expr import And, Join
+from storm.locals import Unicode
 from zope.interface import implements
 from zope.component import getUtility
 
@@ -37,7 +37,8 @@ from canonical.launchpad.database.branchvisibilitypolicy import (
     BranchVisibilityPolicyMixin)
 from canonical.launchpad.database.bug import (
     BugSet, get_bug_tags, get_bug_tags_open_count)
-from canonical.launchpad.database.bugtarget import BugTargetBase
+from canonical.launchpad.database.bugtarget import (
+    BugTargetBase, OfficialBugTagTargetMixin)
 from canonical.launchpad.database.bugtask import BugTask
 from canonical.launchpad.database.bugtracker import BugTracker
 from canonical.launchpad.database.bugwatch import BugWatch
@@ -46,7 +47,7 @@ from canonical.launchpad.database.commercialsubscription import (
 from canonical.launchpad.database.customlanguagecode import CustomLanguageCode
 from canonical.launchpad.database.distribution import Distribution
 from canonical.launchpad.database.karma import KarmaContextMixin
-from canonical.launchpad.database.faq import FAQ, FAQSearch
+from lp.answers.model.faq import FAQ, FAQSearch
 from canonical.launchpad.database.mentoringoffer import MentoringOffer
 from canonical.launchpad.database.milestone import (
     HasMilestonesMixin, Milestone)
@@ -58,7 +59,7 @@ from canonical.launchpad.database.productbounty import ProductBounty
 from canonical.launchpad.database.productlicense import ProductLicense
 from canonical.launchpad.database.productrelease import ProductRelease
 from canonical.launchpad.database.productseries import ProductSeries
-from canonical.launchpad.database.question import (
+from lp.answers.model.question import (
     QuestionTargetSearch, QuestionTargetMixin)
 from canonical.launchpad.database.specification import (
     HasSpecificationsMixin, Specification)
@@ -74,7 +75,6 @@ from canonical.launchpad.interfaces.branch import (
 from canonical.launchpad.interfaces.branchmergeproposal import (
     BranchMergeProposalStatus, IBranchMergeProposalGetter)
 from canonical.launchpad.interfaces.bugsupervisor import IHasBugSupervisor
-from canonical.launchpad.interfaces.faqtarget import IFAQTarget
 from canonical.launchpad.interfaces.launchpad import (
     IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities, ILaunchpadUsage,
     NotFoundError)
@@ -84,9 +84,6 @@ from canonical.launchpad.interfaces.person import IPersonSet
 from canonical.launchpad.interfaces.pillar import IPillarNameSet
 from canonical.launchpad.interfaces.product import (
     IProduct, IProductSet, License, LicenseStatus)
-from canonical.launchpad.interfaces.questioncollection import (
-    QUESTION_STATUS_DEFAULT_SEARCH)
-from canonical.launchpad.interfaces.questiontarget import IQuestionTarget
 from canonical.launchpad.interfaces.structuralsubscription import (
     IStructuralSubscriptionTarget)
 from canonical.launchpad.interfaces.specification import (
@@ -96,6 +93,13 @@ from canonical.launchpad.interfaces.translationgroup import (
     TranslationPermission)
 from canonical.launchpad.webapp.interfaces import (
         IStoreSelector, DEFAULT_FLAVOR, MAIN_STORE)
+
+
+from lp.answers.interfaces.faqtarget import IFAQTarget
+from lp.answers.interfaces.questioncollection import (
+    QUESTION_STATUS_DEFAULT_SEARCH)
+from lp.answers.interfaces.questiontarget import IQuestionTarget
+
 
 def get_license_status(license_approved, license_reviewed, licenses):
     """Decide the license status for an `IProduct`.
@@ -159,7 +163,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
               KarmaContextMixin, BranchVisibilityPolicyMixin,
               QuestionTargetMixin, HasTranslationImportsMixin,
               HasAliasMixin, StructuralSubscriptionTargetMixin,
-              HasMilestonesMixin):
+              HasMilestonesMixin, OfficialBugTagTargetMixin):
 
     """A Product."""
 
@@ -293,17 +297,6 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     license_approved = BoolCol(dbName='license_approved',
                                notNull=True, default=False,
                                storm_validator=_validate_license_approved)
-
-    @property
-    def default_stacked_on_branch(self):
-        """See `IProduct`."""
-        default_branch = self.development_focus.series_branch
-        if default_branch is None:
-            return None
-        elif default_branch.last_mirrored is None:
-            return None
-        else:
-            return default_branch
 
     @cachedproperty('_commercial_subscription_cached')
     def commercial_subscription(self):
@@ -537,12 +530,14 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
     @property
     def releases(self):
-        return ProductRelease.select(
-            AND(ProductRelease.q.productseriesID == ProductSeries.q.id,
-                ProductSeries.q.productID == self.id),
-            clauseTables=['ProductSeries'],
-            orderBy=['version']
-            )
+        store = Store.of(self)
+        origin = [
+            ProductRelease,
+            Join(Milestone, ProductRelease.milestone == Milestone.id),
+            ]
+        result = store.using(*origin)
+        result = result.find(ProductRelease, Milestone.product == self)
+        return result.order_by(Milestone.name)
 
     @property
     def drivers(self):
@@ -895,7 +890,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         # Set the ID of the new ProductSeries to avoid flush order
         # loops in ProductSet.createProduct()
         return ProductSeries(productID=self.id, owner=owner, name=name,
-                             summary=summary, user_branch=branch)
+                             summary=summary, branch=branch)
 
     def getRelease(self, version):
         return ProductRelease.selectOne("""
@@ -964,7 +959,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         store = Store.of(self)
         return store.find(
             BugWatch,
-            And(self == BugTask.product,
+            And(BugTask.product == self.id,
                 BugTask.bugwatch == BugWatch.id,
                 BugWatch.bugtracker == self.getExternalBugTracker()))
 
@@ -1204,8 +1199,7 @@ class ProductSet:
             queries.append('BugTask.product=Product.id')
         if bazaar:
             clauseTables.add('ProductSeries')
-            queries.append('(ProductSeries.import_branch IS NOT NULL OR '
-                           'ProductSeries.user_branch IS NOT NULL)')
+            queries.append('(ProductSeries.branch IS NOT NULL)')
         if 'ProductSeries' in clauseTables:
             queries.append('ProductSeries.product=Product.id')
         if not show_inactive:

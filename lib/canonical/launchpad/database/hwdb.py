@@ -56,7 +56,7 @@ from canonical.launchpad.interfaces.hwdb import (
     IHWSubmissionBugSet, IHWSubmissionDevice, IHWSubmissionDeviceSet,
     IHWSubmissionSet, IHWSystemFingerprint, IHWSystemFingerprintSet,
     IHWVendorID, IHWVendorIDSet, IHWVendorName, IHWVendorNameSet,
-    IllegalQuery)
+    IllegalQuery, ParameterError)
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.interfaces.person import IPersonSet
@@ -249,11 +249,10 @@ class HWSubmissionSet:
                                 EmailAddressStatus.PREFERRED), (
             'Invalid email status for setting ownership of an HWDB '
             'submission: %s' % email.status.title)
-        person = email.person
         submissions =  HWSubmission.selectBy(
             raw_emailaddress=email.email, owner=None)
         for submission in submissions:
-            submission.owner = person
+            submission.ownerID = email.personID
 
     def getByStatus(self, status, user=None):
         """See `IHWSubmissionSet`."""
@@ -477,9 +476,9 @@ class HWVendorID(SQLBase):
             raise TypeError('HWVendorID() did not get expected keyword '
                             'argument vendor_id_for_bus')
         if not isValidVendorID(bus, vendor_id_for_bus):
-            raise ValueError('%s is not a valid vendor ID for %s'
-                             % (repr(vendor_id_for_bus),
-                                bus.title))
+            raise ParameterError(
+                '%s is not a valid vendor ID for %s'
+                % (repr(vendor_id_for_bus), bus.title))
         SQLBase._create(self, id, **kw)
 
 
@@ -497,8 +496,9 @@ class HWVendorIDSet:
     def getByBusAndVendorID(self, bus, vendor_id):
         """See `IHWVendorIDSet`."""
         if not isValidVendorID(bus, vendor_id):
-            raise ValueError('%s is not a valid vendor ID for %s' % (
-                repr(vendor_id), bus.title))
+            raise ParameterError(
+                '%s is not a valid vendor ID for %s'
+                % (repr(vendor_id), bus.title))
         return HWVendorID.selectOneBy(bus=bus, vendor_id_for_bus=vendor_id)
 
     def get(self, id):
@@ -554,8 +554,9 @@ class HWDevice(SQLBase):
             raise TypeError('HWDevice() did not get expected keyword '
                             'argument bus_product_id')
         if not isValidProductID(bus_vendor.bus, bus_product_id):
-            raise ValueError('%s is not a valid product ID for %s'
-                             % (repr(bus_product_id), bus_vendor.bus.title))
+            raise ParameterError(
+                '%s is not a valid product ID for %s'
+                % (repr(bus_product_id), bus_vendor.bus.title))
         SQLBase._create(self, id, **kw)
 
     def getSubmissions(self, driver=None, distribution=None,
@@ -606,8 +607,9 @@ class HWDeviceSet:
     def getByDeviceID(self, bus, vendor_id, product_id, variant=None):
         """See `IHWDeviceSet`."""
         if not isValidProductID(bus, product_id):
-            raise ValueError('%s is not a valid product ID for %s' % (
-                repr(product_id), bus.title))
+            raise ParameterError(
+                '%s is not a valid product ID for %s'
+                % (repr(product_id), bus.title))
         bus_vendor = HWVendorIDSet().getByBusAndVendorID(bus, vendor_id)
         return HWDevice.selectOneBy(bus_vendor=bus_vendor,
                                     bus_product_id=product_id,
@@ -633,6 +635,10 @@ class HWDeviceSet:
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         args = []
         if product_id is not None:
+            if not isValidProductID(bus, product_id):
+                raise ParameterError(
+                    '%s is not a valid product ID for %s'
+                    % (repr(product_id), bus.title))
             args.append(HWDevice.bus_product_id == product_id)
         result_set = store.find(
             HWDevice, HWDevice.bus_vendor == bus_vendor, *args)

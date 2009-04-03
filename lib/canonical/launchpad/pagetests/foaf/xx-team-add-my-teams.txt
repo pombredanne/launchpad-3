@@ -71,6 +71,12 @@ your teams as members.
     >>> admin_browser.title
     'Ubuntu Team in Launchpad'
 
+    >>> browser.open('http://launchpad.dev/~ubuntu-team')
+    >>> browser.getLink('Add one of my teams')
+    Traceback (most recent call last):
+     ...
+    LinkNotFoundError
+
     >>> browser.open('http://launchpad.dev/~ubuntu-team/+add-my-teams')
     >>> print extract_text(find_tag_by_id(browser.contents, 'maincontent'))
     This is a restricted team

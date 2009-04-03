@@ -141,6 +141,7 @@ SourceForge instance which has several bugs that we wish to watch:
 Launchpad.dev bug #10 is the same bug as reported in example.com bug
 #1722250, so we add a watch against the remote bug.
 
+    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
     >>> from canonical.launchpad.interfaces import IPersonSet
     >>> from canonical.launchpad.ftests.externalbugtracker import (
     ...     new_bugtracker)
@@ -149,7 +150,8 @@ Launchpad.dev bug #10 is the same bug as reported in example.com bug
     >>> sample_person = getUtility(IPersonSet).getByEmail(
     ...     'test@canonical.com')
     >>> example_bugwatch = example_bug.addWatch(
-    ...     example_bug_tracker, '1722250', sample_person)
+    ...     example_bug_tracker, '1722250',
+    ...     getUtility(ILaunchpadCelebrities).janitor)
 
     >>> print_bugwatches(example_bug_tracker.watches)
     Remote bug 1722250: None
@@ -164,7 +166,7 @@ remote status for, the bug watch that we have created.
     >>> sourceforge = TestSourceForge(example_bug_tracker.baseurl)
     >>> bug_watch_updater.updateBugWatches(
     ...     sourceforge, example_bug_tracker.watches)
-    INFO:...:Updating 1 watches on http://bugs.some.where
+    INFO:...:Updating 1 watches for 1 bugs on http://bugs.some.where
     >>> print_bugwatches(example_bug_tracker.watches)
     Remote bug 1722250: Open:None
 
@@ -204,7 +206,7 @@ been checked.
     >>> sourceforge.trace_calls = True
     >>> bug_watch_updater.updateBugWatches(
     ...     sourceforge, sorted(example_bug_tracker.watches))
-    INFO:...:Updating 1 watches on http://bugs.some.where
+    INFO:...:Updating 1 watches for 1 bugs on http://bugs.some.where
     CALLED _getPage(u'support/tracker.php?aid=1722251')
 
 For the sake of this test we can set the bug tracker's batch_size to
@@ -216,7 +218,7 @@ None so that it will process all the updates at once:
     >>> sourceforge.batch_size = None
     >>> bug_watch_updater.updateBugWatches(
     ...     sourceforge, example_bug_tracker.watches)
-    INFO:...:Updating 10 watches on http://bugs.some.where
+    INFO:...:Updating 10 watches for 10 bugs on http://bugs.some.where
     CALLED _getPage(u'support/tracker.php?aid=1722250')
     CALLED _getPage(u'support/tracker.php?aid=1722251')
     CALLED _getPage(u'support/tracker.php?aid=1722252')

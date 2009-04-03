@@ -12,13 +12,10 @@ __all__ = [
 
 
 import datetime
-from xmlrpclib import Fault
 
 import pytz
 
 from bzrlib.urlutils import escape, unescape
-
-from twisted.python.util import mergeFunctionMetadata
 
 from zope.component import getUtility
 from zope.interface import implements
@@ -27,14 +24,16 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.ftests import login_person, logout
 from canonical.launchpad.interfaces.branch import (
-    BranchType, BranchCreationException, IBranchSet, UnknownBranchTypeError)
+    BranchType, BranchCreationException, UnknownBranchTypeError)
+from canonical.launchpad.interfaces.branchlookup import IBranchLookup
 from canonical.launchpad.interfaces.branchnamespace import (
     InvalidNamespace, lookup_branch_namespace, split_unique_name)
+from canonical.launchpad.interfaces import branchpuller
 from canonical.launchpad.interfaces.codehosting import (
     BRANCH_TRANSPORT, CONTROL_TRANSPORT, IBranchFileSystem, IBranchPuller,
     LAUNCHPAD_ANONYMOUS, LAUNCHPAD_SERVICES)
 from canonical.launchpad.interfaces.person import IPersonSet, NoSuchPerson
-from canonical.launchpad.interfaces.product import IProductSet, NoSuchProduct
+from canonical.launchpad.interfaces.product import NoSuchProduct
 from canonical.launchpad.interfaces.scriptactivity import IScriptActivitySet
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp import LaunchpadXMLRPCView
@@ -42,6 +41,7 @@ from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import (
     NameLookupFailed, NotFoundError)
 from canonical.launchpad.xmlrpc import faults
+from canonical.launchpad.xmlrpc.helpers import return_fault
 from canonical.launchpad.webapp.interaction import Participation
 
 
@@ -70,14 +70,11 @@ class BranchPuller(LaunchpadXMLRPCView):
         if branch.branch_type == BranchType.REMOTE:
             raise AssertionError(
                 'Remote branches should never be in the pull queue.')
-        if branch.product is None:
-            default_branch = None
-        else:
-            default_branch = branch.product.default_stacked_on_branch
+        default_branch = branch.target.default_stacked_on_branch
         if default_branch is None:
             default_branch = ''
-        elif (default_branch.private
-              and branch.branch_type == BranchType.MIRRORED):
+        elif (branch.branch_type == BranchType.MIRRORED
+              and default_branch.private):
             default_branch = ''
         else:
             default_branch = '/' + default_branch.unique_name
@@ -92,12 +89,13 @@ class BranchPuller(LaunchpadXMLRPCView):
         except KeyError:
             raise UnknownBranchTypeError(
                 'Unknown branch type: %r' % (branch_type,))
-        branches = getUtility(IBranchSet).getPullQueue(branch_type)
+        branches = getUtility(branchpuller.IBranchPuller).getPullQueue(
+            branch_type)
         return [self._getBranchPullInfo(branch) for branch in branches]
 
     def mirrorComplete(self, branch_id, last_revision_id):
         """See `IBranchPuller`."""
-        branch = getUtility(IBranchSet).get(branch_id)
+        branch = getUtility(IBranchLookup).get(branch_id)
         if branch is None:
             return faults.NoBranchWithID(branch_id)
         # See comment in startMirroring.
@@ -110,7 +108,7 @@ class BranchPuller(LaunchpadXMLRPCView):
 
     def mirrorFailed(self, branch_id, reason):
         """See `IBranchPuller`."""
-        branch = getUtility(IBranchSet).get(branch_id)
+        branch = getUtility(IBranchLookup).get(branch_id)
         if branch is None:
             return faults.NoBranchWithID(branch_id)
         # See comment in startMirroring.
@@ -128,7 +126,7 @@ class BranchPuller(LaunchpadXMLRPCView):
 
     def startMirroring(self, branch_id):
         """See `IBranchPuller`."""
-        branch = getUtility(IBranchSet).get(branch_id)
+        branch = getUtility(IBranchLookup).get(branch_id)
         if branch is None:
             return faults.NoBranchWithID(branch_id)
         # The puller runs as no user and may pull private branches. We need to
@@ -141,7 +139,7 @@ class BranchPuller(LaunchpadXMLRPCView):
         # We don't want the security proxy on the branch set because this
         # method should be able to see all branches and set stacking
         # information on any of them.
-        branch_set = removeSecurityProxy(getUtility(IBranchSet))
+        branch_set = removeSecurityProxy(getUtility(IBranchLookup))
         if stacked_on_location == '':
             stacked_on_branch = None
         else:
@@ -204,18 +202,6 @@ def run_with_login(login_id, function, *args, **kwargs):
         logout()
 
 
-def return_fault(function):
-    """Catch any Faults raised by 'function' and return them instead."""
-
-    def decorated(*args, **kwargs):
-        try:
-            return function(*args, **kwargs)
-        except Fault, fault:
-            return fault
-
-    return mergeFunctionMetadata(function, decorated)
-
-
 class BranchFileSystem(LaunchpadXMLRPCView):
     """See `IBranchFileSystem`."""
 
@@ -264,7 +250,7 @@ class BranchFileSystem(LaunchpadXMLRPCView):
     def requestMirror(self, login_id, branchID):
         """See `IBranchFileSystem`."""
         def request_mirror(requester):
-            branch = getUtility(IBranchSet).get(branchID)
+            branch = getUtility(IBranchLookup).get(branchID)
             # We don't really care who requests a mirror of a branch.
             branch.requestMirror()
             return True
@@ -288,16 +274,14 @@ class BranchFileSystem(LaunchpadXMLRPCView):
     def _serializeControlDirectory(self, requester, product_path,
                                    trailing_path):
         try:
-            owner_name, product_name, bazaar = product_path.split('/')
-        except ValueError:
-            # Wrong number of segments -- can't be a product.
+            namespace = lookup_branch_namespace(
+                unescape(product_path).encode('utf-8'))
+        except (InvalidNamespace, NotFoundError):
             return
-        if bazaar != '.bzr':
+        if not ('.bzr' == trailing_path or trailing_path.startswith('.bzr/')):
+            # '.bzr' is OK, '.bzr/foo' is OK, '.bzrfoo' is not.
             return
-        product = getUtility(IProductSet).getByName(product_name)
-        if product is None:
-            return
-        default_branch = product.default_stacked_on_branch
+        default_branch = namespace.target.default_stacked_on_branch
         if default_branch is None:
             return
         try:
@@ -307,7 +291,7 @@ class BranchFileSystem(LaunchpadXMLRPCView):
         return (
             CONTROL_TRANSPORT,
             {'default_stack_on': escape('/' + unique_name)},
-            '/'.join([bazaar, trailing_path]))
+            trailing_path)
 
     def translatePath(self, requester_id, path):
         """See `IBranchFileSystem`."""
@@ -318,7 +302,7 @@ class BranchFileSystem(LaunchpadXMLRPCView):
             stripped_path = path.strip('/')
             for first, second in iter_split(stripped_path, '/'):
                 # Is it a branch?
-                branch = getUtility(IBranchSet).getByUniqueName(
+                branch = getUtility(IBranchLookup).getByUniqueName(
                     unescape(first).encode('utf-8'))
                 if branch is not None:
                     branch = self._serializeBranch(requester, branch, second)

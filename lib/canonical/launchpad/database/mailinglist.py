@@ -23,10 +23,14 @@ from storm.expr import And, LeftJoin
 from storm.store import Store
 
 from sqlobject import ForeignKey, StringCol
+
 from zope.component import getUtility, queryAdapter
 from zope.event import notify
 from zope.interface import implements, providedBy
 from zope.security.proxy import removeSecurityProxy
+
+from lazr.lifecycle.event import ObjectCreatedEvent, ObjectModifiedEvent
+from lazr.lifecycle.snapshot import Snapshot
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
@@ -39,8 +43,6 @@ from canonical.launchpad.database.account import Account
 from canonical.launchpad.database.emailaddress import EmailAddress
 from canonical.launchpad.database.person import Person
 from canonical.launchpad.database.teammembership import TeamParticipation
-from canonical.launchpad.event import (
-    SQLObjectCreatedEvent, SQLObjectModifiedEvent)
 from canonical.launchpad.interfaces.emailaddress import (
     EmailAddressStatus, IEmailAddressSet)
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
@@ -51,7 +53,6 @@ from canonical.launchpad.interfaces.mailinglist import (
     MailingListStatus, PURGE_STATES, PostedMessageStatus, UnsafeToPurge)
 from canonical.launchpad.interfaces.account import AccountStatus
 from canonical.launchpad.validators.person import validate_public_person
-from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.lazr.interfaces.objectprivacy import IObjectPrivacy
 
 
@@ -267,7 +268,7 @@ class MailingList(SQLBase):
                 # than as a response to a user action.
                 removeSecurityProxy(email).status = (
                     EmailAddressStatus.VALIDATED)
-            assert email.person == self.team, (
+            assert email.personID == self.teamID, (
                 "Email already associated with another team.")
 
     def _setAndNotifyDateActivated(self):
@@ -285,7 +286,7 @@ class MailingList(SQLBase):
 
         old_mailinglist = Snapshot(self, providing=providedBy(self))
         self.date_activated = UTC_NOW
-        notify(SQLObjectModifiedEvent(
+        notify(ObjectModifiedEvent(
                 self,
                 object_before_modification=old_mailinglist,
                 edited_fields=['date_activated']))
@@ -296,8 +297,10 @@ class MailingList(SQLBase):
             'Only active mailing lists may be deactivated')
         self.status = MailingListStatus.DEACTIVATING
         email = getUtility(IEmailAddressSet).getByEmail(self.address)
-        if email == self.team.preferredemail:
-            self.team.setContactAddress(None)
+        if email is not None and self.team.preferredemail is not None:
+            if email.id == self.team.preferredemail.id:
+                self.team.setContactAddress(None)
+        assert email.personID == self.teamID, 'Incorrectly linked email.'
         email.status = EmailAddressStatus.NEW
 
     def reactivate(self):
@@ -369,7 +372,7 @@ class MailingList(SQLBase):
         if person.isTeam():
             raise CannotSubscribe('Teams cannot be mailing list members: %s' %
                                   person.displayname)
-        if address is not None and address.person != person:
+        if address is not None and address.personID != person.id:
             raise CannotSubscribe('%s does not own the email address: %s' %
                                   (person.displayname, address.email))
         subscription = self.getSubscription(person)
@@ -398,11 +401,14 @@ class MailingList(SQLBase):
             raise CannotChangeSubscription(
                 '%s is not a member of the mailing list: %s' %
                 (person.displayname, self.team.displayname))
-        if address is not None and address.person != person:
+        if address is not None and address.personID != person.id:
             raise CannotChangeSubscription(
                 '%s does not own the email address: %s' %
                 (person.displayname, address.email))
-        subscription.email_address = address
+        if address is None:
+            subscription.email_address = None
+        else:
+            subscription.email_addressID = address.id
 
     def getSubscribedAddresses(self):
         """See `IMailingList`."""
@@ -530,7 +536,7 @@ class MailingList(SQLBase):
                                        posted_message=message.raw,
                                        posted_date=message.datecreated,
                                        mailing_list=self)
-        notify(SQLObjectCreatedEvent(held_message))
+        notify(ObjectCreatedEvent(held_message))
         return held_message
 
     def getReviewableMessages(self):

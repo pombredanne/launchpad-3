@@ -26,19 +26,23 @@ __all__ = [
     'IServiceRootResource',
     'ITopLevelEntryLink',
     'IUnmarshallingDoesntNeedValue',
+    'IWebServiceConfiguration',
     'IWebBrowserInitiatedRequest',
     'LAZR_WEBSERVICE_NAME',
     'LAZR_WEBSERVICE_NS',
-    'WebServiceLayer',
+    'IWebServiceClientRequest',
+    'IWebServiceLayer',
     ]
 
+from zope.schema import Bool, Int, TextLine
 from zope.interface import Attribute, Interface
 # These two should really be imported from zope.interface, but
 # the import fascist complains because they are not in __all__ there.
 from zope.interface.interface import invariant
 from zope.interface.exceptions import Invalid
-from zope.publisher.interfaces.browser import IDefaultBrowserLayer
-
+from zope.publisher.interfaces.browser import (
+    IBrowserRequest, IDefaultBrowserLayer)
+from lazr.batchnavigator.interfaces import InvalidBatchSizeError
 
 # The namespace prefix for LAZR web service-related tags.
 LAZR_WEBSERVICE_NS = 'lazr.webservice'
@@ -221,8 +225,12 @@ class ITopLevelEntryLink(Interface):
                            "other end of the link.")
 
 
-class WebServiceLayer(IDefaultBrowserLayer):
-    """Marker interface for requests to the web service."""
+class IWebServiceClientRequest(IBrowserRequest):
+    """Marker interface requests to the web service."""
+
+
+class IWebServiceLayer(IWebServiceClientRequest, IDefaultBrowserLayer):
+    """Marker interface for registering views on the web service."""
 
 
 class IJSONRequestCache(Interface):
@@ -315,6 +323,78 @@ class IFieldMarshaller(Interface):
         """
 
 
+class IWebServiceConfiguration(Interface):
+    """A group of configuration settings for a web service.
+
+    These are miscellaneous strings that may differ in different web
+    services.
+    """
+    view_permission = TextLine(
+        title=u"View permission", default=u"zope.View",
+        description=u"The permission to use when checking object visibility.")
+
+    path_override = TextLine(
+        title=u"Web service path override", default=u"api",
+        description=u"The path component for Ajax clients to use when making "
+        "HTTP requests to the web service from their current virtual host. "
+        "The use of this path component (/api/foo instead of /foo) will "
+        "ensure that the request is processed as a web service request "
+        "instead of a website request.")
+
+    use_https = Bool(
+        title=u"Web service is secured",
+        default=True,
+        description=u"Whether or not requests to the web service are secured "
+        "through SSL.")
+
+    service_version_uri_prefix = Attribute(
+        """The versioning string, if any, to use as the URI prefix for web
+        service URIs. A popular string is 'beta', but you could also use
+        a version number or the date the API was finalized.""")
+
+    code_revision = Attribute(
+        """A string designating the current revision number of the code
+        running the webservice. This may be a revision number from version
+        control, or a hand-chosen version number.""")
+
+    show_tracebacks = Bool(
+        title=u"Show tracebacks to end-users",
+        default=True,
+        description=u"Whether or not to show tracebacks in an HTTP response "
+        "for a request that raised an exception.")
+
+    default_batch_size = Int(
+        title=u"The default batch size to use when serving a collection",
+        default=50,
+        description=u"When the client requests a collection and doesn't "
+        "specify how many entries they want, this many entries will be "
+        "served them in the first page.")
+
+    max_batch_size = Int(
+        title=u"The maximum batch size",
+        default=300,
+        description=u"When the client requests a batch of entries from "
+        "a collection, they will not be allowed to request more entries "
+        "in the batch than this.")
+
+    def createRequest(body_instream, environ):
+        """A factory method that creates a request for the web service.
+
+        It should have the correct publication set for the application.
+
+        :param body_instream: A file-like object containing the request
+            input stream.
+        :param environ: A dict containing the request environment.
+        """
+
+    def get_request_user():
+        """The user who made the current web service request.
+
+        'User' here has whatever meaning it has in your application. This
+        value will be fed back into your code.
+        """
+
+
 class IUnmarshallingDoesntNeedValue(Interface):
     """A marker interface for unmarshallers that work without values.
 
@@ -332,3 +412,5 @@ class IWebBrowserInitiatedRequest(Interface):
     know when a request was initiated by a web browser so that
     responses can be tweaked for their benefit.
     """
+
+InvalidBatchSizeError.__lazr_webservice_error__ = 400

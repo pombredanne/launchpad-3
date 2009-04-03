@@ -508,6 +508,37 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
 
         return [build for source, build, arch in result_set]
 
+    @property
+    def changes_file_text(self):
+        """See `ISourcePackagePublishingHistory`."""
+        # Imported locally to avoid circular dependencies.
+        from canonical.launchpad.database.queue import (
+            PackageUpload, PackageUploadSource)
+        from canonical.launchpad.database.sourcepackagerelease import (
+            SourcePackageRelease)
+
+        store = Store.of(self)
+        results = store.find(
+            LibraryFileAlias,
+            PackageUpload.changesfile == LibraryFileAlias.id,
+            SourcePackageRelease.upload_distroseriesID ==
+                PackageUpload.distroseriesID,
+            PackageUploadSource.packageupload == PackageUpload.id,
+            PackageUploadSource.sourcepackagerelease ==
+                SourcePackageRelease.id,
+            SourcePackagePublishingHistory.sourcepackagerelease ==
+                SourcePackageRelease.id,
+            SourcePackagePublishingHistory.id == self.id)
+
+        changesfile = results.one()
+
+        if changesfile is None:
+            # This should not happen in practice, but the code should
+            # not blow up because of bad data.
+            return None
+        
+        return changesfile.read()
+
     def createMissingBuilds(self, architectures_available=None,
                             pas_verify=None, logger=None):
         """See `ISourcePackagePublishingHistory`."""
@@ -556,7 +587,7 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         if logger is not None:
             logger.debug(
                 "Created %s [%d] in %s (%d)"
-                % (build.title, build.id, build.archive.title,
+                % (build.title, build.id, build.archive.displayname,
                    build_queue.lastscore))
 
         return build
@@ -803,6 +834,7 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
         bin_filename = bin_file.libraryfile.filename
         bin_size = bin_file.libraryfile.content.filesize
         bin_md5 = bin_file.libraryfile.content.md5
+        bin_sha1 = bin_file.libraryfile.content.sha1
         bin_filepath = os.path.join(
             makePoolPath(spr.name, self.component.name), bin_filename)
         # description field in index is an association of summary and
@@ -850,6 +882,7 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
         fields.append('Filename', bin_filepath)
         fields.append('Size', bin_size)
         fields.append('MD5sum', bin_md5)
+        fields.append('SHA1', bin_sha1)
         fields.append('Description', bin_description)
 
         # XXX cprov 2006-11-03: the extra override fields (Bugs, Origin and

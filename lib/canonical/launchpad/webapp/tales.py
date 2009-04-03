@@ -1,4 +1,4 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=C0103,W0613,R0911
 #
 """Implementation of the lp: htmlform: fmt: namespaces in TALES."""
@@ -32,8 +32,8 @@ import pytz
 from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
-    BuildStatus, IBug, IBugSet, IDistribution, IFAQSet, IProduct, IProject,
-    ISprint, LicenseStatus, NotFoundError)
+    ArchivePurpose, BuildStatus, IBug, IBugSet, IDistribution, IFAQSet,
+    IProduct, IProject, ISprint, LicenseStatus, NotFoundError)
 from canonical.launchpad.interfaces.launchpad import (
     IHasIcon, IHasLogo, IHasMugshot)
 from canonical.launchpad.interfaces.person import IPerson, IPersonSet
@@ -414,14 +414,22 @@ class ObjectFormatterAPI:
     def __init__(self, context):
         self._context = context
 
-    def url(self, view_name=None):
+    def url(self, view_name=None, rootsite=None):
         """Return the object's canonical URL.
 
         :param view_name: If not None, return the URL to the page with that
             name on this object.
+        :param rootsite: If not None, return the URL to the page on the
+            specified rootsite.  Note this is available only for subclasses
+            that allow specifying the rootsite.
         """
-        url = canonical_url(
-            self._context, path_only_if_possible=True, view_name=view_name)
+        try:
+            url = canonical_url(
+                self._context, path_only_if_possible=True,
+                rootsite=rootsite,
+                view_name=view_name)
+        except Unauthorized:
+            url = ""
         return url
 
     def api_url(self, context):
@@ -535,33 +543,43 @@ class ObjectImageDisplayAPI:
             return '/@@/meeting-mugshot'
         return None
 
+    def _default_icon_url(self, rootsite):
+        """Get the default icon URL."""
+        if rootsite is None:
+            root_url = ''
+        else:
+            root_url = allvhosts.configs[rootsite].rooturl[:-1]
+
+        default_icon = self.default_icon_resource(self._context)
+        if default_icon is None:
+            # We want to indicate that this object doesn't have an
+            # icon.
+            return None
+        url = root_url + default_icon
+        return url
+
+    def icon_url(self, rootsite):
+        """Return the URL for this object's icon."""
+        context = self._context
+        if context is None:
+            # We handle None specially and return an empty string.
+            return ''
+
+        if IHasIcon.providedBy(context) and context.icon is not None:
+            url = context.icon.getURL()
+        else:
+            url = self._default_icon_url(rootsite)
+        return url
+
     def icon(self, rootsite=None):
         """Return the appropriate <img> tag for this object's icon.
 
         :return: A string, or None if the context object doesn't have
             an icon.
         """
-        context = self._context
-        if context is None:
-            # we handle None specially and return an empty string
-            return ''
-
-        if IHasIcon.providedBy(context) and context.icon is not None:
-            url = context.icon.getURL()
-        else:
-            if rootsite is None:
-                root_url = ''
-            else:
-                root_url = allvhosts.configs[rootsite].rooturl[:-1]
-
-            default_icon = self.default_icon_resource(context)
-            if default_icon is None:
-                # We want to indicate that this object doesn't have an
-                # icon.
-                return None
-
-            url = root_url + default_icon
-
+        url = self.icon_url(rootsite)
+        if url is None or url == '':
+            return url
         icon = '<img alt="" width="14" height="14" src="%s" />'
         return icon % url
 
@@ -802,6 +820,7 @@ class KarmaCategoryImageDisplayAPI(ObjectImageDisplayAPI):
         'code': '/@@/branch',
         'translations': '/@@/translation',
         'specs': '/@@/blueprint',
+        'soyuz': '/@@/package-source',
         'answers': '/@@/question'}
 
     def icon(self):
@@ -850,6 +869,31 @@ class BuildImageDisplayAPI(ObjectImageDisplayAPI):
         return self.icon_template % (alt, title, source)
 
 
+class ArchiveImageDisplayAPI(ObjectImageDisplayAPI):
+    """Adapter for IArchive objects to an image.
+
+    Used for image:icon.
+    """
+    icon_template = """
+        <img width="14" height="14" alt="%s" title="%s" src="%s" />
+        """
+
+    def icon(self):
+        """Return the appropriate <img> tag for an archive."""
+        icon_map = {
+            ArchivePurpose.PRIMARY: '/@@/distribution',
+            ArchivePurpose.PARTNER: '/@@/distribution',
+            ArchivePurpose.PPA: '/@@/package-source',
+            ArchivePurpose.COPY: '/@@/distribution',
+            }
+
+        alt = '[%s]' % self._context.purpose.title
+        title = self._context.purpose.title
+        source = icon_map[self._context.purpose]
+
+        return self.icon_template % (alt, title, source)
+
+
 class BadgeDisplayAPI:
     """Adapter for IHasBadges to the images for the badges.
 
@@ -874,11 +918,17 @@ class BadgeDisplayAPI:
 class PersonFormatterAPI(ObjectFormatterAPI):
     """Adapter for `IPerson` objects to a formatted string."""
 
+    traversable_names = {'link': 'link', 'url': 'url', 'api_url': 'api_url',
+                         'icon_url': 'icon_url',
+                         'displayname': 'displayname',
+                         'unique_displayname': 'unique_displayname',
+                         }
+
     final_traversable_names = {'local-time': 'local_time'}
 
     def traverse(self, name, furtherPath):
         """Special-case traversal for links with an optional rootsite."""
-        if name.startswith('link:'):
+        if name.startswith('link:') or name.startswith('url:'):
             rootsite = name.split(':')[1]
             extra_path = None
             if len(furtherPath) > 0:
@@ -886,7 +936,10 @@ class PersonFormatterAPI(ObjectFormatterAPI):
             # Remove remaining entries in furtherPath so that traversal
             # stops here.
             del furtherPath[:]
-            return self.link(extra_path, rootsite=rootsite)
+            if name.startswith('link:'):
+                return self.link(extra_path, rootsite=rootsite)
+            else:
+                return self.url(extra_path, rootsite=rootsite)
         else:
             return super(PersonFormatterAPI, self).traverse(name, furtherPath)
 
@@ -903,13 +956,31 @@ class PersonFormatterAPI(ObjectFormatterAPI):
         """
         person = self._context
         url = canonical_url(person, rootsite=rootsite, view_name=view_name)
-        image_html = ObjectImageDisplayAPI(person).icon(rootsite=rootsite)
-        return '<a href="%s">%s&nbsp;%s</a>' % (
-            url, image_html, cgi.escape(person.browsername))
+        image_url = ObjectImageDisplayAPI(person).icon_url(rootsite=rootsite)
+        return (u'<a href="%s" style="padding-left: 18px; '
+                'background: url(%s) '
+                'center left no-repeat;">%s</a>') % (
+            url, image_url, cgi.escape(person.browsername))
 
+    def displayname(self, view_name, rootsite=None):
+        """Return the displayname as a string."""
+        person = self._context
+        return person.displayname
+
+    def unique_displayname(self, view_name, rootsite=None):
+        """Return the unique_displayname as a string."""
+        person = self._context
+        return person.unique_displayname
+
+    def icon_url(self, view_name, rootsite=None):
+        """Return the URL for the person's icon."""
+        return ObjectImageDisplayAPI(self._context).icon_url(
+            rootsite=rootsite)
 
 class TeamFormatterAPI(PersonFormatterAPI):
     """Adapter for `ITeam` objects to a formatted string."""
+
+    hidden = u'<hidden>'
 
     def url(self, view_name=None):
         """See `ObjectFormatterAPI`."""
@@ -927,10 +998,44 @@ class TeamFormatterAPI(PersonFormatterAPI):
 
     def link(self, view_name, rootsite=None):
         """See `ObjectFormatterAPI`."""
-        if not check_permission('launchpad.View', self._context):
+        person = self._context
+        if not check_permission('launchpad.View', person):
             # This person has no permission to view the team details.
-            return '&lt;redacted&gt;'
+            image_url = ObjectImageDisplayAPI(person)._default_icon_url(
+                rootsite=rootsite)
+            return ('<span style="padding-left: 18px; background: url(%s)'
+                    'center left no-repeat;">%s</span>') % (
+                image_url, cgi.escape(self.hidden))
         return super(TeamFormatterAPI, self).link(view_name, rootsite)
+
+    def displayname(self, view_name, rootsite=None):
+        """See `PersonFormatterAPI`."""
+        person = self._context
+        if not check_permission('launchpad.View', person):
+            # This person has no permission to view the team details.
+            return self.hidden
+        return super(TeamFormatterAPI, self).displayname(view_name, rootsite)
+
+    def unique_displayname(self, view_name, rootsite=None):
+        """See `PersonFormatterAPI`."""
+        person = self._context
+        if not check_permission('launchpad.View', person):
+            # This person has no permission to view the team details.
+            return self.hidden
+        return super(TeamFormatterAPI, self).unique_displayname(view_name,
+                                                                rootsite)
+    def icon_url(self, view_name, rootsite=None):
+        """Return the URL for the team's icon.
+
+        If the team is private use the default team icon url.
+        """
+        person = self._context
+        if not check_permission('launchpad.View', person):
+            image_url = ObjectImageDisplayAPI(person)._default_icon_url(
+                rootsite=rootsite)
+            return image_url
+
+        return ObjectImageDisplayAPI(person).icon_url(rootsite=rootsite)
 
 
 class CustomizableFormatter(ObjectFormatterAPI):
@@ -2007,6 +2112,24 @@ class FormattersAPI:
         return '&nbsp;' * len(groups[0])
 
     @staticmethod
+    def _split_url_and_trailers(url):
+        """Given a URL return a tuple of the URL and punctuation trailers.
+
+        :return: an unescaped url, an unescaped trailer.
+        """
+        # The text will already have been cgi escaped.  We temporarily
+        # unescape it so that we can strip common trailing characters
+        # that aren't part of the URL.
+        url = xml_unescape(url)
+        match = FormattersAPI._re_url_trailers.search(url)
+        if match:
+            trailers = match.group(1)
+            url = url[:-len(trailers)]
+        else:
+            trailers = ''
+        return url, trailers
+
+    @staticmethod
     def _linkify_substitution(match):
         if match.group('bug') is not None:
             bugnum = match.group('bugnum')
@@ -2031,13 +2154,8 @@ class FormattersAPI:
             # The text will already have been cgi escaped.  We temporarily
             # unescape it so that we can strip common trailing characters
             # that aren't part of the URL.
-            url = xml_unescape(match.group('url'))
-            match = FormattersAPI._re_url_trailers.search(url)
-            if match:
-                trailers = match.group(1)
-                url = url[:-len(trailers)]
-            else:
-                trailers = ''
+            url = match.group('url')
+            url, trailers = FormattersAPI._split_url_and_trailers(url)
             # We use nofollow for these links to reduce the value of
             # adding spam URLs to our comments; it's a way of moderately
             # devaluing the return on effort for spammers that consider
@@ -2064,6 +2182,16 @@ class FormattersAPI:
             root_url = config.launchpad.oops_root_url
             url = root_url + match.group('oopscode')
             return '<a href="%s">%s</a>' % (url, text)
+        elif match.group('lpbranchurl') is not None:
+            lp_url = match.group('lpbranchurl')
+            lp_url, trailers = FormattersAPI._split_url_and_trailers(lp_url)
+            path = match.group('branch')
+            url = '/+branch/%s' % path
+            url, trailers = FormattersAPI._split_url_and_trailers(url)
+            return '<a href="%s">%s</a>%s' % (
+                cgi.escape(url, quote=True),
+                cgi.escape(lp_url),
+                cgi.escape(trailers))
         else:
             raise AssertionError("Unknown pattern matched.")
 
@@ -2171,16 +2299,20 @@ class FormattersAPI:
         )?
       ) |
       (?P<bug>
-        \bbug(?:\s|<br\s*/>)*(?:\#|report|number\.?|num\.?|no\.?)?(?:\s|<br\s*/>)*
+        \bbug(?:[\s=-]|<br\s*/>)*(?:\#|report|number\.?|num\.?|no\.?)?(?:[\s=-]|<br\s*/>)*
         0*(?P<bugnum>\d+)
       ) |
       (?P<faq>
-        \bfaq(?:\s|<br\s*/>)*(?:\#|item|number\.?|num\.?|no\.?)?(?:\s|<br\s*/>)*
+        \bfaq(?:[\s=-]|<br\s*/>)*(?:\#|item|number\.?|num\.?|no\.?)?(?:[\s=-]|<br\s*/>)*
         0*(?P<faqnum>\d+)
       ) |
       (?P<oops>
         \boops\s*-?\s*
         (?P<oopscode> \d* [a-z]+ \d+)
+      ) |
+      (?P<lpbranchurl>
+        \blp:(?:///|/)?
+        (?P<branch>[%(unreserved)s][%(unreserved)s/]*)
       )
     ''' % {'unreserved': "-a-zA-Z0-9._~%!$&'()*+,;="},
                              re.IGNORECASE | re.VERBOSE)
@@ -2200,7 +2332,6 @@ class FormattersAPI:
         #    only if the first is between 60 and 80 characters and the
         #    second does not begin with white space.
         # 3. Use <br /> to split logical lines within a paragraph.
-
         output = []
         first_para = True
         for para in split_paragraphs(self._stringtoformat):

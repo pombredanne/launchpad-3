@@ -13,7 +13,9 @@
 
 <div metal:fill-slot="main">
 
-  <h1>Edit dependencies for the <tal:title replace="context/title" /></h1>
+  <h1 tal:content="CONTEXTS/fmt:pagetitle">
+    Edit dependencies for Blah PPA
+  </h1>
 
   <div metal:use-macro="context/@@launchpad_form/form">
 
@@ -67,7 +69,7 @@
   </div> <!-- launchpad_form -->
 
 <script type="text/javascript">
-   YUI().use("*", function(Y) {
+   YUI().use("node", function(Y) {
 
        // Highlight (setting bold font-weight) the label for the
        // selected option in a given NodesList. Assumes the input is

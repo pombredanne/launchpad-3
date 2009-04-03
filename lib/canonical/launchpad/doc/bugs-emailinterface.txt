@@ -1498,14 +1498,14 @@ An email can contain multiple commands, even for different bugs.
     ...         bugtask.status.title)
     ...     print "event: new bugtask, bug %i %s" % (bugtask.bug.id,
     ...         bugtask.importance.title)
-    >>> from canonical.launchpad.event.interfaces import (
-    ...     ISQLObjectCreatedEvent, ISQLObjectModifiedEvent)
+    >>> from lazr.lifecycle.interfaces import (
+    ...     IObjectCreatedEvent, IObjectModifiedEvent)
     >>> from canonical.launchpad.ftests.event import TestEventListener
     >>> from canonical.launchpad.interfaces.bugtask import IBugTask
     >>> bugtask_modified_listener = TestEventListener(
-    ...     IBugTask, ISQLObjectModifiedEvent, print_bugtask_modified_event)
+    ...     IBugTask, IObjectModifiedEvent, print_bugtask_modified_event)
     >>> bugtask_created_listener = TestEventListener(
-    ...     IBugTask, ISQLObjectCreatedEvent, print_bugtask_created_event)
+    ...     IBugTask, IObjectCreatedEvent, print_bugtask_created_event)
     >>> bug_four_upstream_task = bug_four.bugtasks[0]
     >>> print bug_four_upstream_task.status.name
     NEW
@@ -1582,13 +1582,18 @@ which bug task to edit:
     mozilla-firefox (Ubuntu): New, assigned to no one
     mozilla-firefox (Debian): Confirmed, assigned to no one
 
-    >>> bug_notification = BugNotification.selectFirst(orderBy='-id')
-    >>> print bug_notification.bug.id
+    >>> pending_notifications = BugNotification.select(
+    ...     orderBy='-id', limit=2)
+    >>> for bug_notification in pending_notifications:
+    ...     print bug_notification.bug.id
+    ...     print bug_notification.message.text_contents
     1
-    >>> print bug_notification.message.text_contents
     ** Changed in: firefox
-    ...
-        Status: New => Confirmed
+         Assignee: Mark Shuttleworth (sabdfl) => Sample Person (name12)
+    1
+    ** Changed in: firefox
+           Status: New => Confirmed...
+
 
 === The user is a package bug supervisor ===
 
@@ -1618,13 +1623,16 @@ which bug task to edit:
     mozilla-firefox (Ubuntu): Confirmed, assigned to No Privileges Person
     mozilla-firefox (Debian): Confirmed, assigned to no one
 
-    >>> bug_notification = BugNotification.selectFirst(orderBy='-id')
-    >>> print bug_notification.bug.id
+    >>> pending_notifications = BugNotification.select(orderBy='-id', limit=2)
+    >>> for bug_notification in pending_notifications:
+    ...     print bug_notification.bug.id
+    ...     print bug_notification.message.text_contents
     1
-    >>> print bug_notification.message.text_contents
     ** Changed in: mozilla-firefox (Ubuntu)
-        Assignee: (unassigned) => No Privileges Person
-    ...
+         Assignee: (unassigned) => No Privileges Person (no-priv)
+    1
+    ** Changed in: mozilla-firefox (Ubuntu)
+           Status: New => Confirmed
 
 === The user is a bug supervisor of a distribution ===
 
@@ -1644,13 +1652,16 @@ XXX: TBD after InitialBugContacts is implemented.
     mozilla-firefox (Ubuntu): New, assigned to Sample Person
     mozilla-firefox (Debian): Confirmed, assigned to no one
 
-    >>> bug_notification = BugNotification.selectFirst(orderBy='-id')
-    >>> print bug_notification.bug.id
+    >>> pending_notifications = BugNotification.select(orderBy='-id', limit=2)
+    >>> for bug_notification in pending_notifications:
+    ...     print bug_notification.bug.id
+    ...     print bug_notification.message.text_contents
     1
-    >>> print bug_notification.message.text_contents
     ** Changed in: mozilla-firefox (Ubuntu)
-        Assignee: No Privileges Person (no-priv) => Sample Person (name12)
-    ...
+         Assignee: No Privileges Person (no-priv) => Sample Person (name12)
+    1
+    ** Changed in: mozilla-firefox (Ubuntu)
+           Status: Confirmed => New
 
 
 === No matching bug task ===
@@ -1893,26 +1904,6 @@ to the specified team.
 
     >>> print ff_bug.bugtasks[-1].assignee.name
     warty-gnome
-
-We don't use the preffered email address to refer to the assignee in
-any email notifications. Instead, we always use the unique
-displayname - a combination of the user's display name and their unique
-Launchpad username.
-
-    >>> print wartygnome.unique_displayname
-    Warty Gnome Team (warty-gnome)
-    >>> from canonical.launchpad.mailnotification import (
-    ...     get_bug_edit_notification_texts)
-    >>> from canonical.launchpad.components.bug import BugDelta
-    >>> from canonical.launchpad.webapp.publisher import canonical_url
-    >>> bug_delta = BugDelta(
-    ...     bug=ff_bug,
-    ...     bugurl=canonical_url(ff_bug),
-    ...     user=getUtility(IPersonSet).getByEmail('test@canonical.com'),
-    ...     added_bugtasks=ff_bug.bugtasks[-1])
-    >>> print get_bug_edit_notification_texts(bug_delta)[0]
-    **...
-    ...Assignee: Warty Gnome Team (warty-gnome)...
 
 
 == Recovering from errors ==
@@ -2742,8 +2733,11 @@ set the datecreated field of the bug's initial message (see bug
 
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
 
+    >>> from canonical.launchpad.interfaces.launchpad import (
+    ...     ILaunchpadCelebrities)
     >>> bug_tracker = new_bugtracker(BugTrackerType.TRAC)
-    >>> bug_watch = bug_with_watch.addWatch(bug_tracker, '12345', no_priv)
+    >>> bug_watch = bug_with_watch.addWatch(
+    ...     bug_tracker, '12345', getUtility(ILaunchpadCelebrities).janitor)
 
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser(config.processmail.dbuser)

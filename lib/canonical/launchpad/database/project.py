@@ -37,7 +37,7 @@ from canonical.launchpad.database.bug import (
     get_bug_tags, get_bug_tags_open_count)
 from canonical.launchpad.database.bugtarget import BugTargetBase
 from canonical.launchpad.database.bugtask import BugTask
-from canonical.launchpad.database.faq import FAQ, FAQSearch
+from lp.answers.model.faq import FAQ, FAQSearch
 from canonical.launchpad.database.karma import KarmaContextMixin
 from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.mentoringoffer import MentoringOffer
@@ -51,7 +51,7 @@ from canonical.launchpad.database.projectbounty import ProjectBounty
 from canonical.launchpad.database.specification import (
     HasSpecificationsMixin, Specification)
 from canonical.launchpad.database.sprint import HasSprintsMixin
-from canonical.launchpad.database.question import QuestionTargetSearch
+from lp.answers.model.question import QuestionTargetSearch
 from canonical.launchpad.database.structuralsubscription import (
     StructuralSubscriptionTargetMixin)
 from canonical.launchpad.helpers import shortlist
@@ -270,6 +270,14 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """Customize `search_params` for this milestone."""
         search_params.setProject(self)
 
+    @property
+    def official_bug_tags(self):
+        """See `IHasBugs`."""
+        official_bug_tags = set()
+        for product in self.products:
+            official_bug_tags.update(product.official_bug_tags)
+        return sorted(official_bug_tags)
+
     def getUsedBugTags(self):
         """See `IHasBugs`."""
         if not self.products:
@@ -349,10 +357,10 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """
         return self.products.count() != 0
 
-    def _getMilestones(self, only_visible):
+    def _getMilestones(self, only_active):
         """Return a list of milestones for this project.
 
-        If only_visible is True, only visible milestones are returned,
+        If only_active is True, only active milestones are returned,
         else all milestones.
 
         A project has a milestone named 'A', if at least one of its
@@ -363,18 +371,18 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
         columns = (
             Milestone.name,
             SQL('MIN(Milestone.dateexpected)'),
-            SQL('BOOL_OR(Milestone.visible)'),
+            SQL('BOOL_OR(Milestone.active)'),
             )
         conditions = And(Milestone.product == Product.id,
                          Product.project == self,
                          Product.active == True)
         result = store.find(columns, conditions)
         result.group_by(Milestone.name)
-        if only_visible:
-            result.having('BOOL_OR(Milestone.visible) = TRUE')
+        if only_active:
+            result.having('BOOL_OR(Milestone.active) = TRUE')
         milestones = shortlist(
-            [ProjectMilestone(self, name, dateexpected, visible)
-             for name, dateexpected, visible in result])
+            [ProjectMilestone(self, name, dateexpected, active)
+             for name, dateexpected, active in result])
         return sorted(milestones, key=milestone_sort_key, reverse=True)
 
     @property
@@ -497,8 +505,7 @@ class ProjectSet:
         if bazaar:
             clauseTables.add('Product')
             clauseTables.add('ProductSeries')
-            queries.append('(ProductSeries.import_branch IS NOT NULL OR '
-                           'ProductSeries.user_branch IS NOT NULL)')
+            queries.append('(ProductSeries.branch IS NOT NULL)')
             queries.append('ProductSeries.product=Product.id')
 
         if text:

@@ -29,10 +29,10 @@
       # (which is only interpreted by IE), so we have to use
       # /+icing-ubuntu/ie.css rather than using request/icing_url.
     </tal:XXX>
-		<!--[if lt IE 7]>
+                <!--[if lt IE 7]>
     <style type="text/css" media="all">
       @import url(/+icing-ubuntu/ie.css);</style>
-		<![endif]-->
+                <![endif]-->
 
     <metal:block define-slot="head_epilogue"></metal:block>
 
@@ -93,15 +93,16 @@
       <div id="maincontent" class="column span-16 append-1 last">
         <div class="breadcrumb">
           <span class="right push-1">
-            <tal:block condition="request/lp:person">
+            <tal:block condition="view/account">
               <form action="/+logout" class="login" method="post">
-                Logged in as <span tal:replace="request/lp:person/displayname" />
+                Logged in as
+                <span tal:replace="view/account/displayname" />
                   &ndash;
                 <input type="submit" value="Log Out" />
               </form>
             </tal:block>
 
-            <tal:block condition="not: request/lp:person">
+            <tal:block condition="not: view/account">
               Not logged in &#8212;
               <a href="/login">
                 Log In / Register

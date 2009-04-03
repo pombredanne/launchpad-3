@@ -134,19 +134,18 @@ def bugtask_sort_key(bugtask):
 class BugTaskDelta:
     """See `IBugTaskDelta`."""
     implements(IBugTaskDelta)
-    def __init__(self, bugtask, product=None,
-                 sourcepackagename=None, status=None, importance=None,
+    def __init__(self, bugtask, status=None, importance=None,
                  assignee=None, milestone=None, statusexplanation=None,
-                 bugwatch=None):
+                 bugwatch=None, target=None):
         self.bugtask = bugtask
-        self.product = product
-        self.sourcepackagename = sourcepackagename
-        self.status = status
-        self.importance = importance
+
         self.assignee = assignee
-        self.target = milestone
-        self.statusexplanation = statusexplanation
         self.bugwatch = bugwatch
+        self.importance = importance
+        self.milestone = milestone
+        self.status = status
+        self.statusexplanation = statusexplanation
+        self.target = target
 
 
 class BugTaskMixin:
@@ -850,8 +849,7 @@ class BugTask(SQLBase, BugTaskMixin):
             # No change to the assignee, so nothing to do.
             return
 
-        UTC = pytz.timezone('UTC')
-        now = datetime.datetime.now(UTC)
+        now = datetime.datetime.now(pytz.UTC)
         if self.assignee and not assignee:
             # The assignee is being cleared, so clear the date_assigned
             # value.
@@ -988,24 +986,20 @@ class BugTask(SQLBase, BugTaskMixin):
 
     def getDelta(self, old_task):
         """See `IBugTask`."""
-        changes = {}
-        if ((IUpstreamBugTask.providedBy(old_task) and
-             IUpstreamBugTask.providedBy(self)) or
-            (IProductSeriesBugTask.providedBy(old_task) and
-             IProductSeriesBugTask.providedBy(self))):
-            if old_task.product != self.product:
-                changes["product"] = {}
-                changes["product"]["old"] = old_task.product
-                changes["product"]["new"] = self.product
-        elif ((IDistroBugTask.providedBy(old_task) and
-               IDistroBugTask.providedBy(self)) or
-              (IDistroSeriesBugTask.providedBy(old_task) and
-               IDistroSeriesBugTask.providedBy(self))):
-            if old_task.sourcepackagename != self.sourcepackagename:
-                old = old_task
-                changes["sourcepackagename"] = {}
-                changes["sourcepackagename"]["new"] = self.sourcepackagename
-                changes["sourcepackagename"]["old"] = old.sourcepackagename
+        valid_interfaces = [
+            IUpstreamBugTask,
+            IProductSeriesBugTask,
+            IDistroBugTask,
+            IDistroSeriesBugTask,
+            ]
+
+        # This tries to find a matching pair of bug tasks, i.e. where
+        # both provide IUpstreamBugTask, or both IDistroBugTask.
+        # Failing that, it drops off the bottom of the loop and raises
+        # the TypeError.
+        for interface in valid_interfaces:
+            if interface.providedBy(self) and interface.providedBy(old_task):
+                break
         else:
             raise TypeError(
                 "Can't calculate delta on bug tasks of incompatible types: "
@@ -1013,7 +1007,8 @@ class BugTask(SQLBase, BugTaskMixin):
 
         # calculate the differences in the fields that both types of tasks
         # have in common
-        for field_name in ("status", "importance",
+        changes = {}
+        for field_name in ("target", "status", "importance",
                            "assignee", "bugwatch", "milestone"):
             old_val = getattr(old_task, field_name)
             new_val = getattr(self, field_name)
@@ -1510,6 +1505,17 @@ class BugTaskSet:
             )
             """ % sqlvalues(bug_commenter=params.bug_commenter)
             extra_clauses.append(bug_commenter_clause)
+
+        if params.affected_user:
+            affected_user_clause = """
+            BugTask.id IN (
+                SELECT BugTask.id FROM BugTask, BugAffectsPerson
+                WHERE BugTask.bug = BugAffectsPerson.bug
+                AND BugAffectsPerson.person = %(affected_user)s
+                AND BugAffectsPerson.affected = TRUE
+            )
+            """ % sqlvalues(affected_user=params.affected_user)
+            extra_clauses.append(affected_user_clause)
 
         if params.nominated_for:
             mappings = sqlvalues(

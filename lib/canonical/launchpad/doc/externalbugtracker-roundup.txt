@@ -121,9 +121,11 @@ First, we create some bug watches to test with:
 
     >>> example_bug_tracker = new_bugtracker(BugTrackerType.ROUNDUP)
 
+    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
     >>> example_bug = getUtility(IBugSet).get(10)
     >>> example_bugwatch = example_bug.addWatch(
-    ...     example_bug_tracker, '1', sample_person)
+    ...     example_bug_tracker, '1',
+    ...     getUtility(ILaunchpadCelebrities).janitor)
 
 
 Collect the Example.com watches:
@@ -140,7 +142,7 @@ And have a Roundup instance process them:
     >>> roundup = TestRoundup(example_bug_tracker.baseurl)
     >>> bug_watch_updater.updateBugWatches(
     ...     roundup, example_bug_tracker.watches)
-    INFO:...:Updating 1 watches on http://bugs.some.where
+    INFO:...:Updating 1 watches for 1 bugs on http://bugs.some.where
     >>> print_bugwatches(example_bug_tracker.watches)
     Remote bug 1: 1
 
@@ -174,7 +176,7 @@ We'll add some more watches now.
     >>> roundup.trace_calls = True
     >>> bug_watch_updater.updateBugWatches(
     ...     roundup, example_bug_tracker.watches)
-    INFO:...:Updating 11 watches on http://bugs.some.where
+    INFO:...:Updating 11 watches for 11 bugs on http://bugs.some.where
     CALLED urlopen(u'http://.../issue?...@startwith=0')
 
     >>> print_bugwatches(example_bug_tracker.watches,

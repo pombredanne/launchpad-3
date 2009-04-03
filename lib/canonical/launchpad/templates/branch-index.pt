@@ -241,7 +241,7 @@
                 condition="job/requesting_user">
                 (requested by
                 <tal:requested-by-user
-                   content="structure job/requesting_user/fmt:link">
+                   replace="structure job/requesting_user/fmt:link">
                   Some user.
                 </tal:requested-by-user>)</tal:requested-by>.
             </tal:overdue>
@@ -312,7 +312,7 @@
     </div>
     <div tal:condition="not:view/landing_targets">
       &raquo;
-      Not proposed for merging
+      This branch is not proposed for merging into any others.
     </div>
 
 
@@ -414,13 +414,13 @@
     <li>
       <a tal:attributes="href context/owner/fmt:url">
         Other branches owned by <tal:person
-        replace="context/owner/displayname">Owner</tal:person>
+        replace="context/owner/fmt:displayname">Owner</tal:person>
       </a>
     </li>
     <li tal:condition="not:view/owner_is_registrant">
       <a tal:attributes="href string:${context/registrant/fmt:url}/+registeredbranches">
         Other branches registered by <tal:person
-        replace="context/registrant/displayname">Registrant</tal:person>
+        replace="context/registrant/fmt:displayname">Registrant</tal:person>
       </a>
     </li>
   </ul>

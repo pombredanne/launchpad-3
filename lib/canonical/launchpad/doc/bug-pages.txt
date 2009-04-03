@@ -3,19 +3,19 @@
 == Filing a Bug ==
 
 There are three objects on which you can file a bug. An
-SQLObjectCreatedEvent is published when the bug is filed. Let's register
+ObjectCreatedEvent is published when the bug is filed. Let's register
 an event listener to demonstrate this.
 
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> import transaction
 
     >>> from canonical.launchpad.ftests.event import TestEventListener
-    >>> from canonical.launchpad.event.interfaces import ISQLObjectCreatedEvent
+    >>> from lazr.lifecycle.event import IObjectCreatedEvent
     >>> from canonical.launchpad.interfaces import IBug
     >>> def on_created_event(object, event):
-    ...     print "SQLObjectCreatedEvent: %r" % object
+    ...     print "ObjectCreatedEvent: %r" % object
     >>> on_created_listener = TestEventListener(
-    ...     IBug, ISQLObjectCreatedEvent, on_created_event)
+    ...     IBug, IObjectCreatedEvent, on_created_event)
 
 1. Filing a bug on a distribution.
 
@@ -49,7 +49,7 @@ comment, of the bug report.
     >>> launchbag.add(ubuntu)
 
     >>> ubuntu_filebug.initialize()
-    SQLObjectCreatedEvent: <Bug at ...>
+    ObjectCreatedEvent: <Bug at ...>
 
     >>> launchbag.clear()
 
@@ -86,7 +86,7 @@ the bugtask.
     >>> firefox_filebug = getMultiAdapter((firefox, request), name="+filebug")
 
     >>> firefox_filebug.initialize()
-    SQLObjectCreatedEvent: <Bug at ...>
+    ObjectCreatedEvent: <Bug at ...>
 
 3. Filing a bug on a distribution source package.
 
@@ -108,7 +108,7 @@ You can also access the +filebug page from a sourcepackage.
     >>> launchbag.add(ubuntu)
 
     >>> ubuntu_firefox_filebug.initialize()
-    SQLObjectCreatedEvent: <Bug at ...>
+    ObjectCreatedEvent: <Bug at ...>
 
     >>> launchbag.clear()
 
@@ -321,7 +321,7 @@ However, if we now unsubscribe Foo Bar, it will say
 'Subscribe/Unsubscribe' since he will have the option of either
 subscribing himself or unsubscribing the Launchpad team.
 
-    >>> bug_one.unsubscribe(foo_bar)
+    >>> bug_one.unsubscribe(foo_bar, foo_bar)
 
     >>> bug_menu = BugContextMenu(bug_one_bugtask)
     >>> bug_menu.subscription().text
@@ -337,7 +337,7 @@ other team, it will say only 'Subscribe'.
     >>> shipit_team = getUtility(IPersonSet).getByName('shipit-admins')
     >>> foo_bar.inTeam(shipit_team)
     False
-    >>> bug_one.unsubscribe(launchpad_team)
+    >>> bug_one.unsubscribe(launchpad_team, foo_bar)
     >>> bug_one.subscribe(shipit_team, shipit_team)
     <BugSubscription at ...>
 
@@ -777,3 +777,71 @@ users.
     True
 
     >>> test_config_data = config.pop('test_data')
+
+
+== Displaying BugActivity interleaved with comments ==
+
+BugTaskView offers a means for us to get a list of comments and activity
+for a bug, ordered by date.
+
+First, some set-up.
+
+    >>> import pytz
+    >>> from datetime import datetime
+    >>> from canonical.launchpad.components.bugchange import BugTitleChange
+    >>> nowish = datetime(
+    ...     2009, 3, 26, 21, 37, 45, tzinfo=pytz.timezone('UTC'))
+
+    >>> login('foo.bar@canonical.com')
+    >>> bug = factory.makeBug(title="A bug title")
+    >>> title_change = BugTitleChange(
+    ...     when=nowish, person=foo_bar, what_changed='title',
+    ...     old_value=bug.title, new_value="A new bug title")
+    >>> bug.addChange(title_change)
+
+    >>> request = LaunchpadTestRequest(
+    ...     method="POST",
+    ...     form={'field.subject': bug.title,
+    ...           'field.comment': "A comment, for the reading of.",
+    ...           'field.actions.save': 'Save Changes'})
+    >>> view = getMultiAdapter(
+    ...     (bug.bugtasks[0], request), name="+addcomment-form")
+    >>> view.initialize()
+
+    >>> flush_database_updates()
+    >>> transaction.commit()
+
+    >>> request = LaunchpadTestRequest(method="GET")
+    >>> view = getMultiAdapter(
+    ...     (bug.bugtasks[0], request), name="+index")
+
+The activity_by_date property of BugTaskView returns a dict of
+BugActivityItems grouped by the date on which they occurred.
+
+    >>> print pretty(view.activity_by_date)
+    {datetime.datetime(2009, 3, 26...): [<...BugActivityItem...>]}
+
+The activity_and_comments property of BugTaskView is a list of comments
+and activity on a bug, ordered by the date that they occurred. Each item
+is encapsulated in a dict, in the form: {'comment': <BugComment>} or
+{'activity': [<BugActivityItem>...]}. Each dict also contains a 'date'
+item, which is used to sort the list.
+
+If we iterate over the list of activity_and_comments we can examine, in
+order, the comments and activity that have taken place on a bug.
+
+The activity item is always a list of BugActivityItems, grouped together
+by their datechanged property.
+
+    >>> activity_and_comments = view.activity_and_comments
+    >>> for activity_or_comment in activity_and_comments:
+    ...     if 'activity' in activity_or_comment:
+    ...         for activity in activity_or_comment['activity']:
+    ...             print "%s: %s => %s" % (
+    ...                 activity.whatchanged, activity.oldvalue,
+    ...                 activity.newvalue)
+    ...     if 'comment' in activity_or_comment:
+    ...         comment = activity_or_comment['comment']
+    ...         print comment.text_for_display
+    summary: A bug title => A new bug title
+    A comment, for the reading of.

@@ -17,6 +17,7 @@ __all__ = [
     'IPersonClaim',
     'IPersonPublic', # Required for a monkey patch in interfaces/archive.py
     'IPersonSet',
+    'IPersonViewRestricted',
     'IRequestPeopleMerge',
     'ITeam',
     'ITeamContactAddressForm',
@@ -73,8 +74,6 @@ from canonical.launchpad.interfaces.location import (
 from canonical.launchpad.interfaces.mailinglistsubscription import (
     MailingListAutoSubscribePolicy)
 from canonical.launchpad.interfaces.mentoringoffer import IHasMentoringOffers
-from canonical.launchpad.interfaces.questioncollection import (
-    IQuestionCollection, QUESTION_STATUS_DEFAULT_SEARCH)
 from canonical.launchpad.interfaces.specificationtarget import (
     IHasSpecifications)
 from canonical.launchpad.interfaces.teammembership import (
@@ -88,6 +87,8 @@ from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.webapp.interfaces import NameLookupFailed
 from canonical.launchpad.webapp.authorization import check_permission
 
+from lp.answers.interfaces.questioncollection import (
+    IQuestionCollection, QUESTION_STATUS_DEFAULT_SEARCH)
 
 PRIVATE_TEAM_PREFIX = 'private-'
 
@@ -427,21 +428,6 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
     id = Int(title=_('ID'), required=True, readonly=True)
     account = Object(schema=IAccount)
     accountID = Int(title=_('Account ID'), required=True, readonly=True)
-    name = exported(
-        PersonNameField(
-            title=_('Name'), required=True, readonly=False,
-            constraint=name_validator,
-            description=_(
-                "A short unique name, beginning with a lower-case "
-                "letter or number, and containing only letters, "
-                "numbers, dots, hyphens, or plus signs.")))
-    displayname = exported(
-        StrippedTextLine(
-            title=_('Display Name'), required=True, readonly=False,
-            description=_(
-                "Your name as you would like it displayed throughout "
-                "Launchpad. Most people use their full name here.")),
-        exported_as='display_name')
     password = PasswordField(
         title=_('Password'), required=True, readonly=False)
     karma = exported(
@@ -669,23 +655,11 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
         "Any specifications related to this person, either because the are "
         "a subscriber, or an assignee, or a drafter, or the creator. "
         "Sorted newest-first.")
-    approver_specs = Attribute(
-        "Specifications this person is supposed to approve in due "
-        "course, newest first.")
     assigned_specs = Attribute(
         "Specifications assigned to this person, sorted newest first.")
     assigned_specs_in_progress = Attribute(
         "Specifications assigned to this person whose implementation is "
         "started but not yet completed, sorted newest first.")
-    drafted_specs = Attribute(
-        "Specifications being drafted by this person, sorted newest first.")
-    created_specs = Attribute(
-        "Specifications created by this person, sorted newest first.")
-    feedback_specs = Attribute(
-        "Specifications on which this person has been asked to provide "
-        "feedback, sorted newest first.")
-    subscribed_specs = Attribute(
-        "Specifications this person has subscribed to, sorted newest first.")
     team_mentorships = Attribute(
         "All the offers of mentoring which are relevant to this team.")
     teamowner = exported(
@@ -745,17 +719,6 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
     # title is required for the Launchpad Page Layout main template
     title = Attribute('Person Page Title')
 
-    is_trusted_on_shipit = Bool(
-        title=_('Is this a trusted person on shipit?'),
-        description=_("A person is considered trusted on shipit if she's a "
-                      "member of the 'ubuntumembers' team or she has more "
-                      "than MIN_KARMA_ENTRIES_TO_BE_TRUSTED_ON_SHIPIT karma "
-                      "entries."))
-    unique_displayname = TextLine(
-        title=_('Return a string of the form $displayname ($name).'))
-    browsername = Attribute(
-        'Return a textual name suitable for display in a browser.')
-
     archive = exported(
         Reference(title=_("Personal Package Archive"),
                   description=_("The Archive owned by this person, his PPA."),
@@ -813,6 +776,11 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
                 """),
             readonly=True, required=False,
             value_type=Reference(schema=Interface)))
+
+    hardware_submissions = exported(CollectionField(
+            title=_("Hardware submissions"),
+            readonly=True, required=False,
+            value_type=Reference(schema=Interface))) # HWSubmission
 
     @invariant
     def personCannotHaveIcon(person):
@@ -1003,31 +971,6 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
 
         To be used when membership changes are enacted. Only meant to be
         used between TeamMembership and Person objects.
-        """
-
-    def lastShippedRequest():
-        """Return this person's last shipped request, or None."""
-
-    def pastShipItRequests():
-        """Return the requests made by this person that can't be changed
-        anymore.
-
-        Any request that is cancelled, denied or sent for shipping can't be
-        changed.
-        """
-
-    def shippedShipItRequestsOfCurrentSeries():
-        """Return all requests made by this person that were sent to the
-        shipping company already.
-
-        This only includes requests for CDs of
-        ShipItConstants.current_distroseries.
-        """
-
-    def currentShipItRequest():
-        """Return this person's unshipped ShipIt request, if there's one.
-
-        Return None otherwise.
         """
 
     def searchTasks(search_params, *args):
@@ -1228,6 +1171,25 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
 class IPersonViewRestricted(Interface):
     """IPerson attributes that require launchpad.View permission."""
 
+    name = exported(
+        PersonNameField(
+            title=_('Name'), required=True, readonly=False,
+            constraint=name_validator,
+            description=_(
+                "A short unique name, beginning with a lower-case "
+                "letter or number, and containing only letters, "
+                "numbers, dots, hyphens, or plus signs.")))
+    displayname = exported(
+        StrippedTextLine(
+            title=_('Display Name'), required=True, readonly=False,
+            description=_(
+                "Your name as you would like it displayed throughout "
+                "Launchpad. Most people use their full name here.")),
+        exported_as='display_name')
+    browsername = Attribute(
+        'Return a textual name suitable for display in a browser.')
+    unique_displayname = TextLine(
+        title=_('Return a string of the form $displayname ($name).'))
     active_member_count = Attribute(
         "The number of real people who are members of this team.")
     # activemembers.value_type.schema will be set to IPerson once
@@ -1415,7 +1377,7 @@ class IPersonEditRestricted(Interface):
         team will actually be invited to join this one. Otherwise the team
         is added as if it were a person.
 
-        If the the person is not a team, and may_subscribe_to_list
+        If the person is not a team, and may_subscribe_to_list
         is True, then the person may be subscribed to the team's
         mailing list, depending on the list status and the person's
         auto-subscribe settings.

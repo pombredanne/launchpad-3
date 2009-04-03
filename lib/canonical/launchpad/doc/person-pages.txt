@@ -136,6 +136,57 @@ email addresses state is NONE_AVAILABLE.
     []
 
 
+== Languages ==
+
+The PersonView provides a comma separated list of languages that a person
+speaks. The contact details portlet displays the user languages.
+
+English is the default language in Launchpad. If the user has not set
+his preferred languages, English is used.
+
+    >>> sample_person.languages
+    []
+
+    >>> login(ANONYMOUS)
+    >>> view = create_view(sample_person, '+portlet-contact-details')
+    >>> print view.languages
+    English
+
+This assumption is visible to the user when he views his own profile page,
+and he can set his preferred languages if he wants to make a correction.
+The list of languages is alphabetized.
+
+    >>> from canonical.launchpad.interfaces.language import ILanguageSet
+
+    >>> languageset = getUtility(ILanguageSet)
+    >>> sample_person.addLanguage(languageset.getLanguageByCode('so'))
+    >>> sample_person.addLanguage(languageset.getLanguageByCode('fr'))
+
+    >>> view = create_view(sample_person, '+portlet-contact-details')
+    >>> print view.languages
+    French, Somali
+
+Teams may have languages too. English is the default if the team has not
+set a language.
+
+    >>> landscape_developers.languages
+    []
+
+    >>> view = create_view(landscape_developers, '+portlet-contact-details')
+    >>> print view.languages
+    English
+
+Teams most often set just one language that is used for the Answers
+application. If the language is a variant, the variation is shown
+in parenthesis.
+
+    >>> landscape_developers.addLanguage(
+    ...     languageset.getLanguageByCode('pt_BR'))
+    >>> view = create_view(landscape_developers, '+portlet-contact-details')
+    >>> print view.languages
+    Portuguese (Brazil)
+
+
 == Location ==
 
 The Person profile page contains the location portlet that shows a map.
@@ -219,9 +270,9 @@ that are not in progress.
     >>> view = create_initialized_view(user, name='+portlet-currentfocus')
     >>> view.has_assigned_bugs_or_specs_in_progress
     False
-    >>> view.assigned_bugs_in_progress.count()
+    >>> len(view.assigned_bugs_in_progress)
     0
-    >>> view.assigned_specs_in_progress.count()
+    >>> len(view.assigned_specs_in_progress)
     0
     >>> print view.render()
     <BLANKLINE>
@@ -239,9 +290,9 @@ in progress state.
     >>> spec.assignee = user
     >>> view.has_assigned_bugs_or_specs_in_progress
     False
-    >>> view.assigned_bugs_in_progress.count()
+    >>> len(view.assigned_bugs_in_progress)
     0
-    >>> view.assigned_specs_in_progress.count()
+    >>> len(view.assigned_specs_in_progress)
     0
 
 The specification is displayed only when it is in a in progress state
@@ -259,9 +310,9 @@ the user is working on.
     >>> view = create_initialized_view(user, name='+portlet-currentfocus')
     >>> view.has_assigned_bugs_or_specs_in_progress
     True
-    >>> view.assigned_bugs_in_progress.count()
+    >>> len(view.assigned_bugs_in_progress)
     0
-    >>> view.assigned_specs_in_progress.count()
+    >>> len(view.assigned_specs_in_progress)
     1
     >>> print view.render()
     <div id="working-on">...
@@ -278,22 +329,25 @@ Assigned bugs do not display when their status is not INPROGRESS.
     >>> bug.bugtasks[0].transitionToAssignee(user)
     >>> view.has_assigned_bugs_or_specs_in_progress
     True
-    >>> view.assigned_bugs_in_progress.count()
+    >>> len(view.assigned_bugs_in_progress)
     0
-    >>> view.assigned_specs_in_progress.count()
+    >>> len(view.assigned_specs_in_progress)
     1
 
 The assigned bug is displayed in the "Working on..." section when
 its status is in INPROGRESS.
 
     >>> from canonical.launchpad.interfaces import BugTaskStatus
-
     >>> bug.bugtasks[0].transitionToStatus(BugTaskStatus.INPROGRESS, user)
+
+    # Create a new view because we're testing some cached properties.
+    >>> view = create_initialized_view(user, name='+portlet-currentfocus')
+
     >>> view.has_assigned_bugs_or_specs_in_progress
     True
-    >>> view.assigned_bugs_in_progress.count()
+    >>> len(view.assigned_bugs_in_progress)
     1
-    >>> view.assigned_specs_in_progress.count()
+    >>> len(view.assigned_specs_in_progress)
     1
     >>> print view.render()
     <div id="working-on">...
@@ -314,22 +368,29 @@ Multiple bugs and specs are displayed.
     >>> another_bug.bugtasks[0].transitionToAssignee(user)
     >>> another_bug.bugtasks[0].transitionToStatus(
     ...     BugTaskStatus.INPROGRESS, user)
+
+    # Create a new view because we're testing some cached properties.
+    >>> view = create_initialized_view(user, name='+portlet-currentfocus')
+
     >>> view.has_assigned_bugs_or_specs_in_progress
     True
-    >>> view.assigned_bugs_in_progress.count()
+    >>> len(view.assigned_bugs_in_progress)
     2
-    >>> view.assigned_specs_in_progress.count()
+    >>> len(view.assigned_specs_in_progress)
     1
 
 But duplicate bugs are never displayed.
 
     >>> another_bug.duplicateof = bug
 
+    # Create a new view because we're testing some cached properties.
+    >>> view = create_initialized_view(user, name='+portlet-currentfocus')
+
     >>> view.has_assigned_bugs_or_specs_in_progress
     True
-    >>> view.assigned_bugs_in_progress.count()
+    >>> len(view.assigned_bugs_in_progress)
     1
-    >>> view.assigned_specs_in_progress.count()
+    >>> len(view.assigned_specs_in_progress)
     1
 
 

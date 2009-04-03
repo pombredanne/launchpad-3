@@ -1010,3 +1010,89 @@ returned.
     ...     external_bugtracker.getCurrentDBTime(), utc_now)
     >>> print sorted(ids['remote_ids_to_check'])
     [u'0', u'1', u'2', u'3', u'4', u'5', u'6', u'7', u'8', u'9']
+
+
+== Setting the batch size ==
+
+It's possible to set the batch size for a particular checkwatches run by
+passing a batch_size parameter to _getRemoteIdsToCheck(). This overrides
+the batch_size set by a given ExternalBugTracker instance.
+
+With a batch_size of 5 on the ExternalBugTracker instance and a batch_size
+of 2 passed as a parameter to _getExternalBugTrackersAndWatches(), only two
+results will be returned.
+
+    >>> external_bugtracker.batch_size = 5
+    >>> ids = bug_watch_updater._getRemoteIdsToCheck(
+    ...     external_bugtracker,
+    ...     unchecked_watches + watches_with_comments + old_watches,
+    ...     external_bugtracker.getCurrentDBTime(), utc_now,
+    ...     batch_size=2)
+    >>> print sorted(ids['remote_ids_to_check'])
+    [u'5', u'6']
+
+If the batch_size parameter is set to None (the default value), the
+ExternalBugTracker's batch_size is used to decide the number of IDs returned.
+
+    >>> ids = bug_watch_updater._getRemoteIdsToCheck(
+    ...     external_bugtracker,
+    ...     unchecked_watches + watches_with_comments + old_watches,
+    ...     external_bugtracker.getCurrentDBTime(), utc_now,
+    ...     batch_size=None)
+    >>> print sorted(ids['remote_ids_to_check'])
+    [u'0', u'1', u'5', u'6', u'7']
+
+_getRemoteIdsToCheck() will interpret a batch_size parameter of 0 as an
+instruction to ignore the batch size limitation altogether and just return all
+the IDs that need checking.
+
+    >>> ids = bug_watch_updater._getRemoteIdsToCheck(
+    ...     external_bugtracker,
+    ...     unchecked_watches + watches_with_comments + old_watches,
+    ...     external_bugtracker.getCurrentDBTime(), utc_now,
+    ...     batch_size=0)
+    >>> print sorted(ids['remote_ids_to_check'])
+    [u'0', u'1', u'2', u'3', u'4', u'5', u'6', u'7', u'8', u'9']
+
+batch_size can be passed to _getRemoteIdsToCheck() via updateBugWatches(),
+too.
+
+    >>> bug_watch_updater.updateBugWatches(
+    ...     external_bugtracker, unchecked_watches, utc_now, batch_size=2)
+    initializeRemoteBugDB() called: [u'0', u'1']
+    getRemoteStatus() called: u'0'
+    getRemoteStatus() called: u'1'
+
+It can also be passed via updateBugTracker() (which will in turn pass it to
+updateBugWatches()).  In order to prevent it from attempting to connect to the
+outside world we'll subclass it to make sure it uses our non-connecting
+external_bugtracker.
+
+    >>> class NonConnectingBugWatchUpdater(BugWatchUpdater):
+    ...
+    ...     def _getExternalBugTrackersAndWatches(self, bug_trackers,
+    ...                                           bug_watches):
+    ...         return [(external_bugtracker, bug_watches)]
+
+    >>> bug_watch_updater = NonConnectingBugWatchUpdater(
+    ...     transaction, QuietFakeLogger())
+    >>> bug_watch_updater.updateBugTracker(standard_bugzilla, batch_size=2)
+    initializeRemoteBugDB() called: [u'5', u'6']
+    getRemoteStatus() called: u'5'
+    getRemoteStatus() called: u'6'
+
+The default entry point into BugWatchUpdater for the checkwatches script is
+the updateBugTrackers() method. This, too, takes a batch_size parameter, which
+allows it to be passed as a command-line option when the checkwatches script
+is run.
+
+    >>> from canonical.launchpad.scripts.logger import FakeLogger
+    >>> bug_watch_updater = NonConnectingBugWatchUpdater(
+    ...     transaction, FakeLogger())
+    >>> bug_watch_updater.updateBugTrackers(
+    ...     bug_tracker_names=[standard_bugzilla.name], batch_size=2)
+    DEBUG Using a global batch size of 2
+    INFO Updating 4 watches for 2 bugs on http://example.com
+    initializeRemoteBugDB() called: [u'5', u'6']
+    getRemoteStatus() called: u'5'
+    getRemoteStatus() called: u'6'

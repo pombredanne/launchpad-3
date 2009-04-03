@@ -17,6 +17,7 @@ __all__ = [
     'HTTPResource',
     'JSONItem',
     'ReadOnlyResource',
+    'RedirectResource',
     'render_field_to_html',
     'ResourceJSONEncoder',
     'RESTUtilityBase',
@@ -40,8 +41,8 @@ from zope.app import zapi
 from zope.app.pagetemplate.engine import TrustedAppPT
 from zope import component
 from zope.component import (
-    adapts, getAdapters, getAllUtilitiesRegisteredFor,
-    getMultiAdapter, getUtility, queryAdapter)
+    adapts, getAdapters, getAllUtilitiesRegisteredFor, getMultiAdapter,
+    getUtility, queryAdapter)
 from zope.component.interfaces import ComponentLookupError
 from zope.event import notify
 from zope.publisher.http import init_status_codes, status_reasons
@@ -56,27 +57,25 @@ from zope.schema.interfaces import (
     ConstraintNotSatisfied, IBytes, IField, IObject)
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
+from zope.security.management import checkPermission
 from zope.traversing.browser import absoluteURL
-from lazr.enum import BaseItem
-from canonical.lazr.interfaces.fields import IReferenceChoice
 
-# XXX leonardr 2008-01-25 bug=185958:
-# BatchNavigator and event code should be moved into lazr.
-from canonical.launchpad import versioninfo
-from canonical.launchpad.event import SQLObjectModifiedEvent
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.interfaces import ILaunchBag
-from canonical.launchpad.webapp.publisher import get_current_browser_request
-from canonical.launchpad.webapp.snapshot import Snapshot
-from canonical.lazr.interfaces import (
+from lazr.batchnavigator import BatchNavigator
+from lazr.enum import BaseItem
+from lazr.lifecycle.event import ObjectModifiedEvent
+from lazr.lifecycle.snapshot import Snapshot
+
+from canonical.lazr.interfaces.fields import (
+    ICollectionField, IReferenceChoice)
+from canonical.lazr.interfaces.rest import (
     ICollection, ICollectionResource, IEntry, IEntryField,
     IEntryFieldResource, IEntryResource, IFieldHTMLRenderer,
     IFieldMarshaller, IHTTPResource, IJSONPublishable, IResourceGETOperation,
     IResourcePOSTOperation, IScopedCollection, IServiceRootResource,
-    ITopLevelEntryLink, IUnmarshallingDoesntNeedValue, LAZR_WEBSERVICE_NAME,
-    WebServiceLayer)
-from canonical.lazr.interfaces.fields import ICollectionField
+    ITopLevelEntryLink, IUnmarshallingDoesntNeedValue,
+    IWebServiceClientRequest, IWebServiceConfiguration, LAZR_WEBSERVICE_NAME)
+from canonical.lazr.utils import get_current_browser_request
+
 
 # The path to the WADL XML Schema definition.
 WADL_SCHEMA_FILE = os.path.join(os.path.dirname(__file__),
@@ -129,8 +128,8 @@ class ResourceJSONEncoder(simplejson.JSONEncoder):
 
 class JSONItem:
     """JSONPublishable adapter for lazr.enum."""
-    adapts(BaseItem)
     implements(IJSONPublishable)
+    adapts(BaseItem)
 
     def __init__(self, context):
         self.context = context
@@ -138,6 +137,20 @@ class JSONItem:
     def toDataForJSON(self):
         """See `ISJONPublishable`"""
         return str(self.context.title)
+
+
+class RedirectResource:
+    """A resource that redirects to another URL."""
+    implements(IHTTPResource)
+
+    def __init__(self, url, request):
+        self.url = url
+        self.request = request
+
+    def __call__(self):
+        url = self.url
+        self.request.response.setStatus(301)
+        self.request.response.setHeader("Location", url)
 
 
 class HTTPResource:
@@ -309,7 +322,8 @@ class HTTPResource:
         # Append the revision number, because the algorithm for
         # generating the representation might itself change across
         # versions.
-        hash_object.update("\0" + str(versioninfo.revno))
+        revno = getUtility(IWebServiceConfiguration).code_revision
+        hash_object.update("\0" + revno)
 
         etag = '"%s"' % hash_object.hexdigest()
         self.etags_by_media_type[media_type] = etag
@@ -515,6 +529,14 @@ class WebServiceBatchNavigator(BatchNavigator):
     start_variable_name = "ws.start"
     batch_variable_name = "ws.size"
 
+    @property
+    def default_batch_size(self):
+        return getUtility(IWebServiceConfiguration).default_batch_size
+
+    @property
+    def max_batch_size(self):
+        return getUtility(IWebServiceConfiguration).max_batch_size
+
 
 class BatchingResourceMixin:
 
@@ -543,9 +565,10 @@ class BatchingResourceMixin:
         """
         navigator = WebServiceBatchNavigator(entries, request)
 
+        view_permission = getUtility(IWebServiceConfiguration).view_permission
         resources = [EntryResource(entry, request)
                      for entry in navigator.batch
-                     if check_permission('launchpad.View', entry)]
+                     if checkPermission(view_permission, entry)]
         batch = { 'entries' : resources,
                   'total_size' : navigator.batch.listlength,
                   'start' : navigator.batch.start }
@@ -696,7 +719,7 @@ class FieldUnmarshallerMixin:
         return name, renderer(value)
 
 
-@component.adapter(Interface, IField, WebServiceLayer)
+@component.adapter(Interface, IField, IWebServiceClientRequest)
 @implementer(IFieldHTMLRenderer)
 def render_field_to_html(object, field, request):
     """Turn a field's current value into an XHTML snippet.
@@ -1258,11 +1281,10 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin,
         self.etags_by_media_type = {}
 
         # Send a notification event.
-        event = SQLObjectModifiedEvent(
+        event = ObjectModifiedEvent(
             object=self.entry.context,
             object_before_modification=entry_before_modification,
-            edited_fields=validated_changeset.keys(),
-            user=getUtility(ILaunchBag).user)
+            edited_fields=validated_changeset.keys())
         notify(event)
 
         # If the modification caused the entry's URL to change, tell
@@ -1553,6 +1575,7 @@ class Collection:
 class ScopedCollection:
     """A collection associated with some parent object."""
     implements(IScopedCollection)
+    adapts(Interface, Interface)
 
     def __init__(self, context, collection):
         """Initialize the scoped collection.

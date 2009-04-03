@@ -1,4 +1,4 @@
-= SourcePackage View Classes = 
+= SourcePackage View Classes =
 
   >>> from zope.component import queryMultiAdapter
   >>> from zope.publisher.browser import TestRequest
@@ -19,9 +19,9 @@ Retrieve its respective View class:
 
   >>> pmount_view = queryMultiAdapter((pmount, request), name="+index")
 
-Check the consistence of a handy strcuture containing the organized
-published history of a sourcepackage. It should containg a list of
-dictionaries containing all supported pocket as key 'pocketdetails'
+Check the consistency of a handy structure containing the organized
+published history of a sourcepackage. It should contain a list of
+dictionaries containing all supported pockets as key 'pocketdetails'
 and a list of packages represented by IDistroSeriesSourcePackageRelease
 as 'packages', as:
 
@@ -107,4 +107,3 @@ sourcepackagename before passing to regexp.
    -- Sample Person &lt;email address hidden&gt; Tue, 10 Feb 2006 10:10:08 +0300
   <BLANKLINE>
   <BLANKLINE>
-

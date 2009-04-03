@@ -9,7 +9,8 @@ The HWDB application root provides the core methods to access HWDB
 tables. It also provides the set of known package names appearing
 in the table HWDriver.
 
-    >>> from canonical.lazr.testing.webservice import pprint_entry
+    >>> from canonical.lazr.testing.webservice import (
+    ...     pprint_collection, pprint_entry)
     >>> hwdb_root = webservice.get('/+hwdb').jsonBody()
     >>> pprint_entry(hwdb_root)
     package_names: [u'linux-image-2.6.24-19-generic']
@@ -87,6 +88,23 @@ devices matching the given value are returned.
     ...     '/+hwdb?ws.op=devices&bus=System&vendor_id=MSI&product_id=nothing')
     >>> print devices.jsonBody()['entries']
     []
+
+Some buses have constraints for the values of vendor and product IDs.
+IDs for PCI devices, for example, must have the form 0x12ab. (For
+an overview of these constraints, see doc/hwdb-device-tables.txt.)
+Queries with invalid parameter values return a 400 error.
+
+    >>> print webservice.get(
+    ...     '/+hwdb?ws.op=devices&bus=PCI&vendor_id=WRONG')
+    HTTP/1.1 400 Bad Request
+    ...
+    ParameterError: u'WRONG' is not a valid vendor ID for PCI
+
+    >>> print webservice.get(
+    ...     '/+hwdb?ws.op=devices&bus=PCI&vendor_id=0x1234&product_id=BAD')
+    HTTP/1.1 400 Bad Request
+    ...
+    ParameterError: u'BAD' is not a valid product ID for PCI
 
 Single device records can be accessed too.
 
@@ -586,6 +604,22 @@ We can query for submissions from a particular user.
     ...     owner=webservice.getAbsoluteUrl('/~name20')).jsonBody()
     >>> print submissions['total_size']
     0
+
+=== Getting all submissions for a user ===
+
+We can get all of a user's hardware submissions by retrieving their
+`hardware_submissions` collection.
+
+    >>> name12 = webservice.get(webservice.getAbsoluteUrl('/~name12')).jsonBody()
+    >>> pprint_collection(
+    ...     webservice.get(
+    ...         name12['hardware_submissions_collection_link']).jsonBody())
+    resource_type_link: u'http://.../#h_w_submission-page-resource'
+    start: 0
+    total_size: 2
+    ...
+    submission_key: u'sample-submission'
+    ...
 
 
 === Submission Devices ===

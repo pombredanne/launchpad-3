@@ -32,6 +32,7 @@ All merge proposals have to be registered by a Person.
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces import (
     ...     IBranchSet, IPersonSet)
+    >>> from canonical.launchpad.interfaces.branchlookup import IBranchLookup
     >>> person_set = getUtility(IPersonSet)
     >>> login('test@canonical.com')
     >>> sample_person = person_set.getByEmail('test@canonical.com')
@@ -41,12 +42,12 @@ All merge proposals have to be registered by a Person.
 In order to register a merge proposal there has to be a source branch
 and a target branch.
 
-    >>> branch_set = getUtility(IBranchSet)
-    >>> source_branch = branch_set.getByUniqueName(
+    >>> branch_lookup = getUtility(IBranchLookup)
+    >>> source_branch = branch_lookup.getByUniqueName(
     ...     '~name12/gnome-terminal/klingon')
-    >>> target_branch = branch_set.getByUniqueName(
+    >>> target_branch = branch_lookup.getByUniqueName(
     ...     '~name12/gnome-terminal/main')
-    >>> scanned_branch = branch_set.getByUniqueName(
+    >>> scanned_branch = branch_lookup.getByUniqueName(
     ...     '~name12/gnome-terminal/scanned')
 
     >>> merge_proposal = source_branch.addLandingTarget(
@@ -90,7 +91,7 @@ recent branch merge proposals first.
     ...     target_branch=target_branch, dependent_branch=scanned_branch,
     ...     set_state=BranchMergeProposalStatus.MERGED)
 
-    >>> branch = branch_set.getByUniqueName(
+    >>> branch = branch_lookup.getByUniqueName(
     ...     '~launchpad/gnome-terminal/launchpad')
     >>> proposal = branch.addLandingTarget(
     ...     sample_person, target_branch, dependent_branch=scanned_branch,
@@ -99,14 +100,17 @@ recent branch merge proposals first.
     >>> flush_database_updates()
     >>> from canonical.launchpad.database.branchmergeproposal import (
     ...     BranchMergeProposal)
+    >>> # Need to specify orderby - default order is creation date
+    >>> # and objects created in the same transaction have identical
+    >>> # creation dates
     >>> for proposal in BranchMergeProposal.selectBy(
-    ...     target_branch=target_branch):
+    ...     target_branch=target_branch, orderBy=['id']):
     ...     print proposal.queue_status.title
-    Work in progress
     Work in progress
     Superseded
     Rejected
     Merged
+    Work in progress
 
     >>> for proposal in target_branch.landing_candidates:
     ...     print proposal.queue_status.title
@@ -114,13 +118,13 @@ recent branch merge proposals first.
     Work in progress
 
     >>> for proposal in BranchMergeProposal.selectBy(
-    ...     dependent_branch=scanned_branch):
+    ...     dependent_branch=scanned_branch, orderBy=['id']):
     ...     print proposal.queue_status.title
-    Work in progress
     Work in progress
     Superseded
     Rejected
     Merged
+    Work in progress
 
     >>> for proposal in scanned_branch.dependent_branches:
     ...     print proposal.queue_status.title
@@ -203,7 +207,7 @@ revision.  This is to record that the reviewer has approved up to a
 particular revision, and that subsequent revsions added by the branch
 author have not been approved.
 
-    >>> def add_some_revisions_to_branch(branch, factory, branch_set):
+    >>> def add_some_revisions_to_branch(branch, factory, branch_lookup):
     ...     # Revisions can only be added by the scanner, so switch dbuser.
     ...     from canonical.database.sqlbase import commit
     ...     from canonical.testing import LaunchpadZopelessLayer
@@ -215,9 +219,9 @@ author have not been approved.
     ...     factory.makeRevisionsForBranch(branch)
     ...     commit()
     ...     LaunchpadZopelessLayer.switchDbUser(launchpad_dbuser)
-    ...     return branch_set.getByUniqueName(branch_unique_name)
+    ...     return branch_lookup.getByUniqueName(branch_unique_name)
     >>> source_branch = add_some_revisions_to_branch(
-    ...     source_branch, factory, branch_set)
+    ...     source_branch, factory, branch_lookup)
     >>> proposal = source_branch.landing_targets[0]
     >>> source_branch.revision_count
     5
@@ -379,6 +383,7 @@ branches, there is a method on the branch set that returns the branches that a
 user has previously targeted for merging.
 
     >>> gnome_terminal = branch.product
+    >>> branch_set = getUtility(IBranchSet)
     >>> branches = branch_set.getTargetBranchesForUsersMergeProposals(
     ...     sample_person, gnome_terminal)
     >>> for branch in branches:
@@ -399,7 +404,7 @@ proposals as merged.
 
 The user that marked the branch as merged can also be recorded.
 
-    >>> branch = branch_set.getByUniqueName(
+    >>> branch = branch_lookup.getByUniqueName(
     ...     '~launchpad/gnome-terminal/launchpad')
     >>> merge_proposal = branch.landing_targets[0]
     >>> reporter = person_set.getByName('sabdfl')
@@ -429,9 +434,9 @@ But the merge proposal is still listed in the source's targets.
 The firefox branches are the branches that are attached to a product
 and have revisions (well, a revision).
 
-    >>> source_branch = branch_set.getByUniqueName(
+    >>> source_branch = branch_lookup.getByUniqueName(
     ...     '~sabdfl/firefox/release-0.9')
-    >>> target_branch = branch_set.getByUniqueName(
+    >>> target_branch = branch_lookup.getByUniqueName(
     ...     '~sabdfl/firefox/release-0.9.2')
     >>> merge_proposal = source_branch.addLandingTarget(
     ...     sample_person, target_branch, date_created=now.next())

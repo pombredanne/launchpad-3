@@ -519,6 +519,11 @@ class ISourcePackagePublishingHistory(ISecureSourcePackagePublishingHistory):
             title=_("Section Name"),
             required=False, readonly=True))
 
+    changes_file_text = Text(
+        title=_("Changes File Text"),
+        description=_("This source publication's changes file for "
+                      "the source upload."))
+
     def getPublishedBinaries():
         """Return all resulted `IBinaryPackagePublishingHistory`.
 

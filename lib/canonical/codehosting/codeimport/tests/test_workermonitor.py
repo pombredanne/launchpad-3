@@ -14,6 +14,7 @@ import sys
 import tempfile
 import unittest
 
+from bzrlib.branch import Branch
 from bzrlib.tests import TestCaseWithMemoryTransport
 
 from twisted.internet import defer, error, protocol, reactor
@@ -33,6 +34,7 @@ from canonical.codehosting.codeimport.tests.test_worker import (
     clean_up_default_stores_for_import)
 from canonical.config import config
 from canonical.launchpad.database import CodeImport, CodeImportJob
+from canonical.launchpad.ftests import login, logout
 from canonical.launchpad.interfaces import (
     CodeImportResultStatus, CodeImportReviewStatus, ICodeImportJobSet,
     ICodeImportJobWorkflow, ICodeImportSet)
@@ -159,6 +161,7 @@ class TestWorkerMonitorUnit(TestCase):
             self.assert_(failure.check(exc_type))
 
     def setUp(self):
+        login('no-priv@canonical.com')
         self.factory = LaunchpadObjectFactory()
         job = self.factory.makeCodeImportJob()
         self.code_import_id = job.code_import.id
@@ -170,6 +173,9 @@ class TestWorkerMonitorUnit(TestCase):
         self.worker_monitor._failures = []
         self.layer.txn.commit()
         self.layer.switchDbUser('codeimportworker')
+
+    def tearDown(self):
+        logout()
 
     def test_getJob(self):
         # getJob() returns the job whose id we passed to the constructor.
@@ -332,6 +338,7 @@ class TestWorkerMonitorRunNoProcess(TestCase):
 
     def setUp(self):
         self.factory = LaunchpadObjectFactory()
+        login('no-priv@canonical.com')
         job = self.factory.makeCodeImportJob()
         self.code_import_id = job.code_import.id
         getUtility(ICodeImportJobWorkflow).startJob(
@@ -342,6 +349,9 @@ class TestWorkerMonitorRunNoProcess(TestCase):
         self.worker_monitor.result_status = None
         self.layer.txn.commit()
         self.layer.switchDbUser('codeimportworker')
+
+    def tearDown(self):
+        logout()
 
     @read_only_transaction
     def assertFinishJobCalledWithStatus(self, ignored, status):
@@ -395,10 +405,15 @@ class TestWorkerMonitorIntegration(TestCase, TestCaseWithMemoryTransport):
 
     def setUp(self):
         TestCaseWithMemoryTransport.setUp(self)
+        login('no-priv@canonical.com')
         self.factory = LaunchpadObjectFactory()
         nuke_codeimport_sample_data()
         self.repo_path = tempfile.mkdtemp()
         self.addCleanup(shutil.rmtree, self.repo_path)
+
+    def tearDown(self):
+        TestCaseWithMemoryTransport.tearDown(self)
+        logout()
 
     def makeCVSCodeImport(self):
         """Make a `CodeImport` that points to a real CVS repository."""
@@ -445,14 +460,13 @@ class TestWorkerMonitorIntegration(TestCase, TestCaseWithMemoryTransport):
 
     def assertBranchImportedOKForCodeImport(self, code_import):
         """Assert that a branch was pushed into the default branch store."""
-        tree_path = tempfile.mkdtemp()
-        self.addCleanup(shutil.rmtree, tree_path)
 
-        bazaar_tree = get_default_bazaar_branch_store().pull(
-            code_import.branch.id, tree_path)
+        url = get_default_bazaar_branch_store()._getMirrorURL(
+            code_import.branch.id)
+        branch = Branch.open(url)
 
         # The same Mystery Guest as in the test_worker tests.
-        self.assertEqual(2, len(bazaar_tree.branch.revision_history()))
+        self.assertEqual(2, len(branch.revision_history()))
 
     @read_only_transaction
     def assertImported(self, ignored, code_import_id):

@@ -40,11 +40,14 @@ A team member will be able to see these parts of the team page.
     >>> find_tag_by_id(browser.contents, 'recently-applied')
     <...<a href="/~no-priv">No Privileges Person (no-priv)</a>...
 
-    >>> find_tag_by_id(browser.contents, 'membership-summary')
-    <...2 active members...1 proposed members...
+    >>> print extract_text(
+    ...     find_tag_by_id(browser.contents, 'membership-summary'))
+    This team has: 2 active members, 1 proposed members ...
 
 
 == Team Participation ==
+
+=== Direct Membership ===
 
 The person overview page and the +assignedbugs page show which teams that
 person participates in. Although, it would be time consuming to gather the
@@ -102,6 +105,56 @@ on other members' overview or +assignedbugs pages.
     My Team
     Other Team
 
+=== Indirect Membership ===
+
+If a person is a member of a public team that is a member of a private
+membership team then he is indirectly a member of the private team.
+The rules for disclosing that information are the same as for direct
+membership.
+
+My Team invites the Launchpad Admins team to join them.
+
+    >>> owner_browser = setupBrowser(auth='Basic owner@canonical.com:test')
+    >>> owner_browser.open('http://launchpad.dev/~myteam/+addmember')
+    >>> owner_browser.getControl('New member').value = 'admins'
+    >>> owner_browser.getControl('Add Member').click()
+
+Foo Bar accepts the invitation for the Launchpad Admins, which makes
+him, and all other admins, an indirect member of My Team.
+
+    >>> admin_browser.open('http://launchpad.dev/~admins/+invitation/myteam')
+    >>> admin_browser.getControl('Accept').click()
+
+All Launchpad Admin members are indirectly members of My Team and
+their participation is visible to other team members.
+
+    >>> owner_browser.open('http://launchpad.dev/~name16/+participation')
+    >>> div = find_tag_by_id(owner_browser.contents, 'indirect participation')
+    >>> a_tags = div.findAll('a')
+    >>> for a_tag in a_tags:
+    ...     print a_tag.contents
+    [u'Mailing List Experts']
+    [u'My Team']
+
+People who are not members of My Team, such as No Privileges Person,
+do not see it in the indirect participation list for the members who
+are.
+
+    >>> user_browser.open('http://launchpad.dev/~name16/+participation')
+    >>> div = find_tag_by_id(user_browser.contents, 'indirect participation')
+    >>> a_tags = div.findAll('a')
+    >>> for a_tag in a_tags:
+    ...     print a_tag.contents
+    [u'Mailing List Experts']
+
+And anonymous users do not see the membership either.
+
+    >>> anon_browser.open('http://launchpad.dev/~name16/+participation')
+    >>> div = find_tag_by_id(anon_browser.contents, 'indirect participation')
+    >>> a_tags = div.findAll('a')
+    >>> for a_tag in a_tags:
+    ...     print a_tag.contents
+    [u'Mailing List Experts']
 
 == Teams with Icons ==
 
@@ -148,7 +201,6 @@ no user can add that team as an answer contact for a project.
 Even the owner of the team with private membership should not see
 MyTeam as an option in the +answer-contact form.
 
-    >>> owner_browser = setupBrowser(auth='Basic owner@canonical.com:test')
     >>> owner_browser.open(
     ...     'http://answers.launchpad.dev/ubuntu/+answer-contact')
     >>> team_div = find_tag_by_id(owner_browser.contents,
@@ -219,17 +271,17 @@ section.
     >>> print extract_text(
     ...     find_tag_by_id(browser.contents, 'subteam-of'))
     Subteam of
-    &#8220;GuadaMen&#8221; is a member of these teams: My Team
+    &#8220;GuadaMen&#8221; is a member of these teams: My Team...
 
-However, to anonymous or non-members, the team name is redacted and there is
+However, to anonymous or non-members, the team name is hidden and there is
 no clickable link.
 
     >>> user_browser.open('http://launchpad.dev/~guadamen')
     >>> print extract_text(
     ...     find_tag_by_id(user_browser.contents, 'subteam-of'))
     Subteam of
-    &#8220;GuadaMen&#8221; is a member of these teams: &lt;redacted&gt;
-    >>> user_browser.getLink('<redacted>')
+    &#8220;GuadaMen&#8221; is a member of these teams: &lt;hidden&gt;...
+    >>> user_browser.getLink('<hidden>')
     Traceback (most recent call last):
     ...
     LinkNotFoundError
@@ -238,8 +290,8 @@ no clickable link.
     >>> print extract_text(
     ...     find_tag_by_id(anon_browser.contents, 'subteam-of'))
     Subteam of
-    &#8220;GuadaMen&#8221; is a member of these teams: &lt;redacted&gt;
-    >>> anon_browser.getLink('<redacted>')
+    &#8220;GuadaMen&#8221; is a member of these teams: &lt;hidden&gt;...
+    >>> anon_browser.getLink('<hidden>')
     Traceback (most recent call last):
     ...
     LinkNotFoundError

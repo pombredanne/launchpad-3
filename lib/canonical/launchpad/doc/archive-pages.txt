@@ -272,7 +272,7 @@ pagetests/ppa/xx-edit-dependencies.txt.
     ...     cprov.archive, name="+edit-dependencies",
     ...     form={
     ...         'field.selected_dependencies': [],
-    ...         'field.dependency_candidate': 'sabdfl',
+    ...         'field.dependency_candidate': 'sabdfl/ppa',
     ...         'field.primary_dependencies': 'UPDATES',
     ...         'field.primary_components': 'ALL_COMPONENTS',
     ...         'field.actions.save': 'Save',
@@ -306,11 +306,11 @@ dependency. Each element has:
 
     >>> [dependency] = view.widgets.get('selected_dependencies').vocabulary
 
-    >>> print dependency.value.title
+    >>> print dependency.value.displayname
     PPA for Mark Shuttleworth
 
     >>> print dependency.token
-    sabdfl
+    sabdfl/ppa
 
     >>> print dependency.title
     <a href="http://launchpad.dev/~sabdfl/+archive/ppa">PPA for Mark Shuttleworth</a>
@@ -329,7 +329,7 @@ initial/empty state.
     >>> view = create_initialized_view(
     ...     cprov.archive, name="+edit-dependencies",
     ...     form={
-    ...         'field.selected_dependencies': ['sabdfl'],
+    ...         'field.selected_dependencies': ['sabdfl/ppa'],
     ...         'field.dependency_candidate': '',
     ...         'field.primary_dependencies': 'UPDATES',
     ...         'field.primary_components': 'ALL_COMPONENTS',
@@ -516,7 +516,7 @@ PPA the form fails because he has no permission to view its contents.
 
     >>> add_private_form = {
     ...     'field.selected_dependencies': [],
-    ...     'field.dependency_candidate': 'pirulito-team',
+    ...     'field.dependency_candidate': 'pirulito-team/ppa',
     ...     'field.primary_dependencies': 'UPDATES',
     ...     'field.primary_components': 'FOLLOW_PRIMARY',
     ...     'field.actions.save': 'Save',
@@ -567,8 +567,8 @@ to set PPA for Pirulito Team as dependency of his PPA.
 
     >>> dependencies = view.widgets.get('selected_dependencies').vocabulary
     >>> for dependency in dependencies:
-    ...     print dependency.value.title
-    Private PPA for Pirulito Team
+    ...     print dependency.value.displayname
+    PPA for Pirulito Team
 
 Remove Celso's membership on the new team and made his PPA public
 again to not affect subsequent tests.
@@ -820,7 +820,7 @@ the public Ubuntu-team PPA, which is empty.
     ...     form={
     ...         'field.status_filter': 'any',
     ...         'field.selected_sources': [str(private_source.id)],
-    ...         'field.destination_archive': 'ubuntu-team',
+    ...         'field.destination_archive': 'ubuntu-team/ppa',
     ...         'field.destination_series': '',
     ...         'field.include_binaries': 'REBUILD_SOURCES',
     ...         'field.actions.copy': 'Copy',
@@ -836,4 +836,3 @@ error. Nothing was copied to Ubuntu-team PPA.
 
     >>> ubuntu_team_ppa.getPublishedSources().count()
     0
-

@@ -1,5 +1,5 @@
 #!/usr/bin/python
-# Copyright 2004-2006 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
 
 """Import version control metadata from a Bazaar branch into the database."""
 
@@ -10,7 +10,6 @@ __all__ = [
     ]
 
 import logging
-import urlparse
 
 import pytz
 from zope.component import getUtility
@@ -20,285 +19,31 @@ from bzrlib.repofmt.weaverepo import (
     RepositoryFormat4, RepositoryFormat5, RepositoryFormat6)
 from bzrlib import urlutils
 
+from lazr.uri import URI
+
 from canonical.codehosting import iter_list_chunks
 from canonical.codehosting.puller.worker import BranchMirrorer, BranchPolicy
+from canonical.codehosting.scanner.buglinks import BugBranchLinker
+from canonical.codehosting.scanner.email import BranchMailer
+from canonical.codehosting.scanner.mergedetection import (
+    BranchMergeDetectionHandler)
 from canonical.config import config
 from canonical.launchpad.interfaces import (
-    BranchSubscriptionNotificationLevel, BugBranchStatus,
-    IBranchRevisionSet, IBugBranchSet, IBugSet, IRevisionSet,
-    NotFoundError, RepositoryFormat)
+    IBranchRevisionSet, IRevisionSet, RepositoryFormat)
 from canonical.launchpad.interfaces.branch import (
     BranchFormat, BranchLifecycleStatus, ControlFormat)
 from canonical.launchpad.interfaces.branchcollection import IAllBranches
 from canonical.launchpad.interfaces.branchjob import (
-    IRevisionMailJobSource, IRevisionsAddedJobSource)
+    IRevisionsAddedJobSource, IRosettaUploadJobSource)
 from canonical.launchpad.interfaces.branchmergeproposal import (
     BRANCH_MERGE_PROPOSAL_FINAL_STATES)
-from lazr.uri import URI
 
 
 UTC = pytz.timezone('UTC')
 
 
-class BadLineInBugsProperty(Exception):
-    """Raised when the scanner encounters a bad line in a bug property."""
-
-
-class RevisionModifiedError(Exception):
-    """An error indicating that a revision has been modified."""
-    pass
-
-
 class InvalidStackedBranchURL(Exception):
     """Raised when we try to scan a branch stacked on an invalid URL."""
-
-
-def set_bug_branch_status(bug, branch, status):
-    """Ensure there's a BugBranch for 'bug' and 'branch' set to 'status'.
-
-    This creates a BugBranch if one doesn't exist, and changes the status if
-    it does. If a BugBranch is created, the registrant is the branch owner.
-
-    :return: The updated BugBranch.
-    """
-    bug_branch_set = getUtility(IBugBranchSet)
-    bug_branch = bug_branch_set.getBugBranch(bug, branch)
-    if bug_branch is None:
-        return bug_branch_set.new(
-            bug=bug, branch=branch, status=status, registrant=branch.owner)
-    if bug_branch.status != BugBranchStatus.BESTFIX:
-        bug_branch.status = status
-    return bug_branch
-
-
-
-
-class BugBranchLinker:
-    """Links branches to bugs based on revision metadata."""
-
-    def __init__(self, db_branch):
-        self.db_branch = db_branch
-
-    def _parseBugLine(self, line):
-        """Parse a line from a bug property.
-
-        :param line: A line from a Bazaar bug property.
-        :raise BadLineInBugsProperty: if the line is invalid.
-        :return: (bug_url, bug_id) if the line is good, None if the line
-            should be skipped.
-        """
-        valid_statuses = {'fixed': BugBranchStatus.FIXAVAILABLE}
-        line = line.strip()
-
-        # Skip blank lines.
-        if len(line) == 0:
-            return None
-
-        # Lines must be <url> <status>.
-        try:
-            url, status = line.split(None, 2)
-        except ValueError:
-            raise BadLineInBugsProperty('Invalid line: %r' % line)
-        protocol, host, path, ignored, ignored = urlparse.urlsplit(url)
-
-        # Skip URLs that don't point to Launchpad.
-        if host != 'launchpad.net':
-            return None
-
-        # Don't allow Launchpad URLs that aren't /bugs/<integer>.
-        try:
-            # Remove empty path segments.
-            bug_segment, bug_id = [
-                segment for segment in path.split('/') if len(segment) > 0]
-            if bug_segment != 'bugs':
-                raise ValueError('Bad path segment')
-            bug = int(path.split('/')[-1])
-        except ValueError:
-            raise BadLineInBugsProperty('Invalid bug reference: %s' % url)
-
-        # Make sure the status is acceptable.
-        try:
-            status = valid_statuses[status.lower()]
-        except KeyError:
-            raise BadLineInBugsProperty('Invalid bug status: %r' % status)
-        return bug, status
-
-    def extractBugInfo(self, bug_property):
-        """Parse bug information out of the given revision property.
-
-        :param bug_status_prop: A string containing lines of
-            '<bug_url> <status>'.
-        :return: dict mapping bug IDs to BugBranchStatuses.
-        """
-        bug_statuses = {}
-        for line in bug_property.splitlines():
-            try:
-                parsed_line = self._parseBugLine(line)
-                if parsed_line is None:
-                    continue
-                bug, status = parsed_line
-            except BadLineInBugsProperty, e:
-                continue
-            bug_statuses[bug] = status
-        return bug_statuses
-
-    def createBugBranchLinksForRevision(self, bzr_revision):
-        """Create bug-branch links for a revision.
-
-        This looks inside the 'bugs' property of the given Bazaar revision and
-        creates a BugBranch record for each bug mentioned.
-        """
-        bug_property = bzr_revision.properties.get('bugs', None)
-        if bug_property is None:
-            return
-        bug_set = getUtility(IBugSet)
-        for bug_id, status in self.extractBugInfo(bug_property).iteritems():
-            try:
-                bug = bug_set.get(bug_id)
-            except NotFoundError:
-                pass
-            else:
-                set_bug_branch_status(bug, self.db_branch, status)
-
-
-class BranchMailer:
-    """Handles mail notifications for changes to the code in a branch."""
-
-    def __init__(self, trans_manager, db_branch):
-        self.trans_manager = trans_manager
-        self.db_branch = db_branch
-        self.pending_emails = []
-        self.subscribers_want_notification = False
-        self.initial_scan = None
-        self.email_from = config.canonical.noreply_from_address
-
-    def initializeEmailQueue(self, initial_scan):
-        """Create an email queue and determine whether to create diffs.
-
-        In order to avoid creating diffs when no one is interested in seeing
-        it, we check all the branch subscriptions first, and decide here
-        whether or not to generate the revision diffs as the branch is scanned.
-
-        See XXX comment in `sendRevisionNotificationEmails` for the reason
-        behind the queue itself.
-        """
-        self.pending_emails = []
-        self.subscribers_want_notification = False
-
-        diff_levels = (BranchSubscriptionNotificationLevel.DIFFSONLY,
-                       BranchSubscriptionNotificationLevel.FULL)
-
-        subscriptions = self.db_branch.getSubscriptionsByLevel(diff_levels)
-        for subscription in subscriptions:
-            self.subscribers_want_notification = True
-
-        # If db_history is empty, then this is the initial scan of the
-        # branch.  We only want to send one email for the initial scan
-        # of a branch, not one for each revision.
-        self.initial_scan = initial_scan
-
-    def generateEmailForRemovedRevisions(self, removed_history):
-        """Notify subscribers of removed revisions.
-
-        When the history is shortened, and email is sent that says this. This
-        will never happen for a newly scanned branch, so not checking that
-        here.
-        """
-        if not self.subscribers_want_notification:
-            return
-        number_removed = len(removed_history)
-        if number_removed > 0:
-            if number_removed == 1:
-                contents = '1 revision was removed from the branch.'
-            else:
-                contents = ('%d revisions were removed from the branch.'
-                            % number_removed)
-            # No diff is associated with the removed email.
-            job = getUtility(IRevisionMailJobSource).create(
-                self.db_branch, revno='removed', from_address=self.email_from,
-                body=contents, perform_diff=False, subject=None)
-            self.pending_emails.append(job)
-
-    def sendRevisionNotificationEmails(self, bzr_history):
-        """Send out the pending emails.
-
-        If this is the first scan of a branch, then we send out a simple
-        notification email saying that the branch has been scanned.
-        """
-        # XXX: thumper 2007-03-28 bug=29744:
-        # The whole reason that this method exists is due to
-        # emails being sent immediately in a zopeless environment.
-        # When bug #29744 is fixed, this method will no longer be
-        # necessary, and the emails should be sent at the source
-        # instead of appending them to the pending_emails.
-        # This method is enclosed in a transaction so emails will
-        # continue to be sent out when the bug is closed without
-        # immediately having to fix this method.
-        # Now that these changes have been committed, send the pending emails.
-        if not self.subscribers_want_notification:
-            return
-        self.trans_manager.begin()
-
-        if self.initial_scan:
-            assert len(self.pending_emails) == 0, (
-                'Unexpected pending emails on new branch.')
-            revision_count = len(bzr_history)
-            if revision_count == 1:
-                revisions = '1 revision'
-            else:
-                revisions = '%d revisions' % revision_count
-            message = ('First scan of the branch detected %s'
-                       ' in the revision history of the branch.' %
-                       revisions)
-
-            job = getUtility(IRevisionMailJobSource).create(
-                self.db_branch, 'initial', self.email_from, message, False,
-                None)
-        self.trans_manager.commit()
-
-
-class BranchMergeDetectionHandler:
-    """Handle merge detection events."""
-
-    def __init__(self, logger=None):
-        if logger is None:
-            logger = logging.getLogger(self.__class__.__name__)
-        self.logger = logger
-
-    def _markSourceBranchMerged(self, source):
-        # If the source branch is a series branch, then don't change the
-        # lifecycle status of it at all.
-        if source.associatedProductSeries().count() > 0:
-            return
-        # In other cases, we now want to update the lifecycle status of the
-        # source branch to merged.
-        self.logger.info("%s now Merged.", source.bzr_identity)
-        source.lifecycle_status = BranchLifecycleStatus.MERGED
-
-    def mergeProposalMerge(self, proposal):
-        """Handle a detected merge of a proposal."""
-        self.logger.info(
-            'Merge detected: %s => %s',
-            proposal.source_branch.bzr_identity,
-            proposal.target_branch.bzr_identity)
-        proposal.markAsMerged()
-        # Don't update the source branch unless the target branch is a series
-        # branch.
-        if proposal.target_branch.associatedProductSeries().count() == 0:
-            return
-        self._markSourceBranchMerged(proposal.source_branch)
-
-    def mergeOfTwoBranches(self, source, target):
-        """Handle the merge of source into target."""
-        # If the target branch is not the development focus, then don't update
-        # the status of the source branch.
-        self.logger.info(
-            'Merge detected: %s => %s',
-            source.bzr_identity, target.bzr_identity)
-        dev_focus = target.product.development_focus
-        if target != dev_focus.user_branch:
-            return
-        self._markSourceBranchMerged(source)
 
 
 class WarehouseBranchPolicy(BranchPolicy):
@@ -322,8 +67,6 @@ class WarehouseBranchPolicy(BranchPolicy):
         go on checking the URLs of any branches we then open.
         """
         return urlutils.join(branch.base, url), True
-
-
 
 
 class BzrSync:
@@ -672,6 +415,9 @@ class BzrSync:
         if len(bzr_history) > 0:
             last_revision = bzr_history[-1]
             revision = getUtility(IRevisionSet).getByRevisionId(last_revision)
+            if last_revision != self.db_branch.last_scanned_id:
+                getUtility(IRosettaUploadJobSource).create(
+                    self.db_branch, self.db_branch.last_scanned_id)
         else:
             revision = None
 

@@ -11,19 +11,12 @@ team.
     Ubuntu Linux
     Ubuntu Test
     Tomcat
+    &raquo; Show related projects
 
 The +related-software page displays a table with links to open bugs,
 unimplemented specs and open questions.
 
-    >>> print anon_browser.getLink('List related projects').url
-    http://launchpad.dev/~ubuntu-team/+related-software#projects
-
-    # XXX mars 2008-07-16 bug=98478:
-    # Visit the page directly to prevent the testbrowser from mucking with
-    # the URL fragment.
-    >>> anon_browser.open(
-    ...     'http://launchpad.dev/~ubuntu-team/+related-software')
-
+    >>> anon_browser.getLink('Show related projects').click()
     >>> print anon_browser.title
     Software related to Ubuntu Team
 

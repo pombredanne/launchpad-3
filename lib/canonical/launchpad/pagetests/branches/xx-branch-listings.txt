@@ -178,14 +178,6 @@ helpful message supplied.
     >>> print message.renderContents()
     There are branches related to Launchpad Developers...
 
-If the user does not have any branches, then we say so.
-
-    >>> browser.open('http://code.launchpad.dev/~no-priv')
-    >>> message = find_tag_by_id(browser.contents, 'no-branch-message')
-    >>> print extract_text(message)
-    There are no branches related to No Privileges Person today.
-
-
 Subscribed branch listings shouldn't show an option for sorting by "most
 interesting" and should default to sort by project name.
 
@@ -367,7 +359,7 @@ development focus branch.
 
     >>> admin_browser.open('http://launchpad.dev/gnome-terminal/trunk')
     >>> admin_browser.getLink('Link to branch').click()
-    >>> admin_browser.getControl(name='field.user_branch').value = (
+    >>> admin_browser.getControl(name='field.branch').value = (
     ...     '~name12/gnome-terminal/main')
     >>> admin_browser.getControl('Update').click()
 

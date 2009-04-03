@@ -8,6 +8,7 @@ __all__ = [
     'BranchMergeCandidateView',
     'BranchMergeProposalAddVoteView',
     'BranchMergeProposalChangeStatusView',
+    'BranchMergeProposalCommitMessageEditView',
     'BranchMergeProposalContextMenu',
     'BranchMergeProposalDeleteView',
     'BranchMergeProposalDequeueView',
@@ -36,11 +37,12 @@ from zope.schema import Choice, Int, Text
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 from zope.security.proxy import removeSecurityProxy
 
+from lazr.lifecycle.event import ObjectModifiedEvent
+
 from canonical.cachedproperty import cachedproperty
 
 from canonical.launchpad import _
 from canonical.launchpad.components.branch import BranchMergeProposalDelta
-from canonical.launchpad.event import SQLObjectModifiedEvent
 from canonical.launchpad.fields import Summary, Whiteboard
 from canonical.launchpad.interfaces import (
     BranchMergeProposalStatus,
@@ -81,7 +83,7 @@ def notify(func):
     def decorator(view, *args, **kwargs):
         snapshot = BranchMergeProposalDelta.snapshot(view.context)
         result = func(view, *args, **kwargs)
-        zope_notify(SQLObjectModifiedEvent(view.context, snapshot, []))
+        zope_notify(ObjectModifiedEvent(view.context, snapshot, []))
         return result
     return decorator
 
@@ -122,6 +124,7 @@ class BranchMergeProposalContextMenu(ContextMenu):
     usedfor = IBranchMergeProposal
     links = [
         'edit',
+        'edit_commit_message',
         'delete',
         'request_review',
         'add_comment',
@@ -144,6 +147,12 @@ class BranchMergeProposalContextMenu(ContextMenu):
         text = 'Edit details'
         enabled = self.context.isMergable()
         return Link('+edit', text, icon='edit', enabled=enabled)
+
+    @enabled_with_permission('launchpad.Edit')
+    def edit_commit_message(self):
+        text = 'Edit commit message'
+        enabled = self.context.isMergable()
+        return Link('+edit-commit-message', text, icon='edit', enabled=enabled)
 
     @enabled_with_permission('launchpad.Edit')
     def edit_status(self):
@@ -621,6 +630,19 @@ class BranchMergeProposalEditView(MergeProposalEditView):
     @action('Update', name='update')
     def update_action(self, action, data):
         """Update the whiteboard and go back to the source branch."""
+        self.updateContextFromData(data)
+
+
+class BranchMergeProposalCommitMessageEditView(MergeProposalEditView):
+    """The view to edit the commit message of merge proposals."""
+
+    schema = IBranchMergeProposal
+    label = "Edit merge proposal commit message"
+    field_names = ['commit_message']
+
+    @action('Update', name='update')
+    def update_action(self, action, data):
+        """Update the commit message."""
         self.updateContextFromData(data)
 
 

@@ -48,7 +48,7 @@
 
   <subscriber
     for="canonical.launchpad.interfaces.IBranchMergeProposal
-         canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
+         lazr.lifecycle.interfaces.IObjectModifiedEvent"
     handler="canonical.launchpad.mailout.branchmergeproposal.send_merge_proposal_modified_notifications" />
 
   <subscriber
@@ -132,6 +132,14 @@
         template="../templates/branchmergeproposal-edit.pt"
         />
   </browser:pages>
+
+  <browser:page
+      name="+edit-commit-message"
+      for="canonical.launchpad.interfaces.IBranchMergeProposal"
+      class="canonical.launchpad.browser.BranchMergeProposalCommitMessageEditView"
+      facet="branches"
+      permission="launchpad.Edit"
+      template="../templates/branchmergeproposal-commitmessage-edit.pt" />
 
   <browser:page
       name="+delete"

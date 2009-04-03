@@ -312,6 +312,49 @@ and even on substrings:
     DistributionSourcePackage: foobar
     DistributionSourcePackage: commercialpackage
 
+
+=== Searching for binary packages ===
+
+There are two useful functions for searching binary packages related
+to the distribution, searchBinaryPackages() and searchBinaryPackagesFTI().
+The former only does binary package name matches (optionally a substring
+match) and the latter uses the PostgreSQL Full Text Index searches.
+
+Both functions return DistributionSourcePackageCache objects, which
+makes it very easy to associate the binary name with its source.
+
+An exact match search with no matches on any package name returns
+an empty result set:
+
+    >>> results = ubuntu.searchBinaryPackages("mozilla", exact_match=True)
+    >>> results.count()
+    0
+
+Loosening to substring matches gives another result:
+
+    >>> results = ubuntu.searchBinaryPackages("mozilla", exact_match=False)
+    >>> print results[0]
+    <security proxied canonical.launchpad.database.distributionsourcepackagecache.DistributionSourcePackageCache instance ...
+
+    >>> print [result.name for result in results]
+    [u'mozilla-firefox']
+    >>> print [result.binpkgnames for result in results]
+    [u'mozilla-firefox']
+
+We can do an FTI search:
+
+    >>> fti_results = ubuntu.searchBinaryPackagesFTI("rubbish")
+    >>> fti_results.count()
+    0
+
+    >>> fti_results = ubuntu.searchBinaryPackagesFTI("browser")
+    >>> print results[0]
+    <security proxied canonical.launchpad.database.distributionsourcepackagecache.DistributionSourcePackageCache instance ...
+
+    >>> print [result.name for result in fti_results]
+    [u'mozilla-firefox']
+
+
 === Finding distroseriess and pockets from distribution names ===
 
 A distribution knows what distroseriess it has. Those distroseriess have
@@ -601,7 +644,7 @@ They're ordered by dateexpected.
 Only milestones which have visible=True are returned by the .milestones
 property.
 
-    >>> debian_milestone.visible = False
+    >>> debian_milestone.active = False
     >>> [milestone.name for milestone in debian.milestones]
     [u'3.1', u'3.1-rc1']
 
@@ -872,7 +915,7 @@ the distribution.  This list does not, therefore, include PPAs.
 name.  If the component is unknown, None is returned.
 
     >>> partner_archive = ubuntutest.getArchiveByComponent('partner')
-    >>> print partner_archive.title
+    >>> print partner_archive.displayname
     Partner Archive for Ubuntu Test
 
     >>> other_archive = ubuntutest.getArchiveByComponent('dodgycomponent')
@@ -884,13 +927,13 @@ the PRIMARY archive. This relationship is established so we can import
 their packages in the correct archive.
 
     >>> main_archive = ubuntutest.getArchiveByComponent('main')
-    >>> print main_archive.title
+    >>> print main_archive.displayname
     Primary Archive for Ubuntu Test
 
     >>> non_free_archive = ubuntutest.getArchiveByComponent('non-free')
-    >>> print non_free_archive.title
+    >>> print non_free_archive.displayname
     Primary Archive for Ubuntu Test
 
     >>> contrib_archive = ubuntutest.getArchiveByComponent('contrib')
-    >>> print contrib_archive.title
+    >>> print contrib_archive.displayname
     Primary Archive for Ubuntu Test

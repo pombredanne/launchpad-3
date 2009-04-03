@@ -1,4 +1,4 @@
-# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0211,E0213
 
 """Interfaces including and related to IDistroSeries."""
@@ -30,6 +30,7 @@ from canonical.launchpad.interfaces.launchpad import (
 from canonical.launchpad.interfaces.milestone import IHasMilestones
 from canonical.launchpad.interfaces.specificationtarget import (
     ISpecificationGoal)
+from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
 
 from canonical.launchpad.validators.email import email_validator
 from canonical.launchpad.webapp.interfaces import NameLookupFailed
@@ -38,7 +39,8 @@ from canonical.launchpad import _
 
 from canonical.lazr.fields import Reference
 from canonical.lazr.rest.declarations import (
-    export_as_webservice_entry, exported)
+    export_as_webservice_entry, export_read_operation, exported,
+    operation_parameters, operation_returns_entry)
 
 
 # XXX: salgado, 2008-06-02: We should use a more generic name here as this
@@ -110,7 +112,7 @@ class DistroSeriesStatus(DBEnumeratedType):
 class IDistroSeriesEditRestricted(Interface):
     """IDistroSeries properties which require launchpad.Edit."""
 
-    def newMilestone(name, dateexpected=None, description=None):
+    def newMilestone(name, dateexpected=None, summary=None):
         """Create a new milestone for this DistroSeries."""
 
 
@@ -355,6 +357,11 @@ class IDistroSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
         """Update the binary and source package counts for this distro
         series."""
 
+    @operation_parameters(
+        name=TextLine(
+            title=_("The name of the source package"), required=True))
+    @operation_returns_entry(ISourcePackage)
+    @export_read_operation()
     def getSourcePackage(name):
         """Return a source package in this distro series by name.
 
@@ -661,6 +668,13 @@ class IDistroSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
         or any other database object remaining valid across this call!
         """
 
+    def getSuite(pocket):
+        """Return the suite for this distro series and the given pocket.
+
+        :param pocket: A `DBItem` of `PackagePublishingPocket`.
+        :return: A string.
+        """
+
 
 class IDistroSeries(IDistroSeriesEditRestricted, IDistroSeriesPublic):
     """A series of an operating system distribution."""
@@ -702,6 +716,15 @@ class IDistroSeriesSet(Interface):
         """Find a DistroSeries by version.
 
         Returns a list of matching distributions, which may be empty.
+        """
+
+    def fromSuite(distribution, suite):
+        """Return the distroseries and pocket for 'suite' of 'distribution'.
+
+        :param distribution: An `IDistribution`.
+        :param suite: A string that forms the name of a suite.
+        :return: (`IDistroSeries`, `DBItem`) where the item is from
+            `PackagePublishingPocket`.
         """
 
     def search(distribution=None, released=None, orderBy=None):

@@ -37,6 +37,7 @@ __all__ = [
     'IHWVendorName',
     'IHWVendorNameSet',
     'IllegalQuery',
+    'ParameterError',
     ]
 
 from zope.component import getUtility
@@ -163,7 +164,6 @@ class IHWSubmission(Interface):
         CollectionField(
             title=_(u"The HWSubmissionDevice records for this submission."),
             value_type=Reference(schema=Interface)))
-
 
 
 class IHWSubmissionForm(Interface):
@@ -1041,4 +1041,8 @@ class IHWDBApplication(ILaunchpadApplication, ITopLevelEntryLink):
 
 class IllegalQuery(Exception):
     """Exception raised when trying to run an illegal submissions query."""
+    webservice_error(400) #Bad request.
+
+class ParameterError(Exception):
+    """Exception raised when a method parameter does not match a constrint."""
     webservice_error(400) #Bad request.

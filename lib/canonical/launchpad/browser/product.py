@@ -74,10 +74,10 @@ from canonical.launchpad.browser.branchref import BranchRef
 from canonical.launchpad.browser.bugtask import (
     BugTargetTraversalMixin, get_buglisting_search_filter_url)
 from canonical.launchpad.browser.distribution import UsesLaunchpadMixin
-from canonical.launchpad.browser.faqtarget import FAQTargetNavigationMixin
+from lp.answers.browser.faqtarget import FAQTargetNavigationMixin
 from canonical.launchpad.browser.feeds import FeedsMixin
 from canonical.launchpad.browser.productseries import get_series_branch_error
-from canonical.launchpad.browser.questiontarget import (
+from lp.answers.browser.questiontarget import (
     QuestionTargetFacetMixin, QuestionTargetTraversalMixin)
 from canonical.launchpad.browser.translations import TranslationsMixin
 from canonical.launchpad.mail import format_address, simple_sendmail
@@ -109,8 +109,8 @@ class ProductNavigation(
 
     @stepto('.bzr')
     def dotbzr(self):
-        if self.context.development_focus.series_branch:
-            return BranchRef(self.context.development_focus.series_branch)
+        if self.context.development_focus.branch:
+            return BranchRef(self.context.development_focus.branch)
         else:
             return None
 
@@ -291,6 +291,7 @@ class ProductNavigationMenu(NavigationMenu):
     links = [
         'details',
         'announcements',
+        'branchvisibility',
         'downloads',
         ]
 
@@ -305,6 +306,11 @@ class ProductNavigationMenu(NavigationMenu):
     def downloads(self):
         text = 'Downloads'
         return Link('+download', text)
+
+    @enabled_with_permission('launchpad.Admin')
+    def branchvisibility(self):
+        text = 'Branch Visibility Policy'
+        return Link('+branchvisibility', text)
 
 
 class ProductEditNavigationMenu(NavigationMenu):
@@ -655,7 +661,7 @@ class ProductWithSeries:
 
     def getSeriesById(self, id):
         """Look up and return a ProductSeries by id."""
-        return self.series_by_id.get(id)
+        return self.series_by_id[id]
 
 
 class SeriesWithReleases:
@@ -679,11 +685,11 @@ class SeriesWithReleases:
         self.releases.append(release)
 
     @cachedproperty
-    def release_files(self):
-        files = set()
+    def has_release_files(self):
         for release in self.releases:
-            files = files.union(release.files)
-        return files
+            if len(release.files) > 0:
+                return True
+        return False
 
 
 class ReleaseWithFiles:
@@ -1263,18 +1269,18 @@ class ProductAddSeriesView(LaunchpadFormView):
     """A form to add new product series"""
 
     schema = IProductSeries
-    field_names = ['name', 'summary', 'user_branch', 'releasefileglob']
+    field_names = ['name', 'summary', 'branch', 'releasefileglob']
     custom_widget('summary', TextAreaWidget, height=7, width=62)
     custom_widget('releasefileglob', StrippedTextWidget, displayWidth=40)
 
     series = None
 
     def validate(self, data):
-        branch = data.get('user_branch')
+        branch = data.get('branch')
         if branch is not None:
             message = get_series_branch_error(self.context, branch)
             if message:
-                self.setFieldError('user_branch', message)
+                self.setFieldError('branch', message)
 
     @action(_('Register Series'), name='add')
     def add_action(self, action, data):
@@ -1282,7 +1288,7 @@ class ProductAddSeriesView(LaunchpadFormView):
             owner=self.user,
             name=data['name'],
             summary=data['summary'],
-            branch=data['user_branch'])
+            branch=data['branch'])
 
     @property
     def next_url(self):
@@ -1568,3 +1574,4 @@ class ProductEditPeopleView(LaunchpadEditFormView):
         for release in product.releases:
             if release.owner == oldOwner:
                 release.owner = newOwner
+

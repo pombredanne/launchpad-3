@@ -1,4 +1,4 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2008-2009 Canonical Ltd.  All rights reserved.
 
 """Implementations of `IBranchNamespace`."""
 
@@ -11,19 +11,31 @@ __all__ = [
     'ProductNamespace',
     ]
 
-from storm.locals import And
 
 from zope.component import getUtility
+from zope.event import notify
 from zope.interface import implements
 from zope.security.interfaces import Unauthorized
 
+from lazr.lifecycle.event import ObjectCreatedEvent
+from storm.locals import And
+
 from canonical.config import config
+from canonical.database.constants import UTC_NOW
 from canonical.launchpad.database import Branch
 from canonical.launchpad.database.sourcepackage import SourcePackage
 from canonical.launchpad.interfaces.branch import (
-    BranchLifecycleStatus, IBranchSet, NoSuchBranch)
+    BranchCreationForbidden, BranchCreatorNotMemberOfOwnerTeam,
+    BranchCreatorNotOwner, BranchExists, BranchLifecycleStatus,
+    BranchMergeControlStatus, IBranch, NoSuchBranch)
 from canonical.launchpad.interfaces.branchnamespace import (
-    IBranchNamespace, InvalidNamespace)
+    IBranchCreationPolicy, IBranchNamespace, InvalidNamespace)
+from canonical.launchpad.interfaces.branchsubscription import (
+    BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
+    CodeReviewNotificationLevel)
+from canonical.launchpad.interfaces.branchtarget import IBranchTarget
+from canonical.launchpad.interfaces.branchvisibilitypolicy import (
+    BranchVisibilityRule)
 from canonical.launchpad.interfaces.distribution import (
     IDistributionSet, NoSuchDistribution)
 from canonical.launchpad.interfaces.distroseries import (
@@ -48,9 +60,20 @@ class _BaseNamespace:
                      lifecycle_status=BranchLifecycleStatus.DEVELOPMENT,
                      summary=None, whiteboard=None, date_created=None,
                      branch_format=None, repository_format=None,
-                     control_format=None):
+                     control_format=None,
+                     merge_control_status=BranchMergeControlStatus.NO_QUEUE):
         """See `IBranchNamespace`."""
-        owner = self.owner
+
+        self.validateRegistrant(registrant)
+        self.validateBranchName(name)
+
+        if date_created is None:
+            date_created = UTC_NOW
+
+        # Run any necessary data massage on the branch URL.
+        if url is not None:
+            url = IBranch['url'].normalize(url)
+
         product = getattr(self, 'product', None)
         sourcepackage = getattr(self, 'sourcepackage', None)
         if sourcepackage is None:
@@ -59,13 +82,74 @@ class _BaseNamespace:
         else:
             distroseries = sourcepackage.distroseries
             sourcepackagename = sourcepackage.sourcepackagename
-        return getUtility(IBranchSet).new(
-            branch_type, name, registrant, owner, product, url=url,
+
+        private = self.areNewBranchesPrivate()
+
+        branch = Branch(
+            registrant=registrant,
+            name=name, owner=self.owner, product=product, url=url,
             title=title, lifecycle_status=lifecycle_status, summary=summary,
-            whiteboard=whiteboard, date_created=date_created,
-            branch_format=branch_format, repository_format=repository_format,
+            whiteboard=whiteboard, private=private,
+            date_created=date_created, branch_type=branch_type,
+            date_last_modified=date_created, branch_format=branch_format,
+            repository_format=repository_format,
             control_format=control_format, distroseries=distroseries,
-            sourcepackagename=sourcepackagename)
+            sourcepackagename=sourcepackagename,
+            merge_control_status=merge_control_status)
+
+        # Implicit subscriptions are to enable teams to see private branches
+        # as soon as they are created.  The subscriptions can be edited at
+        # a later date if desired.
+        implicit_subscription = self.getPrivacySubscriber()
+        if implicit_subscription is not None:
+            branch.subscribe(
+                implicit_subscription,
+                BranchSubscriptionNotificationLevel.NOEMAIL,
+                BranchSubscriptionDiffSize.NODIFF,
+                CodeReviewNotificationLevel.NOEMAIL)
+
+        # The registrant of the branch should also be automatically subscribed
+        # in order for them to get code review notifications.  The implicit
+        # registrant subscription does not cause email to be sent about
+        # attribute changes, just merge proposals and code review comments.
+        branch.subscribe(
+            registrant,
+            BranchSubscriptionNotificationLevel.NOEMAIL,
+            BranchSubscriptionDiffSize.NODIFF,
+            CodeReviewNotificationLevel.FULL)
+
+        notify(ObjectCreatedEvent(branch))
+        return branch
+
+    def validateRegistrant(self, registrant):
+        """See `IBranchNamespace`."""
+        owner = self.owner
+        if not registrant.inTeam(owner):
+            if owner.isTeam():
+                raise BranchCreatorNotMemberOfOwnerTeam(
+                    "%s is not a member of %s"
+                    % (registrant.displayname, owner.displayname))
+            else:
+                raise BranchCreatorNotOwner(
+                    "%s cannot create branches owned by %s"
+                    % (registrant.displayname, owner.displayname))
+
+        if not self.checkCreationPolicy(registrant):
+            raise BranchCreationForbidden(
+                "You cannot create branches in %r"% self.name)
+
+    def validateBranchName(self, name):
+        """See `IBranchNamespace`."""
+        existing_branch = self.getByName(name)
+        if existing_branch is not None:
+            raise BranchExists(existing_branch)
+
+        # Not all code paths that lead to branch creation go via a
+        # schema-validated form (e.g. the register_branch XML-RPC call or
+        # pushing a new branch to codehosting), so we validate the branch name
+        # here to give a nicer error message than 'ERROR: new row for relation
+        # "branch" violates check constraint "valid_name"...'.
+        IBranch['name'].validate(unicode(name))
 
     def createBranchWithPrefix(self, branch_type, prefix, registrant,
                                url=None):
@@ -104,6 +188,34 @@ class _BaseNamespace:
     def isNameUsed(self, branch_name):
         return self.getByName(branch_name) is not None
 
+    def canCreateBranches(self, user):
+        """See `IBranchNamespace`."""
+        try:
+            self.validateRegistrant(user)
+        except BranchCreatorNotMemberOfOwnerTeam:
+            return False
+        except BranchCreatorNotOwner:
+            return False
+        except BranchCreationForbidden:
+            return False
+        else:
+            return True
+
+    def areNewBranchesPrivate(self):
+        """See `IBranchNamespace`."""
+        raise NotImplementedError(self.areNewBranchesPrivate)
+
+    def getPrivacySubscriber(self):
+        """See `IBranchNamespace`."""
+        raise NotImplementedError(self.getPrivacySubscriber)
+
+    def checkCreationPolicy(self, user):
+        """Check to see if user is allowed a branch in this namespace.
+
+        :return: True if the user is allowed, False otherwise.
+        """
+        raise NotImplementedError(self.checkCreationPolicy)
+
 
 class PersonalNamespace(_BaseNamespace):
     """A namespace for personal (or 'junk') branches.
@@ -111,7 +223,7 @@ class PersonalNamespace(_BaseNamespace):
     Branches in this namespace have names like '~foo/+junk/bar'.
     """
 
-    implements(IBranchNamespace)
+    implements(IBranchNamespace, IBranchCreationPolicy)
 
     def __init__(self, person):
         self.owner = person
@@ -126,6 +238,23 @@ class PersonalNamespace(_BaseNamespace):
         """See `IBranchNamespace`."""
         return '~%s/+junk' % (self.owner.name,)
 
+    def areNewBranchesPrivate(self):
+        """See `IBranchNamespace`."""
+        return False
+
+    def getPrivacySubscriber(self):
+        """See `IBranchNamespace`."""
+        return None
+
+    def checkCreationPolicy(self, user):
+        """See `_BaseNamespace`."""
+        return True
+
+    @property
+    def target(self):
+        """See `IBranchNamespace`."""
+        return IBranchTarget(self.owner)
+
 
 class ProductNamespace(_BaseNamespace):
     """A namespace for product branches.
@@ -134,7 +263,7 @@ class ProductNamespace(_BaseNamespace):
     particular product.
     """
 
-    implements(IBranchNamespace)
+    implements(IBranchNamespace, IBranchCreationPolicy)
 
     def __init__(self, person, product):
         self.owner = person
@@ -148,6 +277,60 @@ class ProductNamespace(_BaseNamespace):
         """See `IBranchNamespace`."""
         return '~%s/%s' % (self.owner.name, self.product.name)
 
+    @property
+    def target(self):
+        """See `IBranchNamespace`."""
+        return IBranchTarget(self.product)
+
+    def _getRelatedPolicies(self):
+        """Return the privacy policies relating to the owner."""
+        policies = self.product.getBranchVisibilityTeamPolicies()
+        return [
+            policy for policy in policies
+            if self.owner.inTeam(policy.team)]
+
+    def _getRelatedPrivatePolicies(self):
+        """Return the related policies for privacy."""
+        return [policy for policy in self._getRelatedPolicies()
+                if policy.rule in (BranchVisibilityRule.PRIVATE,
+                                   BranchVisibilityRule.PRIVATE_ONLY)]
+
+    def getPrivacySubscriber(self):
+        """See `IBranchNamespace`."""
+        # If there is a rule defined for the owner, then there is no privacy
+        # subscriber.
+        rule = self.product.getBranchVisibilityRuleForTeam(self.owner)
+        if rule is not None:
+            return None
+        # If there is one private policy for the user, then return the team
+        # for that policy, otherwise there is no privacy subsciber as we don't
+        # guess the user's intent.
+        private_policies = self._getRelatedPrivatePolicies()
+        if len(private_policies) == 1:
+            return private_policies[0].team
+        else:
+            return None
+
+    def checkCreationPolicy(self, user):
+        """See `_BaseNamespace`."""
+        if len(self._getRelatedPolicies()) > 0:
+            return True
+        base_rule = self.product.getBaseBranchVisibilityRule()
+        return base_rule == BranchVisibilityRule.PUBLIC
+
+    def areNewBranchesPrivate(self):
+        """See `IBranchNamespace`."""
+        # If there is a rule for the namespace owner, use that.
+        private = (
+            BranchVisibilityRule.PRIVATE,
+            BranchVisibilityRule.PRIVATE_ONLY)
+        rule = self.product.getBranchVisibilityRuleForTeam(self.owner)
+        if rule is not None:
+            return rule in private
+        # If the owner is a member of any team that has a PRIVATE or
+        # PRIVATE_ONLY rule, then the branches are private.
+        return len(self._getRelatedPrivatePolicies()) > 0
+
 
 class PackageNamespace(_BaseNamespace):
     """A namespace for source package branches.
@@ -156,7 +339,7 @@ class PackageNamespace(_BaseNamespace):
     particular source package in a particular distroseries.
     """
 
-    implements(IBranchNamespace)
+    implements(IBranchNamespace, IBranchCreationPolicy)
 
     def __init__(self, person, sourcepackage):
         if not config.codehosting.package_branches_enabled:
@@ -174,6 +357,23 @@ class PackageNamespace(_BaseNamespace):
     def name(self):
         """See `IBranchNamespace`."""
         return '~%s/%s' % (self.owner.name, self.sourcepackage.path)
+
+    @property
+    def target(self):
+        """See `IBranchNamespace`."""
+        return IBranchTarget(self.sourcepackage)
+
+    def areNewBranchesPrivate(self):
+        """See `IBranchNamespace`."""
+        return False
+
+    def getPrivacySubscriber(self):
+        """See `IBranchNamespace`."""
+        return None
+
+    def checkCreationPolicy(self, user):
+        """See `_BaseNamespace`."""
+        return True
 
 
 class BranchNamespaceSet:
