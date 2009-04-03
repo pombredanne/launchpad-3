@@ -8,6 +8,8 @@ __all__ = [
     ]
 
 from unittest import TestResult, TestSuite
+from testtools import iterate_tests
+from zope.testing import testrunner
 
 
 # XXX: JonathanLange 2009-03-09: Copied and hacked from testtools.
@@ -47,7 +49,6 @@ class Anything:
 
 def patch_find_tests(hook):
     """Add a post-processing hook to zope.testing.testrunner.find_tests."""
-    from zope.testing import testrunner
     real_find_tests = testrunner.find_tests
     def find_tests(*args):
         return hook(real_find_tests(*args))
@@ -55,7 +56,6 @@ def patch_find_tests(hook):
 
 
 def list_tests(tests_by_layer_name):
-    from testtools import iterate_tests
     for suite in tests_by_layer_name.itervalues():
         for test in iterate_tests(suite):
             print test.id()
@@ -63,7 +63,6 @@ def list_tests(tests_by_layer_name):
 
 
 def filter_tests(list_name):
-    from testtools import iterate_tests
     def do_filter(tests_by_layer_name):
         tests = set(line.strip() for line in open(list_name, 'rb'))
         result = {}
@@ -87,7 +86,6 @@ def patch_zope_testresult(result):
 
     :param result: A TestResult instance.
     """
-    from zope.testing import testrunner
     old_zope_factory = testrunner.TestResult
     def zope_result_factory(options, tests, layer_name=None):
         zope_result = old_zope_factory(options, tests, layer_name=layer_name)
