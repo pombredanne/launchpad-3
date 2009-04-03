@@ -117,6 +117,7 @@
   <adapter for="canonical.launchpad.interfaces.IPerson"
     provides="canonical.launchpad.interfaces.ITranslationsPerson"
     factory="canonical.launchpad.database.TranslationsPerson"
+    trusted="yes"
     />
 
 </configure>
