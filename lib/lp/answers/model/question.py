@@ -41,9 +41,9 @@ from canonical.launchpad.interfaces import (
     IQuestion, IQuestionSet, IQuestionTarget, ISourcePackage,
     QUESTION_STATUS_DEFAULT_SEARCH, QuestionAction, QuestionParticipation,
     QuestionPriority, QuestionSort, QuestionStatus)
-from canonical.launchpad.interfaces.sourcepackagename import (
+from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageNameSet)
-from canonical.launchpad.validators.person import validate_public_person
+from lp.registry.interfaces.person import validate_public_person
 
 from canonical.database.sqlbase import cursor, quote, SQLBase, sqlvalues
 from canonical.database.constants import DEFAULT, UTC_NOW
@@ -1181,7 +1181,7 @@ class QuestionTargetMixin:
     @property
     def direct_answer_contacts(self):
         """See `IQuestionTarget`."""
-        from canonical.launchpad.database.person import Person
+        from lp.registry.model.person import Person
         origin = [AnswerContact,
                   LeftJoin(Person, AnswerContact.person == Person.id)]
         conditions = self._getConditionsToQueryAnswerContacts()
@@ -1196,7 +1196,7 @@ class QuestionTargetMixin:
         languages pre-filled so that we don't need to hit the DB again to get
         them.
         """
-        from canonical.launchpad.database.person import (
+        from lp.registry.model.person import (
             Person, PersonLanguage)
         origin = [
             AnswerContact,
@@ -1238,7 +1238,7 @@ class QuestionTargetMixin:
         constraints.append("""Person.id = AnswerContact.person""")
         clause_tables.append('AnswerContact')
         # Avoid a circular import of Person, which imports the mixin.
-        from canonical.launchpad.database.person import Person
+        from lp.registry.model.person import Person
         return Person.select(
             " AND ".join(constraints), clauseTables=clause_tables,
             orderBy=['displayname'], distinct=True)

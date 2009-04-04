@@ -1379,7 +1379,7 @@ notification level of the subscription.
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
 
-    >>> from canonical.launchpad.interfaces.product import IProductSet
+    >>> from lp.registry.interfaces.product import IProductSet
     >>> from canonical.launchpad.interfaces.structuralsubscription import (
     ...     BugNotificationLevel)
     >>> firefox = getUtility(IProductSet).getByName('firefox')

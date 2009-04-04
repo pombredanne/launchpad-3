@@ -670,7 +670,7 @@ class ManageAnswerContactView(UserSupportLanguagesMixin, LaunchpadFormView):
 
     @property
     def administrated_teams(self):
-        from canonical.launchpad.browser.person import (
+        from lp.registry.browser.person import (
             RestrictedMembershipsPersonView)
         restricted_view = RestrictedMembershipsPersonView(self.user,
                                                           self.request)

@@ -49,7 +49,7 @@ from canonical.config import config
 from canonical.lazr import ExportedFolder, ExportedImageFolder
 from canonical.launchpad.helpers import intOrZero
 
-from canonical.launchpad.interfaces.announcement import IAnnouncementSet
+from lp.registry.interfaces.announcement import IAnnouncementSet
 from canonical.launchpad.interfaces.binarypackagename import (
     IBinaryPackageNameSet)
 from canonical.launchpad.interfaces.bounty import IBountySet
@@ -60,10 +60,10 @@ from canonical.launchpad.interfaces.bug import IBugSet
 from canonical.launchpad.interfaces.bugtracker import IBugTrackerSet
 from canonical.launchpad.interfaces.builder import IBuilderSet
 from canonical.launchpad.interfaces.codeimport import ICodeImportSet
-from canonical.launchpad.interfaces.codeofconduct import ICodeOfConductSet
+from lp.registry.interfaces.codeofconduct import ICodeOfConductSet
 from canonical.launchpad.interfaces.cve import ICveSet
-from canonical.launchpad.interfaces.distribution import IDistributionSet
-from canonical.launchpad.interfaces.karma import IKarmaActionSet
+from lp.registry.interfaces.distribution import IDistributionSet
+from lp.registry.interfaces.karma import IKarmaActionSet
 from canonical.launchpad.interfaces.hwdb import IHWDBApplication
 from canonical.launchpad.interfaces.language import ILanguageSet
 from canonical.launchpad.interfaces.launchpad import (
@@ -73,16 +73,16 @@ from canonical.launchpad.interfaces.launchpad import (
 from canonical.launchpad.interfaces.launchpadstatistic import (
     ILaunchpadStatisticSet)
 from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
-from canonical.launchpad.interfaces.mailinglist import IMailingListSet
+from lp.registry.interfaces.mailinglist import IMailingListSet
 from canonical.launchpad.interfaces.malone import IMaloneApplication
-from canonical.launchpad.interfaces.mentoringoffer import IMentoringOfferSet
+from lp.registry.interfaces.mentoringoffer import IMentoringOfferSet
 from canonical.launchpad.interfaces.openidserver import IOpenIDRPConfigSet
-from canonical.launchpad.interfaces.person import IPersonSet
-from canonical.launchpad.interfaces.pillar import IPillarNameSet
-from canonical.launchpad.interfaces.product import (
+from lp.registry.interfaces.person import IPersonSet
+from lp.registry.interfaces.pillar import IPillarNameSet
+from lp.registry.interfaces.product import (
     InvalidProductName, IProductSet)
-from canonical.launchpad.interfaces.project import IProjectSet
-from canonical.launchpad.interfaces.sourcepackagename import (
+from lp.registry.interfaces.project import IProjectSet
+from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageNameSet)
 from canonical.launchpad.interfaces.specification import ISpecificationSet
 from canonical.launchpad.interfaces.sprint import ISprintSet
