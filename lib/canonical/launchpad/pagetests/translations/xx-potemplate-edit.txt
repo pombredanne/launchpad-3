@@ -101,36 +101,3 @@ And the changed value is stored.
   ...     'evolution-2.2/+edit')
   >>> browser.getControl(name='field.description').value
   'foo'
-
-
-== Distribution templates ==
-
-For distributions, we assume a tighter relationship and a certain amount
-of trust between the distro and its chosen translation group.
-
-    >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces.launchpad import (
-    ...     ILaunchpadCelebrities)
-
-    >>> ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
-    >>> group_owner = factory.makePerson(
-    ...     email='xyz@example.com', password='test')
-    >>> ubuntu.translationgroup = factory.makeTranslationGroup(
-    ...     owner=group_owner)
-
-The owner of the distribution's translation group gets edit access to
-the distribution's templates.
-
-    >>> template_page = (
-    ...     'http://translations.launchpad.dev/evolution/trunk/+pots/'
-    ...     'evolution-2.2')
-    >>> group_owner_browser = setupBrowser(auth='Basic xyz@example.com:test')
-    >>> group_owner_browser.open(template_page)
-    >>> group_owner_browser.getLink('Change details').click()
-
-Naturally, once there, the group owner can change fields there and
-submit the form successfully.
-
-    >>> group_owner_browser.getControl('field.priority').value = '321'
-    >>> group_owner_browser.getControl('Change').click()
-    >>> group_owner_browser.url == template_page
