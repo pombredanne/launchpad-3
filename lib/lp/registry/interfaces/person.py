@@ -109,6 +109,8 @@ def validate_public_person(obj, attr, value):
     assert isinstance(value, (int, long)), (
         "Expected int for Person foreign key reference, got %r" % type(value))
 
+    # XXX sinzui 2009-04-03 bug=354881: We do not want to import form the
+    # DB. This needs cleaning up.
     from lp.registry.model.person import Person
     person = Person.get(value)
     if not is_valid_public_person_link(person, obj):
