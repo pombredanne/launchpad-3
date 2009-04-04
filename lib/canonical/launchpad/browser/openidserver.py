@@ -762,7 +762,7 @@ class LoginServiceStandaloneLoginView(LoginServiceMixinLoginView,
 
     def doLogin(self, email):
         super(LoginServiceStandaloneLoginView, self).doLogin(email)
-        self.next_url = '/'
+        self.next_url = self.request.form.get('redirect_url', '/')
 
 
 class ProtocolErrorView(LaunchpadView):
@@ -839,4 +839,4 @@ class LoginServiceUnauthorizedView(UnauthorizedView):
         return urlappend(
             self.request.getApplicationURL(),
             '+standalone-login?' + urlencode(
-                (('field.redirect_url', current_url + query_string), )))
+                (('redirect_url', current_url + query_string), )))
