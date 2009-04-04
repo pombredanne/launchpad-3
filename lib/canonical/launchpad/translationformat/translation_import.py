@@ -434,7 +434,11 @@ class FileImporter(object):
             except TranslationConflict:
                 # A conflict on top of a validation error?  Give up.
                 # This message is cursed.
-                pass
+                if self.logger is not None:
+                    self.logger.info(
+                        "Conflicting updates; ignoring invalid message %d." %
+                            potmsgset.id)
+                return None
 
 
         just_replaced_msgid = (

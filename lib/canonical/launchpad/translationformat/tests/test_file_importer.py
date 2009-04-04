@@ -1,4 +1,4 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2008-2009 Canonical Ltd.  All rights reserved.
 """Translation File Importer tests."""
 
 __metaclass__ = type
@@ -395,6 +395,40 @@ class FileImporterTestCase(unittest.TestCase):
         self.failUnless(message is not None,
             "POFileImporter.importFile did not create an "
             "ITranslationMessage object with format errors in the database.")
+
+    def test_ValidationErrorPlusConflict(self):
+        # Sometimes a conflict is detected when we resubmit a message as
+        # a suggestion because it failed validation.  We don't much care
+        # what happens to it, so long as the import doesn't bomb out and
+        # the message doesn't become a current translation.
+        (pot_importer, po_importer) = self._createFileImporters(
+                TEST_TEMPLATE_FOR_ERROR,
+                TEST_TRANSLATION_FILE_WITH_ERROR, False)
+        pot_importer.importFile()
+        po_importer.importFile()
+        transaction.commit()
+
+        po_importer2 = self._createPOFileImporter(
+            pot_importer, TEST_TRANSLATION_EXPORTED_EARLIER, False,
+            po_importer.pofile)
+        po_importer2.importFile()
+
+        potmsgset = po_importer.pofile.potemplate.getPOTMsgSetByMsgIDText(
+            unicode(TEST_MSGID_ERROR))
+        messages = potmsgset.getLocalTranslationMessages(
+            po_importer.pofile.language)
+
+        for message in messages:
+            if message.potmsgset.msgid_singular.msgid == TEST_MSGID_ERROR:
+                # This is the accursed message.  Whatever happens, it
+                # must not be set as the current translation.
+                self.assertFalse(message.is_current)
+            else:
+                # This is the other message that the doomed message
+                # conflicted with.
+                self.assertEqual(
+                    message.potmsgset.msgid_singular.msgid, TEST_MSGID)
+                self.assertEqual(message.translations, [TEST_MSGSTR2])
 
     def test_InvalidTranslatorEmail(self):
         # A Last-Translator with invalid email address does not upset
