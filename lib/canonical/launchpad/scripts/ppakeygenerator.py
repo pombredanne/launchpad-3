@@ -8,7 +8,7 @@ from zope.component import getUtility
 from canonical.launchpad.interfaces.archive import IArchiveSet
 from canonical.launchpad.interfaces.archivesigningkey import (
     IArchiveSigningKey)
-from canonical.launchpad.interfaces.person import IPersonSet
+from lp.registry.interfaces.person import IPersonSet
 from canonical.launchpad.scripts.base import (
     LaunchpadCronScript, LaunchpadScriptFailure)
 

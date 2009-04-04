@@ -23,7 +23,7 @@ from storm.locals import And
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.database import Branch
-from canonical.launchpad.database.sourcepackage import SourcePackage
+from lp.registry.model.sourcepackage import SourcePackage
 from canonical.launchpad.interfaces.branch import (
     BranchCreationForbidden, BranchCreatorNotMemberOfOwnerTeam,
     BranchCreatorNotOwner, BranchExists, BranchLifecycleStatus,
@@ -36,16 +36,16 @@ from canonical.launchpad.interfaces.branchsubscription import (
 from canonical.launchpad.interfaces.branchtarget import IBranchTarget
 from canonical.launchpad.interfaces.branchvisibilitypolicy import (
     BranchVisibilityRule)
-from canonical.launchpad.interfaces.distribution import (
+from lp.registry.interfaces.distribution import (
     IDistributionSet, NoSuchDistribution)
-from canonical.launchpad.interfaces.distroseries import (
+from lp.registry.interfaces.distroseries import (
     IDistroSeriesSet, NoSuchDistroSeries)
-from canonical.launchpad.interfaces.person import IPersonSet, NoSuchPerson
-from canonical.launchpad.interfaces.pillar import IPillarNameSet
-from canonical.launchpad.interfaces.project import IProject
-from canonical.launchpad.interfaces.product import (
+from lp.registry.interfaces.person import IPersonSet, NoSuchPerson
+from lp.registry.interfaces.pillar import IPillarNameSet
+from lp.registry.interfaces.project import IProject
+from lp.registry.interfaces.product import (
     IProduct, IProductSet, NoSuchProduct)
-from canonical.launchpad.interfaces.sourcepackagename import (
+from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageNameSet, NoSuchSourcePackageName)
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)

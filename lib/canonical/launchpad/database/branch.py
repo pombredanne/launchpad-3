@@ -52,7 +52,7 @@ from canonical.launchpad.interfaces.branchmergeproposal import (
 from canonical.launchpad.interfaces.branchpuller import IBranchPuller
 from canonical.launchpad.interfaces.branchtarget import IBranchTarget
 from canonical.launchpad.mailnotification import NotificationRecipientSet
-from canonical.launchpad.validators.person import validate_public_person
+from lp.registry.interfaces.person import validate_public_person
 from canonical.launchpad.webapp import urlappend
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, SLAVE_FLAVOR)
@@ -146,7 +146,7 @@ class Branch(SQLBase):
     def sourcepackage(self):
         """See `IBranch`."""
         # Avoid circular imports.
-        from canonical.launchpad.database.sourcepackage import SourcePackage
+        from lp.registry.model.sourcepackage import SourcePackage
         if self.distroseries is None:
             return None
         return SourcePackage(self.sourcepackagename, self.distroseries)
@@ -486,7 +486,7 @@ class Branch(SQLBase):
     def associatedProductSeries(self):
         """See `IBranch`."""
         # Imported here to avoid circular import.
-        from canonical.launchpad.database.productseries import ProductSeries
+        from lp.registry.model.productseries import ProductSeries
         return Store.of(self).find(
             ProductSeries,
             ProductSeries.branch == self)
@@ -922,7 +922,7 @@ class BranchCloud:
     def getProductsWithInfo(self, num_products=None, store_flavor=None):
         """See `IBranchCloud`."""
         # Circular imports are fun.
-        from canonical.launchpad.database.product import Product
+        from lp.registry.model.product import Product
         # It doesn't matter if this query is even a whole day out of date, so
         # use the slave store by default.
         if store_flavor is None:

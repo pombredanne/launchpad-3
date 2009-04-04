@@ -18,7 +18,7 @@ from canonical.launchpad.webapp.vocabulary import (
 
 from canonical.launchpad.interfaces import (
     IBinaryAndSourcePackageName)
-from canonical.launchpad.database.sourcepackagename import (
+from lp.registry.model.sourcepackagename import (
     getSourcePackageDescriptions)
 from canonical.launchpad.database.binarypackagename import (
     getBinaryPackageDescriptions)

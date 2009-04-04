@@ -10,7 +10,7 @@ See also ArchiveSubscriber.txt.
 Set cprov's PPA to be a private one:
 
     >>> login("foo.bar@canonical.com")
-    >>> from canonical.launchpad.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> cprov = getUtility(IPersonSet).getByName("cprov")
     >>> cprov.archive.buildd_secret = "secret"
     >>> cprov.archive.private = True

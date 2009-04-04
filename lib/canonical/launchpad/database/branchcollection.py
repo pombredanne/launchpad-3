@@ -21,12 +21,12 @@ from canonical.launchpad.database.branchsubscription import BranchSubscription
 from canonical.launchpad.database.codereviewcomment import CodeReviewComment
 from canonical.launchpad.database.codereviewvote import (
     CodeReviewVoteReference)
-from canonical.launchpad.database.distribution import Distribution
-from canonical.launchpad.database.distroseries import DistroSeries
-from canonical.launchpad.database.person import Owner
-from canonical.launchpad.database.product import Product
-from canonical.launchpad.database.sourcepackagename import SourcePackageName
-from canonical.launchpad.database.teammembership import TeamParticipation
+from lp.registry.model.distribution import Distribution
+from lp.registry.model.distroseries import DistroSeries
+from lp.registry.model.person import Owner
+from lp.registry.model.product import Product
+from lp.registry.model.sourcepackagename import SourcePackageName
+from lp.registry.model.teammembership import TeamParticipation
 from canonical.launchpad.interfaces.branch import (
     user_has_special_branch_access)
 from canonical.launchpad.interfaces.branchcollection import (

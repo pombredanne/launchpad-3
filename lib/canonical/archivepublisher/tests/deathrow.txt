@@ -9,7 +9,7 @@ this test.
 
 We will work within the Ubuntu distribution context only.
 
-    >>> from canonical.launchpad.interfaces.distribution import (
+    >>> from lp.registry.interfaces.distribution import (
     ...      IDistributionSet)
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
 

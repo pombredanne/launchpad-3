@@ -23,16 +23,15 @@ from canonical.launchpad.interfaces import (
     IBugSet, ILaunchBag, IPersonSet, IProductSet, NotFoundError)
 from canonical.launchpad.interfaces.branch import NoSuchBranch
 from canonical.launchpad.interfaces.branchlookup import (
-    CannotHaveLinkedBranch, IBranchLookup, InvalidBranchIdentifier,
-    NoLinkedBranch)
+    CannotHaveLinkedBranch, IBranchLookup, NoLinkedBranch)
 from canonical.launchpad.interfaces.branchnamespace import (
     get_branch_namespace, InvalidNamespace)
-from canonical.launchpad.interfaces.distroseries import NoSuchDistroSeries
-from canonical.launchpad.interfaces.person import NoSuchPerson
-from canonical.launchpad.interfaces.product import (
+from lp.registry.interfaces.distroseries import NoSuchDistroSeries
+from lp.registry.interfaces.person import NoSuchPerson
+from lp.registry.interfaces.product import (
     InvalidProductName, NoSuchProduct)
-from canonical.launchpad.interfaces.productseries import NoSuchProductSeries
-from canonical.launchpad.interfaces.sourcepackagename import (
+from lp.registry.interfaces.productseries import NoSuchProductSeries
+from lp.registry.interfaces.sourcepackagename import (
     NoSuchSourcePackageName)
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp import LaunchpadXMLRPCView, canonical_url
@@ -236,8 +235,6 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
         # and thus error prone. Alternatives are directly raising faults from
         # the model code(blech) or some automated way of reraising as faults
         # or using a narrower range of faults (e.g. only one "NoSuch" fault).
-        except InvalidBranchIdentifier, e:
-            raise faults.InvalidBranchIdentifier(e.path)
         except InvalidProductName, e:
             raise faults.InvalidProductIdentifier(e.name)
         except NoSuchProductSeries, e:

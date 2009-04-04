@@ -19,7 +19,7 @@ XXX: noodles 2009-03-10 bug=340405. The the +subscriptions traversal
 will require launchpad.Admin until the backend .htaccess update
 machinery is in-place and tested:
 
-    >>> from canonical.launchpad.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> from zope.component import getUtility
     >>> login('foo.bar@canonical.com')
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
@@ -159,4 +159,48 @@ listed in the current subscriptions area:
         Confirm
     PPA for Celso Providelo    Joe is my friend          Pending
         Confirm
+
+== Confirming a subscription ==
+
+When a person clicks on the confirm link, they are taken to a page
+displaying the subscription and requesting their confirmation.
+
+    >>> joe_browser.getLink(text="Confirm").click()
+    >>> joe_browser.getControl(name='activate').click()
+
+    >>> sources_list = find_tag_by_id(joe_browser.contents, 'sources_list')
+    >>> print(extract_text(sources_list))
+    Custom sources.list entries
+    ...
+    # Personal subscription of Joe Smith to PPA for Mark Shuttleworth
+    deb http://joesmith:...@private-ppa.launchpad.dev/sabdfl/ppa/ubuntu hoary
+        main
+    deb-src http://joesmith:...@private-ppa.launchpad.dev/sabdfl/ppa/ubuntu
+        hoary main
+    Next you need to ...
+
+This page will include information about the signing key, if the archive
+has a signing key:
+
+    >>> from lp.registry.interfaces.gpg import IGPGKeySet
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from zope.component import getUtility
+    >>> login('foo.bar@canonical.com')
+    >>> sabdfl = getUtility(IPersonSet).getByName('sabdfl')
+    >>> a_key = getUtility(IGPGKeySet).get(1)
+    >>> sabdfl.archive.signing_key = a_key
+    >>> logout()
+
+    >>> joe_browser.reload()
+    >>> sources_list = find_tag_by_id(joe_browser.contents, 'sources_list')
+    >>> print(extract_text(sources_list))
+    Custom sources.list entries
+    ...
+    # Personal subscription of Joe Smith to PPA for Mark Shuttleworth
+    deb http://joesmith:...@private-ppa.launchpad.dev/sabdfl/ppa/ubuntu hoary
+        main
+    deb-src http://joesmith:...@private-ppa.launchpad.dev/sabdfl/ppa/ubuntu
+        hoary main
+    This repository is signed ...
+    Next you need to ...
 

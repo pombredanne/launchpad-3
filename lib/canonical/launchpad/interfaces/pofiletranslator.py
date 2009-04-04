@@ -14,7 +14,7 @@ from zope.schema import Datetime, Int, Object
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.pofile import IPOFile
-from canonical.launchpad.interfaces.person import IPerson
+from lp.registry.interfaces.person import IPerson
 from canonical.launchpad.interfaces.translationmessage import (
     ITranslationMessage)
 
