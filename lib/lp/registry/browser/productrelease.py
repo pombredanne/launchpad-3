@@ -13,6 +13,7 @@ __all__ = [
     'ProductReleaseView',
     ]
 
+import cgi
 import mimetypes
 
 from zope.event import notify
@@ -30,6 +31,7 @@ from canonical.launchpad.webapp import (
     action, canonical_url, ContextMenu, custom_widget,
     enabled_with_permission, LaunchpadEditFormView, LaunchpadFormView,
     LaunchpadView, Link, Navigation, stepthrough)
+from canonical.launchpad.webapp.menu import structured
 from canonical.widgets import DateTimeWidget
 
 
@@ -96,7 +98,7 @@ class ProductReleaseAddView(LaunchpadFormView):
     def initialize(self):
         if self.context.product_release is not None:
             self.request.response.addErrorNotification(
-                _("A product release already exists for this milestone."))
+                _("A project release already exists for this milestone."))
             self.request.response.redirect(
                 canonical_url(self.context.product_release) + '/+edit')
         else:
@@ -108,10 +110,11 @@ class ProductReleaseAddView(LaunchpadFormView):
             self.form_fields += FormFields(
                 Bool(
                     __name__='keep_milestone_active',
-                    title=_("Keep the milestone active."),
+                    title=_("Keep the %s milestone active." %
+                            self.context.name),
                     description=_(
                         "Only select this if bugs or blueprints still need "
-                        "to be targeted to this product release&rsquo;s "
+                        "to be targeted to this project release's "
                         "milestone.")),
                 render_context=self.render_context)
 
@@ -126,17 +129,28 @@ class ProductReleaseAddView(LaunchpadFormView):
         # should not be targeted to a milestone in the past.
         if data['keep_milestone_active'] is False:
             self.context.active = False
-            self.request.response.addWarningNotification(
-                _("The milestone for this product release was deactivated "
-                  "so that bugs & blueprints cannot be targeted "
-                  "to a milestone in the past."))
+            milestone_link = '<a href="%s">%s milestone</a>' % (
+                canonical_url(self.context), cgi.escape(self.context.name))
+            self.request.response.addWarningNotification(structured(
+                _("The %s for this project release was deactivated "
+                  "so that bugs and blueprints cannot be associated with "
+                  "this release." % milestone_link)))
         self.next_url = canonical_url(newrelease)
         notify(ObjectCreatedEvent(newrelease))
 
     @property
     def label(self):
         """The form label."""
-        return 'Register a new %s release' % self.context.product.name
+        return 'Create a new release for %s' % (
+            self.context.product.displayname)
+
+    @property
+    def releases(self):
+        """The releases in this series, or None."""
+        releases = self.context.productseries.releases
+        if releases.count() == 0:
+            return None
+        return releases
 
     @property
     def cancel_url(self):
