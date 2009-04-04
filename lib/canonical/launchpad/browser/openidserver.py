@@ -762,7 +762,8 @@ class LoginServiceStandaloneLoginView(LoginServiceMixinLoginView,
 
     def doLogin(self, email):
         super(LoginServiceStandaloneLoginView, self).doLogin(email)
-        self.next_url = self.request.form.get('redirect_url', '/')
+        redirect_to = self.request.form.get('redirect_url')
+        self.next_url = redirect_to or '/'
 
 
 class ProtocolErrorView(LaunchpadView):
