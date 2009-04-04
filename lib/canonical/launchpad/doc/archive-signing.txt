@@ -31,7 +31,7 @@ We will setup and use the test-keyserver (zeca).
 PPA pending signing key generation.
 
     >>> from canonical.launchpad.interfaces.archive import IArchiveSet
-    >>> from canonical.launchpad.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
 
 Only PPAs with at least one source publication are considered.
 
@@ -132,7 +132,7 @@ proper publish configuration based on the sampledata.
 
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
 
-    >>> from canonical.launchpad.interfaces.distribution import (
+    >>> from lp.registry.interfaces.distribution import (
     ...     IDistributionSet)
     >>> cprov.archive.distribution = getUtility(
     ...     IDistributionSet).getByName('ubuntutest')
@@ -201,7 +201,7 @@ by the 'PPA key guard' celebrity and represented by a IGPGKey record.
 
     >>> signing_key = archive_signing_key.archive.signing_key
 
-    >>> from canonical.launchpad.interfaces.gpg import IGPGKey
+    >>> from lp.registry.interfaces.gpg import IGPGKey
     >>> verifyObject(IGPGKey, signing_key)
     True
 

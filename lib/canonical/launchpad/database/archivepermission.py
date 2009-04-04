@@ -24,7 +24,7 @@ from canonical.launchpad.interfaces.archivepermission import (
     ArchivePermissionType, IArchivePermission, IArchivePermissionSet,
     IArchiveUploader, IArchiveQueueAdmin)
 from canonical.launchpad.interfaces.component import IComponent, IComponentSet
-from canonical.launchpad.interfaces.sourcepackagename import (
+from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageName, ISourcePackageNameSet)
 from canonical.launchpad.webapp.interfaces import NotFoundError
 

@@ -43,7 +43,7 @@ XXX: noodles 2009-03-10 bug=340405. The the +subscriptions traversal
 will require launchpad.Admin until the backend .htaccess update
 machinery is in-place and tested:
 
-    >>> from canonical.launchpad.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> from zope.component import getUtility
     >>> login('foo.bar@canonical.com')
     >>> cprov = getUtility(IPersonSet).getByName('cprov')

@@ -37,7 +37,7 @@ from canonical.launchpad.interfaces.packagediff import (
 from canonical.launchpad.interfaces.package import PackageUploadStatus
 from canonical.launchpad.interfaces.publishing import (
     PackagePublishingStatus)
-from canonical.launchpad.interfaces.sourcepackage import (
+from lp.registry.interfaces.sourcepackage import (
     SourcePackageFileType, SourcePackageFormat, SourcePackageUrgency)
 from canonical.launchpad.interfaces.sourcepackagerelease import (
     ISourcePackageRelease)
@@ -47,7 +47,7 @@ from canonical.launchpad.interfaces.translationimportqueue import (
 from canonical.launchpad.database.build import Build
 from canonical.launchpad.database.files import SourcePackageReleaseFile
 from canonical.launchpad.database.packagediff import PackageDiff
-from canonical.launchpad.validators.person import validate_public_person
+from lp.registry.interfaces.person import validate_public_person
 from canonical.launchpad.database.publishing import (
     SourcePackagePublishingHistory)
 from canonical.launchpad.database.queue import PackageUpload
@@ -223,7 +223,7 @@ class SourcePackageRelease(SQLBase):
 
         for publishing in publishings:
             # imports us, so avoid circular import
-            from canonical.launchpad.database.sourcepackage import \
+            from lp.registry.model.sourcepackage import \
                  SourcePackage
             # Only process main archives and skip PPA/copy archives.
             if publishing.archive.purpose not in MAIN_ARCHIVE_PURPOSES:

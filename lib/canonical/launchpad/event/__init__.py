@@ -3,4 +3,4 @@
 
 """Launchpad events."""
 
-from canonical.launchpad.event.team import *
+from lp.registry.event.team import *

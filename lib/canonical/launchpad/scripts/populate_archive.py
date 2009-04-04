@@ -22,7 +22,7 @@ from canonical.launchpad.interfaces.component import IComponentSet
 from canonical.launchpad.interfaces.packagecloner import IPackageCloner
 from canonical.launchpad.interfaces.packagecopyrequest import (
     IPackageCopyRequestSet)
-from canonical.launchpad.interfaces.person import IPersonSet
+from lp.registry.interfaces.person import IPersonSet
 from canonical.launchpad.interfaces.processor import IProcessorFamilySet
 from canonical.launchpad.scripts.ftpmasterbase import (
     SoyuzScript, SoyuzScriptError)

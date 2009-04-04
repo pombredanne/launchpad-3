@@ -13,7 +13,7 @@ First, create a person 'joesmith' and a team 'team_cprov':
     >>> login('foo.bar@canonical.com')
     >>> joesmith = factory.makePerson(name="joesmith", displayname="Joe Smith",
     ...     password="test", email="joe@example.com")
-    >>> from canonical.launchpad.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> cprov = getUtility(IPersonSet).getByName("cprov")
     >>> team_cprov = factory.makeTeam(cprov, "Team Cprov")
     >>> logout()

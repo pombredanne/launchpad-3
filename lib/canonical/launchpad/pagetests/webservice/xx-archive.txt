@@ -31,7 +31,7 @@ While the Archive signing key is being generated its
 We can quickly assign a random OpenPGP key to Celso's PPA.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
 
     >>> login('foo.bar@canonical.com')
     >>> foo_bar = getUtility(IPersonSet).getByName('name16')
@@ -434,7 +434,7 @@ For testing purpose we will create some publications.
 
     >>> login('foo.bar@canonical.com')
 
-    >>> from canonical.launchpad.interfaces.distribution import (
+    >>> from lp.registry.interfaces.distribution import (
     ...     IDistributionSet)
 
     >>> ubuntu_distro = getUtility(IDistributionSet).getByName('ubuntu')

@@ -19,7 +19,7 @@ XXX: noodles 2009-03-10 bug=340405. The the +subscriptions traversal
 will require launchpad.Admin until the backend .htaccess update
 machinery is in-place and tested:
 
-    >>> from canonical.launchpad.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> from zope.component import getUtility
     >>> login('foo.bar@canonical.com')
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
@@ -182,7 +182,9 @@ displaying the subscription and requesting their confirmation.
 This page will include information about the signing key, if the archive
 has a signing key:
 
-    >>> from canonical.launchpad.interfaces import IGPGKeySet
+    >>> from lp.registry.interfaces.gpg import IGPGKeySet
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from zope.component import getUtility
     >>> login('foo.bar@canonical.com')
     >>> sabdfl = getUtility(IPersonSet).getByName('sabdfl')
     >>> a_key = getUtility(IGPGKeySet).get(1)

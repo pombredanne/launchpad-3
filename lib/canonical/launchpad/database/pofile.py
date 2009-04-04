@@ -28,8 +28,8 @@ from canonical.database.sqlbase import (
     SQLBase, flush_database_updates, quote, quote_like, sqlvalues)
 from canonical.launchpad import helpers
 from canonical.launchpad.components.rosettastats import RosettaStats
-from canonical.launchpad.validators.person import validate_public_person
-from canonical.launchpad.database.person import Person
+from lp.registry.interfaces.person import validate_public_person
+from lp.registry.database.person import Person
 from canonical.launchpad.database.potmsgset import POTMsgSet
 from canonical.launchpad.database.translationmessage import TranslationMessage
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
