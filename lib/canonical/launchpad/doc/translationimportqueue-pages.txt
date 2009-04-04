@@ -16,7 +16,7 @@ This view is only accessible for administrators.
 In real life, entries in the import queue have been uploaded by a person.
 We will create the entry by hand but need a person to be named as importer.
 
-    >>> from canonical.launchpad.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> importer = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
     >>> print importer.displayname
     Foo Bar
@@ -25,7 +25,7 @@ A real entry would have been uploaded in the context of productseries or a
 sourcepackage within a distroseries. So we need to get a productseries for
 our entry.
 
-    >>> from canonical.launchpad.interfaces.productseries import (
+    >>> from lp.registry.interfaces.productseries import (
     ...     IProductSeriesSet)
     >>> productseries = getUtility(IProductSeriesSet).get(3)
     >>> print productseries.name

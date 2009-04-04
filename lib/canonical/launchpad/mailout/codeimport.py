@@ -16,7 +16,7 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.interfaces.codeimport import RevisionControlSystems
 from canonical.launchpad.interfaces.codeimportevent import (
     CodeImportEventDataType, CodeImportEventType)
-from canonical.launchpad.interfaces.person import IPerson
+from lp.registry.interfaces.person import IPerson
 from canonical.launchpad.mail import format_address, simple_sendmail
 from canonical.launchpad.webapp import canonical_url
 
