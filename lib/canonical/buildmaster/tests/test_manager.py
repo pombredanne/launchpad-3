@@ -8,7 +8,6 @@ import unittest
 
 from twisted.internet import defer
 from twisted.internet.error import ConnectionClosed
-from twisted.internet.threads import deferToThread
 from twisted.python.failure import Failure
 from twisted.trial.unittest import TestCase as TrialTestCase
 
@@ -23,7 +22,7 @@ from canonical.launchpad.ftests import ANONYMOUS, login
 from canonical.launchpad.interfaces.build import BuildStatus
 from canonical.launchpad.interfaces.builder import IBuilderSet
 from canonical.launchpad.interfaces.buildqueue import IBuildQueueSet
-from canonical.launchpad.interfaces.distribution import IDistributionSet
+from lp.registry.interfaces.distribution import IDistributionSet
 from canonical.launchpad.scripts.logger import BufferLogger
 from canonical.launchpad.tests.test_publishing import SoyuzTestPublisher
 from canonical.testing.layers import (
@@ -478,7 +477,7 @@ class TestBuilddManagerScan(TrialTestCase):
         manager.logger = BufferLogger()
         manager.logger.name = 'slave-scanner'
 
-        d = deferToThread(manager.scan)
+        d = defer.maybeDeferred(manager.scan)
         def check_scan(recording_slaves):
             [slave] = recording_slaves
             self.assertEqual('<bob:http://localhost:8221/>', repr(slave))

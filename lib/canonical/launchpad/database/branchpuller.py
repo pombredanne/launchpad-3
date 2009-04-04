@@ -14,8 +14,8 @@ from zope.interface import implements
 
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.database.branch import Branch
-from canonical.launchpad.database.person import Owner
-from canonical.launchpad.database.product import Product
+from lp.registry.model.person import Owner
+from lp.registry.model.product import Product
 from canonical.launchpad.interfaces.branch import BranchType, BranchTypeError
 from canonical.launchpad.interfaces.branchpuller import IBranchPuller
 from canonical.launchpad.webapp.interfaces import (

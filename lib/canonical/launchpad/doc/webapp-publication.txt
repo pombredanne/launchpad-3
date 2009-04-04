@@ -1045,10 +1045,8 @@ the OAuthNonce table.
 
     >>> import time
     >>> from canonical.launchpad.webapp.interfaces import OAuthPermission
-    >>> from canonical.launchpad.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> from canonical.launchpad.interfaces.oauth import IOAuthConsumerSet
-    >>> from storm.locals import Store
-    >>> from canonical.launchpad.webapp.adapter import get_store_name
 
     >>> from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
     >>> from canonical.launchpad.webapp.interfaces import IStoreSelector
@@ -1237,7 +1235,7 @@ associated with the access token specified in the request.  The
 principal's access_level and scope will match what was specified in the
 token.
 
-    >>> from canonical.launchpad.interfaces.product import IProductSet
+    >>> from lp.registry.interfaces.product import IProductSet
     >>> getUtility(IStoreSelector).push(MasterDatabasePolicy())
     >>> salgado = getUtility(IPersonSet).getByName('salgado')
     >>> consumer = getUtility(IOAuthConsumerSet).getByKey('foobar123451432')
