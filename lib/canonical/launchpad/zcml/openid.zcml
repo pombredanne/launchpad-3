@@ -106,14 +106,13 @@
       name="+login"
       />
 
-  <!-- Unauthorized is a regular 500 on the SSO -->
+  <!-- Unauthorized customization for the SSO -->
   <browser:page
       for="zope.exceptions.IUnauthorized"
       layer="canonical.launchpad.layers.OpenIDLayer"
       name="index.html"
       permission="zope.Public"
-      template="../templates/oops.pt"
-      class="canonical.launchpad.webapp.error.SystemErrorView"
+      class="canonical.launchpad.browser.openidserver.LoginServiceUnauthorizedView"
       />
 
     <!-- OpenID persistent identity URLs -->

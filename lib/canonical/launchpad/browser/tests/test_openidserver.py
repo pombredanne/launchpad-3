@@ -362,6 +362,7 @@ def test_suite():
     suite.addTest(LayeredDocFileSuite(
         'loginservice.txt',
         'loginservice-dissect-radio-button.txt',
+        'loginservice-unauthorized-view.txt',
         setUp=setUp, tearDown=tearDown,
         layer=DatabaseFunctionalLayer))
     return suite

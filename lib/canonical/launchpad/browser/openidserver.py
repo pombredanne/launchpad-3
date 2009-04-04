@@ -5,6 +5,7 @@
 __metaclass__ = type
 __all__ = [
     'LoginServiceStandaloneLoginView',
+    'LoginServiceUnauthorizedView',
     'OpenIDMixin',
     ]
 
@@ -13,6 +14,7 @@ import logging
 import pytz
 from datetime import datetime, timedelta
 from time import time
+from urllib import urlencode
 
 from BeautifulSoup import BeautifulSoup
 
@@ -52,8 +54,10 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.interfaces import (
     IPlacelessLoginSource, UnexpectedFormData)
 from canonical.launchpad.webapp.login import (
-    logInPrincipal, logoutPerson, allowUnauthenticatedSession)
+    allowUnauthenticatedSession, logInPrincipal, logoutPerson,
+    UnauthorizedView)
 from canonical.launchpad.webapp.menu import structured
+from canonical.launchpad.webapp.url import urlappend
 from canonical.uuid import generate_uuid
 from canonical.widgets.itemswidgets import LaunchpadRadioWidget
 
@@ -822,3 +826,17 @@ class PreAuthorizeRPView(OpenIDMixin, LaunchpadView):
                 trust_root, http_referrer)
         self.request.response.redirect(callback)
         return u''
+
+
+class LoginServiceUnauthorizedView(UnauthorizedView):
+    """Login Service UnauthorizedView customization."""
+
+    notification_message = _('To continue, you must log in.')
+
+    def getRedirectURL(self, current_url, query_string):
+        """Return the URL to the +standalone-page and pass the redirection URL
+        as a parameter."""
+        return urlappend(
+            self.request.getApplicationURL(),
+            '+standalone-login?' + urlencode(
+                (('field.redirect_url', current_url + query_string), )))
