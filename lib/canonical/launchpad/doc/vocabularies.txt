@@ -1648,6 +1648,15 @@ They can be looked up by their aliases too.
     >>> [term.token for term in vocab.searchForTerms(query='iceweasel')]
     ['firefox']
 
+Aliases are not among the terms when their name does not match the
+token/name.
+
+    >>> [term.token for term in vocab.searchForTerms(query='ubuntu')]
+    ['kubuntu', 'ubuntu', 'ubuntutest']
+
+    >>> vocab.getTermByToken('ubuntu').token
+    'ubuntu'
+
 Inactive projects and project groups are not available.
 
     >>> for term in vocab:
@@ -1901,14 +1910,14 @@ Iterations over the PPA vocabulary will return on PPA archives.
 
 PPA vocabulary terms contain:
 
- * token: the PPA owner name;
+ * token: the PPA owner name combined with the archive name (using '/');
  * value: the IArchive object;
  * title: the first line of the PPA description text.
 
-    >>> cprov_term = vocabulary.getTermByToken('cprov')
+    >>> cprov_term = vocabulary.getTermByToken('cprov/ppa')
 
     >>> print cprov_term.token
-    cprov
+    cprov/ppa
 
     >>> print cprov_term.value
     <Archive ...>
@@ -1923,42 +1932,64 @@ Not found terms result in LookupError.
     ...
     LookupError: foobar
 
-PPA vocabulary searches consider the owner FTI and the PPA FTI itself.
+PPA vocabulary searches consider the owner FTI and the PPA FTI.
+
+    >>> def print_search_results(results):
+    ...     for archive in results:
+    ...         term = vocabulary.toTerm(archive)
+    ...         print '%s: %s' % (term.token, term.title)
 
     >>> cprov_search = vocabulary.search('cprov')
-    >>> cprov_search.count() == 1
-    True
-    >>> print cprov_search[0].owner.name
-    cprov
+    >>> print_search_results(cprov_search)
+    cprov/ppa: packages to help my friends.
 
     >>> celso_search = vocabulary.search('celso')
-    >>> celso_search.count() == 1
-    True
-    >>> print celso_search[0].owner.name
-    cprov
+    >>> print_search_results(celso_search)
+    cprov/ppa: packages to help my friends.
 
     >>> friends_search = vocabulary.search('friends')
-    >>> friends_search.count() == 1
-    True
-    >>> print friends_search[0].description
-    packages to help my friends.
+    >>> print_search_results(friends_search)
+    cprov/ppa: packages to help my friends.
+
+We will create an additional PPA for Celso named 'testing'
+
+    >>> from canonical.launchpad.interfaces.archive import (
+    ...     ArchivePurpose, IArchiveSet)
+
+    >>> cprov = getUtility(IPersonSet).getByName('cprov')
+    >>> cprov_testing = getUtility(IArchiveSet).new(
+    ...     owner=cprov, name='testing', purpose=ArchivePurpose.PPA,
+    ...     description='testing packages.')
+
+Now, a search for 'cprov' will return 2 ppas and the result is ordered
+by PPA name.
+
+    >>> cprov_search = vocabulary.search('cprov')
+    >>> print_search_results(cprov_search)
+    cprov/ppa: packages to help my friends.
+    cprov/testing: testing packages.
+
+The vocabulary search also supports specific named PPA lookups
+follwing the same combined syntax used to build unique tokens.
+
+    >>> named_search = vocabulary.search('cprov/testing')
+    >>> print_search_results(named_search)
+    cprov/testing: testing packages.
 
 As mentioned the PPA vocabulary term title only contains the first
 line of the PPA description.
 
-    >>> cprov = getUtility(IPersonSet).getByName('cprov')
-
     >>> cprov.archive.description = "Single line."
     >>> flush_database_updates()
 
-    >>> cprov_term = vocabulary.getTermByToken('cprov')
+    >>> cprov_term = vocabulary.getTermByToken('cprov/ppa')
     >>> print cprov_term.title
     Single line.
 
     >>> cprov.archive.description = "First line\nSecond line."
     >>> flush_database_updates()
 
-    >>> cprov_term = vocabulary.getTermByToken('cprov')
+    >>> cprov_term = vocabulary.getTermByToken('cprov/ppa')
     >>> print cprov_term.title
     First line
 
@@ -1967,7 +1998,7 @@ PPAs with empty description are identified and have a title saying so.
     >>> cprov.archive.description = None
     >>> flush_database_updates()
 
-    >>> cprov_term = vocabulary.getTermByToken('cprov')
+    >>> cprov_term = vocabulary.getTermByToken('cprov/ppa')
     >>> print cprov_term.title
     No description available
 

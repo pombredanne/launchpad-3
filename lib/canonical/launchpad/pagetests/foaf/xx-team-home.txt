@@ -6,12 +6,11 @@ details about the team.
     >>> browser.open('http://launchpad.dev/~ubuntu-team')
     >>> print extract_text(
     ...     find_tag_by_id(browser.contents, 'your-involvement'))
-    Your involvement
     You must log in to join or leave this team.
 
     >>> print extract_text(
     ...     find_tag_by_id(browser.contents, 'recently-approved'))
-    Recently approved:
+    Recently approved
     Warty Gnome Team (warty-gnome)
     Daniel Silverstone (kinnison)
     Celso Providelo (cprov)
@@ -19,24 +18,18 @@ details about the team.
 
     >>> print extract_text(
     ...     find_tag_by_id(browser.contents, 'recently-applied'))
-    Recently applied:
+    Recently applied
     Sample Person (name12)
     Andrew Bennetts (spiv)
 
     >>> print extract_text(
-    ...     find_tag_by_id(browser.contents, 'portlet-details'))
-    Summary
-    Team owner: Mark Shuttleworth
-    Created on: 2005-06-06
-    Moderated Team:
-        All subscriptions for this team are subject to approval by one
-        of the team's administrators.
+    ...     find_tag_by_id(browser.contents, 'team-details'))
+    Team owned by Mark Shuttleworth, created on 2005-06-06
+
     >>> print extract_text(
     ...     find_tag_by_id(browser.contents, 'membership-summary'))
-    10 active members
-    1 invited members
-    2 proposed members
-    1 inactive members
+    This team has: 10 active members, 1 invited members,
+    2 proposed members and is a Moderated Team...
 
     >>> print extract_text(
     ...     find_tag_by_id(browser.contents, 'contact-details'))
@@ -49,6 +42,16 @@ details about the team.
     Subteam of
     &#8220;Ubuntu Team&#8221; is a member of these teams: GuadaMen...
 
+If the team does not have any recently approved or proposed members,
+the recent members sections are not displayed:
+
+    >>> browser.open('http://launchpad.dev/~launchpad')
+    >>> print find_tag_by_id(browser.contents, 'recently-approved')
+    None
+
+    >>> print find_tag_by_id(browser.contents, 'recently-applied')
+    None
+
 In the above case there's no user logged in, so it doesn't actually show
 what's the user's involvement with the team. If the user logs in, he'll see
 that, though.
@@ -57,21 +60,18 @@ that, though.
     >>> browser.open('http://launchpad.dev/~guadamen')
     >>> print extract_text(
     ...     find_tag_by_id(browser.contents, 'your-involvement'))
-    Your involvement
-    You are the owner of this team.
+    You are the owner of this team...
 
     >>> browser.open('http://launchpad.dev/~rosetta-admins')
     >>> print extract_text(
     ...     find_tag_by_id(browser.contents, 'your-involvement'))
-    Your involvement
     You are a member of the team that owns this team.
-    You are not currently an active member.
+    You are not currently an active member...
 
     >>> browser.open('http://launchpad.dev/~ubuntu-team')
     >>> print extract_text(
     ...     find_tag_by_id(browser.contents, 'your-involvement'))
-    Your involvement
-    You are a member of this team.
+    You are a member of this team...
 
 He can also see the contact email address and a link to contact the team.
 
@@ -79,7 +79,7 @@ He can also see the contact email address and a link to contact the team.
     ...     find_tag_by_id(browser.contents, 'contact-details'))
     Contact details
     support@ubuntu.com
-    (Contact this team)
+    Contact this team
     Languages: English
 
 Member can contact their team even if the team does not have a contact
@@ -91,7 +91,7 @@ address:
     ...     find_tag_by_id(sample_browser.contents, 'contact-details'))
     Contact details
     No contact address
-      (Contact this team)
+      Contact this team
       (Launchpad notifications are sent to all team members)
     Languages: English
 
@@ -109,9 +109,8 @@ will even show the path from the user to the team.
     >>> sample_browser.open('http://launchpad.dev/~name18')
     >>> print extract_text(
     ...     find_tag_by_id(sample_browser.contents, 'your-involvement'))
-    Your involvement
     You are an indirect member of this team:
-    Sample Person &rarr; Warty Security Team &rarr; Ubuntu Gnome Team
+    Sample Person &rarr; Warty Security Team &rarr; Ubuntu Gnome Team...
 
 It is also possible to view the set of mugshots of the people in the team.
 
@@ -129,8 +128,7 @@ No Privileges Person is not a member of the Ubuntu team.
     >>> user_browser.open('http://launchpad.dev/~ubuntu-team')
     >>> print extract_text(
     ...     find_tag_by_id(user_browser.contents, 'your-involvement'))
-    Your involvement
-    You are not a member of this team.
+    You are not a member of this team...
 
 He can see the contact address, but the link's title explains the email
 will actually go to the team's owner.
@@ -139,7 +137,7 @@ will actually go to the team's owner.
     >>> print extract_text(content)
     Contact details
     support@ubuntu.com
-    (Contact this team)
+    Contact this team
     Languages: English
 
     >>> content.a

@@ -43,7 +43,7 @@ def test_confirm_subscription():
         url='http://launchpad.dev:8085/~name16/+archivesubscriptions')
 
     # Click on the Confirm now link... this brings up the form overlay
-    client.click(link=u'                  Confirm now                 ')
+    client.click(link=u'Confirm')
 
     # Click on the form overlay's 'activate' button.
     client.click(name=u'activate')

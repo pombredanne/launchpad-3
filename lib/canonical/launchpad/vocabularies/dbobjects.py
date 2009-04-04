@@ -1588,7 +1588,7 @@ class PPAVocabulary(SQLObjectVocabularyBase):
     implements(IHugeVocabulary)
 
     _table = Archive
-    _orderBy = ['Person.name']
+    _orderBy = ['Person.name, Archive.name']
     _clauseTables = ['Person']
     _filter = AND(
         Person.q.id == Archive.q.ownerID,
@@ -1602,11 +1602,22 @@ class PPAVocabulary(SQLObjectVocabularyBase):
             summary = description.splitlines()[0]
         else:
             summary = "No description available"
-        return SimpleTerm(archive, archive.owner.name, summary)
+
+        token = '%s/%s' % (archive.owner.name, archive.name)
+
+        return SimpleTerm(archive, token, summary)
 
     def getTermByToken(self, token):
         """See `IVocabularyTokenized`."""
-        clause = AND(self._filter, Person.name == token)
+        try:
+            owner_name, archive_name = token.split('/')
+        except ValueError:
+            raise LookupError(token)
+
+        clause = AND(
+            self._filter,
+            Person.name == owner_name,
+            Archive.name == archive_name)
 
         obj = self._table.selectOne(
             clause, clauseTables=self._clauseTables)
@@ -1625,9 +1636,19 @@ class PPAVocabulary(SQLObjectVocabularyBase):
             return self.emptySelectResults()
 
         query = query.lower()
-        clause = AND(self._filter,
-                     SQL("(Archive.fti @@ ftq(%s) OR Person.fti @@ ftq(%s))"
-                         % (quote(query), quote(query))))
+
+        try:
+            owner_name, archive_name = query.split('/')
+        except ValueError:
+            clause = AND(
+                self._filter,
+                SQL("(Archive.fti @@ ftq(%s) OR Person.fti @@ ftq(%s))"
+                    % (quote(query), quote(query))))
+        else:
+            clause = AND(
+                self._filter,
+                Person.name == owner_name,
+                Archive.name == archive_name)
 
         return self._table.select(
             clause, orderBy=self._orderBy, clauseTables=self._clauseTables)
@@ -1877,7 +1898,7 @@ class DistributionOrProductVocabulary(PillarVocabularyBase):
     displayname = 'Select a project'
     _filter = """
         -- An active product/distro.
-        (active IS TRUE
+        ((active IS TRUE
          AND (product IS NOT NULL OR distribution IS NOT NULL)
         )
         OR
@@ -1886,7 +1907,7 @@ class DistributionOrProductVocabulary(PillarVocabularyBase):
             SELECT id FROM PillarName
             WHERE active IS TRUE AND
                 (product IS NOT NULL OR distribution IS NOT NULL))
-        )
+        ))
         """
 
     def __contains__(self, obj):

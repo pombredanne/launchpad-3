@@ -152,6 +152,7 @@ class TranslationBranchApprover(object):
             potemplate = self._potemplateset.new(
                 name, domain, entry.path, entry.importer)
             self._potemplates[entry.path] = potemplate
+            self._n_matched += 1
         else:
             # A matching entry is found, the import can be approved.
             potemplate = self._potemplates[entry.path]

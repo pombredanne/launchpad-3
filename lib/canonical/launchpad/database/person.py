@@ -38,7 +38,7 @@ from sqlobject import (
     SQLRelatedJoin, StringCol)
 from sqlobject.sqlbuilder import AND, OR, SQLConstant
 from storm.store import EmptyResultSet, Store
-from storm.expr import And, Join
+from storm.expr import And, Join, Lower
 from storm.info import ClassAlias
 
 from canonical.config import config
@@ -60,7 +60,6 @@ from canonical.launchpad.database.karma import KarmaCategory
 from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.oauth import (
     OAuthAccessToken, OAuthRequestToken)
-from canonical.launchpad.database.openidserver import OpenIDRPSummary
 from canonical.launchpad.database.personlocation import PersonLocation
 from canonical.launchpad.database.structuralsubscription import (
     StructuralSubscription)
@@ -115,7 +114,6 @@ from canonical.launchpad.interfaces.project import IProject
 from canonical.launchpad.interfaces.revision import IRevisionSet
 from canonical.launchpad.interfaces.salesforce import (
     ISalesforceVoucherProxy, VOUCHER_STATUSES)
-from canonical.launchpad.interfaces.shipit import ShippingRequestStatus
 from canonical.launchpad.interfaces.specification import (
     SpecificationDefinitionStatus, SpecificationFilter,
     SpecificationImplementationStatus, SpecificationSort)
@@ -1650,10 +1648,9 @@ class Person(
             clauseTables=['Person'],
             orderBy=Person.sortingColumns)
 
-    @property
-    def mapped_participants(self):
+    def _mapped_participants_locations(self):
         """See `IPersonViewRestricted`."""
-        locations = PersonLocation.select("""
+        return PersonLocation.select("""
             PersonLocation.person = TeamParticipation.person AND
             TeamParticipation.team = %s AND
             -- We only need to check for a latitude here because there's a DB
@@ -1665,11 +1662,16 @@ class Person(
             """ % sqlvalues(self.id),
             clauseTables=['TeamParticipation', 'Person'],
             prejoins=['person',])
+
+    @property
+    def mapped_participants(self):
+        """See `IPersonViewRestricted`."""
         # Pre-cache this location against its person.  Since we'll always
         # iterate over all persons returned by this property (to build the map
         # of team members), it becomes more important to cache their locations
         # than to return a lazy SelectResults (or similar) object that only
         # fetches the rows when they're needed.
+        locations = self._mapped_participants_locations()
         for location in locations:
             location.person._location = location
         participants = set(location.person for location in locations)
@@ -1678,6 +1680,38 @@ class Person(
             sql = "id IN (%s)" % ",".join(sqlvalues(*participants))
             list(ValidPersonCache.select(sql))
         return list(participants)
+
+    @property
+    def mapped_participants_count(self):
+        """See `IPersonViewRestricted`."""
+        return self._mapped_participants_locations().count()
+
+    def getMappedParticipantsBounds(self):
+        """See `IPersonViewRestricted`."""
+        max_lat = -90.0
+        min_lat = 90.0
+        max_lng = -180.0
+        min_lng = 180.0
+        locations = self._mapped_participants_locations()
+        if self.mapped_participants_count == 0:
+            raise AssertionError, (
+                'This method cannot be called when '
+                'mapped_participants_count == 0.')
+        latitudes = sorted(location.latitude for location in locations)
+        if latitudes[-1] > max_lat:
+            max_lat = latitudes[-1]
+        if latitudes[0] < min_lat:
+            min_lat = latitudes[0]
+        longitudes = sorted(location.longitude for location in locations)
+        if longitudes[-1] > max_lng:
+            max_lng = longitudes[-1]
+        if longitudes[0] < min_lng:
+            min_lng = longitudes[0]
+        center_lat = (max_lat + min_lat) / 2.0
+        center_lng = (max_lng + min_lng) / 2.0
+        return dict(
+            min_lat=min_lat, min_lng=min_lng, max_lat=max_lat,
+            max_lng=max_lng, center_lat=center_lat, center_lng=center_lng)
 
     @property
     def unmapped_participants(self):
@@ -1694,6 +1728,11 @@ class Person(
             Person.teamowner IS NULL
             """ % sqlvalues(self.id, self.id),
             clauseTables=['TeamParticipation'])
+
+    @property
+    def unmapped_participants_count(self):
+        """See `IPersonViewRestricted`."""
+        return self.unmapped_participants.count()
 
     @property
     def open_membership_invitations(self):
@@ -2692,8 +2731,9 @@ class PersonSet:
         # that the Person or EmailAddress was created. This is not
         # optimal for production as it requires two database lookups,
         # but is required by much of the test suite.
+        conditions = (Lower(EmailAddress.email) == email.lower().strip())
         email_address = IStore(EmailAddress).find(
-            EmailAddress, email=email).one()
+            EmailAddress, conditions).one()
         if email_address is None:
             return None
         else:

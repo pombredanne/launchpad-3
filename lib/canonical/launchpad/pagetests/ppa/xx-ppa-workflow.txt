@@ -463,6 +463,18 @@ If Celso does not fill 'PPA name' an error is raised.
     There is 1 error.
     Required input is missing.
 
+An error is raised if Celso sets an invalid PPA name.
+
+    >>> cprov_browser.getControl(name="field.name").value = 'ExPeRiMeNtAl'
+    >>> cprov_browser.getControl("Activate").click()
+
+    >>> for error in get_feedback_messages(cprov_browser.contents):
+    ...     print error
+    There is 1 error.
+    Invalid name 'ExPeRiMeNtAl'. Names must start with a letter or
+    number and be lowercase. The characters +, - and . are also
+    allowed after the first character.
+
 If Celso, by mistake, uses the same name of one of his existing PPAs
 (the default one is named 'ppa') an error is raised.
 
