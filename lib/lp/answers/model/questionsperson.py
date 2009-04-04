@@ -17,7 +17,7 @@ from lp.answers.model.question import QuestionPersonSearch
 
 from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.database.language import Language
-from canonical.launchpad.interfaces.person import IPerson
+from lp.registry.interfaces.person import IPerson
 
 
 class QuestionsPerson:

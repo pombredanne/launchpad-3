@@ -121,7 +121,7 @@
   </class>
 
   <adapter
-    for="canonical.launchpad.interfaces.person.IPerson"
+    for="lp.registry.interfaces.person.IPerson"
     provides=".interfaces.questionsperson.IQuestionsPerson"
     factory=".model.questionsperson.QuestionsPerson"
     trusted="yes"
