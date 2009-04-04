@@ -16,95 +16,57 @@ user/team page.
    Personal package archives
    PPA for Celso Providelo
 
-Since cprov's PPA is already activated in sampledata, one can click
-its title in the 'Personal Package Archives' section.
+There is a link in the body page pointing to Celso's PPA.
 
-    >>> cprov_browser = setupBrowser(
-    ...     auth="Basic celso.providelo@canonical.com:cprov")
-    >>> cprov_browser.open("http://launchpad.dev/~cprov")
-    >>> cprov_browser.getLink("PPA for Celso Providelo").click()
+    >>> anon_browser.getLink("PPA for Celso Providelo").click()
 
-    >>> cprov_browser.title
-    'PPA for Celso Providelo'
+    >>> print anon_browser.title
+    PPA for Celso Providelo
 
-    >>> cprov_browser.url
-    'http://launchpad.dev/~cprov/+archive/ppa'
-
-If, by any chance, the user tries to access the Personal Package
-Archive activation page for already activated PPA (hand-made or save
-URLs) it will get redirected to the PPA page automatically:
-
-    >>> cprov_browser.open("http://launchpad.dev/~cprov/+activate-ppa")
-    >>> cprov_browser.url
-    'http://launchpad.dev/~cprov/+archive/ppa'
-
-Checking if the Person action-menu is sane, by not presenting links to
-a Personal Package Archive that doesn't exist yet, let's use the
-'test' user account.
+On the other hand, Sample Person hasn't activated his PPA yet, so he
+can quickly activate one via the link in his PPA section.
 
     >>> sample_browser = setupBrowser(auth="Basic test@canonical.com:test")
     >>> sample_browser.open("http://launchpad.dev/~name12")
 
-Accessing a nonexistent Personal Package Archive page with a hand-made
-URL results in NotFound error:
-
-    >>> sample_browser.open("http://launchpad.dev/~name12/+archive/ppa")
-    Traceback (most recent call last):
-    ...
-    NotFound: Object: <Person at ...>, name: u'+archive'
-
-Sample Person hasn't activated his PPA yet, so he can quickly activate
-one via the link in his PPA section.
-
-    >>> sample_browser.open("http://launchpad.dev/~name12")
     >>> print_tag_with_id(sample_browser.contents, 'ppas')
     Personal package archives
     Create a new PPA
 
     >>> sample_browser.getLink("Create a new PPA").click()
 
-    >>> sample_browser.title
-    'Activate Personal Package Archive'
-
-    >>> sample_browser.url
-    'http://launchpad.dev/~name12/+activate-ppa'
+    >>> print sample_browser.title
+    Activate Personal Package Archive
 
 This page presents the current PPA-ToS (terms of service) with a
 mandatory checkbox ('accepted') indicating that the user has read and
 accepted the conditions and an optional 'description' text-area.
 
-The 'accepted' checkbox is unchecked by default:
-
-    >>> sample_browser.getControl(name="field.accepted").value
-    False
-
-By submitting the form without checking the check-box results in a
+By submitting the form without checking the checkbox results in a
 error with a proper message:
 
     >>> sample_browser.getControl("Activate").click()
     >>> sample_browser.url
     'http://launchpad.dev/%7Ename12/+activate-ppa'
 
-    >>> errors = find_tags_by_class(sample_browser.contents, 'error')
-    >>> for error in [extract_text(e) for e in errors]:
+    >>> for error in get_feedback_messages(sample_browser.contents):
     ...     print error
     There is 1 error.
-    PPA Terms of Service must be accepted to activate your PPA.
+    PPA Terms of Service must be accepted to activate a PPA.
 
-So, in order to 'activate' a Personal Package Archive the 'accepted'
-checkbox must be checked:
+In order to 'activate' a PPA the user must acknowledge the PPA-ToS.
 
     >>> sample_browser.getControl(name="field.accepted").value = True
     >>> sample_browser.getControl(name="field.description").value = (
     ...    'Hoohay for PPA.')
     >>> sample_browser.getControl("Activate").click()
 
-A successful activation redirects to the Personal Package Archive page:
+A successful activation redirects to the PPA page
 
-    >>> sample_browser.url
-    'http://launchpad.dev/~name12/+archive/ppa'
+    >>> print sample_browser.title
+    PPA for Sample Person
 
-Where we can check for the submitted description:
+Where Sample person user can see the description previously entered.
 
     >>> print extract_text(
     ...     find_tag_by_id(sample_browser.contents, 'description'))
@@ -114,12 +76,17 @@ Where we can check for the submitted description:
 The PPA owner is able to edit PPA 'description'.
 
     >>> sample_browser.getLink("Change details").click()
+
     >>> sample_browser.getControl(name="field.description").value = (
     ...    'Howdy, cowboys !')
+
     >>> sample_browser.getControl("Save").click()
 
-    >>> sample_browser.url
-    'http://launchpad.dev/~name12/+archive/ppa'
+After confirming the changes Sample Person is sent to the PPA page
+where he can see the updated information.
+
+    >>> print sample_browser.title
+    PPA for Sample Person
 
     >>> print extract_text(
     ...     find_tag_by_id(sample_browser.contents, 'description'))
@@ -132,8 +99,8 @@ Empty 'description' fields are not be rendered.
     >>> sample_browser.getControl(name="field.description").value = ('')
     >>> sample_browser.getControl("Save").click()
 
-    >>> sample_browser.url
-    'http://launchpad.dev/~name12/+archive/ppa'
+    >>> print sample_browser.title
+    PPA for Sample Person
 
     >>> print find_tag_by_id(sample_browser.contents, 'description')
     None
@@ -144,7 +111,10 @@ Empty 'description' fields are not be rendered.
 Similarly to the user PPAs activation, team PPAs can be activated by
 anyone with 'launchpad.Edit' permission in the team in question:
 
+    >>> cprov_browser = setupBrowser(
+    ...     auth="Basic celso.providelo@canonical.com:cprov")
     >>> cprov_browser.open("http://launchpad.dev/~landscape-developers")
+
     >>> print_tag_with_id(cprov_browser.contents, 'ppas')
     Personal package archives
 
@@ -159,21 +129,23 @@ Even if we try the URL directly:
 Let's proceed with the required permissions:
 
     >>> sample_browser.open("http://launchpad.dev/~landscape-developers")
+
     >>> print_tag_with_id(sample_browser.contents, 'ppas')
     Personal package archives
     Create a new PPA
 
     >>> sample_browser.getLink('Create a new PPA').click()
-    >>> sample_browser.title
-    'Activate Personal Package Archive'
+
+    >>> print sample_browser.title
+    Activate Personal Package Archive
 
     >>> sample_browser.getControl(name="field.accepted").value = True
     >>> sample_browser.getControl(name="field.description").value = (
     ...    'Hoohay for Team PPA.')
     >>> sample_browser.getControl("Activate").click()
 
-    >>> sample_browser.url
-    'http://launchpad.dev/~landscape-developers/+archive/ppa'
+    >>> print sample_browser.title
+    PPA for Landscape Developers
 
     >>> print extract_text(
     ...     find_tag_by_id(sample_browser.contents, 'description'))
@@ -184,6 +156,7 @@ Any team administrator can edit the description contents,
 exactly the same as for a user-PPA, see above:
 
     >>> sample_browser.getLink("Change details").click()
+
     >>> print sample_browser.title
     Edit PPA for Landscape Developers
 
@@ -221,7 +194,7 @@ page and discard the changes.
 We also allow LP-admins to create Personal Package Archives in the
 name of other users or teams:
 
-    >>> admin_browser.open("http://launchpad.dev/~carlos")
+    >>> admin_browser.open("http://launchpad.dev/~jblack")
     >>> print_tag_with_id(admin_browser.contents, 'ppas')
     Personal package archives
     Create a new PPA
@@ -232,8 +205,8 @@ name of other users or teams:
     ...    'Go for it, you lazy !')
     >>> admin_browser.getControl("Activate").click()
 
-    >>> admin_browser.url
-    'http://launchpad.dev/~carlos/+archive/ppa'
+    >>> print admin_browser.title
+    PPA for James Blackwell
 
     >>> print extract_text(
     ...     find_tag_by_id(admin_browser.contents, 'description'))
@@ -248,25 +221,25 @@ LP-admins can also 'edit' PPAs of other people:
 But more importantly, only LP administrators can 'administer' Personal
 Package Archives.
 
-    >>> sample_browser.open("http://launchpad.dev/~carlos/+archive")
+    >>> sample_browser.open("http://launchpad.dev/~jblack/+archive")
     >>> print sample_browser.getLink("Administer archive")
     Traceback (most recent call last):
     ...
     LinkNotFoundError
 
     >>> admin_browser.getLink("Administer archive").click()
-    >>> admin_browser.url
-    'http://launchpad.dev/~carlos/+archive/ppa/+admin'
+    >>> print admin_browser.title
+    Administer PPA for James Blackwell
 
 Trying to shortcut the URL as a non-privileged user does not work:
 
     >>> sample_browser.open(
-    ...     "http://launchpad.dev/~carlos/+archive/ppa/+admin")
+    ...     "http://launchpad.dev/~jblack/+archive/ppa/+admin")
     Traceback (most recent call last):
     ...
     Unauthorized...
 
-The administration procedure allows us to:
+The administration procedure allows administrators to:
 
  * Enable/Disable: disabled PPA that won't accept uploads (not
    implemented yet)
@@ -295,26 +268,29 @@ build on a virtualized builder.
     >>> admin_browser.getControl(name="field.authorized_size").value = '1'
     >>> admin_browser.getControl("Save").click()
 
-    >>> admin_browser.url
-    'http://launchpad.dev/~carlos/+archive/ppa'
+Once confirmed the administrator is sent to the PPA page where he can
+see updated information.
 
-    >>> admin_browser.open("http://launchpad.dev/~carlos/+archive/ppa/+admin")
-    >>> admin_browser.getControl(name="field.enabled").value
-    False
-    >>> admin_browser.getControl(name="field.private").value
-    True
-    >>> admin_browser.getControl(name="field.require_virtualized").value
-    False
+    >>> print admin_browser.title
+    PPA for James Blackwell
+
+    >>> for msg in get_feedback_messages(admin_browser.contents):
+    ...     print msg
+    This archive has been disabled.
+
+    >>> print_tag_with_id(admin_browser.contents, 'privacy')
+    This archive is private
 
 When the archive is private, the buildd secret must also be set, or an
 error is issued:
 
+    >>> admin_browser.getLink("Administer archive").click()
     >>> admin_browser.getControl(name="field.private").value = True
     >>> admin_browser.getControl(name="field.buildd_secret").value = ""
     >>> admin_browser.getControl("Save").click()
-    >>> tags = find_tags_by_class(admin_browser.contents, 'message')
-    >>> for tag in tags:
-    ...     print extract_text(tag)
+
+    >>> for error in get_feedback_messages(admin_browser.contents):
+    ...     print error
     There is 1 error.
     Required for private archives.
 
@@ -324,9 +300,9 @@ generates an error:
     >>> admin_browser.getControl(name="field.private").value = False
     >>> admin_browser.getControl(name="field.buildd_secret").value = "secret"
     >>> admin_browser.getControl("Save").click()
-    >>> tags = find_tags_by_class(admin_browser.contents, 'message')
-    >>> for tag in tags:
-    ...     print extract_text(tag)
+
+    >>> for error in get_feedback_messages(admin_browser.contents):
+    ...     print error
     There is 1 error.
     Do not specify for non-private archives
 
@@ -336,13 +312,13 @@ MiB. Submitting the form with an authorized_size that is too large
 will result in an error:
 
     >>> limit = 20 * 1024
-    >>> admin_browser.open("http://launchpad.dev/~carlos/+archive/ppa/+admin")
+    >>> admin_browser.open("http://launchpad.dev/~jblack/+archive/ppa/+admin")
     >>> admin_browser.getControl(
     ...     name="field.authorized_size").value = str(limit + 1)
     >>> admin_browser.getControl("Save").click()
-    >>> tags = find_tags_by_class(admin_browser.contents,'message')
-    >>> for tag in tags:
-    ...     print extract_text(tag)
+
+    >>> for error in get_feedback_messages(admin_browser.contents):
+    ...     print error
     There is 1 error.
     Value is too big
 
@@ -350,14 +326,15 @@ Cancelled changes in the administration form redirects the user to the
 PPA overview page and discards the changes.
 
     >>> admin_browser.getControl("Cancel").click()
+
     >>> print admin_browser.title
-    Private PPA for Carlos Perelló Marín
+    PPA for James Blackwell
 
     >>> admin_browser.getLink("Administer archive").click()
     >>> admin_browser.getControl("Cancel").click()
 
     >>> print admin_browser.title
-    Private PPA for Carlos Perelló Marín
+    PPA for James Blackwell
 
 
 == Double submission ==
@@ -370,46 +347,148 @@ Set up two browsers (waiting for bug #68655):
 
     >>> browser1 = setupBrowser(auth="Basic foo.bar@canonical.com:test")
     >>> browser1.open("http://launchpad.dev/~name16/+activate-ppa")
+
     >>> browser2 = setupBrowser(auth="Basic foo.bar@canonical.com:test")
     >>> browser2.open("http://launchpad.dev/~name16/+activate-ppa")
 
-The 'accepted' checkbox must be checked:
+Prepare the forms in both browsers to activate the default PPA for the
+user 'Foo Bar'.
 
     >>> browser1.getControl(name="field.accepted").value = True
     >>> browser1.getControl(name="field.description").value = (
     ...    'PPA rocks!')
+
     >>> browser2.getControl(name="field.accepted").value = True
     >>> browser2.getControl(name="field.description").value = (
     ...    'PPA does not explode!')
 
-Activate the first browser:
+Activate the PPA in the first browser:
 
     >>> browser1.getControl("Activate").click()
 
-A successful activation redirects to the Personal Package Archive page:
-
-    >>> browser1.url
-    'http://launchpad.dev/~name16/+archive/ppa'
-
-Where we can check for the submitted description:
+    >>> print browser1.title
+    PPA for Foo Bar
 
     >>> print extract_text(
     ...     find_tag_by_id(browser1.contents, 'description'))
     Description
     PPA rocks!
 
-Activate the second browser:
+Activating the default PPA in the second browser results in an error
+and the rendered form contains the 'name' field.
 
     >>> browser2.getControl("Activate").click()
 
-It will be directed to the Personal Package Archive page:
+    >>> for error in get_feedback_messages(browser2.contents):
+    ...     print error
+    There is 1 error.
+    The default PPA is already activated.
+    Please specify a name for the new PPA and resubmit the form.
 
-    >>> browser2.url
-    'http://launchpad.dev/~name16/+archive/ppa'
+    >>> browser2.getControl(name="field.name").value
+    ''
 
-And the description matches the first submission's:
+
+== Activating a named PPA ==
+
+Users who already have a PPA may as well activate a second one.
+
+That's the case for Celso.
+
+    >>> cprov_browser.open("http://launchpad.dev/~cprov")
+
+    >>> print_tag_with_id(cprov_browser.contents, 'ppas')
+    Personal package archives
+    PPA for Celso Providelo
+    Create a new PPA
+
+Celso can simply click on 'Create a new PPA' and will be presented to
+the usual PPA activation form where the checkbox for acknowledge the
+PPA-ToS is replaced by a 'name' field and a list of 'Existing PPAs'.
+Launchpad requires an user to acknowledge the PPA-ToS only once for
+all his PPAs.
+
+    >>> cprov_browser.getLink("Create a new PPA").click()
+
+    >>> print cprov_browser.title
+    Activate Personal Package Archive
+
+    >>> print_tag_with_id(cprov_browser.contents, 'ppas')
+    Existing PPAs
+    PPA for Celso Providelo
+
+    >>> cprov_browser.getControl(name="field.accepted")
+    Traceback (most recent call last):
+    ...
+    LookupError: name 'field.accepted'
 
     >>> print extract_text(
-    ...     find_tag_by_id(browser1.contents, 'description'))
-    Description
-    PPA rocks!
+    ...     first_tag_by_class(cprov_browser.contents, 'form'))
+    PPA name:
+      A unique name used to identify this PPA.
+    PPA contents description: (Optional)
+      A short description of this PPA. URLs are allowed and will be
+      rendered as links.
+
+If Celso does not fill 'PPA name' an error is raised.
+
+    >>> cprov_browser.getControl("Activate").click()
+
+    >>> for error in get_feedback_messages(cprov_browser.contents):
+    ...     print error
+    There is 1 error.
+    Required input is missing.
+
+An error is raised if Celso sets an invalid PPA name.
+
+    >>> cprov_browser.getControl(name="field.name").value = 'ExPeRiMeNtAl'
+    >>> cprov_browser.getControl("Activate").click()
+
+    >>> for error in get_feedback_messages(cprov_browser.contents):
+    ...     print error
+    There is 1 error.
+    Invalid name 'ExPeRiMeNtAl'. Names must start with a letter or
+    number and be lowercase. The characters +, - and . are also
+    allowed after the first character.
+
+If Celso, by mistake, uses the same name of one of his existing PPAs
+(the default one is named 'ppa') an error is raised.
+
+    >>> cprov_browser.getControl(name="field.name").value = 'ppa'
+    >>> cprov_browser.getControl("Activate").click()
+
+    >>> for error in get_feedback_messages(cprov_browser.contents):
+    ...     print error
+    There is 1 error.
+    You already have a PPA named 'ppa'.
+
+If the PPA is named as the distribution it is targeted for it cannot
+be created, mainly because of the way we publish repositories
+including the distribution name automatically.
+
+    >>> cprov_browser.getControl(name="field.name").value = 'ubuntu'
+    >>> cprov_browser.getControl("Activate").click()
+
+    >>> for error in get_feedback_messages(cprov_browser.contents):
+    ...     print error
+    There is 1 error.
+    Archives cannot have the same name as its distribution.
+
+Providing a new name, 'edge', Celso can create a new PPA and it
+immediately sent to it.
+
+    >>> cprov_browser.getControl(name="field.name").value = 'edge'
+    >>> cprov_browser.getControl("Activate").click()
+
+    >>> print cprov_browser.title
+    PPA named edge for Celso Providelo
+
+Back to his profile page Celso and anyone can his multiple PPAs.
+
+    >>> cprov_browser.getLink("Celso Providelo").click()
+
+    >>> print_tag_with_id(cprov_browser.contents, 'ppas')
+    Personal package archives
+    PPA named edge for Celso Providelo
+    PPA for Celso Providelo
+    Create a new PPA

@@ -10,7 +10,7 @@ from zope.interface import implements, Interface
 from zope.component import getAdapter, getUtility
 
 from canonical.launchpad.interfaces.account import IAccount
-from canonical.launchpad.interfaces.announcement import IAnnouncement
+from lp.registry.interfaces.announcement import IAnnouncement
 from canonical.launchpad.interfaces.archive import IArchive
 from canonical.launchpad.interfaces.archivepermission import (
     IArchivePermissionSet)
@@ -37,25 +37,25 @@ from canonical.launchpad.interfaces.codeimportmachine import (
     ICodeImportMachine)
 from canonical.launchpad.interfaces.codereviewcomment import (
     ICodeReviewComment, ICodeReviewCommentDeletion)
-from canonical.launchpad.interfaces.distribution import IDistribution
+from lp.registry.interfaces.distribution import IDistribution
 from canonical.launchpad.interfaces.distributionmirror import (
     IDistributionMirror)
-from canonical.launchpad.interfaces.distributionsourcepackage import (
+from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage)
-from canonical.launchpad.interfaces.distroseries import IDistroSeries
+from lp.registry.interfaces.distroseries import IDistroSeries
 from canonical.launchpad.interfaces.distroserieslanguage import (
     IDistroSeriesLanguage)
 from canonical.launchpad.interfaces.emailaddress import IEmailAddress
-from canonical.launchpad.interfaces.entitlement import IEntitlement
+from lp.registry.interfaces.entitlement import IEntitlement
 from canonical.launchpad.interfaces.hwdb import IHWSubmission
 from canonical.launchpad.interfaces.language import ILanguage, ILanguageSet
 from canonical.launchpad.interfaces.languagepack import ILanguagePack
 from canonical.launchpad.interfaces.launchpad import (
     IBazaarApplication, IHasBug, IHasDrivers, IHasOwner, IShipItApplication,
     ILaunchpadCelebrities)
-from canonical.launchpad.interfaces.location import IPersonLocation
-from canonical.launchpad.interfaces.mailinglist import IMailingListSet
-from canonical.launchpad.interfaces.milestone import (
+from lp.registry.interfaces.location import IPersonLocation
+from lp.registry.interfaces.mailinglist import IMailingListSet
+from lp.registry.interfaces.milestone import (
     IMilestone, IProjectMilestone)
 from canonical.launchpad.interfaces.oauth import (
     IOAuthAccessToken, IOAuthRequestToken)
@@ -67,21 +67,21 @@ from canonical.launchpad.interfaces.publishing import (
 from canonical.launchpad.interfaces.queue import (
     IPackageUpload, IPackageUploadQueue)
 from canonical.launchpad.interfaces.packaging import IPackaging
-from canonical.launchpad.interfaces.person import (
+from lp.registry.interfaces.person import (
     IPerson, IPersonSet, ITeam, PersonVisibility)
-from canonical.launchpad.interfaces.pillar import IPillar
-from canonical.launchpad.interfaces.poll import (
+from lp.registry.interfaces.pillar import IPillar
+from lp.registry.interfaces.poll import (
     IPoll, IPollOption, IPollSubset)
-from canonical.launchpad.interfaces.product import IProduct
-from canonical.launchpad.interfaces.productrelease import (
+from lp.registry.interfaces.product import IProduct
+from lp.registry.interfaces.productrelease import (
     IProductRelease, IProductReleaseFile)
-from canonical.launchpad.interfaces.productseries import IProductSeries
+from lp.registry.interfaces.productseries import IProductSeries
 from canonical.launchpad.interfaces.seriessourcepackagebranch import (
     ISeriesSourcePackageBranch, ISeriesSourcePackageBranchSet)
 from canonical.launchpad.interfaces.shipit import (
     IRequestedCDs, IShippingRequest, IShippingRequestSet, IShippingRun,
     IStandardShipItRequest, IStandardShipItRequestSet)
-from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
+from lp.registry.interfaces.sourcepackage import ISourcePackage
 from canonical.launchpad.interfaces.sourcepackagerelease import (
     ISourcePackageRelease)
 from canonical.launchpad.interfaces.specification import ISpecification
@@ -92,7 +92,7 @@ from canonical.launchpad.interfaces.specificationsubscription import (
 from canonical.launchpad.interfaces.sprint import ISprint
 from canonical.launchpad.interfaces.sprintspecification import (
     ISprintSpecification)
-from canonical.launchpad.interfaces.teammembership import ITeamMembership
+from lp.registry.interfaces.teammembership import ITeamMembership
 from canonical.launchpad.interfaces.translationgroup import (
     ITranslationGroup, ITranslationGroupSet)
 from canonical.launchpad.interfaces.translationimportqueue import (
@@ -141,7 +141,7 @@ class AuthorizationBase:
         """
         # For backward compatibility, delegate to one of
         # checkAuthenticated() or checkUnauthenticated().
-        person = IPerson(account)
+        person = IPerson(account, None)
         if person is None:
             return self.checkUnauthenticated()
         else:

@@ -68,7 +68,7 @@ class TargetBranchWidget(LaunchpadRadioWidget):
         merge.
         """
         assert branch.product, "A product is needed to build the vocabulary."
-        self.dev_focus = branch.product.development_focus.user_branch
+        self.dev_focus = branch.product.development_focus.branch
         logged_in_user = getUtility(ILaunchBag).user
         target_branches = shortlist(
             getUtility(IBranchSet).getTargetBranchesForUsersMergeProposals(
