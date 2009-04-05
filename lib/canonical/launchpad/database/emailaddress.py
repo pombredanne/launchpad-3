@@ -61,7 +61,7 @@ class EmailAddress(SQLBase, HasOwnerMixin):
         if self.status == EmailAddressStatus.PREFERRED:
             raise UndeletableEmailAddress(
                 "This is a person's preferred email, so it can't be deleted.")
-        mailing_list = self.person.mailing_list
+        mailing_list = self.person and self.person.mailing_list
         if mailing_list is not None and mailing_list.address == self.email:
             raise UndeletableEmailAddress(
                 "This is the email address of a team's mailing list, so it "

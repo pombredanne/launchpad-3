@@ -103,3 +103,45 @@ We can now see that the user owns the new address:
     new-user@example.com
     second-email@example.com
 
+
+== Changing the Contact Email Address ==
+
+The user can also change their contact email address using the edit
+emails form:
+
+    >>> browser.open('http://openid.launchpad.dev/+edit-emails')
+    >>> print_radio_button_field(browser.contents, "VALIDATED_SELECTED")
+    (*) new-user@example.com
+    ( ) second-email@example.com
+    >>> browser.getControl('second-email@example.com').selected = True
+    >>> browser.getControl('Set as Contact Address').click()
+
+    >>> for msg in get_feedback_messages(browser.contents):
+    ...     print msg
+    Your contact address has been changed to: second-email@example.com
+    >>> print_radio_button_field(browser.contents, "VALIDATED_SELECTED")
+    (*) second-email@example.com
+    ( ) new-user@example.com
+
+
+== Removing an Email Address ==
+
+The user can also remove email addresses other than their contact address.
+
+    >>> browser.open('http://openid.launchpad.dev/+edit-emails')
+    >>> browser.getControl('second-email@example.com').selected = True
+    >>> browser.getControl('Remove', index=0).click()
+    >>> for msg in get_feedback_messages(browser.contents):
+    ...     print msg
+    There is 1 error.
+    You can't remove second-email@example.com because it's your
+    contact email address.
+
+Removing other addresses works though:
+
+    >>> browser.open('http://openid.launchpad.dev/+edit-emails')
+    >>> browser.getControl('new-user@example.com').selected = True
+    >>> browser.getControl('Remove', index=0).click()
+    >>> for msg in get_feedback_messages(browser.contents):
+    ...     print msg
+    The email address 'new-user@example.com' has been removed.
