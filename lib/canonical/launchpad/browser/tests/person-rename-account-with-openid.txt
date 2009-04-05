@@ -16,7 +16,8 @@ Because of this, we warn users about to rename their account of the risks.
     ...     LaunchpadFormHarness, login_person)
 
     >>> class TestPersonEditView(PersonEditView):
-    ...     template = ViewPageTemplateFile('../../templates/person-edit.pt')
+    ...     template = ViewPageTemplateFile(
+    ...         '../../../../lp/registry/templates/person-edit.pt')
     ...     # XXX flacoste 2008-11-18 bug=44032
     ...     # Unnecessary once LaunchpadFormView uses doom().
     ...     def _abort(self):
