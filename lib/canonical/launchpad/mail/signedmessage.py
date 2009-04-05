@@ -60,19 +60,15 @@ class SignedMessage(email.Message.Message):
         assert self.parsed_string is not None, (
             'Use signed_message_from_string() to create the message.')
         signed_content = signature = None
-        for part in self.walk():
-            if part.is_multipart():
-                continue
-            match = clearsigned_re.search(part.get_payload())
-            if match is not None:
-                signed_content_unescaped = match.group(1)
-                signed_content = dash_escaped.sub('', signed_content_unescaped)
-                signature = match.group(2)
-                return signature, signed_content
+        # Check for MIME/PGP signed message first.
+        # See: RFC3156 - MIME Security with OpenPGP
+        # RFC3156 says that in order to be a complient signed message, there
+        # must be two and only two parts and that the second part must have
+        # content_type 'application/pgp-signature'.
         if self.is_multipart():
             payload = self.get_payload()
-            if len(payload) > 1:
-                content_part, signature_part = payload[:2]
+            if len(payload) == 2:
+                content_part, signature_part = payload
                 sig_content_type = signature_part.get_content_type()
                 if sig_content_type == 'application/pgp-signature':
                     # We need to extract the signed content from the
@@ -86,6 +82,35 @@ class SignedMessage(email.Message.Message):
                         self.parsed_string, re.DOTALL)
                     signed_content = match.group('signed_content')
                     signature = signature_part.get_payload()
+                    return signature, signed_content
+        # If we still have no signature, then we have one of several cases:
+        #  1) We do not have a multipart message
+        #  2) We have a multipart message with two parts, but the second part
+        #     isn't a signature. E.g.
+        #        multipart/mixed
+        #          text/plain <- clear signed review comment
+        #          text/x-diff <- patch
+        #  3) We have a multipart message with more than two parts.
+        #        multipart/mixed
+        #          text/plain <- clear signed body text
+        #          text/x-diff <- patch or merge directoive
+        #          application/pgp-signature <- detached signature
+        # Now we can handle one and two by walking the content and stopping at
+        # the first part that isn't multipart, and getting a signature out of
+        # that.  We can partly handle number three by at least checking the
+        # clear text signed message, but we don't check the detached signature
+        # for the attachment.
+        for part in self.walk():
+            if part.is_multipart():
+                continue
+            match = clearsigned_re.search(part.get_payload())
+            if match is not None:
+                signed_content_unescaped = match.group(1)
+                signed_content = dash_escaped.sub('', signed_content_unescaped)
+                signature = match.group(2)
+                return signature, signed_content
+            # Stop processing after the first non-multipart part.
+            break
         return signature, signed_content
 
     @property

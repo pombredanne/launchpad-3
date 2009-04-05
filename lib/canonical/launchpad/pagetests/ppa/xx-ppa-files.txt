@@ -13,7 +13,7 @@ PPA.
 
     >>> from canonical.launchpad.tests.test_publishing import (
     ...      SoyuzTestPublisher)
-    >>> from canonical.launchpad.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> from canonical.launchpad.interfaces.publishing import (
     ...     PackagePublishingPocket)
 
@@ -164,7 +164,7 @@ Checking file links on PPA index page.
     >>> no_priv_browser.open("http://launchpad.dev/~no-priv/+archive")
 
     >>> print no_priv_browser.title
-    Private PPA for No Privileges Person
+    PPA for No Privileges Person
 
     >>> check_urls(no_priv_browser, ppa_links)
     test-pkg_1.0_source.changes: OK

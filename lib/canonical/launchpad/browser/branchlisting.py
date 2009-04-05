@@ -43,9 +43,9 @@ from canonical.launchpad.browser.feeds import (
     FeedsMixin, PersonBranchesFeedLink, PersonRevisionsFeedLink,
     ProductBranchesFeedLink, ProductRevisionsFeedLink,
     ProjectBranchesFeedLink, ProjectRevisionsFeedLink)
-from canonical.launchpad.browser.product import (
+from lp.registry.browser.product import (
     ProductDownloadFileMixin, SortSeriesMixin)
-from canonical.launchpad.database.sourcepackage import SourcePackage
+from lp.registry.model.sourcepackage import SourcePackage
 from canonical.launchpad.interfaces import (
     IBugBranchSet,
     IProductSeriesSet,
@@ -58,11 +58,11 @@ from canonical.launchpad.interfaces.branch import (
 from canonical.launchpad.interfaces.branchcollection import IAllBranches
 from canonical.launchpad.interfaces.branchmergeproposal import (
     BranchMergeProposalStatus, IBranchMergeProposalGetter)
-from canonical.launchpad.interfaces.distroseries import DistroSeriesStatus
-from canonical.launchpad.interfaces.person import IPerson, IPersonSet
+from lp.registry.interfaces.distroseries import DistroSeriesStatus
+from lp.registry.interfaces.person import IPerson, IPersonSet
 from canonical.launchpad.interfaces.personproduct import (
     IPersonProduct, IPersonProductFactory)
-from canonical.launchpad.interfaces.product import IProduct
+from lp.registry.interfaces.product import IProduct
 from canonical.launchpad.webapp import (
     ApplicationMenu, canonical_url, custom_widget, enabled_with_permission,
     LaunchpadFormView, Link)
@@ -307,7 +307,7 @@ class BranchListingBatchNavigator(TableBatchNavigator):
             self._branches_for_current_batch)
         result = {}
         for series in series_resultset:
-            result.setdefault(series.series_branch.id, []).append(series)
+            result.setdefault(series.branch.id, []).append(series)
         return result
 
     def getProductSeries(self, branch):
@@ -333,7 +333,7 @@ class BranchListingBatchNavigator(TableBatchNavigator):
         try:
             return self._dev_series_map[branch.product]
         except KeyError:
-            result = branch.product.development_focus.series_branch
+            result = branch.product.development_focus.branch
             self._dev_series_map[branch.product] = result
             return result
 
@@ -540,8 +540,8 @@ class BranchListingView(LaunchpadFormView, FeedsMixin):
         :param sort_by: an item from the BranchListingSort enumeration.
         """
         from canonical.launchpad.database.branch import Branch
-        from canonical.launchpad.database.person import Owner
-        from canonical.launchpad.database.product import Product
+        from lp.registry.model.person import Owner
+        from lp.registry.model.product import Product
 
         DEFAULT_BRANCH_LISTING_SORT = [
             BranchListingSort.PRODUCT,
@@ -596,6 +596,21 @@ class NoContextBranchListingView(BranchListingView):
         'There are no branches that match the current status filter.')
     extra_columns = ('author', 'product', 'date_created')
 
+    def _branches(self, lifecycle_status):
+        """Return a sequence of branches.
+
+        Override the default behaviour to not join across Owner and Product.
+
+        :param lifecycle_status: A filter of the branch's lifecycle status.
+        """
+        collection = self._getCollection()
+        if lifecycle_status is not None:
+            collection = collection.withLifecycleStatus(*lifecycle_status)
+        collection = collection.visibleByUser(self.user)
+        return collection.getBranches(
+            join_owner=False, join_product=False).order_by(
+            self._branch_order)
+
 
 class RecentlyRegisteredBranchesView(NoContextBranchListingView):
     """A batched view of branches orded by registration date."""
@@ -603,8 +618,9 @@ class RecentlyRegisteredBranchesView(NoContextBranchListingView):
     page_title = 'Recently registered branches'
 
     @property
-    def sort_by(self):
-        return BranchListingSort.NEWEST_FIRST
+    def _branch_order(self):
+        from canonical.launchpad.database.branch import Branch
+        return Desc(Branch.date_created), Desc(Branch.id)
 
     def _getCollection(self):
         return getUtility(IAllBranches)
@@ -617,8 +633,9 @@ class RecentlyImportedBranchesView(NoContextBranchListingView):
     extra_columns = ('product', 'date_created')
 
     @property
-    def sort_by(self):
-        return BranchListingSort.MOST_RECENTLY_CHANGED_FIRST
+    def _branch_order(self):
+        from canonical.launchpad.database.branch import Branch
+        return Desc(Branch.date_last_modified), Desc(Branch.id)
 
     def _getCollection(self):
         return (getUtility(IAllBranches)
@@ -632,8 +649,9 @@ class RecentlyChangedBranchesView(NoContextBranchListingView):
     page_title = 'Recently changed branches'
 
     @property
-    def sort_by(self):
-        return BranchListingSort.MOST_RECENTLY_CHANGED_FIRST
+    def _branch_order(self):
+        from canonical.launchpad.database.branch import Branch
+        return Desc(Branch.date_last_modified), Desc(Branch.id)
 
     def _getCollection(self):
         return (getUtility(IAllBranches)
@@ -1000,7 +1018,7 @@ class ProductBranchListingView(BranchListingView):
 
     @cachedproperty
     def development_focus_branch(self):
-        dev_focus_branch = self.context.development_focus.series_branch
+        dev_focus_branch = self.context.development_focus.branch
         if dev_focus_branch is None:
             return None
         elif check_permission('launchpad.View', dev_focus_branch):
@@ -1116,14 +1134,14 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
                     self.selected_lifecycle_status)
         # The series will always have at least one series, that of the
         # development focus.
-        dev_focus_branch = sorted_series[0].series_branch
+        dev_focus_branch = sorted_series[0].branch
         if not check_permission('launchpad.View', dev_focus_branch):
             dev_focus_branch = None
         result = []
         if dev_focus_branch is not None and show_branch(dev_focus_branch):
             result.append(dev_focus_branch)
         for series in sorted_series[1:]:
-            branch = series.series_branch
+            branch = series.branch
             if (branch is not None and
                 branch not in result and
                 check_permission('launchpad.View', branch) and

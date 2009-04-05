@@ -1,0 +1,153 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="view/macro:page/onecolumn"
+  i18n:domain="launchpad"
+>
+
+<body>
+
+<div metal:fill-slot="main"
+     tal:define="context_menu context/menu:context;
+                 has_edit context/required:launchpad.Edit">
+    <h1>
+      <tal:title content="context/title">Foo Release</tal:title>
+
+      <a tal:condition="context/required:launchpad.Edit"
+        tal:attributes="href context/fmt:url/+delete"
+        title="Delete this release"
+        ><img src="/@@/trash-icon" title="Delete this release" /></a>
+      <a tal:define="link context_menu/edit"
+        tal:condition="link/enabled"
+        tal:attributes="href link/url"
+        ><img
+         tal:attributes="alt link/text;
+                         title link/text" src="/@@/edit" /></a>
+    </h1>
+
+    <table id="Release-details">
+      <tr>
+        <th>Registrant:</th>
+        <td><tal:registrant replace="structure context/owner/fmt:link"/></td>
+      </tr>
+      <tr>
+        <th>When:</th>
+        <td><span
+          tal:attributes="title context/datecreated/fmt:datetime"
+          tal:content="context/datecreated/fmt:approximatedate" /></td>
+      </tr>
+      <tr>
+        <th>Project:</th>
+        <td><tal:link replace="structure context/product/fmt:link" /></td>
+      </tr>
+      <tr>
+        <th>Series:</th>
+        <td><span tal:replace="context/productseries/name" /></td>
+      </tr>
+      <tr>
+        <th>Release version:</th>
+        <td><span tal:replace="context/version" /></td>
+      </tr>
+      <tr>
+        <th>Released:</th>
+        <td><span
+          tal:attributes="title context/datereleased/fmt:datetime"
+          tal:content="context/datereleased/fmt:approximatedate" /></td>
+      </tr>
+    </table>
+
+    <p class="documentDescription" tal:content="context/summary"
+       tal:condition="context/summary">
+        $ProductRelease.summary goes here. This should be quite short,
+        just a single paragraph of text really, giving a summary of
+        this release highlights.
+    </p>
+
+    <div id="release_notes"
+         tal:content="structure context/release_notes/fmt:text-to-html">
+        $ProductRelease.release_notes go here.
+    </div>
+
+    <p tal:condition="not: context/release_notes">
+      <em>This release does not have release notes.
+        <tal:add-release-notes condition="has_edit">
+          You may want to edit it and add release notes, including new
+          features and other highlights.
+        </tal:add-release-notes></em>
+    </p>
+
+    <form method="POST"
+          tal:attributes="action request/URL">
+
+      <h2>Download files for this release</h2>
+
+      <table id="downloads" class="listing">
+        <thead>
+          <tr>
+            <th>Download</th>
+            <th>Description</th>
+            <th tal:condition="has_edit" width="10%">Delete</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr tal:repeat="file context/files">
+            <td>
+              <img alt="download icon" src="/@@/download" />
+              <strong><a
+                tal:attributes="href python:view.fileURL(file.libraryfile)"
+                tal:content="file/libraryfile/filename"
+                >filename</a></strong>
+              (<a tal:attributes="href python:view.md5URL(file.libraryfile)"
+              >md5</a><tal:signature condition="file/signature">,
+              <a tal:attributes="href python:view.fileURL(file.signature)">
+              sig</a></tal:signature>)
+            </td>
+            <td tal:content="file/description">Installer for i386</td>
+            <td tal:condition="has_edit"
+                align="center">
+              <input type="checkbox"
+                     tal:define="cbnum string:${repeat/file/index}"
+                     tal:attributes="value file/libraryfile/id;
+                                     name string:checkbox_${cbnum}" />
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div tal:condition="has_edit">
+        <div style="float:right">
+          <input type="submit" name="delete_files" value="Delete Files"
+            tal:condition="context/files"/>
+        </div>
+        <div
+          tal:define="link context_menu/add_file"
+          tal:condition="link/enabled">
+          <a tal:replace="structure link/render">Add a file</a>
+        </div>
+      </div>
+    </form>
+
+    <h2>Changelog:</h2>
+    <div id="changelog"
+         tal:content="structure context/changelog/fmt:text-to-html">
+        $ProductRelease.changelog go here.
+    </div>
+
+    <p tal:condition="not: context/changelog">
+      <em>This release does not have a changelog.</em>
+    </p>
+
+    <p style="clear: both"
+      tal:define="link context_menu/download"
+      tal:condition="link/enabled">
+      <a tal:replace="structure link/render">Download RDF metadata</a>
+    </p>
+</div>
+
+</body>
+</html>

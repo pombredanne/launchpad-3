@@ -32,8 +32,8 @@ translation group of its own, that too is shown here.
 
     >>> from canonical.database.constants import UTC_NOW
     >>> from canonical.launchpad.database.language import Language
-    >>> from canonical.launchpad.database.person import Person
-    >>> from canonical.launchpad.database.product import Product
+    >>> from lp.registry.model.person import Person
+    >>> from lp.registry.model.product import Product
     >>> from canonical.launchpad.database.translationgroup import (
     ...     TranslationGroup)
 

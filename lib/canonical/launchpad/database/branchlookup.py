@@ -16,11 +16,11 @@ from sqlobject import SQLObjectNotFound
 
 from canonical.config import config
 from canonical.launchpad.database.branch import Branch
-from canonical.launchpad.database.distribution import Distribution
-from canonical.launchpad.database.distroseries import DistroSeries
-from canonical.launchpad.database.person import Person
-from canonical.launchpad.database.product import Product
-from canonical.launchpad.database.sourcepackagename import SourcePackageName
+from lp.registry.model.distribution import Distribution
+from lp.registry.model.distroseries import DistroSeries
+from lp.registry.model.person import Person
+from lp.registry.model.product import Product
+from lp.registry.model.sourcepackagename import SourcePackageName
 from canonical.launchpad.interfaces.branch import NoSuchBranch
 from canonical.launchpad.interfaces.branchlookup import (
     CannotHaveLinkedBranch, IBranchLookup, ICanHasLinkedBranch,
@@ -28,16 +28,15 @@ from canonical.launchpad.interfaces.branchlookup import (
     ISourcePackagePocketFactory, NoLinkedBranch)
 from canonical.launchpad.interfaces.branchnamespace import (
     IBranchNamespaceSet, InvalidNamespace)
-from canonical.launchpad.interfaces.distribution import IDistribution
-from canonical.launchpad.interfaces.distroseries import (
+from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.distroseries import (
     IDistroSeries, IDistroSeriesSet)
-from canonical.launchpad.interfaces.pillar import IPillarNameSet
-from canonical.launchpad.interfaces.product import (
+from lp.registry.interfaces.pillar import IPillarNameSet
+from lp.registry.interfaces.product import (
     InvalidProductName, IProduct, NoSuchProduct)
-from canonical.launchpad.interfaces.productseries import (
+from lp.registry.interfaces.productseries import (
     IProductSeries, NoSuchProductSeries)
-from canonical.launchpad.interfaces.publishing import PackagePublishingPocket
-from canonical.launchpad.interfaces.sourcepackagename import (
+from lp.registry.interfaces.sourcepackagename import (
     NoSuchSourcePackageName)
 from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.webapp.authorization import check_permission

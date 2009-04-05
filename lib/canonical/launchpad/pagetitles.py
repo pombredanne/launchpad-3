@@ -802,6 +802,8 @@ milestone_index = ContextTitle('%s')
 
 milestone_edit = ContextTitle('Edit %s')
 
+milestone_delete = ContextTitle('Delete %s')
+
 announcement_add = 'Make an announcement'
 
 announcement_delete = 'Permanently delete this announcement'
@@ -1083,7 +1085,7 @@ product_translations = ContextTitle('Translations of %s in Launchpad')
 
 product_translators = ContextTitle('Set translation group for %s')
 
-productrelease_add = ContextTitle('Register a new %s release in Launchpad')
+productrelease_add = ContextDisplayName('Publish the release of %s')
 
 productrelease_delete = ContextTitle('Delete %s in Launchpad')
 
@@ -1111,6 +1113,8 @@ productseries_packaging = ContextDisplayName(
 productseries_review = ContextTitle('Review %s')
 
 productseries_translations_upload = 'Request new translations upload'
+
+productseries_translations_settings = 'Settings for translations'
 
 productseries_ubuntupkg = 'Ubuntu source package'
 
@@ -1255,6 +1259,8 @@ shipit_index_edubuntu = 'Getting Edubuntu'
 shipit_index_ubuntu = 'Request an Ubuntu CD'
 
 shipit_login = 'ShipIt'
+
+shipit_login_error = 'ShipIt - Unsuccessful login'
 
 shipit_myrequest = "Your ShipIt order"
 

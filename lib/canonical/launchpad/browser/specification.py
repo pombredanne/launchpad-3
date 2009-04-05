@@ -52,8 +52,8 @@ from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 
 from canonical.launchpad.interfaces.branchnamespace import IBranchNamespaceSet
-from canonical.launchpad.interfaces.distribution import IDistribution
-from canonical.launchpad.interfaces.product import IProduct
+from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.product import IProduct
 from canonical.launchpad.interfaces.specification import (
     INewSpecification, INewSpecificationSeriesGoal, INewSpecificationSprint,
     INewSpecificationTarget, INewSpecificationProjectTarget, ISpecification,
@@ -72,7 +72,7 @@ from canonical.launchpad.webapp import (
     safe_action, stepthrough, stepto, custom_widget)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import ILaunchBag
-from canonical.launchpad.browser.mentoringoffer import CanBeMentoredView
+from lp.registry.browser.mentoringoffer import CanBeMentoredView
 from canonical.launchpad.browser.launchpad import AppFrontPageSearchView
 
 

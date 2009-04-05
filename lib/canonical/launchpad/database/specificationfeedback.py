@@ -10,7 +10,7 @@ from zope.interface import implements
 from sqlobject import ForeignKey, StringCol
 
 from canonical.launchpad.interfaces import ISpecificationFeedback
-from canonical.launchpad.validators.person import validate_public_person
+from lp.registry.interfaces.person import validate_public_person
 
 from canonical.database.sqlbase import SQLBase
 

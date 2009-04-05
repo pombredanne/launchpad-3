@@ -52,7 +52,7 @@ from canonical.launchpad.interfaces.branchmergeproposal import (
 from canonical.launchpad.interfaces.branchpuller import IBranchPuller
 from canonical.launchpad.interfaces.branchtarget import IBranchTarget
 from canonical.launchpad.mailnotification import NotificationRecipientSet
-from canonical.launchpad.validators.person import validate_public_person
+from lp.registry.interfaces.person import validate_public_person
 from canonical.launchpad.webapp import urlappend
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, SLAVE_FLAVOR)
@@ -146,7 +146,7 @@ class Branch(SQLBase):
     def sourcepackage(self):
         """See `IBranch`."""
         # Avoid circular imports.
-        from canonical.launchpad.database.sourcepackage import SourcePackage
+        from lp.registry.model.sourcepackage import SourcePackage
         if self.distroseries is None:
             return None
         return SourcePackage(self.sourcepackagename, self.distroseries)
@@ -332,7 +332,7 @@ class Branch(SQLBase):
         # XXX: JonathanLange 2009-03-19 spec=package-branches bug=345740: This
         # should not dispatch on product is None.
         if self.product is not None:
-            series_branch = self.product.development_focus.series_branch
+            series_branch = self.product.development_focus.branch
             is_dev_focus = (series_branch == self)
         else:
             is_dev_focus = False
@@ -486,11 +486,10 @@ class Branch(SQLBase):
     def associatedProductSeries(self):
         """See `IBranch`."""
         # Imported here to avoid circular import.
-        from canonical.launchpad.database.productseries import ProductSeries
+        from lp.registry.model.productseries import ProductSeries
         return Store.of(self).find(
             ProductSeries,
-            Or(ProductSeries.user_branch == self,
-               ProductSeries.import_branch == self))
+            ProductSeries.branch == self)
 
     # subscriptions
     def subscribe(self, person, notification_level, max_diff_lines,
@@ -813,10 +812,8 @@ class ClearSeriesBranch(DeletionOperation):
         self.branch = branch
 
     def __call__(self):
-        if self.affected_object.user_branch == self.branch:
-            self.affected_object.user_branch = None
-        if self.affected_object.import_branch == self.branch:
-            self.affected_object.import_branch = None
+        if self.affected_object.branch == self.branch:
+            self.affected_object.branch = None
         self.affected_object.syncUpdate()
 
 
@@ -853,9 +850,10 @@ class BranchSet:
         branches = all_branches.visibleByUser(
             visible_by_user).withLifecycleStatus(*lifecycle_statuses)
         branches = branches.withBranchType(
-            BranchType.HOSTED, BranchType.MIRRORED).scanned().getBranches()
+            BranchType.HOSTED, BranchType.MIRRORED).scanned().getBranches(
+            join_owner=False, join_product=False)
         branches.order_by(
-            Desc(Branch.last_scanned), Desc(Branch.id))
+            Desc(Branch.date_last_modified), Desc(Branch.id))
         if branch_count is not None:
             branches.config(limit=branch_count)
         return branches
@@ -869,9 +867,10 @@ class BranchSet:
         branches = all_branches.visibleByUser(
             visible_by_user).withLifecycleStatus(*lifecycle_statuses)
         branches = branches.withBranchType(
-            BranchType.IMPORTED).scanned().getBranches()
+            BranchType.IMPORTED).scanned().getBranches(
+            join_owner=False, join_product=False)
         branches.order_by(
-            Desc(Branch.last_scanned), Desc(Branch.id))
+            Desc(Branch.date_last_modified), Desc(Branch.id))
         if branch_count is not None:
             branches.config(limit=branch_count)
         return branches
@@ -883,7 +882,8 @@ class BranchSet:
         """See `IBranchSet`."""
         all_branches = getUtility(IAllBranches)
         branches = all_branches.withLifecycleStatus(
-            *lifecycle_statuses).visibleByUser(visible_by_user).getBranches()
+            *lifecycle_statuses).visibleByUser(visible_by_user).getBranches(
+            join_owner=False, join_product=False)
         branches.order_by(
             Desc(Branch.date_created), Desc(Branch.id))
         if branch_count is not None:
@@ -922,7 +922,7 @@ class BranchCloud:
     def getProductsWithInfo(self, num_products=None, store_flavor=None):
         """See `IBranchCloud`."""
         # Circular imports are fun.
-        from canonical.launchpad.database.product import Product
+        from lp.registry.model.product import Product
         # It doesn't matter if this query is even a whole day out of date, so
         # use the slave store by default.
         if store_flavor is None:
