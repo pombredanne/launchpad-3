@@ -1090,7 +1090,7 @@ def get_launchpad_views(cookies):
 
 
 class DoesNotExistView:
-    """A view that simply raise NotFound when rendered.
+    """A view that simply raises NotFound when rendered.
 
     Useful to register as a view that shouldn't appear on a particular
     virtual host.
