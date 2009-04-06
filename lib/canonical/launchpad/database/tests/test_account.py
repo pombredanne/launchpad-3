@@ -38,9 +38,13 @@ class TestAccountSetRetriesWhenAccountNotFound(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
-        TestCaseWithFactory.setUp(self)
+        super(TestAccountSetRetriesWhenAccountNotFound, self).setUp()
         self.account = self.factory.makeAccount('Test account')
-        login(removeSecurityProxy(self.account.preferredemail).email)
+        # Store the preferred email address here, since it won't be
+        # visible after changing the database policy.
+        self.account_email = removeSecurityProxy(
+            self.account.preferredemail).email
+        login(self.account_email)
         config_overlay = dedent("""
             [database]
             auth_slave: dbname=launchpad_empty
@@ -51,9 +55,9 @@ class TestAccountSetRetriesWhenAccountNotFound(TestCaseWithFactory):
         self.account_set = getUtility(IAccountSet)
 
     def tearDown(self):
-        TestCaseWithFactory.tearDown(self)
         getUtility(IStoreSelector).pop()
         config.pop('empty_slave')
+        super(TestAccountSetRetriesWhenAccountNotFound, self).tearDown()
 
     def _assertSlaveDBIsEmpty(self):
         slave_store = getUtility(IStoreSelector).get(
@@ -71,7 +75,7 @@ class TestAccountSetRetriesWhenAccountNotFound(TestCaseWithFactory):
 
     def test_getByEmail(self):
         self.assertIsNot(
-            self.account_set.getByEmail(self.account.preferredemail.email),
+            self.account_set.getByEmail(self.account_email),
             None)
 
 
@@ -201,6 +205,7 @@ class EmailManagementTests(TestCaseWithFactory):
         old_email = self.factory.makeEmail(
             "old@example.org", None, account,
             EmailAddressStatus.OLD)
+        transaction.commit()
         self.assertContentEqual(account.validated_emails, [validated_email])
 
     def test_guessed_emails(self):
@@ -214,6 +219,7 @@ class EmailManagementTests(TestCaseWithFactory):
         old_email = self.factory.makeEmail(
             "old@example.org", None, account,
             EmailAddressStatus.OLD)
+        transaction.commit()
         self.assertContentEqual(account.guessed_emails, [new_email])
 
 
