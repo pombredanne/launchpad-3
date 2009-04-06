@@ -1358,6 +1358,21 @@ class MilestoneFormatterAPI(CustomizableFormatter):
         return {'title': self._context.title}
 
 
+class ProductReleaseFormatterAPI(CustomizableFormatter):
+    """Adapter providing fmt support for Milestone objects."""
+
+    _link_summary_template = _('%(displayname)s %(code_name)s')
+    _link_permission = 'zope.Public'
+
+    def _link_summary_values(self):
+        """See CustomizableFormatter._link_summary_values."""
+        code_name = getattr(self._context.milestone, 'code_name', '').strip()
+        if code_name != '':
+            code_name = '(%s)' % code_name
+        return dict(displayname=self._context.milestone.displayname,
+                    code_name=code_name)
+
+
 class ProductSeriesFormatterAPI(CustomizableFormatter):
     """Adapter providing fmt support for ProductSeries objects"""
 

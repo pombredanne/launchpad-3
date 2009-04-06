@@ -143,30 +143,23 @@
         };
 
         var show_milestone_form = function(e) {
-            if (e.target.get('value') === CREATE_MILESTONE_TARGET) {
-                if (milestone_form) {
-                    milestone_form.show();
-                } else {
-                    // This function call is asynchronous, so we can move
-                    // milestone_form.show() below it.
-                    setup_milestone_form();
-                }
-                var select_menu = get_by_id('field.milestone_for_release');
-                select_menu.get('children').item(0).set('selected', true);
-                e.preventDefault();
+            if (milestone_form) {
+                milestone_form.show();
+            } else {
+                // This function call is asynchronous, so we can move
+                // milestone_form.show() below it.
+                setup_milestone_form();
             }
+            var select_menu = get_by_id('field.milestone_for_release');
+            e.preventDefault();
         };
 
         Y.on('domready', function () {
             var select_menu = get_by_id('field.milestone_for_release');
-            var new_milestone_option = Y.get(
-                new Option('Create milestone...', CREATE_MILESTONE_TARGET));
-            select_menu.insertBefore(
-                new_milestone_option,
-                select_menu.get('children').item(1));
-            // Firefox has 'click' events for SELECT OPTION elements, but
-            // Safari does not, so we use a 'change' event on the SELECT.
-            select_menu.on('change', show_milestone_form);
+            var create_milestone_link = Y.Node.create(
+                '<a href="javascript:" class="add">Create milestone</a>')
+            select_menu.ancestor().appendChild(create_milestone_link);
+            create_milestone_link.on('click', show_milestone_form);
         });
     });
   -->
@@ -175,12 +168,12 @@
 
 <div metal:fill-slot="main">
   <div metal:use-macro="context/@@launchpad_form/form">
-    <div metal:fill-slot="extra_info" tal:condition="context/releases">
+    <div metal:fill-slot="extra_info" tal:condition="context/releases"
+         style="border-bottom: solid 1px black">
       The following releases have been made in this series:
       <ul>
         <li tal:repeat="release context/releases">
-          <tal:version content="release/version">0.9</tal:version>
-          <tal:codename content="release/codename">seamonkey</tal:codename>
+          <tal:link replace="structure release/fmt:link"/>
         </li>
       </ul>
     </div>

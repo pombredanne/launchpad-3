@@ -92,8 +92,8 @@ class ProductReleaseAddViewBase(LaunchpadFormView):
     custom_widget('release_notes', TextAreaWidget, height=7, width=62)
     custom_widget('changelog', TextAreaWidget, height=7, width=62)
 
-    def _appendKeepMilestoneActiveField(self):
-        self.form_fields += FormFields(
+    def _prependKeepMilestoneActiveField(self):
+        keep_milestone_active_checkbox = FormFields(
             Bool(
                 __name__='keep_milestone_active',
                 title=_("Keep the milestone active."),
@@ -101,6 +101,7 @@ class ProductReleaseAddViewBase(LaunchpadFormView):
                     "Only select this if bugs or blueprints still need "
                     "to be targeted to this product release's milestone.")),
             render_context=self.render_context)
+        self.form_fields = keep_milestone_active_checkbox + self.form_fields
 
     def _createRelease(self, milestone, data):
         """Create product release for this milestone."""
@@ -153,7 +154,7 @@ class ProductReleaseAddView(ProductReleaseAddViewBase):
     def setUpFields(self):
         super(ProductReleaseAddView, self).setUpFields()
         if self.context.active is True:
-            self._appendKeepMilestoneActiveField()
+            self._prependKeepMilestoneActiveField()
 
     @action(_('Create release'), name='create')
     def createRelease(self, action, data):
@@ -180,13 +181,13 @@ class ProductReleaseFromSeriesAddView(ProductReleaseAddViewBase):
 
     def setUpFields(self):
         super(ProductReleaseFromSeriesAddView, self).setUpFields()
+        self._prependKeepMilestoneActiveField()
         self._prependMilestoneField()
-        self._appendKeepMilestoneActiveField()
 
     def _prependMilestoneField(self):
         """Add Milestone Choice field with custom terms."""
         terms = [
-            SimpleTerm(milestone, milestone.name, milestone.displayname)
+            SimpleTerm(milestone, milestone.name, milestone.name)
             for milestone in self.context.all_milestones
             if milestone.product_release is None]
         terms.insert(0, SimpleTerm(None, None, '- Select Milestone -'))

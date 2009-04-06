@@ -14,12 +14,12 @@
 
 <div metal:fill-slot="main">
   <div metal:use-macro="context/@@launchpad_form/form">
-    <div metal:fill-slot="extra_info" tal:condition="context/productseries/releases">
+    <div metal:fill-slot="extra_info" tal:condition="context/productseries/releases"
+         style="border-bottom: solid 1px black">
       The following releases have been made in this series:
       <ul>
         <li tal:repeat="release context/productseries/releases">
-          <tal:version content="release/version">0.9</tal:version>
-          <tal:codename content="release/codename">seamonkey</tal:codename>
+          <tal:link replace="structure release/fmt:link"/>
         </li>
       </ul>
     </div>
