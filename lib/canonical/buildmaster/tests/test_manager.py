@@ -22,7 +22,7 @@ from canonical.launchpad.ftests import ANONYMOUS, login
 from canonical.launchpad.interfaces.build import BuildStatus
 from canonical.launchpad.interfaces.builder import IBuilderSet
 from canonical.launchpad.interfaces.buildqueue import IBuildQueueSet
-from canonical.launchpad.interfaces.distribution import IDistributionSet
+from lp.registry.interfaces.distribution import IDistributionSet
 from canonical.launchpad.scripts.logger import BufferLogger
 from canonical.launchpad.tests.test_publishing import SoyuzTestPublisher
 from canonical.testing.layers import (

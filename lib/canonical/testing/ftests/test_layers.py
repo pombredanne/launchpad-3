@@ -316,7 +316,7 @@ class LaunchpadScriptTestCase(BaseTestCase):
         # Test that we can switch database configurations, and that we
         # end up connected as the right user.
 
-        self.assertEqual(dbconfig.dbuser, 'launchpad')
+        self.assertEqual(dbconfig.dbuser, 'launchpad_main')
         LaunchpadScriptLayer.switchDbConfig('librarian')
         self.assertEqual(dbconfig.dbuser, 'librarian')
 

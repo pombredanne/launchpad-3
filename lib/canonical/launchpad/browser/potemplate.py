@@ -30,9 +30,9 @@ from zope.publisher.browser import FileUpload
 
 from canonical.launchpad import helpers, _
 from canonical.launchpad.browser.poexportrequest import BaseExportView
-from canonical.launchpad.browser.productseries import ProductSeriesFacets
+from lp.registry.browser.productseries import ProductSeriesFacets
 from canonical.launchpad.browser.translations import TranslationsMixin
-from canonical.launchpad.browser.sourcepackage import SourcePackageFacets
+from lp.registry.browser.sourcepackage import SourcePackageFacets
 from canonical.launchpad.interfaces import (
     IPOTemplate, IPOTemplateSet, ILaunchBag, IPOFileSet, IPOTemplateSubset,
     ITranslationImporter, ITranslationImportQueue, IProductSeries,

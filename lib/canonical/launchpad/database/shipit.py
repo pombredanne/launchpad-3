@@ -4,6 +4,7 @@
 __metaclass__ = type
 __all__ = [
     'RequestedCDs',
+    'ShipitAccount',
     'ShipItReport',
     'ShipItReportSet',
     'ShipItSurveySet',
@@ -24,8 +25,9 @@ import random
 import re
 
 from storm.store import Store
+from zope.error.interfaces import IErrorReportingUtility
 from zope.interface import implements
-from zope.component import getUtility
+from zope.component import adapts, getUtility
 from lazr.enum import Item
 
 import pytz
@@ -34,6 +36,7 @@ from sqlobject.sqlbuilder import AND, SQLConstant
 from sqlobject import (
     ForeignKey, StringCol, BoolCol, SQLObjectNotFound, IntCol)
 
+from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.uuid import generate_uuid
 
@@ -43,21 +46,32 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 
-from canonical.launchpad.helpers import intOrZero, get_email_template
+from canonical.launchpad.helpers import (
+    intOrZero, get_email_template, shortlist)
 from canonical.launchpad.datetimeutils import make_mondays_between
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.mail.sendmail import simple_sendmail
 
-from canonical.launchpad.interfaces import (
-    ILaunchpadCelebrities, ILibraryFileAliasSet, IRequestedCDs, IShipItReport,
-    IShipItReportSet, IShipItSurveySet, IShipment, IShipmentSet,
-    IShippingRequest, IShippingRequestSet, IShippingRun, IShippingRunSet,
+from canonical.launchpad.interfaces.account import IAccount
+from lp.registry.interfaces.person import IPerson
+from canonical.launchpad.interfaces.shipit import (
+    IRequestedCDs, IShipitAccount, IShipItReport, IShipItReportSet,
+    IShipItSurveySet, IShipment, IShipmentSet, IShippingRequest,
+    IShippingRequestSet, IShippingRun, IShippingRunSet,
     IStandardShipItRequest, IStandardShipItRequestSet,
     MAX_CDS_FOR_UNTRUSTED_PEOPLE, ShipItArchitecture, ShipItConstants,
     ShipItDistroSeries, ShipItFlavour, ShipItSurveySchema,
     ShippingRequestPriority, ShippingRequestStatus, ShippingRequestType,
     ShippingService, SOFT_MAX_SHIPPINGRUN_SIZE)
+from canonical.launchpad.interfaces import (
+    ILaunchpadCelebrities, ILibraryFileAliasSet)
+from canonical.launchpad.database.account import Account
 from canonical.launchpad.database.country import Country
+from lp.registry.model.karma import Karma
+from lp.registry.model.person import Person
+
+
+MIN_KARMA_ENTRIES_TO_BE_TRUSTED_ON_SHIPIT = 10
 
 
 class ShippingRequest(SQLBase):
@@ -67,8 +81,8 @@ class ShippingRequest(SQLBase):
     sortingColumns = ['daterequested', 'id']
     _defaultOrder = sortingColumns
 
-    recipient = ForeignKey(dbName='recipient', foreignKey='Person',
-                           notNull=True)
+    recipient = ForeignKey(
+        dbName='recipient', foreignKey='Account', notNull=True)
 
     daterequested = UtcDateTimeCol(notNull=True, default=UTC_NOW)
 
@@ -76,11 +90,11 @@ class ShippingRequest(SQLBase):
     status = EnumCol(
         enum=ShippingRequestStatus, notNull=True,
         default=ShippingRequestStatus.PENDING)
-    whoapproved = ForeignKey(dbName='whoapproved', foreignKey='Person',
-                             default=None)
+    whoapproved = ForeignKey(
+        dbName='whoapproved', foreignKey='Account', default=None)
 
-    whocancelled = ForeignKey(dbName='whocancelled', foreignKey='Person',
-                              default=None)
+    whocancelled = ForeignKey(
+        dbName='whocancelled', foreignKey='Account', default=None)
 
     reason = StringCol(default=None)
     highpriority = BoolCol(notNull=True, default=False)
@@ -114,13 +128,7 @@ class ShippingRequest(SQLBase):
     @property
     def recipient_email(self):
         """See IShippingRequest"""
-        if self.recipient == getUtility(ILaunchpadCelebrities).shipit_admin:
-            # The shipit_admin celebrity is the team to which we assign all
-            # ShippingRequests made using the admin UI, but teams don't
-            # necessarily have a preferredemail, so we have to special case it
-            # here.
-            return config.shipit.admins_email_address
-        elif self.recipient.preferredemail is not None:
+        if self.recipient.preferredemail is not None:
             return self.recipient.preferredemail.email
         else:
             return u'inactive account -- no email address'
@@ -363,7 +371,13 @@ class ShippingRequest(SQLBase):
         assert not (self.isCancelled() or self.isApproved() or
                     self.isShipped())
         self.status = ShippingRequestStatus.APPROVED
-        self.whoapproved = whoapproved
+        if whoapproved is None:
+            self.whoapproved = None
+        else:
+            # XXX: salgado, 2009-03-06: Need this hack here to get the
+            # reviewer from the same store that self came from.  Otherwise
+            # storm will complain.
+            self.whoapproved = Store.of(self).get(Account, whoapproved.id)
 
     def cancel(self, whocancelled):
         """See IShippingRequest"""
@@ -371,7 +385,13 @@ class ShippingRequest(SQLBase):
         if self.isApproved():
             self.clearApproval()
         self.status = ShippingRequestStatus.CANCELLED
-        self.whocancelled = whocancelled
+        if whocancelled is None:
+            self.whocancelled = None
+        else:
+            # XXX: salgado, 2009-03-06: Need this hack here to get the
+            # reviewer from the same store that self came from.  Otherwise
+            # storm will complain.
+            self.whocancelled = Store.of(self).get(Account, whocancelled.id)
 
     def addressIsDuplicated(self):
         """See IShippingRequest"""
@@ -433,7 +453,7 @@ class ShippingRequestSet:
         body = template % {
             'requests_info': "\n".join(request_messages),
             'action': action, 'status': status}
-        to_addr = shipit_admins = config.shipit.admins_email_address
+        to_addr = config.shipit.admins_email_address
         from_addr = config.shipit.ubuntu_from_email_address
         subject = "Report of auto-%s requests" % action
         simple_sendmail(from_addr, to_addr, subject, body)
@@ -442,17 +462,23 @@ class ShippingRequestSet:
             addressline1, phone, addressline2=None, province=None,
             postcode=None, organization=None, reason=None):
         """See IShippingRequestSet"""
-        # Only the shipit-admins team can have more than one open request
-        # at a time.
-        assert (recipient == getUtility(ILaunchpadCelebrities).shipit_admin
-                or recipient.currentShipItRequest() is None)
+        person = IPerson(recipient, None)
+        shipit_admins = getUtility(ILaunchpadCelebrities).shipit_admin
+        if person is not None and person.inTeam(shipit_admins):
+            is_admin_request = True
+        else:
+            # Only members of the shipit-admins team can have more than one
+            # open request at a time.
+            assert IShipitAccount(
+                recipient).currentShipItRequest() is None
+            is_admin_request = False
 
         request = ShippingRequest(
             recipient=recipient, reason=reason, city=city, country=country,
-            addressline1=addressline1, addressline2=addressline2,
-            province=province, postcode=postcode,
             recipientdisplayname=recipientdisplayname,
-            organization=organization, phone=phone)
+            addressline1=addressline1, addressline2=addressline2,
+            province=province, postcode=postcode, organization=organization,
+            phone=phone, is_admin_request=is_admin_request)
 
         # The normalized_address field is maitained by a trigger, so
         # the object needed to be refetched after creation.
@@ -537,16 +563,16 @@ class ShippingRequestSet:
         if recipient_text:
             recipient_text = recipient_text.lower()
             queries.append("""
-                (ShippingRequest.fti @@ ftq(%s) OR recipient IN
+                (ShippingRequest.fti @@ ftq(%(text)s) OR recipient IN
                     (
-                    SELECT Person.id FROM Person
-                        WHERE Person.fti @@ ftq(%s)
+                    SELECT Person.account FROM Person
+                        WHERE Person.fti @@ ftq(%(text)s)
                     UNION
-                    SELECT EmailAddress.person FROM EmailAddress
-                        WHERE lower(EmailAddress.email) LIKE %s || '%%'
+                    SELECT EmailAddress.account FROM EmailAddress
+                        WHERE lower(email) LIKE %(like_text)s || '%%'
                     ))
-                """ % (quote(recipient_text), quote(recipient_text),
-                       quote_like(recipient_text)))
+                """ % dict(text=quote(recipient_text),
+                           like_text=quote_like(recipient_text)))
 
         if status:
             queries.append("ShippingRequest.status = %s" % sqlvalues(status))
@@ -920,18 +946,17 @@ class ShippingRequestSet:
                 ADD COLUMN has_10_karma integer DEFAULT 0;
             UPDATE shippingrequestwithkarma SET has_10_karma = 1
                 WHERE recipient IN (
-                    SELECT person
-                    FROM karma
-                    GROUP BY person
-                    HAVING COUNT(id) > 10);
+                    SELECT Person.account
+                    FROM Person, Karma
+                    WHERE Person.id = Karma.person
+                    GROUP BY Person.account
+                    HAVING COUNT(Karma.id) > 10);
             """
         cur.execute(query)
 
-        shipit_admins = getUtility(ILaunchpadCelebrities).shipit_admin
         # This is a template used for the next two queries.
         template_dict = sqlvalues(
-            current_series=ShipItConstants.current_distroseries,
-            shipit_admins=shipit_admins)
+            current_series=ShipItConstants.current_distroseries)
         query_template = """
             SELECT requests, requesters, requesters_with_10_karma,
                 cds_requested / (requests * requesters) AS avg_requested_cds
@@ -948,7 +973,7 @@ class ShippingRequestSet:
                             ShippingRequestWithKarma.id = RequestedCDs.request
                     WHERE distroseries = %(current_series)s
                         AND %(status_filter)s
-                        AND recipient != %(shipit_admins)s
+                        AND is_admin_request IS FALSE
                     -- The has_10_karma will always be the same for a given
                     -- recipient, so we can safely include it in the group by
                     -- here.
@@ -991,7 +1016,7 @@ class ShippingRequestSet:
                     JOIN RequestedCDs
                         ON RequestedCDs.request = ShippingRequestWithKarma.id
                 WHERE distroseries = %(current_series)s
-                    AND recipient != %(shipit_admins)s
+                    AND is_admin_request IS FALSE
                     AND status != %(cancelled)s);
             CREATE UNIQUE INDEX current_series_requester__unq
                 ON current_series_requester(recipient);
@@ -1006,7 +1031,7 @@ class ShippingRequestSet:
                     JOIN RequestedCDs
                         ON RequestedCDs.request = ShippingRequestWithKarma.id
                 WHERE distroseries < %(current_series)s
-                    AND recipient != %(shipit_admins)s
+                    AND is_admin_request IS FALSE
                     AND status != %(cancelled)s);
             CREATE UNIQUE INDEX previous_series_requester__unq
                 ON previous_series_requester(recipient);
@@ -1021,7 +1046,7 @@ class ShippingRequestSet:
                     JOIN RequestedCDs
                         ON RequestedCDs.request = ShippingRequestWithKarma.id
                 WHERE distroseries < %(current_series)s
-                    AND recipient != %(shipit_admins)s
+                    AND is_admin_request IS FALSE
                     AND status NOT IN (%(shipped)s, %(cancelled)s)
                 EXCEPT
                 SELECT DISTINCT recipient, has_10_karma
@@ -1029,13 +1054,12 @@ class ShippingRequestSet:
                     JOIN RequestedCDs
                         ON RequestedCDs.request = ShippingRequestWithKarma.id
                 WHERE distroseries < %(current_series)s
-                    AND recipient != %(shipit_admins)s
+                    AND is_admin_request IS FALSE
                     AND status = %(shipped)s);
             CREATE UNIQUE INDEX previous_series_non_recipient__unq
                 ON previous_series_non_recipient(recipient);
             """ % sqlvalues(
                     current_series=ShipItConstants.current_distroseries,
-                    shipit_admins=shipit_admins,
                     shipped=ShippingRequestStatus.SHIPPED,
                     cancelled=ShippingRequestStatus.CANCELLED)
         cur.execute(create_tables)
@@ -1066,7 +1090,7 @@ class ShippingRequestSet:
                         AND ShippingRequestWithKarma.id = RequestedCDs.request
                         AND recipient IN (
                             SELECT recipient FROM current_series_requester)
-                        AND recipient != %(shipit_admins)s
+                        AND is_admin_request IS FALSE
                     -- The has_10_karma will always be the same for a given
                     -- recipient, so we can safely include it in the group by
                     -- here.
@@ -1083,14 +1107,12 @@ class ShippingRequestSet:
                           SELECT recipient, has_10_karma
                           FROM previous_series_requester
                          ) AS FIRST_TIME_REQUESTERS
-                    WHERE recipient != %(shipit_admins)s
                     ) AS RECIPIENTS_AND_COUNTS
                 GROUP BY requests
                 ) AS REQUEST_DISTRIBUTION_AND_TOTALS
             WHERE requesters > 0
             """ % sqlvalues(
                     current_series=ShipItConstants.current_distroseries,
-                    shipit_admins=shipit_admins,
                     cancelled=ShippingRequestStatus.CANCELLED)
         cur.execute(query)
         other_series_request_distribution = cur.fetchall()
@@ -1155,7 +1177,6 @@ class ShippingRequestSet:
             WHERE requesters > 0
             """ % sqlvalues(
                     current_series=ShipItConstants.current_distroseries,
-                    shipit_admins=shipit_admins,
                     approved=ShippingRequestStatus.APPROVED,
                     shipped=ShippingRequestStatus.SHIPPED)
         cur.execute(query)
@@ -1341,10 +1362,11 @@ class StandardShipItRequestSet:
                 quantityppc=quantityppc, quantityamd64=quantityamd64,
                 isdefault=isdefault, user_description=user_description)
 
-    def getByFlavour(self, flavour, user=None):
+    def getByFlavour(self, flavour, account=None):
         """See IStandardShipItRequestSet"""
         query = "flavour = %s" % sqlvalues(flavour)
-        if user is None or not user.is_trusted_on_shipit:
+        if (account is None
+            or not IShipitAccount(account).is_trusted_on_shipit):
             query += (" AND quantityx86 + quantityppc + quantityamd64 <= %s"
                       % sqlvalues(MAX_CDS_FOR_UNTRUSTED_PEOPLE))
         orderBy = SQLConstant("quantityx86 + quantityppc + quantityamd64, id")
@@ -1628,7 +1650,7 @@ class ShipItSurveyResult(SQLBase):
 
 
 class ShipItSurvey(SQLBase):
-    person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
+    account = ForeignKey(dbName='account', foreignKey='Account', notNull=True)
     date_created = UtcDateTimeCol(notNull=True, default=UTC_NOW)
     exported = BoolCol(notNull=True, default=False)
 
@@ -1637,11 +1659,12 @@ class ShipItSurveySet:
     """See IShipItSurveySet"""
     implements(IShipItSurveySet)
 
-    def personHasAnswered(self, person):
+    # XXX: salgado, 2009-03-11: This should be moved into ShipitAccount.
+    def personHasAnswered(self, account):
         """See IShipItSurveySet"""
-        return ShipItSurvey.selectBy(person=person).count() > 0
+        return ShipItSurvey.selectBy(account=account).count() > 0
 
-    def new(self, person, answers):
+    def new(self, account, answers):
         """See IShipItSurveySet"""
         survey = None
         for key, values in answers.items():
@@ -1650,7 +1673,7 @@ class ShipItSurveySet:
                 # answered a question.
                 continue
             if survey is None:
-                survey = ShipItSurvey(person=person)
+                survey = ShipItSurvey(account=account)
             question_text = str(ShipItSurveySchema[key].title)
             question = ShipItSurveyQuestion.selectOneBy(
                 question=question_text)
@@ -1665,3 +1688,86 @@ class ShipItSurveySet:
                 ShipItSurveyResult(
                     survey=survey, question=question, answer=answer)
         return survey
+
+
+class ShipitAccount:
+    """See `IShipitAccount`."""
+    implements(IShipitAccount)
+    adapts(IAccount)
+
+    def __init__(self, account):
+        self.account = account
+
+    @cachedproperty
+    def is_trusted_on_shipit(self):
+        """See `IShipitAccount`."""
+        person = IPerson(self.account, None)
+        if person is None:
+            return False
+        min_entries = MIN_KARMA_ENTRIES_TO_BE_TRUSTED_ON_SHIPIT
+        if Karma.selectBy(person=person).count() >= min_entries:
+            return True
+        ubuntu_members = Person.selectOneBy(name='ubuntumembers')
+        if ubuntu_members is None:
+            error = AssertionError(
+                "No team named 'ubuntumembers' found; it's likely it has "
+                "been renamed.")
+            info = (error.__class__, error, None)
+            globalErrorUtility = getUtility(IErrorReportingUtility)
+            globalErrorUtility.raising(info)
+            return False
+        return person.inTeam(ubuntu_members)
+
+    def shippedShipItRequestsOfCurrentSeries(self):
+        """See `IShipitAccount`."""
+        query = '''
+            ShippingRequest.recipient = %s
+            AND ShippingRequest.id = RequestedCDs.request
+            AND RequestedCDs.distroseries = %s
+            AND ShippingRequest.shipment IS NOT NULL
+            ''' % sqlvalues(self.account,
+                            ShipItConstants.current_distroseries)
+        return ShippingRequest.select(
+            query, clauseTables=['RequestedCDs'], distinct=True,
+            orderBy='-daterequested')
+
+    def lastShippedRequest(self):
+        """See `IShipitAccount`."""
+        query = ("recipient = %s AND status = %s"
+                 % sqlvalues(self.account, ShippingRequestStatus.SHIPPED))
+        return ShippingRequest.selectFirst(query, orderBy=['-daterequested'])
+
+    def pastShipItRequests(self):
+        """See `IShipitAccount`."""
+        query = """
+            recipient = %(me)s AND (
+                status IN (%(denied)s, %(cancelled)s, %(shipped)s))
+            """ % sqlvalues(me=self.account,
+                            denied=ShippingRequestStatus.DENIED,
+                            cancelled=ShippingRequestStatus.CANCELLED,
+                            shipped=ShippingRequestStatus.SHIPPED)
+        return ShippingRequest.select(query, orderBy=['id'])
+
+    def currentShipItRequest(self):
+        """See `IShipitAccount`."""
+        query = """
+            recipient = %(me)s
+            AND status NOT IN (%(denied)s, %(cancelled)s, %(shipped)s)
+            """ % sqlvalues(me=self.account,
+                            denied=ShippingRequestStatus.DENIED,
+                            cancelled=ShippingRequestStatus.CANCELLED,
+                            shipped=ShippingRequestStatus.SHIPPED)
+        results = shortlist(
+            ShippingRequest.select(query, orderBy=['id'], limit=2))
+        count = len(results)
+        if count > 1:
+            person = IPerson(self.account, None)
+            shipit_admins = getUtility(ILaunchpadCelebrities).shipit_admin
+            if person is not None and not person.inTeam(shipit_admins):
+                raise AssertionError(
+                    "Only the shipit-admins team is allowed to have more "
+                    "than one open shipit request")
+        if count == 1:
+            return results[0]
+        else:
+            return None
