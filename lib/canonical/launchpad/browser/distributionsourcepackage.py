@@ -246,8 +246,13 @@ class DistributionSourcePackageView(LaunchpadFormView):
         return result
 
     def releases(self):
-        dspr_pubs = self.context.getReleasesAndPublishingHistory()
-        # Return early as possible to avoid unnecessary processing.
+        # XXX cprov 2009-04-02 bug-353568: We are truncating the number
+        # of versions presented in the DSP page because of the extra
+        # load caused the changelog linkification procedure. A better
+        # solution will be investigated during 2.2.4.
+        dspr_pubs = self.context.getReleasesAndPublishingHistory()[:5]
+
+        # Return as early as possible to avoid unnecessary processing.
         if len(dspr_pubs) == 0:
             return []
 
