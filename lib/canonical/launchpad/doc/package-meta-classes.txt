@@ -64,7 +64,7 @@ returns all the builds for the source package
 
 First, publish a build in the main archive of ubuntutest.
 
-    >>> from canonical.launchpad.interfaces.distribution import (
+    >>> from lp.registry.interfaces.distribution import (
     ...     IDistributionSet)
     >>> from canonical.launchpad.interfaces.publishing import (
     ...     PackagePublishingStatus)
@@ -108,9 +108,9 @@ results as well.
     foo in Partner Archive for Ubuntu Test
     foo in Primary Archive for Ubuntu Test
 
-But if we publish in a PPA,
+If we publish in a PPA,
 
-    >>> from canonical.launchpad.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
     >>> source_pub = test_publisher.getPubSource(
     ...     status=PackagePublishingStatus.PUBLISHED,

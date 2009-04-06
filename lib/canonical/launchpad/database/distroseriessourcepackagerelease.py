@@ -11,6 +11,7 @@ __all__ = [
 
 from operator import attrgetter
 
+from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.database.sqlbase import sqlvalues
@@ -22,6 +23,9 @@ from canonical.launchpad.database.publishing import (
 from canonical.launchpad.interfaces import (
     IDistroSeriesSourcePackageRelease, ISourcePackageRelease,
     PackagePublishingStatus)
+from canonical.launchpad.webapp.interfaces import (
+    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
+
 from lazr.delegates import delegates
 
 
@@ -94,14 +98,18 @@ class DistroSeriesSourcePackageRelease:
     @property
     def builds(self):
         """See `IDistroSeriesSourcePackageRelease`."""
-        return Build.select("""
-            Build.sourcepackagerelease = %s AND
-            Build.distroarchseries = DistroArchSeries.id AND
-            DistroArchSeries.distroseries = %s
-            """ % sqlvalues(self.sourcepackagerelease.id,
-                            self.distroseries.id),
-            orderBy=['-datecreated', '-id'],
-            clauseTables=['DistroArchSeries'])
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+
+        # Import DistroArchSeries here to avoid circular imports.
+        from canonical.launchpad.database.distroarchseries import (
+            DistroArchSeries)
+
+        results = store.find(Build,
+            Build.sourcepackagerelease == self.sourcepackagerelease,
+            Build.distroarchseries == DistroArchSeries.id,
+            DistroArchSeries.distroseries == self.distroseries)
+
+        return results.order_by('datecreated DESC', 'id DESC')
 
     @property
     def files(self):
