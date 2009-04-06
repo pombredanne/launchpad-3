@@ -23,6 +23,14 @@
     <allow interface="canonical.launchpad.interfaces.archivesubscriber.IArchiveSubscriberSet"/>
   </securedutility>
 
+  <!-- PersonalArchiveSubscription -->
+  <class 
+    class="canonical.launchpad.browser.archivesubscription.PersonalArchiveSubscription">
+    <require
+      permission="launchpad.View"
+      interface="canonical.launchpad.interfaces.archivesubscriber.IPersonalArchiveSubscription"/>
+  </class>
+
   <browser:url
     for="canonical.launchpad.interfaces.archivesubscriber.IArchiveSubscriptionForOwner"
     path_expression="string:+subscriptions/${subscriber/name}/+edit"
@@ -31,6 +39,12 @@
 
   <browser:url
     for="canonical.launchpad.interfaces.archivesubscriber.IArchiveSubscriptionForSubscriber"
+    path_expression="string:+archivesubscriptions/${archive/id}"
+    attribute_to_parent="subscriber"
+  />
+
+  <browser:url
+    for="canonical.launchpad.interfaces.archivesubscriber.IPersonalArchiveSubscription"
     path_expression="string:+archivesubscriptions/${archive/id}"
     attribute_to_parent="subscriber"
   />
@@ -47,14 +61,14 @@
   <browser:page
     name="+index"
     facet="overview"
-    for="canonical.launchpad.interfaces.archivesubscriber.IArchiveSubscriptionForSubscriber"
+    for="canonical.launchpad.interfaces.archivesubscriber.IPersonalArchiveSubscription"
     class="canonical.launchpad.browser.archivesubscription.PersonArchiveSubscriptionView"
     permission="launchpad.View"
     template="../templates/person-archive-subscription.pt"
     />
 
   <browser:defaultView
-    for="canonical.launchpad.interfaces.archivesubscriber.IArchiveSubscriber"
+    for="canonical.launchpad.interfaces.archivesubscriber.IPersonalArchiveSubscription"
     name="+index"
     />
 

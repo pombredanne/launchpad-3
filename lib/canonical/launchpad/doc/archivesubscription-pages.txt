@@ -276,15 +276,14 @@ if one exists:
     ...         subscription = subscription_and_token['subscription']
     ...         token = subscription_and_token['token']
     ...         print subscription.archive.displayname
-    ...         print subscription.description
     ...         token_text = "None"
     ...         if token:
     ...             token_text = "Token"
     ...         print token_text
 
     >>> print_subscriptions_with_tokens()
-    PPA for Mark Shuttleworth       spiv's still my friend   None
-    PPA for Celso Providelo         spiv's my friend         None
+    PPA for Mark Shuttleworth       None
+    PPA for Celso Providelo         None
 
 After activating a subscription, the token will be included in the
 subscriptions_with_tokens property:
@@ -293,8 +292,8 @@ subscriptions_with_tokens property:
     >>> new_token = cprov.archive.newAuthToken(spiv)
     >>> view = create_initialized_view(spiv, name="+archivesubscriptions")
     >>> print_subscriptions_with_tokens()
-    PPA for Mark Shuttleworth       spiv's still my friend   None
-    PPA for Celso Providelo         spiv's my friend         Token
+    PPA for Mark Shuttleworth       None
+    PPA for Celso Providelo         Token
 
 Just deactivate the new token again for the remaining tests.
 
@@ -308,6 +307,10 @@ corresponding token information.
 
 Initially the subscription does not have an active token:
 
+    >>> from canonical.launchpad.browser.archivesubscription import (
+    ...     PersonalArchiveSubscription)
+    >>> spiv_subscription = PersonalArchiveSubscription(
+    ...     spiv_subscription.subscriber, spiv_subscription.archive)
     >>> view = create_initialized_view(spiv_subscription, name="+index")
     >>> print view.active_token
     None

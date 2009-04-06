@@ -128,11 +128,9 @@ listed in the current subscriptions area:
     >>> for row in find_tags_by_class(joe_browser.contents,
     ...                               'archive-subscription-row'):
     ...     print extract_text(row)
-    Archive                            Subscription description  Status
-    ...PPA for Mark Shuttleworth  Joe is also my friend     Pending
-        Confirm
-    ...PPA for Celso Providelo    Joe is my friend          Pending
-        Confirm
+    Archive                       Status
+    ...PPA for Mark Shuttleworth  Pending    Confirm
+    ...PPA for Celso Providelo    Pending    Confirm
 
 == Confirming a subscription ==
 

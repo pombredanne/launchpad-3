@@ -12,7 +12,8 @@ __all__ = [
     'IArchiveSubscriberUI',
     'IArchiveSubscriptionForOwner',
     'IArchiveSubscriptionForSubscriber',
-    'IArchiveSubscriberSet'
+    'IArchiveSubscriberSet',
+    'IPersonalArchiveSubscription'
     ]
 
 from zope.interface import Interface
@@ -180,4 +181,25 @@ class IArchiveSubscriberUI(Interface):
     description = Text(
         title=_("Description"), required=False,
         description=_("Optional notes about this subscription."))
+
+
+class IPersonalArchiveSubscription(Interface):
+    """An abstract interface representing a subscription for an individual.
+
+    An individual may be included in three separate team subscriptions for a
+    private PPA, but should only ever be able to navigate and activate one
+    token for the archive. This non-db class allows a traversal for an
+    individual's subscription to a p3a, irrespective of how many subscriptions
+    there may be.
+    """
+    subscriber = Reference(
+        IPerson, title=_("Person"), required=True, readonly=True,
+        description=_("The person for this individual subscription."))
+
+    archive = Reference(
+        IArchive, title=_("Archive"), required=True,
+        description=_("The archive for this subscription."))
+
+    displayname = TextLine(title=_("Subscription displayname"),
+        required=False)
 

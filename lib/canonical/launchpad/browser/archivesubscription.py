@@ -18,7 +18,7 @@ from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser import TextWidget
 from zope.component import getUtility
 from zope.formlib import form
-from zope.interface import alsoProvides
+from zope.interface import alsoProvides, implements
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.cachedproperty import cachedproperty
@@ -29,7 +29,8 @@ from canonical.launchpad.interfaces.archiveauthtoken import (
     IArchiveAuthTokenSet)
 from canonical.launchpad.interfaces.archivesubscriber import (
     IArchiveSubscriberSet, IArchiveSubscriberUI,
-    IArchiveSubscriptionForOwner, IArchiveSubscriptionForSubscriber)
+    IArchiveSubscriptionForOwner, IArchiveSubscriptionForSubscriber,
+    IPersonalArchiveSubscription)
 from canonical.launchpad.webapp.launchpadform import (
     action, custom_widget, LaunchpadFormView, LaunchpadEditFormView)
 from canonical.launchpad.webapp.menu import structured
@@ -73,6 +74,22 @@ def archive_subscription_for_subscriber_adapter(archive_subscription):
 
     return archive_subscription
 
+
+class PersonalArchiveSubscription:
+    """See `IPersonalArchiveSubscription`."""
+
+    implements(IPersonalArchiveSubscription)
+
+    def __init__(self, subscriber, archive):
+        self.subscriber = subscriber
+        self.archive = archive
+
+    @property
+    def displayname(self):
+        """See `IPersonalArchiveSubscription`."""
+        return "%s's subscription to %s" % (
+            self.subscriber.displayname, self.archive.displayname)
+
 def traverse_archive_subscription_for_subscriber(subscriber, archive_id):
     """Return the subscription for a subscriber to an archive."""
     subscription = None
@@ -84,7 +101,7 @@ def traverse_archive_subscription_for_subscriber(subscriber, archive_id):
     if subscription is None:
         return None
     else:
-        return IArchiveSubscriptionForSubscriber(subscription)
+        return PersonalArchiveSubscription(subscriber, archive)
 
 
 class ArchiveSubscribersView(LaunchpadFormView):
@@ -262,9 +279,10 @@ class PersonArchiveSubscriptionsView(LaunchpadView):
         # Turn the result set into a list of dicts so it can be easily
         # accessed in TAL:
         return [
-            dict(subscription=IArchiveSubscriptionForSubscriber(subscription),
+            dict(subscription=PersonalArchiveSubscription(self.context,
+                                                          subscr.archive),
                  token=token)
-            for subscription, token in subs_with_tokens]
+            for subscr, token in subs_with_tokens]
 
 
 class PersonArchiveSubscriptionView(LaunchpadView):
