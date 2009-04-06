@@ -1020,7 +1020,7 @@ class BuildSet:
         LibraryFileContent respectively) as well as builders related to the
         Builds at hand.
         """
-        from canonical.launchpad.database.sourcepackagename import (
+        from lp.registry.model.sourcepackagename import (
             SourcePackageName)
         from canonical.launchpad.database.sourcepackagerelease import (
             SourcePackageRelease)

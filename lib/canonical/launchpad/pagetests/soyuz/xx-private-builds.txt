@@ -20,12 +20,11 @@ We'll make a private archive and add a new build to it to demonstrate this.
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces import (
-    ...     BuildStatus, IBuilderSet, IPersonSet)
+    ...     IBuilderSet, IPersonSet)
     >>> from canonical.launchpad.tests.test_publishing import (
     ...      SoyuzTestPublisher)
     >>> from canonical.launchpad.interfaces.publishing import (
-    ...     PackagePublishingPocket, PackagePublishingStatus)
-    >>> from canonical.launchpad.database.buildqueue import BuildQueue
+    ...     PackagePublishingStatus)
     >>> from canonical.launchpad.ftests import login, logout
     >>> from canonical.database.sqlbase import flush_database_updates
 
@@ -51,7 +50,7 @@ can use him to see builds from a buildd-admin perspective.
     >>> name12 = getUtility(IPersonSet).getByName("name12")
     >>> buildd_admins = getUtility(
     ...     IPersonSet).getByName("launchpad-buildd-admins")
-    >>> from canonical.launchpad.interfaces.person import (
+    >>> from lp.registry.interfaces.person import (
     ...     TeamMembershipStatus)
     >>> buildd_admins.addMember(
     ...     name12, reviewer=name12, status=TeamMembershipStatus.APPROVED)
@@ -356,13 +355,17 @@ Let's make the iceweasel package available in breezy-autotest.
 First log in as an admin to be able to manipulate the source publishing.
 
     >>> login("foo.bar@canonical.com")
-    >>> from canonical.launchpad.interfaces.distribution import (
+    >>> from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
+    >>> from canonical.launchpad.webapp.interfaces import IStoreSelector
+    >>> getUtility(IStoreSelector).push(MasterDatabasePolicy())
+    >>> from lp.registry.interfaces.distribution import (
     ...     IDistributionSet)
     >>> ubuntutest = getUtility(IDistributionSet)['ubuntutest']
     >>> breezy_autotest = ubuntutest['breezy-autotest']
     >>> new_pub = private_source_pub.copyTo(
     ...     breezy_autotest, private_source_pub.pocket, ubuntutest.main_archive)
     >>> flush_database_updates()
+    >>> policy = getUtility(IStoreSelector).pop()
     >>> logout()
 
 Now the anonymous user can see the build:

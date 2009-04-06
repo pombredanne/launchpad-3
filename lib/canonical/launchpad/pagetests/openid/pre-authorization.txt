@@ -29,6 +29,7 @@ As an example we'll pre-authorize our own OpenID consumer:
     'Log in or register with Launchpad'
     >>> browser.getControl('E-mail address:', index=0).value = 'mark@hbd.com'
     >>> browser.getControl('Password:').value = 'test'
+    >>> browser.handleErrors = False
     >>> browser.getControl('Log In').click()
 
     # Now he's redirected to the callback page and the RP has been

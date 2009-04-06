@@ -20,7 +20,7 @@ well as allowing the addition of new subscribers.
 First, ensure that the archives we'll be using are private:
 
     >>> login('foo.bar@canonical.com')
-    >>> from canonical.launchpad.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> cprov = getUtility(IPersonSet).getByName("cprov")
     >>> cprov.archive.buildd_secret = 'boing'
     >>> cprov.archive.private = True
@@ -79,7 +79,7 @@ After adding a subscriber, the view includes a relevant notification:
 
     >>> for notification in view.request.notifications:
     ...     print notification.message
-    You have subscribed Andrew Bennetts to Private PPA for Celso Providelo.
+    You have subscribed Andrew Bennetts to PPA for Celso Providelo.
 
 The view includes a subscribers property that returns all the current
 subscribers:
@@ -240,7 +240,7 @@ After canceling a subscription, a relevant notification is added to the view.
 
     >>> for notification in view.request.notifications:
     ...     print notification.message
-    You have cancelled Andrew Bennetts's subscription to Private PPA for
+    You have cancelled Andrew Bennetts's subscription to PPA for
     Celso Providelo.
 
 Just uncancel the subscription before continuing on.
@@ -283,8 +283,8 @@ if one exists:
     ...         print token_text
 
     >>> print_subscriptions_with_tokens()
-    Private PPA for Mark Shuttleworth       spiv's still my friend   None
-    Private PPA for Celso Providelo         spiv's my friend         None
+    PPA for Mark Shuttleworth       spiv's still my friend   None
+    PPA for Celso Providelo         spiv's my friend         None
 
 After activating a subscription, the token will be included in the
 subscriptions_with_tokens property:
@@ -293,8 +293,8 @@ subscriptions_with_tokens property:
     >>> new_token = cprov.archive.newAuthToken(spiv)
     >>> view = create_initialized_view(spiv, name="+archivesubscriptions")
     >>> print_subscriptions_with_tokens()
-    Private PPA for Mark Shuttleworth       spiv's still my friend   None
-    Private PPA for Celso Providelo         spiv's my friend         Token
+    PPA for Mark Shuttleworth       spiv's still my friend   None
+    PPA for Celso Providelo         spiv's my friend         Token
 
 Just deactivate the new token again for the remaining tests.
 
@@ -334,7 +334,7 @@ Now the view can then access the token and the source list entries:
     Andrew Bennetts
 
     >>> print view.private_ppa_sources_list
-    # Personal subscription of Andrew Bennetts to Private PPA for Celso
+    # Personal subscription of Andrew Bennetts to PPA for Celso
         Providelo
     deb http://spiv:...@private-ppa.launchpad.dev/cprov/ppa/ubuntu hoary main
     deb-src http://spiv:...@private-ppa.launchpad.dev/cprov/ppa/ubuntu hoary

@@ -362,7 +362,9 @@ class CodeHandler:
         mp_target = getUtility(IBranchLookup).getByUrl(md.target_branch)
         if mp_target is None:
             raise NonLaunchpadTarget()
-        if md.bundle is None:
+        # XXX TimPenhey 2009-04-01 bug 352800
+        # Disabled pull processing until we can create stacked branches.
+        if True: # md.bundle is None:
             mp_source = self._getSourceNoBundle(
                 md, mp_target, submitter)
         else:
@@ -419,7 +421,9 @@ class CodeHandler:
 
     def _getSourceNoBundle(self, md, target, submitter):
         """Get a source branch for a merge directive with no bundle."""
-        mp_source = getUtility(IBranchLookup).getByUrl(md.source_branch)
+        mp_source = None
+        if md.source_branch is not None:
+            mp_source = getUtility(IBranchLookup).getByUrl(md.source_branch)
         if mp_source is None:
             mp_source = self._getNewBranch(
                 BranchType.REMOTE, md.source_branch, target, submitter)
