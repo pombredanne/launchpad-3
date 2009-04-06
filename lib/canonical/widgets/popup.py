@@ -291,7 +291,7 @@ class VocabularyPickerWidget(SinglePopupWidget):
             step_title=self.step_title,
             show_widget_id=self.show_widget_id,
             input_id=self.name)
-        return ('(<a id="%s" href="javascript:" class="ajax">'
+        return ('(<a id="%s" href="javascript:" class="js-action">'
                 'Choose&hellip;</a>)'
                 '\n<script>\n%s\n</script>') % (self.show_widget_id, js)
 
