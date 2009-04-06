@@ -1,6 +1,6 @@
 # Copyright 2009 Canonical Ltd.  All rights reserved.
 
-"""Implementation of the launchpad script to list modified branches."""
+"""Implementation of the Launchpad script to list modified branches."""
 
 __metaclass__ = type
 __all__ = ['ModifiedBranchesScript']
@@ -13,7 +13,7 @@ from time import strptime
 import pytz
 from zope.component import getUtility
 
-from canonical.codehosting.vfs.branchfs import branch_id_to_path
+from canonical.codehosting.vfs import branch_id_to_path
 from canonical.config import config
 from canonical.launchpad.interfaces.branch import BranchType
 from canonical.launchpad.interfaces.branchcollection import IAllBranches
@@ -26,7 +26,7 @@ class ModifiedBranchesScript(LaunchpadScript):
 
     Only branches that have been modified since the specified time will be
     returned.  It is possible that the branch will have been modified only in
-    the web UI and not actually recieved any more revisions, and will be a
+    the web UI and not actually received any more revisions, and will be a
     false positive.
 
     If the branch is REMOTE it is ignored.
@@ -53,7 +53,7 @@ class ModifiedBranchesScript(LaunchpadScript):
             help="Return the branches that have been modified in "
             "the last HOURS number of hours.")
 
-    def parse_last_modified(self):
+    def get_last_modified_epoch(self):
         """Return the timezone aware datetime for the last modified epoch. """
         if (self.options.last_hours is not None and
             self.options.since is not None):
@@ -77,17 +77,14 @@ class ModifiedBranchesScript(LaunchpadScript):
         return last_modified.replace(tzinfo=pytz.UTC)
 
     def branch_locations(self, branch):
-        """Return a list of branches to rsync for the specified branch."""
+        """Return a list of branch paths for the given branch."""
         path = branch_id_to_path(branch.id)
-        result = [
-            os.path.join(config.codehosting.mirrored_branches_root, path)]
+        yield os.path.join(config.codehosting.mirrored_branches_root, path)
         if branch.branch_type == BranchType.HOSTED:
-            result.append(
-                os.path.join(config.codehosting.hosted_branches_root, path))
-        return result
+            yield os.path.join(config.codehosting.hosted_branches_root, path)
 
     def main(self):
-        last_modified = self.parse_last_modified()
+        last_modified = self.get_last_modified_epoch()
         self.logger.info(
             "Looking for branches modified since %s", last_modified)
         collection = getUtility(IAllBranches)

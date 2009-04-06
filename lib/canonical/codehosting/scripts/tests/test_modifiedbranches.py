@@ -12,7 +12,7 @@ import pytz
 
 from canonical.codehosting.scripts.modifiedbranches import (
     ModifiedBranchesScript)
-from canonical.codehosting.vfs.branchfs import branch_id_to_path
+from canonical.codehosting.vfs import branch_id_to_path
 from canonical.config import config
 from canonical.launchpad.interfaces.branch import BranchType
 from canonical.launchpad.scripts.base import LaunchpadScriptFailure
@@ -62,7 +62,7 @@ class TestModifiedBranchesLocations(TestCaseWithFactory):
         self.assertMirroredLocation(branch, mirrored)
 
 
-class TestModifiedBranchesDateParsing(TestCase):
+class TestModifiedBranchesLastModifiedEpoch(TestCase):
     """Test the calculation of the last modifed date."""
 
     def test_no_args(self):
@@ -71,7 +71,7 @@ class TestModifiedBranchesDateParsing(TestCase):
             'modified-branches', test_args=[])
         self.assertRaises(
             LaunchpadScriptFailure,
-            script.parse_last_modified)
+            script.get_last_modified_epoch)
 
     def test_both_args(self):
         # We don't like it if both --since and --last-hours are specified.
@@ -80,7 +80,7 @@ class TestModifiedBranchesDateParsing(TestCase):
             test_args=['--since=2009-03-02', '--last-hours=12'])
         self.assertRaises(
             LaunchpadScriptFailure,
-            script.parse_last_modified)
+            script.get_last_modified_epoch)
 
     def test_modified_since(self):
         # The --since parameter is parsed into a datetime using the fairly
@@ -89,7 +89,7 @@ class TestModifiedBranchesDateParsing(TestCase):
             'modified-branches', test_args=['--since=2009-03-02'])
         self.assertEqual(
             datetime(2009, 3, 2, tzinfo=pytz.UTC),
-            script.parse_last_modified())
+            script.get_last_modified_epoch())
 
     def test_modified_since_bad_format(self):
         # Passing in a bad format string for the --since parameter errors.
@@ -97,7 +97,7 @@ class TestModifiedBranchesDateParsing(TestCase):
             'modified-branches', test_args=['--since=2009-03'])
         self.assertRaises(
             LaunchpadScriptFailure,
-            script.parse_last_modified)
+            script.get_last_modified_epoch)
 
     def test_modified_last_hours(self):
         # If last_hours is specified, that number of hours is removed from the
@@ -110,7 +110,7 @@ class TestModifiedBranchesDateParsing(TestCase):
         # The last modified should be 3am on the same day.
         self.assertEqual(
             datetime(2009, 1, 1, 3, tzinfo=pytz.UTC),
-            script.parse_last_modified())
+            script.get_last_modified_epoch())
 
 
 def test_suite():

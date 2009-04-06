@@ -1,1 +1,1 @@
-# Make this directory a module.
+"""Tests for codehosting scripts."""

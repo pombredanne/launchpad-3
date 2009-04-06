@@ -1,1 +1,1 @@
-# Make this directory a module.
+"""This module contains Launchpad codehosting related scripts."""
