@@ -34,12 +34,12 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.ftests import login, logout
-from lp.registry.tests import mailinglists_helper
-from lp.registry.interfaces.mailinglist import IMailingListSet
-from lp.registry.interfaces.person import IPersonSet
-from canonical.launchpad.mailman.testing.layers import MailmanLayer
 from canonical.launchpad.testing.browser import Browser
 from canonical.launchpad.testing.factory import LaunchpadObjectFactory
+from lp.registry.interfaces.mailinglist import IMailingListSet
+from lp.registry.interfaces.person import IPersonSet
+from lp.registry.tests import mailinglists_helper
+from lp.services.mailman.testing.layers import MailmanLayer
 
 # pylint: disable-msg=F0401
 from Mailman import mm_cfg
