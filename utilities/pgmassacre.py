@@ -5,6 +5,8 @@ dropdb only more so.
 Cut off access, slaughter connections and burn the database to the ground.
 """
 
+# Nothing but system installed libraries - this script sometimes
+# gets installed standalone with no Launchpad tree available.
 import sys
 import time
 import psycopg2
@@ -62,8 +64,8 @@ def send_signal(database, signal):
 def rollback_prepared_transactions(database):
     """Rollback any prepared transactions.
 
-    For some crazy reason PostgreSQL will refuse to drop a database with
-    outstanding prepared transactions.
+    PostgreSQL will refuse to drop a database with outstanding prepared
+    transactions.
     """
     con = connect(database)
     con.set_isolation_level(0) # Autocommit so we can ROLLBACK PREPARED.
@@ -79,9 +81,9 @@ def rollback_prepared_transactions(database):
     con.close()
 
 
-def still_open(database):
-    """Return True if there are still open connections.
-    
+def still_open(database, max_wait=10):
+    """Return True if there are still open connections, apart from our own.
+
     Waits a while to ensure that connections shutting down have a chance to.
     """
     con = connect()
@@ -89,10 +91,13 @@ def still_open(database):
     cur = con.cursor()
     # Wait for up to 10 seconds, returning True if all backends are gone.
     start = time.time()
-    while time.time() < start + 10:
+    while time.time() < start + max_wait:
         cur.execute("""
             SELECT procpid FROM pg_stat_activity
-            WHERE datname=%(database)s LIMIT 1
+            WHERE
+                datname=%(database)s
+                AND procpid != pg_backend_pid()
+            LIMIT 1
             """, vars())
         if cur.fetchone() is None:
             return False
@@ -102,41 +107,10 @@ def still_open(database):
     return True
 
 
-options = None
-
-
-def main():
-    parser = OptionParser()
-    parser.add_option("-U", "--user", dest="user", default=None,
-            help="Connect as USER", metavar="USER")
-    global options
-    (options, args) = parser.parse_args()
-
-    if len(args) != 1:
-        print >> sys.stderr, (
-                'Must specify one, and only one, database to destroy')
-        sys.exit(1)
-
-    database = args[0]
-
-    if database in ('template1', 'template0'):
-        print >> sys.stderr, (
-                "Put the gun down and back away from the vehicle!")
-        return 666
-
+def massacre(database):
     con = connect()
     con.set_isolation_level(0) # Autocommit
     cur = con.cursor()
-
-    # Ensure the database exists. Note that the script returns success
-    # if the database does not exist to ease scripting.
-    cur.execute(
-            "SELECT count(*) FROM pg_database WHERE datname=%s", [database])
-    if cur.fetchone()[0] == 0:
-        print >> sys.stderr, (
-                "%s has fled the building. Database does not exist"
-                % database)
-        return 0
 
     # Allow connections to the doomed database if something turned this off,
     # such as an aborted run of this script.
@@ -159,7 +133,8 @@ def main():
         send_signal(database, SIGINT)
 
         # Shutdown current connections normally.
-        send_signal(database, SIGTERM)
+        if still_open(database, 1):
+            send_signal(database, SIGTERM)
 
         # Shutdown current connections immediately.
         if still_open(database):
@@ -180,7 +155,7 @@ def main():
         con.set_isolation_level(0)
         cur = con.cursor()
         cur.execute("DROP DATABASE %s" % database) # Not quoted.
-        return 0
+
     finally:
         # In case something messed up, allow connections again so we can
         # inspect the damage.
@@ -190,6 +165,81 @@ def main():
         cur.execute(
                 "UPDATE pg_database SET datallowconn=TRUE WHERE datname=%s",
                 [database])
+        con.close()
+
+
+def rebuild(database, template):
+    if still_open(template, 20):
+        print >> sys.stderr, (
+            "Giving up waiting for connections to %s to drop." % template)
+        return 10
+
+    start = time.time()
+    error_msg = None
+    while time.time() < start + 20:
+        con = connect()
+        con.set_isolation_level(0) # Autocommit
+        cur = con.cursor()
+        try:
+            cur.execute(
+                "CREATE DATABASE %s WITH ENCODING='UTF8' TEMPLATE=%s"
+                % (database, template))
+            return 0
+        except psycopg2.Error, exception:
+            error_msg = str(exception)
+        con.close()
+        time.sleep(0.6) # Stats only updated every 500ms.
+
+    print >> sys.stderr, "Unable to recreate database: %s" % error_msg
+    return 11
+
+
+options = None
+
+
+def main():
+    parser = OptionParser()
+    parser.add_option("-U", "--user", dest="user", default=None,
+        help="Connect as USER", metavar="USER")
+    parser.add_option("-t", "--template", dest="template", default=None,
+        help="Recreate database using DBNAME as a template database.",
+        metavar="DBNAME")
+    global options
+    (options, args) = parser.parse_args()
+
+    if len(args) != 1:
+        parser.error('Must specify one, and only one, database to destroy')
+
+    database = args[0]
+
+    # Don't be stupid protection.
+    if database in ('template1', 'template0'):
+        parser.error("Put the gun down and back away from the vehicle!")
+
+    con = connect()
+    cur = con.cursor()
+    # Ensure the template database exists.
+    if options.template is not None:
+        cur.execute(
+            "SELECT TRUE FROM pg_database WHERE datname=%s",
+            [options.template])
+        if cur.fetchone() is None:
+            parser.error(
+                "Template database %s does not exist." % options.template)
+    # If the database doesn't exist, no point attempting to drop it.
+    cur.execute("SELECT TRUE FROM pg_database WHERE datname=%s", [database])
+    db_exists = cur.fetchone() is not None
+    con.close()
+
+    if db_exists:
+        rv = massacre(database)
+        if rv != 0:
+            return rv
+
+    if options.template is not None:
+        return rebuild(database, options.template)
+    else:
+        return 0
 
 
 if __name__ == '__main__':
