@@ -56,16 +56,16 @@ from canonical.launchpad.interfaces.build import (
     BuildStatus, IBuildSet)
 from canonical.launchpad.interfaces.buildrecords import IHasBuildRecords
 from canonical.launchpad.interfaces.component import IComponentSet
-from canonical.launchpad.interfaces.distroseries import DistroSeriesStatus
+from lp.registry.interfaces.distroseries import DistroSeriesStatus
 from canonical.launchpad.interfaces.launchpad import (
     ILaunchpadCelebrities, NotFoundError)
 from canonical.launchpad.interfaces.packagecopyrequest import (
     IPackageCopyRequestSet)
-from canonical.launchpad.interfaces.person import IPersonSet
+from lp.registry.interfaces.person import IPersonSet
 from canonical.launchpad.interfaces.publishing import (
     PackagePublishingPocket, active_publishing_status,
     inactive_publishing_status, IPublishingSet)
-from canonical.launchpad.interfaces.sourcepackagename import (
+from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageNameSet)
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, enabled_with_permission,
@@ -845,8 +845,9 @@ class ArchivePackageCopyingView(ArchiveSourceSelectionFormView):
             if self.can_copy_to_context_ppa and self.context == ppa:
                 required = False
                 continue
+            token = '%s/%s' % (ppa.owner.name, ppa.name)
             terms.append(
-                SimpleTerm(ppa, str(ppa.owner.name), ppa.displayname))
+                SimpleTerm(ppa, token, ppa.displayname))
 
         return form.Fields(
             Choice(__name__='destination_archive',
@@ -1056,8 +1057,10 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
                 continue
             dependency_label = '<a href="%s">%s</a>' % (
                 canonical_url(dependency), archive_dependency.title)
+            dependency_token = '%s/%s' % (
+                dependency.owner.name, dependency.name)
             term = SimpleTerm(
-                dependency, dependency.owner.name, dependency_label)
+                dependency, dependency_token, dependency_label)
             terms.append(term)
         return form.Fields(
             List(__name__='selected_dependencies',

@@ -34,8 +34,8 @@ from canonical.launchpad.interfaces.bugwatch import IBugWatch
 from canonical.launchpad.interfaces.cve import ICve
 from canonical.launchpad.interfaces.launchpad import NotFoundError
 from canonical.launchpad.interfaces.message import IMessage
-from canonical.launchpad.interfaces.mentoringoffer import ICanBeMentored
-from canonical.launchpad.interfaces.person import IPerson
+from lp.registry.interfaces.mentoringoffer import ICanBeMentored
+from lp.registry.interfaces.person import IPerson
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.validators.bugattachment import (
     bug_attachment_size_constraint)

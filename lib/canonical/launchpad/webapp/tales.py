@@ -36,7 +36,7 @@ from canonical.launchpad.interfaces import (
     IProduct, IProject, ISprint, LicenseStatus, NotFoundError)
 from canonical.launchpad.interfaces.launchpad import (
     IHasIcon, IHasLogo, IHasMugshot)
-from canonical.launchpad.interfaces.person import IPerson, IPersonSet
+from lp.registry.interfaces.person import IPerson, IPersonSet
 from canonical.launchpad.webapp.interfaces import (
     IApplicationMenu, IContextMenu, IFacetMenu, ILaunchBag, INavigationMenu,
     IPrimaryContext, NoCanonicalUrl)
@@ -1366,9 +1366,11 @@ class ProductReleaseFormatterAPI(CustomizableFormatter):
 
     def _link_summary_values(self):
         """See CustomizableFormatter._link_summary_values."""
-        code_name = getattr(self._context.milestone, 'code_name', '').strip()
-        if code_name != '':
-            code_name = '(%s)' % code_name
+        code_name = self._context.milestone.code_name
+        if code_name is None or code_name.strip() == '':
+            code_name = ''
+        else:
+            code_name = '(%s)' % code_name.strip()
         return dict(displayname=self._context.milestone.displayname,
                     code_name=code_name)
 

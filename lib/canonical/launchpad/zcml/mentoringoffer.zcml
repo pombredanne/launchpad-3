@@ -53,7 +53,7 @@
     />
 
   <browser:menus
-    module="canonical.launchpad.browser.mentoringoffer"
+    module="lp.registry.browser.mentoringoffer"
     classes="MentoringOfferSetFacets MentoringOfferSetOverviewMenu"
     />
 

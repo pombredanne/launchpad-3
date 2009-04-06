@@ -35,7 +35,7 @@ recently, using the OpenID service.
     >>> from datetime import datetime
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces.account import IAccountSet
-    >>> from canonical.launchpad.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> from canonical.launchpad.interfaces.openidserver import (
     ...     IOpenIDRPSummarySet)
     >>> from canonical.launchpad.webapp.dbpolicy import SSODatabasePolicy

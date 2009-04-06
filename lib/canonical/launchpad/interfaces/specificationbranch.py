@@ -16,7 +16,7 @@ from zope.schema import Choice, Int, Object
 from canonical.launchpad import _
 from canonical.launchpad.fields import Summary
 from canonical.launchpad.interfaces.launchpad import IHasDateCreated
-from canonical.launchpad.interfaces.person import IPerson
+from lp.registry.interfaces.person import IPerson
 
 
 class ISpecificationBranch(IHasDateCreated):

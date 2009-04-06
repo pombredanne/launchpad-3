@@ -7,7 +7,7 @@ the information that Launchpad has about the work going on in the
 branches.  We want to encourage the linking of information, and so
 give karma for it.
 
-    >>> from canonical.launchpad.database.karma import KarmaCategory
+    >>> from lp.registry.model.karma import KarmaCategory
     >>> code_category = KarmaCategory.byName('code')
     >>> code_karma_actions = code_category.karmaactions
     >>> for summary in sorted(

@@ -13,7 +13,7 @@ display different types of archives (copy archives, ppas).
 
 First let's create a copy archive:
 
-    >>> from canonical.launchpad.interfaces.distribution import (
+    >>> from lp.registry.interfaces.distribution import (
     ...     IDistributionSet)
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
     >>> copy_location = factory.makeCopyArchiveLocation(
@@ -272,7 +272,7 @@ pagetests/ppa/xx-edit-dependencies.txt.
     ...     cprov.archive, name="+edit-dependencies",
     ...     form={
     ...         'field.selected_dependencies': [],
-    ...         'field.dependency_candidate': 'sabdfl',
+    ...         'field.dependency_candidate': 'sabdfl/ppa',
     ...         'field.primary_dependencies': 'UPDATES',
     ...         'field.primary_components': 'ALL_COMPONENTS',
     ...         'field.actions.save': 'Save',
@@ -310,7 +310,7 @@ dependency. Each element has:
     PPA for Mark Shuttleworth
 
     >>> print dependency.token
-    sabdfl
+    sabdfl/ppa
 
     >>> print dependency.title
     <a href="http://launchpad.dev/~sabdfl/+archive/ppa">PPA for Mark Shuttleworth</a>
@@ -329,7 +329,7 @@ initial/empty state.
     >>> view = create_initialized_view(
     ...     cprov.archive, name="+edit-dependencies",
     ...     form={
-    ...         'field.selected_dependencies': ['sabdfl'],
+    ...         'field.selected_dependencies': ['sabdfl/ppa'],
     ...         'field.dependency_candidate': '',
     ...         'field.primary_dependencies': 'UPDATES',
     ...         'field.primary_components': 'ALL_COMPONENTS',
@@ -516,7 +516,7 @@ PPA the form fails because he has no permission to view its contents.
 
     >>> add_private_form = {
     ...     'field.selected_dependencies': [],
-    ...     'field.dependency_candidate': 'pirulito-team',
+    ...     'field.dependency_candidate': 'pirulito-team/ppa',
     ...     'field.primary_dependencies': 'UPDATES',
     ...     'field.primary_components': 'FOLLOW_PRIMARY',
     ...     'field.actions.save': 'Save',
@@ -820,7 +820,7 @@ the public Ubuntu-team PPA, which is empty.
     ...     form={
     ...         'field.status_filter': 'any',
     ...         'field.selected_sources': [str(private_source.id)],
-    ...         'field.destination_archive': 'ubuntu-team',
+    ...         'field.destination_archive': 'ubuntu-team/ppa',
     ...         'field.destination_series': '',
     ...         'field.include_binaries': 'REBUILD_SOURCES',
     ...         'field.actions.copy': 'Copy',
