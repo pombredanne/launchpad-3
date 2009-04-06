@@ -25,7 +25,7 @@ delete the branch.
 
     >>> delete_link.click()
     >>> print extract_text(find_main_content(browser.contents))
-    Last modified ...
+    Created by Sample Person ...
     lp://dev/~name12/firefox/to-delete
     ...
     Delete branch
@@ -72,6 +72,6 @@ Even if you are an admin.
     >>> admin_browser.open(branch_location)
     >>> admin_browser.getLink('Delete branch').click()
     >>> print extract_text(find_main_content(admin_browser.contents))
-    Last modified ...
+    Created by ...
     Delete branch
     This branch cannot be deleted as it has 1 branch sharing revisions.
