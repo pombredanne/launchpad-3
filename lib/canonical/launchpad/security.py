@@ -16,7 +16,7 @@ from canonical.launchpad.interfaces.archivepermission import (
     IArchivePermissionSet)
 from canonical.launchpad.interfaces.archiveauthtoken import IArchiveAuthToken
 from canonical.launchpad.interfaces.archivesubscriber import (
-    IArchiveSubscriber)
+    IArchiveSubscriber, IPersonalArchiveSubscription)
 from canonical.launchpad.interfaces.branch import (
     IBranch, user_has_special_branch_access)
 from canonical.launchpad.interfaces.branchmergeproposal import (
@@ -1950,6 +1950,27 @@ class EditArchiveAuthToken(AuthorizationBase):
         auth_append = AppendArchive(self.obj.archive)
         if auth_append.checkAuthenticated(user):
             return True
+        admins = getUtility(ILaunchpadCelebrities).admin
+        return user.inTeam(admins)
+
+
+class ViewPersonalArchiveSubscription(AuthorizationBase):
+    """Restrict viewing of personal archive subscriptions (non-db class).
+
+    The user should be the subscriber, have append privileg to the archive
+    or be an admin.
+    """
+    permission = "launchpad.View"
+    usedfor = IPersonalArchiveSubscription
+
+    def checkAuthenticated(self, user):
+        if user == self.obj.subscriber:
+            return True
+        append_archive = AppendArchive(self.obj.archive)
+
+        if append_archive.checkAuthenticated(user):
+            return True
+
         admins = getUtility(ILaunchpadCelebrities).admin
         return user.inTeam(admins)
 

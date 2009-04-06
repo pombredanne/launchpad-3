@@ -177,7 +177,7 @@ class IArchiveSubscriberUI(Interface):
 class IPersonalArchiveSubscription(Interface):
     """An abstract interface representing a subscription for an individual.
 
-    An individual may be included in three separate team subscriptions for a
+    An individual may be included in multiple team subscriptions for a
     private PPA, but should only ever be able to navigate and activate one
     token for the archive. This non-db class allows a traversal for an
     individual's subscription to a p3a, irrespective of how many subscriptions

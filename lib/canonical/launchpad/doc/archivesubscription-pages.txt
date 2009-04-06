@@ -356,3 +356,24 @@ The view can also be used to regenerate the source.list entries.
     >>> view = create_initialized_view(spiv_subscription, name="+index")
     >>> view.active_token.token == original_token
     False
+
+The security for the PersonalArchiveSubscription provides spiv, as the
+subscriber, with view access:
+
+    >>> from canonical.launchpad.webapp.authorization import check_permission
+    >>> check_permission('launchpad.View', spiv_subscription)
+    True
+
+but as a default security setting, other logged in users cannot.
+
+    >>> login('no-priv@canonical.com')
+    >>> check_permission('launchpad.View', spiv_subscription)
+    False
+
+Celso, on the other hand, will be granted view access as he has append privs
+on the archive:
+
+    >>> login('celso.providelo@canonical.com')
+    >>> check_permission('launchpad.View', spiv_subscription)
+    True
+
