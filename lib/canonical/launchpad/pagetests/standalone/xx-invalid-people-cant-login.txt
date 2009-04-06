@@ -20,9 +20,10 @@ Now invalidate that person
     >>> from canonical.launchpad.interfaces import AccountStatus
     >>> from canonical.launchpad.database import Person
     >>> foobar = Person.byName('name16')
-    >>> foobar.account.status = AccountStatus.DEACTIVATED
-    >>> from canonical.database.sqlbase import flush_database_updates
-    >>> flush_database_updates()
+    >>> from canonical.launchpad.interfaces import IMasterObject
+    >>> IMasterObject(foobar.account).status = AccountStatus.DEACTIVATED
+    >>> import transaction
+    >>> transaction.commit()
 
 Now if we reload the front page, we should be logged out.
 
@@ -34,8 +35,8 @@ Now if we reload the front page, we should be logged out.
 
 We also can only connect via Basic auth when then user is valid
 
-    >>> foobar.account.status = AccountStatus.ACTIVE
-    >>> flush_database_updates()
+    >>> IMasterObject(foobar.account).status = AccountStatus.ACTIVE
+    >>> transaction.commit()
 
     >>> browser = setupBrowser(auth='Basic foo.bar@canonical.com:test')
     >>> browser.open('http://launchpad.dev')
@@ -44,8 +45,8 @@ We also can only connect via Basic auth when then user is valid
     >>> print extract_text(find_tag_by_id(browser.contents, 'logincontrol'))
     Foo Bar...
 
-    >>> foobar.account.status = AccountStatus.SUSPENDED
-    >>> flush_database_updates()
+    >>> IMasterObject(foobar.account).status = AccountStatus.SUSPENDED
+    >>> transaction.commit()
 
     >>> browser = setupBrowser(auth='Basic foo.bar@canonical.com:test')
     >>> browser.open('http://launchpad.dev')

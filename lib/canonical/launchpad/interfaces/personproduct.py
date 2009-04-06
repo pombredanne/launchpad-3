@@ -13,8 +13,8 @@ from zope.interface import Interface
 
 from canonical.lazr.fields import Reference
 
-from canonical.launchpad.interfaces.person import IPerson
-from canonical.launchpad.interfaces.product import IProduct
+from lp.registry.interfaces.person import IPerson
+from lp.registry.interfaces.product import IProduct
 
 
 class IPersonProduct(Interface):

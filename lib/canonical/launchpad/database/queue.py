@@ -42,7 +42,7 @@ from canonical.launchpad.interfaces.component import IComponentSet
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.package import (
     PackageUploadStatus, PackageUploadCustomFormat)
-from canonical.launchpad.interfaces.person import IPersonSet
+from lp.registry.interfaces.person import IPersonSet
 from canonical.launchpad.interfaces.publishing import (
     PackagePublishingPocket, PackagePublishingStatus, pocketsuffix)
 from canonical.launchpad.interfaces.queue import (
@@ -51,7 +51,7 @@ from canonical.launchpad.interfaces.queue import (
     NonBuildableSourceUploadError, QueueBuildAcceptError,
     QueueInconsistentStateError, QueueSourceAcceptError,
     QueueStateWriteProtectedError)
-from canonical.launchpad.interfaces.sourcepackage import SourcePackageFileType
+from lp.registry.interfaces.sourcepackage import SourcePackageFileType
 from canonical.launchpad.mail import (
     format_address, signed_message_from_string, sendmail)
 from canonical.launchpad.scripts.processaccepted import (

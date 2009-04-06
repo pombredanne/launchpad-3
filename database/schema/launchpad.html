@@ -4,7 +4,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
 <meta name="generator" content=
-"HTML Tidy for Linux (vers 6 November 2007), see www.w3.org" />
+"HTML Tidy for Linux/x86 (vers 6 November 2007), see www.w3.org" />
 <title>Index for launchpad_dev</title>
 <meta http-equiv="Content-Type" content=
 "text/html; charset=us-ascii" />
@@ -121,7 +121,7 @@
 <!-- Primary Index -->
 <p><br />
 <br />
-Dumped on 2009-01-26</p>
+Dumped on 2009-03-04</p>
 <h1><a name="index" id="index">Index of database -
 launchpad_dev</a></h1>
 <ul>
@@ -359,6 +359,8 @@ launchpad_dev</a></h1>
 <li><a href=
 "#public.table.packageuploadsource">packageuploadsource</a></li>
 <li><a href="#public.table.packaging">packaging</a></li>
+<li><a href=
+"#public.table.parsedapachelog">parsedapachelog</a></li>
 <li><a href="#public.table.person">person</a></li>
 <li><a href="#public.table.personlanguage">personlanguage</a></li>
 <li><a href="#public.table.personlocation">personlocation</a></li>
@@ -510,12 +512,12 @@ launchpad_dev</a></h1>
 "#public.function.-killall-backends-text">_killall_backends( text
 )</a></li>
 <li><a href=
-"#public.function.assert-patch-applied-ARRAY-0xc79040-integer-integer-integer">
-assert_patch_applied( ARRAY(0xc79040) integer, integer, integer
+"#public.function.assert-patch-applied-ARRAY-0x91beb80-integer-integer-integer">
+assert_patch_applied( ARRAY(0x91beb80) integer, integer, integer
 )</a></li>
 <li><a href=
-"#public.function.debversion-sort-key-ARRAY-0xc75ea8-text">debversion_sort_key(
-ARRAY(0xc75ea8) text )</a></li>
+"#public.function.debversion-sort-key-ARRAY-0x91bebd0-text">debversion_sort_key(
+ARRAY(0x91bebd0) text )</a></li>
 <li><a href=
 "#public.function.generate-openid-identifier">generate_openid_identifier(
 )</a></li>
@@ -547,11 +549,11 @@ text )</a></li>
 "#public.function.name-blacklist-match-text">name_blacklist_match(
 text )</a></li>
 <li><a href=
-"#public.function.null-count-ARRAY-0xc77ae0-anyarray">null_count(
-ARRAY(0xc77ae0) anyarray )</a></li>
+"#public.function.null-count-ARRAY-0x91bee60-anyarray">null_count(
+ARRAY(0x91bee60) anyarray )</a></li>
 <li><a href=
-"#public.function.person-sort-key-ARRAY-0xc78938-text-text">person_sort_key(
-ARRAY(0xc78938) text, text )</a></li>
+"#public.function.person-sort-key-ARRAY-0x91bee00-text-text">person_sort_key(
+ARRAY(0x91bee00) text, text )</a></li>
 <li><a href=
 "#public.function.plpython-call-handler">plpython_call_handler(
 )</a></li>
@@ -570,6 +572,9 @@ ARRAY(0xc78938) text, text )</a></li>
 )</a></li>
 <li><a href=
 "#public.function.set-bug-users-affected-count">set_bug_users_affected_count(
+)</a></li>
+<li><a href=
+"#public.function.set-bugtask-date-milestone-set">set_bugtask_date_milestone_set(
 )</a></li>
 <li><a href=
 "#public.function.set-date-status-set">set_date_status_set(
@@ -896,6 +901,10 @@ openid_identifier.</td>
 <ul>
 <li><a href=
 "#public.table.emailaddress">public.emailaddress</a></li>
+</ul>
+<ul>
+<li><a href=
+"#public.table.openidauthorization">public.openidauthorization</a></li>
 </ul>
 <ul>
 <li><a href=
@@ -1375,6 +1384,24 @@ How many packages are building at present?</td>
 <td><br />
 <br />
 The GpgKey used for signing this archive.</td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>removed_binary_retention_days</td>
+<td>integer</td>
+<td><br />
+<br />
+The number of days before superseded or deleted binary files are
+expired in the librarian, or zero for never.</td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>num_old_versions_published</td>
+<td>integer</td>
+<td><br />
+<br />
+The number of versions of a package to keep published before older
+versions are superseded.</td>
 </tr>
 </table>
 <!-- Inherits -->
@@ -4504,6 +4531,15 @@ set_bug_users_affected_count_t trigger.</td>
 <td>integer</td>
 <td></td>
 </tr>
+<tr class="tr0">
+<td></td>
+<td>hotness</td>
+<td>integer</td>
+<td><i>NOT NULL</i><br />
+<br />
+The relevance of this bug. This value is computed periodically
+using bug_affects_person and other bug values.</td>
+</tr>
 </table>
 <!-- Inherits -->
 <!-- Constraint List -->
@@ -4597,7 +4633,8 @@ set_bug_users_affected_count_t trigger.</td>
 <!-- Indexes -->
 bug__date_last_message__idx date_last_message
 bug__date_last_updated__idx date_last_updated bug__datecreated__idx
-datecreated bug__users_affected_count__idx users_affected_count
+datecreated bug__hotness__idx hotness
+bug__users_affected_count__idx users_affected_count
 bug__users_unaffected_count__idx users_unaffected_count
 bug__who_made_private__idx who_made_private) WHERE
 (who_made_private IS NOT NULL bug_duplicateof_idx duplicateof
@@ -5947,6 +5984,24 @@ The date when this bug transitioned to a FIXRELEASED status.</td>
 The date when this bug last transitioned out of a CLOSED
 status.</td>
 </tr>
+<tr class="tr1">
+<td></td>
+<td>hotness_rank</td>
+<td>integer</td>
+<td><i>NOT NULL</i><br />
+<br />
+The hotness bin in which this bugtask appears, as a value from the
+BugTaskHotnessRank enumeration.</td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>date_milestone_set</td>
+<td>timestamp without time zone</td>
+<td><br />
+<br />
+The date when this bug was targed to the milestone that is
+currently set.</td>
+</tr>
 </table>
 <!-- Inherits -->
 <!-- Constraint List -->
@@ -6115,6 +6170,12 @@ tracker supports it.</td>
 <br />
 Whether we have confirmed that the Launchpad plugin was installed
 on the bug tracker, the last time checkwatches was run.</td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>active</td>
+<td>boolean</td>
+<td><i>NOT NULL DEFAULT true</i></td>
 </tr>
 </table>
 <!-- Inherits -->
@@ -8009,6 +8070,10 @@ public</a></p>
 <ul>
 <li><a href=
 "#public.table.distributionmirror">public.distributionmirror</a></li>
+</ul>
+<ul>
+<li><a href=
+"#public.table.libraryfiledownloadcount">public.libraryfiledownloadcount</a></li>
 </ul>
 <ul>
 <li><a href="#public.table.mirror">public.mirror</a></li>
@@ -12857,6 +12922,14 @@ The timestamp when this alias was created.</td>
 <br />
 Is this file available only from the restricted librarian?</td>
 </tr>
+<tr class="tr0">
+<td></td>
+<td>hits</td>
+<td>integer</td>
+<td><i>NOT NULL</i><br />
+<br />
+The number of times this file has been downloaded.</td>
+</tr>
 </table>
 <!-- Inherits -->
 <!-- Constraint List -->
@@ -12989,6 +13062,7 @@ Is this file available only from the restricted librarian?</td>
 "#public.table.translationimportqueueentry">public.translationimportqueueentry</a></li>
 </ul>
 <!-- Indexes -->
+libraryfilealias__expires__idx expires
 libraryfilealias__filename__idx filename
 libraryfilealias_content_idx content <!-- View Definition -->
  <!-- List off permissions -->
@@ -13086,6 +13160,7 @@ public</a></p>
 <h2>Table: <a href="#public.schema">public</a>.<a name=
 "public.table.libraryfiledownloadcount" id=
 "public.table.libraryfiledownloadcount">libraryfiledownloadcount</a></h2>
+<p>The number of daily downloads for a given LibraryFileAlias.</p>
 <table width="100%" cellspacing="0" cellpadding="3">
 <caption>public.libraryfiledownloadcount Structure</caption>
 <tr>
@@ -13105,19 +13180,33 @@ public</a></p>
 "#public.table.libraryfilealias">public.libraryfilealias.id</a></td>
 <td>libraryfilealias</td>
 <td>integer</td>
-<td><i>UNIQUE#1 NOT NULL</i></td>
+<td><i>UNIQUE#1 NOT NULL</i><br />
+<br />
+The LibraryFileAlias.</td>
 </tr>
 <tr class="tr0">
 <td></td>
 <td>day</td>
 <td>date</td>
-<td><i>UNIQUE#1 NOT NULL</i></td>
+<td><i>UNIQUE#1 NOT NULL</i><br />
+<br />
+The day of the downloads.</td>
 </tr>
 <tr class="tr1">
 <td></td>
 <td>count</td>
 <td>integer</td>
-<td><i>NOT NULL</i></td>
+<td><i>NOT NULL</i><br />
+<br />
+The number of downloads.</td>
+</tr>
+<tr class="tr0">
+<td><a href="#public.table.country">public.country.id</a></td>
+<td>country</td>
+<td>integer</td>
+<td><br />
+<br />
+The country from where the download requests came from.</td>
 </tr>
 </table>
 <!-- Inherits -->
@@ -14933,7 +15022,8 @@ access token. This is generated by the consumer.</p>
 <td></td>
 <td>request_timestamp</td>
 <td>timestamp without time zone</td>
-<td><i>NOT NULL DEFAULT timezone('UTC'::text, now())</i><br />
+<td><i>UNIQUE#1 NOT NULL DEFAULT timezone('UTC'::text,
+now())</i><br />
 <br />
 The date and time (as a timestamp) in which the request was
 made.</td>
@@ -15278,8 +15368,8 @@ public</a></p>
 <td><i>PRIMARY KEY</i></td>
 </tr>
 <tr class="tr1">
-<td><a href="#public.table.person">public.person.id</a></td>
-<td>person</td>
+<td><a href="#public.table.account">public.account.id</a></td>
+<td>account</td>
 <td>integer</td>
 <td><i>NOT NULL</i></td>
 </tr>
@@ -15312,8 +15402,8 @@ public</a></p>
 <!-- Constraint List -->
 <!-- Foreign Key Discovery -->
 <!-- Indexes -->
-openidauthorization__person__trust_root__date_expires__client_i
-person, trust_root, date_expires, client_id 
+openidauthorixation__account__troot__expires__client_id__idx
+account, trust_root, date_expires, client_id 
 <!-- View Definition -->
  <!-- List off permissions -->
 <p><a href="#index">Index</a> - <a href="#public.schema">Schema
@@ -16275,6 +16365,59 @@ sourcepackagename packaging_sourcepackagename_idx sourcepackagename
 public</a></p>
 <hr />
 <h2>Table: <a href="#public.schema">public</a>.<a name=
+"public.table.parsedapachelog" id=
+"public.table.parsedapachelog">parsedapachelog</a></h2>
+<p>A parsed apache log file for librarian.</p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>public.parsedapachelog Structure</caption>
+<tr>
+<th>F-Key</th>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>id</td>
+<td>serial</td>
+<td><i>PRIMARY KEY</i></td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>first_line</td>
+<td>text</td>
+<td><i>NOT NULL</i><br />
+<br />
+The first line of this log file, smashed to ASCII. This uniquely
+identifies the log file, even if its filename is changed by log
+rotation or archival.</td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>bytes_read</td>
+<td>integer</td>
+<td><i>NOT NULL</i><br />
+<br />
+The number of bytes from this log file that have been parsed.</td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>date_last_parsed</td>
+<td>timestamp without time zone</td>
+<td><i>NOT NULL DEFAULT timezone('UTC'::text, now())</i></td>
+</tr>
+</table>
+<!-- Inherits -->
+<!-- Constraint List -->
+<!-- Foreign Key Discovery -->
+<!-- Indexes -->
+parsedapachelog__first_line__idx first_line 
+<!-- View Definition -->
+ <!-- List off permissions -->
+<p><a href="#index">Index</a> - <a href="#public.schema">Schema
+public</a></p>
+<hr />
+<h2>Table: <a href="#public.schema">public</a>.<a name=
 "public.table.person" id="public.table.person">person</a></h2>
 <p>A row represents a person if teamowner is NULL, and represents a
 team if teamowner is set.</p>
@@ -16832,10 +16975,6 @@ IS NULL) WHEN (renewal_policy = ANY (ARRAY[20, 30])) THEN
 <ul>
 <li><a href=
 "#public.table.oauthrequesttoken">public.oauthrequesttoken</a></li>
-</ul>
-<ul>
-<li><a href=
-"#public.table.openidauthorization">public.openidauthorization</a></li>
 </ul>
 <ul>
 <li><a href=
@@ -19056,7 +19195,7 @@ The target branch revision_id used to generate this diff.</td>
 <td></td>
 <td>dependent_revision_id</td>
 <td>text</td>
-<td><i>NOT NULL</i><br />
+<td><br />
 <br />
 The dependant branch revision_id used to generate this diff.</td>
 </tr>
@@ -20212,13 +20351,13 @@ ProductSeries</p>
 <td><a href="#public.table.product">public.product.id</a></td>
 <td>product</td>
 <td>integer</td>
-<td><i>UNIQUE#2 UNIQUE#3 NOT NULL</i></td>
+<td><i>UNIQUE#1 UNIQUE#3 NOT NULL</i></td>
 </tr>
 <tr class="tr0">
 <td></td>
 <td>name</td>
 <td>text</td>
-<td><i>UNIQUE#2 NOT NULL</i><br />
+<td><i>UNIQUE#1 NOT NULL</i><br />
 <br />
 The name of the ProductSeries is like a unix name, it should not
 contain any spaces and should start with a letter or number. Good
@@ -20287,7 +20426,7 @@ etc should be filled out.</td>
 <td></td>
 <td>cvsroot</td>
 <td>text</td>
-<td><i>UNIQUE#1</i><br />
+<td><i>UNIQUE#2</i><br />
 <br />
 The CVS root where this productseries hosts its code. Only used if
 rcstype is CVS.</td>
@@ -20296,7 +20435,7 @@ rcstype is CVS.</td>
 <td></td>
 <td>cvsmodule</td>
 <td>text</td>
-<td><i>UNIQUE#1</i><br />
+<td><i>UNIQUE#2</i><br />
 <br />
 The CVS branch that contains the upstream code for this
 productseries. Only used if rcstype is CVS.</td>
@@ -20305,7 +20444,7 @@ productseries. Only used if rcstype is CVS.</td>
 <td></td>
 <td>cvsbranch</td>
 <td>text</td>
-<td><i>UNIQUE#1</i></td>
+<td><i>UNIQUE#2</i></td>
 </tr>
 <tr class="tr0">
 <td></td>
@@ -20456,6 +20595,16 @@ datelastsynced or datepublishedsync.</td>
 <td><i>NOT NULL DEFAULT 2</i><br />
 <br />
 The current status of this productseries.</td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>translations_autoimport_mode</td>
+<td>integer</td>
+<td><i>NOT NULL DEFAULT 1</i><br />
+<br />
+At what level the import of translations from a branch in
+codehosting will happen: None, POT files only, POT and PO files.
+See also the corresponding Enum.</td>
 </tr>
 </table>
 <!-- Inherits -->
@@ -22653,6 +22802,7 @@ Reason why the publication was removed.</td>
 <!-- Constraint List -->
 <!-- Foreign Key Discovery -->
 <!-- Indexes -->
+sbpph__dateremoved__idx dateremoved) WHERE (dateremoved IS NOT NULL
 securebinarypackagepublishinghistory__archive__status__idx archive,
 status securebinarypackagepublishinghistory__distroarchseries__idx
 distroarchseries
@@ -27405,10 +27555,10 @@ before all the others have been killed.</p>
 </pre>
 <hr />
 <h2>Function: <a href="#public.schema">public</a>.<a name=
-"public.function.assert-patch-applied-ARRAY-0xc79040-integer-integer-integer"
+"public.function.assert-patch-applied-ARRAY-0x91beb80-integer-integer-integer"
 id=
-"public.function.assert-patch-applied-ARRAY-0xc79040-integer-integer-integer">assert_patch_applied(
-ARRAY(0xc79040) integer, integer, integer )</a></h2>
+"public.function.assert-patch-applied-ARRAY-0x91beb80-integer-integer-integer">assert_patch_applied(
+ARRAY(0x91beb80) integer, integer, integer )</a></h2>
 <h3>Returns: boolean</h3>
 <h3>Language: PLPYTHONU</h3>
 <p>Raise an exception if the given database patch has not been
@@ -27426,9 +27576,9 @@ applied.</p>
 </pre>
 <hr />
 <h2>Function: <a href="#public.schema">public</a>.<a name=
-"public.function.debversion-sort-key-ARRAY-0xc75ea8-text" id=
-"public.function.debversion-sort-key-ARRAY-0xc75ea8-text">debversion_sort_key(
-ARRAY(0xc75ea8) text )</a></h2>
+"public.function.debversion-sort-key-ARRAY-0x91bebd0-text" id=
+"public.function.debversion-sort-key-ARRAY-0x91bebd0-text">debversion_sort_key(
+ARRAY(0x91bebd0) text )</a></h2>
 <h3>Returns: text</h3>
 <h3>Language: PLPYTHONU</h3>
 <p>Return a string suitable for sorting debian version strings
@@ -27773,9 +27923,9 @@ match.</p>
 </pre>
 <hr />
 <h2>Function: <a href="#public.schema">public</a>.<a name=
-"public.function.null-count-ARRAY-0xc77ae0-anyarray" id=
-"public.function.null-count-ARRAY-0xc77ae0-anyarray">null_count(
-ARRAY(0xc77ae0) anyarray )</a></h2>
+"public.function.null-count-ARRAY-0x91bee60-anyarray" id=
+"public.function.null-count-ARRAY-0x91bee60-anyarray">null_count(
+ARRAY(0x91bee60) anyarray )</a></h2>
 <h3>Returns: integer</h3>
 <h3>Language: PLPGSQL</h3>
 <p>Return the number of NULLs in the first row of the given
@@ -27795,9 +27945,9 @@ END;
 </pre>
 <hr />
 <h2>Function: <a href="#public.schema">public</a>.<a name=
-"public.function.person-sort-key-ARRAY-0xc78938-text-text" id=
-"public.function.person-sort-key-ARRAY-0xc78938-text-text">person_sort_key(
-ARRAY(0xc78938) text, text )</a></h2>
+"public.function.person-sort-key-ARRAY-0x91bee00-text-text" id=
+"public.function.person-sort-key-ARRAY-0x91bee00-text-text">person_sort_key(
+ARRAY(0x91bee00) text, text )</a></h2>
 <h3>Returns: text</h3>
 <h3>Language: PLPYTHONU</h3>
 <p>Return a string suitable for sorting people on, generated by
@@ -28019,6 +28169,57 @@ BEGIN
     END IF;
 
     RETURN NULL;
+END;
+</pre>
+<hr />
+<h2>Function: <a href="#public.schema">public</a>.<a name=
+"public.function.set-bugtask-date-milestone-set" id=
+"public.function.set-bugtask-date-milestone-set">set_bugtask_date_milestone_set(
+)</a></h2>
+<h3>Returns: trigger</h3>
+<h3>Language: PLPGSQL</h3>
+<p>Update BugTask.date_milestone_set when BugTask.milestone is
+changed.</p>
+<pre>
+BEGIN
+    IF TG_OP = 'INSERT' THEN
+        -- If the inserted row as a milestone set, set date_milestone_set.
+        IF NEW.milestone IS NOT NULL THEN
+            UPDATE BugTask
+            SET date_milestone_set = CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+            WHERE BugTask.id = NEW.id;
+        END IF;
+    END IF;
+
+    IF TG_OP = 'UPDATE' THEN
+        IF OLD.milestone IS NULL THEN
+            -- If there was no milestone set, check if the new row has a
+            -- milestone set and set date_milestone_set.
+            IF NEW.milestone IS NOT NULL THEN
+                UPDATE BugTask
+                SET date_milestone_set = CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+                WHERE BugTask.id = NEW.id;
+            END IF;
+        ELSE
+            IF NEW.milestone IS NULL THEN
+                -- If the milestone was unset, clear date_milestone_set.
+                UPDATE BugTask
+                SET date_milestone_set = NULL
+                WHERE BugTask.id = NEW.id;
+            ELSE
+                -- Update date_milestone_set if the bug task was
+                -- targeted to another milestone.
+                IF NEW.milestone != OLD.milestone THEN
+                    UPDATE BugTask
+                    SET date_milestone_set = CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+                    WHERE BugTask.id = NEW.id;
+                END IF;
+
+            END IF;
+        END IF;
+    END IF;
+
+    RETURN NULL; -- Ignored - this is an AFTER trigger.
 END;
 </pre>
 <hr />

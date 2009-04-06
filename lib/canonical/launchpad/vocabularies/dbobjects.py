@@ -91,9 +91,9 @@ from canonical.launchpad.database import (
     Specification, Sprint, TeamParticipation, TranslationGroup,
     TranslationMessage)
 from canonical.launchpad.database.stormsugar import StartsWith
-
 from canonical.database.sqlbase import SQLBase, quote_like, quote, sqlvalues
 from canonical.launchpad.helpers import shortlist
+from canonical.launchpad.interfaces import IStore
 from canonical.launchpad.interfaces.archive import ArchivePurpose
 from canonical.launchpad.interfaces.branch import IBranch
 from canonical.launchpad.interfaces.branchcollection import IAllBranches
@@ -101,27 +101,26 @@ from canonical.launchpad.interfaces.bugtask import (
     IBugTask, IDistroBugTask, IDistroSeriesBugTask, IProductSeriesBugTask,
     IUpstreamBugTask)
 from canonical.launchpad.interfaces.bugtracker import BugTrackerType
-from canonical.launchpad.interfaces.distribution import IDistribution
-from canonical.launchpad.interfaces.distributionsourcepackage import (
+from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage)
-from canonical.launchpad.interfaces.distroseries import (
+from lp.registry.interfaces.distroseries import (
     DistroSeriesStatus, IDistroSeries)
-from canonical.launchpad.interfaces.emailaddress import (
-    EmailAddressStatus, IEmailAddressSet)
+from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
 from canonical.launchpad.interfaces.language import ILanguage
 from canonical.launchpad.interfaces.languagepack import LanguagePackType
-from canonical.launchpad.interfaces.mailinglist import (
+from lp.registry.interfaces.mailinglist import (
     IMailingListSet, MailingListStatus)
-from canonical.launchpad.interfaces.milestone import (
+from lp.registry.interfaces.milestone import (
     IMilestoneSet, IProjectMilestone)
-from canonical.launchpad.interfaces.person import (
+from lp.registry.interfaces.person import (
     IPerson, IPersonSet, ITeam, PersonVisibility)
-from canonical.launchpad.interfaces.pillar import IPillarName
-from canonical.launchpad.interfaces.product import (
+from lp.registry.interfaces.pillar import IPillarName
+from lp.registry.interfaces.product import (
     IProduct, IProductSet, License)
-from canonical.launchpad.interfaces.productseries import IProductSeries
-from canonical.launchpad.interfaces.project import IProject
-from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
+from lp.registry.interfaces.productseries import IProductSeries
+from lp.registry.interfaces.project import IProject
+from lp.registry.interfaces.sourcepackage import ISourcePackage
 from canonical.launchpad.interfaces.specification import (
     ISpecification, SpecificationFilter)
 from canonical.launchpad.interfaces.account import AccountStatus
@@ -157,7 +156,12 @@ class BasePersonVocabulary:
         if "@" in token:
             # This looks like an email token, so let's do an object
             # lookup based on that.
-            email = getUtility(IEmailAddressSet).getByEmail(token)
+            # We retrieve the email address via the main store, so 
+            # we can easily traverse to email.person to retrieve the
+            # result from the main Store as expected by our call sites.
+            email = IStore(Person).find(
+                EmailAddress,
+                EmailAddress.email.lower() == token.strip().lower()).one()
             if email is None:
                 raise LookupError(token)
             return self.toTerm(email.person)
@@ -1066,8 +1070,7 @@ class ProductReleaseVocabulary(SQLObjectVocabularyBase):
     # Sorting by version won't give the expected results, because it's just a
     # text field.  e.g. ["1.0", "2.0", "11.0"] would be sorted as ["1.0",
     # "11.0", "2.0"].
-    _orderBy = [Product.q.name, ProductSeries.q.name,
-                ProductRelease.q.version]
+    _orderBy = [Product.q.name, ProductSeries.q.name, Milestone.q.name]
     _clauseTables = ['Product', 'ProductSeries']
 
     def toTerm(self, obj):
@@ -1091,11 +1094,11 @@ class ProductReleaseVocabulary(SQLObjectVocabularyBase):
             raise LookupError(token)
 
         obj = ProductRelease.selectOne(
-            AND(ProductRelease.q.productseriesID == ProductSeries.q.id,
+            AND(ProductRelease.q.milestoneID == Milestone.q.id,
+                Milestone.q.productseriesID == ProductSeries.q.id,
                 ProductSeries.q.productID == Product.q.id,
                 Product.q.name == productname,
-                ProductSeries.q.name == productseriesname,
-                ProductRelease.q.version == productreleaseversion
+                ProductSeries.q.name == productseriesname
                 )
             )
         try:
@@ -1111,12 +1114,12 @@ class ProductReleaseVocabulary(SQLObjectVocabularyBase):
         query = query.lower()
         objs = self._table.select(
             AND(
-                ProductSeries.q.id == ProductRelease.q.productseriesID,
+                Milestone.q.id == ProductRelease.q.milestoneID,
+                ProductSeries.q.id == Milestone.q.productseriesID,
                 Product.q.id == ProductSeries.q.productID,
                 OR(
                     CONTAINSSTRING(Product.q.name, query),
                     CONTAINSSTRING(ProductSeries.q.name, query),
-                    CONTAINSSTRING(ProductRelease.q.version, query)
                     )
                 ),
             orderBy=self._orderBy
@@ -1321,7 +1324,7 @@ class MilestoneVocabulary(SQLObjectVocabularyBase):
                 getUtility(IMilestoneSet), longest_expected=40)
 
         visible_milestones = [
-            milestone for milestone in milestones if milestone.visible]
+            milestone for milestone in milestones if milestone.active]
         if (IBugTask.providedBy(milestone_context) and
             milestone_context.milestone is not None and
             milestone_context.milestone not in visible_milestones):
@@ -1433,8 +1436,7 @@ class CommercialProjectsVocabulary(NamedSQLObjectVocabulary):
         if check_permission('launchpad.Commercial', user):
             product_set = getUtility(IProductSet)
             projects = product_set.forReview(
-                search_text=query,
-                licenses=[License.OTHER_PROPRIETARY],
+                search_text=query, licenses=[License.OTHER_PROPRIETARY],
                 active=True)
         else:
             projects = user.getOwnedProjects(match_name=query)
@@ -1636,7 +1638,7 @@ class PPAVocabulary(SQLObjectVocabularyBase):
     implements(IHugeVocabulary)
 
     _table = Archive
-    _orderBy = ['Person.name']
+    _orderBy = ['Person.name, Archive.name']
     _clauseTables = ['Person']
     _filter = AND(
         Person.q.id == Archive.q.ownerID,
@@ -1650,11 +1652,22 @@ class PPAVocabulary(SQLObjectVocabularyBase):
             summary = description.splitlines()[0]
         else:
             summary = "No description available"
-        return SimpleTerm(archive, archive.owner.name, summary)
+
+        token = '%s/%s' % (archive.owner.name, archive.name)
+
+        return SimpleTerm(archive, token, summary)
 
     def getTermByToken(self, token):
         """See `IVocabularyTokenized`."""
-        clause = AND(self._filter, Person.name == token)
+        try:
+            owner_name, archive_name = token.split('/')
+        except ValueError:
+            raise LookupError(token)
+
+        clause = AND(
+            self._filter,
+            Person.name == owner_name,
+            Archive.name == archive_name)
 
         obj = self._table.selectOne(
             clause, clauseTables=self._clauseTables)
@@ -1673,9 +1686,19 @@ class PPAVocabulary(SQLObjectVocabularyBase):
             return self.emptySelectResults()
 
         query = query.lower()
-        clause = AND(self._filter,
-                     SQL("(Archive.fti @@ ftq(%s) OR Person.fti @@ ftq(%s))"
-                         % (quote(query), quote(query))))
+
+        try:
+            owner_name, archive_name = query.split('/')
+        except ValueError:
+            clause = AND(
+                self._filter,
+                SQL("(Archive.fti @@ ftq(%s) OR Person.fti @@ ftq(%s))"
+                    % (quote(query), quote(query))))
+        else:
+            clause = AND(
+                self._filter,
+                Person.name == owner_name,
+                Archive.name == archive_name)
 
         return self._table.select(
             clause, orderBy=self._orderBy, clauseTables=self._clauseTables)
@@ -1925,7 +1948,7 @@ class DistributionOrProductVocabulary(PillarVocabularyBase):
     displayname = 'Select a project'
     _filter = """
         -- An active product/distro.
-        (active IS TRUE
+        ((active IS TRUE
          AND (product IS NOT NULL OR distribution IS NOT NULL)
         )
         OR
@@ -1934,7 +1957,7 @@ class DistributionOrProductVocabulary(PillarVocabularyBase):
             SELECT id FROM PillarName
             WHERE active IS TRUE AND
                 (product IS NOT NULL OR distribution IS NOT NULL))
-        )
+        ))
         """
 
     def __contains__(self, obj):

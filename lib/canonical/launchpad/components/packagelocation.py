@@ -15,7 +15,7 @@ from zope.component import getUtility
 
 from canonical.launchpad.interfaces import NotFoundError
 from canonical.launchpad.interfaces.archive import ArchivePurpose, IArchiveSet
-from canonical.launchpad.interfaces.distribution import IDistributionSet
+from lp.registry.interfaces.distribution import IDistributionSet
 from canonical.launchpad.interfaces.publishing import PackagePublishingPocket
 
 

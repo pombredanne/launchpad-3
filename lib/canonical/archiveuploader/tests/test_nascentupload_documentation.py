@@ -16,7 +16,7 @@ from canonical.launchpad.database import (
     ComponentSelection, LibraryFileAlias)
 from canonical.launchpad.ftests import import_public_test_keys, login, logout
 from canonical.launchpad.interfaces.component import IComponentSet
-from canonical.launchpad.interfaces.distribution import IDistributionSet
+from lp.registry.interfaces.distribution import IDistributionSet
 from canonical.launchpad.testing.systemdocs import (
     LayeredDocFileSuite, setGlobs)
 from canonical.testing import LaunchpadZopelessLayer

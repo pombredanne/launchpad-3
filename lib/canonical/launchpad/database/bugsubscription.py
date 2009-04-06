@@ -11,7 +11,7 @@ from sqlobject import ForeignKey
 from canonical.database.sqlbase import SQLBase
 
 from canonical.launchpad.interfaces import IBugSubscription
-from canonical.launchpad.validators.person import (
+from lp.registry.interfaces.person import (
     validate_person_not_private_membership)
 
 

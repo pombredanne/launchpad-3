@@ -99,8 +99,8 @@ are also able to limit that access to a certain scope (Project, Product,
 Distribution or DistributionSourcePackage).  If that is used, then the
 access level specified will be valid only for things in that scope.
 
-    >>> from canonical.launchpad.interfaces.product import IProductSet
-    >>> from canonical.launchpad.interfaces.project import IProjectSet
+    >>> from lp.registry.interfaces.product import IProductSet
+    >>> from lp.registry.interfaces.project import IProjectSet
     >>> login('foo.bar@canonical.com')
     >>> principal = getUtility(IPlacelessAuthUtility).getPrincipalByLogin(
     ...     'foo.bar@canonical.com')
@@ -140,7 +140,7 @@ be used for anything which is part of that Project/Distribution.
     >>> check_permission('launchpad.Edit', firefox)
     True
 
-    >>> from canonical.launchpad.interfaces.distribution import (
+    >>> from lp.registry.interfaces.distribution import (
     ...     IDistributionSet)
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
     >>> warty = ubuntu.getSeries('warty')

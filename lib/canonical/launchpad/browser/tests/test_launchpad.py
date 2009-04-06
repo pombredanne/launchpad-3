@@ -65,7 +65,7 @@ class TestBranchTraversal(TestCaseWithFactory):
         # branch that is the development focus branch for that product.
         branch = self.factory.makeProductBranch()
         product = removeSecurityProxy(branch.product)
-        product.development_focus.user_branch = branch
+        product.development_focus.branch = branch
         self.assertRedirects(product.name, canonical_url(branch))
 
     def test_nonexistent_product(self):
@@ -90,7 +90,7 @@ class TestBranchTraversal(TestCaseWithFactory):
         branch = self.factory.makeProductBranch()
         product = branch.product
         series = self.factory.makeProductSeries(product=product)
-        removeSecurityProxy(series).user_branch = branch
+        removeSecurityProxy(series).branch = branch
         self.assertRedirects(
             '%s/%s' % (product.name, series.name), canonical_url(branch))
 
