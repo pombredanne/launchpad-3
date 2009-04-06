@@ -198,7 +198,7 @@ options = None
 
 
 def main():
-    parser = OptionParser()
+    parser = OptionParser("Usage: %prog [options] DBNAME")
     parser.add_option("-U", "--user", dest="user", default=None,
         help="Connect as USER", metavar="USER")
     parser.add_option("-t", "--template", dest="template", default=None,
