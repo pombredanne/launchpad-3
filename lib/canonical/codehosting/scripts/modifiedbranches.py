@@ -9,15 +9,14 @@ __all__ = ['ModifiedBranchesScript']
 from datetime import datetime, timedelta
 import os
 from time import strptime
-import sys
 
-from pytz import UTC
+import pytz
 from zope.component import getUtility
 
 from canonical.codehosting.vfs.branchfs import branch_id_to_path
 from canonical.config import config
-from canonical.launchpad.database.branch import Branch
 from canonical.launchpad.interfaces.branch import BranchType
+from canonical.launchpad.interfaces.branchcollection import IAllBranches
 from canonical.launchpad.scripts.base import (
     LaunchpadScript, LaunchpadScriptFailure)
 from canonical.launchpad.webapp.interfaces import (
@@ -41,6 +40,11 @@ class ModifiedBranchesScript(LaunchpadScript):
     description = (
         "List branch paths for branches modified since the specified time.")
 
+    def __init__(self, name, dbuser=None, test_args=None):
+        LaunchpadScript.__init__(self, name, dbuser, test_args)
+        # Cache this on object creation so it can be used in tests.
+        self.now_timestamp = datetime.utcnow()
+
     def add_my_options(self):
         self.parser.add_option(
             "-s", "--since", metavar="DATE",
@@ -60,7 +64,7 @@ class ModifiedBranchesScript(LaunchpadScript):
         last_modified = None
         if self.options.last_hours is not None:
             last_modified = (
-                datetime.utcnow() - timedelta(hours=self.options.last_hours))
+                self.now_timestamp - timedelta(hours=self.options.last_hours))
         elif self.options.since is not None:
             try:
                 parsed_time = strptime(self.options.since, '%Y-%m-%d')
@@ -72,23 +76,20 @@ class ModifiedBranchesScript(LaunchpadScript):
                 "One of --since or --last-hours needs to be specified.")
 
         # Make the datetime timezone aware.
-        return last_modified.replace(tzinfo=UTC)
+        return last_modified.replace(tzinfo=pytz.UTC)
 
     def main(self):
         last_modified = self.parse_last_modified()
         self.logger.info(
             "Looking for branches modified since %s", last_modified)
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        branches = store.find(
-            Branch, Branch.date_last_modified > last_modified)
-        for branch in branches:
+        collection = getUtility(IAllBranches)
+        collection = collection.withBranchType(
+            BranchType.HOSTED, BranchType.MIRRORED, BranchType.IMPORTED)
+        collection = collection.modifiedSince(last_modified)
+        for branch in collection.branches():
             self.logger.info(branch.unique_name)
-            branch_type = branch.branch_type
-            if branch_type == BranchType.REMOTE:
-                self.logger.info("remote branch, skipping")
-                continue
             path = branch_id_to_path(branch.id)
-            if branch_type == BranchType.HOSTED:
+            if branch.branch_type == BranchType.HOSTED:
                 print os.path.join(
                     config.codehosting.hosted_branches_root, path)
             print os.path.join(
