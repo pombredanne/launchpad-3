@@ -162,6 +162,7 @@ from canonical.testing.customresult import (
     patch_zope_testresult,
     )
 from subunit import TestProtocolClient
+from bzrlib.tests import TextTestResult
 from twisted.trial.reporter import TreeReporter
 
 
@@ -194,10 +195,18 @@ if __name__ == '__main__':
     if '--subunit' in args:
         args.remove('--subunit')
         patch_zope_testresult(TestProtocolClient(sys.stdout))
-    else:
+    elif '--progress' in args:
+        args.remove('--progress')
         # XXX: provide a decent way of allowing the default result object.
         # XXX: the summary for this is not being called.
-        patch_zope_testresult(TreeReporter())
+        import bzrlib.ui
+        bzrlib.ui.ui_factory = bzrlib.ui.make_ui_for_terminal(
+            sys.stdin, sys.stdout, sys.stderr)
+        # XXX: need to provide num_tests -- but don't know the number right
+        # here.
+        # XXX: layer summary junk screws up the progress bar.
+        result = TextTestResult(sys.stdout, False, 1)
+        patch_zope_testresult(result)
 
     options = testrunner.get_options(args=args, defaults=defaults)
 
