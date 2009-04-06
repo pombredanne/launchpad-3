@@ -19,8 +19,6 @@ from canonical.launchpad.interfaces.branch import BranchType
 from canonical.launchpad.interfaces.branchcollection import IAllBranches
 from canonical.launchpad.scripts.base import (
     LaunchpadScript, LaunchpadScriptFailure)
-from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 
 
 class ModifiedBranchesScript(LaunchpadScript):
@@ -56,7 +54,7 @@ class ModifiedBranchesScript(LaunchpadScript):
             "the last HOURS number of hours.")
 
     def parse_last_modified(self):
-        """ """
+        """Return the timezone aware datetime for the last modified epoch. """
         if (self.options.last_hours is not None and
             self.options.since is not None):
             raise LaunchpadScriptFailure(
@@ -78,6 +76,16 @@ class ModifiedBranchesScript(LaunchpadScript):
         # Make the datetime timezone aware.
         return last_modified.replace(tzinfo=pytz.UTC)
 
+    def branch_locations(self, branch):
+        """Return a list of branches to rsync for the specified branch."""
+        path = branch_id_to_path(branch.id)
+        result = [
+            os.path.join(config.codehosting.mirrored_branches_root, path)]
+        if branch.branch_type == BranchType.HOSTED:
+            result.append(
+                os.path.join(config.codehosting.hosted_branches_root, path))
+        return result
+
     def main(self):
         last_modified = self.parse_last_modified()
         self.logger.info(
@@ -88,12 +96,8 @@ class ModifiedBranchesScript(LaunchpadScript):
         collection = collection.modifiedSince(last_modified)
         for branch in collection.branches():
             self.logger.info(branch.unique_name)
-            path = branch_id_to_path(branch.id)
-            if branch.branch_type == BranchType.HOSTED:
-                print os.path.join(
-                    config.codehosting.hosted_branches_root, path)
-            print os.path.join(
-                config.codehosting.mirrored_branches_root, path)
+            for location in self.branch_locations(branch):
+                print location
 
         self.logger.info("Done.")
 

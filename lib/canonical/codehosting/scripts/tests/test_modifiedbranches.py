@@ -5,15 +5,61 @@
 __metaclass__ = type
 
 from datetime import datetime
+import os
 import unittest
 
 import pytz
 
 from canonical.codehosting.scripts.modifiedbranches import (
     ModifiedBranchesScript)
+from canonical.codehosting.vfs.branchfs import branch_id_to_path
+from canonical.config import config
+from canonical.launchpad.interfaces.branch import BranchType
 from canonical.launchpad.scripts.base import LaunchpadScriptFailure
-from canonical.launchpad.testing import TestCase
+from canonical.launchpad.testing import TestCase, TestCaseWithFactory
 from canonical.testing.layers import DatabaseFunctionalLayer
+
+
+class TestModifiedBranchesLocations(TestCaseWithFactory):
+    """Test the ModifiedBranchesScript.branch_locations method."""
+
+    layer = DatabaseFunctionalLayer
+
+    def assertHostedLocation(self, branch, location):
+        """Assert that the location is the hosted location for the branch."""
+        path = branch_id_to_path(branch.id)
+        self.assertEqual(
+            os.path.join(config.codehosting.hosted_branches_root, path),
+            location)
+
+    def assertMirroredLocation(self, branch, location):
+        """Assert that the location is the mirror location for the branch."""
+        path = branch_id_to_path(branch.id)
+        self.assertEqual(
+            os.path.join(config.codehosting.mirrored_branches_root, path),
+            location)
+
+    def test_hosted_branch(self):
+        # A hosted branch prints both the hosted and mirrored locations.
+        branch = self.factory.makeAnyBranch(branch_type=BranchType.HOSTED)
+        script = ModifiedBranchesScript('modified-branches', test_args=[])
+        [mirrored, hosted] = script.branch_locations(branch)
+        self.assertHostedLocation(branch, hosted)
+        self.assertMirroredLocation(branch, mirrored)
+
+    def test_mirrored_branch(self):
+        # A mirrored branch prints only the mirrored location.
+        branch = self.factory.makeAnyBranch(branch_type=BranchType.MIRRORED)
+        script = ModifiedBranchesScript('modified-branches', test_args=[])
+        [mirrored] = script.branch_locations(branch)
+        self.assertMirroredLocation(branch, mirrored)
+
+    def test_imported_branch(self):
+        # A mirrored branch prints only the mirrored location.
+        branch = self.factory.makeAnyBranch(branch_type=BranchType.IMPORTED)
+        script = ModifiedBranchesScript('modified-branches', test_args=[])
+        [mirrored] = script.branch_locations(branch)
+        self.assertMirroredLocation(branch, mirrored)
 
 
 class TestModifiedBranchesDateParsing(TestCase):
