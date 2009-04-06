@@ -163,7 +163,6 @@ from canonical.testing.customresult import (
     )
 from subunit import TestProtocolClient
 from bzrlib.tests import TextTestResult
-from twisted.trial.reporter import TreeReporter
 
 
 if __name__ == '__main__':
