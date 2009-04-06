@@ -77,6 +77,7 @@ from zope.component import getUtility
 from zope.interface import implements
 from zope.schema.interfaces import IVocabulary, IVocabularyTokenized
 from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
+from zope.security.interfaces import Unauthorized
 from zope.security.proxy import isinstance as zisinstance
 from zope.security.proxy import removeSecurityProxy
 
@@ -141,7 +142,11 @@ class BasePersonVocabulary:
 
     def toTerm(self, obj):
         """Return the term for this object."""
-        return SimpleTerm(obj, obj.name, obj.browsername)
+        try:
+            term = SimpleTerm(obj, obj.name, obj.browsername)
+        except Unauthorized:
+            term = None
+        return term
 
     def getTermByToken(self, token):
         """Return the term for the given token.
@@ -162,7 +167,10 @@ class BasePersonVocabulary:
             person = getUtility(IPersonSet).getByName(token)
             if person is None:
                 raise LookupError(token)
-            return self.toTerm(person)
+            term = self.toTerm(person)
+            if term is None:
+                raise LookupError(token)
+            return term
 
 
 class ComponentVocabulary(SQLObjectVocabularyBase):
