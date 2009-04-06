@@ -26,7 +26,7 @@ from canonical.launchpad import _
 from canonical.launchpad.fields import (
     BaseImageUpload, PasswordField, URIField, UniqueField)
 from canonical.launchpad.interfaces.account import IAccount
-from canonical.launchpad.interfaces.person import PersonCreationRationale
+from lp.registry.interfaces.person import PersonCreationRationale
 from lazr.restful.fields import Reference
 
 

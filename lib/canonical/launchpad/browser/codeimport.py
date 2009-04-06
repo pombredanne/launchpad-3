@@ -226,7 +226,10 @@ class CodeImportNewView(CodeImportBaseView):
         # Extract the radio buttons from the rcs_type widget, so we can
         # display them separately in the form.
         soup = BeautifulSoup(self.widgets['rcs_type']())
-        [cvs_button, svn_button, empty_marker] = soup.findAll('input')
+        fields = soup.findAll('input')
+        [cvs_button, svn_button, empty_marker] = [
+            field for field in fields
+            if field.get('value') in ['CVS', 'SVN', '1']]
         cvs_button['onclick'] = 'updateWidgets()'
         svn_button['onclick'] = 'updateWidgets()'
         # The following attributes are used only in the page template.

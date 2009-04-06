@@ -83,7 +83,7 @@ from canonical.launchpad.interfaces.branchlookup import IBranchLookup
 from canonical.launchpad.interfaces.branchtarget import IHasBranchTarget
 from canonical.launchpad.interfaces.launchpad import (
     IHasOwner, ILaunchpadCelebrities)
-from canonical.launchpad.interfaces.person import IPerson
+from lp.registry.interfaces.person import IPerson
 from canonical.launchpad.webapp.interfaces import (
     ITableBatchNavigator, NameLookupFailed)
 from canonical.launchpad.webapp.menu import structured
@@ -995,9 +995,9 @@ class IBranch(IHasOwner, IHasBranchTarget):
     def associatedProductSeries():
         """Return the product series that this branch is associated with.
 
-        A branch may be associated with a product series as either a
-        user_branch or import_branch.  Also a branch can be associated
-        with more than one product series as a user_branch.
+        A branch may be associated with a product series is either a
+        branch.  Also a branch can be associated with more than one product
+        series as a branch.
         """
 
     # subscription-related methods

@@ -28,7 +28,7 @@ from canonical.launchpad.interfaces import NotFoundError
 from canonical.launchpad.interfaces.bugtask import IBugTask
 from canonical.launchpad.interfaces.job import IJob
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
-from canonical.launchpad.interfaces.person import IPerson
+from lp.registry.interfaces.person import IPerson
 
 from lazr.delegates import delegates
 from lazr.restful.fields import CollectionField, Reference

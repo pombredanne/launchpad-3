@@ -56,8 +56,8 @@ from canonical.launchpad.interfaces.bugwatch import (
     IBugWatch, IBugWatchSet, NoBugTrackerFound, UnrecognizedBugTrackerURL)
 from canonical.launchpad.interfaces.component import IComponent
 from canonical.launchpad.interfaces.launchpad import IHasDateCreated, IHasBug
-from canonical.launchpad.interfaces.mentoringoffer import ICanBeMentored
-from canonical.launchpad.interfaces.person import IPerson
+from lp.registry.interfaces.mentoringoffer import ICanBeMentored
+from lp.registry.interfaces.person import IPerson
 from canonical.launchpad.searchbuilder import all, any, NULL
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import name_validator
@@ -986,7 +986,7 @@ class BugTaskSearchParams:
     def setSourcePackage(self, sourcepackage):
         """Set the sourcepackage context on which to filter the search."""
         # Import this here to avoid circular dependencies
-        from canonical.launchpad.interfaces.sourcepackage import (
+        from lp.registry.interfaces.sourcepackage import (
             ISourcePackage)
         if ISourcePackage.providedBy(sourcepackage):
             # This is a sourcepackage in a distro series.

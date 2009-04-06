@@ -23,7 +23,7 @@ from canonical.launchpad import _
 from canonical.launchpad.fields import Tag
 from canonical.launchpad.interfaces.bugtask import (
     BugTagsSearchCombinator, IBugTask, IBugTaskSearch)
-from canonical.launchpad.interfaces.person import IPerson
+from lp.registry.interfaces.person import IPerson
 from lazr.restful.fields import Reference
 from lazr.restful.interface import copy_field
 from lazr.restful.declarations import (

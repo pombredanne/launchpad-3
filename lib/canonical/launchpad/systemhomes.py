@@ -25,9 +25,9 @@ from zope.interface import implements
 from canonical.config import config
 from canonical.launchpad.interfaces.bug import (
     CreateBugParams, IBugSet, InvalidBugTargetType)
-from canonical.launchpad.interfaces.product import IProduct
-from canonical.launchpad.interfaces.distribution import IDistribution
-from canonical.launchpad.interfaces.distributionsourcepackage import (
+from lp.registry.interfaces.product import IProduct
+from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage)
 from canonical.launchpad.interfaces import (
     BugTaskSearchParams, IAuthServerApplication, IBazaarApplication,

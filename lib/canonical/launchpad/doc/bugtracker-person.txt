@@ -7,7 +7,7 @@ linkPersonToSelf() method of IBugTracker.
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces.bugtracker import (
     ...     BugTrackerType)
-    >>> from canonical.launchpad.interfaces.person import (
+    >>> from lp.registry.interfaces.person import (
     ...     IPersonSet)
     >>> from canonical.launchpad.ftests.externalbugtracker import (
     ...     new_bugtracker)
@@ -73,7 +73,7 @@ remote username on on a given bugtracker.
 Passing a new remote user's details to ensurePersonForSelf() will
 return a new Person record.
 
-    >>> from canonical.launchpad.interfaces.person import (
+    >>> from lp.registry.interfaces.person import (
     ...     PersonCreationRationale)
 
     >>> print getUtility(IPersonSet).getByEmail('new.person@example.com')

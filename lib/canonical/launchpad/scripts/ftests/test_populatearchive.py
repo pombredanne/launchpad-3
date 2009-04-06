@@ -20,7 +20,7 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.interfaces.archivearch import IArchiveArchSet
 from canonical.launchpad.interfaces.packagecopyrequest import (
     IPackageCopyRequestSet, PackageCopyStatus)
-from canonical.launchpad.interfaces.person import IPersonSet
+from lp.registry.interfaces.person import IPersonSet
 from canonical.launchpad.scripts.ftpmaster import (
     PackageLocationError, SoyuzScriptError)
 from canonical.launchpad.scripts.populate_archive import ArchivePopulator
