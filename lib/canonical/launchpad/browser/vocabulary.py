@@ -22,7 +22,7 @@ from zope.app.form.interfaces import MissingInputError
 
 from canonical.config import config
 from canonical.launchpad.interfaces.launchpad import IHasIcon
-from canonical.launchpad.interfaces.person import IPerson
+from lp.registry.interfaces.person import IPerson
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.tales import ObjectImageDisplayAPI
 from canonical.launchpad.webapp.vocabulary import IHugeVocabulary
