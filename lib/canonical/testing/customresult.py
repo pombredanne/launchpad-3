@@ -7,37 +7,9 @@ __all__ = [
     'patch_zope_testresult',
     ]
 
-from unittest import TestResult, TestSuite
-from testtools import iterate_tests
+from unittest import TestSuite
+from testtools import MultiTestResult, iterate_tests
 from zope.testing import testrunner
-
-
-# XXX: JonathanLange 2009-03-09: Copied and hacked from testtools.
-class MultiTestResult(TestResult):
-    """A test result that dispatches to many test results."""
-
-    def __init__(self, *results):
-        TestResult.__init__(self)
-        self._results = list(results)
-
-    def _dispatch(self, message, *args, **kwargs):
-        for result in self._results:
-            getattr(result, message)(*args, **kwargs)
-
-    def startTest(self, test):
-        self._dispatch('startTest', test)
-
-    def stopTest(self, test):
-        self._dispatch('stopTest', test)
-
-    def addError(self, test, error):
-        self._dispatch('addError', test, error)
-
-    def addFailure(self, test, failure):
-        self._dispatch('addFailure', test, failure)
-
-    def addSuccess(self, test):
-        self._dispatch('addSuccess', test)
 
 
 class Anything:
