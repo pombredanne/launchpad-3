@@ -169,11 +169,10 @@ for editing, together with Update and Cancel actions:
 
     >>> login('celso.providelo@canonical.com')
     >>> from canonical.launchpad.interfaces.archivesubscriber import (
-    ...     IArchiveSubscriberSet, IArchiveSubscriptionForOwner)
+    ...     IArchiveSubscriberSet)
     >>> spiv_subscription = getUtility(IArchiveSubscriberSet).getByArchive(
     ...     cprov.archive).one()
-    >>> view = create_initialized_view(
-    ...     IArchiveSubscriptionForOwner(spiv_subscription), name="+edit")
+    >>> view = create_initialized_view(spiv_subscription, name="+edit")
     >>> view.field_names
     ['date_expires', 'description']
     >>> for action in view.actions:

@@ -10,8 +10,6 @@ __all__ = [
     'ArchiveSubscriptionError',
     'IArchiveSubscriber',
     'IArchiveSubscriberUI',
-    'IArchiveSubscriptionForOwner',
-    'IArchiveSubscriptionForSubscriber',
     'IArchiveSubscriberSet',
     'IPersonalArchiveSubscription'
     ]
@@ -115,13 +113,6 @@ class IArchiveSubscriberEdit(Interface):
 
 class IArchiveSubscriber(IArchiveSubscriberView, IArchiveSubscriberEdit):
     """An interface for archive subscribers."""
-
-
-class IArchiveSubscriptionForOwner(IArchiveSubscriber):
-    """Marker interface so traversal works differently for PPA owners."""
-
-class IArchiveSubscriptionForSubscriber(IArchiveSubscriber):
-    """Marker interface so traversal works differently for PPA subscribers."""
 
 
 class IArchiveSubscriberSet(Interface):

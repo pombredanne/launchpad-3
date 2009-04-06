@@ -51,7 +51,7 @@ from canonical.launchpad.interfaces.archive import (
 from canonical.launchpad.interfaces.archivepermission import (
     ArchivePermissionType, IArchivePermissionSet)
 from canonical.launchpad.interfaces.archivesubscriber import (
-    IArchiveSubscriberSet, IArchiveSubscriptionForOwner)
+    IArchiveSubscriberSet)
 from canonical.launchpad.interfaces.build import (
     BuildStatus, IBuildSet)
 from canonical.launchpad.interfaces.buildrecords import IHasBuildRecords
@@ -213,7 +213,7 @@ class ArchiveNavigation(Navigation, FileNavigationMixin):
         # the direct subscription:
         for subscription in subscriptions:
             if subscription.subscriber == person:
-                return IArchiveSubscriptionForOwner(subscription)
+                return subscription
 
         return None
 

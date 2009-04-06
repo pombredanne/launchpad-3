@@ -29,7 +29,6 @@ from canonical.launchpad.interfaces.archiveauthtoken import (
     IArchiveAuthTokenSet)
 from canonical.launchpad.interfaces.archivesubscriber import (
     IArchiveSubscriberSet, IArchiveSubscriberUI,
-    IArchiveSubscriptionForOwner, IArchiveSubscriptionForSubscriber,
     IPersonalArchiveSubscription)
 from canonical.launchpad.webapp.launchpadform import (
     action, custom_widget, LaunchpadFormView, LaunchpadEditFormView)
@@ -45,33 +44,6 @@ def archive_subscription_ui_adapter(archive_subscription):
     Since we are only modifying the type of fields that already exist
     on IArchiveSubscriber, we simply return the archive_subscriber record.
     """
-    return archive_subscription
-
-def archive_subscription_for_owner_adapter(archive_subscription):
-    """Adapt an archive subscriber into an IArchiveSubscriptionForOwner
-
-    Adds IArchiveSubscriptionForOwner as an interface provided by the object.
-    """
-    # removeSecurityProxy is required only for alsoProvides(), the proxied
-    # object is still returned.
-    alsoProvides(
-        removeSecurityProxy(archive_subscription),
-        IArchiveSubscriptionForOwner)
-
-    return archive_subscription
-
-def archive_subscription_for_subscriber_adapter(archive_subscription):
-    """Adapt an archive subscriber into an IArchiveSubscriptionForSubscriber
-
-    Adds IArchiveSubscriptionForSubscriber as an interface provided by the
-    object.
-    """
-    # removeSecurityProxy is required only for alsoProvides(), the proxied
-    # object is still returned.
-    alsoProvides(
-        removeSecurityProxy(archive_subscription),
-        IArchiveSubscriptionForSubscriber)
-
     return archive_subscription
 
 
@@ -127,27 +99,16 @@ class ArchiveSubscribersView(LaunchpadFormView):
 
     @property
     def subscriptions(self):
-        """Return all the subscriptions for this archive.
-
-        A decorated result set is used to adapt the subscriptions to
-        IArchiveSubscriptionForOwner so that the correct URL is used
-        in templates.
-        """
-        result_set = getUtility(IArchiveSubscriberSet).getByArchive(
+        """Return all the subscriptions for this archive."""
+        return getUtility(IArchiveSubscriberSet).getByArchive(
             self.context)
-
-        def adapt_for_owner(subscription):
-            return IArchiveSubscriptionForOwner(subscription)
-
-        return DecoratedResultSet(result_set, adapt_for_owner)
 
     @cachedproperty
     def has_subscriptions(self):
         """Return whether this archive has any subscribers."""
         # XXX noodles 20090212 bug=246200: use bool() when it gets fixed
         # in storm.
-        return getUtility(IArchiveSubscriberSet).getByArchive(
-            self.context).count() > 0
+        return self.subscriptions.count() > 0
 
     def validate_new_subscription(self, action, data):
         """Ensure the subscriber isn't already subscribed.
