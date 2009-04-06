@@ -15,11 +15,14 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.database.sqlbase import sqlvalues
+from canonical.launchpad.database.archive import Archive
 from canonical.launchpad.database.build import Build
 from canonical.launchpad.database.binarypackagerelease import (
     BinaryPackageRelease)
 from canonical.launchpad.database.publishing import (
     SourcePackagePublishingHistory)
+from canonical.launchpad.interfaces.archive import (
+    ArchivePurpose, IArchiveSet, MAIN_ARCHIVE_PURPOSES)
 from canonical.launchpad.interfaces import (
     IDistroSeriesSourcePackageRelease, ISourcePackageRelease,
     PackagePublishingStatus)
@@ -104,12 +107,21 @@ class DistroSeriesSourcePackageRelease:
         from canonical.launchpad.database.distroarchseries import (
             DistroArchSeries)
 
-        results = store.find(Build,
+        # The builds are joined with their publishing histories to
+        # restrict the results to only those builds that have been published
+        # in a main archive. So a PPA build won't be included unless it
+        # was copied to a main archive.
+        builds_published_in_main_archives = store.find(Build,
             Build.sourcepackagerelease == self.sourcepackagerelease,
             Build.distroarchseries == DistroArchSeries.id,
-            DistroArchSeries.distroseries == self.distroseries)
+            DistroArchSeries.distroseries == self.distroseries,
+            SourcePackagePublishingHistory.sourcepackagerelease ==
+                self.sourcepackagerelease,
+            SourcePackagePublishingHistory.archive == Archive.id,
+            Archive.purpose.is_in(MAIN_ARCHIVE_PURPOSES))
 
-        return results.order_by('datecreated DESC', 'id DESC')
+        return builds_published_in_main_archives.config(
+            distinct=True).order_by('datecreated DESC', 'id DESC')
 
     @property
     def files(self):
