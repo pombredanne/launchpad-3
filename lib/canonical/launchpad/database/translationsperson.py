@@ -10,7 +10,7 @@ from zope.interface import implements
 
 from canonical.database.sqlbase import sqlvalues
 
-from canonical.launchpad.interfaces.person import IPerson
+from lp.registry.interfaces.person import IPerson
 from canonical.launchpad.interfaces.translationgroup import (
     ITranslationGroupSet)
 from canonical.launchpad.interfaces.translationsperson import (
