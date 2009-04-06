@@ -20,9 +20,8 @@ from canonical.launchpad.database.build import Build
 from canonical.launchpad.database.binarypackagerelease import (
     BinaryPackageRelease)
 from canonical.launchpad.database.publishing import (
-    SourcePackagePublishingHistory)
-from canonical.launchpad.interfaces.archive import (
-    ArchivePurpose, IArchiveSet, MAIN_ARCHIVE_PURPOSES)
+    BinaryPackagePublishingHistory, SourcePackagePublishingHistory)
+from canonical.launchpad.interfaces.archive import MAIN_ARCHIVE_PURPOSES
 from canonical.launchpad.interfaces import (
     IDistroSeriesSourcePackageRelease, ISourcePackageRelease,
     PackagePublishingStatus)
@@ -115,9 +114,10 @@ class DistroSeriesSourcePackageRelease:
             Build.sourcepackagerelease == self.sourcepackagerelease,
             Build.distroarchseries == DistroArchSeries.id,
             DistroArchSeries.distroseries == self.distroseries,
-            SourcePackagePublishingHistory.sourcepackagerelease ==
-                self.sourcepackagerelease,
-            SourcePackagePublishingHistory.archive == Archive.id,
+            BinaryPackageRelease.build == Build.id,
+            BinaryPackagePublishingHistory.binarypackagerelease ==
+                BinaryPackageRelease.id,
+            BinaryPackagePublishingHistory.archive == Archive.id,
             Archive.purpose.is_in(MAIN_ARCHIVE_PURPOSES))
 
         return builds_published_in_main_archives.config(

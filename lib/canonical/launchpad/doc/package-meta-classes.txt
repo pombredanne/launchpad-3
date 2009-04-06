@@ -80,6 +80,14 @@ First, publish a build in the main archive of ubuntutest.
     ...     archive=ubuntutest.main_archive)
     >>> [build] = source_pub.createMissingBuilds()
 
+We also need to ensure that a binary pkg release has been published in the
+archive:
+
+    >>> binary_pkg_release = test_publisher.uploadBinaryForBuild(
+    ...     build, 'foo-bin')
+    >>> binary_pkg_pub_history = test_publisher.publishBinaryInArchive(
+    ...     binary_pkg_release, ubuntutest.main_archive)
+
 Next we create our DistroSeriesSourcePackageRelease.
 
     >>> breezy_autotest = ubuntutest['breezy-autotest']
@@ -101,14 +109,19 @@ Now we can query the builds:
 If we add a build to the partner archive, it is included in the
 results as well.
 
+    >>> partner_archive = ubuntutest.all_distro_archives[1]
     >>> partner_pub = source_pub.copyTo(breezy_autotest, source_pub.pocket,
-    ...     ubuntutest.all_distro_archives[1])
+    ...     partner_archive)
     >>> [partner_build] = partner_pub.createMissingBuilds()
+    >>> binary_pkg_release = test_publisher.uploadBinaryForBuild(
+    ...     partner_build, 'foo-bin')
+    >>> binary_pkg_pub_history = test_publisher.publishBinaryInArchive(
+    ...     binary_pkg_release, partner_archive)
     >>> print_builds(breezytest_dsspr_foo.builds)
     foo in Partner Archive for Ubuntu Test
     foo in Primary Archive for Ubuntu Test
 
-If we publish in a PPA,
+If we publish the source and binary in a PPA,
 
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
@@ -117,6 +130,10 @@ If we publish in a PPA,
     ...     sourcename='bar',
     ...     archive=cprov.archive)
     >>> [build] = source_pub.createMissingBuilds()
+    >>> binary_pkg_release = test_publisher.uploadBinaryForBuild(
+    ...     build, 'bar-bin')
+    >>> binary_pkg_pub_history = test_publisher.publishBinaryInArchive(
+    ...     binary_pkg_release, cprov.archive)
     >>> breezytest_dsspr_bar = DistroSeriesSourcePackageRelease(
     ...     breezy_autotest, source_pub.sourcepackagerelease)
 
@@ -124,11 +141,13 @@ the build will not be returned.
 
     >>> print_builds(breezytest_dsspr_bar.builds)
 
-But if the package is copied into the main archive, it will then be included
-in the results.
+But if the package is copied into the main archive (and the binary published
+there) then it will then be included in the results.
 
     >>> main_pub = source_pub.copyTo(breezy_autotest, source_pub.pocket,
     ...     ubuntutest.main_archive)
+    >>> binary_pkg_pub_history = test_publisher.publishBinaryInArchive(
+    ...     binary_pkg_release, ubuntutest.main_archive)
     >>> print_builds(breezytest_dsspr_bar.builds)
     bar in PPA for Celso Providelo
 
