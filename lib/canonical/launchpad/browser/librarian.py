@@ -5,9 +5,10 @@
 __metaclass__ = type
 
 __all__ = [
-    'LibraryFileAliasView',
-    'LibraryFileAliasMD5View',
     'FileNavigationMixin',
+    'LibraryFileAliasMD5View',
+    'LibraryFileAliasView',
+    'ProxiedLibraryFileAlias',
     'StreamOrRedirectLibraryFileAliasView',
     ]
 
@@ -21,10 +22,17 @@ from zope.publisher.interfaces.browser import IBrowserPublisher
 from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad.interfaces import ILibraryFileAlias
+from canonical.launchpad.layers import WebServiceLayer
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.publisher import (
-    LaunchpadView, RedirectionView, stepthrough)
+    LaunchpadView, RedirectionView, canonical_url, stepthrough)
+from canonical.launchpad.webapp.servers import LaunchpadBrowserRequest
+from canonical.launchpad.webapp.url import urlappend
+from canonical.launchpad.webapp.vhosts import allvhosts
+from canonical.lazr.utils import get_current_browser_request
 from canonical.librarian.utils import filechunks, guess_librarian_encoding
+
+from lazr.delegates import delegates
 
 
 class LibraryFileAliasView(LaunchpadView):
@@ -152,3 +160,34 @@ class FileNavigationMixin:
         library_file  = self.context.getFileByName(filename)
         return StreamOrRedirectLibraryFileAliasView(
             library_file, self.request)
+
+
+class ProxiedLibraryFileAlias:
+    """A `LibraryFileAlias` proxied via webapp.
+
+    Overrides `ILibraryFileAlias.http_url` to always point to the webapp URL,
+    even when called from the webservice domain.
+    """
+    delegates(ILibraryFileAlias)
+
+    def __init__(self, context, parent):
+        self.context = context
+        self.parent = parent
+
+    @property
+    def http_url(self):
+        """Return the webapp URL for the context `LibraryFileAlias`.
+
+        Mask webservice requests if it's the case, so the returned URL will
+        be always relative to the parent webapp URL.
+        """
+        request = get_current_browser_request()
+        if WebServiceLayer.providedBy(request):
+            environ = dict(request.environment)
+            environ['SERVER_URL'] = allvhosts.configs['mainsite'].rooturl
+            request = LaunchpadBrowserRequest('', environ)
+
+        parent_url = canonical_url(self.parent, request=request)
+        traversal_url = urlappend(parent_url, '+files')
+        url = urlappend(traversal_url, self.context.filename)
+        return url
