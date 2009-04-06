@@ -49,8 +49,20 @@
     <adapter
         for="canonical.launchpad.layers.FeedsLayer"
         provides="canonical.launchpad.webapp.interfaces.IDatabasePolicy"
-        factory="canonical.launchpad.webapp.dbpolicy.SlaveDatabasePolicy"
+        factory="canonical.launchpad.webapp.dbpolicy.SlaveOnlyDatabasePolicy"
         />
+    <!-- XXX StuartBishop 2009-03-04 bug=264783 Weee! Two OpenID Layers. -->
+    <adapter
+        for="canonical.launchpad.layers.IdLayer"
+        provides="canonical.launchpad.webapp.interfaces.IDatabasePolicy"
+        factory="canonical.launchpad.webapp.dbpolicy.SSODatabasePolicy"
+        />
+    <adapter
+        for="canonical.launchpad.layers.OpenIDLayer"
+        provides="canonical.launchpad.webapp.interfaces.IDatabasePolicy"
+        factory="canonical.launchpad.webapp.dbpolicy.SSODatabasePolicy"
+        />
+
 
     <!-- lazr.batchnavigator hook -->
     <adapter
@@ -532,6 +544,38 @@
         component="canonical.launchpad.webapp.adapter.StoreSelector"
         provides="canonical.launchpad.webapp.interfaces.IStoreSelector">
     </utility>
+
+    <!-- Storm Store adapters, adapting a Storm subclass or instance
+         to the correct Store for that tables replication set.
+      -->
+    <adapter
+        provides="canonical.launchpad.interfaces.IStore"
+        for="zope.interface.Interface"
+        factory="canonical.launchpad.webapp.adapter.get_store"
+        />
+    <adapter
+        provides="canonical.launchpad.interfaces.IMasterStore"
+        for="zope.interface.Interface"
+        factory="canonical.launchpad.webapp.adapter.get_master_store"
+        />
+    <adapter
+        provides="canonical.launchpad.interfaces.ISlaveStore"
+        for="zope.interface.Interface"
+        factory="canonical.launchpad.webapp.adapter.get_slave_store"
+        />
+    <adapter
+        provides="canonical.launchpad.interfaces.IMasterObject"
+        for="canonical.launchpad.interfaces.IDBObject"
+        trusted="yes"
+        factory="canonical.launchpad.webapp.adapter.get_object_from_master_store"
+        />
+    <class class="storm.store.Store">
+        <implements interface="canonical.launchpad.interfaces.IStore" />
+        <allow attributes="get" />
+    </class>
+    <class class="canonical.database.sqlbase.SQLBase">
+        <implements interface="canonical.launchpad.interfaces.IDBObject" />
+    </class>
 
     <!-- Default favicon -->
     <browser:favicon for="*" file="../images/launchpad.png" />

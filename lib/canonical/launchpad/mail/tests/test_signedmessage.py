@@ -21,7 +21,7 @@ from canonical.launchpad.ftests import (
     import_public_test_keys, import_secret_test_key)
 from canonical.launchpad.interfaces.gpghandler import IGPGHandler
 from canonical.launchpad.interfaces.mail import IWeaklyAuthenticatedPrincipal
-from canonical.launchpad.interfaces.person import IPersonSet
+from lp.registry.interfaces.person import IPersonSet
 from canonical.launchpad.testing import GPGSigningContext, TestCaseWithFactory
 from canonical.testing.layers import DatabaseFunctionalLayer
 

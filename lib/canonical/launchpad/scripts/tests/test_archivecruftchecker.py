@@ -16,7 +16,7 @@ import unittest
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.launchpad.interfaces.distribution import IDistributionSet
+from lp.registry.interfaces.distribution import IDistributionSet
 from canonical.launchpad.interfaces.publishing import PackagePublishingPocket
 from canonical.launchpad.scripts.ftpmaster import (
     ArchiveCruftChecker, ArchiveCruftCheckerError)

@@ -7,6 +7,8 @@ from zope.component import getGlobalSiteManager, provideUtility
 from zope.interface import implements
 import unittest
 
+from canonical.launchpad.testing import TestCase
+
 class DummyWebServiceConfiguration:
     """A totally vanilla web service configuration."""
     implements(IWebServiceConfiguration)
@@ -14,7 +16,7 @@ class DummyWebServiceConfiguration:
     service_version_uri_prefix = "beta"
 
 
-class DummyConfigurationTestCase(unittest.TestCase):
+class DummyConfigurationTestCase(TestCase):
     """A test case that installs a DummyWebServiceConfiguration."""
 
     def setUp(self):

@@ -15,9 +15,10 @@ a new password.
 
     >>> from zope.component import getMultiAdapter, getUtility
     >>> from zope.security.proxy import removeSecurityProxy
+    >>> from canonical.launchpad.interfaces.authtoken import LoginTokenType
     >>> from canonical.launchpad.interfaces.logintoken import (
-    ...     ILoginTokenSet, LoginTokenType)
-    >>> from canonical.launchpad.interfaces.person import IPersonSet
+    ...     ILoginTokenSet)
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 
     >>> person_set = getUtility(IPersonSet)
@@ -79,6 +80,8 @@ A user with a DEACTIVATED account does not have a password--he must use
 the +resetpassword view to set his account to ACTIVE and add a password.
 
     >>> former_user = person_set.getByEmail('former-user@canonical.com')
+    >>> from canonical.launchpad.interfaces import IMasterObject
+    >>> former_user = removeSecurityProxy(IMasterObject(former_user))
     >>> former_user.name
     u'former-user-deactivatedaccount'
 
@@ -91,6 +94,7 @@ the +resetpassword view to set his account to ACTIVE and add a password.
     >>> login_token = login_token_set.new(
     ...     former_user, 'former-user@canonical.com',
     ...     'former-user@canonical.com', LoginTokenType.PASSWORDRECOVERY)
+    >>> transaction.commit()
 
 If the user provides the correct email address for the token, the
 password is reset, and the account status is set ACTIVE.
@@ -109,6 +113,7 @@ password is reset, and the account status is set ACTIVE.
     >>> resetpassword_view = getMultiAdapter(
     ...     (login_token, request), name="+resetpassword")
     >>> resetpassword_view.initialize()
+    >>> transaction.commit()
 
     >>> former_user.name
     u'former-user'
@@ -131,11 +136,13 @@ account to ACTIVE, nor will it reset his password.
     ...     email='suspended-user@canonical.com',
     ...     name='suspended-user',
     ...     password='invalid')
-    >>> suspended_user.account.status = AccountStatus.SUSPENDED
-    >>> original_password = suspended_user.account.password
+    >>> suspended_account = IMasterObject(suspended_user.account)
+    >>> suspended_account.status = AccountStatus.SUSPENDED
+    >>> original_password = suspended_account.password
+    >>> transaction.commit()
     >>> suspended_user.is_valid_person
     False
-    >>> suspended_user.account.status
+    >>> suspended_account.status
     <DBItem AccountStatus.SUSPENDED, ...>
 
     >>> login_token = login_token_set.new(
@@ -215,6 +222,7 @@ indicate if his email address can be shown to other Launchpad users.
     >>> claimprofile_view.initialize()
     >>> claimprofile_view.errors
     []
+    >>> transaction.commit()
 
 The user's Person, EmailAddress, and Account objects are updated.
 
@@ -287,6 +295,7 @@ that verifies his access to the email address his provided.
     >>> login_token = login_token_set.new(
     ...     andrelop, 'andrelop@debian.org',
     ...     'andrelop@debian.org', LoginTokenType.NEWACCOUNT)
+    >>> transaction.commit()
 
 The NewAccountView will activate the existing account and update
 the Person object.
@@ -308,6 +317,7 @@ the Person object.
     >>> claimprofile_view.initialize()
     >>> claimprofile_view.errors
     []
+    >>> transaction.commit()
 
 The existing Account, Person and EmailAddress are updated.
 
