@@ -3774,8 +3774,6 @@ def person_from_account(account):
     """Adapt an IAccount into an IPerson."""
     # The IAccount interface does not publish the account.person reference.
     naked_account = removeSecurityProxy(account)
-    person = ProxyFactory(IStore(Person).find(
-        Person, accountID=naked_account.id).one())
-    if person is None:
+    if naked_account.person is None:
         raise ComponentLookupError
-    return person
+    return ProxyFactory(naked_account.person)
