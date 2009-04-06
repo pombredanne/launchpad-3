@@ -3,7 +3,7 @@
 A widget used when setting the geographic location of a given person.
 
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-    >>> from canonical.launchpad.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> from canonical.launchpad.fields import LocationField
     >>> from canonical.widgets.location import LocationWidget
     >>> salgado = getUtility(IPersonSet).getByName('salgado')

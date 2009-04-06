@@ -98,26 +98,26 @@ from canonical.launchpad.interfaces.bugtask import (
     IBugTask, IDistroBugTask, IDistroSeriesBugTask, IProductSeriesBugTask,
     IUpstreamBugTask)
 from canonical.launchpad.interfaces.bugtracker import BugTrackerType
-from canonical.launchpad.interfaces.distribution import IDistribution
-from canonical.launchpad.interfaces.distributionsourcepackage import (
+from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage)
-from canonical.launchpad.interfaces.distroseries import (
+from lp.registry.interfaces.distroseries import (
     DistroSeriesStatus, IDistroSeries)
 from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
 from canonical.launchpad.interfaces.language import ILanguage
 from canonical.launchpad.interfaces.languagepack import LanguagePackType
-from canonical.launchpad.interfaces.mailinglist import (
+from lp.registry.interfaces.mailinglist import (
     IMailingListSet, MailingListStatus)
-from canonical.launchpad.interfaces.milestone import (
+from lp.registry.interfaces.milestone import (
     IMilestoneSet, IProjectMilestone)
-from canonical.launchpad.interfaces.person import (
+from lp.registry.interfaces.person import (
     IPerson, IPersonSet, ITeam, PersonVisibility)
-from canonical.launchpad.interfaces.pillar import IPillarName
-from canonical.launchpad.interfaces.product import (
+from lp.registry.interfaces.pillar import IPillarName
+from lp.registry.interfaces.product import (
     IProduct, IProductSet, License)
-from canonical.launchpad.interfaces.productseries import IProductSeries
-from canonical.launchpad.interfaces.project import IProject
-from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
+from lp.registry.interfaces.productseries import IProductSeries
+from lp.registry.interfaces.project import IProject
+from lp.registry.interfaces.sourcepackage import ISourcePackage
 from canonical.launchpad.interfaces.specification import (
     ISpecification, SpecificationFilter)
 from canonical.launchpad.interfaces.account import AccountStatus
@@ -1898,7 +1898,7 @@ class DistributionOrProductVocabulary(PillarVocabularyBase):
     displayname = 'Select a project'
     _filter = """
         -- An active product/distro.
-        (active IS TRUE
+        ((active IS TRUE
          AND (product IS NOT NULL OR distribution IS NOT NULL)
         )
         OR
@@ -1907,7 +1907,7 @@ class DistributionOrProductVocabulary(PillarVocabularyBase):
             SELECT id FROM PillarName
             WHERE active IS TRUE AND
                 (product IS NOT NULL OR distribution IS NOT NULL))
-        )
+        ))
         """
 
     def __contains__(self, obj):

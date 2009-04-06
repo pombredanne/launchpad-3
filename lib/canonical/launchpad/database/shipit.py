@@ -53,7 +53,7 @@ from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.mail.sendmail import simple_sendmail
 
 from canonical.launchpad.interfaces.account import IAccount
-from canonical.launchpad.interfaces.person import IPerson
+from lp.registry.interfaces.person import IPerson
 from canonical.launchpad.interfaces.shipit import (
     IRequestedCDs, IShipitAccount, IShipItReport, IShipItReportSet,
     IShipItSurveySet, IShipment, IShipmentSet, IShippingRequest,
@@ -67,8 +67,8 @@ from canonical.launchpad.interfaces import (
     ILaunchpadCelebrities, ILibraryFileAliasSet)
 from canonical.launchpad.database.account import Account
 from canonical.launchpad.database.country import Country
-from canonical.launchpad.database.karma import Karma
-from canonical.launchpad.database.person import Person
+from lp.registry.model.karma import Karma
+from lp.registry.model.person import Person
 
 
 MIN_KARMA_ENTRIES_TO_BE_TRUSTED_ON_SHIPIT = 10

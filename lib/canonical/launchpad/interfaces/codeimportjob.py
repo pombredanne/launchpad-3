@@ -23,7 +23,7 @@ from canonical.launchpad import _
 from canonical.launchpad.interfaces.codeimport import ICodeImport
 from canonical.launchpad.interfaces.codeimportmachine import (
     ICodeImportMachine)
-from canonical.launchpad.interfaces.person import IPerson
+from lp.registry.interfaces.person import IPerson
 
 
 class CodeImportJobState(DBEnumeratedType):

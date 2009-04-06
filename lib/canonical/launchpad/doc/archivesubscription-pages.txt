@@ -20,7 +20,7 @@ well as allowing the addition of new subscribers.
 First, ensure that the archives we'll be using are private:
 
     >>> login('foo.bar@canonical.com')
-    >>> from canonical.launchpad.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> cprov = getUtility(IPersonSet).getByName("cprov")
     >>> cprov.archive.buildd_secret = 'boing'
     >>> cprov.archive.private = True

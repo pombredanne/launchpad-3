@@ -9,7 +9,7 @@ import transaction
 from unittest import TestLoader
 
 from canonical.config import config
-from canonical.launchpad.database.karma import Karma
+from lp.registry.model.karma import Karma
 from canonical.launchpad.database.revision import RevisionSet
 from canonical.launchpad.database.emailaddress import EmailAddressSet
 from canonical.launchpad.scripts.revisionkarma import RevisionKarmaAllocator
