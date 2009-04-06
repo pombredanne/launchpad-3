@@ -713,6 +713,12 @@ class ViewPublicOrPrivateTeamMembers(AuthorizationBase):
     permission = 'launchpad.View'
     usedfor = IPerson
 
+    def checkUnauthenticated(self):
+        """Unauthenticated users can only view public memberships."""
+        if self.obj.visibility == PersonVisibility.PUBLIC:
+            return True
+        return False
+
     def checkAccountAuthenticated(self, account):
         """See `IAuthorization.checkAccountAuthenticated`.
 
