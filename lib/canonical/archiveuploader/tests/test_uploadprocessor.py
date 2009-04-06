@@ -32,7 +32,7 @@ from canonical.launchpad.database.binarypackagerelease import (
 from canonical.launchpad.database.component import Component
 from canonical.launchpad.database.publishing import (
     SourcePackagePublishingHistory, BinaryPackagePublishingHistory)
-from canonical.launchpad.database.sourcepackagename import SourcePackageName
+from lp.registry.model.sourcepackagename import SourcePackageName
 from canonical.launchpad.database.sourcepackagerelease import (
     SourcePackageRelease)
 from canonical.launchpad.ftests import import_public_test_keys
@@ -43,8 +43,8 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.interfaces.archivepermission import (
     ArchivePermissionType)
 from canonical.launchpad.interfaces.component import IComponentSet
-from canonical.launchpad.interfaces.person import IPersonSet
-from canonical.launchpad.interfaces.sourcepackagename import (
+from lp.registry.interfaces.person import IPersonSet
+from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageNameSet)
 from canonical.launchpad.mail import stub
 from canonical.launchpad.testing.fakepackager import FakePackager

@@ -1856,7 +1856,7 @@ First we create three copy archives for ubuntu:
 
 One of the new copy archives will be owned by a team:
 
-    >>> from canonical.launchpad.interfaces.person import (
+    >>> from lp.registry.interfaces.person import (
     ...     TeamSubscriptionPolicy)
     >>> team = getUtility(IPersonSet).newTeam(sabdfl, 't1', 't1',
     ...     subscriptionpolicy=TeamSubscriptionPolicy.OPEN)

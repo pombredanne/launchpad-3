@@ -56,16 +56,16 @@ from canonical.launchpad.interfaces.build import (
     BuildStatus, IBuildSet)
 from canonical.launchpad.interfaces.buildrecords import IHasBuildRecords
 from canonical.launchpad.interfaces.component import IComponentSet
-from canonical.launchpad.interfaces.distroseries import DistroSeriesStatus
+from lp.registry.interfaces.distroseries import DistroSeriesStatus
 from canonical.launchpad.interfaces.launchpad import (
     ILaunchpadCelebrities, NotFoundError)
 from canonical.launchpad.interfaces.packagecopyrequest import (
     IPackageCopyRequestSet)
-from canonical.launchpad.interfaces.person import IPersonSet
+from lp.registry.interfaces.person import IPersonSet
 from canonical.launchpad.interfaces.publishing import (
     PackagePublishingPocket, active_publishing_status,
     inactive_publishing_status, IPublishingSet)
-from canonical.launchpad.interfaces.sourcepackagename import (
+from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageNameSet)
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, enabled_with_permission,
@@ -282,6 +282,10 @@ class ArchiveContextMenu(ContextMenu):
         # This link should only be available for private archives:
         if not self.context.private:
             link.enabled = False
+
+        # XXX: noodles 2009-03-10 bug=340405. This link is disabled until
+        # the cron-job supporting private archive subscriptions is enabled.
+        link.enabled = False
 
         return link
 

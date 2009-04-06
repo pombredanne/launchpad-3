@@ -1327,7 +1327,7 @@ is used via the API via IArchive.getBuildSummariesForSourceIds).
 
 First we'll grab two source publishing history records:
 
-    >>> from canonical.launchpad.interfaces.distribution import (
+    >>> from lp.registry.interfaces.distribution import (
     ...     IDistributionSet)
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
     >>> firefox_source = ubuntu.getSourcePackage('mozilla-firefox')

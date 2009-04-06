@@ -1085,7 +1085,7 @@ product_translations = ContextTitle('Translations of %s in Launchpad')
 
 product_translators = ContextTitle('Set translation group for %s')
 
-productrelease_add = ContextTitle('Register a new %s release in Launchpad')
+productrelease_add = ContextDisplayName('Publish the release of %s')
 
 productrelease_delete = ContextTitle('Delete %s in Launchpad')
 
