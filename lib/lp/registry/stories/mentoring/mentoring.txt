@@ -147,7 +147,7 @@ Now, let's repeat the whole exercise with a Blueprint.
 
   >>> browser = setupBrowser(auth="Basic one-membership@test.com:test")
   >>> browser.open('http://blueprints.launchpad.dev/kubuntu/+spec/cluster-installation')
-  >>> browser.getLink(menu_mentoring_offer).click()
+  >>> browser.getLink('Offer to mentor someone implementing this blueprint').click()
   >>> print browser.title
   Offer to mentor this work
   >>> back_link = browser.getLink('Facilitate mass installs')
@@ -163,23 +163,15 @@ We should see the listing of mentors, now:
   True
 
 And most importantly, we should no longer be able to offer mentoring on this
-bug, because we are ALREADY a mentor!
+Blueprint, because we are ALREADY a mentor!
 
-  >>> for tag in find_tags_by_class(
-  ...     browser.contents, 'menu-link-offermentoring-disabled'):
-  ...     print tag.renderContents()
-  Offer mentorship (disabled)
-  >>> page_mentoring_offer not in browser.contents
+  >>> 'Offer to mentor someone implementing this blueprint' not in browser.contents
   True
 
 Similarly, because we are now a mentor, we should see a menu and page link
 which allow us to retract this offer of mentorship.
 
-  >>> for tag in find_tags_by_class(
-  ...     browser.contents, 'menu-link-retractmentoring'):
-  ...     print tag.renderContents()
-  Retract mentorship
-  >>> page_mentoring_retract in browser.contents
+  >>> 'Retract my offer of mentorship' in browser.contents
   True
 
 However, somebody ELSE should still be able to offer mentoring, and not yet
@@ -187,17 +179,9 @@ retract mentoring:
 
   >>> browser = setupBrowser(auth="Basic test@canonical.com:test")
   >>> browser.open('http://blueprints.launchpad.dev/kubuntu/+spec/cluster-installation')
-  >>> for tag in find_tags_by_class(
-  ...     browser.contents, 'menu-link-offermentoring'):
-  ...     print tag.renderContents()
-  Offer mentorship
-  >>> page_mentoring_offer in browser.contents
+  >>> 'Offer to mentor someone implementing' in browser.contents
   True
-  >>> for tag in find_tags_by_class(
-  ...     anon_browser.contents, 'menu-link-retractmentoring-disabled'):
-  ...     print tag.renderContents()
-  Retract mentorship (disabled)
-  >>> page_mentoring_retract in browser.contents
+  >>> 'Retract my offer of mentorship' in browser.contents
   False
 
 
@@ -483,11 +467,7 @@ retract mentoring that you have offered.
   >>> browser.open('http://blueprints.launchpad.dev/kubuntu/+spec/cluster-installation')
   >>> 'Mentors:' in browser.contents
   True
-  >>> for tag in find_tags_by_class(
-  ...     browser.contents, 'menu-link-retractmentoring-disabled'):
-  ...     print tag.renderContents()
-  Retract mentorship (disabled)
-  >>> page_mentoring_retract in browser.contents
+  >>> 'Retract my offer of mentorship' in browser.contents
   False
   >>> browser.open('http://bugs.launchpad.dev/tomcat/+bug/2')
   >>> 'Mentors:' in browser.contents
@@ -528,7 +508,7 @@ mentoring again.
 
   >>> browser = setupBrowser(auth="Basic one-membership@test.com:test")
   >>> browser.open('http://blueprints.launchpad.dev/kubuntu/+spec/cluster-installation')
-  >>> browser.getLink(menu_mentoring_retract).click()
+  >>> browser.getLink('Retract my offer of mentorship').click()
   >>> print browser.title
   Retract offer of mentorship
   >>> back_link = browser.getLink('Facilitate mass installs')
@@ -537,10 +517,8 @@ mentoring again.
   >>> browser.getControl('Retract Mentoring').click()
   >>> 'Facilitate mass installs' in browser.title
   True
-  >>> for tag in find_tags_by_class(
-  ...     browser.contents, 'menu-link-offermentoring'):
-  ...     print tag.renderContents()
-  Offer mentorship
+  >>> 'Offer to mentor someone implementing' in browser.contents
+  True
 
 And finally let's do it on the bug.
 
@@ -573,7 +551,7 @@ blueprint:
 
 Now we offer mentoring, and along the way we request to be subscribed:
 
-  >>> browser.getLink(menu_mentoring_offer).click()
+  >>> browser.getLink('Offer to mentor someone implementing this blueprint').click()
   >>> browser.getControl(name='field.subscription_request').value = True
   >>> browser.getControl('Offer Mentoring').click()
   >>> browser.url
@@ -581,9 +559,13 @@ Now we offer mentoring, and along the way we request to be subscribed:
 
 And now 'One Membership' is a subscriber:
 
-  >>> subs = find_portlet(browser.contents, 'Subscribers')
-  >>> 'One Membership' in subs.renderContents()
-  True
+  >>> subscribers = find_tags_by_class(browser.contents, 'subscriber')
+  >>> for subscriber in subscribers:
+  ...     a_tags = subscriber.findAll('a')
+  ...     img = a_tags[0].first('img')
+  ...     print img['src'],
+  ...     print a_tags[1].string
+  /@@/subscriber-inessential One Membership
 
 
 
