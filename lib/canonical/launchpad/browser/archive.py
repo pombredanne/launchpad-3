@@ -283,10 +283,6 @@ class ArchiveContextMenu(ContextMenu):
         if not self.context.private:
             link.enabled = False
 
-        # XXX: noodles 2009-03-10 bug=340405. This link is disabled until
-        # the cron-job supporting private archive subscriptions is enabled.
-        link.enabled = False
-
         return link
 
     @enabled_with_permission('launchpad.Edit')
