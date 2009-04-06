@@ -381,9 +381,10 @@ does not show either link.
 
     >>> browser.open('http://launchpad.dev/~ubuntu-translators')
     >>> print extract_text(
-    ...     find_portlet(browser.contents, 'Your involvement'))
-    Your involvement
-    You are a member of the team that owns this team.
+    ...     find_portlet(browser.contents, 'Mailing list'))
+    Mailing list
+    This team does not have a mailing list.
+    Configure mailing list
 
     >>> browser.getLink('Subscribe')
     Traceback (most recent call last):

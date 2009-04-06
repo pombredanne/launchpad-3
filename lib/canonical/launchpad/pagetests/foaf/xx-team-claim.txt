@@ -106,10 +106,8 @@ page.
     Team claimed successfully
 
     >>> print extract_text(
-    ...     find_tag_by_id(user_browser.contents, 'portlet-details'))
-    Summary
-    Team owner: No Privileges Person
-    ...
+    ...     find_tag_by_id(user_browser.contents, 'team-details'))
+    Team owned by No Privileges Person, ...
 
 
 Trying to access +claimteam for an already active team 404s as you would

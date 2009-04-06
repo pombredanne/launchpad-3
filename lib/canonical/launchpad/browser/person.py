@@ -129,6 +129,8 @@ from canonical.launchpad.browser.archivesubscription import (
 from canonical.launchpad.browser.launchpad import get_launchpad_views
 from canonical.launchpad.components.openidserver import CurrentOpenIDEndPoint
 from canonical.launchpad.interfaces.account import IAccount
+from canonical.launchpad.interfaces.archivesubscriber import (
+    IArchiveSubscriberSet)
 from canonical.launchpad.interfaces import (
     AccountStatus, BugTaskSearchParams, BugTaskStatus, CannotUnsubscribe,
     DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT, EmailAddressStatus,
@@ -881,7 +883,8 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
              'editircnicknames', 'editjabberids', 'editpassword',
              'editsshkeys', 'editpgpkeys', 'editlocation', 'memberships',
              'mentoringoffers', 'codesofconduct', 'karma', 'common_packages',
-             'administer', 'related_projects', 'activate_ppa']
+             'administer', 'related_projects', 'activate_ppa',
+             'view_ppa_subscriptions']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -985,6 +988,20 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
         target = '+review'
         text = 'Administer'
         return Link(target, text, icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
+    def view_ppa_subscriptions(self):
+        target = "+archivesubscriptions"
+        text = "View your private PPA subscriptions"
+        summary = ('View your personal PPA subscriptions and set yourself '
+                   'up to download your software')
+
+        # Only enable the link if the person has some subscriptions.
+        subscriptions = getUtility(IArchiveSubscriberSet).getBySubscriber(
+            self.context)
+        enabled = subscriptions.count() > 0
+
+        return Link(target, text, summary, enabled=enabled, icon='info')
 
 
 class IPersonEditMenu(Interface):
@@ -1150,13 +1167,18 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
 
     def map(self):
         target = '+map'
-        text = 'Show map and time zones'
+        text = 'View map and time zones'
         return Link(target, text, icon='meeting')
 
     def add_my_teams(self):
         target = '+add-my-teams'
         text = 'Add one of my teams'
-        return Link(target, text, icon='add')
+        enabled = True
+        team = self.context
+        if team.subscriptionpolicy == TeamSubscriptionPolicy.RESTRICTED:
+            # This is a restricted team; users can't join.
+            enabled = False
+        return Link(target, text, icon='add', enabled=enabled)
 
     def memberships(self):
         target = '+participation'
@@ -1166,10 +1188,8 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
     def mentorships(self):
         target = '+mentoring'
         text = 'Mentoring available'
-        enabled = bool(self.context.team_mentorships)
         summary = 'Offers of mentorship for prospective team members'
-        return Link(target, text, summary=summary, enabled=enabled,
-                    icon='info')
+        return Link(target, text, summary=summary, icon='info')
 
     @enabled_with_permission('launchpad.View')
     def mugshots(self):
@@ -1224,6 +1244,9 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
         team = self.context
         enabled = True
         if userIsActiveTeamMember(team):
+            if team.teamowner == self.user:
+                # The owner cannot leave his team
+                enabled = False
             target = '+leave'
             text = 'Leave the Team' # &#8230;
             icon = 'remove'
@@ -2429,6 +2452,13 @@ class PersonView(LaunchpadView, FeedsMixin):
             TeamMembershipStatus.PROPOSED,
             orderBy='-TeamMembership.date_proposed')
         return members[:5]
+
+    @cachedproperty
+    def has_recent_approved_or_proposed_members(self):
+        """Does the team have recently approved or proposed members?"""
+        approved = self.recently_approved_members.count() > 0
+        proposed = self.recently_proposed_members.count() > 0
+        return approved or proposed
 
     @cachedproperty
     def openpolls(self):

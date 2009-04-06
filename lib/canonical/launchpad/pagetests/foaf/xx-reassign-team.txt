@@ -27,11 +27,8 @@ administrator of the team.
     >>> browser.url
     'http://launchpad.dev/~landscape-developers'
     >>> print extract_text(
-    ...     find_tag_by_id(browser.contents, 'portlet-details'))
-    Summary
-    Team owner: Celso Providelo
-    Created on: 2006-07-12
-    ...
+    ...     find_tag_by_id(browser.contents, 'team-details'))
+    Team owned by Celso Providelo, created on 2006-07-12
 
     >>> browser.open('http://launchpad.dev/~landscape-developers/+members')
     >>> print extract_text(find_tag_by_id(browser.contents, 'activemembers'))
@@ -66,13 +63,8 @@ But cprov can.
     >>> browser.url
     'http://launchpad.dev/~landscape-developers'
     >>> print extract_text(
-    ...     find_tag_by_id(browser.contents, 'portlet-details'))
-    Summary
-    Team owner:
-    Ubuntu Team
-    ...
-    Moderated Team:
-    ...
+    ...     find_tag_by_id(browser.contents, 'team-details'))
+    Team owned by Ubuntu Team...
 
     >>> browser.open('http://launchpad.dev/~landscape-developers/+members')
     >>> print extract_text(find_tag_by_id(browser.contents, 'activemembers'))

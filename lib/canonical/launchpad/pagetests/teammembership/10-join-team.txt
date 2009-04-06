@@ -6,7 +6,7 @@ Karl will join the newly created team.
     >>> browser.open('http://launchpad.dev/~myemail')
     >>> print extract_text(
     ...     find_tag_by_id(browser.contents, 'subscription-policy'))
-    Open Team:
+    Open Team
 
     >>> browser.getLink('Join the team').click()
     >>> browser.url
@@ -56,7 +56,7 @@ approved, though.
     >>> browser.open('http://launchpad.dev/~myemail')
     >>> print extract_text(
     ...     find_tag_by_id(browser.contents, 'subscription-policy'))
-    Moderated Team:
+    Moderated Team
 
     >>> browser.getLink('Join the team').click()
     >>> browser.url
@@ -99,7 +99,7 @@ If it was a restricted team, users wouldn't even see a link to join the team.
     'http://launchpad.dev/~myemail'
     >>> print extract_text(
     ...     find_tag_by_id(browser.contents, 'subscription-policy'))
-    Restricted Team:
+    Restricted Team
 
     >>> browser.getLink('Join the team')
     Traceback (most recent call last):

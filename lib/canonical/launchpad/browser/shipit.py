@@ -16,6 +16,7 @@ __all__ = [
     'ShipItRequestServerCDsView',
     'ShipItRequestView',
     'ShipItSurveyView',
+    'ShipitSystemErrorView',
     'ShipItUnauthorizedView',
     'ShippingRequestAdminView',
     'ShippingRequestApproveOrDenyView',
@@ -71,10 +72,7 @@ from canonical.launchpad.layers import (
 from canonical.launchpad import _
 
 
-class ShipItUnauthorizedView(SystemErrorView):
-
-    response_code = 403
-    forbidden_page = ViewPageTemplateFile('../templates/shipit-forbidden.pt')
+class ShipitSystemErrorView(SystemErrorView):
 
     # XXX: salgado, 2009-03-25: This should not be necessary as it's provided
     # by LaunchpadView, but SystemErrorView hasn't been made into a
@@ -82,6 +80,12 @@ class ShipItUnauthorizedView(SystemErrorView):
     @property
     def account(self):
         return getUtility(ILaunchBag).account
+
+
+class ShipItUnauthorizedView(ShipitSystemErrorView):
+
+    response_code = 403
+    forbidden_page = ViewPageTemplateFile('../templates/shipit-forbidden.pt')
 
     def __call__(self):
         # Users should always go to shipit.ubuntu.com and login before
