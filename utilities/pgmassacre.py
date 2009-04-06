@@ -87,13 +87,13 @@ def still_open(database, max_wait=10):
     Waits a while to ensure that connections shutting down have a chance to.
     """
     con = connect()
-    con.set_isolation_level(1)
+    con.set_isolation_level(0) # Autocommit.
     cur = con.cursor()
     # Wait for up to 10 seconds, returning True if all backends are gone.
     start = time.time()
     while time.time() < start + max_wait:
         cur.execute("""
-            SELECT procpid FROM pg_stat_activity
+            SELECT TRUE FROM pg_stat_activity
             WHERE
                 datname=%(database)s
                 AND procpid != pg_backend_pid()
@@ -102,7 +102,6 @@ def still_open(database, max_wait=10):
         if cur.fetchone() is None:
             return False
         time.sleep(0.6) # Stats only updated every 500ms.
-    con.rollback()
     con.close()
     return True
 
@@ -155,7 +154,8 @@ def massacre(database):
         con.set_isolation_level(0)
         cur = con.cursor()
         cur.execute("DROP DATABASE %s" % database) # Not quoted.
-
+        con.close()
+        return 0
     finally:
         # In case something messed up, allow connections again so we can
         # inspect the damage.
@@ -172,26 +172,46 @@ def rebuild(database, template):
     if still_open(template, 20):
         print >> sys.stderr, (
             "Giving up waiting for connections to %s to drop." % template)
+        report_open_connections(template)
         return 10
 
     start = time.time()
+    now = start
     error_msg = None
-    while time.time() < start + 20:
-        con = connect()
-        con.set_isolation_level(0) # Autocommit
+    con = connect()
+    con.set_isolation_level(0) # Autocommit required for CREATE DATABASE.
+    while now < start + 20:
         cur = con.cursor()
         try:
             cur.execute(
                 "CREATE DATABASE %s WITH ENCODING='UTF8' TEMPLATE=%s"
                 % (database, template))
+            con.close()
             return 0
         except psycopg2.Error, exception:
             error_msg = str(exception)
-        con.close()
         time.sleep(0.6) # Stats only updated every 500ms.
+        now = time.time()
+    con.close()
 
     print >> sys.stderr, "Unable to recreate database: %s" % error_msg
     return 11
+
+
+def report_open_connections(database):
+    con = connect()
+    cur = con.cursor()
+    cur.execute("""
+        SELECT usename, datname, count(*)
+        FROM pg_stat_activity
+        WHERE procpid != pg_backend_pid()
+        GROUP BY usename, datname
+        ORDER BY datname, usename
+        """, [database])
+    for usename, datname, num_connections in cur.fetchall():
+        print >> sys.stderr, "%d connections by %s to %s" % (
+            num_connections, usename, datname)
+    con.close()
 
 
 options = None
@@ -234,6 +254,7 @@ def main():
     if db_exists:
         rv = massacre(database)
         if rv != 0:
+            print >> sys.stderr, "Fail %d" % rv
             return rv
 
     if options.template is not None:
