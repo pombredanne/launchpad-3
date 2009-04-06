@@ -73,3 +73,18 @@ name.
     ...     name='alsa-utils').jsonBody()
     >>> print alsa_utils['self_link']
     http://.../ubuntu/+source/alsa-utils
+
+"searchSourcePackages" returns a collection of distribution source
+packages matching (substring) the given text.
+
+    >>> alsa_results = webservice.named_get(
+    ...     ubuntu['self_link'], 'searchSourcePackages',
+    ...     source_match='a').jsonBody()
+
+    >>> for entry in alsa_results['entries']:
+    ...     print entry['self_link']
+    http://.../ubuntu/+source/mozilla-firefox
+    http://.../ubuntu/+source/netapplet
+    http://.../ubuntu/+source/alsa-utils
+    http://.../ubuntu/+source/foobar
+    http://.../ubuntu/+source/commercialpackage

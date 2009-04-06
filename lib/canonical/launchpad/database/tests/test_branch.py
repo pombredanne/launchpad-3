@@ -28,21 +28,23 @@ from canonical.launchpad.database.branchmergeproposal import (
 from canonical.launchpad.database.bugbranch import BugBranch
 from canonical.launchpad.database.codeimport import CodeImport, CodeImportSet
 from canonical.launchpad.database.codereviewcomment import CodeReviewComment
-from canonical.launchpad.database.product import ProductSet
+from lp.registry.model.product import ProductSet
 from canonical.launchpad.database.specificationbranch import (
     SpecificationBranch)
-from canonical.launchpad.database.sourcepackage import SourcePackage
+from lp.registry.model.sourcepackage import SourcePackage
 from canonical.launchpad.ftests import (
-    login, login_person, logout, syncUpdate)
+    ANONYMOUS, login, login_person, logout, syncUpdate)
 from canonical.launchpad.interfaces import (
     BranchSubscriptionNotificationLevel, BranchType, CannotDeleteBranch,
-    CodeReviewNotificationLevel, CreateBugParams, IBugSet,
-    ILaunchpadCelebrities, IPersonSet, IProductSet, ISpecificationSet,
-    InvalidBranchMergeProposal, SpecificationDefinitionStatus)
+    CodeReviewNotificationLevel, CreateBugParams, IBugSet, IPersonSet,
+    IProductSet, ISpecificationSet, InvalidBranchMergeProposal,
+    SpecificationDefinitionStatus)
 from canonical.launchpad.interfaces.branch import (
     BranchLifecycleStatus, DEFAULT_BRANCH_STATUS_IN_LISTING)
 from canonical.launchpad.interfaces.branchlookup import IBranchLookup
 from canonical.launchpad.interfaces.branchnamespace import IBranchNamespaceSet
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.publishing import PackagePublishingPocket
 from canonical.launchpad.testing import (
     LaunchpadObjectFactory, TestCaseWithFactory)
 from canonical.launchpad.webapp.interfaces import IOpenLaunchBag
@@ -288,6 +290,89 @@ class TestBranch(TestCaseWithFactory):
             branch.sourcepackage)
 
 
+class TestBzrIdentity(TestCaseWithFactory):
+    """Test IBranch.bzr_identity."""
+
+    layer = DatabaseFunctionalLayer
+
+    def assertBzrIdentity(self, branch, identity_path):
+        """Assert that the bzr identity of 'branch' is 'identity_path'.
+
+        Actually, it'll be lp://dev/<identity_path>.
+        """
+        self.assertEqual(
+            'lp://dev/%s' % identity_path, branch.bzr_identity,
+            "bzr identity")
+
+    def test_default_identity(self):
+        # By default, the bzr identity is an lp URL with the branch's unique
+        # name.
+        branch = self.factory.makeAnyBranch()
+        self.assertBzrIdentity(branch, branch.unique_name)
+
+    def test_linked_to_product(self):
+        # If a branch is the development focus branch for a product, then it's
+        # bzr identity is lp:product.
+        branch = self.factory.makeProductBranch()
+        product = branch.product
+        removeSecurityProxy(product).development_focus.user_branch = branch
+        self.assertBzrIdentity(branch, product.name)
+
+    def test_linked_to_product_series(self):
+        # If a branch is the development focus branch for a product series,
+        # then it's bzr identity is lp:product/series.
+        branch = self.factory.makeProductBranch()
+        product = branch.product
+        series = self.factory.makeProductSeries(product=product)
+        series.user_branch = branch
+        self.assertBzrIdentity(branch, '%s/%s' % (product.name, series.name))
+
+    def test_private_linked_to_product(self):
+        # If a branch is private, then the bzr identity is the unique name,
+        # even if it's linked to a product. Of course, you have to be able to
+        # see the branch at all.
+        branch = self.factory.makeProductBranch(private=True)
+        owner = removeSecurityProxy(branch).owner
+        login_person(owner)
+        self.addCleanup(logout)
+        product = branch.product
+        removeSecurityProxy(product).development_focus.user_branch = branch
+        self.assertBzrIdentity(branch, branch.unique_name)
+
+    def test_linked_to_series_and_dev_focus(self):
+        # If a branch is the development focus branch for a product and the
+        # branch for a series, the bzr identity will be the storter of the two
+        # URLs.
+        branch = self.factory.makeProductBranch()
+        product = branch.product
+        removeSecurityProxy(product).development_focus.user_branch = branch
+        series = self.factory.makeProductSeries(product=product)
+        series.user_branch = branch
+        self.assertBzrIdentity(branch, product.name)
+
+    def test_junk_branch_always_unique_name(self):
+        # For junk branches, the bzr identity is always based on the unique
+        # name of the branch, even if it's linked to a product, product series
+        # or whatever.
+        branch = self.factory.makePersonalBranch()
+        product = self.factory.makeProduct()
+        removeSecurityProxy(product).development_focus.user_branch = branch
+        self.assertBzrIdentity(branch, branch.unique_name)
+
+    def test_linked_to_package_release(self):
+        # If a branch is linked to the release pocket of a package, then the
+        # bzr identity is the path to that package.
+        branch = self.factory.makePackageBranch()
+        registrant = getUtility(
+            ILaunchpadCelebrities).ubuntu_branches.teamowner
+        login_person(registrant)
+        branch.sourcepackage.setBranch(
+            PackagePublishingPocket.RELEASE, branch, registrant)
+        logout()
+        login(ANONYMOUS)
+        self.assertBzrIdentity(branch, branch.sourcepackage.path)
+
+
 class TestBranchDeletion(TestCaseWithFactory):
     """Test the different cases that makes a branch deletable or not."""
 
@@ -360,26 +445,15 @@ class TestBranchDeletion(TestCaseWithFactory):
                          "A branch linked to a spec is not deletable.")
         self.assertRaises(CannotDeleteBranch, self.branch.destroySelf)
 
-    def test_associatedProductSeriesUserBranchDisablesDeletion(self):
-        """A branch linked as a user_branch to a product series cannot be
+    def test_associatedProductSeriesBranchDisablesDeletion(self):
+        """A branch linked as a branch to a product series cannot be
         deleted.
         """
-        self.product.development_focus.user_branch = self.branch
+        self.product.development_focus.branch = self.branch
         syncUpdate(self.product.development_focus)
         self.assertEqual(self.branch.canBeDeleted(), False,
                          "A branch that is a user branch for a product series"
                          " is not deletable.")
-        self.assertRaises(CannotDeleteBranch, self.branch.destroySelf)
-
-    def test_associatedProductSeriesImportBranchDisablesDeletion(self):
-        """A branch linked as an import_branch to a product series cannot
-        be deleted.
-        """
-        self.product.development_focus.import_branch = self.branch
-        syncUpdate(self.product.development_focus)
-        self.assertEqual(self.branch.canBeDeleted(), False,
-                         "A branch that is an import branch for a product "
-                         "series is not deletable.")
         self.assertRaises(CannotDeleteBranch, self.branch.destroySelf)
 
     def test_revisionsDeletable(self):
@@ -596,35 +670,21 @@ class TestBranchDeletionConsequences(TestCase):
         self.assertRaises(SQLObjectNotFound, SpecificationBranch.get,
                           spec2_branch_id)
 
-    def test_branchWithSeriesUserRequirements(self):
-        """Deletion requirements for a series' user_branch are right."""
-        series = self.factory.makeSeries(self.branch)
+    def test_branchWithSeriesRequirements(self):
+        """Deletion requirements for a series' branch are right."""
+        series = self.factory.makeSeries(branch=self.branch)
         self.assertEqual(
             {series: ('alter',
             _('This series is linked to this branch.'))},
             self.branch.deletionRequirements())
 
-    def test_branchWithSeriesImportRequirements(self):
-        """Deletion requirements for a series' import_branch are right."""
-        series = self.factory.makeSeries(import_branch=self.branch)
-        self.assertEqual(
-            {series: ('alter',
-            _('This series is linked to this branch.'))},
-            self.branch.deletionRequirements())
-
-    def test_branchWithSeriesUserDeletion(self):
-        """break_links allows deleting a series' user_branch."""
-        series1 = self.factory.makeSeries(self.branch)
-        series2 = self.factory.makeSeries(self.branch)
+    def test_branchWithSeriesDeletion(self):
+        """break_links allows deleting a series' branch."""
+        series1 = self.factory.makeSeries(branch=self.branch)
+        series2 = self.factory.makeSeries(branch=self.branch)
         self.branch.destroySelf(break_references=True)
-        self.assertEqual(None, series1.user_branch)
-        self.assertEqual(None, series2.user_branch)
-
-    def test_branchWithSeriesImportDeletion(self):
-        """break_links allows deleting a series' import_branch."""
-        series = self.factory.makeSeries(import_branch=self.branch)
-        self.branch.destroySelf(break_references=True)
-        self.assertEqual(None, series.user_branch)
+        self.assertEqual(None, series1.branch)
+        self.assertEqual(None, series2.branch)
 
     def test_branchWithCodeImportRequirements(self):
         """Deletion requirements for a code import branch are right"""
@@ -664,18 +724,12 @@ class TestBranchDeletionConsequences(TestCase):
         ClearDependentBranch(merge_proposal)()
         self.assertEqual(None, merge_proposal.dependent_branch)
 
-    def test_ClearSeriesUserBranch(self):
+    def test_ClearSeriesBranch(self):
         """ClearSeriesBranch.__call__ must clear the user branch."""
-        series = removeSecurityProxy(self.factory.makeSeries(self.branch))
+        series = removeSecurityProxy(self.factory.makeSeries(
+            branch=self.branch))
         ClearSeriesBranch(series, self.branch)()
-        self.assertEqual(None, series.user_branch)
-
-    def test_ClearSeriesImportBranch(self):
-        """ClearSeriesBranch.__call__ must clear the import branch."""
-        series = removeSecurityProxy(
-            self.factory.makeSeries(import_branch=self.branch))
-        ClearSeriesBranch(series, self.branch)()
-        self.assertEqual(None, series.import_branch)
+        self.assertEqual(None, series.branch)
 
     def test_DeletionOperation(self):
         """DeletionOperation.__call__ is not implemented."""

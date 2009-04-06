@@ -32,8 +32,8 @@ from canonical.launchpad.interfaces import branchpuller
 from canonical.launchpad.interfaces.codehosting import (
     BRANCH_TRANSPORT, CONTROL_TRANSPORT, IBranchFileSystem, IBranchPuller,
     LAUNCHPAD_ANONYMOUS, LAUNCHPAD_SERVICES)
-from canonical.launchpad.interfaces.person import IPersonSet, NoSuchPerson
-from canonical.launchpad.interfaces.product import NoSuchProduct
+from lp.registry.interfaces.person import IPersonSet, NoSuchPerson
+from lp.registry.interfaces.product import NoSuchProduct
 from canonical.launchpad.interfaces.scriptactivity import IScriptActivitySet
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp import LaunchpadXMLRPCView

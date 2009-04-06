@@ -25,7 +25,7 @@ from lazr.enum import DBEnumeratedType, DBItem
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
     ContentNameField, StrippedTextLine, URIField)
-from canonical.launchpad.interfaces.person import IPerson
+from lp.registry.interfaces.person import IPerson
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import name_validator
 
@@ -231,6 +231,10 @@ class IBugTracker(Interface):
         'Bug messages that have been imported from this bug tracker.')
     multi_product = Attribute(
         "This bug tracker tracks multiple remote products.")
+    active = exported(
+        Bool(
+            title=_('Updates for this bug tracker are enabled'),
+            required=True, default=True))
 
     def getBugFilingAndSearchLinks(remote_product, summary=None,
                                    description=None):

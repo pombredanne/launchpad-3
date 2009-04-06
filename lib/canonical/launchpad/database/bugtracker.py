@@ -24,11 +24,11 @@ from sqlobject import (
 from sqlobject.sqlbuilder import AND
 
 from storm.expr import Or
+from storm.locals import Bool
 from storm.store import Store
 
 from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import (
-    SQLBase, flush_database_updates)
+from canonical.database.sqlbase import SQLBase, flush_database_updates
 
 from canonical.launchpad.database.bugtrackerperson import BugTrackerPerson
 from canonical.launchpad.helpers import shortlist
@@ -37,13 +37,13 @@ from canonical.launchpad.interfaces.bugtrackerperson import (
 from canonical.launchpad.database.bug import Bug
 from canonical.launchpad.database.bugmessage import BugMessage
 from canonical.launchpad.database.bugwatch import BugWatch
-from canonical.launchpad.validators.person import validate_public_person
+from lp.registry.interfaces.person import validate_public_person
 from canonical.launchpad.interfaces import NotFoundError
 from canonical.launchpad.interfaces.bugtracker import (
     BugTrackerType, IBugTracker, IBugTrackerAlias, IBugTrackerAliasSet,
     IBugTrackerSet, SINGLE_PRODUCT_BUGTRACKERTYPES)
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.interfaces.person import IPersonSet
+from lp.registry.interfaces.person import IPersonSet
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.validators.name import sanitize_name
 from lazr.uri import URI
@@ -154,6 +154,9 @@ class BugTracker(SQLBase):
     title = StringCol(notNull=True)
     summary = StringCol(notNull=False)
     baseurl = StringCol(notNull=True)
+    active = Bool(
+        name='active', allow_none=False, default=True)
+
     owner = ForeignKey(
         dbName='owner', foreignKey='Person',
         storm_validator=validate_public_person, notNull=True)
@@ -257,6 +260,12 @@ class BugTracker(SQLBase):
             summary = ''
         if description is None:
             description = ''
+
+        # UTF-8 encode the description and summary so that quote()
+        # doesn't break if they contain unicode characters it doesn't
+        # understand.
+        summary = summary.encode('utf-8')
+        description = description.encode('utf-8')
 
         if self.bugtrackertype == BugTrackerType.SOURCEFORGE:
             # SourceForge bug trackers use a group ID and an ATID to
@@ -554,8 +563,8 @@ class BugTrackerSet:
 
     def getPillarsForBugtrackers(self, bugtrackers):
         """See `IBugTrackerSet`."""
-        from canonical.launchpad.database.product import Product
-        from canonical.launchpad.database.project import Project
+        from lp.registry.model.product import Product
+        from lp.registry.model.project import Project
         ids = [str(b.id) for b in bugtrackers]
         products = Product.select(
             "bugtracker in (%s)" % ",".join(ids), orderBy="name")

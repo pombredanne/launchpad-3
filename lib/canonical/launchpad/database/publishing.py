@@ -55,7 +55,7 @@ from canonical.launchpad.interfaces.publishing import (
 from canonical.launchpad.scripts.changeoverride import ArchiveOverriderError
 from canonical.launchpad.webapp.interfaces import (
         IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
-from canonical.launchpad.validators.person import validate_public_person
+from lp.registry.interfaces.person import validate_public_person
 from canonical.launchpad.webapp.interfaces import NotFoundError
 
 
@@ -834,6 +834,7 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
         bin_filename = bin_file.libraryfile.filename
         bin_size = bin_file.libraryfile.content.filesize
         bin_md5 = bin_file.libraryfile.content.md5
+        bin_sha1 = bin_file.libraryfile.content.sha1
         bin_filepath = os.path.join(
             makePoolPath(spr.name, self.component.name), bin_filename)
         # description field in index is an association of summary and
@@ -881,6 +882,7 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
         fields.append('Filename', bin_filepath)
         fields.append('Size', bin_size)
         fields.append('MD5sum', bin_md5)
+        fields.append('SHA1', bin_sha1)
         fields.append('Description', bin_description)
 
         # XXX cprov 2006-11-03: the extra override fields (Bugs, Origin and

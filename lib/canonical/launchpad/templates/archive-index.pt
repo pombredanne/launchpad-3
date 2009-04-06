@@ -135,15 +135,6 @@ div#package_counters p {
           replace="structure link/render" />
       </div>
 
-      <tal:whiteboard condition="context/required:launchpad.Edit">
-         <div id="whiteboard" class="informational"
-              tal:condition="context/whiteboard">
-           <p><tal:archive_label replace="archive_label" /> whiteboard:</p>
-           <tal:archive-whiteboard
-              replace="structure context/whiteboard/fmt:text-to-html" />
-         </div>
-      </tal:whiteboard>
-
       <div tal:define="archive context"
            tal:condition="archive_active"
            id="build-status-summary">

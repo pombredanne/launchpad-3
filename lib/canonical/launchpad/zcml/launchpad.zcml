@@ -269,21 +269,21 @@
   <browser:page
       for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
       name="+search"
-      class="canonical.launchpad.browser.root.LaunchpadSearchView"
+      class="lp.registry.browser.root.LaunchpadSearchView"
       template="../templates/launchpad-search.pt"
       permission="zope.Public" />
 
   <browser:page
       for="*"
       name="+search-form"
-      class="canonical.launchpad.browser.root.LaunchpadSearchFormView"
+      class="lp.registry.browser.root.LaunchpadSearchFormView"
       template="../templates/launchpad-search-form.pt"
       permission="zope.Public" />
 
   <browser:page
       for="*"
       name="+primary-search-form"
-      class="canonical.launchpad.browser.root.LaunchpadPrimarySearchFormView"
+      class="lp.registry.browser.root.LaunchpadPrimarySearchFormView"
       template="../templates/launchpad-search-form.pt"
       permission="zope.Public" />
 

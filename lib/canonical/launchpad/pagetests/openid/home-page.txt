@@ -34,14 +34,20 @@ recently, using the OpenID service.
     >>> import pytz
     >>> from datetime import datetime
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces.person import IPersonSet
+    >>> from canonical.launchpad.interfaces.account import IAccountSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> from canonical.launchpad.interfaces.openidserver import (
     ...     IOpenIDRPSummarySet)
+    >>> from canonical.launchpad.webapp.dbpolicy import SSODatabasePolicy
+    >>> from canonical.launchpad.webapp.interfaces import IStoreSelector
     >>> login(ANONYMOUS)
+    >>> getUtility(IStoreSelector).push(SSODatabasePolicy())
+    >>> sabdfl_person = getUtility(IPersonSet).getByName('sabdfl')
+    >>> sabdfl_account = getUtility(IAccountSet).get(sabdfl_person.accountID)
     >>> summary = getUtility(IOpenIDRPSummarySet).record(
-    ...     getUtility(IPersonSet).getByName('sabdfl').account,
-    ...     'http://example.com/',
+    ...     sabdfl_account, 'http://example.com/',
     ...     date_used=datetime(2009, 01, 01, tzinfo=pytz.UTC))
+    >>> db_policy = getUtility(IStoreSelector).pop()
     >>> logout()
 
     >>> browser.reload()

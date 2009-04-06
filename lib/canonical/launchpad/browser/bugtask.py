@@ -98,16 +98,16 @@ from canonical.launchpad.interfaces.bugtask import (
     UNRESOLVED_BUGTASK_STATUSES)
 from canonical.launchpad.interfaces.bugtracker import BugTrackerType
 from canonical.launchpad.interfaces.cve import ICveSet
-from canonical.launchpad.interfaces.distribution import IDistribution
-from canonical.launchpad.interfaces.distributionsourcepackage import (
+from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage)
-from canonical.launchpad.interfaces.distroseries import IDistroSeries
+from lp.registry.interfaces.distroseries import IDistroSeries
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.interfaces.person import IPerson, IPersonSet
-from canonical.launchpad.interfaces.product import IProduct
-from canonical.launchpad.interfaces.productseries import IProductSeries
-from canonical.launchpad.interfaces.project import IProject
-from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
+from lp.registry.interfaces.person import IPerson, IPersonSet
+from lp.registry.interfaces.product import IProduct
+from lp.registry.interfaces.productseries import IProductSeries
+from lp.registry.interfaces.project import IProject
+from lp.registry.interfaces.sourcepackage import ISourcePackage
 from canonical.launchpad.interfaces.validation import (
     valid_upstreamtask, validate_distrotask)
 from canonical.launchpad.webapp.interfaces import (
@@ -121,7 +121,7 @@ from canonical.launchpad.browser.bug import BugContextMenu, BugTextView
 from canonical.launchpad.browser.bugcomment import build_comments_from_chunks
 from canonical.launchpad.browser.feeds import (
     BugTargetLatestBugsFeedLink, FeedsMixin, PersonLatestBugsFeedLink)
-from canonical.launchpad.browser.mentoringoffer import CanBeMentoredView
+from lp.registry.browser.mentoringoffer import CanBeMentoredView
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 
 from canonical.launchpad.webapp.authorization import check_permission
@@ -775,13 +775,28 @@ class BugTaskView(LaunchpadView, CanBeMentoredView, FeedsMixin):
         The `BugActivityItem`s will be grouped by the date on which they
         occurred.
         """
-        interesting_changes = [
-             'security vulnerability', 'summary', 'visibility']
         activity_by_date = {}
+        bugtask_change_re = (
+            '[a-z0-9][a-z0-9\+\.\-]+( \([A-Za-z0-9\s]+\))?: '
+            '(assignee|importance|milestone|status)')
+        interesting_changes = [
+             'description',
+             'security vulnerability',
+             'summary',
+             'tags',
+             'visibility',
+             bugtask_change_re,
+             ]
+
+        # Turn the interesting_changes list into a regex so that we can
+        # do complex matches.
+        interesting_changes_expression = "|".join(interesting_changes)
+        interesting_changes_regex = re.compile(
+            "^(%s)$" % interesting_changes_expression)
 
         for activity in self.context.bug.activity:
             # If we're not interested in the change, skip it.
-            if activity.whatchanged not in interesting_changes:
+            if interesting_changes_regex.match(activity.whatchanged) is None:
                 continue
 
             activity = BugActivityItem(activity)
@@ -3146,19 +3161,90 @@ class BugActivityItem:
     @property
     def change_summary(self):
         """Return a formatted summary of the change."""
-        return "%s changed" % self.whatchanged
+        # Remove colons to make BugTask attribute changes are a little
+        # more readable.
+        return self.whatchanged.replace(':', '')
+
+    @property
+    def _formatted_tags_change(self):
+        """Return a tags change as lists of added and removed tags."""
+        assert self.whatchanged == 'tags', (
+            "Can't return a formatted tags change for a change in %s."
+            % self.whatchanged)
+
+        # Turn the strings of newvalue and oldvalue into sets so we
+        # can work out the differences.
+        if self.newvalue != '':
+            new_tags = set(re.split('\s+', self.newvalue))
+        else:
+            new_tags = set()
+
+        if self.oldvalue != '':
+            old_tags = set(re.split('\s+', self.oldvalue))
+        else:
+            old_tags = set()
+
+        added_tags = sorted(new_tags.difference(old_tags))
+        removed_tags = sorted(old_tags.difference(new_tags))
+
+        return_string = ''
+        if len(added_tags) > 0:
+            return_string = "added: %s\n" % ' '.join(added_tags)
+        if len(removed_tags) > 0:
+            return_string = (
+                return_string + "removed: %s" % ' '.join(removed_tags))
+
+        # Trim any leading or trailing \ns and then convert the to
+        # <br />s so they're displayed correctly.
+        return return_string.strip('\n')
 
     @property
     def change_details(self):
         """Return a detailed description of the change."""
-        diffable_changes = ['summary']
+        assignee_regex = re.compile(
+            '[a-z0-9][a-z0-9\+\.\-]+( \([A-Za-z0-9\s]+\))?: assignee')
+        milestone_regex = re.compile(
+            '[a-z0-9][a-z0-9\+\.\-]+( \([A-Za-z0-9\s]+\))?: milestone')
 
-        if self.whatchanged in diffable_changes:
-            # If we're going to display it as a diff we replace \ns with
-            # <br />s so that the lines are separated properly.
+        # Our default return dict. We may mutate this depending on
+        # what's changed.
+        return_dict = {
+            'old_value': self.oldvalue,
+            'new_value': self.newvalue,
+            }
+        if self.whatchanged == 'summary':
+            # We display summary changes as a unified diff, replacing
+            # \ns with <br />s so that the lines are separated properly.
             diff = cgi.escape(
                 get_unified_diff(self.oldvalue, self.newvalue, 72), True)
             return diff.replace("\n", "<br />")
+
+        elif self.whatchanged == 'description':
+            # Description changes can be quite long, so we just return
+            # 'updated' rather than returning the whole new description
+            # or a diff.
+            return 'updated'
+
+        elif self.whatchanged == 'tags':
+            # We special-case tags because we can work out what's been
+            # added and what's been removed.
+            return self._formatted_tags_change.replace('\n', '<br />')
+
+        elif assignee_regex.match(self.whatchanged) is not None:
+            for key in return_dict:
+                if return_dict[key] is None:
+                    return_dict[key] = 'nobody'
+
+        elif milestone_regex.match(self.whatchanged) is not None:
+            for key in return_dict:
+                if return_dict[key] is None:
+                    return_dict[key] = 'none'
+
         else:
-            return "%s &#8594; %s" % (
-                cgi.escape(self.oldvalue), cgi.escape(self.newvalue))
+            # Our default state is to just return oldvalue and newvalue.
+            # Since we don't necessarily know what they are, we escape
+            # them.
+            for key in return_dict:
+                return_dict[key] = cgi.escape(return_dict[key])
+
+        return "%(old_value)s &#8594; %(new_value)s" % return_dict

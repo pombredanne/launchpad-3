@@ -25,10 +25,10 @@ from canonical.launchpad.interfaces.archive import (
     ArchivePurpose, IArchiveSet)
 from canonical.launchpad.interfaces.binarypackagerelease import (
     BinaryPackageFormat)
-from canonical.launchpad.interfaces.distribution import IDistributionSet
-from canonical.launchpad.interfaces.distroseries import DistroSeriesStatus
+from lp.registry.interfaces.distribution import IDistributionSet
+from lp.registry.interfaces.distroseries import DistroSeriesStatus
 from canonical.launchpad.interfaces.gpghandler import IGPGHandler
-from canonical.launchpad.interfaces.person import IPersonSet
+from lp.registry.interfaces.person import IPersonSet
 from canonical.launchpad.interfaces.publishing import (
     PackagePublishingPocket, PackagePublishingStatus)
 from canonical.launchpad.interfaces.archivesigningkey import (
@@ -510,6 +510,7 @@ class TestPublisher(TestPublisherBase):
              'Filename: pool/main/f/foo/foo-bin_666_all.deb',
              'Size: 18',
              'MD5sum: 008409e7feb1c24a6ccab9f6a62d24c5',
+             'SHA1: 30b7b4e583fa380772c5a40e428434628faef8cf',
              'Description: Foo app is great',
              ' My leading spaces are normalised to a single space but not '
              'trailing.  ',
@@ -537,6 +538,7 @@ class TestPublisher(TestPublisherBase):
              'Filename: pool/main/f/foo/bingo_666_all.udeb',
              'Size: 18',
              'MD5sum: 008409e7feb1c24a6ccab9f6a62d24c5',
+             'SHA1: 30b7b4e583fa380772c5a40e428434628faef8cf',
              'Description: Foo app is great',
              ' nice udeb',
              ''],

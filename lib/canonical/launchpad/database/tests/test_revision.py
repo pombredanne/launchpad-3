@@ -16,10 +16,11 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.sqlbase import cursor
-from canonical.launchpad.database.karma import Karma
+from lp.registry.model.karma import Karma
 from canonical.launchpad.database.revision import RevisionSet
 from canonical.launchpad.ftests import login, logout
-from canonical.launchpad.interfaces import IRevisionSet
+from canonical.launchpad.interfaces import (
+    IMasterObject, IRevisionSet)
 from canonical.launchpad.interfaces.account import AccountStatus
 from canonical.launchpad.interfaces.branch import BranchLifecycleStatus
 from canonical.launchpad.interfaces.branchlookup import IBranchLookup
@@ -108,7 +109,7 @@ class TestRevisionKarma(TestCaseWithFactory):
         author = self.factory.makePerson()
         rev = self.factory.makeRevision(
             author=author.preferredemail.email)
-        author.account.status = AccountStatus.SUSPENDED
+        IMasterObject(author.account).status = AccountStatus.SUSPENDED
         branch = self.factory.makeProductBranch()
         branch.createBranchRevision(1, rev)
         self.failIf(rev.karma_allocated)

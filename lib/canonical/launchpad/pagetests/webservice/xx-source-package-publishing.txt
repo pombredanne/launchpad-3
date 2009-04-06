@@ -82,7 +82,6 @@ Each source publication exposes a number of properties.
     >>> from canonical.lazr.testing.webservice import pprint_entry
     >>> pprint_entry(pubs['entries'][0])
     archive_link: u'http://.../~cprov/+archive/ppa'
-    changes_file_text: u'-----BEGIN PGP SIGNED MESSAGE-----...
     component_name: u'main'
     datecreated: u'2007-07-09T12:00:00+00:00'
     datemadepending: None
@@ -107,7 +106,7 @@ When Celso's PPA becomes private ...
     >>> login("foo.bar@canonical.com")
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
 
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
     >>> cprov.archive.buildd_secret = 'boing'

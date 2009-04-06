@@ -12,7 +12,7 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.launchpad.database.branch import Branch
 from canonical.launchpad.database.branchcollection import (
     GenericBranchCollection)
-from canonical.launchpad.database.product import Product
+from lp.registry.model.product import Product
 from canonical.launchpad.interfaces import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.branch import (
     BranchLifecycleStatus, BranchType)
