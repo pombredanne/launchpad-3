@@ -58,7 +58,7 @@ class TestTranslationSharedPOFile(unittest.TestCase):
         # Searching for English strings.
         potmsgset = self.factory.makePOTMsgSet(self.devel_potemplate,
                                                u"Some wild text")
-        potmsgset.setSequence(self.devel_potemplate, 1)
+        potmsgset.setSequence(self.devel_potemplate, 2)
 
         found_potmsgsets = list(
             self.devel_sr_pofile.findPOTMsgSetsContaining(u"wild"))
@@ -66,7 +66,7 @@ class TestTranslationSharedPOFile(unittest.TestCase):
 
         # Just linking an existing POTMsgSet into another POTemplate
         # will make it be returned in searches.
-        potmsgset.setSequence(self.stable_potemplate, 1)
+        potmsgset.setSequence(self.stable_potemplate, 2)
         found_potmsgsets = list(
             self.stable_sr_pofile.findPOTMsgSetsContaining(u"wild"))
         self.assertEquals(found_potmsgsets, [potmsgset])
@@ -75,7 +75,7 @@ class TestTranslationSharedPOFile(unittest.TestCase):
         plural_potmsgset = self.factory.makePOTMsgSet(self.devel_potemplate,
                                                       u"Some singular text",
                                                       u"Some plural text")
-        plural_potmsgset.setSequence(self.devel_potemplate, 1)
+        plural_potmsgset.setSequence(self.devel_potemplate, 3)
 
         found_potmsgsets = list(
             self.devel_sr_pofile.findPOTMsgSetsContaining(u"singular"))
