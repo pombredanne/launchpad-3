@@ -37,7 +37,9 @@ from canonical.codehosting import sftp
 from canonical.codehosting.sshserver import accesslog
 from canonical.codehosting.sshserver.session import (
     launch_smart_server, PatchedSSHSession)
+from canonical.codehosting.vfs.branchfsclient import trap_fault
 from canonical.config import config
+from canonical.launchpad.xmlrpc import faults
 
 
 class LaunchpadAvatar(avatar.ConchUser):
@@ -161,22 +163,18 @@ class PublicKeyFromLaunchpadChecker(SSHPublicKeyDatabase):
         self.authserver = authserver
 
     def checkKey(self, credentials):
-        d = self.authserver.callRemote('getUser', credentials.username)
-        return d.addCallback(self._checkUserExistence, credentials)
+        d = self.authserver.callRemote(
+            'getUserAndSSHKeys', credentials.username)
+        d.addCallback(self._checkForAuthorizedKey, credentials)
+        d.addErrback(self._reportNoSuchUser, credentials)
+        return d
 
-    def _checkUserExistence(self, userDict, credentials):
-        if len(userDict) == 0:
-            raise UserDisplayedUnauthorizedLogin(
-                "No such Launchpad account: %s" % credentials.username)
+    def _reportNoSuchUser(self, failure, credentials):
+        trap_fault(failure, faults.NoSuchPersonWithName)
+        raise UserDisplayedUnauthorizedLogin(
+            "No such Launchpad account: %s" % credentials.username)
 
-        authorizedKeys = self.authserver.callRemote(
-            'getSSHKeys', credentials.username)
-
-        # Add callback to try find the authorized key
-        authorizedKeys.addCallback(self._checkForAuthorizedKey, credentials)
-        return authorizedKeys
-
-    def _checkForAuthorizedKey(self, keys, credentials):
+    def _checkForAuthorizedKey(self, userDict, credentials):
         if credentials.algName == 'ssh-dss':
             wantKeyType = 'DSA'
         elif credentials.algName == 'ssh-rsa':
@@ -185,12 +183,12 @@ class PublicKeyFromLaunchpadChecker(SSHPublicKeyDatabase):
             # unknown key type
             return False
 
-        if len(keys) == 0:
+        if len(userDict['keys']) == 0:
             raise UserDisplayedUnauthorizedLogin(
                 "Launchpad user %r doesn't have a registered SSH key"
                 % credentials.username)
 
-        for keytype, keytext in keys:
+        for keytype, keytext in userDict['keys']:
             if keytype != wantKeyType:
                 continue
             try:

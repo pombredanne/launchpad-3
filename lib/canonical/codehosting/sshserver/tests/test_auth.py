@@ -21,6 +21,7 @@ from twisted.trial.unittest import TestCase as TrialTestCase
 
 from canonical.codehosting.sshserver import auth
 from canonical.config import config
+from canonical.launchpad.xmlrpc import faults
 from canonical.testing.layers import TwistedLayer
 from canonical.twistedsupport import suppress_stderr
 
@@ -342,11 +343,22 @@ class TestPublicKeyFromLaunchpadChecker(TrialTestCase):
                     })
             return defer.succeed({})
 
-        def xmlrpc_getSSHKeys(self, username):
-            if username != self.valid_user:
-                return defer.succeed([])
-            return defer.succeed(
-                [('DSA', self.valid_key.encode('base64'))])
+        def xmlrpc_getUserAndSSHKeys(self, username):
+            if username == self.valid_user:
+                return defer.succeed({
+                    'name': username,
+                    'keys': [('DSA', self.valid_key.encode('base64'))],
+                    })
+            elif username == self.no_key_user:
+                return defer.succeed({
+                    'name': username,
+                    'keys': [],
+                    })
+            else:
+                try:
+                    raise faults.NoSuchPersonWithName(username)
+                except faults.NoSuchPersonWithName:
+                    return defer.fail()
 
     def makeCredentials(self, username, public_key):
         return SSHPrivateKey(
