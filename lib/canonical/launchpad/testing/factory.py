@@ -100,6 +100,7 @@ from canonical.launchpad.interfaces.shipit import (
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageNameSet)
+from lp.registry.interfaces.ssh import ISSHKeySet, SSHKeyType
 from canonical.launchpad.interfaces.specification import (
     ISpecificationSet, SpecificationDefinitionStatus)
 from canonical.launchpad.interfaces.translationgroup import (
@@ -1615,3 +1616,11 @@ class LaunchpadObjectFactory(ObjectFactory):
             date_created, format, private, contactable,
             submission_key, emailaddress, distroarchseries,
             raw_submission, filename, filesize, system)
+
+    def makeSSHKey(self, person=None, keytype=SSHKeyType.RSA):
+        """ """
+        if person is None:
+            person = self.makePerson()
+        return getUtility(ISSHKeySet).new(
+            person=person, keytype=keytype, keytext=self.getUniqueString(),
+            comment=self.getUniqueString())
