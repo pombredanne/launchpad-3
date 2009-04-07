@@ -19,13 +19,14 @@ import binascii
 
 from twisted.conch import avatar
 from twisted.conch.error import ConchError
-from twisted.conch.interfaces import ISession
-from twisted.conch.ssh import filetransfer, userauth
+from twisted.conch.interfaces import IConchUser, ISession
+from twisted.conch.ssh import filetransfer, keys, userauth
 from twisted.conch.ssh.common import getNS, NS
 from twisted.conch.checkers import SSHPublicKeyDatabase
 
 from twisted.cred.error import UnauthorizedLogin
 from twisted.cred.checkers import ICredentialsChecker
+from twisted.cred import credentials
 from twisted.cred.portal import IRealm, Portal
 
 from twisted.python import components, failure
@@ -87,7 +88,8 @@ class Realm:
         self.branchfs_proxy = branchfs_proxy
 
     def requestAvatar(self, avatarId, mind, *interfaces):
-        # Fetch the user's details from the authserver
+        # Fetch the user's details from the authserver -- YYY using the mind
+        # as a some kind of key as a cache.
         deferred = self.authentication_proxy.callRemote('getUser', avatarId)
 
         # Once all those details are retrieved, we can construct the avatar.
@@ -151,6 +153,28 @@ class SSHUserAuthServer(userauth.SSHUserAuthServer):
         self.sendBanner(reason.getErrorMessage())
         return reason
 
+    def auth_publickey(self, packet):
+        # Copy-paste-hack from conch!
+        hasSig = ord(packet[0])
+        algName, blob, rest = getNS(packet[1:], 2)
+        pubKey = keys.Key.fromString(blob).keyObject
+        signature = hasSig and getNS(rest)[0] or None
+        if hasSig:
+            b = NS(self.transport.sessionID) + chr(userauth.MSG_USERAUTH_REQUEST) + \
+                NS(self.user) + NS(self.nextService) + NS('publickey') + \
+                chr(hasSig) +  NS(keys.objectType(pubKey)) + NS(blob)
+            # YYY Create our own kind of credential here.
+            c = credentials.SSHPrivateKey(self.user, algName, blob, b, signature)
+            # Pass something useful in as the mind.
+            return self.portal.login(c, None, IConchUser)
+        else:
+            # YYY Create our own kind of credential here.
+            c = credentials.SSHPrivateKey(self.user, algName, blob, None, None)
+            # Pass something useful in as the mind.
+            return self.portal.login(c, None, IConchUser).addErrback(
+                                                        self._ebCheckKey,
+                                                        packet[1:])
+
 
 class PublicKeyFromLaunchpadChecker(SSHPublicKeyDatabase):
     """Cred checker for getting public keys from launchpad.
@@ -163,6 +187,8 @@ class PublicKeyFromLaunchpadChecker(SSHPublicKeyDatabase):
         self.authserver = authserver
 
     def checkKey(self, credentials):
+        # YYY Use some part of credentials as the key into a cache for these
+        # results.
         d = self.authserver.callRemote(
             'getUserAndSSHKeys', credentials.username)
         d.addCallback(self._checkForAuthorizedKey, credentials)
