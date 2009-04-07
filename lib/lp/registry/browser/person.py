@@ -226,6 +226,7 @@ from canonical.launchpad import _
 from canonical.lazr.utils import smartquote
 
 from lp.answers.interfaces.questioncollection import IQuestionSet
+from lp.answers.interfaces.questionsperson import IQuestionsPerson
 
 
 class RestrictedMembershipsPersonView(LaunchpadView):
@@ -4419,7 +4420,7 @@ class PersonLatestQuestionsView(LaunchpadView):
     @cachedproperty
     def getLatestQuestions(self, quantity=5):
         """Return <quantity> latest questions created for this target. """
-        return self.context.searchQuestions(
+        return IQuestionsPerson(self.context).searchQuestions(
             participation=QuestionParticipation.OWNER)[:quantity]
 
 
@@ -4593,7 +4594,7 @@ class PersonAnswerContactForView(LaunchpadView):
         Return a list of IQuestionTargets sorted alphabetically by title.
         """
         return sorted(
-            self.context.getDirectAnswerQuestionTargets(),
+            IQuestionsPerson(self.context).getDirectAnswerQuestionTargets(),
             key=attrgetter('title'))
 
     @cachedproperty
@@ -4603,7 +4604,7 @@ class PersonAnswerContactForView(LaunchpadView):
         Sorted alphabetically by title.
         """
         return sorted(
-            self.context.getTeamAnswerQuestionTargets(),
+            IQuestionsPerson(self.context).getTeamAnswerQuestionTargets(),
             key=attrgetter('title'))
 
     def showRemoveYourselfLink(self):

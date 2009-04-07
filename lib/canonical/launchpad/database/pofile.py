@@ -29,10 +29,10 @@ from canonical.database.sqlbase import (
 from canonical.launchpad import helpers
 from canonical.launchpad.components.rosettastats import RosettaStats
 from lp.registry.interfaces.person import validate_public_person
+from lp.registry.model.person import Person
 from canonical.launchpad.database.potmsgset import POTMsgSet
 from canonical.launchpad.database.translationmessage import TranslationMessage
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from lp.registry.interfaces.person import IPersonSet
 from canonical.launchpad.interfaces.pofile import IPOFile, IPOFileSet
 from canonical.launchpad.interfaces.translationcommonformat import (
     ITranslationFileData)
@@ -410,7 +410,18 @@ class POFile(SQLBase, POFileMixIn):
     @property
     def contributors(self):
         """See `IPOFile`."""
-        return getUtility(IPersonSet).getPOFileContributors(self)
+        contributors = Person.select("""
+            POFileTranslator.person = Person.id AND
+            POFileTranslator.pofile = %s""" % quote(self),
+            clauseTables=["POFileTranslator"],
+            distinct=True,
+            # XXX: kiko 2006-10-19:
+            # We can't use Person.sortingColumns because this is a
+            # distinct query. To use it we'd need to add the sorting
+            # function to the column results and then ignore it -- just
+            # like selectAlso does, ironically.
+            orderBy=["Person.displayname", "Person.name"])
+        return contributors
 
     def prepareTranslationCredits(self, potmsgset):
         """See `IPOFile`."""
