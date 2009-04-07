@@ -22,7 +22,7 @@ from lazr.enum import DBEnumeratedType, DBItem, EnumeratedType, Item
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.archive import IArchive
 from canonical.launchpad.interfaces.builder import IBuilder
-from canonical.launchpad.interfaces.distribution import IDistribution
+from lp.registry.interfaces.distribution import IDistribution
 from canonical.launchpad.interfaces.distroarchseries import IDistroArchSeries
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 from canonical.launchpad.interfaces.processor import IProcessor
@@ -459,21 +459,6 @@ class IBuildSet(Interface):
                     'builds':[build3]
                 }
         :rtype: ``dict``.
-        """
-
-    def prefetchBuildData(build_ids):
-        """Used to pre-populate the cache with build related data.
-
-        When dealing with a group of Build records we can't use the
-        prejoin facility to also fetch BuildQueue, SourcePackageRelease
-        and LibraryFileAlias records in a single query because the
-        result set is too large and the queries time out too often.
-
-        So this method receives a list of Build IDs (the current batch
-        to be displayed on the GUI) and fetches the corresponding
-        BuildQueue, SourcePackageRelease and LibraryFileAlias rows
-        (prejoined with the appropriate Builder, SourcePackageName and
-        LibraryFileContent respectively).
         """
 
 

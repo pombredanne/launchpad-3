@@ -916,7 +916,7 @@ Product or a DistroSeries.
 The user uploads two translations into Hoary and Warty respectively, as
 well as one for the Firefox trunk series.
 
-    >>> from canonical.launchpad.interfaces.distribution import (
+    >>> from lp.registry.interfaces.distribution import (
     ...     IDistributionSet)
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> hoary_distroseries = ubuntu.getSeries('hoary')

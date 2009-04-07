@@ -135,25 +135,6 @@ div#package_counters p {
           replace="structure link/render" />
       </div>
 
-      <h2 style="margin-top: 0" tal:condition="not: context/is_copy">
-        URL:
-        <a tal:condition="archive_active"
-           tal:attributes="href view/archive_url"
-           tal:content="view/archive_url">url</a>
-        <tal:no-link
-           condition="not: archive_active"
-           content="context/archive_url">url</tal:no-link>
-      </h2>
-
-      <tal:whiteboard condition="context/required:launchpad.Edit">
-         <div id="whiteboard" class="informational"
-              tal:condition="context/whiteboard">
-           <p><tal:archive_label replace="archive_label" /> whiteboard:</p>
-           <tal:archive-whiteboard
-              replace="structure context/whiteboard/fmt:text-to-html" />
-         </div>
-      </tal:whiteboard>
-
       <div tal:define="archive context"
            tal:condition="archive_active"
            id="build-status-summary">
@@ -218,7 +199,9 @@ div#package_counters p {
 
       <p tal:condition="not: archive_active">
         This <tal:archive_label replace="archive_label" /> does not contain
-        any packages yet.
+        any packages yet. Find more information about how to upload
+        packages in the <a href="https://help.launchpad.net/Packaging/PPA"
+        >PPA help page</a>
       </p>
 
       <tal:active_archive condition="archive_active">

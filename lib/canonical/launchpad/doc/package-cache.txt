@@ -1,4 +1,6 @@
-= Package Cache System =
+====================
+Package Cache System
+====================
 
 Launchpad caches published packages (sources and binaries) details in
 order to get better performance on searches.
@@ -91,7 +93,8 @@ scripts runs periodically in our infrastructure. See usage at
 package-cache-script.txt.
 
 
-== Dealing with Source Caches ==
+Dealing with Source Caches
+==========================
 
 A SourcePackage that has the status DELETED will be deleted from the
 cache when it's updated.
@@ -196,7 +199,8 @@ reached via searches:
   True
 
 
-== Dealing with Binary Caches ==
+Dealing with Binary Caches
+==========================
 
 A BinaryPackage that has the status DELETED will be deleted from the
 cache when it's updated.
@@ -289,7 +293,8 @@ reached via searches:
   True
 
 
-== PPA package caches ==
+PPA package caches
+==================
 
 Package caches are also populated for PPAs, allowing users to search
 for them considering the packages currently published in their context.
@@ -323,7 +328,7 @@ We have to issue 'updateArchiveCache' to include the owner 'name' and
 Now Celso's PPA can be found via searches and the package counters got
 reset, reflecting that nothing is cached in the database yet.
 
-  >>> print ubuntu.searchPPAs(text='cprov')[0].title
+  >>> print ubuntu.searchPPAs(text='cprov')[0].displayname
   PPA for Celso Providelo
 
   >>> print cprov.archive.sources_cached
@@ -374,15 +379,15 @@ same queries work, pointing to Celso's PPA.
   >>> print cprov.archive.binaries_cached
   2
 
-  >>> print ubuntu.searchPPAs(text='cprov')[0].title
+  >>> print ubuntu.searchPPAs(text='cprov')[0].displayname
   PPA for Celso Providelo
-  >>> print ubuntu.searchPPAs(text='pmount')[0].title
+  >>> print ubuntu.searchPPAs(text='pmount')[0].displayname
   PPA for Celso Providelo
-  >>> print ubuntu.searchPPAs(text='firefox')[0].title
+  >>> print ubuntu.searchPPAs(text='firefox')[0].displayname
   PPA for Celso Providelo
-  >>> print ubuntu.searchPPAs(text='warty')[0].title
+  >>> print ubuntu.searchPPAs(text='warty')[0].displayname
   PPA for Celso Providelo
-  >>> print ubuntu.searchPPAs(text='shortdesc')[0].title
+  >>> print ubuntu.searchPPAs(text='shortdesc')[0].displayname
   PPA for Celso Providelo
 
 The method which populates the archive caches also cleans the texts up
@@ -470,7 +475,8 @@ everything will be back to normal.
   >>> transaction.commit()
 
 
-== Package Counters ==
+Package Counters
+================
 
 We also store counters for the number of Sources and Binaries
 published in a DistroSeries pocket RELEASE:
@@ -597,7 +603,8 @@ New values were stored:
   9
 
 
-== DistroSeriesBinaryPackage cache lookups ==
+DistroSeriesBinaryPackage cache lookups
+=======================================
 
 The DistroSeriesBinaryPackage and DistroArchSeriesBinaryPackage
 objects uses a DistroSeriesPackageCache record to present summary and
@@ -652,3 +659,27 @@ cache entry for a PPA package with the same name.
   >>> foobar_arch_binary = warty_i386.getBinaryPackage('foobar')
   >>> foobar_arch_binary.cache != ppa_cache
   True
+
+
+Content class declarations for FTI
+==================================
+
+For the FTI to work properly with Storm queries, the fti column on the
+content class must be declared as a RawStr, otherwise unicode errors are
+likely to be thrown.
+
+    >>> transaction.commit()
+    >>> binary_name = getUtility(
+    ...     IBinaryPackageNameSet).queryByName('commercialpackage')
+    >>> cache_with_unicode = DistroSeriesPackageCache(
+    ...     archive=ubuntu.main_archive, distroseries=warty,
+    ...     binarypackagename=binary_name, summaries=u"“unicode“") 
+    >>> transaction.commit()
+    >>> flush_database_updates()
+
+    >>> cache = DistroSeriesPackageCache.get(id=cache_with_unicode.id)
+
+The following line fails unless the content class FTI column is RawStr:
+
+    >>> cache.fti
+    "'\xc3\xa2\xc2\x80\xc2\x9cunicode\xc3\xa2\xc2\x80\xc2\x9c':1B"

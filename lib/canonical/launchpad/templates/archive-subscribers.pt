@@ -11,25 +11,25 @@
   >
 <body>
 
-  <div metal:fill-slot="main" tal:define="archive_label view/archive_label">
+  <div metal:fill-slot="main">
 
     <h1 tal:content="CONTEXTS/fmt:pagetitle">
       Manage subscribers for Blah PPA
     </h1>
     <p>Subscribers are people or teams who can install software
-       from your <tal:archive-label replace="archive_label" />.
+       from your PPA.
     </p>
 
     <div class="subscribers">
       <p tal:condition="not: view/has_subscriptions" id="no-subscribers">
-        This <tal:archive-label replace="archive_label "/> does not yet
+        This PPA does not yet
         have any subscribers.
       </p>
 
       <p class="error message" tal:condition="view/errors"
          tal:content="view/error_count" />
 
-      <h2><tal:archive-label replace="archive_label"/> Subscribers</h2>
+      <h2>PPA Subscribers</h2>
 
       <form action="."
         tal:attributes="action view/action_url"
@@ -38,7 +38,7 @@
         enctype="multipart/form-data"
         accept-charset="UTF-8">
 
-      <table tal:attributes="summary string:Subscribers for this ${archive_label};"
+      <table tal:attributes="summary string:Subscribers for ${context/displayname};"
              id="archive-subscribers" class="listing">
         <thead>
           <tr class="archive_subscriber_row">
@@ -82,7 +82,12 @@
               tal:repeat="subscription view/subscriptions">
             <td tal:content="structure subscription/subscriber/fmt:link" />
             <td tal:content="subscription/date_expires/fmt:date" />
-            <td colspan="2" tal:content="subscription/description" />
+            <td tal:content="subscription/description" />
+            <td>
+              <a class="edit" tal:attributes="href subscription/fmt:url">
+                Edit/Cancel
+              </a>
+            </td>
          </tr>
         </tbody>
       </table>

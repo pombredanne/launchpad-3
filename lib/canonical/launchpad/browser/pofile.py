@@ -401,9 +401,6 @@ class POFileTranslateView(BaseTranslationView):
 
         :return: TranslationGroup or None if not found.
         """
-        # XXX 2009-02-20 Danilo (bug #332044): potemplate.translationgroups
-        # provides a list of translation groups even if it can have at
-        # most one.
         translation_groups = self.context.potemplate.translationgroups
         if translation_groups is not None and len(translation_groups) > 0:
             group = translation_groups[0]

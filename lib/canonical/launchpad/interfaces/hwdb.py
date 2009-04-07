@@ -37,6 +37,7 @@ __all__ = [
     'IHWVendorName',
     'IHWVendorNameSet',
     'IllegalQuery',
+    'ParameterError',
     ]
 
 from zope.component import getUtility
@@ -46,10 +47,10 @@ from zope.schema import (
 from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces.distribution import IDistribution
-from canonical.launchpad.interfaces.distroseries import IDistroSeries
-from canonical.launchpad.interfaces.person import IPerson
-from canonical.launchpad.interfaces.product import License
+from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.distroseries import IDistroSeries
+from lp.registry.interfaces.person import IPerson
+from lp.registry.interfaces.product import License
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.validators.email import valid_email
@@ -1040,4 +1041,8 @@ class IHWDBApplication(ILaunchpadApplication, ITopLevelEntryLink):
 
 class IllegalQuery(Exception):
     """Exception raised when trying to run an illegal submissions query."""
+    webservice_error(400) #Bad request.
+
+class ParameterError(Exception):
+    """Exception raised when a method parameter does not match a constrint."""
     webservice_error(400) #Bad request.

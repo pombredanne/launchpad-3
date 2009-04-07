@@ -241,27 +241,17 @@ class LaunchpadFormView(LaunchpadView):
         """Validate the named form widgets.
 
         :param names: Names of widgets to validate. If None, all widgets
-        will be validated.
+            will be validated.
         """
-        # XXX jamesh 2006-09-26:
-        # If a form field is disabled, then no data will be sent back.
-        # getWidgetsData() raises an exception when this occurs, even
-        # if the field is not marked as required.
-        #
-        # To work around this, we pass a subset of widgets to
-        # getWidgetsData().  Reported as:
-        #     http://www.zope.org/Collectors/Zope3-dev/717
-        widgets = []
-        for input, widget in self.widgets.__iter_input_and_widget__():
-            if names is None or widget.context.__name__ in names:
-                if (input and IInputWidget.providedBy(widget) and
-                    not widget.hasInput()):
-                    if widget.context.required:
-                        self.setFieldError(widget.context.__name__,
-                                           'Required field is missing')
-                else:
+        if names is None:
+            # Validate all widgets.
+            widgets = self.widgets
+        else:
+            widgets = []
+            for input, widget in self.widgets.__iter_input_and_widget__():
+                if widget.context.__name__ in names:
                     widgets.append((input, widget))
-        widgets = form.Widgets(widgets, len(self.prefix)+1)
+            widgets = form.Widgets(widgets, len(self.prefix) + 1)
         for error in form.getWidgetsData(widgets, self.prefix, data):
             self.errors.append(error)
         for error in form.checkInvariants(self.form_fields, data):

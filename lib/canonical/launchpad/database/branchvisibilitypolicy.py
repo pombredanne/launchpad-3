@@ -20,12 +20,12 @@ from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
 
 from canonical.launchpad.helpers import shortlist
-from canonical.launchpad.interfaces.product import IProduct
-from canonical.launchpad.interfaces.project import IProject
+from lp.registry.interfaces.product import IProduct
+from lp.registry.interfaces.project import IProject
 from canonical.launchpad.interfaces.branchvisibilitypolicy import (
     BranchVisibilityRule, IBranchVisibilityTeamPolicy,
     InvalidVisibilityPolicy)
-from canonical.launchpad.validators.person import validate_public_person
+from lp.registry.interfaces.person import validate_public_person
 
 
 class BranchVisibilityTeamPolicy(SQLBase):

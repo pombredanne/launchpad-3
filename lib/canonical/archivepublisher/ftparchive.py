@@ -433,7 +433,7 @@ class FTPArchiveHandler:
         for package, priority, section in bin_overrides:
             origin = "\t".join([package, "Origin", "Ubuntu"])
             bugs = "\t".join([package, "Bugs",
-                        "mailto:ubuntu-users@lists.ubuntu.com"])
+                        "https://bugs.launchpad.net/ubuntu/+filebug"])
 
             f.write("\t".join((package, priority, section)))
             f.write("\n")

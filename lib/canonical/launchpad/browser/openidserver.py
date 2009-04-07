@@ -37,7 +37,7 @@ from canonical.launchpad import _
 from canonical.launchpad.components.openidserver import (
     OpenIDPersistentIdentity, CurrentOpenIDEndPoint)
 from canonical.launchpad.interfaces.account import IAccountSet, AccountStatus
-from canonical.launchpad.interfaces.person import (
+from lp.registry.interfaces.person import (
     IPerson, IPersonSet, PersonVisibility)
 from canonical.launchpad.interfaces.authtoken import (
     IAuthTokenSet, LoginTokenType)
@@ -658,10 +658,10 @@ class LoginServiceMixinLoginView:
         loginsource = getUtility(IPlacelessLoginSource)
         principal = loginsource.getPrincipalByLogin(email)
         if principal is not None and principal.validate(password):
-            person = principal.person
-            if person is None:
+            account = principal.account
+            if account is None:
                 return
-            if person.preferredemail is None:
+            if account.preferredemail is None:
                 self.addError(
                         _(
                     "The email address '${email}' has not yet been "
@@ -669,19 +669,11 @@ class LoginServiceMixinLoginView:
                     "instructions on how to confirm that it belongs to you.",
                     mapping=dict(email=email)))
                 self.token = getUtility(IAuthTokenSet).new(
-                    person.account, email, email,
+                    account, email, email,
                     LoginTokenType.VALIDATEEMAIL,
                     redirection_url=self.redirection_url)
                 self.token.sendEmailValidationRequest()
                 self.saveRequestInSession('token' + self.token.token)
-
-            if not person.is_valid_person:
-                # Normally invalid accounts will have a NULL password
-                # so this will be rarely seen, if ever. An account with no
-                # valid email addresses might end up in this situation,
-                # such as having them flagged as OLD by a email bounce
-                # processor or manual changes by the DBA.
-                self.addError(_("This account cannot be used."))
         else:
             self.addError(_("Incorrect password for the provided "
                             "email address."))

@@ -28,11 +28,14 @@ from canonical.launchpad.interfaces.codereviewcomment import (
 from canonical.launchpad.interfaces.codereviewvote import (
     ICodeReviewVoteReference)
 from canonical.launchpad.interfaces.diff import IPreviewDiff
+from lp.registry.interfaces.distroseries import IDistroSeries
+from lp.registry.interfaces.person import IPerson, IPersonPublic
 from canonical.launchpad.interfaces.hwdb import IHWSubmission
-from canonical.launchpad.interfaces.person import IPerson, IPersonPublic
-from canonical.launchpad.interfaces.product import IProduct
+from lp.registry.interfaces.product import IProduct
+from lp.registry.interfaces.productseries import IProductSeries
 from canonical.launchpad.interfaces.publishing import (
     PackagePublishingPocket)
+from lp.registry.interfaces.sourcepackage import ISourcePackage
 
 
 IBranch['product'].schema = IProduct
@@ -78,5 +81,17 @@ IHasBuildRecords['getBuildRecords'].queryTaggedValue(
     'lazr.webservice.exported')[
         'return_type'].value_type.schema = IBuild
 
-IPerson['hardware_submissions'].value_type.schema = IHWSubmission
+ISourcePackage['distroseries'].schema = IDistroSeries
+ISourcePackage['productseries'].schema = IProductSeries
+ISourcePackage['getBranch'].queryTaggedValue(
+    'lazr.webservice.exported')[
+        'params']['pocket'].vocabulary = PackagePublishingPocket
+ISourcePackage['getBranch'].queryTaggedValue(
+    'lazr.webservice.exported')['return_type'].schema = IBranch
+ISourcePackage['setBranch'].queryTaggedValue(
+    'lazr.webservice.exported')[
+        'params']['pocket'].vocabulary = PackagePublishingPocket
+ISourcePackage['setBranch'].queryTaggedValue(
+    'lazr.webservice.exported')['params']['branch'].schema = IBranch
 
+IPerson['hardware_submissions'].value_type.schema = IHWSubmission

@@ -760,7 +760,7 @@ message translations were ignored.
 Imports so far have been associated with a product series. We can also
 submit translations for a distroseries.
 
-    >>> from canonical.launchpad.interfaces.distribution import (
+    >>> from lp.registry.interfaces.distribution import (
     ...     IDistributionSet)
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> warty = ubuntu.getSeries('warty')
