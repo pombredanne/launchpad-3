@@ -13,7 +13,7 @@ import atexit
 
 from canonical.testing.layers import AppServerLayer, LayerProcessController
 from canonical.launchpad.mailman.runmailman import start_mailman, stop_mailman
-from canonical.launchpad.mailman.testing import logwatcher
+from lp.services.mailman.testing import logwatcher
 
 
 class MailmanLayer(AppServerLayer):
