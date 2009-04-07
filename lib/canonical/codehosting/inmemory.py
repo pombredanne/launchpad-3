@@ -16,18 +16,18 @@ from zope.component import adapter, getSiteManager
 from zope.interface import implementer
 
 from canonical.database.constants import UTC_NOW
-from canonical.launchpad.database.branchnamespace import BranchNamespaceSet
-from canonical.launchpad.database.branchtarget import (
+from lp.code.model.branchnamespace import BranchNamespaceSet
+from lp.code.model.branchtarget import (
     PackageBranchTarget, ProductBranchTarget)
-from canonical.launchpad.interfaces.branch import BranchType, IBranch
-from canonical.launchpad.interfaces.branchtarget import IBranchTarget
-from canonical.launchpad.interfaces.codehosting import (
+from lp.code.interfaces.branch import BranchType, IBranch
+from lp.code.interfaces.branchtarget import IBranchTarget
+from lp.code.interfaces.codehosting import (
     BRANCH_TRANSPORT, CONTROL_TRANSPORT, LAUNCHPAD_ANONYMOUS,
     LAUNCHPAD_SERVICES)
 from canonical.launchpad.interfaces.publishing import PackagePublishingPocket
 from canonical.launchpad.testing import ObjectFactory
 from canonical.launchpad.validators import LaunchpadValidationError
-from canonical.launchpad.xmlrpc.codehosting import (
+from lp.code.xmlrpc.codehosting import (
     datetime_from_tuple, iter_split)
 from canonical.launchpad.xmlrpc import faults
 

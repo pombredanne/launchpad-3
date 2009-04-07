@@ -37,7 +37,7 @@ from lp.registry.interfaces.project import (
     IProject, IProjectSeries, IProjectSet)
 from lp.registry.interfaces.pillar import IPillarNameSet
 
-from canonical.launchpad.database.branchvisibilitypolicy import (
+from lp.code.model.branchvisibilitypolicy import (
     BranchVisibilityPolicyMixin)
 from canonical.launchpad.database.bug import (
     get_bug_tags, get_bug_tags_open_count)

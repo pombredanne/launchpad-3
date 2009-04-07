@@ -4,12 +4,12 @@
 # XXX flacoste 2009/03/18 We should use specific imports instead of
 # importing from this module.
 from canonical.launchpad.database.account import *
-from canonical.launchpad.database.codeimport import *
-from canonical.launchpad.database.codeimportevent import *
-from canonical.launchpad.database.codeimportjob import *
-from canonical.launchpad.database.codeimportmachine import *
-from canonical.launchpad.database.codeimportresult import *
-from canonical.launchpad.database.codereviewvote import *
+from lp.code.model.codeimport import *
+from lp.code.model.codeimportevent import *
+from lp.code.model.codeimportjob import *
+from lp.code.model.codeimportmachine import *
+from lp.code.model.codeimportresult import *
+from lp.code.model.codereviewvote import *
 from canonical.launchpad.database.customlanguagecode import *
 from lp.registry.model.milestone import *
 from lp.registry.model.person import *
@@ -83,11 +83,11 @@ from canonical.launchpad.database.translationsoverview import *
 from canonical.launchpad.database.translationtemplateitem import *
 from canonical.launchpad.database.translator import *
 from canonical.launchpad.database.processor import *
-from canonical.launchpad.database.branch import *
-from canonical.launchpad.database.branchmergeproposal import *
-from canonical.launchpad.database.branchrevision import *
-from canonical.launchpad.database.branchsubscription import *
-from canonical.launchpad.database.branchvisibilitypolicy import *
+from lp.code.model.branch import *
+from lp.code.model.branchmergeproposal import *
+from lp.code.model.branchrevision import *
+from lp.code.model.branchsubscription import *
+from lp.code.model.branchvisibilitypolicy import *
 from canonical.launchpad.database.build import *
 from canonical.launchpad.database.builder import *
 from canonical.launchpad.database.buildqueue import *
@@ -141,5 +141,5 @@ from lp.registry.model.mailinglist import *
 from canonical.launchpad.database.hwdb import *
 from canonical.launchpad.database.archivedependency import *
 from canonical.launchpad.database.packagediff import *
-from canonical.launchpad.database.codereviewcomment import *
+from lp.code.model.codereviewcomment import *
 from canonical.launchpad.database.archivepermission import *

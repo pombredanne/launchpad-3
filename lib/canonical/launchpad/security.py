@@ -17,11 +17,11 @@ from canonical.launchpad.interfaces.archivepermission import (
 from canonical.launchpad.interfaces.archiveauthtoken import IArchiveAuthToken
 from canonical.launchpad.interfaces.archivesubscriber import (
     IArchiveSubscriber)
-from canonical.launchpad.interfaces.branch import (
+from lp.code.interfaces.branch import (
     IBranch, user_has_special_branch_access)
-from canonical.launchpad.interfaces.branchmergeproposal import (
+from lp.code.interfaces.branchmergeproposal import (
     IBranchMergeProposal)
-from canonical.launchpad.interfaces.branchsubscription import (
+from lp.code.interfaces.branchsubscription import (
     IBranchSubscription)
 from canonical.launchpad.interfaces.bug import IBug
 from canonical.launchpad.interfaces.bugattachment import IBugAttachment
@@ -30,12 +30,12 @@ from canonical.launchpad.interfaces.bugnomination import IBugNomination
 from canonical.launchpad.interfaces.bugtracker import IBugTracker
 from canonical.launchpad.interfaces.build import IBuild
 from canonical.launchpad.interfaces.builder import IBuilder, IBuilderSet
-from canonical.launchpad.interfaces.codeimport import ICodeImport
-from canonical.launchpad.interfaces.codeimportjob import (
+from lp.code.interfaces.codeimport import ICodeImport
+from lp.code.interfaces.codeimportjob import (
     ICodeImportJobSet, ICodeImportJobWorkflow)
-from canonical.launchpad.interfaces.codeimportmachine import (
+from lp.code.interfaces.codeimportmachine import (
     ICodeImportMachine)
-from canonical.launchpad.interfaces.codereviewcomment import (
+from lp.code.interfaces.codereviewcomment import (
     ICodeReviewComment, ICodeReviewCommentDeletion)
 from lp.registry.interfaces.distribution import IDistribution
 from canonical.launchpad.interfaces.distributionmirror import (
@@ -76,7 +76,7 @@ from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productrelease import (
     IProductRelease, IProductReleaseFile)
 from lp.registry.interfaces.productseries import IProductSeries
-from canonical.launchpad.interfaces.seriessourcepackagebranch import (
+from lp.code.interfaces.seriessourcepackagebranch import (
     ISeriesSourcePackageBranch, ISeriesSourcePackageBranchSet)
 from canonical.launchpad.interfaces.shipit import (
     IRequestedCDs, IShippingRequest, IShippingRequestSet, IShippingRun,

@@ -51,7 +51,7 @@ from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 
-from canonical.launchpad.interfaces.branchnamespace import IBranchNamespaceSet
+from lp.code.interfaces.branchnamespace import IBranchNamespaceSet
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.product import IProduct
 from canonical.launchpad.interfaces.specification import (

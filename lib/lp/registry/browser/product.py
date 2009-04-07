@@ -75,7 +75,7 @@ from lp.registry.interfaces.productseries import (
 from canonical.launchpad import helpers
 from lp.registry.browser.announcement import HasAnnouncementsView
 from canonical.launchpad.browser.branding import BrandingChangeView
-from canonical.launchpad.browser.branchref import BranchRef
+from lp.code.browser.branchref import BranchRef
 from canonical.launchpad.browser.bugtask import (
     BugTargetTraversalMixin, get_buglisting_search_filter_url)
 from lp.registry.browser.distribution import UsesLaunchpadMixin
