@@ -1,10 +1,12 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2008-2009 Canonical Ltd.  All rights reserved.
 """`MozillaZipTraversal` tests."""
 
 __metaclass__ = type
 
 import unittest
 
+from canonical.launchpad.interfaces.translationimporter import (
+    TranslationFormatInvalidInputError)
 from canonical.launchpad.translationformat.mozilla_zip import (
     MozillaZipTraversal)
 from canonical.launchpad.translationformat.tests.xpi_helpers import (
@@ -44,6 +46,14 @@ class MozillaZipTraversalTestCase(unittest.TestCase):
     """Test Mozilla XPI/jar traversal."""
 
     layer = LaunchpadZopelessLayer
+
+    def test_InvalidXpiFile(self):
+        # If the "XPI" file isn't really a zip file, that's a
+        # TranslationFormatInvalidInputError.
+        self.assertRaises(
+            TranslationFormatInvalidInputError,
+            TraversalRecorder,
+            'foo.xpi', __file__)
 
     def test_XpiTraversal(self):
         """Test a typical traversal of XPI file, with nested jar file."""

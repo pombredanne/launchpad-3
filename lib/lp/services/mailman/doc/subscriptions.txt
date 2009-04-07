@@ -4,7 +4,7 @@ Both direct and indirect members of a team may subscribe to a team's mailing
 list.  First, create the mailing list, which will send a notification messages
 to all the members of the mailing list.  We can ignore these messages.
 
-    >>> from canonical.launchpad.mailman.testing import helpers
+    >>> from lp.services.mailman.testing import helpers
     >>> list_one = helpers.create_list('itest-one')
 
 Anne registers with Launchpad and decides to subscribe to the mailing list.
