@@ -68,11 +68,11 @@ class POTMsgSet(SQLBase):
 
     _cached_singular_text = None
 
-    _uses_english_msgids = None
+    _cached_uses_english_msgids = None
 
     def __storm_invalidated__(self):
         self._cached_singular_text = None
-        self._uses_english_msgids = None
+        self._cached_uses_english_msgids = None
 
     def _conflictsExistingSourceFileFormats(self, source_file_format=None):
         """Return whether `source_file_format` conflicts with existing ones
@@ -125,8 +125,8 @@ class POTMsgSet(SQLBase):
     @property
     def uses_english_msgids(self):
         """See `IPOTMsgSet`."""
-        if self._uses_english_msgids is not None:
-            return self._uses_english_msgids
+        if self._cached_uses_english_msgids is not None:
+            return self._cached_uses_english_msgids
 
         conflicts, uses_english_msgids = (
             self._conflictsExistingSourceFileFormats())
@@ -137,9 +137,14 @@ class POTMsgSet(SQLBase):
                 "have conflicting values for uses_english_msgids.")
         else:
             if uses_english_msgids is None:
+                # Default is to use English in msgids, as opposed
+                # to using unique identifiers (like XPI files do) and
+                # having a separate English translation.
+                # However, we are not caching anything when there's
+                # no value to cache.
                 return True
-            self._uses_english_msgids = uses_english_msgids
-        return self._uses_english_msgids
+            self._cached_uses_english_msgids = uses_english_msgids
+        return self._cached_uses_english_msgids
 
     @property
     def singular_text(self):
