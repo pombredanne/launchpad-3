@@ -7,7 +7,7 @@ Mailman adds to the bottom of very message.
 
 A mailing list is created, and Anne subscribes to it.
 
-    >>> from canonical.launchpad.mailman.testing import helpers
+    >>> from lp.services.mailman.testing import helpers
     >>> list_one = helpers.create_list('itest-one')
     >>> helpers.subscribe('Anne', 'itest-one')
 

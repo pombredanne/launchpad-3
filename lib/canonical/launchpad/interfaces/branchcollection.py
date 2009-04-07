@@ -136,6 +136,12 @@ class IBranchCollection(Interface):
     def withLifecycleStatus(*statuses):
         """Restrict the collection to branches with the given statuses."""
 
+    def modifiedSince(epoch):
+        """Restrict the collection to branches modified since `epoch`."""
+
+    def scannedSince(epoch):
+        """Restrict the collection to branches scanned since `epoch`."""
+
 
 class IAllBranches(IBranchCollection):
     """An `IBranchCollection` representing all branches in Launchpad."""
