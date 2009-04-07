@@ -86,7 +86,6 @@ class Realm:
 
     def requestAvatar(self, avatarId, mind, *interfaces):
         # Fetch the user's details from the authserver
-        print >> open('/home/mwh/blargh.txt', 'a'), ('*****', avatarId,)
         deferred = self.authentication_proxy.callRemote('getUser', avatarId)
 
         # Once all those details are retrieved, we can construct the avatar.
@@ -162,7 +161,6 @@ class PublicKeyFromLaunchpadChecker(SSHPublicKeyDatabase):
         self.authserver = authserver
 
     def checkKey(self, credentials):
-        print >> open('/home/mwh/blargh.txt', 'a'), ('!!!!', credentials, credentials.username)
         d = self.authserver.callRemote('getUser', credentials.username)
         return d.addCallback(self._checkUserExistence, credentials)
 
