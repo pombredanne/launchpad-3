@@ -228,7 +228,12 @@ class POFileMixIn(RosettaStats):
         return header
 
     def _getTranslationSearchQuery(self, pofile, plural_form, text):
-        """Query for finding `text` in `plural_form` translations of `pofile`.
+        """Query to find `text` in `plural_form` translations of a `pofile`.
+
+        This produces a list of clauses that can be used to search for
+        TranslationMessages containing `text` in their msgstr[`plural_form`].
+        Returned values are POTMsgSet ids containing them, expected to be
+        used in a UNION across all plural forms.
         """
         if pofile.variant is None:
             variant_query = " IS NULL"
@@ -564,10 +569,10 @@ class POFile(SQLBase, POFileMixIn):
             orderBy=['sequence', '-date_created'])
 
     def _getTranslatedMessagesQuery(self):
-        """Get clauses and clause tables for fetching all POTMsgSets
-        with translations.
+        """Get query data for fetching all POTMsgSets with translations.
 
-        To be used with POTMsgSet.select().
+        Return a tuple of SQL (clauses, clause_tables) to be used with
+        POTMsgSet.select().
         """
         clause_tables = ['TranslationTemplateItem', 'TranslationMessage']
         clauses = self._getClausesForPOFileMessages()
@@ -603,7 +608,6 @@ class POFile(SQLBase, POFileMixIn):
                             + shared_translation_query + ') )')
         clauses.append(translated_query)
         return (clauses, clause_tables)
-
 
     def getPOTMsgSetTranslated(self):
         """See `IPOFile`."""
@@ -679,7 +683,6 @@ class POFile(SQLBase, POFileMixIn):
             clauseTables=['TranslationTemplateItem', 'TranslationMessage'],
             orderBy='POTMsgSet.sequence',
             distinct=True)
-
         return results
 
     def getPOTMsgSetChangedInLaunchpad(self):
@@ -698,7 +701,6 @@ class POFile(SQLBase, POFileMixIn):
         clauses.extend([
             'TranslationTemplateItem.potmsgset = POTMsgSet.id',
             ])
-
 
         imported_no_diverged = (
             '''NOT EXISTS (
@@ -812,18 +814,18 @@ class POFile(SQLBase, POFileMixIn):
             'TranslationMessage.is_imported IS TRUE',
             'TranslationMessage.is_current IS TRUE',
             'TranslationMessage.potmsgset = POTMsgSet.id',
-            ('(TranslationMessage.potemplate = %(template)s OR ('
-             '  TranslationMessage.potemplate IS NULL AND NOT EXISTS ('
-             '    SELECT * FROM TranslationMessage AS current '
-             '      WHERE '
-             '        current.potemplate = %(template)s AND '
-             '        current.id <> TranslationMessage.id AND '
-             '        TranslationMessage.language=current.language AND '
-             '        TranslationMessage.variant IS NOT DISTINCT FROM '
-             '           current.variant AND '
-             '        TranslationMessage.potmsgset=current.potmsgset AND '
-             '        TranslationMessage.msgstr0 IS NOT NULL  AND '
-             '        TranslationMessage.is_current IS TRUE)))') % (
+            """(TranslationMessage.potemplate = %(template)s OR (
+                TranslationMessage.potemplate IS NULL AND NOT EXISTS (
+                  SELECT * FROM TranslationMessage AS current
+                    WHERE
+                      current.potemplate = %(template)s AND
+                      current.id <> TranslationMessage.id AND
+                      TranslationMessage.language=current.language AND
+                      TranslationMessage.variant IS NOT DISTINCT FROM
+                         current.variant AND
+                      TranslationMessage.potmsgset=current.potmsgset AND
+                      TranslationMessage.msgstr0 IS NOT NULL  AND
+                      TranslationMessage.is_current IS TRUE )))""" % (
               sqlvalues(template=self.potemplate)),
             ])
         self._appendCompletePluralFormsConditions(current_clauses)

@@ -1,4 +1,4 @@
-# Copyright 2008-2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=C0102
 
 __metaclass__ = type
@@ -103,12 +103,12 @@ class TestTranslationSharedPOTMsgSets(unittest.TestCase):
         # Gettext PO format uses English strings as msgids.
         self.devel_potemplate.source_file_format = TranslationFileFormat.PO
         transaction.commit()
-        self.assertEquals(self.potmsgset.uses_english_msgids, True)
+        self.assertTrue(self.potmsgset.uses_english_msgids)
 
         # Mozilla XPI format doesn't use English strings as msgids.
         self.devel_potemplate.source_file_format = TranslationFileFormat.XPI
         transaction.commit()
-        self.assertEquals(self.potmsgset.uses_english_msgids, False)
+        self.assertFalse(self.potmsgset.uses_english_msgids)
 
     def test_POTMsgSet_singular_text(self):
         """Test that `singular_text` property works correctly."""
