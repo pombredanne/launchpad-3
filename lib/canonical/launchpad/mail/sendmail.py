@@ -263,7 +263,6 @@ def sendmail(message, to_addrs=None, bulk=True):
     assert 'subject' in message and bool(message['subject']), \
             'No Subject: header'
 
-    from_addr = message['from']
     if to_addrs is None:
         to_addrs = get_addresses_from_header(message['to'])
         if message['cc']:
