@@ -3,7 +3,6 @@ import unittest
 
 from zope.interface import implements
 
-from twisted.cred.credentials import SSHPrivateKey
 from twisted.cred.error import UnauthorizedLogin
 from twisted.cred.portal import IRealm, Portal
 
@@ -335,13 +334,6 @@ class TestPublicKeyFromLaunchpadChecker(TrialTestCase):
         def callRemote(self, function_name, *args, **kwargs):
             return getattr(
                 self, 'xmlrpc_%s' % function_name)(*args, **kwargs)
-
-        def xmlrpc_getUser(self, username):
-            if username in (self.valid_user, self.no_key_user):
-                return defer.succeed({
-                    'name': username,
-                    })
-            return defer.succeed({})
 
         def xmlrpc_getUserAndSSHKeys(self, username):
             if username == self.valid_user:
