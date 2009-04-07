@@ -413,7 +413,8 @@ When accessing the distroseries source package release page, the builds
 portlet will display a link to the newly unembargoed build:
 
     >>> browser.open(
-    ...     "http://launchpad.dev/ubuntutest/breezy-autotest/+source/privacy-test/666")
+    ...     "http://launchpad.dev/ubuntutest/breezy-autotest/"
+    ...     "+source/privacy-test/666")
     >>> portlet = find_portlet(browser.contents, 'Builds')
     >>> link = portlet.find('a', href="/~cprov/+archive/ppa/+build/%s" % (
     ...     private_build.id))
