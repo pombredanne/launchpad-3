@@ -3772,7 +3772,7 @@ def generate_nick(email_addr, is_registered=_is_nick_registered):
 @adapter(IAccount)
 @implementer(IPerson)
 def person_from_account(account):
-    """Adapt an IAccount into an IPerson.
+    """Adapt an `IAccount` into an `IPerson`.
 
     If there is a current browser request, we cache the looked up Person in
     the request's annotations so that we don't have to hit the DB once again
