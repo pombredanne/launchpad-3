@@ -1,8 +1,16 @@
-= The Launchpad Login Service =
+= The Launchpad Login Service (SSO Service) =
 
 The Launchpad login service is an OpenID Provider intended for use by
 various Canonical and Ubuntu web sites participating in Launchpad
 Single Signon.
+
+The SSO Service has its own database policy to strictly enforce that it
+can only write to tables it controls. This will allow us to keep the
+SSO Service running during Launchpad outages.
+
+    >>> from canonical.launchpad.webapp.interfaces import IStoreSelector
+    >>> from canonical.launchpad.webapp.dbpolicy import SSODatabasePolicy
+    >>> getUtility(IStoreSelector).push(SSODatabasePolicy())
 
 
 == Login Form ==
@@ -84,9 +92,11 @@ If the email address is associated with an invalid Launchpad account (aka
 placeholder profile), though, we let the user continue the registration as if
 we've never heard about that email address.
 
-    >>> from canonical.launchpad.database import EmailAddress
-    >>> EmailAddress.selectOneBy(
-    ...     email='andrelop@debian.org').person.is_valid_person
+    >>> from canonical.launchpad.database import EmailAddress, Person
+    >>> email_address = EmailAddress.selectOneBy(
+    ...     email='andrelop@debian.org')
+    >>> person = Person.get(email_address.personID)
+    >>> person.is_valid_person
     False
     >>> harness.submit('continue', {'field.email': 'andrelop@debian.org',
     ...                             'field.action': 'createaccount'})
@@ -114,3 +124,7 @@ registered email address which doesn't belong to a team.
     >>> print harness.getFormErrors()
     []
 
+
+== Cleanup ==
+
+    >>> db_policy = getUtility(IStoreSelector).pop()

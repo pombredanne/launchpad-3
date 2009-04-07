@@ -1,4 +1,4 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
 """Browser code for the launchpad application."""
 
 __metaclass__ = type
@@ -49,19 +49,21 @@ from canonical.config import config
 from canonical.lazr import ExportedFolder, ExportedImageFolder
 from canonical.launchpad.helpers import intOrZero
 
-from canonical.launchpad.interfaces.announcement import IAnnouncementSet
+from lp.registry.interfaces.announcement import IAnnouncementSet
 from canonical.launchpad.interfaces.binarypackagename import (
     IBinaryPackageNameSet)
 from canonical.launchpad.interfaces.bounty import IBountySet
-from canonical.launchpad.interfaces.branch import IBranchSet
+from canonical.launchpad.interfaces.branchlookup import (
+    CannotHaveLinkedBranch, IBranchLookup, NoLinkedBranch)
+from canonical.launchpad.interfaces.branchnamespace import InvalidNamespace
 from canonical.launchpad.interfaces.bug import IBugSet
 from canonical.launchpad.interfaces.bugtracker import IBugTrackerSet
 from canonical.launchpad.interfaces.builder import IBuilderSet
 from canonical.launchpad.interfaces.codeimport import ICodeImportSet
-from canonical.launchpad.interfaces.codeofconduct import ICodeOfConductSet
+from lp.registry.interfaces.codeofconduct import ICodeOfConductSet
 from canonical.launchpad.interfaces.cve import ICveSet
-from canonical.launchpad.interfaces.distribution import IDistributionSet
-from canonical.launchpad.interfaces.karma import IKarmaActionSet
+from lp.registry.interfaces.distribution import IDistributionSet
+from lp.registry.interfaces.karma import IKarmaActionSet
 from canonical.launchpad.interfaces.hwdb import IHWDBApplication
 from canonical.launchpad.interfaces.language import ILanguageSet
 from canonical.launchpad.interfaces.launchpad import (
@@ -71,15 +73,16 @@ from canonical.launchpad.interfaces.launchpad import (
 from canonical.launchpad.interfaces.launchpadstatistic import (
     ILaunchpadStatisticSet)
 from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
-from canonical.launchpad.interfaces.mailinglist import IMailingListSet
+from lp.registry.interfaces.mailinglist import IMailingListSet
 from canonical.launchpad.interfaces.malone import IMaloneApplication
-from canonical.launchpad.interfaces.mentoringoffer import IMentoringOfferSet
-from canonical.launchpad.interfaces.person import IPersonSet
-from canonical.launchpad.interfaces.pillar import IPillarNameSet
-from canonical.launchpad.interfaces.product import IProductSet
-from canonical.launchpad.interfaces.project import IProjectSet
-from canonical.launchpad.interfaces.questioncollection import IQuestionSet
-from canonical.launchpad.interfaces.sourcepackagename import (
+from lp.registry.interfaces.mentoringoffer import IMentoringOfferSet
+from canonical.launchpad.interfaces.openidserver import IOpenIDRPConfigSet
+from lp.registry.interfaces.person import IPersonSet
+from lp.registry.interfaces.pillar import IPillarNameSet
+from lp.registry.interfaces.product import (
+    InvalidProductName, IProductSet)
+from lp.registry.interfaces.project import IProjectSet
+from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageNameSet)
 from canonical.launchpad.interfaces.specification import ISpecificationSet
 from canonical.launchpad.interfaces.sprint import ISprintSet
@@ -100,7 +103,6 @@ from canonical.launchpad.webapp.authorization import check_permission
 from lazr.uri import URI
 from canonical.launchpad.webapp.url import urlparse, urlappend
 from canonical.launchpad.webapp.vhosts import allvhosts
-from canonical.launchpad.xmlrpc.faults import NoBranchForSeries, NoSuchSeries
 from canonical.widgets.project import ProjectScopeWidget
 
 
@@ -110,6 +112,8 @@ from canonical.widgets.project import ProjectScopeWidget
 #     code and for TALES namespace code to use.
 #     Same for MenuAPI.
 from canonical.launchpad.webapp.tales import DurationFormatterAPI, MenuAPI
+
+from lp.answers.interfaces.questioncollection import IQuestionSet
 
 
 class MaloneApplicationNavigation(Navigation):
@@ -252,6 +256,10 @@ class Hierarchy(LaunchpadView):
         working_url = baseurl
         for segment in urlparts[2].split('/'):
             working_url = urlappend(working_url, segment)
+            # Segments starting with '+' should be ignored because they
+            # will never correspond to an object in navigation.
+            if segment.startswith('+'):
+                continue
             pathurls.append(working_url)
 
         # We assume a 1:1 relationship between the traversed_objects list and
@@ -591,10 +599,11 @@ class LaunchpadRootNavigation(Navigation):
         """
         path = '/'.join(self.request.stepstogo)
         try:
-            branch_data = getUtility(IBranchSet).getByLPPath(path)
-        except (NoBranchForSeries, NoSuchSeries):
+            branch_data = getUtility(IBranchLookup).getByLPPath(path)
+        except (CannotHaveLinkedBranch, NoLinkedBranch, InvalidNamespace,
+                InvalidProductName):
             raise NotFoundError
-        branch, trailing, series = branch_data
+        branch, trailing = branch_data
         if branch is None:
             raise NotFoundError
         url = canonical_url(branch)
@@ -602,12 +611,22 @@ class LaunchpadRootNavigation(Navigation):
             url = urlappend(url, trailing)
         return self.redirectSubTree(url)
 
+    @stepto('+builds')
+    def redirect_buildfarm(self):
+        """Redirect old /+builds requests to new URL, /builders."""
+        new_url = '/builders'
+        return self.redirectSubTree(
+            urlappend(new_url, '/'.join(self.request.stepstogo)))
+
+    # XXX cprov 2009-03-19 bug=345877: path segments starting with '+'
+    # should never correspond to a valid traversal, they confuse the
+    # hierarchical navigation model.
     stepto_utilities = {
         '+announcements': IAnnouncementSet,
         'binarypackagenames': IBinaryPackageNameSet,
         'bounties': IBountySet,
         'bugs': IMaloneApplication,
-        '+builds': IBuilderSet,
+        'builders': IBuilderSet,
         '+code': IBazaarApplication,
         '+code-imports': ICodeImportSet,
         'codeofconduct': ICodeOfConductSet,
@@ -630,6 +649,7 @@ class LaunchpadRootNavigation(Navigation):
         '+groups': ITranslationGroupSet,
         'translations': IRosettaApplication,
         'questions': IQuestionSet,
+        '+rpconfig': IOpenIDRPConfigSet,
         # These three have been renamed, and no redirects done, as the old
         # urls now point to the product pages.
         #'bazaar': IBazaarApplication,

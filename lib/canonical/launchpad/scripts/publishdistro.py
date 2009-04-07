@@ -13,8 +13,9 @@ from zope.component import getUtility
 from canonical.archivepublisher.publishing import getPublisher
 from canonical.database.sqlbase import (
     clear_current_connection_cache, flush_database_updates)
-from canonical.launchpad.interfaces.archive import MAIN_ARCHIVE_PURPOSES
-from canonical.launchpad.interfaces.distribution import IDistributionSet
+from canonical.launchpad.interfaces.archive import (
+    ArchivePurpose, MAIN_ARCHIVE_PURPOSES)
+from lp.registry.interfaces.distribution import IDistributionSet
 from canonical.launchpad.scripts import logger, logger_options
 from canonical.launchpad.scripts.base import LaunchpadScriptFailure
 from canonical.launchpad.webapp.interfaces import NotFoundError
@@ -152,7 +153,8 @@ def run_publisher(options, txn, log=None):
 
     for archive in archives:
         if archive.purpose in MAIN_ARCHIVE_PURPOSES:
-            log.info("Processing %s %s" % (distribution.name, archive.title))
+            log.info(
+                "Processing %s %s" % (distribution.name, archive.displayname))
             # Only let the primary/partner archives override the distsroot.
             publisher = getPublisher(
                 archive, allowed_suites, log, options.distsroot)
@@ -169,7 +171,7 @@ def run_publisher(options, txn, log=None):
 
         # The primary archive uses apt-ftparchive to generate the indexes,
         # everything else uses the newer internal LP code.
-        if archive.purpose in MAIN_ARCHIVE_PURPOSES:
+        if archive.purpose == ArchivePurpose.PRIMARY:
             try_and_commit("doing apt-ftparchive", publisher.C_doFTPArchive,
                            options.careful or options.careful_apt)
         else:

@@ -45,16 +45,12 @@ from zope.schema.interfaces import IField, IText
 from zope.security.checker import CheckerPublic
 from zope.traversing.browser import absoluteURL
 
-# XXX flacoste 2008-01-25 bug=185958:
-# ILaunchBag code should be moved into lazr.
-from canonical.launchpad.webapp.interfaces import ILaunchBag
-
 from lazr.delegates import Passthrough
 from canonical.lazr.fields import CollectionField, Reference
 from canonical.lazr.interface import copy_field
 from canonical.lazr.interfaces.rest import (
     ICollection, IEntry, IResourceGETOperation, IResourcePOSTOperation,
-    LAZR_WEBSERVICE_NAME, LAZR_WEBSERVICE_NS)
+    IWebServiceConfiguration, LAZR_WEBSERVICE_NAME, LAZR_WEBSERVICE_NS)
 from canonical.lazr.rest.resource import (
     Collection, Entry, EntryAdapterUtility)
 from canonical.lazr.rest.operation import ResourceOperation, ObjectLink
@@ -676,7 +672,8 @@ def params_with_dereferenced_user(params):
     params = params.copy()
     for name, value in params.items():
         if value is REQUEST_USER:
-            params[name] = getUtility(ILaunchBag).user
+            params[name] = getUtility(
+                IWebServiceConfiguration).get_request_user()
     return params
 
 

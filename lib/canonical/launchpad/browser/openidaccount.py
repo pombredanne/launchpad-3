@@ -14,7 +14,7 @@ from canonical.launchpad import _
 
 from canonical.launchpad.interfaces.account import IAccount
 from canonical.launchpad.interfaces.launchpad import IPasswordEncryptor
-from canonical.launchpad.interfaces.person import IPersonChangePassword
+from lp.registry.interfaces.person import IPersonChangePassword
 from canonical.launchpad.webapp import (
     action, custom_widget, LaunchpadEditFormView, LaunchpadFormView)
 

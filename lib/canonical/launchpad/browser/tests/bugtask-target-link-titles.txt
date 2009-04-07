@@ -48,6 +48,7 @@ information is displayed for the source package.
     >>> unpublished_distro = factory.makeDistribution(
     ...     name='unpublished-distro', displayname='Unpublished Distro')
 
+    >>> login('foo.bar@canonical.com')
     >>> view = set_up_view(unpublished_distro)
     >>> print view.getTargetLinkTitle(unpublished_distro)
     None
@@ -66,7 +67,7 @@ about the current release is displayed.
 
     >>> import pytz
     >>> from datetime import datetime
-    >>> from canonical.launchpad.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> published_distro = factory.makeDistribution(
     ...     name='published-distro', displayname='Published Distro')
     >>> published_distro_series = factory.makeDistroRelease(

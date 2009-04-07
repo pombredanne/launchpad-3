@@ -32,12 +32,12 @@ utility.
     >>> sm.registerUtility(SimpleWebServiceConfiguration())
     >>> sm.registerAdapter(browser_request_to_web_service_request)
 
-    >>> website_request = TestRequest(SERVER_URL="http://launchpad.dev/")
+    >>> website_request = TestRequest(SERVER_URL="http://cookbooks.dev/")
     >>> request = IWebServiceClientRequest(website_request)
     >>> request
     <...WebServiceTestRequest...>
     >>> request.getApplicationURL()
-    'http://launchpad.dev/api/beta'
+    'http://cookbooks.dev/api/beta'
 
 
 = The JSON Cache=

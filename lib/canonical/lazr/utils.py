@@ -5,6 +5,7 @@
 __metaclass__ = type
 __all__ = [
     'camelcase_to_underscore_separated',
+    'get_current_browser_request',
     'safe_js_escape',
     'safe_hasattr',
     'smartquote',
@@ -46,3 +47,26 @@ def safe_js_escape(text):
     This will also perform a cgi.escape() on the given text.
     """
     return encoder.encode_basestring(cgi.escape(text, True))
+
+
+def get_current_browser_request():
+    """Return the current browser request, looked up from the interaction.
+
+    If there is no suitable request, then return None.
+
+    Returns only requests that provide IHTTPApplicationRequest.
+    """
+    from zope.security.management import queryInteraction
+    from zope.publisher.interfaces.http import IHTTPApplicationRequest
+    interaction = queryInteraction()
+    requests = [
+        participation
+        for participation in interaction.participations
+        if IHTTPApplicationRequest.providedBy(participation)
+        ]
+    if not requests:
+        return None
+    assert len(requests) == 1, (
+        "We expect only one IHTTPApplicationRequest in the interaction."
+        " Got %s." % len(requests))
+    return requests[0]

@@ -3,16 +3,17 @@
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   class="portlet" id="portlet-tags"
-  tal:define="bug_tags view/getUsedBugTagsWithURLs"
-  tal:condition="bug_tags">
-
-  <h2>Tags</h2>
+  tal:define="official_tags view/official_tags;
+              other_tags view/other_tags"
+  tal:condition="python: official_tags or other_tags">
 
   <div class="portletBody">
+   <div class="section" tal:condition="official_tags">
+    <h2>Official Tags</h2>
 
     <table width="100%">
-      <tr tal:repeat="bug_tag_info bug_tags">
-        <td>
+      <tr tal:repeat="bug_tag_info official_tags">
+        <td width="100%">
           <a tal:content="bug_tag_info/tag"
              tal:attributes=" href bug_tag_info/url">
             crash
@@ -21,6 +22,33 @@
         <td tal:content="bug_tag_info/count">20</td>
       </tr>
     </table>
+   </div>
 
+   <div class="section" tal:condition="other_tags">
+    <h2 tal:condition="official_tags">Other Tags</h2>
+    <h2 tal:condition="not: official_tags">Tags</h2>
+
+    <table width="100%">
+      <tr tal:repeat="bug_tag_info other_tags">
+        <td width="100%">
+          <a tal:content="bug_tag_info/tag"
+             tal:attributes=" href bug_tag_info/url">
+            crash
+          </a>
+        </td>
+        <td tal:content="bug_tag_info/count">20</td>
+      </tr>
+    </table>
+   </div>
+
+    <p tal:condition="view/show_manage_tags_link"
+       style="text-align:right">
+      <a tal:attributes="href context/fmt:url/+manage-official-tags">
+        <img src="/@@/edit" alt="Edit official tags" />
+      </a>
+      <a tal:attributes="href context/fmt:url/+manage-official-tags">
+        Edit official tags
+      </a>
+    </p>
   </div>
 </div>

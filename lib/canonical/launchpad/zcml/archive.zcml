@@ -17,7 +17,7 @@
       />
     <require
       permission="launchpad.Edit"
-      set_attributes="description whiteboard"
+      set_attributes="description"
       />
     <require
       permission="launchpad.Admin"
@@ -45,9 +45,16 @@
       factory="canonical.launchpad.components.archivesigningkey.ArchiveSigningKey"
       />
 
+  <adapter
+    provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
+    for="canonical.launchpad.interfaces.archive.IArchive"
+    factory="canonical.launchpad.browser.archive.ArchiveBreadcrumbBuilder"
+    permission="zope.Public"
+    />
+
   <browser:menus
     module="canonical.launchpad.browser"
-    classes="ArchiveContextMenu"
+    classes="ArchiveContextMenu ArchiveNavigationMenu"
     />
 
   <browser:defaultView

@@ -232,7 +232,7 @@ The start parameter can be changed by passing a start int argument.
 == Google Search Protocol parsing ==
 
 The GoogleSearchService's _parse_google_search_protocol() requires a
-subset of the the GSP 3.2 markup to create the PageMatch and PageMatches
+subset of the GSP 3.2 markup to create the PageMatch and PageMatches
 objects. An error is raised when the XML document cannot be parsed into
 objects. The probable cause of an error is that Google returned a new
 and incompatible version of GSP.

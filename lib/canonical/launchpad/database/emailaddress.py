@@ -55,7 +55,7 @@ class EmailAddress(SQLBase, HasOwnerMixin):
     def destroySelf(self):
         """See `IEmailAddress`."""
         # Import this here to avoid circular references.
-        from canonical.launchpad.database.mailinglist import (
+        from lp.registry.model.mailinglist import (
             MailingListSubscription)
 
         if self.status == EmailAddressStatus.PREFERRED:

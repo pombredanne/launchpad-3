@@ -18,7 +18,7 @@ from canonical.launchpad import _
 from canonical.launchpad.interfaces.account import AccountStatus
 from canonical.launchpad.interfaces.authtoken import LoginTokenType
 from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
-from canonical.launchpad.interfaces.person import (
+from lp.registry.interfaces.person import (
     IPersonSet, PersonCreationRationale)
 from canonical.launchpad.interfaces.shipit import ShipItConstants
 from canonical.launchpad.interfaces.validation import valid_password

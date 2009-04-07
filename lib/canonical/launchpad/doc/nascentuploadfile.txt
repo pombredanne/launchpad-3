@@ -20,7 +20,7 @@ We need to be logged into the security model in order to get any further
 
   >>> login('foo.bar@canonical.com')
   >>> from canonical.archiveuploader.tests import (
-  ...    datadir, getPolicy, mock_logger, mock_logger_quiet)
+  ...    datadir, getPolicy, mock_logger_quiet)
 
 
 == ChangesFile  ==
@@ -38,6 +38,12 @@ considered) for the upload in question.
   >>> ed_mixed_changes = ChangesFile(
   ...     datadir('ed_0.2-20_i386.changes'),
   ...     modified_insecure_policy, mock_logger_quiet)
+
+Make sure we are not getting any exceptions due to a malformed changes
+file name.
+
+  >>> len(list(ed_mixed_changes.checkFileName()))
+  0
 
 At this point the changesfile content is already parsed:
 
@@ -89,6 +95,27 @@ a error generator
   >>> len(list(errors))
   0
 
+Make sure malformed changes file names are caught.
+
+We first create a misnamed copy of the changes file.
+
+  >>> import os, shutil
+  >>> originalp = datadir('ed_0.2-20_i386.changes')
+  >>> copyp = datadir('p-m_0.4.12-2~ppa2.changes')
+  >>> shutil.copyfile(originalp, copyp)
+
+And then invoke the name check on the changes file with the malformed name.
+
+  >>> wrong_file_name = ChangesFile(
+  ...     datadir('p-m_0.4.12-2~ppa2.changes'),
+  ...     modified_insecure_policy, mock_logger_quiet)
+  >>> [err] = list(wrong_file_name.checkFileName())
+  >>> str(err)
+  'p-m_0.4.12-2~ppa2.changes -> inappropriate changesfile name, ...'
+
+Remove the misnamed changes file copy used for testing.
+
+  >>> os.unlink(copyp)
 
 === CustomUploadFile identification ===
 

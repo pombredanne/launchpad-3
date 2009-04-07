@@ -11,7 +11,7 @@ import _pythonpath
 
 from canonical.config import config
 from canonical.launchpad.scripts.base import LaunchpadCronScript
-from canonical.launchpad.scripts.productreleasefinder.finder import (
+from lp.registry.scripts.productreleasefinder.finder import (
     ProductReleaseFinder)
 
 

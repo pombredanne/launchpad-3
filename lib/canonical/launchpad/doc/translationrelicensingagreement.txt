@@ -8,7 +8,7 @@ under BSD or not.
     >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.launchpad.database.translationrelicensingagreement \
     ...     import TranslationRelicensingAgreement
-    >>> from canonical.launchpad.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> from canonical.launchpad.interfaces.translationrelicensingagreement \
     ...     import ITranslationRelicensingAgreement
     >>> person_set = getUtility(IPersonSet)
