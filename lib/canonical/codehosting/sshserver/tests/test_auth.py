@@ -361,8 +361,9 @@ class TestPublicKeyFromLaunchpadChecker(TrialTestCase):
                     return defer.fail()
 
     def makeCredentials(self, username, public_key):
-        return SSHPrivateKey(
-            username, 'ssh-dss', public_key, '', None)
+        mind = auth.UserDetailsMind({})
+        return auth.SSHPrivateKeyWithMind(
+            username, 'ssh-dss', public_key, '', None, mind)
 
     def makeChecker(self, do_signature_checking=False):
         """Construct a PublicKeyFromLaunchpadChecker.
