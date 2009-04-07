@@ -129,8 +129,6 @@ from canonical.launchpad.browser.archivesubscription import (
 from canonical.launchpad.browser.launchpad import get_launchpad_views
 from canonical.launchpad.components.openidserver import CurrentOpenIDEndPoint
 from canonical.launchpad.interfaces.account import IAccount
-from canonical.launchpad.interfaces.archivesubscriber import (
-    IArchiveSubscriberSet)
 from canonical.launchpad.interfaces.account import AccountStatus
 from canonical.launchpad.interfaces.archivesubscriber import (
     IArchiveSubscriberSet)
@@ -228,6 +226,7 @@ from canonical.launchpad import _
 from canonical.lazr.utils import smartquote
 
 from lp.answers.interfaces.questioncollection import IQuestionSet
+from lp.answers.interfaces.questionsperson import IQuestionsPerson
 
 
 class RestrictedMembershipsPersonView(LaunchpadView):
@@ -905,7 +904,8 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
              'editircnicknames', 'editjabberids', 'editpassword',
              'editsshkeys', 'editpgpkeys', 'editlocation', 'memberships',
              'mentoringoffers', 'codesofconduct', 'karma', 'common_packages',
-             'administer', 'related_projects', 'activate_ppa']
+             'administer', 'related_projects', 'activate_ppa',
+             'view_ppa_subscriptions']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -1009,6 +1009,20 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
         target = '+review'
         text = 'Administer'
         return Link(target, text, icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
+    def view_ppa_subscriptions(self):
+        target = "+archivesubscriptions"
+        text = "View your private PPA subscriptions"
+        summary = ('View your personal PPA subscriptions and set yourself '
+                   'up to download your software')
+
+        # Only enable the link if the person has some subscriptions.
+        subscriptions = getUtility(IArchiveSubscriberSet).getBySubscriber(
+            self.context)
+        enabled = subscriptions.count() > 0
+
+        return Link(target, text, summary, enabled=enabled, icon='info')
 
 
 class IPersonEditMenu(Interface):
@@ -4426,7 +4440,7 @@ class PersonLatestQuestionsView(LaunchpadView):
     @cachedproperty
     def getLatestQuestions(self, quantity=5):
         """Return <quantity> latest questions created for this target. """
-        return self.context.searchQuestions(
+        return IQuestionsPerson(self.context).searchQuestions(
             participation=QuestionParticipation.OWNER)[:quantity]
 
 
@@ -4600,7 +4614,7 @@ class PersonAnswerContactForView(LaunchpadView):
         Return a list of IQuestionTargets sorted alphabetically by title.
         """
         return sorted(
-            self.context.getDirectAnswerQuestionTargets(),
+            IQuestionsPerson(self.context).getDirectAnswerQuestionTargets(),
             key=attrgetter('title'))
 
     @cachedproperty
@@ -4610,7 +4624,7 @@ class PersonAnswerContactForView(LaunchpadView):
         Sorted alphabetically by title.
         """
         return sorted(
-            self.context.getTeamAnswerQuestionTargets(),
+            IQuestionsPerson(self.context).getTeamAnswerQuestionTargets(),
             key=attrgetter('title'))
 
     def showRemoveYourselfLink(self):

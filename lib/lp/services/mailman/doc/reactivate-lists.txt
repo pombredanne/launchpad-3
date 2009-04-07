@@ -7,7 +7,7 @@ restored.
 
 First, No Privileges Person will create a new team and its mailing list.
 
-    >>> from canonical.launchpad.mailman.testing import helpers
+    >>> from lp.services.mailman.testing import helpers
     >>> mailing_list = helpers.create_list('itest-one')
 
 Give the mailing list a welcome message.

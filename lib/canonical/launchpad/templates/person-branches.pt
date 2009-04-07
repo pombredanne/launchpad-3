@@ -15,20 +15,11 @@
 <div metal:fill-slot="main"
      tal:define="branches view/branches">
 
-  <div style="float:right" id="floating-buttons"
-       tal:condition="view/user_in_context_team">
-    <tal:comment condition="nothing">
-      Only show the register a branch link if the person is in the team for the
-      person that we are looking at.  So if the logged in user is looking at
-      their own page, or a page of a team that they are in, they see the
-      register a branch button, otherwise they don't.
-    </tal:comment>
-    <div>
-      <a href="+addbranch" id="register-branch">
-        <img alt="Register a branch"
-             src="/+icing/but-lrg-registerabranch.gif"/>
-      </a>
-    </div>
+  <div style="float:right" id="floating-links"
+       tal:define="menu context/menu:branches">
+    <div tal:define="link menu/addbranch"
+         tal:condition="link/enabled"
+         tal:content="structure link/render" />
   </div>
 
   <h1 tal:content="view/heading">Bazaar branches</h1>

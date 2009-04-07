@@ -302,6 +302,14 @@ class GenericBranchCollection:
         """See `IBranchCollection`."""
         return self._filterBy([Branch.lifecycle_status.is_in(statuses)])
 
+    def modifiedSince(self, epoch):
+        """See `IBranchCollection`."""
+        return self._filterBy([Branch.date_last_modified > epoch])
+
+    def scannedSince(self, epoch):
+        """See `IBranchCollection`."""
+        return self._filterBy([Branch.last_scanned > epoch])
+
 
 class VisibleBranchCollection(GenericBranchCollection):
     """A branch collection that has special logic for visibility."""
