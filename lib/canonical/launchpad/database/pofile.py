@@ -808,7 +808,6 @@ class POFile(SQLBase, POFileMixIn):
         # make sure all the data is in the db
         flush_database_updates()
 
-
         # Get number of imported messages that are still synced in Launchpad.
         current_clauses = self._getClausesForPOFileMessages()
         current_clauses.extend([
