@@ -1,0 +1,107 @@
+= Product Pages =
+
+The browser module for product has many view classes that should be
+tested in this pages test.  As it is this test is pretty sparse.
+
+
+== Product View ==
+
+The page at /product_name includes overview information about the product.
+
+
+=== Effective Driver ===
+
+The `effective_driver` property on the view shows the product driver,
+if one exists.  If the product does not have a driver, then the driver
+for the project is returned.  If the product has no project or the
+project has no driver then None is returned.
+
+    >>> from lp.registry.interfaces.product import IProductSet
+    >>> from lp.registry.interfaces.project import IProjectSet
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from canonical.launchpad.ftests import ANONYMOUS
+    >>> login('foo.bar@canonical.com')
+    >>> mozilla = getUtility(IProjectSet).getByName('mozilla')
+    >>> firefox = getUtility(IProductSet).getByName('firefox')
+    >>> cprov = getUtility(IPersonSet).getByName('cprov')
+    >>> sabdfl = getUtility(IPersonSet).getByName('sabdfl')
+
+Neither Mozilla nor Firefox has a driver set.
+
+    >>> print mozilla.driver
+    None
+    >>> print firefox.driver
+    None
+
+Thus the effective driver for Firefox is None.
+    >>> view = create_initialized_view(firefox, name='+index')
+    >>> print view.effective_driver
+    None
+
+Setting the driver for the Mozilla project trickles down to Firefox.
+
+    >>> mozilla.driver = sabdfl
+
+But since the effective_driver is a cached property it will not show
+up on this view instance.
+
+    >>> print view.effective_driver
+    None
+
+Creating a new view shows the new driver.
+
+    >>> view = create_initialized_view(firefox, name='+index')
+    >>> print view.effective_driver.name
+    sabdfl
+
+Setting the driver for Firefox shows that it is used for the product,
+after a new view is obtained.
+
+    >>> firefox.driver = cprov
+    >>> print view.effective_driver.name
+    sabdfl
+    >>> view = create_initialized_view(firefox, name='+index')
+    >>> print view.effective_driver.name
+    cprov
+
+=== Displaying Commercial Subscription Information ===
+
+Only project maintainers, Launchpad administrators, and Launchpad
+Commercial members are to see commercial subscription information on
+the product overview page.
+
+For product maintainers the property is true.  Sample Person
+(test@canonical.com) is the owner of the Firefox product.
+
+    >>> login('test@canonical.com')
+    >>> view = create_initialized_view(firefox, name='+index')
+    >>> print view.show_commercial_subscription_info
+    True
+
+For Launchpad admins the property is true.
+
+    >>> login('foo.bar@canonical.com')
+    >>> view = create_initialized_view(firefox, name='+index')
+    >>> print view.show_commercial_subscription_info
+    True
+
+For Launchpad commercial members th property is true.
+
+    >>> login('commercial-member@canonical.com')
+    >>> view = create_initialized_view(firefox, name='+index')
+    >>> print view.show_commercial_subscription_info
+    True
+
+But for a no-privileges user the property is false.
+
+    >>> login('no-priv@canonical.com')
+    >>> view = create_initialized_view(firefox, name='+index')
+    >>> print view.show_commercial_subscription_info
+    False
+
+And for an anonymous user it is false.
+
+    >>> login(ANONYMOUS)
+    >>> view = create_initialized_view(firefox, name='+index')
+    >>> print view.show_commercial_subscription_info
+    False

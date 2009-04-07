@@ -9,7 +9,8 @@ from unittest import TestCase, TestLoader
 from zope.component import getUtility
 
 from canonical.launchpad.ftests import login, logout, ANONYMOUS
-from canonical.launchpad.interfaces import IBranchSet, IProductSet
+from canonical.launchpad.interfaces import IProductSet
+from canonical.launchpad.interfaces.branchlookup import IBranchLookup
 from canonical.launchpad.testing import LaunchpadObjectFactory
 from canonical.launchpad.vocabularies.dbobjects import (
     BranchRestrictedOnProductVocabulary, BranchVocabulary)
@@ -207,7 +208,8 @@ class TestRestrictedBranchVocabularyOnBranch(
 
     def _getVocabRestriction(self):
         """Restrict using a branch on widget."""
-        return getUtility(IBranchSet).getByUniqueName('~spotty/widget/hill')
+        return getUtility(IBranchLookup).getByUniqueName(
+            '~spotty/widget/hill')
 
 
 def test_suite():

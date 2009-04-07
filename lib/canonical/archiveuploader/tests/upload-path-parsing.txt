@@ -129,7 +129,7 @@ We will disable Celso's default PPA and uploads to it will result in
 an error.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
 
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
     >>> cprov_ppa = cprov.getPPAByName('ppa')

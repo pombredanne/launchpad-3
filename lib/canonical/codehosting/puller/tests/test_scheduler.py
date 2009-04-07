@@ -26,7 +26,8 @@ from canonical.codehosting.puller.tests import PullerBranchTestCase
 from canonical.codehosting.puller.worker import (
     get_canonical_url_for_branch_name)
 from canonical.config import config
-from canonical.launchpad.interfaces import BranchType, IBranchSet
+from canonical.launchpad.interfaces import BranchType
+from canonical.launchpad.interfaces.branchlookup import IBranchLookup
 from canonical.launchpad.testing import ObjectFactory
 from canonical.launchpad.webapp import errorlog
 from canonical.launchpad.xmlrpc import faults
@@ -671,7 +672,7 @@ class TestPullerMasterIntegration(TrialTestCase, PullerBranchTestCase):
         branch_id = self.factory.makeAnyBranch(
             branch_type=BranchType.HOSTED).id
         self.layer.txn.commit()
-        self.db_branch = getUtility(IBranchSet).get(branch_id)
+        self.db_branch = getUtility(IBranchLookup).get(branch_id)
         self.bzr_tree = self.make_branch_and_tree('src-branch')
         self.bzr_tree.commit('rev1')
         self.pushToBranch(self.db_branch, self.bzr_tree)
@@ -993,7 +994,6 @@ class TestPullerMasterIntegration(TrialTestCase, PullerBranchTestCase):
                 start_mirroring_call = self.client.calls[0]
                 set_stacked_on_call = self.client.calls[1]
                 mirror_failed_call = self.client.calls[2]
-                self.client.calls
                 self.assertEqual(
                     start_mirroring_call,
                     ('startMirroring', self.db_branch.id))

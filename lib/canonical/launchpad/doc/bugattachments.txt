@@ -343,7 +343,7 @@ attachments attributes:
     ...
     Unauthorized: (..., 'title',...
 
-Of course, anonymous is also not allowed to access or set the them:
+Of course, anonymous is also not allowed to access or set them:
 
     >>> login(ANONYMOUS)
     >>> attachment.title
@@ -442,7 +442,7 @@ It's also possible to delete attachments.
     ...     print attachment.title
     Attachment to be deleted
 
-    >>> attachment.removeFromBug()
+    >>> attachment.removeFromBug(user=foobar)
     >>> bug_two.attachments.count()
     0
 

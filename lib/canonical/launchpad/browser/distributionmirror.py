@@ -22,7 +22,7 @@ from canonical.launchpad.browser.objectreassignment import (
 from canonical.launchpad.browser.sourceslist import (
     SourcesListEntries, SourcesListEntriesView)
 from canonical.cachedproperty import cachedproperty
-from canonical.launchpad.interfaces.distribution import (
+from lp.registry.interfaces.distribution import (
     IDistributionMirrorMenuMarker)
 from canonical.launchpad.interfaces.distributionmirror import (
     IDistributionMirror)

@@ -17,6 +17,7 @@ each category where all items can be perused.
     Profile: http://launchpad.dev/~name16
     Related Software
     Karma: http://launchpad.dev/~name16/+karma
+    Personal Package Archives: http://launchpad.dev/~name16#ppas
       Summary
       Maintained Packages: http://launchpad.dev/~name16/+maintained-packages
       Uploaded Packages: http://launchpad.dev/~name16/+uploaded-packages
@@ -245,14 +246,14 @@ both packages:
     >>> print_ppa_rows(nopriv_browser)
     source1 PPA for Celso Providelo - Ubuntutest Breezy-autotest 666
         ...ago None - -
-    source2 Private PPA for No Priv... Person - Ubuntutest Breezy-autotest 666
+    source2 PPA for No Priv... Person - Ubuntutest Breezy-autotest 666
         ...ago None - -
 
     >>> admin_browser.open("http://launchpad.dev/~cprov/+related-software")
     >>> print_ppa_rows(admin_browser)
     source1 PPA for Celso Providelo - Ubuntutest Breezy-autotest 666
         ...ago None - -
-    source2 Private PPA for No Priv... Person - Ubuntutest Breezy-autotest 666
+    source2 PPA for No Priv... Person - Ubuntutest Breezy-autotest 666
         ...ago None - -
 
 Let's make sabdfl's archive private and view the page again.
@@ -302,12 +303,12 @@ archive is public.
 
     >>> user_browser.open("http://launchpad.dev/~cprov/+related-software")
     >>> print_ppa_rows(user_browser)
-    source1 Private PPA for Celso Providelo - Ubuntutest Breezy-autotest 666
+    source1 PPA for Celso Providelo - Ubuntutest Breezy-autotest 666
         ...ago None - -
 
     >>> anon_browser.open("http://launchpad.dev/~cprov/+related-software")
     >>> print_ppa_rows(anon_browser)
-    source1 Private PPA for Celso Providelo - Ubuntutest Breezy-autotest 666
+    source1 PPA for Celso Providelo - Ubuntutest Breezy-autotest 666
         ...ago None - -
 
 Even after the package is superseded, the package remains visibile in
@@ -320,12 +321,12 @@ the listings.
 
     >>> user_browser.open("http://launchpad.dev/~cprov/+related-software")
     >>> print_ppa_rows(user_browser)
-    source1 Private PPA for Celso Providelo - Ubuntutest Breezy-autotest 666
+    source1 PPA for Celso Providelo - Ubuntutest Breezy-autotest 666
         ...ago None - -
 
     >>> anon_browser.open("http://launchpad.dev/~cprov/+related-software")
     >>> print_ppa_rows(anon_browser)
-    source1 Private PPA for Celso Providelo - Ubuntutest Breezy-autotest 666
+    source1 PPA for Celso Providelo - Ubuntutest Breezy-autotest 666
         ...ago None - -
 
 
@@ -340,9 +341,9 @@ First list the packages in the PPA.
 
     >>> admin_browser.open("http://launchpad.dev/~cprov/+related-software")
     >>> print_ppa_rows(admin_browser)
-    source1 Private PPA for Celso Providelo - Ubuntutest Breezy-autotest 666
+    source1 PPA for Celso Providelo - Ubuntutest Breezy-autotest 666
         ...ago None - -
-    source2 Private PPA for No Priv... Person - Ubuntutest Breezy-autotest 666
+    source2 PPA for No Priv... Person - Ubuntutest Breezy-autotest 666
         ...ago None - -
 
 Then delete the 'source2' package.
@@ -376,8 +377,8 @@ appears.
 
     >>> admin_browser.open("http://launchpad.dev/~cprov/+related-software")
     >>> print_ppa_rows(admin_browser)
-    source1 Private PPA for Celso Providelo - Ubuntutest Breezy-autotest 666
+    source1 PPA for Celso Providelo - Ubuntutest Breezy-autotest 666
         ...ago None - -
-    source2 Private PPA for No Priv... Person - Ubuntutest Breezy-autotest 666
+    source2 PPA for No Priv... Person - Ubuntutest Breezy-autotest 666
         ...ago None - -
 

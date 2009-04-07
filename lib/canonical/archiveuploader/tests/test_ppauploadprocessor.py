@@ -416,7 +416,7 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         cprov_pub_bar = name16_pub_bar.copyTo(
             self.breezy, PackagePublishingPocket.RELEASE, cprov.archive)
         self.assertEqual(
-            cprov_pub_bar.sourcepackagerelease.upload_archive.title,
+            cprov_pub_bar.sourcepackagerelease.upload_archive.displayname,
             'PPA for Foo Bar')
 
         # Create a build record for source bar for breezy-i386

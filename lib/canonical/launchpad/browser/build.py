@@ -19,7 +19,8 @@ from zope.interface import implements
 from canonical.launchpad import _
 from canonical.launchpad.browser.librarian import FileNavigationMixin
 from canonical.launchpad.interfaces.build import (
-    BuildStatus, IBuild, IBuildRescoreForm, IBuildSet)
+    BuildStatus, IBuild, IBuildRescoreForm)
+from canonical.launchpad.interfaces.buildqueue import IBuildQueueSet
 from canonical.launchpad.interfaces.buildrecords import IHasBuildRecords
 from canonical.launchpad.interfaces.launchpad import UnexpectedFormData
 from canonical.launchpad.interfaces.package import PackageUploadStatus
@@ -120,18 +121,19 @@ class BuildView(LaunchpadView):
     def retry_build(self):
         """Check user confirmation and perform the build record retry."""
         if not self.context.can_be_retried:
-            self.error = 'Build can not be retried'
-            return
+            self.request.response.addErrorNotification(
+                'Build can not be retried')
+        else:
+            action = self.request.form.get('RETRY', None)
+            # No action, return None to present the form again.
+            if action is None:
+                return
 
-        # retrieve user confirmation
-        action = self.request.form.get('RETRY', None)
-        # no action, return None to present the form again
-        if not action:
-            return None
+            # Invoke context method to retry the build record.
+            self.context.retry()
+            self.request.response.addInfoNotification('Build record active')
 
-        # invoke context method to retry the build record
-        self.context.retry()
-        return 'Build record active'
+        self.request.response.redirect(canonical_url(self.context))
 
     @property
     def user_can_retry_build(self):
@@ -190,22 +192,12 @@ class BuildRescoringView(LaunchpadFormView):
 class CompleteBuild:
     """Super object to store related IBuild & IBuildQueue."""
     delegates(IBuild)
-    def __init__(
-        self, build, buildqueue_record, sourcepackagerelease, buildlog):
+    def __init__(self, build, buildqueue_record):
         self.context = build
         self._buildqueue_record = buildqueue_record
-        self._sourcepackagerelease = sourcepackagerelease
-        self._buildlog = buildlog
-
-    @property
-    def buildlog(self):
-        return self._buildlog
 
     def buildqueue_record(self):
         return self._buildqueue_record
-
-    def sourcepackagerelease(self):
-        return self._sourcepackagerelease
 
 
 def setupCompleteBuilds(batch):
@@ -223,19 +215,18 @@ def setupCompleteBuilds(batch):
     if not builds:
         return []
 
-    prejoins = dict()
+    prefetched_data = dict()
     build_ids = [build.id for build in builds]
-    results = getUtility(IBuildSet).prefetchBuildData(build_ids)
-    for result in results:
+    results = getUtility(IBuildQueueSet).getForBuilds(build_ids)
+    for (buildqueue, builder) in results:
         # Get the build's id, 'buildqueue', 'sourcepackagerelease' and
         # 'buildlog' (from the result set) respectively.
-        (build_id, buildqueue, sourcepackagerelease, buildlog,
-         sourcepackagename, buildlog_content, builder) = result
-        prejoins[build_id] = (buildqueue, sourcepackagerelease, buildlog)
+        prefetched_data[buildqueue.build.id] = buildqueue
 
     complete_builds = []
     for build in builds:
-        complete_builds.append(CompleteBuild(build, *prejoins[build.id]))
+        buildqueue = prefetched_data.get(build.id)
+        complete_builds.append(CompleteBuild(build, buildqueue))
 
     return complete_builds
 

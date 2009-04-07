@@ -25,7 +25,6 @@ __all__ = [
     'DistributionUsingMaloneVocabulary',
     'DistributionVocabulary',
     'DistroSeriesVocabulary',
-    'FAQVocabulary',
     'FeaturedProjectVocabulary',
     'FilteredDeltaLanguagePackVocabulary',
     'FilteredDistroArchSeriesVocabulary',
@@ -99,28 +98,26 @@ from canonical.launchpad.interfaces.bugtask import (
     IBugTask, IDistroBugTask, IDistroSeriesBugTask, IProductSeriesBugTask,
     IUpstreamBugTask)
 from canonical.launchpad.interfaces.bugtracker import BugTrackerType
-from canonical.launchpad.interfaces.distribution import IDistribution
-from canonical.launchpad.interfaces.distributionsourcepackage import (
+from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage)
-from canonical.launchpad.interfaces.distroseries import (
+from lp.registry.interfaces.distroseries import (
     DistroSeriesStatus, IDistroSeries)
 from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
-from canonical.launchpad.interfaces.faq import IFAQ
-from canonical.launchpad.interfaces.faqtarget import IFAQTarget
 from canonical.launchpad.interfaces.language import ILanguage
 from canonical.launchpad.interfaces.languagepack import LanguagePackType
-from canonical.launchpad.interfaces.mailinglist import (
+from lp.registry.interfaces.mailinglist import (
     IMailingListSet, MailingListStatus)
-from canonical.launchpad.interfaces.milestone import (
+from lp.registry.interfaces.milestone import (
     IMilestoneSet, IProjectMilestone)
-from canonical.launchpad.interfaces.person import (
+from lp.registry.interfaces.person import (
     IPerson, IPersonSet, ITeam, PersonVisibility)
-from canonical.launchpad.interfaces.pillar import IPillarName
-from canonical.launchpad.interfaces.product import (
+from lp.registry.interfaces.pillar import IPillarName
+from lp.registry.interfaces.product import (
     IProduct, IProductSet, License)
-from canonical.launchpad.interfaces.productseries import IProductSeries
-from canonical.launchpad.interfaces.project import IProject
-from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
+from lp.registry.interfaces.productseries import IProductSeries
+from lp.registry.interfaces.project import IProject
+from lp.registry.interfaces.sourcepackage import ISourcePackage
 from canonical.launchpad.interfaces.specification import (
     ISpecification, SpecificationFilter)
 from canonical.launchpad.interfaces.account import AccountStatus
@@ -293,62 +290,6 @@ class WebBugTrackerVocabulary(BugTrackerVocabulary):
     """All web-based bug tracker types."""
 
     _filter = BugTracker.q.bugtrackertype != BugTrackerType.EMAILADDRESS
-
-
-class FAQVocabulary:
-    """Vocabulary containing all the FAQs in an `IFAQTarget`."""
-
-    implements(IHugeVocabulary)
-
-    displayname = 'Select a FAQ'
-
-    def __init__(self, context):
-        """Create a new vocabulary for the context.
-
-        :param context: It should adaptable to `IFAQTarget`.
-        """
-        self.context = IFAQTarget(context)
-
-    def __len__(self):
-        """See `IIterableVocabulary`."""
-        return self.context.searchFAQs().count()
-
-    def __iter__(self):
-        """See `IIterableVocabulary`."""
-        for faq in self.context.searchFAQs():
-            yield self.toTerm(faq)
-
-    def __contains__(self, value):
-        """See `IVocabulary`."""
-        if not IFAQ.providedBy(value):
-            return False
-        return self.context.getFAQ(value.id) is not None
-
-    def getTerm(self, value):
-        """See `IVocabulary`."""
-        if value not in self:
-            raise LookupError(value)
-        return self.toTerm(value)
-
-    def getTermByToken(self, token):
-        """See `IVocabularyTokenized`."""
-        try:
-            faq_id = int(token)
-        except ValueError:
-            raise LookupError(token)
-        faq = self.context.getFAQ(token)
-        if faq is None:
-            raise LookupError(token)
-        return self.toTerm(faq)
-
-    def toTerm(self, faq):
-        """Return the term for a FAQ."""
-        return SimpleTerm(faq, faq.id, faq.title)
-
-    def searchForTerms(self, query=None):
-        """See `IHugeVocabulary`."""
-        results = self.context.findSimilarFAQs(query)
-        return CountableIterator(results.count(), results, self.toTerm)
 
 
 class LanguageVocabulary(SQLObjectVocabularyBase):
@@ -1647,7 +1588,7 @@ class PPAVocabulary(SQLObjectVocabularyBase):
     implements(IHugeVocabulary)
 
     _table = Archive
-    _orderBy = ['Person.name']
+    _orderBy = ['Person.name, Archive.name']
     _clauseTables = ['Person']
     _filter = AND(
         Person.q.id == Archive.q.ownerID,
@@ -1661,11 +1602,22 @@ class PPAVocabulary(SQLObjectVocabularyBase):
             summary = description.splitlines()[0]
         else:
             summary = "No description available"
-        return SimpleTerm(archive, archive.owner.name, summary)
+
+        token = '%s/%s' % (archive.owner.name, archive.name)
+
+        return SimpleTerm(archive, token, summary)
 
     def getTermByToken(self, token):
         """See `IVocabularyTokenized`."""
-        clause = AND(self._filter, Person.name == token)
+        try:
+            owner_name, archive_name = token.split('/')
+        except ValueError:
+            raise LookupError(token)
+
+        clause = AND(
+            self._filter,
+            Person.name == owner_name,
+            Archive.name == archive_name)
 
         obj = self._table.selectOne(
             clause, clauseTables=self._clauseTables)
@@ -1684,9 +1636,19 @@ class PPAVocabulary(SQLObjectVocabularyBase):
             return self.emptySelectResults()
 
         query = query.lower()
-        clause = AND(self._filter,
-                     SQL("(Archive.fti @@ ftq(%s) OR Person.fti @@ ftq(%s))"
-                         % (quote(query), quote(query))))
+
+        try:
+            owner_name, archive_name = query.split('/')
+        except ValueError:
+            clause = AND(
+                self._filter,
+                SQL("(Archive.fti @@ ftq(%s) OR Person.fti @@ ftq(%s))"
+                    % (quote(query), quote(query))))
+        else:
+            clause = AND(
+                self._filter,
+                Person.name == owner_name,
+                Archive.name == archive_name)
 
         return self._table.select(
             clause, orderBy=self._orderBy, clauseTables=self._clauseTables)
@@ -1936,7 +1898,7 @@ class DistributionOrProductVocabulary(PillarVocabularyBase):
     displayname = 'Select a project'
     _filter = """
         -- An active product/distro.
-        (active IS TRUE
+        ((active IS TRUE
          AND (product IS NOT NULL OR distribution IS NOT NULL)
         )
         OR
@@ -1945,7 +1907,7 @@ class DistributionOrProductVocabulary(PillarVocabularyBase):
             SELECT id FROM PillarName
             WHERE active IS TRUE AND
                 (product IS NOT NULL OR distribution IS NOT NULL))
-        )
+        ))
         """
 
     def __contains__(self, obj):
