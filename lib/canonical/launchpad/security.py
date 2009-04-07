@@ -1957,7 +1957,7 @@ class EditArchiveAuthToken(AuthorizationBase):
 class ViewPersonalArchiveSubscription(AuthorizationBase):
     """Restrict viewing of personal archive subscriptions (non-db class).
 
-    The user should be the subscriber, have append privileg to the archive
+    The user should be the subscriber, have append privilege to the archive
     or be an admin.
     """
     permission = "launchpad.View"

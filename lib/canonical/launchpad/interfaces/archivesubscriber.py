@@ -177,11 +177,11 @@ class IArchiveSubscriberUI(Interface):
 class IPersonalArchiveSubscription(Interface):
     """An abstract interface representing a subscription for an individual.
 
-    An individual may be included in multiple team subscriptions for a
-    private PPA, but should only ever be able to navigate and activate one
-    token for the archive. This non-db class allows a traversal for an
-    individual's subscription to a p3a, irrespective of how many subscriptions
-    there may be.
+    An individual may be subscribed via a team, but should only ever be
+    able to navigate and activate one token for their individual person.
+    This non-db class allows a traversal for an individual's subscription
+    to a p3a, irrespective of whether the ArchiveSubscriber records linking
+    this individual to the archive are for teams or individuals.
     """
     subscriber = Reference(
         IPerson, title=_("Person"), required=True, readonly=True,

@@ -108,7 +108,7 @@ class ArchiveSubscribersView(LaunchpadFormView):
         """Return whether this archive has any subscribers."""
         # XXX noodles 20090212 bug=246200: use bool() when it gets fixed
         # in storm.
-        return self.subscriptions.count() > 0
+        return self.subscriptions.any() is not None
 
     def validate_new_subscription(self, action, data):
         """Ensure the subscriber isn't already subscribed.
@@ -126,7 +126,7 @@ class ArchiveSubscribersView(LaunchpadFormView):
 
             # XXX noodles 20090212 bug=246200: use bool() when it gets fixed
             # in storm.
-            if current_subscription.count() > 0:
+            if current_subscription.any() is not None:
                 self.setFieldError('subscriber',
                     "%s is already subscribed." % subscriber.displayname)
 
