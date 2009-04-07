@@ -10,10 +10,8 @@ __all__ = [
 import cgi
 from textwrap import dedent
 
-from zope.component import getUtility
 from zope.security.checker import canWrite
 
-from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.publisher import canonical_url
 
 

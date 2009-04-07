@@ -95,6 +95,7 @@ from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
 from canonical.launchpad.webapp.menu import NavigationMenu
+from canonical.widgets.popup import PersonPickerWidget, VocabularyPickerWidget
 from lazr.uri import URI
 from canonical.widgets.date import DateWidget
 from canonical.widgets.itemswidgets import (
@@ -1475,6 +1476,9 @@ class ProductAddView(ProductAddViewBase):
     label = "Register an upstream open source project"
     product = None
 
+    custom_widget('project', VocabularyPickerWidget,
+                  header="Select a project group")
+
     def isVCSImport(self):
         if self.user is None:
             return False
@@ -1536,6 +1540,9 @@ class ProductEditPeopleView(LaunchpadEditFormView):
         'owner',
         'driver',
         ]
+
+    custom_widget('owner', PersonPickerWidget, header="Select the maintainer")
+    custom_widget('driver', PersonPickerWidget, header="Select the driver")
 
     @action(_('Save changes'), name='save')
     def save_action(self, action, data):

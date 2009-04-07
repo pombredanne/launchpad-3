@@ -227,37 +227,6 @@ visible to a user that isn't able to see the branch itself.
     No bug branch links
 
 
-== Blueprint branch links ==
-
-Links between blueprints and branches are shown in a portlet on the
-blueprint index page.
-
-    >>> landscape_dev_browser.open(
-    ...     'http://blueprints.launchpad.dev/kubuntu/+spec/krunch-desktop-plan')
-    >>> print find_portlet(landscape_dev_browser.contents, 'Branches')
-    None
-
-Link a private branch to this blueprint.
-
-    >>> landscape_dev_browser.getLink('Link to branch').click()
-    >>> landscape_dev_browser.getControl('Branch').value = (
-    ...     '~landscape-developers/landscape/trunk')
-    >>> landscape_dev_browser.getControl('Continue').click()
-
-    >>> portlet = find_portlet(landscape_dev_browser.contents, 'Branches')
-    >>> print extract_text(portlet)
-    Branches
-    trunk: Landscape trunk
-
-The portlet is not shown at all to users that cannot see the associated
-branches.
-
-    >>> anon_browser.open(
-    ...     'http://blueprints.launchpad.dev/kubuntu/+spec/krunch-desktop-plan')
-    >>> print find_portlet(anon_browser.contents, 'Branches')
-    None
-
-
 == Branches set as primary branches for product series ==
 
 When a branch is set as the user branch for product series, the details

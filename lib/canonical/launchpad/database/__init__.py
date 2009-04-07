@@ -80,6 +80,7 @@ from canonical.launchpad.database.translationgroup import *
 from canonical.launchpad.database.translationimportqueue import *
 from canonical.launchpad.database.translationmessage import *
 from canonical.launchpad.database.translationsoverview import *
+from canonical.launchpad.database.translationsperson import *
 from canonical.launchpad.database.translationtemplateitem import *
 from canonical.launchpad.database.translator import *
 from canonical.launchpad.database.processor import *

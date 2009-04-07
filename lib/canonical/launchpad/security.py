@@ -97,6 +97,8 @@ from canonical.launchpad.interfaces.translationgroup import (
     ITranslationGroup, ITranslationGroupSet)
 from canonical.launchpad.interfaces.translationimportqueue import (
     ITranslationImportQueue, ITranslationImportQueueEntry)
+from canonical.launchpad.interfaces.translationsperson import (
+    ITranslationsPerson)
 from canonical.launchpad.interfaces.translator import (
     ITranslator, IEditTranslator)
 
@@ -637,6 +639,16 @@ class EditPersonBySelfOrAdmins(AuthorizationBase):
         """
         admins = getUtility(ILaunchpadCelebrities).admin
         return self.obj.id == user.id or user.inTeam(admins)
+
+
+class EditTranslationsPersonByPerson(AuthorizationBase):
+    permission = 'launchpad.Edit'
+    usedfor = ITranslationsPerson
+
+    def checkAuthenticated(self, user):
+        person = self.obj.person
+        admins = getUtility(ILaunchpadCelebrities).admin
+        return person == user or user.inTeam(admins)
 
 
 class EditPersonLocation(AuthorizationBase):
