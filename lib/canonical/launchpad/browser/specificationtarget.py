@@ -10,13 +10,13 @@ __all__ = [
 
 from operator import itemgetter
 
-from canonical.launchpad.interfaces.distribution import IDistribution
-from canonical.launchpad.interfaces.distroseries import IDistroSeries
+from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.distroseries import IDistroSeries
 from canonical.launchpad.interfaces.launchpad import IHasDrivers
-from canonical.launchpad.interfaces.person import IPerson
-from canonical.launchpad.interfaces.product import IProduct
-from canonical.launchpad.interfaces.productseries import IProductSeries
-from canonical.launchpad.interfaces.project import IProject, IProjectSeries
+from lp.registry.interfaces.person import IPerson
+from lp.registry.interfaces.product import IProduct
+from lp.registry.interfaces.productseries import IProductSeries
+from lp.registry.interfaces.project import IProject, IProjectSeries
 from canonical.launchpad.interfaces.specification import (
     SpecificationFilter, SpecificationSort)
 from canonical.launchpad.interfaces.specificationtarget import (
@@ -279,12 +279,12 @@ class HasSpecificationsView(LaunchpadView):
         detect which set of specifications you want to see. The options are:
 
          - all specs (self.context.specifications())
-         - created by this person (self.context.created_specs)
-         - assigned to this person (self.context.assigned_specs)
-         - for review by this person (self.context.feedback_specs)
-         - specs this person must approve (self.context.approver_specs)
-         - drafted by this person (self.context.drafted_specs)
-         - subscribed by this person (self.context.subscriber_specs)
+         - created by this person
+         - assigned to this person
+         - for review by this person
+         - specs this person must approve
+         - drafted by this person
+         - subscribed by this person
 
         """
         categories = {}

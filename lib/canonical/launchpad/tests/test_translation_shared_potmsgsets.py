@@ -3,7 +3,7 @@
 
 __metaclass__ = type
 
-from datetime import datetime, timedelta
+from datetime import datetime
 import pytz
 import unittest
 

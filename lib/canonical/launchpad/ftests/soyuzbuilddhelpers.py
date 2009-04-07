@@ -156,6 +156,7 @@ class OkSlave:
         else:
             print "No archives set."
         print "Suite: %s" % args['suite']
+        print "Ogre-component: %s" % args['ogrecomponent']
         print "Archive Purpose: %s" % args['archive_purpose']
         print "Archive Private: %s" % args['archive_private']
         return ('BuildStatus.Building', info)

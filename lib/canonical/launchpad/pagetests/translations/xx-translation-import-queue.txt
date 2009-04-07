@@ -178,7 +178,8 @@ And provide information for this IPOFile to be newly created.
   >>> print browser.url
   http://translations.launchpad.dev/+imports
 
-And we get the enties approved and with a place where they will be imported.
+The entries are approved, and now have the place where they will be
+imported assigned.
 
   >>> anon_browser.open('http://translations.launchpad.dev/+imports')
   >>> imports_table = find_tag_by_id(
@@ -275,6 +276,50 @@ The entry now appears deleted.
   ...selected="selected" value="DELETED"...
   ...Sample Person...
   ...Spanish (es) translation of pkgconf-mozilla in Mozilla Firefox 1.0...
+
+
+Ubuntu uploads
+--------------
+
+As a special case, the owners of Ubuntu's translation group are allowed
+to manage Ubuntu uploads.
+
+    >>> from canonical.launchpad.database import (
+    ...     Distribution, TranslationImportQueue)
+    >>> queue = TranslationImportQueue()
+    >>> ubuntu = Distribution.selectOneBy(name='ubuntu')
+    >>> hoary = ubuntu['hoary']
+
+There is a translation group for Ubuntu.  Its owner has no special
+privileges or roles other than running the group.
+
+Somebody else has uploaded a translation template for an Ubuntu package.
+
+    >>> login(ANONYMOUS)
+
+    >>> package = factory.makeSourcePackageName()
+    >>> group_owner = factory.makePerson(
+    ...     email='go@example.com', name='groupowner', password='test')
+    >>> uploader = factory.makePerson()
+    >>> ubuntu.translationgroup = factory.makeTranslationGroup(group_owner)
+    >>> ubuntu_upload = queue.addOrUpdateEntry(
+    ...     'messages.pot', '(content)', False, uploader,
+    ...     sourcepackagename=package, distroseries=hoary)
+
+    >>> logout()
+
+The owner of Ubuntu's translation group, despite not being the owner or
+having any special privileges, is permitted to approve it.
+
+    >>> group_owner_browser = setupBrowser(auth='Basic go@example.com:test')
+    >>> group_owner_browser.open(
+    ...     'http://translations.launchpad.dev/+imports/%d' %
+    ...         ubuntu_upload.id)
+    >>> group_owner_browser.getControl(name='field.name').value = 'f918'
+    >>> group_owner_browser.getControl(
+    ...     name='field.translation_domain').value = 'f918'
+    >>> group_owner_browser.getControl(name='field.actions.approve').click()
+
 
 Corner cases
 ------------

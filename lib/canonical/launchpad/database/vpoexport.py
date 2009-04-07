@@ -14,7 +14,7 @@ from zope.interface import implements
 
 from canonical.database.sqlbase import quote, sqlvalues, cursor
 from canonical.launchpad.database.component import Component
-from canonical.launchpad.database.distroseries import DistroSeries
+from lp.registry.model.distroseries import DistroSeries
 from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.publishing import (
     SourcePackagePublishingHistory)

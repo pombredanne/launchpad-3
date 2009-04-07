@@ -26,10 +26,10 @@ from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.components.tokens import (
     create_token, create_unique_token_for_table)
 
-from canonical.launchpad.interfaces.distribution import IDistribution
-from canonical.launchpad.interfaces.product import IProduct
-from canonical.launchpad.interfaces.project import IProject
-from canonical.launchpad.interfaces.distributionsourcepackage import (
+from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.product import IProduct
+from lp.registry.interfaces.project import IProject
+from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage)
 from canonical.launchpad.interfaces import (
     IOAuthAccessToken, IOAuthConsumer, IOAuthConsumerSet, IOAuthNonce,

@@ -32,8 +32,8 @@ from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.archive import IArchive
-from canonical.launchpad.interfaces.distroseries import IDistroSeries
-from canonical.launchpad.interfaces.person import IPerson
+from lp.registry.interfaces.distroseries import IDistroSeries
+from lp.registry.interfaces.person import IPerson
 
 from canonical.lazr.fields import Reference
 from canonical.lazr.rest.declarations import (
@@ -518,6 +518,11 @@ class ISourcePackagePublishingHistory(ISecureSourcePackagePublishingHistory):
         TextLine(
             title=_("Section Name"),
             required=False, readonly=True))
+
+    changes_file_text = Text(
+        title=_("Changes File Text"),
+        description=_("This source publication's changes file for "
+                      "the source upload."))
 
     def getPublishedBinaries():
         """Return all resulted `IBinaryPackagePublishingHistory`.

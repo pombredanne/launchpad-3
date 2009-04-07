@@ -10,17 +10,19 @@ __all__ = [
     'ArchiveSubscriptionError',
     'IArchiveSubscriber',
     'IArchiveSubscriberUI',
+    'IArchiveSubscriptionForOwner',
+    'IArchiveSubscriptionForSubscriber',
     'IArchiveSubscriberSet'
     ]
 
 from zope.interface import Interface
-from zope.schema import Choice, Date, Datetime, Int, Text
+from zope.schema import Choice, Date, Datetime, Int, Text, TextLine
 from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice
 from canonical.launchpad.interfaces.archive import IArchive
-from canonical.launchpad.interfaces.person import IPerson
+from lp.registry.interfaces.person import IPerson
 from canonical.lazr.fields import Reference
 
 
@@ -93,6 +95,9 @@ class IArchiveSubscriberView(Interface):
         IPerson, title=_("Cancelled By"), required=False,
         description=_("The person who cancelled the subscription."))
 
+    displayname = TextLine(title=_("Subscription displayname"),
+        required=False)
+
 
 class IArchiveSubscriberEdit(Interface):
     """An interface for launchpad.Edit ops on archive subscribers."""
@@ -109,6 +114,13 @@ class IArchiveSubscriberEdit(Interface):
 
 class IArchiveSubscriber(IArchiveSubscriberView, IArchiveSubscriberEdit):
     """An interface for archive subscribers."""
+
+
+class IArchiveSubscriptionForOwner(IArchiveSubscriber):
+    """Marker interface so traversal works differently for PPA owners."""
+
+class IArchiveSubscriptionForSubscriber(IArchiveSubscriber):
+    """Marker interface so traversal works differently for PPA subscribers."""
 
 
 class IArchiveSubscriberSet(Interface):
@@ -167,5 +179,5 @@ class IArchiveSubscriberUI(Interface):
 
     description = Text(
         title=_("Description"), required=False,
-        description=_("Free text describing this subscription."))
+        description=_("Optional notes about this subscription."))
 

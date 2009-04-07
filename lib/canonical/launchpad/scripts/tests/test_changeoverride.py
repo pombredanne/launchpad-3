@@ -8,9 +8,9 @@ import unittest
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces.component import IComponentSet
-from canonical.launchpad.interfaces.distribution import IDistributionSet
+from lp.registry.interfaces.distribution import IDistributionSet
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.launchpad.interfaces.person import IPersonSet
+from lp.registry.interfaces.person import IPersonSet
 from canonical.launchpad.interfaces.publishing import (
     PackagePublishingPocket, PackagePublishingPriority)
 from canonical.launchpad.interfaces.section import ISectionSet

@@ -31,7 +31,7 @@ from canonical.database.sqlbase import (
 from canonical.launchpad import helpers
 from canonical.launchpad.components.rosettastats import RosettaStats
 from canonical.launchpad.database.language import Language
-from canonical.launchpad.validators.person import validate_public_person
+from lp.registry.interfaces.person import validate_public_person
 from canonical.launchpad.database.pofile import POFile, DummyPOFile
 from canonical.launchpad.database.pomsgid import POMsgID
 from canonical.launchpad.database.potmsgset import POTMsgSet
@@ -270,7 +270,7 @@ class POTemplate(SQLBase, RosettaStats):
         if self.productseries is not None:
             return self.productseries
         elif self.distroseries is not None:
-            from canonical.launchpad.database.sourcepackage import \
+            from lp.registry.model.sourcepackage import \
                 SourcePackage
             return SourcePackage(distroseries=self.distroseries,
                 sourcepackagename=self.sourcepackagename)
@@ -347,7 +347,7 @@ class POTemplate(SQLBase, RosettaStats):
             clauses.append('TranslationTemplateItem.sequence > 0')
 
         query = POTMsgSet.select(" AND ".join(clauses),
-                                 clauseTables = ['TranslationTemplateItem'],
+                                 clauseTables=['TranslationTemplateItem'],
                                  orderBy=['TranslationTemplateItem.sequence'])
         return query.prejoin(['msgid_singular', 'msgid_plural'])
 
@@ -460,15 +460,17 @@ class POTemplate(SQLBase, RosettaStats):
             return " = %s" % sqlvalues(value)
 
     def _getPOTMsgSetBy(self, msgid_singular, msgid_plural=None, context=None,
-                        shared=False):
-        """Look for a POTMsgSet by msgid_singular, msgid_plural, context,
-        and whether to look in any of the shared templates as well.
+                        sharing_templates=False):
+        """Look for a POTMsgSet by msgid_singular, msgid_plural, context.
+
+        If `sharing_templates` is True, and the current template has no such
+        POTMsgSet, look through sharing templates as well.
         """
         clauses = [
             'TranslationTemplateItem.potmsgset = POTMsgSet.id',
             ]
         clause_tables = ['TranslationTemplateItem']
-        if shared:
+        if sharing_templates:
             clauses.extend([
                 'TranslationTemplateItem.potemplate = POTemplate.id',
                 'TranslationTemplateItem.potmsgset = POTMsgSet.id',
@@ -734,7 +736,7 @@ class POTemplate(SQLBase, RosettaStats):
         else:
             msgid_plural = self.getOrCreatePOMsgID(plural_text)
         potmsgset = self._getPOTMsgSetBy(msgid_singular, msgid_plural,
-                                         context, shared=True)
+                                         context, sharing_templates=True)
         if potmsgset is None:
             potmsgset = self.createMessageSetFromText(
                 singular_text, plural_text, context)

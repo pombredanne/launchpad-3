@@ -271,13 +271,6 @@ if [ ! -e $LPDEV_SOURCES ]; then
   sudo touch $LPDEV_SOURCES
 fi
 
-LP_DEBS="deb http://lpdebs.canonical.com/${DISTRIB_CODENAME} ./"
-grep -q "^${LP_DEBS}" $LPDEV_SOURCES
-if [ $? -ne 0 ]; then
-  echo "Adding lpdebs package repository to package source list."
-  echo "$LP_DEBS" | sudo tee -a $LPDEV_SOURCES
-fi
-
 LP_PPA="deb http://ppa.launchpad.net/launchpad/ppa/ubuntu ${DISTRIB_CODENAME} main"
 grep -q "^${LP_PPA}" $LPDEV_SOURCES
 if [ $? -ne 0 ]; then

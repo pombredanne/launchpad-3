@@ -10,11 +10,11 @@ __all__ = [
 from zope.component import getUtility
 from zope.formlib.form import Action, Actions
 
-from canonical.launchpad.interfaces.distribution import IDistributionSet
+from lp.registry.interfaces.distribution import IDistributionSet
 from canonical.launchpad.interfaces.oauth import (
     IOAuthConsumerSet, IOAuthRequestToken, IOAuthRequestTokenSet,
     OAUTH_CHALLENGE)
-from canonical.launchpad.interfaces.pillar import IPillarNameSet
+from lp.registry.interfaces.pillar import IPillarNameSet
 from canonical.launchpad.webapp import LaunchpadFormView, LaunchpadView
 from canonical.launchpad.webapp.authentication import (
     check_oauth_signature, get_oauth_authorization)

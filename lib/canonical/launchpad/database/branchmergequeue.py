@@ -24,7 +24,7 @@ from canonical.launchpad.interfaces.branchmergequeue import (
     IBranchMergeQueue, IBranchMergeQueueSet, IMultiBranchMergeQueue)
 from canonical.launchpad.interfaces.branchmergeproposal import (
     BranchMergeProposalStatus)
-from canonical.launchpad.validators.person import validate_public_person
+from lp.registry.interfaces.person import validate_public_person
 
 
 class BaseBranchMergeQueue:

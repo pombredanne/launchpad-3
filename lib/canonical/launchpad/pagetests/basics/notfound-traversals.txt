@@ -97,6 +97,7 @@ status is returned.
 ...                 host='translations.launchpad.dev')
 
 >>> check("robots.txt", host="shipit.ubuntu.dev")
+>>> check_redirect('/user.cgi', host="shipit.ubuntu.dev", status=301)
 
 >>> check("/bounties")
 >>> check("/bounties/foomatic-widgets")
@@ -464,7 +465,9 @@ sabdfl owns many packages, so he's a better test for some pages:
 
 >>> check("/+code")
 
->>> check("/+builds/bob/")
+>>> check("/builders")
+>>> check("/builders/bob/")
+>>> check_redirect("/+builds", status=301)
 >>> check("/ubuntu/+source/pmount/0.1-1/+build/7/")
 >>> check("/ubuntu/+source/pmount/0.1-1/+build/7/pmount/")
 

@@ -43,9 +43,9 @@ from canonical.launchpad.browser.feeds import (
     FeedsMixin, PersonBranchesFeedLink, PersonRevisionsFeedLink,
     ProductBranchesFeedLink, ProductRevisionsFeedLink,
     ProjectBranchesFeedLink, ProjectRevisionsFeedLink)
-from canonical.launchpad.browser.product import (
+from lp.registry.browser.product import (
     ProductDownloadFileMixin, SortSeriesMixin)
-from canonical.launchpad.database.sourcepackage import SourcePackage
+from lp.registry.model.sourcepackage import SourcePackage
 from canonical.launchpad.interfaces import (
     IBugBranchSet,
     IProductSeriesSet,
@@ -53,14 +53,16 @@ from canonical.launchpad.interfaces import (
     ISpecificationBranchSet)
 from canonical.launchpad.interfaces.branch import (
     bazaar_identity, BranchLifecycleStatus, BranchLifecycleStatusFilter,
-    DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch, IBranchBatchNavigator,
-    IBranchSet)
+    BranchType, DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch,
+    IBranchBatchNavigator)
 from canonical.launchpad.interfaces.branchcollection import IAllBranches
 from canonical.launchpad.interfaces.branchmergeproposal import (
     BranchMergeProposalStatus, IBranchMergeProposalGetter)
-from canonical.launchpad.interfaces.distroseries import DistroSeriesStatus
-from canonical.launchpad.interfaces.person import IPerson, IPersonSet
-from canonical.launchpad.interfaces.product import IProduct
+from lp.registry.interfaces.distroseries import DistroSeriesStatus
+from lp.registry.interfaces.person import IPerson, IPersonSet
+from canonical.launchpad.interfaces.personproduct import (
+    IPersonProduct, IPersonProductFactory)
+from lp.registry.interfaces.product import IProduct
 from canonical.launchpad.webapp import (
     ApplicationMenu, canonical_url, custom_widget, enabled_with_permission,
     LaunchpadFormView, Link)
@@ -89,11 +91,12 @@ class BranchListingItem(BranchBadges):
 
     def __init__(self, branch, last_commit, now, show_bug_badge,
                  show_blueprint_badge, is_dev_focus,
-                 associated_product_series):
+                 associated_product_series, show_mp_badge):
         BranchBadges.__init__(self, branch)
         self.last_commit = last_commit
         self.show_bug_badge = show_bug_badge
         self.show_blueprint_badge = show_blueprint_badge
+        self.show_merge_proposals = show_mp_badge
         self._now = now
         self.is_development_focus = is_dev_focus
         self.associated_product_series = associated_product_series
@@ -125,6 +128,10 @@ class BranchListingItem(BranchBadges):
 
     def isBlueprintBadgeVisible(self):
         return self.show_blueprint_badge
+
+    def isMergeproposalBadgeVisible(self):
+        """Show the merge proposal badge if needed"""
+        return self.show_merge_proposals
 
     @property
     def revision_author(self):
@@ -251,25 +258,32 @@ class BranchListingBatchNavigator(TableBatchNavigator):
         return list(self.currentBatch())
 
     @cachedproperty
-    def has_bug_branch_links(self):
+    def branch_ids_with_bug_links(self):
         """Return a set of branch ids that should show bug badges."""
         bug_branches = getUtility(IBugBranchSet).getBugBranchesForBranches(
             self._branches_for_current_batch, self.view.user)
-        result = set()
-        for bug_branch in bug_branches:
-            result.add(bug_branch.branch.id)
-        return result
+        return set(bug_branch.branch.id for bug_branch in bug_branches)
 
     @cachedproperty
-    def has_branch_spec_links(self):
+    def branch_ids_with_spec_links(self):
         """Return a set of branch ids that should show blueprint badges."""
         spec_branches = getUtility(
             ISpecificationBranchSet).getSpecificationBranchesForBranches(
             self._branches_for_current_batch, self.view.user)
-        result = set()
-        for spec_branch in spec_branches:
-            result.add(spec_branch.branch.id)
-        return result
+        return set(spec_branch.branch.id for spec_branch in spec_branches)
+
+    @cachedproperty
+    def branch_ids_with_merge_proposals(self):
+        """Return a set of branches that should show merge proposal badges.
+
+        Branches have merge proposals badges if they've been proposed for
+        merging into another branch (source branches)
+        """
+        proposals = (
+            self.view._getCollection()
+            .visibleByUser(self.view.user)
+            .getMergeProposals(for_branches=self._branches_for_current_batch))
+        return set(proposal.source_branch.id for proposal in proposals)
 
     @cachedproperty
     def tip_revisions(self):
@@ -325,13 +339,15 @@ class BranchListingBatchNavigator(TableBatchNavigator):
 
     def _createItem(self, branch):
         last_commit = self.tip_revisions[branch.id]
-        show_bug_badge = branch.id in self.has_bug_branch_links
-        show_blueprint_badge = branch.id in self.has_branch_spec_links
+        show_bug_badge = branch.id in self.branch_ids_with_bug_links
+        show_blueprint_badge = branch.id in self.branch_ids_with_spec_links
+        show_mp_badge = branch.id in self.branch_ids_with_merge_proposals
         associated_product_series = self.getProductSeries(branch)
         is_dev_focus = (self.getDevFocusBranch(branch) == branch)
         return BranchListingItem(
             branch, last_commit, self._now, show_bug_badge,
-            show_blueprint_badge, is_dev_focus, associated_product_series)
+            show_blueprint_badge, is_dev_focus,
+            associated_product_series, show_mp_badge)
 
     def branches(self):
         """Return a list of BranchListingItems."""
@@ -524,8 +540,8 @@ class BranchListingView(LaunchpadFormView, FeedsMixin):
         :param sort_by: an item from the BranchListingSort enumeration.
         """
         from canonical.launchpad.database.branch import Branch
-        from canonical.launchpad.database.person import Owner
-        from canonical.launchpad.database.product import Product
+        from lp.registry.model.person import Owner
+        from lp.registry.model.product import Product
 
         DEFAULT_BRANCH_LISTING_SORT = [
             BranchListingSort.PRODUCT,
@@ -580,108 +596,142 @@ class NoContextBranchListingView(BranchListingView):
         'There are no branches that match the current status filter.')
     extra_columns = ('author', 'product', 'date_created')
 
+    def _branches(self, lifecycle_status):
+        """Return a sequence of branches.
+
+        Override the default behaviour to not join across Owner and Product.
+
+        :param lifecycle_status: A filter of the branch's lifecycle status.
+        """
+        collection = self._getCollection()
+        if lifecycle_status is not None:
+            collection = collection.withLifecycleStatus(*lifecycle_status)
+        collection = collection.visibleByUser(self.user)
+        return collection.getBranches(
+            join_owner=False, join_product=False).order_by(
+            self._branch_order)
+
 
 class RecentlyRegisteredBranchesView(NoContextBranchListingView):
     """A batched view of branches orded by registration date."""
 
     page_title = 'Recently registered branches'
 
-    def _branches(self, lifecycle_status):
-        """Return the branches ordered by date created."""
-        return getUtility(IBranchSet).getRecentlyRegisteredBranches(
-            lifecycle_statuses=lifecycle_status,
-            visible_by_user=self.user)
+    @property
+    def _branch_order(self):
+        from canonical.launchpad.database.branch import Branch
+        return Desc(Branch.date_created), Desc(Branch.id)
+
+    def _getCollection(self):
+        return getUtility(IAllBranches)
 
 
 class RecentlyImportedBranchesView(NoContextBranchListingView):
-    """A batched view of imported branches ordered by last scanned time."""
+    """A batched view of imported branches ordered by last modifed time."""
 
     page_title = 'Recently imported branches'
     extra_columns = ('product', 'date_created')
 
-    def _branches(self, lifecycle_status):
-        """Return imported branches ordered by last update."""
-        return getUtility(IBranchSet).getRecentlyImportedBranches(
-            lifecycle_statuses=lifecycle_status,
-            visible_by_user=self.user)
+    @property
+    def _branch_order(self):
+        from canonical.launchpad.database.branch import Branch
+        return Desc(Branch.date_last_modified), Desc(Branch.id)
+
+    def _getCollection(self):
+        return (getUtility(IAllBranches)
+                .withBranchType(BranchType.IMPORTED)
+                .scanned())
 
 
 class RecentlyChangedBranchesView(NoContextBranchListingView):
-    """Batched view of non-imported branches ordered by last scanned time."""
+    """Batched view of non-imported branches ordered by last modified time."""
 
     page_title = 'Recently changed branches'
 
-    def _branches(self, lifecycle_status):
-        """Return non-imported branches orded by last commit."""
-        return getUtility(IBranchSet).getRecentlyChangedBranches(
-            lifecycle_statuses=lifecycle_status,
-            visible_by_user=self.user)
+    @property
+    def _branch_order(self):
+        from canonical.launchpad.database.branch import Branch
+        return Desc(Branch.date_last_modified), Desc(Branch.id)
+
+    def _getCollection(self):
+        return (getUtility(IAllBranches)
+                .withBranchType(BranchType.HOSTED, BranchType.MIRRORED)
+                .scanned())
 
 
 class PersonBranchCountMixin:
-    """A mixin class for person branch listings."""
+    """A mixin class to provide various counts for person branch listings.
+
+    These counts are shown at the top of the person listings, and also used to
+    enable or disable some menu items.
+    """
+
+    def _getCountCollection(self):
+        """The base collection of branches which should be counted.
+
+        This collection will be further restricted to, e.g., the
+        branches registered by a particular user for the counts that
+        appear at the top of a branch listing page.
+
+        This should be overriden in subclasses to restrict to, for
+        example, the set of branches of a particular product.
+        """
+        return getUtility(IAllBranches).visibleByUser(self.user)
+
+    @property
+    def person(self):
+        """The `IPerson` for the context of the view.
+
+        In simple cases this is the context itself, but in others, like the
+        PersonProduct, it is an attribute of the context.
+        """
+        return self.context
 
     @cachedproperty
     def has_branches(self):
         """Does this person have branches that the logged in user can see?"""
-        return bool(
-            self.owned_branch_count +
-            self.registered_branch_count +
-            self.subscribed_branch_count)
+        # Use short circuit evaluation instead of necessarily realising all
+        # queries.
+        return (self.owned_branch_count or
+                self.registered_branch_count or
+                self.subscribed_branch_count)
 
     @cachedproperty
     def registered_branch_count(self):
-        """Return the number of branches registered by the person."""
-        return getUtility(IAllBranches).visibleByUser(self.user).registeredBy(
-            self.context).count()
+        """Return the number of branches registered by self.person."""
+        return self._getCountCollection().registeredBy(self.person).count()
 
     @cachedproperty
     def owned_branch_count(self):
-        """Return the number of branches owned by the person."""
-        return getUtility(IAllBranches).visibleByUser(self.user).ownedBy(
-            self.context).count()
+        """Return the number of branches owned by self.person."""
+        return self._getCountCollection().ownedBy(self.person).count()
 
     @cachedproperty
     def subscribed_branch_count(self):
-        """Return the number of branches subscribed to by the person."""
-        return getUtility(IAllBranches).visibleByUser(self.user).subscribedBy(
-            self.context).count()
-
-    @property
-    def user_in_context_team(self):
-        if self.user is None:
-            return False
-        return self.user.inTeam(self.context)
+        """Return the number of branches subscribed to by self.person."""
+        return self._getCountCollection().subscribedBy(self.person).count()
 
     @cachedproperty
     def active_review_count(self):
-        """Return the number of active reviews for the user."""
-        # XXX: JonathanLange 2009-03-05: Make this use IBranchCollection, when
-        # IBranchCollection supports getMergeProposals.
-        query = getUtility(IBranchMergeProposalGetter).getProposalsForContext(
-            self.context, [BranchMergeProposalStatus.NEEDS_REVIEW], self.user)
-        return query.count()
+        """Return the number of active reviews for self.person's branches."""
+        return self._getCountCollection().ownedBy(
+            self.person).getMergeProposals(
+            [BranchMergeProposalStatus.NEEDS_REVIEW]).count()
 
     @cachedproperty
     def approved_merge_count(self):
-        """Return the number of active reviews for the user."""
-        # XXX: JonathanLange 2009-03-05: Make this use IBranchCollection, when
-        # IBranchCollection supports getMergeProposals.
-        query = getUtility(IBranchMergeProposalGetter).getProposalsForContext(
-            self.context, [BranchMergeProposalStatus.CODE_APPROVED],
-            self.user)
-        return query.count()
+        """The number of approved proposals for self.person's branches."""
+        return self._getCountCollection().ownedBy(
+            self.person).getMergeProposals(
+            [BranchMergeProposalStatus.CODE_APPROVED]).count()
 
     @cachedproperty
     def requested_review_count(self):
-        """Return the number of active reviews for the user."""
-        utility = getUtility(IBranchMergeProposalGetter)
-        query = utility.getProposalsForReviewer(
-            self.context, [
-                BranchMergeProposalStatus.CODE_APPROVED,
-                BranchMergeProposalStatus.NEEDS_REVIEW],
-            self.user)
-        return query.count()
+        """Return the number of review requests for self.person."""
+        return self._getCountCollection().getMergeProposalsForReviewer(
+            self.person,
+            [BranchMergeProposalStatus.CODE_APPROVED,
+             BranchMergeProposalStatus.NEEDS_REVIEW]).count()
 
 
 class PersonBranchesMenu(ApplicationMenu, PersonBranchCountMixin):
@@ -744,7 +794,31 @@ class PersonBranchesMenu(ApplicationMenu, PersonBranchCountMixin):
         return Link('+requestedreviews', text, summary=summary)
 
 
-class PersonRegisteredBranchesView(BranchListingView, PersonBranchCountMixin):
+class PersonBaseBranchListingView(BranchListingView, PersonBranchCountMixin):
+    """Base class used for different person listing views."""
+
+    @property
+    def user_in_context_team(self):
+        if self.user is None:
+            return False
+        return self.user.inTeam(self.person)
+
+    @property
+    def no_branch_message(self):
+        if (self.selected_lifecycle_status is not None
+            and self.hasAnyBranchesVisibleByUser()):
+            message = (
+                'There are branches related to %s but none of them match the '
+                'current filter criteria for this page. '
+                'Try filtering on "Any Status".')
+        else:
+            message = (
+                'There are no branches related to %s '
+                'in Launchpad today.')
+        return message % self.context.displayname
+
+
+class PersonRegisteredBranchesView(PersonBaseBranchListingView):
     """View for branch listing for a person's registered branches."""
 
     heading_template = 'Bazaar branches registered by %(displayname)s'
@@ -754,7 +828,7 @@ class PersonRegisteredBranchesView(BranchListingView, PersonBranchCountMixin):
         return getUtility(IAllBranches).registeredBy(self.context)
 
 
-class PersonOwnedBranchesView(BranchListingView, PersonBranchCountMixin):
+class PersonOwnedBranchesView(PersonBaseBranchListingView):
     """View for branch listing for a person's owned branches."""
 
     heading_template = 'Bazaar branches owned by %(displayname)s'
@@ -764,7 +838,7 @@ class PersonOwnedBranchesView(BranchListingView, PersonBranchCountMixin):
         return getUtility(IAllBranches).ownedBy(self.context)
 
 
-class PersonSubscribedBranchesView(BranchListingView, PersonBranchCountMixin):
+class PersonSubscribedBranchesView(PersonBaseBranchListingView):
     """View for branch listing for a person's subscribed branches."""
 
     heading_template = 'Bazaar branches subscribed to by %(displayname)s'
@@ -777,13 +851,50 @@ class PersonSubscribedBranchesView(BranchListingView, PersonBranchCountMixin):
 class PersonTeamBranchesView(LaunchpadView):
     """View for team branches portlet."""
 
+    def _getCollection(self):
+        """The collection of branches to use to look for team branches."""
+        return getUtility(IAllBranches).visibleByUser(self.user)
+
+    def _createItem(self, team):
+        """Return a dict of the team, and the thing to get the URL from.
+
+        This dict is used to build the list shown to the user.  Since we don't
+        want a particular url formatter for a PersonProduct, we have the url
+        separately.
+        """
+        return {'team': team, 'url_provider': team}
+
+    @property
+    def person(self):
+        return self.context
+
     @cachedproperty
     def teams_with_branches(self):
         def team_has_branches(team):
-            return getUtility(IAllBranches).ownedBy(team).visibleByUser(
-                self.user).count() > 0
-        return [team for team in self.context.teams_participated_in
-                if team_has_branches(team) and team != self.context]
+            return self._getCollection().ownedBy(team).count() > 0
+        return [self._createItem(team)
+                for team in self.person.teams_participated_in
+                if team_has_branches(team) and team != self.person]
+
+
+class PersonProductTeamBranchesView(PersonTeamBranchesView):
+    """View for teams that the person is in with related product branches."""
+
+    def _getCollection(self):
+        """Use a collection restricted on on the product."""
+        return getUtility(IAllBranches).visibleByUser(self.user).inProduct(
+                self.context.product)
+
+    def _createItem(self, team):
+        """Return a tuple of the team, and the thing to get the URL from."""
+        return {
+            'team': team,
+            'url_provider': getUtility(IPersonProductFactory).create(
+                team, self.context.product)}
+
+    @property
+    def person(self):
+        return self.context.person
 
 
 class PersonCodeSummaryView(LaunchpadView, PersonBranchCountMixin):
@@ -799,6 +910,25 @@ class PersonCodeSummaryView(LaunchpadView, PersonBranchCountMixin):
         support for showing the summary even if there are no branches.
         """
         return self.has_branches or self.requested_review_count
+
+
+class PersonProductCodeSummaryView(PersonCodeSummaryView):
+    """A view to render the code page summary for a `PersonProduct`."""
+
+    __used_for__ = IPersonProduct
+
+    def _getCountCollection(self):
+        """Limit the branches to those in the product.
+
+        Overriding `PersonBranchCountMixin._getCountCollection`.
+        """
+        base_collection = PersonCodeSummaryView._getCountCollection(self)
+        return base_collection.inProduct(self.context.product)
+
+    @property
+    def person(self):
+        """Return the person from the context."""
+        return self.context.person
 
 
 class ProductReviewCountMixin:
@@ -1165,3 +1295,46 @@ class SourcePackageBranchesView(BranchListingView):
                 series_name=series.name,
                 package=SourcePackage(our_sourcepackagename, series),
                 linked=(series != our_series))
+
+
+class PersonProductOwnedBranchesView(PersonBaseBranchListingView):
+    """View for branch listing for a person's owned branches."""
+
+    no_sort_by = (BranchListingSort.DEFAULT,
+                  BranchListingSort.REGISTRANT,
+                  BranchListingSort.PRODUCT)
+
+    def _getCountCollection(self):
+        """Restrict the base collection on the product."""
+        collection = PersonBaseBranchListingView._getCountCollection(self)
+        return collection.inProduct(self.context.product)
+
+    @property
+    def person(self):
+        """Return the person from the PersonProduct context."""
+        return self.context.person
+
+    @property
+    def heading(self):
+        return ('Bazaar Branches of %s owned by %s' %
+                (self.context.product.displayname,
+                 self.context.person.displayname))
+
+    def _getCollection(self):
+        return getUtility(IAllBranches).ownedBy(
+            self.context.person).inProduct(self.context.product)
+
+    @property
+    def no_branch_message(self):
+        """Provide a more appropriate message for no branches."""
+        if (self.selected_lifecycle_status is not None
+            and self.hasAnyBranchesVisibleByUser()):
+            message = (
+                'There are branches of %s owned by %s but none of them '
+                'match the current filter criteria for this page. '
+                'Try filtering on "Any Status".')
+        else:
+            message = (
+                'There are no branches of %s owned by %s in Launchpad today.')
+        return message % (
+            self.context.product.displayname, self.context.person.displayname)

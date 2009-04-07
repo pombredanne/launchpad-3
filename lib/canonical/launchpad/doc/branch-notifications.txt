@@ -30,10 +30,11 @@ also sends the email to the list of recipients.
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces import (
     ...     BranchSubscriptionNotificationLevel, BranchSubscriptionDiffSize,
-    ...     CodeReviewNotificationLevel, IBranchSet)
+    ...     CodeReviewNotificationLevel)
+    >>> from canonical.launchpad.interfaces.branchlookup import IBranchLookup
     >>> from canonical.launchpad.mailout.branch import BranchMailer
     >>> from canonical.launchpad.tests.mail_helpers import pop_notifications
-    >>> branch = getUtility(IBranchSet).getByUniqueName(
+    >>> branch = getUtility(IBranchLookup).getByUniqueName(
     ...     '~name12/firefox/main')
     >>> subscription = branch.subscribe(
     ...     branch.owner,
@@ -466,7 +467,8 @@ an email to be sent out are:
 So, if all the UI fields are changed, you should get an email that looks
 something like this:
 
-    >>> branch = getUtility(IBranchSet).getByUniqueName('~name12/firefox/main')
+    >>> branch = getUtility(IBranchLookup).getByUniqueName(
+    ...     '~name12/firefox/main')
 
     >>> before_modification = Snapshot(branch, providing=IBranch)
 
@@ -618,7 +620,7 @@ We don't want to show None in the email, so we show (not set) instead.
 If another user modified some branch attributes, then an email is sent
 to the branch owner.
 
-    >>> branch = getUtility(IBranchSet).getByUniqueName(
+    >>> branch = getUtility(IBranchLookup).getByUniqueName(
     ...     '~name12/gnome-terminal/main')
 
 There are no subscribers to this branch.

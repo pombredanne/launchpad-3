@@ -18,9 +18,10 @@ import _pythonpath
 
 from optparse import OptionParser
 
+from canonical.codehosting import load_optional_plugin
 from canonical.codehosting.codeimport.worker import (
-    CodeImportSourceDetails, ImportWorker, get_default_bazaar_branch_store,
-    get_default_foreign_tree_store)
+    CSCVSImportWorker, CodeImportSourceDetails, PullingImportWorker,
+    get_default_bazaar_branch_store, get_default_foreign_tree_store)
 from canonical.launchpad import scripts
 
 
@@ -35,9 +36,18 @@ class CodeImportWorker:
 
     def main(self):
         source_details = CodeImportSourceDetails.fromArguments(self.args)
-        import_worker = ImportWorker(
-            source_details, get_default_foreign_tree_store(),
-            get_default_bazaar_branch_store(), self.logger)
+        if source_details.rcstype == 'git':
+            load_optional_plugin('git')
+            import_worker = PullingImportWorker(
+                source_details, get_default_bazaar_branch_store(),
+                self.logger)
+        else:
+            if source_details.rcstype not in ['cvs', 'svn']:
+                raise AssertionError(
+                    'unknown rcstype %r' % source_details.rcstype)
+            import_worker = CSCVSImportWorker(
+                source_details, get_default_foreign_tree_store(),
+                get_default_bazaar_branch_store(), self.logger)
         import_worker.run()
 
 

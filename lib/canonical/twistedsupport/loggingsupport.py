@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'LaunchpadLogFile',
     'OOPSLoggingObserver',
     'log_oops_from_failure',
     'set_up_logging_for_script',
@@ -12,10 +13,16 @@ __all__ = [
     ]
 
 
+import bz2
+import glob
+import os
+
 from twisted.python import log
+from twisted.python.logfile import DailyLogFile
 
 from canonical.launchpad.scripts import logger
 from canonical.launchpad.webapp import errorlog
+from canonical.librarian.utils import copy_and_close
 
 
 class OOPSLoggingObserver(log.PythonLoggingObserver):
@@ -70,4 +77,71 @@ def set_up_oops_reporting(name, mangle_stdout=False):
     errorlog.globalErrorUtility.configure(name)
     log.startLoggingWithObserver(
         OOPSLoggingObserver(loggerName=name).emit, mangle_stdout)
+
+
+class LaunchpadLogFile(DailyLogFile):
+    """Extending `DailyLogFile` to serve Launchpad purposes.
+
+    Additionally to the original daily log file rotation it also allows
+    call sites to control the number of rotated logfiles kept around and
+    when to start compressing them.
+    """
+    maxRotatedFiles = 5
+    compressLast = 3
+
+    def __init__(self, name, directory, defaultMode=None,
+                 maxRotatedFiles=None, compressLast=None):
+        DailyLogFile.__init__(self, name, directory, defaultMode)
+        if maxRotatedFiles is not None:
+            self.maxRotatedFiles = int(maxRotatedFiles)
+        if compressLast is not None:
+            self.compressLast = int(compressLast)
+
+        assert self.compressLast <= self.maxRotatedFiles, (
+            "Only %d rotate files are kept, cannot compress %d"
+            % (self.maxRotatedFiles, self.compressLast))
+
+    def _compressFile(self, path):
+        """Compress the file in the given path using bzip2.
+
+        The compressed file will be in the same path and old file
+        will be removed.
+
+        :return: the path to the compressed file.
+        """
+        bz2_path = '%s.bz2' % path
+        copy_and_close(open(path), bz2.BZ2File(bz2_path, mode='w'))
+        os.remove(path)
+        return bz2_path
+
+    def rotate(self):
+        """Rotate the current logfile.
+
+        Also remove extra entries and compress the last ones.
+        """
+        # Rotate the log daily.
+        DailyLogFile.rotate(self)
+
+        # Remove 'extra' rotated log files.
+        logs = self.listLogs()
+        for log_path in logs[self.maxRotatedFiles:]:
+            os.remove(log_path)
+
+        # Refresh the list of existing rotated logs
+        logs = self.listLogs()
+
+        # Skip compressing if there are no files to be compressed.
+        if len(logs) <= self.compressLast:
+            return
+
+        # Compress last log files.
+        for log_path in logs[-self.compressLast:]:
+            # Skip already compressed files.
+            if log_path.endswith('bz2'):
+                continue
+            self._compressFile(log_path)
+
+    def listLogs(self):
+        """Return the list of rotate log files, newest first."""
+        return sorted(glob.glob("%s.*" % self.path), reverse=True)
 

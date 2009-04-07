@@ -548,3 +548,16 @@ participant, use the 'findPathToTeam' custom operation.
     # ...     print entry['self_link']
     # http://.../~admins
     # http://.../~mailing-list-experts
+
+
+== Restrictions ==
+
+A team can't be its own owner.
+
+  >>> import simplejson
+  >>> doc = {'team_owner_link' : webservice.getAbsoluteUrl("/~admins")}
+  >>> print webservice.patch(
+  ...    "/~admins", 'application/json', simplejson.dumps(doc))
+  HTTP/1.1 400 Bad Request
+  ...
+  team_owner_link: Constraint not satisfied.
