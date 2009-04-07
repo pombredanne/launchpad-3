@@ -1,0 +1,329 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="view/macro:page/onecolumn"
+  i18n:domain="launchpad"
+>
+
+<head>
+  <tal:block metal:fill-slot="head_epilogue">
+    <link
+        tal:condition="not:context/hide_email_addresses"
+        rel="meta" type="application/rdf+xml"
+        title="FOAF" href="+rdf"
+        />
+  </tal:block>
+</head>
+
+<body>
+
+<div metal:fill-slot="before_nav_menu">
+  <div id="team-details" style="text-align:right">
+    Team owned
+    by <tal:reporter replace="structure context/teamowner/fmt:link" />,
+    created on <span id="created-date"
+      tal:attributes="title context/datecreated/fmt:datetime"
+      tal:content="context/datecreated/fmt:date" />
+  </div>
+</div>
+
+<div metal:fill-slot="main" class="pillar"
+  tal:define="overview_menu context/menu:overview">
+
+  <div class="actions" style="float:right; margin:0"
+    tal:condition="overview_menu/edit/enabled"
+    tal:content="structure overview_menu/edit/fmt:link-icon">
+  </div>
+
+  <tal:icon replace="structure context/image:mugshot" />
+
+  <h1 tal:content="context/displayname" />
+
+  <div
+    class="description"
+    tal:condition="context/homepage_content"
+    tal:content="structure context/homepage_content/fmt:text-to-html"
+  />
+
+  <div
+    class="description"
+    tal:content="structure context/teamdescription/fmt:text-to-html"
+  />
+
+  <div class="portletBody portletContent" style="margin-bottom: 1em;"
+    tal:define="can_view_membership context/@@+restricted-membership/userCanViewMembership">
+    <div tal:content="structure context/@@+portlet-map" />
+  </div>
+
+  <div class="portlet" id="contact-details">
+    <h2 tal:condition="context/is_team">Contact details</h2>
+
+    <div class="portletContent portletBody">
+      <tal:not_logged_in
+        condition="view/email_address_visibility/is_login_required">
+        <a href="+login">Log in</a> for email information.
+      </tal:not_logged_in>
+
+      <tal:no_preferredemail
+        condition="view/email_address_visibility/are_none_available">
+        No contact address
+        <metal:define metal:define-macro="contact">
+          <tal:can-contact condition="view/can_contact">
+            &nbsp; <img src="/@@/mail" alt="email"/>
+            <a href="+contactuser"
+               tal:attributes="title view/contact_link_title"
+               tal:content="view/specific_contact_text">Contact this person</a>
+            <tal:no_preferredemail
+              condition="view/email_address_visibility/are_none_available">
+              <br /><small>(Launchpad notifications are sent to all
+                            team members)</small>
+            </tal:no_preferredemail>
+          </tal:can-contact>
+        </metal:define>
+      </tal:no_preferredemail>
+      <tal:emails repeat="email view/visible_email_addresses">
+        <span style="white-space: nowrap">
+          <img src="/@@/mail" alt="mail" />
+          <tal:email replace="email">foo2@bar.com</tal:email>
+          <tal:contact condition="repeat/email/start">
+            <tal:contact metal:use-macro="template/macros/contact" />
+          </tal:contact>
+          <br tal:omit-tag="repeat/email/end" />
+        </span>
+      </tal:emails>
+      <a tal:replace="structure overview_menu/editemail/fmt:icon" />
+      <br /><strong>Languages:</strong>
+      <tal:languages content="view/languages">English</tal:languages>
+      <a tal:replace="structure overview_menu/editlanguages/fmt:icon"/>
+    </div>
+  </div>
+
+  <div tal:replace="structure context/@@+portlet-ppas"/>
+
+  <div tal:content="structure context/@@+portlet-related-projects" />
+
+  <div id="mailing-lists" class="portlet">
+    <h2>Mailing list</h2>
+
+    <div class="portletBody portletContent">
+      <div
+        tal:define="archive_url view/archive_url"
+        tal:condition="archive_url">
+        <img src="/@@/mail" alt="mail" />
+        <a id="mailing-list-posting-address"
+          tal:attributes="href string:mailto:${context/mailing_list/address}"
+          tal:content="context/mailing_list/address">team@example.com</a>
+        <br />
+        <strong>Policy:</strong>
+        You must be a team member to subscribe to the team mailing list.
+        <br /><img src="/@@/mail" alt="email" /> <a id="mailing-list-archive"
+                tal:attributes="href archive_url">Mailing list archive</a>
+        <br /><img src="/@@/team" alt="team" /> <a id="mailing-list-subscribers"
+                tal:attributes="href context/fmt:url/+mailing-list-subscribers"
+                >Mailing list subscribers</a>
+      </div>
+      <div tal:condition="not: view/archive_url">
+        This team does not have a mailing list.
+      </div>
+      <div tal:condition="overview_menu/configure_mailing_list/enabled">
+        <tal:configure_mailing_list
+          replace="structure overview_menu/configure_mailing_list/fmt:link-icon" />
+        &nbsp;
+        <tal:moderate_mailing_list
+          replace="structure overview_menu/moderate_mailing_list/fmt:link-icon" />
+      </div>
+      <tal:block condition="view/userIsParticipant">
+        <div id="mailing-list-involvement"
+          tal:condition="view/team_has_mailing_list">
+          <tal:subscribed-to-list
+              condition="view/user_is_subscribed_to_list">
+            <form class="actions" id="form.list.unsubscribe" name="unsubscribe"
+              action="" method="post">
+              You are subscribed to the team mailing list.
+              <input type="submit" name="unsubscribe" value="Unsubscribe" />
+            </form>
+          </tal:subscribed-to-list>
+          <tal:can-subscribe-to-list
+              condition="view/user_can_subscribe_to_list">
+            You are not subscribed to the team mailing list.
+            (<a href="/people/+me/+editemails">Subscribe</a>)
+          </tal:can-subscribe-to-list>
+        </div>
+      </tal:block>
+    </div>
+  </div>
+
+  <div id="membership" class="portlet">
+    <h2>Members</h2>
+
+    <div id="membership-summary" class="portletBody portletContent"
+      style="margin-bottom: 1.5em;">
+      <div id="membership-summary">
+        This team has: <img src="/@@/team" alt="team" />
+        <strong><tal:active content="context/all_member_count" /></strong>
+        <a tal:attributes="href string:${context/fmt:url/+members}#active"
+          >active members</a><tal:invited
+            define="invited_member_count context/invited_member_count"
+            condition="invited_member_count">,
+          <strong><tal:invited_count content="context/invited_member_count" /></strong>
+          <a tal:attributes="href string:${context/fmt:url/+members}#invited"
+            >invited members</a></tal:invited><tal:proposed
+              define="proposed_member_count context/proposed_member_count"
+              condition="proposed_member_count">,
+          <strong><tal:proposed_count content="proposed_member_count" /></strong>
+          <a tal:attributes="href string:${context/fmt:url/+members}#proposed"
+            >proposed members</a>
+        </tal:proposed>
+        and is a
+      <span id="subscription-policy">
+        <strong><tal:policy replace="context/subscriptionpolicy/title" /></strong>
+        <img src="/@@/maybe"
+          tal:attributes="title context/subscriptionpolicy/description" />
+      </span>
+      <br />
+      <tal:members
+        replace="structure overview_menu/members/fmt:link" />
+      &nbsp;
+      <tal:mugshots
+        replace="structure overview_menu/mugshots/fmt:link" />
+      </div>
+
+      <p id="your-involvement" tal:condition="not: request/lp:person">
+        You must <a href="+login">log in</a>
+        to join or leave this team.
+      </p>
+
+      <p id="your-involvement" tal:condition="request/lp:person">
+        <tal:is-owner condition="view/userIsOwner">
+            <tal:team condition="context/teamowner/is_team">
+              You are a member of the team that owns this team.
+            </tal:team>
+            <tal:user condition="not: context/teamowner/is_team">
+              You are the owner of this team.
+            </tal:user>
+            <tal:absentee-owner condition="not: view/userIsActiveMember">
+              You are not currently an active member.
+            </tal:absentee-owner>
+        </tal:is-owner>
+
+        <tal:not-owner condition="not: view/userIsOwner">
+          <tal:active-member tal:condition="view/userIsActiveMember">
+            <tal:can-leave condition="view/userCanRequestToLeave">
+              You are a member of this team.
+            </tal:can-leave>
+          </tal:active-member>
+          <tal:not-active-member tal:condition="not: view/userIsActiveMember">
+            <tal:not-member condition="not: view/userIsParticipant">
+              You are not a member of this team.
+            </tal:not-member>
+            <tal:participant condition="view/userIsParticipant">
+              You are an indirect member of this team:
+              <br />
+              <a tal:replace="structure view/user/fmt:link"
+                >Guilherme Salgado</a>
+              <tal:path repeat="team view/findUserPathToTeam">
+                &rarr;
+                <a tal:replace="structure team/fmt:link"
+                  >Launchpad Developers</a>
+              </tal:path>
+            </tal:participant>
+          </tal:not-active-member>
+        </tal:not-owner>
+        <tal:join-leave
+          replace="structure overview_menu/joinleave/fmt:link" />
+        <a tal:replace="structure overview_menu/reassign/fmt:icon">
+          Change owner</a>
+        <br />
+        &nbsp;
+        <tal:add_member
+          condition="overview_menu/add_member/enabled">
+          <a tal:replace="structure overview_menu/add_member/fmt:link" />
+          &nbsp;
+        </tal:add_member>
+        <tal:add_my_teams
+          condition="overview_menu/add_my_teams/enabled">
+          <a tal:replace="structure overview_menu/add_my_teams/fmt:link" />
+           &nbsp;
+        </tal:add_my_teams>
+      </p>
+    </div>
+
+    <tal:can-view condition="context/@@+restricted-membership/userCanViewMembership">
+    <table style="margin: 0px 0px .5em 0px;"
+      tal:condition="view/has_recent_approved_or_proposed_members">
+      <tr>
+        <td style="padding: 0px 3em 0px 0px" id="recently-approved"
+          tal:condition="view/recently_approved_members">
+        <h3 style="color:black; font-weight:bold; margin: 0px">Recently approved</h3>
+        <ul style="margin: 0px"
+          tal:condition="view/recently_approved_members">
+          <li class="person"
+              tal:repeat="person view/recently_approved_members">
+            <a tal:attributes="href person/fmt:url"
+              tal:content="person/fmt:unique_displayname"
+              >Foo Bar (name16)</a>
+          </li>
+        </ul>
+        </td>
+        <td style="padding: 0px;" id="recently-applied"
+          tal:condition="view/recently_proposed_members">
+        <h3 style="color:black; font-weight:bold; margin: 0px">Recently applied</h3>
+        <ul style="margin: 0px;">
+          <li class="person"
+              tal:repeat="person view/recently_proposed_members">
+            <a tal:attributes="href person/fmt:url"
+              tal:content="person/fmt:unique_displayname"
+              >Foo Bar (name16)</a>
+          </li>
+        </ul>
+        </td>
+      </tr>
+    </table>
+    </tal:can-view>
+    <div>
+      <tal:mentorships
+        replace="structure overview_menu/mentorships/fmt:link" />
+    </div>
+
+    <div>
+
+    </div>
+  </div>
+  <div class="portlet" id="subteam-of">
+    <h2>Subteam of</h2>
+
+    <p tal:condition="not: context/super_teams">
+      &#8220;<span tal:replace="context/displayname"/>&#8221;
+      itself is not a member of any other team.
+    </p>
+
+    <tal:is-a-subteam condition="context/super_teams">
+      <p>
+        &#8220;<span tal:replace="context/browsername"/>&#8221;
+        is a member of these teams:
+      </p>
+      <ul class="iconed">
+        <li tal:repeat="team context/super_teams">
+          <tal:block replace="structure team/fmt:link" />
+        </li>
+      </ul>
+    </tal:is-a-subteam>
+
+    <p>
+      <tal:memberships
+        replace="structure overview_menu/memberships/fmt:link" />
+      &nbsp;
+      <tal:received_invitations
+        replace="structure overview_menu/received_invitations/fmt:link" />
+    </p>
+  </div>
+
+  <div tal:replace="structure context/@@+portlet-latestquestions" />
+  </div>
+</body>
+</html>

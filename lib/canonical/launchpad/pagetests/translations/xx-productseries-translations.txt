@@ -80,7 +80,7 @@ Now this is changed: Evolution's owner configures it not to use
 Launchpad Translations.
 
     # Use the raw DB object to bypass the security proxy.
-    >>> from canonical.launchpad.database.product import Product
+    >>> from lp.registry.model.product import Product
     >>> Product.byName('evolution').official_rosetta = False
 
 When the owner now visits the upload page for trunk, there's a notice.

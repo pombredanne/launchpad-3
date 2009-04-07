@@ -184,7 +184,7 @@ HWVendorID ensures that the vendor IDs match the bus-specific format.
 
 USB, PCI and PCCard IDs are represented as strings with a four-digit
 hexadecimal number, prefixed by '0x'; the digits a..f must be lower
-cases characters. Other ID values raise a ValueError.
+cases characters. Other ID values raise a ParameterError.
 
 The characters a..f are accepted as digits.
 
@@ -225,7 +225,7 @@ A..F is rejected.
     ...                      vendor_name=intel_name)
     Traceback (most recent call last):
     ...
-    ValueError: '0x10AE' is not a valid vendor ID for PCI
+    ParameterError: '0x10AE' is not a valid vendor ID for PCI
     >>> from storm.tracer import debug; debug(True)
     >>> store.flush()
     >>> debug(False)
@@ -235,14 +235,14 @@ A..F is rejected.
     ...                      vendor_name=intel_name)
     Traceback (most recent call last):
     ...
-    ValueError: '0x10AE' is not a valid vendor ID for PC Card (32 bit)
+    ParameterError: '0x10AE' is not a valid vendor ID for PC Card (32 bit)
 
     >>> vendor_id_set.create(bus=HWBus.USB,
     ...                      vendor_id='0x10AE',
     ...                      vendor_name=intel_name)
     Traceback (most recent call last):
     ...
-    ValueError: '0x10AE' is not a valid vendor ID for USB
+    ParameterError: '0x10AE' is not a valid vendor ID for USB
 
 The ID must have the prefix "0x".
 
@@ -251,21 +251,21 @@ The ID must have the prefix "0x".
     ...                      vendor_name=intel_name)
     Traceback (most recent call last):
     ...
-    ValueError: '8086' is not a valid vendor ID for PCI
+    ParameterError: '8086' is not a valid vendor ID for PCI
 
     >>> vendor_id_set.create(bus=HWBus.PCCARD,
     ...                      vendor_id='8086',
     ...                      vendor_name=intel_name)
     Traceback (most recent call last):
     ...
-    ValueError: '8086' is not a valid vendor ID for PC Card (32 bit)
+    ParameterError: '8086' is not a valid vendor ID for PC Card (32 bit)
 
     >>> vendor_id_set.create(bus=HWBus.USB,
     ...                      vendor_id='8086',
     ...                      vendor_name=intel_name)
     Traceback (most recent call last):
     ...
-    ValueError: '8086' is not a valid vendor ID for USB
+    ParameterError: '8086' is not a valid vendor ID for USB
 
 The number must have four digits.
 
@@ -274,42 +274,42 @@ The number must have four digits.
     ...                      vendor_name=intel_name)
     Traceback (most recent call last):
     ...
-    ValueError: '0x123' is not a valid vendor ID for PCI
+    ParameterError: '0x123' is not a valid vendor ID for PCI
 
     >>> vendor_id_set.create(bus=HWBus.PCCARD,
     ...                      vendor_id='0x123',
     ...                      vendor_name=intel_name)
     Traceback (most recent call last):
     ...
-    ValueError: '0x123' is not a valid vendor ID for PC Card (32 bit)
+    ParameterError: '0x123' is not a valid vendor ID for PC Card (32 bit)
 
     >>> vendor_id_set.create(bus=HWBus.USB,
     ...                      vendor_id='0x123',
     ...                      vendor_name=intel_name)
     Traceback (most recent call last):
     ...
-    ValueError: '0x123' is not a valid vendor ID for USB
+    ParameterError: '0x123' is not a valid vendor ID for USB
 
     >>> vendor_id_set.create(bus=HWBus.PCI,
     ...                      vendor_id='0x12345',
     ...                      vendor_name=intel_name)
     Traceback (most recent call last):
     ...
-    ValueError: '0x12345' is not a valid vendor ID for PCI
+    ParameterError: '0x12345' is not a valid vendor ID for PCI
 
     >>> vendor_id_set.create(bus=HWBus.PCCARD,
     ...                      vendor_id='0x12345',
     ...                      vendor_name=intel_name)
     Traceback (most recent call last):
     ...
-    ValueError: '0x12345' is not a valid vendor ID for PC Card (32 bit)
+    ParameterError: '0x12345' is not a valid vendor ID for PC Card (32 bit)
 
     >>> vendor_id_set.create(bus=HWBus.USB,
     ...                      vendor_id='0x12345',
     ...                      vendor_name=intel_name)
     Traceback (most recent call last):
     ...
-    ValueError: '0x12345' is not a valid vendor ID for USB
+    ParameterError: '0x12345' is not a valid vendor ID for USB
 
 Only hex digits are allowed.
 
@@ -318,21 +318,21 @@ Only hex digits are allowed.
     ...                      vendor_name=intel_name)
     Traceback (most recent call last):
     ...
-    ValueError: '0xblah' is not a valid vendor ID for PCI
+    ParameterError: '0xblah' is not a valid vendor ID for PCI
 
     >>> vendor_id_set.create(bus=HWBus.PCCARD,
     ...                      vendor_id='0xblah',
     ...                      vendor_name=intel_name)
     Traceback (most recent call last):
     ...
-    ValueError: '0xblah' is not a valid vendor ID for PC Card (32 bit)
+    ParameterError: '0xblah' is not a valid vendor ID for PC Card (32 bit)
 
     >>> vendor_id_set.create(bus=HWBus.USB,
     ...                      vendor_id='0xblah',
     ...                      vendor_name=intel_name)
     Traceback (most recent call last):
     ...
-    ValueError: '0xblah' is not a valid vendor ID for USB
+    ParameterError: '0xblah' is not a valid vendor ID for USB
 
 IEEE1394 IDs are represented as strings with a six-digit hexadecimal
 number, prefixed by '0x'; the digits a..f must be lower cases characters.
@@ -355,7 +355,7 @@ A..F is rejected.
     ...                      vendor_name=intel_name)
     Traceback (most recent call last):
     ...
-    ValueError: '0x0010E0' is not a valid vendor ID for IEEE1394
+    ParameterError: '0x0010E0' is not a valid vendor ID for IEEE1394
 
 The ID must have the prefix "0x".
 
@@ -364,7 +364,7 @@ The ID must have the prefix "0x".
     ...                      vendor_name=intel_name)
     Traceback (most recent call last):
     ...
-    ValueError: '0010E0' is not a valid vendor ID for IEEE1394
+    ParameterError: '0010E0' is not a valid vendor ID for IEEE1394
 
 The number must have six digits.
 
@@ -373,14 +373,14 @@ The number must have six digits.
     ...                      vendor_name=intel_name)
     Traceback (most recent call last):
     ...
-    ValueError: '0x12345' is not a valid vendor ID for IEEE1394
+    ParameterError: '0x12345' is not a valid vendor ID for IEEE1394
 
     >>> vendor_id_set.create(bus=HWBus.IEEE1394,
     ...                      vendor_id='0x1234567',
     ...                      vendor_name=intel_name)
     Traceback (most recent call last):
     ...
-    ValueError: '0x1234567' is not a valid vendor ID for IEEE1394
+    ParameterError: '0x1234567' is not a valid vendor ID for IEEE1394
 
 Only hex digits are allowed.
 
@@ -389,7 +389,7 @@ Only hex digits are allowed.
     ...                      vendor_name=intel_name)
     Traceback (most recent call last):
     ...
-    ValueError: '0xfoobar' is not a valid vendor ID for IEEE1394
+    ParameterError: '0xfoobar' is not a valid vendor ID for IEEE1394
 
 SCSI vendor IDs are ASCII strings with exactly eight characters.
 
@@ -410,7 +410,7 @@ Strings with less than eight characters are not allowed as SCSI vendor IDs...
     ...                      vendor_name=intel_name)
     Traceback (most recent call last):
     ...
-    ValueError: '1234567' is not a valid vendor ID for SCSI
+    ParameterError: '1234567' is not a valid vendor ID for SCSI
 
 ...as well as strings with more than eight characters.
 
@@ -419,7 +419,7 @@ Strings with less than eight characters are not allowed as SCSI vendor IDs...
     ...                      vendor_name=intel_name)
     Traceback (most recent call last):
     ...
-    ValueError: '123456789' is not a valid vendor ID for SCSI
+    ParameterError: '123456789' is not a valid vendor ID for SCSI
 
 HWVendorIDSet.getByBusAndVendorID() is used to look up a HWVendorID record.
 
@@ -445,7 +445,7 @@ HWVendorIDSet.getByBusAndVendorID() must be a valid ID for the given bus.
     >>> vendor_id_set.getByBusAndVendorID(bus=HWBus.PCI, vendor_id='8086')
     Traceback (most recent call last):
     ...
-    ValueError: '8086' is not a valid vendor ID for PCI
+    ParameterError: '8086' is not a valid vendor ID for PCI
 
 HWVendorIDSet.get() returns the HWVendorID record with the given ID...
 
@@ -530,7 +530,7 @@ ID.)
 
 USB, PCI and PCCard IDs are represented as strings with a four-digit
 hexadecimal number, prefixed by '0x'; the digits a..f must be lower
-cases characters. Other ID values raise a ValueError.
+cases characters. Other ID values raise a ParameterError.
 
     >>> another_pci_product = device_set.create(bus=HWBus.PCI,
     ...                                         vendor_id='0x8086',
@@ -561,7 +561,7 @@ A..F is rejected.
     ...                   product_name='A PCI card')
     Traceback (most recent call last):
     ...
-    ValueError: '0xABCD' is not a valid product ID for PCI
+    ParameterError: '0xABCD' is not a valid product ID for PCI
 
     >>> device_set.create(bus=HWBus.PCCARD,
     ...                   vendor_id='0x8086',
@@ -569,7 +569,7 @@ A..F is rejected.
     ...                   product_name='A PC Card')
     Traceback (most recent call last):
     ...
-    ValueError: '0xABCD' is not a valid product ID for PC Card (32 bit)
+    ParameterError: '0xABCD' is not a valid product ID for PC Card (32 bit)
 
     >>> device_set.create(bus=HWBus.USB,
     ...                   vendor_id='0x8086',
@@ -577,7 +577,7 @@ A..F is rejected.
     ...                   product_name='A USB device')
     Traceback (most recent call last):
     ...
-    ValueError: '0xABCD' is not a valid product ID for USB
+    ParameterError: '0xABCD' is not a valid product ID for USB
 
 The ID must have the prefix "0x".
 
@@ -587,7 +587,7 @@ The ID must have the prefix "0x".
     ...                   product_name='A PCI card')
     Traceback (most recent call last):
     ...
-    ValueError: '1234' is not a valid product ID for PCI
+    ParameterError: '1234' is not a valid product ID for PCI
 
     >>> device_set.create(bus=HWBus.PCCARD,
     ...                   vendor_id='0x8086',
@@ -595,7 +595,7 @@ The ID must have the prefix "0x".
     ...                   product_name='A PC Card')
     Traceback (most recent call last):
     ...
-    ValueError: '1234' is not a valid product ID for PC Card (32 bit)
+    ParameterError: '1234' is not a valid product ID for PC Card (32 bit)
 
     >>> device_set.create(bus=HWBus.USB,
     ...                   vendor_id='0x8086',
@@ -603,7 +603,7 @@ The ID must have the prefix "0x".
     ...                   product_name='A USB device')
     Traceback (most recent call last):
     ...
-    ValueError: '1234' is not a valid product ID for USB
+    ParameterError: '1234' is not a valid product ID for USB
 
 The number must have four digits.
 
@@ -613,7 +613,7 @@ The number must have four digits.
     ...                   product_name='A PCI card')
     Traceback (most recent call last):
     ...
-    ValueError: '0x123' is not a valid product ID for PCI
+    ParameterError: '0x123' is not a valid product ID for PCI
 
     >>> device_set.create(bus=HWBus.PCCARD,
     ...                   vendor_id='0x8086',
@@ -621,7 +621,7 @@ The number must have four digits.
     ...                   product_name='A PC Card')
     Traceback (most recent call last):
     ...
-    ValueError: '0x123' is not a valid product ID for PC Card (32 bit)
+    ParameterError: '0x123' is not a valid product ID for PC Card (32 bit)
 
     >>> device_set.create(bus=HWBus.USB,
     ...                   vendor_id='0x8086',
@@ -629,7 +629,7 @@ The number must have four digits.
     ...                   product_name='A USB device')
     Traceback (most recent call last):
     ...
-    ValueError: '0x123' is not a valid product ID for USB
+    ParameterError: '0x123' is not a valid product ID for USB
 
     >>> device_set.create(bus=HWBus.PCI,
     ...                   vendor_id='0x8086',
@@ -637,7 +637,7 @@ The number must have four digits.
     ...                   product_name='A PCI card')
     Traceback (most recent call last):
     ...
-    ValueError: '0x12345' is not a valid product ID for PCI
+    ParameterError: '0x12345' is not a valid product ID for PCI
 
     >>> device_set.create(bus=HWBus.PCCARD,
     ...                   vendor_id='0x8086',
@@ -645,7 +645,7 @@ The number must have four digits.
     ...                   product_name='A PC Card')
     Traceback (most recent call last):
     ...
-    ValueError: '0x12345' is not a valid product ID for PC Card (32 bit)
+    ParameterError: '0x12345' is not a valid product ID for PC Card (32 bit)
 
     >>> device_set.create(bus=HWBus.USB,
     ...                   vendor_id='0x8086',
@@ -653,7 +653,7 @@ The number must have four digits.
     ...                   product_name='A USB device')
     Traceback (most recent call last):
     ...
-    ValueError: '0x12345' is not a valid product ID for USB
+    ParameterError: '0x12345' is not a valid product ID for USB
 
 Only hex digits are allowed.
 
@@ -663,7 +663,7 @@ Only hex digits are allowed.
     ...                   product_name='A PCI card')
     Traceback (most recent call last):
     ...
-    ValueError: '0xblah' is not a valid product ID for PCI
+    ParameterError: '0xblah' is not a valid product ID for PCI
 
     >>> device_set.create(bus=HWBus.PCCARD,
     ...                   vendor_id='0x8086',
@@ -671,7 +671,7 @@ Only hex digits are allowed.
     ...                   product_name='A PC Card')
     Traceback (most recent call last):
     ...
-    ValueError: '0xblah' is not a valid product ID for PC Card (32 bit)
+    ParameterError: '0xblah' is not a valid product ID for PC Card (32 bit)
 
     >>> device_set.create(bus=HWBus.USB,
     ...                   vendor_id='0x8086',
@@ -679,7 +679,7 @@ Only hex digits are allowed.
     ...                   product_name='A USB device')
     Traceback (most recent call last):
     ...
-    ValueError: '0xblah' is not a valid product ID for USB
+    ParameterError: '0xblah' is not a valid product ID for USB
 
 SCSI product IDs are ASCII strings with 16 characters.
 
@@ -698,7 +698,7 @@ Strings with less than 16 characters are not allowed as SCSI product IDs...
     ...                   product_name='A SCSI device')
     Traceback (most recent call last):
     ...
-    ValueError: '123456789012345' is not a valid product ID for SCSI
+    ParameterError: '123456789012345' is not a valid product ID for SCSI
 
 ...as well as strings with more than 16 characters.
 
@@ -708,7 +708,7 @@ Strings with less than 16 characters are not allowed as SCSI product IDs...
     ...                   product_name='A SCSI device')
     Traceback (most recent call last):
     ...
-    ValueError: '12345678901234567' is not a valid product ID for SCSI
+    ParameterError: '12345678901234567' is not a valid product ID for SCSI
 
 
 === Unknown Vendor IDs ===
@@ -901,12 +901,12 @@ given bus.
     >>> device_set.getByDeviceID(HWBus.USB, '07b3', '0x0017')
     Traceback (most recent call last):
     ...
-    ValueError: '07b3' is not a valid vendor ID for USB
+    ParameterError: '07b3' is not a valid vendor ID for USB
 
     >>> device_set.getByDeviceID(HWBus.USB, '0x07b3', '0017')
     Traceback (most recent call last):
     ...
-    ValueError: '0017' is not a valid product ID for USB
+    ParameterError: '0017' is not a valid product ID for USB
 
 HWDeviceSet.getOrCreate() returns an existing record matching the given
 parameters or creates a new one, if no existing record matches.
@@ -1007,6 +1007,21 @@ Searching can be limited to a single product ID.
     USB 0x07b3 0x0017 OpticPro UT16
     USB 0x07b3 0x0017 Some other scanner
 
+HWDeviceSet.search() raises a ParameterError for vendor or product IDs
+that are not valid for the given bus.
+
+    >>> devices = device_set.search(
+    ...     bus=HWBus.USB, vendor_id='invalid', product_id='0x0017')
+    Traceback (most recent call last):
+    ...
+    ParameterError: 'invalid' is not a valid vendor ID for USB
+
+    >>> devices = device_set.search(
+    ...     bus=HWBus.USB, vendor_id='0x07b3', product_id='nonsense')
+    Traceback (most recent call last):
+    ...
+    ParameterError: 'nonsense' is not a valid product ID for USB
+
 HWDevice.getSubmissions() returns submissions which contain this device.
 
 We'll switch the DB user from hwdb-submission-processor to the ordinary
@@ -1039,7 +1054,7 @@ HWDriver.)
 
 We can limit the results to a specific distribution.
 
-    >>> from canonical.launchpad.interfaces.distribution import (
+    >>> from lp.registry.interfaces.distribution import (
     ...     IDistributionSet)
     >>> distribution_set = getUtility(IDistributionSet)
     >>> ubuntu = distribution_set.getByName('ubuntu')
@@ -1184,7 +1199,7 @@ The driver is not in every case a kernel driver, it may also be for
 example a Ghostscript driver of a printer or a Sane scanner backend.
 
     >>> from canonical.launchpad.interfaces import IHWDriverSet
-    >>> from canonical.launchpad.interfaces.product import License
+    >>> from lp.registry.interfaces.product import License
     >>> driver_set = getUtility(IHWDriverSet)
     >>> usb_driver = driver_set.create(package_name='linux-image-generic',
     ...                                name='usb',

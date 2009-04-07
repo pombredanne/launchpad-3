@@ -66,7 +66,7 @@ for these.
 
     >>> browser.getLink('pending proposals').click()
     >>> print browser.title
-    Pending proposals
+    Pending proposals for Fooix
 
 The proposals are listed in a table that shows the source and target branches,
 who requested the merge, the date the review was requested, and the vote

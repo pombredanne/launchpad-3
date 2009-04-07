@@ -17,6 +17,7 @@ __all__ = [
     'HTTPResource',
     'JSONItem',
     'ReadOnlyResource',
+    'RedirectResource',
     'render_field_to_html',
     'ResourceJSONEncoder',
     'RESTUtilityBase',
@@ -40,7 +41,7 @@ from zope.app import zapi
 from zope.app.pagetemplate.engine import TrustedAppPT
 from zope import component
 from zope.component import (
-    adapts, getAdapters, getAllUtilitiesRegisteredFor, getMultiAdapter, 
+    adapts, getAdapters, getAllUtilitiesRegisteredFor, getMultiAdapter,
     getUtility, queryAdapter)
 from zope.component.interfaces import ComponentLookupError
 from zope.event import notify
@@ -56,15 +57,14 @@ from zope.schema.interfaces import (
     ConstraintNotSatisfied, IBytes, IField, IObject)
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
+from zope.security.management import checkPermission
 from zope.traversing.browser import absoluteURL
 
+from lazr.batchnavigator import BatchNavigator
 from lazr.enum import BaseItem
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
 
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.publisher import get_current_browser_request
 from canonical.lazr.interfaces.fields import (
     ICollectionField, IReferenceChoice)
 from canonical.lazr.interfaces.rest import (
@@ -74,6 +74,8 @@ from canonical.lazr.interfaces.rest import (
     IResourcePOSTOperation, IScopedCollection, IServiceRootResource,
     ITopLevelEntryLink, IUnmarshallingDoesntNeedValue,
     IWebServiceClientRequest, IWebServiceConfiguration, LAZR_WEBSERVICE_NAME)
+from canonical.lazr.utils import get_current_browser_request
+
 
 # The path to the WADL XML Schema definition.
 WADL_SCHEMA_FILE = os.path.join(os.path.dirname(__file__),
@@ -135,6 +137,20 @@ class JSONItem:
     def toDataForJSON(self):
         """See `ISJONPublishable`"""
         return str(self.context.title)
+
+
+class RedirectResource:
+    """A resource that redirects to another URL."""
+    implements(IHTTPResource)
+
+    def __init__(self, url, request):
+        self.url = url
+        self.request = request
+
+    def __call__(self):
+        url = self.url
+        self.request.response.setStatus(301)
+        self.request.response.setHeader("Location", url)
 
 
 class HTTPResource:
@@ -513,6 +529,14 @@ class WebServiceBatchNavigator(BatchNavigator):
     start_variable_name = "ws.start"
     batch_variable_name = "ws.size"
 
+    @property
+    def default_batch_size(self):
+        return getUtility(IWebServiceConfiguration).default_batch_size
+
+    @property
+    def max_batch_size(self):
+        return getUtility(IWebServiceConfiguration).max_batch_size
+
 
 class BatchingResourceMixin:
 
@@ -544,7 +568,7 @@ class BatchingResourceMixin:
         view_permission = getUtility(IWebServiceConfiguration).view_permission
         resources = [EntryResource(entry, request)
                      for entry in navigator.batch
-                     if check_permission(view_permission, entry)]
+                     if checkPermission(view_permission, entry)]
         batch = { 'entries' : resources,
                   'total_size' : navigator.batch.listlength,
                   'start' : navigator.batch.start }

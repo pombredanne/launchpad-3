@@ -19,19 +19,21 @@ from sqlobject import (
     BoolCol, ForeignKey, IntCol, StringCol, SQLObjectNotFound,
     SQLMultipleJoin)
 
-from canonical.database.sqlbase import quote, SQLBase, sqlvalues
 from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
+from canonical.database.sqlbase import quote, SQLBase, sqlvalues
 
 from canonical.launchpad.interfaces import (
     EmailAddressStatus, IEmailAddressSet, IRevision, IRevisionAuthor,
     IRevisionParent, IRevisionProperty, IRevisionSet)
-from canonical.launchpad.interfaces.product import IProduct
-from canonical.launchpad.interfaces.project import IProject
+from canonical.launchpad.interfaces.branch import (
+    DEFAULT_BRANCH_STATUS_IN_LISTING)
+from lp.registry.interfaces.product import IProduct
+from lp.registry.interfaces.project import IProject
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.webapp.interfaces import (
         IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
-from canonical.launchpad.validators.person import validate_public_person
+from lp.registry.interfaces.person import validate_public_person
 
 
 class Revision(SQLBase):
@@ -216,6 +218,10 @@ class RevisionSet:
                             log_body=log_body,
                             revision_date=revision_date,
                             revision_author=author)
+        # Don't create future revisions.
+        if revision.revision_date > revision.date_created:
+            revision.revision_date = revision.date_created
+
         seen_parents = set()
         for sequence, parent_id in enumerate(parent_ids):
             if parent_id in seen_parents:
@@ -319,7 +325,7 @@ class RevisionSet:
 
         revision_subselect = Select(
             Min(Revision.id), revision_time_limit(days))
-
+        # Only look in active branches.
         result_set = Store.of(product).find(
             (Revision, RevisionAuthor),
             Revision.revision_author == RevisionAuthor.id,
@@ -327,6 +333,7 @@ class RevisionSet:
             BranchRevision.revision == Revision.id,
             BranchRevision.branch == Branch.id,
             Branch.product == product,
+            Branch.lifecycle_status.is_in(DEFAULT_BRANCH_STATUS_IN_LISTING),
             BranchRevision.revisionID >= revision_subselect)
         result_set.config(distinct=True)
         return result_set.order_by(Desc(Revision.revision_date))
@@ -337,7 +344,7 @@ class RevisionSet:
         # Here to stop circular imports.
         from canonical.launchpad.database.branch import Branch
         from canonical.launchpad.database.branchrevision import BranchRevision
-        from canonical.launchpad.database.person import ValidPersonCache
+        from lp.registry.model.person import ValidPersonCache
 
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
 
@@ -361,7 +368,7 @@ class RevisionSet:
         # Here to stop circular imports.
         from canonical.launchpad.database.branch import Branch
         from canonical.launchpad.database.branchrevision import BranchRevision
-        from canonical.launchpad.database.teammembership import (
+        from lp.registry.model.teammembership import (
             TeamParticipation)
 
         store = Store.of(person)
@@ -395,7 +402,7 @@ class RevisionSet:
         """Helper method for Products and Projects."""
         # Here to stop circular imports.
         from canonical.launchpad.database.branch import Branch
-        from canonical.launchpad.database.product import Product
+        from lp.registry.model.product import Product
         from canonical.launchpad.database.branchrevision import BranchRevision
 
         origin = [

@@ -1,4 +1,4 @@
-= Private PPA Subscriptions =
+= PPA Subscriptions =
 
 Note: This file contains all the pagetests for functionality that is not
 part of the stories in xx-private-ppa-subscription-stories.txt.
@@ -19,7 +19,7 @@ XXX: noodles 2009-03-10 bug=340405. The the +subscriptions traversal
 will require launchpad.Admin until the backend .htaccess update
 machinery is in-place and tested:
 
-    >>> from canonical.launchpad.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> from zope.component import getUtility
     >>> login('foo.bar@canonical.com')
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
@@ -72,7 +72,7 @@ with a message:
 
     >>> main_content = find_main_content(cprov_browser.contents)
     >>> print extract_text(main_content.find('h1'))
-    Manage subscriptions for Private PPA for Celso Providelo
+    Manage subscriptions for PPA for Celso Providelo
 
     >>> print extract_text(find_tag_by_id(cprov_browser.contents,
     ...     'no-subscribers'))
@@ -113,8 +113,8 @@ Once the subscription has been added, it will display in the table:
     ...                               'archive_subscriber_row'):
     ...     print extract_text(row)
     Name                Expires     Comment
-    Brad Smith          2200-08-01  Brad can access for a while.
-    Joe Smith                       Joe is my friend
+    Brad Smith          2200-08-01  Brad can access for a while.  Edit/Cancel
+    Joe Smith                       Joe is my friend              Edit/Cancel
 
 
 == Managing a persons' Archive subscriptions ==
@@ -125,7 +125,7 @@ heading:
     >>> cprov_browser.open("/~cprov/+archivesubscriptions")
     >>> h1_heading = find_main_content(cprov_browser.contents).find('h1')
     >>> print extract_text(h1_heading)
-    Private archive subscriptions for Celso Providelo
+    Celso Providelo's private archive subscriptions
 
 A person who is not subscribed to any archives will see an appropriate
 explanation if they try to view their archive subscriptions:
@@ -155,6 +155,52 @@ listed in the current subscriptions area:
     ...                               'archive-subscription-row'):
     ...     print extract_text(row)
     Archive                            Subscription description  Status
-    Private PPA for Mark Shuttleworth  Joe is also my friend     Pending
-    Private PPA for Celso Providelo    Joe is my friend          Pending
+    PPA for Mark Shuttleworth  Joe is also my friend     Pending
+        Confirm
+    PPA for Celso Providelo    Joe is my friend          Pending
+        Confirm
+
+== Confirming a subscription ==
+
+When a person clicks on the confirm link, they are taken to a page
+displaying the subscription and requesting their confirmation.
+
+    >>> joe_browser.getLink(text="Confirm").click()
+    >>> joe_browser.getControl(name='activate').click()
+
+    >>> sources_list = find_tag_by_id(joe_browser.contents, 'sources_list')
+    >>> print(extract_text(sources_list))
+    Custom sources.list entries
+    ...
+    # Personal subscription of Joe Smith to PPA for Mark Shuttleworth
+    deb http://joesmith:...@private-ppa.launchpad.dev/sabdfl/ppa/ubuntu hoary
+        main
+    deb-src http://joesmith:...@private-ppa.launchpad.dev/sabdfl/ppa/ubuntu
+        hoary main
+    Next you need to ...
+
+This page will include information about the signing key, if the archive
+has a signing key:
+
+    >>> from lp.registry.interfaces.gpg import IGPGKeySet
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from zope.component import getUtility
+    >>> login('foo.bar@canonical.com')
+    >>> sabdfl = getUtility(IPersonSet).getByName('sabdfl')
+    >>> a_key = getUtility(IGPGKeySet).get(1)
+    >>> sabdfl.archive.signing_key = a_key
+    >>> logout()
+
+    >>> joe_browser.reload()
+    >>> sources_list = find_tag_by_id(joe_browser.contents, 'sources_list')
+    >>> print(extract_text(sources_list))
+    Custom sources.list entries
+    ...
+    # Personal subscription of Joe Smith to PPA for Mark Shuttleworth
+    deb http://joesmith:...@private-ppa.launchpad.dev/sabdfl/ppa/ubuntu hoary
+        main
+    deb-src http://joesmith:...@private-ppa.launchpad.dev/sabdfl/ppa/ubuntu
+        hoary main
+    This repository is signed ...
+    Next you need to ...
 

@@ -103,7 +103,7 @@ class BugTaskSearchBugsElsewhereTest(unittest.TestCase):
         flush_database_updates()
 
     def assertBugTaskIsPendingBugWatchElsewhere(self, bugtask):
-        """Assert the the bugtask is pending a bug watch elsewhere.
+        """Assert the bugtask is pending a bug watch elsewhere.
 
         Pending a bugwatch elsewhere means that at least one of the bugtask's
         related task's target isn't using Malone, and that
@@ -303,6 +303,7 @@ class BugTaskSetTest(unittest.TestCase):
         bugs to their bugtasks. It does that in a single query, to avoid
         hitting the DB again when getting the bugs' tasks.
         """
+        login('no-priv@canonical.com')
         factory = LaunchpadObjectFactory()
         bug1 = factory.makeBug()
         factory.makeBugTask(bug1)

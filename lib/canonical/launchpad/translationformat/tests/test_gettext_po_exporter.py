@@ -2,7 +2,6 @@
 
 __metaclass__ = type
 
-import doctest
 import unittest
 from textwrap import dedent
 from zope.interface.verify import verifyObject
@@ -12,7 +11,6 @@ from canonical.launchpad.interfaces.translationexporter import (
     ITranslationFormatExporter)
 from canonical.launchpad.interfaces.translationfileformat import (
     TranslationFileFormat)
-from canonical.launchpad.translationformat import gettext_po_exporter
 from canonical.launchpad.translationformat.gettext_po_exporter import (
     GettextPOExporter)
 from canonical.launchpad.translationformat.gettext_po_parser import (
@@ -50,7 +48,8 @@ class GettextPOExporterTestCase(unittest.TestCase):
     def testInterface(self):
         """Check whether the object follows the interface."""
         self.failUnless(
-            verifyObject(ITranslationFormatExporter, self.translation_exporter),
+            verifyObject(ITranslationFormatExporter,
+                         self.translation_exporter),
             "GettextPOExporter doesn't follow the interface")
 
     def testSupportedFormats(self):
@@ -93,6 +92,7 @@ class GettextPOExporterTestCase(unittest.TestCase):
             msgstr[3] ""
 
             #, fuzzy
+            #| msgid "zog"
             msgid "zig"
             msgstr "zag"
 
@@ -279,6 +279,5 @@ class GettextPOExporterTestCase(unittest.TestCase):
 def test_suite():
     # Run gettext po exporter doc tests.
     suite = unittest.TestSuite()
-    suite.addTest(doctest.DocTestSuite(gettext_po_exporter))
     suite.addTest(unittest.makeSuite(GettextPOExporterTestCase))
     return suite

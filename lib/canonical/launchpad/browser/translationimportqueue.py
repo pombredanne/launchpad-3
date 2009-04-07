@@ -1,4 +1,4 @@
-# Copyright 2005-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2005-2009 Canonical Ltd.  All rights reserved.
 
 """Browser views for ITranslationImportQueue."""
 
@@ -22,10 +22,11 @@ from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.browser.hastranslationimports import (
     HasTranslationImportsView)
-from canonical.launchpad.interfaces.distroseries import IDistroSeries
+from lp.registry.interfaces.distroseries import IDistroSeries
 from canonical.launchpad.interfaces.translationimportqueue import (
     ITranslationImportQueueEntry, IEditTranslationImportQueueEntry,
-    ITranslationImportQueue, RosettaImportStatus, TranslationFileType)
+    ITranslationImportQueue, RosettaImportStatus,
+    SpecialTranslationImportTargetFilter, TranslationFileType)
 from canonical.launchpad.interfaces.language import ILanguageSet
 from canonical.launchpad.interfaces.pofile import IPOFileSet
 from canonical.launchpad.interfaces.potemplate import IPOTemplateSet
@@ -469,6 +470,11 @@ class TranslationImportTargetVocabularyFactory:
                     pass
 
         terms = [SimpleTerm('all', 'all', 'All targets')]
+
+        for item in SpecialTranslationImportTargetFilter.items:
+            term_name = '[%s]' % item.name
+            terms.append(SimpleTerm(term_name, term_name, item.title))
+
         for target in targets:
             if IDistroSeries.providedBy(target):
                 # Distroseries are not pillar names, we need to note

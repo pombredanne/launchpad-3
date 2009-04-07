@@ -32,7 +32,7 @@ from canonical.config import config
 from canonical.launchpad.interfaces.account import IAccountSet
 from canonical.launchpad.interfaces.launchpad import IPasswordEncryptor
 from canonical.launchpad.interfaces.oauth import OAUTH_CHALLENGE
-from canonical.launchpad.interfaces.person import IPerson, IPersonSet
+from lp.registry.interfaces.person import IPerson, IPersonSet
 from canonical.launchpad.webapp.interfaces import (
     AccessLevel, BasicAuthLoggedInEvent, CookieAuthPrincipalIdentifiedEvent,
     ILaunchpadPrincipal, IPlacelessAuthUtility, IPlacelessLoginSource)
@@ -77,8 +77,8 @@ class PlacelessAuthUtility:
             person_id = authdata.get('personid')
             if person_id is not None:
                 person = getUtility(IPersonSet).get(person_id)
-                if person is not None and person.account is not None:
-                    id = person.account.id
+                if person is not None and person.accountID is not None:
+                    id = person.accountID
 
         if id is None:
             return None

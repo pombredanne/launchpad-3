@@ -1,0 +1,33 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    xmlns:i18n="http://namespaces.zope.org/i18n"
+    i18n_domain="launchpad">
+
+  <class class="canonical.launchpad.database.branchlookup.BranchLookup">
+    <allow interface="canonical.launchpad.interfaces.branchlookup.IBranchLookup" />
+  </class>
+
+  <class class="canonical.launchpad.database.branchlookup.SourcePackagePocket">
+    <allow interface="canonical.launchpad.database.branchlookup.ISourcePackagePocket" />
+  </class>
+
+  <securedutility
+      class="canonical.launchpad.database.branchlookup.BranchLookup"
+      provides="canonical.launchpad.interfaces.branchlookup.IBranchLookup" >
+    <allow interface="canonical.launchpad.interfaces.branchlookup.IBranchLookup" />
+  </securedutility>
+
+  <securedutility
+     class="canonical.launchpad.database.branchlookup.LinkedBranchTraverser"
+     provides="canonical.launchpad.interfaces.branchlookup.ILinkedBranchTraverser">
+    <allow interface="canonical.launchpad.interfaces.branchlookup.ILinkedBranchTraverser" />
+  </securedutility>
+
+  <securedutility
+     component="canonical.launchpad.database.branchlookup.SourcePackagePocket"
+     provides="canonical.launchpad.interfaces.branchlookup.ISourcePackagePocketFactory">
+    <allow interface="canonical.launchpad.interfaces.branchlookup.ISourcePackagePocketFactory" />
+  </securedutility>
+
+</configure>

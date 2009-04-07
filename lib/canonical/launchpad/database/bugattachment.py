@@ -38,9 +38,9 @@ class BugAttachment(SQLBase):
     message = ForeignKey(
         foreignKey='Message', dbName='message', notNull=True)
 
-    def removeFromBug(self):
+    def removeFromBug(self, user):
         """See IBugAttachment."""
-        notify(ObjectDeletedEvent(self))
+        notify(ObjectDeletedEvent(self, user))
         self.destroySelf()
 
 class BugAttachmentSet:
@@ -70,5 +70,5 @@ class BugAttachmentSet:
             bug=bug, libraryfile=filealias, type=attach_type, title=title,
             message=message)
         if send_notifications:
-            notify(ObjectCreatedEvent(attachment))
+            notify(ObjectCreatedEvent(attachment, user=message.owner))
         return attachment
