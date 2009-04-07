@@ -6,7 +6,7 @@ mailing list's address.
 
 Create a mailing list for the contact address of our new team.
 
-    >>> from canonical.launchpad.mailman.testing import helpers
+    >>> from lp.services.mailman.testing import helpers
     >>> list_one = helpers.create_list('itest-one')
 
     # Ignore the new list notification message.

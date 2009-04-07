@@ -92,9 +92,6 @@ from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.webapp.interfaces import NameLookupFailed
 from canonical.launchpad.webapp.authorization import check_permission
 
-from lp.answers.interfaces.questioncollection import (
-    IQuestionCollection, QUESTION_STATUS_DEFAULT_SEARCH)
-
 PRIVATE_TEAM_PREFIX = 'private-'
 
 
@@ -459,9 +456,8 @@ class IHasStanding(Interface):
         description=_("The reason the person's standing is what it is."))
 
 
-class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
-                    IQuestionCollection, IHasLogo, IHasMugshot, IHasIcon,
-                    IHasLocation, IObjectWithLocation):
+class IPersonPublic(IHasSpecifications, IHasMentoringOffers, IHasLogo,
+                    IHasMugshot, IHasIcon, IHasLocation, IObjectWithLocation):
     """Public attributes for a Person."""
 
     id = Int(title=_('ID'), required=True, readonly=True)
@@ -1113,41 +1109,6 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
         If the given language is not present, nothing  will happen.
         """
 
-    def getDirectAnswerQuestionTargets():
-        """Return a list of IQuestionTargets that a person is subscribed to.
-
-        This will return IQuestionTargets that the person is registered as an
-        answer contact because he subscribed himself.
-        """
-
-    def getTeamAnswerQuestionTargets():
-        """Return a list of IQuestionTargets that are indirect subscriptions.
-
-        This will return IQuestionTargets that the person or team is
-        registered as an answer contact because of his membership in a team.
-        """
-
-    def searchQuestions(search_text=None,
-                        status=QUESTION_STATUS_DEFAULT_SEARCH,
-                        language=None, sort=None, participation=None,
-                        needs_attention=None):
-        """Search the person's questions.
-
-        See IQuestionCollection for the description of the standard search
-        parameters.
-
-        :participation: A list of QuestionParticipation that defines the set
-        of relationship to questions that will be searched. If None or an
-        empty sequence, all relationships are considered.
-
-        :needs_attention: If this flag is true, only questions needing
-        attention from the person will be included. Questions needing
-        attention are those owned by the person in the ANSWERED or NEEDSINFO
-        state, as well as, those not owned by the person but on which the
-        person requested for more information or gave an answer and that are
-        back in the OPEN state.
-        """
-
     def isBugContributor(user):
         """Is the person a contributer to bugs in Launchpad?
 
@@ -1777,16 +1738,6 @@ class IPersonSet(Interface):
     def getByAccount(account):
         """Return the `IPerson` with the given account, or None."""
 
-    def getPOFileContributors(pofile):
-        """Return people that have contributed to the specified POFile."""
-
-    def getPOFileContributorsByDistroSeries(distroseries, language):
-        """Return people who translated strings in distroseries to language.
-
-        The people that translated only IPOTemplate objects that are not
-        current will not appear in the returned list.
-        """
-
     def updateStatistics(ztm):
         """Update statistics caches and commit."""
 
@@ -1885,15 +1836,6 @@ class IPersonSet(Interface):
         We are not yet game to delete the `from_person` entry from the
         database yet. We will let it roll for a while and see what cruft
         develops. -- StuartBishop 20050812
-        """
-
-    def getTranslatorsByLanguage(language):
-        """Return the list of translators for the given language.
-
-        :arg language: ILanguage object for which we want to get the
-            translators.
-
-        Return None if there is no translator.
         """
 
     def getValidPersons(self, persons):

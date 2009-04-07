@@ -213,12 +213,6 @@ class IProductSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
             description=_("The Bazaar branch for this series.  Leave blank "
                           "if this series is not maintained in Bazaar.")))
 
-    user_branch = Attribute(
-        _("Backwards compatibility shim for IProductSeries.branch"))
-
-    series_branch = Attribute(
-        _("Backwards compatibility shim for IProductSeries.branch"))
-
     translations_autoimport_mode = Choice(
         title=_('Import mode'),
         vocabulary=TranslationsBranchImportMode,
