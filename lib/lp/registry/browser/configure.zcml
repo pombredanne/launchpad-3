@@ -494,7 +494,7 @@
         template="../templates/related-bounties.pt"/>
     <browser:page
         for="lp.registry.interfaces.project.IProject"
-        class="canonical.launchpad.browser.ProjectBranchesView"
+        class="lp.code.browser.branchlisting.ProjectBranchesView"
         facet="branches"
         permission="zope.Public"
         name="+branches"
@@ -1414,28 +1414,28 @@
         </browser:pages>
         <browser:page
             for="lp.registry.interfaces.person.IPerson"
-            class="canonical.launchpad.browser.PersonOwnedBranchesView"
+            class="lp.code.browser.branchlisting.PersonOwnedBranchesView"
             permission="zope.Public"
             facet="branches"
             name="+branches"
             template="../../../canonical/launchpad/templates/person-branches.pt"/>
         <browser:page
             for="lp.registry.interfaces.person.IPerson"
-            class="canonical.launchpad.browser.PersonOwnedBranchesView"
+            class="lp.code.browser.branchlisting.PersonOwnedBranchesView"
             permission="zope.Public"
             facet="branches"
             name="+ownedbranches"
             template="../../../canonical/launchpad/templates/person-branches.pt"/>
         <browser:page
             for="lp.registry.interfaces.person.IPerson"
-            class="canonical.launchpad.browser.PersonSubscribedBranchesView"
+            class="lp.code.browser.branchlisting.PersonSubscribedBranchesView"
             permission="zope.Public"
             facet="branches"
             name="+subscribedbranches"
             template="../../../canonical/launchpad/templates/person-branches.pt"/>
         <browser:page
             for="lp.registry.interfaces.person.IPerson"
-            class="canonical.launchpad.browser.PersonRegisteredBranchesView"
+            class="lp.code.browser.branchlisting.PersonRegisteredBranchesView"
             permission="zope.Public"
             facet="branches"
             name="+registeredbranches"
@@ -1629,13 +1629,13 @@
         <browser:page
             name="+addbranch"
             for="lp.registry.interfaces.person.IPerson"
-            class="canonical.launchpad.browser.PersonBranchAddView"
+            class="lp.code.browser.branch.PersonBranchAddView"
             facet="branches"
             permission="launchpad.AnyPerson"
             template="../templates/person-branch-add.pt"/>
         <browser:page
             for="lp.registry.interfaces.person.IPerson"
-            class="canonical.launchpad.browser.PersonTeamBranchesView"
+            class="lp.code.browser.branchlisting.PersonTeamBranchesView"
             name="+portlet-teambranches"
             template="../../../canonical/launchpad/templates/person-portlet-teambranches.pt"
             permission="zope.Public"/>
@@ -1965,14 +1965,14 @@
     </browser:pages>
     <browser:page
         for="lp.registry.interfaces.product.IProduct"
-        class="canonical.launchpad.browser.ProductBranchesView"
+        class="lp.code.browser.branchlisting.ProductBranchesView"
         facet="branches"
         permission="zope.Public"
         name="+branches"
         template="../templates/product-branches.pt"/>
     <browser:page
         for="lp.registry.interfaces.product.IProduct"
-        class="canonical.launchpad.browser.ProductCodeIndexView"
+        class="lp.code.browser.branchlisting.ProductCodeIndexView"
         facet="branches"
         permission="zope.Public"
         name="+code-index"
@@ -1993,7 +1993,7 @@
         template="../templates/product-mergeproposals.pt"/>
     <browser:page
         for="lp.registry.interfaces.product.IProduct"
-        class="canonical.launchpad.browser.ProductCodeIndexView"
+        class="lp.code.browser.branchlisting.ProductCodeIndexView"
         facet="branches"
         permission="zope.Public"
         name="+branch-summary"
@@ -2098,7 +2098,7 @@
     <browser:page
         name="+addbranch"
         for="lp.registry.interfaces.product.IProduct"
-        class="canonical.launchpad.browser.ProductBranchAddView"
+        class="lp.code.browser.branch.ProductBranchAddView"
         facet="branches"
         permission="launchpad.AnyPerson"
         template="../templates/product-branch-add.pt"/>
