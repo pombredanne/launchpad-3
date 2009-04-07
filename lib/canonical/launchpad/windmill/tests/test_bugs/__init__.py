@@ -13,7 +13,7 @@ test_title_inline_edit = widgets.InlineEditorWidgetTest(
 
 def test_subscribers_portlet():
     """Test that the subscribers portlet on a bug page.
-    
+
     Test that the contents of the subscribers portlet on
     a bug page loads successfully after the page loads.
     """

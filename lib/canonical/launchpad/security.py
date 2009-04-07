@@ -16,7 +16,7 @@ from canonical.launchpad.interfaces.archivepermission import (
     IArchivePermissionSet)
 from canonical.launchpad.interfaces.archiveauthtoken import IArchiveAuthToken
 from canonical.launchpad.interfaces.archivesubscriber import (
-    IArchiveSubscriber)
+    IArchiveSubscriber, IPersonalArchiveSubscription)
 from canonical.launchpad.interfaces.branch import (
     IBranch, user_has_special_branch_access)
 from canonical.launchpad.interfaces.branchmergeproposal import (
@@ -1158,37 +1158,20 @@ class EditCodeImportMachine(OnlyVcsImportsAndAdmins):
     usedfor = ICodeImportMachine
 
 
-class EditPOTemplateDetails(EditByOwnersOrAdmins):
-    usedfor = IPOTemplate
-
-    def checkAuthenticated(self, user):
-        """Allow product/sourcepackage/potemplate owner, experts and admis.
-        """
-        if (self.obj.productseries is not None and
-            user.inTeam(self.obj.productseries.product.owner)):
-            # The user is the owner of the product.
-            return True
-
-        rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_experts
-
-        return (EditByOwnersOrAdmins.checkAuthenticated(self, user) or
-                user.inTeam(rosetta_experts))
-
-
 class AdminPOTemplateDetails(OnlyRosettaExpertsAndAdmins):
-    """Permissions to edit all aspects of an IPOTemplate."""
     permission = 'launchpad.Admin'
     usedfor = IPOTemplate
 
     def checkAuthenticated(self, user):
+        """Allow LP/Translations admins, and for distros, owners and 
+        translation group owners.
+        """
         if OnlyRosettaExpertsAndAdmins.checkAuthenticated(self, user):
             return True
 
-        if self.obj.distroseries is not None:
-            # For distroseries, both the owners and the owners of its
-            # chosen translation group (if any) are allowed to manage
-            # templates.
-            distro = self.obj.distroseries.distribution
+        template = self.obj
+        if template.distroseries is not None:
+            distro = template.distroseries.distribution
             if user.inTeam(distro.owner):
                 return True
             translation_group = distro.translationgroup
@@ -1196,6 +1179,24 @@ class AdminPOTemplateDetails(OnlyRosettaExpertsAndAdmins):
                 return True
 
         return False
+
+
+class EditPOTemplateDetails(AdminPOTemplateDetails, EditByOwnersOrAdmins):
+    permission = 'launchpad.Edit'
+    usedfor = IPOTemplate
+
+    def checkAuthenticated(self, user):
+        """Allow anyone with admin rights; owners, product owners and
+        distribution owners; and for distros, translation group owners.
+        """
+        if (self.obj.productseries is not None and
+            user.inTeam(self.obj.productseries.product.owner)):
+            # The user is the owner of the product.
+            return True
+
+        return (
+            AdminPOTemplateDetails.checkAuthenticated(self, user) or 
+            EditByOwnersOrAdmins.checkAuthenticated(self, user))
 
 
 # XXX: Carlos Perello Marin 2005-05-24 bug=753:
@@ -1954,6 +1955,27 @@ class EditArchiveAuthToken(AuthorizationBase):
         auth_append = AppendArchive(self.obj.archive)
         if auth_append.checkAuthenticated(user):
             return True
+        admins = getUtility(ILaunchpadCelebrities).admin
+        return user.inTeam(admins)
+
+
+class ViewPersonalArchiveSubscription(AuthorizationBase):
+    """Restrict viewing of personal archive subscriptions (non-db class).
+
+    The user should be the subscriber, have append privilege to the archive
+    or be an admin.
+    """
+    permission = "launchpad.View"
+    usedfor = IPersonalArchiveSubscription
+
+    def checkAuthenticated(self, user):
+        if user == self.obj.subscriber:
+            return True
+        append_archive = AppendArchive(self.obj.archive)
+
+        if append_archive.checkAuthenticated(user):
+            return True
+
         admins = getUtility(ILaunchpadCelebrities).admin
         return user.inTeam(admins)
 

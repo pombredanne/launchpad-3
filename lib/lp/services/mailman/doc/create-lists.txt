@@ -35,7 +35,7 @@ In order for Mailman to create the mailing list, a Launchpad 'mailing list
 expert' must approve the application.  This cannot currently be done through
 the web, so we'll go behind the scenes to do this.
 
-    >>> from canonical.launchpad.mailman.testing import helpers
+    >>> from lp.services.mailman.testing import helpers
     >>> list_one = helpers.review_list('itest-one')
     >>> sorted(name for name in list_names() if name.startswith('itest-'))
     ['itest-one']
