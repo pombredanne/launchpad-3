@@ -149,7 +149,7 @@ class TestExpandURL(TestCaseWithFactory):
         # Return a NoLinkedBranch fault if the development focus has no branch
         # associated with it.
         product = self.factory.makeProduct()
-        self.assertEqual(None, product.development_focus.user_branch)
+        self.assertEqual(None, product.development_focus.branch)
         self.assertFault(product.name, faults.NoLinkedBranch(product))
 
     def test_series_has_no_branch(self):
