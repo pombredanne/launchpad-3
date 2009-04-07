@@ -17,7 +17,7 @@
       />
     <require
       permission="launchpad.Edit"
-      set_attributes="description"
+      set_attributes="description displayname"
       />
     <require
       permission="launchpad.Admin"
