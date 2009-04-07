@@ -116,6 +116,22 @@
       class="canonical.launchpad.webapp.error.SystemErrorView"
       />
 
+  <!-- Vocabularies -->
+  <browser:page
+    for="canonical.launchpad.interfaces.ILaunchpadRoot"
+    permission="zope.Public"
+    class="canonical.launchpad.browser.vocabulary.HugeVocabularyJSONView"
+    name="+huge-vocabulary"
+    />
+
+  <adapter
+    factory="canonical.launchpad.browser.vocabulary.default_pickerentry_adapter"
+    />
+
+  <adapter
+    factory="canonical.launchpad.browser.vocabulary.person_to_pickerentry"
+    />
+
 <facet facet="overview">
 
   <utility
