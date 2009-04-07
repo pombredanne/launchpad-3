@@ -183,6 +183,60 @@ The Ubuntu product page then redirects to the beta site:
     HTTP Error 303: See Other
     Location: http://beta.launchpad.dev/ubuntu
 
+== Redirection notice in OOPS timeouts ==
+
+The beta site has timeout values lower than lpnet, so beta testers are more
+likely to experience timeouts. When a page times out for beta testers the
+notification to disable beta redirection is displayed.
+
+Add Foo Bar to the beta team.
+
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces import (
+    ...     ILaunchpadCelebrities, IPersonSet)
+    >>> from canonical.launchpad.ftests import login, logout
+    >>> login('foo.bar@canonical.com')
+    >>> foo_bar = getUtility(IPersonSet).getByName('name16')
+    >>> launchpad_beta_testers = getUtility(
+    ...     ILaunchpadCelebrities).launchpad_beta_testers
+    >>> launchpad_beta_testers.addMember(foo_bar, reviewer=foo_bar)
+    >>> foo_bar.inTeam(launchpad_beta_testers)
+    True
+
+    >>> logout()
+
+Decrease the timeout values for launchpad.dev
+
+    >>> beta_data = """
+    ...     [launchpad]
+    ...     beta_testers_redirection_host = edge.launchpad.dev
+    ...     [database]
+    ...     db_statement_timeout: 1
+    ...     soft_request_timeout: 2
+    ...     """
+    >>> config.push('beta_data', beta_data)
+
+Check that the notification is in the timeout page
+
+    >>> print http(r"""
+    ... GET /+soft-timeout HTTP/1.1
+    ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+    ... """)
+    HTTP/1.1 503 Service Unavailable
+    ...
+    Retry-After: 900
+    ...
+    <title>Error: Timeout</title>
+    ...
+    <h1 class="exception">Timeout error</h1>
+    <div id="redirect_notice" style="display:none" class="informational message">
+    <p>As a member of the Launchpad Beta Testers team, you will be
+    redirected to the beta site when viewing Launchpad pages.</p>
+    <p><button onclick="setBetaRedirect(false)">Disable redirection
+    for 2 hours</button></p>
+    </div>
+    ...
+
 Restore the config to state it was in at the start of the test.
 
     >>> config_data = config.pop('beta_data')
