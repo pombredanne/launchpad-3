@@ -62,7 +62,7 @@ from bzrlib.errors import (
     NoSuchFile, PermissionDenied, TransportNotPossible)
 from bzrlib.transport import get_transport
 from bzrlib.transport.memory import MemoryServer
-from bzrlib.urlutils import unescape
+from bzrlib import urlutils
 
 from twisted.internet import defer
 from twisted.python import failure
@@ -301,7 +301,8 @@ class TransportDispatch:
             return transport
         format = BzrDirFormat.get_default_format()
         bzrdir = format.initialize_on_transport(transport)
-        bzrdir.get_config().set_default_stack_on(unescape(default_stack_on))
+        bzrdir.get_config().set_default_stack_on(
+            urlutils.unescape(default_stack_on))
         return get_readonly_transport(transport)
 
 
@@ -553,17 +554,28 @@ class LaunchpadServer(_BaseLaunchpadServer):
         return deferred.addCallback(got_path_info)
 
 
-def get_lp_server(branchfs_client, user_id, hosted_url, mirror_url):
+def get_lp_server(user_id, branchfs_endpoint_url=None, hosted_directory=None,
+                  mirror_directory=None):
     """Create a Launchpad server.
 
-    :param branchfs_client: An `xmlrpclib.ServerProxy` (or equivalent) for the
-        branch file system end-point.
     :param user_id: A unique database ID of the user whose branches are
         being served.
-    :param hosted_url: Where the branches are uploaded to.
-    :param mirror_url: Where all Launchpad branches are mirrored.
+    :param branchfs_endpoint_url: URL for the branch file system end-point.
+    :param hosted_directory: Where the branches are uploaded to.
+    :param mirror_directory: Where all Launchpad branches are mirrored.
     :return: A `LaunchpadServer`.
     """
+    # Get the defaults from the config.
+    if hosted_directory is None:
+        hosted_directory = config.codehosting.hosted_branches_root
+    if mirror_directory is None:
+        mirror_directory = config.codehosting.mirrored_branches_root
+    if branchfs_endpoint_url is None:
+        branchfs_endpoint_url = config.codehosting.branchfs_endpoint
+
+    hosted_url = urlutils.local_path_to_url(hosted_directory)
+    mirror_url = urlutils.local_path_to_url(mirror_directory)
+    branchfs_client = xmlrpclib.ServerProxy(branchfs_endpoint_url)
     # XXX: JonathanLange 2007-05-29: The 'chroot' lines lack unit tests.
     hosted_transport = get_chrooted_transport(hosted_url)
     mirror_transport = get_chrooted_transport(mirror_url)

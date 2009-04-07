@@ -22,6 +22,7 @@ from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
+from canonical.codehosting.bzrutils import is_branch_stackable
 from canonical.codehosting.vfs import get_lp_server
 
 from canonical.launchpad.interfaces.branch import BranchType
@@ -431,42 +432,11 @@ class CodeHandler:
 
     def _getSourceNoBundle(self, md, target, submitter):
         """Get a source branch for a merge directive with no bundle."""
-        mp_source = None
-        if md.source_branch is not None:
-            mp_source = getUtility(IBranchLookup).getByUrl(md.source_branch)
+        mp_source = getUtility(IBranchLookup).getByUrl(md.source_branch)
         if mp_source is None:
             mp_source = self._getNewBranch(
                 BranchType.REMOTE, md.source_branch, target, submitter)
         return mp_source
-
-    def _isBranchStackable(self, target):
-        """Check to see if the branch is stackable."""
-        bzr_target = removeSecurityProxy(target).getBzrBranch()
-        try:
-            bzr_target.get_stacked_on_url()
-        except (UnstackableBranchFormat, UnstackableRepositoryFormat):
-            return False
-        except NotStacked:
-            # This is fine.
-            return True
-        else:
-            # If nothing is raised, then stackable (and stacked even).
-            return True
-
-    def _getUsersLPServer(self, submitter):
-        """Get a launchpad server to use for processing the MD.
-
-        The launchpad server defines a custom transport for the submitter.
-        """
-        upload_directory = config.codehosting.hosted_branches_root
-        mirror_directory = config.codehosting.mirrored_branches_root
-        branchfs_endpoint_url = config.codehosting.branchfs_endpoint
-        upload_url = local_path_to_url(upload_directory)
-        mirror_url = local_path_to_url(mirror_directory)
-        branchfs_client = xmlrpclib.ServerProxy(branchfs_endpoint_url)
-        # Create the LP server as if the submitter was pushing a branch to LP.
-        return get_lp_server(
-            branchfs_client, int(submitter.id), upload_url, mirror_url)
 
     def _getSourceWithBundle(self, md, target, submitter):
         """Get a source branch for a merge directive with a bundle."""
@@ -487,11 +457,14 @@ class CodeHandler:
         # source branch - one that has *no* Bazaar data.  Together these
         # prevent users from using Launchpad disk space at a rate that is
         # disproportionately greater than data uploaded.
-        if not self._isBranchStackable(target):
+        target_bzr_branch = removeSecurityProxy(target).getBzrBranch()
+        if not is_branch_stackable(target_bzr_branch):
             return mp_source
-        assert mp_source.branch_type == BranchType.HOSTED
+        assert mp_source.branch_type == BranchType.HOSTED, (
+            "Source branch is not hosted.")
 
-        lp_server = self._getUsersLPServer(submitter)
+        # Create the LP server as if the submitter was pushing a branch to LP.
+        lp_server = get_lp_server(submitter.id)
         lp_server.setUp()
         try:
             source_url = urljoin(lp_server.get_url(), mp_source.unique_name)

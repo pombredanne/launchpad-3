@@ -728,21 +728,6 @@ class TestCodeHandlerProcessMergeDirective(TestCaseWithFactory):
         self.addCleanup(transport.delete_tree, '.')
         lp_mirror.pull(bzr_branch)
 
-    def _getUsersLPServer(self, user):
-        """Get a launchpad server to use for accessing the branches.
-
-        The launchpad server defines a custom transport for the submitter.
-        """
-        upload_directory = config.codehosting.hosted_branches_root
-        mirror_directory = config.codehosting.mirrored_branches_root
-        branchfs_endpoint_url = config.codehosting.branchfs_endpoint
-        upload_url = local_path_to_url(upload_directory)
-        mirror_url = local_path_to_url(mirror_directory)
-        branchfs_client = xmlrpclib.ServerProxy(branchfs_endpoint_url)
-        # Create the LP server as if the submitter was pushing a branch to LP.
-        return get_lp_server(
-            branchfs_client, int(user.id), upload_url, mirror_url)
-
     def _createTargetSourceAndBundle(self, format=None):
         """Create a merge directive with a bundle and associated branches.
 
@@ -769,7 +754,7 @@ class TestCodeHandlerProcessMergeDirective(TestCaseWithFactory):
 
     def _openBazaarBranchAsClient(self, db_branch):
         """Open the Bazaar branch relating to db_branch as if a client was."""
-        lp_server = self._getUsersLPServer(db_branch.owner)
+        lp_server = get_lp_server(db_branch.owner.id)
         lp_server.setUp()
         self.addCleanup(lp_server.tearDown)
         branch_url = urljoin(lp_server.get_url(), db_branch.unique_name)
