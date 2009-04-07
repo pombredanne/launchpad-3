@@ -5,11 +5,20 @@ __metaclass__ = type
 import unittest
 
 from canonical.launchpad.translationformat.mozilla_xpi_importer import DtdFile
-from canonical.launchpad.interfaces import TranslationFormatInvalidInputError
+from canonical.launchpad.interfaces.translationimporter import (
+    TranslationFormatInvalidInputError)
 
 
 class DtdFormatTestCase(unittest.TestCase):
     """Test class for dtd file format."""
+
+    def test_DtdSyntaxError(self):
+        # Syntax errors in a DTD file are reported as translation format
+        # errors.
+        content = '<!ENTITY foo "gah"></ENTITY>'
+        self.assertRaises(
+            TranslationFormatInvalidInputError, DtdFile, 'test.dtd', None,
+            content)
 
     def test_UTF8DtdFileTest(self):
         """This test makes sure that we handle UTF-8 encoding files."""
