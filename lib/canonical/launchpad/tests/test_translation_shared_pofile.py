@@ -7,9 +7,12 @@ from datetime import datetime, timedelta
 import pytz
 import unittest
 
+from zope.component import getAdapter
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.interfaces import TranslationValidationStatus
+from canonical.launchpad.interfaces.translationcommonformat import (
+    ITranslationFileData)
 from canonical.launchpad.testing.factory import LaunchpadObjectFactory
 from canonical.testing import LaunchpadZopelessLayer
 
@@ -730,6 +733,44 @@ class TestTranslationSharedPOFile(unittest.TestCase):
         self.assertEquals(self.devel_sr_pofile.rosettaCount(), 3)
         self.assertEquals(self.devel_sr_pofile.updatesCount(), 1)
         self.assertEquals(self.devel_sr_pofile.unreviewedCount(), 2)
+
+    def test_TranslationFileData_adapter(self):
+        # Test that exporting works correctly with shared and diverged
+        # messages.
+        shared_translation = self.factory.makeSharedTranslationMessage(
+            pofile=self.devel_sr_pofile,
+            potmsgset=self.potmsgset,
+            translations=["Shared translation"])
+
+        # Get the adapter and extract only English singular and
+        # first translation form from all messages.
+        translation_file_data = getAdapter(
+            self.devel_sr_pofile, ITranslationFileData, 'all_messages')
+        exported_messages = [
+            (msg.singular_text, msg.translations[0])
+            for msg in translation_file_data.messages]
+        self.assertEquals(exported_messages,
+                          [(self.potmsgset.singular_text,
+                            "Shared translation")])
+
+        # When we add a diverged translation, only that is exported.
+        diverged_translation = self.factory.makeTranslationMessage(
+            pofile=self.devel_sr_pofile,
+            potmsgset=self.potmsgset,
+            translations=["Diverged translation"],
+            force_diverged=True)
+
+        # Get the adapter and extract only English singular and
+        # first translation form from all messages.
+        translation_file_data = getAdapter(
+            self.devel_sr_pofile, ITranslationFileData, 'all_messages')
+        exported_messages = [
+            (msg.singular_text, msg.translations[0])
+            for msg in translation_file_data.messages]
+        # Only the diverged translation is exported.
+        self.assertEquals(exported_messages,
+                          [(self.potmsgset.singular_text,
+                            "Diverged translation")])
 
 
 def test_suite():

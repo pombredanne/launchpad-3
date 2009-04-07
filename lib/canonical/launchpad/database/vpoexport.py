@@ -159,14 +159,7 @@ class VPOExportSet:
             conditions.append("""
                 (
                     POTemplate.date_last_updated > %s OR
-                    EXISTS (
-                        SELECT *
-                        FROM TranslationMessage
-                        WHERE
-                            TranslationMessage.pofile = POFile.id AND
-                            TranslationMessage.is_current AND
-                            TranslationMessage.date_reviewed > %s
-                    )
+                    POFile.date_changed > %s
                 )
                 """ % sqlvalues(date, date))
 
