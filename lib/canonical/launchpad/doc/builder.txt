@@ -174,7 +174,7 @@ We will temporarily disable the ubuntu primary archive.
     >>> ubuntu.main_archive.enabled = False
     >>> login(ANONYMOUS)
 
-That done, the queue for non-virtualized queue for i386 becomes empty.
+That done, the non-virtualized queue for i386 becomes empty.
 
     >>> builderset.getBuildQueueSizeForProcessor(p386)
     0
