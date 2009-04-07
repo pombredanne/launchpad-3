@@ -264,7 +264,6 @@ MailingListSubscription object.
     >>> print list_one.getSubscription(dirk)
     <security ...MailingListSubscription instance ...>
 
-
 Sub-team members may still ask to subscribe to the super-team's list,
 but their subscription will not become active, as they are not an
 approved member of the super-team.
@@ -280,7 +279,6 @@ approved member of the super-team.
     >>> sorted(email.email for email in list_one.getSubscribedAddresses())
     [u'anne.person@example.com', u'bperson@example.org',
      u'cris.person@example.com']
-
 
 Teams, even subteams, cannot subscribe to mailing lists.
 

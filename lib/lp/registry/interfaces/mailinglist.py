@@ -490,6 +490,33 @@ class IMailingListSet(Interface):
         :raises AssertionError: When `team_name` is not a string.
         """
 
+    def getSubscribedAddresses(team_names):
+        """Return the set of subscribed email addresses for members.
+
+        :param team_names: The set of teams to query.
+        :type team_names: sequence
+        :return: A dictionary of iterators.  The dictionary's keys are the
+            team names given in the argument.  The values are iterators over
+            the subscribed IEmailAddresses for all subscribed members of that
+            mailing lists, in no particular order.  This represents all the
+            addresses which will receive messages posted to that mailing list.
+        :rtype: dictionary mapping team names to iterators
+        """
+
+    def getSenderAddresses(team_names):
+        """Return the set of all email addresses for members.
+
+        :param team_names: The set of teams to query.
+        :type team_names: sequence
+        :return: A dictionary of iterators.  The dictionary's keys are the
+            team names given in the argument.  The values are iterators over
+            the all the registered and validated IEmailAddresses for all
+            members of that mailing list's team, in no particular order.
+            These represent all the addresses which are allowed to post to
+            that mailing list.
+        :rtype: dictionary mapping team names to iterators
+        """
+
     registered_lists = Set(
         title=_('Registered lists'),
         description=_(
