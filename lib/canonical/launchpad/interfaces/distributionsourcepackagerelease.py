@@ -9,7 +9,7 @@ __all__ = [
     'IDistributionSourcePackageRelease',
     ]
 
-from zope.interface import Interface, Attribute
+from zope.interface import Attribute
 
 from canonical.launchpad.interfaces.sourcepackagerelease import (
     ISourcePackageRelease)

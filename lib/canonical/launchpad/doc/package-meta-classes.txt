@@ -5,10 +5,8 @@ There are a bunch of meta classes used for combine information from
 our Database Model for packages in a intuitive manner, they are:
 
  >>> from canonical.launchpad.database import (
- ...     Distribution, DistroSeries,
- ...     SourcePackageRelease, SourcePackageName,
- ...     DistributionSourcePackageRelease,
- ...     DistroSeriesSourcePackageRelease)
+ ...     Distribution, SourcePackageRelease, SourcePackageName,
+ ...     DistributionSourcePackageRelease, DistroSeriesSourcePackageRelease)
 
  >>> from canonical.launchpad.interfaces import (
  ...     IDistributionSourcePackageRelease,
@@ -56,8 +54,8 @@ Combining DistroSeries and SourcePackageRelease:
  u'pmount 0.1-1'
 
 
-Querying builds for DistroSeries and DistributionSourcePackageRelease
----------------------------------------------------------------------
+Querying builds for DistributionSourcePackageRelease and DistroSeriesSPR
+------------------------------------------------------------------------
 
 Both the DistroSeriesSourcePackageRelease class and the
 DistributionSourcePackageRelease have a builds() method which

@@ -96,10 +96,14 @@ class DistributionSourcePackageRelease:
         # in a main archive. So a PPA build won't be included unless it
         # was also published in a main archive.
         builds_published_in_main_archives = store.find(Build,
+            # First the expressions to get the builds in this
+            # Distribution:
             Build.sourcepackagerelease == self.sourcepackagerelease,
             Build.distroarchseries == DistroArchSeries.id,
             DistroArchSeries.distroseries == DistroSeries.id,
             DistroSeries.distribution == self.distribution,
+            # Then narrow it down to only those builds with binaries
+            # published in main archives:
             BinaryPackageRelease.build == Build.id,
             BinaryPackagePublishingHistory.binarypackagerelease ==
                 BinaryPackageRelease.id,

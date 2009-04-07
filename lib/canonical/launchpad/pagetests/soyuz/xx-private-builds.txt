@@ -364,6 +364,10 @@ First log in as an admin to be able to manipulate the source publishing.
     >>> breezy_autotest = ubuntutest['breezy-autotest']
     >>> new_pub = private_source_pub.copyTo(
     ...     breezy_autotest, private_source_pub.pocket, ubuntutest.main_archive)
+    >>> binary_pkg_release = test_publisher.uploadBinaryForBuild(
+    ...     private_build, 'privacy-test-bin')
+    >>> binary_pkg_pub_history = test_publisher.publishBinaryInArchive(
+    ...     binary_pkg_release, ubuntutest.main_archive)
     >>> flush_database_updates()
     >>> policy = getUtility(IStoreSelector).pop()
     >>> logout()
