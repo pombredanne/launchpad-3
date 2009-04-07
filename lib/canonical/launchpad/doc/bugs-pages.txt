@@ -1,6 +1,6 @@
 = The Bugs front page =
 
-The contents on the the Bugs front page is driven by MaloneView. It
+The contents on the Bugs front page is driven by MaloneView. It
 doesn't use its context for anything, so we don't have to supply one
 when creating it.
 

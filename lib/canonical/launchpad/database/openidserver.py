@@ -30,16 +30,16 @@ from zope.interface import implements, classProvides
 from canonical.database.constants import DEFAULT, UTC_NOW, NEVER_EXPIRES
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import cursor, SQLBase, sqlvalues
+from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.launchpad.interfaces import IMasterStore, IStore
 from canonical.launchpad.interfaces.account import AccountStatus
 from canonical.launchpad.interfaces.openidserver import (
     ILaunchpadOpenIDStoreFactory, IOpenIDAuthorization,
     IOpenIDAuthorizationSet, IOpenIDPersistentIdentity, IOpenIDRPConfig,
     IOpenIDRPConfigSet, IOpenIDRPSummary, IOpenIDRPSummarySet)
-from canonical.launchpad.interfaces.person import PersonCreationRationale
+from lp.registry.interfaces.person import PersonCreationRationale
 from canonical.launchpad.webapp.interfaces import (
-    AUTH_STORE, DEFAULT_FLAVOR, IStoreSelector, MASTER_FLAVOR)
+    AUTH_STORE, IStoreSelector, MASTER_FLAVOR)
 from canonical.launchpad.webapp.url import urlparse
 from canonical.launchpad.webapp.vhosts import allvhosts
 
@@ -201,6 +201,8 @@ class LaunchpadOpenIDStore(PostgreSQLStore):
     """The standard OpenID Library PostgreSQL store with overrides to
     ensure it plays nicely with Zope3 and Launchpad.
 
+    This class is used by the SSO Server (OpenID Provider)
+
     It is registered as a factory to provide a way for instances to be
     created from browser code without warnings, as getUtility is not
     suitable as this class is not thread safe.
@@ -209,8 +211,8 @@ class LaunchpadOpenIDStore(PostgreSQLStore):
 
     exceptions = psycopg2
     settings_table = None
-    associations_table = 'OpenIDAssociations'
-    nonces_table = None
+    associations_table = 'OpenIDAssociation'
+    nonces_table = 'OpenIDNonce'
 
     def __init__(self):
         # No need to pass in the connection - we have better ways of
@@ -223,12 +225,11 @@ class LaunchpadOpenIDStore(PostgreSQLStore):
         No transactional semantics in Launchpad because Z3 is already
         fully transactional so there is no need to reinvent the wheel.
         """
-        self.cur = IMasterStore(
-            OpenIDAuthorization)._connection._raw_connection.cursor()
+        store = getUtility(IStoreSelector).get(AUTH_STORE, MASTER_FLAVOR)
+        self.cur = store._connection._raw_connection.cursor()
         try:
             return func(*args, **kwargs)
         finally:
-            self.cur.close()
             self.cur = None
 
     def createTables(self):

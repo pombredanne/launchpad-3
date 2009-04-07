@@ -38,13 +38,13 @@
   <!-- Adapt several related objects to provide unified details -->
   <adapter for="canonical.launchpad.interfaces.IMessageApproval"
     provides="canonical.launchpad.interfaces.IHeldMessageDetails"
-    factory="canonical.launchpad.database.mailinglist.HeldMessageDetails"
+    factory="lp.registry.model.mailinglist.HeldMessageDetails"
     />
 
   <!-- Adapt a person to an IDirectEmailAuthorization for throttling of direct
        person-to-person emails. -->
   <adapter
-    for="canonical.launchpad.interfaces.person.IPerson"
+    for="lp.registry.interfaces.person.IPerson"
     provides="canonical.launchpad.interfaces.message.IDirectEmailAuthorization"
     factory="canonical.launchpad.database.message.DirectEmailAuthorization"
     />

@@ -104,7 +104,7 @@ developers team has two branches which are both private.
     >>> from canonical.launchpad.database.branch import Branch
     >>> from canonical.launchpad.interfaces.branchcollection import (
     ...     IAllBranches)
-    >>> from canonical.launchpad.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> login(ANONYMOUS)
     >>> person_set = getUtility(IPersonSet)
     >>> landscape_team = person_set.getByName('landscape-developers')

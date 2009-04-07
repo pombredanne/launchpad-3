@@ -231,7 +231,7 @@ There are older URLs that contain non-translatable languages such as
 English, or a non-visible language. Two example requests in OOPSes
 were for: en_GB/+translate?field.alternative_language=en and
 za/+translate?field.alternative_language=zh. In these cases, the
-alternative language is ignored and the the 'Make suggestions from'
+alternative language is ignored and the 'Make suggestions from'
 control is unset.
 
     >>> browser.open(

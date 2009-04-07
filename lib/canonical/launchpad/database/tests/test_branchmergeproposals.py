@@ -27,7 +27,8 @@ from canonical.launchpad.database.diff import StaticDiff
 from canonical.launchpad.event.branchmergeproposal import (
     NewBranchMergeProposalEvent, NewCodeReviewCommentEvent,
     ReviewerNominatedEvent)
-from canonical.launchpad.ftests import ANONYMOUS, login, logout, syncUpdate
+from canonical.launchpad.ftests import (
+    ANONYMOUS, import_secret_test_key, login, logout, syncUpdate)
 from canonical.launchpad.interfaces import (
     BadStateTransition, BranchMergeProposalStatus,
     BranchSubscriptionNotificationLevel, BranchType,
@@ -36,12 +37,12 @@ from canonical.launchpad.interfaces import (
     ICreateMergeProposalJob, ICreateMergeProposalJobSource,
     IMergeProposalCreatedJob, WrongBranchMergeProposal)
 from canonical.launchpad.interfaces.message import IMessageJob
-from canonical.launchpad.interfaces.person import IPersonSet
-from canonical.launchpad.interfaces.product import IProductSet
+from lp.registry.interfaces.person import IPersonSet
+from lp.registry.interfaces.product import IProductSet
 from canonical.launchpad.interfaces.codereviewcomment import CodeReviewVote
 from canonical.launchpad.testing import (
-    capture_events, LaunchpadObjectFactory, login_person, TestCaseWithFactory,
-    time_counter)
+    capture_events, GPGSigningContext, LaunchpadObjectFactory, login_person,
+    TestCaseWithFactory, time_counter)
 from canonical.launchpad.tests.mail_helpers import pop_notifications
 from canonical.launchpad.webapp.testing import verifyObject
 
@@ -891,52 +892,6 @@ class TestBranchMergeProposalGetterGetProposals(TestCaseWithFactory):
             self._get_merge_proposals(
                 november, visible_by_user=self.factory.makePerson()))
 
-    def test_getProposalsForReviewer(self):
-        reviewer = self.factory.makePerson()
-        proposal = self.factory.makeBranchMergeProposal()
-        proposal.nominateReviewer(reviewer, reviewer)
-        proposal2 = self.factory.makeBranchMergeProposal()
-        proposals = BranchMergeProposalGetter.getProposalsForReviewer(
-            reviewer)
-        self.assertEqual([proposal], list(proposals))
-
-    def test_getProposalsForReviewer_filter_status(self):
-        reviewer = self.factory.makePerson()
-        proposal1 = self.factory.makeBranchMergeProposal(
-            set_state=BranchMergeProposalStatus.NEEDS_REVIEW)
-        proposal1.nominateReviewer(reviewer, reviewer)
-        proposal2 = self.factory.makeBranchMergeProposal(
-            set_state=BranchMergeProposalStatus.WORK_IN_PROGRESS)
-        proposal2.nominateReviewer(reviewer, reviewer)
-        proposals = BranchMergeProposalGetter.getProposalsForReviewer(
-            reviewer, [BranchMergeProposalStatus.NEEDS_REVIEW])
-        self.assertEqual([proposal1], list(proposals))
-
-    def test_getProposalsForReviewer_anonymous(self):
-        # Don't include proposals for private branches for anonymous views.
-        reviewer = self.factory.makePerson()
-        target_branch = self.factory.makeAnyBranch(private=True)
-        proposal = self.factory.makeBranchMergeProposal(
-            target_branch=target_branch)
-        proposal.nominateReviewer(reviewer, reviewer)
-        proposals = BranchMergeProposalGetter.getProposalsForReviewer(
-            reviewer)
-        self.assertEqual([], list(proposals))
-
-    def test_getProposalsForReviewer_anonymous_source_private(self):
-        # Don't include proposals for private branches for anonymous views.
-        reviewer = self.factory.makePerson()
-        product = self.factory.makeProduct()
-        source_branch = self.factory.makeProductBranch(
-            product=product, private=True)
-        target_branch = self.factory.makeProductBranch(product=product)
-        proposal = self.factory.makeBranchMergeProposal(
-            source_branch=source_branch, target_branch=target_branch)
-        proposal.nominateReviewer(reviewer, reviewer)
-        proposals = BranchMergeProposalGetter.getProposalsForReviewer(
-            reviewer)
-        self.assertEqual([], list(proposals))
-
 
 class TestBranchMergeProposalDeletion(TestCaseWithFactory):
     """Deleting a branch merge proposal deletes relevant objects."""
@@ -1300,8 +1255,11 @@ class TestCreateMergeProposalJob(TestCaseWithFactory):
 
     def test_run_creates_proposal(self):
         """CreateMergeProposalJob.run should create a merge proposal."""
+        key = import_secret_test_key()
+        signing_context = GPGSigningContext(key.fingerprint, password='test')
         message, file_alias, source, target = (
-            self.factory.makeMergeDirectiveEmail())
+            self.factory.makeMergeDirectiveEmail(
+                signing_context=signing_context))
         job = CreateMergeProposalJob.create(file_alias)
         transaction.commit()
         proposal, comment = job.run()

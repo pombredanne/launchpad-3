@@ -16,14 +16,15 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.codehosting.inmemory import InMemoryFrontend
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.ftests import ANONYMOUS, login, logout
-from canonical.launchpad.interfaces.launchpad import ILaunchBag
 from canonical.launchpad.interfaces.branch import (
-    BranchCreationNoTeamOwnedJunkBranches, BranchType, IBranchSet,
-    BRANCH_NAME_VALIDATION_ERROR_MESSAGE)
+    BranchType, BRANCH_NAME_VALIDATION_ERROR_MESSAGE)
+from canonical.launchpad.interfaces.branchlookup import IBranchLookup
+from canonical.launchpad.interfaces.branchtarget import IBranchTarget
 from canonical.launchpad.interfaces.scriptactivity import (
     IScriptActivitySet)
 from canonical.launchpad.interfaces.codehosting import (
     BRANCH_TRANSPORT, CONTROL_TRANSPORT)
+from canonical.launchpad.interfaces.launchpad import ILaunchBag
 from canonical.launchpad.testing import (
     LaunchpadObjectFactory, TestCase, TestCaseWithFactory)
 from canonical.launchpad.webapp.interfaces import NotFoundError
@@ -120,7 +121,7 @@ class BranchPullerTest(TestCaseWithFactory):
     """Tests for the implementation of `IBranchPuller`.
 
     :ivar frontend: A nullary callable that returns an object that implements
-        getPullerEndpoint, getLaunchpadObjectFactory and getBranchSet.
+        getPullerEndpoint, getLaunchpadObjectFactory and getBranchLookup.
     """
 
     def setUp(self):
@@ -128,7 +129,7 @@ class BranchPullerTest(TestCaseWithFactory):
         frontend = self.frontend()
         self.storage = frontend.getPullerEndpoint()
         self.factory = frontend.getLaunchpadObjectFactory()
-        self.branch_set = frontend.getBranchSet()
+        self.branch_lookup = frontend.getBranchLookup()
         self.getLastActivity = frontend.getLastActivity
 
     def assertFaultEqual(self, expected_fault, observed_fault):
@@ -176,7 +177,7 @@ class BranchPullerTest(TestCaseWithFactory):
         """Return a branch ID that isn't in the database."""
         branch_id = 999
         # We can't be sure until the sample data is gone.
-        self.assertIs(self.branch_set.get(branch_id), None)
+        self.assertIs(self.branch_lookup.get(branch_id), None)
         return branch_id
 
     def test_startMirroring(self):
@@ -457,13 +458,14 @@ class BranchPullQueueTest(TestCaseWithFactory):
 
     def test_getBranchPullInfo_private_branch(self):
         # We don't want to stack mirrored branches onto private branches:
-        # mirrored branches are public by their nature. This, if the default
+        # mirrored branches are public by their nature. Thus, if the default
         # stacked-on branch for the project is private and the branch is
         # MIRRORED then we don't include the default stacked-on branch's
         # details in the tuple.
-        default_branch = self.factory.makeAnyBranch(private=True)
-        product = removeSecurityProxy(default_branch).product
-        product.development_focus.branch = default_branch
+        product = self.factory.makeProduct()
+        default_branch = self.factory.makeProductBranch(
+            product=product, private=True)
+        self.factory.enableDefaultStackingForProduct(product, default_branch)
         mirrored_branch = self.factory.makeProductBranch(
             branch_type=BranchType.MIRRORED, product=product)
         info = self.storage._getBranchPullInfo(mirrored_branch)
@@ -500,7 +502,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
         frontend = self.frontend()
         self.branchfs = frontend.getFilesystemEndpoint()
         self.factory = frontend.getLaunchpadObjectFactory()
-        self.branch_set = frontend.getBranchSet()
+        self.branch_lookup = frontend.getBranchLookup()
 
     def assertFaultEqual(self, expected_fault, observed_fault):
         """Assert that `expected_fault` equals `observed_fault`."""
@@ -518,7 +520,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
         branch_id = self.branchfs.createBranch(
             owner.id, escape('/~%s/%s/%s' % (owner.name, product.name, name)))
         login(ANONYMOUS)
-        branch = self.branch_set.get(branch_id)
+        branch = self.branch_lookup.get(branch_id)
         self.assertEqual(owner, branch.owner)
         self.assertEqual(product, branch.product)
         self.assertEqual(name, branch.name)
@@ -539,7 +541,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
         branch_id = self.branchfs.createBranch(
             owner.id, escape('/~%s/%s/%s' % (owner.name, '+junk', name)))
         login(ANONYMOUS)
-        branch = self.branch_set.get(branch_id)
+        branch = self.branch_lookup.get(branch_id)
         self.assertEqual(owner, branch.owner)
         self.assertEqual(None, branch.product)
         self.assertEqual(name, branch.name)
@@ -547,16 +549,19 @@ class BranchFileSystemTest(TestCaseWithFactory):
         self.assertEqual(BranchType.HOSTED, branch.branch_type)
 
     def test_createBranch_team_junk(self):
-        # createBranch cannot create +junk branches on teams -- it raises
-        # PermissionDenied.
-        owner = self.factory.makePerson()
-        team = self.factory.makeTeam(owner)
+        # createBranch can create +junk branches on teams.
+        registrant = self.factory.makePerson()
+        team = self.factory.makeTeam(registrant)
         name = self.factory.getUniqueString()
-        fault = self.branchfs.createBranch(
-            owner.id, escape('/~%s/+junk/%s' % (team.name, name)))
-        expected_fault = faults.PermissionDenied(
-            BranchCreationNoTeamOwnedJunkBranches.error_message)
-        self.assertFaultEqual(expected_fault, fault)
+        branch_id = self.branchfs.createBranch(
+            registrant.id, escape('/~%s/+junk/%s' % (team.name, name)))
+        login(ANONYMOUS)
+        branch = self.branch_lookup.get(branch_id)
+        self.assertEqual(team, branch.owner)
+        self.assertEqual(None, branch.product)
+        self.assertEqual(name, branch.name)
+        self.assertEqual(registrant, branch.registrant)
+        self.assertEqual(BranchType.HOSTED, branch.branch_type)
 
     def test_createBranch_bad_product(self):
         # Creating a branch for a non-existant product fails.
@@ -636,7 +641,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
             branch_name)
         branch_id = self.branchfs.createBranch(owner.id, escape(unique_name))
         login(ANONYMOUS)
-        branch = self.branch_set.get(branch_id)
+        branch = self.branch_lookup.get(branch_id)
         self.assertEqual(owner, branch.owner)
         self.assertEqual(sourcepackage.distroseries, branch.distroseries)
         self.assertEqual(
@@ -739,7 +744,8 @@ class BranchFileSystemTest(TestCaseWithFactory):
         product = self.factory.makeProduct()
         branch = self.factory.makeProductBranch(private=private)
         self.factory.enableDefaultStackingForProduct(product, branch)
-        self.assertEqual(product.default_stacked_on_branch, branch)
+        target = IBranchTarget(removeSecurityProxy(product))
+        self.assertEqual(target.default_stacked_on_branch, branch)
         return product, branch
 
     def test_translatePath_cannot_translate(self):
@@ -931,9 +937,11 @@ class BranchFileSystemTest(TestCaseWithFactory):
             (BRANCH_TRANSPORT, {'id': branch.id, 'writable': False}, ''),
             translation)
 
-    def assertControlDirectory(self, unique_name, trailing_path, translation):
+    def assertTranslationIsControlDirectory(self, translation,
+                                            default_stacked_on,
+                                            trailing_path):
         """Assert that 'translation' points to the right control transport."""
-        unique_name = escape(u'/' + unique_name)
+        unique_name = escape(u'/' + default_stacked_on)
         expected_translation = (
             CONTROL_TRANSPORT,
             {'default_stack_on': unique_name}, trailing_path)
@@ -945,7 +953,10 @@ class BranchFileSystemTest(TestCaseWithFactory):
         path = escape(u'/~%s/%s/.bzr' % (requester.name, product.name))
         translation = self.branchfs.translatePath(requester.id, path)
         login(ANONYMOUS)
-        self.assertControlDirectory(branch.unique_name, '.bzr/', translation)
+        self.assertTranslationIsControlDirectory(
+            translation,
+            default_stacked_on=branch.unique_name,
+            trailing_path='.bzr')
 
     def test_translatePath_control_directory_no_stacked_set(self):
         # When there's no default stacked-on branch set for the project, we
@@ -968,7 +979,10 @@ class BranchFileSystemTest(TestCaseWithFactory):
         path = escape(u'/~%s/%s/.bzr/' % (requester.name, product.name))
         translation = self.branchfs.translatePath(requester.id, path)
         login(ANONYMOUS)
-        self.assertControlDirectory(branch.unique_name, '.bzr/', translation)
+        self.assertTranslationIsControlDirectory(
+            translation,
+            default_stacked_on=branch.unique_name,
+            trailing_path='.bzr')
 
     def test_translatePath_control_directory_other_owner(self):
         requester = self.factory.makePerson()
@@ -977,7 +991,36 @@ class BranchFileSystemTest(TestCaseWithFactory):
         path = escape(u'/~%s/%s/.bzr' % (owner.name, product.name))
         translation = self.branchfs.translatePath(requester.id, path)
         login(ANONYMOUS)
-        self.assertControlDirectory(branch.unique_name, '.bzr/', translation)
+        self.assertTranslationIsControlDirectory(
+            translation,
+            default_stacked_on=branch.unique_name,
+            trailing_path='.bzr')
+
+    def test_translatePath_control_directory_package_no_focus(self):
+        # If the package has no default stacked-on branch, then don't show the
+        # control directory.
+        requester = self.factory.makePerson()
+        package = self.factory.makeSourcePackage()
+        self.assertIs(None, IBranchTarget(package).default_stacked_on_branch)
+        path = '/~%s/%s/.bzr/' % (requester.name, package.path)
+        self.assertNotFound(requester, path)
+
+    def test_translatePath_control_directory_package(self):
+        # If the package has a default stacked-on branch, then show the
+        # control directory.
+        requester = self.factory.makePerson()
+        package = self.factory.makeSourcePackage()
+        branch = self.factory.makePackageBranch(sourcepackage=package)
+        self.factory.enableDefaultStackingForPackage(package, branch)
+        self.assertIsNot(
+            None, IBranchTarget(package).default_stacked_on_branch)
+        path = '/~%s/%s/.bzr/' % (requester.name, package.path)
+        translation = self.branchfs.translatePath(requester.id, path)
+        login(ANONYMOUS)
+        self.assertTranslationIsControlDirectory(
+            translation,
+            default_stacked_on=branch.unique_name,
+            trailing_path='.bzr')
 
 
 class TestIterateSplit(TestCase):
@@ -1023,14 +1066,14 @@ class LaunchpadDatabaseFrontend:
         """
         return LaunchpadObjectFactory()
 
-    def getBranchSet(self):
-        """Return an implementation of `IBranchSet`.
+    def getBranchLookup(self):
+        """Return an implementation of `IBranchLookup`.
 
         Tests should use this to get the branch set they need, rather than
         using 'getUtility(IBranchSet)'. This allows in-memory implementations
         to work correctly.
         """
-        return getUtility(IBranchSet)
+        return getUtility(IBranchLookup)
 
     def getLastActivity(self, activity_name):
         """Get the last script activity with 'activity_name'."""

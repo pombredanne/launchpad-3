@@ -15,21 +15,28 @@ import os
 from zope.component import getUtility
 from zope.interface import Interface, implements
 
+from lazr.uri import URI
+
 from canonical.config import config
 from canonical.launchpad.interfaces import (
     BranchCreationException, BranchCreationForbidden, BranchType, IBranch,
-    IBranchSet, IBugSet, ILaunchBag, IPersonSet, IProductSet, NotFoundError)
+    IBugSet, ILaunchBag, IPersonSet, IProductSet, NotFoundError)
 from canonical.launchpad.interfaces.branch import NoSuchBranch
-from canonical.launchpad.interfaces.distribution import IDistribution
-from canonical.launchpad.interfaces.person import NoSuchPerson
-from canonical.launchpad.interfaces.pillar import IPillarNameSet
-from canonical.launchpad.interfaces.product import NoSuchProduct
-from canonical.launchpad.interfaces.project import IProject
+from canonical.launchpad.interfaces.branchlookup import (
+    CannotHaveLinkedBranch, IBranchLookup, NoLinkedBranch)
+from canonical.launchpad.interfaces.branchnamespace import (
+    get_branch_namespace, InvalidNamespace)
+from lp.registry.interfaces.distroseries import NoSuchDistroSeries
+from lp.registry.interfaces.person import NoSuchPerson
+from lp.registry.interfaces.product import (
+    InvalidProductName, NoSuchProduct)
+from lp.registry.interfaces.productseries import NoSuchProductSeries
+from lp.registry.interfaces.sourcepackagename import (
+    NoSuchSourcePackageName)
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp import LaunchpadXMLRPCView, canonical_url
-from canonical.launchpad.webapp.authorization import check_permission
-from lazr.uri import URI
 from canonical.launchpad.xmlrpc import faults
+from canonical.launchpad.xmlrpc.helpers import return_fault
 
 
 class IBranchSetAPI(Interface):
@@ -83,8 +90,8 @@ class BranchSetAPI(LaunchpadXMLRPCView):
         # slashes from the end of the URL.
         branch_url = branch_url.rstrip('/')
 
-        branch_set = getUtility(IBranchSet)
-        existing_branch = branch_set.getByUrl(branch_url)
+        branch_lookup = getUtility(IBranchLookup)
+        existing_branch = branch_lookup.getByUrl(branch_url)
         if existing_branch is not None:
             return faults.BranchAlreadyRegistered(branch_url)
 
@@ -108,10 +115,11 @@ class BranchSetAPI(LaunchpadXMLRPCView):
                 branch_type = BranchType.MIRRORED
             else:
                 branch_type = BranchType.HOSTED
-            branch = branch_set.new(
+            namespace = get_branch_namespace(owner, product)
+            branch = namespace.createBranch(
                 branch_type=branch_type,
-                name=branch_name, registrant=registrant, owner=owner,
-                product=product, url=branch_url, title=branch_title,
+                name=branch_name, registrant=registrant,
+                url=branch_url, title=branch_title,
                 summary=branch_description)
             if branch_type == BranchType.MIRRORED:
                 branch.requestMirror()
@@ -126,7 +134,7 @@ class BranchSetAPI(LaunchpadXMLRPCView):
 
     def link_branch_to_bug(self, branch_url, bug_id, whiteboard):
         """See IBranchSetAPI."""
-        branch = getUtility(IBranchSet).getByUrl(url=branch_url)
+        branch = getUtility(IBranchLookup).getByUrl(url=branch_url)
         if branch is None:
             return faults.NoSuchBranch(branch_url)
         try:
@@ -204,38 +212,49 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
                 str(URI(host=host, scheme=scheme, path=path)))
         return result
 
-    def resolve_lp_path(self, path):
+    @return_fault
+    def _resolve_lp_path(self, path):
         """See `IPublicCodehostingAPI`."""
+        # Separate method because Zope's mapply raises errors if we use
+        # decorators in XMLRPC methods. mapply checks that the passed
+        # arguments match the formal parameters. Decorators normally have
+        # *args and **kwargs, which mapply fails on.
         strip_path = path.strip('/')
         if strip_path == '':
-            return faults.InvalidBranchIdentifier(path)
-        branch_set = getUtility(IBranchSet)
+            raise faults.InvalidBranchIdentifier(path)
+        branch_set = getUtility(IBranchLookup)
         try:
-            branch, suffix, series = branch_set.getByLPPath(strip_path)
-            if not check_permission('launchpad.View', branch):
-                if series is None:
-                    raise NoSuchBranch(strip_path)
-                else:
-                    raise faults.NoBranchForSeries(series)
+            branch, suffix = branch_set.getByLPPath(strip_path)
         except NoSuchBranch:
+            # If the branch isn't found, but it looks like a valid name, then
+            # resolve it anyway, treating the path like a branch's unique
+            # name. This lets people push new branches up to Launchpad using
+            # lp: URL syntax.
             return self._getUniqueNameResultDict(strip_path)
-        except NoSuchProduct, e:
-            product_name = e.name
-            pillar = getUtility(IPillarNameSet).getByName(product_name)
-            if pillar:
-                if IProject.providedBy(pillar):
-                    pillar_type = 'project group'
-                elif IDistribution.providedBy(pillar):
-                    pillar_type = 'distribution'
-                else:
-                    raise AssertionError(
-                        "pillar of unknown type %s" % pillar)
-                return faults.NoDefaultBranchForPillar(
-                    product_name, pillar_type)
-            else:
-                return faults.NoSuchProduct(product_name)
+        # XXX: JonathanLange 2009-03-21 bug=347728: All of this is repetitive
+        # and thus error prone. Alternatives are directly raising faults from
+        # the model code(blech) or some automated way of reraising as faults
+        # or using a narrower range of faults (e.g. only one "NoSuch" fault).
+        except InvalidProductName, e:
+            raise faults.InvalidProductIdentifier(e.name)
+        except NoSuchProductSeries, e:
+            raise faults.NoSuchProductSeries(e.name, e.product)
         except NoSuchPerson, e:
-            return faults.NoSuchPersonWithName(e.name)
-        except faults.LaunchpadFault, e:
-            return e
+            raise faults.NoSuchPersonWithName(e.name)
+        except NoSuchProduct, e:
+            raise faults.NoSuchProduct(e.name)
+        except NoSuchDistroSeries, e:
+            raise faults.NoSuchDistroSeries(e.name)
+        except NoSuchSourcePackageName, e:
+            raise faults.NoSuchSourcePackageName(e.name)
+        except NoLinkedBranch, e:
+            raise faults.NoLinkedBranch(e.component)
+        except CannotHaveLinkedBranch, e:
+            raise faults.CannotHaveLinkedBranch(e.component)
+        except InvalidNamespace, e:
+            raise faults.InvalidBranchUniqueName(e.name)
         return self._getResultDict(branch, suffix)
+
+    def resolve_lp_path(self, path):
+        """See `IPublicCodehostingAPI`."""
+        return self._resolve_lp_path(path)
