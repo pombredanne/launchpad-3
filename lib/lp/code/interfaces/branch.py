@@ -791,8 +791,7 @@ class IBranch(IHasOwner, IHasBranchTarget):
     revision_count = exported(
         Int(
             title=_("Revision count"), readonly=True,
-            description=_("The revision number of the tip of the branch.")
-            ))
+            description=_("The revision number of the tip of the branch.")))
 
     stacked_on = Attribute('Stacked-on branch')
 
@@ -813,6 +812,9 @@ class IBranch(IHasOwner, IHasBranchTarget):
     # Specification attributes
     spec_links = Attribute("Specifications linked to this branch")
 
+    pending_writes = Attribute(
+        "Whether there is new Bazaar data for this branch.")
+
     # Joins
     revision_history = Attribute(
         """The sequence of BranchRevision for the mainline of that branch.
@@ -827,6 +829,7 @@ class IBranch(IHasOwner, IHasBranchTarget):
             title=_("BranchSubscriptions associated to this branch."),
             readonly=True,
             value_type=Reference(Interface))) # Really IBranchSubscription
+
     subscribers = exported(
         CollectionField(
             title=_("Persons subscribed to this branch."),

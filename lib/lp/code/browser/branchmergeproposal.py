@@ -232,6 +232,11 @@ class UnmergedRevisionsMixin:
         return self.context.getUnlandedSourceBranchRevisions()
 
     @property
+    def pending_writes(self):
+        """Needed to make the branch-revisions metal macro work."""
+        return False
+
+    @property
     def codebrowse_url(self):
         """Return the link to codebrowse for this branch."""
         return self.context.source_branch.codebrowse_url()

@@ -169,14 +169,14 @@ class HasLinkedBranch:
 @implementer(ICanHasLinkedBranch)
 def product_series_linked_branch(product_series):
     """The series branch of a product series is its linked branch."""
-    return HasLinkedBranch(product_series.series_branch)
+    return HasLinkedBranch(product_series.branch)
 
 
 @adapter(IProduct)
 @implementer(ICanHasLinkedBranch)
 def product_linked_branch(product):
     """The series branch of a product's development focus is its branch."""
-    return HasLinkedBranch(product.development_focus.series_branch)
+    return HasLinkedBranch(product.development_focus.branch)
 
 
 sm = getSiteManager()

@@ -818,8 +818,9 @@ class PersonBranchesMenu(ApplicationMenu, PersonBranchCountMixin):
             enabled = False
         else:
             enabled = self.user.inTeam(self.context)
-        text = 'Register branch'
-        return Link('+addbranch', text, icon='add', enabled=enabled)
+        text = 'Register a branch'
+        summary = 'Register a new Bazaar branch'
+        return Link('+addbranch', text, summary, icon='add', enabled=enabled)
 
     def requested_reviews(self):
         text = get_plural_text(

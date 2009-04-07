@@ -155,7 +155,7 @@ class TestProductBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
         self.assertIs(None, target.default_stacked_on_branch)
 
     def _setDevelopmentFocus(self, product, branch):
-        removeSecurityProxy(product).development_focus.user_branch = branch
+        removeSecurityProxy(product).development_focus.branch = branch
 
     def test_default_stacked_on_branch_unmirrored_dev_focus(self):
         # If the development focus hasn't been mirrored, then don't use it as

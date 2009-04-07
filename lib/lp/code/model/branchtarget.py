@@ -147,8 +147,7 @@ class ProductBranchTarget(_BaseBranchTarget):
     @property
     def default_stacked_on_branch(self):
         """See `IBranchTarget`."""
-        return check_default_stacked_on(
-            self.product.development_focus.series_branch)
+        return check_default_stacked_on(self.product.development_focus.branch)
 
     def getNamespace(self, owner):
         """See `IBranchTarget`."""

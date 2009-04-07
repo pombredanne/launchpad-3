@@ -326,6 +326,11 @@ class BranchView(LaunchpadView, FeedsMixin):
         """Return the link to codebrowse for this branch."""
         return self.context.codebrowse_url()
 
+    @property
+    def pending_writes(self):
+        """Whether or not there are pending writes for this branch."""
+        return self.context.pending_writes
+
     def bzr_download_url(self):
         """Return the generic URL for downloading the branch."""
         if self.user_can_download():

@@ -469,7 +469,7 @@ class TestGetByLPPath(TestCaseWithFactory):
         # weren't there at all.
         branch = self.factory.makeProductBranch(private=True)
         product = removeSecurityProxy(branch).product
-        removeSecurityProxy(product).development_focus.user_branch = branch
+        removeSecurityProxy(product).development_focus.branch = branch
         self.assertRaises(
             NoLinkedBranch, self.branch_lookup.getByLPPath, product.name)
 
@@ -517,7 +517,7 @@ class TestGetByLPPath(TestCaseWithFactory):
         # branch.
         branch = self.factory.makeProductBranch()
         product = removeSecurityProxy(branch.product)
-        product.development_focus.user_branch = branch
+        product.development_focus.branch = branch
         self.assertRaises(
             NoSuchProductSeries,
             self.branch_lookup.getByLPPath, '%s/other/bits' % product.name)
@@ -529,7 +529,7 @@ class TestGetByLPPath(TestCaseWithFactory):
         # change this behaviour in future.
         series = self.factory.makeSeries()
         branch = self.factory.makeProductBranch(series.product)
-        series.user_branch = branch
+        series.branch = branch
         result = self.branch_lookup.getByLPPath(
             '%s/%s/other/bits' % (series.product.name, series.name))
         self.assertEqual((branch, None), result)

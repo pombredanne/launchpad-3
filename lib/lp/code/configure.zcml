@@ -445,7 +445,9 @@
                 sourcepackage
                 codebrowse_url
                 merge_queue
-                namespace"/>
+                namespace
+                pending_writes
+                "/>
         <require
             permission="launchpad.Edit"
             attributes="

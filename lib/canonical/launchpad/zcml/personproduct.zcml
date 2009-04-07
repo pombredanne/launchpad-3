@@ -41,7 +41,7 @@
       permission="zope.Public"
       facet="branches"
       name="+branches"
-      template="../templates/person-branches.pt"
+      template="../templates/personproduct-branches.pt"
       />
 
   <browser:page
