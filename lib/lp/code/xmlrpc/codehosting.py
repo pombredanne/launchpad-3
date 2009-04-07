@@ -28,6 +28,7 @@ from lp.code.interfaces.branch import (
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.branchnamespace import (
     InvalidNamespace, lookup_branch_namespace, split_unique_name)
+from lp.code.interfaces import branchpuller
 from lp.code.interfaces.codehosting import (
     BRANCH_TRANSPORT, CONTROL_TRANSPORT, IBranchFileSystem, IBranchPuller,
     LAUNCHPAD_ANONYMOUS, LAUNCHPAD_SERVICES)
