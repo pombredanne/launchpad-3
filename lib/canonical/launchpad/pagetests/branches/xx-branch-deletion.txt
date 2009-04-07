@@ -6,7 +6,7 @@ branches that have been created in error.
 
     >>> browser = setupBrowser(auth="Basic test@canonical.com:test")
     >>> browser.open('http://code.launchpad.dev/~name12')
-    >>> browser.getLink(id="register-branch").click()
+    >>> browser.getLink("Register a branch").click()
     >>> browser.getControl('Project').value = 'firefox'
     >>> browser.getControl('Branch URL').value = 'http://foo.bar.com/oops'
     >>> browser.getControl('Name').value = 'to-delete'
@@ -25,7 +25,7 @@ delete the branch.
 
     >>> delete_link.click()
     >>> print extract_text(find_main_content(browser.contents))
-    Last modified ...
+    Created by Sample Person ...
     lp://dev/~name12/firefox/to-delete
     ...
     Delete branch
@@ -47,7 +47,7 @@ If the branch is junk, then the user is taken back to the code listing for
 the deleted branch's owner.
 
     >>> browser.open('http://code.launchpad.dev/~name12')
-    >>> browser.getLink(id="register-branch").click()
+    >>> browser.getLink("Register a branch").click()
     >>> browser.getControl('Hosted').click()
     >>> browser.getControl('Name').value = 'to-delete'
     >>> browser.getControl('Register Branch').click()
@@ -72,6 +72,6 @@ Even if you are an admin.
     >>> admin_browser.open(branch_location)
     >>> admin_browser.getLink('Delete branch').click()
     >>> print extract_text(find_main_content(admin_browser.contents))
-    Last modified ...
+    Created by ...
     Delete branch
     This branch cannot be deleted as it has 1 branch sharing revisions.

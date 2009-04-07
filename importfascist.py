@@ -28,9 +28,9 @@ permitted_database_imports = text_lines_to_set("""
     canonical.codehosting.inmemory
     canonical.launchpad.browser.branchlisting
     canonical.launchpad.feed.branch
+    canonical.launchpad.interfaces.person
     canonical.launchpad.scripts.garbo
     canonical.launchpad.scripts.librarian_apache_log_parser
-    canonical.launchpad.validators.person
     canonical.launchpad.vocabularies.dbobjects
     canonical.librarian.client
     canonical.librarian.db

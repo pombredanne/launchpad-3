@@ -39,8 +39,8 @@ from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice
 from canonical.launchpad.interfaces import IHasOwner
 from canonical.launchpad.interfaces.buildrecords import IHasBuildRecords
-from canonical.launchpad.interfaces.gpg import IGPGKey
-from canonical.launchpad.interfaces.person import IPerson
+from lp.registry.interfaces.gpg import IGPGKey
+from lp.registry.interfaces.person import IPerson
 from canonical.launchpad.validators.name import name_validator
 
 from canonical.lazr.fields import Reference
@@ -823,7 +823,7 @@ class IPPAActivateForm(Interface):
     """Schema used to activate PPAs."""
 
     name = TextLine(
-        title=_("PPA name"), required=True,
+        title=_("PPA name"), required=True, constraint=name_validator,
         description=_("A unique name used to identify this PPA."))
 
     description = Text(
@@ -1057,7 +1057,7 @@ from canonical.launchpad.components.apihelpers import (
     patch_plain_parameter_type, patch_choice_parameter_type,
     patch_reference_property)
 
-from canonical.launchpad.interfaces.distribution import IDistribution
+from lp.registry.interfaces.distribution import IDistribution
 patch_reference_property(IArchive, 'distribution', IDistribution)
 
 from canonical.launchpad.interfaces.archivepermission import (
@@ -1078,7 +1078,7 @@ patch_entry_return_type(IArchive, 'newQueueAdmin', IArchivePermission)
 patch_plain_parameter_type(IArchive, 'syncSources', 'from_archive', IArchive)
 patch_plain_parameter_type(IArchive, 'syncSource', 'from_archive', IArchive)
 
-from canonical.launchpad.interfaces.distroseries import IDistroSeries
+from lp.registry.interfaces.distroseries import IDistroSeries
 from canonical.launchpad.interfaces.publishing import (
     ISourcePackagePublishingHistory, PackagePublishingPocket,
     PackagePublishingStatus)
@@ -1093,6 +1093,6 @@ patch_choice_parameter_type(
 
 # This is patched here to avoid even more circular imports in
 # interfaces/person.py.
-from canonical.launchpad.interfaces.person import IPersonPublic
+from lp.registry.interfaces.person import IPersonPublic
 patch_reference_property(IPersonPublic, 'archive', IArchive)
 

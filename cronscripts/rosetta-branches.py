@@ -18,12 +18,14 @@ from canonical.codehosting.vfs.branchfs import get_scanner_server
 from canonical.codehosting.jobs import JobRunner
 from canonical.launchpad.interfaces.branchjob import IRosettaUploadJobSource
 from canonical.launchpad.scripts.base import LaunchpadCronScript
+from canonical.launchpad.webapp.errorlog import globalErrorUtility
 
 
 class RunRosettaBranchJobs(LaunchpadCronScript):
     """Run pending branch translations jobs."""
 
     def main(self):
+        globalErrorUtility.configure('rosettabranches')
         runner = JobRunner.fromReady(getUtility(IRosettaUploadJobSource))
         server = get_scanner_server()
         server.setUp()
@@ -36,6 +38,6 @@ class RunRosettaBranchJobs(LaunchpadCronScript):
 
 
 if __name__ == '__main__':
-    script = RunRosettaBranchJobs('rosettabranch',
-                                  config.branchscanner.dbuser)
+    script = RunRosettaBranchJobs('rosettabranches',
+                                  config.rosettabranches.dbuser)
     script.lock_and_run()

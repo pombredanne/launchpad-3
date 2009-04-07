@@ -26,7 +26,7 @@ from zope.interface import classProvides, implements
 from canonical.launchpad.database.branch import Branch
 from canonical.launchpad.database.diff import StaticDiff
 from canonical.launchpad.database.job import Job
-from canonical.launchpad.database.productseries import ProductSeries
+from lp.registry.model.productseries import ProductSeries
 from canonical.launchpad.database.translationbranchapprover import (
     TranslationBranchApprover)
 from canonical.launchpad.interfaces import (

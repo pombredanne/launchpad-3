@@ -317,7 +317,7 @@ modify tables in the lpmain replication set.
     >>> from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
     >>> getUtility(IStoreSelector).push(MasterDatabasePolicy())
 
-    >>> from canonical.launchpad.interfaces.person import (
+    >>> from lp.registry.interfaces.person import (
     ...     PersonCreationRationale)
     >>> fresh_account, email = account_set.createAccountAndEmail(
     ...     'foo@example.com',

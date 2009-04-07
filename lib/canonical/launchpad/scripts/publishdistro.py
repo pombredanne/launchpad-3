@@ -15,7 +15,7 @@ from canonical.database.sqlbase import (
     clear_current_connection_cache, flush_database_updates)
 from canonical.launchpad.interfaces.archive import (
     ArchivePurpose, MAIN_ARCHIVE_PURPOSES)
-from canonical.launchpad.interfaces.distribution import IDistributionSet
+from lp.registry.interfaces.distribution import IDistributionSet
 from canonical.launchpad.scripts import logger, logger_options
 from canonical.launchpad.scripts.base import LaunchpadScriptFailure
 from canonical.launchpad.webapp.interfaces import NotFoundError

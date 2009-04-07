@@ -4,15 +4,17 @@
 
 __metaclass__ = type
 
+from datetime import datetime
 import unittest
 
+import pytz
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.database.branch import Branch
 from canonical.launchpad.database.branchcollection import (
     GenericBranchCollection)
-from canonical.launchpad.database.product import Product
+from lp.registry.model.product import Product
 from canonical.launchpad.interfaces import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.branch import (
     BranchLifecycleStatus, BranchType)
@@ -264,6 +266,16 @@ class TestBranchCollectionFilters(TestCaseWithFactory):
         unscanned_branch = self.factory.makeAnyBranch()
         branches = self.all_branches.scanned()
         self.assertEqual([scanned_branch], list(branches.getBranches()))
+
+    def test_modifiedSince(self):
+        # Only branches modified since the time specified will be returned.
+        old_branch = self.factory.makeAnyBranch()
+        old_branch.date_last_modified = datetime(2008, 1, 1, tzinfo=pytz.UTC)
+        new_branch = self.factory.makeAnyBranch()
+        new_branch.date_last_modified=datetime(2009, 1, 1, tzinfo=pytz.UTC)
+        branches = self.all_branches.modifiedSince(
+            datetime(2008, 6, 1, tzinfo=pytz.UTC))
+        self.assertEqual([new_branch], list(branches.getBranches()))
 
 
 class TestGenericBranchCollectionVisibleFilter(TestCaseWithFactory):
