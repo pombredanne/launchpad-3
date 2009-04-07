@@ -29,6 +29,8 @@ from twisted.cred.checkers import ICredentialsChecker
 from twisted.cred import credentials
 from twisted.cred.portal import IRealm, Portal
 
+from twisted.internet import defer
+
 from twisted.python import components, failure
 
 from zope.event import notify
@@ -90,7 +92,7 @@ class Realm:
     def requestAvatar(self, avatarId, mind, *interfaces):
         # Fetch the user's details from the authserver -- YYY using the mind
         # as a some kind of key as a cache.
-        deferred = self.authentication_proxy.callRemote('getUser', avatarId)
+        deferred = mind.lookup(self.authentication_proxy, avatarId)
 
         # Once all those details are retrieved, we can construct the avatar.
         def gotUserDict(userDict):
@@ -99,11 +101,46 @@ class Realm:
         return deferred.addCallback(gotUserDict)
 
 
+class ISSHPrivateKeyWithMind(credentials.ISSHPrivateKey):
+    pass
+
+
+class SSHPrivateKeyWithMind(credentials.SSHPrivateKey):
+    implements(ISSHPrivateKeyWithMind)
+    def __init__(self, username, algName, blob, sigData, signature, mind):
+        credentials.SSHPrivateKey.__init__(
+            self, username, algName, blob, sigData, signature)
+        self.mind = mind
+
+
+interfaceToMethod = userauth.SSHUserAuthServer.interfaceToMethod.copy()
+interfaceToMethod.update({
+    ISSHPrivateKeyWithMind : 'publickey',
+    })
+
+
+class UserDetailsMind:
+    def __init__(self, cache):
+        self.cache = cache
+    def lookup(self, proxy, username):
+        if username in self.cache:
+            return defer.succeed(self.cache[username])
+        else:
+            d = proxy.callRemote('getUserAndSSHKeys', username)
+            d.addCallback(self._add_to_cache, username)
+            return d
+    def _add_to_cache(self, result, username):
+        self.cache[username] = result
+        return result
+
+
 class SSHUserAuthServer(userauth.SSHUserAuthServer):
+    interfaceToMethod = interfaceToMethod
 
     def __init__(self, transport=None):
         self.transport = transport
         self._configured_banner_sent = False
+        self._userdetails_cache = {}
 
     def sendBanner(self, text, language='en'):
         bytes = '\r\n'.join(text.encode('UTF8').splitlines() + [''])
@@ -159,19 +196,18 @@ class SSHUserAuthServer(userauth.SSHUserAuthServer):
         algName, blob, rest = getNS(packet[1:], 2)
         pubKey = keys.Key.fromString(blob).keyObject
         signature = hasSig and getNS(rest)[0] or None
+        mind = UserDetailsMind(self._userdetails_cache)
         if hasSig:
             b = NS(self.transport.sessionID) + chr(userauth.MSG_USERAUTH_REQUEST) + \
                 NS(self.user) + NS(self.nextService) + NS('publickey') + \
                 chr(hasSig) +  NS(keys.objectType(pubKey)) + NS(blob)
-            # YYY Create our own kind of credential here.
-            c = credentials.SSHPrivateKey(self.user, algName, blob, b, signature)
-            # Pass something useful in as the mind.
-            return self.portal.login(c, None, IConchUser)
+            c = SSHPrivateKeyWithMind(
+                self.user, algName, blob, b, signature, mind)
+            return self.portal.login(c, mind, IConchUser)
         else:
-            # YYY Create our own kind of credential here.
-            c = credentials.SSHPrivateKey(self.user, algName, blob, None, None)
-            # Pass something useful in as the mind.
-            return self.portal.login(c, None, IConchUser).addErrback(
+            c = SSHPrivateKeyWithMind(
+                self.user, algName, blob, None, None, mind)
+            return self.portal.login(c, mind, IConchUser).addErrback(
                                                         self._ebCheckKey,
                                                         packet[1:])
 
@@ -181,16 +217,14 @@ class PublicKeyFromLaunchpadChecker(SSHPublicKeyDatabase):
 
     It knows how to get the public keys from the authserver.
     """
+    credentialInterfaces = ISSHPrivateKeyWithMind,
     implements(ICredentialsChecker)
 
     def __init__(self, authserver):
         self.authserver = authserver
 
     def checkKey(self, credentials):
-        # YYY Use some part of credentials as the key into a cache for these
-        # results.
-        d = self.authserver.callRemote(
-            'getUserAndSSHKeys', credentials.username)
+        d = credentials.mind.lookup(self.authserver, credentials.username)
         d.addCallback(self._checkForAuthorizedKey, credentials)
         d.addErrback(self._reportNoSuchUser, credentials)
         return d
