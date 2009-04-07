@@ -72,6 +72,9 @@ def do_paranoid_email_content_validation(from_addr, to_addrs, subject, body):
     for addr in to_addrs:
         assert zisinstance(addr, basestring) and bool(addr), \
                 'Invalid recipient: %r in %r' % (addr, to_addrs)
+        assert '\n' not in addr, (
+            "Address contain carriage returns: %r" % (addr,))
+
 
 def format_address(name, address):
     r"""Formats a name and address to be used as an email header.
