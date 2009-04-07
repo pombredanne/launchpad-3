@@ -1035,69 +1035,6 @@ for a Person:
     Japanese (ja) tran... of evolution-2.2 in Ubuntu Hoary package "evolution"
     Spanish (es) trans... of evolution-2.2 in Ubuntu Hoary package "evolution"
 
-The IPersonSet component contains a few convenience methods to return
-Person objects that have contributed translations.
-
-    >>> from canonical.launchpad.database import POFile
-    >>> pofile = POFile.get(12)
-    >>> [p.name for p in personset.getPOFileContributors(pofile)]
-    [u'carlos', u'name16', u'tsukimi']
-
-getPOFileContributorsByDistroSeries gives the list of people that did
-contributions to templates that are current in the given IDistroSeries
-and ILanguage.
-
-    >>> from canonical.launchpad.database import DistroSeries, Language
-    >>> hoary = DistroSeries.selectOneBy(name="hoary")
-    >>> spanish = Language.selectOneBy(code="es")
-    >>> [p.name for p in personset.getPOFileContributorsByDistroSeries(
-    ...     hoary, spanish)]
-    [u'jorge-gonzalez-gonzalez', u'carlos', u'valyag', u'danner', u'name16',
-     u'name12', u'tsukimi']
-
-    # We can see that there is another translator that doesn't appear in
-    # previous list because the template he translated is not current.
-
-    >>> non_current_pofile = POFile.get(31)
-    >>> non_current_pofile.potemplate.iscurrent
-    False
-
-    >>> [p.name for p in personset.getPOFileContributors(non_current_pofile)]
-    [u'jordi']
-
-    >>> non_current_pofile.potemplate.distroseries == hoary
-    True
-
-    >>> non_current_pofile.language == spanish
-    True
-
-
-=== Translators for a given language ===
-
-We can get the list of translators that did some translation in
-Launchpad and expressed their interest for a concrete language.
-
-    # Sample data is not complete for this test, so we need to note that
-    # another Spanish translator expressed its interest on doing Spanish
-    # translations.  That other person is Foo Bar (name16).
-
-    >>> personset = getUtility(IPersonSet)
-    >>> foo_bar = personset.getByName('name16')
-    >>> print foo_bar.displayname
-    Foo Bar
-
-    >>> spanish = languageset.getLanguageByCode('es')
-    >>> foo_bar.addLanguage(spanish)
-    >>> translators = personset.getTranslatorsByLanguage(spanish)
-    >>> for translator in translators:
-    ...     karma = 0
-    ...     for karma_category_cache in translator.karma_category_caches:
-    ...         if (karma_category_cache.category.name == 'translations'):
-    ...             karma = karma_category_cache.karmavalue
-    ...     print (translator.displayname, karma)
-    (u'Foo Bar', 164)
-    (u'Carlos Perell\xf3 Mar\xedn', 9)
-
 
 == Specification Lists ==
 

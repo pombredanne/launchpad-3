@@ -21,7 +21,7 @@ automatically.
     >>> browser.getLink('Configure mailing list').click()
     >>> browser.getControl('Apply for Mailing List').click()
 
-    >>> from canonical.launchpad.mailman.testing import helpers
+    >>> from lp.services.mailman.testing import helpers
     >>> list_one = helpers.review_list('itest-one')
 
 

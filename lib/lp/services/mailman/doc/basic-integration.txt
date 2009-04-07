@@ -9,7 +9,7 @@ if the site list is set up correctly, otherwise it returns 1.
     >>> from canonical.config import config
     >>> from canonical.launchpad.mailman.config import configure_prefix
     >>> def withlist(callable, *options):
-    ...     callable_path = 'canonical.launchpad.mailman.testing.' + callable
+    ...     callable_path = 'lp.services.mailman.testing.' + callable
     ...     args = ' '.join(options)
     ...     site_list = 'unused_mailman_site_list'
     ...     prefix_path = configure_prefix(config.mailman.build_prefix)
