@@ -234,7 +234,8 @@ def main():
 
     # Don't be stupid protection.
     if database in ('template1', 'template0'):
-        parser.error("Put the gun down and back away from the vehicle!")
+        parser.error(
+            "Running this script against template1 or template0 is nuts.")
 
     con = connect()
     cur = con.cursor()
