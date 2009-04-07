@@ -27,7 +27,7 @@ from canonical.launchpad.interfaces.distroarchseries import IDistroArchSeries
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 from canonical.launchpad.interfaces.processor import IProcessor
 from canonical.launchpad.interfaces.publishing import (
-    PackagePublishingPocket)
+    PackagePublishingPocket, ISourcePackagePublishingHistory)
 from canonical.launchpad.interfaces.sourcepackagerelease import (
     ISourcePackageRelease)
 from canonical.lazr.fields import Reference
@@ -219,6 +219,13 @@ class IBuild(Interface):
                           "Will be None if there was no failure.")))
 
     # Properties
+    current_source_publication = exported(
+        Reference(
+            title=_("Source publication"),
+            schema=ISourcePackagePublishingHistory,
+            required=False, readonly=True,
+            description=_("The current source publication for this build.")))
+
     current_component = Attribute(
         "Component where the ISourcePackageRelease related to "
         "this build was published.")
@@ -425,9 +432,6 @@ class IBuildSet(Interface):
         records in the given architecture and those with all dependencies
         satisfied at this point will be automatically retried and re-scored.
         """
-
-    def getCurrentPublication():
-        """Return the publishing record for this build."""
 
     def getBuildsBySourcePackageRelease(sourcepackagerelease_ids,
                                         buildstate=None):

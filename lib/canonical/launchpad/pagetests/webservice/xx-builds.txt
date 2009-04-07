@@ -33,6 +33,7 @@ of properties:
     archive_link: u'http://.../~cprov/+archive/ppa'
     build_log_url: u'http://.../~cprov/+archive/ppa/+build/26/+files/netapplet-1.0.0.tar.gz'
     buildstate: u'Failed to build'
+    current_source_publication_link: u'http://.../~cprov/+archive/ppa/+sourcepub/27'
     date_first_dispatched: None
     datebuilt: u'2007-07-08T00:00:01+00:00'
     datecreated: u'2007-07-08T00:00:00+00:00'
