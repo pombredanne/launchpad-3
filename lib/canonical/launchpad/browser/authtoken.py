@@ -37,9 +37,8 @@ from canonical.launchpad.interfaces.authtoken import (
 from canonical.launchpad.interfaces.emailaddress import (
     EmailAddressStatus, IEmailAddressSet)
 from canonical.launchpad.interfaces.launchpad import UnexpectedFormData
-from canonical.launchpad.interfaces.lpstorm import IMasterObject
 from canonical.launchpad.interfaces.openidserver import IOpenIDRPConfigSet
-from canonical.launchpad.interfaces.person import (
+from lp.registry.interfaces.person import (
     INewPersonForm, IPerson, IPersonSet, PersonCreationRationale)
 from canonical.launchpad.interfaces.shipit import ShipItConstants
 
@@ -194,7 +193,7 @@ class ResetPasswordView(BaseAuthTokenView, LaunchpadFormView):
     @action(_('Continue'), name='continue')
     def continue_action(self, action, data):
         """Reset the user's password. When password is successfully changed,
-        the LoginToken (self.context) used is consumed, so nobody can use
+        the AuthToken (self.context) used is consumed, so nobody can use
         it again.
         """
         emailaddress = getUtility(IEmailAddressSet).getByEmail(
@@ -218,14 +217,7 @@ class ResetPasswordView(BaseAuthTokenView, LaunchpadFormView):
         else:
             naked_account.password = data.get('password')
 
-        person = IMasterObject(self.context.requester, None)
-        # Make sure this person has a preferred email address.
-        if person is not None and person.preferredemail != emailaddress:
-            # Must remove the security proxy of the email address because
-            # the user is not logged in at this point and we may need to
-            # change its status.
-            removeSecurityProxy(person).validateAndEnsurePreferredEmail(
-                removeSecurityProxy(emailaddress))
+        person = self.context.requester
 
         if self.context.redirection_url is not None:
             self.next_url = self.context.redirection_url
@@ -385,7 +377,15 @@ class NewAccountView(BaseAuthTokenView, LaunchpadFormView):
             self.next_url = self.context.redirection_url
         elif self.account is not None:
             # User is logged in, redirect to his home page.
-            self.next_url = canonical_url(IPerson(self.account))
+            person = IPerson(self.account, None)
+            # XXX: salgado, 2009-04-02: We shouldn't reach this path when
+            # self.account is a personless account, but unfortunately our
+            # OpenID server doesn't store a fallback redirection_url in the
+            # AuthTokens it creates (bug=353974), so we need this hack here.
+            if person is None:
+                self.next_url = self.request.getApplicationURL()
+            else:
+                self.next_url = canonical_url(person)
         elif self.created_person is not None:
             # User is not logged in, redirect to the created person's home
             # page.

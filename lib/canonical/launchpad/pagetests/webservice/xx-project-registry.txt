@@ -70,6 +70,7 @@ Project groups are available at their canonical URL on the API virtual host.
     logo_link: u'http://.../mozilla/logo'
     mugshot_link: u'http://.../mozilla/mugshot'
     name: u'mozilla'
+    official_bug_tags: []
     owner_link: u'http://.../~name12'
     projects_collection_link: u'http://.../mozilla/projects'
     registrant_link: u'http://.../~name12'
@@ -130,6 +131,7 @@ Projects are available at their canonical URL on the API virtual host.
     licenses: []
     logo_link: u'http://.../firefox/logo'
     name: u'firefox'
+    official_bug_tags: []
     owner_link: u'http://.../~name12'
     programming_language: None
     project_group_link: u'http://.../mozilla'
@@ -178,6 +180,7 @@ several that are not available to non-privileged users marked as
     licenses: []
     logo_link: u'http://.../firefox/logo'
     name: u'firefox'
+    official_bug_tags: []
     owner_link: u'http://.../~name12'
     programming_language: None
     project_group_link: u'http://.../mozilla'
@@ -632,6 +635,7 @@ virtual host.
     driver_link: None
     drivers_collection_link: u'http://.../babadoo/foobadoo/drivers'
     name: u'foobadoo'
+    official_bug_tags: []
     owner_link: u'http://.../~person-name8'
     project_link: u'http://.../babadoo'
     releases_collection_link: u'http://.../babadoo/foobadoo/releases'
@@ -779,6 +783,7 @@ host.
     date_targeted: u'2056-10-16T18:31:44.293448'
     is_active: True
     name: u'1.0'
+    official_bug_tags: []
     resource_type_link: u'...'
     self_link: u'http://.../firefox/+milestone/1.0'
     series_target_link: u'http://.../firefox/trunk'

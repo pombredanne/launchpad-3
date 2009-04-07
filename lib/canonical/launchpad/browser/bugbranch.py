@@ -86,8 +86,7 @@ class BugBranchEditView(LaunchpadEditFormView):
 
     @action('Delete', name='delete')
     def delete_action(self, action, data):
-        notify(ObjectDeletedEvent(self.context, user=self.user))
-        self.context.destroySelf()
+        self.context.bug.removeBranch(self.context.branch, self.user)
 
 
 class BugBranchBranchInlineEditView(BugBranchEditView):

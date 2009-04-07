@@ -232,6 +232,7 @@ Updater and get a bug watch and a bugtask to test with.
     >>> login('bugwatch@bugs.launchpad.net')
     >>> bug_watch_updater_user = getUtility(ILaunchBag).user
     >>> bug_one = getUtility(IBugSet).get(1)
+    >>> bug_one.expireNotifications()
     >>> print len(bug_one.bugtasks)
     3
     >>> debian_task = bug_one.bugtasks[2]
@@ -309,8 +310,12 @@ tasks, because it's not a valid person and only valid persons can get karma.
 
 Finally, let's make sure that bug notifications were added:
 
-    >>> from canonical.launchpad.database import BugNotification
-    >>> for bug_notification in BugNotification.select():
+    >>> from canonical.launchpad.database.bugnotification import (
+    ...     BugNotification)
+    >>> unsent_notifications = (
+    ...     BugNotification.selectBy(date_emailed=None, orderBy='id'))
+
+    >>> for bug_notification in unsent_notifications:
     ...     print "Bug %s changed by %s:" % (
     ...         bug_notification.bug.id,
     ...         bug_notification.message.owner.displayname)
@@ -367,7 +372,7 @@ The `lastchanged` field was updated, though.
 Changes to bug watch statuses will produce notifications in the usual
 manner:
 
-    >>> for bug_notification in BugNotification.select(orderBy='id'):
+    >>> for bug_notification in unsent_notifications:
     ...     print "Bug %s changed by %s:" % (
     ...         bug_notification.bug.id,
     ...         bug_notification.message.owner.displayname)
@@ -485,4 +490,14 @@ errors, we ignore such bug watches.
     >>> product.bugtracker == bug_watch.bugtracker
     False
     >>> [bug_watch.remotebug for bug_watch in product.getLinkedBugWatches()]
+    []
+
+Bug watches can be removed using the removeWatch method.
+
+    >>> bug_watch = factory.makeBugWatch(remote_bug='42')
+    >>> bug = bug_watch.bug
+    >>> [bug_watch.remotebug for bug_watch in bug.watches]
+    [u'42']
+    >>> bug.removeWatch(bug_watch, factory.makePerson())
+    >>> [bug_watch.remotebug for bug_watch in bug.watches]
     []

@@ -3,6 +3,13 @@
 An Account is used by someone to Authenticate with the Launchpad login
 service.
 
+Many operations on Account and related tables are available only to
+the SSO Server.
+
+    >>> from canonical.launchpad.webapp.interfaces import IStoreSelector
+    >>> from canonical.launchpad.webapp.dbpolicy import SSODatabasePolicy
+    >>> getUtility(IStoreSelector).push(SSODatabasePolicy())
+
 
 = AccountSet =
 
@@ -264,7 +271,13 @@ If the account is deactivated, it won't be considered valid any more:
 From a newly created account which has no person associated with, it is
 possible to create a new person that will be associated with it.
 
-    >>> from canonical.launchpad.interfaces.person import (
+We need to change database policy here again, as the SSO Server cannot
+modify tables in the lpmain replication set.
+
+    >>> from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
+    >>> getUtility(IStoreSelector).push(MasterDatabasePolicy())
+
+    >>> from lp.registry.interfaces.person import (
     ...     PersonCreationRationale)
     >>> fresh_account, email = account_set.createAccountAndEmail(
     ...     'foo@example.com',
@@ -305,6 +318,8 @@ address, a new Person cannot be created.
     Traceback (most recent call last):
     ...
     AssertionError: Can't create a Person for an account which has no email.
+
+    >>> db_policy = getUtility(IStoreSelector).pop()
 
 
 == OpenID identifiers ==
@@ -421,7 +436,7 @@ date.
 
     >>> from canonical.launchpad.interfaces.openidserver import (
     ...     IOpenIDRPSummarySet)
-    >>> from datetime import datetime, timedelta
+    >>> from datetime import datetime
     >>> import pytz
     >>> two_thousand_and_seven = datetime(2007, 1, 1, tzinfo=pytz.UTC)
     >>> two_thousand_and_eight = datetime(2008, 1, 1, tzinfo=pytz.UTC)
@@ -431,7 +446,13 @@ date.
     >>> summary = getUtility(IOpenIDRPSummarySet).record(
     ...     fresh_account, 'http://blog.example.com/',
     ...     date_used=two_thousand_and_seven)
+    >>> transaction.commit()
 
     >>> [summary.date_last_used.strftime('%Y-%m-%d')
     ...  for summary in fresh_account.recently_authenticated_rps]
     ['2008-01-01', '2007-01-01']
+
+
+== Cleanup ==
+
+    >>> db_policy = getUtility(IStoreSelector).pop()

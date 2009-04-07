@@ -99,7 +99,7 @@ When a valid PPA is chosen the dependency is added, a notification
 is rendered on top of the page and the list of dependencies available
 for removal is updated.
 
-    >>> admin_browser.getControl("Add PPA dependency").value = 'sabdfl'
+    >>> admin_browser.getControl("Add PPA dependency").value = 'sabdfl/ppa'
     >>> admin_browser.getControl("Save").click()
     >>> messages = get_feedback_messages(admin_browser.contents)
     >>> for msg in messages:
@@ -112,7 +112,7 @@ for removal is updated.
 
 Trying to add a dependency that is already recorded results in a error.
 
-    >>> admin_browser.getControl("Add PPA dependency").value = 'sabdfl'
+    >>> admin_browser.getControl("Add PPA dependency").value = 'sabdfl/ppa'
     >>> admin_browser.getControl("Save").click()
     >>> messages = get_feedback_messages(admin_browser.contents)
     >>> for msg in messages:
@@ -123,7 +123,7 @@ Trying to add a dependency that is already recorded results in a error.
 Trying to add a dependency for the context PPA itself also results in
 a error.
 
-    >>> admin_browser.getControl("Add PPA dependency").value = 'cprov'
+    >>> admin_browser.getControl("Add PPA dependency").value = 'cprov/ppa'
     >>> admin_browser.getControl("Save").click()
     >>> messages = get_feedback_messages(admin_browser.contents)
     >>> for msg in messages:
@@ -133,7 +133,7 @@ a error.
 
 If it's a new dependency everything is fine.
 
-    >>> admin_browser.getControl("Add PPA dependency").value = 'no-priv'
+    >>> admin_browser.getControl("Add PPA dependency").value = 'no-priv/ppa'
     >>> admin_browser.getControl("Save").click()
     >>> messages = get_feedback_messages(admin_browser.contents)
     >>> for msg in messages:
@@ -178,7 +178,8 @@ On successful removals, a notification is rendered and the list of
 dependencies is refreshed.
 
     >>> admin_browser.getControl(
-    ...     name="field.selected_dependencies").value = ['sabdfl', 'no-priv']
+    ...     name="field.selected_dependencies").value = [
+    ...     'sabdfl/ppa', 'no-priv/ppa']
     >>> admin_browser.getControl("Save").click()
     >>> messages = get_feedback_messages(admin_browser.contents)
     >>> for msg in messages:
@@ -339,7 +340,7 @@ The form can perform multiple actions in a single submit.
 
 First we will create a PPA dependency for No privileged' PPA.
 
-    >>> admin_browser.getControl("Add PPA dependency").value = 'no-priv'
+    >>> admin_browser.getControl("Add PPA dependency").value = 'no-priv/ppa'
     >>> admin_browser.getControl("Save").click()
     >>> messages = get_feedback_messages(admin_browser.contents)
     >>> for msg in messages:
@@ -371,12 +372,12 @@ from 'Mark Shuttleworth' PPA and modify the primary dependency to
 RELEASE.
 
     >>> admin_browser.getControl(
-    ...     name="field.selected_dependencies").value = ['no-priv']
+    ...     name="field.selected_dependencies").value = ['no-priv/ppa']
 
     >>> admin_browser.getControl(
     ...     "Use all Ubuntu components available.").selected = True
 
-    >>> admin_browser.getControl("Add PPA dependency").value = 'sabdfl'
+    >>> admin_browser.getControl("Add PPA dependency").value = 'sabdfl/ppa'
 
     >>> admin_browser.getControl(
     ...     "Basic (only released packages).").selected = True
@@ -438,9 +439,9 @@ PPA context page and the action won't be executed.
 
     >>> admin_browser.getLink('Edit dependencies').click()
 
-    >>> admin_browser.getControl("Add PPA dependency").value = 'no-priv'
+    >>> admin_browser.getControl("Add PPA dependency").value = 'no-priv/ppa'
     >>> admin_browser.getControl(
-    ...     name="field.selected_dependencies").value = ['sabdfl']
+    ...     name="field.selected_dependencies").value = ['sabdfl/ppa']
     >>> admin_browser.getControl(
     ...     "Default (security dependencies and recommended updates)."
     ...     ).selected = True

@@ -13,7 +13,7 @@ __all__ = [
     'MergeProposalCreatedJob',
     ]
 
-from email.Utils import make_msgid
+from email.Utils import make_msgid, parseaddr
 
 from lazr.delegates import delegates
 from lazr.enum import DBEnumeratedType, DBItem
@@ -25,9 +25,8 @@ import transaction
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import classProvides, implements
-from zope.security.proxy import removeSecurityProxy
 
-from storm.expr import Desc, Join, LeftJoin
+from storm.expr import Join, LeftJoin
 from storm.locals import Int, Reference, Unicode
 from sqlobject import (
     ForeignKey, IntCol, StringCol, SQLMultipleJoin, SQLObjectNotFound)
@@ -47,7 +46,7 @@ from canonical.launchpad.database.diff import Diff, PreviewDiff, StaticDiff
 from canonical.launchpad.database.job import Job
 from canonical.launchpad.database.message import (
     Message, MessageChunk, MessageJob, MessageJobAction)
-from canonical.launchpad.database.person import Person
+from lp.registry.model.person import Person
 from canonical.launchpad.event.branchmergeproposal import (
     BranchMergeProposalStatusChangeEvent, NewCodeReviewCommentEvent,
     ReviewerNominatedEvent)
@@ -63,13 +62,15 @@ from canonical.launchpad.interfaces.branchtarget import IHasBranchTarget
 from canonical.launchpad.interfaces.codereviewcomment import CodeReviewVote
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.message import IMessageJob
-from canonical.launchpad.interfaces.person import IPerson
-from canonical.launchpad.interfaces.product import IProduct
+from lp.registry.interfaces.person import IPerson
+from lp.registry.interfaces.product import IProduct
 from canonical.launchpad.mailout.branch import RecipientReason
 from canonical.launchpad.mailout.branchmergeproposal import BMPMailer
-from canonical.launchpad.validators.person import validate_public_person
+from lp.registry.interfaces.person import validate_public_person
 from canonical.launchpad.webapp.interfaces import (
-        DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
+    DEFAULT_FLAVOR, IPlacelessAuthUtility, IStoreSelector, MAIN_STORE,
+    MASTER_FLAVOR)
+from canonical.launchpad.webapp.interaction import setupInteraction
 
 
 VALID_TRANSITION_GRAPH = {
@@ -686,42 +687,6 @@ class BranchMergeProposalGetter:
             raise BadBranchMergeProposalSearchContext(context)
         return collection.getMergeProposals(status)
 
-    @staticmethod
-    def getProposalsForReviewer(reviewer, status=None, visible_by_user=None):
-        """See `IBranchMergeProposalGetter`."""
-        from canonical.launchpad.database.branch import Branch
-        store = Store.of(reviewer)
-        tables = [
-            BranchMergeProposal,
-            Join(CodeReviewVoteReference,
-                 CodeReviewVoteReference.branch_merge_proposalID == \
-                 BranchMergeProposal.id),
-            LeftJoin(CodeReviewComment,
-                 CodeReviewVoteReference.commentID == CodeReviewComment.id)]
-
-        # XXX: TimPenhey 2009-03-08 bug=337494
-        # This code is copied from BranchCollection.  Shortly this method
-        # will live there.  The old code that this replaces realised the
-        # visible branches result set into a set and this caused a double
-        # query, which took 2s rather than less than 100ms.
-        # XXX: JonathanLange 2009-03-04 bug=337494: getBranches() returns a
-        # decorated set, so we get at the underlying set so we can get at the
-        # private and juicy _get_select.
-        naked_query = removeSecurityProxy(
-            getUtility(IAllBranches).visibleByUser(
-                visible_by_user).getBranches())
-        visible_branches = naked_query.result_set._get_select()
-        visible_branches.columns = (Branch.id,)
-        expression = And(
-            CodeReviewVoteReference.reviewer == reviewer,
-            BranchMergeProposal.target_branchID.is_in(visible_branches),
-            BranchMergeProposal.source_branchID.is_in(visible_branches))
-        if status is not None:
-            expression = And(
-                expression, BranchMergeProposal.queue_status.is_in(status))
-        result = store.using(*tables).find(BranchMergeProposal, expression)
-        result.order_by(Desc(CodeReviewComment.vote))
-        return result
 
     @staticmethod
     def getVotesForProposals(proposals):
@@ -958,9 +923,17 @@ class CreateMergeProposalJob(object):
         """See `ICreateMergeProposalJob`."""
         # Avoid circular import
         from canonical.launchpad.mail.codehandler import CodeHandler
-        from canonical.launchpad.mail.incoming import authenticateEmail
         message = self.getMessage()
-        authenticateEmail(message)
+        # Since the message was checked as signed before it was saved in the
+        # Librarian, just create the principle from the sender and setup the
+        # interaction.
+        name, email_addr = parseaddr(message['From'])
+        authutil = getUtility(IPlacelessAuthUtility)
+        principal = authutil.getPrincipalByLogin(email_addr)
+        if principal is None:
+            raise AssertionError('No principal found for %s' % email_addr)
+        setupInteraction(principal, email_addr)
+
         server = get_multi_server(write_hosted=True)
         server.setUp()
         try:

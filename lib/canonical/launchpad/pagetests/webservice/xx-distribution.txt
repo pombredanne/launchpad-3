@@ -35,6 +35,7 @@ And for every distribution we publish most of its attributes.
     main_archive_link: u'http://.../ubuntu/+archive/primary'
     mugshot_link: u'http://.../ubuntu/mugshot'
     name: u'ubuntu'
+    official_bug_tags: []
     owner_link: u'http://.../~ubuntu-team'
     resource_type_link: u'http://.../#distribution'
     self_link: u'http://.../ubuntu'
@@ -72,3 +73,18 @@ name.
     ...     name='alsa-utils').jsonBody()
     >>> print alsa_utils['self_link']
     http://.../ubuntu/+source/alsa-utils
+
+"searchSourcePackages" returns a collection of distribution source
+packages matching (substring) the given text.
+
+    >>> alsa_results = webservice.named_get(
+    ...     ubuntu['self_link'], 'searchSourcePackages',
+    ...     source_match='a').jsonBody()
+
+    >>> for entry in alsa_results['entries']:
+    ...     print entry['self_link']
+    http://.../ubuntu/+source/mozilla-firefox
+    http://.../ubuntu/+source/netapplet
+    http://.../ubuntu/+source/alsa-utils
+    http://.../ubuntu/+source/foobar
+    http://.../ubuntu/+source/commercialpackage

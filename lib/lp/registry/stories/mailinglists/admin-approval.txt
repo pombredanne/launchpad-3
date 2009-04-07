@@ -1,0 +1,187 @@
+= Launchpad administrator approval =
+
+When a team requests a mailing list, this request must be approved by a
+Launchpad administrator before the mailing list will be created.
+
+Anonymous users cannot view the mailing list approval page.
+
+    >>> anon_browser.open('http://launchpad.dev/+mailinglists')
+    Traceback (most recent call last):
+    ...
+    Unauthorized: ...
+
+Ordinary users also cannot view this page.
+
+    >>> user_browser.open('http://launchpad.dev/+mailinglists')
+    Traceback (most recent call last):
+    ...
+    Unauthorized: ...
+
+But Launchpad administrators can see the mailing list approval page.
+
+    >>> admin_browser.open('http://launchpad.dev/+mailinglists')
+    >>> admin_browser.title
+    'Pending mailing lists requests'
+
+Additionally, members of the Mailing List Experts team can see the approval
+page.  Sample Person is not a mailing list expert, and cannot view the page.
+
+    >>> sample_browser = setupBrowser('Basic test@canonical.com:test')
+    >>> sample_browser.open('http://launchpad.dev/+mailinglists')
+    Traceback (most recent call last):
+    ...
+    Unauthorized: ...
+
+But once Sample Person is made a mailing list expert, he can view the page.
+
+    >>> admin_browser.open(
+    ...     'http://launchpad.dev/~mailing-list-experts/+addmember')
+    >>> admin_browser.getControl('New member').value = 'name12'
+    >>> admin_browser.getControl('Add Member').click()
+
+    >>> sample_browser.open('http://launchpad.dev/+mailinglists')
+    >>> sample_browser.title
+    'Pending mailing lists requests'
+
+For convenience, let's use the mailing list expert's browser.
+
+    >>> browser = sample_browser
+
+
+== When there's nothing to do ==
+
+When there are no pending mailing list requests, the page contains just a
+helpful message and no form.
+
+    >>> extract_text(find_tag_by_id(browser.contents, 'status'))
+    u'There is nothing to do.'
+
+    >>> browser.getControl('Submit')
+    Traceback (most recent call last):
+    ...
+    LookupError: label 'Submit'
+
+
+== When there is something to do ==
+
+Now the No Privileges Person creates a team, and then requests a mailing list
+for that team.  This mailing list will not be created until the Launchpad
+administrator approves it.
+
+    >>> from lp.registry.tests import mailinglists_helper
+    >>> mailinglists_helper.apply_for_list(user_browser, 'test-one')
+
+The Launchpad administrator views the pending requests page, and sees that
+there is a request by No Privileges Person to create the Test One mailing
+list.
+
+    >>> browser.reload()
+    >>> browser.getControl('Submit')
+    <SubmitControl name='field.actions.submit' type='submit'>
+    >>> mailinglists_helper.print_review_table(browser.contents)
+    App Dec Hol Team                     Requester
+    ( ) ( ) (*) Test One <.../~test-one> No Privileges Person <.../~no-priv>
+
+The user creates a second team, and makes a request to create this new team's
+mailing list.  The pending requests administration page shows them both.
+
+    >>> mailinglists_helper.apply_for_list(user_browser, 'test-two')
+
+    >>> browser.reload()
+    >>> mailinglists_helper.print_review_table(browser.contents)
+    App Dec Hol Team                     Requester
+    ( ) ( ) (*) Test One <.../~test-one> No Privileges Person <.../~no-priv>
+    ( ) ( ) (*) Test Two <.../~test-two> No Privileges Person <.../~no-priv>
+
+
+== Deferring decisions ==
+
+The Launchpad administrator defers until later the decisions about whether to
+approve or decline the mailing list requests.  This is called 'holding' the
+request and it is the default action.  Deferring the decision until later
+really means that nothing happens.
+
+    >>> browser.getControl('Submit').click()
+    >>> mailinglists_helper.print_review_table(browser.contents)
+    App Dec Hol Team                     Requester
+    ( ) ( ) (*) Test One <.../~test-one> No Privileges Person <.../~no-priv>
+    ( ) ( ) (*) Test Two <.../~test-two> No Privileges Person <.../~no-priv>
+
+
+== Approving lists ==
+
+The Launchpad administrator decides that the Test One mailing list is a good
+idea, so she goes ahead and approves that list's creation.  She defers the
+decision on the other mailing list until later.
+
+    >>> browser.getControl(name='field.test-one').value = ['approve']
+    >>> browser.getControl('Submit').click()
+
+The pending requests page no longer displays anything about the Test One
+mailing list, but the Test Two list is still pending.
+
+    >>> mailinglists_helper.print_review_table(browser.contents)
+    App Dec Hol Team                     Requester
+    ( ) ( ) (*) Test Two <.../~test-two> No Privileges Person <.../~no-priv>
+
+The Test One mailing list has been approved so that Mailman can create it,
+though we won't wait for Mailman to act <wink>.
+
+    >>> print '\n'.join(get_feedback_messages(browser.contents))
+    Test One mailing list was approved
+
+
+== Declining lists ==
+
+The Launchpad administrator decides that the Test Two mailing list is a bad
+idea, so she goes ahead and declines that list's creation.
+
+    >>> browser.getControl(name='field.test-two').value = ['decline']
+    >>> browser.getControl('Submit').click()
+
+The pending requests page no longer displays anything about the Test Two
+mailing list.
+
+    >>> extract_text(find_tag_by_id(browser.contents, 'status'))
+    u'There is nothing to do.'
+    >>> print '\n'.join(get_feedback_messages(browser.contents))
+    Test Two mailing list was declined
+
+The Test Two mailing list has been declined so Mailman will not create it.
+
+    >>> user_browser.open('http://launchpad.dev/~test-two/+mailinglist')
+    >>> print extract_text(find_main_content(user_browser.contents))
+    Mailing list configuration
+    The application for this team's mailing list has been declined.
+    Please contact a Launchpad administrator for further assistance.
+    ...
+
+
+== Multiple actions ==
+
+The Launchpad administrator neglects to check for pending requests for a
+little while, and in the meantime, three new requests have appeared.
+
+    >>> mailinglists_helper.apply_for_list(user_browser, 'test-three')
+    >>> mailinglists_helper.apply_for_list(user_browser, 'test-four')
+    >>> mailinglists_helper.apply_for_list(user_browser, 'test-five')
+
+The Launchpad administrator can approve them all at once.
+
+    >>> browser.open('http://launchpad.dev/+mailinglists')
+    >>> mailinglists_helper.print_review_table(browser.contents)
+    App Dec Hol Team                         Requester
+    ( ) ( ) (*) Test Five <.../~test-five>   No Priv... <.../~no-priv>
+    ( ) ( ) (*) Test Four <.../~test-four>   No Priv... <.../~no-priv>
+    ( ) ( ) (*) Test Three <.../~test-three> No Priv... <.../~no-priv>
+
+    >>> browser.getControl(name='field.test-three').value = ['approve']
+    >>> browser.getControl(name='field.test-four').value = ['approve']
+    >>> browser.getControl(name='field.test-five').value = ['approve']
+    >>> browser.getControl('Submit').click()
+
+    >>> for message in sorted(get_feedback_messages(browser.contents)):
+    ...     print message
+    Test Five mailing list was approved
+    Test Four mailing list was approved
+    Test Three mailing list was approved

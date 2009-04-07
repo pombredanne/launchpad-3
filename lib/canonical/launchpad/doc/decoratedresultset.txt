@@ -115,3 +115,43 @@ The DecoratedResultSet's count method works as per normal if other
 args/kwargs are passed:
     >>> decorated_results.count(distinct=False)
     26
+
+The pre_iter_hook() method is only called once when iteration begins.
+
+    >>> class FakeResultSet(list):
+    ...     def count(self, *args, **kwargs):
+    ...         return len(self)
+    ...     def first(self, *args, **kwargs):
+    ...         return self[0]
+    ...     def last(self, *args, **kwargs):
+    ...         return self[-1]
+    ...     def any(self, *args, **kwargs):
+    ...         return self[-1]
+    ...     def one(self, *args, **kwargs):
+    ...         return self[-1]
+    ...     def order_by(self, *args, **kwargs):
+    ...         return FakeResultSet(self)
+    ...     def config(self, *args, **kwargs):
+    ...         pass
+    ...     def copy(self, *args, **kwargs):
+    ...         return FakeResultSet(self)
+    >>> rs = FakeResultSet(range(1,5))
+    >>> def my_pih(result_set):
+    ...     print('this should run once only, count: %s' % len(result_set))
+    >>> def my_deco(result):
+    ...     print('> original value : %s' % result)
+    ...     return (result * 2)
+
+    >>> my_drs = DecoratedResultSet(rs, my_deco, my_pih)
+    >>> for res in my_drs:
+    ...     print(' decorated result: %s' % res)
+    this should run once only, count: 4
+    > original value : 1
+     decorated result: 2
+    > original value : 2
+     decorated result: 4
+    > original value : 3
+     decorated result: 6
+    > original value : 4
+     decorated result: 8
+

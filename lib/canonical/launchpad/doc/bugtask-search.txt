@@ -134,7 +134,7 @@ For example, no Firefox bugs are found when searching for
     >>> found_bugtasks.count()
     0
 
-If we add a comment containg the the search string to bug one, that bug
+If we add a comment containing the search string to bug one, that bug
 will be returned by the search only if search_comments is True.
 
     >>> from canonical.launchpad.interfaces import IBugSet
@@ -800,7 +800,7 @@ If we want to restrict the search using certain parameters pass them to
 the function directly. Here we search Ubuntu again, but only bugs for
 the firefox package.
 
-    >>> from canonical.launchpad.interfaces.sourcepackagename import (
+    >>> from lp.registry.interfaces.sourcepackagename import (
     ...     ISourcePackageNameSet)
     >>> source_package_name_set = getUtility(ISourcePackageNameSet)
     >>> firefox_source_package = source_package_name_set['mozilla-firefox']
