@@ -18,7 +18,7 @@ from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser import TextWidget
 from zope.component import getUtility
 from zope.formlib import form
-from zope.interface import alsoProvides
+from zope.interface import alsoProvides, implements
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.cachedproperty import cachedproperty
@@ -29,7 +29,7 @@ from canonical.launchpad.interfaces.archiveauthtoken import (
     IArchiveAuthTokenSet)
 from canonical.launchpad.interfaces.archivesubscriber import (
     IArchiveSubscriberSet, IArchiveSubscriberUI,
-    IArchiveSubscriptionForOwner, IArchiveSubscriptionForSubscriber)
+    IPersonalArchiveSubscription)
 from canonical.launchpad.webapp.launchpadform import (
     action, custom_widget, LaunchpadFormView, LaunchpadEditFormView)
 from canonical.launchpad.webapp.menu import structured
@@ -46,32 +46,21 @@ def archive_subscription_ui_adapter(archive_subscription):
     """
     return archive_subscription
 
-def archive_subscription_for_owner_adapter(archive_subscription):
-    """Adapt an archive subscriber into an IArchiveSubscriptionForOwner
 
-    Adds IArchiveSubscriptionForOwner as an interface provided by the object.
-    """
-    # removeSecurityProxy is required only for alsoProvides(), the proxied
-    # object is still returned.
-    alsoProvides(
-        removeSecurityProxy(archive_subscription),
-        IArchiveSubscriptionForOwner)
+class PersonalArchiveSubscription:
+    """See `IPersonalArchiveSubscription`."""
 
-    return archive_subscription
+    implements(IPersonalArchiveSubscription)
 
-def archive_subscription_for_subscriber_adapter(archive_subscription):
-    """Adapt an archive subscriber into an IArchiveSubscriptionForSubscriber
+    def __init__(self, subscriber, archive):
+        self.subscriber = subscriber
+        self.archive = archive
 
-    Adds IArchiveSubscriptionForSubscriber as an interface provided by the
-    object.
-    """
-    # removeSecurityProxy is required only for alsoProvides(), the proxied
-    # object is still returned.
-    alsoProvides(
-        removeSecurityProxy(archive_subscription),
-        IArchiveSubscriptionForSubscriber)
-
-    return archive_subscription
+    @property
+    def displayname(self):
+        """See `IPersonalArchiveSubscription`."""
+        return "%s's subscription to %s" % (
+            self.subscriber.displayname, self.archive.displayname)
 
 def traverse_archive_subscription_for_subscriber(subscriber, archive_id):
     """Return the subscription for a subscriber to an archive."""
@@ -84,7 +73,7 @@ def traverse_archive_subscription_for_subscriber(subscriber, archive_id):
     if subscription is None:
         return None
     else:
-        return IArchiveSubscriptionForSubscriber(subscription)
+        return PersonalArchiveSubscription(subscriber, archive)
 
 
 class ArchiveSubscribersView(LaunchpadFormView):
@@ -110,27 +99,16 @@ class ArchiveSubscribersView(LaunchpadFormView):
 
     @property
     def subscriptions(self):
-        """Return all the subscriptions for this archive.
-
-        A decorated result set is used to adapt the subscriptions to
-        IArchiveSubscriptionForOwner so that the correct URL is used
-        in templates.
-        """
-        result_set = getUtility(IArchiveSubscriberSet).getByArchive(
+        """Return all the subscriptions for this archive."""
+        return getUtility(IArchiveSubscriberSet).getByArchive(
             self.context)
-
-        def adapt_for_owner(subscription):
-            return IArchiveSubscriptionForOwner(subscription)
-
-        return DecoratedResultSet(result_set, adapt_for_owner)
 
     @cachedproperty
     def has_subscriptions(self):
         """Return whether this archive has any subscribers."""
         # XXX noodles 20090212 bug=246200: use bool() when it gets fixed
         # in storm.
-        return getUtility(IArchiveSubscriberSet).getByArchive(
-            self.context).count() > 0
+        return self.subscriptions.any() is not None
 
     def validate_new_subscription(self, action, data):
         """Ensure the subscriber isn't already subscribed.
@@ -148,7 +126,7 @@ class ArchiveSubscribersView(LaunchpadFormView):
 
             # XXX noodles 20090212 bug=246200: use bool() when it gets fixed
             # in storm.
-            if current_subscription.count() > 0:
+            if current_subscription.any() is not None:
                 self.setFieldError('subscriber',
                     "%s is already subscribed." % subscriber.displayname)
 
@@ -262,9 +240,10 @@ class PersonArchiveSubscriptionsView(LaunchpadView):
         # Turn the result set into a list of dicts so it can be easily
         # accessed in TAL:
         return [
-            dict(subscription=IArchiveSubscriptionForSubscriber(subscription),
+            dict(subscription=PersonalArchiveSubscription(self.context,
+                                                          subscr.archive),
                  token=token)
-            for subscription, token in subs_with_tokens]
+            for subscr, token in subs_with_tokens]
 
 
 class PersonArchiveSubscriptionView(LaunchpadView):

@@ -53,6 +53,8 @@ Subversion, takes values from the 'RevisionControlSystems' vocabulary.
     ...     print item.title
     Concurrent Versions System
     Subversion
+    Subversion via bzr-svn
+    Git
 
 
 === Import from CVS ===

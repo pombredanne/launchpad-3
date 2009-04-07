@@ -152,7 +152,7 @@ the Zope3 infrastructure.
 
 >>> from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
 >>> LaunchpadZopelessTestSetup().setUp()
->>> from canonical.launchpad.database.person import Person
+>>> from lp.registry.model.person import Person
 >>> stub = Person.byName('stub')
 >>> stub.displayname
 u'Stuart Bishop'

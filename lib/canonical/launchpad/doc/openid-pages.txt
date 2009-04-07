@@ -28,7 +28,7 @@ casting the account to the IOpenIDPersistentIdentity interface.
 
 Persons can be adapted to a OpenIDPersistentIdentity too.
 
-    >>> from canonical.launchpad.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
 
     >>> personset = getUtility(IPersonSet)
     >>> sample_person = personset.getByEmail('test@canonical.com')

@@ -6,10 +6,10 @@
 
     <!-- Content class configuration -->
     <include file="account.zcml" />
-    <include file="announcement.zcml" />
     <include file="archivearch.zcml" />
     <include file="archiveauthtoken.zcml" />
     <include file="archivesubscriber.zcml" />
+    <include file="authtoken.zcml" />
     <include file="batchnavigator.zcml" />
     <include file="binarypackagepublishinghistory.zcml" />
     <include file="binarypackagerelease.zcml" />
@@ -55,9 +55,7 @@
     <include file="codeimportjob.zcml" />
     <include file="codeimportmachine.zcml" />
     <include file="codeimportresult.zcml" />
-    <include file="codeofconduct.zcml" />
     <include file="codereviewcomment.zcml" />
-    <include file="commercialsubscription.zcml" />
     <include file="country.zcml" />
     <include file="crowd.zcml" />
     <include file="customlanguagecode.zcml" />
@@ -67,12 +65,9 @@
     <include file="diff.zcml" />
     <include file="datetime.zcml" />
     <include file="decoratedresultset.zcml" />
-    <include file="distribution.zcml" />
     <include file="distributionmirror.zcml" />
-    <include file="distributionsourcepackage.zcml" />
     <include file="distributionsourcepackagecache.zcml" />
     <include file="distributionsourcepackagerelease.zcml" />
-    <include file="distroseries.zcml" />
     <include file="distroseriesbinarypackage.zcml" />
     <include file="distroseriespackagecache.zcml" />
     <include file="distroseriessourcepackagerelease.zcml" />
@@ -80,29 +75,20 @@
     <include file="distroarchseries.zcml" />
     <include file="distroarchseriesbinarypackage.zcml" />
     <include file="distroarchseriesbinarypackagerelease.zcml" />
-    <include file="driver.zcml" />
     <include file="emailaddress.zcml" />
-    <include file="entitlement.zcml" />
     <include file="feeds.zcml" />
     <include file="files.zcml" />
-    <include file="gpgkey.zcml" />
     <include file="hwdb.zcml" />
-    <include file="ircid.zcml" />
-    <include file="jabberid.zcml" />
     <include file="job.zcml" />
-    <include file="karma.zcml" />
     <include file="language.zcml" />
     <include file="languagepack.zcml" />
     <include file="launchpad.zcml" />
     <include file="launchpadstatistic.zcml" />
     <include file="librarian.zcml" />
-    <include file="location.zcml" />
     <include file="logintoken.zcml" />
-    <include file="mailinglist.zcml" />
     <include file="marketing.zcml" />
     <include file="mentoringoffer.zcml" />
     <include file="message.zcml" />
-    <include file="milestone.zcml" />
     <include file="oauth.zcml" />
     <include file="openid.zcml" />
     <include file="packagebugsupervisor.zcml" />
@@ -110,33 +96,22 @@
     <include file="packagecopyrequest.zcml" />
     <include file="packagerelationship.zcml" />
     <include file="packaging.zcml" />
-    <include file="pillar.zcml" />
-    <include file="person.zcml" />
     <include file="personnotification.zcml" />
     <include file="personproduct.zcml" />
     <include file="poexportrequest.zcml" />
     <include file="pofile.zcml" />
     <include file="pofiletranslator.zcml" />
-    <include file="poll.zcml" />
     <include file="pomsgid.zcml" />
     <include file="potemplate.zcml" />
     <include file="potmsgset.zcml" />
     <include file="potranslation.zcml" />
     <include file="processor.zcml" />
-    <include file="productrelease.zcml" />
-    <include file="productseries.zcml" />
-    <include file="product.zcml" />
-    <include file="project.zcml" />
     <include file="publishedpackage.zcml" />
     <include file="queue.zcml" />
     <include file="revision.zcml" />
-    <include file="salesforce.zcml" />
     <include file="scriptactivity.zcml" />
-    <include file="securitycontact.zcml" />
     <include file="seriessourcepackagebranch.zcml" />
     <include file="shipit.zcml" />
-    <include file="sourcepackage.zcml" />
-    <include file="sourcepackagename.zcml" />
     <include file="sourcepackagepublishinghistory.zcml" />
     <include file="sourcepackagerelease.zcml" />
     <include file="specification.zcml" />
@@ -149,11 +124,7 @@
     <include file="sprint.zcml" />
     <include file="sprintattendance.zcml" />
     <include file="sprintspecification.zcml" />
-    <include file="sshkey.zcml" />
     <include file="structuralsubscription.zcml" />
-    <include file="teammembership.zcml" />
-    <include file="teamparticipation.zcml" />
-    <include file="team-subscriptions.zcml" />
     <include file="temporaryblobstorage.zcml" />
     <include file="translationexport.zcml" />
     <include file="translationimport.zcml" />
@@ -163,7 +134,6 @@
     <include file="translationimportqueue.zcml" />
     <include file="translationtemplateitem.zcml" />
     <include file="translator.zcml" />
-    <include file="wikiname.zcml" />
     <include file="component.zcml" />
     <include file="section.zcml" />
     <include file="vpoexport.zcml" />
@@ -174,7 +144,6 @@
     <include file="archivesigningkey.zcml" />
     <include file="webservice.zcml" />
     <include file="packagediff.zcml" />
-    <include file="voucher.zcml" />
 
     <include file="fields.zcml" />
     <include file="widgets.zcml" />
@@ -188,7 +157,6 @@
     <include file="bug-events.zcml" />
     <include file="bugtask-events.zcml" />
     <include file="bugactivity-subscriptions.zcml" />
-    <include file="product-events.zcml" />
 
     <!-- Special Utilities -->
     <include file="geoip.zcml" />

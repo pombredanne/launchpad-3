@@ -11,7 +11,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.database.branchnamespace import (
     PackageNamespace, PersonalNamespace, ProductNamespace)
-from canonical.launchpad.database.sourcepackage import SourcePackage
+from lp.registry.model.sourcepackage import SourcePackage
 from canonical.launchpad.interfaces.branch import (
     BranchCreationForbidden, BranchCreatorNotMemberOfOwnerTeam,
     BranchCreatorNotOwner, BranchExists, BranchLifecycleStatus, BranchType,
@@ -22,11 +22,11 @@ from canonical.launchpad.interfaces.branchnamespace import (
 from canonical.launchpad.interfaces.branchtarget import IBranchTarget
 from canonical.launchpad.interfaces.branchvisibilitypolicy import (
     BranchVisibilityRule)
-from canonical.launchpad.interfaces.distribution import NoSuchDistribution
-from canonical.launchpad.interfaces.distroseries import NoSuchDistroSeries
-from canonical.launchpad.interfaces.person import NoSuchPerson
-from canonical.launchpad.interfaces.product import NoSuchProduct
-from canonical.launchpad.interfaces.sourcepackagename import (
+from lp.registry.interfaces.distribution import NoSuchDistribution
+from lp.registry.interfaces.distroseries import NoSuchDistroSeries
+from lp.registry.interfaces.person import NoSuchPerson
+from lp.registry.interfaces.product import NoSuchProduct
+from lp.registry.interfaces.sourcepackagename import (
     NoSuchSourcePackageName)
 from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.launchpad.validators import LaunchpadValidationError

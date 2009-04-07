@@ -45,6 +45,8 @@ from canonical.launchpad.interfaces import (
     ITranslationMessageSet, ITranslationMessageSuggestions,
     RosettaTranslationOrigin, TranslationConflict, TranslationConstants,
     UnexpectedFormData)
+from canonical.launchpad.interfaces.translationsperson import (
+    ITranslationsPerson)
 from canonical.launchpad.webapp import (
     ApplicationMenu, canonical_url, enabled_with_permission, LaunchpadView,
     Link, urlparse)
@@ -441,13 +443,15 @@ class BaseTranslationView(LaunchpadView):
         self.start = self.batchnav.start
         self.size = self.batchnav.currentBatch().size
 
-        if (self.request.method == 'POST'):
+        if self.request.method == 'POST':
             if self.user is None:
                 raise UnexpectedFormData, (
                     'Anonymous users or users who are not accepting our '
                     'licensing terms cannot do POST submissions.')
-            if (self.user.translations_relicensing_agreement is not None and
-                not self.user.translations_relicensing_agreement):
+            translations_person = ITranslationsPerson(self.user)
+            if (translations_person.translations_relicensing_agreement 
+                    is not None and
+                not translations_person.translations_relicensing_agreement):
                 raise UnexpectedFormData, (
                     'Users who do not agree to licensing terms '
                     'cannot do POST submissions.')
@@ -660,7 +664,8 @@ class BaseTranslationView(LaunchpadView):
         if alternative_language is not None:
             user = getUtility(ILaunchBag).user
             if user is not None:
-                choices = set(user.translatable_languages)
+                translations_person = ITranslationsPerson(user)
+                choices = set(translations_person.translatable_languages)
                 if choices and alternative_language not in choices:
                     self.request.response.addInfoNotification(
                         u"Not showing suggestions from selected alternative "

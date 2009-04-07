@@ -202,6 +202,26 @@ else.
     None
 
 
+== Pending review ==
+
+The status of a mirror is displayed in the mirror page. Any user can
+see if the status of a mirror is "Pending review' when the mirror
+administrator changes the status.
+
+    >>> karl_browser.getLink('Review mirror').click()
+    >>> karl_browser.getControl('Status').value = ['PENDING_REVIEW']
+    >>> karl_browser.getControl('Save').click()
+    >>> print karl_browser.title
+    Mirror My.mirror.com-archive
+
+    >>> anon_browser.open(
+    ...     'http://launchpad.dev/ubuntu/+mirror/my.mirror.com-archive')
+    >>> print anon_browser.title
+    Mirror My.mirror.com-archive
+    >>> print extract_text(find_tag_by_id(anon_browser.contents, 'status'))
+    Pending review Ubuntu Linux Mirror registered by Sample Person ...
+
+
 == Deleting mirrors ==
 
 If a mirror has never been probed we can be sure that it was never marked as
