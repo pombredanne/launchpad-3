@@ -26,9 +26,9 @@ from canonical.launchpad.layers import WebServiceLayer
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.publisher import (
     LaunchpadView, RedirectionView, canonical_url, stepthrough)
-from canonical.launchpad.webapp.servers import LaunchpadBrowserRequest
+from canonical.launchpad.webapp.servers import (
+    web_service_request_to_browser_request)
 from canonical.launchpad.webapp.url import urlappend
-from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.lazr.utils import get_current_browser_request
 from canonical.librarian.utils import filechunks, guess_librarian_encoding
 
@@ -183,9 +183,7 @@ class ProxiedLibraryFileAlias:
         """
         request = get_current_browser_request()
         if WebServiceLayer.providedBy(request):
-            environ = dict(request.environment)
-            environ['SERVER_URL'] = allvhosts.configs['mainsite'].rooturl
-            request = LaunchpadBrowserRequest('', environ)
+            request = web_service_request_to_browser_request(request)
 
         parent_url = canonical_url(self.parent, request=request)
         traversal_url = urlappend(parent_url, '+files')
