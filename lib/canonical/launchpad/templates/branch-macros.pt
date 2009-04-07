@@ -219,7 +219,7 @@
       revisions - the revisions to list
   </tal:comment>
 
-  <tal:pending-writes tal:condition="context/pending_writes">
+  <tal:pending-writes tal:condition="view/pending_writes">
     <div id="branch-pending-writes">
       <h3>Updating branch...</h3>
       <p>
