@@ -62,7 +62,7 @@
   <adapter
       for="canonical.launchpad.interfaces.IBranch"
       provides="canonical.launchpad.webapp.badge.IHasBadges"
-      factory="canonical.launchpad.browser.BranchBadges"
+      factory="canonical.launchpad.browser.branch.BranchBadges"
       />
 
   <adapter
@@ -87,7 +87,7 @@
       />
 
     <browser:menus
-        module="canonical.launchpad.browser"
+        module="canonical.launchpad.browser.branch"
         classes="BranchContextMenu BranchNavigationMenu" />
 
     <browser:defaultView
@@ -99,14 +99,14 @@
         urldata="canonical.launchpad.browser.branch.BranchURL" />
 
     <browser:navigation
-        module="canonical.launchpad.browser"
+        module="canonical.launchpad.browser.branch"
         classes="BranchNavigation" />
 
     <browser:pages
         for="canonical.launchpad.interfaces.IBranch"
         facet="branches"
         permission="zope.Public"
-        class="canonical.launchpad.browser.BranchView" >
+        class="canonical.launchpad.browser.branch.BranchView" >
         <browser:page
             name="+index"
             template="../templates/branch-index.pt"
@@ -149,7 +149,7 @@
   <browser:page
     name="+portlet-subscribers"
     for="canonical.launchpad.interfaces.IBranch"
-    class="canonical.launchpad.browser.BranchSubscriptionsView"
+    class="canonical.launchpad.browser.branch.BranchSubscriptionsView"
     facet="branches"
     permission="zope.Public"
     template="../templates/branch-portlet-subscribers.pt" />
@@ -158,7 +158,7 @@
       for="canonical.launchpad.interfaces.IBranch"
       facet="overview"
       permission="zope.Public"
-      class="canonical.launchpad.browser.BranchInProductView" >
+      class="canonical.launchpad.browser.branch.BranchInProductView" >
     <browser:page
         name="+product-summary-listing"
         template="../templates/branch-summary-listing.pt" />
@@ -179,7 +179,7 @@
   <browser:page
       name="+whiteboard"
       for="canonical.launchpad.interfaces.IBranch"
-      class="canonical.launchpad.browser.BranchEditWhiteboardView"
+      class="canonical.launchpad.browser.branch.BranchEditWhiteboardView"
       facet="branches"
       permission="launchpad.AnyPerson"
       template="../templates/branch-edit.pt" />
@@ -187,7 +187,7 @@
   <browser:page
       name="+edit"
       for="canonical.launchpad.interfaces.IBranch"
-      class="canonical.launchpad.browser.BranchEditView"
+      class="canonical.launchpad.browser.branch.BranchEditView"
       facet="branches"
       permission="launchpad.Edit"
       template="../templates/branch-edit.pt" />
@@ -195,7 +195,7 @@
   <browser:page
       name="+reviewer"
       for="canonical.launchpad.interfaces.IBranch"
-      class="canonical.launchpad.browser.BranchReviewerEditView"
+      class="canonical.launchpad.browser.branch.BranchReviewerEditView"
       facet="branches"
       permission="launchpad.Edit"
       template="../templates/branch-edit.pt" />
@@ -211,14 +211,14 @@
   <browser:page
       name="+delete"
       for="canonical.launchpad.interfaces.IBranch"
-      class="canonical.launchpad.browser.BranchDeletionView"
+      class="canonical.launchpad.browser.branch.BranchDeletionView"
       facet="branches"
       permission="launchpad.Edit"
       template="../templates/branch-delete.pt" />
 
   <browser:pages
       for="canonical.launchpad.interfaces.IBranch"
-      class="canonical.launchpad.browser.BranchMirrorStatusView"
+      class="canonical.launchpad.browser.branch.BranchMirrorStatusView"
       facet="branches"
       permission="launchpad.View">
     <browser:page
@@ -241,7 +241,7 @@
   <browser:page
       name="+register-merge"
       for="canonical.launchpad.interfaces.IBranch"
-      class="canonical.launchpad.browser.RegisterBranchMergeProposalView"
+      class="canonical.launchpad.browser.branch.RegisterBranchMergeProposalView"
       facet="branches"
       permission="launchpad.AnyPerson"
       template="../templates/branch-register-merge-proposal.pt" />
@@ -281,7 +281,7 @@
 
   <browser:page
       for="canonical.launchpad.interfaces.IBranch"
-      class="canonical.launchpad.browser.BranchRequestImportView"
+      class="canonical.launchpad.browser.branch.BranchRequestImportView"
       name="+request-import"
       template="../templates/inline-form-only-buttons.pt"
       permission="launchpad.AnyPerson" />

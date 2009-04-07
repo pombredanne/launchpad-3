@@ -17,7 +17,6 @@ from canonical.launchpad.browser.bazaar import *
 from canonical.launchpad.browser.binarypackagerelease import *
 from canonical.launchpad.browser.bounty import *
 from canonical.launchpad.browser.bountysubscription import *
-from canonical.launchpad.browser.branch import *
 from canonical.launchpad.browser.branchlisting import *
 from canonical.launchpad.browser.branchmergeproposal import *
 from canonical.launchpad.browser.branchref import *

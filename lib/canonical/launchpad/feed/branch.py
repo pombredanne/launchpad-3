@@ -23,7 +23,7 @@ from zope.security.interfaces import Unauthorized
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
-from canonical.launchpad.browser import BranchView
+from canonical.launchpad.browser.branch import BranchView
 from canonical.launchpad.interfaces.branch import (
     DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch)
 from canonical.launchpad.interfaces.branchcollection import IAllBranches
