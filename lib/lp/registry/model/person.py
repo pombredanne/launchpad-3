@@ -62,8 +62,6 @@ from canonical.launchpad.database.oauth import (
 from lp.registry.model.personlocation import PersonLocation
 from canonical.launchpad.database.structuralsubscription import (
     StructuralSubscription)
-from canonical.launchpad.database.translationrelicensingagreement import (
-    TranslationRelicensingAgreement)
 from lp.registry.event.karma import KarmaAssignedEvent
 from lp.registry.event.team import JoinTeamEvent, TeamInvitationEvent
 from canonical.launchpad.helpers import (
@@ -120,9 +118,6 @@ from canonical.launchpad.interfaces.lpstorm import IStore
 from lp.registry.interfaces.ssh import ISSHKey, ISSHKeySet, SSHKeyType
 from lp.registry.interfaces.teammembership import (
     TeamMembershipStatus)
-from canonical.launchpad.interfaces.translationgroup import (
-    ITranslationGroupSet)
-from canonical.launchpad.interfaces.translator import ITranslatorSet
 from lp.registry.interfaces.wikiname import IWikiName, IWikiNameSet
 from canonical.launchpad.webapp.interfaces import (
     ILaunchBag, IStoreSelector, AUTH_STORE, MASTER_FLAVOR)
@@ -135,7 +130,6 @@ from canonical.launchpad.database.emailaddress import (
 from lp.registry.model.karma import KarmaCache, KarmaTotalCache
 from canonical.launchpad.database.logintoken import LoginToken
 from lp.registry.model.pillar import PillarName
-from canonical.launchpad.database.pofiletranslator import POFileTranslator
 from lp.registry.model.karma import KarmaAction, Karma
 from lp.registry.model.mentoringoffer import MentoringOffer
 from canonical.launchpad.database.sourcepackagerelease import (
@@ -543,37 +537,6 @@ class Person(
             getUtility(IPersonNotificationSet).addNotification(
                 self, subject, mail_text)
 
-    def get_translations_relicensing_agreement(self):
-        """Return whether translator agrees to relicense their translations.
-
-        If she has made no explicit decision yet, return None.
-        """
-        relicensing_agreement = TranslationRelicensingAgreement.selectOneBy(
-            person=self)
-        if relicensing_agreement is None:
-            return None
-        else:
-            return relicensing_agreement.allow_relicensing
-
-    def set_translations_relicensing_agreement(self, value):
-        """Set a translations relicensing decision by translator.
-
-        If she has already made a decision, overrides it with the new one.
-        """
-        relicensing_agreement = TranslationRelicensingAgreement.selectOneBy(
-            person=self)
-        if relicensing_agreement is None:
-            relicensing_agreement = TranslationRelicensingAgreement(
-                person=self,
-                allow_relicensing=value)
-        else:
-            relicensing_agreement.allow_relicensing = value
-
-    translations_relicensing_agreement = property(
-        get_translations_relicensing_agreement,
-        set_translations_relicensing_agreement,
-        doc="See `IPerson`.")
-
     # specification-related joins
     @property
     def assigned_specs(self):
@@ -794,16 +757,6 @@ class Person(
         if prejoin_people:
             results = results.prejoin(['assignee', 'approver', 'drafter'])
         return results
-
-    @property
-    def translatable_languages(self):
-        """See `IPerson`."""
-        return Language.select("""
-            Language.id = PersonLanguage.language AND
-            PersonLanguage.person = %s AND
-            Language.code <> 'en' AND
-            Language.visible""" % quote(self),
-            clauseTables=['PersonLanguage'], orderBy='englishname')
 
     # XXX: Tom Berger 2008-04-14 bug=191799:
     # The implementation of these functions
@@ -1973,23 +1926,6 @@ class Person(
             return datetime.now(pytz.timezone('UTC')) + timedelta(days)
         else:
             return None
-
-    @property
-    def translation_history(self):
-        """See `IPerson`."""
-        return POFileTranslator.select(
-            'POFileTranslator.person = %s' % sqlvalues(self),
-            orderBy='-date_last_touched')
-
-    @property
-    def translation_groups(self):
-        """See `IPerson`."""
-        return getUtility(ITranslationGroupSet).getByPerson(self)
-
-    @property
-    def translators(self):
-        """See `IPerson`."""
-        return getUtility(ITranslatorSet).getByTranslator(self)
 
     def validateAndEnsurePreferredEmail(self, email):
         """See `IPerson`."""

@@ -185,6 +185,8 @@ from canonical.launchpad.interfaces.sourcepackagerelease import (
 from canonical.launchpad.interfaces.translationrelicensingagreement import (
     ITranslationRelicensingAgreementEdit,
     TranslationRelicensingAgreementOptions)
+from canonical.launchpad.interfaces.translationsperson import (
+    ITranslationsPerson)
 
 from canonical.launchpad.browser.bugtask import BugTaskSearchListingView
 from canonical.launchpad.browser.feeds import FeedsMixin
@@ -3272,8 +3274,9 @@ class PersonTranslationView(LaunchpadView):
 
     @cachedproperty
     def batchnav(self):
+        translations_person = ITranslationsPerson(self.context)
         batchnav = BatchNavigator(
-            self.context.translation_history, self.request)
+            translations_person.translation_history, self.request)
 
         pofiletranslatorset = getUtility(IPOFileTranslatorSet)
         batch = batchnav.currentBatch()
@@ -3285,12 +3288,14 @@ class PersonTranslationView(LaunchpadView):
     @cachedproperty
     def translation_groups(self):
         """Return translation groups a person is a member of."""
-        return list(self.context.translation_groups)
+        translations_person = ITranslationsPerson(self.context)
+        return list(translations_person.translation_groups)
 
     @cachedproperty
     def translators(self):
         """Return translators a person is a member of."""
-        return list(self.context.translators)
+        translations_person = ITranslationsPerson(self.context)
+        return list(translations_person.translators)
 
     @cachedproperty
     def person_filter_querystring(self):
@@ -3322,9 +3327,10 @@ class PersonTranslationRelicensingView(LaunchpadFormView):
     @property
     def initial_values(self):
         """Set the default value for the relicensing radio buttons."""
+        translations_person = ITranslationsPerson(self.context)
         # If the person has previously made a choice, we default to that.
         # Otherwise, we default to BSD, because that's what we'd prefer.
-        if self.context.translations_relicensing_agreement == False:
+        if translations_person.translations_relicensing_agreement == False:
             default = TranslationRelicensingAgreementOptions.REMOVE
         else:
             default = TranslationRelicensingAgreementOptions.BSD
@@ -3350,17 +3356,18 @@ class PersonTranslationRelicensingView(LaunchpadFormView):
         """Store person's decision about translations relicensing.
 
         Decision is stored through
-        `IPerson.translations_relicensing_agreement`
+        `ITranslationsPerson.translations_relicensing_agreement`
         which uses TranslationRelicensingAgreement table.
         """
+        translations_person = ITranslationsPerson(self.context)
         allow_relicensing = data['allow_relicensing']
         if allow_relicensing == TranslationRelicensingAgreementOptions.BSD:
-            self.context.translations_relicensing_agreement = True
+            translations_person.translations_relicensing_agreement = True
             self.request.response.addInfoNotification(_(
                 "Thank you for BSD-licensing your translations."))
         elif (allow_relicensing ==
             TranslationRelicensingAgreementOptions.REMOVE):
-            self.context.translations_relicensing_agreement = False
+            translations_person.translations_relicensing_agreement = False
             self.request.response.addInfoNotification(_(
                 "We respect your choice. "
                 "Your translations will be removed once we complete the "
