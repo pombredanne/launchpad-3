@@ -16,7 +16,7 @@ from canonical.launchpad.interfaces.codeimport import ICodeImport
 from canonical.launchpad.interfaces.codeimportmachine import \
      ICodeImportMachine
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
-from canonical.launchpad.interfaces.person import IPerson
+from lp.registry.interfaces.person import IPerson
 
 
 class CodeImportResultStatus(DBEnumeratedType):
