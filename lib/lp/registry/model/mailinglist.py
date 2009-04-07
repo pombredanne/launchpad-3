@@ -654,16 +654,25 @@ class MailingListSet:
                     Person.teamowner != None))
             )
         mailing_list_ids = set(
-            mailing_list.teamID for mailing_list in store.find(
-                MailingList))
+            mailing_list.id for mailing_list in store.find(
+                MailingList,
+                MailingList.teamID.is_in(team_ids)))
+        # Find all the people who are subscribed with their preferred address.
         preferred = store.using(*tables).find(
-            (EmailAddress, MailingList),
+            (EmailAddress, MailingListSubscription),
             And(MailingListSubscription.mailing_listID.is_in(mailing_list_ids),
                 TeamParticipation.teamID.is_in(team_ids),
                 MailingList.status != MailingListStatus.INACTIVE,
                 MailingListSubscription.email_addressID == None,
                 EmailAddress.status == EmailAddressStatus.PREFERRED,
                 Account.status == AccountStatus.ACTIVE))
+        # Sort by team name.
+        by_team = {}
+        for email_address, subscription in preferred:
+            team_name = subscription.mailing_list.team.name
+            assert team_name in team_names, (
+                'Unexpected team name in results: %s' % team_name)
+            by_team.setdefault(team_name, set()).add(email_address.email)
         tables = (
             EmailAddress,
             LeftJoin(Account, Account.id == EmailAddress.accountID),
@@ -683,16 +692,7 @@ class MailingListSet:
                 TeamParticipation.teamID.is_in(team_ids),
                 MailingList.status != MailingListStatus.INACTIVE,
                 Account.status == AccountStatus.ACTIVE))
-        # Union the two queries together to give us the complete list of email
-        # addresses allowed to post.  Note that while we're retrieving both
-        # the EmailAddress and Person records, this method is defined as only
-        # returning EmailAddresses.  The reason why we include the Person in
-        # the query is because the consumer of this method will access
-        # email_address.person.displayname, so the prejoin to Person is
-        # critical to acceptable performance.  Indeed, without the prejoin, we
-        # were getting tons of timeout OOPSes.  See bug 259440.
-        by_team = {}
-        for email_address, mailing_list in preferred.union(explicit):
+        for email_address, mailing_list in explicit:
             team_name = mailing_list.team.name
             assert team_name in team_names, (
                 'Unexpected team name in results: %s' % team_name)
@@ -756,8 +756,9 @@ class MailingListSet:
                      MessageApproval.posted_byID == Person.id),
             )
         mailing_list_ids = set(
-            mailing_list.teamID for mailing_list in store.find(
-                MailingList))
+            mailing_list.id for mailing_list in store.find(
+                MailingList,
+                MailingList.teamID.is_in(team_ids)))
         approved_posters = store.using(*tables).find(
             (EmailAddress, Person, MessageApproval),
             And(MessageApproval.mailing_listID.is_in(mailing_list_ids),

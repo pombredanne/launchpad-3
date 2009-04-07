@@ -64,7 +64,7 @@ No one is yet subscribed to the mailing list though.
     []
     >>> list(list_one.getSubscribers())
     []
-    >>> mailinglist_set.getSubscribedAddresses(['team-one'])
+    >>> mailinglist_set.getSubscribedAddresses([team_one.name])
     {}
 
 Anne subscribes to the mailing list for team one.  Because Anne does not
@@ -75,6 +75,9 @@ provide an email address when she subscribes, her preferred address is used.
     [u'anne.person@example.com']
     >>> sorted(person.displayname for person in list_one.getSubscribers())
     [u'Anne Person']
+
+    >>> pretty(mailinglist_set.getSubscribedAddresses([team_one.name]))
+    "{u'team-one': [u'anne.person@example.com']}"
 
 Now Bart also subscribes to the mailing list, but he does so with something
 other than his preferred email address.
