@@ -40,9 +40,13 @@ def comments_text_representation(translation_message):
         for line in translation_message.comment.split('\n')[:-1]:
             comment_line = u'#' + line
             if line.startswith('|'):
-                comment_lines_previous_msgids.append(comment_line)
+                if translation_message.is_obsolete:
+                    comment_prefix = u'#~'
+                else:
+                    comment_prefix = u'#'
+                comment_lines_previous_msgids.append(comment_prefix + line)
             else:
-                comment_lines.append(comment_line)
+                comment_lines.append(u'#' + line)
     if not translation_message.is_obsolete:
         # Source comments are only exported if it's not an obsolete entry.
         if translation_message.source_comment:
