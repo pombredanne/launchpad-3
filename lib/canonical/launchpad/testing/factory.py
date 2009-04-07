@@ -1618,7 +1618,7 @@ class LaunchpadObjectFactory(ObjectFactory):
             raw_submission, filename, filesize, system)
 
     def makeSSHKey(self, person=None, keytype=SSHKeyType.RSA):
-        """ """
+        """Create a new SSHKey."""
         if person is None:
             person = self.makePerson()
         return getUtility(ISSHKeySet).new(
