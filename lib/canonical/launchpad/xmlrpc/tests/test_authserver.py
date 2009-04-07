@@ -13,10 +13,13 @@ from canonical.launchpad.interfaces import IPrivateApplication
 from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.launchpad.xmlrpc import faults
 from canonical.launchpad.xmlrpc.authserver import AuthServerAPIView
+from canonical.testing.layers import DatabaseFunctionalLayer
 
 class GetUserAndSSHKeysTests(TestCaseWithFactory):
     """Tests for the implementation of `IAuthServer.getUserAndSSHKeys`.
     """
+
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         TestCaseWithFactory.setUp(self)
@@ -36,7 +39,7 @@ class GetUserAndSSHKeysTests(TestCaseWithFactory):
         # no Person of the given name.
         self.assertFaultEqual(
             faults.NoSuchPersonWithName('no-one'),
-            self.getUserAndSSHKeys('no-one'))
+            self.authserver.getUserAndSSHKeys('no-one'))
 
     def test_user_no_keys(self):
         # getUserAndSSHKeys returns a dict with keys ['id', 'name', 'keys'].
@@ -45,7 +48,7 @@ class GetUserAndSSHKeysTests(TestCaseWithFactory):
         new_person = self.factory.makePerson()
         self.assertEqual(
             dict(id=new_person.id, name=new_person.name, keys=[]),
-            self.getUserAndSSHKeys(new_person.name))
+            self.authserver.getUserAndSSHKeys(new_person.name))
 
     def test_user_with_keys(self):
         # For a user with registered SSH keys, getUserAndSSHKeys returns the
@@ -56,7 +59,7 @@ class GetUserAndSSHKeysTests(TestCaseWithFactory):
         self.assertEqual(
             dict(id=new_person.id, name=new_person.name,
                  keys=[(key.keytype.title, key.keytext)]),
-            self.getUserAndSSHKeys(new_person.name))
+            self.authserver.getUserAndSSHKeys(new_person.name))
 
 
 def test_suite():
