@@ -56,11 +56,17 @@ Combining DistroSeries and SourcePackageRelease:
  u'pmount 0.1-1'
 
 
-DistroSeriesSourcePackageRelease
---------------------------------
+Querying builds for DistroSeries and DistributionSourcePackageRelease
+---------------------------------------------------------------------
 
-The DistroSeriesSourcePackageRelease class has a builds() method which
-returns all the builds for the source package 
+Both the DistroSeriesSourcePackageRelease class and the
+DistributionSourcePackageRelease have a builds() method which
+returns all the builds for the source package that have been published
+in a main archive.
+
+The build may have been built and published initially in a PPA (such as a
+security PPA), but it will only be included in the results if it has also
+been published in a main archive.
 
 First, publish a build in the main archive of ubuntutest.
 
@@ -88,11 +94,14 @@ archive:
     >>> binary_pkg_pub_history = test_publisher.publishBinaryInArchive(
     ...     binary_pkg_release, ubuntutest.main_archive)
 
-Next we create our DistroSeriesSourcePackageRelease.
+Next we create our DistroSeriesSourcePackageRelease and our
+DistributionSourcePackageRelease
 
     >>> breezy_autotest = ubuntutest['breezy-autotest']
     >>> breezytest_dsspr_foo = DistroSeriesSourcePackageRelease(
     ...     breezy_autotest, source_pub.sourcepackagerelease)
+    >>> ubuntutest_dspr_foo = DistributionSourcePackageRelease(
+    ...     ubuntutest, source_pub.sourcepackagerelease)
 
 Create a helper for printing builds:
 
@@ -104,6 +113,8 @@ Create a helper for printing builds:
 Now we can query the builds:
 
     >>> print_builds(breezytest_dsspr_foo.builds)
+    foo in Primary Archive for Ubuntu Test
+    >>> print_builds(ubuntutest_dspr_foo.builds)
     foo in Primary Archive for Ubuntu Test
 
 If we add a build to the partner archive, it is included in the
@@ -117,7 +128,11 @@ results as well.
     ...     partner_build, 'foo-bin')
     >>> binary_pkg_pub_history = test_publisher.publishBinaryInArchive(
     ...     binary_pkg_release, partner_archive)
+
     >>> print_builds(breezytest_dsspr_foo.builds)
+    foo in Partner Archive for Ubuntu Test
+    foo in Primary Archive for Ubuntu Test
+    >>> print_builds(ubuntutest_dspr_foo.builds)
     foo in Partner Archive for Ubuntu Test
     foo in Primary Archive for Ubuntu Test
 
@@ -136,10 +151,14 @@ If we publish the source and binary in a PPA,
     ...     binary_pkg_release, cprov.archive)
     >>> breezytest_dsspr_bar = DistroSeriesSourcePackageRelease(
     ...     breezy_autotest, source_pub.sourcepackagerelease)
+    >>> ubuntutest_dspr_bar = DistributionSourcePackageRelease(
+    ...     ubuntutest, source_pub.sourcepackagerelease)
 
 the build will not be returned.
 
     >>> print_builds(breezytest_dsspr_bar.builds)
+
+    >>> print_builds(ubuntutest_dspr_bar.builds)
 
 But if the package is copied into the main archive (and the binary published
 there) then it will then be included in the results.
@@ -148,6 +167,9 @@ there) then it will then be included in the results.
     ...     ubuntutest.main_archive)
     >>> binary_pkg_pub_history = test_publisher.publishBinaryInArchive(
     ...     binary_pkg_release, ubuntutest.main_archive)
+
     >>> print_builds(breezytest_dsspr_bar.builds)
+    bar in PPA for Celso Providelo
+    >>> print_builds(ubuntutest_dspr_bar.builds)
     bar in PPA for Celso Providelo
 

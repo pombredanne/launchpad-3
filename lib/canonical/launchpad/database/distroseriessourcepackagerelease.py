@@ -109,7 +109,7 @@ class DistroSeriesSourcePackageRelease:
         # The builds are joined with their publishing histories to
         # restrict the results to only those builds that have been published
         # in a main archive. So a PPA build won't be included unless it
-        # was copied to a main archive.
+        # was also published in a main archive.
         builds_published_in_main_archives = store.find(Build,
             Build.sourcepackagerelease == self.sourcepackagerelease,
             Build.distroarchseries == DistroArchSeries.id,

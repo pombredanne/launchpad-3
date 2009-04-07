@@ -9,6 +9,7 @@ __all__ = [
     'DistributionSourcePackageRelease',
     ]
 
+from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.launchpad.interfaces import(
@@ -16,7 +17,10 @@ from canonical.launchpad.interfaces import(
 
 from canonical.database.sqlbase import sqlvalues
 
+from canonical.launchpad.database.archive import Archive
 from canonical.launchpad.database.binarypackagename import BinaryPackageName
+from canonical.launchpad.database.binarypackagerelease import (
+    BinaryPackageRelease)
 from canonical.launchpad.database.distroseriesbinarypackage import (
     DistroSeriesBinaryPackage)
 from canonical.launchpad.database.publishing import (
@@ -24,6 +28,9 @@ from canonical.launchpad.database.publishing import (
 from canonical.launchpad.database.build import Build
 from canonical.launchpad.database.publishing import \
     SourcePackagePublishingHistory
+from canonical.launchpad.interfaces.archive import MAIN_ARCHIVE_PURPOSES
+from canonical.launchpad.webapp.interfaces import (
+    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 
 from lazr.delegates import delegates
 
@@ -77,15 +84,30 @@ class DistributionSourcePackageRelease:
     @property
     def builds(self):
         """See IDistributionSourcePackageRelease."""
-        return Build.select("""
-            Build.sourcepackagerelease = %s AND
-            Build.distroarchseries = DistroArchSeries.id AND
-            DistroArchSeries.distroseries = DistroSeries.id AND
-            DistroSeries.distribution = %s
-            """ % sqlvalues(self.sourcepackagerelease.id,
-                            self.distribution.id),
-            orderBy='-datecreated',
-            clauseTables=['distroarchseries', 'distroseries'])
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+
+        # Import DistroArchSeries here to avoid circular imports.
+        from canonical.launchpad.database.distroarchseries import (
+            DistroArchSeries)
+        from lp.registry.model.distroseries import DistroSeries
+
+        # The builds are joined with their publishing histories to
+        # restrict the results to only those builds that have been published
+        # in a main archive. So a PPA build won't be included unless it
+        # was also published in a main archive.
+        builds_published_in_main_archives = store.find(Build,
+            Build.sourcepackagerelease == self.sourcepackagerelease,
+            Build.distroarchseries == DistroArchSeries.id,
+            DistroArchSeries.distroseries == DistroSeries.id,
+            DistroSeries.distribution == self.distribution,
+            BinaryPackageRelease.build == Build.id,
+            BinaryPackagePublishingHistory.binarypackagerelease ==
+                BinaryPackageRelease.id,
+            BinaryPackagePublishingHistory.archive == Archive.id,
+            Archive.purpose.is_in(MAIN_ARCHIVE_PURPOSES))
+
+        return builds_published_in_main_archives.config(
+            distinct=True).order_by('datecreated DESC', 'id DESC')
 
     @property
     def binary_package_names(self):
