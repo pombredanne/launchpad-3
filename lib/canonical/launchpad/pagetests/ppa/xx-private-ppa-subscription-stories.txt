@@ -39,19 +39,6 @@ Given a private PPA for Celso,
 
 and a browser for Celso currently navigated to the Manage Subscriptions page,
 
-XXX: noodles 2009-03-10 bug=340405. The the +subscriptions traversal
-will require launchpad.Admin until the backend .htaccess update
-machinery is in-place and tested:
-
-    >>> from lp.registry.interfaces.person import IPersonSet
-    >>> from zope.component import getUtility
-    >>> login('foo.bar@canonical.com')
-    >>> cprov = getUtility(IPersonSet).getByName('cprov')
-    >>> foobar = getUtility(IPersonSet).getByName('name16')
-    >>> admins = getUtility(IPersonSet).getByName('admins')
-    >>> admins.addMember(cprov, foobar)
-    >>> logout()
-
     >>> cprov_browser = setupBrowser(
     ...     auth="Basic celso.providelo@canonical.com:cprov")
     >>> cprov_browser.open(
@@ -199,25 +186,17 @@ cancellation is displayed.
 === Scenario 1: A user activates a personal subscription ===
 
 Given a subscription for Celso's private PPA for Joe Smith, when
-Joe visits his private archive subscriptions page, then he sees
-a list of all his subscriptions.
+Joe visits his profile and clicks 'View your private PPA subscriptions'
+then he'll see a list of his current subscriptions.
 
-XXX: noodles 2009-03-10 bug=340405. The +archivesubscriptions traversal
-will require launchpad.Admin until the backend .htaccess update
-machinery is in-place and tested:
-
-    >>> login('foo.bar@canonical.com')
-    >>> admins.addMember(client, foobar)
-    >>> logout()
     >>> joe_browser = setupBrowser(auth="Basic joe@example.com:test")
-    >>> joe_browser.open(
-    ...     "http://launchpad.dev/~joesmith/+archivesubscriptions")
+    >>> joe_browser.open("http://launchpad.dev/~joesmith")
+    >>> joe_browser.getLink('View your private PPA subscriptions').click()
     >>> print_subscriptions_for_person(joe_browser.contents)
-    Archive                             Subscription description Status
-    PPA for Celso Providelo     Joe is my friend         Pending
-        Confirm
+    Archive                             Status
+    PPA for Celso Providelo             Pending     Confirm
 
-When Joe clicks on the 'Activate now' link for Celso's PPA then the
+When Joe clicks on the 'Confirm' link for Celso's PPA then the
 details of the subscription are displayed with a request to confirm the
 subscription.
 
@@ -251,8 +230,8 @@ subscriptions reflects the confirmed subscription.
     >>> joe_browser.open(
     ...     "http://launchpad.dev/~joesmith/+archivesubscriptions")
     >>> print_subscriptions_for_person(joe_browser.contents)
-    Archive                             Subscription description Status
-    PPA for Celso Providelo     Joe is my friend         Active View
+    Archive                      Status
+    PPA for Celso Providelo      Active     View
 
 === Scenario 2: A user re-generates the token for a subscription ===
 
@@ -278,6 +257,79 @@ the page is redisplayed with new sources.list entries and a notification.
     Launchpad has generated the new password you requested for your
     subscription to the archive PPA for Celso Providelo. Please
     follow the instructions below to update your custom "sources.list".
+
+
+=== Scenario 3: A user activates a team subscription ===
+
+Given a subscription for Celso's private PPA for the Launchpad Team and
+a user Mark who is a member of the Launchpad team,
+
+    >>> login('celso.providelo@canonical.com')
+    >>> from zope.component import getUtility
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> cprov = getUtility(IPersonSet).getByName('cprov')
+    >>> launchpad = getUtility(IPersonSet).getByName('launchpad')
+    >>> ignore = cprov.archive.newSubscription(launchpad, cprov)
+    >>> logout()
+    >>> login('foo.bar@canonical.com')
+    >>> foobar = getUtility(IPersonSet).getByName('name16')
+    >>> sabdfl = getUtility(IPersonSet).getByName('sabdfl')
+    >>> launchpad.addMember(sabdfl, foobar)
+    >>> import transaction
+    >>> transaction.commit()
+    >>> logout()
+
+When Mark, a member of the Launchpad team, visits his profile and clicks 
+'View your private PPA subscriptions', then he'll see a list of his current
+subscriptions.
+
+    >>> mark_browser = setupBrowser(auth='Basic mark@hbd.com:test')
+    >>> mark_browser.open(
+    ...     "http://launchpad.dev/~sabdfl")
+
+    >>> mark_browser.getLink('View your private PPA subscriptions').click()
+    >>> print_subscriptions_for_person(mark_browser.contents)
+    Archive                            Status
+    PPA for Celso Providelo            Pending    Confirm
+
+When Marks clicks on the confirm link, then he is taken to the page for
+his personal subscription for Celso's private PPA and asked to confirm
+the subscription.
+
+    >>> mark_browser.getLink('Confirm').click()
+    >>> print mark_browser.url
+    http://launchpad.dev/~sabdfl/+archivesubscriptions/9
+    >>> print extract_text(find_main_content(mark_browser.contents))
+    Profile...
+    Mark Shuttleworth's subscription to PPA for Celso Providelo
+    ...
+    Confirm subscription
+
+When Mark clicks on the 'Confirm subscription' button then a sources.list
+snippet is displayed.as well as a notification message.
+
+    >>> mark_browser.getControl(name='activate').click()
+    >>> sources_list = find_tag_by_id(mark_browser.contents, 'sources_list')
+    >>> print(extract_text(sources_list))
+    Custom sources.list entries
+    ...
+    # Personal subscription of Mark Shuttleworth to PPA for Celso Providelo
+    deb http://sabdfl:...@private-ppa.launchpad.dev/cprov/ppa/ubuntu hoary main
+    deb-src http://sabdfl:...@private-ppa.launchpad.dev/cprov/ppa/ubuntu hoary main
+    ...
+
+    >>> for msg in get_feedback_messages(mark_browser.contents):
+    ...     print msg
+    You have confirmed your subscription to the archive...
+
+When Mark navigates back to his current archive subscriptions then the list of
+subscriptions reflects the confirmed subscription.
+
+    >>> mark_browser.open(
+    ...     "http://launchpad.dev/~sabdfl/+archivesubscriptions")
+    >>> print_subscriptions_for_person(mark_browser.contents)
+    Archive                             Status
+    PPA for Celso Providelo             Active    View
 
 
 == Story 4: A user's subscription expires or is cancelled ==

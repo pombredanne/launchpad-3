@@ -7,7 +7,7 @@ reconstitution later.
 First, create the mailing list, which will send notification messages
 to all the members of the mailing list.  We can ignore these messages.
 
-    >>> from canonical.launchpad.mailman.testing import helpers
+    >>> from lp.services.mailman.testing import helpers
     >>> list_one = helpers.create_list('itest-one')
 
 Because the mailing list is active, there is no archived backup file.

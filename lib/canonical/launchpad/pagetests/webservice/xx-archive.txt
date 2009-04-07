@@ -688,17 +688,3 @@ the same for `syncSource` or `syncSources` operations.
     CannotCopy: private 1.0 in hoary
     (Cannot copy private source into public archives.)
     <BLANKLINE>
-
-
-== Archive editable displayname ==
-
-During this transition period, 'displayname' will be available in the
-API but users won't be able to edit it.
-
-    >>> print cprov_webservice.patch(
-    ...     cprov_archive['self_link'], 'application/json',
-    ...     simplejson.dumps({'displayname': 'boing'})).getOutput()
-    HTTP/1.1 500 Internal Server Error
-    ...
-    ForbiddenAttribute: ('displayname', <Archive at ...>)
-
