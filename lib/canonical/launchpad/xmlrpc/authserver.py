@@ -34,7 +34,8 @@ class AuthServerAPIView(LaunchpadXMLRPCView):
     def _getPerson(self, login_id):
         """Look up a person by login_id.
 
-        The login_id will be first tried as a numeric ID, then as a nickname.
+        The login_id will be first tried as an email address, then as a
+        numeric ID, then finally as a nickname.
 
         :returns: a `Person` or None if not found.
         """
@@ -47,14 +48,17 @@ class AuthServerAPIView(LaunchpadXMLRPCView):
 
         person_set = getUtility(IPersonSet)
 
-        person = None
+        # Try as email first.
+        person = person_set.getByEmail(login_id)
 
-        try:
-            person_id = int(login_id)
-        except ValueError:
-            pass
-        else:
-            person = person_set.get(person_id)
+        # If email didn't work, try as id.
+        if person is None:
+            try:
+                person_id = int(login_id)
+            except ValueError:
+                pass
+            else:
+                person = person_set.get(person_id)
 
         # If id didn't work, try as nick-name.
         if person is None:
