@@ -3772,7 +3772,18 @@ def generate_nick(email_addr, is_registered=_is_nick_registered):
 @adapter(IAccount)
 @implementer(IPerson)
 def person_from_account(account):
-    """Adapt an IAccount into an IPerson."""
+    """Adapt an IAccount into an IPerson.
+
+    If there is a current browser request, we cache the looked up Person in
+    the request's annotations so that we don't have to hit the DB once again
+    when further adaptation is needed.  We know this cache may cross
+    transaction boundaries, but this should not be a problem as the Person ->
+    Account link can't be changed.
+
+    This cache is necessary because our security adapters may need to adapt
+    the Account representing the logged in user into an IPerson multiple
+    times.
+    """
     request = get_current_browser_request()
     person = None
     # First we try to get the person from the cache, but only if there is a
