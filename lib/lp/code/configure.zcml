@@ -465,7 +465,7 @@
     <adapter
         for="lp.code.interfaces.branch.IBranch"
         provides="canonical.launchpad.webapp.badge.IHasBadges"
-        factory="lp.code.browser.branch.BranchBadges"/>
+        factory="lp.code.browser.branchlisting.BranchBadges"/>
     <adapter
         for="lp.code.interfaces.branch.IBranch"
         provides="canonical.launchpad.webapp.interfaces.IPrimaryContext"

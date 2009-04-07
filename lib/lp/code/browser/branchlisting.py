@@ -5,6 +5,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'BranchBadges',
     'BranchListingView',
     'PersonBranchesMenu',
     'PersonCodeSummaryView',
@@ -38,7 +39,6 @@ from canonical.config import config
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
-from lp.code.browser.branch import BranchBadges
 from canonical.launchpad.browser.feeds import (
     FeedsMixin, PersonBranchesFeedLink, PersonRevisionsFeedLink,
     ProductBranchesFeedLink, ProductRevisionsFeedLink,
@@ -66,6 +66,7 @@ from canonical.launchpad.webapp import (
     ApplicationMenu, canonical_url, custom_widget, enabled_with_permission,
     LaunchpadFormView, Link)
 from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.badge import Badge, HasBadgeBase
 from canonical.launchpad.webapp.batching import TableBatchNavigator
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.widgets import LaunchpadDropdownWidget
@@ -77,6 +78,44 @@ def get_plural_text(count, singular, plural):
         return singular
     else:
         return plural
+
+
+class BranchBadges(HasBadgeBase):
+    badges = "private", "bug", "blueprint", "warning", "mergeproposal"
+
+    def isBugBadgeVisible(self):
+        """Show a bug badge if the branch is linked to bugs."""
+        # Only show the badge if at least one bug is visible by the user.
+        for bug in self.context.related_bugs:
+            # Stop on the first visible one.
+            if check_permission('launchpad.View', bug):
+                return True
+        return False
+
+    def isBlueprintBadgeVisible(self):
+        """Show a blueprint badge if the branch is linked to blueprints."""
+        # When specs get privacy, this will need to be adjusted.
+        return self.context.spec_links.count() > 0
+
+    def isWarningBadgeVisible(self):
+        """Show a warning badge if there are mirror failures."""
+        return self.context.mirror_failures > 0
+
+    def isMergeproposalBadgeVisible(self):
+        """Show a proposal badge if there are any landing targets."""
+        for proposal in self.context.landing_targets:
+            # Stop on the first visible one.
+            if check_permission('launchpad.View', proposal):
+                return True
+        return False
+
+    def getBadge(self, badge_name):
+        """See `IHasBadges`."""
+        if badge_name == "warning":
+            return Badge('/@@/warning', '/@@/warning-large', '',
+                         'Branch has errors')
+        else:
+            return HasBadgeBase.getBadge(self, badge_name)
 
 
 class BranchListingItem(BranchBadges):

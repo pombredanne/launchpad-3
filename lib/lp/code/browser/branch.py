@@ -7,7 +7,6 @@ __metaclass__ = type
 __all__ = [
     'PersonBranchAddView',
     'ProductBranchAddView',
-    'BranchBadges',
     'BranchContextMenu',
     'BranchDeletionView',
     'BranchEditView',
@@ -75,7 +74,6 @@ from canonical.launchpad.webapp import (
     LaunchpadView, Navigation, NavigationMenu, stepto, stepthrough,
     LaunchpadFormView, LaunchpadEditFormView, action, custom_widget)
 from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.badge import Badge, HasBadgeBase
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from canonical.launchpad.webapp.menu import structured
 from lazr.uri import URI
@@ -114,44 +112,6 @@ class BranchHierarchy(Hierarchy):
         return self._breadcrumbs(
             (obj, canonical_url(obj))
             for obj in IHasBranchTarget(self.context).target.components)
-
-
-class BranchBadges(HasBadgeBase):
-    badges = "private", "bug", "blueprint", "warning", "mergeproposal"
-
-    def isBugBadgeVisible(self):
-        """Show a bug badge if the branch is linked to bugs."""
-        # Only show the badge if at least one bug is visible by the user.
-        for bug in self.context.related_bugs:
-            # Stop on the first visible one.
-            if check_permission('launchpad.View', bug):
-                return True
-        return False
-
-    def isBlueprintBadgeVisible(self):
-        """Show a blueprint badge if the branch is linked to blueprints."""
-        # When specs get privacy, this will need to be adjusted.
-        return self.context.spec_links.count() > 0
-
-    def isWarningBadgeVisible(self):
-        """Show a warning badge if there are mirror failures."""
-        return self.context.mirror_failures > 0
-
-    def isMergeproposalBadgeVisible(self):
-        """Show a proposal badge if there are any landing targets."""
-        for proposal in self.context.landing_targets:
-            # Stop on the first visible one.
-            if check_permission('launchpad.View', proposal):
-                return True
-        return False
-
-    def getBadge(self, badge_name):
-        """See `IHasBadges`."""
-        if badge_name == "warning":
-            return Badge('/@@/warning', '/@@/warning-large', '',
-                         'Branch has errors')
-        else:
-            return HasBadgeBase.getBadge(self, badge_name)
 
 
 class BranchNavigation(Navigation):
