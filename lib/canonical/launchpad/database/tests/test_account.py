@@ -21,14 +21,14 @@ from canonical.launchpad.interfaces.account import (
 from canonical.launchpad.interfaces.authtoken import (
     IAuthTokenSet, LoginTokenType)
 from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
-from canonical.launchpad.interfaces.person import (
-    IPerson, PersonCreationRationale)
 from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.launchpad.webapp.dbpolicy import (
     SlaveDatabasePolicy, SSODatabasePolicy)
 from canonical.launchpad.webapp.interfaces import (
     AUTH_STORE, IStoreSelector, SLAVE_FLAVOR)
 from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.registry.interfaces.person import (
+    IPerson, PersonCreationRationale)
 
 
 class TestAccountSetRetriesWhenAccountNotFound(TestCaseWithFactory):
