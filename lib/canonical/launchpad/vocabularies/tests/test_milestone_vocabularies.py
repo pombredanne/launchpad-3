@@ -30,14 +30,14 @@ class TestMilestoneVocabulary(TestCase):
     def tearDown(self):
         logout()
 
-    def test_productMilestoneVocabulary(self):
+    def testProductMilestoneVocabulary(self):
         """Test of MilestoneVocabulary for a product."""
         firefox = getUtility(IProductSet).getByName('firefox')
         vocabulary = MilestoneVocabulary(firefox)
         self.assertEqual(
             [term.title for term in vocabulary], [u'Mozilla Firefox: 1.0'])
 
-    def test_productSeriesMilestoneVocabulary(self):
+    def testProductSeriesMilestoneVocabulary(self):
         """Test of MilestoneVocabulary for a product series."""
         firefox = getUtility(IProductSet).getByName('firefox')
         trunk = firefox.getSeries('trunk')
@@ -45,14 +45,14 @@ class TestMilestoneVocabulary(TestCase):
         self.assertEqual(
             [term.title for term in vocabulary], [u'Mozilla Firefox: 1.0'])
 
-    def test_projectMilestoneVocabulary(self):
+    def testProjectMilestoneVocabulary(self):
         """Test of MilestoneVocabulary for a project."""
         mozilla = getUtility(IProjectSet).getByName('mozilla')
         vocabulary = MilestoneVocabulary(mozilla)
         self.assertEqual(
             [term.title for term in vocabulary], [u'Mozilla Firefox: 1.0'])
 
-    def test_distributionMilestoneVocabulary(self):
+    def testDistributionMilestoneVocabulary(self):
         """Test of MilestoneVocabulary for a distribution."""
         debian = getUtility(IDistributionSet).getByName('debian')
         vocabulary = MilestoneVocabulary(debian)
@@ -60,7 +60,7 @@ class TestMilestoneVocabulary(TestCase):
             [term.title for term in vocabulary],
             [u'Debian: 3.1', u'Debian: 3.1-rc1'])
 
-    def test_distroseriesMilestoneVocabulary(self):
+    def testDistroseriesMilestoneVocabulary(self):
         """Test of MilestoneVocabulary for a distroseries."""
         debian = getUtility(IDistributionSet).getByName('debian')
         woody = debian.getSeries('woody')
@@ -69,7 +69,7 @@ class TestMilestoneVocabulary(TestCase):
             [term.title for term in vocabulary],
             [u'Debian: 3.1', u'Debian: 3.1-rc1'])
 
-    def test_upstreamBugTaskMilestoneVocabulary(self):
+    def testUpstreamBugTaskMilestoneVocabulary(self):
         """Test of MilestoneVocabulary for a upstraem bugtask."""
         bugtask = getUtility(IBugTaskSet).get(2)
         firefox = getUtility(IProductSet).getByName('firefox')
@@ -78,7 +78,7 @@ class TestMilestoneVocabulary(TestCase):
         self.assertEqual(
             [term.title for term in vocabulary], [u'Mozilla Firefox: 1.0'])
 
-    def test_distributionBugTaskMilestoneVocabulary(self):
+    def testDistributionBugTaskMilestoneVocabulary(self):
         """Test of MilestoneVocabulary for a distribution."""
         bugtask = getUtility(IBugTaskSet).get(4)
         debian = getUtility(IDistributionSet).getByName('debian')
@@ -88,7 +88,7 @@ class TestMilestoneVocabulary(TestCase):
             [term.title for term in vocabulary],
             [u'Debian: 3.1', u'Debian: 3.1-rc1'])
 
-    def test_distroseriesBugTaskMilestoneVocabulary(self):
+    def testDistroseriesBugTaskMilestoneVocabulary(self):
         """Test of MilestoneVocabulary for a distroseries."""
         bugtask = getUtility(IBugTaskSet).get(18)
         debian = getUtility(IDistributionSet).getByName('debian')
@@ -99,7 +99,7 @@ class TestMilestoneVocabulary(TestCase):
             [term.title for term in vocabulary],
             [u'Debian: 3.1', u'Debian: 3.1-rc1'])
 
-    def test_productseriesBugTaskMilestoneVocabulary(self):
+    def testProductseriesBugTaskMilestoneVocabulary(self):
         """Test of MilestoneVocabulary for a productseries."""
         bugtask = getUtility(IBugTaskSet).get(29)
         firefox = getUtility(IProductSet).getByName('firefox')
@@ -109,7 +109,7 @@ class TestMilestoneVocabulary(TestCase):
         self.assertEqual(
             [term.title for term in vocabulary], [u'Mozilla Firefox: 1.0'])
 
-    def test_distributionsourcepackageBugTaskMilestoneVocabulary(self):
+    def testDistributionsourcepackageBugTaskMilestoneVocabulary(self):
         """Test of MilestoneVocabulary for a productseries."""
         factory = LaunchpadObjectFactory()
         debian = getUtility(IDistributionSet).getByName('debian')
@@ -121,7 +121,7 @@ class TestMilestoneVocabulary(TestCase):
             [term.title for term in vocabulary],
             [u'Debian: 3.1', u'Debian: 3.1-rc1'])
 
-    def test_sourcepackageBugTaskMilestoneVocabulary(self):
+    def testSourcepackageBugTaskMilestoneVocabulary(self):
         """Test of MilestoneVocabulary for a productseries."""
         factory = LaunchpadObjectFactory()
         debian = getUtility(IDistributionSet).getByName('debian')
@@ -134,7 +134,7 @@ class TestMilestoneVocabulary(TestCase):
             [term.title for term in vocabulary],
             [u'Debian: 3.1', u'Debian: 3.1-rc1'])
 
-    def test_specificationMilestoneVocabulary(self):
+    def testSpecificationMilestoneVocabulary(self):
         """Test of MilestoneVocabulary for a specification."""
         spec = getUtility(ISpecificationSet).get(1)
         firefox = getUtility(IProductSet).getByName('firefox')
@@ -143,7 +143,7 @@ class TestMilestoneVocabulary(TestCase):
         self.assertEqual(
             [term.title for term in vocabulary], [u'Mozilla Firefox: 1.0'])
 
-    def test_personMilestoneVocabulary(self):
+    def testPersonMilestoneVocabulary(self):
         """Test of MilestoneVocabulary for a person."""
         sample_person = getUtility(IPersonSet).getByEmail(
             'test@canonical.com')
@@ -153,8 +153,6 @@ class TestMilestoneVocabulary(TestCase):
         self.assertEqual(
             [term.title for term in vocabulary],
             [u'Debian: 3.1', u'Debian: 3.1-rc1', u'Mozilla Firefox: 1.0'])
-
-#xxx spec and person (context-less)
 
 
 def test_suite():
