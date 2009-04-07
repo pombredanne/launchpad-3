@@ -407,6 +407,22 @@ And the pmount counts make up the difference between the two:
 
     >>> transaction.abort()
 
+Only active milestones relevant to the distribution being searched will
+be shown on the advanced search form.
+
+    >>> form = {
+    ...     'advanced': '1',
+    ...     'search': "Search",
+    ...     'field.distribution': "ubuntu",
+    ...     'field.sourcepackagename': "mozilla-firefox",
+    ...     'field.status': [s.title for s in UNRESOLVED_BUGTASK_STATUSES]}
+
+    >>> packagebugs_search_view = create_view(
+    ...     name16, name="+packagebugs", form=form)
+
+    >>> print pretty(packagebugs_search_view.getMilestoneWidgetValues())
+    []
+
 
 == Bugs commented on by a Person ==
 

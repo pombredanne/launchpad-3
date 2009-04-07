@@ -123,6 +123,7 @@ from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 
 from canonical.cachedproperty import cachedproperty
 
+from canonical.launchpad import helpers
 from canonical.launchpad.browser.archive import traverse_named_ppa
 from canonical.launchpad.browser.archivesubscription import (
     traverse_archive_subscription_for_subscriber)
