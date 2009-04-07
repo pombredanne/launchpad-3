@@ -823,16 +823,16 @@ class POFile(SQLBase, POFileMixIn):
             error_text = str(exception)
             entry_to_import.error_output = error_text
             needs_notification_for_imported = True
-        except OutdatedTranslationError:
+        except OutdatedTranslationError, exception:
             # The attached file is older than the last imported one, we ignore
             # it. We also log this problem and select the email template.
             if logger:
                 logger.info('Got an old version for %s' % self.title)
             template_mail = 'poimport-got-old-version.txt'
             import_rejected = True
+            error_text = str(exception)
             entry_to_import.error_output = (
-                "Header's PO-Revision-Date is older than in last imported "
-                "version.")
+                "Outdated translation.  " + error_text)
         except TooManyPluralFormsError:
             if logger:
                 logger.warning("Too many plural forms.")
