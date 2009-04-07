@@ -215,21 +215,34 @@ class TestGarbo(TestCase):
                 """ % (table_name, str(delta), str(delta), now-10, delta))
         transaction.commit()
 
+        # Ensure that we created at least one expirable row (using the
+        # test start time as 'now').
         num_expired = store.execute("""
             SELECT COUNT(*) FROM %s
             WHERE issued + lifetime < %f
             """ % (table_name, now)).get_one()[0]
         self.failUnless(num_expired > 0)
 
+        # Expire all those expirable rows, and possibly a few more if this
+        # test is running slow.
         self.runHourly()
 
         LaunchpadZopelessLayer.switchDbUser('testadmin')
         store = store_selector.get(store_name, MASTER_FLAVOR)
+        # Confirm all the rows we know should have been expired have
+        # been expired. These are the ones that would be expired using
+        # the test start time as 'now'.
         num_expired = store.execute("""
             SELECT COUNT(*) FROM %s
             WHERE issued + lifetime < %f
             """ % (table_name, now)).get_one()[0]
         self.failUnlessEqual(num_expired, 0)
+
+        # Confirm that we haven't expired everything. This test will fail
+        # if it has taken 10 seconds to get this far.
+        num_unexpired = store.execute(
+            "SELECT COUNT(*) FROM %s" % table_name).get_one()[0]
+        self.failUnless(num_unexpired > 0)
 
     def test_OpenIDConsumerAssociationPruner(self):
         self.test_OpenIDAssociationPruner(OpenIDConsumerAssociationPruner)
