@@ -171,12 +171,6 @@ unavailable.
     >>> account.displayname
     u'No Privileges Person'
 
-If an account has an associated person, it can be accessed via the
-person attribute:
-
-    >>> IPerson(account) == person
-    True
-
 An Account has an OpenID identifier used to generate the OpenID identity
 URL.
 

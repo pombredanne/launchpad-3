@@ -235,6 +235,9 @@ A Person may be linked to an Account.
     >>> person.account.openid_identifier
     u'no-priv_oid'
 
+
+==== Adapting an Account into a Person ====
+
 And when the person is linked to an account, it's possible to adapt that
 account into an IPerson.
 
@@ -249,6 +252,39 @@ We can't adapt an account which has no person associated with, though.
     ...     AccountCreationRationale.UNKNOWN, 'Display name')
     >>> print IPerson(personless_account, None)
     None
+
+Our security adapters expect to get passed an IPerson, but we use IAccounts to
+represent logged in users, so we need to adapt them into IPerson before
+passing that to the adapters.  Since our Account table has no reference to the
+Person table, the adaptation may end up hitting the DB, which is something we
+don't want our security adapters to be doing as they're called tons of times
+for every page we render.  For that reason, whenever there is a browser
+request, we will cache the IPerson objects associated to the accounts we
+adapt.
+
+    >>> from canonical.lazr.utils import get_current_browser_request
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> request = LaunchpadTestRequest()
+    >>> login('foo.bar@canonical.com', request)
+
+    >>> print request.annotations.get('launchpad.person_to_account_cache')
+    None
+
+    >>> IPerson(person.account)
+    <Person...No Privileges Person)>
+
+    >>> print request.annotations.get('launchpad.person_to_account_cache')
+    <WeakKeyDictionary...
+
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> cache = request.annotations.get('launchpad.person_to_account_cache')
+    >>> cache[removeSecurityProxy(person.account)] = 'foo'
+
+    >>> IPerson(person.account)
+    'foo'
+    >>> cache[removeSecurityProxy(person.account)] = None
+    >>> IPerson(person.account)
+    <Person...No Privileges Person)>
 
 
 === Personal standing ===
@@ -415,8 +451,6 @@ entries into teams.
 
     >>> from canonical.launchpad.mail import stub
     >>> stub.test_emails = []
-
-    >>> from zope.security.proxy import removeSecurityProxy
 
     >>> not_a_person.convertToTeam(team_owner=ddaa)
     >>> not_a_person.isTeam()
