@@ -15,13 +15,6 @@
 <div metal:fill-slot="main"
      tal:define="branches view/branches">
 
-  <div style="float:right" id="floating-links"
-       tal:define="menu context/menu:branches">
-    <div tal:define="link menu/addbranch"
-         tal:condition="link/enabled"
-         tal:content="structure link/render" />
-  </div>
-
   <h1 tal:content="view/heading">Bazaar branches</h1>
 
   <div id="no-branch-message" tal:condition="not: view/has_branches">
