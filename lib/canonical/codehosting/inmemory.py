@@ -253,12 +253,7 @@ def fake_product_to_branch_target(fake_product):
 class FakeProductSeries(FakeDatabaseObject):
     """Fake product series."""
 
-    user_branch = None
-
-    @property
-    def series_branch(self):
-        """See `IProductSeries`."""
-        return self.user_branch
+    branch = None
 
 
 class FakeScriptActivity(FakeDatabaseObject):
@@ -408,7 +403,7 @@ class FakeObjectFactory(ObjectFactory):
         """
         if branch is None:
             branch = self.makeBranch(product=product)
-        product.development_focus.user_branch = branch
+        product.development_focus.branch = branch
         branch.last_mirrored = 'rev1'
         return branch
 
@@ -435,7 +430,7 @@ class FakeBranchPuller:
         default_branch = ''
         if branch.product is not None:
             series = branch.product.development_focus
-            user_branch = series.user_branch
+            user_branch = series.branch
             if (user_branch is not None
                 and not (
                     user_branch.private

@@ -35,7 +35,7 @@ from zope.security.proxy import isinstance as zope_isinstance
 
 from canonical.launchpad.interfaces.bugchange import IBugChange
 from canonical.launchpad.interfaces.bugtask import IBugTask
-from canonical.launchpad.interfaces.product import IProduct
+from lp.registry.interfaces.product import IProduct
 from canonical.launchpad.webapp.publisher import canonical_url
 
 

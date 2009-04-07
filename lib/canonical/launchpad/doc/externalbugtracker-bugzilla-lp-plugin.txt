@@ -402,8 +402,8 @@ bugtracker and a couple of bugwatches.
     >>> from canonical.database.sqlbase import commit
     >>> from canonical.launchpad.interfaces.bug import CreateBugParams
     >>> from canonical.launchpad.interfaces.bugtracker import BugTrackerType
-    >>> from canonical.launchpad.interfaces.person import IPersonSet
-    >>> from canonical.launchpad.interfaces.product import IProductSet
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.product import IProductSet
     >>> from canonical.launchpad.ftests.externalbugtracker import (
     ...     new_bugtracker)
 

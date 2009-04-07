@@ -63,7 +63,7 @@ present.
 While navigating around the PPA the "structural location" includes a PPA:
 
     >>> print_location(anon_browser.contents)
-    Hierarchy: Launchpad > Celso Providelo > PPA
+    Hierarchy: Launchpad > Celso Providelo > PPA for Celso Providelo
     Tabs:
     * Overview (selected) - http://launchpad.dev/~cprov
     * Code - http://code.launchpad.dev/~cprov
@@ -73,19 +73,40 @@ While navigating around the PPA the "structural location" includes a PPA:
     * Answers - http://answers.launchpad.dev/~cprov
     Main heading: PPA for Celso Providelo
 
+The PPA breadcrumb follows the PPA displayname.
+
+    >>> cprov_browser = setupBrowser(
+    ...     auth="Basic celso.providelo@canonical.com:cprov")
+    >>> cprov_browser.open("http://launchpad.dev/~cprov/+archive/ppa")
+    >>> cprov_browser.getLink("Change details").click()
+    >>> cprov_browser.getControl(
+    ...    name="field.displayname").value = 'Default PPA'
+    >>> cprov_browser.getControl("Save").click()
+
+    >>> print_location(cprov_browser.contents)
+    Hierarchy: Launchpad > Celso Providelo > Default PPA
+    Tabs:
+    * Overview (selected) - http://launchpad.dev/~cprov
+    * Code - http://code.launchpad.dev/~cprov
+    * Bugs - http://bugs.launchpad.dev/~cprov
+    * Blueprints - http://blueprints.launchpad.dev/~cprov
+    * Translations - http://translations.launchpad.dev/~cprov
+    * Answers - http://answers.launchpad.dev/~cprov
+    Main heading: Default PPA
+
 You can see the build details of the packages in the archive by using
 the 'View build records' link.
 
     >>> anon_browser.getLink('View build records').click()
     >>> anon_browser.title
-    'Builds for PPA for Celso Providelo'
+    'Builds for Default PPA'
 
     >>> anon_browser.url
     'http://launchpad.dev/~cprov/+archive/ppa/+builds'
 
 The user could return to the 'PPA' overview by using the breadcrumb link.
 
-    >>> print anon_browser.getLink('PPA').url
+    >>> print anon_browser.getLink('Default PPA').url
     http://launchpad.dev/%7Ecprov/+archive/ppa
 
 The user can navigate to an individual build details:
@@ -97,7 +118,7 @@ The user can navigate to an individual build details:
     'i386 build of iceweasel 1.0 in ubuntu warty RELEASE'
 
     >>> print_location(anon_browser.contents)
-    Hierarchy: Launchpad > Celso Providelo > PPA
+    Hierarchy: Launchpad > Celso Providelo > Default PPA
     Tabs:
     * Overview (selected) - http://launchpad.dev/~cprov
     * Code - http://code.launchpad.dev/~cprov

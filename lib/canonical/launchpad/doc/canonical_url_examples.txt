@@ -129,7 +129,7 @@ An ISourcePackage.
 
 An IDistributionSourcePackage.
 
-    >>> from canonical.launchpad.interfaces.sourcepackagename import (
+    >>> from lp.registry.interfaces.sourcepackagename import (
     ...     ISourcePackageNameSet)
     >>> sourcepackagenameset = getUtility(ISourcePackageNameSet)
     >>> ubuntu_firefox = celebs.ubuntu.getSourcePackage(

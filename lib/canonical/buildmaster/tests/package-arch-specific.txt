@@ -9,7 +9,7 @@ packages (architecturehintlist).
 For testing PAS we will create a set of publications using
 `SoyuzTestPublisher`.
 
-    >>> from canonical.launchpad.interfaces.distribution import (
+    >>> from lp.registry.interfaces.distribution import (
     ...     IDistributionSet)
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> hoary = ubuntu.getSeries('hoary')

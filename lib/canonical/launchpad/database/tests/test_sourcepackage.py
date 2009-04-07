@@ -11,7 +11,7 @@ from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.ftests import login_person, logout
-from canonical.launchpad.interfaces.distroseries import DistroSeriesStatus
+from lp.registry.interfaces.distroseries import DistroSeriesStatus
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.publishing import PackagePublishingPocket
 from canonical.launchpad.interfaces.seriessourcepackagebranch import (
