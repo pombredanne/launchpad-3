@@ -733,7 +733,7 @@ functions that achieve that.
 First we import the classes required to test the view:
 
   >>> from zope.component import getMultiAdapter
-  >>> from canonical.launchpad.browser.distribution import (
+  >>> from lp.registry.browser.distribution import (
   ...     DistributionMirrorsView)
   >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 

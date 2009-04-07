@@ -12,7 +12,7 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.launchpad.database.branch import Branch
 from canonical.launchpad.database.branchcollection import (
     GenericBranchCollection)
-from canonical.launchpad.database.product import Product
+from lp.registry.model.product import Product
 from canonical.launchpad.interfaces import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.branch import (
     BranchLifecycleStatus, BranchType)
@@ -474,6 +474,77 @@ class TestBranchMergeProposals(TestCaseWithFactory):
         proposals = collection.getMergeProposals(
             [BranchMergeProposalStatus.NEEDS_REVIEW])
         self.assertEqual([mp1], list(proposals))
+
+
+class TestBranchMergeProposalsForReviewer(TestCaseWithFactory):
+    """Tests for IBranchCollection.getProposalsForReviewer()."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        # Use the admin user as we don't care about who can and can't call
+        # nominate reviewer in this test.
+        TestCaseWithFactory.setUp(self, 'admin@canonical.com')
+        remove_all_sample_data_branches()
+        self.all_branches = getUtility(IAllBranches)
+
+    def test_getProposalsForReviewer(self):
+        reviewer = self.factory.makePerson()
+        proposal = self.factory.makeBranchMergeProposal()
+        proposal.nominateReviewer(reviewer, reviewer)
+        proposal2 = self.factory.makeBranchMergeProposal()
+        proposals = self.all_branches.getMergeProposalsForReviewer(reviewer)
+        self.assertEqual([proposal], list(proposals))
+
+    def test_getProposalsForReviewer_filter_status(self):
+        reviewer = self.factory.makePerson()
+        proposal1 = self.factory.makeBranchMergeProposal(
+            set_state=BranchMergeProposalStatus.NEEDS_REVIEW)
+        proposal1.nominateReviewer(reviewer, reviewer)
+        proposal2 = self.factory.makeBranchMergeProposal(
+            set_state=BranchMergeProposalStatus.WORK_IN_PROGRESS)
+        proposal2.nominateReviewer(reviewer, reviewer)
+        proposals = self.all_branches.getMergeProposalsForReviewer(
+            reviewer, [BranchMergeProposalStatus.NEEDS_REVIEW])
+        self.assertEqual([proposal1], list(proposals))
+
+    def test_getProposalsForReviewer_anonymous(self):
+        # Don't include proposals if the target branch is private for
+        # anonymous views.
+        reviewer = self.factory.makePerson()
+        target_branch = self.factory.makeAnyBranch(private=True)
+        proposal = self.factory.makeBranchMergeProposal(
+            target_branch=target_branch)
+        proposal.nominateReviewer(reviewer, reviewer)
+        proposals = self.all_branches.visibleByUser(
+            None).getMergeProposalsForReviewer(reviewer)
+        self.assertEqual([], list(proposals))
+
+    def test_getProposalsForReviewer_anonymous_source_private(self):
+        # Don't include proposals if the source branch is private for
+        # anonymous views.
+        reviewer = self.factory.makePerson()
+        product = self.factory.makeProduct()
+        source_branch = self.factory.makeProductBranch(
+            product=product, private=True)
+        target_branch = self.factory.makeProductBranch(product=product)
+        proposal = self.factory.makeBranchMergeProposal(
+            source_branch=source_branch, target_branch=target_branch)
+        proposal.nominateReviewer(reviewer, reviewer)
+        proposals = self.all_branches.visibleByUser(
+            None).getMergeProposalsForReviewer(reviewer)
+        self.assertEqual([], list(proposals))
+
+    def test_getProposalsForReviewer_for_product(self):
+        reviewer = self.factory.makePerson()
+        proposal = self.factory.makeBranchMergeProposal()
+        proposal.nominateReviewer(reviewer, reviewer)
+        proposal2 = self.factory.makeBranchMergeProposal()
+        proposal2.nominateReviewer(reviewer, reviewer)
+        proposals = self.all_branches.inProduct(
+            proposal.source_branch.product).getMergeProposalsForReviewer(
+            reviewer)
+        self.assertEqual([proposal], list(proposals))
 
 
 class TestSearch(TestCaseWithFactory):

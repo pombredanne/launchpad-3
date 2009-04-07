@@ -9,8 +9,19 @@ from zope.testing.doctest import DocTestSuite
 
 from canonical.launchpad.browser import specification
 from canonical.launchpad.testing import TestCaseWithFactory
+from canonical.launchpad.webapp.servers import StepsToGo
 from canonical.lazr.testing.webservice import FakeRequest
 from canonical.testing.layers import DatabaseFunctionalLayer
+
+
+class LocalFakeRequest(FakeRequest):
+    @property
+    def stepstogo(self):
+        """See IBasicLaunchpadRequest.
+
+        This method is called by traversal machinery.
+        """
+        return StepsToGo(self)
 
 
 class TestBranchTraversal(TestCaseWithFactory):
@@ -31,7 +42,7 @@ class TestBranchTraversal(TestCaseWithFactory):
     def traverse(self, segments):
         stack = list(reversed(['+branch'] + segments))
         name = stack.pop()
-        request = FakeRequest([], stack)
+        request = LocalFakeRequest([], stack)
         traverser = specification.SpecificationNavigation(
             self.specification, request)
         return traverser.publishTraverse(request, name)

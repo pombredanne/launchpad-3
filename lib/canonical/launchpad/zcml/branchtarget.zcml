@@ -8,7 +8,7 @@
     <allow interface="canonical.launchpad.interfaces.branchtarget.IBranchTarget" />
   </class>
 
-  <adapter for="canonical.launchpad.interfaces.sourcepackage.ISourcePackage"
+  <adapter for="lp.registry.interfaces.sourcepackage.ISourcePackage"
            provides="canonical.launchpad.interfaces.branchtarget.IBranchTarget"
            factory="canonical.launchpad.database.branchtarget.PackageBranchTarget"
            />
@@ -17,7 +17,7 @@
     <allow interface="canonical.launchpad.interfaces.branchtarget.IBranchTarget" />
   </class>
 
-  <adapter for="canonical.launchpad.interfaces.person.IPerson"
+  <adapter for="lp.registry.interfaces.person.IPerson"
            provides="canonical.launchpad.interfaces.branchtarget.IBranchTarget"
            factory="canonical.launchpad.database.branchtarget.PersonBranchTarget"
            />
@@ -26,7 +26,7 @@
     <allow interface="canonical.launchpad.interfaces.branchtarget.IBranchTarget" />
   </class>
 
-  <adapter for="canonical.launchpad.interfaces.product.IProduct"
+  <adapter for="lp.registry.interfaces.product.IProduct"
            provides="canonical.launchpad.interfaces.branchtarget.IBranchTarget"
            factory="canonical.launchpad.database.branchtarget.ProductBranchTarget"
            />

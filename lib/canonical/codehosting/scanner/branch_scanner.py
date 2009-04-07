@@ -13,7 +13,7 @@ import sys
 from bzrlib.errors import NotBranchError, ConnectionError
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces import IBranchSet
+from canonical.launchpad.interfaces.branchscanner import IBranchScanner
 from canonical.codehosting.vfs import get_scanner_server
 from canonical.codehosting.scanner.bzrsync import BzrSync
 from canonical.launchpad.webapp import canonical_url, errorlog
@@ -35,7 +35,7 @@ class BranchScanner:
         server = get_scanner_server()
         server.setUp()
         try:
-            for branch in getUtility(IBranchSet).getBranchesToScan():
+            for branch in getUtility(IBranchScanner).getBranchesToScan():
                 try:
                     self.scanOneBranch(branch)
                 except (KeyboardInterrupt, SystemExit):
@@ -43,11 +43,11 @@ class BranchScanner:
                     # finish. Any other Exception is an error condition and
                     # must not terminate the script.
                     raise
-                except:
+                except Exception, e:
                     # Yes, bare except. Bugs or error conditions when scanning
                     # any given branch must not prevent scanning the other
                     # branches.
-                    self.logScanFailure(branch)
+                    self.logScanFailure(branch, str(e))
         finally:
             server.tearDown()
         self.log.info('Finished branch scanning')
@@ -62,9 +62,9 @@ class BranchScanner:
             return
         try:
             bzrsync.syncBranchAndClose()
-        except ConnectionError:
+        except ConnectionError, e:
             # A network glitch occured. Yes, that does happen.
-            self.logScanFailure(branch, "Internal network failure")
+            self.logScanFailure(branch, "Internal network failure: %s" % e)
 
     def logScanFailure(self, branch, message="Failed to scan"):
         """Log diagnostic for branches that could not be scanned."""
@@ -76,4 +76,5 @@ class BranchScanner:
             ('error-explanation', message)])
         request.URL = canonical_url(branch)
         errorlog.globalErrorUtility.raising(sys.exc_info(), request)
-        self.log.info('%s: %s', request.oopsid, message)
+        self.log.info('%s: %s (%s)',
+            request.oopsid, message, branch.unique_name)

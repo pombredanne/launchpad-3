@@ -106,8 +106,12 @@ Now, let's add 'new-tag' again, and confirm it this time.
   >>> user_browser.getControl('Yes, define new tag').click()
   >>> user_browser.url
   'http://bugs.launchpad.dev/firefox/+bug/1'
-  >>> 'layout-test' in user_browser.contents
+
+  >>> tags_div = extract_text(
+  ...       find_tag_by_id(user_browser.contents, 'bug-tags'))
+
+  >>> 'layout-test' in tags_div
   False
-  >>> 'new-tag' in user_browser.contents
+  >>> 'new-tag' in tags_div
   True
 

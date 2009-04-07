@@ -15,7 +15,7 @@ from zope.schema import Datetime, Int, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.archive import IArchive
-from canonical.launchpad.interfaces.person import IPerson
+from lp.registry.interfaces.person import IPerson
 from canonical.lazr.fields import Reference
 
 
@@ -72,7 +72,14 @@ class IArchiveAuthTokenSet(Interface):
         """Retrieve a token by its token text.
 
         :param token: The token text for the token.
-        :return An object conforming to IArchiveAuthToken
+        :return: An object conforming to IArchiveAuthToken
+        """
+
+    def getByArchive(archive):
+        """Retrieve all the tokens for an archive.
+
+        :param archive: The context archive.
+        :return: A result set containing `IArchiveAuthToken`s.
         """
 
     def getActiveTokenForArchiveAndPerson(archive, person):

@@ -9,7 +9,7 @@ can support Unicode contents.
     ...     import_public_test_keys, import_secret_test_key, decrypt_content)
     >>> import transaction
     >>> import_public_test_keys()
-    >>> import_secret_test_key()
+    >>> key = import_secret_test_key()
 
     >>> transaction.commit()
 
@@ -33,14 +33,14 @@ Sample Person has public and secret keys set.
 
 Let's use a unicode content, it can't be directly typed as
 unicode, because doctest system seems to be reencoding the test
-content, let's use cryptic form. 
+content, let's use cryptic form.
 
     >>> content = u'\ufcber'
 
 Note, gpgkeys is ordered (by GPGKey.id), we can slice it without
 generating warnings: (its is also valid for Person.inactivegpgkeys
 property, since both are generating using GPGKeyset.getGPGKeys)
- 
+
     >>> fingerprint = bag.user.gpgkeys[0].fingerprint
 
 Note fingerprint is also unicode.

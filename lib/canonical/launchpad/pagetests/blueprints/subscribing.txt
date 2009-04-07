@@ -117,7 +117,7 @@ When we subscribe someone else to a blueprint, they get notified by email.
 
     >>> from canonical.launchpad.tests.mail_helpers import pop_notifications
     >>> last_email = pop_notifications()[-1]
-    >>> last_email['To'] 
+    >>> last_email['To']
     '...stuart.bishop@canonical.com...'
     >>> last_email['From']
     '...carlos@canonical.com...'
@@ -172,8 +172,8 @@ a spec will cause email notifications to be sent to each of its members.
     >>> browser.getControl('Continue').click()
 
 We created a subscription for the Launchpad Admins, but because the
-team does not have a preffered email address, an email is sent to
-each active member who has a preffered email registered.
+team does not have a preferred email address, an email is sent to
+each active member who has a preferred email registered.
 
     >>> print admins.preferredemail
     None
@@ -205,7 +205,7 @@ The Ubuntu Team does have a preferred email address.
     >>> browser.getControl('Continue').click()
 
 We subscribe the Ubuntu Team and an email is sent to the team's
-preffered email address.
+preferred email address.
 
     >>> login(ANONYMOUS)
     >>> ([message['To'] for message in pop_notifications()] ==
@@ -219,10 +219,31 @@ preffered email address.
     >>> browser.getControl('Continue').click()
 
 We modified the Ubuntu Team's subscription and again,
-an email is sent to the team's preffered email address. 
+an email is sent to the team's preferred email address.
 
     >>> login(ANONYMOUS)
     >>> ([message['To'] for message in pop_notifications()] ==
     ...     [str(ubuntu_team.preferredemail.email)])
     True
     >>> logout()
+
+
+== Viewing the subscribers ==
+
+The subcribers portlet lists each subscriber with the appropriate icon
+representing whether the person is essential to the specification or
+not.
+
+    >>> browser.open(
+    ...   "http://blueprints.launchpad.dev/firefox/+spec/svg-support")
+    >>> subscribers = find_tags_by_class(browser.contents, 'subscriber')
+    >>> for subscriber in subscribers:
+    ...     a_tags = subscriber.findAll('a')
+    ...     img = a_tags[0].first('img')
+    ...     print img['src'],
+    ...     print a_tags[1].string
+    /@@/subscriber-inessential Foo Bar
+    /@@/subscriber-essential Robert Collins
+    /@@/subscriber-essential Andrew Bennetts
+    /@@/subscriber-inessential Stuart Bishop
+    /@@/subscriber-inessential Dafydd Harries

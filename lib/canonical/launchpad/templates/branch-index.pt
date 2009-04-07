@@ -312,7 +312,7 @@
     </div>
     <div tal:condition="not:view/landing_targets">
       &raquo;
-      Not proposed for merging
+      This branch is not proposed for merging into any others.
     </div>
 
 

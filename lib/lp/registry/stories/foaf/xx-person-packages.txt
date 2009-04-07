@@ -1,0 +1,22 @@
+== Package Maintenance Report ==
+
+From the main person page, the user's Package Maintenance Report can be
+accessed by clicking on the 'Related Software' menu item.
+
+    >>> anon_browser.open('http://launchpad.dev/~sabdfl')
+    >>> anon_browser.getLink('Related Software').click()
+    >>> print_navigation_links(anon_browser.contents)
+    Profile: ...
+    Related Software
+    Karma: ...
+
+    >>> print anon_browser.title
+    Software related to Mark Shuttleworth
+    >>> print anon_browser.url
+    http://launchpad.dev/~sabdfl/+related-software
+
+That page displays a table, the with list of 'Maintained'packages as
+well as the list of 'Uploaded' packages. The table also shows the
+number of open bugs and questions filed against each package.
+
+Please see pagetests/soyuz/xx-person-packages.txt for details.

@@ -5,7 +5,7 @@ email addresses must be unique.
 
     >>> from canonical.launchpad.interfaces.emailaddress import (
     ...     IEmailAddress, IEmailAddressSet)
-    >>> from canonical.launchpad.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> emailset = getUtility(IEmailAddressSet)
     >>> person = factory.makePerson()
 
@@ -87,7 +87,7 @@ Otherwise, UndeletableEmailAddress is raised.
     ...
     UndeletableEmailAddress: This is a person's preferred email...
 
-    >>> from canonical.launchpad.ftests.mailinglists_helper import (
+    >>> from lp.registry.tests.mailinglists_helper import (
     ...     new_list_for_team)
     >>> mailing_list = new_list_for_team(guadamen)
     >>> email = emailset.getByEmail(guadamen.mailing_list.address)

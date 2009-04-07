@@ -1,0 +1,22 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
+  <div id="ppas">
+    <div class="section">
+      <div class="portlet">
+        <h2>Personal package archives</h2>
+
+        <div tal:replace="structure context/@@+ppas-list"/>
+
+        <div class="actions">
+           <tal:activate_ppa
+             define="link context/menu:overview/activate_ppa"
+             condition="link/enabled"
+             replace="structure link/fmt:icon-link" />
+        </div>
+      </div>
+    </div>
+  </div>
+</tal:root>

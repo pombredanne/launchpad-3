@@ -100,7 +100,7 @@ The login status area has a link to the user's Profile page, regardless
 of the facet that the user is currently viewing.
 
     >>> from zope.component import getMultiAdapter, getUtility
-    >>> from canonical.launchpad.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 
     >>> person_set = getUtility(IPersonSet)
@@ -112,7 +112,7 @@ of the facet that the user is currently viewing.
 
     >>> print view()
     <...
-    ...<a href="http://launchpad.dev/~name16">...
+    ...<a href="http://launchpad.dev/~name16"...>...
 
 The link is for the user's Profile page in the 'overview' facet, even if
 we are viewing the 'bugs' facet.
@@ -123,4 +123,4 @@ we are viewing the 'bugs' facet.
 
     >>> print view()
     <...
-    ...<a href="http://launchpad.dev/~name16">...
+    ...<a href="http://launchpad.dev/~name16"...>...

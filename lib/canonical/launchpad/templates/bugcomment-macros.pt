@@ -125,3 +125,34 @@
             tal:content="string:connectRemoteCommentReply(${comment/index});" />
   </div>
 </div>
+
+<div
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  metal:define-macro="activity-box"
+  tal:attributes="class string:boardComment">
+  <div class="boardCommentDetails">
+    <tal:activity_has_person>
+      <tal:activity_person replace="structure activity_person/fmt:link" />
+    </tal:activity_has_person>
+    <span
+      tal:attributes="title activity_date/fmt:datetime"
+      tal:content="activity_date/fmt:displaydate">
+      7 minutes ago
+    </span>
+  </div>
+  <div class="boardBugActivityBody">
+    <div class="bug-comment">
+      <table>
+        <tr tal:repeat="activity activity_list">
+          <td style="text-align: right;">
+            <b><tal:summary replace="activity/change_summary" /></b>:
+          </td>
+          <td>
+            <tal:details replace="structure activity/change_details" />
+          </td>
+        </tr>
+      </table>
+    </div>
+  </div>
+</div>

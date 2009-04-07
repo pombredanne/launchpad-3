@@ -7,7 +7,6 @@ import unittest
 from zope.error.interfaces import IErrorReportingUtility
 from zope.component import getMultiAdapter, getUtility
 
-from canonical.config import config
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.ftests import ANONYMOUS, login, login_person, logout
 from canonical.launchpad.systemhomes import ShipItApplication
@@ -227,6 +226,18 @@ class TestPeopleTrustedOnShipIt(TestCaseWithFactory):
     """Tests for the 'is_trusted_on_shipit' property of IPerson."""
     layer = LaunchpadFunctionalLayer
 
+    def setUp(self):
+        TestCaseWithFactory.setUp(self)
+        login(ANONYMOUS)
+        self.error_utility = getUtility(IErrorReportingUtility)
+        self.salgado = getUtility(IPersonSet).getByName('salgado')
+        self.sabdfl = getUtility(IPersonSet).getByName('sabdfl')
+        # Log a bogus error just to make sure we have something to compare
+        # further errors against.
+        bogus_error = Exception('Bogus error')
+        self.error_utility.raising(
+            (bogus_error.__class__, bogus_error, None))
+
     def test_person_with_karma_when_ubuntumembers_do_not_exist(self):
         """Return True and do not record an OOPS when the 'ubuntumembers' team
         doesn't exist.
@@ -234,11 +245,10 @@ class TestPeopleTrustedOnShipIt(TestCaseWithFactory):
         Since the person has karma, there's no need to check for membership in
         the ubuntumembers team, so we don't care whether it exists or not.
         """
-        login(ANONYMOUS)
-        sabdfl = getUtility(IPersonSet).getByName('sabdfl')
-        report = getUtility(IErrorReportingUtility).getLastOopsReport()
-        self.failUnless(IShipitAccount(sabdfl.account).is_trusted_on_shipit)
-        report2 = getUtility(IErrorReportingUtility).getLastOopsReport()
+        report = self.error_utility.getLastOopsReport()
+        self.failUnless(
+            IShipitAccount(self.sabdfl.account).is_trusted_on_shipit)
+        report2 = self.error_utility.getLastOopsReport()
         self.failUnlessEqual(report.id, report2.id)
 
     def test_person_without_karma_when_ubuntumembers_do_not_exist(self):
@@ -249,42 +259,37 @@ class TestPeopleTrustedOnShipIt(TestCaseWithFactory):
         don't want to fail the request -- instead we just move on as if the
         user was not trusted on shipit.
         """
-        login(ANONYMOUS)
-        salgado = getUtility(IPersonSet).getByName('salgado')
-        self.failUnlessEqual(salgado.karma, 0)
-        report = getUtility(IErrorReportingUtility).getLastOopsReport()
-        self.failIf(IShipitAccount(salgado.account).is_trusted_on_shipit)
-        report2 = getUtility(IErrorReportingUtility).getLastOopsReport()
+        self.failUnlessEqual(self.salgado.karma, 0)
+        report = self.error_utility.getLastOopsReport()
+        self.failIf(IShipitAccount(self.salgado.account).is_trusted_on_shipit)
+        report2 = self.error_utility.getLastOopsReport()
         self.failIfEqual(report.id, report2.id)
         self.failUnless(
             report2.value.startswith("No team named 'ubuntumembers'"))
 
     def test_person_without_karma_and_not_in_ubuntumembers(self):
         """Return False and do not log an OOPS as the team exists."""
-        login(ANONYMOUS)
-        salgado = getUtility(IPersonSet).getByName('salgado')
-        sabdfl = getUtility(IPersonSet).getByName('sabdfl')
-        ubuntumembers = self.factory.makeTeam(sabdfl, name='ubuntumembers')
-        self.failIf(salgado.inTeam(ubuntumembers))
-        self.failUnlessEqual(salgado.karma, 0)
-        report = getUtility(IErrorReportingUtility).getLastOopsReport()
-        self.failIf(IShipitAccount(salgado.account).is_trusted_on_shipit)
-        report2 = getUtility(IErrorReportingUtility).getLastOopsReport()
+        ubuntumembers = self.factory.makeTeam(
+            self.sabdfl, name='ubuntumembers')
+        self.failIf(self.salgado.inTeam(ubuntumembers))
+        self.failUnlessEqual(self.salgado.karma, 0)
+        report = self.error_utility.getLastOopsReport()
+        self.failIf(IShipitAccount(self.salgado.account).is_trusted_on_shipit)
+        report2 = self.error_utility.getLastOopsReport()
         self.failUnlessEqual(report.id, report2.id)
 
     def test_person_without_karma_and_in_ubuntumembers(self):
         """Return True and do not log an OOPS as the team exists."""
-        login(ANONYMOUS)
-        salgado = getUtility(IPersonSet).getByName('salgado')
-        sabdfl = getUtility(IPersonSet).getByName('sabdfl')
-        ubuntumembers = self.factory.makeTeam(sabdfl, name='ubuntumembers')
-        login_person(sabdfl)
-        ubuntumembers.addMember(salgado, sabdfl)
-        self.failUnless(salgado.inTeam(ubuntumembers))
-        self.failUnlessEqual(salgado.karma, 0)
-        report = getUtility(IErrorReportingUtility).getLastOopsReport()
-        self.failUnless(IShipitAccount(salgado.account).is_trusted_on_shipit)
-        report2 = getUtility(IErrorReportingUtility).getLastOopsReport()
+        ubuntumembers = self.factory.makeTeam(
+            self.sabdfl, name='ubuntumembers')
+        login_person(self.sabdfl)
+        ubuntumembers.addMember(self.salgado, self.sabdfl)
+        self.failUnless(self.salgado.inTeam(ubuntumembers))
+        self.failUnlessEqual(self.salgado.karma, 0)
+        report = self.error_utility.getLastOopsReport()
+        self.failUnless(
+            IShipitAccount(self.salgado.account).is_trusted_on_shipit)
+        report2 = self.error_utility.getLastOopsReport()
         self.failUnlessEqual(report.id, report2.id)
 
 
