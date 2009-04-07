@@ -1648,7 +1648,7 @@ class Person(
             clauseTables=['Person'],
             orderBy=Person.sortingColumns)
 
-    def _mapped_participants_locations(self):
+    def _mapped_participants_locations(self, limit=None):
         """See `IPersonViewRestricted`."""
         return PersonLocation.select("""
             PersonLocation.person = TeamParticipation.person AND
@@ -1661,17 +1661,16 @@ class Person(
             Person.teamowner IS NULL
             """ % sqlvalues(self.id),
             clauseTables=['TeamParticipation', 'Person'],
-            prejoins=['person',])
+            prejoins=['person',], limit=limit)
 
-    @property
-    def mapped_participants(self):
+    def getMappedParticipants(self, limit=None):
         """See `IPersonViewRestricted`."""
         # Pre-cache this location against its person.  Since we'll always
         # iterate over all persons returned by this property (to build the map
         # of team members), it becomes more important to cache their locations
         # than to return a lazy SelectResults (or similar) object that only
         # fetches the rows when they're needed.
-        locations = self._mapped_participants_locations()
+        locations = self._mapped_participants_locations(limit=limit)
         for location in locations:
             location.person._location = location
         participants = set(location.person for location in locations)
