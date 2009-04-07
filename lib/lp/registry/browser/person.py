@@ -1868,9 +1868,10 @@ class BugSubscriberPackageBugsSearchListingView(BugTaskSearchListingView):
         vocabulary_registry = getVocabularyRegistry()
         vocabulary = vocabulary_registry.get(current_distro, 'Milestone')
 
-        return [
+        return helpers.shortlist([
             dict(title=milestone.title, value=milestone.token, checked=False)
-            for milestone in vocabulary]
+            for milestone in vocabulary],
+            longest_expected=10)
 
     @cachedproperty
     def total_bug_counts(self):
