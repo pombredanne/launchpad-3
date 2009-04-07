@@ -1154,37 +1154,20 @@ class EditCodeImportMachine(OnlyVcsImportsAndAdmins):
     usedfor = ICodeImportMachine
 
 
-class EditPOTemplateDetails(EditByOwnersOrAdmins):
-    usedfor = IPOTemplate
-
-    def checkAuthenticated(self, user):
-        """Allow product/sourcepackage/potemplate owner, experts and admis.
-        """
-        if (self.obj.productseries is not None and
-            user.inTeam(self.obj.productseries.product.owner)):
-            # The user is the owner of the product.
-            return True
-
-        rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_experts
-
-        return (EditByOwnersOrAdmins.checkAuthenticated(self, user) or
-                user.inTeam(rosetta_experts))
-
-
 class AdminPOTemplateDetails(OnlyRosettaExpertsAndAdmins):
-    """Permissions to edit all aspects of an IPOTemplate."""
     permission = 'launchpad.Admin'
     usedfor = IPOTemplate
 
     def checkAuthenticated(self, user):
+        """Allow LP/Translations admins, and for distros, owners and 
+        translation group owners.
+        """
         if OnlyRosettaExpertsAndAdmins.checkAuthenticated(self, user):
             return True
 
-        if self.obj.distroseries is not None:
-            # For distroseries, both the owners and the owners of its
-            # chosen translation group (if any) are allowed to manage
-            # templates.
-            distro = self.obj.distroseries.distribution
+        template = self.obj
+        if template.distroseries is not None:
+            distro = template.distroseries.distribution
             if user.inTeam(distro.owner):
                 return True
             translation_group = distro.translationgroup
@@ -1192,6 +1175,24 @@ class AdminPOTemplateDetails(OnlyRosettaExpertsAndAdmins):
                 return True
 
         return False
+
+
+class EditPOTemplateDetails(AdminPOTemplateDetails, EditByOwnersOrAdmins):
+    permission = 'launchpad.Edit'
+    usedfor = IPOTemplate
+
+    def checkAuthenticated(self, user):
+        """Allow anyone with admin rights; owners, product owners and
+        distribution owners; and for distros, translation group owners.
+        """
+        if (self.obj.productseries is not None and
+            user.inTeam(self.obj.productseries.product.owner)):
+            # The user is the owner of the product.
+            return True
+
+        return (
+            AdminPOTemplateDetails.checkAuthenticated(self, user) or 
+            EditByOwnersOrAdmins.checkAuthenticated(self, user))
 
 
 # XXX: Carlos Perello Marin 2005-05-24 bug=753:
