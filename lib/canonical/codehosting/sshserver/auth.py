@@ -90,9 +90,8 @@ class Realm:
         self.branchfs_proxy = branchfs_proxy
 
     def requestAvatar(self, avatarId, mind, *interfaces):
-        # Fetch the user's details from the authserver -- YYY using the mind
-        # as a some kind of key as a cache.
-        deferred = mind.lookup(self.authentication_proxy, avatarId)
+        # Fetch the user's details from the authserver
+        deferred = mind.lookupUserDetails(self.authentication_proxy, avatarId)
 
         # Once all those details are retrieved, we can construct the avatar.
         def gotUserDict(userDict):
@@ -120,9 +119,9 @@ interfaceToMethod.update({
 
 
 class UserDetailsMind:
-    def __init__(self, cache):
-        self.cache = cache
-    def lookup(self, proxy, username):
+    def __init__(self):
+        self.cache = {}
+    def lookupUserDetails(self, proxy, username):
         if username in self.cache:
             return defer.succeed(self.cache[username])
         else:
@@ -140,7 +139,7 @@ class SSHUserAuthServer(userauth.SSHUserAuthServer):
     def __init__(self, transport=None):
         self.transport = transport
         self._configured_banner_sent = False
-        self._userdetails_cache = {}
+        self._mind = UserDetailsMind()
 
     def sendBanner(self, text, language='en'):
         bytes = '\r\n'.join(text.encode('UTF8').splitlines() + [''])
@@ -190,23 +189,29 @@ class SSHUserAuthServer(userauth.SSHUserAuthServer):
         self.sendBanner(reason.getErrorMessage())
         return reason
 
+    def getMind(self):
+        return self._mind
+
+    def makeCredentials(self, user, algName, blob, b, signature):
+        mind = self.getMind()
+        return SSHPrivateKeyWithMind(
+                self.user, algName, blob, b, signature, mind)
+
     def auth_publickey(self, packet):
         # Copy-paste-hack from conch!
         hasSig = ord(packet[0])
         algName, blob, rest = getNS(packet[1:], 2)
         pubKey = keys.Key.fromString(blob).keyObject
         signature = hasSig and getNS(rest)[0] or None
-        mind = UserDetailsMind(self._userdetails_cache)
+        mind = self.getMind()
         if hasSig:
             b = NS(self.transport.sessionID) + chr(userauth.MSG_USERAUTH_REQUEST) + \
                 NS(self.user) + NS(self.nextService) + NS('publickey') + \
                 chr(hasSig) +  NS(keys.objectType(pubKey)) + NS(blob)
-            c = SSHPrivateKeyWithMind(
-                self.user, algName, blob, b, signature, mind)
+            c = self.makeCredentials(self.user, algName, blob, b, signature)
             return self.portal.login(c, mind, IConchUser)
         else:
-            c = SSHPrivateKeyWithMind(
-                self.user, algName, blob, None, None, mind)
+            c = self.makeCredentials(self.user, algName, blob, None, None)
             return self.portal.login(c, mind, IConchUser).addErrback(
                                                         self._ebCheckKey,
                                                         packet[1:])
@@ -224,7 +229,8 @@ class PublicKeyFromLaunchpadChecker(SSHPublicKeyDatabase):
         self.authserver = authserver
 
     def checkKey(self, credentials):
-        d = credentials.mind.lookup(self.authserver, credentials.username)
+        d = credentials.mind.lookupUserDetails(
+            self.authserver, credentials.username)
         d.addCallback(self._checkForAuthorizedKey, credentials)
         d.addErrback(self._reportNoSuchUser, credentials)
         return d

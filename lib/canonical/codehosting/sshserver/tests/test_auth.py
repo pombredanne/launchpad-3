@@ -353,7 +353,7 @@ class TestPublicKeyFromLaunchpadChecker(TrialTestCase):
                     return defer.fail()
 
     def makeCredentials(self, username, public_key):
-        mind = auth.UserDetailsMind({})
+        mind = auth.UserDetailsMind()
         return auth.SSHPrivateKeyWithMind(
             username, 'ssh-dss', public_key, '', None, mind)
 
