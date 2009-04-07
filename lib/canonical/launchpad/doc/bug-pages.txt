@@ -793,7 +793,8 @@ First, some set-up.
     ...     2009, 3, 26, 21, 37, 45, tzinfo=pytz.timezone('UTC'))
 
     >>> login('foo.bar@canonical.com')
-    >>> bug = factory.makeBug(title="A bug title")
+    >>> product = factory.makeProduct(name='testproduct')
+    >>> bug = factory.makeBug(title="A bug title", product=product)
     >>> title_change = BugTitleChange(
     ...     when=nowish, person=foo_bar, what_changed='title',
     ...     old_value=bug.title, new_value="A new bug title")
@@ -816,10 +817,14 @@ First, some set-up.
     ...     (bug.bugtasks[0], request), name="+index")
 
 The activity_by_date property of BugTaskView returns a dict of
-BugActivityItems grouped by the date on which they occurred.
+BugActivityItems grouped by the date on which they occurred. The items
+are returned as a list of dicts containig a list of activity items for a
+given target.
 
     >>> print pretty(view.activity_by_date)
-    {datetime.datetime(2009, 3, 26...): [<...BugActivityItem...>]}
+    {datetime.datetime(2009, 3, 26...):
+    [{'activity': [<...BugActivityItem...>],
+    'target': None}]}
 
 The activity_and_comments property of BugTaskView is a list of comments
 and activity on a bug, ordered by the date that they occurred. Each item
@@ -830,18 +835,39 @@ item, which is used to sort the list.
 If we iterate over the list of activity_and_comments we can examine, in
 order, the comments and activity that have taken place on a bug.
 
-The activity item is always a list of BugActivityItems, grouped together
-by their datechanged property.
+    >>> request = LaunchpadTestRequest(
+    ...     method="POST",
+    ...     form={
+    ...         'testproduct.status': 'Confirmed',
+    ...         'testproduct.actions.save': 'Save Changes',
+    ...         })
+    >>> view = getMultiAdapter(
+    ...     (bug.bugtasks[0], request), name="+editstatus-page")
+    >>> view.initialize()
+
+    >>> view = getMultiAdapter(
+    ...     (bug.bugtasks[0], request), name="+index")
+    >>> view.initialize()
 
     >>> activity_and_comments = view.activity_and_comments
     >>> for activity_or_comment in activity_and_comments:
     ...     if 'activity' in activity_or_comment:
-    ...         for activity in activity_or_comment['activity']:
-    ...             print "%s: %s => %s" % (
-    ...                 activity.whatchanged, activity.oldvalue,
-    ...                 activity.newvalue)
+    ...         activity_dict = activity_or_comment['activity']
+    ...         for activity_for_target in activity_dict:
+    ...             target_name = activity_for_target['target']
+    ...             activity_items = activity_for_target['activity']
+    ...             if target_name is not None:
+    ...                 print "Changed in %s:" % target_name
+    ...             for activity_item in activity_items:
+    ...                 print "%s: %s => %s" % (
+    ...                     activity_item.change_summary,
+    ...                     activity_item.oldvalue,
+    ...                     activity_item.newvalue)
+    ...
     ...     if 'comment' in activity_or_comment:
     ...         comment = activity_or_comment['comment']
     ...         print comment.text_for_display
     summary: A bug title => A new bug title
     A comment, for the reading of.
+    Changed in testproduct:
+                    status: New => Confirmed

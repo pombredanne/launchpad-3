@@ -107,7 +107,7 @@ class Language(SQLBase):
         # language, so we are actually returning the people with the most
         # translation karma that have this language selected in their
         # preferences.
-        from canonical.launchpad.database.person import Person
+        from lp.registry.model.person import Person
         return Person.select('''
             PersonLanguage.person = Person.id AND
             PersonLanguage.language = %s AND

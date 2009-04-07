@@ -50,7 +50,7 @@ from canonical.launchpad.interfaces.archive import (
 from canonical.launchpad.interfaces.archivepermission import (
     ArchivePermissionType, IArchivePermissionSet)
 from canonical.launchpad.interfaces.archivesubscriber import (
-    IArchiveSubscriberSet, IArchiveSubscriptionForOwner)
+    IArchiveSubscriberSet)
 from canonical.launchpad.interfaces.build import (
     BuildStatus, IBuildSet)
 from canonical.launchpad.interfaces.buildrecords import IHasBuildRecords
@@ -212,7 +212,7 @@ class ArchiveNavigation(Navigation, FileNavigationMixin):
         # the direct subscription:
         for subscription in subscriptions:
             if subscription.subscriber == person:
-                return IArchiveSubscriptionForOwner(subscription)
+                return subscription
 
         return None
 
@@ -281,10 +281,6 @@ class ArchiveContextMenu(ContextMenu):
         # This link should only be available for private archives:
         if not self.context.private:
             link.enabled = False
-
-        # XXX: noodles 2009-03-10 bug=340405. This link is disabled until
-        # the cron-job supporting private archive subscriptions is enabled.
-        link.enabled = False
 
         return link
 
