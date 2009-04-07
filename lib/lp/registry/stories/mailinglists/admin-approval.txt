@@ -154,7 +154,6 @@ The Test Two mailing list has been declined so Mailman will not create it.
     Mailing list configuration
     The application for this team's mailing list has been declined.
     Please contact a Launchpad administrator for further assistance.
-    ...
 
 
 == Multiple actions ==

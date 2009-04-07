@@ -13,17 +13,16 @@ from Mailman.MailList import MailList
 from Mailman.mm_cfg import MAILMAN_SITE_LIST, QUEUE_DIR, VAR_PREFIX
 from Mailman.Utils import list_names
 
-from canonical.launchpad.mailman.testing import helpers
-from canonical.launchpad.mailman.testing.layers import MailmanLayer
+import lp.services.mailman.doc
+
 from canonical.launchpad.testing.browser import (
     setUp as setUpBrowser,
     tearDown as tearDownBrowser)
 from canonical.launchpad.testing.factory import LaunchpadObjectFactory
 from canonical.launchpad.testing.systemdocs import LayeredDocFileSuite
 from canonical.testing.layers import LayerProcessController
-
-
-HERE = os.path.dirname(__file__)
+from lp.services.mailman.testing import helpers
+from lp.services.mailman.testing.layers import MailmanLayer
 
 
 def setUp(testobj):
@@ -96,11 +95,14 @@ def tearDown(testobj):
 
 def test_suite():
     suite = unittest.TestSuite()
-    doc_directory = os.path.normpath(os.path.join(HERE, os.pardir, 'doc'))
+    doc_directory = os.path.normpath(
+        os.path.dirname(lp.services.mailman.doc.__file__))
     for filename in os.listdir(doc_directory):
         if filename.endswith('.txt'):
             test = LayeredDocFileSuite(
-                '../doc/' + filename,
-                setUp=setUp, tearDown=tearDown, layer=MailmanLayer)
+                filename,
+                package=lp.services.mailman.doc,
+                setUp=setUp, tearDown=tearDown,
+                layer=MailmanLayer)
             suite.addTest(test)
     return suite

@@ -255,28 +255,6 @@ class FakeProductSeries(FakeDatabaseObject):
 
     branch = None
 
-    @property
-    def series_branch(self):
-        return self.branch
-
-    def _get_user_branch(self):
-        return self.branch
-
-    def _set_user_branch(self, branch):
-        self.branch = branch
-
-    user_branch = property(_get_user_branch, _set_user_branch)
-
-    @property
-    def series_branch(self):
-        """See `IProductSeries`."""
-        return self.user_branch
-
-    @property
-    def series_branch(self):
-        """See `IProductSeries`."""
-        return self.user_branch
-
 
 class FakeScriptActivity(FakeDatabaseObject):
     """Fake script activity."""
@@ -425,7 +403,7 @@ class FakeObjectFactory(ObjectFactory):
         """
         if branch is None:
             branch = self.makeBranch(product=product)
-        product.development_focus.user_branch = branch
+        product.development_focus.branch = branch
         branch.last_mirrored = 'rev1'
         return branch
 

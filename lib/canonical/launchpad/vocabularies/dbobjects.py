@@ -1227,6 +1227,7 @@ class MilestoneVocabulary(SQLObjectVocabularyBase):
             target = milestone_context.target
         elif (IProject.providedBy(milestone_context) or
               IProduct.providedBy(milestone_context) or
+              IProductSeries.providedBy(milestone_context) or
               IDistribution.providedBy(milestone_context) or
               IDistroSeries.providedBy(milestone_context)):
             target = milestone_context
