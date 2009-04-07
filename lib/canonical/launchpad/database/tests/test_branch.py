@@ -315,7 +315,7 @@ class TestBzrIdentity(TestCaseWithFactory):
         # bzr identity is lp:product.
         branch = self.factory.makeProductBranch()
         product = branch.product
-        removeSecurityProxy(product).development_focus.user_branch = branch
+        removeSecurityProxy(product).development_focus.branch = branch
         self.assertBzrIdentity(branch, product.name)
 
     def test_linked_to_product_series(self):
@@ -324,7 +324,7 @@ class TestBzrIdentity(TestCaseWithFactory):
         branch = self.factory.makeProductBranch()
         product = branch.product
         series = self.factory.makeProductSeries(product=product)
-        series.user_branch = branch
+        series.branch = branch
         self.assertBzrIdentity(branch, '%s/%s' % (product.name, series.name))
 
     def test_private_linked_to_product(self):
@@ -336,7 +336,7 @@ class TestBzrIdentity(TestCaseWithFactory):
         login_person(owner)
         self.addCleanup(logout)
         product = branch.product
-        removeSecurityProxy(product).development_focus.user_branch = branch
+        removeSecurityProxy(product).development_focus.branch = branch
         self.assertBzrIdentity(branch, branch.unique_name)
 
     def test_linked_to_series_and_dev_focus(self):
@@ -345,9 +345,9 @@ class TestBzrIdentity(TestCaseWithFactory):
         # URLs.
         branch = self.factory.makeProductBranch()
         product = branch.product
-        removeSecurityProxy(product).development_focus.user_branch = branch
+        removeSecurityProxy(product).development_focus.branch = branch
         series = self.factory.makeProductSeries(product=product)
-        series.user_branch = branch
+        series.branch = branch
         self.assertBzrIdentity(branch, product.name)
 
     def test_junk_branch_always_unique_name(self):
@@ -356,7 +356,7 @@ class TestBzrIdentity(TestCaseWithFactory):
         # or whatever.
         branch = self.factory.makePersonalBranch()
         product = self.factory.makeProduct()
-        removeSecurityProxy(product).development_focus.user_branch = branch
+        removeSecurityProxy(product).development_focus.branch = branch
         self.assertBzrIdentity(branch, branch.unique_name)
 
     def test_linked_to_package_release(self):
@@ -1191,6 +1191,87 @@ class TestBranchNamespace(TestCaseWithFactory):
         namespace = getUtility(IBranchNamespaceSet).get(
             person=branch.owner, product=branch.product)
         self.assertNamespaceEqual(namespace, branch.namespace)
+
+
+class TestPendingWrites(TestCaseWithFactory):
+    """Are there changes to this branch not reflected in the database?"""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_new_branch_no_writes(self):
+        # New branches have no pending writes.
+        branch = self.factory.makeAnyBranch()
+        self.assertEqual(False, branch.pending_writes)
+
+    def test_requestMirror_for_hosted(self):
+        # If a hosted branch has a requested mirror, then someone has just
+        # pushed something up. Therefore, pending writes.
+        branch = self.factory.makeAnyBranch(branch_type=BranchType.HOSTED)
+        branch.requestMirror()
+        self.assertEqual(True, branch.pending_writes)
+
+    def test_requestMirror_for_imported(self):
+        # If an imported branch has a requested mirror, then we've just
+        # imported new changes. Therefore, pending writes.
+        branch = self.factory.makeAnyBranch(branch_type=BranchType.IMPORTED)
+        branch.requestMirror()
+        self.assertEqual(True, branch.pending_writes)
+
+    def test_requestMirror_for_mirrored(self):
+        # Mirrored branches *always* have a requested mirror. The fact that a
+        # mirror is requested has no bearing on whether there are pending
+        # writes. Thus, pending_writes is False.
+        branch = self.factory.makeAnyBranch(branch_type=BranchType.MIRRORED)
+        branch.requestMirror()
+        self.assertEqual(False, branch.pending_writes)
+
+    def test_pulled_but_not_scanned(self):
+        # If a branch has been pulled (mirrored) but not scanned, then we have
+        # yet to load the revisions into the database. This means there are
+        # pending writes.
+        branch = self.factory.makeAnyBranch()
+        branch.startMirroring()
+        rev_id = self.factory.getUniqueString('rev-id')
+        branch.mirrorComplete(rev_id)
+        self.assertEqual(True, branch.pending_writes)
+
+    def test_pulled_and_scanned(self):
+        # If a branch has been pulled and scanned, then there are no pending
+        # writes.
+        branch = self.factory.makeAnyBranch()
+        branch.startMirroring()
+        rev_id = self.factory.getUniqueString('rev-id')
+        branch.mirrorComplete(rev_id)
+        # Cheat! The actual API for marking a branch as scanned is
+        # updateScannedDetails. That requires a revision in the database
+        # though.
+        removeSecurityProxy(branch).last_scanned_id = rev_id
+        self.assertEqual(False, branch.pending_writes)
+
+    def test_first_mirror_started(self):
+        # If we have started mirroring the branch for the first time, then
+        # there are probably pending writes.
+        branch = self.factory.makeAnyBranch()
+        branch.startMirroring()
+        self.assertEqual(True, branch.pending_writes)
+
+    def test_following_mirror_started(self):
+        # If we have started mirroring the branch, then there are probably
+        # pending writes.
+        branch = self.factory.makeAnyBranch()
+        branch.startMirroring()
+        rev_id = self.factory.getUniqueString('rev-id')
+        branch.mirrorComplete(rev_id)
+        # Cheat! The actual API for marking a branch as scanned is
+        # updateScannedDetails. That requires a revision in the database
+        # though.
+        removeSecurityProxy(branch).last_scanned_id = rev_id
+        # Cheat again! We can only tell if mirroring has started if the last
+        # mirrored attempt is different from the last mirrored time. To ensure
+        # this, we start the second mirror in a new transaction.
+        transaction.commit()
+        branch.startMirroring()
+        self.assertEqual(True, branch.pending_writes)
 
 
 def test_suite():

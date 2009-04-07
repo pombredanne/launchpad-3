@@ -272,8 +272,20 @@ class TestBranchCollectionFilters(TestCaseWithFactory):
         old_branch = self.factory.makeAnyBranch()
         old_branch.date_last_modified = datetime(2008, 1, 1, tzinfo=pytz.UTC)
         new_branch = self.factory.makeAnyBranch()
-        new_branch.date_last_modified=datetime(2009, 1, 1, tzinfo=pytz.UTC)
+        new_branch.date_last_modified = datetime(2009, 1, 1, tzinfo=pytz.UTC)
         branches = self.all_branches.modifiedSince(
+            datetime(2008, 6, 1, tzinfo=pytz.UTC))
+        self.assertEqual([new_branch], list(branches.getBranches()))
+
+    def test_scannedSince(self):
+        # Only branches scanned since the time specified will be returned.
+        old_branch = self.factory.makeAnyBranch()
+        removeSecurityProxy(old_branch).last_scanned = (
+            datetime(2008, 1, 1, tzinfo=pytz.UTC))
+        new_branch = self.factory.makeAnyBranch()
+        removeSecurityProxy(new_branch).last_scanned = (
+            datetime(2009, 1, 1, tzinfo=pytz.UTC))
+        branches = self.all_branches.scannedSince(
             datetime(2008, 6, 1, tzinfo=pytz.UTC))
         self.assertEqual([new_branch], list(branches.getBranches()))
 

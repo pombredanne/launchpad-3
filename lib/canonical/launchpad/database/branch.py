@@ -653,6 +653,25 @@ class Branch(SQLBase):
             recipients.add(subscription.person, subscription, rationale)
         return recipients
 
+    @property
+    def pending_writes(self):
+        """See `IBranch`.
+
+        A branch has pending writes if it has just been pushed to, if it has
+        been mirrored and not yet scanned or if it is in the middle of being
+        mirrored.
+        """
+        new_data_pushed = (
+             self.branch_type in (BranchType.HOSTED, BranchType.IMPORTED)
+             and self.next_mirror_time is not None)
+        pulled_but_not_scanned = self.last_mirrored_id != self.last_scanned_id
+        pull_in_progress = (
+            self.last_mirror_attempt is not None
+            and (self.last_mirrored is None
+                 or self.last_mirror_attempt > self.last_mirrored))
+        return (
+            new_data_pushed or pulled_but_not_scanned or pull_in_progress)
+
     def getScannerData(self):
         """See `IBranch`."""
         cur = cursor()

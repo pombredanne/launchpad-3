@@ -34,6 +34,7 @@ from canonical.launchpad.database.potmsgset import POTMsgSet
 from canonical.launchpad.database.translationmessage import TranslationMessage
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.pofile import IPOFile, IPOFileSet
+from canonical.launchpad.interfaces.potmsgset import BrokenTextError
 from canonical.launchpad.interfaces.translationcommonformat import (
     ITranslationFileData)
 from canonical.launchpad.interfaces.translationexporter import (
@@ -811,7 +812,7 @@ class POFile(SQLBase, POFileMixIn):
             import_rejected = True
             entry_to_import.error_output = (
                 "File was not exported from Launchpad.")
-        except (TranslationFormatSyntaxError,
+        except (BrokenTextError, TranslationFormatSyntaxError,
                 TranslationFormatInvalidInputError), exception:
             # The import failed with a format error. We log it and select the
             # email template.
@@ -823,16 +824,16 @@ class POFile(SQLBase, POFileMixIn):
             error_text = str(exception)
             entry_to_import.error_output = error_text
             needs_notification_for_imported = True
-        except OutdatedTranslationError:
+        except OutdatedTranslationError, exception:
             # The attached file is older than the last imported one, we ignore
             # it. We also log this problem and select the email template.
             if logger:
                 logger.info('Got an old version for %s' % self.title)
             template_mail = 'poimport-got-old-version.txt'
             import_rejected = True
+            error_text = str(exception)
             entry_to_import.error_output = (
-                "Header's PO-Revision-Date is older than in last imported "
-                "version.")
+                "Outdated translation.  " + error_text)
         except TooManyPluralFormsError:
             if logger:
                 logger.warning("Too many plural forms.")

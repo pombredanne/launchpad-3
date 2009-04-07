@@ -671,8 +671,8 @@ class TestPopulateArchiveScript(TestCase):
         cprov = getUtility(IPersonSet).getByName('cprov')
         distro = getUtility(IDistributionSet).getByName('ubuntu')
         disabled_archive = getUtility(IArchiveSet).new(
-            ArchivePurpose.COPY, cprov, 'disabled-copy-archive',
-            distro, 'disabled-copy-archive test')
+            ArchivePurpose.COPY, cprov, name='disabled-copy-archive',
+            distribution=distro, description='disabled-copy-archive test')
         disabled_archive.enabled = False
 
         extra_args = ['--from-user', 'cprov', '--merge-copy']
