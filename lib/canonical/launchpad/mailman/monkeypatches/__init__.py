@@ -91,6 +91,8 @@ PUBLIC_EXTERNAL_ARCHIVER = '/usr/bin/mhonarc \
 -add \
 -dbfile %(var_dir)s/archives/private/%%(listname)s.mbox/mhonarc.db \
 -outdir %(var_dir)s/mhonarc/%%(listname)s \
+-definevar ML-NAME=%%(listname)s \
+-rcfile %(var_dir)s/data/lp-mhonarc-common.mrc \
 -stderr %(var_dir)s/logs/mhonarc \
 -stdout %(var_dir)s/logs/mhonarc \
 -spammode \
@@ -145,8 +147,15 @@ PRIVATE_EXTERNAL_ARCHIVER = PUBLIC_EXTERNAL_ARCHIVER
             print >> handler_file, 'from', module, 'import *'
         finally:
             handler_file.close()
-    # Install the launchpad site templates.
+
     here = os.path.dirname(__file__)
+    # Install the MHonArc control file.
+    mhonarc_rc_file = os.path.join(here, 'lp-mhonarc-common.mrc')
+    mailman_data_dir = os.path.join(mailman_path, 'data')
+    if not os.path.isdir(mailman_data_dir):
+      os.mkdir(mailman_data_dir)
+    shutil.copy(mhonarc_rc_file, mailman_data_dir)
+    # Install the launchpad site templates.
     launchpad_template_path = os.path.join(here, 'sitetemplates')
     site_template_path = os.path.join(mailman_path, 'templates', 'site')
     if os.path.isdir(site_template_path):
