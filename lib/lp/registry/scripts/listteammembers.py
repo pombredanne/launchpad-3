@@ -8,12 +8,14 @@ __all__ = ['process_team']
 from zope.component import getUtility
 
 from lp.registry.interfaces.person import IPersonSet
+from lp.registry.interfaces.ssh import SSHKeyType
 
 
 OUTPUT_TEMPLATES = {
    'simple': '%(name)s, %(email)s',
    'email': '%(email)s',
-   'full': '%(teamname)s|%(id)s|%(name)s|%(email)s|%(displayname)s|%(ubuntite)s'
+   'full': '%(teamname)s|%(id)s|%(name)s|%(email)s|%(displayname)s|%(ubuntite)s',
+   'sshkeys': '%(name)s, %(sshkeys)s',
    }
 
 
@@ -41,6 +43,17 @@ def process_team(teamname, display_option='simple'):
                     email=validatedemail.email,
                     )
                 output.append(template % params)
+        # SSH Keys
+        sshkeys = []
+        if display_option == 'sshkeys':
+            for key in member.sshkeys:
+                if key.keytype == SSHKeyType.DSA:
+                    type_name = 'ssh-dss'
+                elif key.keytype == SSHKeyType.RSA:
+                    type_name = 'ssh-rsa'
+                else:
+                    type_name = 'Unknown key type'
+                sshkeys.append("%s %s %s" % (type_name, key.keytext, key.comment))
         # Ubuntite
         ubuntite = "no"
         if member.signedcocs:
@@ -54,7 +67,8 @@ def process_team(teamname, display_option='simple'):
             teamname=teamname,
             id=member.id,
             displayname=member.displayname.encode("ascii", "replace"),
-            ubuntite=ubuntite
+            ubuntite=ubuntite,
+            sshkeys=sshkeys
             )
         output.append(template % params)
     # If we're only looking at email, remove --none-- entries
