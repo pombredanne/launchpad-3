@@ -14,7 +14,7 @@
   tal:attributes="lang view/lang|default_language|default;
                   xml:lang view/lang|default_language|default;
                   dir view/dir|string:ltr"
-  tal:define="CONTEXTS python:{'template':template, 'context': context, 'view':view};">
+  tal:define="CONTEXTS python:{'template':view.template, 'context': context, 'view':view};">
 
   <head>
     <title tal:content="CONTEXTS/fmt:pagetitle">Launchpad</title>

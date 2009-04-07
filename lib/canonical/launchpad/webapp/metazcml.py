@@ -11,7 +11,6 @@ from zope.app.component.metaconfigure import (
     handler, PublicPermission, utility, view)
 from zope.app.file.image import Image
 from zope.app.pagetemplate.engine import TrustedEngine
-from zope.app.publisher.browser.viewmeta import pages as original_pages
 from zope.component import getUtility
 from zope.component.zcml import adapter
 from zope.configuration.fields import (
@@ -32,6 +31,7 @@ from zope.security.zcml import IPermissionDirective
 
 import z3c.ptcompat.zcml
 from z3c.ptcompat.zcml import page_directive as original_page
+from z3c.ptcompat.zcml import pages_directive as original_pages
 
 from canonical.launchpad.layers import FeedsLayer
 from canonical.launchpad.webapp.interfaces import (

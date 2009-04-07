@@ -4,7 +4,7 @@ We export DOAP RDF metadata for projects from a link in the
   >>> anon_browser.open("http://launchpad.dev/mozilla")
   >>> anon_browser.getLink("Download RDF metadata").click()
   >>> print anon_browser.contents
-  <?xml version="1.0" encoding="utf-8"?>
+  <?xml version="1.0" encoding="utf-8"...?>
   <rdf:RDF xmlns:doaml="http://ns.balbinus.net/doaml#"
            xmlns:foaf="http://xmlns.com/foaf/0.1/"
            xmlns:lp="https://launchpad.net/rdf/launchpad#"

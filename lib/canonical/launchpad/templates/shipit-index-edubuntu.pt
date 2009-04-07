@@ -5,7 +5,7 @@
       tal:attributes="
         lang default_language|default;
         xml:lang default_language|default;"
-      tal:define="CONTEXTS python:{'template':template, 'context': context, 'view':view};"
+      tal:define="CONTEXTS python:{'template':view.template, 'context': context, 'view':view};"
     >
 
 <head>
