@@ -1858,6 +1858,20 @@ class BugSubscriberPackageBugsSearchListingView(BugTaskSearchListingView):
         return BugTaskSearchListingView.search(
             self, searchtext=searchtext, context=distrosourcepackage)
 
+    def getMilestoneWidgetValues(self):
+        """See `BugTaskSearchListingView`.
+
+        We return only the active milestones on the current distribution
+        since any others are irrelevant.
+        """
+        current_distro = self.current_package.distribution
+        vocabulary_registry = getVocabularyRegistry()
+        vocabulary = vocabulary_registry.get(current_distro, 'Milestone')
+
+        return [
+            dict(title=milestone.title, value=milestone.token, checked=False)
+            for milestone in vocabulary]
+
     @cachedproperty
     def total_bug_counts(self):
         """Return the totals of each type of package bug count as a dict."""
