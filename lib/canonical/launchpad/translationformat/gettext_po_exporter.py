@@ -38,7 +38,6 @@ def comments_text_representation(translation_message):
     # after the other comments to preserve the order expected by msgfmt.
     if translation_message.comment:
         for line in translation_message.comment.split('\n')[:-1]:
-            comment_line = u'#' + line
             if line.startswith('|'):
                 if translation_message.is_obsolete:
                     comment_prefix = u'#~'
