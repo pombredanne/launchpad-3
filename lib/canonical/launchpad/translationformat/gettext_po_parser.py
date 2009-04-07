@@ -1,4 +1,4 @@
-# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=W0404
 # (Suppress warning about two datetimes being imported)
 #
@@ -259,6 +259,13 @@ class POHeader:
 
         return text
 
+    def _parseOptionalDate(self, date_string):
+        """Attempt to parse `date_string`, or return None if invalid."""
+        try:
+            return zope_datetime.parseDatetimetz(date_string)
+        except (ValueError, zope_datetime.DateTimeError), exception:
+            return None
+
     def _parseHeaderFields(self):
         """Return plural form values based on the parsed header."""
         for key, value in self._header_dictionary.iteritems():
@@ -298,19 +305,12 @@ class POHeader:
                     pass
 
             elif key == 'pot-creation-date':
-                try:
-                    self.template_creation_date = (
-                        zope_datetime.parseDatetimetz(value))
-                except zope_datetime.DateTimeError:
-                    # We couldn't parse it, leave current default value.
-                    pass
+                date = self._parseOptionalDate(value)
+                if date:
+                    self.template_creation_date = date
             elif key == 'po-revision-date':
-                try:
-                    self.translation_revision_date = (
-                        zope_datetime.parseDatetimetz(value))
-                except zope_datetime.DateTimeError:
-                    # We couldn't parse it.
-                    self.translation_revision_date = None
+                self.translation_revision_date = self._parseOptionalDate(
+                    value)
             elif key == 'last-translator':
                 self._last_translator = value
             elif key == 'language-team':
@@ -319,11 +319,7 @@ class POHeader:
                 # The key we use right now to note the export date is
                 # X-Launchpad-Export-Date but we need to accept the old one
                 # too so old exports will still work.
-                try:
-                    self.launchpad_export_date = (
-                        zope_datetime.parseDatetimetz(value))
-                except zope_datetime.DateTimeError:
-                    self.launchpad_export_date = None
+                self.launchpad_export_date = self._parseOptionalDate(value)
             else:
                 # We don't use the other keys.
                 pass
@@ -1013,7 +1009,22 @@ class POParser(object):
             if line.startswith('['):
                 # Plural case
                 new_plural_case, line = line[1:].split(']', 1)
-                new_plural_case = int(new_plural_case)
+
+                try:
+                    new_plural_case = int(new_plural_case)
+                except ValueError:
+                    # Trigger "invalid plural case number" error.
+                    new_plural_case = -1
+
+                if new_plural_case < 0:
+                    raise TranslationFormatSyntaxError(
+                        line_number=self._lineno,
+                        message="Invalid plural case number.")
+                elif new_plural_case >= TranslationConstants.MAX_PLURAL_FORMS:
+                    raise TranslationFormatSyntaxError(
+                        line_number=self._lineno,
+                        message="Unsupported plural case number.")
+
                 if (self._plural_case is not None) and (
                         new_plural_case != self._plural_case + 1):
                     logging.warning(POSyntaxWarning(self._lineno,
