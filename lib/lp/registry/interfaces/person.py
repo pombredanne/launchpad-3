@@ -1758,16 +1758,6 @@ class IPersonSet(Interface):
     def getByAccount(account):
         """Return the `IPerson` with the given account, or None."""
 
-    def getPOFileContributors(pofile):
-        """Return people that have contributed to the specified POFile."""
-
-    def getPOFileContributorsByDistroSeries(distroseries, language):
-        """Return people who translated strings in distroseries to language.
-
-        The people that translated only IPOTemplate objects that are not
-        current will not appear in the returned list.
-        """
-
     def updateStatistics(ztm):
         """Update statistics caches and commit."""
 
@@ -1866,15 +1856,6 @@ class IPersonSet(Interface):
         We are not yet game to delete the `from_person` entry from the
         database yet. We will let it roll for a while and see what cruft
         develops. -- StuartBishop 20050812
-        """
-
-    def getTranslatorsByLanguage(language):
-        """Return the list of translators for the given language.
-
-        :arg language: ILanguage object for which we want to get the
-            translators.
-
-        Return None if there is no translator.
         """
 
     def getValidPersons(self, persons):
