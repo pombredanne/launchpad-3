@@ -90,7 +90,7 @@ class ModifiedBranchesScript(LaunchpadScript):
         collection = getUtility(IAllBranches)
         collection = collection.withBranchType(
             BranchType.HOSTED, BranchType.MIRRORED, BranchType.IMPORTED)
-        collection = collection.modifiedSince(last_modified)
+        collection = collection.scannedSince(last_modified)
         for branch in collection.getBranches():
             self.logger.info(branch.unique_name)
             for location in self.branch_locations(branch):
