@@ -160,6 +160,36 @@ The virtualized build queue for 386 is also empty.
     >>> builderset.getBuildQueueSizeForProcessor(p386, virtualized=True)
     0
 
+The queue size is not affect by builds target to disabled
+archives. Builds for disabled archive are not dispatched as well, this
+is an effective manner to hold activity in a specific archive.
+
+We will temporarily disable the ubuntu primary archive.
+
+    >>> from lp.registry.interfaces.distribution import (
+    ...     IDistributionSet)
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+
+    >>> login('foo.bar@canonical.com')
+    >>> ubuntu.main_archive.enabled = False
+    >>> login(ANONYMOUS)
+
+That done, the queue for non-virtualized queue for i386 becomes empty.
+
+    >>> builderset.getBuildQueueSizeForProcessor(p386)
+    0
+
+Let's re-enable the ubuntu primary archive.
+
+    >>> login('foo.bar@canonical.com')
+    >>> ubuntu.main_archive.enabled = True
+    >>> login(ANONYMOUS)
+
+The build for the ubuntu primary archive shows up again.
+
+    >>> builderset.getBuildQueueSizeForProcessor(p386)
+    1
+
 
 == Resuming buildd slaves ==
 

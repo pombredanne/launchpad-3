@@ -696,7 +696,8 @@ class BuilderSet(object):
            DistroArchSeries.processorfamily = Processor.family AND
            Processor.id = %s AND
            Build.buildstate = %s AND
-           Archive.require_virtualized = %s
+           Archive.require_virtualized = %s AND
+           Archive.enabled = true
         """ % sqlvalues(processor, BuildStatus.NEEDSBUILD, virtualized)
 
         clauseTables = [
