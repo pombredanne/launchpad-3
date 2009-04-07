@@ -93,10 +93,21 @@ def format_address(name, address):
 
         >>> format_address('Foo [Baz] Bar', 'foo.bar@canonical.com')
         '"Foo \\[Baz\\] Bar" <foo.bar@canonical.com>'
+
+    Really long names doesn't get folded, since we're not constructing
+    an e-mail header here.
+
+        >>> formatted_address = format_address(
+        ...     'a '*100, 'long.name@example.com')
+        >>> '\n' in formatted_address
+        False
     """
     if not name:
         return str(address)
     name = str(Header(name))
+    # Using Header to encode the name has the side-effect that long
+    # names are folded, so let's unfold it again.
+    name = ''.join(name.splitlines())
     return str(formataddr((name, address)))
 
 
