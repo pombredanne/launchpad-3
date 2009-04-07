@@ -7,9 +7,12 @@ from datetime import datetime, timedelta
 import pytz
 import unittest
 
+from zope.component import getAdapter
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.interfaces import TranslationValidationStatus
+from canonical.launchpad.interfaces.translationcommonformat import (
+    ITranslationFileData)
 from canonical.launchpad.testing.factory import LaunchpadObjectFactory
 from canonical.testing import LaunchpadZopelessLayer
 
@@ -50,12 +53,12 @@ class TestTranslationSharedPOFile(unittest.TestCase):
         self.potmsgset.setSequence(self.devel_potemplate, 1)
 
     def test_findPOTMsgSetsContaining(self):
-        """Test that search works correctly."""
+        # Test that search works correctly.
 
         # Searching for English strings.
         potmsgset = self.factory.makePOTMsgSet(self.devel_potemplate,
                                                u"Some wild text")
-        potmsgset.setSequence(self.devel_potemplate, 1)
+        potmsgset.setSequence(self.devel_potemplate, 2)
 
         found_potmsgsets = list(
             self.devel_sr_pofile.findPOTMsgSetsContaining(u"wild"))
@@ -63,7 +66,7 @@ class TestTranslationSharedPOFile(unittest.TestCase):
 
         # Just linking an existing POTMsgSet into another POTemplate
         # will make it be returned in searches.
-        potmsgset.setSequence(self.stable_potemplate, 1)
+        potmsgset.setSequence(self.stable_potemplate, 2)
         found_potmsgsets = list(
             self.stable_sr_pofile.findPOTMsgSetsContaining(u"wild"))
         self.assertEquals(found_potmsgsets, [potmsgset])
@@ -72,7 +75,7 @@ class TestTranslationSharedPOFile(unittest.TestCase):
         plural_potmsgset = self.factory.makePOTMsgSet(self.devel_potemplate,
                                                       u"Some singular text",
                                                       u"Some plural text")
-        plural_potmsgset.setSequence(self.devel_potemplate, 1)
+        plural_potmsgset.setSequence(self.devel_potemplate, 3)
 
         found_potmsgsets = list(
             self.devel_sr_pofile.findPOTMsgSetsContaining(u"singular"))
@@ -83,7 +86,6 @@ class TestTranslationSharedPOFile(unittest.TestCase):
         found_potmsgsets = list(
             self.devel_sr_pofile.findPOTMsgSetsContaining(u"plural"))
         self.assertEquals(found_potmsgsets, [plural_potmsgset])
-
 
         # Search translations as well.
         translation = self.factory.makeTranslationMessage(
@@ -104,7 +106,6 @@ class TestTranslationSharedPOFile(unittest.TestCase):
                 u"Plural translation"))
         self.assertEquals(found_potmsgsets, [plural_potmsgset])
 
-
         # Search works case insensitively for English strings.
         found_potmsgsets = list(
             self.devel_sr_pofile.findPOTMsgSetsContaining(u"WiLd"))
@@ -123,7 +124,7 @@ class TestTranslationSharedPOFile(unittest.TestCase):
         self.assertEquals(found_potmsgsets, [plural_potmsgset])
 
     def test_getTranslationsFilteredBy(self):
-        """Test that filtering by submitters works."""
+        # Test that filtering by submitters works.
 
         potmsgset = self.potmsgset
 
@@ -179,8 +180,8 @@ class TestTranslationSharedPOFile(unittest.TestCase):
         self.assertEquals(found_translations, [translation])
 
     def test_getPOTMsgSetTranslated_NoShared(self):
-        """Test listing of translated POTMsgSets when there is no shared
-        translation for the POTMsgSet."""
+        # Test listing of translated POTMsgSets when there is no shared
+        # translation for the POTMsgSet.
 
         # When there is no diverged translation either, nothing is returned.
         found_translations = list(
@@ -204,8 +205,8 @@ class TestTranslationSharedPOFile(unittest.TestCase):
         self.assertEquals(found_translations, [])
 
     def test_getPOTMsgSetTranslated_Shared(self):
-        """Test listing of translated POTMsgSets when there is a shared
-        translation for the POTMsgSet as well."""
+        # Test listing of translated POTMsgSets when there is a shared
+        # translation for the POTMsgSet as well.
 
         # We create a shared translation first.
         shared_translation = self.factory.makeSharedTranslationMessage(
@@ -234,8 +235,8 @@ class TestTranslationSharedPOFile(unittest.TestCase):
         self.assertEquals(found_translations, [self.potmsgset])
 
     def test_getPOTMsgSetTranslated_EmptyShared(self):
-        """Test listing of translated POTMsgSets when there is an
-        empty shared translation for the POTMsgSet as well."""
+        # Test listing of translated POTMsgSets when there is an
+        # empty shared translation for the POTMsgSet as well.
 
         # We create an empty shared translation first.
         shared_translation = self.factory.makeSharedTranslationMessage(
@@ -265,8 +266,8 @@ class TestTranslationSharedPOFile(unittest.TestCase):
         self.assertEquals(found_translations, [self.potmsgset])
 
     def test_getPOTMsgSetTranslated_Multiple(self):
-        """Test listing of translated POTMsgSets if there is more than one
-        translated message."""
+        # Test listing of translated POTMsgSets if there is more than one
+        # translated message.
 
         # Add a diverged translation on the included POTMsgSet...
         translation = self.factory.makeTranslationMessage(
@@ -288,8 +289,8 @@ class TestTranslationSharedPOFile(unittest.TestCase):
         self.assertEquals(found_translations, [self.potmsgset, potmsgset])
 
     def test_getPOTMsgSetUntranslated_NoShared(self):
-        """Test listing of translated POTMsgSets when there is no shared
-        translation for the POTMsgSet."""
+        # Test listing of translated POTMsgSets when there is no shared
+        # translation for the POTMsgSet.
 
         # When there is no diverged translation either, nothing is returned.
         found_translations = list(
@@ -313,8 +314,8 @@ class TestTranslationSharedPOFile(unittest.TestCase):
         self.assertEquals(found_translations, [self.potmsgset])
 
     def test_getPOTMsgSetUntranslated_Shared(self):
-        """Test listing of translated POTMsgSets when there is a shared
-        translation for the POTMsgSet as well."""
+        # Test listing of translated POTMsgSets when there is a shared
+        # translation for the POTMsgSet as well.
 
         # We create a shared translation first.
         shared_translation = self.factory.makeSharedTranslationMessage(
@@ -343,8 +344,8 @@ class TestTranslationSharedPOFile(unittest.TestCase):
         self.assertEquals(found_translations, [])
 
     def test_getPOTMsgSetUntranslated_EmptyShared(self):
-        """Test listing of translated POTMsgSets when there is an
-        empty shared translation for the POTMsgSet as well."""
+        # Test listing of translated POTMsgSets when there is an
+        # empty shared translation for the POTMsgSet as well.
 
         # We create an empty shared translation first.
         shared_translation = self.factory.makeSharedTranslationMessage(
@@ -374,8 +375,8 @@ class TestTranslationSharedPOFile(unittest.TestCase):
         self.assertEquals(found_translations, [])
 
     def test_getPOTMsgSetUntranslated_Multiple(self):
-        """Test listing of untranslated POTMsgSets if there is more than one
-        untranslated message."""
+        # Test listing of untranslated POTMsgSets if there is more than one
+        # untranslated message.
 
         # Add an empty translation to the included POTMsgSet...
         translation = self.factory.makeTranslationMessage(
@@ -393,7 +394,7 @@ class TestTranslationSharedPOFile(unittest.TestCase):
         self.assertEquals(found_translations, [self.potmsgset, potmsgset])
 
     def test_getPOTMsgSetWithNewSuggestions(self):
-        """Test listing of POTMsgSets with unreviewed suggestions."""
+        # Test listing of POTMsgSets with unreviewed suggestions.
 
         # When there are no suggestions, nothing is returned.
         found_translations = list(
@@ -411,8 +412,9 @@ class TestTranslationSharedPOFile(unittest.TestCase):
         self.assertEquals(found_translations, [self.potmsgset])
 
     def test_getPOTMsgSetWithNewSuggestions_Shared(self):
-        """Test listing of suggestions for POTMsgSets with a shared
-        translation."""
+        # Test listing of suggestions for POTMsgSets with a shared
+        # translation.
+
         # A POTMsgSet has a shared, current translation created 5 days ago.
         date_created = datetime.now(pytz.UTC)-timedelta(5)
         translation = self.factory.makeSharedTranslationMessage(
@@ -458,8 +460,9 @@ class TestTranslationSharedPOFile(unittest.TestCase):
         self.assertEquals(found_translations, [self.potmsgset])
 
     def test_getPOTMsgSetWithNewSuggestions_Diverged(self):
-        """Test listing of suggestions for POTMsgSets with a shared
-        translation and a later diverged one."""
+        # Test listing of suggestions for POTMsgSets with a shared
+        # translation and a later diverged one.
+
         # First we create a shared translation (5 days old), a diverged
         # translation 1 day later.
         # Then we make sure that getting unreviewed messages works when:
@@ -525,7 +528,7 @@ class TestTranslationSharedPOFile(unittest.TestCase):
         self.assertEquals(found_translations, [])
 
     def test_getPOTMsgSetWithNewSuggestions_Multiple(self):
-        """Test that multiple unreviewed POTMsgSets are returned."""
+        # Test that multiple unreviewed POTMsgSets are returned.
 
         # One POTMsgSet has no translations, but only a suggestion.
         translation = self.factory.makeTranslationMessage(
@@ -552,7 +555,7 @@ class TestTranslationSharedPOFile(unittest.TestCase):
         self.assertEquals(found_translations, [self.potmsgset, potmsgset])
 
     def test_getPOTMsgSetChangedInLaunchpad(self):
-        """Test listing of POTMsgSets which contain changes from imports."""
+        # Test listing of POTMsgSets which contain changes from imports.
 
         # If there are no translations, nothing is listed.
         found_translations = list(
@@ -626,7 +629,7 @@ class TestTranslationSharedPOFile(unittest.TestCase):
         self.assertEquals(found_translations, [self.potmsgset])
 
     def test_getPOTMsgSetChangedInLaunchpad_SharedDiverged(self):
-        """Test listing of changed in LP for shared/diverged messages."""
+        # Test listing of changed in LP for shared/diverged messages.
 
         # Adding an imported translation which is also current indicates
         # that there are no changes.
@@ -650,9 +653,8 @@ class TestTranslationSharedPOFile(unittest.TestCase):
             self.devel_sr_pofile.getPOTMsgSetChangedInLaunchpad())
         self.assertEquals(found_translations, [self.potmsgset])
 
-
     def test_getPOTMsgSetWithErrors(self):
-        """Test listing of POTMsgSets with errors in translations."""
+        # Test listing of POTMsgSets with errors in translations.
         translation = self.factory.makeSharedTranslationMessage(
             pofile=self.devel_sr_pofile, potmsgset=self.potmsgset,
             translations=[u"Imported translation"], is_imported=True)
@@ -663,7 +665,7 @@ class TestTranslationSharedPOFile(unittest.TestCase):
         self.assertEquals(found_translations, [self.potmsgset])
 
     def test_updateStatistics(self):
-        """Test that updating statistics keeps working."""
+        # Test that updating statistics keeps working.
 
         # We are constructing a POFile with:
         #  - 2 untranslated message
@@ -732,7 +734,43 @@ class TestTranslationSharedPOFile(unittest.TestCase):
         self.assertEquals(self.devel_sr_pofile.updatesCount(), 1)
         self.assertEquals(self.devel_sr_pofile.unreviewedCount(), 2)
 
+    def test_TranslationFileData_adapter(self):
+        # Test that exporting works correctly with shared and diverged
+        # messages.
+        shared_translation = self.factory.makeSharedTranslationMessage(
+            pofile=self.devel_sr_pofile,
+            potmsgset=self.potmsgset,
+            translations=["Shared translation"])
 
+        # Get the adapter and extract only English singular and
+        # first translation form from all messages.
+        translation_file_data = getAdapter(
+            self.devel_sr_pofile, ITranslationFileData, 'all_messages')
+        exported_messages = [
+            (msg.singular_text, msg.translations[0])
+            for msg in translation_file_data.messages]
+        self.assertEquals(exported_messages,
+                          [(self.potmsgset.singular_text,
+                            "Shared translation")])
+
+        # When we add a diverged translation, only that is exported.
+        diverged_translation = self.factory.makeTranslationMessage(
+            pofile=self.devel_sr_pofile,
+            potmsgset=self.potmsgset,
+            translations=["Diverged translation"],
+            force_diverged=True)
+
+        # Get the adapter and extract only English singular and
+        # first translation form from all messages.
+        translation_file_data = getAdapter(
+            self.devel_sr_pofile, ITranslationFileData, 'all_messages')
+        exported_messages = [
+            (msg.singular_text, msg.translations[0])
+            for msg in translation_file_data.messages]
+        # Only the diverged translation is exported.
+        self.assertEquals(exported_messages,
+                          [(self.potmsgset.singular_text,
+                            "Diverged translation")])
 
 
 def test_suite():
