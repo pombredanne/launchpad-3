@@ -988,6 +988,41 @@ will not be listed twice in the returned result.
     3
 
 
+== People who contributed translations ==
+
+The 'contributors' property of a POFile returns all the people who contributed
+translations to it.
+
+    >>> [person.name for person in evolution_es.contributors]
+    [u'carlos', u'sabdfl', u'no-priv']
+
+If you have a distroseries and want to know all the people who contributed
+translations on a given language for that distroseries, you can use
+the getPOFileContributorsByLanguage() method of IDistroSeries.
+
+    >>> from canonical.launchpad.database import DistroSeries, Language
+    >>> hoary = DistroSeries.selectOneBy(name="hoary")
+    >>> spanish = Language.selectOneBy(code="es")
+    >>> [p.name for p in hoary.getPOFileContributorsByLanguage(spanish)]
+    [u'jorge-gonzalez-gonzalez', u'carlos', u'valyag', u'danner', u'name16',
+     u'name12', u'ubuntu-translators', u'tsukimi']
+
+    # We can see that there is another translator that doesn't appear in
+    # previous list because the template he translated is not current.
+    >>> non_current_pofile = POFile.get(31)
+    >>> non_current_pofile.potemplate.iscurrent
+    False
+
+    >>> [p.name for p in non_current_pofile.contributors]
+    [u'jordi']
+
+    >>> non_current_pofile.potemplate.distroseries == hoary
+    True
+
+    >>> non_current_pofile.language == spanish
+    True
+
+
 == getPOTMsgSetTranslated ==
 
 With this method we can get all POTMsgSet objects that are fully

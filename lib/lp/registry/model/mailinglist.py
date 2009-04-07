@@ -19,7 +19,7 @@ from itertools import repeat
 from socket import getfqdn
 from string import Template
 
-from storm.expr import And, LeftJoin
+from storm.expr import And, LeftJoin, Select
 from storm.store import Store
 
 from sqlobject import ForeignKey, StringCol
@@ -41,19 +41,29 @@ from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.launchpad import _
 from canonical.launchpad.database.account import Account
 from canonical.launchpad.database.emailaddress import EmailAddress
-from lp.registry.model.person import Person
-from lp.registry.model.teammembership import TeamParticipation
 from canonical.launchpad.interfaces.emailaddress import (
     EmailAddressStatus, IEmailAddressSet)
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.account import AccountStatus
+from canonical.launchpad.webapp.interfaces import (
+    IStoreSelector, MAIN_STORE, MASTER_FLAVOR, SLAVE_FLAVOR)
+from canonical.lazr.interfaces.objectprivacy import IObjectPrivacy
+from lp.registry.interfaces.person import validate_public_person
 from lp.registry.interfaces.mailinglist import (
     CannotChangeSubscription, CannotSubscribe, CannotUnsubscribe,
     IHeldMessageDetails, IMailingList, IMailingListSet,
     IMailingListSubscription, IMessageApproval, IMessageApprovalSet,
     MailingListStatus, PURGE_STATES, PostedMessageStatus, UnsafeToPurge)
-from canonical.launchpad.interfaces.account import AccountStatus
-from lp.registry.interfaces.person import validate_public_person
-from canonical.lazr.interfaces.objectprivacy import IObjectPrivacy
+from lp.registry.model.person import Person
+from lp.registry.model.teammembership import TeamParticipation
+
+
+EMAIL_ADDRESS_STATUSES = (
+    EmailAddressStatus.VALIDATED,
+    EmailAddressStatus.PREFERRED)
+MESSAGE_APPROVAL_STATUSES = (
+    PostedMessageStatus.APPROVED,
+    PostedMessageStatus.APPROVAL_PENDING)
 
 
 class MessageApproval(SQLBase):
@@ -471,13 +481,6 @@ class MailingList(SQLBase):
     def getSenderAddresses(self):
         """See `IMailingList`."""
         store = Store.of(self)
-        # Here are two useful conveniences for the queries below.
-        email_address_statuses = (
-            EmailAddressStatus.VALIDATED,
-            EmailAddressStatus.PREFERRED)
-        message_approval_statuses = (
-            PostedMessageStatus.APPROVED,
-            PostedMessageStatus.APPROVAL_PENDING)
         # First, we need to find all the members of the team this mailing list
         # is associated with.  Find all of their validated and preferred email
         # addresses of those team members.  Every one of those email addresses
@@ -496,7 +499,7 @@ class MailingList(SQLBase):
             And(TeamParticipation.team == self.team,
                 MailingList.status != MailingListStatus.INACTIVE,
                 Person.teamowner == None,
-                EmailAddress.status.is_in(email_address_statuses),
+                EmailAddress.status.is_in(EMAIL_ADDRESS_STATUSES),
                 Account.status == AccountStatus.ACTIVE,
                 ))
         # Second, find all of the email addresses for all of the people who
@@ -514,8 +517,8 @@ class MailingList(SQLBase):
         approved_posters = store.using(*tables).find(
             (EmailAddress, Person),
             And(MessageApproval.mailing_list == self,
-                MessageApproval.status.is_in(message_approval_statuses),
-                EmailAddress.status.is_in(email_address_statuses),
+                MessageApproval.status.is_in(MESSAGE_APPROVAL_STATUSES),
+                EmailAddress.status.is_in(EMAIL_ADDRESS_STATUSES),
                 Account.status == AccountStatus.ACTIVE,
                 ))
         # Union the two queries together to give us the complete list of email
@@ -620,6 +623,158 @@ class MailingListSet:
             AND Person.teamowner IS NOT NULL
             """ % sqlvalues(team_name),
             clauseTables=['Person'])
+
+    def getSubscribedAddresses(self, team_names):
+        """See `IMailingListSet`."""
+        # This is a read-only query, so the slave is fine.  XXX Except that
+        # the test fails if it uses the SLAVE_FLAVOR, because mailing_list_ids
+        # below is empty.
+        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+        # In order to handle the case where the preferred email address is
+        # used (i.e. where MailingListSubscription.email_address is NULL), we
+        # need to UNION, those using a specific address and those using the
+        # preferred address.
+        tables = (
+            EmailAddress,
+            LeftJoin(Account, Account.id == EmailAddress.accountID),
+            LeftJoin(MailingListSubscription,
+                     MailingListSubscription.personID
+                     == EmailAddress.personID),
+            # pylint: disable-msg=C0301
+            LeftJoin(MailingList,
+                     MailingList.id == MailingListSubscription.mailing_listID),
+            LeftJoin(TeamParticipation,
+                     TeamParticipation.personID
+                     == MailingListSubscription.personID),
+            )
+        team_ids = set(
+            team.id for team in store.find(
+                Person,
+                And(Person.name.is_in(team_names),
+                    Person.teamowner != None))
+            )
+        mailing_list_ids = set(
+            mailing_list.teamID for mailing_list in store.find(
+                MailingList))
+        preferred = store.using(*tables).find(
+            (EmailAddress, MailingList),
+            And(MailingListSubscription.mailing_listID.is_in(mailing_list_ids),
+                TeamParticipation.teamID.is_in(team_ids),
+                MailingList.status != MailingListStatus.INACTIVE,
+                MailingListSubscription.email_addressID == None,
+                EmailAddress.status == EmailAddressStatus.PREFERRED,
+                Account.status == AccountStatus.ACTIVE))
+        tables = (
+            EmailAddress,
+            LeftJoin(Account, Account.id == EmailAddress.accountID),
+            LeftJoin(MailingListSubscription,
+                     MailingListSubscription.email_addressID
+                     == EmailAddress.id),
+            # pylint: disable-msg=C0301
+            LeftJoin(MailingList,
+                     MailingList.id == MailingListSubscription.mailing_listID),
+            LeftJoin(TeamParticipation,
+                     TeamParticipation.personID
+                     == MailingListSubscription.personID),
+            )
+        explicit = store.using(*tables).find(
+            (EmailAddress, MailingList),
+            And(MailingListSubscription.mailing_listID.is_in(mailing_list_ids),
+                TeamParticipation.teamID.is_in(team_ids),
+                MailingList.status != MailingListStatus.INACTIVE,
+                Account.status == AccountStatus.ACTIVE))
+        # Union the two queries together to give us the complete list of email
+        # addresses allowed to post.  Note that while we're retrieving both
+        # the EmailAddress and Person records, this method is defined as only
+        # returning EmailAddresses.  The reason why we include the Person in
+        # the query is because the consumer of this method will access
+        # email_address.person.displayname, so the prejoin to Person is
+        # critical to acceptable performance.  Indeed, without the prejoin, we
+        # were getting tons of timeout OOPSes.  See bug 259440.
+        by_team = {}
+        for email_address, mailing_list in preferred.union(explicit):
+            team_name = mailing_list.team.name
+            assert team_name in team_names, (
+                'Unexpected team name in results: %s' % team_name)
+            by_team.setdefault(team_name, set()).add(email_address.email)
+        # Turn the results into a mapping of lists.
+        results = {}
+        for team_name, address_set in by_team.items():
+            results[team_name] = list(address_set)
+        return results
+        
+    def getSenderAddresses(self, team_names):
+        """See `IMailingListSet`."""
+        # This is a read-only query, so the slave is fine.  XXX Except that
+        # the test fails if it uses the SLAVE_FLAVOR, because mailing_list_ids
+        # below is empty.
+        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+        # First, we need to find all the members of all the mailing lists for
+        # the given teams.  Find all of their validated and preferred email
+        # addresses of those team members.  Every one of those email addresses
+        # are allowed to post to the mailing list.
+        tables = (
+            Person,
+            LeftJoin(Account, Account.id == Person.accountID),
+            LeftJoin(EmailAddress, EmailAddress.personID == Person.id),
+            LeftJoin(TeamParticipation,
+                     TeamParticipation.personID == Person.id),
+            LeftJoin(MailingList,
+                     MailingList.teamID == TeamParticipation.teamID),
+            )
+        team_ids = set(
+            team.id for team in store.find(
+                Person,
+                And(Person.name.is_in(team_names),
+                    Person.teamowner != None))
+            )
+        team_members = store.using(*tables).find(
+            (EmailAddress, Person, MailingList),
+            And(TeamParticipation.teamID.is_in(team_ids),
+                MailingList.status != MailingListStatus.INACTIVE,
+                Person.teamowner == None,
+                EmailAddress.status.is_in(EMAIL_ADDRESS_STATUSES),
+                Account.status == AccountStatus.ACTIVE,
+                ))
+        # Sort allowed posters by team/mailing list.
+        by_team = {}
+        for email_address, person, mailing_list in team_members:
+            team_name = mailing_list.team.name
+            assert team_name in team_names, (
+                'Unexpected team name in results: %s' % team_name)
+            by_team.setdefault(team_name, set()).add(email_address.email)
+        # Second, find all of the email addresses for all of the people who
+        # have been explicitly approved for posting to the team mailing lists.
+        # This occurs as part of first post moderation, but since they've
+        # already been approved for the specific list, we don't need to wait
+        # for three global approvals.
+        tables = (
+            Person,
+            LeftJoin(Account, Account.id == Person.accountID),
+            LeftJoin(EmailAddress, EmailAddress.personID == Person.id),
+            LeftJoin(MessageApproval,
+                     MessageApproval.posted_byID == Person.id),
+            )
+        mailing_list_ids = set(
+            mailing_list.teamID for mailing_list in store.find(
+                MailingList))
+        approved_posters = store.using(*tables).find(
+            (EmailAddress, Person, MessageApproval),
+            And(MessageApproval.mailing_listID.is_in(mailing_list_ids),
+                MessageApproval.status.is_in(MESSAGE_APPROVAL_STATUSES),
+                EmailAddress.status.is_in(EMAIL_ADDRESS_STATUSES),
+                Account.status == AccountStatus.ACTIVE,
+                ))
+        for email_address, person, message_approval in approved_posters:
+            team_name = message_approval.mailing_list.team.name
+            assert team_name in team_names, (
+                'Unexpected team name in results: %s' % team_name)
+            by_team.setdefault(team_name, set()).add(email_address.email)
+        # Turn the results into a mapping of lists.
+        results = {}
+        for team_name, address_set in by_team.items():
+            results[team_name] = list(address_set)
+        return results
 
     @property
     def registered_lists(self):

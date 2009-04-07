@@ -12,6 +12,7 @@
       interface="canonical.launchpad.interfaces.archiveauthtoken.IArchiveAuthTokenView"/>
     <require
       permission="launchpad.Edit"
+      set_schema="canonical.launchpad.interfaces.archiveauthtoken.IArchiveAuthTokenView"
       interface="canonical.launchpad.interfaces.archiveauthtoken.IArchiveAuthTokenEdit"/>
   </class>
 

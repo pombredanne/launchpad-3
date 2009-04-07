@@ -26,9 +26,10 @@ Anne gets two email addresses.  One is her preferred address...
     >>> get_alternative_email(anne).email
     u'aperson@example.org'
 
+    >>> team_owner = 'no-priv'
     >>> bart = factory.makePersonByName('Bart')
-    >>> from lp.registry.tests.mailinglists_helper import new_team
-    >>> team_one, list_one = new_team('team-one', with_list=True)
+    >>> team_one, list_one = factory.makeTeamAndMailingList(
+    ...     'team-one', team_owner)
 
 Once Anne and Bart join team one, they can post to the mailing list, but they
 will not get deliveries.
@@ -41,14 +42,30 @@ will not get deliveries.
     >>> sorted(member.displayname for member in team_one.allmembers)
     [u'Anne Person', u'Bart Person', u'No Privileges Person']
 
+The list of sender addresses, i.e. those that are allowed to send emails to a
+mailing list, are available both through the mailing list object and through
+the mailing list set.
+
     >>> sorted(email.email for email in list_one.getSenderAddresses())
     [u'anne.person@example.com', u'aperson@example.org',
      u'bart.person@example.com', u'bperson@example.org',
      u'no-priv@canonical.com']
+
+    >>> from lp.registry.interfaces.mailinglist import IMailingListSet
+    >>> mailinglist_set = getUtility(IMailingListSet)
+    >>> pretty(mailinglist_set.getSenderAddresses([team_one.name]))
+    "{u'team-one': [u'no-priv@canonical.com', u'bperson@example.org',
+                    u'bart.person@example.com', u'anne.person@example.com',
+                    u'aperson@example.org']}"
+
+No one is yet subscribed to the mailing list though.
+
     >>> list(list_one.getSubscribedAddresses())
     []
     >>> list(list_one.getSubscribers())
     []
+    >>> mailinglist_set.getSubscribedAddresses(['team-one'])
+    {}
 
 Anne subscribes to the mailing list for team one.  Because Anne does not
 provide an email address when she subscribes, her preferred address is used.
@@ -148,7 +165,7 @@ Nested teams
 Indirect members can subscribe to a team's mailing list.  To illustrate this,
 we first create team-two as a subteam of team-one.
 
-    >>> team_two = new_team('team-two')
+    >>> team_two = factory.makeTeam(name='team-two', owner=team_owner)
 
     >>> from canonical.launchpad.interfaces import IPersonSet
     >>> salgado = getUtility(IPersonSet).getByName('salgado')
@@ -216,8 +233,10 @@ Once Cris validates her new address, she can post from it.
 People can subscribe to both a superteam's mailing list and a subteam's
 mailing list.
 
-    >>> super_team, super_team_list = new_team('super-team', with_list=True)
-    >>> sub_team, sub_team_list = new_team('sub-team', with_list=True)
+    >>> super_team, super_team_list = factory.makeTeamAndMailingList(
+    ...     'super-team', team_owner)
+    >>> sub_team, sub_team_list = factory.makeTeamAndMailingList(
+    ...     'sub-team', team_owner)
     >>> super_team.addMember(sub_team, salgado, force_team_add=True)
     >>> lars = factory.makePersonByName('Lars')
     >>> lars.join(super_team)
@@ -233,7 +252,8 @@ mailing list.
 This is true even if the person's subscription in the superteam's list is
 allowed due to indirect membership in the superteam.
 
-    >>> team_three, list_three = new_team('team-three', with_list=True)
+    >>> team_three, list_three = factory.makeTeamAndMailingList(
+    ...     'team-three', team_owner)
     >>> team_one.addMember(team_three, salgado, force_team_add=True)
     >>> dirk = factory.makePersonByName('Dirk')
     >>> dirk.join(team_two)
@@ -302,7 +322,8 @@ preferred address.
     >>> elle_alternative = get_alternative_email(elle)
     >>> elle_alternative.email
     u'eperson@example.org'
-    >>> team_four, list_four = new_team('team-four', with_list=True)
+    >>> team_four, list_four = factory.makeTeamAndMailingList(
+    ...     'team-four', team_owner)
     >>> elle.join(team_four)
     >>> list_four.subscribe(elle)
     >>> sorted(email.email for email in list_four.getSubscribedAddresses())
@@ -371,7 +392,7 @@ the mailing list.  To illustrate, we set up a new subteam and join a few new
 members to that team.  Only Iona will have a path to the superteam through
 more than one subteam.
 
-    >>> team_five = new_team('team-five')
+    >>> team_five = factory.makeTeam(name='team-five', owner=team_owner)
     >>> team_one.addMember(team_five, salgado, force_team_add=True)
     >>> gwen = factory.makePersonByName('Gwen')
     >>> hank = factory.makePersonByName('Hank')
@@ -458,7 +479,8 @@ preferences are preserved, so that if they re-join the team, their
 subscription gets re-instated.  Currently, the subscribed email address is the
 only relevant preference.
 
-    >>> team_six, list_six = new_team('team-six', with_list=True)
+    >>> team_six, list_six = factory.makeTeamAndMailingList(
+    ...     'team-six', team_owner)
     >>> jack = factory.makePersonByName('Jack')
     >>> jack.join(team_six)
     >>> list_six.subscribe(jack)
@@ -547,7 +569,8 @@ Someone who is not a member of a team may subscribe to the team's
 mailing list.  Full membership is only required to post to or receive
 emails from it.
 
-    >>> team_seven, list_seven = new_team('team-7', with_list=True)
+    >>> team_seven, list_seven = factory.makeTeamAndMailingList(
+    ...     'team-7', team_owner)
     >>> sam = factory.makePersonByName('Samuel')
 
     >>> list_seven.subscribe(sam)
@@ -624,7 +647,8 @@ Deactivating accounts
 When a subscribed user has her account disabled, she will no longer be able to
 post to the mailing list, nor will she receive mailing list posts.
 
-    >>> team_nine, list_nine = new_team('team-9', with_list=True)
+    >>> team_nine, list_nine = factory.makeTeamAndMailingList(
+    ...     'team-9', team_owner)
     >>> umma = factory.makePersonByName('Umma')
     >>> umma.join(team_nine)
     >>> list_nine.subscribe(umma)
@@ -673,7 +697,8 @@ mailing list is usable, then it can be subscribed to.  See above also
 for states in which the list /cannot/ be subscribed to, such as the
 DEACTIVATED state.
 
-    >>> team_eight, list_eight = new_team('team-8', with_list=True)
+    >>> team_eight, list_eight = factory.makeTeamAndMailingList(
+    ...     'team-8', team_owner)
     >>> teri = factory.makePersonByName('Teri')
     >>> teri.join(team_seven)
 
@@ -754,7 +779,8 @@ IPerson.autoSubscribeToMailingList() will take these settings into account
 and try to recover gracefully from errors.  The method will return a
 True or False value to indicate if the user was subscribed to the list.
 
-    >>> team_eight, list_eight = new_team('team-eight', with_list=True)
+    >>> team_eight, list_eight = factory.makeTeamAndMailingList(
+    ...     'team-eight', team_owner)
     >>> mary = factory.makePersonByName(
     ...     'Mary', use_default_autosubscribe_policy=True)
 
@@ -772,7 +798,8 @@ Subscribing a second time will do nothing.
 
 Subscribing to an inactive list also does nothing.
 
-    >>> team_off, list_off = new_team('team-off', with_list=True)
+    >>> team_off, list_off = factory.makeTeamAndMailingList(
+    ...     'team-off', team_owner)
     >>> list_off.deactivate()
     >>> list_off.is_usable
     False
@@ -783,7 +810,7 @@ Subscribing to an inactive list also does nothing.
 If a team's mailing list is non-existant, then the method will try to
 recover gracefully.
 
-    >>> team_sans_list = new_team('sans-list', with_list=False)
+    >>> team_sans_list = factory.makeTeam(name='sans-list', owner=team_owner)
     >>> mary.autoSubscribeToMailingList(team_sans_list.mailing_list)
     False
 

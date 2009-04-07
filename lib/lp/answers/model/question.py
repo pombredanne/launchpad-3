@@ -1000,7 +1000,7 @@ class SimilarQuestionsSearch(QuestionSearch):
 class QuestionPersonSearch(QuestionSearch):
     """Search questions which are related to a particular person.
 
-    Used to implement IPerson.searchQuestions().
+    Used to implement IQuestionsPerson.searchQuestions().
     """
 
     def __init__(self, person, search_text=None,
