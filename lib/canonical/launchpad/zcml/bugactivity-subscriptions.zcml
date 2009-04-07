@@ -17,9 +17,14 @@
         handler="canonical.launchpad.subscribers.bugactivity.record_bug_edited" />
 
     <subscriber
-        for="canonical.launchpad.interfaces.IBugTask
-             zope.lifecycleevent.interfaces.IObjectCreatedEvent"
-        handler="canonical.launchpad.subscribers.bugactivity.record_bug_task_added" />
+        for="canonical.launchpad.interfaces.bugcve.IBugCve
+             lazr.lifecycle.interfaces.IObjectCreatedEvent"
+        handler="canonical.launchpad.subscribers.bugactivity.record_cve_linked_to_bug" />
+
+    <subscriber
+        for="canonical.launchpad.interfaces.bugcve.IBugCve
+             lazr.lifecycle.interfaces.IObjectDeletedEvent"
+        handler="canonical.launchpad.subscribers.bugactivity.record_cve_unlinked_from_bug" />
 
      <subscriber
         for="canonical.launchpad.interfaces.IBugTask
@@ -35,10 +40,5 @@
      for="canonical.launchpad.interfaces.IBugSubscription
           lazr.lifecycle.interfaces.IObjectModifiedEvent"
      handler="canonical.launchpad.subscribers.bugactivity.record_bugsubscription_edited" />
-
-  <subscriber
-     for="canonical.launchpad.interfaces.IBugAttachment
-          lazr.lifecycle.interfaces.IObjectCreatedEvent"
-     handler="canonical.launchpad.subscribers.bugactivity.record_bug_attachment_added" />
 
 </configure>

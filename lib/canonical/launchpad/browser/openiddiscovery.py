@@ -21,8 +21,8 @@ from canonical.launchpad.interfaces.launchpad import (
     IOpenIDApplication, NotFoundError)
 from canonical.launchpad.interfaces.authtoken import IAuthTokenSet
 from canonical.launchpad.interfaces.openidserver import (
-    IOpenIDAuthorizationSet, IOpenIDRPConfigSet, IOpenIDPersistentIdentity)
-from canonical.launchpad.interfaces.person import IPersonSet
+    IOpenIDPersistentIdentity)
+from lp.registry.interfaces.person import IPersonSet
 from canonical.launchpad.webapp import canonical_url, LaunchpadView
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from canonical.launchpad.webapp.publisher import (
@@ -64,11 +64,6 @@ class OpenIDApplicationNavigation(Navigation):
             return self._get_active_identity(name)
         else:
             raise NotFoundError(name)
-
-    @stepto('+rpconfig')
-    def rpconfig(self):
-        """Traverse to the `IOpenIDRPConfigSet`."""
-        return getUtility(IOpenIDRPConfigSet)
 
     @stepto('token')
     def token(self):

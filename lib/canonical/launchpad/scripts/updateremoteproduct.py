@@ -11,7 +11,7 @@ from canonical.launchpad.components.externalbugtracker import (
     BugWatchUpdateError, BugWatchUpdateWarning, get_external_bugtracker)
 from canonical.launchpad.interfaces.bugtracker import (
     BugTrackerType, SINGLE_PRODUCT_BUGTRACKERTYPES)
-from canonical.launchpad.interfaces.product import IProductSet
+from lp.registry.interfaces.product import IProductSet
 
 
 class RemoteProductUpdater:

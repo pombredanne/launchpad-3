@@ -4,22 +4,17 @@ We don't have a separate hostname for people to go to when they want to
 request server CDs.  Instead, they can do that at shipit.ubuntu.com by
 following a separate link from the front page.
 
+    >>> browser = setupBrowser(auth='Basic marilize@hbd.com:test')
     >>> browser.open('http://shipit.ubuntu.dev/')
     >>> print extract_text(find_tag_by_id(browser.contents, 'chooseLinks'))
     Request a CD of Ubuntu Desktop Edition
     Request a CD of Ubuntu Server Edition
 
     >>> browser.getLink('Request a CD of Ubuntu Server Edition').click()
-    >>> browser.url
-    'http://shipit.ubuntu.dev/login-server'
-
-    >>> browser.getControl(name='loginpage_email').value = 'marilize@hbd.com'
-    >>> browser.getControl(name='loginpage_password').value = 'test'
 
 Requesting server CDs is as easy as requesting any other flavour, but
 in order to do that we ask Marilize to answer a small survey.
 
-    >>> browser.getControl('Log In').click()
     >>> browser.title
     'ShipIt Survey'
     >>> print extract_text(

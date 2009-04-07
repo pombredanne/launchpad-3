@@ -49,13 +49,14 @@ modified using the CodeImportJobWorkflow utility.
 
 There are two CodeImport objects of interest in the sample data.
 
-    >>> from canonical.launchpad.interfaces import IBranchSet, ICodeImportSet
-    >>> branch_set = getUtility(IBranchSet)
+    >>> from canonical.launchpad.interfaces import ICodeImportSet
+    >>> from canonical.launchpad.interfaces.branchlookup import IBranchLookup
+    >>> branch_lookup = getUtility(IBranchLookup)
     >>> code_import_set = getUtility(ICodeImportSet)
 
 One has review_status set to NEW.
 
-    >>> new_import_branch = branch_set.getByUniqueName(
+    >>> new_import_branch = branch_lookup.getByUniqueName(
     ...     '~vcs-imports/evolution/import')
     >>> new_import = code_import_set.getByBranch(new_import_branch)
     >>> print new_import.review_status.name
@@ -63,7 +64,7 @@ One has review_status set to NEW.
 
 The other one has review_status set to REVIEWED.
 
-    >>> reviewed_import_branch = branch_set.getByUniqueName(
+    >>> reviewed_import_branch = branch_lookup.getByUniqueName(
     ...     '~vcs-imports/gnome-terminal/import')
     >>> reviewed_import = code_import_set.getByBranch(reviewed_import_branch)
     >>> print reviewed_import.review_status.name

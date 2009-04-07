@@ -1,4 +1,4 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
 
 """Tests for the virtual filesystem presented by Launchpad codehosting."""
 
@@ -16,7 +16,7 @@ from bzrlib.urlutils import escape
 
 from canonical.codehosting.vfs.branchfs import LaunchpadServer
 from canonical.codehosting.inmemory import InMemoryFrontend, XMLRPCWrapper
-
+from canonical.launchpad.interfaces.branchtarget import IBranchTarget
 
 
 class TestFilesystem(TestCaseWithTransport):
@@ -100,18 +100,6 @@ class TestFilesystem(TestCaseWithTransport):
             transport.has(
                 '~%s/%s/shiny-new-thing' % (team.name, product.name)))
 
-    def test_make_team_junk_branch_directory(self):
-        # Teams do not have +junk products
-        # XXX: JonathanLange 2008-08-16: We don't need to test this here,
-        # since it's already tested at the XMLRPC server level. We should
-        # delete this test once we add tests for fault-to-bzr-error
-        # translation.
-        team = self.factory.makeTeam(self.requester)
-        transport = self.getTransport()
-        self.assertRaises(
-            errors.PermissionDenied,
-            transport.mkdir, '~%s/+junk/new-branch' % team.name)
-
     def test_make_product_directory_for_nonexistent_product(self):
         # Making a branch directory for a non-existent product is not allowed.
         # Products must first be registered in Launchpad.
@@ -148,7 +136,7 @@ class TestFilesystem(TestCaseWithTransport):
             % (self.requester.name, product.name))
         self.assertEqual(
             'default_stack_on = /%s'
-            % product.default_stacked_on_branch.unique_name,
+            % IBranchTarget(product).default_stacked_on_branch.unique_name,
             control_file.strip())
 
     def test_can_open_product_control_dir(self):

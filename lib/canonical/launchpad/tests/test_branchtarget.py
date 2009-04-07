@@ -1,4 +1,4 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2008-2009 Canonical Ltd.  All rights reserved.
 
 """Tests for branch contexts."""
 
@@ -6,10 +6,17 @@ __metaclass__ = type
 
 import unittest
 
+from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
+
 from canonical.launchpad.database.branchtarget import (
+    check_default_stacked_on,
     PackageBranchTarget, PersonBranchTarget, ProductBranchTarget)
+from canonical.launchpad.interfaces.branch import BranchType
 from canonical.launchpad.interfaces.branchtarget import IBranchTarget
-from canonical.launchpad.testing import TestCaseWithFactory
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.publishing import PackagePublishingPocket
+from canonical.launchpad.testing import run_with_login, TestCaseWithFactory
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import IPrimaryContext
 from canonical.testing import DatabaseFunctionalLayer
@@ -62,6 +69,23 @@ class TestPackageBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
              self.original],
             list(target.components))
 
+    def test_default_stacked_on_branch(self):
+        # The default stacked-on branch for a source package is the branch
+        # linked to the release pocket of the current series of that package.
+        target = IBranchTarget(self.original)
+        development_package = self.original.development_version
+        default_branch = self.factory.makePackageBranch(
+            sourcepackage=development_package)
+        default_branch.startMirroring()
+        default_branch.mirrorComplete(self.factory.getUniqueString())
+        ubuntu_branches = getUtility(ILaunchpadCelebrities).ubuntu_branches
+        run_with_login(
+            ubuntu_branches.teamowner,
+            development_package.setBranch,
+            PackagePublishingPocket.RELEASE, default_branch,
+            ubuntu_branches.teamowner)
+        self.assertEqual(default_branch, target.default_stacked_on_branch)
+
 
 class TestPersonBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
 
@@ -91,6 +115,11 @@ class TestPersonBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
         target = IBranchTarget(self.original)
         self.assertEqual([self.original], list(target.components))
 
+    def test_default_stacked_on_branch(self):
+        # Junk branches are not stacked by default, ever.
+        target = IBranchTarget(self.original)
+        self.assertIs(None, target.default_stacked_on_branch)
+
 
 class TestProductBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
 
@@ -118,6 +147,91 @@ class TestProductBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
     def test_components(self):
         target = IBranchTarget(self.original)
         self.assertEqual([self.original], list(target.components))
+
+    def test_default_stacked_on_branch_no_dev_focus(self):
+        # The default stacked-on branch for a product target that has no
+        # development focus is None.
+        target = IBranchTarget(self.original)
+        self.assertIs(None, target.default_stacked_on_branch)
+
+    def _setDevelopmentFocus(self, product, branch):
+        removeSecurityProxy(product).development_focus.user_branch = branch
+
+    def test_default_stacked_on_branch_unmirrored_dev_focus(self):
+        # If the development focus hasn't been mirrored, then don't use it as
+        # the default stacked-on branch.
+        branch = self.factory.makeProductBranch(product=self.original)
+        self._setDevelopmentFocus(self.original, branch)
+        target = IBranchTarget(self.original)
+        self.assertIs(None, target.default_stacked_on_branch)
+
+    def test_default_stacked_on_branch_has_been_mirrored(self):
+        # If the development focus has been mirrored, then use it as the
+        # default stacked-on branch.
+        branch = self.factory.makeProductBranch(product=self.original)
+        self._setDevelopmentFocus(self.original, branch)
+        branch.startMirroring()
+        branch.mirrorComplete('rev1')
+        target = IBranchTarget(self.original)
+        self.assertEqual(branch, target.default_stacked_on_branch)
+
+
+class TestCheckDefaultStackedOnBranch(TestCaseWithFactory):
+    """Only certain branches are allowed to be default stacked-on branches."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_none(self):
+        # `check_default_stacked_on` returns None if passed None.
+        self.assertIs(None, check_default_stacked_on(None))
+
+    def test_unmirrored(self):
+        # `check_default_stacked_on` returns None if passed an unmirrored
+        # banch. This is because we don't want to stack things on unmirrored
+        # branches.
+        branch = self.factory.makeAnyBranch()
+        self.assertIs(None, check_default_stacked_on(branch))
+
+    def test_remote(self):
+        # `check_default_stacked_on` returns None if passed a remote branch.
+        # We have no Bazaar data for remote branches, so stacking on one is
+        # futile.
+        branch = self.factory.makeAnyBranch(branch_type=BranchType.REMOTE)
+        self.assertIs(None, check_default_stacked_on(branch))
+
+    def test_remote_thats_been_mirrored(self):
+        # Although REMOTE branches are not generally ever mirrored, it's
+        # possible for a branch to be turned into a REMOTE branch later in
+        # life.
+        branch = self.factory.makeAnyBranch(branch_type=BranchType.MIRRORED)
+        branch.startMirroring()
+        branch.mirrorComplete(self.factory.getUniqueString())
+        removeSecurityProxy(branch).branch_type = BranchType.REMOTE
+        self.assertIs(None, check_default_stacked_on(branch))
+
+    def test_invisible(self):
+        # `check_default_stacked_on` returns None for branches invisible to
+        # the current user.
+        branch = self.factory.makeAnyBranch(private=True)
+        self.assertIs(None, check_default_stacked_on(branch))
+
+    def test_invisible_been_mirrored(self):
+        # `check_default_stacked_on` returns None for branches invisible to
+        # the current user, even if those branches have already been mirrored.
+        branch = self.factory.makeAnyBranch(private=True)
+        naked_branch = removeSecurityProxy(branch)
+        naked_branch.startMirroring()
+        naked_branch.mirrorComplete(self.factory.getUniqueString())
+        self.assertIs(None, check_default_stacked_on(branch))
+
+    def test_been_mirrored(self):
+        # `check_default_stacked_on` returns None if passed a remote branch.
+        # We have no Bazaar data for remote branches, so stacking on one is
+        # futile.
+        branch = self.factory.makeAnyBranch()
+        branch.startMirroring()
+        branch.mirrorComplete('rev1')
+        self.assertEqual(branch, check_default_stacked_on(branch))
 
 
 class TestPrimaryContext(TestCaseWithFactory):

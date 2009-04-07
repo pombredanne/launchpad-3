@@ -1,0 +1,95 @@
+===================
+Publishing Security
+===================
+
+The publication records, SourcePackagePublishingHistory and
+BinaryPackagePublishingHistory have a security adapter that prevents viewing
+by unauthorised people.  For publications attached to a public archive, there
+are no restrictions.  For those attached to a private archive, only those able
+to view the archive, or admins, can see the publication.
+
+As an anonymous user get the first published source and binary out of cprov's 
+public PPA:
+
+    >>> login(ANONYMOUS)
+
+    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> cprov_ppa = getUtility(IPersonSet).getByName('cprov').archive
+    >>> cprov_ppa.private
+    False
+
+    >>> source_pub = cprov_ppa.getPublishedSources()[0]
+    >>> print source_pub.displayname
+    cdrkit 1.0 in breezy-autotest
+
+    >>> binary_pub = cprov_ppa.getAllPublishedBinaries()[0]
+    >>> print binary_pub.displayname
+    mozilla-firefox 1.0 in warty hppa
+
+A regular user can see them too:
+
+    >>> login('no-priv@canonical.com')
+    >>> source_pub = cprov_ppa.getPublishedSources()[0]
+    >>> print source_pub.displayname
+    cdrkit 1.0 in breezy-autotest
+
+    >>> binary_pub = cprov_ppa.getAllPublishedBinaries()[0]
+    >>> print binary_pub.displayname
+    mozilla-firefox 1.0 in warty hppa
+
+Now, we'll make cprov's PPA private:
+
+    >>> login('admin@canonical.com')
+    >>> cprov_ppa.private = True
+    >>> cprov_ppa.buildd_secret = "blah"
+
+Anonymous access will now be refused:
+
+    >>> login(ANONYMOUS)
+    >>> source_pub = cprov_ppa.getPublishedSources()[0]
+    Traceback (most recent call last):
+    ...
+    Unauthorized:...
+
+    >>> binary_pub = cprov_ppa.getAllPublishedBinaries()[0]
+    >>> print binary_pub.displayname
+    Traceback (most recent call last):
+    ...
+    Unauthorized:...
+
+As is for a regular user.
+
+    >>> login('no-priv@canonical.com')
+    >>> source_pub = cprov_ppa.getPublishedSources()[0]
+    Traceback (most recent call last):
+    ...
+    Unauthorized:...
+
+    >>> binary_pub = cprov_ppa.getAllPublishedBinaries()[0]
+    >>> print binary_pub.displayname
+    Traceback (most recent call last):
+    ...
+    Unauthorized:...
+
+But cprov himself can see them:
+
+    >>> login('celso.providelo@canonical.com')
+    >>> source_pub = cprov_ppa.getPublishedSources()[0]
+    >>> print source_pub.displayname
+    cdrkit 1.0 in breezy-autotest
+
+    >>> binary_pub = cprov_ppa.getAllPublishedBinaries()[0]
+    >>> print binary_pub.displayname
+    mozilla-firefox 1.0 in warty hppa
+
+As can an administrator.
+
+    >>> login('admin@canonical.com')
+    >>> source_pub = cprov_ppa.getPublishedSources()[0]
+    >>> print source_pub.displayname
+    cdrkit 1.0 in breezy-autotest
+
+    >>> binary_pub = cprov_ppa.getAllPublishedBinaries()[0]
+    >>> print binary_pub.displayname
+    mozilla-firefox 1.0 in warty hppa
+
