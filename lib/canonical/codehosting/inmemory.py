@@ -403,7 +403,7 @@ class FakeObjectFactory(ObjectFactory):
         """
         if branch is None:
             branch = self.makeBranch(product=product)
-        product.development_focus.user_branch = branch
+        product.development_focus.branch = branch
         branch.last_mirrored = 'rev1'
         return branch
 
