@@ -191,6 +191,10 @@ class TestGetByUrl(TestCaseWithFactory):
         return self.factory.makeProductBranch(
             owner=owner, product=product, name='c')
 
+    def test_getByUrl_with_none(self):
+        """getByUrl returns None if given None."""
+        self.assertIsNone(getUtility(IBranchLookup).getByUrl(None))
+
     def test_getByUrl_with_http(self):
         """getByUrl recognizes LP branches for http URLs."""
         branch = self.makeProductBranch()
