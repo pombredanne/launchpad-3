@@ -68,8 +68,8 @@ from zope.schema import (
 
 from lazr.enum import (
     DBEnumeratedType, DBItem, EnumeratedType, Item, use_template)
-from canonical.lazr.fields import CollectionField, Reference, ReferenceChoice
-from canonical.lazr.rest.declarations import (
+from lazr.restful.fields import CollectionField, Reference, ReferenceChoice
+from lazr.restful.declarations import (
     export_as_webservice_entry, export_write_operation, exported,
     operation_parameters, operation_returns_entry)
 
