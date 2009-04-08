@@ -14,7 +14,7 @@ from zope.interface import Interface, Attribute
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import IDistributionSourcePackage
 
-from canonical.lazr.fields import Reference
+from lazr.restful.fields import Reference
 
 class IDistroArchSeriesBinaryPackage(Interface):
 

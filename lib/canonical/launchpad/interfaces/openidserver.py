@@ -27,7 +27,7 @@ from canonical.launchpad.fields import (
     BaseImageUpload, PasswordField, URIField, UniqueField)
 from canonical.launchpad.interfaces.account import IAccount
 from lp.registry.interfaces.person import PersonCreationRationale
-from canonical.lazr.fields import Reference
+from lazr.restful.fields import Reference
 
 
 class IOpenIDAuthorization(Interface):
