@@ -888,6 +888,9 @@ class IArchiveSet(Interface):
             description=None):
         """Create a new archive.
 
+        On named-ppa creation, the signing key for the default PPA for the
+        given owner will be used if it is present.
+
         :param purpose: `ArchivePurpose`;
         :param owner: `IPerson` owning the Archive;
         :param name: optional text to be used as the archive name, if not
