@@ -66,9 +66,11 @@ provided link.
     >>> print jblack_browser.title
     Activate Personal Package Archive
 
+    >>> jblack_browser.getControl(
+    ...     name="field.displayname").value = 'PPA for James Blackwell'
     >>> jblack_browser.getControl(name="field.accepted").value = True
-    >>> jblack_browser.getControl(name="field.description").value = (
-    ...    'There we go ...')
+    >>> jblack_browser.getControl(
+    ...     name="field.description").value = 'There we go ...'
     >>> jblack_browser.getControl("Activate").click()
 
     >>> print jblack_browser.title
@@ -671,9 +673,12 @@ together.
     >>> jblack_browser.getControl("Create").click()
 
     >>> jblack_browser.getLink('Create a new PPA').click()
+    >>> jblack_browser.getControl(
+    ...     name="field.displayname").value = (
+    ...     'PPA for James Blackwell Friends')
     >>> jblack_browser.getControl(name="field.accepted").value = True
-    >>> jblack_browser.getControl(name="field.description").value = (
-    ...    'Come friends ...')
+    >>> jblack_browser.getControl(
+    ...     name="field.description").value = 'Come friends ...'
     >>> jblack_browser.getControl("Activate").click()
 
     >>> print jblack_browser.title
@@ -809,9 +814,12 @@ tests.
     >>> jblack_browser.getControl("Create").click()
 
     >>> jblack_browser.getLink('Create a new PPA').click()
+    >>> jblack_browser.getControl(
+    ...     name="field.displayname").value = (
+    ...     'PPA for James Blackwell Sandbox')
     >>> jblack_browser.getControl(name="field.accepted").value = True
-    >>> jblack_browser.getControl(name="field.description").value = (
-    ...    'Come friends ...')
+    >>> jblack_browser.getControl(
+    ...     name="field.description").value = 'Come friends ...'
     >>> jblack_browser.getControl("Activate").click()
 
     >>> print jblack_browser.title

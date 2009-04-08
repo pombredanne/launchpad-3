@@ -18,7 +18,7 @@ from zope.interface import Interface, Attribute
 
 from canonical.launchpad.fields import (
     ContentNameField, PublicPersonChoice, Title)
-from canonical.launchpad.interfaces.branch import IBranch
+from lp.code.interfaces.branch import IBranch
 from canonical.launchpad.interfaces.bugtarget import IBugTarget
 from lp.registry.interfaces.distroseries import DistroSeriesStatus
 from canonical.launchpad.interfaces.launchpad import (
@@ -212,12 +212,6 @@ class IProductSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
             required=False,
             description=_("The Bazaar branch for this series.  Leave blank "
                           "if this series is not maintained in Bazaar.")))
-
-    user_branch = Attribute(
-        _("Backwards compatibility shim for IProductSeries.branch"))
-
-    series_branch = Attribute(
-        _("Backwards compatibility shim for IProductSeries.branch"))
 
     translations_autoimport_mode = Choice(
         title=_('Import mode'),

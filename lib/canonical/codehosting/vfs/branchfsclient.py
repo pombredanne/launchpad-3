@@ -18,7 +18,7 @@ import time
 from twisted.internet import defer
 from twisted.web.xmlrpc import Fault
 
-from canonical.launchpad.interfaces.codehosting import BRANCH_TRANSPORT
+from lp.code.interfaces.codehosting import BRANCH_TRANSPORT
 
 
 class BlockingProxy:

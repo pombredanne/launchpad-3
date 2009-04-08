@@ -32,7 +32,7 @@ there's a map, and the scripts are loaded.
     >>> nopriv_browser = setupBrowser(auth='Basic no-priv@canonical.com:test')
     >>> nopriv_browser.open('http://launchpad.dev/~yyy')
     >>> markup = str(nopriv_browser.contents)
-    >>> print extract_text(find_tag_by_id(markup, 'portlet-map'))
+    >>> print extract_text(find_tag_by_id(markup, 'portlet-map'), skip_tags=[])
     Location
     Time zone: Europe/London...
     Y.lp.mapping.renderPersonMapSmall(...

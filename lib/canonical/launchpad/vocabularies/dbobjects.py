@@ -92,8 +92,8 @@ from canonical.database.sqlbase import SQLBase, quote_like, quote, sqlvalues
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces import IStore
 from canonical.launchpad.interfaces.archive import ArchivePurpose
-from canonical.launchpad.interfaces.branch import IBranch
-from canonical.launchpad.interfaces.branchcollection import IAllBranches
+from lp.code.interfaces.branch import IBranch
+from lp.code.interfaces.branchcollection import IAllBranches
 from canonical.launchpad.interfaces.bugtask import (
     IBugTask, IDistroBugTask, IDistroSeriesBugTask, IProductSeriesBugTask,
     IUpstreamBugTask)
@@ -1227,6 +1227,7 @@ class MilestoneVocabulary(SQLObjectVocabularyBase):
             target = milestone_context.target
         elif (IProject.providedBy(milestone_context) or
               IProduct.providedBy(milestone_context) or
+              IProductSeries.providedBy(milestone_context) or
               IDistribution.providedBy(milestone_context) or
               IDistroSeries.providedBy(milestone_context)):
             target = milestone_context

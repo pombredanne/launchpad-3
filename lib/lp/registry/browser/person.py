@@ -123,14 +123,13 @@ from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 
 from canonical.cachedproperty import cachedproperty
 
+from canonical.launchpad import helpers
 from canonical.launchpad.browser.archive import traverse_named_ppa
 from canonical.launchpad.browser.archivesubscription import (
     traverse_archive_subscription_for_subscriber)
 from canonical.launchpad.browser.launchpad import get_launchpad_views
 from canonical.launchpad.components.openidserver import CurrentOpenIDEndPoint
 from canonical.launchpad.interfaces.account import IAccount
-from canonical.launchpad.interfaces.archivesubscriber import (
-    IArchiveSubscriberSet)
 from canonical.launchpad.interfaces.account import AccountStatus
 from canonical.launchpad.interfaces.archivesubscriber import (
     IArchiveSubscriberSet)
@@ -166,7 +165,7 @@ from lp.registry.interfaces.teammembership import (
     DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT, ITeamMembership,
     ITeamMembershipSet, TeamMembershipStatus)
 from lp.registry.interfaces.wikiname import IWikiNameSet
-from canonical.launchpad.interfaces.branchnamespace import (
+from lp.code.interfaces.branchnamespace import (
     IBranchNamespaceSet, InvalidNamespace)
 from canonical.launchpad.interfaces.bugtask import IBugTaskSet
 from canonical.launchpad.interfaces.build import (
@@ -187,6 +186,8 @@ from canonical.launchpad.interfaces.sourcepackagerelease import (
 from canonical.launchpad.interfaces.translationrelicensingagreement import (
     ITranslationRelicensingAgreementEdit,
     TranslationRelicensingAgreementOptions)
+from canonical.launchpad.interfaces.translationsperson import (
+    ITranslationsPerson)
 
 from canonical.launchpad.browser.bugtask import BugTaskSearchListingView
 from canonical.launchpad.browser.feeds import FeedsMixin
@@ -226,6 +227,7 @@ from canonical.launchpad import _
 from canonical.lazr.utils import smartquote
 
 from lp.answers.interfaces.questioncollection import IQuestionSet
+from lp.answers.interfaces.questionsperson import IQuestionsPerson
 
 
 class RestrictedMembershipsPersonView(LaunchpadView):
@@ -903,7 +905,8 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
              'editircnicknames', 'editjabberids', 'editpassword',
              'editsshkeys', 'editpgpkeys', 'editlocation', 'memberships',
              'mentoringoffers', 'codesofconduct', 'karma', 'common_packages',
-             'administer', 'related_projects', 'activate_ppa']
+             'administer', 'related_projects', 'activate_ppa',
+             'view_ppa_subscriptions']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -1007,6 +1010,20 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
         target = '+review'
         text = 'Administer'
         return Link(target, text, icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
+    def view_ppa_subscriptions(self):
+        target = "+archivesubscriptions"
+        text = "View your private PPA subscriptions"
+        summary = ('View your personal PPA subscriptions and set yourself '
+                   'up to download your software')
+
+        # Only enable the link if the person has some subscriptions.
+        subscriptions = getUtility(IArchiveSubscriberSet).getBySubscriber(
+            self.context)
+        enabled = subscriptions.count() > 0
+
+        return Link(target, text, summary, enabled=enabled, icon='info')
 
 
 class IPersonEditMenu(Interface):
@@ -1842,6 +1859,21 @@ class BugSubscriberPackageBugsSearchListingView(BugTaskSearchListingView):
         distrosourcepackage = self.current_package
         return BugTaskSearchListingView.search(
             self, searchtext=searchtext, context=distrosourcepackage)
+
+    def getMilestoneWidgetValues(self):
+        """See `BugTaskSearchListingView`.
+
+        We return only the active milestones on the current distribution
+        since any others are irrelevant.
+        """
+        current_distro = self.current_package.distribution
+        vocabulary_registry = getVocabularyRegistry()
+        vocabulary = vocabulary_registry.get(current_distro, 'Milestone')
+
+        return helpers.shortlist([
+            dict(title=milestone.title, value=milestone.token, checked=False)
+            for milestone in vocabulary],
+            longest_expected=10)
 
     @cachedproperty
     def total_bug_counts(self):
@@ -3258,8 +3290,9 @@ class PersonTranslationView(LaunchpadView):
 
     @cachedproperty
     def batchnav(self):
+        translations_person = ITranslationsPerson(self.context)
         batchnav = BatchNavigator(
-            self.context.translation_history, self.request)
+            translations_person.translation_history, self.request)
 
         pofiletranslatorset = getUtility(IPOFileTranslatorSet)
         batch = batchnav.currentBatch()
@@ -3271,12 +3304,14 @@ class PersonTranslationView(LaunchpadView):
     @cachedproperty
     def translation_groups(self):
         """Return translation groups a person is a member of."""
-        return list(self.context.translation_groups)
+        translations_person = ITranslationsPerson(self.context)
+        return list(translations_person.translation_groups)
 
     @cachedproperty
     def translators(self):
         """Return translators a person is a member of."""
-        return list(self.context.translators)
+        translations_person = ITranslationsPerson(self.context)
+        return list(translations_person.translators)
 
     @cachedproperty
     def person_filter_querystring(self):
@@ -3308,9 +3343,10 @@ class PersonTranslationRelicensingView(LaunchpadFormView):
     @property
     def initial_values(self):
         """Set the default value for the relicensing radio buttons."""
+        translations_person = ITranslationsPerson(self.context)
         # If the person has previously made a choice, we default to that.
         # Otherwise, we default to BSD, because that's what we'd prefer.
-        if self.context.translations_relicensing_agreement == False:
+        if translations_person.translations_relicensing_agreement == False:
             default = TranslationRelicensingAgreementOptions.REMOVE
         else:
             default = TranslationRelicensingAgreementOptions.BSD
@@ -3336,17 +3372,18 @@ class PersonTranslationRelicensingView(LaunchpadFormView):
         """Store person's decision about translations relicensing.
 
         Decision is stored through
-        `IPerson.translations_relicensing_agreement`
+        `ITranslationsPerson.translations_relicensing_agreement`
         which uses TranslationRelicensingAgreement table.
         """
+        translations_person = ITranslationsPerson(self.context)
         allow_relicensing = data['allow_relicensing']
         if allow_relicensing == TranslationRelicensingAgreementOptions.BSD:
-            self.context.translations_relicensing_agreement = True
+            translations_person.translations_relicensing_agreement = True
             self.request.response.addInfoNotification(_(
                 "Thank you for BSD-licensing your translations."))
         elif (allow_relicensing ==
             TranslationRelicensingAgreementOptions.REMOVE):
-            self.context.translations_relicensing_agreement = False
+            translations_person.translations_relicensing_agreement = False
             self.request.response.addInfoNotification(_(
                 "We respect your choice. "
                 "Your translations will be removed once we complete the "
@@ -4419,7 +4456,7 @@ class PersonLatestQuestionsView(LaunchpadView):
     @cachedproperty
     def getLatestQuestions(self, quantity=5):
         """Return <quantity> latest questions created for this target. """
-        return self.context.searchQuestions(
+        return IQuestionsPerson(self.context).searchQuestions(
             participation=QuestionParticipation.OWNER)[:quantity]
 
 
@@ -4593,7 +4630,7 @@ class PersonAnswerContactForView(LaunchpadView):
         Return a list of IQuestionTargets sorted alphabetically by title.
         """
         return sorted(
-            self.context.getDirectAnswerQuestionTargets(),
+            IQuestionsPerson(self.context).getDirectAnswerQuestionTargets(),
             key=attrgetter('title'))
 
     @cachedproperty
@@ -4603,7 +4640,7 @@ class PersonAnswerContactForView(LaunchpadView):
         Sorted alphabetically by title.
         """
         return sorted(
-            self.context.getTeamAnswerQuestionTargets(),
+            IQuestionsPerson(self.context).getTeamAnswerQuestionTargets(),
             key=attrgetter('title'))
 
     def showRemoveYourselfLink(self):

@@ -4,7 +4,7 @@ We will have to check for a BranchJob being created for a branch, so
 let's put this check in a convenient function.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces.branchjob import (
+    >>> from lp.code.interfaces.branchjob import (
     ...     IRosettaUploadJobSource)
     >>> job_counter = 0
     >>> def isUploadJobCreatedForBranch(productseries):
