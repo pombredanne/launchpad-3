@@ -12,7 +12,7 @@ __all__ = [
 from zope.component import getUtility
 from zope.interface import implements
 
-from storm.expr import Column, Desc
+from storm.expr import Desc
 
 from canonical.launchpad.interfaces import(
     IDistributionSourcePackageRelease, ISourcePackageRelease)
@@ -128,7 +128,7 @@ class DistributionSourcePackageRelease:
 
         return builds_built_in_main_archives.union(
             builds_published_in_main_archives).order_by(
-                Desc(Column('datecreated')), Desc(Column('id')))
+                Desc(Build.datecreated), Desc(Build.id))
 
     @property
     def binary_package_names(self):
