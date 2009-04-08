@@ -812,6 +812,7 @@ class POFile(SQLBase, POFileMixIn):
         # Get number of imported messages that are still synced in Launchpad.
         current_clauses = self._getClausesForPOFileMessages()
         current_clauses.extend([
+            'TranslationTemplateItem.sequence > 0',
             'TranslationMessage.is_imported IS TRUE',
             'TranslationMessage.is_current IS TRUE',
             'TranslationMessage.potmsgset = POTMsgSet.id',
