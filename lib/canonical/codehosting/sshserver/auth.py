@@ -142,7 +142,7 @@ class UserDetailsMind:
             return defer.succeed(self.cache[username])
         else:
             d = proxy.callRemote('getUserAndSSHKeys', username)
-            d.addCallback(self._add_to_cache, username)
+            d.addBoth(self._add_to_cache, username)
             return d
 
     def _add_to_cache(self, result, username):
