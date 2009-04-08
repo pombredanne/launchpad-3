@@ -69,6 +69,7 @@ from lp.code.interfaces.branch import (
 from lp.code.interfaces.branchmergeproposal import (
     IBranchMergeProposal, InvalidBranchMergeProposal)
 from lp.code.interfaces.branchsubscription import IBranchSubscription
+from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.branchvisibilitypolicy import BranchVisibilityRule
 from lp.code.interfaces.codeimportjob import (
     CodeImportJobState, ICodeImportJobWorkflow)
@@ -858,8 +859,9 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
 
     schema = IBranch
     for_input = True
-    field_names = ['owner', 'product', 'name', 'branch_type', 'url', 'title',
-                   'summary', 'lifecycle_status', 'whiteboard']
+    field_names = [
+        'owner', 'name', 'branch_type', 'url', 'title', 'summary',
+        'lifecycle_status', 'whiteboard']
 
     branch = None
     custom_widget('branch_type', LaunchpadRadioWidgetWithDescription)
@@ -881,8 +883,8 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
         """Handle a request to create a new branch for this product."""
         try:
             ui_branch_type = data['branch_type']
-            namespace = get_branch_namespace(
-                data['owner'], product=data['product'])
+            namespace = IBranchTarget(self.context).getNamespace(
+                data['owner'])
             self.branch = namespace.createBranch(
                 branch_type=BranchType.items[ui_branch_type.name],
                 name=data['name'],
@@ -892,6 +894,7 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
                 summary=data['summary'],
                 lifecycle_status=data['lifecycle_status'],
                 whiteboard=data['whiteboard'])
+            # XXX: Should we perhaps move this to the model?
             if self.branch.branch_type == BranchType.MIRRORED:
                 self.branch.requestMirror()
         except BranchCreationForbidden:
