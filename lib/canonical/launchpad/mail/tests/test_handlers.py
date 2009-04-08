@@ -5,13 +5,12 @@ __metaclass__ = type
 from textwrap import dedent
 import transaction
 import unittest
-import xmlrpclib
 
 from bzrlib.branch import Branch
 from bzrlib.bzrdir import BzrDir
 from bzrlib import errors as bzr_errors
 from bzrlib.transport import get_transport
-from bzrlib.urlutils import local_path_to_url
+from bzrlib.urlutils import escape
 from bzrlib.urlutils import join as urljoin
 from zope.component import getUtility
 from zope.interface import directlyProvides, directlyProvidedBy
@@ -829,8 +828,28 @@ class TestCodeHandlerProcessMergeDirective(TestCaseWithFactory):
             bzr_errors.NotBranchError, Branch.open,
             bmp.source_branch.warehouse_url)
 
+    def test_branch_stacked(self):
+        # When a branch is created for a merge directive, it is created
+        # stacked on the target branch.
+        self.useBzrBranches(real_server=True)
+        branch, source, message = self._createTargetSourceAndBundle(
+            format="1.9")
+        bmp, comment = self._processMergeDirective(message)
+        # The soruce branch is stacked on the target.
+        source_bzr_branch = self._openBazaarBranchAsClient(bmp.source_branch)
+        self.assertEqual(
+            escape('/' + bmp.target_branch.unique_name),
+            source_bzr_branch.get_stacked_on_url())
+        # Make sure that the source branch doesn't have all the revisions.
+        source_branch_revisions = (
+            source_bzr_branch.bzrdir.open_repository().all_revision_ids())
+        # The only revision is the tip revision, as the other revisions are
+        # from the target branch.
+        tip_revision = source_bzr_branch.last_revision()
+        self.assertEqual([tip_revision], source_branch_revisions)
+
     def _createPreexistingSourceAndMessage(self, target_format,
-                                           source_format):
+                                           source_format, set_stacked=False):
         """Create the source and target branches and the merge directive."""
         db_target_branch, target_tree = self.create_branch_and_tree(
             'target', format=target_format)
@@ -856,13 +875,19 @@ class TestCodeHandlerProcessMergeDirective(TestCaseWithFactory):
         message = self.factory.makeBundleMergeDirectiveEmail(
             bundle_tree.branch, db_target_branch,
             sender=db_source_branch.owner)
+        # Tell the source branch that it is stacked on the target.
+        if set_stacked:
+            stacked_url = escape('/' + db_target_branch.unique_name)
+            branch = self._openBazaarBranchAsClient(db_source_branch)
+            branch.set_stacked_on_url(stacked_url)
         return db_source_branch, message
 
-    def test_existing_branch(self):
-        # A bundle can update an existing branch if they are both stackable.
+    def test_existing_stacked_branch(self):
+        # A bundle can update an existing branch if they are both stackable,
+        # and the source branch is stacked.
         self.useBzrBranches(real_server=True)
         lp_source, message = self._createPreexistingSourceAndMessage(
-            target_format="1.9", source_format="1.9")
+            target_format="1.9", source_format="1.9", set_stacked=True)
         bmp, comment = self._processMergeDirective(message)
         # The branch merge proposal should use the existing db branch.
         self.assertEqual(lp_source, bmp.source_branch)
@@ -874,6 +899,22 @@ class TestCodeHandlerProcessMergeDirective(TestCaseWithFactory):
         hosted = self._openBazaarBranchAsClient(bmp.source_branch)
         # The hosted copy of the branch has been updated.
         self.assertEqual('rev3', hosted.last_revision())
+
+    def test_existing_unstacked_branch(self):
+        # Even if the source and target are stackable, if the source is not
+        # stacked, we don't support stacking something that wasn't stacked
+        # before (yet).
+        self.useBzrBranches(real_server=True)
+        lp_source, message = self._createPreexistingSourceAndMessage(
+            target_format="1.9", source_format="1.9")
+        bmp, comment = self._processMergeDirective(message)
+        # The branch merge proposal should use the existing db branch.
+        self.assertEqual(lp_source, bmp.source_branch)
+        # Now the branch is not scheduled to be mirrorred.
+        self.assertIs(None, lp_source.next_mirror_time)
+        hosted = self._openBazaarBranchAsClient(bmp.source_branch)
+        # The hosted copy of the branch has not been updated.
+        self.assertEqual('rev2', hosted.last_revision())
 
     def test_existing_branch_nonstackable_target(self):
         # If the target branch is not stackable, then we don't pull any
