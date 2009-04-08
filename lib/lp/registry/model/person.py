@@ -26,6 +26,7 @@ from operator import attrgetter
 import pytz
 import random
 import re
+import weakref
 
 from zope.lifecycleevent import ObjectCreatedEvent
 from zope.interface import alsoProvides, implementer, implements
@@ -51,7 +52,7 @@ from canonical.database.sqlbase import (
 
 from canonical.cachedproperty import cachedproperty
 
-from canonical.lazr.utils import safe_hasattr
+from canonical.lazr.utils import get_current_browser_request, safe_hasattr
 
 from canonical.launchpad.database.account import Account
 from canonical.launchpad.database.bugtarget import HasBugsBase
@@ -3574,11 +3575,35 @@ def generate_nick(email_addr, is_registered=_is_nick_registered):
 @adapter(IAccount)
 @implementer(IPerson)
 def person_from_account(account):
-    """Adapt an IAccount into an IPerson."""
-    # The IAccount interface does not publish the account.person reference.
-    naked_account = removeSecurityProxy(account)
-    person = ProxyFactory(IStore(Person).find(
-        Person, accountID=naked_account.id).one())
+    """Adapt an `IAccount` into an `IPerson`.
+
+    If there is a current browser request, we cache the looked up Person in
+    the request's annotations so that we don't have to hit the DB once again
+    when further adaptation is needed.  We know this cache may cross
+    transaction boundaries, but this should not be a problem as the Person ->
+    Account link can't be changed.
+
+    This cache is necessary because our security adapters may need to adapt
+    the Account representing the logged in user into an IPerson multiple
+    times.
+    """
+    request = get_current_browser_request()
+    person = None
+    # First we try to get the person from the cache, but only if there is a
+    # browser request.
+    if request is not None:
+        cache = request.annotations.setdefault(
+            'launchpad.person_to_account_cache', weakref.WeakKeyDictionary())
+        person = cache.get(account)
+
+    # If it's not in the cache, then we get it from the database, and in that
+    # case, if there is a browser request, we also store that person in the
+    # cache.
     if person is None:
-        raise ComponentLookupError
+        person = IStore(Person).find(Person, account=account).one()
+        if request is not None:
+            cache[account] = person
+
+    if person is None:
+        raise ComponentLookupError()
     return person
