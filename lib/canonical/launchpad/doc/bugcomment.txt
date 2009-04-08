@@ -346,7 +346,7 @@ doc/bugactivity.txt for details of the BugActivityItem class).
     >>> for activity in bug_comment.activity:
     ...     print "%s: %s" % (
     ...         activity.change_summary, activity.change_details)
-    malone status: New &#8594; Confirmed
+    status: New &#8594; Confirmed
 
 The activity will be inserted into the footer of the comment. If a
 BugComment has some activity associated with it, it's show_footer
