@@ -97,15 +97,18 @@ class DistributionSourcePackageRelease:
         # were built for a main archive together with the builds for this
         # distribution that were built for a PPA but have been published
         # in a main archive.
+        builds_for_distro_exprs = (
+            Build.sourcepackagerelease == self.sourcepackagerelease,
+            Build.distroarchseries == DistroArchSeries.id,
+            DistroArchSeries.distroseries == DistroSeries.id,
+            DistroSeries.distribution == self.distribution,
+            )
 
         # First, get all the builds built in a main archive (this will
         # include new and failed builds.)
         builds_built_in_main_archives = store.find(
             Build,
-            Build.sourcepackagerelease == self.sourcepackagerelease,
-            Build.distroarchseries == DistroArchSeries.id,
-            DistroArchSeries.distroseries == DistroSeries.id,
-            DistroSeries.distribution == self.distribution,
+            builds_for_distro_exprs,
             Build.archive == Archive.id,
             Archive.purpose.is_in(MAIN_ARCHIVE_PURPOSES)).order_by(
                 'datecreated DESC', 'id DESC')
@@ -116,10 +119,7 @@ class DistributionSourcePackageRelease:
         # ppa builds that have been published in main archives.
         builds_published_in_main_archives = store.find(
             Build,
-            Build.sourcepackagerelease == self.sourcepackagerelease,
-            Build.distroarchseries == DistroArchSeries.id,
-            DistroArchSeries.distroseries == DistroSeries.id,
-            DistroSeries.distribution == self.distribution,
+            builds_for_distro_exprs,
             BinaryPackageRelease.build == Build.id,
             BinaryPackagePublishingHistory.binarypackagerelease ==
                 BinaryPackageRelease.id,
