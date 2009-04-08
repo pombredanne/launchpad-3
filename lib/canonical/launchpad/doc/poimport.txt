@@ -488,11 +488,11 @@ files are now counted as coming from Launchpad translations
 (rosettaCount) because latest imported file doesn't have them anymore.
 
     >>> pofile.currentCount()
-    2
+    4
     >>> pofile.updatesCount()
     0
     >>> pofile.rosettaCount()
-    2
+    0
 
 This time, our notification email reports complete success, except
 that nothing is emailed out (subject is None) because this is a published

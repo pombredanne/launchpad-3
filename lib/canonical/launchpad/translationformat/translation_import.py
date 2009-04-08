@@ -740,7 +740,8 @@ class POFileImporter(FileImporter):
             if potmsgset is not None:
                 previous_imported_message = (
                     potmsgset.getImportedTranslationMessage(
-                    self.potemplate, self.pofile.language))
+                    self.potemplate, self.pofile.language,
+                    self.pofile.variant))
                 if previous_imported_message is not None:
                     # The message was not imported this time, it
                     # therefore looses its imported status.
