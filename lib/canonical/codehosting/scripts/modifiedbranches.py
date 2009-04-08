@@ -15,10 +15,10 @@ from zope.component import getUtility
 
 from canonical.codehosting.vfs import branch_id_to_path
 from canonical.config import config
-from canonical.launchpad.interfaces.branch import BranchType
-from canonical.launchpad.interfaces.branchcollection import IAllBranches
 from canonical.launchpad.scripts.base import (
     LaunchpadScript, LaunchpadScriptFailure)
+from lp.code.interfaces.branch import BranchType
+from lp.code.interfaces.branchcollection import IAllBranches
 
 
 class ModifiedBranchesScript(LaunchpadScript):

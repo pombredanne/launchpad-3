@@ -17,6 +17,8 @@
   <include package="lp.answers" />
   <include package="lp.coop.answersbugs" />
 
+  <include package="lp.code" />
+
   <browser:url
     for="canonical.launchpad.interfaces.IPersonSet"
     path_expression="string:people"

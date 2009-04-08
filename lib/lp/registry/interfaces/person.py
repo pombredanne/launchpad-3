@@ -536,8 +536,6 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers, IHasLogo,
             title=_('List of languages known by this person'),
             readonly=True, required=False,
             value_type=Reference(schema=ILanguage)))
-    translatable_languages = Attribute(
-        _('Languages this person knows, apart from English'))
 
     hide_email_addresses = exported(
         Bool(title=_("Hide my email addresses from other Launchpad users"),
@@ -730,16 +728,6 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers, IHasLogo,
             "this is set to None, then this Person has not been merged "
             "into another and is still valid"))
 
-    translation_history = Attribute(
-        "The set of POFileTranslator objects that represent work done "
-        "by this translator.")
-
-    translation_groups = Attribute(
-        "The set of TranslationGroup objects this person is a member of.")
-
-    translators = Attribute(
-        "The set of Translator objects this person is a member of.")
-
     # title is required for the Launchpad Page Layout main template
     title = Attribute('Person Page Title')
 
@@ -758,10 +746,6 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers, IHasLogo,
 
     visibility_consistency_warning = Attribute(
         "Warning that a private team may leak membership info.")
-
-    translations_relicensing_agreement = Bool(
-        title=_("Whether person agrees to relicense their translations"),
-        readonly=False)
 
     sub_teams = exported(
         CollectionField(

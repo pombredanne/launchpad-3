@@ -13,7 +13,7 @@ import sys
 from bzrlib.errors import NotBranchError, ConnectionError
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces.branchscanner import IBranchScanner
+from lp.code.interfaces.branchscanner import IBranchScanner
 from canonical.codehosting.vfs import get_scanner_server
 from canonical.codehosting.scanner.bzrsync import BzrSync
 from canonical.launchpad.webapp import canonical_url, errorlog

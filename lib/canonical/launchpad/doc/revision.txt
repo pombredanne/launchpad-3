@@ -79,7 +79,7 @@ Revisions are associated to branches through the BranchRevision table. A given
 revision may appear in different positions in different branches thanks to
 Bazaar converge-on-pull logic.
 
->>> from canonical.launchpad.interfaces.branchlookup import IBranchLookup
+>>> from lp.code.interfaces.branchlookup import IBranchLookup
 >>> branch = getUtility(IBranchLookup).get(1)
 >>> branch.revision_history.count()
 0

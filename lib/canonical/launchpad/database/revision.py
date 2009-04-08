@@ -26,7 +26,7 @@ from canonical.database.sqlbase import quote, SQLBase, sqlvalues
 from canonical.launchpad.interfaces import (
     EmailAddressStatus, IEmailAddressSet, IRevision, IRevisionAuthor,
     IRevisionParent, IRevisionProperty, IRevisionSet)
-from canonical.launchpad.interfaces.branch import (
+from lp.code.interfaces.branch import (
     DEFAULT_BRANCH_STATUS_IN_LISTING)
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.project import IProject
@@ -95,8 +95,8 @@ class Revision(SQLBase):
 
     def getBranch(self, allow_private=False, allow_junk=True):
         """See `IRevision`."""
-        from canonical.launchpad.database.branch import Branch
-        from canonical.launchpad.database.branchrevision import BranchRevision
+        from lp.code.model.branch import Branch
+        from lp.code.model.branchrevision import BranchRevision
 
         store = Store.of(self)
 
@@ -320,8 +320,8 @@ class RevisionSet:
     def getRecentRevisionsForProduct(product, days):
         """See `IRevisionSet`."""
         # Here to stop circular imports.
-        from canonical.launchpad.database.branch import Branch
-        from canonical.launchpad.database.branchrevision import BranchRevision
+        from lp.code.model.branch import Branch
+        from lp.code.model.branchrevision import BranchRevision
 
         revision_subselect = Select(
             Min(Revision.id), revision_time_limit(days))
@@ -342,8 +342,8 @@ class RevisionSet:
     def getRevisionsNeedingKarmaAllocated():
         """See `IRevisionSet`."""
         # Here to stop circular imports.
-        from canonical.launchpad.database.branch import Branch
-        from canonical.launchpad.database.branchrevision import BranchRevision
+        from lp.code.model.branch import Branch
+        from lp.code.model.branchrevision import BranchRevision
         from lp.registry.model.person import ValidPersonCache
 
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
@@ -366,8 +366,8 @@ class RevisionSet:
     def getPublicRevisionsForPerson(person, day_limit=30):
         """See `IRevisionSet`."""
         # Here to stop circular imports.
-        from canonical.launchpad.database.branch import Branch
-        from canonical.launchpad.database.branchrevision import BranchRevision
+        from lp.code.model.branch import Branch
+        from lp.code.model.branchrevision import BranchRevision
         from lp.registry.model.teammembership import (
             TeamParticipation)
 
@@ -401,9 +401,9 @@ class RevisionSet:
     def _getPublicRevisionsHelper(obj, day_limit):
         """Helper method for Products and Projects."""
         # Here to stop circular imports.
-        from canonical.launchpad.database.branch import Branch
+        from lp.code.model.branch import Branch
         from lp.registry.model.product import Product
-        from canonical.launchpad.database.branchrevision import BranchRevision
+        from lp.code.model.branchrevision import BranchRevision
 
         origin = [
             Revision,

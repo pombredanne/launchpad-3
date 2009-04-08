@@ -175,36 +175,6 @@ are simple little functions.
     True
 
 
-== Target a bug task to a milestone ==
-
-    >>> from canonical.launchpad.interfaces import IBugSet
-    >>> from canonical.launchpad.interfaces import IPersonSet
-    >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
-    >>> firefox = getUtility(IProductSet).getByName('firefox')
-    >>> firefox_1_0 = firefox.getMilestone('1.0')
-    >>> bug_one = getUtility(IBugSet).get(1)
-    >>> firefox_task = bug_one.getBugTask(firefox)
-    >>> print firefox_task.milestone
-    None
-    >>> old_bugtask = Snapshot(firefox_task, providing=IUpstreamBugTask)
-
-    >>> firefox_task.milestone = firefox_1_0
-    >>> edit_fields = ["milestone"]
-    >>> bugtask_edited = ObjectModifiedEvent(
-    ...     firefox_task, old_bugtask, edit_fields, user=no_priv)
-    >>> notify(bugtask_edited)
-
-    >>> latest_activity = bug_one.activity[-1]
-    >>> latest_activity.person.name
-    u'no-priv'
-    >>> latest_activity.whatchanged
-    u'firefox: milestone'
-    >>> print latest_activity.oldvalue
-    None
-    >>> print latest_activity.newvalue
-    1.0
-
-
 == BugActivityItem ==
 
 BugActivityItem implements the stuff that BugActivity doesn't need to
@@ -213,10 +183,13 @@ know about.
     >>> import pytz
     >>> from datetime import datetime
     >>> from canonical.launchpad.browser.bugtask import BugActivityItem
-    >>> from canonical.launchpad.interfaces import IBugActivitySet
+    >>> from canonical.launchpad.interfaces.bug import IBugSet
+    >>> from canonical.launchpad.interfaces.bugactivity import (
+    ...     IBugActivitySet)
 
     >>> nowish = datetime(
     ...     2009, 3, 26, 16, 40, 31, tzinfo=pytz.timezone('UTC'))
+    >>> bug_one = getUtility(IBugSet).get(1)
     >>> activity = getUtility(IBugActivitySet).new(
     ...     bug=bug_one, whatchanged='summary', oldvalue='Old value',
     ...     newvalue='New value', person=user, datechanged=nowish)

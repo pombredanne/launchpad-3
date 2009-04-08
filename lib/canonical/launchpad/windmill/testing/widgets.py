@@ -27,7 +27,8 @@ class InlineEditorWidgetTest:
         """
         self.url = url
         if name is None:
-            self.__name__ = 'test_%s_inline_edit' % widget_id.replace('-', '_')
+            self.__name__ = ('test_%s_inline_edit'
+                             % widget_id.replace('-', '_'))
         else:
             self.__name__ = name
         self.widget_id = widget_id
@@ -81,3 +82,72 @@ class InlineEditorWidgetTest:
         client.asserts.assertText(
             xpath=u"//h1[@id='%s']/span[1]" % self.widget_id,
             validator=self.new_value)
+
+def _search_picker_widget(client, search_text, result_index):
+    """Search in picker widget and select an item."""
+    # Search for search_text in picker widget.
+    client.type(
+        text=search_text,
+        xpath=u"//table[contains(@class, 'yui-picker') "
+               "and not(contains(@class, 'yui-picker-hidden'))]"
+               "//input[@class='yui-picker-search']")
+    client.click(
+        xpath=u"//table[contains(@class, 'yui-picker') "
+               "and not(contains(@class, 'yui-picker-hidden'))]"
+               "//div[@class='yui-picker-search-box']/button")
+    # Select item at the result_index in the list.
+    client.click(
+        xpath=u"//table[contains(@class, 'yui-picker') "
+               "and not(contains(@class, 'yui-picker-hidden'))]"
+               "//ul[@class='yui-picker-results']/li[%d]/span" % result_index)
+
+
+class FormPickerWidgetTest:
+    """Test that the Picker widget edits a form value properly."""
+
+    def __init__(self, url, short_field_name, search_text, result_index,
+                 new_value, name=None, suite='form_picker',
+                 user=lpuser.FOO_BAR):
+        """Create a new FormPickerWidgetTest.
+
+        :param url: The URL to the page on which the widget lives.
+        :param short_field_name: The name of the Zope attribute. For example,
+                                 'owner' which has the id 'field.owner'.
+        :param search_text: Picker search value.
+        :param result_index: Item in picker result to select.
+        :param new_value: The value to change the field to.
+        :param name: Override the test name, if necessary.
+        :param suite: The suite in which this test is part of.
+        :param user: The user who should be logged in.
+        """
+        self.url = url
+        if name is None:
+            self.__name__ = 'test_%s_form_picker' % (
+                short_field_name.replace('-', '_'),)
+        else:
+            self.__name__ = name
+        self.search_text = search_text
+        self.result_index = result_index
+        self.new_value = new_value
+        self.suite = suite
+        self.user = user
+        self.choose_link_id = 'show-widget-field-%s' % short_field_name
+        self.field_id = 'field.%s' % short_field_name
+
+    def __call__(self):
+        client = WindmillTestClient(self.suite)
+        self.user.ensure_login(client)
+
+        # Load page.
+        client.open(url=self.url)
+        client.waits.forPageLoad(timeout=u'20000')
+
+        # Click on "Choose" link to show picker for the given field.
+        client.click(id=self.choose_link_id)
+
+        # Search picker.
+        _search_picker_widget(client, self.search_text, self.result_index)
+
+        # Verify value.
+        client.asserts.assertProperty(
+            id=self.field_id, validator=u"value|%s" % self.new_value)

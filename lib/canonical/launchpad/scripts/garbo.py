@@ -13,7 +13,7 @@ from zope.interface import implements
 from storm.locals import SQL, Max, Min
 
 from canonical.database.sqlbase import sqlvalues
-from canonical.launchpad.database.codeimportresult import CodeImportResult
+from lp.code.model.codeimportresult import CodeImportResult
 from canonical.launchpad.database.oauth import OAuthNonce
 from canonical.launchpad.database.openidconsumer import OpenIDConsumerNonce
 from canonical.launchpad.interfaces import IMasterStore
