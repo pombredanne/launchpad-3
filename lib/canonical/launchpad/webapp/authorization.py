@@ -32,8 +32,7 @@ from canonical.launchpad.webapp.metazcml import ILaunchpadPermission
 steveIsFixingThis = False
 
 
-LAUNCHPAD_SECURITY_POLICY_CACHE_KEY = (
-    'launchpad.security_policy_cache')
+LAUNCHPAD_SECURITY_POLICY_CACHE_KEY = 'launchpad.security_policy_cache'
 
 
 class LaunchpadSecurityPolicy(ParanoidSecurityPolicy):

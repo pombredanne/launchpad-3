@@ -15,9 +15,9 @@ from canonical.codehosting.scanner.bzrsync import (
 from canonical.codehosting.scanner.tests.test_bzrsync import (
     BzrSyncTestCase, run_as_db_user)
 from canonical.config import config
-from canonical.launchpad.interfaces.branch import BranchLifecycleStatus
-from canonical.launchpad.interfaces.branchlookup import IBranchLookup
-from canonical.launchpad.interfaces.branchmergeproposal import (
+from lp.code.interfaces.branch import BranchLifecycleStatus
+from lp.code.interfaces.branchlookup import IBranchLookup
+from lp.code.interfaces.branchmergeproposal import (
     BranchMergeProposalStatus)
 from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.testing import LaunchpadZopelessLayer

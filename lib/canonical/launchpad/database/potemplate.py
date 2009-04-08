@@ -41,6 +41,7 @@ from canonical.launchpad.interfaces import (
     ITranslationImporter, IVPOTExportSet, LanguageNotFound, NotFoundError,
     RosettaImportStatus, TranslationFileFormat,
     TranslationFormatInvalidInputError, TranslationFormatSyntaxError)
+from canonical.launchpad.interfaces.potmsgset import BrokenTextError
 from canonical.launchpad.translationformat import TranslationMessageData
 
 
@@ -677,7 +678,7 @@ class POTemplate(SQLBase, RosettaStats):
         template_mail = 'poimport-template-confirmation.txt'
         try:
             translation_importer.importFile(entry_to_import, logger)
-        except (TranslationFormatSyntaxError,
+        except (BrokenTextError, TranslationFormatSyntaxError,
                 TranslationFormatInvalidInputError), exception:
             if logger:
                 logger.info(

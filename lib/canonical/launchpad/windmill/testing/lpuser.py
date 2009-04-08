@@ -24,7 +24,8 @@ class LaunchpadUser:
             # Check under which name they are logged in.
             result = client.commands.execJS(
                 code="""lookupNode({xpath: '//div[@id="logincontrol"]//a'}).text""")
-            if result['result'].strip() == self.display_name:
+            if (result['result'] is not None and
+                result['result'].strip() == self.display_name):
                 # We are logged as that user.
                 return
             client.click(name="logout")
