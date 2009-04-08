@@ -16,12 +16,17 @@ is presented with a login form:
 However, if the user is logged in, they are presented with some
 information about their account.
 
-    >>> browser.getControl(name='field.email').value = 'mark@hbd.com'
+    >>> browser.getControl(name='field.email').value = 'test@canonical.com'
     >>> browser.getControl(name='field.password').value = 'test'
     >>> browser.getControl('Continue').click()
 
     >>> print browser.title
-    Welcome Mark Shuttleworth
+    Welcome Sample Person
+
+    >>> print extract_text(find_tag_by_id(browser.contents, 'maincontent'))
+    Logged in as Sample Person (edit)
+    Sites you last authenticated to
+    ...
 
 
 == Previously Visited Sites ==
@@ -33,28 +38,29 @@ recently, using the OpenID service.
     # Pretend the user authenticated to an OpenID relying party.
     >>> import pytz
     >>> from datetime import datetime
+    >>> import transaction
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces.account import IAccountSet
-    >>> from canonical.launchpad.interfaces.person import IPersonSet
     >>> from canonical.launchpad.interfaces.openidserver import (
     ...     IOpenIDRPSummarySet)
     >>> from canonical.launchpad.webapp.dbpolicy import SSODatabasePolicy
     >>> from canonical.launchpad.webapp.interfaces import IStoreSelector
     >>> login(ANONYMOUS)
     >>> getUtility(IStoreSelector).push(SSODatabasePolicy())
-    >>> sabdfl_person = getUtility(IPersonSet).getByName('sabdfl')
-    >>> sabdfl_account = getUtility(IAccountSet).get(sabdfl_person.accountID)
     >>> summary = getUtility(IOpenIDRPSummarySet).record(
-    ...     sabdfl_account, 'http://example.com/',
+    ...     getUtility(IAccountSet).getByEmail('test@canonical.com'),
+    ...     'http://example.com/',
     ...     date_used=datetime(2009, 01, 01, tzinfo=pytz.UTC))
     >>> db_policy = getUtility(IStoreSelector).pop()
     >>> logout()
+    >>> transaction.commit()
 
     >>> browser.reload()
     >>> print extract_text(find_tag_by_id(browser.contents, 'visited-sites'))
     Sites you last authenticated to
-    Site                 First authenticated  Last authenticated
-    http://example.com/  2009-01-01           2009-01-01
+    Site                        First authenticated  Last authenticated
+    http://example.com/         2009-01-01           2009-01-01
+    https://shop.canonical.com  2008-02-04           2008-02-04
 
 
 == Editing User Details ==
@@ -62,12 +68,12 @@ recently, using the OpenID service.
 The user can edit their details from this page:
 
     >>> browser.getLink("edit").click()
-    >>> browser.getControl("Display Name").value = "sabdfl"
+    >>> browser.getControl("Display Name").value = "New name"
     >>> browser.getControl("Change").click()
     >>> print browser.url
     http://openid.launchpad.dev/
     >>> print browser.title
-    Welcome sabdfl
+    Welcome New name
 
 Including their password:
 
@@ -97,9 +103,9 @@ From the Home page, the user can also log out:
 
 To log back in the user will have to use their new password:
 
-    >>> browser.getControl(name='field.email').value = 'mark@hbd.com'
+    >>> browser.getControl(name='field.email').value = 'test@canonical.com'
     >>> browser.getControl(name='field.password').value = 'test2'
     >>> browser.getControl('Continue').click()
 
     >>> print browser.title
-    Welcome sabdfl
+    Welcome New name

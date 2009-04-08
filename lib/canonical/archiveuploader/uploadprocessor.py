@@ -58,8 +58,8 @@ from canonical.archiveuploader.nascentupload import (
     NascentUpload, FatalUploadError, EarlyReturnUploadError)
 from canonical.archiveuploader.uploadpolicy import (
     findPolicyByOptions, UploadPolicyError)
-from canonical.launchpad.interfaces.distribution import IDistributionSet
-from canonical.launchpad.interfaces.person import IPersonSet
+from lp.registry.interfaces.distribution import IDistributionSet
+from lp.registry.interfaces.person import IPersonSet
 from canonical.launchpad.webapp.errorlog import (
     ErrorReportingUtility, ScriptRequest)
 from canonical.launchpad.webapp.interfaces import NotFoundError
@@ -438,12 +438,21 @@ def _getDistributionAndSuite(parts, exc_type):
     :raises: the given `exc_type` if the corresponding distribution or suite
         could not be found.
     """
-    assert len(parts) > 0 and len(parts) <= 2, (
-        "'%s' does not correspond to a <distribution>[/suite]." % parts)
+    # This assertion should never happens when this method is called from
+    # 'parse_upload_path'.
+    assert len(parts) <= 2, (
+        "'%s' does not correspond to a [distribution[/suite]]."
+        % '/'.join(parts))
 
-    distribution = getUtility(IDistributionSet).getByName(parts[0])
+    # Uploads with undefined distribution defaults to 'ubuntu'.
+    if len(parts) == 0 or parts[0] is '':
+        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+        return (ubuntu, None)
+
+    distribution_name = parts[0]
+    distribution = getUtility(IDistributionSet).getByName(distribution_name)
     if distribution is None:
-        raise exc_type("Could not find distribution '%s'" % parts[0])
+        raise exc_type("Could not find distribution '%s'" % distribution_name)
 
     if len(parts) == 1:
         return (distribution, None)
@@ -478,12 +487,6 @@ def parse_upload_path(relative_path):
     parts = relative_path.split(os.path.sep)
 
     first_path = parts[0]
-
-    # Root upload, defaults to 'ubuntu' primary archive, nothing else to
-    # check, return the default upload location.
-    if first_path is '':
-        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-        return (ubuntu, None, ubuntu.main_archive)
 
     if not first_path.startswith('~') and len(parts) <= 2:
         # Distribution upload (<distro>[/distroseries]). Always targeted to

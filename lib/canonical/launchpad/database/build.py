@@ -18,8 +18,9 @@ from sqlobject import (
     StringCol, ForeignKey, IntervalCol, SQLObjectNotFound)
 from sqlobject.sqlbuilder import AND, IN
 
-from storm.expr import In, LeftJoin
+from storm.expr import Desc, In, LeftJoin
 from storm.references import Reference
+from storm.store import Store
 
 from canonical.config import config
 
@@ -51,9 +52,9 @@ from canonical.launchpad.interfaces.launchpad import (
     NotFoundError, ILaunchpadCelebrities)
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.interfaces.publishing import (
-    PackagePublishingPocket, PackagePublishingStatus)
+    PackagePublishingPocket, active_publishing_status)
 from canonical.launchpad.mail import simple_sendmail, format_address
-from canonical.launchpad.webapp import canonical_url, urlappend
+from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from canonical.launchpad.webapp.tales import DurationFormatterAPI
@@ -92,40 +93,54 @@ class Build(SQLBase):
     upload_log = ForeignKey(
         dbName='upload_log', foreignKey='LibraryFileAlias', default=None)
 
+    def _getProxiedFileURL(self, library_file):
+        """Return the 'http_url' of a `ProxiedLibraryFileAlias`."""
+        # Avoiding circular imports.
+        from canonical.launchpad.browser.librarian import (
+            ProxiedLibraryFileAlias)
+
+        proxied_file = ProxiedLibraryFileAlias(library_file, self)
+        return proxied_file.http_url
+
     @property
     def upload_log_url(self):
         """See `IBuild`."""
         if self.upload_log is None:
             return None
+        return self._getProxiedFileURL(self.upload_log)
 
-        url = urlappend(canonical_url(self), "+files")
-        url = urlappend(url, self.upload_log.filename)
-        return url
+    @property
+    def build_log_url(self):
+        """See `IBuild`."""
+        if self.buildlog is None:
+            return None
+        return self._getProxiedFileURL(self.buildlog)
 
     @property
     def current_component(self):
         """See `IBuild`."""
-        pub = self.getCurrentPublication()
+        pub = self.current_source_publication
         if pub is not None:
             return pub.component
         return self.sourcepackagerelease.component
 
-    def getCurrentPublication(self):
+    @property
+    def current_source_publication(self):
         """See `IBuild`."""
-        allowed_status = (
-            PackagePublishingStatus.PENDING,
-            PackagePublishingStatus.PUBLISHED)
-        query = """
-        SourcePackagePublishingHistory.distroseries = %s AND
-        SourcePackagePublishingHistory.sourcepackagerelease = %s AND
-        SourcePackagePublishingHistory.archive = %s AND
-        SourcePackagePublishingHistory.status IN %s
-        """ % sqlvalues(
-            self.distroseries, self.sourcepackagerelease,
-            self.archive, allowed_status)
+        store = Store.of(self)
+        results = store.find(
+            SourcePackagePublishingHistory,
+            SourcePackagePublishingHistory.archive == self.archive,
+            SourcePackagePublishingHistory.distroseries == self.distroseries,
+            SourcePackagePublishingHistory.sourcepackagerelease ==
+                self.sourcepackagerelease,
+            SourcePackagePublishingHistory.status.is_in(
+                active_publishing_status))
 
-        return SourcePackagePublishingHistory.selectFirst(
-            query, orderBy='-datecreated')
+        current_publication = results.order_by(
+            Desc(SourcePackagePublishingHistory.id)).first()
+
+        return current_publication
 
     @property
     def changesfile(self):
@@ -546,18 +561,6 @@ class Build(SQLBase):
     def createBuildQueueEntry(self):
         """See `IBuild`"""
         return BuildQueue(build=self)
-
-    @property
-    def build_log_url(self):
-        """See `IBuild`."""
-        if self.buildlog is None:
-            return None
-
-        # The librarian URL is explicitly not used here because if
-        # the build is a private one then it would be in the
-        # restricted librarian.  It's proxied through the webapp and
-        # security applied accordingly.
-        return canonical_url(self) + "/+files/" + self.buildlog.filename
 
     def notify(self, extra_info=None):
         """See `IBuild`"""
@@ -1020,7 +1023,7 @@ class BuildSet:
         LibraryFileContent respectively) as well as builders related to the
         Builds at hand.
         """
-        from canonical.launchpad.database.sourcepackagename import (
+        from lp.registry.model.sourcepackagename import (
             SourcePackageName)
         from canonical.launchpad.database.sourcepackagerelease import (
             SourcePackageRelease)

@@ -87,7 +87,7 @@ The 'task' to be performed is adjusted to delete the second probing
 record once it's called.
 
     >>> import transaction
-    >>> from canonical.launchpad.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
 
     >>> def nasty_task(binary_publication):

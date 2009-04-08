@@ -37,7 +37,7 @@ from canonical.launchpad.interfaces.openidserver import (
     ILaunchpadOpenIDStoreFactory, IOpenIDAuthorization,
     IOpenIDAuthorizationSet, IOpenIDPersistentIdentity, IOpenIDRPConfig,
     IOpenIDRPConfigSet, IOpenIDRPSummary, IOpenIDRPSummarySet)
-from canonical.launchpad.interfaces.person import PersonCreationRationale
+from lp.registry.interfaces.person import PersonCreationRationale
 from canonical.launchpad.webapp.interfaces import (
     AUTH_STORE, IStoreSelector, MASTER_FLAVOR)
 from canonical.launchpad.webapp.url import urlparse

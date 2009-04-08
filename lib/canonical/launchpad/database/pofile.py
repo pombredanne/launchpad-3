@@ -28,12 +28,13 @@ from canonical.database.sqlbase import (
     SQLBase, flush_database_updates, quote, quote_like, sqlvalues)
 from canonical.launchpad import helpers
 from canonical.launchpad.components.rosettastats import RosettaStats
-from canonical.launchpad.validators.person import validate_public_person
+from lp.registry.interfaces.person import validate_public_person
+from lp.registry.model.person import Person
 from canonical.launchpad.database.potmsgset import POTMsgSet
 from canonical.launchpad.database.translationmessage import TranslationMessage
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.interfaces.person import IPersonSet
 from canonical.launchpad.interfaces.pofile import IPOFile, IPOFileSet
+from canonical.launchpad.interfaces.potmsgset import BrokenTextError
 from canonical.launchpad.interfaces.translationcommonformat import (
     ITranslationFileData)
 from canonical.launchpad.interfaces.translationexporter import (
@@ -48,6 +49,8 @@ from canonical.launchpad.interfaces.translationimportqueue import (
     RosettaImportStatus)
 from canonical.launchpad.interfaces.translationmessage import (
     TranslationValidationStatus)
+from canonical.launchpad.interfaces.translationsperson import (
+    ITranslationsPerson)
 from canonical.launchpad.interfaces.translations import TranslationConstants
 from canonical.launchpad.interfaces.vpoexport import IVPOExportSet
 from canonical.launchpad.translationformat.translation_common_format import (
@@ -107,8 +110,9 @@ def _check_translation_perms(permission, translators, person):
 
 def _person_has_not_licensed_translations(person):
     """Whether a person has declined to BSD-license their translations."""
-    if (person.translations_relicensing_agreement is not None and
-        person.translations_relicensing_agreement is False):
+    t_p = ITranslationsPerson(person)
+    if (t_p.translations_relicensing_agreement is not None and
+        t_p.translations_relicensing_agreement is False):
         return True
     else:
         return False
@@ -410,7 +414,18 @@ class POFile(SQLBase, POFileMixIn):
     @property
     def contributors(self):
         """See `IPOFile`."""
-        return getUtility(IPersonSet).getPOFileContributors(self)
+        contributors = Person.select("""
+            POFileTranslator.person = Person.id AND
+            POFileTranslator.pofile = %s""" % quote(self),
+            clauseTables=["POFileTranslator"],
+            distinct=True,
+            # XXX: kiko 2006-10-19:
+            # We can't use Person.sortingColumns because this is a
+            # distinct query. To use it we'd need to add the sorting
+            # function to the column results and then ignore it -- just
+            # like selectAlso does, ironically.
+            orderBy=["Person.displayname", "Person.name"])
+        return contributors
 
     def prepareTranslationCredits(self, potmsgset):
         """See `IPOFile`."""
@@ -800,7 +815,7 @@ class POFile(SQLBase, POFileMixIn):
             import_rejected = True
             entry_to_import.error_output = (
                 "File was not exported from Launchpad.")
-        except (TranslationFormatSyntaxError,
+        except (BrokenTextError, TranslationFormatSyntaxError,
                 TranslationFormatInvalidInputError), exception:
             # The import failed with a format error. We log it and select the
             # email template.
@@ -812,16 +827,16 @@ class POFile(SQLBase, POFileMixIn):
             error_text = str(exception)
             entry_to_import.error_output = error_text
             needs_notification_for_imported = True
-        except OutdatedTranslationError:
+        except OutdatedTranslationError, exception:
             # The attached file is older than the last imported one, we ignore
             # it. We also log this problem and select the email template.
             if logger:
                 logger.info('Got an old version for %s' % self.title)
             template_mail = 'poimport-got-old-version.txt'
             import_rejected = True
+            error_text = str(exception)
             entry_to_import.error_output = (
-                "Header's PO-Revision-Date is older than in last imported "
-                "version.")
+                "Outdated translation.  " + error_text)
         except TooManyPluralFormsError:
             if logger:
                 logger.warning("Too many plural forms.")

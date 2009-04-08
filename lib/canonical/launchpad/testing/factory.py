@@ -38,39 +38,39 @@ from canonical.launchpad.components.packagelocation import PackageLocation
 from canonical.launchpad.database.account import Account
 from canonical.launchpad.database.emailaddress import EmailAddress
 from canonical.launchpad.database.message import Message, MessageChunk
-from canonical.launchpad.database.milestone import Milestone
+from lp.registry.model.milestone import Milestone
 from canonical.launchpad.database.processor import ProcessorFamilySet
 from canonical.launchpad.interfaces import IMasterStore
 from canonical.launchpad.interfaces.account import (
     AccountCreationRationale, AccountStatus, IAccountSet)
 from canonical.launchpad.interfaces.archive import (
     IArchiveSet, ArchivePurpose)
-from canonical.launchpad.interfaces.branch import (
+from lp.code.interfaces.branch import (
     BranchType, UnknownBranchTypeError)
-from canonical.launchpad.interfaces.branchmergeproposal import (
+from lp.code.interfaces.branchmergeproposal import (
     BranchMergeProposalStatus)
-from canonical.launchpad.interfaces.branchmergequeue import (
+from lp.code.interfaces.branchmergequeue import (
     IBranchMergeQueueSet)
-from canonical.launchpad.interfaces.branchnamespace import (
+from lp.code.interfaces.branchnamespace import (
     get_branch_namespace)
-from canonical.launchpad.interfaces.branchsubscription import (
+from lp.code.interfaces.branchsubscription import (
     BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel)
 from canonical.launchpad.interfaces.bug import CreateBugParams, IBugSet
 from canonical.launchpad.interfaces.bugtask import BugTaskStatus
 from canonical.launchpad.interfaces.bugtracker import (
     BugTrackerType, IBugTrackerSet)
 from canonical.launchpad.interfaces.bugwatch import IBugWatchSet
-from canonical.launchpad.interfaces.codeimport import ICodeImportSet
-from canonical.launchpad.interfaces.codeimportevent import ICodeImportEventSet
-from canonical.launchpad.interfaces.codeimportmachine import (
+from lp.code.interfaces.codeimport import ICodeImportSet
+from lp.code.interfaces.codeimportevent import ICodeImportEventSet
+from lp.code.interfaces.codeimportmachine import (
     CodeImportMachineState, ICodeImportMachineSet)
-from canonical.launchpad.interfaces.codeimportresult import (
+from lp.code.interfaces.codeimportresult import (
     CodeImportResultStatus, ICodeImportResultSet)
-from canonical.launchpad.interfaces.codeimport import (
+from lp.code.interfaces.codeimport import (
     CodeImportReviewStatus, RevisionControlSystems)
 from canonical.launchpad.interfaces.country import ICountrySet
-from canonical.launchpad.interfaces.distribution import IDistributionSet
-from canonical.launchpad.interfaces.distroseries import (
+from lp.registry.interfaces.distribution import IDistributionSet
+from lp.registry.interfaces.distroseries import (
     DistroSeriesStatus, IDistroSeries)
 from canonical.launchpad.interfaces.emailaddress import (
     EmailAddressStatus, IEmailAddressSet)
@@ -79,32 +79,33 @@ from canonical.launchpad.interfaces.hwdb import (
     HWSubmissionFormat, IHWSubmissionSet)
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.launchpad.interfaces.mailinglist import (
+from lp.registry.interfaces.mailinglist import (
     IMailingListSet, MailingListStatus)
-from canonical.launchpad.interfaces.mailinglistsubscription import (
+from lp.registry.interfaces.mailinglistsubscription import (
     MailingListAutoSubscribePolicy)
-from canonical.launchpad.interfaces.poll import (
+from lp.registry.interfaces.poll import (
     IPollSet, PollAlgorithm, PollSecrecy)
 from canonical.launchpad.interfaces.potemplate import IPOTemplateSet
-from canonical.launchpad.interfaces.person import (
+from lp.registry.interfaces.person import (
     IPersonSet, PersonCreationRationale, TeamSubscriptionPolicy)
-from canonical.launchpad.interfaces.product import (
+from lp.registry.interfaces.product import (
     IProductSet, License)
-from canonical.launchpad.interfaces.productseries import IProductSeries
-from canonical.launchpad.interfaces.project import IProjectSet
+from lp.registry.interfaces.productseries import IProductSeries
+from lp.registry.interfaces.project import IProjectSet
 from canonical.launchpad.interfaces.publishing import PackagePublishingPocket
 from canonical.launchpad.interfaces.revision import IRevisionSet
 from canonical.launchpad.interfaces.shipit import (
     IShippingRequestSet, IStandardShipItRequestSet, ShipItFlavour,
     ShippingRequestStatus)
-from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
-from canonical.launchpad.interfaces.sourcepackagename import (
+from lp.registry.interfaces.sourcepackage import ISourcePackage
+from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageNameSet)
+from lp.registry.interfaces.ssh import ISSHKeySet, SSHKeyType
 from canonical.launchpad.interfaces.specification import (
     ISpecificationSet, SpecificationDefinitionStatus)
 from canonical.launchpad.interfaces.translationgroup import (
     ITranslationGroupSet)
-from canonical.launchpad.database.distributionsourcepackage import (
+from lp.registry.model.distributionsourcepackage import (
     DistributionSourcePackage)
 from canonical.launchpad.ftests import syncUpdate
 from canonical.launchpad.mail.signedmessage import SignedMessage
@@ -671,94 +672,6 @@ class LaunchpadObjectFactory(ObjectFactory):
         # development focus series.
         naked_series = removeSecurityProxy(product.development_focus)
         naked_series.branch = branch
-        return branch
-
-    def enableDefaultStackingForPackage(self, package, branch):
-        """Give 'package' a default stacked-on branch.
-
-        :param package: The package to give a default stacked-on branch to.
-        :param branch: The branch that should be the default stacked-on
-            branch.
-        """
-        from canonical.launchpad.testing import run_with_login
-        # 'branch' might be private, so we remove the security proxy to get at
-        # the methods.
-        naked_branch = removeSecurityProxy(branch)
-        naked_branch.startMirroring()
-        naked_branch.mirrorComplete('rev1')
-        ubuntu_branches = getUtility(ILaunchpadCelebrities).ubuntu_branches
-        run_with_login(
-            ubuntu_branches.teamowner,
-            package.development_version.setBranch,
-            PackagePublishingPocket.RELEASE,
-            branch,
-            ubuntu_branches.teamowner)
-        return branch
-
-    def enableDefaultStackingForPackage(self, package, branch):
-        """Give 'package' a default stacked-on branch.
-
-        :param package: The package to give a default stacked-on branch to.
-        :param branch: The branch that should be the default stacked-on
-            branch.
-        """
-        from canonical.launchpad.testing import run_with_login
-        # 'branch' might be private, so we remove the security proxy to get at
-        # the methods.
-        naked_branch = removeSecurityProxy(branch)
-        naked_branch.startMirroring()
-        naked_branch.mirrorComplete('rev1')
-        ubuntu_branches = getUtility(ILaunchpadCelebrities).ubuntu_branches
-        run_with_login(
-            ubuntu_branches.teamowner,
-            package.development_version.setBranch,
-            PackagePublishingPocket.RELEASE,
-            branch,
-            ubuntu_branches.teamowner)
-        return branch
-
-    def enableDefaultStackingForPackage(self, package, branch):
-        """Give 'package' a default stacked-on branch.
-
-        :param package: The package to give a default stacked-on branch to.
-        :param branch: The branch that should be the default stacked-on
-            branch.
-        """
-        from canonical.launchpad.testing import run_with_login
-        # 'branch' might be private, so we remove the security proxy to get at
-        # the methods.
-        naked_branch = removeSecurityProxy(branch)
-        naked_branch.startMirroring()
-        naked_branch.mirrorComplete('rev1')
-        ubuntu_branches = getUtility(ILaunchpadCelebrities).ubuntu_branches
-        run_with_login(
-            ubuntu_branches.teamowner,
-            package.development_version.setBranch,
-            PackagePublishingPocket.RELEASE,
-            branch,
-            ubuntu_branches.teamowner)
-        return branch
-
-    def enableDefaultStackingForPackage(self, package, branch):
-        """Give 'package' a default stacked-on branch.
-
-        :param package: The package to give a default stacked-on branch to.
-        :param branch: The branch that should be the default stacked-on
-            branch.
-        """
-        from canonical.launchpad.testing import run_with_login
-        # 'branch' might be private, so we remove the security proxy to get at
-        # the methods.
-        naked_branch = removeSecurityProxy(branch)
-        naked_branch.startMirroring()
-        naked_branch.mirrorComplete('rev1')
-        ubuntu_branches = getUtility(ILaunchpadCelebrities).ubuntu_branches
-        run_with_login(
-            ubuntu_branches.teamowner,
-            package.development_version.setBranch,
-            PackagePublishingPocket.RELEASE,
-            branch,
-            ubuntu_branches.teamowner)
         return branch
 
     def enableDefaultStackingForPackage(self, package, branch):
@@ -1707,3 +1620,11 @@ class LaunchpadObjectFactory(ObjectFactory):
             date_created, format, private, contactable,
             submission_key, emailaddress, distroarchseries,
             raw_submission, filename, filesize, system)
+
+    def makeSSHKey(self, person=None, keytype=SSHKeyType.RSA):
+        """Create a new SSHKey."""
+        if person is None:
+            person = self.makePerson()
+        return getUtility(ISSHKeySet).new(
+            person=person, keytype=keytype, keytext=self.getUniqueString(),
+            comment=self.getUniqueString())

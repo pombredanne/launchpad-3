@@ -36,13 +36,14 @@ from canonical.config import config
 from canonical.launchpad.database import CodeImport, CodeImportJob
 from canonical.launchpad.ftests import login, logout
 from canonical.launchpad.interfaces import (
-    CodeImportResultStatus, CodeImportReviewStatus, ICodeImportJobSet,
-    ICodeImportJobWorkflow, ICodeImportSet)
+    CodeImportReviewStatus, ICodeImportJobSet, ICodeImportJobWorkflow,
+    ICodeImportSet)
 from canonical.launchpad.testing import LaunchpadObjectFactory
 from canonical.testing.layers import (
     TwistedLayer, TwistedLaunchpadZopelessLayer)
 from canonical.twistedsupport.tests.test_processmonitor import (
     makeFailure, ProcessTestsMixin)
+from lp.code.interfaces.codeimportresult import CodeImportResultStatus
 
 class TestWorkerMonitorProtocol(ProcessTestsMixin, TestCase):
 
