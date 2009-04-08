@@ -12,7 +12,7 @@ __all__ = [
 from zope.component import getUtility
 from zope.interface import implements
 
-from storm.expr import And, Or
+from storm.expr import Column, Desc
 
 from canonical.launchpad.interfaces import(
     IDistributionSourcePackageRelease, ISourcePackageRelease)
@@ -110,8 +110,7 @@ class DistributionSourcePackageRelease:
             Build,
             builds_for_distro_exprs,
             Build.archive == Archive.id,
-            Archive.purpose.is_in(MAIN_ARCHIVE_PURPOSES)).order_by(
-                'datecreated DESC', 'id DESC')
+            Archive.purpose.is_in(MAIN_ARCHIVE_PURPOSES))
 
         # Next get all the builds that have a binary published in the
         # main archive... this will include many of those in the above
@@ -125,10 +124,11 @@ class DistributionSourcePackageRelease:
                 BinaryPackageRelease.id,
             BinaryPackagePublishingHistory.archive == Archive.id,
             Archive.purpose.is_in(MAIN_ARCHIVE_PURPOSES)).config(
-                distinct=True).order_by('datecreated DESC', 'id DESC')
+                distinct=True)
 
         return builds_built_in_main_archives.union(
-            builds_published_in_main_archives)
+            builds_published_in_main_archives).order_by(
+                Desc(Column('datecreated')), Desc(Column('id')))
 
     @property
     def binary_package_names(self):

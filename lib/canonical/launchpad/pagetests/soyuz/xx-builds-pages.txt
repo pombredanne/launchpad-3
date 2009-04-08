@@ -471,8 +471,8 @@ Such feature is visible when anonymous user access the
     >>> print extract_text(
     ...     find_tag_by_id(anon_browser.contents,"portlet-builds"))
     Builds
-    warty           i386     Successfully built
+    warty           hppa     Successfully built
     hoary           i386     Currently building
     breezy-autotest i386     Successfully built (NEW)
-    warty           hppa     Successfully built
+    warty           i386     Successfully built
 
