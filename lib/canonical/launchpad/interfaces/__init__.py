@@ -56,7 +56,6 @@ from lp.code.interfaces.codeimport import *
 from lp.code.interfaces.codeimportevent import *
 from lp.code.interfaces.codeimportjob import *
 from lp.code.interfaces.codeimportmachine import *
-from lp.code.interfaces.codeimportresult import *
 from lp.code.interfaces.codeimportscheduler import *
 from lp.registry.interfaces.codeofconduct import *
 from lp.code.interfaces.codereviewcomment import *

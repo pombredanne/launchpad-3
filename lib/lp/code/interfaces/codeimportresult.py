@@ -5,7 +5,10 @@
 
 __metaclass__ = type
 __all__ = [
-    'CodeImportResultStatus', 'ICodeImportResult', 'ICodeImportResultSet']
+    'CodeImportResultStatus',
+    'ICodeImportResult',
+    'ICodeImportResultSet',
+    ]
 
 from zope.interface import Attribute, Interface
 from zope.schema import Choice, Datetime, Int, Object, Text

@@ -49,7 +49,7 @@ Then create a result object.
     ...     datetime(2008, 1, 1, tzinfo=UTC),
     ...     timedelta(days=1))
     >>> odin = factory.makeCodeImportMachine(hostname="odin")
-    >>> from canonical.launchpad.interfaces import CodeImportResultStatus
+    >>> from lp.code.interfaces.codeimportresult import CodeImportResultStatus
     >>> new_result = factory.makeCodeImportResult(
     ...     sample_import, result_status=CodeImportResultStatus.SUCCESS,
     ...     date_started=time_source.next(), log_excerpt=log_excerpt,

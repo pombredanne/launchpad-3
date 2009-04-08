@@ -20,8 +20,9 @@ from zope.security.proxy import removeSecurityProxy
 from lp.code.model.codeimportjob import CodeImportJobWorkflow
 from canonical.launchpad.ftests import sync
 from canonical.launchpad.interfaces import (
-    CodeImportJobState, CodeImportResultStatus, CodeImportReviewStatus)
+    CodeImportJobState, CodeImportReviewStatus)
 from lp.code.interfaces.branchlookup import IBranchLookup
+from lp.code.interfaces.codeimportresult import CodeImportResultStatus
 from canonical.launchpad.testing import LaunchpadObjectFactory, time_counter
 
 
