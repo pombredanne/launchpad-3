@@ -38,7 +38,7 @@ from canonical.launchpad.interfaces import (
     IPrivateMaloneApplication, IProductSet, IRosettaApplication,
     IShipItApplication, ITranslationGroupSet, ITranslationsOverview,
     IWebServiceApplication)
-from canonical.launchpad.interfaces.codehosting import (
+from lp.code.interfaces.codehosting import (
     IBranchFileSystemApplication, IBranchPullerApplication)
 from canonical.launchpad.interfaces.hwdb import (
     IHWDeviceSet, IHWDriverSet, IHWVendorIDSet)

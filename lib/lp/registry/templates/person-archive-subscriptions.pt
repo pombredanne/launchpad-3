@@ -88,7 +88,7 @@ Y.on('domready', function() {
         class="listing">
         <thead>
           <tr class="archive-subscription-row">
-            <th>Archive</th><th>Subscription description</th><th>Status</th>
+            <th>Archive</th><th>Status</th>
           </tr>
         </thead>
         <tbody>
@@ -99,8 +99,6 @@ Y.on('domready', function() {
                         token subscription_with_token/token">
             <td tal:content="subscription/archive/displayname"
                 class="ppa_display_name">Private PPA for Celso
-            </td>
-            <td tal:content="subscription/description">Allow Team X access.
             </td>
             <td>
                 <tal:active condition="token">Active</tal:active>

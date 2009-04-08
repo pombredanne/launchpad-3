@@ -15,7 +15,7 @@ from zope.component import getUtility
 from canonical.config import config
 from canonical.codehosting.vfs import get_scanner_server
 from canonical.codehosting.jobs import JobRunner
-from canonical.launchpad.interfaces.branchjob import (
+from lp.code.interfaces.branchjob import (
     IRevisionMailJobSource, IRevisionsAddedJobSource)
 from canonical.launchpad.scripts.base import LaunchpadCronScript
 from canonical.launchpad.webapp.errorlog import globalErrorUtility
