@@ -13,7 +13,7 @@ from zope.interface import implements
 from canonical.launchpad.interfaces import IPillarNameSet
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 
-from canonical.lazr.interfaces.rest import ITopLevelEntryLink
+from lazr.restful.interfaces import ITopLevelEntryLink
 
 
 class IPillarSetLink(ITopLevelEntryLink, ICanonicalUrlData):

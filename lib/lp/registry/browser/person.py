@@ -110,7 +110,7 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.config import config
 from lazr.delegates import delegates
 from lazr.config import as_timedelta
-from canonical.lazr.interface import copy_field, use_template
+from lazr.restful.interface import copy_field, use_template
 from canonical.lazr.utils import safe_hasattr
 from canonical.database.sqlbase import flush_database_updates
 
@@ -123,6 +123,7 @@ from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 
 from canonical.cachedproperty import cachedproperty
 
+from canonical.launchpad import helpers
 from canonical.launchpad.browser.archive import traverse_named_ppa
 from canonical.launchpad.browser.archivesubscription import (
     traverse_archive_subscription_for_subscriber)
@@ -1858,6 +1859,21 @@ class BugSubscriberPackageBugsSearchListingView(BugTaskSearchListingView):
         distrosourcepackage = self.current_package
         return BugTaskSearchListingView.search(
             self, searchtext=searchtext, context=distrosourcepackage)
+
+    def getMilestoneWidgetValues(self):
+        """See `BugTaskSearchListingView`.
+
+        We return only the active milestones on the current distribution
+        since any others are irrelevant.
+        """
+        current_distro = self.current_package.distribution
+        vocabulary_registry = getVocabularyRegistry()
+        vocabulary = vocabulary_registry.get(current_distro, 'Milestone')
+
+        return helpers.shortlist([
+            dict(title=milestone.title, value=milestone.token, checked=False)
+            for milestone in vocabulary],
+            longest_expected=10)
 
     @cachedproperty
     def total_bug_counts(self):

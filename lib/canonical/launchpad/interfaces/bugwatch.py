@@ -23,9 +23,9 @@ from canonical.launchpad.interfaces.launchpad import IHasBug
 from lp.registry.interfaces.person import IPerson
 from canonical.launchpad.interfaces.bugtracker import IBugTracker
 
-from canonical.lazr.rest.declarations import (
+from lazr.restful.declarations import (
     export_as_webservice_entry, exported)
-from canonical.lazr.fields import CollectionField, Reference, ReferenceChoice
+from lazr.restful.fields import CollectionField, Reference, ReferenceChoice
 
 
 class BugWatchErrorType(DBEnumeratedType):

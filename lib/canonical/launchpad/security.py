@@ -731,15 +731,19 @@ class ViewPublicOrPrivateTeamMembers(AuthorizationBase):
             return True
         return False
 
-    def checkAuthenticated(self, user):
-        """Verify that the user can view the team's membership.
+    def checkAccountAuthenticated(self, account):
+        """See `IAuthorization.checkAccountAuthenticated`.
 
-        Anyone can see a public team's membership.
-        Only a team member or a Launchpad admin can view a
-        private membership.
+        Verify that the user can view the team's membership.
+
+        Anyone can see a public team's membership. Only a team member
+        or a Launchpad admin can view a private membership.
         """
         if self.obj.visibility == PersonVisibility.PUBLIC:
             return True
+        user = IPerson(account, None)
+        if user is None:
+            return False
         admins = getUtility(ILaunchpadCelebrities).admin
         if user.inTeam(admins) or user.inTeam(self.obj):
             return True
@@ -2132,12 +2136,8 @@ class ViewEmailAddress(AuthorizationBase):
         if self.obj.account == account:
             return True
 
-        # Email addresses without an associated Person cannot be seen by
-        # others.
-        if self.obj.person is None:
-            return False
-
-        if not self.obj.person.hide_email_addresses:
+        if not (self.obj.person is None or
+                self.obj.person.hide_email_addresses):
             return True
 
         user = IPerson(account, None)
@@ -2145,7 +2145,7 @@ class ViewEmailAddress(AuthorizationBase):
             return False
 
         celebrities = getUtility(ILaunchpadCelebrities)
-        return (user.inTeam(self.obj.person)
+        return (self.obj.person is not None and user.inTeam(self.obj.person)
                 or user.inTeam(celebrities.commercial_admin)
                 or user.inTeam(celebrities.launchpad_developers)
                 or user.inTeam(celebrities.admin))
