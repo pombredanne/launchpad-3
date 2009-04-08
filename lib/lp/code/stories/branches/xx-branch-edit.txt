@@ -254,7 +254,7 @@ branch, and changing the product and the branch name at the same time.
     >>> for msg in get_feedback_messages(browser.contents):
     ...     print msg
     There is 1 error.
-    You already have a junk branch called junk.dev.
+    You already have a branch for +junk called junk.dev.
 
 Finally, let's try just to change the name of the branch to the name of some
 branch we already own in the same product. So we have tested all the

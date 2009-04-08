@@ -956,7 +956,7 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
 class PersonBranchAddView(BranchAddView):
     """See `BranchAddView`."""
 
-    initial_focus_widget = 'product'
+    initial_focus_widget = 'name'
 
     @property
     def initial_values(self):
