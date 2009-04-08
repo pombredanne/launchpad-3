@@ -11,22 +11,16 @@ __all__ = [
 
 from operator import attrgetter
 
-from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.database.sqlbase import sqlvalues
-from canonical.launchpad.database.archive import Archive
-from canonical.launchpad.database.build import Build
 from canonical.launchpad.database.binarypackagerelease import (
     BinaryPackageRelease)
 from canonical.launchpad.database.publishing import (
-    BinaryPackagePublishingHistory, SourcePackagePublishingHistory)
-from canonical.launchpad.interfaces.archive import MAIN_ARCHIVE_PURPOSES
+    SourcePackagePublishingHistory)
 from canonical.launchpad.interfaces import (
     IDistroSeriesSourcePackageRelease, ISourcePackageRelease,
     PackagePublishingStatus)
-from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 
 from lazr.delegates import delegates
 
@@ -100,35 +94,23 @@ class DistroSeriesSourcePackageRelease:
     @property
     def builds(self):
         """See `IDistroSeriesSourcePackageRelease`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        # Find all the builds for the distribution and then filter them
+        # for the current distroseries. We do this rather than separate
+        # storm query because DSSPR will be removed later as part of the
+        # planned package refactor.
 
-        # Import DistroArchSeries here to avoid circular imports.
-        from canonical.launchpad.database.distroarchseries import (
-            DistroArchSeries)
+        # Import DistributionSourcePackageRelease here to avoid circular
+        # imports (and imported directly from database to avoid long line)
+        from canonical.launchpad.database import (
+            DistributionSourcePackageRelease)
 
-        # The builds are joined with their publishing histories to
-        # restrict the results to only those builds that have been published
-        # in a main archive. So a PPA build won't be included unless it
-        # was also published in a main archive.
-        builds_published_in_main_archives = store.find(
-            Build,
+        distro_builds = DistributionSourcePackageRelease(
+            self.distroseries.distribution,
+            self.sourcepackagerelease).builds
 
-            # First the expressions to get the builds in this
-            # DistroSeries:
-            Build.sourcepackagerelease == self.sourcepackagerelease,
-            Build.distroarchseries == DistroArchSeries.id,
-            DistroArchSeries.distroseries == self.distroseries,
-
-            # Then narrow it down to only those builds with binaries
-            # published in main archives:
-            BinaryPackageRelease.build == Build.id,
-            BinaryPackagePublishingHistory.binarypackagerelease ==
-                BinaryPackageRelease.id,
-            BinaryPackagePublishingHistory.archive == Archive.id,
-            Archive.purpose.is_in(MAIN_ARCHIVE_PURPOSES))
-
-        return builds_published_in_main_archives.config(
-            distinct=True).order_by('datecreated DESC', 'id DESC')
+        return (
+            [build for build in distro_builds
+                if build.distroarchseries.distroseries == self.distroseries])
 
     @property
     def files(self):

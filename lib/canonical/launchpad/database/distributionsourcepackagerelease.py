@@ -12,6 +12,8 @@ __all__ = [
 from zope.component import getUtility
 from zope.interface import implements
 
+from storm.expr import And, Or
+
 from canonical.launchpad.interfaces import(
     IDistributionSourcePackageRelease, ISourcePackageRelease)
 
@@ -91,6 +93,11 @@ class DistributionSourcePackageRelease:
             DistroArchSeries)
         from lp.registry.model.distroseries import DistroSeries
 
+        # We want to return all the builds for this distribution that
+        # were built for a main archive together with the builds for this
+        # distribution that were built for a PPA but have been published
+        # in a main archive.
+
         # The builds are joined with their publishing histories to
         # restrict the results to only those builds that have been published
         # in a main archive. So a PPA build won't be included unless it
@@ -105,13 +112,17 @@ class DistributionSourcePackageRelease:
             DistroArchSeries.distroseries == DistroSeries.id,
             DistroSeries.distribution == self.distribution,
 
-            # Then narrow it down to only those builds with binaries
+            # Then narrow it down to only those builds that were built in
+            # a main archive context or otherwise with binaries
             # published in main archives:
-            BinaryPackageRelease.build == Build.id,
-            BinaryPackagePublishingHistory.binarypackagerelease ==
-                BinaryPackageRelease.id,
-            BinaryPackagePublishingHistory.archive == Archive.id,
-            Archive.purpose.is_in(MAIN_ARCHIVE_PURPOSES))
+            Or(
+                And(Build.archive == Archive.id,
+                    Archive.purpose.is_in(MAIN_ARCHIVE_PURPOSES)),
+                And(BinaryPackageRelease.build == Build.id,
+                    BinaryPackagePublishingHistory.binarypackagerelease ==
+                        BinaryPackageRelease.id,
+                    BinaryPackagePublishingHistory.archive == Archive.id,
+                    Archive.purpose.is_in(MAIN_ARCHIVE_PURPOSES))))
 
         return builds_published_in_main_archives.config(
             distinct=True).order_by('datecreated DESC', 'id DESC')
