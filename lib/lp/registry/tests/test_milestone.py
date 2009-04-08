@@ -29,10 +29,10 @@ class MilestoneTest(unittest.TestCase):
 
     def testMilestoneSetIterator(self):
         """Test of MilestoneSet.__iter__()."""
-        all_milestones_ids = [
-            milestone.id for milestone in getUtility(IMilestoneSet)]
+        all_milestones_ids = set(
+            milestone.id for milestone in getUtility(IMilestoneSet))
         self.assertEqual(all_milestones_ids,
-                         [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12])
+                         set((1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12)))
 
     def testMilestoneSetGet(self):
         """Test of MilestoneSet.get()"""
