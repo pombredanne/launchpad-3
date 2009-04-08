@@ -895,7 +895,7 @@ class POFile(SQLBase, POFileMixIn):
         if import_rejected:
             # There were no imports at all and the user needs to review that
             # file, we tag it as FAILED.
-            entry_to_import.status = RosettaImportStatus.FAILED
+            entry_to_import.setStatus(RosettaImportStatus.FAILED)
         else:
             if (entry_to_import.is_published and
                 not needs_notification_for_imported):
@@ -904,7 +904,7 @@ class POFile(SQLBase, POFileMixIn):
                 # are needed.
                 subject = None
 
-            entry_to_import.status = RosettaImportStatus.IMPORTED
+            entry_to_import.setStatus(RosettaImportStatus.IMPORTED)
             # Assign karma to the importer if this is not an automatic import
             # (all automatic imports come from the rosetta expert user) and
             # comes from upstream.

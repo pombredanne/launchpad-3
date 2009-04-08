@@ -76,7 +76,7 @@ First, we do a valid import.
 
 We must approve the entry to be able to import it.
 
-    >>> entry.status = RosettaImportStatus.APPROVED
+    >>> entry.setStatus(RosettaImportStatus.APPROVED)
 
 We do the import.  This succeeds without errors.
 
@@ -124,7 +124,7 @@ field with a date older than a previous .po import.
 
 We must approve the entry to be able to import it.
 
-    >>> entry.status = RosettaImportStatus.APPROVED
+    >>> entry.setStatus(RosettaImportStatus.APPROVED)
 
 We do the import.
 

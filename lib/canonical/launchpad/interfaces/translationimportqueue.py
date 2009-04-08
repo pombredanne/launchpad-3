@@ -2,11 +2,24 @@
 # pylint: disable-msg=E0211,E0213
 
 from zope.interface import Interface, Attribute
-from zope.schema import Bool, Choice, Datetime, Field, Text, TextLine
+from zope.schema import (
+    Bool, Choice, Datetime, Field, Int, Object, Text, TextLine)
 from lazr.enum import DBEnumeratedType, DBItem, EnumeratedType, Item
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces import TranslationFileFormat
+from canonical.launchpad.interfaces import (
+    ISourcePackage, TranslationFileFormat)
+from lp.registry.interfaces.distroseries import IDistroSeries
+from lp.registry.interfaces.person import IPerson
+from lp.registry.interfaces.productseries import IProductSeries
+
+from canonical.lazr.interface import copy_field
+
+from canonical.lazr.fields import Reference, ReferenceChoice
+from canonical.lazr.rest.declarations import (
+    collection_default_content, exported, export_as_webservice_collection,
+    export_as_webservice_entry, export_read_operation, operation_parameters,
+    operation_returns_entry, operation_returns_collection_of)
 
 from canonical.launchpad.interfaces.translationcommonformat import (
     TranslationImportExportBaseException)
@@ -94,38 +107,79 @@ class SpecialTranslationImportTargetFilter(DBEnumeratedType):
         """)
 
 
+class IHasTranslationImports(Interface):
+    """An entity on which a translation import queue entry is attached.
+
+    Examples include an IProductSeries, ISourcePackage, IDistroSeries and
+    IPerson.
+    """
+    export_as_webservice_entry(
+        singular_name='object_with_translation_imports',
+        plural_name='objects_with_translation_imports')
+
+    def getFirstEntryToImport():
+        """Return the first entry of the queue ready to be imported."""
+
+    def getTranslationImportQueueEntries(imports_status=None,
+                                         file_extension=None):
+        """Return entries in the translation import queue for this entity.
+
+        :arg import_status: RosettaImportStatus DB Schema entry.
+        :arg file_extension: String with the file type extension, usually 'po'
+            or 'pot'.
+
+        If one of both of 'import_status' or 'file_extension' are given, the
+        returned entries are filtered based on those values.
+        """
+
+
 class ITranslationImportQueueEntry(Interface):
     """An entry of the Translation Import Queue."""
+    export_as_webservice_entry(
+        singular_name='translation_import_queue_entry',
+        plural_name='translation_import_queue_entries')
 
-    id = Attribute('The entry ID')
+    id = exported(Int(title=_('The entry ID'), required=True, readonly=True))
 
-    path = TextLine(
-        title=_("Path"),
-        description=_(
-            "The path to this file inside the source tree. Includes the"
-            " filename."),
-        required=True)
+    path = exported(
+        TextLine(
+            title=_("Path"),
+            description=_(
+                "The path to this file inside the source tree. Includes the"
+                " filename."),
+            required=True))
 
-    importer = Choice(
-        title=_("Importer"),
-        required=True,
-        description=_(
-            "The person that imported this file in Launchpad."),
-        vocabulary="ValidOwner")
+    importer = exported(
+        ReferenceChoice(
+            title=_("Uploader"),
+            schema=IPerson,
+            required=True,
+            readonly=True,
+            description=_(
+                "The person that uploaded this file to Launchpad."),
+            vocabulary="ValidOwner"),
+        exported_as="uploader")
 
-    dateimported = Datetime(
-        title=_("The timestamp when this file was imported."),
-        required=True)
+    dateimported = exported(
+        Datetime(
+            title=_("The timestamp when this queue entry was created."),
+            required=True,
+            readonly=True),
+        exported_as="date_created")
 
-    productseries = Choice(
-        title=_("Series"),
-        required=False,
-        vocabulary="ProductSeries")
+    productseries = exported(
+        Object(
+            title=_("Series"),
+            required=False,
+            readonly=True,
+            schema=IProductSeries))
 
-    distroseries = Choice(
-        title=_("Series"),
-        required=False,
-        vocabulary="DistroSeries")
+    distroseries = exported(
+        Object(
+            title=_("Series"),
+            required=False,
+            readonly=True,
+            schema=IDistroSeries))
 
     sourcepackagename = Choice(
         title=_("Source Package Name"),
@@ -145,24 +199,33 @@ class ITranslationImportQueueEntry(Interface):
         "An ILibraryFileAlias reference with the file content. Must not be"
         " None.")
 
-    format = Choice(
-        title=_('The file format of the import.'),
-        vocabulary=TranslationFileFormat,
-        required=True, readonly=True)
+    format = exported(
+        Choice(
+            title=_('The file format of the import.'),
+            vocabulary=TranslationFileFormat,
+            required=True,
+            readonly=True))
 
-    status = Choice(
-        title=_("The status of the import."),
-        values=RosettaImportStatus.items,
-        required=True)
+    status = exported(
+        Choice(
+            title=_("The status of the import."),
+            values=RosettaImportStatus.items,
+            required=True,
+            readonly=True))
 
-    date_status_changed = Datetime(
-        title=_("The timestamp when the status was changed."),
-        required=True)
+    date_status_changed = exported(
+        Datetime(
+            title=_("The timestamp when the status was changed."),
+            required=True))
 
     is_targeted_to_ubuntu = Attribute(
         "True if this entry is to be imported into the Ubuntu distribution.")
 
-    sourcepackage = Attribute("The sourcepackage associated with this entry.")
+    sourcepackage = exported(
+        Object(
+            schema=ISourcePackage,
+            title=_("The sourcepackage associated with this entry."),
+            readonly=True))
 
     guessed_potemplate = Attribute(
         "The IPOTemplate that we can guess this entry could be imported into."
@@ -188,6 +251,12 @@ class ITranslationImportQueueEntry(Interface):
         description=_("Output from most recent import attempt."),
         required=False)
 
+    def setStatus(status):
+        """Set status.
+
+        :param status: new status to set.
+        """
+
     def getGuessedPOFile():
         """Return an IPOFile that we think this entry should be imported into.
 
@@ -212,6 +281,7 @@ class ITranslationImportQueueEntry(Interface):
 
 class ITranslationImportQueue(Interface):
     """A set of files to be imported into Rosetta."""
+    export_as_webservice_collection(ITranslationImportQueueEntry)
 
     def __iter__():
         """Iterate over all entries in the queue."""
@@ -223,8 +293,8 @@ class ITranslationImportQueue(Interface):
         raised.
         """
 
-    def entryCount():
-        """Return the number of TranslationImportQueueEntry records."""
+    def countEntries():
+        """Return the number of `TranslationImportQueueEntry` records."""
 
     def addOrUpdateEntry(path, content, is_published, importer,
         sourcepackagename=None, distroseries=None, productseries=None,
@@ -273,8 +343,13 @@ class ITranslationImportQueue(Interface):
         """Return the ITranslationImportQueueEntry with the given id or None.
         """
 
+    @collection_default_content()
+    @operation_parameters(
+        import_status=copy_field(ITranslationImportQueueEntry['status']))
+    @operation_returns_collection_of(ITranslationImportQueueEntry)
+    @export_read_operation()
     def getAllEntries(target=None, import_status=None, file_extensions=None):
-        """Return all entries this import queue has
+        """Return all entries this import queue has.
 
         :arg target: IPerson, IProduct, IProductSeries, IDistribution,
             IDistroSeries or ISourcePackage the import entries are attached to
@@ -287,16 +362,23 @@ class ITranslationImportQueue(Interface):
         entries are filtered based on those values.
         """
 
+    @export_read_operation()
+    @operation_parameters(target=Reference(schema=IHasTranslationImports))
+    @operation_returns_entry(ITranslationImportQueueEntry)
     def getFirstEntryToImport(target=None):
         """Return the first entry of the queue ready to be imported.
 
-        :arg target: IPerson, IProduct, IProductSeries, IDistribution,
+        :param target: IPerson, IProduct, IProductSeries, IDistribution,
             IDistroSeries or ISourcePackage the import entries are attached to
             or None to get all entries available.
         """
 
+    @export_read_operation()
+    @operation_parameters(
+        status=copy_field(ITranslationImportQueueEntry['status']))
+    @operation_returns_collection_of(IHasTranslationImports)
     def getRequestTargets(status=None):
-        """Return list of `Product` and `DistroSeries` with pending imports.
+        """List `Product`s and `DistroSeries` with pending imports.
 
         :arg status: Filter by `RosettaImportStatus`.
 
@@ -437,26 +519,3 @@ class IEditTranslationImportQueueEntry(Interface):
             "Language variant, usually used to note the script used to"
             " write the translations (like 'Latn' for Latin)"),
         required=False)
-
-
-class IHasTranslationImports(Interface):
-    """An entity on which a translation import queue entry is attached.
-
-    Examples include an IProductSeries, ISourcePackage, IDistroSeries and
-    IPerson.
-    """
-
-    def getFirstEntryToImport():
-        """Return the first entry of the queue ready to be imported."""
-
-    def getTranslationImportQueueEntries(imports_status=None,
-                                         file_extension=None):
-        """Return entries in the translation import queue for this entity.
-
-        :arg import_status: RosettaImportStatus DB Schema entry.
-        :arg file_extension: String with the file type extension, usually 'po'
-            or 'pot'.
-
-        If one of both of 'import_status' or 'file_extension' are given, the
-        returned entries are filtered based on those values.
-        """
