@@ -101,21 +101,18 @@ class Realm:
 
 
 class ISSHPrivateKeyWithMind(credentials.ISSHPrivateKey):
-    pass
+    """Marker interface for SSH credentials that store a Mind."""
 
 
 class SSHPrivateKeyWithMind(credentials.SSHPrivateKey):
+    """SSH credentials that also store a Mind."""
+
     implements(ISSHPrivateKeyWithMind)
+
     def __init__(self, username, algName, blob, sigData, signature, mind):
         credentials.SSHPrivateKey.__init__(
             self, username, algName, blob, sigData, signature)
         self.mind = mind
-
-
-interfaceToMethod = userauth.SSHUserAuthServer.interfaceToMethod.copy()
-interfaceToMethod.update({
-    ISSHPrivateKeyWithMind : 'publickey',
-    })
 
 
 class UserDetailsMind:
@@ -134,12 +131,26 @@ class UserDetailsMind:
 
 
 class SSHUserAuthServer(userauth.SSHUserAuthServer):
-    interfaceToMethod = interfaceToMethod
+    """Subclass of Conch's SSHUserAuthServer to customize various behaviors.
+
+    There are two main differences:
+
+     * We override ssh_USERAUTH_REQUEST to display as a banner the reason why
+       an authentication attempt failed.
+
+     * We override auth_publickey to create credentials that reference a
+       UserDetailsMind and pass the same mind to self.portal.login.
+
+    Conch is not written in a way to make this easy; we've had to copy and
+    paste and change the implementations of these methods.
+    """
 
     def __init__(self, transport=None):
         self.transport = transport
         self._configured_banner_sent = False
         self._mind = UserDetailsMind()
+        self.interfaceToMethod = userauth.SSHUserAuthServer.interfaceToMethod
+        self.interfaceToMethod[ISSHPrivateKeyWithMind] = 'publickey'
 
     def sendBanner(self, text, language='en'):
         bytes = '\r\n'.join(text.encode('UTF8').splitlines() + [''])
@@ -190,31 +201,54 @@ class SSHUserAuthServer(userauth.SSHUserAuthServer):
         return reason
 
     def getMind(self):
+        """Return the mind that should be passed to self.portal.login().
+
+        If multiple requests to authenticate within this overall login attempt
+        should share state, this method can return the same mind each time.
+        """
         return self._mind
 
-    def makeCredentials(self, user, algName, blob, b, signature):
+    def makePublicKeyCredentials(self, username, algName, blob, sigData,
+                                 signature):
+        """Construct credentials for a request to login with a public key.
+
+        Our implementation returns a SSHPrivateKeyWithMind.
+
+        :param username: The username the request is for.
+        :param algName: The algorithm name for the blob.
+        :param blob: The public key blob as sent by the client.
+        :param sigData: The data the signature was made from.
+        :param signature: The signed data.  This is checked to verify that the
+            user owns the private key.
+        """
         mind = self.getMind()
         return SSHPrivateKeyWithMind(
-                self.user, algName, blob, b, signature, mind)
+                username, algName, blob, sigData, signature, mind)
 
     def auth_publickey(self, packet):
-        # Copy-paste-hack from conch!
+        # This is copied and pasted from twisted/conch/ssh/userauth.py in
+        # Twisted 8.0.1. We do this so we can customize how the credentials
+        # are built and pass a mind to self.portal.login.
         hasSig = ord(packet[0])
         algName, blob, rest = getNS(packet[1:], 2)
         pubKey = keys.Key.fromString(blob).keyObject
         signature = hasSig and getNS(rest)[0] or None
-        mind = self.getMind()
         if hasSig:
-            b = NS(self.transport.sessionID) + chr(userauth.MSG_USERAUTH_REQUEST) + \
-                NS(self.user) + NS(self.nextService) + NS('publickey') + \
-                chr(hasSig) +  NS(keys.objectType(pubKey)) + NS(blob)
-            c = self.makeCredentials(self.user, algName, blob, b, signature)
-            return self.portal.login(c, mind, IConchUser)
+            b = NS(self.transport.sessionID) + \
+                chr(userauth.MSG_USERAUTH_REQUEST) +  NS(self.user) + \
+                NS(self.nextService) + NS('publickey') +  chr(hasSig) + \
+                NS(keys.objectType(pubKey)) + NS(blob)
+            # The next three lines are different from the original.
+            c = self.makePublicKeyCredentials(
+                self.user, algName, blob, b, signature)
+            return self.portal.login(c, self.getMind(), IConchUser)
         else:
-            c = self.makeCredentials(self.user, algName, blob, None, None)
-            return self.portal.login(c, mind, IConchUser).addErrback(
-                                                        self._ebCheckKey,
-                                                        packet[1:])
+            # The next four lines are different from the original.
+            c = self.makePublicKeyCredentials(
+                self.user, algName, blob, None, None)
+            return self.portal.login(
+                c, self.getMind(), IConchUser).addErrback(
+                    self._ebCheckKey, packet[1:])
 
 
 class PublicKeyFromLaunchpadChecker(SSHPublicKeyDatabase):

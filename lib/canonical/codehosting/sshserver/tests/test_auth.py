@@ -332,11 +332,15 @@ class TestPublicKeyFromLaunchpadChecker(TrialTestCase):
         no_key_user = 'no_key_user'
         valid_key = 'valid_key'
 
+        def __init__(self):
+            self.calls = []
+
         def callRemote(self, function_name, *args, **kwargs):
             return getattr(
                 self, 'xmlrpc_%s' % function_name)(*args, **kwargs)
 
         def xmlrpc_getUserAndSSHKeys(self, username):
+            self.calls.append(username)
             if username == self.valid_user:
                 return defer.succeed({
                     'name': username,
@@ -353,8 +357,9 @@ class TestPublicKeyFromLaunchpadChecker(TrialTestCase):
                 except faults.NoSuchPersonWithName:
                     return defer.fail()
 
-    def makeCredentials(self, username, public_key):
-        mind = auth.UserDetailsMind()
+    def makeCredentials(self, username, public_key, mind=None):
+        if mind is None:
+            mind = auth.UserDetailsMind()
         return auth.SSHPrivateKeyWithMind(
             username, 'ssh-dss', public_key, '', None, mind)
 
@@ -459,6 +464,31 @@ class TestPublicKeyFromLaunchpadChecker(TrialTestCase):
                                    auth.UserDisplayedUnauthorizedLogin),
                         "Should not be a UserDisplayedUnauthorizedLogin"))
         return d
+
+    def test_successful_with_second_key_calls_authserver_once(self):
+        # It is normal in SSH authentication to be presented with a number of
+        # keys.  When the valid key is presented after some invalid ones (a)
+        # the login succeeds and (b) only one call is made to the authserver
+        # to retrieve the user's details.
+        checker = self.makeChecker()
+        mind = auth.UserDetailsMind()
+        wrong_key_creds = self.makeCredentials(
+            self.authserver.valid_user, 'invalid key', mind)
+        right_key_creds = self.makeCredentials(
+            self.authserver.valid_user, self.authserver.valid_key, mind)
+        d = checker.requestAvatarId(wrong_key_creds)
+        def try_second_key(failure):
+            failure.trap(UnauthorizedLogin)
+            return checker.requestAvatarId(right_key_creds)
+        d.addErrback(try_second_key)
+        d.addCallback(self.assertEqual, self.authserver.valid_user)
+        def check_one_call(r):
+            self.assertEqual(
+                [self.authserver.valid_user], self.authserver.calls)
+            return r
+        d.addCallback(check_one_call)
+        return d
+
 
 class StringTransportWith_setTcpKeepAlive(StringTransport):
     def setTcpKeepAlive(self, b):
