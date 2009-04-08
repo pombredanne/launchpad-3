@@ -13,7 +13,7 @@ display different types of archives (copy archives, ppas).
 
 First let's create a copy archive:
 
-    >>> from canonical.launchpad.interfaces.distribution import (
+    >>> from lp.registry.interfaces.distribution import (
     ...     IDistributionSet)
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
     >>> copy_location = factory.makeCopyArchiveLocation(

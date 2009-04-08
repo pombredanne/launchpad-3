@@ -16,7 +16,7 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.sqlbase import cursor
-from canonical.launchpad.database.karma import Karma
+from lp.registry.model.karma import Karma
 from canonical.launchpad.database.revision import RevisionSet
 from canonical.launchpad.ftests import login, logout
 from canonical.launchpad.interfaces import (

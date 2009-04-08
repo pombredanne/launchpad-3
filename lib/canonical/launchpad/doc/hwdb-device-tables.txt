@@ -1054,7 +1054,7 @@ HWDriver.)
 
 We can limit the results to a specific distribution.
 
-    >>> from canonical.launchpad.interfaces.distribution import (
+    >>> from lp.registry.interfaces.distribution import (
     ...     IDistributionSet)
     >>> distribution_set = getUtility(IDistributionSet)
     >>> ubuntu = distribution_set.getByName('ubuntu')
@@ -1199,7 +1199,7 @@ The driver is not in every case a kernel driver, it may also be for
 example a Ghostscript driver of a printer or a Sane scanner backend.
 
     >>> from canonical.launchpad.interfaces import IHWDriverSet
-    >>> from canonical.launchpad.interfaces.product import License
+    >>> from lp.registry.interfaces.product import License
     >>> driver_set = getUtility(IHWDriverSet)
     >>> usb_driver = driver_set.create(package_name='linux-image-generic',
     ...                                name='usb',

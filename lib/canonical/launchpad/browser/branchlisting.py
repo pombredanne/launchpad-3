@@ -43,9 +43,9 @@ from canonical.launchpad.browser.feeds import (
     FeedsMixin, PersonBranchesFeedLink, PersonRevisionsFeedLink,
     ProductBranchesFeedLink, ProductRevisionsFeedLink,
     ProjectBranchesFeedLink, ProjectRevisionsFeedLink)
-from canonical.launchpad.browser.product import (
+from lp.registry.browser.product import (
     ProductDownloadFileMixin, SortSeriesMixin)
-from canonical.launchpad.database.sourcepackage import SourcePackage
+from lp.registry.model.sourcepackage import SourcePackage
 from canonical.launchpad.interfaces import (
     IBugBranchSet,
     IProductSeriesSet,
@@ -58,11 +58,11 @@ from canonical.launchpad.interfaces.branch import (
 from canonical.launchpad.interfaces.branchcollection import IAllBranches
 from canonical.launchpad.interfaces.branchmergeproposal import (
     BranchMergeProposalStatus, IBranchMergeProposalGetter)
-from canonical.launchpad.interfaces.distroseries import DistroSeriesStatus
-from canonical.launchpad.interfaces.person import IPerson, IPersonSet
+from lp.registry.interfaces.distroseries import DistroSeriesStatus
+from lp.registry.interfaces.person import IPerson, IPersonSet
 from canonical.launchpad.interfaces.personproduct import (
     IPersonProduct, IPersonProductFactory)
-from canonical.launchpad.interfaces.product import IProduct
+from lp.registry.interfaces.product import IProduct
 from canonical.launchpad.webapp import (
     ApplicationMenu, canonical_url, custom_widget, enabled_with_permission,
     LaunchpadFormView, Link)
@@ -540,8 +540,8 @@ class BranchListingView(LaunchpadFormView, FeedsMixin):
         :param sort_by: an item from the BranchListingSort enumeration.
         """
         from canonical.launchpad.database.branch import Branch
-        from canonical.launchpad.database.person import Owner
-        from canonical.launchpad.database.product import Product
+        from lp.registry.model.person import Owner
+        from lp.registry.model.product import Product
 
         DEFAULT_BRANCH_LISTING_SORT = [
             BranchListingSort.PRODUCT,
@@ -780,8 +780,9 @@ class PersonBranchesMenu(ApplicationMenu, PersonBranchCountMixin):
             enabled = False
         else:
             enabled = self.user.inTeam(self.context)
-        text = 'Register branch'
-        return Link('+addbranch', text, icon='add', enabled=enabled)
+        text = 'Register a branch'
+        summary = 'Register a new Bazaar branch'
+        return Link('+addbranch', text, summary, icon='add', enabled=enabled)
 
     def requested_reviews(self):
         text = get_plural_text(

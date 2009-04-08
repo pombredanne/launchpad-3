@@ -37,8 +37,8 @@ from canonical.launchpad.interfaces import (
     ICreateMergeProposalJob, ICreateMergeProposalJobSource,
     IMergeProposalCreatedJob, WrongBranchMergeProposal)
 from canonical.launchpad.interfaces.message import IMessageJob
-from canonical.launchpad.interfaces.person import IPersonSet
-from canonical.launchpad.interfaces.product import IProductSet
+from lp.registry.interfaces.person import IPersonSet
+from lp.registry.interfaces.product import IProductSet
 from canonical.launchpad.interfaces.codereviewcomment import CodeReviewVote
 from canonical.launchpad.testing import (
     capture_events, GPGSigningContext, LaunchpadObjectFactory, login_person,

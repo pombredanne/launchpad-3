@@ -27,9 +27,9 @@ from canonical.launchpad.browser import BranchView
 from canonical.launchpad.interfaces.branch import (
     DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch)
 from canonical.launchpad.interfaces.branchcollection import IAllBranches
-from canonical.launchpad.interfaces.person import IPerson
-from canonical.launchpad.interfaces.product import IProduct
-from canonical.launchpad.interfaces.project import IProject
+from lp.registry.interfaces.person import IPerson
+from lp.registry.interfaces.product import IProduct
+from lp.registry.interfaces.project import IProject
 from canonical.launchpad.interfaces.revision import IRevisionSet
 from canonical.launchpad.webapp import canonical_url, LaunchpadView, urlparse
 
@@ -142,7 +142,7 @@ class BranchListingFeed(BranchFeedBase):
         Only `self.quantity` revisions are returned.
         """
         from canonical.launchpad.database.branch import Branch
-        from canonical.launchpad.database.product import Product
+        from lp.registry.model.product import Product
         collection = self._getCollection().visibleByUser(
             None).withLifecycleStatus(*DEFAULT_BRANCH_STATUS_IN_LISTING)
         branches = collection.getBranches()
