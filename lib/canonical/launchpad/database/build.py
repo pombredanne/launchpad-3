@@ -18,8 +18,9 @@ from sqlobject import (
     StringCol, ForeignKey, IntervalCol, SQLObjectNotFound)
 from sqlobject.sqlbuilder import AND, IN
 
-from storm.expr import In, LeftJoin
+from storm.expr import Desc, In, LeftJoin
 from storm.references import Reference
+from storm.store import Store
 
 from canonical.config import config
 
@@ -51,7 +52,7 @@ from canonical.launchpad.interfaces.launchpad import (
     NotFoundError, ILaunchpadCelebrities)
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.interfaces.publishing import (
-    PackagePublishingPocket, PackagePublishingStatus)
+    PackagePublishingPocket, active_publishing_status)
 from canonical.launchpad.mail import simple_sendmail, format_address
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import (
@@ -118,27 +119,28 @@ class Build(SQLBase):
     @property
     def current_component(self):
         """See `IBuild`."""
-        pub = self.getCurrentPublication()
+        pub = self.current_source_publication
         if pub is not None:
             return pub.component
         return self.sourcepackagerelease.component
 
-    def getCurrentPublication(self):
+    @property
+    def current_source_publication(self):
         """See `IBuild`."""
-        allowed_status = (
-            PackagePublishingStatus.PENDING,
-            PackagePublishingStatus.PUBLISHED)
-        query = """
-        SourcePackagePublishingHistory.distroseries = %s AND
-        SourcePackagePublishingHistory.sourcepackagerelease = %s AND
-        SourcePackagePublishingHistory.archive = %s AND
-        SourcePackagePublishingHistory.status IN %s
-        """ % sqlvalues(
-            self.distroseries, self.sourcepackagerelease,
-            self.archive, allowed_status)
+        store = Store.of(self)
+        results = store.find(
+            SourcePackagePublishingHistory,
+            SourcePackagePublishingHistory.archive == self.archive,
+            SourcePackagePublishingHistory.distroseries == self.distroseries,
+            SourcePackagePublishingHistory.sourcepackagerelease ==
+                self.sourcepackagerelease,
+            SourcePackagePublishingHistory.status.is_in(
+                active_publishing_status))
 
-        return SourcePackagePublishingHistory.selectFirst(
-            query, orderBy='-datecreated')
+        current_publication = results.order_by(
+            Desc(SourcePackagePublishingHistory.id)).first()
+
+        return current_publication
 
     @property
     def changesfile(self):

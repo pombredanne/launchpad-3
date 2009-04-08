@@ -590,7 +590,7 @@ class Builder(SQLBase):
                 candidate = self._findBuildCandidate()
                 continue
 
-            publication = candidate.build.getCurrentPublication()
+            publication = candidate.build.current_source_publication
 
             if publication is None:
                 # The build should be superseded if it no longer has a
