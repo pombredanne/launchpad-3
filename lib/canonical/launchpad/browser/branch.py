@@ -371,6 +371,11 @@ class BranchView(LaunchpadView, FeedsMixin):
         """Return the link to codebrowse for this branch."""
         return self.context.codebrowse_url()
 
+    @property
+    def pending_writes(self):
+        """Whether or not there are pending writes for this branch."""
+        return self.context.pending_writes
+
     def bzr_download_url(self):
         """Return the generic URL for downloading the branch."""
         if self.user_can_download():
@@ -1135,7 +1140,7 @@ class RegisterBranchMergeProposalView(LaunchpadFormView):
         # If there is a development focus branch for the product, then default
         # the reviewer to be the review team for that branch.
         reviewer = None
-        dev_focus_branch = self.context.product.development_focus.user_branch
+        dev_focus_branch = self.context.product.development_focus.branch
         if dev_focus_branch is not None:
             reviewer = dev_focus_branch.code_reviewer
         return {'reviewer': reviewer}

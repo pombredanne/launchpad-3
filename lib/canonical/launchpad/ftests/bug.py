@@ -19,11 +19,11 @@ from canonical.launchpad.testing.pages import (
 from canonical.launchpad.interfaces.bug import CreateBugParams, IBugSet
 from canonical.launchpad.interfaces.bugtask import BugTaskStatus, IBugTaskSet
 from canonical.launchpad.interfaces.bugwatch import IBugWatchSet
-from canonical.launchpad.interfaces.distribution import IDistributionSet
+from lp.registry.interfaces.distribution import IDistributionSet
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.interfaces.person import IPersonSet
-from canonical.launchpad.interfaces.product import IProductSet
-from canonical.launchpad.interfaces.sourcepackagename import (
+from lp.registry.interfaces.person import IPersonSet
+from lp.registry.interfaces.product import IProductSet
+from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageNameSet)
 
 

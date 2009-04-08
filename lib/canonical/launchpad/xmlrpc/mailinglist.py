@@ -17,7 +17,7 @@ from canonical.launchpad.interfaces import (
     EmailAddressStatus, IEmailAddressSet, IMailingListAPIView,
     IMailingListSet, IMessageApprovalSet, IMessageSet, IPersonSet,
     MailingListStatus, PersonalStanding, PostedMessageStatus)
-from canonical.launchpad.interfaces.person import PersonVisibility
+from lp.registry.interfaces.person import PersonVisibility
 from canonical.launchpad.webapp import LaunchpadXMLRPCView
 from canonical.launchpad.xmlrpc import faults
 

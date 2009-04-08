@@ -11,6 +11,7 @@ from canonical.launchpad.interfaces.translationexporter import (
     ITranslationFormatExporter)
 from canonical.launchpad.interfaces.translationfileformat import (
     TranslationFileFormat)
+from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.launchpad.translationformat.gettext_po_exporter import (
     GettextPOExporter)
 from canonical.launchpad.translationformat.gettext_po_parser import (
@@ -18,11 +19,12 @@ from canonical.launchpad.translationformat.gettext_po_parser import (
 from canonical.testing import LaunchpadZopelessLayer
 
 
-class GettextPOExporterTestCase(unittest.TestCase):
+class GettextPOExporterTestCase(TestCaseWithFactory):
     """Class test for gettext's .po file exports"""
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
+        TestCaseWithFactory.setUp(self)
         self.parser = POParser()
         self.translation_exporter = GettextPOExporter()
 
@@ -274,6 +276,70 @@ class GettextPOExporterTestCase(unittest.TestCase):
 
         self._compareImportAndExport(
             pofile.strip() % 'msgstr[1] ""', exported_file.read().strip())
+
+    def testClashingSingularMsgIds(self):
+        # We don't accept it in gettext imports directly, since it's not
+        # valid gettext, but it's possible for our database to hold
+        # messages that differ only in msgid_plural.  In gettext those
+        # would be considered equal, so we can't export them.  Only the
+        # first of the two messages is exported.
+        template = self.factory.makePOTemplate()
+        self.factory.makePOTMsgSet(
+            template, singular='%d foo', plural='%d foos', sequence=1)
+        self.factory.makePOTMsgSet(
+            template, singular='%d foo', plural='%d foox', sequence=2)
+
+        exported_file = template.export()
+
+        # The "foos" (as opposed to "foox") tells us that the exporter
+        # has picked the first message for export.
+        expected_output = dedent("""
+            msgid "%d foo"
+            msgid_plural "%d foos"
+            msgstr[0] ""
+            msgstr[1] ""
+            """).strip()
+
+        body = exported_file.split('\n\n', 1)[1].strip()
+        self.assertEqual(body, expected_output)
+
+    def testObsoleteMessageYieldsToNonObsoleteClashingOne(self):
+        # When an obsolete message and a non-obsolete message in the
+        # same POFile have identical identifying information except
+        # msgid_plural (which Launchpad considers part of the message's
+        # identifying information but gettext does not), only the
+        # non-obsolete one is exported.
+        template = self.factory.makePOTemplate()
+        obsolete_message = self.factory.makePOTMsgSet(
+            template, singular='%d goo', plural='%d goos', sequence=0)
+        current_message = self.factory.makePOTMsgSet(
+            template, singular='%d goo', plural='%d gooim', sequence=1)
+
+        pofile = self.factory.makePOFile(
+            potemplate=template, language_code='nl')
+
+        self.factory.makeTranslationMessage(
+            pofile=pofile, potmsgset=obsolete_message,
+            translations=['%d splut', '%d splutjes'])
+        self.factory.makeTranslationMessage(
+            pofile=pofile, potmsgset=current_message,
+            translations=['%d gargl', '%d garglii'])
+
+        exported_file = pofile.export()
+
+        # The "gooim" (as opposed to "goos") tells us that the exporter
+        # has picked the non-obsolete message for export.  The "gargl"
+        # and "garglii" tell us we're not just getting the msgid from
+        # the non-obsolete message, but the translations as well.
+        expected_output = dedent("""
+            msgid "%d goo"
+            msgid_plural "%d gooim"
+            msgstr[0] "%d gargl"
+            msgstr[1] "%d garglii"
+            """).strip()
+
+        body = exported_file.split('\n\n', 1)[1].strip()
+        self.assertEqual(body, expected_output)
 
 
 def test_suite():

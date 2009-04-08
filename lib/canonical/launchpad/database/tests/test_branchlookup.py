@@ -12,23 +12,22 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
-from canonical.launchpad.ftests import ANONYMOUS, login, login_person
 from canonical.launchpad.interfaces.branch import NoSuchBranch
 from canonical.launchpad.interfaces.branchlookup import (
     CannotHaveLinkedBranch, IBranchLookup, ILinkedBranchTraverser,
     ISourcePackagePocketFactory, NoLinkedBranch)
 from canonical.launchpad.interfaces.branchnamespace import (
     get_branch_namespace, InvalidNamespace)
-from canonical.launchpad.interfaces.distroseries import NoSuchDistroSeries
+from lp.registry.interfaces.distroseries import NoSuchDistroSeries
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.interfaces.person import NoSuchPerson
-from canonical.launchpad.interfaces.product import (
+from lp.registry.interfaces.person import NoSuchPerson
+from lp.registry.interfaces.product import (
     InvalidProductName, NoSuchProduct)
-from canonical.launchpad.interfaces.productseries import NoSuchProductSeries
+from lp.registry.interfaces.productseries import NoSuchProductSeries
 from canonical.launchpad.interfaces.publishing import PackagePublishingPocket
-from canonical.launchpad.interfaces.sourcepackagename import (
+from lp.registry.interfaces.sourcepackagename import (
     NoSuchSourcePackageName)
-from canonical.launchpad.testing import TestCaseWithFactory
+from canonical.launchpad.testing import run_with_login, TestCaseWithFactory
 from canonical.testing.layers import DatabaseFunctionalLayer
 
 
@@ -341,9 +340,10 @@ class TestLinkedBranchTraverser(TestCaseWithFactory):
         # branch for 'pocket' on that package.
         package = self.factory.makeSourcePackage()
         pocket = PackagePublishingPocket.BACKPORTS
+        path = package.getPocketPath(pocket)
         sourcepackagepocket = getUtility(ISourcePackagePocketFactory).new(
             package, pocket)
-        self.assertTraverses(sourcepackagepocket.path, sourcepackagepocket)
+        self.assertTraverses(path, sourcepackagepocket)
 
     def test_no_such_distribution(self):
         # `traverse` raises `NoSuchProduct` error if the distribution doesn't
@@ -469,7 +469,7 @@ class TestGetByLPPath(TestCaseWithFactory):
         # weren't there at all.
         branch = self.factory.makeProductBranch(private=True)
         product = removeSecurityProxy(branch).product
-        removeSecurityProxy(product).development_focus.user_branch = branch
+        removeSecurityProxy(product).development_focus.branch = branch
         self.assertRaises(
             NoLinkedBranch, self.branch_lookup.getByLPPath, product.name)
 
@@ -509,6 +509,49 @@ class TestGetByLPPath(TestCaseWithFactory):
         self.assertRaises(
             InvalidNamespace, self.branch_lookup.getByLPPath, path)
 
+    def test_too_long_product(self):
+        # If the provided path points to an existing product with a linked
+        # branch but there are also extra path segments, then raise a
+        # NoSuchProductSeries error, since we can't tell the difference
+        # between a trailing path and an attempt to load a non-existent series
+        # branch.
+        branch = self.factory.makeProductBranch()
+        product = removeSecurityProxy(branch.product)
+        product.development_focus.branch = branch
+        self.assertRaises(
+            NoSuchProductSeries,
+            self.branch_lookup.getByLPPath, '%s/other/bits' % product.name)
+
+    def test_too_long_product_series(self):
+        # If the provided path points to an existing product series with a
+        # linked branch but is followed by extra path segments, then we return
+        # the linked branch but chop off the extra segments. We might want to
+        # change this behaviour in future.
+        series = self.factory.makeSeries()
+        branch = self.factory.makeProductBranch(series.product)
+        series.branch = branch
+        result = self.branch_lookup.getByLPPath(
+            '%s/%s/other/bits' % (series.product.name, series.name))
+        self.assertEqual((branch, None), result)
+
+    def test_too_long_sourcepackage(self):
+        # If the provided path points to an existing source package with a
+        # linked branch but is followed by extra path segments, then we return
+        # the linked branch but chop off the extra segments. We might want to
+        # change this behaviour in future.
+        package = self.factory.makeSourcePackage()
+        branch = self.factory.makePackageBranch(sourcepackage=package)
+        ubuntu_branches = getUtility(ILaunchpadCelebrities).ubuntu_branches
+        run_with_login(
+            ubuntu_branches.teamowner,
+            package.setBranch,
+            PackagePublishingPocket.RELEASE,
+            branch,
+            ubuntu_branches.teamowner)
+        result = self.branch_lookup.getByLPPath(
+            '%s/other/bits' % package.path)
+        self.assertEqual((branch, None), result)
+
 
 class TestSourcePackagePocket(TestCaseWithFactory):
     """Tests for the SourcePackagePocket wrapper class."""
@@ -523,25 +566,6 @@ class TestSourcePackagePocket(TestCaseWithFactory):
         return getUtility(ISourcePackagePocketFactory).new(
             sourcepackage, pocket)
 
-    def test_suite_release_pocket(self):
-        # The suite of a RELEASE source package pocket is the name of the
-        # distroseries.
-        package = self.factory.makeSourcePackage()
-        package_pocket = self.makeSourcePackagePocket(
-            package, PackagePublishingPocket.RELEASE)
-        self.assertEqual(package.distroseries.name, package_pocket.suite)
-
-    def test_suite_non_release_pocket(self):
-        # The suite of a non-RELEASE source package pocket is the name of the
-        # distroseries, followed by a hyphen and the lower-case name of the
-        # pocket.
-        package = self.factory.makeSourcePackage()
-        pocket = PackagePublishingPocket.SECURITY
-        package_pocket = self.makeSourcePackagePocket(package, pocket)
-        self.assertEqual(
-            '%s-%s' % (package.distroseries.name, pocket.name.lower()),
-            package_pocket.suite)
-
     def test_branch(self):
         # The 'branch' attribute is the linked branch for the pocket on that
         # packet.
@@ -549,44 +573,21 @@ class TestSourcePackagePocket(TestCaseWithFactory):
         branch = self.factory.makePackageBranch(sourcepackage=package)
         registrant = self.factory.makePerson()
         ubuntu_branches = getUtility(ILaunchpadCelebrities).ubuntu_branches
-        login_person(ubuntu_branches.teamowner)
-        try:
-            package.setBranch(
-                PackagePublishingPocket.SECURITY, branch, registrant)
-        finally:
-            login(ANONYMOUS)
+        run_with_login(
+            ubuntu_branches.teamowner,
+            package.setBranch,
+            PackagePublishingPocket.SECURITY, branch, registrant)
         package_pocket = self.makeSourcePackagePocket(
             sourcepackage=package, pocket=PackagePublishingPocket.SECURITY)
         self.assertEqual(branch, package_pocket.branch)
-
-    def test_path_release_pocket(self):
-        # The path of a RELEASE source package pocket is the path of the
-        # source package.
-        package = self.factory.makeSourcePackage()
-        package_pocket = self.makeSourcePackagePocket(
-            package, PackagePublishingPocket.RELEASE)
-        self.assertEqual(package.path, package_pocket.path)
-
-    def test_path_non_release_pocket(self):
-        # The path of a non-RELEASE source package pocket is the path of the
-        # source package, except with the middle series component replaced by
-        # <series>-<pocket>.
-        package = self.factory.makeSourcePackage()
-        package_pocket = self.makeSourcePackagePocket(
-            package, PackagePublishingPocket.BACKPORTS)
-        self.assertEqual(
-            '%s/%s-%s/%s' % (
-                package.distribution.name,
-                package.distroseries.name,
-                PackagePublishingPocket.BACKPORTS.name.lower(),
-                package.sourcepackagename.name),
-            package_pocket.path)
 
     def test_display_name(self):
         # A SourcePackagePocket also has a display name, so we can use it in
         # error messages.
         package_pocket = self.makeSourcePackagePocket()
-        self.assertEqual(package_pocket.path, package_pocket.displayname)
+        self.assertEqual(
+            package_pocket.sourcepackage.getPocketPath(package_pocket.pocket),
+            package_pocket.displayname)
 
     def test_equality(self):
         package = self.factory.makeSourcePackage()

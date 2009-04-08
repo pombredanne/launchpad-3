@@ -74,7 +74,6 @@ registered as an utility.
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces import IBranchSet
     >>> from canonical.launchpad.interfaces.branchlookup import IBranchLookup
-    >>> from canonical.launchpad.ftests import syncUpdate
     >>> branchset = getUtility(IBranchSet)
     >>> branch_lookup = getUtility(IBranchLookup)
 
@@ -96,7 +95,7 @@ Branches can be created with IBranchNamespace.createBranch, which takes
 details like the type of the branch -- whether it is mirrored, hosted,
 imported or remote, name, and so on.
 
-    >>> from canonical.launchpad.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> registrant = factory.makePerson(name='registrant')
     >>> from canonical.launchpad.interfaces.branchnamespace import (
     ...     get_branch_namespace)
@@ -552,59 +551,10 @@ For a public branch without revisions, the link is disabled.
     False
 
 
-== Branch push and branch URLs ==
-
-URLs are shown for a branch to show a user where they can push to and
-pull or branch from.  These methods don't check any visibility constraints
-for the person passed into the methods, that job is left to the views.
-The branch location is shown using the lp: Bazaar lookup names.
-
-    >>> branch = branch_lookup.getByUniqueName(
-    ...     '~landscape-developers/landscape/trunk')
-    >>> print branch.unique_name
-    ~landscape-developers/landscape/trunk
-    >>> branch.private
-    True
-    >>> print branch.bzr_identity
-    lp://dev/~landscape-developers/landscape/trunk
-
-Branches associated with product series have shorter identities.  To
-show this the landscape trunk branch will be associated as the primary
-development focus branch.
-
-    >>> landscape = branch.product
-    >>> landscape.development_focus.user_branch = branch
-    >>> syncUpdate(landscape.development_focus)
-
-Private branches still show the full branch name.
-
-    >>> print branch.bzr_identity
-    lp://dev/~landscape-developers/landscape/trunk
-
-    >>> branch.private = False
-    >>> print branch.bzr_identity
-    lp://dev/landscape
-
-If the series is not the main development focus, then the series
-name is appended.  The branch will always use the shorter of the
-names if possible.
-
-    >>> series = landscape.newSeries(branch.owner, 'experimental', '', branch)
-    >>> len(list(branch.associatedProductSeries()))
-    2
-    >>> print branch.bzr_identity
-    lp://dev/landscape
-    >>> landscape.development_focus.user_branch = None
-    >>> syncUpdate(landscape.development_focus)
-    >>> print branch.bzr_identity
-    lp://dev/landscape/experimental
-
-
 == Associated product series ==
 
 A branch is able to return a list of product series that the branch is
-associated with through either ProductSeries.user_branch or
-ProductSeries.import_branch.
+associated with through ProductSeries.branch.
 
     >>> branch = branch_lookup.getByUniqueName('~vcs-imports/evolution/main')
     >>> series = list(branch.associatedProductSeries())
@@ -655,8 +605,7 @@ The current references to the branch table are shown here.
     branchsubscription.branch
     bugbranch.branch
     codeimport.branch
-    productseries.import_branch
-    productseries.user_branch
+    productseries.branch
     seriessourcepackagebranch.branch
     specificationbranch.branch
 

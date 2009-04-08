@@ -46,7 +46,7 @@ from canonical.launchpad.database.diff import Diff, PreviewDiff, StaticDiff
 from canonical.launchpad.database.job import Job
 from canonical.launchpad.database.message import (
     Message, MessageChunk, MessageJob, MessageJobAction)
-from canonical.launchpad.database.person import Person
+from lp.registry.model.person import Person
 from canonical.launchpad.event.branchmergeproposal import (
     BranchMergeProposalStatusChangeEvent, NewCodeReviewCommentEvent,
     ReviewerNominatedEvent)
@@ -62,11 +62,11 @@ from canonical.launchpad.interfaces.branchtarget import IHasBranchTarget
 from canonical.launchpad.interfaces.codereviewcomment import CodeReviewVote
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.message import IMessageJob
-from canonical.launchpad.interfaces.person import IPerson
-from canonical.launchpad.interfaces.product import IProduct
+from lp.registry.interfaces.person import IPerson
+from lp.registry.interfaces.product import IProduct
 from canonical.launchpad.mailout.branch import RecipientReason
 from canonical.launchpad.mailout.branchmergeproposal import BMPMailer
-from canonical.launchpad.validators.person import validate_public_person
+from lp.registry.interfaces.person import validate_public_person
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR, IPlacelessAuthUtility, IStoreSelector, MAIN_STORE,
     MASTER_FLAVOR)

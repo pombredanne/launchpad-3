@@ -84,7 +84,6 @@ from lazr.uri import URI
 from canonical.launchpad.interfaces.bugattachment import (
     BugAttachmentType, IBugAttachmentSet)
 from canonical.launchpad.interfaces.bugactivity import IBugActivity
-from canonical.launchpad.interfaces.bugmessage import IBugComment
 from canonical.launchpad.interfaces.bugnomination import (
     BugNominationStatus, IBugNominationSet)
 from canonical.launchpad.interfaces.bug import IBug, IBugSet
@@ -99,16 +98,16 @@ from canonical.launchpad.interfaces.bugtask import (
     UNRESOLVED_BUGTASK_STATUSES)
 from canonical.launchpad.interfaces.bugtracker import BugTrackerType
 from canonical.launchpad.interfaces.cve import ICveSet
-from canonical.launchpad.interfaces.distribution import IDistribution
-from canonical.launchpad.interfaces.distributionsourcepackage import (
+from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage)
-from canonical.launchpad.interfaces.distroseries import IDistroSeries
+from lp.registry.interfaces.distroseries import IDistroSeries
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.interfaces.person import IPerson, IPersonSet
-from canonical.launchpad.interfaces.product import IProduct
-from canonical.launchpad.interfaces.productseries import IProductSeries
-from canonical.launchpad.interfaces.project import IProject
-from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
+from lp.registry.interfaces.person import IPerson, IPersonSet
+from lp.registry.interfaces.product import IProduct
+from lp.registry.interfaces.productseries import IProductSeries
+from lp.registry.interfaces.project import IProject
+from lp.registry.interfaces.sourcepackage import ISourcePackage
 from canonical.launchpad.interfaces.validation import (
     valid_upstreamtask, validate_distrotask)
 from canonical.launchpad.webapp.interfaces import (
@@ -122,7 +121,7 @@ from canonical.launchpad.browser.bug import BugContextMenu, BugTextView
 from canonical.launchpad.browser.bugcomment import build_comments_from_chunks
 from canonical.launchpad.browser.feeds import (
     BugTargetLatestBugsFeedLink, FeedsMixin, PersonLatestBugsFeedLink)
-from canonical.launchpad.browser.mentoringoffer import CanBeMentoredView
+from lp.registry.browser.mentoringoffer import CanBeMentoredView
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 
 from canonical.launchpad.webapp.authorization import check_permission
@@ -777,9 +776,17 @@ class BugTaskView(LaunchpadView, CanBeMentoredView, FeedsMixin):
         occurred.
         """
         activity_by_date = {}
+        bugtask_change_re = (
+            '[a-z0-9][a-z0-9\+\.\-]+( \([A-Za-z0-9\s]+\))?: '
+            '(assignee|importance|milestone|status)')
         interesting_changes = [
-             'description', 'security vulnerability', 'summary', 'tags',
-             'visibility']
+             'description',
+             'security vulnerability',
+             'summary',
+             'tags',
+             'visibility',
+             bugtask_change_re,
+             ]
 
         # Turn the interesting_changes list into a regex so that we can
         # do complex matches.
@@ -793,16 +800,28 @@ class BugTaskView(LaunchpadView, CanBeMentoredView, FeedsMixin):
                 continue
 
             activity = BugActivityItem(activity)
-            if activity.datechanged in activity_by_date:
-                activity_by_date[activity.datechanged].append(activity)
+            if activity.datechanged not in activity_by_date:
+                activity_by_date[activity.datechanged] = {
+                    activity.target: [activity]}
             else:
-                activity_by_date[activity.datechanged] = [activity]
+                activity_dict = activity_by_date[activity.datechanged]
+                if activity.target in activity_dict:
+                    activity_dict[activity.target].append(activity)
+                else:
+                    activity_dict[activity.target] = [activity]
 
         # Sort all the lists to ensure that changes are written out in
         # alphabetical order.
-        for date, activity_list in activity_by_date.items():
-            activity_by_date[date] = sorted(
-                activity_list, key=attrgetter('whatchanged'))
+        for date, activity_by_target in activity_by_date.items():
+            # We convert each {target: activty_list} mapping into a list
+            # of {target, activity_list} dicts for the sake of making
+            # them usable in templates.
+            activity_by_date[date] = [{
+                'target': target,
+                'activity': sorted(
+                    activity_list, key=attrgetter('attribute')),
+                }
+                for target, activity_list in activity_by_target.items()]
 
         return activity_by_date
 
@@ -811,10 +830,14 @@ class BugTaskView(LaunchpadView, CanBeMentoredView, FeedsMixin):
         activity_and_comments = [
             {'comment': comment, 'date': comment.datecreated}
             for comment in self.visible_comments_for_display]
+
+        # Add the activity to the activity_and_comments list. For each
+        # activity dict we use the person responsible for the first
+        # activity item as the owner of the list of activities.
         activity_and_comments.extend(
-            {'activity': activity_list, 'date': date,
-             'person': activity_list[0].person}
-            for date, activity_list in self.activity_by_date.items())
+            {'activity': activity_dict, 'date': date,
+             'person': activity_dict[0]['activity'][0].person}
+            for date, activity_dict in self.activity_by_date.items())
 
         activity_and_comments.sort(key=itemgetter('date'))
         return activity_and_comments
@@ -3148,13 +3171,51 @@ class BugActivityItem:
     """A decorated BugActivity."""
     delegates(IBugActivity, 'activity')
 
+    # The regular expression we use for matching bug task changes.
+    bugtask_change_re = re.compile(
+        '(?P<target>[a-z0-9][a-z0-9\+\.\-]+( \([A-Za-z0-9\s]+\))?): '
+        '(?P<attribute>assignee|importance|milestone|status)')
+
     def __init__(self, activity):
         self.activity = activity
 
     @property
+    def target(self):
+        """Return the target of this BugActivityItem.
+
+        `target` is determined based on the `whatchanged` string of the
+        original BugAcitivity.
+
+        :return: The target name of the item if `whatchanged` is of the
+        form <target_name>: <attribute>. Otherwise, return None.
+        """
+        match = self.bugtask_change_re.match(self.whatchanged)
+        if match is None:
+            return None
+        else:
+            return match.groupdict()['target']
+
+    @property
+    def attribute(self):
+        """Return the attribute changed in this BugActivityItem.
+
+        `attribute` is determined based on the `whatchanged` string of the
+        original BugAcitivity.
+
+        :return: The attribute name of the item if `whatchanged` is of
+            the form <target_name>: <attribute>. Otherwise, return the
+            original `whatchanged` string.
+        """
+        match = self.bugtask_change_re.match(self.whatchanged)
+        if match is None:
+            return self.whatchanged
+        else:
+            return match.groupdict()['attribute']
+
+    @property
     def change_summary(self):
         """Return a formatted summary of the change."""
-        return "%s changed" % self.whatchanged
+        return self.attribute
 
     @property
     def _formatted_tags_change(self):
@@ -3192,18 +3253,45 @@ class BugActivityItem:
     @property
     def change_details(self):
         """Return a detailed description of the change."""
-        diffable_changes = ['summary', 'description']
-
-        if self.whatchanged in diffable_changes:
-            # If we're going to display it as a diff we replace \ns with
-            # <br />s so that the lines are separated properly.
+        # Our default return dict. We may mutate this depending on
+        # what's changed.
+        return_dict = {
+            'old_value': self.oldvalue,
+            'new_value': self.newvalue,
+            }
+        if self.attribute == 'summary':
+            # We display summary changes as a unified diff, replacing
+            # \ns with <br />s so that the lines are separated properly.
             diff = cgi.escape(
                 get_unified_diff(self.oldvalue, self.newvalue, 72), True)
             return diff.replace("\n", "<br />")
-        elif self.whatchanged == 'tags':
+
+        elif self.attribute == 'description':
+            # Description changes can be quite long, so we just return
+            # 'updated' rather than returning the whole new description
+            # or a diff.
+            return 'updated'
+
+        elif self.attribute == 'tags':
             # We special-case tags because we can work out what's been
             # added and what's been removed.
             return self._formatted_tags_change.replace('\n', '<br />')
+
+        elif self.attribute == 'assignee':
+            for key in return_dict:
+                if return_dict[key] is None:
+                    return_dict[key] = 'nobody'
+
+        elif self.attribute == 'milestone':
+            for key in return_dict:
+                if return_dict[key] is None:
+                    return_dict[key] = 'none'
+
         else:
-            return "%s &#8594; %s" % (
-                cgi.escape(self.oldvalue), cgi.escape(self.newvalue))
+            # Our default state is to just return oldvalue and newvalue.
+            # Since we don't necessarily know what they are, we escape
+            # them.
+            for key in return_dict:
+                return_dict[key] = cgi.escape(return_dict[key])
+
+        return "%(old_value)s &#8594; %(new_value)s" % return_dict

@@ -1,0 +1,26 @@
+= Shipit OOPSes =
+
+Shipit has OOPSes just like the rest of Launchpad.
+
+Here we'll force an OOPS by overwriting one of our view's properties to make
+it always raise an error.
+
+    >>> from canonical.launchpad.browser.shipit import ShipitFrontPageView
+    >>> def raise_exception(self):
+    ...     raise Exception()
+    >>> orig_prerelease_mode = ShipitFrontPageView.prerelease_mode
+    >>> ShipitFrontPageView.prerelease_mode = raise_exception
+
+    >>> result = http(r"""
+    ... GET / HTTP/1.1
+    ... Host: shipit.ubuntu.dev
+    ... """)
+    >>> print extract_text(find_tag_by_id(str(result), 'error-message'))
+    Sorry, something just went wrong in ShipIt.
+    We&#8217;ve recorded what happened,
+    and we&#8217;ll fix it as soon as possible.
+    ...
+    Thanks for using ShipIt, and sorry for the inconvenience.
+
+    # Undo the monkey-patch we did above.
+    >>> ShipitFrontPageView.prerelease_mode = orig_prerelease_mode
