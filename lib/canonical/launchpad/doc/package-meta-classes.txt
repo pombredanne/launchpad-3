@@ -128,11 +128,11 @@ results as well.
     ...     binary_pkg_release, partner_archive)
 
     >>> print_builds(breezytest_dsspr_foo.builds)
-    foo in Partner Archive for Ubuntu Test
     foo in Primary Archive for Ubuntu Test
+    foo in Partner Archive for Ubuntu Test
     >>> print_builds(ubuntutest_dspr_foo.builds)
-    foo in Partner Archive for Ubuntu Test
     foo in Primary Archive for Ubuntu Test
+    foo in Partner Archive for Ubuntu Test
 
 If we publish the source and binary in a PPA,
 

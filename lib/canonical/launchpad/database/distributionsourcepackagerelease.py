@@ -98,34 +98,37 @@ class DistributionSourcePackageRelease:
         # distribution that were built for a PPA but have been published
         # in a main archive.
 
-        # The builds are joined with their publishing histories to
-        # restrict the results to only those builds that have been published
-        # in a main archive. So a PPA build won't be included unless it
-        # was also published in a main archive.
-        builds_published_in_main_archives = store.find(
+        # First, get all the builds built in a main archive (this will
+        # include new and failed builds.)
+        builds_built_in_main_archives = store.find(
             Build,
-
-            # First the expressions to get the builds in this
-            # Distribution:
             Build.sourcepackagerelease == self.sourcepackagerelease,
             Build.distroarchseries == DistroArchSeries.id,
             DistroArchSeries.distroseries == DistroSeries.id,
             DistroSeries.distribution == self.distribution,
+            Build.archive == Archive.id,
+            Archive.purpose.is_in(MAIN_ARCHIVE_PURPOSES)).order_by(
+                'datecreated DESC', 'id DESC')
 
-            # Then narrow it down to only those builds that were built in
-            # a main archive context or otherwise with binaries
-            # published in main archives:
-            Or(
-                And(Build.archive == Archive.id,
-                    Archive.purpose.is_in(MAIN_ARCHIVE_PURPOSES)),
-                And(BinaryPackageRelease.build == Build.id,
-                    BinaryPackagePublishingHistory.binarypackagerelease ==
-                        BinaryPackageRelease.id,
-                    BinaryPackagePublishingHistory.archive == Archive.id,
-                    Archive.purpose.is_in(MAIN_ARCHIVE_PURPOSES))))
+        # Next get all the builds that have a binary published in the
+        # main archive... this will include many of those in the above
+        # query, but not the new/failed ones. It will also include
+        # ppa builds that have been published in main archives.
+        builds_published_in_main_archives = store.find(
+            Build,
+            Build.sourcepackagerelease == self.sourcepackagerelease,
+            Build.distroarchseries == DistroArchSeries.id,
+            DistroArchSeries.distroseries == DistroSeries.id,
+            DistroSeries.distribution == self.distribution,
+            BinaryPackageRelease.build == Build.id,
+            BinaryPackagePublishingHistory.binarypackagerelease ==
+                BinaryPackageRelease.id,
+            BinaryPackagePublishingHistory.archive == Archive.id,
+            Archive.purpose.is_in(MAIN_ARCHIVE_PURPOSES)).config(
+                distinct=True).order_by('datecreated DESC', 'id DESC')
 
-        return builds_published_in_main_archives.config(
-            distinct=True).order_by('datecreated DESC', 'id DESC')
+        return builds_built_in_main_archives.union(
+            builds_published_in_main_archives)
 
     @property
     def binary_package_names(self):
