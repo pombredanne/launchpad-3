@@ -513,30 +513,58 @@ class TestPublicKeyFromLaunchpadChecker(TrialTestCase):
 
 
 class StringTransportWith_setTcpKeepAlive(StringTransport):
-    def setTcpKeepAlive(self, b):
-        pass
+    def __init__(self, hostAddress=None, peerAddress=None):
+        StringTransport.__init__(self, hostAddress, peerAddress)
+        self._keepAlive = False
+
+    def setTcpKeepAlive(self, flag):
+        self._keepAlive = flag
 
 
-class TestUserAuth(TrialTestCase):
+class TestFactory(TrialTestCase):
+    """Tests for our SSH factory."""
+
+    layer = TwistedLayer
 
     def makeFactory(self):
+        """Create and start the factory that our SSH server uses."""
         factory = service.Factory(auth.get_portal(None, None))
         factory.startFactory()
         return factory
 
-    def beginAuthentication(self, factory):
+    def startConnecting(self, factory):
+        """Connect to the `factory`."""
         server_transport = factory.buildProtocol(None)
         server_transport.makeConnection(StringTransportWith_setTcpKeepAlive())
+        return server_transport
+
+    def test_set_keepalive_on_connection(self):
+        # The server transport sets TCP keep alives on the underlying
+        # transport.
+        factory = self.makeFactory()
+        server_transport = self.startConnecting(factory)
+        self.assertTrue(server_transport.transport._keepAlive)
+
+    def beginAuthentication(self, factory):
+        """Connect to `factory` and begin authentication on this connection.
+
+        :return: The `SSHServerTransport` after the process of authentication
+            has begun.
+        """
+        server_transport = self.startConnecting(factory)
         server_transport.ssh_SERVICE_REQUEST(NS('ssh-userauth'))
         self.addCleanup(server_transport.service.serviceStopped)
         return server_transport
 
     def test_authentication_uses_our_userauth_service(self):
+        # The service of a SSHServerTransport after authentication has started
+        # is an instance of our SSHUserAuthServer class.
         factory = self.makeFactory()
         transport = self.beginAuthentication(factory)
         self.assertIsInstance(transport.service, auth.SSHUserAuthServer)
 
     def test_two_connections_two_minds(self):
+        # Two attempts to authenticate do not share the user-details cache.
         factory = self.makeFactory()
 
         server_transport1 = self.beginAuthentication(factory)
