@@ -38,7 +38,7 @@ from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import OAuthPermission
 from canonical.launchpad.webapp.url import urlsplit
 from canonical.testing import PageTestLayer
-from canonical.lazr.testing.webservice import WebServiceCaller
+from lazr.restful.testing.webservice import WebServiceCaller
 
 class UnstickyCookieHTTPCaller(HTTPCaller):
     """HTTPCaller subclass that do not carry cookies across requests.
@@ -276,7 +276,7 @@ def extract_link_from_tag(tag, base=None):
         return urljoin(base, href)
 
 
-def extract_text(content, extract_image_text=False):
+def extract_text(content, extract_image_text=False, skip_tags=['script']):
     """Return the text stripped of all tags.
 
     All runs of tabs and spaces are replaced by a single space and runs of
@@ -300,6 +300,8 @@ def extract_text(content, extract_image_text=False):
             if isinstance(node, Tag):
                 # If the node has the class "sortkey" then it is invisible.
                 if node.get('class') == 'sortkey':
+                    continue
+                elif getattr(node, 'name', '') in skip_tags:
                     continue
                 if node.name.lower() in ELEMENTS_INTRODUCING_NEWLINE:
                     result.append(u'\n')

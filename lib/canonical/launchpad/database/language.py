@@ -5,15 +5,14 @@ __metaclass__ = type
 __all__ = ['Language', 'LanguageSet']
 
 from zope.interface import implements
-from zope.component import getUtility
 
 from sqlobject import (
     BoolCol, IntCol, SQLObjectNotFound, SQLRelatedJoin, StringCol)
 
-from canonical.database.sqlbase import SQLBase, quote_like
+from canonical.database.sqlbase import quote_like, SQLBase, sqlvalues
 from canonical.database.enumcol import EnumCol
 from canonical.launchpad.interfaces import (
-    ILanguageSet, ILanguage, IPersonSet, NotFoundError, TextDirection)
+    ILanguageSet, ILanguage, NotFoundError, TextDirection)
 
 
 class Language(SQLBase):
@@ -103,8 +102,25 @@ class Language(SQLBase):
     @property
     def translators(self):
         """See `ILanguage`."""
-        personset = getUtility(IPersonSet)
-        return personset.getTranslatorsByLanguage(self)
+        # XXX CarlosPerelloMarin 2007-03-31 bug=102257:
+        # The KarmaCache table doesn't have a field to store karma per
+        # language, so we are actually returning the people with the most
+        # translation karma that have this language selected in their
+        # preferences.
+        from lp.registry.model.person import Person
+        return Person.select('''
+            PersonLanguage.person = Person.id AND
+            PersonLanguage.language = %s AND
+            KarmaCache.person = Person.id AND
+            KarmaCache.product IS NULL AND
+            KarmaCache.project IS NULL AND
+            KarmaCache.sourcepackagename IS NULL AND
+            KarmaCache.distribution IS NULL AND
+            KarmaCache.category = KarmaCategory.id AND
+            KarmaCategory.name = 'translations'
+            ''' % sqlvalues(self), orderBy=['-KarmaCache.karmavalue'],
+            clauseTables=[
+                'PersonLanguage', 'KarmaCache', 'KarmaCategory'])
 
 
 class LanguageSet:

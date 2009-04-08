@@ -53,7 +53,7 @@ version. This way, other tests will have a clean slate.
 Like all lazr.restful applications, Launchpad's web service generates
 valid WADL.
 
-    >>> from canonical.lazr.rest.resource import WADL_SCHEMA_FILE
+    >>> from lazr.restful import WADL_SCHEMA_FILE
     >>> from canonical.lazr.xml import XMLValidator
     >>> wadl_schema = XMLValidator(WADL_SCHEMA_FILE)
 

@@ -81,7 +81,7 @@ def test_cookie_scope():
 def test_dbschemaapi():
     """
     >>> from canonical.launchpad.webapp.tales import DBSchemaAPI
-    >>> from canonical.launchpad.interfaces.branch import BranchType
+    >>> from lp.code.interfaces.branch import BranchType
 
     The syntax to get the title is: number/lp:DBSchemaClass
 

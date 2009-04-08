@@ -20,7 +20,7 @@ from canonical.config import config
 from canonical.cachedproperty import cachedproperty
 from lp.registry.browser.announcement import HasAnnouncementsView
 from canonical.launchpad.interfaces.launchpadstatistic import ILaunchpadStatisticSet
-from canonical.launchpad.interfaces.branchcollection import IAllBranches
+from lp.code.interfaces.branchcollection import IAllBranches
 from canonical.launchpad.interfaces.bug import IBugSet
 from canonical.launchpad.interfaces.launchpad import ILaunchpadSearch
 from lp.registry.interfaces.pillar import IPillarNameSet

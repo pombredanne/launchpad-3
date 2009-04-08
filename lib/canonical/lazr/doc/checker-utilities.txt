@@ -3,6 +3,10 @@
 LAZR provides utility functions to make it easy to define security
 checkers for content class.
 
+[XXX leonardr 2009-04-02 bug=354441
+ This test should be moved into the same lazr module as the code it
+ tests, security.py (in lazr.restful as of this writing.)]
+
 
 == protect_schema() ==
 

@@ -3,7 +3,6 @@ import unittest
 
 from zope.interface import implements
 
-from twisted.cred.credentials import SSHPrivateKey
 from twisted.cred.error import UnauthorizedLogin
 from twisted.cred.portal import IRealm, Portal
 
@@ -16,11 +15,13 @@ from twisted.conch.ssh.transport import SSHCiphers, SSHServerTransport
 from twisted.internet import defer
 from twisted.python import failure
 from twisted.python.util import sibpath
+from twisted.test.proto_helpers import StringTransport
 
 from twisted.trial.unittest import TestCase as TrialTestCase
 
-from canonical.codehosting.sshserver import auth
+from canonical.codehosting.sshserver import auth, service
 from canonical.config import config
+from canonical.launchpad.xmlrpc import faults
 from canonical.testing.layers import TwistedLayer
 from canonical.twistedsupport import suppress_stderr
 
@@ -331,26 +332,36 @@ class TestPublicKeyFromLaunchpadChecker(TrialTestCase):
         no_key_user = 'no_key_user'
         valid_key = 'valid_key'
 
+        def __init__(self):
+            self.calls = []
+
         def callRemote(self, function_name, *args, **kwargs):
             return getattr(
                 self, 'xmlrpc_%s' % function_name)(*args, **kwargs)
 
-        def xmlrpc_getUser(self, username):
-            if username in (self.valid_user, self.no_key_user):
+        def xmlrpc_getUserAndSSHKeys(self, username):
+            self.calls.append(username)
+            if username == self.valid_user:
                 return defer.succeed({
                     'name': username,
+                    'keys': [('DSA', self.valid_key.encode('base64'))],
                     })
-            return defer.succeed({})
+            elif username == self.no_key_user:
+                return defer.succeed({
+                    'name': username,
+                    'keys': [],
+                    })
+            else:
+                try:
+                    raise faults.NoSuchPersonWithName(username)
+                except faults.NoSuchPersonWithName:
+                    return defer.fail()
 
-        def xmlrpc_getSSHKeys(self, username):
-            if username != self.valid_user:
-                return defer.succeed([])
-            return defer.succeed(
-                [('DSA', self.valid_key.encode('base64'))])
-
-    def makeCredentials(self, username, public_key):
-        return SSHPrivateKey(
-            username, 'ssh-dss', public_key, '', None)
+    def makeCredentials(self, username, public_key, mind=None):
+        if mind is None:
+            mind = auth.UserDetailsMind()
+        return auth.SSHPrivateKeyWithMind(
+            username, 'ssh-dss', public_key, '', None, mind)
 
     def makeChecker(self, do_signature_checking=False):
         """Construct a PublicKeyFromLaunchpadChecker.
@@ -454,6 +465,115 @@ class TestPublicKeyFromLaunchpadChecker(TrialTestCase):
                         "Should not be a UserDisplayedUnauthorizedLogin"))
         return d
 
+    def test_successful_with_second_key_calls_authserver_once(self):
+        # It is normal in SSH authentication to be presented with a number of
+        # keys.  When the valid key is presented after some invalid ones (a)
+        # the login succeeds and (b) only one call is made to the authserver
+        # to retrieve the user's details.
+        checker = self.makeChecker()
+        mind = auth.UserDetailsMind()
+        wrong_key_creds = self.makeCredentials(
+            self.authserver.valid_user, 'invalid key', mind)
+        right_key_creds = self.makeCredentials(
+            self.authserver.valid_user, self.authserver.valid_key, mind)
+        d = checker.requestAvatarId(wrong_key_creds)
+        def try_second_key(failure):
+            failure.trap(UnauthorizedLogin)
+            return checker.requestAvatarId(right_key_creds)
+        d.addErrback(try_second_key)
+        d.addCallback(self.assertEqual, self.authserver.valid_user)
+        def check_one_call(r):
+            self.assertEqual(
+                [self.authserver.valid_user], self.authserver.calls)
+            return r
+        d.addCallback(check_one_call)
+        return d
+
+    def test_noSuchUser_with_two_keys_calls_authserver_once(self):
+        # When more than one key is presented for a username that does not
+        # exist, only one call is made to the authserver.
+        checker = self.makeChecker()
+        mind = auth.UserDetailsMind()
+        creds_1 = self.makeCredentials(
+            'invalid-user', 'invalid key 1', mind)
+        creds_2 = self.makeCredentials(
+            'invalid-user', 'invalid key 2', mind)
+        d = checker.requestAvatarId(creds_1)
+        def try_second_key(failure):
+            return self.assertFailure(
+                checker.requestAvatarId(creds_2),
+                UnauthorizedLogin)
+        d.addErrback(try_second_key)
+        def check_one_call(r):
+            self.assertEqual(
+                ['invalid-user'], self.authserver.calls)
+            return r
+        d.addCallback(check_one_call)
+        return d
+
+
+class StringTransportWith_setTcpKeepAlive(StringTransport):
+    def __init__(self, hostAddress=None, peerAddress=None):
+        StringTransport.__init__(self, hostAddress, peerAddress)
+        self._keepAlive = False
+
+    def setTcpKeepAlive(self, flag):
+        self._keepAlive = flag
+
+
+class TestFactory(TrialTestCase):
+    """Tests for our SSH factory."""
+
+    layer = TwistedLayer
+
+    def makeFactory(self):
+        """Create and start the factory that our SSH server uses."""
+        factory = service.Factory(auth.get_portal(None, None))
+        factory.startFactory()
+        return factory
+
+    def startConnecting(self, factory):
+        """Connect to the `factory`."""
+        server_transport = factory.buildProtocol(None)
+        server_transport.makeConnection(StringTransportWith_setTcpKeepAlive())
+        return server_transport
+
+    def test_set_keepalive_on_connection(self):
+        # The server transport sets TCP keep alives on the underlying
+        # transport.
+        factory = self.makeFactory()
+        server_transport = self.startConnecting(factory)
+        self.assertTrue(server_transport.transport._keepAlive)
+
+    def beginAuthentication(self, factory):
+        """Connect to `factory` and begin authentication on this connection.
+
+        :return: The `SSHServerTransport` after the process of authentication
+            has begun.
+        """
+        server_transport = self.startConnecting(factory)
+        server_transport.ssh_SERVICE_REQUEST(NS('ssh-userauth'))
+        self.addCleanup(server_transport.service.serviceStopped)
+        return server_transport
+
+    def test_authentication_uses_our_userauth_service(self):
+        # The service of a SSHServerTransport after authentication has started
+        # is an instance of our SSHUserAuthServer class.
+        factory = self.makeFactory()
+        transport = self.beginAuthentication(factory)
+        self.assertIsInstance(transport.service, auth.SSHUserAuthServer)
+
+    def test_two_connections_two_minds(self):
+        # Two attempts to authenticate do not share the user-details cache.
+        factory = self.makeFactory()
+
+        server_transport1 = self.beginAuthentication(factory)
+        server_transport2 = self.beginAuthentication(factory)
+
+        mind1 = server_transport1.service.getMind()
+        mind2 = server_transport2.service.getMind()
+
+        self.assertNotIdentical(mind1.cache, mind2.cache)
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

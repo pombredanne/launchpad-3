@@ -26,6 +26,7 @@ from operator import attrgetter
 import pytz
 import random
 import re
+import weakref
 
 from zope.lifecycleevent import ObjectCreatedEvent
 from zope.interface import alsoProvides, implementer, implements
@@ -51,10 +52,9 @@ from canonical.database.sqlbase import (
 
 from canonical.cachedproperty import cachedproperty
 
-from canonical.lazr.utils import safe_hasattr
+from canonical.lazr.utils import get_current_browser_request, safe_hasattr
 
 from canonical.launchpad.database.account import Account
-from lp.answers.model.answercontact import AnswerContact
 from canonical.launchpad.database.bugtarget import HasBugsBase
 from lp.registry.model.karma import KarmaCategory
 from canonical.launchpad.database.language import Language
@@ -63,8 +63,6 @@ from canonical.launchpad.database.oauth import (
 from lp.registry.model.personlocation import PersonLocation
 from canonical.launchpad.database.structuralsubscription import (
     StructuralSubscription)
-from canonical.launchpad.database.translationrelicensingagreement import (
-    TranslationRelicensingAgreement)
 from lp.registry.event.karma import KarmaAssignedEvent
 from lp.registry.event.team import JoinTeamEvent, TeamInvitationEvent
 from canonical.launchpad.helpers import (
@@ -78,7 +76,7 @@ from canonical.launchpad.interfaces.archive import ArchivePurpose
 from canonical.launchpad.interfaces.archivepermission import (
     IArchivePermissionSet)
 from canonical.launchpad.interfaces.authtoken import LoginTokenType
-from canonical.launchpad.interfaces.branchmergeproposal import (
+from lp.code.interfaces.branchmergeproposal import (
     BranchMergeProposalStatus, IBranchMergeProposalGetter)
 from canonical.launchpad.interfaces.bugtask import (
     BugTaskSearchParams, IBugTaskSet)
@@ -121,9 +119,6 @@ from canonical.launchpad.interfaces.lpstorm import IStore
 from lp.registry.interfaces.ssh import ISSHKey, ISSHKeySet, SSHKeyType
 from lp.registry.interfaces.teammembership import (
     TeamMembershipStatus)
-from canonical.launchpad.interfaces.translationgroup import (
-    ITranslationGroupSet)
-from canonical.launchpad.interfaces.translator import ITranslatorSet
 from lp.registry.interfaces.wikiname import IWikiName, IWikiNameSet
 from canonical.launchpad.webapp.interfaces import (
     ILaunchBag, IStoreSelector, AUTH_STORE, MASTER_FLAVOR)
@@ -136,7 +131,6 @@ from canonical.launchpad.database.emailaddress import (
 from lp.registry.model.karma import KarmaCache, KarmaTotalCache
 from canonical.launchpad.database.logintoken import LoginToken
 from lp.registry.model.pillar import PillarName
-from canonical.launchpad.database.pofiletranslator import POFileTranslator
 from lp.registry.model.karma import KarmaAction, Karma
 from lp.registry.model.mentoringoffer import MentoringOffer
 from canonical.launchpad.database.sourcepackagerelease import (
@@ -147,14 +141,11 @@ from canonical.launchpad.database.translationimportqueue import (
     HasTranslationImportsMixin)
 from lp.registry.model.teammembership import (
     TeamMembership, TeamMembershipSet, TeamParticipation)
-from lp.answers.model.question import QuestionPersonSearch
 
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.validators.name import sanitize_name, valid_name
 from lp.registry.interfaces.person import validate_public_person
 
-from lp.answers.interfaces.questioncollection import (
-    QUESTION_STATUS_DEFAULT_SEARCH)
 
 class ValidPersonCache(SQLBase):
     """Flags if a Person is active and usable in Launchpad.
@@ -547,37 +538,6 @@ class Person(
             getUtility(IPersonNotificationSet).addNotification(
                 self, subject, mail_text)
 
-    def get_translations_relicensing_agreement(self):
-        """Return whether translator agrees to relicense their translations.
-
-        If she has made no explicit decision yet, return None.
-        """
-        relicensing_agreement = TranslationRelicensingAgreement.selectOneBy(
-            person=self)
-        if relicensing_agreement is None:
-            return None
-        else:
-            return relicensing_agreement.allow_relicensing
-
-    def set_translations_relicensing_agreement(self, value):
-        """Set a translations relicensing decision by translator.
-
-        If she has already made a decision, overrides it with the new one.
-        """
-        relicensing_agreement = TranslationRelicensingAgreement.selectOneBy(
-            person=self)
-        if relicensing_agreement is None:
-            relicensing_agreement = TranslationRelicensingAgreement(
-                person=self,
-                allow_relicensing=value)
-        else:
-            relicensing_agreement.allow_relicensing = value
-
-    translations_relicensing_agreement = property(
-        get_translations_relicensing_agreement,
-        set_translations_relicensing_agreement,
-        doc="See `IPerson`.")
-
     # specification-related joins
     @property
     def assigned_specs(self):
@@ -798,92 +758,6 @@ class Person(
         if prejoin_people:
             results = results.prejoin(['assignee', 'approver', 'drafter'])
         return results
-
-    def searchQuestions(self, search_text=None,
-                        status=QUESTION_STATUS_DEFAULT_SEARCH,
-                        language=None, sort=None, participation=None,
-                        needs_attention=None):
-        """See `IPerson`."""
-        return QuestionPersonSearch(
-                person=self,
-                search_text=search_text,
-                status=status, language=language, sort=sort,
-                participation=participation,
-                needs_attention=needs_attention
-                ).getResults()
-
-    def getQuestionLanguages(self):
-        """See `IQuestionTarget`."""
-        return set(Language.select(
-            """Language.id = language AND Question.id IN (
-            SELECT id FROM Question
-                      WHERE owner = %(personID)s OR answerer = %(personID)s OR
-                           assignee = %(personID)s
-            UNION SELECT question FROM QuestionSubscription
-                  WHERE person = %(personID)s
-            UNION SELECT question
-                  FROM QuestionMessage JOIN Message ON (message = Message.id)
-                  WHERE owner = %(personID)s
-            )""" % sqlvalues(personID=self.id),
-            clauseTables=['Question'], distinct=True))
-
-    @property
-    def translatable_languages(self):
-        """See `IPerson`."""
-        return Language.select("""
-            Language.id = PersonLanguage.language AND
-            PersonLanguage.person = %s AND
-            Language.code <> 'en' AND
-            Language.visible""" % quote(self),
-            clauseTables=['PersonLanguage'], orderBy='englishname')
-
-    def getDirectAnswerQuestionTargets(self):
-        """See `IPerson`."""
-        answer_contacts = AnswerContact.select(
-            'person = %s' % sqlvalues(self))
-        return self._getQuestionTargetsFromAnswerContacts(answer_contacts)
-
-    def getTeamAnswerQuestionTargets(self):
-        """See `IPerson`."""
-        answer_contacts = AnswerContact.select(
-            '''AnswerContact.person = TeamParticipation.team
-            AND TeamParticipation.person = %(personID)s
-            AND AnswerContact.person != %(personID)s''' % sqlvalues(
-                personID=self.id),
-            clauseTables=['TeamParticipation'], distinct=True)
-        return self._getQuestionTargetsFromAnswerContacts(answer_contacts)
-
-    def _getQuestionTargetsFromAnswerContacts(self, answer_contacts):
-        """Return a list of active IQuestionTargets.
-
-        :param answer_contacts: an iterable of `AnswerContact`s.
-        :return: a list of active `IQuestionTarget`s.
-        :raise AssertionError: if the IQuestionTarget is not a `Product`,
-            `Distribution`, or `SourcePackage`.
-        """
-        targets = set()
-        for answer_contact in answer_contacts:
-            if answer_contact.product is not None:
-                target = answer_contact.product
-                pillar = target
-            elif answer_contact.sourcepackagename is not None:
-                assert answer_contact.distribution is not None, (
-                    "Missing distribution.")
-                distribution = answer_contact.distribution
-                target = distribution.getSourcePackage(
-                    answer_contact.sourcepackagename)
-                pillar = distribution
-            elif answer_contact.distribution is not None:
-                target = answer_contact.distribution
-                pillar = target
-            else:
-                raise AssertionError('Unknown IQuestionTarget.')
-
-            if pillar.active:
-                # Deactivated pillars are not valid IQuestionTargets.
-                targets.add(target)
-
-        return list(targets)
 
     # XXX: Tom Berger 2008-04-14 bug=191799:
     # The implementation of these functions
@@ -2053,23 +1927,6 @@ class Person(
         else:
             return None
 
-    @property
-    def translation_history(self):
-        """See `IPerson`."""
-        return POFileTranslator.select(
-            'POFileTranslator.person = %s' % sqlvalues(self),
-            orderBy='-date_last_touched')
-
-    @property
-    def translation_groups(self):
-        """See `IPerson`."""
-        return getUtility(ITranslationGroupSet).getByPerson(self)
-
-    @property
-    def translators(self):
-        """See `IPerson`."""
-        return getUtility(ITranslatorSet).getByTranslator(self)
-
     def validateAndEnsurePreferredEmail(self, email):
         """See `IPerson`."""
         email = IMasterObject(email)
@@ -2738,38 +2595,6 @@ class PersonSet:
         else:
             return IStore(Person).get(Person, email_address.personID)
 
-    def getPOFileContributors(self, pofile):
-        """See `IPersonSet`."""
-        contributors = Person.select("""
-            POFileTranslator.person = Person.id AND
-            POFileTranslator.pofile = %s""" % quote(pofile),
-            clauseTables=["POFileTranslator"],
-            distinct=True,
-            # XXX: kiko 2006-10-19:
-            # We can't use Person.sortingColumns because this is a
-            # distinct query. To use it we'd need to add the sorting
-            # function to the column results and then ignore it -- just
-            # like selectAlso does, ironically.
-            orderBy=["Person.displayname", "Person.name"])
-        return contributors
-
-    def getPOFileContributorsByDistroSeries(self, distroseries, language):
-        """See `IPersonSet`."""
-        contributors = Person.select("""
-            POFileTranslator.person = Person.id AND
-            POFileTranslator.pofile = POFile.id AND
-            POFile.language = %s AND
-            POFile.potemplate = POTemplate.id AND
-            POTemplate.distroseries = %s AND
-            POTemplate.iscurrent = TRUE"""
-                % sqlvalues(language, distroseries),
-            clauseTables=["POFileTranslator", "POFile", "POTemplate"],
-            distinct=True,
-            # See comment in getPOFileContributors about how we can't
-            # use Person.sortingColumns.
-            orderBy=["Person.displayname", "Person.name"])
-        return contributors
-
     def latest_teams(self, limit=5):
         """See `IPersonSet`."""
         return Person.select("Person.teamowner IS NOT NULL",
@@ -3410,27 +3235,6 @@ class PersonSet:
         # flush its caches.
         store.invalidate()
 
-    def getTranslatorsByLanguage(self, language):
-        """See `IPersonSet`."""
-        # XXX CarlosPerelloMarin 2007-03-31 bug=102257:
-        # The KarmaCache table doesn't have a field to store karma per
-        # language, so we are actually returning the people with the most
-        # translation karma that have this language selected in their
-        # preferences.
-        return Person.select('''
-            PersonLanguage.person = Person.id AND
-            PersonLanguage.language = %s AND
-            KarmaCache.person = Person.id AND
-            KarmaCache.product IS NULL AND
-            KarmaCache.project IS NULL AND
-            KarmaCache.sourcepackagename IS NULL AND
-            KarmaCache.distribution IS NULL AND
-            KarmaCache.category = KarmaCategory.id AND
-            KarmaCategory.name = 'translations'
-            ''' % sqlvalues(language), orderBy=['-KarmaCache.karmavalue'],
-            clauseTables=[
-                'PersonLanguage', 'KarmaCache', 'KarmaCategory'])
-
     def getValidPersons(self, persons):
         """See `IPersonSet.`"""
         person_ids = [person.id for person in persons]
@@ -3770,11 +3574,35 @@ def generate_nick(email_addr, is_registered=_is_nick_registered):
 @adapter(IAccount)
 @implementer(IPerson)
 def person_from_account(account):
-    """Adapt an IAccount into an IPerson."""
-    # The IAccount interface does not publish the account.person reference.
-    naked_account = removeSecurityProxy(account)
-    person = ProxyFactory(IStore(Person).find(
-        Person, accountID=naked_account.id).one())
+    """Adapt an `IAccount` into an `IPerson`.
+
+    If there is a current browser request, we cache the looked up Person in
+    the request's annotations so that we don't have to hit the DB once again
+    when further adaptation is needed.  We know this cache may cross
+    transaction boundaries, but this should not be a problem as the Person ->
+    Account link can't be changed.
+
+    This cache is necessary because our security adapters may need to adapt
+    the Account representing the logged in user into an IPerson multiple
+    times.
+    """
+    request = get_current_browser_request()
+    person = None
+    # First we try to get the person from the cache, but only if there is a
+    # browser request.
+    if request is not None:
+        cache = request.annotations.setdefault(
+            'launchpad.person_to_account_cache', weakref.WeakKeyDictionary())
+        person = cache.get(account)
+
+    # If it's not in the cache, then we get it from the database, and in that
+    # case, if there is a browser request, we also store that person in the
+    # cache.
     if person is None:
-        raise ComponentLookupError
+        person = IStore(Person).find(Person, account=account).one()
+        if request is not None:
+            cache[account] = person
+
+    if person is None:
+        raise ComponentLookupError()
     return person

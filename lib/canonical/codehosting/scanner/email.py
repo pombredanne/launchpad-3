@@ -11,7 +11,7 @@ from zope.component import getUtility
 
 from canonical.config import config
 from canonical.launchpad.interfaces import BranchSubscriptionNotificationLevel
-from canonical.launchpad.interfaces.branchjob import IRevisionMailJobSource
+from lp.code.interfaces.branchjob import IRevisionMailJobSource
 
 
 class BranchMailer:

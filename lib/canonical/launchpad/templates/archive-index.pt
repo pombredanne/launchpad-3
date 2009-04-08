@@ -69,7 +69,7 @@ function dispatchUpdate () {
 
     var container = Y.get('#package_counters div');
     container.set('innerHTML', '');
-    container.appendChild(in_progress_message)
+    container.appendChild(in_progress_message);
 
     var uri = '+repository-size';
     var xhr_config = {
