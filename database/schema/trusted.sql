@@ -351,7 +351,7 @@ DECLARE
 BEGIN
     -- If we are deleting a row, we need to remove the existing
     -- POFileTranslator row and reinsert the historical data if it exists.
-    -- We also treat UPDATEs that change the key (submitter, pofile) the same
+    -- We also treat UPDATEs that change the key (submitter) the same
     -- as deletes. UPDATEs that don't change these columns are treated like
     -- INSERTs below.
     IF TG_OP = 'INSERT' THEN
@@ -360,7 +360,7 @@ BEGIN
         v_trash_old := TRUE;
     ELSE -- UPDATE
         v_trash_old = (
-            OLD.submitter != NEW.submitter OR OLD.pofile != NEW.pofile
+            OLD.submitter != NEW.submitter
             );
     END IF;
 
@@ -379,7 +379,7 @@ BEGIN
                 person, pofile, latest_message, date_last_touched
                 )
             SELECT DISTINCT ON (person, pofile.id)
-                NEW.submitter AS person,
+                new_latest_message.submitter AS person,
                 pofile.id,
                 new_latest_message.id,
                 greatest(new_latest_message.date_created,
@@ -406,7 +406,8 @@ BEGIN
               WHERE
                 new_latest_message.submitter=OLD.submitter
               ORDER BY new_latest_message.submitter, pofile.id,
-                       new_latest_message.date_created DESC, id DESC;
+                       new_latest_message.date_created DESC,
+                       new_latest_message.id DESC;
         END IF;
 
         -- No NEW with DELETE, so we can short circuit and leave.
