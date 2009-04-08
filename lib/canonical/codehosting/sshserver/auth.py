@@ -101,11 +101,11 @@ class Realm:
 
 
 class ISSHPrivateKeyWithMind(credentials.ISSHPrivateKey):
-    """Marker interface for SSH credentials that store a Mind."""
+    """Marker interface for SSH credentials that reference a Mind."""
 
 
 class SSHPrivateKeyWithMind(credentials.SSHPrivateKey):
-    """SSH credentials that also store a Mind."""
+    """SSH credentials that also reference a Mind."""
 
     implements(ISSHPrivateKeyWithMind)
 
@@ -116,16 +116,37 @@ class SSHPrivateKeyWithMind(credentials.SSHPrivateKey):
 
 
 class UserDetailsMind:
+    """A 'Mind' object that answers and caches requests for user details.
+
+    A mind is a (poorly named) concept from twisted.cred that basically can be
+    passed to portal.login to represent the client side view of
+    authentication.  In our case we attach a mind to the SSHUserAuthServer
+    object that corresponds to an attempt to authenticate against the server.
+    """
+
     def __init__(self):
         self.cache = {}
+
     def lookupUserDetails(self, proxy, username):
+        """Find details for the named user, including registered SSH keys.
+
+        This method basically wraps `IAuthServer.getUserAndSSHKeys` -- see the
+        documentation of that method for more details -- and caches the
+        details found for any particular user.
+
+        :param proxy: A twisted.web.xmlrpc.Proxy object for the authentication
+            endpoint.
+        :param username: The username to look up.
+        """
         if username in self.cache:
             return defer.succeed(self.cache[username])
         else:
             d = proxy.callRemote('getUserAndSSHKeys', username)
             d.addCallback(self._add_to_cache, username)
             return d
+
     def _add_to_cache(self, result, username):
+        """Add the results to our cache."""
         self.cache[username] = result
         return result
 
@@ -263,6 +284,11 @@ class PublicKeyFromLaunchpadChecker(SSHPublicKeyDatabase):
         self.authserver = authserver
 
     def checkKey(self, credentials):
+        """Check whether `credentials` is a valid request to authenticate.
+
+        We check the key data in credentials against the keys the named user
+        has registered in Launchpad.
+        """
         d = credentials.mind.lookupUserDetails(
             self.authserver, credentials.username)
         d.addCallback(self._checkForAuthorizedKey, credentials)
@@ -270,11 +296,13 @@ class PublicKeyFromLaunchpadChecker(SSHPublicKeyDatabase):
         return d
 
     def _reportNoSuchUser(self, failure, credentials):
+        """Report the user named in the credentials not existing nicely."""
         trap_fault(failure, faults.NoSuchPersonWithName)
         raise UserDisplayedUnauthorizedLogin(
             "No such Launchpad account: %s" % credentials.username)
 
     def _checkForAuthorizedKey(self, userDict, credentials):
+        """Check the key data in credentials against the keys found in LP."""
         if credentials.algName == 'ssh-dss':
             wantKeyType = 'DSA'
         elif credentials.algName == 'ssh-rsa':
