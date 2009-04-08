@@ -37,6 +37,7 @@ from zope.publisher.interfaces import NotFound
 from zope.schema import Choice, Text
 from lazr.delegates import delegates
 from lazr.enum import EnumeratedType, Item
+from lazr.uri import URI
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
@@ -44,7 +45,6 @@ from canonical.database.constants import UTC_NOW
 
 from canonical.lazr.interface import copy_field
 from canonical.launchpad import _
-from lp.code.browser.branchref import BranchRef
 from canonical.launchpad.browser.feeds import BranchFeedLink, FeedsMixin
 from canonical.launchpad.browser.launchpad import Hierarchy
 from canonical.launchpad.helpers import truncate_text
@@ -52,6 +52,17 @@ from canonical.launchpad.interfaces.bug import IBugSet
 from canonical.launchpad.interfaces.bugbranch import IBugBranch
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.specificationbranch import ISpecificationBranch
+from canonical.launchpad.webapp import (
+    canonical_url, ContextMenu, Link, enabled_with_permission,
+    LaunchpadView, Navigation, NavigationMenu, stepto, stepthrough,
+    LaunchpadFormView, LaunchpadEditFormView, action, custom_widget)
+from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
+from canonical.launchpad.webapp.menu import structured
+from canonical.widgets.branch import TargetBranchWidget
+from canonical.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
+
+from lp.code.browser.branchref import BranchRef
 from lp.code.interfaces.branch import (
     BranchCreationForbidden, BranchExists, BranchType, IBranch,
     IBranchNavigationMenu, UICreatableBranchType)
@@ -62,23 +73,11 @@ from lp.code.interfaces.branchvisibilitypolicy import BranchVisibilityRule
 from lp.code.interfaces.codeimportjob import (
     CodeImportJobState, ICodeImportJobWorkflow)
 from lp.code.interfaces.codereviewcomment import ICodeReviewComment
+from lp.code.interfaces.branchnamespace import get_branch_namespace
+from lp.code.interfaces.branchtarget import IHasBranchTarget
+from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.productseries import IProductSeries
-from lp.code.interfaces.branchnamespace import (
-    get_branch_namespace)
-from lp.code.interfaces.branchtarget import IHasBranchTarget
-from lp.code.interfaces.codereviewvote import (
-    ICodeReviewVoteReference)
-from canonical.launchpad.webapp import (
-    canonical_url, ContextMenu, Link, enabled_with_permission,
-    LaunchpadView, Navigation, NavigationMenu, stepto, stepthrough,
-    LaunchpadFormView, LaunchpadEditFormView, action, custom_widget)
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
-from canonical.launchpad.webapp.menu import structured
-from lazr.uri import URI
-from canonical.widgets.branch import TargetBranchWidget
-from canonical.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
 
 
 def quote(text):
