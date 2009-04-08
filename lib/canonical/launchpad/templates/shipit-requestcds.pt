@@ -201,17 +201,8 @@
       </td>
 
       <td tal:condition="view/flavour/enumvalue:SERVER">
-        <span tal:replace="structure view/widgets/ubuntu_quantityx86" />
-        <strong>32-bit CDs</strong> and
         <span tal:replace="structure view/widgets/ubuntu_quantityamd64" />
         <strong>64-bit CDs</strong>.
-        <div class="error"
-             tal:condition="view/widgets/ubuntu_quantityx86/error">
-          <div class="message"
-               tal:content="view/widgets/ubuntu_quantityx86/error">
-            Error message
-          </div>
-        </div>
         <div class="error"
              tal:condition="view/widgets/ubuntu_quantityamd64/error">
           <div class="message"
