@@ -175,36 +175,6 @@ are simple little functions.
     True
 
 
-== Target a bug task to a milestone ==
-
-    >>> from canonical.launchpad.interfaces import IBugSet
-    >>> from canonical.launchpad.interfaces import IPersonSet
-    >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
-    >>> firefox = getUtility(IProductSet).getByName('firefox')
-    >>> firefox_1_0 = firefox.getMilestone('1.0')
-    >>> bug_one = getUtility(IBugSet).get(1)
-    >>> firefox_task = bug_one.getBugTask(firefox)
-    >>> print firefox_task.milestone
-    None
-    >>> old_bugtask = Snapshot(firefox_task, providing=IUpstreamBugTask)
-
-    >>> firefox_task.milestone = firefox_1_0
-    >>> edit_fields = ["milestone"]
-    >>> bugtask_edited = ObjectModifiedEvent(
-    ...     firefox_task, old_bugtask, edit_fields, user=no_priv)
-    >>> notify(bugtask_edited)
-
-    >>> latest_activity = bug_one.activity[-1]
-    >>> latest_activity.person.name
-    u'no-priv'
-    >>> latest_activity.whatchanged
-    u'firefox: milestone'
-    >>> print latest_activity.oldvalue
-    None
-    >>> print latest_activity.newvalue
-    1.0
-
-
 == BugActivityItem ==
 
 BugActivityItem implements the stuff that BugActivity doesn't need to
@@ -213,10 +183,13 @@ know about.
     >>> import pytz
     >>> from datetime import datetime
     >>> from canonical.launchpad.browser.bugtask import BugActivityItem
-    >>> from canonical.launchpad.interfaces import IBugActivitySet
+    >>> from canonical.launchpad.interfaces.bug import IBugSet
+    >>> from canonical.launchpad.interfaces.bugactivity import (
+    ...     IBugActivitySet)
 
     >>> nowish = datetime(
     ...     2009, 3, 26, 16, 40, 31, tzinfo=pytz.timezone('UTC'))
+    >>> bug_one = getUtility(IBugSet).get(1)
     >>> activity = getUtility(IBugActivitySet).new(
     ...     bug=bug_one, whatchanged='summary', oldvalue='Old value',
     ...     newvalue='New value', person=user, datechanged=nowish)
@@ -283,9 +256,9 @@ _formatted_tags_change but with newlines replaced by HTML line-breaks.
     >>> print activity_item.change_details
     added: tag3<br />removed: tag2
 
-For changes to bug tasks, BugActivityItem mutates the whatchanged
-attribute slightly, removing extraneous punctuation to make the
-change_summary property a bit more readable.
+For changes to bug tasks, BugActivityItem returns the name of the attribute
+that was changed (see "Determining the target and attribute of a
+change", below).
 
     >>> activity = getUtility(IBugActivitySet).new(
     ...     bug=bug_one, whatchanged='malone: status', oldvalue='New',
@@ -293,7 +266,7 @@ change_summary property a bit more readable.
     >>> activity_item = BugActivityItem(activity)
 
     >>> print activity_item.change_summary
-    malone status
+    status
 
 The change_details are expressed as a simple change.
 
@@ -329,4 +302,40 @@ since such changes may be too long to be useful as a diff.
     >>> print "%s: %s" % (
     ...     activity_item.change_summary, activity_item.change_details)
     description: updated
-    
+
+
+=== Determining the target and attribute of a change ===
+
+Some changes - specifically changes to a BugTask - are listed in
+BugActivity as targeted changes, i.e. their `whatchanged` string will be
+of the form "<target>: <attribute>". BugActivityItem offers two
+properties by which to extract these.
+
+BugActivityItem.target will return the <target> part of the whatchanged
+string or None if the BugActivity is not targeted to a BugTask.
+
+    >>> activity = getUtility(IBugActivitySet).new(
+    ...     bug=bug_one, whatchanged='malone: assignee',
+    ...     oldvalue='nobody', newvalue='New Assignee',
+    ...     person=user, datechanged=nowish)
+    >>> targeted_activity_item = BugActivityItem(activity)
+    >>> print targeted_activity_item.target
+    malone
+
+    >>> activity = getUtility(IBugActivitySet).new(
+    ...     bug=bug_one, whatchanged='description',
+    ...     oldvalue='Old description', newvalue='New description',
+    ...     person=user, datechanged=nowish)
+    >>> untargeted_activity_item = BugActivityItem(activity)
+    >>> print untargeted_activity_item.target
+    None
+
+BugActivityItem.attribute will return the <attribute> part of the
+whatchanged string if the activity is targeted to a BugTask. Otherwise
+it will simply return the whole whatchanged string.
+
+    >>> print targeted_activity_item.attribute
+    assignee
+
+    >>> print untargeted_activity_item.attribute
+    description

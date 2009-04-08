@@ -13,9 +13,9 @@ from zope.component import getUtility
 from canonical.archivepublisher.domination import Dominator
 from canonical.archivepublisher.publishing import Publisher
 from canonical.database.sqlbase import flush_database_updates
-from canonical.launchpad.interfaces.distroseries import DistroSeriesStatus
+from lp.registry.interfaces.distroseries import DistroSeriesStatus
 from canonical.launchpad.interfaces.component import IComponentSet
-from canonical.launchpad.interfaces.person import IPersonSet
+from lp.registry.interfaces.person import IPersonSet
 from canonical.launchpad.interfaces.publishing import (
     PackagePublishingStatus, PackagePublishingPocket)
 from canonical.launchpad.tests.test_publishing import TestNativePublishingBase

@@ -144,14 +144,21 @@
   <div class="boardBugActivityBody">
     <div class="bug-comment">
       <table>
-        <tr tal:repeat="activity activity_list">
-          <td style="text-align: right;">
-            <b><tal:summary replace="activity/change_summary" /></b>:
-          </td>
-          <td>
-            <tal:details replace="structure activity/change_details" />
-          </td>
-        </tr>
+        <tal:activity-by-target repeat="activity_dict activity_list">
+          <tal:target define="target activity_dict/target|nothing">
+            <tr tal:condition="target">
+              <td>Changed in <tal:target content="target" />: </td>
+            </tr>
+          </tal:target>
+          <tr tal:repeat="activity activity_dict/activity">
+            <td style="text-align: right;">
+              <b><tal:summary replace="activity/change_summary" /></b>:
+            </td>
+            <td>
+              <tal:details replace="structure activity/change_details" />
+            </td>
+          </tr>
+        </tal:activity-by-target>
       </table>
     </div>
   </div>

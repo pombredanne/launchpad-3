@@ -15,8 +15,8 @@ from zope.schema import Datetime, Int, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.archive import IArchive
-from canonical.launchpad.interfaces.person import IPerson
-from canonical.lazr.fields import Reference
+from lp.registry.interfaces.person import IPerson
+from lazr.restful.fields import Reference
 
 
 class IArchiveAuthTokenView(Interface):
@@ -48,10 +48,12 @@ class IArchiveAuthTokenView(Interface):
         description=_(
             "External archive URL including basic auth for this person"))
 
-class IArchiveAuthTokenEdit(Interface):
-    """Interface for Archive Auth Tokens requiring launchpad.Edit."""
     def deactivate(self):
         """Deactivate the token by setting date_deactivated to UTC_NOW."""
+
+
+class IArchiveAuthTokenEdit(Interface):
+    """Interface for Archive Auth Tokens requiring launchpad.Edit."""
 
 
 class IArchiveAuthToken(IArchiveAuthTokenView, IArchiveAuthTokenEdit):

@@ -4,7 +4,7 @@ The FAQ vocabulary contains all the FAQs available in a particular
 collection. It provides the IHugeVocabulary interface.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces.product import IProductSet
+    >>> from lp.registry.interfaces.product import IProductSet
     >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.launchpad.webapp.vocabulary import IHugeVocabulary
     >>> from zope.schema.vocabulary import getVocabularyRegistry
@@ -42,7 +42,7 @@ The term's token is the FAQ's id and its title is the FAQ's title:
 
 Asking for something which isn't a FAQ of the target raises LookupError:
 
-    >>> from canonical.launchpad.interfaces.distribution import (
+    >>> from lp.registry.interfaces.distribution import (
     ...     IDistributionSet)
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> ubuntu_faq = ubuntu.getFAQ(1)

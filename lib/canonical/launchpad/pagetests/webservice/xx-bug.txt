@@ -8,7 +8,7 @@ lot of state and many relationships to other objects.
 
 At the top level we provide a collection of bugs.
 
-  >>> from canonical.lazr.testing.webservice import (
+  >>> from lazr.restful.testing.webservice import (
   ...     pprint_collection, pprint_entry)
   >>> from operator import itemgetter
   >>> bugs = webservice.get("/bugs").jsonBody()
@@ -288,15 +288,9 @@ The collection of bug tasks is not exposed as a resource:
 
 It's possible to change the task's assignee.
 
-  >>> print webservice.named_post(
-  ...     bugtask_path, 'transitionToAssignee',
-  ...     assignee=webservice.getAbsoluteUrl('/~cprov'))
-  HTTP/1.1 200 Ok
-  ...
-  Content-Type: application/json
-  ...
-  <BLANKLINE>
-  null
+  >>> patch = {u'assignee_link': webservice.getAbsoluteUrl('/~cprov')}
+  >>> print webservice.patch(bugtask_path, 'application/json', dumps(patch))
+  HTTP/1.1 209 Content Returned...
 
   >>> print webservice.get(bugtask_path).jsonBody()['assignee_link']
   http://.../~cprov
@@ -641,6 +635,7 @@ Following the redirect, we can see the new bug watch:
   >>> bug_tracker = webservice.get(bug_watch['bug_tracker_link']).jsonBody()
 
   >>> pprint_entry(bug_tracker)
+  active: True
   base_url: u'https://bugzilla.mozilla.org/'
   base_url_aliases: []
   bug_tracker_type: u'Bugzilla'
@@ -696,6 +691,7 @@ renamed bug tracker.
   >>> bug_tracker_path = response.getHeader('Location')
   >>> bug_tracker = webservice.get(bug_tracker_path).jsonBody()
   >>> pprint_entry(bug_tracker)
+  active: True
   base_url: u'http://bugs.example.com/'
   base_url_aliases: [u'http://bugs.example.com/bugs/', u'http://www.example.com/bugtracker/']
   bug_tracker_type: u'Bugzilla'
@@ -708,6 +704,23 @@ renamed bug tracker.
   summary: u'Where Bob files his bugs.'
   title: u"Bob's Tracker"
   watches_collection_link: u'http://.../bugs/bugtrackers/bob/watches'
+
+Non-admins can't disable a bugtracker through the API.
+
+    >>> print public_webservice.patch(
+    ...     bug_tracker_path, 'application/json',
+    ...     dumps(dict(active=False))).jsonBody()
+    Traceback (most recent call last):
+      ...
+    ValueError: HTTP/1.1 401 Unauthorized...
+
+Admins can, however.
+
+    >>> bug_tracker = webservice.patch(
+    ...     bug_tracker_path, 'application/json',
+    ...     dumps(dict(active=False))).jsonBody()
+    >>> pprint_entry(bug_tracker)
+    active: False...
 
 
 == Bug attachments ==

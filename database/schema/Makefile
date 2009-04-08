@@ -28,16 +28,16 @@ EMPTY_DBNAME=launchpad_empty
 TEST_SESSION_DBNAME=session_ftest
 
 # The database which is a copy of launchpad_ftest_template and can be accessed
-# via http://launchpad.dev when you use LPCONFIG=test-playground
+# via http://launchpad.dev when you use LPCONFIG=test-playground.
 TEST_PLAYGROUND_DBNAME=launchpad_ftest_playground
 
 # The session database name.
 SESSION_DBNAME=session_dev
 
-# The command we use to drop a database
+# The command we use to drop a database.
 DROPDB=${PYTHON} ../../utilities/pgmassacre.py
-# The command we use to create a database
-CREATEDB=${PYTHON} ../../utilities/pgcreate.py
+# The command we use to drop (if exists) and recreate a database.
+CREATEDB=${PYTHON} ../../utilities/pgmassacre.py -t
 
 # The command used (in conjunction with $(call)) to dump the contents of the
 # given database ($1) into an SQL file ($2).
@@ -61,10 +61,6 @@ default: all
 # Create a launchpad_ftest_template DB and load the test sample data into it.
 test: create 
 	@ echo "* Creating database \"$(TEMPLATE_WITH_TEST_SAMPLEDATA)\"."
-	@if [ "$$((`psql -l | grep -w ${TEMPLATE_WITH_TEST_SAMPLEDATA} | wc -l`))" = '1' ]; \
-	    then ${DROPDB} ${TEMPLATE_WITH_TEST_SAMPLEDATA} | grep : | cat ; \
-	fi
-	@ sleep 2
 	@ ${CREATEDB} ${EMPTY_DBNAME} ${TEMPLATE_WITH_TEST_SAMPLEDATA}
 	@ echo "* Loading sample data"
 	@ psql -v ON_ERROR_STOP=1 -d ${TEMPLATE_WITH_TEST_SAMPLEDATA} -f $(SAMPLEDATA) > /dev/null
@@ -72,18 +68,16 @@ test: create
 	@ ${PYTHON} fti.py --force -q -d ${TEMPLATE_WITH_TEST_SAMPLEDATA}
 	@ echo "* Resetting sequences"
 	@ ${PYTHON} reset_sequences.py -d ${TEMPLATE_WITH_TEST_SAMPLEDATA}
-	@ echo "* Vacuuming"
-	@ psql -d ${TEMPLATE_WITH_TEST_SAMPLEDATA} -c 'vacuum full analyze' | grep : | cat
+# XXX StuartBishop 20090304 - Disabling the vacuum step as we seem to be
+# getting buildbot hangs here. Ideally temporary.
+#	@ echo "* Vacuuming"
+#	@ psql -d ${TEMPLATE_WITH_TEST_SAMPLEDATA} -c 'vacuum full analyze' | grep : | cat
 
 # Create a launchpad_dev_template DB and load the dev sample data into it.
 # Also create a launchpad_ftest_playground DB as a copy of
 # launchpad_ftest_template.
 dev: test
 	@ echo "* Creating ${TEMPLATE_WITH_DEV_SAMPLEDATA}"
-	@if [ "$$((`psql -l | grep -w ${TEMPLATE_WITH_DEV_SAMPLEDATA} | wc -l`))" = '1' ]; \
-	    then ${DROPDB} ${TEMPLATE_WITH_DEV_SAMPLEDATA} | grep : | cat ; \
-	fi
-	@ sleep 2
 	@ ${CREATEDB} ${EMPTY_DBNAME} ${TEMPLATE_WITH_DEV_SAMPLEDATA}
 	@ echo "* Loading sample data"
 	@ psql -v ON_ERROR_STOP=1 -d ${TEMPLATE_WITH_DEV_SAMPLEDATA} -f $(SAMPLEDATA_DEV) > /dev/null
@@ -91,20 +85,14 @@ dev: test
 	@ ${PYTHON} fti.py --force -q -d ${TEMPLATE_WITH_DEV_SAMPLEDATA}
 	@ echo "* Resetting sequences"
 	@ ${PYTHON} reset_sequences.py -d ${TEMPLATE_WITH_DEV_SAMPLEDATA}
-	@ echo "* Vacuuming"
-	@ psql -d ${TEMPLATE_WITH_DEV_SAMPLEDATA} -c 'vacuum full analyze' | grep : | cat
+# XXX StuartBishop 20090304 - Disabling the vacuum step as we seem to be
+# getting buildbot hangs here. Ideally temporary.
+#	@ echo "* Vacuuming"
+#	@ psql -d ${TEMPLATE_WITH_DEV_SAMPLEDATA} -c 'vacuum full analyze' | grep : | cat
 	@ echo "* Creating ${DBNAME_DEV}"
-	@if [ "$$((`psql -l | grep -w ${DBNAME_DEV} | wc -l`))" = '1' ]; \
-	    then ${DROPDB} ${DBNAME_DEV} | grep : | cat ; \
-	fi
-	@ sleep 2
 	@ ${CREATEDB} ${TEMPLATE_WITH_DEV_SAMPLEDATA} ${DBNAME_DEV}
 
 	@ echo "* Creating ${TEST_PLAYGROUND_DBNAME}"
-	@if [ "$$((`psql -l | grep -w ${TEST_PLAYGROUND_DBNAME} | wc -l`))" = '1' ]; \
-	    then ${DROPDB} ${TEST_PLAYGROUND_DBNAME} | grep : | cat ; \
-	fi
-	@ sleep 2
 	@ ${CREATEDB} ${TEMPLATE_WITH_TEST_SAMPLEDATA} ${TEST_PLAYGROUND_DBNAME}
 
 # This will create a DB named launchpad_empty and load the base
@@ -152,9 +140,6 @@ create: check
 	    psql -q -d ${SESSION_DBNAME} -f launchpad_session.sql ; \
 	fi
 	@ echo "* Creating session database '${TEST_SESSION_DBNAME}'"
-	@if [ "$$((`psql -l | grep -w ${TEST_SESSION_DBNAME} | wc -l`))" = '1' ]; \
-	    then ${DROPDB} ${TEST_SESSION_DBNAME} | grep : | cat ; \
-	fi
 	${CREATEDB} template1 ${TEST_SESSION_DBNAME} ; \
 	createlang plpgsql ${TEST_SESSION_DBNAME}; \
 	psql -q -d ${TEST_SESSION_DBNAME} -f launchpad_session.sql ; \

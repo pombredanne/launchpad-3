@@ -29,8 +29,8 @@ from canonical.codehosting.bzrutils import ensure_base
 from canonical.codehosting.inmemory import InMemoryFrontend, XMLRPCWrapper
 from canonical.codehosting.sftp import FatLocalTransport
 from canonical.codehosting.vfs.transport import AsyncVirtualTransport
-from canonical.launchpad.interfaces.branch import BranchType
-from canonical.launchpad.interfaces.codehosting import (
+from lp.code.interfaces.branch import BranchType
+from lp.code.interfaces.codehosting import (
     BRANCH_TRANSPORT, CONTROL_TRANSPORT)
 from canonical.launchpad.testing import TestCase
 from canonical.testing import TwistedLayer
@@ -327,7 +327,7 @@ class TestLaunchpadInternalServer(MixinBaseLaunchpadServerTests,
         self.server.setUp()
         self.addCleanup(self.server.tearDown)
         branch = self.factory.makeProductBranch()
-        branch.product.development_focus.user_branch = branch
+        branch.product.development_focus.branch = branch
         transport = get_transport(self.server.get_url())
         self.assertRaises(
             errors.NoSuchFile, transport.list_dir, "~%s/%s/.bzr/"

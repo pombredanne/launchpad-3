@@ -20,6 +20,8 @@ records to disk, including configuration and indexes.
     ppa
     >>> print cprov_archive.purpose.name
     PPA
+    >>> print cprov_archive.displayname
+    PPA for Celso Providelo
     >>> cprov_archive.enabled
     True
     >>> cprov_archive.authorized_size
@@ -108,9 +110,6 @@ make Celso's PPA public again.
 
 Useful properties:
 
-    >>> print cprov_archive.displayname
-    PPA for Celso Providelo
-
     >>> print cprov_archive.archive_url
     http://ppa.launchpad.dev/cprov/ppa/ubuntu
 
@@ -179,11 +178,10 @@ Valid names work as expected.
 
     >>> login(ANONYMOUS)
 
-Please note that copy archive displayname include the owner name as
-well as the archive's name.
+Please note that copy archive displayname doesn't follow the name change.
 
     >>> rebuild_archive.displayname
-    u'Copy archive there-we-go for J\xc3\xbcrgen'
+    u'Copy archive editable-rebuild for J\xc3\xbcrgen'
 
 The "is_copy" property allows us to ask an archive whether it's a copy
 archive.
@@ -1569,7 +1567,7 @@ In the sampledata, 'cprov' only participates in his own PPA.
 
     >>> for ppa in archive_set.getPPAsForUser(cprov):
     ...     print ppa.displayname
-    Private PPA for Celso Providelo
+    PPA for Celso Providelo
 
 However 'cprov' is also a member of 'launchpad-buildd-admins' team,
 which doesn't have a PPA yet.
@@ -1592,7 +1590,7 @@ immediately recognises 'cprov' rights on it.
 
     >>> for ppa in archive_set.getPPAsForUser(cprov):
     ...     print ppa.displayname
-    Private PPA for Celso Providelo
+    PPA for Celso Providelo
     PPA for Launchpad Buildd Admins
 
 When there is no active PPA for the team a user participates the
@@ -1611,7 +1609,7 @@ private.
     >>> p3as = archive_set.getPrivatePPAs()
     >>> for p3a in p3as:
     ...     print p3a.displayname
-    Private PPA for Celso Providelo
+    PPA for Celso Providelo
 
 For the next test we will make Celso's PPA public again, so it can
 appear in public lists. We do that because that PPA contains relevant
@@ -1858,7 +1856,7 @@ First we create three copy archives for ubuntu:
 
 One of the new copy archives will be owned by a team:
 
-    >>> from canonical.launchpad.interfaces.person import (
+    >>> from lp.registry.interfaces.person import (
     ...     TeamSubscriptionPolicy)
     >>> team = getUtility(IPersonSet).newTeam(sabdfl, 't1', 't1',
     ...     subscriptionpolicy=TeamSubscriptionPolicy.OPEN)
@@ -2292,6 +2290,19 @@ different displayname format, including their names.
     >>> print another_ppa.displayname
     PPA named nightly for Mark Shuttleworth
 
+Additionally, archives, despite of their purpose, cannot have the same
+name as their distribution.
+
+    >>> boingolinux = factory.makeDistribution(name='boingolinux')
+
+    >>> getUtility(IArchiveSet).new(
+    ...     owner=sabdfl, purpose=ArchivePurpose.PRIMARY,
+    ...     distribution=boingolinux, name=boingolinux.name)
+    Traceback (most recent call last):
+    ...
+    AssertionError: Archives cannot have the same name as their
+    distribution.
+
 
 == Looking up named PPAs ==
 
@@ -2321,3 +2332,35 @@ When there are not matching PPAs, None is returned.
 
     >>> print sabdfl.getPPAByName('not-found')
     None
+
+
+== Editable displayname ==
+
+If 'displayname' is omitted on archive created, a default form is
+automatically used.
+    >>> new_ppa = getUtility(IArchiveSet).new(
+    ...     owner=cprov, purpose=ArchivePurpose.PPA,
+    ...     distribution=ubuntu, name='test-ppa')
+    >>> print new_ppa.displayname
+    PPA named test-ppa for Celso Providelo
+
+When provided 'displayname' is used as given.
+
+    >>> new_copy = getUtility(IArchiveSet).new(
+    ...     owner=cprov, purpose=ArchivePurpose.COPY,
+    ...     displayname='Rock and roll with rebuilds!',
+    ...     distribution=ubuntu, name='test-rebuild')
+    >>> print new_copy.displayname
+    Rock and roll with rebuilds!
+
+After archive creation, the 'displayname' can be edited by the archive
+anyone with 'edit' permissions on the archive.
+
+    >>> login("no-priv@canonical.com")
+    >>> new_ppa.displayname = 'No-way!'
+    Traceback (most recent call last):
+    ...
+    Unauthorized: (<Archive at ...>, 'displayname', 'launchpad.Edit')
+
+    >>> login('celso.providelo@canonical.com')
+    >>> new_ppa.displayname = 'My testing packages for jaunty'

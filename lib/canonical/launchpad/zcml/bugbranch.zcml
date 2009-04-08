@@ -23,7 +23,7 @@
   <browser:page
       for="canonical.launchpad.interfaces.IBugBranch"
       name="+hierarchy"
-      class="canonical.launchpad.browser.branch.BranchHierarchy"
+      class="lp.code.browser.branch.BranchHierarchy"
       attribute="__call__"
       permission="zope.Public"
       />

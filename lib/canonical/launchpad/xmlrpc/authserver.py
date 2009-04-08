@@ -13,6 +13,7 @@ from zope.interface import implements
 
 from canonical.launchpad.interfaces import IAuthServer, IPersonSet
 from canonical.launchpad.webapp import LaunchpadXMLRPCView
+from canonical.launchpad.xmlrpc import faults
 
 
 class AuthServerAPIView(LaunchpadXMLRPCView):
@@ -77,3 +78,16 @@ class AuthServerAPIView(LaunchpadXMLRPCView):
             'id': person.id,
             'name': person.name,
         }
+
+    def getUserAndSSHKeys(self, name):
+        """See `IAuthServer.getUserAndSSHKeys`."""
+        person = getUtility(IPersonSet).getByName(name)
+        if person is None:
+            return faults.NoSuchPersonWithName(name)
+        return {
+            'id': person.id,
+            'name': person.name,
+            'keys': [(key.keytype.title, key.keytext)
+                     for key in person.sshkeys],
+            }
+
