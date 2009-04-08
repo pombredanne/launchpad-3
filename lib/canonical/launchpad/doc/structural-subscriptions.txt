@@ -208,7 +208,7 @@ firefox._targets_args. This attribute should be renamed. Bug #247525.
 
     >>> from zope.security.proxy import removeSecurityProxy
     >>> firefox_no_proxy = removeSecurityProxy(firefox)
-    >>> from canonical.launchpad.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> person_set = getUtility(IPersonSet)
     >>> firefox_subscribers = person_set.getSubscribersForTargets(
     ...     [firefox_no_proxy])

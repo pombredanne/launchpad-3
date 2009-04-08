@@ -12,7 +12,6 @@ from zope.security.proxy import removeSecurityProxy
 from zope.interface import implements
 
 from storm.expr import Desc, Or
-from storm.references import Reference
 from storm.store import Store
 
 from sqlobject import ForeignKey, StringCol
@@ -61,15 +60,9 @@ class Account(SQLBase):
     new_openid_identifier = StringCol(
         dbName='old_openid_identifier', notNull=False, default=DEFAULT)
 
-    person = Reference("id", "Person.account", on_remote=True)
-
-    def _getEmails(self, status, master=False):
+    def _getEmails(self, status):
         """Get related `EmailAddress` objects with the given status."""
-        if master:
-            store = IMasterStore(EmailAddress)
-        else:
-            store = Store.of(self)
-        result = store.find(
+        result = IStore(EmailAddress).find(
             EmailAddress, accountID=self.id, status=status)
         result.order_by(EmailAddress.email)
         return result
@@ -102,8 +95,7 @@ class Account(SQLBase):
             # Mark preferred email address as validated, if it exists.
             # XXX 2009-03-30 jamesh bug=349482: we should be able to
             # use ResultSet.set() here :(
-            for address in self._getEmails(EmailAddressStatus.PREFERRED,
-                                           master=True):
+            for address in self._getEmails(EmailAddressStatus.PREFERRED):
                 address.status = EmailAddressStatus.VALIDATED
             return
 
@@ -114,8 +106,11 @@ class Account(SQLBase):
         email = IMasterObject(removeSecurityProxy(email))
         assert email.accountID == self.id
 
-        existing_preferred_email = self._getEmails(
-            EmailAddressStatus.PREFERRED, master=True).one()
+        # If we have the preferred email address here, we're done.
+        if email.status == EmailAddressStatus.PREFERRED:
+            return
+
+        existing_preferred_email = self.preferredemail
         if existing_preferred_email is not None:
             assert Store.of(email) is Store.of(existing_preferred_email), (
                 "Store of %r is not the same as store of %r" %
@@ -127,7 +122,8 @@ class Account(SQLBase):
 
         email.status = EmailAddressStatus.PREFERRED
 
-        # XXX 2009-03-30 jamesh: SSO server can't write to HWDB tables
+        # XXX 2009-03-30 jamesh bug=356092: SSO server can't write to
+        # HWDB tables
         # getUtility(IHWSubmissionSet).setOwnership(email)
 
     def validateAndEnsurePreferredEmail(self, email):
@@ -136,34 +132,33 @@ class Account(SQLBase):
             raise TypeError, (
                 "Any person's email address must provide the IEmailAddress "
                 "interface. %s doesn't." % email)
-        email = IMasterObject(email)
-        assert email.account == self, 'Wrong person! %r, %r' % (
-            email.accountID, self.id)
 
-        preferred_email = self._getEmails(
-            EmailAddressStatus.PREFERRED, master=True).one()
+        assert email.accountID == self.id, 'Wrong account! %r, %r' % (
+            email.accountID, self.id)
 
         # This email is already validated and is this person's preferred
         # email, so we have nothing to do.
-        if preferred_email == email:
+        if email.status == EmailAddressStatus.PREFERRED:
             return
 
-        if preferred_email is None:
+        email = IMasterObject(email)
+
+        if self.preferredemail is None:
             # This branch will be executed only in the first time a person
             # uses Launchpad. Either when creating a new account or when
             # resetting the password of an automatically created one.
             self.setPreferredEmail(email)
         else:
             email.status = EmailAddressStatus.VALIDATED
-            # XXX: do something to make sure the EmailAddress is
-            # linked to the right person.
 
-            # XXX 2009-03-30 jamesh: SSO server can't write to HWDB tables
+            # XXX 2009-03-30 jamesh bug=356092: SSO server can't write
+            # to HWDB tables
             # getUtility(IHWSubmissionSet).setOwnership(email)
 
         # Now that we have validated the email, see if this can be
         # matched to an existing RevisionAuthor.
-        # XXX 2009-03-30 jamesh: SSO server can't write to revision tables
+        # XXX 2009-03-30 jamesh bug=356092: SSO server can't write to
+        # revision tables
         # getUtility(IRevisionSet).checkNewVerifiedEmail(email)
 
     @property
@@ -179,6 +174,7 @@ class Account(SQLBase):
         :raise AssertionError: if the password is not valid.
         :raise AssertionError: if the preferred email address is None.
         """
+        from lp.registry.model.person import Person
         if password in (None, ''):
             raise AssertionError(
                 "Account %s cannot be reactivated without a "
@@ -194,7 +190,7 @@ class Account(SQLBase):
         # XXX: salgado, 2009-02-26: Instead of doing what we do below, we
         # should just provide a hook for callsites to do other stuff that's
         # not directly related to the account itself.
-        person = IMasterObject(self.person, None)
+        person = IStore(Person).find(Person, account=self).one()
         if person is not None:
             # Since we have a person associated with this account, it may be
             # used to log into Launchpad, and so it may not have a preferred
@@ -255,7 +251,7 @@ class Account(SQLBase):
     def createPerson(self, rationale):
         """See `IAccount`."""
         # Need a local import because of circular dependencies.
-        from canonical.launchpad.database.person import (
+        from lp.registry.model.person import (
             generate_nick, Person, PersonSet)
         assert self.preferredemail is not None, (
             "Can't create a Person for an account which has no email.")
@@ -318,7 +314,7 @@ class AccountSet:
     def createAccountAndEmail(self, email, rationale, displayname, password,
                               password_is_encrypted=False):
         """See `IAccountSet`."""
-        from canonical.launchpad.database.person import generate_nick
+        from lp.registry.model.person import generate_nick
         openid_mnemonic = generate_nick(email)
         # Convert the PersonCreationRationale to an AccountCreationRationale.
         account_rationale = getattr(AccountCreationRationale, rationale.name)

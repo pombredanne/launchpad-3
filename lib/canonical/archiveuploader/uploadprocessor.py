@@ -58,8 +58,8 @@ from canonical.archiveuploader.nascentupload import (
     NascentUpload, FatalUploadError, EarlyReturnUploadError)
 from canonical.archiveuploader.uploadpolicy import (
     findPolicyByOptions, UploadPolicyError)
-from canonical.launchpad.interfaces.distribution import IDistributionSet
-from canonical.launchpad.interfaces.person import IPersonSet
+from lp.registry.interfaces.distribution import IDistributionSet
+from lp.registry.interfaces.person import IPersonSet
 from canonical.launchpad.webapp.errorlog import (
     ErrorReportingUtility, ScriptRequest)
 from canonical.launchpad.webapp.interfaces import NotFoundError

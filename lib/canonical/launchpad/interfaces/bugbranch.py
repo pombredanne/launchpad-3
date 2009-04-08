@@ -20,7 +20,7 @@ from canonical.launchpad.fields import BugField, Summary
 from canonical.launchpad.interfaces import (
     IHasBug, IHasDateCreated, non_duplicate_branch)
 from canonical.launchpad.interfaces.bugtask import IBugTask
-from canonical.launchpad.interfaces.person import IPerson
+from lp.registry.interfaces.person import IPerson
 
 
 class BugBranchStatus(DBEnumeratedType):

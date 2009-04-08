@@ -205,14 +205,18 @@ class IAccountPublic(Interface):
     validated_emails = CollectionField(
         title=_("Confirmed e-mails of this account."),
         description=_(
-            "Confirmed e-mails are the ones in the VALIDATED state"),
+            "Confirmed e-mails are the ones in the VALIDATED state.  The "
+            "user has confirmed that they are active and that they control "
+            "them."),
         readonly=True, required=False,
         value_type=Reference(schema=Interface))
 
     guessed_emails = CollectionField(
         title=_("Guessed e-mails of this account."),
         description=_(
-            "Guessed e-mails are the ones in the NEW state"),
+            "Guessed e-mails are the ones in the NEW state.  We believe "
+            "that the user owns the address, but they have not confirmed "
+            "the fact."),
         readonly=True, required=False,
         value_type=Reference(schema=Interface))
 

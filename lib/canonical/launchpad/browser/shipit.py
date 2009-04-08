@@ -8,6 +8,7 @@ __all__ = [
     'ShipItExportsView',
     'ShipitFrontPageView',
     'ShipItNavigation',
+    'ShipitNotFoundView',
     'ShipitOpenIDCallbackForServerCDsView',
     'ShipitOpenIDCallbackView',
     'ShipitOpenIDLoginForServerCDsView',
@@ -80,6 +81,10 @@ class ShipitSystemErrorView(SystemErrorView):
     @property
     def account(self):
         return getUtility(ILaunchBag).account
+
+
+class ShipitNotFoundView(ShipitSystemErrorView):
+    response_code = 404
 
 
 class ShipItUnauthorizedView(ShipitSystemErrorView):

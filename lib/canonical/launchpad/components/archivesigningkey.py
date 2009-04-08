@@ -20,7 +20,7 @@ from canonical.config import config
 from canonical.launchpad.interfaces.archivesigningkey import (
     IArchiveSigningKey)
 from canonical.launchpad.interfaces.gpghandler import IGPGHandler
-from canonical.launchpad.interfaces.gpg import IGPGKeySet, GPGKeyAlgorithm
+from lp.registry.interfaces.gpg import IGPGKeySet, GPGKeyAlgorithm
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 
 

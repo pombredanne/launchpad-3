@@ -212,12 +212,6 @@ unavailable.
     >>> account.displayname
     u'No Privileges Person'
 
-If an account has an associated person, it can be accessed via the
-person attribute:
-
-    >>> IPerson(account) == person
-    True
-
 An Account has an OpenID identifier used to generate the OpenID identity
 URL.
 
@@ -317,7 +311,7 @@ modify tables in the lpmain replication set.
     >>> from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
     >>> getUtility(IStoreSelector).push(MasterDatabasePolicy())
 
-    >>> from canonical.launchpad.interfaces.person import (
+    >>> from lp.registry.interfaces.person import (
     ...     PersonCreationRationale)
     >>> fresh_account, email = account_set.createAccountAndEmail(
     ...     'foo@example.com',

@@ -13,7 +13,7 @@ PPA.
 
     >>> from canonical.launchpad.tests.test_publishing import (
     ...      SoyuzTestPublisher)
-    >>> from canonical.launchpad.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> from canonical.launchpad.interfaces.publishing import (
     ...     PackagePublishingPocket)
 

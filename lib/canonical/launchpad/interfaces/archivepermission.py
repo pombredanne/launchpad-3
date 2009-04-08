@@ -21,7 +21,7 @@ from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice
 from canonical.launchpad.interfaces.archive import IArchive
 from canonical.launchpad.interfaces.component import IComponent
-from canonical.launchpad.interfaces.sourcepackagename import (
+from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageName)
 from canonical.lazr.fields import Reference
 from canonical.lazr.rest.declarations import (

@@ -4,7 +4,7 @@ __metaclass__ = type
 
 
 from canonical.database.sqlbase import block_implicit_flushes
-from canonical.launchpad.interfaces.person import IPerson
+from lp.registry.interfaces.person import IPerson
 from canonical.launchpad.interfaces.specification import (
     SpecificationGoalStatus)
 

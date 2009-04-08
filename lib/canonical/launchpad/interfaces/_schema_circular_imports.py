@@ -17,25 +17,25 @@ __all__ = []
 from canonical.launchpad.interfaces.build import (
     BuildStatus, IBuild)
 from canonical.launchpad.interfaces.buildrecords import IHasBuildRecords
-from canonical.launchpad.interfaces.branch import IBranch
-from canonical.launchpad.interfaces.branchmergeproposal import (
+from lp.code.interfaces.branch import IBranch
+from lp.code.interfaces.branchmergeproposal import (
     BranchMergeProposalStatus, IBranchMergeProposal)
-from canonical.launchpad.interfaces.branchsubscription import (
+from lp.code.interfaces.branchsubscription import (
     BranchSubscriptionNotificationLevel, BranchSubscriptionDiffSize,
     CodeReviewNotificationLevel, IBranchSubscription)
-from canonical.launchpad.interfaces.codereviewcomment import (
+from lp.code.interfaces.codereviewcomment import (
     CodeReviewVote, ICodeReviewComment)
-from canonical.launchpad.interfaces.codereviewvote import (
+from lp.code.interfaces.codereviewvote import (
     ICodeReviewVoteReference)
 from canonical.launchpad.interfaces.diff import IPreviewDiff
-from canonical.launchpad.interfaces.distroseries import IDistroSeries
-from canonical.launchpad.interfaces.person import IPerson, IPersonPublic
+from lp.registry.interfaces.distroseries import IDistroSeries
+from lp.registry.interfaces.person import IPerson, IPersonPublic
 from canonical.launchpad.interfaces.hwdb import IHWSubmission
-from canonical.launchpad.interfaces.product import IProduct
-from canonical.launchpad.interfaces.productseries import IProductSeries
+from lp.registry.interfaces.product import IProduct
+from lp.registry.interfaces.productseries import IProductSeries
 from canonical.launchpad.interfaces.publishing import (
     PackagePublishingPocket)
-from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
+from lp.registry.interfaces.sourcepackage import ISourcePackage
 
 
 IBranch['product'].schema = IProduct

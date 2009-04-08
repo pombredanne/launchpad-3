@@ -50,11 +50,11 @@ either one product series, or one source package in one distro series.
 
 When we create a template, it is initialized with a default header.
 
-    >>> from canonical.launchpad.database.product import ProductSet
+    >>> from lp.registry.model.product import ProductSet
     >>> alsa_product = ProductSet().getByName('alsa-utils')
     >>> alsa_trunk = alsa_product.getSeries('trunk')
     >>> alsa_subset = potemplate_set.getSubset(productseries=alsa_trunk)
-    >>> from canonical.launchpad.database.person import PersonSet
+    >>> from lp.registry.model.person import PersonSet
     >>> user = PersonSet().getByEmail('test@canonical.com')
     >>> new_template = alsa_subset.new(
     ...     'testtemplate', 'testing', 'po/testing.pot', user)

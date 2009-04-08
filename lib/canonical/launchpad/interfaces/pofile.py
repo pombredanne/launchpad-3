@@ -19,11 +19,13 @@ from zope.schema.vocabulary import (
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import ILaunchBag
-from canonical.launchpad.interfaces.person import IPerson
+from lp.registry.interfaces.person import IPerson
 from canonical.launchpad.interfaces.potemplate import IPOTemplate
 from canonical.launchpad.interfaces.rosettastats import IRosettaStats
 from canonical.launchpad.interfaces.translationgroup import (
     TranslationPermission)
+from canonical.launchpad.interfaces.translationsperson import (
+    ITranslationsPerson)
 
 
 class IPOFile(IRosettaStats):
@@ -286,9 +288,10 @@ class AlternativeLanguageVocabularyFactory:
         """See `IContextSourceBinder`."""
         user = getUtility(ILaunchBag).user
         if user is not None and user.languages:
+            translations_user = ITranslationsPerson(user)
             terms = [
                 SimpleTerm(language, language.code, language.displayname)
-                for language in user.translatable_languages]
+                for language in translations_user.translatable_languages]
             if terms:
                 return SimpleVocabulary(terms)
         return getVocabularyRegistry().get(None, "TranslatableLanguage")
