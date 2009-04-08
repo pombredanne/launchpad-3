@@ -659,7 +659,7 @@ class MailingListSet:
                 MailingList.teamID.is_in(team_ids)))
         # Find all the people who are subscribed with their preferred address.
         preferred = store.using(*tables).find(
-            (EmailAddress, MailingListSubscription),
+            (EmailAddress, MailingListSubscription, TeamParticipation),
             And(MailingListSubscription.mailing_listID.is_in(mailing_list_ids),
                 TeamParticipation.teamID.is_in(team_ids),
                 MailingList.status != MailingListStatus.INACTIVE,
@@ -668,7 +668,10 @@ class MailingListSet:
                 Account.status == AccountStatus.ACTIVE))
         # Sort by team name.
         by_team = {}
-        for email_address, subscription in preferred:
+        for email_address, subscription, participation in preferred:
+            # XXX Works this into the query somehow.
+            if subscription.mailing_list.team != participation.team:
+                continue
             team_name = subscription.mailing_list.team.name
             assert team_name in team_names, (
                 'Unexpected team name in results: %s' % team_name)

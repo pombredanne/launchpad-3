@@ -13,7 +13,7 @@ people, a team and its team mailing list.
     >>> from canonical.launchpad.ftests import syncUpdate
 
     >>> from lp.registry.tests.mailinglists_helper import (
-    ...     get_alternative_email)
+    ...     get_alternative_email, print_addresses)
     >>> anne = factory.makePersonByName('Anne')
 
 Anne gets two email addresses.  One is her preferred address...
@@ -30,6 +30,7 @@ Anne gets two email addresses.  One is her preferred address...
     >>> bart = factory.makePersonByName('Bart')
     >>> team_one, list_one = factory.makeTeamAndMailingList(
     ...     'team-one', team_owner)
+    >>> team_names = [team_one.name]
 
 Once Anne and Bart join team one, they can post to the mailing list, but they
 will not get deliveries.
@@ -53,10 +54,11 @@ the mailing list set.
 
     >>> from lp.registry.interfaces.mailinglist import IMailingListSet
     >>> mailinglist_set = getUtility(IMailingListSet)
-    >>> pretty(mailinglist_set.getSenderAddresses([team_one.name]))
-    "{u'team-one': [u'no-priv@canonical.com', u'bperson@example.org',
-                    u'bart.person@example.com', u'anne.person@example.com',
-                    u'aperson@example.org']}"
+    >>> print_addresses(mailinglist_set.getSenderAddresses(team_names))
+    team-one
+        anne.person@example.com, aperson@example.org,
+        bart.person@example.com, bperson@example.org,
+        no-priv@canonical.com
 
 No one is yet subscribed to the mailing list though.
 
@@ -76,8 +78,9 @@ provide an email address when she subscribes, her preferred address is used.
     >>> sorted(person.displayname for person in list_one.getSubscribers())
     [u'Anne Person']
 
-    >>> pretty(mailinglist_set.getSubscribedAddresses([team_one.name]))
-    "{u'team-one': [u'anne.person@example.com']}"
+    >>> print_addresses(mailinglist_set.getSubscribedAddresses(team_names))
+    team-one
+        anne.person@example.com
 
 Now Bart also subscribes to the mailing list, but he does so with something
 other than his preferred email address.
@@ -86,10 +89,15 @@ other than his preferred email address.
     >>> alternative_email.email
     u'bperson@example.org'
     >>> list_one.subscribe(bart, alternative_email)
+
     >>> sorted(email.email for email in list_one.getSubscribedAddresses())
     [u'anne.person@example.com', u'bperson@example.org']
     >>> sorted(person.displayname for person in list_one.getSubscribers())
     [u'Anne Person', u'Bart Person']
+
+    >>> print_addresses(mailinglist_set.getSubscribedAddresses(team_names))
+    team-one
+        anne.person@example.com, bperson@example.org
 
 A team can not subscribe to a mailing list.
 
@@ -115,6 +123,7 @@ not post from it.
     >>> alternative = address_set.new('anne.x.person@example.net', anne)
     >>> alternative.email
     u'anne.x.person@example.net'
+
     >>> sorted(email.email for email in list_one.getSenderAddresses())
     [u'anne.person@example.com', u'aperson@example.org',
      u'bart.person@example.com', u'bperson@example.org',
@@ -125,11 +134,19 @@ Once Anne validates her new address, she can post from it.
     >>> from canonical.launchpad.interfaces import EmailAddressStatus
     >>> alternative.status = EmailAddressStatus.VALIDATED
     >>> transaction.commit()
+
     >>> sorted(email.email for email in list_one.getSenderAddresses())
     [u'anne.person@example.com', u'anne.x.person@example.net',
      u'aperson@example.org',
      u'bart.person@example.com', u'bperson@example.org',
      u'no-priv@canonical.com']
+
+    >>> print_addresses(mailinglist_set.getSenderAddresses(team_names))
+    team-one
+        anne.person@example.com, anne.x.person@example.net,
+        aperson@example.org,
+        bart.person@example.com, bperson@example.org,
+        no-priv@canonical.com
 
     # Reverse the validation so that it doesn't affect subsequent tests.
     >>> alternative.status = EmailAddressStatus.NEW
@@ -149,8 +166,8 @@ as the email_address member.
     >>> verifyObject(IMailingListSubscription, subscription)
     True
 
-    >>> subscription.email_address.email
-    u'bperson@example.org'
+    >>> print subscription.email_address.email
+    bperson@example.org
 
 Every subscription has a corresponding MailingListSubscription object,
 but not every MailingListSubscription object names a specific email
@@ -169,6 +186,7 @@ Indirect members can subscribe to a team's mailing list.  To illustrate this,
 we first create team-two as a subteam of team-one.
 
     >>> team_two = factory.makeTeam(name='team-two', owner=team_owner)
+    >>> team_names.append(team_two.name)
 
     >>> from canonical.launchpad.interfaces import IPersonSet
     >>> salgado = getUtility(IPersonSet).getByName('salgado')
@@ -191,11 +209,17 @@ Now, by virtue of her indirect membership in team-one, Cris can subscribe to
 team-one's mailing list.
 
     >>> list_one.subscribe(cris)
+
     >>> sorted(email.email for email in list_one.getSubscribedAddresses())
     [u'anne.person@example.com', u'bperson@example.org',
      u'cris.person@example.com']
     >>> [person.displayname for person in list_one.getSubscribers()]
     [u'Anne Person', u'Bart Person', u'Cris Person']
+
+    >>> print_addresses(mailinglist_set.getSubscribedAddresses(team_names))
+    team-one
+        anne.person@example.com, bperson@example.org,
+        cris.person@example.com
 
 Cris may post to the mailing list using any of her registered and validated
 email addresses.
@@ -206,12 +230,20 @@ email addresses.
      u'cperson@example.org', u'cris.person@example.com',
      u'no-priv@canonical.com']
 
+    >>> print_addresses(mailinglist_set.getSenderAddresses(team_names))
+    team-one
+        anne.person@example.com, aperson@example.org,
+        bart.person@example.com, bperson@example.org,
+        cperson@example.org, cris.person@example.com,
+        no-priv@canonical.com
+
 Any new address that Cris registers but does not validate may not yet be used
 to post to the mailing list.
 
     >>> alternative = address_set.new('cris.x.person@example.net', cris)
     >>> alternative.email
     u'cris.x.person@example.net'
+
     >>> sorted(email.email for email in list_one.getSenderAddresses())
     [u'anne.person@example.com', u'aperson@example.org',
      u'bart.person@example.com', u'bperson@example.org',
@@ -222,12 +254,21 @@ Once Cris validates her new address, she can post from it.
 
     >>> alternative.status = EmailAddressStatus.VALIDATED
     >>> transaction.commit()
+
     >>> sorted(email.email for email in list_one.getSenderAddresses())
     [u'anne.person@example.com', u'aperson@example.org',
      u'bart.person@example.com', u'bperson@example.org',
      u'cperson@example.org', u'cris.person@example.com',
      u'cris.x.person@example.net',
      u'no-priv@canonical.com']
+
+    >>> print_addresses(mailinglist_set.getSenderAddresses(team_names))
+    team-one
+        anne.person@example.com, aperson@example.org,
+        bart.person@example.com, bperson@example.org,
+        cperson@example.org, cris.person@example.com,
+        cris.x.person@example.net,
+        no-priv@canonical.com
 
     # Reverse the validation so that it doesn't affect subsequent tests.
     >>> alternative.status = EmailAddressStatus.NEW
@@ -240,46 +281,124 @@ mailing list.
     ...     'super-team', team_owner)
     >>> sub_team, sub_team_list = factory.makeTeamAndMailingList(
     ...     'sub-team', team_owner)
+    >>> team_names.extend((super_team.name, sub_team.name))
+
     >>> super_team.addMember(sub_team, salgado, force_team_add=True)
     >>> lars = factory.makePersonByName('Lars')
     >>> lars.join(super_team)
     >>> lars.join(sub_team)
     >>> super_team_list.subscribe(lars)
     >>> sub_team_list.subscribe(lars)
+
     >>> sorted(email.email
     ...        for email in super_team_list.getSubscribedAddresses())
     [u'lars.person@example.com']
     >>> sorted(email.email for email in sub_team_list.getSubscribedAddresses())
     [u'lars.person@example.com']
 
+    >>> print_addresses(mailinglist_set.getSenderAddresses(team_names))
+    sub-team
+        lars.person@example.com, lperson@example.org, no-priv@canonical.com
+    super-team
+        lars.person@example.com, lperson@example.org, no-priv@canonical.com
+    team-one
+        anne.person@example.com, aperson@example.org,
+        bart.person@example.com, bperson@example.org,
+        cperson@example.org, cris.person@example.com,
+        no-priv@canonical.com
+
+    >>> print_addresses(mailinglist_set.getSubscribedAddresses(team_names))
+    sub-team
+        lars.person@example.com
+    super-team
+        lars.person@example.com
+    team-one
+        anne.person@example.com, bperson@example.org, cris.person@example.com
+
 This is true even if the person's subscription in the superteam's list is
 allowed due to indirect membership in the superteam.
 
     >>> team_three, list_three = factory.makeTeamAndMailingList(
     ...     'team-three', team_owner)
+    >>> team_names.append(team_three.name)
+
     >>> team_one.addMember(team_three, salgado, force_team_add=True)
     >>> dirk = factory.makePersonByName('Dirk')
     >>> dirk.join(team_two)
     >>> dirk.join(team_three)
     >>> list_one.subscribe(dirk)
     >>> list_three.subscribe(dirk)
+
     >>> sorted(email.email for email in list_one.getSubscribedAddresses())
     [u'anne.person@example.com', u'bperson@example.org',
      u'cris.person@example.com', u'dirk.person@example.com']
     >>> sorted(email.email for email in list_three.getSubscribedAddresses())
     [u'dirk.person@example.com']
 
-Once the subteam is deactivated from the superteam, subteam members who have
-no other indirect membership in the superteam will be unsubscribed to the
-superteam's mailing list.
+    >>> print_addresses(mailinglist_set.getSenderAddresses(team_names))
+    sub-team
+        lars.person@example.com, lperson@example.org, no-priv@canonical.com
+    super-team
+        lars.person@example.com, lperson@example.org, no-priv@canonical.com
+    team-one
+        anne.person@example.com, aperson@example.org,
+        bart.person@example.com, bperson@example.org,
+        cperson@example.org, cris.person@example.com,
+        dirk.person@example.com, dperson@example.org,
+        no-priv@canonical.com
+    team-three
+        dirk.person@example.com, dperson@example.org,
+        no-priv@canonical.com
+
+    >>> print_addresses(mailinglist_set.getSubscribedAddresses(team_names))
+    sub-team
+        lars.person@example.com
+    super-team
+        lars.person@example.com
+    team-one
+        anne.person@example.com, bperson@example.org,
+        cris.person@example.com, dirk.person@example.com
+    team-three
+        dirk.person@example.com
+
+Once the subteam is deactivated from the superteam, subteam members (such as
+Dirk) who have no other indirect membership in the superteam will be
+unsubscribed from the superteam's mailing list.
 
     >>> dirk.leave(team_two)
     >>> from canonical.launchpad.interfaces import TeamMembershipStatus
     >>> team_one.setMembershipData(team_three,
     ...     TeamMembershipStatus.DEACTIVATED, salgado)
+    >>> transaction.commit()
+
     >>> sorted(email.email for email in list_one.getSubscribedAddresses())
     [u'anne.person@example.com', u'bperson@example.org',
      u'cris.person@example.com']
+
+    >>> print_addresses(mailinglist_set.getSenderAddresses(team_names))
+    sub-team
+        lars.person@example.com, lperson@example.org, no-priv@canonical.com
+    super-team
+        lars.person@example.com, lperson@example.org, no-priv@canonical.com
+    team-one
+        anne.person@example.com, aperson@example.org,
+        bart.person@example.com, bperson@example.org,
+        cperson@example.org, cris.person@example.com,
+        no-priv@canonical.com
+    team-three
+        dirk.person@example.com, dperson@example.org,
+        no-priv@canonical.com
+
+    >>> print_addresses(mailinglist_set.getSubscribedAddresses(team_names))
+    sub-team
+        lars.person@example.com
+    super-team
+        lars.person@example.com
+    team-one
+        anne.person@example.com, bperson@example.org,
+        cris.person@example.com
+    team-three
+        dirk.person@example.com
 
 However, their mail-list settings for the super-team will remain via a
 MailingListSubscription object.
@@ -302,6 +421,17 @@ approved member of the super-team.
     >>> sorted(email.email for email in list_one.getSubscribedAddresses())
     [u'anne.person@example.com', u'bperson@example.org',
      u'cris.person@example.com']
+
+    >>> print_addresses(mailinglist_set.getSubscribedAddresses(team_names))
+    sub-team
+        lars.person@example.com
+    super-team
+        lars.person@example.com
+    team-one
+        anne.person@example.com, bperson@example.org,
+        cris.person@example.com
+    team-three
+        dirk.person@example.com
 
 Teams, even subteams, cannot subscribe to mailing lists.
 
@@ -327,14 +457,77 @@ preferred address.
     u'eperson@example.org'
     >>> team_four, list_four = factory.makeTeamAndMailingList(
     ...     'team-four', team_owner)
+    >>> team_names.append(team_four.name)
+
     >>> elle.join(team_four)
     >>> list_four.subscribe(elle)
+
     >>> sorted(email.email for email in list_four.getSubscribedAddresses())
     [u'elle.person@example.com']
+
+    >>> print_addresses(mailinglist_set.getSenderAddresses(team_names))
+    sub-team
+        lars.person@example.com, lperson@example.org, no-priv@canonical.com
+    super-team
+        lars.person@example.com, lperson@example.org, no-priv@canonical.com
+    team-four
+        elle.person@example.com, eperson@example.org, no-priv@canonical.com
+    team-one
+        anne.person@example.com, aperson@example.org,
+        bart.person@example.com, bperson@example.org,
+        cperson@example.org, cris.person@example.com,
+        no-priv@canonical.com
+    team-three
+        dirk.person@example.com, dperson@example.org,
+        no-priv@canonical.com
+
+    >>> print_addresses(mailinglist_set.getSubscribedAddresses(team_names))
+    sub-team
+        lars.person@example.com
+    super-team
+        lars.person@example.com
+    team-four
+        elle.person@example.com
+    team-one
+        anne.person@example.com, bperson@example.org,
+        cris.person@example.com
+    team-three
+        dirk.person@example.com
+
     >>> elle.setPreferredEmail(elle_alternative)
     >>> transaction.commit()
+
     >>> sorted(email.email for email in list_four.getSubscribedAddresses())
     [u'eperson@example.org']
+
+    >>> print_addresses(mailinglist_set.getSenderAddresses(team_names))
+    sub-team
+        lars.person@example.com, lperson@example.org, no-priv@canonical.com
+    super-team
+        lars.person@example.com, lperson@example.org, no-priv@canonical.com
+    team-four
+        elle.person@example.com, eperson@example.org, no-priv@canonical.com
+    team-one
+        anne.person@example.com, aperson@example.org,
+        bart.person@example.com, bperson@example.org,
+        cperson@example.org, cris.person@example.com,
+        no-priv@canonical.com
+    team-three
+        dirk.person@example.com, dperson@example.org,
+        no-priv@canonical.com
+
+    >>> print_addresses(mailinglist_set.getSubscribedAddresses(team_names))
+    sub-team
+        lars.person@example.com
+    super-team
+        lars.person@example.com
+    team-four
+        eperson@example.org
+    team-one
+        anne.person@example.com, bperson@example.org,
+        cris.person@example.com
+    team-three
+        dirk.person@example.com
 
 A person cannot subscribe an email address they do not own.
 
@@ -396,6 +589,8 @@ members to that team.  Only Iona will have a path to the superteam through
 more than one subteam.
 
     >>> team_five = factory.makeTeam(name='team-five', owner=team_owner)
+    >>> team_names.append(team_five.name)
+
     >>> team_one.addMember(team_five, salgado, force_team_add=True)
     >>> gwen = factory.makePersonByName('Gwen')
     >>> hank = factory.makePersonByName('Hank')
@@ -484,6 +679,8 @@ only relevant preference.
 
     >>> team_six, list_six = factory.makeTeamAndMailingList(
     ...     'team-six', team_owner)
+    >>> team_names.append(team_six.name)
+
     >>> jack = factory.makePersonByName('Jack')
     >>> jack.join(team_six)
     >>> list_six.subscribe(jack)
@@ -574,6 +771,8 @@ emails from it.
 
     >>> team_seven, list_seven = factory.makeTeamAndMailingList(
     ...     'team-7', team_owner)
+    >>> team_names.append(team_seven.name)
+
     >>> sam = factory.makePersonByName('Samuel')
 
     >>> list_seven.subscribe(sam)
@@ -652,6 +851,8 @@ post to the mailing list, nor will she receive mailing list posts.
 
     >>> team_nine, list_nine = factory.makeTeamAndMailingList(
     ...     'team-9', team_owner)
+    >>> team_names.append(team_nine.name)
+
     >>> umma = factory.makePersonByName('Umma')
     >>> umma.join(team_nine)
     >>> list_nine.subscribe(umma)
@@ -702,6 +903,8 @@ DEACTIVATED state.
 
     >>> team_eight, list_eight = factory.makeTeamAndMailingList(
     ...     'team-8', team_owner)
+    >>> team_names.append(team_eight.name)
+
     >>> teri = factory.makePersonByName('Teri')
     >>> teri.join(team_seven)
 
@@ -784,6 +987,8 @@ True or False value to indicate if the user was subscribed to the list.
 
     >>> team_eight, list_eight = factory.makeTeamAndMailingList(
     ...     'team-eight', team_owner)
+    >>> team_names.append(team_eight.name)
+
     >>> mary = factory.makePersonByName(
     ...     'Mary', use_default_autosubscribe_policy=True)
 
@@ -803,6 +1008,8 @@ Subscribing to an inactive list also does nothing.
 
     >>> team_off, list_off = factory.makeTeamAndMailingList(
     ...     'team-off', team_owner)
+    >>> team_names.append(team_off.name)
+
     >>> list_off.deactivate()
     >>> list_off.is_usable
     False
@@ -814,6 +1021,8 @@ If a team's mailing list is non-existant, then the method will try to
 recover gracefully.
 
     >>> team_sans_list = factory.makeTeam(name='sans-list', owner=team_owner)
+    >>> team_names.append(team_sans_list.name)
+
     >>> mary.autoSubscribeToMailingList(team_sans_list.mailing_list)
     False
 

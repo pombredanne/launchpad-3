@@ -29,6 +29,10 @@ from lp.registry.interfaces.mailinglist import (
     IMailingListSet, IMessageApprovalSet, MailingListStatus,
     PostedMessageStatus)
 from lp.registry.interfaces.person import IPersonSet, TeamSubscriptionPolicy
+
+COMMASPACE = ', '
+
+
 def fault_catcher(func):
     """Decorator for displaying Faults in a cross-compatible way.
 
@@ -148,6 +152,17 @@ def print_review_table(content):
                     else:
                         print '( )',
         print
+
+
+def print_addresses(data):
+    """Print the addresses in a dictionary.
+
+    This is used for the results returned by `IMailingListSet` methods
+    `getSenderAddresses()` and `getSubscribedAddresses()`.
+    """
+    for team_name in sorted(data):
+        print team_name
+        print COMMASPACE.join(sorted(data[team_name]))
 
 
 def new_team(team_name, with_list=False):
