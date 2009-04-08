@@ -18,7 +18,7 @@ from zope.interface import Interface, Attribute
 
 from canonical.launchpad.fields import (
     ContentNameField, PublicPersonChoice, Title)
-from canonical.launchpad.interfaces.branch import IBranch
+from lp.code.interfaces.branch import IBranch
 from canonical.launchpad.interfaces.bugtarget import IBugTarget
 from lp.registry.interfaces.distroseries import DistroSeriesStatus
 from canonical.launchpad.interfaces.launchpad import (
@@ -38,8 +38,8 @@ from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.webapp.interfaces import NameLookupFailed
 from canonical.launchpad import _
 
-from canonical.lazr.fields import CollectionField, Reference, ReferenceChoice
-from canonical.lazr.rest.declarations import (
+from lazr.restful.fields import CollectionField, Reference, ReferenceChoice
+from lazr.restful.declarations import (
     export_as_webservice_entry, export_factory_operation, exported,
     rename_parameters_as)
 

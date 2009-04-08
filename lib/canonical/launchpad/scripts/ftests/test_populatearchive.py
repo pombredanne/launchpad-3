@@ -31,9 +31,9 @@ from canonical.testing import LaunchpadZopelessLayer
 from canonical.testing.layers import DatabaseLayer
 
 
-def get_spn(binary_package):
-    """Return the SourcePackageName of the binary."""
-    pub = binary_package.getCurrentPublication()
+def get_spn(build):
+    """Return the SourcePackageName of the given Build."""
+    pub = build.current_source_publication
     return pub.sourcepackagerelease.sourcepackagename
 
 

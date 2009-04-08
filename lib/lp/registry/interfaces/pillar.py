@@ -12,8 +12,8 @@ from zope.interface import Interface, Attribute
 from zope.schema import Bool, Int, List, TextLine
 
 from canonical.launchpad import _
-from canonical.lazr.fields import CollectionField, Reference
-from canonical.lazr.rest.declarations import (
+from lazr.restful.fields import CollectionField, Reference
+from lazr.restful.declarations import (
     export_as_webservice_entry, export_read_operation, exported,
     operation_parameters, operation_returns_collection_of)
 

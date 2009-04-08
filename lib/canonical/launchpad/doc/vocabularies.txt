@@ -995,7 +995,7 @@ A search with the full branch unique name should also find the branch.
 The tokens used by terms retrieved from BranchVocabulary use the
 branch unique name as an ID:
 
-    >>> from canonical.launchpad.interfaces.branchlookup import IBranchLookup
+    >>> from lp.code.interfaces.branchlookup import IBranchLookup
     >>> branch = getUtility(IBranchLookup).get(15)
     >>> print branch.unique_name
     ~name12/gnome-terminal/main

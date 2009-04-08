@@ -98,6 +98,14 @@ default PPA (the one named 'ppa').
     Distribution: ubuntu
     Suite: None
 
+PPA upload paths missing the 'distribution' part default to 'ubuntu'
+distribution.
+
+    >>> check_upload('~cprov/ppa')
+    Archive: ppa
+    Distribution: ubuntu
+    Suite: None
+
 PPA uploads also support overrides to the changesfile suite when it's
 valid. It's also supported for uploads omitting the PPA name.
 
