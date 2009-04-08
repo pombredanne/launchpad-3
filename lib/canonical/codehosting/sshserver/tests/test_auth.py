@@ -489,6 +489,28 @@ class TestPublicKeyFromLaunchpadChecker(TrialTestCase):
         d.addCallback(check_one_call)
         return d
 
+    def test_noSuchUser_with_two_keys_calls_authserver_once(self):
+        # When more than one key is presented for a username that does not
+        # exist, only one call is made to the authserver.
+        checker = self.makeChecker()
+        mind = auth.UserDetailsMind()
+        creds_1 = self.makeCredentials(
+            'invalid-user', 'invalid key 1', mind)
+        creds_2 = self.makeCredentials(
+            'invalid-user', 'invalid key 2', mind)
+        d = checker.requestAvatarId(creds_1)
+        def try_second_key(failure):
+            return self.assertFailure(
+                checker.requestAvatarId(creds_2),
+                UnauthorizedLogin)
+        d.addErrback(try_second_key)
+        def check_one_call(r):
+            self.assertEqual(
+                ['invalid-user'], self.authserver.calls)
+            return r
+        d.addCallback(check_one_call)
+        return d
+
 
 class StringTransportWith_setTcpKeepAlive(StringTransport):
     def setTcpKeepAlive(self, b):
