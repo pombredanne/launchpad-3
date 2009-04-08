@@ -94,6 +94,29 @@ class SpecialTranslationImportTargetFilter(DBEnumeratedType):
         """)
 
 
+class IHasTranslationImports(Interface):
+    """An entity on which a translation import queue entry is attached.
+
+    Examples include an IProductSeries, ISourcePackage, IDistroSeries and
+    IPerson.
+    """
+
+    def getFirstEntryToImport():
+        """Return the first entry of the queue ready to be imported."""
+
+    def getTranslationImportQueueEntries(imports_status=None,
+                                         file_extension=None):
+        """Return entries in the translation import queue for this entity.
+
+        :arg import_status: RosettaImportStatus DB Schema entry.
+        :arg file_extension: String with the file type extension, usually 'po'
+            or 'pot'.
+
+        If one of both of 'import_status' or 'file_extension' are given, the
+        returned entries are filtered based on those values.
+        """
+
+
 class ITranslationImportQueueEntry(Interface):
     """An entry of the Translation Import Queue."""
 
@@ -153,7 +176,8 @@ class ITranslationImportQueueEntry(Interface):
     status = Choice(
         title=_("The status of the import."),
         values=RosettaImportStatus.items,
-        required=True)
+        required=True,
+        readonly=True)
 
     date_status_changed = Datetime(
         title=_("The timestamp when the status was changed."),
@@ -223,7 +247,7 @@ class ITranslationImportQueue(Interface):
         raised.
         """
 
-    def entryCount():
+    def countEntries():
         """Return the number of TranslationImportQueueEntry records."""
 
     def addOrUpdateEntry(path, content, is_published, importer,
@@ -437,26 +461,3 @@ class IEditTranslationImportQueueEntry(Interface):
             "Language variant, usually used to note the script used to"
             " write the translations (like 'Latn' for Latin)"),
         required=False)
-
-
-class IHasTranslationImports(Interface):
-    """An entity on which a translation import queue entry is attached.
-
-    Examples include an IProductSeries, ISourcePackage, IDistroSeries and
-    IPerson.
-    """
-
-    def getFirstEntryToImport():
-        """Return the first entry of the queue ready to be imported."""
-
-    def getTranslationImportQueueEntries(imports_status=None,
-                                         file_extension=None):
-        """Return entries in the translation import queue for this entity.
-
-        :arg import_status: RosettaImportStatus DB Schema entry.
-        :arg file_extension: String with the file type extension, usually 'po'
-            or 'pot'.
-
-        If one of both of 'import_status' or 'file_extension' are given, the
-        returned entries are filtered based on those values.
-        """
