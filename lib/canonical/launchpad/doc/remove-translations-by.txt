@@ -50,7 +50,7 @@ criteria).
     >>> from storm.store import Store
 
     >>> message = factory.makePOTMsgSet(
-    ...     potemplate, "My goose is undercooked.")
+    ...     potemplate, "My goose is undercooked.", sequence=0)
 
     >>> nl_message = set_translation(
     ...     message, nl_pofile, "Maar dan in het Nederlands.")
@@ -66,7 +66,7 @@ criteria).
     >>> de_message = set_translation(
     ...     message, de_pofile, "Und jetzt auf deutsch.")
     >>> spare_message = factory.makePOTMsgSet(
-    ...     potemplate, "Unrelated notice #931")
+    ...     potemplate, "Unrelated notice #931", sequence=0)
     >>> nl_spare = set_translation(spare_message, nl_pofile, "Bericht 931")
     >>> de_spare = set_translation(spare_message, de_pofile, "Nachricht 931")
 
