@@ -192,6 +192,10 @@ class TranslationImportQueueEntry(SQLBase):
             distroseries=self.distroseries,
             sourcepackagename=self.sourcepackagename)
 
+    def setStatus(self, status):
+        """See `ITranslationImportQueueEntry`."""
+        self.status = status
+
     def _findCustomLanguageCode(self, language_code):
         """Find applicable custom language code, if any."""
         if self.distroseries is not None:
@@ -358,7 +362,7 @@ class TranslationImportQueueEntry(SQLBase):
         if guessed_language is None:
             # Custom language code says to ignore imports with this language
             # code.
-            self.status = RosettaImportStatus.DELETED
+            self.setStatus(RosettaImportStatus.DELETED)
             return None
         elif guessed_language == '':
             # We don't recognize this as a translation file with a name
@@ -762,7 +766,7 @@ class TranslationImportQueue:
                 # We got an update for this entry. If the previous import is
                 # deleted or failed or was already imported we should retry
                 # the import now, just in case it can be imported now.
-                entry.status = RosettaImportStatus.NEEDS_REVIEW
+                entry.setStatus(RosettaImportStatus.NEEDS_REVIEW)
 
             entry.date_status_changed = UTC_NOW
             entry.format = format
@@ -1019,7 +1023,7 @@ class TranslationImportQueue:
 
             # Already know where it should be imported. The entry is approved
             # automatically.
-            entry.status = RosettaImportStatus.APPROVED
+            entry.setStatus(RosettaImportStatus.APPROVED)
             # Do the commit to save the changes.
             ztm.commit()
 
@@ -1053,7 +1057,7 @@ class TranslationImportQueue:
             if has_templates and not has_templates_unblocked:
                 # All templates on the same directory as this entry are
                 # blocked, so we can block it too.
-                entry.status = RosettaImportStatus.BLOCKED
+                entry.setStatus(RosettaImportStatus.BLOCKED)
                 num_blocked += 1
                 if ztm is not None:
                     # Do the commit to save the changes.
