@@ -548,9 +548,40 @@ Any list member can unsubscribe from the mailing list.
     >>> sorted(email.email for email in list_one.getSubscribedAddresses())
     [u'anne.person@example.com', u'bperson@example.org',
      u'cris.person@example.com']
+
     >>> list_one.unsubscribe(anne)
     >>> sorted(email.email for email in list_one.getSubscribedAddresses())
     [u'bperson@example.org', u'cris.person@example.com']
+
+    >>> print_addresses(mailinglist_set.getSenderAddresses(team_names))
+    sub-team
+        lars.person@example.com, lperson@example.org, no-priv@canonical.com
+    super-team
+        lars.person@example.com, lperson@example.org, no-priv@canonical.com
+    team-four
+        anne.person@example.com, aperson@example.org,
+        elle.person@example.com, eperson@example.org,
+        no-priv@canonical.com
+    team-one
+        anne.person@example.com, aperson@example.org,
+        bart.person@example.com, bperson@example.org,
+        cperson@example.org, cris.person@example.com,
+        no-priv@canonical.com
+    team-three
+        dirk.person@example.com, dperson@example.org,
+        no-priv@canonical.com
+
+    >>> print_addresses(mailinglist_set.getSubscribedAddresses(team_names))
+    sub-team
+        lars.person@example.com
+    super-team
+        lars.person@example.com
+    team-four
+        eperson@example.org
+    team-one
+        bperson@example.org, cris.person@example.com
+    team-three
+        dirk.person@example.com
 
 But someone who is not a member cannot unsubscribe.
 
@@ -566,6 +597,35 @@ When someone leaves a direct team, they automatically get unsubscribed.
     >>> sorted(email.email for email in list_one.getSubscribedAddresses())
     [u'cris.person@example.com']
 
+    >>> print_addresses(mailinglist_set.getSenderAddresses(team_names))
+    sub-team
+        lars.person@example.com, lperson@example.org, no-priv@canonical.com
+    super-team
+        lars.person@example.com, lperson@example.org, no-priv@canonical.com
+    team-four
+        anne.person@example.com, aperson@example.org,
+        elle.person@example.com, eperson@example.org,
+        no-priv@canonical.com
+    team-one
+        anne.person@example.com, aperson@example.org,
+        cperson@example.org, cris.person@example.com,
+        no-priv@canonical.com
+    team-three
+        dirk.person@example.com, dperson@example.org,
+        no-priv@canonical.com
+
+    >>> print_addresses(mailinglist_set.getSubscribedAddresses(team_names))
+    sub-team
+        lars.person@example.com
+    super-team
+        lars.person@example.com
+    team-four
+        eperson@example.org
+    team-one
+        cris.person@example.com
+    team-three
+        dirk.person@example.com
+
 When the person re-joins a team that gives them indirect membership in a team
 with a mailing list that they were previously subscribed to, they get
 re-subscribed to that mailing list automatically.  See the section on
@@ -575,12 +635,54 @@ persistence of preferences below for more examples of this.
     >>> sorted(email.email for email in list_one.getSubscribedAddresses())
     [u'bperson@example.org', u'cris.person@example.com']
 
+    >>> print_addresses(mailinglist_set.getSenderAddresses(team_names))
+    sub-team
+        lars.person@example.com, lperson@example.org, no-priv@canonical.com
+    super-team
+        lars.person@example.com, lperson@example.org, no-priv@canonical.com
+    team-four
+        anne.person@example.com, aperson@example.org,
+        elle.person@example.com, eperson@example.org,
+        no-priv@canonical.com
+    team-one
+        anne.person@example.com, aperson@example.org,
+        bart.person@example.com, bperson@example.org,
+        cperson@example.org, cris.person@example.com,
+        no-priv@canonical.com
+    team-three
+        dirk.person@example.com, dperson@example.org,
+        no-priv@canonical.com
+
+    >>> print_addresses(mailinglist_set.getSubscribedAddresses(team_names))
+    sub-team
+        lars.person@example.com
+    super-team
+        lars.person@example.com
+    team-four
+        eperson@example.org
+    team-one
+        bperson@example.org, cris.person@example.com
+    team-three
+        dirk.person@example.com
+
 When someone is a member of a mailing list through an indirect team, and they
 leave that indirect team, they also get unsubscribed from the mailing list.
 
     >>> cris.leave(team_two)
     >>> sorted(email.email for email in list_one.getSubscribedAddresses())
     [u'bperson@example.org']
+
+    >>> print_addresses(mailinglist_set.getSubscribedAddresses(team_names))
+    sub-team
+        lars.person@example.com
+    super-team
+        lars.person@example.com
+    team-four
+        eperson@example.org
+    team-one
+        bperson@example.org
+    team-three
+        dirk.person@example.com
 
 It's also the case that if a subteam leaves its superteam, all members who
 have no other indirect membership in the super team will get unsubscribed from
@@ -612,14 +714,40 @@ more than one subteam.
     [u'bperson@example.org', u'gwen.person@example.com',
      u'hank.person@example.com', u'iona.person@example.com']
 
-Now remove one of the subteams from the superteam.  All of the subteams'
+    >>> print_addresses(mailinglist_set.getSubscribedAddresses(team_names))
+    sub-team
+        lars.person@example.com
+    super-team
+        lars.person@example.com
+    team-four
+        eperson@example.org
+    team-one
+        bperson@example.org, gwen.person@example.com,
+        hank.person@example.com, iona.person@example.com
+    team-three
+        dirk.person@example.com
+
+One of the subteams is removed from its superteam.  All of the subteams'
 members that have no other path to membership in the superteam will be
 unsubscribed from the superteam's mailing list.
 
     >>> team_one.setMembershipData(team_five,
     ...     TeamMembershipStatus.DEACTIVATED, salgado)
+
     >>> sorted(email.email for email in list_one.getSubscribedAddresses())
     [u'bperson@example.org', u'iona.person@example.com']
+
+    >>> print_addresses(mailinglist_set.getSubscribedAddresses(team_names))
+    sub-team
+        lars.person@example.com
+    super-team
+        lars.person@example.com
+    team-four
+        eperson@example.org
+    team-one
+        bperson@example.org, iona.person@example.com
+    team-three
+        dirk.person@example.com
 
 
 Double subscriptions
@@ -661,6 +789,16 @@ list are dropped.
     >>> sorted(email.email for email in list_one.getSubscribedAddresses())
     []
 
+    >>> print_addresses(mailinglist_set.getSubscribedAddresses(team_names))
+    sub-team
+        lars.person@example.com
+    super-team
+        lars.person@example.com
+    team-four
+        eperson@example.org
+    team-three
+        dirk.person@example.com
+
 A list that is not active cannot be subscribed to.
 
     >>> list_one.subscribe(anne)
@@ -684,14 +822,51 @@ only relevant preference.
     >>> jack = factory.makePersonByName('Jack')
     >>> jack.join(team_six)
     >>> list_six.subscribe(jack)
+
     >>> sorted(email.email for email in list_six.getSubscribedAddresses())
     [u'jack.person@example.com']
+
+    >>> print_addresses(mailinglist_set.getSubscribedAddresses(team_names))
+    sub-team
+        lars.person@example.com
+    super-team
+        lars.person@example.com
+    team-four
+        eperson@example.org
+    team-six
+        jack.person@example.com
+    team-three
+        dirk.person@example.com
+
     >>> jack.leave(team_six)
     >>> sorted(email.email for email in list_six.getSubscribedAddresses())
     []
+
+    >>> print_addresses(mailinglist_set.getSubscribedAddresses(team_names))
+    sub-team
+        lars.person@example.com
+    super-team
+        lars.person@example.com
+    team-four
+        eperson@example.org
+    team-three
+        dirk.person@example.com
+
     >>> jack.join(team_six)
     >>> sorted(email.email for email in list_six.getSubscribedAddresses())
     [u'jack.person@example.com']
+
+    >>> print_addresses(mailinglist_set.getSubscribedAddresses(team_names))
+    sub-team
+        lars.person@example.com
+    super-team
+        lars.person@example.com
+    team-four
+        eperson@example.org
+    team-six
+        jack.person@example.com
+    team-three
+        dirk.person@example.com
 
 This is true even if they subscribe with an address that's different than
 their preferred email address.
@@ -702,14 +877,53 @@ their preferred email address.
     >>> kara_alternative.email
     u'kperson@example.org'
     >>> list_six.subscribe(kara, kara_alternative)
+
     >>> sorted(email.email for email in list_six.getSubscribedAddresses())
     [u'jack.person@example.com', u'kperson@example.org']
+
+    >>> print_addresses(mailinglist_set.getSubscribedAddresses(team_names))
+    sub-team
+        lars.person@example.com
+    super-team
+        lars.person@example.com
+    team-four
+        eperson@example.org
+    team-six
+        jack.person@example.com, kperson@example.org
+    team-three
+        dirk.person@example.com
+
     >>> kara.leave(team_six)
     >>> sorted(email.email for email in list_six.getSubscribedAddresses())
     [u'jack.person@example.com']
+
+    >>> print_addresses(mailinglist_set.getSubscribedAddresses(team_names))
+    sub-team
+        lars.person@example.com
+    super-team
+        lars.person@example.com
+    team-four
+        eperson@example.org
+    team-six
+        jack.person@example.com
+    team-three
+        dirk.person@example.com
+
     >>> kara.join(team_six)
     >>> sorted(email.email for email in list_six.getSubscribedAddresses())
     [u'jack.person@example.com', u'kperson@example.org']
+
+    >>> print_addresses(mailinglist_set.getSubscribedAddresses(team_names))
+    sub-team
+        lars.person@example.com
+    super-team
+        lars.person@example.com
+    team-four
+        eperson@example.org
+    team-six
+        jack.person@example.com, kperson@example.org
+    team-three
+        dirk.person@example.com
 
 
 Changing subscribed email address
@@ -721,28 +935,83 @@ address.  Let's say for example that Kara wants to change the address that
 she is subscribed to List Six with.
 
     >>> list_six.unsubscribe(jack)
-    >>> for address in address_set.getByPerson(kara):
-    ...     list_six.changeAddress(kara, address)
-    ...     transaction.commit()
-    ...     print address.email, sorted(
-    ...         email.email for email in list_six.getSubscribedAddresses())
-    kara.person@example.com [u'kara.person@example.com']
-    kperson@example.org [u'kperson@example.org']
+    >>> address = address_set.getByEmail('kara.person@example.com')
+    >>> list_six.changeAddress(kara, address)
+    >>> transaction.commit()
+
+    >> sorted(email.email for email in list_six.getSubscribedAddresses())
+    [u'kara.person@example.com']
+
+    >>> print_addresses(mailinglist_set.getSubscribedAddresses(team_names))
+    sub-team
+        lars.person@example.com
+    super-team
+        lars.person@example.com
+    team-four
+        eperson@example.org
+    team-six
+        kara.person@example.com
+    team-three
+        dirk.person@example.com
+
+    >>> address = address_set.getByEmail('kperson@example.org')
+    >>> list_six.changeAddress(kara, address)
+    >>> transaction.commit()
+
+    >> sorted(email.email for email in list_six.getSubscribedAddresses())
+    [u'kperson@example.org']
+
+    >>> print_addresses(mailinglist_set.getSubscribedAddresses(team_names))
+    sub-team
+        lars.person@example.com
+    super-team
+        lars.person@example.com
+    team-four
+        eperson@example.org
+    team-six
+        kperson@example.org
+    team-three
+        dirk.person@example.com
 
 Kara can also change her email address to None, which uses and tracks any
 changes to her preferred email address.
 
     >>> list_six.changeAddress(kara, None)
     >>> transaction.commit()
+
     >>> sorted(email.email for email in list_six.getSubscribedAddresses())
     [u'kara.person@example.com']
-    >>> for address in address_set.getByPerson(kara):
-    ...     kara.setPreferredEmail(address)
-    ...     transaction.commit()
-    ...     print address.email, sorted(
-    ...         email.email for email in list_six.getSubscribedAddresses())
-    kara.person@example.com [u'kara.person@example.com']
-    kperson@example.org [u'kperson@example.org']
+
+    >>> print_addresses(mailinglist_set.getSubscribedAddresses(team_names))
+    sub-team
+        lars.person@example.com
+    super-team
+        lars.person@example.com
+    team-four
+        eperson@example.org
+    team-six
+        kara.person@example.com
+    team-three
+        dirk.person@example.com
+
+    >>> address = address_set.getByEmail('kperson@example.org')
+    >>> list_six.changeAddress(kara, address)
+    >>> kara.setPreferredEmail(address)
+
+    >>> sorted(email.email for email in list_six.getSubscribedAddresses())
+    [u'kperson@example.org']
+
+    >>> print_addresses(mailinglist_set.getSubscribedAddresses(team_names))
+    sub-team
+        lars.person@example.com
+    super-team
+        lars.person@example.com
+    team-four
+        eperson@example.org
+    team-six
+        kperson@example.org
+    team-three
+        dirk.person@example.com
 
 Kara cannot change her email address to one she does not own.
 
@@ -779,10 +1048,41 @@ emails from it.
     >>> sorted(email.email for email in list_seven.getSubscribedAddresses())
     []
 
+    >>> print_addresses(mailinglist_set.getSubscribedAddresses(team_names))
+    sub-team
+        lars.person@example.com
+    super-team
+        lars.person@example.com
+    team-four
+        eperson@example.org
+    team-six
+        kperson@example.org
+    team-three
+        dirk.person@example.com
+
 Samuel may not post to the mailing list using any of his addresses.
 
     >>> sorted(email.email for email in list_seven.getSenderAddresses())
     [u'no-priv@canonical.com']
+
+    >>> print_addresses(mailinglist_set.getSenderAddresses(team_names))
+    sub-team
+        lars.person@example.com, lperson@example.org, no-priv@canonical.com
+    super-team
+        lars.person@example.com, lperson@example.org, no-priv@canonical.com
+    team-7
+        no-priv@canonical.com
+    team-four
+        anne.person@example.com, aperson@example.org,
+        elle.person@example.com, eperson@example.org,
+        no-priv@canonical.com
+    team-six
+        jack.person@example.com, jperson@example.org,
+        kara.person@example.com, kperson@example.org,
+        no-priv@canonical.com
+    team-three
+        dirk.person@example.com, dperson@example.org,
+        no-priv@canonical.com
 
 Samuel will have a corresponding subscription object in the database,
 but his subscription will not be fully active or visible until
@@ -791,27 +1091,87 @@ his team membership is approved.
     >>> print list_seven.getSubscription(sam)
     <security ...MailingListSubscription instance ...>
 
-    >>> sorted(email.email for email in list_seven.getSubscribedAddresses())
-    []
-    >>> sorted(email.email for email in list_seven.getSenderAddresses())
-    [u'no-priv@canonical.com']
-
     >>> sam.join(team_seven)
+
     >>> sorted(email.email for email in list_seven.getSubscribedAddresses())
     [u'samuel.person@example.com']
     >>> sorted(email.email for email in list_seven.getSenderAddresses())
     [u'no-priv@canonical.com',
      u'samuel.person@example.com', u'sperson@example.org']
 
+    >>> print_addresses(mailinglist_set.getSubscribedAddresses(team_names))
+    sub-team
+        lars.person@example.com
+    super-team
+        lars.person@example.com
+    team-7
+        samuel.person@example.com
+    team-four
+        eperson@example.org
+    team-six
+        kperson@example.org
+    team-three
+        dirk.person@example.com
+
+    >>> print_addresses(mailinglist_set.getSenderAddresses(team_names))
+    sub-team
+        lars.person@example.com, lperson@example.org, no-priv@canonical.com
+    super-team
+        lars.person@example.com, lperson@example.org, no-priv@canonical.com
+    team-7
+        no-priv@canonical.com,
+        samuel.person@example.com, sperson@example.org
+    team-four
+        anne.person@example.com, aperson@example.org,
+        elle.person@example.com, eperson@example.org,
+        no-priv@canonical.com
+    team-six
+        jack.person@example.com, jperson@example.org,
+        kara.person@example.com, kperson@example.org,
+        no-priv@canonical.com
+    team-three
+        dirk.person@example.com, dperson@example.org,
+        no-priv@canonical.com
+
 Should the mailing list become inactive, none of the addresses will be
 returned either as recipients or senders.
 
     >>> from zope.security.proxy import removeSecurityProxy
     >>> removeSecurityProxy(list_seven).status = MailingListStatus.INACTIVE
+
     >>> sorted(email.email for email in list_seven.getSubscribedAddresses())
     []
     >>> sorted(email.email for email in list_seven.getSenderAddresses())
     []
+
+    >>> print_addresses(mailinglist_set.getSubscribedAddresses(team_names))
+    sub-team
+        lars.person@example.com
+    super-team
+        lars.person@example.com
+    team-four
+        eperson@example.org
+    team-six
+        kperson@example.org
+    team-three
+        dirk.person@example.com
+
+    >>> print_addresses(mailinglist_set.getSenderAddresses(team_names))
+    sub-team
+        lars.person@example.com, lperson@example.org, no-priv@canonical.com
+    super-team
+        lars.person@example.com, lperson@example.org, no-priv@canonical.com
+    team-four
+        anne.person@example.com, aperson@example.org,
+        elle.person@example.com, eperson@example.org,
+        no-priv@canonical.com
+    team-six
+        jack.person@example.com, jperson@example.org,
+        kara.person@example.com, kperson@example.org,
+        no-priv@canonical.com
+    team-three
+        dirk.person@example.com, dperson@example.org,
+        no-priv@canonical.com
 
     # Restore the state.
     >>> removeSecurityProxy(list_seven).status = MailingListStatus.ACTIVE
@@ -841,6 +1201,38 @@ subscriptions that use that address are automatically deleted as well.
     >>> print sorted(email.email
     ...              for email in list_six.getSubscribedAddresses())
     []
+
+    >>> print_addresses(mailinglist_set.getSubscribedAddresses(team_names))
+    sub-team
+        lars.person@example.com
+    super-team
+        lars.person@example.com
+    team-7
+        samuel.person@example.com
+    team-four
+        eperson@example.org
+    team-three
+        dirk.person@example.com
+
+    >>> print_addresses(mailinglist_set.getSenderAddresses(team_names))
+    sub-team
+        lars.person@example.com, lperson@example.org, no-priv@canonical.com
+    super-team
+        lars.person@example.com, lperson@example.org, no-priv@canonical.com
+    team-7
+        no-priv@canonical.com,
+        samuel.person@example.com, sperson@example.org
+    team-four
+        anne.person@example.com, aperson@example.org,
+        elle.person@example.com, eperson@example.org,
+        no-priv@canonical.com
+    team-six
+        jack.person@example.com, jperson@example.org,
+        kara.person@example.com,
+        no-priv@canonical.com
+    team-three
+        dirk.person@example.com, dperson@example.org,
+        no-priv@canonical.com
 
 
 Deactivating accounts
