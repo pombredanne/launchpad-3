@@ -24,6 +24,8 @@ from zope.component import getUtility
 from sqlobject import (
     StringCol, ForeignKey, BoolCol, IntCol, SQLObjectNotFound)
 
+from storm.store import Store
+
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.buildd.slave import BuilderStatus
@@ -689,19 +691,33 @@ class BuilderSet(object):
 
     def getBuildQueueSizeForProcessor(self, processor, virtualized=False):
         """See `IBuilderSet`."""
-        query = """
-           BuildQueue.build = Build.id AND
-           Build.archive = Archive.id AND
-           Build.distroarchseries = DistroArchSeries.id AND
-           DistroArchSeries.processorfamily = Processor.family AND
-           Processor.id = %s AND
-           Build.buildstate = %s AND
-           Archive.require_virtualized = %s
-        """ % sqlvalues(processor, BuildStatus.NEEDSBUILD, virtualized)
+        # Avoiding circular imports.
+        from canonical.launchpad.database.archive import Archive
+        from canonical.launchpad.database.build import Build
+        from canonical.launchpad.database.distroarchseries import (
+            DistroArchSeries)
+        from canonical.launchpad.database.processor import Processor
 
-        clauseTables = [
-            'Build', 'DistroArchSeries', 'Processor', 'Archive']
-        queue = BuildQueue.select(query, clauseTables=clauseTables)
+        store = Store.of(processor)
+        origin = (
+            Archive,
+            Build,
+            BuildQueue,
+            DistroArchSeries,
+            Processor,
+            )
+        queue = store.using(*origin).find(
+            BuildQueue,
+            BuildQueue.build == Build.id,
+            Build.distroarchseries == DistroArchSeries.id,
+            Build.archive == Archive.id,
+            DistroArchSeries.processorfamilyID == Processor.familyID,
+            Build.buildstate == BuildStatus.NEEDSBUILD,
+            Archive.enabled == True,
+            Processor.id == processor.id,
+            Archive.require_virtualized == virtualized,
+            )
+
         return queue.count()
 
     def pollBuilders(self, logger, txn):
