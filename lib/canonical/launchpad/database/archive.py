@@ -1222,8 +1222,8 @@ class ArchiveSet:
 
         return '%s for %s' % (purpose.title, distribution.title)
 
-    def new(self, purpose, owner, name=None, distribution=None,
-            description=None):
+    def new(self, purpose, owner, name=None, displayname=None,
+            distribution=None, description=None):
         """See `IArchiveSet`."""
         if distribution is None:
             distribution = getUtility(ILaunchpadCelebrities).ubuntu
@@ -1236,6 +1236,12 @@ class ArchiveSet:
         if name == distribution.name:
             raise AssertionError(
                 'Archives cannot have the same name as their distribution.')
+
+        # If displayname is not given, create a default one.
+        if displayname is None:
+            displayname = self._getDefaultDisplayname(
+                name=name, owner=owner, distribution=distribution,
+                purpose=purpose)
 
         # Copy archives are to be instantiated with the 'publish' flag turned
         # off.
@@ -1263,15 +1269,9 @@ class ArchiveSet:
                     "Person '%s' already has a PPA named '%s'." %
                     (owner.name, name))
 
-        # XXX cprov bug=340457: Use the default'displayname' until we
-        # allow users to edit it.
-        default_displayname = self._getDefaultDisplayname(
-            name=name, owner=owner, distribution=distribution,
-            purpose=purpose)
-
         new_archive = Archive(
             owner=owner, distribution=distribution, name=name,
-            displayname=default_displayname, description=description,
+            displayname=displayname, description=description,
             purpose=purpose, publish=publish)
 
         return new_archive

@@ -21,7 +21,7 @@ from canonical.launchpad.interfaces import (
     ILaunchBag, IMailHandler,
     IMessageSet, IQuestionSet, ISpecificationSet,
     QuestionStatus)
-from canonical.launchpad.mail.codehandler import CodeHandler
+from lp.code.mail.codehandler import CodeHandler
 from canonical.launchpad.mail.commands import (
     BugEmailCommands, get_error_message)
 from canonical.launchpad.mail.helpers import (

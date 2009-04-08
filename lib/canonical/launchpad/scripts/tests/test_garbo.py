@@ -13,12 +13,11 @@ from pytz import UTC
 from storm.locals import Min
 import transaction
 
-from canonical.launchpad.database.codeimportresult import CodeImportResult
+from lp.code.model.codeimportresult import CodeImportResult
 from canonical.launchpad.database.oauth import OAuthNonce
 from canonical.launchpad.database.openidconsumer import OpenIDConsumerNonce
 from canonical.launchpad.interfaces import IMasterStore
-from canonical.launchpad.interfaces.codeimportresult import (
-    CodeImportResultStatus)
+from lp.code.interfaces.codeimportresult import CodeImportResultStatus
 from canonical.launchpad.testing import TestCase
 from canonical.launchpad.scripts.garbo import (
     DailyDatabaseGarbageCollector, HourlyDatabaseGarbageCollector)

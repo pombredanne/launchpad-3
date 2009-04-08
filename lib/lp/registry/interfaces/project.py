@@ -17,7 +17,7 @@ from zope.schema import Bool, Choice, Datetime, Int, Object, Text, TextLine
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
     PublicPersonChoice, Summary, Title, URIField)
-from canonical.launchpad.interfaces.branchvisibilitypolicy import (
+from lp.code.interfaces.branchvisibilitypolicy import (
     IHasBranchVisibilityPolicy)
 from canonical.launchpad.interfaces.bugtarget import IHasBugs
 from lp.registry.interfaces.karma import IKarmaContext

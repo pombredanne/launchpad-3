@@ -669,6 +669,13 @@ class IDistroSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
         or any other database object remaining valid across this call!
         """
 
+    def getPOFileContributorsByLanguage(language):
+        """People who translated strings to the given language.
+
+        The people that translated only IPOTemplate objects that are not
+        current will not appear in the returned list.
+        """
+
     def getSuite(pocket):
         """Return the suite for this distro series and the given pocket.
 

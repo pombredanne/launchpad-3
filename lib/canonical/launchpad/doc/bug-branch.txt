@@ -18,7 +18,7 @@ BugBranch links a bug and a branch.
 
     >>> from canonical.launchpad.interfaces import (
     ...     BugBranchStatus, IBugSet, IPersonSet)
-    >>> from canonical.launchpad.interfaces.branchlookup import IBranchLookup
+    >>> from lp.code.interfaces.branchlookup import IBranchLookup
     >>> from canonical.database.sqlbase import flush_database_updates
 
     >>> login("no-priv@canonical.com")

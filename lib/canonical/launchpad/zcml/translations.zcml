@@ -109,4 +109,18 @@
     layer="canonical.launchpad.layers.TranslationsLayer"
     />
 
+  <!-- ITranslationsPerson -->
+  <class class="canonical.launchpad.database.TranslationsPerson">
+    <allow interface="canonical.launchpad.interfaces.ITranslationsPerson" />
+    <require
+      permission="launchpad.Edit"
+      set_attributes="translations_relicensing_agreement" />
+  </class>
+
+  <adapter for="canonical.launchpad.interfaces.IPerson"
+    provides="canonical.launchpad.interfaces.ITranslationsPerson"
+    factory="canonical.launchpad.database.TranslationsPerson"
+    trusted="yes"
+    />
+
 </configure>

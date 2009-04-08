@@ -19,15 +19,15 @@ from lazr.restful.declarations import LAZR_WEBSERVICE_EXPORTED
 from canonical.launchpad.interfaces.build import (
     BuildStatus, IBuild)
 from canonical.launchpad.interfaces.buildrecords import IHasBuildRecords
-from canonical.launchpad.interfaces.branch import IBranch
-from canonical.launchpad.interfaces.branchmergeproposal import (
+from lp.code.interfaces.branch import IBranch
+from lp.code.interfaces.branchmergeproposal import (
     BranchMergeProposalStatus, IBranchMergeProposal)
-from canonical.launchpad.interfaces.branchsubscription import (
+from lp.code.interfaces.branchsubscription import (
     BranchSubscriptionNotificationLevel, BranchSubscriptionDiffSize,
     CodeReviewNotificationLevel, IBranchSubscription)
-from canonical.launchpad.interfaces.codereviewcomment import (
+from lp.code.interfaces.codereviewcomment import (
     CodeReviewVote, ICodeReviewComment)
-from canonical.launchpad.interfaces.codereviewvote import (
+from lp.code.interfaces.codereviewvote import (
     ICodeReviewVoteReference)
 from canonical.launchpad.interfaces.diff import IPreviewDiff
 from lp.registry.interfaces.distroseries import IDistroSeries

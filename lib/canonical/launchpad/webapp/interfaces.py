@@ -893,3 +893,9 @@ class IStoreSelector(Interface):
         :raises DisallowedStore:
         """
 
+class IWebBrowserOriginatingRequest(Interface):
+    """Marker interface for converting webservice requests into webapp ones.
+
+    It's used in the webservice domain for calculating webapp URLs, for
+    instance, `ProxiedLibraryFileAlias`.
+    """

@@ -621,6 +621,18 @@ class BrowserFormNG:
         return value
 
 
+def web_service_request_to_browser_request(webservice_request):
+    """Convert a given webservice request into a webapp one.
+
+    Simply overrides 'SERVER_URL' to the 'mainsite', preserving headers and
+    body.
+    """
+    body = webservice_request.bodyStream.getCacheStream().read()
+    environ = dict(webservice_request.environment)
+    environ['SERVER_URL'] = allvhosts.configs['mainsite'].rooturl
+    return LaunchpadBrowserRequest(body, environ)
+
+
 class Zope3WidgetsUseIBrowserFormNGMonkeyPatch:
     """Make Zope3 widgets use IBrowserFormNG.
 
