@@ -1251,13 +1251,53 @@ post to the mailing list, nor will she receive mailing list posts.
     >>> vera = factory.makePersonByName('Vera')
     >>> vera.join(team_nine)
     >>> list_nine.subscribe(vera)
+
     >>> print sorted(
     ...     email.email for email in list_nine.getSubscribedAddresses())
     [u'umma.person@example.com', u'vera.person@example.com']
+
     >>> print sorted(email.email for email in list_nine.getSenderAddresses())
     [u'no-priv@canonical.com',
      u'umma.person@example.com', u'uperson@example.org',
      u'vera.person@example.com', u'vperson@example.org']
+
+    >>> print_addresses(mailinglist_set.getSubscribedAddresses(team_names))
+    sub-team
+        lars.person@example.com
+    super-team
+        lars.person@example.com
+    team-7
+        samuel.person@example.com
+    team-9
+        umma.person@example.com, vera.person@example.com
+    team-four
+        eperson@example.org
+    team-three
+        dirk.person@example.com
+
+    >>> print_addresses(mailinglist_set.getSenderAddresses(team_names))
+    sub-team
+        lars.person@example.com, lperson@example.org, no-priv@canonical.com
+    super-team
+        lars.person@example.com, lperson@example.org, no-priv@canonical.com
+    team-7
+        no-priv@canonical.com,
+        samuel.person@example.com, sperson@example.org
+    team-9
+        no-priv@canonical.com,
+        umma.person@example.com, uperson@example.org,
+        vera.person@example.com, vperson@example.org
+    team-four
+        anne.person@example.com, aperson@example.org,
+        elle.person@example.com, eperson@example.org,
+        no-priv@canonical.com
+    team-six
+        jack.person@example.com, jperson@example.org,
+        kara.person@example.com,
+        no-priv@canonical.com
+    team-three
+        dirk.person@example.com, dperson@example.org,
+        no-priv@canonical.com
 
 Now Umma's account is suspended by a Launchpad administrator.
 
@@ -1274,11 +1314,48 @@ Umma is no longer subscribed to the mailing list...
     ...     email.email for email in list_nine.getSubscribedAddresses())
     [u'vera.person@example.com']
 
+    >>> print_addresses(mailinglist_set.getSubscribedAddresses(team_names))
+    sub-team
+        lars.person@example.com
+    super-team
+        lars.person@example.com
+    team-7
+        samuel.person@example.com
+    team-9
+        vera.person@example.com
+    team-four
+        eperson@example.org
+    team-three
+        dirk.person@example.com
+
 ...and she can no longer post directly to the mailing list.
 
     >>> print sorted(email.email for email in list_nine.getSenderAddresses())
     [u'no-priv@canonical.com',
      u'vera.person@example.com', u'vperson@example.org']
+
+    >>> print_addresses(mailinglist_set.getSenderAddresses(team_names))
+    sub-team
+        lars.person@example.com, lperson@example.org, no-priv@canonical.com
+    super-team
+        lars.person@example.com, lperson@example.org, no-priv@canonical.com
+    team-7
+        no-priv@canonical.com,
+        samuel.person@example.com, sperson@example.org
+    team-9
+        no-priv@canonical.com,
+        vera.person@example.com, vperson@example.org
+    team-four
+        anne.person@example.com, aperson@example.org,
+        elle.person@example.com, eperson@example.org,
+        no-priv@canonical.com
+    team-six
+        jack.person@example.com, jperson@example.org,
+        kara.person@example.com,
+        no-priv@canonical.com
+    team-three
+        dirk.person@example.com, dperson@example.org,
+        no-priv@canonical.com
 
 
 Subscription states
