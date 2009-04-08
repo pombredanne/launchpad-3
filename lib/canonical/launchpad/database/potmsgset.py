@@ -711,8 +711,6 @@ class POTMsgSet(SQLBase):
                 # Don't create empty is_imported translations
                 if imported_message is not None:
                     imported_message.is_imported = False
-                    if imported_message.is_current:
-                        imported_message.is_current = False
                 return None
             else:
                 matching_message = TranslationMessage(

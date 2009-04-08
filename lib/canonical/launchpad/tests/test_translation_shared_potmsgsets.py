@@ -520,6 +520,29 @@ class TestTranslationSharedPOTMsgSets(unittest.TestCase):
             self.devel_potemplate, serbian)
         self.assertEquals(current_translation, shared_translation)
 
+    def test_updateTranslation_imported_deactivation(self):
+        """Test that deactivating imported translations works as expected."""
+        sr_pofile = self.factory.makePOFile('sr', self.devel_potemplate)
+        serbian = sr_pofile.language
+
+        # Let's create a shared, current translation, and diverge from it
+        # in this POTemplate.
+        imported_translation = self.potmsgset.updateTranslation(
+            pofile=sr_pofile, submitter=sr_pofile.owner,
+            new_translations=[u'Imported'], is_imported=True,
+            lock_timestamp=datetime.now(pytz.UTC))
+        self.assertTrue(imported_translation.is_current)
+        self.assertTrue(imported_translation.is_imported)
+
+        # If an empty imported message comes in, existing one is left
+        # as current, but is not marked as imported anymore.
+        empty_translation = self.potmsgset.updateTranslation(
+            pofile=sr_pofile, submitter=sr_pofile.owner,
+            new_translations=[], is_imported=True,
+            lock_timestamp=datetime.now(pytz.UTC))
+        self.assertEquals(empty_translation, None)
+        self.assertTrue(imported_translation.is_current)
+        self.assertFalse(imported_translation.is_imported)
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
