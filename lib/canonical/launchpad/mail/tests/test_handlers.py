@@ -714,6 +714,7 @@ class TestCodeHandlerProcessMergeDirective(TestCaseWithFactory):
 
     def tearDown(self):
         setSecurityPolicy(self._old_policy)
+        TestCaseWithFactory.tearDown(self)
 
     def switchDbUser(self, user):
         """Commit the transactionand switch to the new user."""
@@ -752,7 +753,10 @@ class TestCodeHandlerProcessMergeDirective(TestCaseWithFactory):
         return db_target_branch, source_tree.branch, message
 
     def _openBazaarBranchAsClient(self, db_branch):
-        """Open the Bazaar branch relating to db_branch as if a client was."""
+        """Open the Bazaar branch relating to db_branch as if a client was.
+
+        The client has write access to the branch.
+        """
         lp_server = get_lp_server(db_branch.owner.id)
         lp_server.setUp()
         self.addCleanup(lp_server.tearDown)
