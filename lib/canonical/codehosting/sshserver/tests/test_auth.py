@@ -15,10 +15,11 @@ from twisted.conch.ssh.transport import SSHCiphers, SSHServerTransport
 from twisted.internet import defer
 from twisted.python import failure
 from twisted.python.util import sibpath
+from twisted.test.proto_helpers import StringTransport
 
 from twisted.trial.unittest import TestCase as TrialTestCase
 
-from canonical.codehosting.sshserver import auth
+from canonical.codehosting.sshserver import auth, service
 from canonical.config import config
 from canonical.launchpad.xmlrpc import faults
 from canonical.testing.layers import TwistedLayer
@@ -459,6 +460,40 @@ class TestPublicKeyFromLaunchpadChecker(TrialTestCase):
                         "Should not be a UserDisplayedUnauthorizedLogin"))
         return d
 
+class StringTransportWith_setTcpKeepAlive(StringTransport):
+    def setTcpKeepAlive(self, b):
+        pass
+
+
+class TestUserAuth(TrialTestCase):
+
+    def makeFactory(self):
+        factory = service.Factory(auth.get_portal(None, None))
+        factory.startFactory()
+        return factory
+
+    def beginAuthentication(self, factory):
+        server_transport = factory.buildProtocol(None)
+        server_transport.makeConnection(StringTransportWith_setTcpKeepAlive())
+        server_transport.ssh_SERVICE_REQUEST(NS('ssh-userauth'))
+        self.addCleanup(server_transport.service.serviceStopped)
+        return server_transport
+
+    def test_authentication_uses_our_userauth_service(self):
+        factory = self.makeFactory()
+        transport = self.beginAuthentication(factory)
+        self.assertIsInstance(transport.service, auth.SSHUserAuthServer)
+
+    def test_two_connections_two_minds(self):
+        factory = self.makeFactory()
+
+        server_transport1 = self.beginAuthentication(factory)
+        server_transport2 = self.beginAuthentication(factory)
+
+        mind1 = server_transport1.service.getMind()
+        mind2 = server_transport2.service.getMind()
+
+        self.assertNotIdentical(mind1.cache, mind2.cache)
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
