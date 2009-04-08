@@ -191,6 +191,9 @@ class IMilestoneSet(Interface):
         If no milestone is found, default will be returned.
         """
 
+    def getVisibleMilestones():
+        """Return all visible milestones."""
+
 
 class IProjectMilestone(IMilestone):
     """A marker interface for milestones related to a project"""
