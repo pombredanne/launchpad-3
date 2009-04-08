@@ -1,8 +1,11 @@
-  <div class="portletBody"
-       tal:define="official_tags view/official_tags;
-                   other_tags view/other_tags"
-       tal:condition="python: official_tags or other_tags">
-   <div class="section" tal:condition="official_tags">
+<div xmlns:tal="http://xml.zope.org/namespaces/tal"
+     xmlns:metal="http://xml.zope.org/namespaces/metal"
+     xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+     class="portletBody"
+     tal:define="official_tags view/official_tags;
+                 other_tags view/other_tags"
+     tal:condition="python: official_tags or other_tags">
+  <div class="section" tal:condition="official_tags">
     <h2>Official Tags</h2>
 
     <table width="100%">
@@ -16,9 +19,9 @@
         <td tal:content="bug_tag_info/count">20</td>
       </tr>
     </table>
-   </div>
+  </div>
 
-   <div class="section" tal:condition="other_tags">
+  <div class="section" tal:condition="other_tags">
     <h2 tal:condition="official_tags">Other Tags</h2>
     <h2 tal:condition="not: official_tags">Tags</h2>
 
@@ -33,6 +36,6 @@
         <td tal:content="bug_tag_info/count">20</td>
       </tr>
     </table>
-   </div>
   </div>
+</div>
 
