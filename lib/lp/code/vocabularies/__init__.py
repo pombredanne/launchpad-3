@@ -1,0 +1,1 @@
+"""Vocabularies for lp.code."""

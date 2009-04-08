@@ -463,7 +463,7 @@ no longer appear in the result set.
 
     >>> from canonical.launchpad.interfaces import (
     ...     BranchLifecycleStatus)
-    >>> from canonical.launchpad.interfaces.branchcollection import (
+    >>> from lp.code.interfaces.branchcollection import (
     ...     IAllBranches)
     >>> thunderbird_branches = getUtility(IAllBranches).inProduct(
     ...     productset.getByName('thunderbird')).getBranches()

@@ -697,7 +697,7 @@ Editing an attachment.
 
 Adding a branch.
 
-    >>> from canonical.launchpad.interfaces.branchlookup import IBranchLookup
+    >>> from lp.code.interfaces.branchlookup import IBranchLookup
     >>> firefox_bug.bug_branches.count()
     0
 

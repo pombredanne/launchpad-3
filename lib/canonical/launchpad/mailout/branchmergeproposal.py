@@ -8,7 +8,7 @@ __metaclass__ = type
 
 from zope.component import getUtility
 
-from canonical.launchpad.components.branch import BranchMergeProposalDelta
+from lp.code.adapters.branch import BranchMergeProposalDelta
 from canonical.launchpad.mail import get_msgid
 from canonical.launchpad.interfaces import (
     CodeReviewNotificationLevel, IMergeProposalCreatedJobSource)
