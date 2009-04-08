@@ -95,6 +95,7 @@ from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
 from canonical.launchpad.webapp.menu import NavigationMenu
+from canonical.widgets.popup import PersonPickerWidget, VocabularyPickerWidget
 from lazr.uri import URI
 from canonical.widgets.date import DateWidget
 from canonical.widgets.itemswidgets import (
@@ -560,7 +561,7 @@ class ProductSetContextMenu(ContextMenu):
     usedfor = IProductSet
 
     links = ['products', 'distributions', 'people', 'meetings',
-             'all', 'register', 'register_team']
+             'all', 'register', 'register_team', 'review_licenses']
 
     def register(self):
         text = 'Register a project'
@@ -588,6 +589,10 @@ class ProductSetContextMenu(ContextMenu):
 
     def meetings(self):
         return Link('/sprints/', 'View meetings')
+
+    @enabled_with_permission('launchpad.Commercial')
+    def review_licenses(self):
+        return Link('+review-licenses', 'Review licenses')
 
 
 class SortSeriesMixin:
@@ -1475,6 +1480,9 @@ class ProductAddView(ProductAddViewBase):
     label = "Register an upstream open source project"
     product = None
 
+    custom_widget('project', VocabularyPickerWidget,
+                  header="Select a project group")
+
     def isVCSImport(self):
         if self.user is None:
             return False
@@ -1536,6 +1544,9 @@ class ProductEditPeopleView(LaunchpadEditFormView):
         'owner',
         'driver',
         ]
+
+    custom_widget('owner', PersonPickerWidget, header="Select the maintainer")
+    custom_widget('driver', PersonPickerWidget, header="Select the driver")
 
     @action(_('Save changes'), name='save')
     def save_action(self, action, data):

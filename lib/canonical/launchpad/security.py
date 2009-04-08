@@ -97,6 +97,8 @@ from canonical.launchpad.interfaces.translationgroup import (
     ITranslationGroup, ITranslationGroupSet)
 from canonical.launchpad.interfaces.translationimportqueue import (
     ITranslationImportQueue, ITranslationImportQueueEntry)
+from canonical.launchpad.interfaces.translationsperson import (
+    ITranslationsPerson)
 from canonical.launchpad.interfaces.translator import (
     ITranslator, IEditTranslator)
 
@@ -639,6 +641,16 @@ class EditPersonBySelfOrAdmins(AuthorizationBase):
         return self.obj.id == user.id or user.inTeam(admins)
 
 
+class EditTranslationsPersonByPerson(AuthorizationBase):
+    permission = 'launchpad.Edit'
+    usedfor = ITranslationsPerson
+
+    def checkAuthenticated(self, user):
+        person = self.obj.person
+        admins = getUtility(ILaunchpadCelebrities).admin
+        return person == user or user.inTeam(admins)
+
+
 class EditPersonLocation(AuthorizationBase):
     permission = 'launchpad.EditLocation'
     usedfor = IPerson
@@ -719,15 +731,19 @@ class ViewPublicOrPrivateTeamMembers(AuthorizationBase):
             return True
         return False
 
-    def checkAuthenticated(self, user):
-        """Verify that the user can view the team's membership.
+    def checkAccountAuthenticated(self, account):
+        """See `IAuthorization.checkAccountAuthenticated`.
 
-        Anyone can see a public team's membership.
-        Only a team member or a Launchpad admin can view a
-        private membership.
+        Verify that the user can view the team's membership.
+
+        Anyone can see a public team's membership. Only a team member
+        or a Launchpad admin can view a private membership.
         """
         if self.obj.visibility == PersonVisibility.PUBLIC:
             return True
+        user = IPerson(account, None)
+        if user is None:
+            return False
         admins = getUtility(ILaunchpadCelebrities).admin
         if user.inTeam(admins) or user.inTeam(self.obj):
             return True

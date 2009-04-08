@@ -12,7 +12,6 @@ from zope.security.proxy import removeSecurityProxy
 from zope.interface import implements
 
 from storm.expr import Desc, Or
-from storm.references import Reference
 from storm.store import Store
 
 from sqlobject import ForeignKey, StringCol
@@ -60,8 +59,6 @@ class Account(SQLBase):
     # rename new_openid_identifier => openid_identifier.
     new_openid_identifier = StringCol(
         dbName='old_openid_identifier', notNull=False, default=DEFAULT)
-
-    person = Reference("id", "Person.account", on_remote=True)
 
     def _getEmails(self, status):
         """Get related `EmailAddress` objects with the given status."""
@@ -177,6 +174,7 @@ class Account(SQLBase):
         :raise AssertionError: if the password is not valid.
         :raise AssertionError: if the preferred email address is None.
         """
+        from lp.registry.model.person import Person
         if password in (None, ''):
             raise AssertionError(
                 "Account %s cannot be reactivated without a "
@@ -192,7 +190,7 @@ class Account(SQLBase):
         # XXX: salgado, 2009-02-26: Instead of doing what we do below, we
         # should just provide a hook for callsites to do other stuff that's
         # not directly related to the account itself.
-        person = IMasterObject(self.person, None)
+        person = IStore(Person).find(Person, account=self).one()
         if person is not None:
             # Since we have a person associated with this account, it may be
             # used to log into Launchpad, and so it may not have a preferred
