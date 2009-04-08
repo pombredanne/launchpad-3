@@ -140,6 +140,9 @@ given one are ignored.
     ...     '84', bugtracker=rt, bug=rt_bugtask.bug)
     >>> rt_bugtask.bugwatch = rt_bugwatch
 
+    >>> import transaction
+    >>> transaction.commit()
+
     >>> updater.updateByBugTrackerType(BugTrackerType.RT)
     Initializing DB for bugs: [u'84'].
 
@@ -253,26 +256,3 @@ AssertionErrors are also handled.
     DEBUG Trying to update fooix
     ERROR Unable to set remote_product for 'fooix': True isn't False!
 
-
-== update-remote-product.py ==
-
-The script that uses RemoteProductUpdater is update-remote-product.py.
-
-    >>> import subprocess
-    >>> process = subprocess.Popen(
-    ...     ['cronscripts/update-remote-product.py'],
-    ...     stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-    ...     stderr=subprocess.PIPE)
-    >>> (out, err) = process.communicate()
-    >>> out
-    ''
-    >>> process.returncode
-    0
-
-    >>> print err
-    INFO    creating lockfile
-    INFO    0 projects using BUGZILLA needing updating.
-    ...
-    INFO    0 projects using RT needing updating.
-    ...
-    INFO    Time for this run: ... seconds.

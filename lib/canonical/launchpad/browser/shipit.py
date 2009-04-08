@@ -7,13 +7,17 @@ __all__ = [
     'ShipItCustomRequestServerCDsView',
     'ShipItExportsView',
     'ShipitFrontPageView',
-    'ShipItLoginView',
-    'ShipItLoginForServerCDsView',
     'ShipItNavigation',
+    'ShipitNotFoundView',
+    'ShipitOpenIDCallbackForServerCDsView',
+    'ShipitOpenIDCallbackView',
+    'ShipitOpenIDLoginForServerCDsView',
+    'ShipitOpenIDLoginView',
     'ShipItReportsView',
     'ShipItRequestServerCDsView',
     'ShipItRequestView',
     'ShipItSurveyView',
+    'ShipitSystemErrorView',
     'ShipItUnauthorizedView',
     'ShippingRequestAdminView',
     'ShippingRequestApproveOrDenyView',
@@ -28,39 +32,62 @@ from operator import attrgetter
 
 from zope.event import notify
 from zope.component import getUtility
-from zope.app.form.browser.add import AddView
 from zope.formlib import form
 from zope.lifecycleevent import ObjectCreatedEvent
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
+from zope.session.interfaces import ISession
+
+from openid.consumer.consumer import CANCEL, Consumer, FAILURE, SUCCESS
 
 from canonical.config import config
 from canonical.cachedproperty import cachedproperty
 from canonical.widgets import CheckBoxMatrixWidget, LabeledMultiCheckBoxWidget
-from canonical.launchpad.helpers import intOrZero
+from canonical.launchpad.helpers import intOrZero, shortlist
 from canonical.launchpad.webapp.error import SystemErrorView
-from canonical.launchpad.webapp.login import LoginOrRegister
+from canonical.launchpad.webapp.login import (
+    allowUnauthenticatedSession, logInPrincipal)
 from canonical.launchpad.webapp.launchpadform import (
     action, custom_widget, LaunchpadEditFormView, LaunchpadFormView)
 from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.launchpad.webapp.interfaces import IPlacelessLoginSource
+from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.launchpad.webapp import (
-    canonical_url, Navigation, stepto, redirection)
+    canonical_url, Navigation, redirection, stepto, urlappend)
 from canonical.database.sqlbase import flush_database_updates
+from canonical.launchpad.interfaces.account import IAccountSet
 from canonical.launchpad.interfaces.validation import shipit_postcode_required
 from canonical.launchpad.interfaces import (
-    ILaunchBag, ILaunchpadCelebrities, IShipItApplication, IShipItReportSet,
-    IShipItSurveySet, IShippingRequestAdmin, IShippingRequestEdit,
-    IShippingRequestSet, IShippingRequestUser, IShippingRunSet,
-    IStandardShipItRequest, IStandardShipItRequestSet, ShipItArchitecture,
-    ShipItConstants, ShipItDistroSeries, ShipItFlavour, ShipItSurveySchema,
-    ShippingRequestStatus, UnexpectedFormData)
+    ILaunchBag, IShipItApplication, UnexpectedFormData)
+from canonical.launchpad.interfaces.openidconsumer import (
+    IOpenIDConsumerStoreFactory)
+from canonical.launchpad.interfaces.shipit import (
+    IShipitAccount, IShipItReportSet, IShipItSurveySet, IShippingRequestAdmin,
+    IShippingRequestEdit, IShippingRequestSet, IShippingRequestUser,
+    IShippingRunSet, IStandardShipItRequest, IStandardShipItRequestSet,
+    ShipItArchitecture, ShipItConstants, ShipItDistroSeries, ShipItFlavour,
+    ShipItSurveySchema, ShippingRequestStatus)
 from canonical.launchpad.layers import (
     ShipItUbuntuLayer, ShipItKUbuntuLayer, ShipItEdUbuntuLayer)
 from canonical.launchpad import _
 
 
-class ShipItUnauthorizedView(SystemErrorView):
+class ShipitSystemErrorView(SystemErrorView):
+
+    # XXX: salgado, 2009-03-25: This should not be necessary as it's provided
+    # by LaunchpadView, but SystemErrorView hasn't been made into a
+    # LaunchpadView yet, so we define the 'account' property here.
+    @property
+    def account(self):
+        return getUtility(ILaunchBag).account
+
+
+class ShipitNotFoundView(ShipitSystemErrorView):
+    response_code = 404
+
+
+class ShipItUnauthorizedView(ShipitSystemErrorView):
 
     response_code = 403
     forbidden_page = ViewPageTemplateFile('../templates/shipit-forbidden.pt')
@@ -102,89 +129,157 @@ def shipit_is_open(flavour):
     the given flavour.
     """
     return bool(getUtility(IStandardShipItRequestSet).getByFlavour(
-        flavour, getUtility(ILaunchBag).user))
+        flavour, getUtility(ILaunchBag).account))
 
 
-# XXX: GuilhermeSalgado 2005-09-09:
-# The LoginOrRegister class is not really designed to be reused. That
-# class must either be fixed to allow proper reuse or we should write a new
-# class which doesn't reuses LoginOrRegister here.
-class ShipItLoginView(LoginOrRegister):
-    """Process the login form and redirect the user to the request page."""
+class BaseLoginView(LaunchpadView):
 
-    standard_order_page = '/myrequest'
-    custom_order_page = '/specialrequest'
-    possible_origins = {
-        ShipItFlavour.UBUNTU: 'shipit-ubuntu',
-        ShipItFlavour.KUBUNTU: 'shipit-kubuntu',
-        ShipItFlavour.EDUBUNTU: 'shipit-edubuntu'}
+    _openid_session_ns = 'OPENID'
+    _flavour = None
 
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-        self.flavour = _get_flavour_from_layer(request)
-        self.series = ShipItConstants.current_distroseries
-        self.origin = self.possible_origins[self.flavour]
-
-    def is_open(self):
-        return shipit_is_open(self.flavour)
-
-    def getApplicationURL(self):
-        return 'https://launchpad.net'
-
-    def process_form(self):
-        if getUtility(ILaunchBag).user is not None:
-            # Already logged in.
+    def initialize(self):
+        super(BaseLoginView, self).initialize()
+        if self._flavour is None:
+            self.flavour = _get_flavour_from_layer(self.request)
+        else:
+            self.flavour = self._flavour
+        if self.account is not None:
             self._redirect()
-            return
-        LoginOrRegister.process_form(self)
-        if self.login_success():
-            self._redirect()
+
+    def _getConsumer(self):
+        session = ISession(self.request)[self._openid_session_ns]
+        store = getUtility(IOpenIDConsumerStoreFactory)()
+        return Consumer(session, store)
 
     def _redirect(self):
         """Redirect the logged in user to the request page."""
-        user = getUtility(ILaunchBag).user
-        assert user is not None
-        current_order = user.currentShipItRequest()
+        shipit_account = IShipitAccount(getUtility(ILaunchBag).account)
+        assert shipit_account is not None
+        current_order = shipit_account.currentShipItRequest()
         if (current_order and
             current_order.containsCustomQuantitiesOfFlavour(self.flavour)):
             self.request.response.redirect(self.custom_order_page)
         else:
             self.request.response.redirect(self.standard_order_page)
 
-
-class ShipItLoginForServerCDsView(ShipItLoginView):
-    """The login page used when users want Server CDs."""
-
-    def __init__(self, context, request):
-        super(ShipItLoginForServerCDsView, self).__init__(context, request)
-        self.flavour = ShipItFlavour.SERVER
-
     @property
     def custom_order_page(self):
-        """Return the page where users make custom requests for server CDs.
+        """The page where users make custom requests of self.flavour CDs.
 
-        If the user hasn't answered the survey yet, we return the /survey page
-        instead.
+        If self.flavour is SERVER and the user hasn't answered the survey yet,
+        we return the /survey page instead.
         """
-        user = getUtility(ILaunchBag).user
-        if getUtility(IShipItSurveySet).personHasAnswered(user):
+        if self.flavour != ShipItFlavour.SERVER:
+            return '/specialrequest'
+        if getUtility(IShipItSurveySet).personHasAnswered(self.account):
             return '/specialrequest-server'
         else:
             return '/survey'
 
     @property
     def standard_order_page(self):
-        """Return the page where users make standard requests for server CDs.
+        """The page where users make standard requests of self.flavour CDs.
 
-        If the user hasn't answered the survey yet, we return the /survey page
-        instead.
+        If self.flavour is SERVER and the user hasn't answered the survey yet,
+        we return the /survey page instead.
         """
-        user = getUtility(ILaunchBag).user
-        if getUtility(IShipItSurveySet).personHasAnswered(user):
+        if self.flavour != ShipItFlavour.SERVER:
+            return '/myrequest'
+        if getUtility(IShipItSurveySet).personHasAnswered(self.account):
             return '/myrequest-server'
         else:
             return '/survey'
+
+
+class ShipitOpenIDLoginView(BaseLoginView):
+    """The OpenID login page for shipit.
+
+    This page will start the OpenID handshake and send the user's browser
+    to the Launchpad Login Service, where he will be asked to authenticate
+    and allow the provider to send his details to shipit.
+    """
+
+    _return_to_page = 'callback'
+
+    def render(self):
+        # Allow unauthenticated users to have sessions for the OpenID
+        # handshake to work.
+        allowUnauthenticatedSession(self.request)
+        consumer = self._getConsumer()
+        self.openid_request = consumer.begin(
+            allvhosts.configs['openid'].rooturl)
+
+        return_to = self.return_to_url
+        trust_root = self.request.getApplicationURL()
+        assert not self.openid_request.shouldSendRedirect(), (
+            "Our fixed OpenID server should not need us to redirect.")
+        form_html = self.openid_request.htmlMarkup(trust_root, return_to)
+
+        # Need to commit here because the consumer.begin() call above will
+        # insert rows into the OpenIDAssociations table.
+        import transaction
+        transaction.commit()
+
+        return form_html
+
+    @property
+    def return_to_url(self):
+        app_url = self.request.getApplicationURL()
+        return urlappend(app_url, self._return_to_page)
+
+
+class ShipitOpenIDLoginForServerCDsView(ShipitOpenIDLoginView):
+
+    _flavour = ShipItFlavour.SERVER
+    _return_to_page = 'callback-server'
+
+
+class ShipitOpenIDCallbackView(BaseLoginView):
+    """The OpenID callback page for logging into shipit.
+
+    This is the page the OpenID provider will send the user's browser to,
+    after the user has authenticated on the provider.
+    """
+
+    def render(self):
+        consumer = self._getConsumer()
+        response = consumer.complete(self.request.form, self.request.getURL())
+        if response.status == SUCCESS:
+            identity = response.identity_url
+            account = getUtility(IAccountSet).getByOpenIDIdentifier(
+                response.identity_url.split('/')[-1])
+            loginsource = getUtility(IPlacelessLoginSource)
+            # We don't have a logged in principal, so we must remove the
+            # security proxy of the account's preferred email.
+            from zope.security.proxy import removeSecurityProxy
+            email = removeSecurityProxy(account.preferredemail).email
+            logInPrincipal(
+                self.request, loginsource.getPrincipalByLogin(email), email)
+            self._redirect()
+        else:
+            return ShipitOpenIDLoginErrorView(
+                self.context, self.request, response)()
+
+
+class ShipitOpenIDCallbackForServerCDsView(ShipitOpenIDCallbackView):
+    """The OpenID callback page used when users want Server CDs."""
+    _flavour = ShipItFlavour.SERVER
+
+
+class ShipitOpenIDLoginErrorView(LaunchpadView):
+
+    template = ViewPageTemplateFile("../templates/shipit-login-error.pt")
+
+    def __init__(self, context, request, openid_response):
+        super(ShipitOpenIDLoginErrorView, self).__init__(context, request)
+        assert self.account is None, (
+            "Don't try to render this page when the user is logged in.")
+        if openid_response.status == CANCEL:
+            self.login_error = "User cancelled"
+        elif openid_response.status == FAILURE:
+            self.login_error = openid_response.message
+        else:
+            self.login_error = "Unknown error: %s" % openid_response
 
 
 def _get_flavour_from_layer(request):
@@ -232,6 +327,10 @@ class ShipItRequestView(LaunchpadFormView):
         self._setExtraFields()
         super(ShipItRequestView, self).initialize()
 
+    @property
+    def shipit_account(self):
+        return IShipitAccount(self.account)
+
     def _setExtraFields(self):
         self._extra_fields = []
         self.quantity_fields_mapping = {}
@@ -275,11 +374,10 @@ class ShipItRequestView(LaunchpadFormView):
         the last shipped order made by this user.
         """
         field_values = {}
-        user = getUtility(ILaunchBag).user
-        current_order = user.currentShipItRequest()
+        current_order = self.shipit_account.currentShipItRequest()
         existing_order = current_order
         if existing_order is None:
-            existing_order = user.lastShippedRequest()
+            existing_order = self.shipit_account.lastShippedRequest()
 
         if existing_order is not None:
             for name in self._standard_fields:
@@ -299,7 +397,7 @@ class ShipItRequestView(LaunchpadFormView):
     def standard_options(self):
         """Return all standard ShipIt Requests sorted by quantity of CDs."""
         requests = getUtility(IStandardShipItRequestSet).getByFlavour(
-            self.flavour, self.user)
+            self.flavour, self.account)
         return sorted(requests, key=attrgetter('totalCDs'))
 
     @cachedproperty
@@ -338,7 +436,7 @@ class ShipItRequestView(LaunchpadFormView):
 
     @cachedproperty('_current_order')
     def current_order(self):
-        return self.user.currentShipItRequest()
+        return self.shipit_account.currentShipItRequest()
 
     @property
     def selected_standardrequest(self):
@@ -371,7 +469,7 @@ class ShipItRequestView(LaunchpadFormView):
             # cancelling his request, so we'll just refresh the page so he
             # can see that he has no current request, actually.
             return
-        self.current_order.cancel(self.user)
+        self.current_order.cancel(self.account)
         self._current_order = None
         self.request.response.addInfoNotification(_('Request Cancelled'))
 
@@ -387,7 +485,7 @@ class ShipItRequestView(LaunchpadFormView):
         current_order = self.current_order
         if not current_order:
             current_order = getUtility(IShippingRequestSet).new(
-                self.user, data.get('recipientdisplayname'),
+                self.account, data.get('recipientdisplayname'),
                 data.get('country'), data.get('city'),
                 data.get('addressline1'), data.get('phone'),
                 data.get('addressline2'), data.get('province'),
@@ -454,7 +552,8 @@ class ShipItRequestView(LaunchpadFormView):
         max_size_for_auto_approval = (
             ShipItConstants.max_size_for_auto_approval)
         new_total_of_cds = current_order.getTotalCDs()
-        shipped_orders = self.user.shippedShipItRequestsOfCurrentSeries()
+        shipped_orders = (
+            self.shipit_account.shippedShipItRequestsOfCurrentSeries())
         if new_total_of_cds > max_size_for_auto_approval:
             # If the order was already approved and the guy is just reducing
             # the number of CDs, there's no reason for de-approving it.
@@ -503,7 +602,7 @@ class ShipItRequestView(LaunchpadFormView):
             # request pending in the code above, we need to clear them out.
             current_order.clearApprovedQuantities()
 
-        self._current_order = self.user.currentShipItRequest()
+        self._current_order = self.shipit_account.currentShipItRequest()
         self.request.response.addInfoNotification(structured(msg))
 
     def userAlreadyRequestedFlavours(self, flavours):
@@ -511,7 +610,8 @@ class ShipItRequestView(LaunchpadFormView):
         this users's shipped requests of the current distroseries.
         """
         flavours = set(flavours)
-        for order in self.user.shippedShipItRequestsOfCurrentSeries():
+        shipit_account = self.shipit_account
+        for order in shipit_account.shippedShipItRequestsOfCurrentSeries():
             if flavours.intersection(order.getContainedFlavours()):
                 return True
         return False
@@ -626,7 +726,7 @@ class _SelectMenuOption:
         self.is_selected = is_selected
 
 
-class ShippingRequestsView:
+class ShippingRequestsView(LaunchpadView):
     """The view to list ShippingRequests that match a given criteria."""
 
     submitted = False
@@ -726,7 +826,7 @@ class ShippingRequestsView:
         return BatchNavigator(results, self.request)
 
 
-class StandardShipItRequestsView:
+class StandardShipItRequestsView(LaunchpadView):
     """The view for the list of all StandardShipItRequests."""
 
     def processForm(self):
@@ -739,13 +839,16 @@ class StandardShipItRequestsView:
                 getUtility(IStandardShipItRequestSet).get(id).destroySelf()
 
 
-class StandardShipItRequestAddView(AddView):
+class StandardShipItRequestAddView(LaunchpadFormView):
     """The view to add a new Standard ShipIt Request."""
 
-    def nextURL(self):
-        return '.'
+    schema = IStandardShipItRequest
+    field_names = ["flavour", "quantityx86", "quantityamd64",
+                   "user_description", "isdefault"]
+    label = "Create a new standard option"
 
-    def createAndAdd(self, data):
+    @action(_("Add"), name="add")
+    def action_add(self, action, data):
         flavour = data.get('flavour')
         quantityx86 = data.get('quantityx86')
         quantityamd64 = data.get('quantityamd64')
@@ -789,6 +892,10 @@ class ShippingRequestAdminMixinView:
     # This is the order in which we display the quantity widgets for each
     # flavour in the UI
     ordered_architectures = (ShipItArchitecture.X86, ShipItArchitecture.AMD64)
+
+    @property
+    def recipient_shipit_account(self):
+        return IShipitAccount(self.context.recipient)
 
     def widgetsMatrixWithFlavours(self):
         """Return a matrix in which each row contains a ShipItFlavour and one
@@ -899,7 +1006,7 @@ class ShippingRequestApproveOrDenyView(
             # This shipit request was changed behind our back; let's just
             # refresh the page so the user can decide what to do with it.
             return
-        self.context.approve(whoapproved=self.user)
+        self.context.approve(whoapproved=self.account)
         self.context.highpriority = data['highpriority']
         self.context.setApprovedQuantities(self.getQuantities(data))
         self.next_url = self._makeNextURL(previous_action='approved')
@@ -959,14 +1066,19 @@ class ShippingRequestApproveOrDenyView(
         initial['highpriority'] = order.highpriority
         return initial
 
-    def recipientHasOtherShippedRequests(self):
-        """Return True if the recipient has other requests that were already
-        sent to the shipping company."""
+    @cachedproperty
+    def shipped_shipit_requests_of_current_series(self):
         recipient = self.context.recipient
-        shipped_requests = recipient.shippedShipItRequestsOfCurrentSeries()
+        return shortlist(IShipitAccount(
+            recipient).shippedShipItRequestsOfCurrentSeries())
+
+    def recipientHasOtherShippedRequests(self):
+        """Return True if the recipient has *other* requests that were already
+        sent to the shipping company."""
+        shipped_requests = self.shipped_shipit_requests_of_current_series
         if not shipped_requests:
             return False
-        elif (shipped_requests.count() == 1
+        elif (len(shipped_requests) == 1
               and shipped_requests[0] == self.context):
             return False
         else:
@@ -1059,12 +1171,6 @@ class ShippingRequestAdminView(
 
     @action('Request', name='request')
     def request_action(self, action, data):
-        # All requests created through the admin UI have the shipit_admin
-        # celeb as the recipient. This is so because shipit administrators
-        # have to be able to create requests on behalf of people who don't
-        # have a Launchpad account, and only the shipit_admin celeb is allowed
-        # to have more than one open request at a time.
-        shipit_admin = getUtility(ILaunchpadCelebrities).shipit_admin
         form = self.request.form
         quantities = {}
         for flavour in self.quantity_fields_mapping:
@@ -1079,7 +1185,7 @@ class ShippingRequestAdminView(
         current_order = self.current_order
         if not current_order:
             current_order = getUtility(IShippingRequestSet).new(
-                shipit_admin, data['recipientdisplayname'], data['country'],
+                self.account, data['recipientdisplayname'], data['country'],
                 data['city'], data['addressline1'], data['phone'],
                 data['addressline2'], data['province'], data['postcode'],
                 data['organization'])
@@ -1112,7 +1218,7 @@ class ShipItReportsView(LaunchpadView):
         return getUtility(IShipItReportSet).getAll()
 
 
-class ShipItExportsView:
+class ShipItExportsView(LaunchpadView):
     """The view for the list of shipit exports."""
 
     def process_form(self):
@@ -1202,8 +1308,8 @@ class ShipItSurveyView(LaunchpadFormView):
         CDs, he'll be sent to /specialrequest-server, otherwise he's sent to
         /myrequest-server.
         """
-        getUtility(IShipItSurveySet).new(self.user, data)
-        current_order = self.user.currentShipItRequest()
+        getUtility(IShipItSurveySet).new(self.account, data)
+        current_order = IShipitAccount(self.account).currentShipItRequest()
         server = ShipItFlavour.SERVER
         if (current_order is not None and
             current_order.containsCustomQuantitiesOfFlavour(server)):

@@ -56,7 +56,7 @@ from canonical.launchpad.interfaces.codereviewcomment import (
     CodeReviewVote, ICodeReviewComment)
 from canonical.launchpad.interfaces.codereviewvote import (
     ICodeReviewVoteReference)
-from canonical.launchpad.interfaces.person import IPersonSet
+from lp.registry.interfaces.person import IPersonSet
 from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, custom_widget, Link, enabled_with_permission,
     LaunchpadEditFormView, LaunchpadFormView, LaunchpadView, action,
@@ -232,6 +232,11 @@ class UnmergedRevisionsMixin:
     def unlanded_revisions(self):
         """Return the unlanded revisions from the source branch."""
         return self.context.getUnlandedSourceBranchRevisions()
+
+    @property
+    def pending_writes(self):
+        """Needed to make the branch-revisions metal macro work."""
+        return False
 
     @property
     def codebrowse_url(self):

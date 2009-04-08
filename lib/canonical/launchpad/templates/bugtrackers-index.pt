@@ -37,7 +37,7 @@
     </thead>
 
     <tbody>
-      <tr tal:repeat="bugtracker view/bugtrackers">
+      <tr tal:repeat="bugtracker view/active_bug_trackers">
           <td>
             <a tal:replace="structure bugtracker/fmt:link" />
           </td>
@@ -73,6 +73,52 @@
      tal:condition="link/enabled">
     Add a new bug tracker
   </p>
+
+  <tal:inactive-bug-trackers condition="view/inactive_bug_trackers">
+    <h1>Inactive bug trackers</h1>
+
+    <table class="sortable listing" id="inactive-trackers">
+      <thead>
+        <tr>
+          <th>Title</th>
+          <th>Location</th>
+          <th>Linked Projects</th>
+          <th class="type">Type</th>
+          <th class="amount">Watches</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        <tr tal:repeat="bugtracker view/inactive_bug_trackers">
+            <td>
+              <a tal:replace="structure bugtracker/fmt:link" />
+            </td>
+            <td>
+              <a tal:replace="structure bugtracker/fmt:external-link" />
+            </td>
+            <td tal:define="pillar_data python:view.getPillarData(bugtracker)">
+              <tal:pillars condition="pillar_data">
+                <tal:pillar-entry repeat="pillar pillar_data/pillars">
+                    <a tal:attributes="href pillar/fmt:url"
+                       tal:content="pillar/displayname"
+                       ></a><tal:comma condition="not: repeat/pillar/end">, </tal:comma>
+                </tal:pillar-entry>
+                <tal:many-pillars
+                  condition="pillar_data/has_more_pillars">
+                    &hellip;
+                </tal:many-pillars>
+              </tal:pillars>
+              <tal:no-pillars condition="not: pillar_data">
+                  &mdash;
+              </tal:no-pillars>
+            </td>
+            <td class="type"
+              tal:content="bugtracker/bugtrackertype/title">bugtrackertype</td>
+            <td class="amount" tal:content="bugtracker/watches/count">bugcount</td>
+        </tr>
+      </tbody>
+    </table>
+  </tal:inactive-bug-trackers>
 
 </div>
 

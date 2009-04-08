@@ -5,7 +5,15 @@
   id="branch-heading">
 
   <div style="float:right; text-align: right">
-    Last modified <tal:modified replace="context/date_last_modified/fmt:displaydate" />
+    Created by
+    <tal:registrant tal:replace="structure context/registrant/fmt:link"/>
+    on
+    <span
+       tal:attributes="title context/date_created/fmt:datetime"
+       tal:content="context/date_created/fmt:approximatedate">
+      2005-10-18
+    </span>
+    and last modified <tal:modified replace="context/date_last_modified/fmt:displaydate" />
   </div>
   <img src="/@@/branch" alt="" /> Branch
   <tt tal:content="context/bzr_identity" />

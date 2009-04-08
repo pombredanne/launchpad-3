@@ -35,7 +35,7 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.translationformat.gettext_po_importer import (
     GettextPOImporter)
 from canonical.librarian.interfaces import ILibrarianClient
-from canonical.launchpad.validators.person import validate_public_person
+from lp.registry.interfaces.person import validate_public_person
 
 
 # Number of days when the DELETED and IMPORTED entries are removed from the
@@ -940,8 +940,8 @@ class TranslationImportQueue:
         """See `ITranslationImportQueue`."""
         # XXX DaniloSegan 2007-05-22: When imported on the module level,
         # it errs out with: "ImportError: cannot import name Person"
-        from canonical.launchpad.database.distroseries import DistroSeries
-        from canonical.launchpad.database.product import Product
+        from lp.registry.model.distroseries import DistroSeries
+        from lp.registry.model.product import Product
 
         if status is None:
             status_clause = "TRUE"

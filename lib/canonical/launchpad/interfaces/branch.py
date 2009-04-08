@@ -83,7 +83,7 @@ from canonical.launchpad.interfaces.branchlookup import IBranchLookup
 from canonical.launchpad.interfaces.branchtarget import IHasBranchTarget
 from canonical.launchpad.interfaces.launchpad import (
     IHasOwner, ILaunchpadCelebrities)
-from canonical.launchpad.interfaces.person import IPerson
+from lp.registry.interfaces.person import IPerson
 from canonical.launchpad.webapp.interfaces import (
     ITableBatchNavigator, NameLookupFailed)
 from canonical.launchpad.webapp.menu import structured
@@ -791,8 +791,7 @@ class IBranch(IHasOwner, IHasBranchTarget):
     revision_count = exported(
         Int(
             title=_("Revision count"), readonly=True,
-            description=_("The revision number of the tip of the branch.")
-            ))
+            description=_("The revision number of the tip of the branch.")))
 
     stacked_on = Attribute('Stacked-on branch')
 
@@ -813,6 +812,9 @@ class IBranch(IHasOwner, IHasBranchTarget):
     # Specification attributes
     spec_links = Attribute("Specifications linked to this branch")
 
+    pending_writes = Attribute(
+        "Whether there is new Bazaar data for this branch.")
+
     # Joins
     revision_history = Attribute(
         """The sequence of BranchRevision for the mainline of that branch.
@@ -827,6 +829,7 @@ class IBranch(IHasOwner, IHasBranchTarget):
             title=_("BranchSubscriptions associated to this branch."),
             readonly=True,
             value_type=Reference(Interface))) # Really IBranchSubscription
+
     subscribers = exported(
         CollectionField(
             title=_("Persons subscribed to this branch."),
@@ -995,9 +998,9 @@ class IBranch(IHasOwner, IHasBranchTarget):
     def associatedProductSeries():
         """Return the product series that this branch is associated with.
 
-        A branch may be associated with a product series as either a
-        user_branch or import_branch.  Also a branch can be associated
-        with more than one product series as a user_branch.
+        A branch may be associated with a product series is either a
+        branch.  Also a branch can be associated with more than one product
+        series as a branch.
         """
 
     # subscription-related methods
