@@ -34,14 +34,14 @@ from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.publisher.browser import FileUpload
 
 from canonical.launchpad import _
-from canonical.launchpad.browser.branchref import BranchRef
+from lp.code.browser.branchref import BranchRef
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.poexportrequest import BaseExportView
 from canonical.launchpad.browser.translations import TranslationsMixin
 from canonical.launchpad.helpers import browserLanguages, is_tar_filename
-from canonical.launchpad.interfaces.codeimport import (
+from lp.code.interfaces.codeimport import (
     ICodeImportSet)
-from canonical.launchpad.interfaces.branchjob import IRosettaUploadJobSource
+from lp.code.interfaces.branchjob import IRosettaUploadJobSource
 from canonical.launchpad.interfaces.country import ICountry
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.potemplate import IPOTemplateSet

@@ -164,7 +164,7 @@ from lp.registry.interfaces.teammembership import (
     DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT, ITeamMembership,
     ITeamMembershipSet, TeamMembershipStatus)
 from lp.registry.interfaces.wikiname import IWikiNameSet
-from canonical.launchpad.interfaces.branchnamespace import (
+from lp.code.interfaces.branchnamespace import (
     IBranchNamespaceSet, InvalidNamespace)
 from canonical.launchpad.interfaces.bugtask import IBugTaskSet
 from canonical.launchpad.interfaces.build import (

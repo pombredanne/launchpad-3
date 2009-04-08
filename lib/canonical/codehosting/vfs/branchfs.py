@@ -76,7 +76,7 @@ from canonical.codehosting.vfs.transport import (
     AsyncVirtualServer, AsyncVirtualTransport, _MultiServer,
     get_chrooted_transport, get_readonly_transport, TranslationError)
 from canonical.config import config
-from canonical.launchpad.interfaces.codehosting import (
+from lp.code.interfaces.codehosting import (
     BRANCH_TRANSPORT, CONTROL_TRANSPORT, LAUNCHPAD_SERVICES)
 from canonical.launchpad.xmlrpc import faults
 

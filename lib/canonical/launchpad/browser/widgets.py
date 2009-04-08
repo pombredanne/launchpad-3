@@ -30,8 +30,8 @@ from zope.app.form.interfaces import ConversionError
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces import BranchType, IBranch
-from canonical.launchpad.interfaces.branchlookup import IBranchLookup
-from canonical.launchpad.interfaces.branchnamespace import (
+from lp.code.interfaces.branchlookup import IBranchLookup
+from lp.code.interfaces.branchnamespace import (
     get_branch_namespace)
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp.interfaces import ILaunchBag
