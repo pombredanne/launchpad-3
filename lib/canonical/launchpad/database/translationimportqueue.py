@@ -602,8 +602,8 @@ class TranslationImportQueue:
 
         return entry
 
-    def entryCount(self):
-        """See ITranslationImportQueue."""
+    def countEntries(self):
+        """See `ITranslationImportQueue`."""
         return TranslationImportQueueEntry.select().count()
 
     def _iterNeedsReview(self):
