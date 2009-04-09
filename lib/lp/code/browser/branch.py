@@ -959,6 +959,10 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
         else:
             raise AssertionError('Unknown branch type')
 
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
+
 
 class DecoratedSubscription:
     """Adds the editable attribute to a `BranchSubscription`."""
