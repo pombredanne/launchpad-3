@@ -624,7 +624,7 @@ class POFile(SQLBase, POFileMixIn):
 
         return POTMsgSet.select(
             ' AND '.join(clauses), clauseTables=clause_tables,
-            orderBy='POTMsgSet.sequence')
+            orderBy='TranslationTemplateItem.sequence')
 
     def getPOTMsgSetUntranslated(self):
         """See `IPOFile`."""
@@ -646,7 +646,7 @@ class POFile(SQLBase, POFileMixIn):
         clauses.append('POTMsgSet.id NOT IN (' + translated_query + ')')
         return POTMsgSet.select(' AND '.join(clauses),
                                 clauseTables=['TranslationTemplateItem'],
-                                orderBy='POTMsgSet.sequence')
+                                orderBy='TranslationTemplateItem.sequence')
 
     def getPOTMsgSetWithNewSuggestions(self):
         """See `IPOFile`."""
@@ -690,7 +690,7 @@ class POFile(SQLBase, POFileMixIn):
         # TranslationMessage newer than the current reviewed one.
         results = POTMsgSet.select(' AND '.join(clauses),
             clauseTables=['TranslationTemplateItem', 'TranslationMessage'],
-            orderBy='POTMsgSet.sequence',
+            orderBy='TranslationTemplateItem.sequence',
             distinct=True)
         return results
 
