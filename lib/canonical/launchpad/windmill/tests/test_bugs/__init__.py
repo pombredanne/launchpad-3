@@ -56,3 +56,27 @@ def test_bugfilters_portlet():
     client.asserts.assertText(
         xpath=u"//div[@id='portlet-bugfilters']",
         validator=u"All bugs ever reported")
+
+
+def test_tags_portlet():
+    """Test the tags portlet on a bugtarget bugs index page.
+    
+    Test that the contents of the tags portlet on
+    a bugtarget index page loads successfully after the page loads.
+    """
+    client = WindmillTestClient('Bug tags portlet test')
+    # We open a distro bugs page, and wait for it to load
+    client.open(url='http://bugs.launchpad.dev:8085/ubuntu')
+    client.waits.forPageLoad(timeout=u'20000')
+    client.waits.forElement(
+        xpath=u"//div[@id='portlet-tags']", timeout=u'8000')
+    # The tags portlet is available and the spinner is hidden.
+    client.asserts.assertProperty(
+        xpath=u"//div[@id='portlet-tags']//"
+              u"div[@id='tags-portlet-spinner']",
+        validator="style.display|none")
+    # The tags for Ubuntu are present inside the portlet,
+    # which means that the contents were loaded correctly.
+    client.asserts.assertNode(
+        xpath=u"//div[@id='portlet-tags']//div[@class='portletBody']")
+

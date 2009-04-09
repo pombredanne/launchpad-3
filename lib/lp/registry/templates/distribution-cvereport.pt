@@ -10,17 +10,21 @@
   i18n:domain="launchpad"
 >
   <body>
-    <metal:heading fill-slot="pageheading">
-      <h1>CVEs related to bugs in <span tal:replace="context/displayname" /></h1>
-    </metal:heading>
 
 <metal:leftportlets fill-slot="portlets_one">
   <div tal:replace="structure context/@@+portlet-aboutcve" />
 </metal:leftportlets>
 
-<div metal:fill-slot="main">
+<div metal:fill-slot="main" tal:define="serieses context/serieses">
+  <h1 tal:condition="not: serieses">
+    CVEs related to bugs in <span tal:replace="context/displayname" />
+  </h1>
+  <h1 tal:condition="serieses">
+    CVE reports in releases of <span tal:replace="context/displayname" />
+  </h1>
 
-  <tal:open_issues define="bugtaskcves view/open_cve_bugtasks">
+  <tal:open_issues condition="not: serieses"
+                   define="bugtaskcves view/open_cve_bugtasks">
 
     <h2>Open bugs</h2>
 
@@ -35,7 +39,8 @@
 
   </tal:open_issues>
 
-  <tal:resolved_issues define="bugtaskcves view/resolved_cve_bugtasks">
+  <tal:resolved_issues condition="not: serieses"
+                       define="bugtaskcves view/resolved_cve_bugtasks">
 
     <h2>Resolved bugs</h2>
 
@@ -50,21 +55,14 @@
 
   </tal:resolved_issues>
 
-  <tal:serieses
-        define="serieses context/serieses"
-        condition="serieses">
-    <h2>CVE reports in releases of <span tal:replace="context/displayname" /></h2>
-
-    <p>
-      See also the CVE reports for individual distribution releases:
-    </p>
+  <tal:series condition="serieses">
       <ul>
         <li tal:repeat="series serieses">
           <a tal:attributes="href string:${series/fmt:url}/+cve"
              tal:content="series/displayname"></a>
         </li>
       </ul>
-  </tal:serieses>
+  </tal:series>
 
 </div> 
 </body>
