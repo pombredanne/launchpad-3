@@ -113,7 +113,7 @@ members of that team.  That page also lists the local times of members.
 
     >>> login('foo.bar@canonical.com')
     >>> context = factory.makeTeam(salgado)
-    >>> len(context.mapped_participants)
+    >>> context.mapped_participants_count
     0
     >>> view = create_initialized_view(context, '+map')
     >>> view.times
@@ -126,14 +126,17 @@ not be rendered.
     False
 
 Once a member is mapped, needs_gmap2 is True and the map will be rendered.
-The number of times is incremented for each timezone added.
+The view provides a cached property to access the mapped participants. The
+views number of times is incremented for each timezone the members reside in.
 
     >>> london_member = factory.makePerson(
     ...     latitude=51.49, longitude=-0.13, time_zone='Europe/London')
     >>> context.addMember(london_member, sabdfl)
-    >>> len(context.mapped_participants)
+    >>> context.mapped_participants_count
     1
     >>> view = create_initialized_view(context, '+map')
+    >>> len(view.mapped_participants)
+    1
     >>> len(view.times)
     1
 
@@ -143,9 +146,11 @@ The number of times is incremented for each timezone added.
     >>> brazil_member = factory.makePerson(
     ...     latitude=-23.60, longitude=-46.64, time_zone='America/Sao_Paulo')
     >>> context.addMember(brazil_member, sabdfl)
-    >>> len(context.mapped_participants)
+    >>> context.mapped_participants_count
     2
     >>> view = create_initialized_view(context, '+map')
+    >>> len(view.mapped_participants)
+    2
     >>> len(view.times)
     2
 
@@ -155,11 +160,32 @@ twice, for obvious reasons.
     >>> london_member2 = factory.makePerson(
     ...     latitude=51.49, longitude=-0.13, time_zone='Europe/London')
     >>> context.addMember(london_member2, sabdfl)
-    >>> len(context.mapped_participants)
+    >>> context.mapped_participants_count
     3
     >>> view = create_view(context, '+map')
     >>> len(view.times)
     2
+
+The number of persons returned my mapped_participants is governed by the
+view's limit attribute. the default value is None, meaning there is no
+limit.
+
+    >>> print view.limit
+    None
+    >>> len(view.mapped_participants)
+    3
+
+When the preview parameter is sent to the view, the number of
+mapped_participants is limited to 24.
+
+    >>> view = create_view(context, '+map', form={'preview': 'anything'})
+    >>> view.limit
+    24
+
+    # Hack the limit to demonstrate that it controls mapped_participants.
+    >>> view.limit = 1
+    >>> len(view.mapped_participants)
+    1
 
 The view provides the count of mapped and unmapped members. The counts
 are cached to improve performance.
