@@ -12,11 +12,6 @@
 
 <body>
 
-<metal:portlets fill-slot="portlets">
-  <div tal:replace="structure context/@@+portlet-series" />
-  <div tal:replace="structure context/@@+portlet-latestbranches" />
-</metal:portlets>
-
 <div metal:fill-slot="main">
 
   <h1>Register a branch</h1>
