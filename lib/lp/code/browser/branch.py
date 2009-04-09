@@ -5,8 +5,7 @@
 __metaclass__ = type
 
 __all__ = [
-    'PersonBranchAddView',
-    'ProductBranchAddView',
+    'BranchAddView',
     'BranchContextMenu',
     'BranchDeletionView',
     'BranchEditView',
@@ -77,7 +76,7 @@ from lp.code.interfaces.codereviewcomment import ICodeReviewComment
 from lp.code.interfaces.branchnamespace import get_branch_namespace
 from lp.code.interfaces.branchtarget import IHasBranchTarget
 from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
-from lp.registry.interfaces.person import IPersonSet
+from lp.registry.interfaces.person import IPerson, IPersonSet
 from lp.registry.interfaces.productseries import IProductSeries
 
 
@@ -869,7 +868,18 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
 
     @property
     def initial_values(self):
-        return {'branch_type': UICreatableBranchType.MIRRORED}
+        return {
+            'owner': self.default_owner,
+            'branch_type': UICreatableBranchType.MIRRORED}
+
+    @property
+    def default_owner(self):
+        """The default owner of branches in this context.
+
+        If the context is a person, then it's the context. If the context is
+        not a person, then the default owner is the currently logged-in user.
+        """
+        return IPerson(self.context, self.user)
 
     def showOptionalMarker(self, field_name):
         """Don't show the optional marker for url."""
@@ -943,32 +953,6 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
             pass
         else:
             raise AssertionError('Unknown branch type')
-
-
-class PersonBranchAddView(BranchAddView):
-    """See `BranchAddView`."""
-
-    initial_focus_widget = 'name'
-
-    @property
-    def initial_values(self):
-        return {'owner': self.context,
-                'branch_type': UICreatableBranchType.MIRRORED}
-
-
-class ProductBranchAddView(BranchAddView):
-    """See `BranchAddView`."""
-
-    initial_focus_widget = 'name'
-
-    @property
-    def initial_values(self):
-        return {'owner' : self.user,
-                'branch_type': UICreatableBranchType.MIRRORED}
-
-    @property
-    def cancel_url(self):
-        return canonical_url(self.context)
 
 
 class DecoratedSubscription:
