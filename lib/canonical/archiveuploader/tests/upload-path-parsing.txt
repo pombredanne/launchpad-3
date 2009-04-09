@@ -230,7 +230,11 @@ A named PPA upload missing '~'.
 
 == Binary uploads from build slaves ==
 
-This is what a relative upload to the primary archive looks like.
+A relative path for a binary upload from a build slave will have the
+following format: <archive_id>/<distribution_name> where archive_id
+is the database key of the archive in question.
+
+So, here is a binary upload path to the primary archive:
 
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
