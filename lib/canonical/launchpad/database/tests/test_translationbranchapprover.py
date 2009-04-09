@@ -186,6 +186,8 @@ class TestTranslationBranchApprover(TestCaseWithFactory):
         self.assertEqual(RosettaImportStatus.APPROVED, entry2.status)
 
     def test_duplicate_template_name(self):
+        # If two templates in the branch indicate the same translation
+        # domain they are in conflict and will not be approved.
         pot_path1 = "po/foo_domain.pot"
         pot_path2 = "foo_domain/messages.pot"
         entry1 = self._upload_file(pot_path1)
