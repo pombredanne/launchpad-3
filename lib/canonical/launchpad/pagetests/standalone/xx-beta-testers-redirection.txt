@@ -183,6 +183,10 @@ The Ubuntu product page then redirects to the beta site:
     HTTP Error 303: See Other
     Location: http://beta.launchpad.dev/ubuntu
 
+Restore the config to state it was in at the start of the test.
+
+    >>> config_data = config.pop('beta_data')
+
 == Redirection notice in OOPS timeouts ==
 
 The beta site has timeout values lower than lpnet, so beta testers are more
@@ -240,4 +244,3 @@ Check that the notification is in the timeout page
 Restore the config to state it was in at the start of the test.
 
     >>> config_data = config.pop('beta_data')
-
