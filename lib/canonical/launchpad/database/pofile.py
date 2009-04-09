@@ -544,7 +544,7 @@ class POFile(SQLBase, POFileMixIn):
         """See `IPOFile`."""
         return iter(self.currentMessageSets())
 
-    def _getClausesForPOFileMessages(self):
+    def _getClausesForPOFileMessages(self, current=True):
         """Get TranslationMessages for the POFile via TranslationTemplateItem.
 
         Call-site will have to have appropriate clauseTables.
@@ -552,10 +552,12 @@ class POFile(SQLBase, POFileMixIn):
         clauses = [
             'TranslationTemplateItem.potemplate = %s' % sqlvalues(
                 self.potemplate),
-            'TranslationTemplateItem.sequence > 0',
             ('TranslationTemplateItem.potmsgset'
              ' = TranslationMessage.potmsgset'),
             'TranslationMessage.language = %s' % sqlvalues(self.language)]
+        if current:
+            clauses.append('TranslationTemplateItem.sequence > 0')
+
         if self.variant is None:
             clauses.append(
                 'TranslationMessage.variant IS NULL')
@@ -567,7 +569,7 @@ class POFile(SQLBase, POFileMixIn):
     def getTranslationsFilteredBy(self, person):
         """See `IPOFile`."""
         assert person is not None, "You must provide a person to filter by."
-        clauses = self._getClausesForPOFileMessages()
+        clauses = self._getClausesForPOFileMessages(current=False)
         clauses.append(
             'TranslationMessage.submitter = %s' % sqlvalues(person))
 
