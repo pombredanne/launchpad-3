@@ -48,9 +48,12 @@ above, failed being worst).
 __metaclass__ = type
 
 import os
+import re
 import shutil
 import stat
 import sys
+
+from sqlobject import SQLObjectNotFound
 
 from zope.component import getUtility
 
@@ -58,6 +61,7 @@ from canonical.archiveuploader.nascentupload import (
     NascentUpload, FatalUploadError, EarlyReturnUploadError)
 from canonical.archiveuploader.uploadpolicy import (
     findPolicyByOptions, UploadPolicyError)
+from canonical.launchpad.interfaces.archive import IArchiveSet
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from canonical.launchpad.webapp.errorlog import (
@@ -488,7 +492,8 @@ def parse_upload_path(relative_path):
 
     first_path = parts[0]
 
-    if not first_path.startswith('~') and len(parts) <= 2:
+    if ((len(relative_path) == 0 or not relative_path[0] in '~0123456789')
+        and len(parts) <= 2):
         # Distribution upload (<distro>[/distroseries]). Always targeted to
         # the corresponding primary archive.
         distribution, suite_name = _getDistributionAndSuite(
@@ -534,7 +539,17 @@ def parse_upload_path(relative_path):
             raise PPAUploadPathError(
                 "%s only supports uploads to '%s'"
                 % (archive.displayname, archive.distribution.name))
-
+    elif re.match('\d+', first_path) is not None:
+        # This must be a binary upload from a build slave.
+        try:
+            archive = getUtility(IArchiveSet).get(int(first_path))
+        except SQLObjectNotFound:
+            raise UploadPathError(
+                "Could not find archive with id=%s" % first_path)
+        if not archive.enabled:
+            raise UploadPathError("%s is disabled" % archive.displayname)
+        distribution, suite_name = _getDistributionAndSuite(
+            parts[1:], UploadPathError)
     else:
         # Upload path does not match anything we support.
         raise UploadPathError(
