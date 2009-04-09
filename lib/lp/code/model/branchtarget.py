@@ -96,6 +96,11 @@ class PackageBranchTarget(_BaseBranchTarget):
             self.sourcepackage.development_version.getBranch(
                 PackagePublishingPocket.RELEASE))
 
+    @property
+    def displayname(self):
+        """See `IBranchTarget`."""
+        return self.sourcepackage.displayname
+
 
 class PersonBranchTarget(_BaseBranchTarget):
     implements(IBranchTarget)
@@ -115,6 +120,11 @@ class PersonBranchTarget(_BaseBranchTarget):
     def context(self):
         """See `IBranchTarget`."""
         return self.person
+
+    @property
+    def displayname(self):
+        """See `IBranchTarget`."""
+        return "~%s/+junk" % self.person.name
 
     def getNamespace(self, owner):
         """See `IBranchTarget`."""
@@ -138,6 +148,11 @@ class ProductBranchTarget(_BaseBranchTarget):
     def context(self):
         """See `IBranchTarget`."""
         return self.product
+
+    @property
+    def displayname(self):
+        """See `IBranchTarget`."""
+        return self.product.displayname
 
     @property
     def name(self):
