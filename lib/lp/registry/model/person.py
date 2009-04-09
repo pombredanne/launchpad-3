@@ -1552,6 +1552,7 @@ class Person(
         if len(participants) > 0:
             sql = "id IN (%s)" % ",".join(sqlvalues(*participants))
             list(ValidPersonCache.select(sql))
+        getUtility(IPersonSet).cacheBrandingForPeople(participants)
         return list(participants)
 
     @property
