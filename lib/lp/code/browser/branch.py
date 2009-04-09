@@ -875,6 +875,11 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
             'branch_type': UICreatableBranchType.MIRRORED}
 
     @property
+    def target(self):
+        """The branch target for the context."""
+        return IBranchTarget(self.context)
+
+    @property
     def default_owner(self):
         """The default owner of branches in this context.
 
