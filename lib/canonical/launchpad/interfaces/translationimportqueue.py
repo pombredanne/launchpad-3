@@ -14,9 +14,8 @@ from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.productseries import IProductSeries
 
 from lazr.restful.interface import copy_field
-
-from canonical.lazr.fields import Reference, ReferenceChoice
-from canonical.lazr.rest.declarations import (
+from lazr.restful.fields import Reference, ReferenceChoice
+from lazr.restful.declarations import (
     collection_default_content, exported, export_as_webservice_collection,
     export_as_webservice_entry, export_read_operation, operation_parameters,
     operation_returns_entry, operation_returns_collection_of)
