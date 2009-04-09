@@ -86,7 +86,7 @@ class TranslationImportQueueEntry(SQLBase):
     @property
     def is_targeted_to_ubuntu(self):
         return (self.distroseries is not None and
-            self.distroseries.distribution == 
+            self.distroseries.distribution ==
             getUtility(ILaunchpadCelebrities).ubuntu)
 
     @property
@@ -196,7 +196,13 @@ class TranslationImportQueueEntry(SQLBase):
 
     def setStatus(self, status):
         """See `ITranslationImportQueueEntry`."""
+        # XXX JeroenVermeulen 2009-04-09 bug=358404: This looks like a
+        # good place to set date_status_changed.
         self.status = status
+
+    def setErrorOutput(self, output):
+        """See `ITranslationImportQueueEntry`."""
+        self.error_output = output
 
     def _findCustomLanguageCode(self, language_code):
         """Find applicable custom language code, if any."""
@@ -745,7 +751,7 @@ class TranslationImportQueue:
                 pofile=pofile, format=format)
         else:
             # It's an update.
-            entry.error_output = None
+            entry.setErrorOutput(None)
             entry.content = alias
             entry.is_published = is_published
             if potemplate is not None:

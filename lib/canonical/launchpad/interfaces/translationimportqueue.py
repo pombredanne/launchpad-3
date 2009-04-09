@@ -249,13 +249,17 @@ class ITranslationImportQueueEntry(Interface):
         Text(
             title=_("Error output"),
             description=_("Output from most recent import attempt."),
-            required=False))
+            required=False,
+            readonly=True))
 
     def setStatus(status):
         """Set status.
 
         :param status: new status to set.
         """
+
+    def setErrorOutput(output):
+        """Set error_output string."""
 
     def getGuessedPOFile():
         """Return an IPOFile that we think this entry should be imported into.

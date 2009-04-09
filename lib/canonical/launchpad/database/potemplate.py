@@ -687,10 +687,10 @@ class POTemplate(SQLBase, RosettaStats):
             template_mail = 'poimport-syntax-error.txt'
             entry_to_import.setStatus(RosettaImportStatus.FAILED)
             error_text = str(exception)
-            entry_to_import.error_output = error_text
+            entry_to_import.setErrorOutput(error_text)
         else:
             error_text = None
-            entry_to_import.error_output = None
+            entry_to_import.setErrorOutput(None)
 
         replacements = {
             'dateimport': entry_to_import.dateimported.strftime('%F %R%z'),
