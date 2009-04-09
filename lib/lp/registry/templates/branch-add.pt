@@ -6,7 +6,7 @@
   xml:lang="en"
   lang="en"
   dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/onecolumn"
   i18n:domain="launchpad"
 >
 
@@ -14,7 +14,8 @@
 
 <div metal:fill-slot="main">
 
-  <h1>Register a branch</h1>
+  <h1>Register a branch on
+    <tal:target-name tal:replace="view/target/displayname"/></h1>
 
   <metal:add-branch use-macro="context/@@branch-form-macros/add-branch-content"/>
 
