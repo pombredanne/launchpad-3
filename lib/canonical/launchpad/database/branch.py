@@ -51,7 +51,7 @@ from canonical.launchpad.interfaces.branchmergeproposal import (
      BranchMergeProposalStatus, InvalidBranchMergeProposal)
 from canonical.launchpad.interfaces.branchpuller import IBranchPuller
 from canonical.launchpad.interfaces.branchtarget import IBranchTarget
-from canonical.launchpad.mailnotification import NotificationRecipientSetfrom lp.registry.interfaces.person import (
+from canonical.launchpad.mailnotification import NotificationRecipientSet
 from lp.registry.interfaces.person import (
     validate_person_not_private_membership, validate_public_person)
 from canonical.launchpad.webapp import urlappend
