@@ -898,21 +898,13 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
             if self.branch.branch_type == BranchType.MIRRORED:
                 self.branch.requestMirror()
         except BranchCreationForbidden:
-            self.setForbiddenError(data['product'])
+            self.addError(
+                "You are not allowed to create branches in %s." %
+                self.context.displayname)
         except BranchExists, e:
             self._setBranchExists(e.existing_branch)
         else:
             self.next_url = canonical_url(self.branch)
-
-    def setForbiddenError(self, product):
-        """Method provided so the error handling can be overridden."""
-        assert product is not None, (
-            "BranchCreationForbidden should never be raised for "
-            "junk branches.")
-        self.setFieldError(
-            'product',
-            "You are not allowed to create branches in %s." %
-            product.displayname)
 
     def validate(self, data):
         owner = data['owner']
@@ -972,8 +964,7 @@ class ProductBranchAddView(BranchAddView):
     @property
     def initial_values(self):
         return {'owner' : self.user,
-                'branch_type': UICreatableBranchType.MIRRORED,
-                'product': self.context}
+                'branch_type': UICreatableBranchType.MIRRORED}
 
     @property
     def cancel_url(self):
