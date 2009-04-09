@@ -16,7 +16,7 @@ from canonical.launchpad.interfaces.distroarchseriesbinarypackagerelease import 
 from canonical.launchpad.interfaces.distroseriessourcepackagerelease import (
     IDistroSeriesSourcePackageRelease)
 
-from canonical.lazr.fields import Reference
+from lazr.restful.fields import Reference
 
 class IDistroSeriesBinaryPackage(Interface):
     """A binary package in a distroseries."""

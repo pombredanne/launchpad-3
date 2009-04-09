@@ -1,0 +1,46 @@
+= The BranchPuller application =
+
+The branch puller application is an XMLRPC service that allows the puller
+to find and update the status of branches.  It is available as the
+branch_puller attribute of our private XMLRPC instance.
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     IPrivateApplication)
+    >>> from lp.code.interfaces.codehosting import (
+    ...     IBranchPullerApplication)
+    >>> from canonical.launchpad.webapp.testing import verifyObject
+
+    >>> private_root = getUtility(IPrivateApplication)
+    >>> verifyObject(
+    ...     IBranchPullerApplication,
+    ...     private_root.branch_puller)
+    True
+
+The BranchPuller view provides the IBranchPuller XML-RPC API:
+
+    >>> from zope.publisher.xmlrpc import TestRequest
+    >>> from lp.code.interfaces.codehosting import IBranchPuller
+    >>> from lp.code.xmlrpc.codehosting import BranchPuller
+
+    >>> branch_puller = BranchPuller(
+    ...     private_root.branch_puller, TestRequest())
+    >>> verifyObject(IBranchPuller, branch_puller)
+    True
+
+The IBranchPuller interface defines some methods, for which see the unit
+tests.  To allow a minimal test here, we call getBranchPullQueue,
+which will return an empty list.
+
+    >>> from lp.code.interfaces.branch import BranchType
+    >>> branch_puller.getBranchPullQueue(BranchType.HOSTED.name)
+    []
+
+This remains true when it is accessed over XMLRPC.
+
+    >>> import xmlrpclib
+    >>> from canonical.functional import XMLRPCTestTransport
+    >>> puller = xmlrpclib.ServerProxy(
+    ...     'http://xmlrpc-private.launchpad.dev:8087/branch_puller',
+    ...     transport=XMLRPCTestTransport())
+    >>> puller.getBranchPullQueue(BranchType.HOSTED.name)
+    []

@@ -214,7 +214,7 @@ We'll add a milestone to Redfish to demonstrate this.
     --------
     Foo Bar ... ago
     Changed in redfish:
-              assignee: nobody &#8594; name16
+              assignee: nobody &#8594; Foo Bar (name16)
             importance: Undecided &#8594; High
              milestone: none &#8594; foo
                 status: New &#8594; Confirmed

@@ -14,7 +14,7 @@ branch.
 
     >>> browser = setupBrowser(auth="Basic eric@example.com:test")
     >>> browser.open('http://code.launchpad.dev/~eric')
-    >>> browser.getLink(id="register-branch").click()
+    >>> browser.getLink("Register a branch").click()
     >>> browser.getControl('Name').value = 'personal-junk'
     >>> browser.getControl('Hosted').click()
     >>> browser.getControl('Register Branch').click()
@@ -35,7 +35,7 @@ branches.
 Junk branches can also be associated with a team.
 
     >>> browser.open('http://code.launchpad.dev/~vikings')
-    >>> browser.getLink(id="register-branch").click()
+    >>> browser.getLink("Register a branch").click()
     >>> browser.getControl('Name').value = 'team-junk'
     >>> browser.getControl('Hosted').click()
     >>> browser.getControl('Register Branch').click()

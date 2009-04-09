@@ -45,28 +45,28 @@ from canonical.launchpad.interfaces.account import (
     AccountCreationRationale, AccountStatus, IAccountSet)
 from canonical.launchpad.interfaces.archive import (
     IArchiveSet, ArchivePurpose)
-from canonical.launchpad.interfaces.branch import (
+from lp.code.interfaces.branch import (
     BranchType, UnknownBranchTypeError)
-from canonical.launchpad.interfaces.branchmergeproposal import (
+from lp.code.interfaces.branchmergeproposal import (
     BranchMergeProposalStatus)
-from canonical.launchpad.interfaces.branchmergequeue import (
+from lp.code.interfaces.branchmergequeue import (
     IBranchMergeQueueSet)
-from canonical.launchpad.interfaces.branchnamespace import (
+from lp.code.interfaces.branchnamespace import (
     get_branch_namespace)
-from canonical.launchpad.interfaces.branchsubscription import (
+from lp.code.interfaces.branchsubscription import (
     BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel)
 from canonical.launchpad.interfaces.bug import CreateBugParams, IBugSet
 from canonical.launchpad.interfaces.bugtask import BugTaskStatus
 from canonical.launchpad.interfaces.bugtracker import (
     BugTrackerType, IBugTrackerSet)
 from canonical.launchpad.interfaces.bugwatch import IBugWatchSet
-from canonical.launchpad.interfaces.codeimport import ICodeImportSet
-from canonical.launchpad.interfaces.codeimportevent import ICodeImportEventSet
-from canonical.launchpad.interfaces.codeimportmachine import (
+from lp.code.interfaces.codeimport import ICodeImportSet
+from lp.code.interfaces.codeimportevent import ICodeImportEventSet
+from lp.code.interfaces.codeimportmachine import (
     CodeImportMachineState, ICodeImportMachineSet)
-from canonical.launchpad.interfaces.codeimportresult import (
+from lp.code.interfaces.codeimportresult import (
     CodeImportResultStatus, ICodeImportResultSet)
-from canonical.launchpad.interfaces.codeimport import (
+from lp.code.interfaces.codeimport import (
     CodeImportReviewStatus, RevisionControlSystems)
 from canonical.launchpad.interfaces.country import ICountrySet
 from lp.registry.interfaces.distribution import IDistributionSet
@@ -100,6 +100,7 @@ from canonical.launchpad.interfaces.shipit import (
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageNameSet)
+from lp.registry.interfaces.ssh import ISSHKeySet, SSHKeyType
 from canonical.launchpad.interfaces.specification import (
     ISpecificationSet, SpecificationDefinitionStatus)
 from canonical.launchpad.interfaces.translationgroup import (
@@ -1617,3 +1618,11 @@ class LaunchpadObjectFactory(ObjectFactory):
             date_created, format, private, contactable,
             submission_key, emailaddress, distroarchseries,
             raw_submission, filename, filesize, system)
+
+    def makeSSHKey(self, person=None, keytype=SSHKeyType.RSA):
+        """Create a new SSHKey."""
+        if person is None:
+            person = self.makePerson()
+        return getUtility(ISSHKeySet).new(
+            person=person, keytype=keytype, keytext=self.getUniqueString(),
+            comment=self.getUniqueString())

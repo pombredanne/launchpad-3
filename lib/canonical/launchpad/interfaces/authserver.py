@@ -37,3 +37,12 @@ class IAuthServer(Interface):
         :returns: list of 2-tuples of (key type, key text).  This list will be
             empty if the user has no keys or does not exist.
         """
+
+    def getUserAndSSHKeys(name):
+        """Get details about a person, including their SSH keys.
+
+        :param name: The username to look up.
+        :returns: A dictionary {id: person-id, username: person-name, keys:
+            [(key-type, key-text)]}, or NoSuchPersonWithName if there is no
+            person with the given name.
+        """

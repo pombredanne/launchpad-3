@@ -199,8 +199,10 @@ class ArchivePopulator(SoyuzScript):
             # done before creating the copy archive.
             proc_families = loadProcessorFamilies(proc_family_names)
             copy_archive = getUtility(IArchiveSet).new(
-                ArchivePurpose.COPY, registrant, to_archive,
-                the_destination.distribution, reason)
+                ArchivePurpose.COPY, registrant,
+                name=to_archive,
+                distribution=the_destination.distribution,
+                description=reason)
             the_destination.archive = copy_archive
             # Associate the newly created copy archive with the processor
             # families specified by the user.

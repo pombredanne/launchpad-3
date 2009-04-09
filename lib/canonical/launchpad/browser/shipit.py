@@ -670,7 +670,6 @@ class ShipItCustomRequestView(ShipItRequestView):
         """
         if self.flavour == ShipItFlavour.SERVER:
             self.quantity_fields_mapping = {
-                ShipItArchitecture.X86: 'ubuntu_quantityx86',
                 ShipItArchitecture.AMD64: 'ubuntu_quantityamd64'}
         elif self.flavour in ShipItFlavour.items:
             self.quantity_fields_mapping = {
@@ -948,6 +947,13 @@ class ShippingRequestApproveOrDenyView(
         LaunchpadFormView, ShippingRequestAdminMixinView):
     """The page where admins can Approve/Deny existing requests."""
 
+    # XXX: salgado, 2009-04-08: We're now shipping only one architecture for
+    # any given flavour, but these architectures may differ (e.g. 64-bit for
+    # Server and 32-bit for all others).  This means we now have an
+    # over-complicated UI which has, for every flavour, both a 32-bit and a
+    # 64-bit column.  We could easily simplify that UI (leaving only one
+    # column for the quantity of CDs to be shipped) if we hard-code the
+    # Server CDs to 64-bit, while others are hard-coded to 32-bit.
     quantity_fields_mapping = {
         ShipItFlavour.UBUNTU:
             {ShipItArchitecture.X86: 'ubuntu_quantityx86approved',
@@ -959,7 +965,7 @@ class ShippingRequestApproveOrDenyView(
             {ShipItArchitecture.X86: 'edubuntu_quantityx86approved',
              ShipItArchitecture.AMD64: None},
         ShipItFlavour.SERVER:
-            {ShipItArchitecture.X86: 'server_quantityx86approved',
+            {ShipItArchitecture.X86: None,
              ShipItArchitecture.AMD64: 'server_quantityamd64approved'}
         }
 
@@ -1097,6 +1103,13 @@ class ShippingRequestAdminView(
         LaunchpadFormView, ShippingRequestAdminMixinView):
     """Where admins can make new orders or change existing ones."""
 
+    # XXX: salgado, 2009-04-08: We're now shipping only one architecture for
+    # any given flavour, but these architectures may differ (e.g. 64-bit for
+    # Server and 32-bit for all others).  This means we now have an
+    # over-complicated UI which has, for every flavour, both a 32-bit and a
+    # 64-bit column.  We could easily simplify that UI (leaving only one
+    # column for the quantity of CDs to be shipped) if we hard-code the
+    # Server CDs to 64-bit, while others are hard-coded to 32-bit.
     quantity_fields_mapping = {
         ShipItFlavour.UBUNTU:
             {ShipItArchitecture.X86: 'ubuntu_quantityx86',
@@ -1108,7 +1121,7 @@ class ShippingRequestAdminView(
             {ShipItArchitecture.X86: 'edubuntu_quantityx86',
              ShipItArchitecture.AMD64: None},
         ShipItFlavour.SERVER:
-            {ShipItArchitecture.X86: 'server_quantityx86',
+            {ShipItArchitecture.X86: None,
              ShipItArchitecture.AMD64: 'server_quantityamd64'}
         }
 

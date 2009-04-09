@@ -23,8 +23,8 @@ from canonical.launchpad.interfaces.archive import IArchive
 from canonical.launchpad.interfaces.component import IComponent
 from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageName)
-from canonical.lazr.fields import Reference
-from canonical.lazr.rest.declarations import (
+from lazr.restful.fields import Reference
+from lazr.restful.declarations import (
     export_as_webservice_entry, exported)
 
 
