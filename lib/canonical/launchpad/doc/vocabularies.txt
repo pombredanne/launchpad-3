@@ -424,7 +424,7 @@ through direct or indirect participations.
 All the milestone in a context.
 
 A MilestoneVolcabulary contains different milestones, depending on the
-current context. It is pointless to present tha large number of all
+current context. It is pointless to present the large number of all
 active milestones known in Launchpad in a vocabulary. Hence a
 MilestoneVolcabulary contains only those milestones that are related
 to the current context. If no context is given, or if the context does
@@ -442,8 +442,7 @@ not have any milestones, a MilestoneVocabulary is empty...
 
 ...but if the context is an IPerson, the MilestoneVocabulary contains all
 milestones. IPerson related pages showing milestone lists retrieve the
-milestones from
-lp.registry.browser.person.RelevantMilestonesMixin.getMilestoneWidgetValues()
+milestones from RelevantMilestonesMixin.getMilestoneWidgetValues()
 but we need the big default vocabulary for form input validation.
 
     >>> all_milestones = vocabulary_registry.get(sample_person, 'Milestone')
