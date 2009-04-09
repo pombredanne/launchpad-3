@@ -19,9 +19,9 @@ from lazr.enum import DBEnumeratedType, DBItem
 from canonical.launchpad import _
 from lp.code.interfaces.branch import IBranch
 from canonical.launchpad.fields import PublicPersonChoice
-from canonical.lazr.rest.declarations import (
+from lazr.restful.declarations import (
     export_as_webservice_entry, exported)
-from canonical.lazr.fields import Reference
+from lazr.restful.fields import Reference
 
 
 class BranchSubscriptionDiffSize(DBEnumeratedType):

@@ -14,7 +14,6 @@ from operator import attrgetter
 from zope.interface import implements
 
 from canonical.database.sqlbase import sqlvalues
-from canonical.launchpad.database.build import Build
 from canonical.launchpad.database.binarypackagerelease import (
     BinaryPackageRelease)
 from canonical.launchpad.database.publishing import (
@@ -22,6 +21,7 @@ from canonical.launchpad.database.publishing import (
 from canonical.launchpad.interfaces import (
     IDistroSeriesSourcePackageRelease, ISourcePackageRelease,
     PackagePublishingStatus)
+
 from lazr.delegates import delegates
 
 
@@ -94,14 +94,23 @@ class DistroSeriesSourcePackageRelease:
     @property
     def builds(self):
         """See `IDistroSeriesSourcePackageRelease`."""
-        return Build.select("""
-            Build.sourcepackagerelease = %s AND
-            Build.distroarchseries = DistroArchSeries.id AND
-            DistroArchSeries.distroseries = %s
-            """ % sqlvalues(self.sourcepackagerelease.id,
-                            self.distroseries.id),
-            orderBy=['-datecreated', '-id'],
-            clauseTables=['DistroArchSeries'])
+        # Find all the builds for the distribution and then filter them
+        # for the current distroseries. We do this rather than separate
+        # storm query because DSSPR will be removed later as part of the
+        # planned package refactor.
+
+        # Import DistributionSourcePackageRelease here to avoid circular
+        # imports (and imported directly from database to avoid long line)
+        from canonical.launchpad.database import (
+            DistributionSourcePackageRelease)
+
+        distro_builds = DistributionSourcePackageRelease(
+            self.distroseries.distribution,
+            self.sourcepackagerelease).builds
+
+        return (
+            [build for build in distro_builds
+                if build.distroarchseries.distroseries == self.distroseries])
 
     @property
     def files(self):

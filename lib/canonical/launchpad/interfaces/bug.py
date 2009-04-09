@@ -40,13 +40,13 @@ from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.validators.bugattachment import (
     bug_attachment_size_constraint)
 
-from canonical.lazr.rest.declarations import (
+from lazr.restful.declarations import (
     REQUEST_USER, call_with, export_as_webservice_entry,
     export_factory_operation, export_operation_as, export_write_operation,
     exported, mutator_for, operation_parameters, rename_parameters_as,
     webservice_error)
-from canonical.lazr.fields import CollectionField, Reference
-from canonical.lazr.interface import copy_field
+from lazr.restful.fields import CollectionField, Reference
+from lazr.restful.interface import copy_field
 
 
 class CreateBugParams:

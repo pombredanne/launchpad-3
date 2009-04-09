@@ -19,7 +19,7 @@ from zope.interface import Attribute, Interface
 
 from canonical.launchpad import _
 from canonical.launchpad.webapp.interfaces import IPrimaryContext
-from canonical.lazr.fields import Reference
+from lazr.restful.fields import Reference
 
 
 class IHasBranchTarget(Interface):
