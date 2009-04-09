@@ -871,8 +871,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
     def testSourceUploadToBuilddPath(self):
         """Source uploads to buildd upload paths are not permitted."""
         ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-        primary = getUtility(IArchiveSet).getByDistroPurpose(
-            ubuntu, ArchivePurpose.PRIMARY, 'primary')
+        primary = ubuntu.main_archive
 
         uploadprocessor = self.setupBreezyAndGetUploadProcessor()
         upload_dir = self.queueUpload("bar_1.0-1", "%s/ubuntu" % primary.id)

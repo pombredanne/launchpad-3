@@ -308,12 +308,11 @@ class UploadProcessor:
         # Reject source upload to buildd upload paths.
         first_path = relative_path.split(os.path.sep)[0]
         if first_path.isdigit() and policy.name != 'buildd':
-            upload.reject(
+            error_message = (
                 "Invalid upload path (%s) for this policy (%s)" %
                 (relative_path, policy.name))
-            self.log.error(
-                "Invalid upload path (%s) for this policy (%s)" %
-                (relative_path, policy.name))
+            upload.reject(error_message)
+            self.log.error(error_message)
 
         # Store archive lookup error in the upload if it was the case.
         if error is not None:
