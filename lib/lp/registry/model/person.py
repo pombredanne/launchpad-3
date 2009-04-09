@@ -1522,7 +1522,7 @@ class Person(
             clauseTables=['Person'],
             orderBy=Person.sortingColumns)
 
-    def _mapped_participants_locations(self, limit=None):
+    def _getMappedParticipantsLocations(self, limit=None):
         """See `IPersonViewRestricted`."""
         return PersonLocation.select("""
             PersonLocation.person = TeamParticipation.person AND
@@ -1544,7 +1544,7 @@ class Person(
         # of team members), it becomes more important to cache their locations
         # than to return a lazy SelectResults (or similar) object that only
         # fetches the rows when they're needed.
-        locations = self._mapped_participants_locations(limit=limit)
+        locations = self._getMappedParticipantsLocations(limit=limit)
         for location in locations:
             location.person._location = location
         participants = set(location.person for location in locations)
@@ -1558,7 +1558,7 @@ class Person(
     @property
     def mapped_participants_count(self):
         """See `IPersonViewRestricted`."""
-        return self._mapped_participants_locations().count()
+        return self._getMappedParticipantsLocations().count()
 
     def getMappedParticipantsBounds(self):
         """See `IPersonViewRestricted`."""
@@ -1566,7 +1566,7 @@ class Person(
         min_lat = 90.0
         max_lng = -180.0
         min_lng = 180.0
-        locations = self._mapped_participants_locations()
+        locations = self._getMappedParticipantsLocations()
         if self.mapped_participants_count == 0:
             raise AssertionError, (
                 'This method cannot be called when '
