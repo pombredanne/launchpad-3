@@ -131,7 +131,7 @@ Translators'
 
 Check that the branches have been renamed properly.
 
-    >>> from canonical.launchpad.interfaces.branchnamespace import (
+    >>> from lp.code.interfaces.branchnamespace import (
     ...     get_branch_namespace)
     >>> sample_junk = get_branch_namespace(sample)
     >>> sample_junk.getByName('peoplemerge') == peoplemerge

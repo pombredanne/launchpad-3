@@ -9,7 +9,7 @@
         file="meta-overrides.zcml" />
     <include package="canonical.launchpad" file="permissions.zcml" />
     <include package="canonical.launchpad.webapp" file="meta.zcml" />
-    <include package="canonical.lazr.rest" file="meta.zcml" />
+    <include package="lazr.restful" file="meta.zcml" />
     <include package="lazr.uri" />
     <include package="canonical.librarian" />
 

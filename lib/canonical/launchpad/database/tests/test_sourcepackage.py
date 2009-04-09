@@ -14,7 +14,7 @@ from canonical.launchpad.ftests import login_person, logout
 from lp.registry.interfaces.distroseries import DistroSeriesStatus
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.publishing import PackagePublishingPocket
-from canonical.launchpad.interfaces.seriessourcepackagebranch import (
+from lp.code.interfaces.seriessourcepackagebranch import (
     ISeriesSourcePackageBranchSet)
 from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.testing.layers import DatabaseFunctionalLayer

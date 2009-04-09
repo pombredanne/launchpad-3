@@ -22,7 +22,6 @@ The proposal will have to be reviewed by a team administrator.
     Launchpad Administrators
     Mailing List Experts
     Rosetta Administrators
-    ...
 
 We'll now propose Launchpad Administrators as a member of Ubuntu Team.
 

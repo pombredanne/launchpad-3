@@ -49,15 +49,15 @@ from zope.interface.interface import invariant
 from zope.component import getUtility
 from lazr.enum import DBEnumeratedType, DBItem, EnumeratedType, Item
 
-from canonical.lazr.interface import copy_field
-from canonical.lazr.rest.declarations import (
-   call_with, collection_default_content, export_as_webservice_collection,
-   export_as_webservice_entry, export_factory_operation,
-   export_read_operation, export_write_operation, exported,
-   operation_parameters, operation_returns_collection_of,
-   operation_returns_entry, rename_parameters_as, REQUEST_USER,
-   webservice_error)
-from canonical.lazr.fields import CollectionField, Reference
+from lazr.restful.interface import copy_field
+from lazr.restful.declarations import (
+    LAZR_WEBSERVICE_EXPORTED, REQUEST_USER, call_with,
+    collection_default_content, export_as_webservice_collection,
+    export_as_webservice_entry, export_factory_operation,
+    export_read_operation, export_write_operation, exported,
+    operation_parameters, operation_returns_collection_of,
+    operation_returns_entry, rename_parameters_as, webservice_error)
+from lazr.restful.fields import CollectionField, Reference
 
 from canonical.launchpad import _
 
@@ -90,9 +90,6 @@ from canonical.launchpad.validators.email import email_validator
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.webapp.interfaces import NameLookupFailed
 from canonical.launchpad.webapp.authorization import check_permission
-
-from lp.answers.interfaces.questioncollection import (
-    IQuestionCollection, QUESTION_STATUS_DEFAULT_SEARCH)
 
 PRIVATE_TEAM_PREFIX = 'private-'
 
@@ -448,9 +445,8 @@ class IHasStanding(Interface):
         description=_("The reason the person's standing is what it is."))
 
 
-class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
-                    IQuestionCollection, IHasLogo, IHasMugshot, IHasIcon,
-                    IHasLocation, IObjectWithLocation):
+class IPersonPublic(IHasSpecifications, IHasMentoringOffers, IHasLogo,
+                    IHasMugshot, IHasIcon, IHasLocation, IObjectWithLocation):
     """Public attributes for a Person."""
 
     id = Int(title=_('ID'), required=True, readonly=True)
@@ -540,8 +536,6 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
             title=_('List of languages known by this person'),
             readonly=True, required=False,
             value_type=Reference(schema=ILanguage)))
-    translatable_languages = Attribute(
-        _('Languages this person knows, apart from English'))
 
     hide_email_addresses = exported(
         Bool(title=_("Hide my email addresses from other Launchpad users"),
@@ -734,16 +728,6 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
             "this is set to None, then this Person has not been merged "
             "into another and is still valid"))
 
-    translation_history = Attribute(
-        "The set of POFileTranslator objects that represent work done "
-        "by this translator.")
-
-    translation_groups = Attribute(
-        "The set of TranslationGroup objects this person is a member of.")
-
-    translators = Attribute(
-        "The set of Translator objects this person is a member of.")
-
     # title is required for the Launchpad Page Layout main template
     title = Attribute('Person Page Title')
 
@@ -762,10 +746,6 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
 
     visibility_consistency_warning = Attribute(
         "Warning that a private team may leak membership info.")
-
-    translations_relicensing_agreement = Bool(
-        title=_("Whether person agrees to relicense their translations"),
-        readonly=False)
 
     sub_teams = exported(
         CollectionField(
@@ -1094,41 +1074,6 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
         :param language: An object providing ILanguage.
 
         If the given language is not present, nothing  will happen.
-        """
-
-    def getDirectAnswerQuestionTargets():
-        """Return a list of IQuestionTargets that a person is subscribed to.
-
-        This will return IQuestionTargets that the person is registered as an
-        answer contact because he subscribed himself.
-        """
-
-    def getTeamAnswerQuestionTargets():
-        """Return a list of IQuestionTargets that are indirect subscriptions.
-
-        This will return IQuestionTargets that the person or team is
-        registered as an answer contact because of his membership in a team.
-        """
-
-    def searchQuestions(search_text=None,
-                        status=QUESTION_STATUS_DEFAULT_SEARCH,
-                        language=None, sort=None, participation=None,
-                        needs_attention=None):
-        """Search the person's questions.
-
-        See IQuestionCollection for the description of the standard search
-        parameters.
-
-        :participation: A list of QuestionParticipation that defines the set
-        of relationship to questions that will be searched. If None or an
-        empty sequence, all relationships are considered.
-
-        :needs_attention: If this flag is true, only questions needing
-        attention from the person will be included. Questions needing
-        attention are those owned by the person in the ANSWERED or NEEDSINFO
-        state, as well as, those not owned by the person but on which the
-        person requested for more information or gave an answer and that are
-        back in the OPEN state.
         """
 
     def isBugContributor(user):
@@ -1758,16 +1703,6 @@ class IPersonSet(Interface):
     def getByAccount(account):
         """Return the `IPerson` with the given account, or None."""
 
-    def getPOFileContributors(pofile):
-        """Return people that have contributed to the specified POFile."""
-
-    def getPOFileContributorsByDistroSeries(distroseries, language):
-        """Return people who translated strings in distroseries to language.
-
-        The people that translated only IPOTemplate objects that are not
-        current will not appear in the returned list.
-        """
-
     def updateStatistics(ztm):
         """Update statistics caches and commit."""
 
@@ -1866,15 +1801,6 @@ class IPersonSet(Interface):
         We are not yet game to delete the `from_person` entry from the
         database yet. We will let it roll for a while and see what cruft
         develops. -- StuartBishop 20050812
-        """
-
-    def getTranslatorsByLanguage(language):
-        """Return the list of translators for the given language.
-
-        :arg language: ILanguage object for which we want to get the
-            translators.
-
-        Return None if there is no translator.
         """
 
     def getValidPersons(self, persons):
@@ -2077,14 +2003,14 @@ params_to_fix = [
     ]
 for method, name in params_to_fix:
     method.queryTaggedValue(
-        'lazr.webservice.exported')['params'][name].schema = IPerson
+        'lazr.restful.exported')['params'][name].schema = IPerson
 
 # Fix schema of operation return values.
 # XXX: salgado, 2008-08-01: Uncomment when findPathToTeam is exported again.
 # IPersonPublic['findPathToTeam'].queryTaggedValue(
 #     'lazr.webservice.exported')['return_type'].value_type.schema = IPerson
 IPersonViewRestricted['getMembersByStatus'].queryTaggedValue(
-    'lazr.webservice.exported')['return_type'].value_type.schema = IPerson
+    LAZR_WEBSERVICE_EXPORTED)['return_type'].value_type.schema = IPerson
 
 # Fix schema of ITeamMembership fields.  Has to be done here because of
 # circular dependencies.

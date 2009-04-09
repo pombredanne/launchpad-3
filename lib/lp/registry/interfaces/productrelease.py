@@ -29,9 +29,9 @@ from canonical.launchpad.fields import ContentNameField
 from lp.registry.interfaces.person import IPerson
 from canonical.launchpad.validators import LaunchpadValidationError
 
-from canonical.lazr.fields import CollectionField, Reference, ReferenceChoice
-from canonical.lazr.interface import copy_field
-from canonical.lazr.rest.declarations import (
+from lazr.restful.fields import CollectionField, Reference, ReferenceChoice
+from lazr.restful.interface import copy_field
+from lazr.restful.declarations import (
     REQUEST_USER, call_with, export_as_webservice_entry,
     export_factory_operation, export_operation_as, export_write_operation,
     exported, operation_parameters)

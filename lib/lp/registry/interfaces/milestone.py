@@ -25,8 +25,8 @@ from canonical.launchpad.fields import (
     )
 from canonical.launchpad.validators.name import name_validator
 
-from canonical.lazr.fields import CollectionField, Reference
-from canonical.lazr.rest.declarations import (
+from lazr.restful.fields import CollectionField, Reference
+from lazr.restful.declarations import (
     call_with, export_as_webservice_entry, export_factory_operation, exported,
     export_operation_as, export_write_operation, rename_parameters_as,
     REQUEST_USER)

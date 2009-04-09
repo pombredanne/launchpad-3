@@ -16,12 +16,12 @@ from canonical.launchpad.interfaces.archivepermission import (
     IArchivePermissionSet)
 from canonical.launchpad.interfaces.archiveauthtoken import IArchiveAuthToken
 from canonical.launchpad.interfaces.archivesubscriber import (
-    IArchiveSubscriber)
-from canonical.launchpad.interfaces.branch import (
+    IArchiveSubscriber, IPersonalArchiveSubscription)
+from lp.code.interfaces.branch import (
     IBranch, user_has_special_branch_access)
-from canonical.launchpad.interfaces.branchmergeproposal import (
+from lp.code.interfaces.branchmergeproposal import (
     IBranchMergeProposal)
-from canonical.launchpad.interfaces.branchsubscription import (
+from lp.code.interfaces.branchsubscription import (
     IBranchSubscription)
 from canonical.launchpad.interfaces.bug import IBug
 from canonical.launchpad.interfaces.bugattachment import IBugAttachment
@@ -30,12 +30,12 @@ from canonical.launchpad.interfaces.bugnomination import IBugNomination
 from canonical.launchpad.interfaces.bugtracker import IBugTracker
 from canonical.launchpad.interfaces.build import IBuild
 from canonical.launchpad.interfaces.builder import IBuilder, IBuilderSet
-from canonical.launchpad.interfaces.codeimport import ICodeImport
-from canonical.launchpad.interfaces.codeimportjob import (
+from lp.code.interfaces.codeimport import ICodeImport
+from lp.code.interfaces.codeimportjob import (
     ICodeImportJobSet, ICodeImportJobWorkflow)
-from canonical.launchpad.interfaces.codeimportmachine import (
+from lp.code.interfaces.codeimportmachine import (
     ICodeImportMachine)
-from canonical.launchpad.interfaces.codereviewcomment import (
+from lp.code.interfaces.codereviewcomment import (
     ICodeReviewComment, ICodeReviewCommentDeletion)
 from lp.registry.interfaces.distribution import IDistribution
 from canonical.launchpad.interfaces.distributionmirror import (
@@ -76,7 +76,7 @@ from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productrelease import (
     IProductRelease, IProductReleaseFile)
 from lp.registry.interfaces.productseries import IProductSeries
-from canonical.launchpad.interfaces.seriessourcepackagebranch import (
+from lp.code.interfaces.seriessourcepackagebranch import (
     ISeriesSourcePackageBranch, ISeriesSourcePackageBranchSet)
 from canonical.launchpad.interfaces.shipit import (
     IRequestedCDs, IShippingRequest, IShippingRequestSet, IShippingRun,
@@ -97,6 +97,8 @@ from canonical.launchpad.interfaces.translationgroup import (
     ITranslationGroup, ITranslationGroupSet)
 from canonical.launchpad.interfaces.translationimportqueue import (
     ITranslationImportQueue, ITranslationImportQueueEntry)
+from canonical.launchpad.interfaces.translationsperson import (
+    ITranslationsPerson)
 from canonical.launchpad.interfaces.translator import (
     ITranslator, IEditTranslator)
 
@@ -639,6 +641,16 @@ class EditPersonBySelfOrAdmins(AuthorizationBase):
         return self.obj.id == user.id or user.inTeam(admins)
 
 
+class EditTranslationsPersonByPerson(AuthorizationBase):
+    permission = 'launchpad.Edit'
+    usedfor = ITranslationsPerson
+
+    def checkAuthenticated(self, user):
+        person = self.obj.person
+        admins = getUtility(ILaunchpadCelebrities).admin
+        return person == user or user.inTeam(admins)
+
+
 class EditPersonLocation(AuthorizationBase):
     permission = 'launchpad.EditLocation'
     usedfor = IPerson
@@ -719,15 +731,19 @@ class ViewPublicOrPrivateTeamMembers(AuthorizationBase):
             return True
         return False
 
-    def checkAuthenticated(self, user):
-        """Verify that the user can view the team's membership.
+    def checkAccountAuthenticated(self, account):
+        """See `IAuthorization.checkAccountAuthenticated`.
 
-        Anyone can see a public team's membership.
-        Only a team member or a Launchpad admin can view a
-        private membership.
+        Verify that the user can view the team's membership.
+
+        Anyone can see a public team's membership. Only a team member
+        or a Launchpad admin can view a private membership.
         """
         if self.obj.visibility == PersonVisibility.PUBLIC:
             return True
+        user = IPerson(account, None)
+        if user is None:
+            return False
         admins = getUtility(ILaunchpadCelebrities).admin
         if user.inTeam(admins) or user.inTeam(self.obj):
             return True
@@ -1154,37 +1170,20 @@ class EditCodeImportMachine(OnlyVcsImportsAndAdmins):
     usedfor = ICodeImportMachine
 
 
-class EditPOTemplateDetails(EditByOwnersOrAdmins):
-    usedfor = IPOTemplate
-
-    def checkAuthenticated(self, user):
-        """Allow product/sourcepackage/potemplate owner, experts and admis.
-        """
-        if (self.obj.productseries is not None and
-            user.inTeam(self.obj.productseries.product.owner)):
-            # The user is the owner of the product.
-            return True
-
-        rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_experts
-
-        return (EditByOwnersOrAdmins.checkAuthenticated(self, user) or
-                user.inTeam(rosetta_experts))
-
-
 class AdminPOTemplateDetails(OnlyRosettaExpertsAndAdmins):
-    """Permissions to edit all aspects of an IPOTemplate."""
     permission = 'launchpad.Admin'
     usedfor = IPOTemplate
 
     def checkAuthenticated(self, user):
+        """Allow LP/Translations admins, and for distros, owners and 
+        translation group owners.
+        """
         if OnlyRosettaExpertsAndAdmins.checkAuthenticated(self, user):
             return True
 
-        if self.obj.distroseries is not None:
-            # For distroseries, both the owners and the owners of its
-            # chosen translation group (if any) are allowed to manage
-            # templates.
-            distro = self.obj.distroseries.distribution
+        template = self.obj
+        if template.distroseries is not None:
+            distro = template.distroseries.distribution
             if user.inTeam(distro.owner):
                 return True
             translation_group = distro.translationgroup
@@ -1192,6 +1191,24 @@ class AdminPOTemplateDetails(OnlyRosettaExpertsAndAdmins):
                 return True
 
         return False
+
+
+class EditPOTemplateDetails(AdminPOTemplateDetails, EditByOwnersOrAdmins):
+    permission = 'launchpad.Edit'
+    usedfor = IPOTemplate
+
+    def checkAuthenticated(self, user):
+        """Allow anyone with admin rights; owners, product owners and
+        distribution owners; and for distros, translation group owners.
+        """
+        if (self.obj.productseries is not None and
+            user.inTeam(self.obj.productseries.product.owner)):
+            # The user is the owner of the product.
+            return True
+
+        return (
+            AdminPOTemplateDetails.checkAuthenticated(self, user) or 
+            EditByOwnersOrAdmins.checkAuthenticated(self, user))
 
 
 # XXX: Carlos Perello Marin 2005-05-24 bug=753:
@@ -1954,6 +1971,27 @@ class EditArchiveAuthToken(AuthorizationBase):
         return user.inTeam(admins)
 
 
+class ViewPersonalArchiveSubscription(AuthorizationBase):
+    """Restrict viewing of personal archive subscriptions (non-db class).
+
+    The user should be the subscriber, have append privilege to the archive
+    or be an admin.
+    """
+    permission = "launchpad.View"
+    usedfor = IPersonalArchiveSubscription
+
+    def checkAuthenticated(self, user):
+        if user == self.obj.subscriber:
+            return True
+        append_archive = AppendArchive(self.obj.archive)
+
+        if append_archive.checkAuthenticated(user):
+            return True
+
+        admins = getUtility(ILaunchpadCelebrities).admin
+        return user.inTeam(admins)
+
+
 class ViewArchiveSubscriber(AuthorizationBase):
     """Restrict viewing of archive subscribers.
 
@@ -2098,12 +2136,8 @@ class ViewEmailAddress(AuthorizationBase):
         if self.obj.account == account:
             return True
 
-        # Email addresses without an associated Person cannot be seen by
-        # others.
-        if self.obj.person is None:
-            return False
-
-        if not self.obj.person.hide_email_addresses:
+        if not (self.obj.person is None or
+                self.obj.person.hide_email_addresses):
             return True
 
         user = IPerson(account, None)
@@ -2111,7 +2145,7 @@ class ViewEmailAddress(AuthorizationBase):
             return False
 
         celebrities = getUtility(ILaunchpadCelebrities)
-        return (user.inTeam(self.obj.person)
+        return (self.obj.person is not None and user.inTeam(self.obj.person)
                 or user.inTeam(celebrities.commercial_admin)
                 or user.inTeam(celebrities.launchpad_developers)
                 or user.inTeam(celebrities.admin))

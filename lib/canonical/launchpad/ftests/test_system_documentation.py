@@ -259,23 +259,6 @@ def manageChrootSetup(test):
 # the harness for the mailinglist-xmlrpc.txt tests, or improving things so
 # that all this cruft isn't necessary.
 
-def zopelessLaunchpadSecuritySetUp(test):
-    """Set up a LaunchpadZopelessLayer test to use LaunchpadSecurityPolicy.
-
-    To be able to use LaunchpadZopelessLayer.switchDbUser in a test, we need
-    to run in the Zopeless environment. The Zopeless environment normally runs
-    using the PermissiveSecurityPolicy. If we want the test to cover
-    functionality used in the webapp, it needs to use the
-    LaunchpadSecurityPolicy.
-    """
-    setGlobs(test)
-    test.old_security_policy = setSecurityPolicy(LaunchpadSecurityPolicy)
-
-
-def zopelessLaunchpadSecurityTearDown(test):
-    setSecurityPolicy(test.old_security_policy)
-
-
 def hwdbDeviceTablesSetup(test):
     setUp(test)
     LaunchpadZopelessLayer.switchDbUser('hwdb-submission-processor')
@@ -689,22 +672,10 @@ special = {
                 tearDown=tearDown,
                 layer=LaunchpadZopelessLayer
                 ),
-    'codeimport-machine.txt': LayeredDocFileSuite(
-            '../doc/codeimport-machine.txt',
-            setUp=zopelessLaunchpadSecuritySetUp,
-            tearDown=zopelessLaunchpadSecurityTearDown,
-            layer=LaunchpadZopelessLayer,
-            ),
     'openid-fetcher.txt': LayeredDocFileSuite(
             '../doc/openid-fetcher.txt',
             stdout_logging=False,
             layer=LaunchpadFunctionalLayer
-            ),
-    'branch-merge-proposals.txt': LayeredDocFileSuite(
-            '../doc/branch-merge-proposals.txt',
-            setUp=zopelessLaunchpadSecuritySetUp,
-            tearDown=zopelessLaunchpadSecurityTearDown,
-            layer=LaunchpadZopelessLayer,
             ),
     'soyuz-set-of-uploads.txt': LayeredDocFileSuite(
             '../doc/soyuz-set-of-uploads.txt',

@@ -94,6 +94,14 @@
         tal:attributes="href
         string:${icingroot}/lazr/build/formoverlay/assets/formoverlay.css"
         />
+    <link rel="stylesheet" type="text/css"
+        tal:attributes="href
+        string:${icingroot}/lazr/build/picker/assets/skins/sam/picker.css"
+        />
+    <link rel="stylesheet" type="text/css"
+        tal:attributes="href
+        string:${icingroot}/lazr/build/activator/assets/skins/sam/activator.css"
+        />
 
     <tal:devmode condition="devmode">
       <script type="text/javascript"
@@ -127,6 +135,8 @@
       <script type="text/javascript"
               tal:attributes="src string:${yui}/widget/widget.js"></script>
       <script type="text/javascript"
+              tal:attributes="src string:${yui}/widget/widget-position-ext.js"></script>
+      <script type="text/javascript"
               tal:attributes="src string:${yui}/cookie/cookie.js"></script>
       <script type="text/javascript"
               tal:attributes="src string:${yui}/widget/widget-position.js"></script>
@@ -150,9 +160,15 @@
       <script type="text/javascript"
               tal:attributes="src string:${lazr_js}/overlay/overlay.js"></script>
       <script type="text/javascript"
+              tal:attributes="src string:${lazr_js}/activator/activator.js"></script>
+      <script type="text/javascript"
+              tal:attributes="src string:${lazr_js}/picker/picker.js"></script>
+      <script type="text/javascript"
               tal:attributes="src string:${lazr_js}/formoverlay/formoverlay.js"></script>
       <script type="text/javascript"
               tal:attributes="src string:${lp_js}/lp/lp.js"></script>
+      <script type="text/javascript"
+              tal:attributes="src string:${lp_js}/lp/picker.js"></script>
       <script type="text/javascript"
               tal:attributes="src string:${lp_js}/sorttable/sorttable.js"></script>
       <script type="text/javascript"

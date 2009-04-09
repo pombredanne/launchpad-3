@@ -1512,6 +1512,9 @@ class BugSet:
                 sourcepackagename=params.sourcepackagename,
                 owner=params.owner, status=params.status)
 
+        # Mark the bug reporter as affected by that bug.
+        bug.markUserAffected(bug.owner)
+
         return bug
 
 

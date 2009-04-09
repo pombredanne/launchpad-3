@@ -11,7 +11,7 @@ from zope.interface import directlyProvides, directlyProvidedBy, Interface
 from zope.publisher.interfaces.browser import (
     IBrowserRequest, IDefaultBrowserLayer)
 
-from canonical.lazr.interfaces.rest import IWebServiceLayer
+from lazr.restful.interfaces import IWebServiceLayer
 
 
 def setAdditionalLayer(request, layer):
