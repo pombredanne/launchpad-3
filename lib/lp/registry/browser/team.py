@@ -194,26 +194,39 @@ class TeamEditView(TeamFormMixin, HasRenewalPolicyMixin,
             self.updateContextFromData(data)
         except ImmutableVisibilityError, error:
             self.request.response.addErrorNotification(str(error))
-        self.next_url = canonical_url(self.context)
+            # Abort must be called or changes to fields before the one causing
+            # the error will be committed.  If we have a database validation
+            # error we want to abort the transaction.
+            self._abort()
+        else:
+            self.next_url = canonical_url(self.context)
 
     def setUpWidgets(self):
         """See `LaunchpadViewForm`.
 
         When a team has a mailing list, renames are prohibited.
+        Also when a team is private renames are prohibited.
         """
         mailing_list = getUtility(IMailingListSet).get(self.context.name)
-        writable = (mailing_list is None or
-                    mailing_list.status == MailingListStatus.PURGED)
+        writable = ((mailing_list is None or
+                     mailing_list.status == MailingListStatus.PURGED) and
+                    self.context.visibility != PersonVisibility.PRIVATE
+                    )
+
         if not writable:
             # This makes the field's widget display (i.e. read) only.
             self.form_fields['name'].for_display = True
         super(TeamEditView, self).setUpWidgets()
         if not writable:
+            if self.context.visibility == PersonVisibility.PRIVATE:
+                message = _('You cannot change the name of a private team.')
+            else:
+                message = _(
+                    'This team has a mailing list and may not be renamed.')
             # We can't change the widget's .hint directly because that's a
             # read-only property.  But that property just delegates to the
             # context's underlying description, so change that instead.
-            self.widgets['name'].context.description = _(
-                'This team has a mailing list and may not be renamed.')
+            self.widgets['name'].context.description = message
 
 
 def generateTokenAndValidationEmail(email, team):
