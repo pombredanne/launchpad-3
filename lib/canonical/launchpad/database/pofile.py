@@ -287,6 +287,9 @@ class POFileMixIn(RosettaStats):
         -- filtered by this POTemplate.
           SELECT POTMsgSet.id
             FROM POTMsgSet
+            JOIN TranslationTemplateItem
+              ON TranslationTemplateItem.potmsgset=POTMsgSet.id AND
+                 TranslationTemplateItem.potemplate=4
             WHERE
               (POTMsgSet.msgid_singular IS NOT NULL AND
                POTMsgSet.msgid_singular IN (
@@ -305,6 +308,9 @@ class POFileMixIn(RosettaStats):
         -- Step 1b: like above, just on msgid_plural.
           SELECT POTMsgSet.id
             FROM POTMsgSet
+            JOIN TranslationTemplateItem
+              ON TranslationTemplateItem.potmsgset=POTMsgSet.id AND
+                 TranslationTemplateItem.potemplate=4
             WHERE
               (POTMsgSet.msgid_plural IS NOT NULL AND
                POTMsgSet.msgid_plural IN (
@@ -355,7 +361,7 @@ class POFileMixIn(RosettaStats):
 
             all_potmsgsets_query = "(" + " UNION ".join(search_clauses) + ")"
 
-        return POTMsgSet.select(" POTMsgSet.id IN " + all_potmsgsets_query,
+        return POTMsgSet.select("POTMsgSet.id IN " + all_potmsgsets_query,
                                 orderBy='sequence')
 
 
@@ -635,6 +641,7 @@ class POFile(SQLBase, POFileMixIn):
             'TranslationTemplateItem.potemplate = %s' % sqlvalues(
                 self.potemplate),
             'TranslationTemplateItem.potmsgset = POTMsgSet.id',
+            'TranslationTemplateItem.sequence > 0',
             ]
         clauses.append('POTMsgSet.id NOT IN (' + translated_query + ')')
         return POTMsgSet.select(' AND '.join(clauses),
