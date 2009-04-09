@@ -1506,6 +1506,11 @@ div#signing-key p {
     padding-left: 18px;
 }
 
+/* build status links should always be padded. */
+td.build_status a {
+    margin: 0 0 0 0.4em;
+}
+
 div#signing-key a {
     font-weight: bold;
 }

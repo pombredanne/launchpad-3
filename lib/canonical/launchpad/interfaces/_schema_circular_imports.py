@@ -14,6 +14,8 @@ __metaclass__ = type
 __all__ = []
 
 
+from lazr.restful.declarations import LAZR_WEBSERVICE_EXPORTED
+
 from canonical.launchpad.interfaces.build import (
     BuildStatus, IBuild)
 from canonical.launchpad.interfaces.buildrecords import IHasBuildRecords
@@ -44,20 +46,20 @@ IBranch['landing_targets'].value_type.schema = IBranchMergeProposal
 IBranch['landing_candidates'].value_type.schema = IBranchMergeProposal
 IBranch['dependent_branches'].value_type.schema = IBranchMergeProposal
 IBranch['subscribe'].queryTaggedValue(
-    'lazr.webservice.exported')['return_type'].schema = IBranchSubscription
-IBranch['subscribe'].queryTaggedValue('lazr.webservice.exported')['params'][
+    LAZR_WEBSERVICE_EXPORTED)['return_type'].schema = IBranchSubscription
+IBranch['subscribe'].queryTaggedValue(LAZR_WEBSERVICE_EXPORTED)['params'][
     'notification_level'].vocabulary = BranchSubscriptionNotificationLevel
-IBranch['subscribe'].queryTaggedValue('lazr.webservice.exported')['params'][
+IBranch['subscribe'].queryTaggedValue(LAZR_WEBSERVICE_EXPORTED)['params'][
     'max_diff_lines'].vocabulary = BranchSubscriptionDiffSize
-IBranch['subscribe'].queryTaggedValue('lazr.webservice.exported')['params'][
+IBranch['subscribe'].queryTaggedValue(LAZR_WEBSERVICE_EXPORTED)['params'][
     'code_review_level'].vocabulary = CodeReviewNotificationLevel
 
 IBranchMergeProposal['getComment'].queryTaggedValue(
-    'lazr.webservice.exported')['return_type'].schema = ICodeReviewComment
+    LAZR_WEBSERVICE_EXPORTED)['return_type'].schema = ICodeReviewComment
 IBranchMergeProposal['createComment'].queryTaggedValue(
-    'lazr.webservice.exported')['params']['vote'].vocabulary = CodeReviewVote
+    LAZR_WEBSERVICE_EXPORTED)['params']['vote'].vocabulary = CodeReviewVote
 IBranchMergeProposal['createComment'].queryTaggedValue(
-    'lazr.webservice.exported')['params']['parent'].schema = \
+    LAZR_WEBSERVICE_EXPORTED)['params']['parent'].schema = \
         ICodeReviewComment
 IBranchMergeProposal['all_comments'].value_type.schema = ICodeReviewComment
 IBranchMergeProposal['votes'].value_type.schema = ICodeReviewVoteReference
@@ -65,33 +67,33 @@ IBranchMergeProposal['votes'].value_type.schema = ICodeReviewVoteReference
 IPreviewDiff['branch_merge_proposal'].schema = IBranchMergeProposal
 
 IPersonPublic['getMergeProposals'].queryTaggedValue(
-    'lazr.webservice.exported')['return_type'].value_type.schema = \
+    LAZR_WEBSERVICE_EXPORTED)['return_type'].value_type.schema = \
         IBranchMergeProposal
 IPersonPublic['getMergeProposals'].queryTaggedValue(
-    'lazr.webservice.exported')['params']['status'].value_type.vocabulary = \
+    LAZR_WEBSERVICE_EXPORTED)['params']['status'].value_type.vocabulary = \
         BranchMergeProposalStatus
 
 IHasBuildRecords['getBuildRecords'].queryTaggedValue(
-    'lazr.webservice.exported')[
+    LAZR_WEBSERVICE_EXPORTED)[
         'params']['pocket'].vocabulary = PackagePublishingPocket
 IHasBuildRecords['getBuildRecords'].queryTaggedValue(
-    'lazr.webservice.exported')[
+    LAZR_WEBSERVICE_EXPORTED)[
         'params']['build_state'].vocabulary = BuildStatus
 IHasBuildRecords['getBuildRecords'].queryTaggedValue(
-    'lazr.webservice.exported')[
+    LAZR_WEBSERVICE_EXPORTED)[
         'return_type'].value_type.schema = IBuild
 
 ISourcePackage['distroseries'].schema = IDistroSeries
 ISourcePackage['productseries'].schema = IProductSeries
 ISourcePackage['getBranch'].queryTaggedValue(
-    'lazr.webservice.exported')[
+    LAZR_WEBSERVICE_EXPORTED)[
         'params']['pocket'].vocabulary = PackagePublishingPocket
 ISourcePackage['getBranch'].queryTaggedValue(
-    'lazr.webservice.exported')['return_type'].schema = IBranch
+    LAZR_WEBSERVICE_EXPORTED)['return_type'].schema = IBranch
 ISourcePackage['setBranch'].queryTaggedValue(
-    'lazr.webservice.exported')[
+    LAZR_WEBSERVICE_EXPORTED)[
         'params']['pocket'].vocabulary = PackagePublishingPocket
 ISourcePackage['setBranch'].queryTaggedValue(
-    'lazr.webservice.exported')['params']['branch'].schema = IBranch
+    LAZR_WEBSERVICE_EXPORTED)['params']['branch'].schema = IBranch
 
 IPerson['hardware_submissions'].value_type.schema = IHWSubmission

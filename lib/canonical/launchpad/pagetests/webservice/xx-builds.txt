@@ -27,7 +27,7 @@ Retrieve a source publication:
 'builds' is a collection of Build records.  Each Build contains a number
 of properties:
 
-    >>> from canonical.lazr.testing.webservice import pprint_entry
+    >>> from lazr.restful.testing.webservice import pprint_entry
     >>> pprint_entry(builds['entries'][0])
     arch_tag: u'i386'
     archive_link: u'http://.../~cprov/+archive/ppa'
