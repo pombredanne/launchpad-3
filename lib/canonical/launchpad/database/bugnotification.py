@@ -89,17 +89,17 @@ class BugNotificationSet:
         # XXX jamesh 2008-05-21: these flushes are to fix ordering
         # problems in the bugnotification-sending.txt tests.
         store.flush()
-        values = []
+        sql_values = []
         for recipient in recipients:
             reason_body, reason_header = recipients.getReason(recipient)
-            values.append('(%s, %s, %s, %s)' % sqlvalues(
+            sql_values.append('(%s, %s, %s, %s)' % sqlvalues(
                 bug_notification, recipient, reason_header, reason_body))
         # We add all the recipients in a single SQL statement to make
         # this a bit more efficient for bugs with many subscribers.
         store.execute("""
             INSERT INTO BugNotificationRecipient
               (bug_notification, person, reason_header, reason_body)
-            VALUES %s;""" % ', '.join(values))
+            VALUES %s;""" % ', '.join(sql_values))
         return bug_notification
 
 
