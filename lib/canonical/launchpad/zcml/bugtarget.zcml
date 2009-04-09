@@ -46,6 +46,13 @@
 
     <browser:page
         for="canonical.launchpad.interfaces.IHasBugs"
+        class="canonical.launchpad.browser.BugTargetBugTagsView"
+        name="+bugtarget-portlet-tags-content"
+        template="../templates/bugtarget-portlet-tags-content.pt" 
+        permission="zope.Public" />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IHasBugs"
         class="canonical.launchpad.browser.TextualBugTaskSearchListingView"
         permission="zope.Public"
         name="+bugs-text"
@@ -92,7 +99,6 @@
         facet="bugs"
         permission="launchpad.Edit"
         template="../templates/official-bug-target-manage-tags.pt" />
-
 
   </facet>
 
