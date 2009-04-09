@@ -48,7 +48,6 @@ above, failed being worst).
 __metaclass__ = type
 
 import os
-import re
 import shutil
 import stat
 import sys
@@ -492,7 +491,7 @@ def parse_upload_path(relative_path):
 
     first_path = parts[0]
 
-    if ((len(relative_path) == 0 or not relative_path[0] in '~0123456789')
+    if (not first_path.startswith('~') and not first_path.isdigit()
         and len(parts) <= 2):
         # Distribution upload (<distro>[/distroseries]). Always targeted to
         # the corresponding primary archive.
@@ -539,7 +538,7 @@ def parse_upload_path(relative_path):
             raise PPAUploadPathError(
                 "%s only supports uploads to '%s'"
                 % (archive.displayname, archive.distribution.name))
-    elif re.match('\d+', first_path) is not None:
+    elif first_path.isdigit():
         # This must be a binary upload from a build slave.
         try:
             archive = getUtility(IArchiveSet).get(int(first_path))
