@@ -19,7 +19,7 @@ from storm.store import Store
 from zope.interface import implements
 
 from canonical.config import config
-from canonical.database.sqlbase import SQLBase
+from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.launchpad.interfaces import (
     IBugNotification, IBugNotificationRecipient, IBugNotificationSet)
@@ -89,12 +89,17 @@ class BugNotificationSet:
         # XXX jamesh 2008-05-21: these flushes are to fix ordering
         # problems in the bugnotification-sending.txt tests.
         store.flush()
+        values = []
         for recipient in recipients:
             reason_body, reason_header = recipients.getReason(recipient)
-            BugNotificationRecipient(
-                bug_notification=bug_notification, person=recipient,
-                reason_header=reason_header, reason_body=reason_body)
-            store.flush()
+            values.append('(%s, %s, %s, %s)' % sqlvalues(
+                bug_notification, recipient, reason_header, reason_body))
+        # We add all the recipients in a single SQL statement to make
+        # this a bit more efficient for bugs with many subscribers.
+        store.execute("""
+            INSERT INTO BugNotificationRecipient
+              (bug_notification, person, reason_header, reason_body)
+            VALUES %s;""" % ', '.join(values))
         return bug_notification
 
 
