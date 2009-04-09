@@ -33,7 +33,7 @@ from canonical.launchpad.webapp import (
 
 from canonical.launchpad.browser.authtoken import (
     AuthTokenView, BaseAuthTokenView, ValidateEmailView)
-from canonical.launchpad.browser.team import HasRenewalPolicyMixin
+from lp.registry.browser.team import HasRenewalPolicyMixin
 from canonical.launchpad.interfaces import (
     EmailAddressStatus, GPGKeyAlgorithm, GPGKeyNotFoundError,
     GPGVerificationError, IEmailAddressSet, IGPGHandler, IGPGKeySet,

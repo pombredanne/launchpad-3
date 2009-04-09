@@ -18,7 +18,7 @@ follows:
     4) The token is now marked as consumed, together with any other
        tokens of the same type and for the same email address.
 
-    >>> from canonical.launchpad.database.person import Person
+    >>> from lp.registry.model.person import Person
     >>> from canonical.launchpad.interfaces.authtoken import LoginTokenType
     >>> from canonical.launchpad.interfaces.logintoken import (
     ...     ILoginTokenSet)

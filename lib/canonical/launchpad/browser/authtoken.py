@@ -37,9 +37,8 @@ from canonical.launchpad.interfaces.authtoken import (
 from canonical.launchpad.interfaces.emailaddress import (
     EmailAddressStatus, IEmailAddressSet)
 from canonical.launchpad.interfaces.launchpad import UnexpectedFormData
-from canonical.launchpad.interfaces.lpstorm import IMasterObject
 from canonical.launchpad.interfaces.openidserver import IOpenIDRPConfigSet
-from canonical.launchpad.interfaces.person import (
+from lp.registry.interfaces.person import (
     INewPersonForm, IPerson, IPersonSet, PersonCreationRationale)
 from canonical.launchpad.interfaces.shipit import ShipItConstants
 
@@ -388,7 +387,15 @@ class NewAccountView(BaseAuthTokenView, LaunchpadFormView):
             self.next_url = self.context.redirection_url
         elif self.account is not None:
             # User is logged in, redirect to his home page.
-            self.next_url = canonical_url(IPerson(self.account))
+            person = IPerson(self.account, None)
+            # XXX: salgado, 2009-04-02: We shouldn't reach this path when
+            # self.account is a personless account, but unfortunately our
+            # OpenID server doesn't store a fallback redirection_url in the
+            # AuthTokens it creates (bug=353974), so we need this hack here.
+            if person is None:
+                self.next_url = self.request.getApplicationURL()
+            else:
+                self.next_url = canonical_url(person)
         elif self.created_person is not None:
             # User is not logged in, redirect to the created person's home
             # page.

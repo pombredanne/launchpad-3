@@ -32,13 +32,13 @@ from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.archive import IArchive
-from canonical.launchpad.interfaces.distroseries import IDistroSeries
-from canonical.launchpad.interfaces.person import IPerson
+from lp.registry.interfaces.distroseries import IDistroSeries
+from lp.registry.interfaces.person import IPerson
 
-from canonical.lazr.fields import Reference
-from canonical.lazr.rest.declarations import (
-    export_as_webservice_entry, export_read_operation,
-    exported, operation_returns_collection_of)
+from lazr.restful.fields import Reference
+from lazr.restful.declarations import (
+    LAZR_WEBSERVICE_EXPORTED, export_as_webservice_entry,
+    export_read_operation, exported, operation_returns_collection_of)
 
 
 #
@@ -519,11 +519,10 @@ class ISourcePackagePublishingHistory(ISecureSourcePackagePublishingHistory):
             title=_("Section Name"),
             required=False, readonly=True))
 
-    changes_file_text = exported(
-        Text(
-            title=_("Changes File Text"),
-            description=_("This source publication's changes file for "
-                          "the source upload.")))
+    changes_file_text = Text(
+        title=_("Changes File Text"),
+        description=_("This source publication's changes file for "
+                      "the source upload."))
 
     def getPublishedBinaries():
         """Return all resulted `IBinaryPackagePublishingHistory`.
@@ -939,6 +938,5 @@ inactive_publishing_status = (
 
 from canonical.launchpad.interfaces.build import IBuild
 ISourcePackagePublishingHistory['getBuilds'].queryTaggedValue(
-    'lazr.webservice.exported')[
-        'return_type'].value_type.schema = IBuild
+    LAZR_WEBSERVICE_EXPORTED)['return_type'].value_type.schema = IBuild
 

@@ -16,7 +16,7 @@ from canonical.launchpad.ftests import import_secret_test_key
 from canonical.launchpad.testing import (
     GPGSigningContext, TestCaseWithFactory)
 from canonical.launchpad.scripts.tests import run_script
-from canonical.launchpad.database.branchmergeproposal import (
+from lp.code.model.branchmergeproposal import (
     CreateMergeProposalJob)
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 
@@ -81,15 +81,17 @@ class TestCreateMergeProposals(TestCaseWithFactory):
         # A mirror should be scheduled.
         self.assertIsNot(None, bmp.source_branch.next_mirror_time)
 
-    def test_merge_directive_with_bundle(self):
+    def disabled_test_merge_directive_with_bundle(self):
         """Merge directives with bundles generate branches."""
+        # XXX TimPenhey 2009-04-01 bug 352800
         self.useBzrBranches(real_server=True)
         branch, tree = self.create_branch_and_tree()
         source = self.createJob(branch, tree)
         self.jobOutputCheck(branch, source)
 
-    def test_merge_directive_with_project(self):
+    def disabled_test_merge_directive_with_project(self):
         """Bundles are handled when the target branch has a project."""
+        # XXX TimPenhey 2009-04-01 bug 352800
         self.useBzrBranches(real_server=True)
         product = self.factory.makeProduct(project=self.factory.makeProject())
         branch, tree = self.create_branch_and_tree(product=product)

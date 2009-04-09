@@ -120,7 +120,7 @@
       />
 
     <adapter
-      for="canonical.launchpad.interfaces.person.IPerson"
+      for="lp.registry.interfaces.person.IPerson"
       provides="canonical.launchpad.interfaces.openidserver.IOpenIDPersistentIdentity"
       factory="canonical.launchpad.components.openidserver.person_to_openidpersistentidentity"
       />

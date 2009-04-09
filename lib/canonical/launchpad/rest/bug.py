@@ -7,7 +7,7 @@ __all__ = [
     'bugcomment_to_entry',
     ]
 
-from canonical.lazr.interfaces.rest import IEntry
+from lazr.restful.interfaces import IEntry
 
 def bugcomment_to_entry(comment):
     """Will adapt to the bugcomment to the real IMessage.

@@ -599,7 +599,7 @@ Admins have access to all submissions.
 If a distribution is specified, only those submissions that were made
 for that distribution are returned.
 
-    >>> from canonical.launchpad.interfaces.distribution import (
+    >>> from lp.registry.interfaces.distribution import (
     ...     IDistributionSet)
     >>> distribution_set = getUtility(IDistributionSet)
     >>> ubuntu = distribution_set.getByName('ubuntu')

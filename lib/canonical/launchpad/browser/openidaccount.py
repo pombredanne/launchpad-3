@@ -9,7 +9,6 @@ import urllib
 
 from zope.component import getUtility
 from zope.formlib.form import FormFields
-from zope.publisher.interfaces import NotFound
 from zope.schema import Choice, TextLine
 from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
 
@@ -23,9 +22,8 @@ from canonical.launchpad.interfaces.emailaddress import (
     EmailAddressStatus, IEmailAddress, IEmailAddressSet)
 from canonical.launchpad.interfaces.launchpad import (
     ILaunchBag, IOpenIDApplication, IPasswordEncryptor)
-from canonical.launchpad.interfaces.person import (
-    IPersonSet, IPersonChangePassword)
 from canonical.launchpad.validators.email import valid_email
+from lp.registry.interfaces.person import IPersonSet, IPersonChangePassword
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, LaunchpadEditFormView,
     LaunchpadFormView)
@@ -359,7 +357,7 @@ class AccountEditEmailsView(LaunchpadFormView):
         email = getUtility(IEmailAddressSet).getByEmail(newemail)
         account = self.context
         if email is not None:
-            if email.account == person:
+            if email.account == account:
                 self.addError(
                     "The email address '%s' is already registered as your "
                     "email address. This can be either because you already "

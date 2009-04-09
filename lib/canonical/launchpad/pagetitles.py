@@ -993,6 +993,10 @@ person_uploaded_packages = ContextDisplayName('Software uploaded by %s')
 person_vouchers = ContextDisplayName(
     'Commercial subscription vouchers for %s')
 
+def personproduct_branches(context, view):
+    """Return the view's heading."""
+    return view.heading
+
 pofile_edit = ContextTitle(smartquote('Edit "%s" details'))
 
 pofile_export = ContextTitle(smartquote('Download translation for "%s"'))
@@ -1088,7 +1092,7 @@ product_translations = ContextTitle('Translations of %s in Launchpad')
 
 product_translators = ContextTitle('Set translation group for %s')
 
-productrelease_add = ContextTitle('Register a new %s release in Launchpad')
+productrelease_add = ContextDisplayName('Publish the release of %s')
 
 productrelease_delete = ContextTitle('Delete %s in Launchpad')
 
