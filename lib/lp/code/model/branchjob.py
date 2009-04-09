@@ -428,7 +428,7 @@ class RosettaUploadJob(BranchJobDerived):
     def getMetadata(from_revision_id, do_translations_upload):
         return {
             'from_revision_id': from_revision_id,
-            'do_translations_upload': do_translations_upload
+            'do_translations_upload': do_translations_upload,
         }
 
     @property
@@ -488,15 +488,16 @@ class RosettaUploadJob(BranchJobDerived):
         """
         if productseries.translations_autoimport_mode in (
             TranslationsBranchImportMode.IMPORT_TEMPLATES,
-            TranslationsBranchImportMode.IMPORT_TRANSLATIONS
-            ):
+            TranslationsBranchImportMode.IMPORT_TRANSLATIONS):
+            #
             yield (self.template_file_names,
                    self.template_files_changed,
                    self._uploader_person_pot(productseries))
+
         if (productseries.translations_autoimport_mode ==
             TranslationsBranchImportMode.IMPORT_TRANSLATIONS or
-            self.do_translations_upload
-            ):
+            self.do_translations_upload):
+            #
             yield (self.translation_file_names,
                    self.translation_files_changed,
                    self._uploader_person_po(productseries))
@@ -566,11 +567,11 @@ class RosettaUploadJob(BranchJobDerived):
     def _uploader_person_po(self, series):
         """Determine which person is the uploader for a po file."""
         # For po files, try to determine the author of the latest push.
-        try:
-            uploader = self.branch.getTipRevision().revision_author.person
-            if uploader is None:
-                raise AttributeError
-        except AttributeError:
+        uploader = None
+        revision = self.branch.getTipRevision()
+        if revision is not None and revision.revision_author is not None:
+            uploader = revision.revision_author.person
+        if uploader is None:
             uploader = self._uploader_person_pot(series)
         return uploader
 
