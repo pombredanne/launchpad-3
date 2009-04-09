@@ -900,8 +900,7 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
         """Handle a request to create a new branch for this product."""
         try:
             ui_branch_type = data['branch_type']
-            namespace = IBranchTarget(self.context).getNamespace(
-                data['owner'])
+            namespace = self.target.getNamespace(data['owner'])
             self.branch = namespace.createBranch(
                 branch_type=BranchType.items[ui_branch_type.name],
                 name=data['name'],
@@ -911,7 +910,6 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
                 summary=data['summary'],
                 lifecycle_status=data['lifecycle_status'],
                 whiteboard=data['whiteboard'])
-            # XXX: Should we perhaps move this to the model?
             if self.branch.branch_type == BranchType.MIRRORED:
                 self.branch.requestMirror()
         except BranchCreationForbidden:
