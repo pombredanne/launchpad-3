@@ -112,7 +112,7 @@ class ProductReleaseAddViewBase(LaunchpadFormView):
             datereleased=data['datereleased'])
         # Set Milestone.active to false, since bugs & blueprints
         # should not be targeted to a milestone in the past.
-        if data['keep_milestone_active'] is False:
+        if data.get('keep_milestone_active') is False:
             milestone.active = False
             milestone_link = '<a href="%s">%s milestone</a>' % (
                 canonical_url(milestone), cgi.escape(milestone.name))
@@ -166,7 +166,7 @@ class ProductReleaseAddView(ProductReleaseAddViewBase):
 
 
 class ProductReleaseFromSeriesAddView(ProductReleaseAddViewBase):
-    """Create a product release and select or add a milestone.
+    """Create a product release from an existing or new milestone.
 
     Also, deactivate the milestone it is attached to.
     """
