@@ -546,6 +546,7 @@ class POFile(SQLBase, POFileMixIn):
         clauses = [
             'TranslationTemplateItem.potemplate = %s' % sqlvalues(
                 self.potemplate),
+            'TranslationTemplateItem.sequence > 0',
             ('TranslationTemplateItem.potmsgset'
              ' = TranslationMessage.potmsgset'),
             'TranslationMessage.language = %s' % sqlvalues(self.language)]
