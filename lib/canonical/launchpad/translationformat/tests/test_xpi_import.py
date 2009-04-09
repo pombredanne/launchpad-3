@@ -245,7 +245,7 @@ class XpiTestCase(unittest.TestCase):
         potmsgset = self.firefox_template.getPOTMsgSetByMsgIDText(
             u'foozilla.name', context='main/test1.dtd')
         translation = potmsgset.getCurrentTranslationMessage(
-            self.spanish_firefox.language)
+            self.firefox_template, self.spanish_firefox.language)
 
         # It's a normal message that lacks any comment.
         self.assertEquals(potmsgset.singular_text, u'FooZilla!')
@@ -255,6 +255,7 @@ class XpiTestCase(unittest.TestCase):
         self.assertEquals(
             translation.translations,
             potmsgset.getImportedTranslationMessage(
+                self.firefox_template,
                 self.spanish_firefox.language).translations)
 
         potmsgset = self.firefox_template.getPOTMsgSetByMsgIDText(
@@ -271,6 +272,7 @@ class XpiTestCase(unittest.TestCase):
         # But for the translation import, we get the key directly.
         self.assertEquals(
             potmsgset.getImportedTranslationMessage(
+                self.firefox_template,
                 self.spanish_firefox.language).translations,
             [u'M'])
 
@@ -288,6 +290,7 @@ class XpiTestCase(unittest.TestCase):
         # But for the translation import, we get the key directly.
         self.assertEquals(
             potmsgset.getImportedTranslationMessage(
+                self.firefox_template,
                 self.spanish_firefox.language).translations,
             [u'm'])
 

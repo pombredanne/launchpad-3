@@ -286,12 +286,21 @@ class POTemplate(SQLBase, RosettaStats):
         header.has_plural_forms = self.hasPluralMessage()
         return header
 
+    def _getPOTMsgSetSelectionClauses(self):
+        """Return SQL clauses for finding POTMsgSets which belong
+        to this POTemplate."""
+        clauses = [
+            'TranslationTemplateItem.potemplate = %s' % sqlvalues(self),
+            'TranslationTemplateItem.potmsgset = POTMsgSet.id',
+            ]
+        return clauses
+
     def getPOTMsgSetByMsgIDText(self, singular_text, plural_text=None,
                                 only_current=False, context=None):
         """See `IPOTemplate`."""
-        clauses = [ 'potemplate = %s' % sqlvalues(self.id) ]
+        clauses = self._getPOTMsgSetSelectionClauses()
         if only_current:
-            clauses.append('sequence > 0')
+            clauses.append('TranslationTemplateItem.sequence > 0')
         if context is not None:
             clauses.append('context = %s' % sqlvalues(context))
         else:
@@ -316,49 +325,45 @@ class POTemplate(SQLBase, RosettaStats):
             clauses.append('msgid_plural IS NULL')
 
         # Find a message set with the given message ID.
-        return POTMsgSet.selectOne(' AND '.join(clauses))
+        return POTMsgSet.selectOne(' AND '.join(clauses),
+                                   clauseTables=['TranslationTemplateItem'])
 
     def getPOTMsgSetBySequence(self, sequence):
         """See `IPOTemplate`."""
         assert sequence > 0, ('%r is out of range')
 
-        return POTMsgSet.selectOne("""
-            POTMsgSet.potemplate = %s AND
-            POTMsgSet.sequence = %s
-            """ % sqlvalues (self.id, sequence))
+        clauses = self._getPOTMsgSetSelectionClauses()
+        clauses.append(
+            'TranslationTemplateItem.sequence = %s' % sqlvalues(sequence))
 
+        return POTMsgSet.selectOne(' AND '.join(clauses),
+                                   clauseTables=['TranslationTemplateItem'])
 
     def getPOTMsgSets(self, current=True):
         """See `IPOTemplate`."""
-        clauses = [
-            'POTMsgSet.potemplate = %s' % sqlvalues(self)
-            ]
+        clauses = self._getPOTMsgSetSelectionClauses()
 
         if current:
             # Only count the number of POTMsgSet that are current.
-            clauses.append('POTMsgSet.sequence > 0')
+            clauses.append('TranslationTemplateItem.sequence > 0')
 
-        query = POTMsgSet.select(" AND ".join(clauses), orderBy='sequence')
+        query = POTMsgSet.select(" AND ".join(clauses),
+                                 clauseTables=['TranslationTemplateItem'],
+                                 orderBy=['TranslationTemplateItem.sequence'])
         return query.prejoin(['msgid_singular', 'msgid_plural'])
 
     def getPOTMsgSetsCount(self, current=True):
         """See `IPOTemplate`."""
-        if current:
-            # Only count the number of POTMsgSet that are current
-            results = POTMsgSet.select(
-                'POTMsgSet.potemplate = %s AND POTMsgSet.sequence > 0' %
-                    sqlvalues(self.id))
-        else:
-            results = POTMsgSet.select(
-                'POTMsgSet.potemplate = %s' % sqlvalues(self.id))
-
+        results = self.getPOTMsgSets(current)
         return results.count()
 
     def getPOTMsgSetByID(self, id):
         """See `IPOTemplate`."""
-        return POTMsgSet.selectOne(
-            "POTMsgSet.potemplate = %s AND POTMsgSet.id = %s" % sqlvalues(
-                self.id, id))
+        clauses = self._getPOTMsgSetSelectionClauses()
+        clauses.append('POTMsgSet.id = %s' % sqlvalues(id))
+
+        return POTMsgSet.selectOne(' AND '.join(clauses),
+                                   clauseTables=['TranslationTemplateItem'])
 
     def languages(self):
         """See `IPOTemplate`."""
@@ -449,20 +454,85 @@ class POTemplate(SQLBase, RosettaStats):
         else:
             pofile.unreviewedCount()
 
+    def _null_quote(self, value):
+        if value is None:
+            return " IS NULL "
+        else:
+            return " = %s" % sqlvalues(value)
+
+    def _getPOTMsgSetBy(self, msgid_singular, msgid_plural=None, context=None,
+                        sharing_templates=False):
+        """Look for a POTMsgSet by msgid_singular, msgid_plural, context.
+
+        If `sharing_templates` is True, and the current template has no such
+        POTMsgSet, look through sharing templates as well.
+        """
+        clauses = [
+            'TranslationTemplateItem.potmsgset = POTMsgSet.id',
+            ]
+        clause_tables = ['TranslationTemplateItem']
+        if sharing_templates:
+            clauses.extend([
+                'TranslationTemplateItem.potemplate = POTemplate.id',
+                'TranslationTemplateItem.potmsgset = POTMsgSet.id',
+                'POTemplate.name = %s' % sqlvalues(self.name),
+                ])
+            product = None
+            distribution = None
+            clause_tables.append('POTemplate')
+            if self.productseries is not None:
+                product = self.productseries.product
+                clauses.extend([
+                    'POTemplate.productseries=ProductSeries.id',
+                    'ProductSeries.product %s' % self._null_quote(product)
+                    ])
+                clause_tables.append('ProductSeries')
+            elif self.distroseries is not None:
+                distribution = self.distroseries.distribution
+                clauses.extend([
+                    'POTemplate.distroseries=DistroSeries.id',
+                    'DistroSeries.distribution %s' % (
+                        self._null_quote(distribution)),
+                    'POTemplate.sourcepackagename %s' % self._null_quote(
+                        self.sourcepackagename),
+                    ])
+                clause_tables.append('DistroSeries')
+        else:
+            clauses.append(
+                'TranslationTemplateItem.potemplate = %s' % sqlvalues(self))
+
+        clauses.append(
+            'POTMsgSet.msgid_singular %s' % self._null_quote(msgid_singular))
+        clauses.append(
+            'POTMsgSet.msgid_plural %s' % self._null_quote(msgid_plural))
+        clauses.append(
+            'POTMsgSet.context %s' % self._null_quote(context))
+
+        result = POTMsgSet.select(
+            ' AND '.join(clauses),
+            clauseTables=clause_tables,
+            # If there are multiple messages, make the one from the
+            # current POTemplate be returned first.
+            orderBy=['(TranslationTemplateItem.POTemplate<>%s)' % (
+                sqlvalues(self))])[:2]
+        if result and len(list(result)) > 0:
+            return result[0]
+        else:
+            return None
+
     def hasMessageID(self, msgid_singular, msgid_plural, context=None):
         """See `IPOTemplate`."""
-        results = POTMsgSet.selectBy(
-            potemplate=self, msgid_singular=msgid_singular,
-            msgid_plural=msgid_plural, context=context)
-        return bool(results)
+        return bool(
+            self._getPOTMsgSetBy(msgid_singular, msgid_plural, context))
 
     def hasPluralMessage(self):
         """See `IPOTemplate`."""
-        results = POTMsgSet.select('''
-            msgid_plural IS NOT NULL AND
-            POTemplate = %s
-            ''' % sqlvalues(self))
-        return bool(results)
+        clauses = self._getPOTMsgSetSelectionClauses()
+        clauses.append(
+            'POTMsgSet.msgid_plural IS NOT NULL')
+        return bool(POTMsgSet.select(
+                ' AND '.join(clauses),
+                clauseTables=['TranslationTemplateItem']))
 
     def export(self):
         """See `IPOTemplate`."""
@@ -508,7 +578,7 @@ class POTemplate(SQLBase, RosettaStats):
 
     def expireAllMessages(self):
         """See `IPOTemplate`."""
-        for potmsgset in self:
+        for potmsgset in self.getPOTMsgSets():
             potmsgset.setSequence(self, 0)
 
     def _lookupLanguage(self, language_code):
@@ -625,7 +695,7 @@ class POTemplate(SQLBase, RosettaStats):
             msgid_singular=msgid_singular,
             msgid_plural=msgid_plural,
             sequence=0,
-            potemplate=self,
+            potemplate=None,
             commenttext=None,
             filereferences=None,
             sourcecomment=None,
@@ -657,6 +727,22 @@ class POTemplate(SQLBase, RosettaStats):
 
         return self.createPOTMsgSetFromMsgIDs(msgid_singular, msgid_plural,
                                               context)
+
+    def getOrCreateSharedPOTMsgSet(self, singular_text, plural_text,
+                                   context=None):
+        """See `IPOTemplate`."""
+        msgid_singular = self.getOrCreatePOMsgID(singular_text)
+        if plural_text is None:
+            msgid_plural = None
+        else:
+            msgid_plural = self.getOrCreatePOMsgID(plural_text)
+        potmsgset = self._getPOTMsgSetBy(msgid_singular, msgid_plural,
+                                         context, sharing_templates=True)
+        if potmsgset is None:
+            potmsgset = self.createMessageSetFromText(
+                singular_text, plural_text, context)
+            potmsgset.setSequence(self, 0)
+        return potmsgset
 
     def importFromQueue(self, entry_to_import, logger=None, txn=None):
         """See `IPOTemplate`."""

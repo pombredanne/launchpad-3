@@ -4974,7 +4974,7 @@ Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 Report-Msgid-Bugs-To: serrador@hispalinux.es
 Plural-Forms: nplurals=2; plural=(n != 1);
-', true, 50, 7, 1, 0, NULL, 31, NULL, 'es.po', '2005-06-06 08:59:54.235169', NULL, 1, '2005-06-06 20:05:03.244905');
+', true, 50, 6, 1, 1, NULL, 31, NULL, 'es.po', '2005-06-06 08:59:54.235169', NULL, 1, '2005-06-06 20:05:03.244905');
 INSERT INTO pofile (id, potemplate, language, description, topcomment, header, fuzzyheader, lasttranslator, currentcount, updatescount, rosettacount, lastparsed, owner, variant, path, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (13, 5, 132, NULL, '
     Translators, if you are not familiar with the PO format, gettext
     documentation is worth reading, especially sections dedicated to
@@ -5363,7 +5363,7 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 Plural-Forms: nplurals=2; plural=n != 1
-', true, 13, 0, 0, 1, NULL, 13, NULL, 'po/alsa-utils-es.po', '2007-04-07 10:14:36.267119', NULL, 0, '2007-04-07 10:14:36.267119');
+', true, 13, 0, 0, 0, NULL, 13, NULL, 'po/alsa-utils-es.po', '2007-04-07 10:14:36.267119', NULL, 0, '2007-04-07 10:14:36.267119');
 INSERT INTO pofile (id, potemplate, language, description, topcomment, header, fuzzyheader, lasttranslator, currentcount, updatescount, rosettacount, lastparsed, owner, variant, path, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (34, 5, 119, NULL, ' English translation for mozilla
  Copyright (c) 2007 Rosetta Contributors and Canonical Ltd 2007
  This file is distributed under the same license as the mozilla package.
@@ -10179,6 +10179,7 @@ INSERT INTO translationtemplateitem (id, potemplate, sequence, potmsgset) VALUES
 INSERT INTO translationtemplateitem (id, potemplate, sequence, potmsgset) VALUES (193, 10, 2, 199);
 INSERT INTO translationtemplateitem (id, potemplate, sequence, potmsgset) VALUES (194, 10, 3, 200);
 INSERT INTO translationtemplateitem (id, potemplate, sequence, potmsgset) VALUES (195, 10, 4, 201);
+INSERT INTO translationtemplateitem (id, potemplate, sequence, potmsgset) VALUES (196, 1, 0, 21);
 
 
 ALTER TABLE translationtemplateitem ENABLE TRIGGER ALL;

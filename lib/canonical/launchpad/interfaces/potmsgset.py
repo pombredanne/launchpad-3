@@ -2,7 +2,7 @@
 # pylint: disable-msg=E0211,E0213
 
 from zope.interface import Interface, Attribute
-from zope.schema import Int, Object, Text, TextLine
+from zope.schema import Bool, Int, Object, Text
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.pomsgid import IPOMsgID
@@ -12,11 +12,19 @@ __metaclass__ = type
 __all__ = [
     'IPOTMsgSet',
     'BrokenTextError',
+    'POTMsgSetInIncompatibleTemplatesError',
     ]
 
 
 class BrokenTextError(ValueError):
     """Exception raised when we detect values on a text that aren't valid."""
+
+class POTMsgSetInIncompatibleTemplatesError(Exception):
+    """Raised when a POTMsgSet appears in multiple incompatible templates.
+
+    Two PO templates are incompatible if one uses English strings for msgids,
+    and another doesn't (i.e. it uses English translation instead).
+    """
 
 
 class IPOTMsgSet(Interface):
@@ -65,21 +73,33 @@ class IPOTMsgSet(Interface):
     plural_text = Text(
         title=_("The plural text for this message or None."), readonly=True)
 
-    def getCurrentDummyTranslationMessage(language):
+    uses_english_msgids = Bool(
+        title=_("Uses English strings as msgids"), readonly=True,
+        description=_("""
+            Some formats, such as Mozilla's XPI, use symbolic msgids where
+            gettext uses the original English strings to identify messages.
+            """))
+
+    def getCurrentDummyTranslationMessage(potemplate, language):
         """Return a DummyTranslationMessage for this message language.
 
+        :param potemplate: PO template you want a translation message for.
         :param language: language we want a dummy translations for.
 
-        We must not have already a TranslationMessage for this language.
+        If a TranslationMessage for this language already exists,
+        an exception is raised.
         """
 
-    def getCurrentTranslationMessage(language, variant=None):
+    def getCurrentTranslationMessage(potemplate, language, variant=None):
         """Returns a TranslationMessage marked as being currently used."""
 
-    def getImportedTranslationMessage(language, variant=None):
+    def getImportedTranslationMessage(potemplate, language, variant=None):
         """Returns a TranslationMessage as imported from the package."""
 
-    def getLocalTranslationMessages(language):
+    def getSharedTranslationMessage(language, variant=None):
+        """Returns a shared TranslationMessage."""
+
+    def getLocalTranslationMessages(potemplate, language):
         """Return all local unused translation messages for the POTMsgSet.
 
         Unused are those which are not current or imported, and local are
@@ -106,9 +126,10 @@ class IPOTMsgSet(Interface):
         :param language: language we want translations for.
         """
 
-    def hasTranslationChangedInLaunchpad(language):
+    def hasTranslationChangedInLaunchpad(potemplate, language):
         """Whether an imported translation differs from the current one.
 
+        :param potemplate: potemplate we are asking about.
         :param language: language for which translations we are asking about.
 
         There has to be an imported translation: if there isn't, this is
