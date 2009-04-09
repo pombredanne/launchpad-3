@@ -292,6 +292,7 @@ class UploadProcessor:
         self.options.distro = distribution.name
         policy = findPolicyByOptions(self.options)
         policy.archive = archive
+
         # DistroSeries overriding respect the following precedence:
         #  1. process-upload.py command-line option (-r),
         #  2. upload path,
@@ -303,6 +304,16 @@ class UploadProcessor:
         # containing the changes file (and the other files referenced by it).
         changesfile_path = os.path.join(upload_path, changes_file)
         upload = NascentUpload(changesfile_path, policy, self.log)
+
+        # Reject source upload to buildd upload paths.
+        first_path = relative_path.split(os.path.sep)[0]
+        if first_path.isdigit() and policy.name != 'buildd':
+            upload.reject(
+                "Invalid upload path (%s) for this policy (%s)" %
+                (relative_path, policy.name))
+            self.log.error(
+                "Invalid upload path (%s) for this policy (%s)" %
+                (relative_path, policy.name))
 
         # Store archive lookup error in the upload if it was the case.
         if error is not None:

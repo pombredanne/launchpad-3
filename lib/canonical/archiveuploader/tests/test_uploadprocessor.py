@@ -868,20 +868,19 @@ class TestUploadProcessor(TestUploadProcessorBase):
         [queue_item] = queue_items
         self.assertEqual(queue_item.sourcepackagerelease.section.name, "misc")
 
-    def testSourceUploadToCopyArchive(self):
-        """Source uploads to copy archives are currently not permitted."""
-        # First create the sample archive we want to upload to.
-        cprov = getUtility(IPersonSet).getByName('cprov')
-        copy_archive = getUtility(IArchiveSet).new(
-            ArchivePurpose.COPY, cprov, 'samplecopyarchive')
+    def testSourceUploadToBuilddPath(self):
+        """Source uploads to buildd upload paths are not permitted."""
+        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+        primary = getUtility(IArchiveSet).getByDistroPurpose(
+            ubuntu, ArchivePurpose.PRIMARY, 'primary')
 
         uploadprocessor = self.setupBreezyAndGetUploadProcessor()
-        upload_dir = self.queueUpload("bar_1.0-1", str(copy_archive.id))
+        upload_dir = self.queueUpload("bar_1.0-1", "%s/ubuntu" % primary.id)
         self.processUpload(uploadprocessor, upload_dir)
 
         # Check that the sourceful upload to the copy archive is rejected.
         contents = [
-            "Source uploads to copy archives are not allowed."
+            "Invalid upload path (1/ubuntu) for this policy (insecure)"
             ]
         self.assertEmail(contents=contents, recipients=[])
 
