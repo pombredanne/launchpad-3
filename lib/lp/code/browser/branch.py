@@ -866,6 +866,8 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
     custom_widget('branch_type', LaunchpadRadioWidgetWithDescription)
     custom_widget('lifecycle_status', LaunchpadRadioWidgetWithDescription)
 
+    initial_focus_widget = 'name'
+
     @property
     def initial_values(self):
         return {
