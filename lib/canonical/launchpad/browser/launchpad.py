@@ -55,13 +55,13 @@ from lp.registry.interfaces.announcement import IAnnouncementSet
 from canonical.launchpad.interfaces.binarypackagename import (
     IBinaryPackageNameSet)
 from canonical.launchpad.interfaces.bounty import IBountySet
-from canonical.launchpad.interfaces.branchlookup import (
+from lp.code.interfaces.branchlookup import (
     CannotHaveLinkedBranch, IBranchLookup, NoLinkedBranch)
-from canonical.launchpad.interfaces.branchnamespace import InvalidNamespace
+from lp.code.interfaces.branchnamespace import InvalidNamespace
 from canonical.launchpad.interfaces.bug import IBugSet
 from canonical.launchpad.interfaces.bugtracker import IBugTrackerSet
 from canonical.launchpad.interfaces.builder import IBuilderSet
-from canonical.launchpad.interfaces.codeimport import ICodeImportSet
+from lp.code.interfaces.codeimport import ICodeImportSet
 from lp.registry.interfaces.codeofconduct import ICodeOfConductSet
 from canonical.launchpad.interfaces.cve import ICveSet
 from lp.registry.interfaces.distribution import IDistributionSet

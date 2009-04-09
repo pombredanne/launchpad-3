@@ -110,7 +110,7 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.config import config
 from lazr.delegates import delegates
 from lazr.config import as_timedelta
-from canonical.lazr.interface import copy_field, use_template
+from lazr.restful.interface import copy_field, use_template
 from canonical.lazr.utils import safe_hasattr
 from canonical.database.sqlbase import flush_database_updates
 
@@ -165,7 +165,7 @@ from lp.registry.interfaces.teammembership import (
     DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT, ITeamMembership,
     ITeamMembershipSet, TeamMembershipStatus)
 from lp.registry.interfaces.wikiname import IWikiNameSet
-from canonical.launchpad.interfaces.branchnamespace import (
+from lp.code.interfaces.branchnamespace import (
     IBranchNamespaceSet, InvalidNamespace)
 from canonical.launchpad.interfaces.bugtask import IBugTaskSet
 from canonical.launchpad.interfaces.build import (

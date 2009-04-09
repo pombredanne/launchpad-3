@@ -56,9 +56,10 @@ correct it by going to the /adminrequest page.
 
 For this request we'll change the approved quantities before approving.
 
-  >>> browser.getControl(name='field.server_quantityx86approved').value
+  >>> browser.getControl(name='field.server_quantityamd64approved').value
   '0'
-  >>> browser.getControl(name='field.server_quantityx86approved').value = '3'
+  >>> browser.getControl(
+  ...     name='field.server_quantityamd64approved').value = '3'
   >>> browser.getControl('Approve & Continue').click()
 
 
@@ -68,7 +69,7 @@ requests.
   >>> browser.url
   'http://shipit.ubuntu.dev/requests/13/'
   
-  >>> browser.getControl(name='field.server_quantityx86approved').value
+  >>> browser.getControl(name='field.server_quantityamd64approved').value
   '3'
 
 
@@ -129,7 +130,6 @@ CDs of the Server edition.
 
   >>> browser.getControl(name='field.ubuntu_quantityx86').value = '15'
   >>> browser.getControl(name='field.kubuntu_quantityx86').value = '10'
-  >>> browser.getControl(name='field.server_quantityx86').value = '1'
   >>> browser.getControl(name='field.server_quantityamd64').value = '1'
 
   >>> browser.getControl('Name:').value = 'Guilherme Salgado'
@@ -152,7 +152,5 @@ approved.
   '15'
   >>> browser.getControl(name='field.kubuntu_quantityx86approved').value
   '10'
-  >>> browser.getControl(name='field.server_quantityx86approved').value
-  '1'
   >>> browser.getControl(name='field.server_quantityamd64approved').value
   '1'

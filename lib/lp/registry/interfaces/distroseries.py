@@ -37,10 +37,11 @@ from canonical.launchpad.webapp.interfaces import NameLookupFailed
 
 from canonical.launchpad import _
 
-from canonical.lazr.fields import Reference
-from canonical.lazr.rest.declarations import (
-    export_as_webservice_entry, export_read_operation, exported,
-    operation_parameters, operation_returns_entry)
+from lazr.restful.fields import Reference
+from lazr.restful.declarations import (
+    LAZR_WEBSERVICE_EXPORTED, export_as_webservice_entry,
+    export_read_operation, exported, operation_parameters,
+    operation_returns_entry)
 
 
 # XXX: salgado, 2008-06-02: We should use a more generic name here as this
@@ -690,7 +691,7 @@ class IDistroSeries(IDistroSeriesEditRestricted, IDistroSeriesPublic):
 
 # We assign the schema for an `IHasBugs` method argument here
 # in order to avoid circular dependencies.
-IHasBugs['searchTasks'].queryTaggedValue('lazr.webservice.exported')[
+IHasBugs['searchTasks'].queryTaggedValue(LAZR_WEBSERVICE_EXPORTED)[
     'params']['nominated_for'].schema = IDistroSeries
 
 

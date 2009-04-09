@@ -14,7 +14,7 @@ from canonical.codehosting.scanner.tests.test_bzrsync import BzrSyncTestCase
 from canonical.launchpad.interfaces import (
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
     CodeReviewNotificationLevel, IPersonSet)
-from canonical.launchpad.interfaces.branchjob import (
+from lp.code.interfaces.branchjob import (
     IRevisionMailJobSource, IRevisionsAddedJobSource)
 from canonical.launchpad.mail import stub
 from canonical.testing import LaunchpadZopelessLayer
