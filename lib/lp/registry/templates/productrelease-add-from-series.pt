@@ -82,6 +82,8 @@
                 error_box.set('innerHTML', '');
                 error_box.setStyle('display', 'none');
                 milestone_form.hide();
+                // Reset the HTML form inside the widget.
+                milestone_form.get('contentBox').query('form').reset();
                 var select_menu = get_by_id('field.milestone_for_release');
                 var new_milestone_option = Y.get(
                     new Option(parameters.name, parameters.name));
@@ -170,10 +172,12 @@
   <div metal:use-macro="context/@@launchpad_form/form">
     <div metal:fill-slot="extra_info" tal:condition="context/releases"
          style="border-bottom: solid 1px black">
-      The following releases have been made in this series:
+      The following releases have been made for the
+      <tal:series replace="context/displayname" /> series:
       <ul>
         <li tal:repeat="release context/releases">
           <tal:link replace="structure release/fmt:link"/>
+          <tal:released replace="release/datereleased/fmt:date" />
         </li>
       </ul>
     </div>
