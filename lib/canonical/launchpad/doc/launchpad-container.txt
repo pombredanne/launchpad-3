@@ -104,7 +104,7 @@ But it's not within anything other than its tasks' targets.
 A branch is within its product, in case it is associated with one.
 
     >>> sample_person = getUtility(IPersonSet).getByName('name12')
-    >>> from canonical.launchpad.interfaces.branchnamespace import (
+    >>> from lp.code.interfaces.branchnamespace import (
     ...     get_branch_namespace)
     >>> firefox_main = get_branch_namespace(
     ...     sample_person, product=firefox).getByName('main')

@@ -122,6 +122,61 @@ class GettextPOExporterTestCase(TestCaseWithFactory):
         self._compareImportAndExport(
             pofile_cy.strip(), exported_cy_file.read().strip())
 
+    def testObsoleteExport(self):
+        """Check how obsoleted messages are exported."""
+
+        pofile_eo = dedent('''
+            msgid ""
+            msgstr ""
+            "Project-Id-Version: Kumquats 1.0\\n"
+            "Report-Msgid-Bugs-To: \\n"
+            "POT-Creation-Date: 2007-07-09 03:39+0100\\n"
+            "PO-Revision-Date: 2001-09-09 01:46+0000\\n"
+            "Last-Translator: L.L. Zamenhoff <llz@uea.org>\\n"
+            "Language-Team: Esperanto <eo@li.org>\\n"
+            "MIME-Version: 1.0\\n"
+            "Content-Type: text/plain; charset=UTF-8\\n"
+            "Content-Transfer-Encoding: 8bit\\n"
+
+            # Foo bar.
+            #, c-format
+            #: src/foo.c
+            #| msgid "zog"
+            msgid "zig"
+            msgstr "zag"
+            ''')
+
+        pofile_eo_obsolete = dedent('''
+            msgid ""
+            msgstr ""
+            "Project-Id-Version: Kumquats 1.0\\n"
+            "Report-Msgid-Bugs-To: \\n"
+            "POT-Creation-Date: 2007-07-09 03:39+0100\\n"
+            "PO-Revision-Date: 2001-09-09 01:46+0000\\n"
+            "Last-Translator: L.L. Zamenhoff <llz@uea.org>\\n"
+            "Language-Team: Esperanto <eo@li.org>\\n"
+            "MIME-Version: 1.0\\n"
+            "Content-Type: text/plain; charset=UTF-8\\n"
+            "Content-Transfer-Encoding: 8bit\\n"
+
+            # Foo bar.
+            #, c-format
+            #~| msgid "zog"
+            #~ msgid "zig"
+            #~ msgstr "zag"
+            ''')
+        eo_translation_file = self.parser.parse(pofile_eo)
+        eo_translation_file.is_template = False
+        eo_translation_file.language_code = 'eo'
+        eo_translation_file.path = 'po/eo.po'
+        eo_translation_file.translation_domain = 'testing'
+        eo_translation_file.messages[0].is_obsolete = True
+        exported_eo_file = self.translation_exporter.exportTranslationFiles(
+            [eo_translation_file])
+
+        self._compareImportAndExport(
+            pofile_eo_obsolete.strip(), exported_eo_file.read().strip())
+
     def testEncodingExport(self):
         """Test that PO headers specifying character sets are respected."""
 
