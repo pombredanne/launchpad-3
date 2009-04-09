@@ -35,7 +35,7 @@ We use the webservice as an unrelated, unprivileged user.
     ...     new_person, permission=OAuthPermission.READ_PUBLIC)
 
     >>> merge_proposal = webservice.get(proposal_url).jsonBody()
-    >>> from canonical.lazr.testing.webservice import pprint_entry
+    >>> from lazr.restful.testing.webservice import pprint_entry
     >>> pprint_entry(merge_proposal)
     address: u'mp+1@code.launchpad.dev'
     all_comments_collection_link: u'http://.../~source/fooix/fix-it/+merge/1/all_comments'

@@ -4,8 +4,11 @@ Most of the time, if a web service client triggers an exception, the
 response code will be 500. But specific exception classes can override
 this behavior and set some other response code.
 
-    >>> from canonical.lazr.testing.webservice import FakeRequest
+    >>> import threading
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from canonical.launchpad.webapp.adapter import set_request_started
     >>> from zope.component import getMultiAdapter
+
     >>> def render_using_default_view(error):
     ...     """Render an exception using its default 'index.html' view.
     ...     :return: response, result tuple. (The response object and
@@ -14,7 +17,10 @@ this behavior and set some other response code.
     ...     try:
     ...         raise error
     ...     except Exception, error:
-    ...         request = FakeRequest()
+    ...         request = LaunchpadTestRequest(
+    ...             environ={'PATH_INFO' : ''})
+    ...         set_request_started()
+    ...         request.oopsid = '100'
     ...         view = getMultiAdapter((error, request), name="index.html")
     ...         result = view()
     ...         return request.response, result
@@ -24,5 +30,5 @@ IRequestExpired exceptions have a 503 status code.
 
     >>> from canonical.launchpad.webapp.adapter import RequestExpired
     >>> response, result = render_using_default_view(RequestExpired())
-    >>> response.status
+    >>> response.getStatus()
     503

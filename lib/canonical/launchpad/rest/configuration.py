@@ -11,7 +11,7 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.config import config
-from canonical.lazr.interfaces.rest import IWebServiceConfiguration
+from lazr.restful.interfaces import IWebServiceConfiguration
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.servers import (
     WebServiceClientRequest, WebServicePublication)
