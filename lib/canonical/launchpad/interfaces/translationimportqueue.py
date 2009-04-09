@@ -13,7 +13,7 @@ from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.productseries import IProductSeries
 
-from canonical.lazr.interface import copy_field
+from lazr.restful.interface import copy_field
 
 from canonical.lazr.fields import Reference, ReferenceChoice
 from canonical.lazr.rest.declarations import (
@@ -246,10 +246,11 @@ class ITranslationImportQueueEntry(Interface):
         " associated with tha translation."),
         required=False)
 
-    error_output = Text(
-        title=_("Error output"),
-        description=_("Output from most recent import attempt."),
-        required=False)
+    error_output = exported(
+        Text(
+            title=_("Error output"),
+            description=_("Output from most recent import attempt."),
+            required=False))
 
     def setStatus(status):
         """Set status.
