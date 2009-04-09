@@ -37,7 +37,7 @@ def check_default_stacked_on(branch):
     returns None if passed None. Otherwise, return the branch.
     """
     # Import here to avoid circular imports.
-    from canonical.launchpad.interfaces.branch import BranchType
+    from lp.code.interfaces.branch import BranchType
     if branch is None:
         return None
     try:

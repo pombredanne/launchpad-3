@@ -193,7 +193,7 @@ class TestGetByUrl(TestCaseWithFactory):
 
     def test_getByUrl_with_none(self):
         """getByUrl returns None if given None."""
-        self.assertIsNone(getUtility(IBranchLookup).getByUrl(None))
+        self.assertIs(None, getUtility(IBranchLookup).getByUrl(None))
 
     def test_getByUrl_with_http(self):
         """getByUrl recognizes LP branches for http URLs."""
