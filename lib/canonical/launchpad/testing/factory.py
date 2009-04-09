@@ -340,7 +340,7 @@ class LaunchpadObjectFactory(ObjectFactory):
             account.status = AccountStatus.ACTIVE
 
         email.status = email_address_status
-        
+
         # Ensure updated ValidPersonCache
         flush_database_updates()
         return person
@@ -1510,7 +1510,7 @@ class LaunchpadObjectFactory(ObjectFactory):
         return msg
 
     def makeBundleMergeDirectiveEmail(self, source_branch, target_branch,
-                                      signing_context=None):
+                                      signing_context=None, sender=None):
         """Create a merge directive email from two bzr branches.
 
         :param source_branch: The source branch for the merge directive.
@@ -1518,6 +1518,7 @@ class LaunchpadObjectFactory(ObjectFactory):
         :param signing_context: A GPGSigningContext instance containing the
             gpg key to sign with.  If None, the message is unsigned.  The
             context also contains the password and gpg signing mode.
+        :param sender: The `Person` that is sending the email.
         """
         from bzrlib.merge_directive import MergeDirective2
         md = MergeDirective2.from_objects(
@@ -1526,10 +1527,13 @@ class LaunchpadObjectFactory(ObjectFactory):
             target_branch=target_branch.warehouse_url,
             local_target_branch=target_branch.warehouse_url, time=0,
             timezone=0)
+        email = None
+        if sender is not None:
+            email = sender.preferredemail.email
         return self.makeSignedMessage(
             body='My body', subject='My subject',
             attachment_contents=''.join(md.to_lines()),
-            signing_context=signing_context)
+            signing_context=signing_context, email_address=email)
 
     def makeMergeDirective(self, source_branch=None, target_branch=None,
         source_branch_url=None, target_branch_url=None):
