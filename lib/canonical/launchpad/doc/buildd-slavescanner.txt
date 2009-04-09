@@ -839,7 +839,7 @@ permissive database user.
 
     >>> spr = old_candidate.build.sourcepackagerelease
     >>> secure_pub = removeSecurityProxy(
-    ...     old_candidate).build.getCurrentPublication().secure_record
+    ...     old_candidate).build.current_source_publication.secure_record
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
     >>> secure_pub.status = PackagePublishingStatus.SUPERSEDED
@@ -865,7 +865,7 @@ to demonstrate this, and also make the archive private:
 
     >>> source = new_candidate.build.sourcepackagerelease
     >>> secure_pub = removeSecurityProxy(
-    ...     new_candidate).build.getCurrentPublication().secure_record
+    ...     new_candidate).build.current_source_publication.secure_record
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
     >>> secure_pub.status = PackagePublishingStatus.PENDING
@@ -904,10 +904,10 @@ making the build be superseded and no candidate is returned.
 
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
     >>> secure_pub = removeSecurityProxy(
-    ...     new_candidate).build.getCurrentPublication().secure_record
+    ...     new_candidate).build.current_source_publication.secure_record
     >>> secure_pub.status = PackagePublishingStatus.DELETED
     >>> secure_pub = removeSecurityProxy(
-    ...     new_candidate).build.getCurrentPublication().secure_record
+    ...     new_candidate).build.current_source_publication.secure_record
     >>> secure_pub.status = PackagePublishingStatus.SUPERSEDED
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser(config.builddmaster.dbuser)

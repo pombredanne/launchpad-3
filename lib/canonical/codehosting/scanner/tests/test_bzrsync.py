@@ -23,8 +23,8 @@ from canonical.config import config
 from canonical.launchpad.database import (
     BranchRevision, Revision, RevisionAuthor, RevisionParent)
 from canonical.launchpad.interfaces import IRevisionSet
-from canonical.launchpad.interfaces.branchjob import IRosettaUploadJobSource
-from canonical.launchpad.interfaces.branchlookup import IBranchLookup
+from lp.code.interfaces.branchjob import IRosettaUploadJobSource
+from lp.code.interfaces.branchlookup import IBranchLookup
 from canonical.launchpad.interfaces.translations import (
     TranslationsBranchImportMode)
 from canonical.launchpad.testing import LaunchpadObjectFactory

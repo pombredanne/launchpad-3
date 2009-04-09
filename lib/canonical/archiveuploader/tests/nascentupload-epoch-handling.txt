@@ -10,7 +10,7 @@ helper functions added in the globals by test_nascentupload_documentation.py.
 Ubuntu/hoary in sampledata is ready to receive uploads in RELEASE
 pocket.
 
-    >>> from canonical.launchpad.interfaces.distribution import (
+    >>> from lp.registry.interfaces.distribution import (
     ...     IDistributionSet)
 
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']

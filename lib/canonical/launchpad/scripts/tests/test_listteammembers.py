@@ -2,7 +2,7 @@ import unittest
 
 from canonical.testing import LaunchpadZopelessLayer
 
-from canonical.launchpad.scripts import listteammembers
+from lp.registry.scripts import listteammembers
 
 ubuntuteam_default = [
     u'cprov, celso.providelo@canonical.com',

@@ -34,9 +34,9 @@ from canonical.launchpad.fields import (
     ContentNameField, PublicPersonChoice, Summary, Title)
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.interfaces.launchpad import IHasOwner
-from canonical.launchpad.interfaces.mentoringoffer import ICanBeMentored
+from lp.registry.interfaces.mentoringoffer import ICanBeMentored
 from canonical.launchpad.interfaces.validation import valid_webref
-from canonical.launchpad.interfaces.project import IProject
+from lp.registry.interfaces.project import IProject
 from canonical.launchpad.interfaces.sprint import ISprint
 from canonical.launchpad.interfaces.specificationtarget import (
     IHasSpecifications)

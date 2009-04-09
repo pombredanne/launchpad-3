@@ -2,4 +2,4 @@
 """Compatibility shim."""
 
 # pylint: disable-msg=W0611
-from canonical.lazr.testing.tales import Context, test_tales
+from canonical.lazr.testing.tales import test_tales

@@ -1,4 +1,4 @@
-# Copyright 2007-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2007-2009 Canonical Ltd.  All rights reserved.
 
 """Export module for gettext's .po file format.
 
@@ -38,11 +38,14 @@ def comments_text_representation(translation_message):
     # after the other comments to preserve the order expected by msgfmt.
     if translation_message.comment:
         for line in translation_message.comment.split('\n')[:-1]:
-            comment_line = u'#' + line
             if line.startswith('|'):
-                comment_lines_previous_msgids.append(comment_line)
+                if translation_message.is_obsolete:
+                    comment_prefix = u'#~'
+                else:
+                    comment_prefix = u'#'
+                comment_lines_previous_msgids.append(comment_prefix + line)
             else:
-                comment_lines.append(comment_line)
+                comment_lines.append(u'#' + line)
     if not translation_message.is_obsolete:
         # Source comments are only exported if it's not an obsolete entry.
         if translation_message.source_comment:
@@ -250,6 +253,10 @@ class GettextPOExporterBase:
     format = None
     supported_source_formats = []
 
+    # Does the format we're exporting allow messages to be distinguished
+    # by just their msgid_plural?
+    msgid_plural_distinguishes_messages = False
+
     def exportTranslationMessageData(self, translation_message):
         """See `ITranslationFormatExporter`."""
         return export_translation_message(translation_message)
@@ -264,9 +271,6 @@ class GettextPOExporterBase:
     def exportTranslationFiles(self, translation_files, ignore_obsolete=False,
                                force_utf8=False):
         """See `ITranslationFormatExporter`."""
-        # XXX JeroenVermeulen 2008-02-06: Is there anything here that we can
-        # unify with the language-pack export code?
-
         storage = ExportFileStorage('application/x-po')
 
         for translation_file in translation_files:
@@ -293,7 +297,25 @@ class GettextPOExporterBase:
             if force_utf8:
                 translation_file.header.charset = 'UTF-8'
             chunks = [self._makeExportedHeader(translation_file)]
+
+            seen_keys = {}
+
             for message in translation_file.messages:
+                key = (message.context, message.msgid_singular)
+                if key in seen_keys:
+                    # Launchpad can deal with messages that are
+                    # identical to gettext, but differ in plural msgid.
+                    plural = message.msgid_plural
+                    previous_plural = seen_keys[key].msgid_plural
+
+                    if not self.msgid_plural_distinguishes_messages:
+                        # Suppress messages that are duplicative to
+                        # gettext so that gettext doesn't choke on the
+                        # resulting file.
+                        continue
+                else:
+                    seen_keys[key] = message
+
                 if (message.is_obsolete and
                     (ignore_obsolete or len(message.translations) == 0)):
                     continue
@@ -330,6 +352,23 @@ class GettextPOExporterBase:
             storage.addFile(file_path, file_extension, exported_file_content)
 
         return storage.export()
+
+    def acceptSingularClash(self, previous_message, current_message):
+        """Handle clash of (singular) msgid and context with other message.
+
+        Define in derived class how it should behave when this happens.
+
+        Obsolete messages are guaranteed to be processed after
+        non-obsolete ones.
+
+        :param previous_message: already processed message in this
+            export.
+        :param current_message: another message with the same (singular)
+            msgid and context as `previous_message`.
+        :return: boolean: True to accept `current_message`, or False to
+            leave it out of the export.
+        """
+        raise NotImplementedError()
 
 
 class GettextPOExporter(GettextPOExporterBase):
@@ -390,3 +429,6 @@ class GettextPOChangedExporter(GettextPOExporterBase):
             charset = translation_file.header.charset
         return self.exported_header.encode(charset)
 
+    def acceptSingularClash(self, previous_message, current_message):
+        """See `GettextPOExporterBase`."""
+        return True

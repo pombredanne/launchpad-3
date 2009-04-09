@@ -13,7 +13,7 @@ from twisted.trial.unittest import TestCase
 from canonical.codehosting.vfs.branchfsclient import (
     BranchFileSystemClient, NotInCache, trap_fault)
 from canonical.codehosting.inmemory import InMemoryFrontend, XMLRPCWrapper
-from canonical.launchpad.interfaces.codehosting import BRANCH_TRANSPORT
+from lp.code.interfaces.codehosting import BRANCH_TRANSPORT
 from canonical.launchpad.testing import FakeTime
 from canonical.launchpad.xmlrpc.tests.test_faults import (
     TestFaultOne, TestFaultTwo)

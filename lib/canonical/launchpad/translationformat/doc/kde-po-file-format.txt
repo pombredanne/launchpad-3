@@ -295,7 +295,9 @@ Template export turns it back into a KDE-style PO file:
     "entries"
     msgstr ""
 
-But, we can also export it as a regular gettext PO file:
+But, we can also export it as a regular gettext PO file.  This format
+does not support messages that are identical in all but the plural, so
+those are stripped out.
 
     >>> print export_with_format(firefox_potemplate,
     ...                          TranslationFileFormat.PO)
@@ -323,19 +325,6 @@ But, we can also export it as a regular gettext PO file:
     #, c-format
     msgid "%d foo"
     msgid_plural "%d foos"
-    msgstr[0] ""
-    msgstr[1] ""
-    <BLANKLINE>
-    # Legacy KDE PO files allow two messages with same singular message
-    # ID, but different or no plural to exist, what is otherwise not
-    # allowed by standard gettext support.
-    #, c-format
-    msgid "%d foo"
-    msgstr ""
-    <BLANKLINE>
-    #, c-format
-    msgid "%d foo"
-    msgid_plural "%d bars"
     msgstr[0] ""
     msgstr[1] ""
     <BLANKLINE>

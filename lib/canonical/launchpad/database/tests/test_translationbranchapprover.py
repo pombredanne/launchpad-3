@@ -149,6 +149,24 @@ class TestTranslationBranchApprover(TestCaseWithFactory):
         self.assertEqual(
             translation_domain, self.entry.potemplate.translation_domain)
 
+    def test_upload_multiple_new_templates(self):
+        # Multiple new templates can be added using the same
+        # TranslationBranchApprover instance.
+        pot_path1 = self.factory.getUniqueString() + ".pot"
+        pot_path2 = self.factory.getUniqueString() + ".pot"
+        entry1 = self.queue.addOrUpdateEntry(pot_path1,
+            self.factory.getUniqueString(), True, self.series.owner,
+            productseries=self.series)
+        entry2 = self.queue.addOrUpdateEntry(pot_path2,
+            self.factory.getUniqueString(), True, self.series.owner,
+            productseries=self.series)
+        approver = TranslationBranchApprover((pot_path1, pot_path2),
+                                             productseries=self.series)
+        approver.approve(entry1)
+        self.assertEqual(RosettaImportStatus.APPROVED, entry1.status)
+        approver.approve(entry2)
+        self.assertEqual(RosettaImportStatus.APPROVED, entry2.status)
+
     def test_duplicate_template_name(self):
         pot_path1 = "po/foo_domain.pot"
         pot_path2 = "foo_domain/messages.pot"

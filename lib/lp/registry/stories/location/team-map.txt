@@ -1,0 +1,104 @@
+== The map of a team's members ==
+
+If a team has members that have locations, then you should see a portlet
+with their locations displayed.
+
+    >>> nopriv_browser = setupBrowser(auth='Basic no-priv@canonical.com:test')
+    >>> nopriv_browser.open('http://launchpad.dev/~guadamen')
+    >>> body = find_main_content(nopriv_browser.contents)
+    >>> mapdiv = find_tag_by_id(str(body), 'team_map_div')
+    >>> 'lp.mapping.renderTeamMapSmall(' in str(body)
+    True
+    >>> markup = str(nopriv_browser.contents)
+    >>> 'src="http://maps.google.com/maps' in markup
+    True
+    >>> 'build/lp/mapping.js' in markup
+    True
+
+You should also be able to see a map of the team, with links to the people
+who need to have location data added to complete the team.
+
+    >>> maplink = nopriv_browser.getLink('View map and time zones')
+    >>> maplink.click()
+    >>> nopriv_browser.url
+    'http://launchpad.dev/~guadamen/+map'
+    >>> link = nopriv_browser.getLink('Edgar Bursic')
+    >>> link.url
+    'http://launchpad.dev/~edgar/+editlocation?for_team=guadamen'
+
+The map depends on a stream of XML-formatted data, giving the locations of
+all members of the team. We show that this stream works for teams with, and
+without, mapped members.
+
+    >>> anon_browser.open('http://launchpad.dev/~guadamen/+mapdata')
+    >>> print anon_browser.contents
+    <?xml version="1.0"?><!--*- mode: nxml -*-->
+    <participants>
+      <!--
+        This collection of team location data is (c) Canonical Ltd and
+        contributors, and the format may be changed at any time.
+      -->
+      <participant
+        displayname="Colin Watson"
+        name="kamion"
+        logo_html="&lt;img alt=&quot;&quot; width=&quot;64&quot; height=&quot;64&quot; src=&quot;/@@/person-logo&quot; /&gt;"
+        url="/~kamion"
+        local_time="..."
+        lat="52.2"
+        lng="0.3"/>
+    </participants>
+    <BLANKLINE>
+
+    >>> anon_browser.open('http://launchpad.dev/~name21/+mapdata')
+    >>> print anon_browser.contents
+    <?xml version="1.0"?><!--*- mode: nxml -*-->
+    <participants>
+      <!--
+        This collection of team location data is (c) Canonical Ltd and
+        contributors, and the format may be changed at any time.
+      -->
+    </participants>
+    <BLANKLINE>
+
+We have a nice way to add locations for all the members of a team. We look
+at a page which shows all the members of the team on a map, together with
+links to edit the location of folks who have not yet been mapped. When we
+click on those links, we pass the name of the team, so when the location is
+added, we come back to the team map, and from there we can click on the next
+person.
+
+    >>> admin_browser.open('http://launchpad.dev/~guadamen/+map')
+    >>> admin_browser.getLink('Edgar Bursic').click()
+    >>> admin_browser.url
+    'http://launchpad.dev/~edgar/+editlocation?for_team=guadamen'
+    >>> admin_browser.getControl(name='field.location.latitude').value = '37.3'
+    >>> admin_browser.getControl(name='field.location.longitude').value = '2.45'
+    >>> admin_browser.getControl(name='field.location.time_zone').value = ['Europe/Madrid']
+    >>> admin_browser.getControl('Update').click()
+    >>> admin_browser.url
+    'http://launchpad.dev/~guadamen/+map'
+
+It doesn't make sense to edit the location of the team itself, not even
+if we are an admin, so a team's +editlocation page will simply redirect
+to +map.
+
+    >>> admin_browser.open('http://launchpad.dev/~guadamen/+editlocation')
+    >>> print admin_browser.url
+    http://launchpad.dev/~guadamen/+map
+
+
+== +mapdata ==
+
+The display name of all team participants will be escaped to prevent
+XSS attacks on any callsite of +mapdata.
+
+    >>> admin_browser.open('http://launchpad.dev/~edgar/+edit')
+    >>> admin_browser.getControl('Display Name').value = (
+    ...     "<script>alert('John \"nasty\"');</script>")
+    >>> admin_browser.getControl('Save Changes').click()
+
+    >>> anon_browser.open('http://launchpad.dev/~guadamen/+mapdata')
+    >>> print anon_browser.contents
+    <?xml version="1.0"?><!--*- mode: nxml -*-->
+    ...displayname="&amp;lt;script&amp;gt;alert('John &amp;quot;nasty&amp;quot;');&amp;lt;/script&amp;gt;"
+    ...

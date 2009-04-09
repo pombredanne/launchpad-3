@@ -1,0 +1,69 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
+>
+  <body>
+
+<metal:leftportlets fill-slot="portlets_one">
+  <div tal:replace="structure context/@@+portlet-aboutcve" />
+</metal:leftportlets>
+
+<div metal:fill-slot="main" tal:define="serieses context/serieses">
+  <h1 tal:condition="not: serieses">
+    CVEs related to bugs in <span tal:replace="context/displayname" />
+  </h1>
+  <h1 tal:condition="serieses">
+    CVE reports in releases of <span tal:replace="context/displayname" />
+  </h1>
+
+  <tal:open_issues condition="not: serieses"
+                   define="bugtaskcves view/open_cve_bugtasks">
+
+    <h2>Open bugs</h2>
+
+    <tal:listing condition="bugtaskcves">
+       <metal:table use-macro="context/@@bugtask-macros-cve/table-listing" />
+    </tal:listing>
+
+    <p tal:condition="not: bugtaskcves">
+      There are no CVEs related to bugs open in <span
+        tal:replace="context/displayname">Ubuntu</span>.
+    </p>
+
+  </tal:open_issues>
+
+  <tal:resolved_issues condition="not: serieses"
+                       define="bugtaskcves view/resolved_cve_bugtasks">
+
+    <h2>Resolved bugs</h2>
+
+    <tal:listing condition="bugtaskcves">
+       <metal:table use-macro="context/@@bugtask-macros-cve/table-listing" />
+    </tal:listing>
+
+    <p tal:condition="not: bugtaskcves">
+      There are no CVEs related to bugs resolved in <span
+        tal:replace="context/displayname">Ubuntu</span>.
+    </p>
+
+  </tal:resolved_issues>
+
+  <tal:series condition="serieses">
+      <ul>
+        <li tal:repeat="series serieses">
+          <a tal:attributes="href string:${series/fmt:url}/+cve"
+             tal:content="series/displayname"></a>
+        </li>
+      </ul>
+  </tal:series>
+
+</div> 
+</body>
+</html>

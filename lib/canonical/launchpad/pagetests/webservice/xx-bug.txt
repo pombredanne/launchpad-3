@@ -8,7 +8,7 @@ lot of state and many relationships to other objects.
 
 At the top level we provide a collection of bugs.
 
-  >>> from canonical.lazr.testing.webservice import (
+  >>> from lazr.restful.testing.webservice import (
   ...     pprint_collection, pprint_entry)
   >>> from operator import itemgetter
   >>> bugs = webservice.get("/bugs").jsonBody()
@@ -288,15 +288,9 @@ The collection of bug tasks is not exposed as a resource:
 
 It's possible to change the task's assignee.
 
-  >>> print webservice.named_post(
-  ...     bugtask_path, 'transitionToAssignee',
-  ...     assignee=webservice.getAbsoluteUrl('/~cprov'))
-  HTTP/1.1 200 Ok
-  ...
-  Content-Type: application/json
-  ...
-  <BLANKLINE>
-  null
+  >>> patch = {u'assignee_link': webservice.getAbsoluteUrl('/~cprov')}
+  >>> print webservice.patch(bugtask_path, 'application/json', dumps(patch))
+  HTTP/1.1 209 Content Returned...
 
   >>> print webservice.get(bugtask_path).jsonBody()['assignee_link']
   http://.../~cprov

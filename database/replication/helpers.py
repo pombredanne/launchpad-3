@@ -50,6 +50,7 @@ LPMAIN_SEED = frozenset([
     ('public', 'launchpadstatistic'),
     ('public', 'parsedapachelog'),
     ('public', 'shipitsurvey'),
+    ('public', 'openidassociations'), # Remove this in April 2009 or later.
     ])
 
 # Explicitly list tables that should not be replicated. This includes the

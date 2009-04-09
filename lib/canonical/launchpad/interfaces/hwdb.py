@@ -47,19 +47,19 @@ from zope.schema import (
 from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces.distribution import IDistribution
-from canonical.launchpad.interfaces.distroseries import IDistroSeries
-from canonical.launchpad.interfaces.person import IPerson
-from canonical.launchpad.interfaces.product import License
+from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.distroseries import IDistroSeries
+from lp.registry.interfaces.person import IPerson
+from lp.registry.interfaces.product import License
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
 
-from canonical.lazr.fields import CollectionField, Reference
-from canonical.lazr.interface import copy_field
-from canonical.lazr.interfaces.rest import ITopLevelEntryLink
-from canonical.lazr.rest.declarations import (
+from lazr.restful.fields import CollectionField, Reference
+from lazr.restful.interface import copy_field
+from lazr.restful.interfaces import ITopLevelEntryLink
+from lazr.restful.declarations import (
     export_as_webservice_entry, export_read_operation, exported,
     operation_parameters, operation_returns_collection_of, webservice_error)
 

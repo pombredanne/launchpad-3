@@ -1,10 +1,12 @@
 On the bug listings page there is a portlet which shows all tags that
-have been used for bugs in this context.
+have been used for bugs in this context. The content of this portlet is loaded
+using Javascript after page load.
 
     >>> anon_browser.open('http://launchpad.dev/ubuntu/+bugs')
-    >>> anon_browser.url
-    'http://launchpad.dev/ubuntu/+bugs'
-    >>> tags_portlet = find_tag_by_id(anon_browser.contents, 'portlet-tags')
+    >>> anon_browser.getLink(id='tags-content-link').click()
+    >>> print anon_browser.url
+    http://launchpad.dev/ubuntu/+bugtarget-portlet-tags-content
+    >>> tags_portlet = find_tags_by_class(anon_browser.contents, 'portletBody')[0]
     >>> for td_tag in tags_portlet('td'):
     ...     print td_tag.renderContents()
     <a ...>crash</a>
@@ -31,23 +33,8 @@ Clicking on a tags shows only bugs that have that specific tag, so if
 we click on another tag, the bugs that were shown previously won't be
 shown.
 
-    >>> anon_browser.getLink('dataloss').click()
-    >>> anon_browser.url
-    'http://launchpad.dev/ubuntu/+bugs?field.tag=dataloss'
-    >>> print_bugtasks(anon_browser.contents)
-    2 Blackhole Trash folder
-      &mdash; Medium New
-
-The links don't work as a filter to the existing listing, it's a filter
-of the default listing. So if we would show only the invalid bugs, and
-then press the tag link again, only open bugs will be shown
-
     >>> anon_browser.open(
-    ...     'http://launchpad.dev/ubuntu/+bugs?advanced=1')
-    >>> anon_browser.getControl(name='field.status:list').displayValue = ['Invalid']
-    >>> anon_browser.getControl('Search', index=0).click()
-    >>> print_bugtasks(anon_browser.contents)
-
+    ...     'http://launchpad.dev/ubuntu/+bugtarget-portlet-tags-content')
     >>> anon_browser.getLink('dataloss').click()
     >>> anon_browser.url
     'http://launchpad.dev/ubuntu/+bugs?field.tag=dataloss'
@@ -55,14 +42,15 @@ then press the tag link again, only open bugs will be shown
     2 Blackhole Trash folder
       &mdash; Medium New
 
-We update bug #2's status to Invalid to demonstrate that the portlet is
-hidden when no tags are relevant:
+We update bug #2's status to Invalid to demonstrate that the portlet body is
+not available when no tags are relevant:
 
     >>> admin_browser.open('http://bugs.launchpad.dev/tomcat/+bug/2')
     >>> admin_browser.getControl("Status", index=0).value = ["Invalid"]
     >>> admin_browser.getControl("Save Changes", index=0).click()
 
-    >>> anon_browser.open('http://launchpad.dev/tomcat/+bugs')
-    >>> print find_tag_by_id(anon_browser.contents, 'portlet-tags')
-    None
+    >>> anon_browser.open(
+    ...     'http://launchpad.dev/tomcat/+bugtarget-portlet-tags-content')
+    >>> print extract_text(anon_browser.contents)
+    <BLANKLINE>
 

@@ -93,6 +93,47 @@ An account has a displayname, and a preferred email address.
     >>> print account.preferredemail.email
     no-priv@canonical.com
 
+The account can have additional validated and guessed email
+addresses.  This will be empty if the user has only a single validated
+email address:
+
+    >>> [email.email for email in account.validated_emails]
+    []
+    >>> [email.email for email in account.guessed_emails]
+    []
+
+If we add a new guessed email address, it will be included in the
+guessed list:
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     EmailAddressStatus, IEmailAddressSet)
+    >>> email = getUtility(IEmailAddressSet).new(
+    ...     "guessed-email@example.com", account=account,
+    ...     status=EmailAddressStatus.NEW)
+    >>> [email.email for email in account.guessed_emails]
+    [u'guessed-email@example.com']
+
+If we add a validated email address, it will show up in the validated
+list:
+
+    >>> email = getUtility(IEmailAddressSet).new(
+    ...     "validated-email@example.com", account=account,
+    ...     status=EmailAddressStatus.VALIDATED)
+    >>> [email.email for email in account.validated_emails]
+    [u'validated-email@example.com']
+
+We can also get a list of email addresses that are waiting for the
+user to validate:
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     IAuthTokenSet, LoginTokenType)
+    >>> token = getUtility(IAuthTokenSet).new(
+    ...     account, u"test@canonical.com", u"unvalidated-email@example.com",
+    ...     LoginTokenType.VALIDATEEMAIL, None)
+    >>> account.getUnvalidatedEmails()
+    [u'unvalidated-email@example.com']
+
+
 It also has an encrypted password.
 
     >>> account.password
@@ -171,12 +212,6 @@ unavailable.
     >>> account.displayname
     u'No Privileges Person'
 
-If an account has an associated person, it can be accessed via the
-person attribute:
-
-    >>> IPerson(account) == person
-    True
-
 An Account has an OpenID identifier used to generate the OpenID identity
 URL.
 
@@ -245,7 +280,6 @@ account with no email address is not valid:
 
 Lets add a new email address to the account:
 
-    >>> from canonical.launchpad.interfaces import IEmailAddressSet
     >>> email = getUtility(IEmailAddressSet).new(
     ...     "valid-account-test@example.com", account=account)
     >>> account.is_valid
@@ -277,7 +311,7 @@ modify tables in the lpmain replication set.
     >>> from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
     >>> getUtility(IStoreSelector).push(MasterDatabasePolicy())
 
-    >>> from canonical.launchpad.interfaces.person import (
+    >>> from lp.registry.interfaces.person import (
     ...     PersonCreationRationale)
     >>> fresh_account, email = account_set.createAccountAndEmail(
     ...     'foo@example.com',
@@ -436,7 +470,7 @@ date.
 
     >>> from canonical.launchpad.interfaces.openidserver import (
     ...     IOpenIDRPSummarySet)
-    >>> from datetime import datetime, timedelta
+    >>> from datetime import datetime
     >>> import pytz
     >>> two_thousand_and_seven = datetime(2007, 1, 1, tzinfo=pytz.UTC)
     >>> two_thousand_and_eight = datetime(2008, 1, 1, tzinfo=pytz.UTC)
