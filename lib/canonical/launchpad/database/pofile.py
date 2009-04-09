@@ -293,7 +293,7 @@ class POFileMixIn(RosettaStats):
             FROM POTMsgSet
             JOIN TranslationTemplateItem
               ON TranslationTemplateItem.potmsgset=POTMsgSet.id AND
-                 TranslationTemplateItem.potemplate=4
+                 TranslationTemplateItem.potemplate=%s
             WHERE
               (POTMsgSet.msgid_singular IS NOT NULL AND
                POTMsgSet.msgid_singular IN (
@@ -314,7 +314,7 @@ class POFileMixIn(RosettaStats):
             FROM POTMsgSet
             JOIN TranslationTemplateItem
               ON TranslationTemplateItem.potmsgset=POTMsgSet.id AND
-                 TranslationTemplateItem.potemplate=4
+                 TranslationTemplateItem.potemplate=%s
             WHERE
               (POTMsgSet.msgid_plural IS NOT NULL AND
                POTMsgSet.msgid_plural IN (
@@ -329,8 +329,10 @@ class POFileMixIn(RosettaStats):
                          TranslationTemplateItem.sequence > 0
                    ) AND
                    msgid ILIKE '%%' || %s || '%%'))
-            """ % (quote(self.potemplate), quote_like(text),
-                   quote(self.potemplate), quote_like(text))
+            """ % (quote(self.potemplate), quote(self.potemplate),
+                   quote_like(text),
+                   quote(self.potemplate), quote(self.potemplate),
+                   quote_like(text))
         return english_match
 
     def findPOTMsgSetsContaining(self, text):
@@ -641,7 +643,7 @@ class POFile(SQLBase, POFileMixIn):
 
         return POTMsgSet.select(
             ' AND '.join(clauses), clauseTables=clause_tables,
-            orderBy='TranslationTemplateItem.sequence')
+            orderBy='POTMsgSet.sequence')
 
     def getPOTMsgSetUntranslated(self):
         """See `IPOFile`."""
@@ -663,7 +665,7 @@ class POFile(SQLBase, POFileMixIn):
         clauses.append('POTMsgSet.id NOT IN (' + translated_query + ')')
         return POTMsgSet.select(' AND '.join(clauses),
                                 clauseTables=['TranslationTemplateItem'],
-                                orderBy='TranslationTemplateItem.sequence')
+                                orderBy='POTMsgSet.sequence')
 
     def getPOTMsgSetWithNewSuggestions(self):
         """See `IPOFile`."""
@@ -707,7 +709,7 @@ class POFile(SQLBase, POFileMixIn):
         # TranslationMessage newer than the current reviewed one.
         results = POTMsgSet.select(' AND '.join(clauses),
             clauseTables=['TranslationTemplateItem', 'TranslationMessage'],
-            orderBy='TranslationTemplateItem.sequence',
+            orderBy='POTMsgSet.sequence',
             distinct=True)
         return results
 

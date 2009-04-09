@@ -417,7 +417,7 @@ class FileImporterTestCase(unittest.TestCase):
         potmsgset = po_importer.pofile.potemplate.getPOTMsgSetByMsgIDText(
             unicode(TEST_MSGID_ERROR))
         messages = potmsgset.getLocalTranslationMessages(
-            po_importer.pofile.language)
+            po_importer.pofile.potemplate, po_importer.pofile.language)
 
         for message in messages:
             if message.potmsgset.msgid_singular.msgid == TEST_MSGID_ERROR:

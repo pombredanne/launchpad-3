@@ -185,4 +185,4 @@ FROM
      LEFT JOIN potranslation potranslation5 ON
           potranslation5.id = translationmessage.msgstr5;
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2109, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (2109, 48, 0);
