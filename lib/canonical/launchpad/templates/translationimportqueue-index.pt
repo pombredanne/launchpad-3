@@ -22,6 +22,7 @@
     </metal:css>
 
     <div metal:fill-slot="main">
+
       <h1 tal:condition="view/label"
           tal:content="view/label">
         Translation files waiting to be imported in Launchpad
@@ -37,6 +38,7 @@
 
       <metal:translation-import-queue
         use-macro="view/translation_import_queue_content" />
+
     </div>
   </body>
 </html>
