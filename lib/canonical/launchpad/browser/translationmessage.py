@@ -1167,7 +1167,6 @@ class CurrentTranslationMessageView(LaunchpadView):
             for suggestion in externally_suggested:
                 pofile = suggestion.getOnePOFile()
                 suggestion.setPOFile(pofile)
-                suggestion.setPOFile(pofile)
         else:
             # Don't show suggestions for anonymous users.
             local = externally_used = externally_suggested = []
