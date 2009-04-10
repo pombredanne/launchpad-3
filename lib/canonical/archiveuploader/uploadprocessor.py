@@ -52,12 +52,15 @@ import shutil
 import stat
 import sys
 
+from sqlobject import SQLObjectNotFound
+
 from zope.component import getUtility
 
 from canonical.archiveuploader.nascentupload import (
     NascentUpload, FatalUploadError, EarlyReturnUploadError)
 from canonical.archiveuploader.uploadpolicy import (
     findPolicyByOptions, UploadPolicyError)
+from canonical.launchpad.interfaces.archive import IArchiveSet
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from canonical.launchpad.webapp.errorlog import (
@@ -289,6 +292,7 @@ class UploadProcessor:
         self.options.distro = distribution.name
         policy = findPolicyByOptions(self.options)
         policy.archive = archive
+
         # DistroSeries overriding respect the following precedence:
         #  1. process-upload.py command-line option (-r),
         #  2. upload path,
@@ -300,6 +304,15 @@ class UploadProcessor:
         # containing the changes file (and the other files referenced by it).
         changesfile_path = os.path.join(upload_path, changes_file)
         upload = NascentUpload(changesfile_path, policy, self.log)
+
+        # Reject source upload to buildd upload paths.
+        first_path = relative_path.split(os.path.sep)[0]
+        if first_path.isdigit() and policy.name != 'buildd':
+            error_message = (
+                "Invalid upload path (%s) for this policy (%s)" %
+                (relative_path, policy.name))
+            upload.reject(error_message)
+            self.log.error(error_message)
 
         # Store archive lookup error in the upload if it was the case.
         if error is not None:
@@ -488,7 +501,8 @@ def parse_upload_path(relative_path):
 
     first_path = parts[0]
 
-    if not first_path.startswith('~') and len(parts) <= 2:
+    if (not first_path.startswith('~') and not first_path.isdigit()
+        and len(parts) <= 2):
         # Distribution upload (<distro>[/distroseries]). Always targeted to
         # the corresponding primary archive.
         distribution, suite_name = _getDistributionAndSuite(
@@ -534,7 +548,17 @@ def parse_upload_path(relative_path):
             raise PPAUploadPathError(
                 "%s only supports uploads to '%s'"
                 % (archive.displayname, archive.distribution.name))
-
+    elif first_path.isdigit():
+        # This must be a binary upload from a build slave.
+        try:
+            archive = getUtility(IArchiveSet).get(int(first_path))
+        except SQLObjectNotFound:
+            raise UploadPathError(
+                "Could not find archive with id=%s" % first_path)
+        if not archive.enabled:
+            raise UploadPathError("%s is disabled" % archive.displayname)
+        distribution, suite_name = _getDistributionAndSuite(
+            parts[1:], UploadPathError)
     else:
         # Upload path does not match anything we support.
         raise UploadPathError(

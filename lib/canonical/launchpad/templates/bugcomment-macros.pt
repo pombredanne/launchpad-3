@@ -147,7 +147,9 @@
         <tal:activity-by-target repeat="activity_dict activity_list">
           <tal:target define="target activity_dict/target|nothing">
             <tr tal:condition="target">
-              <td>Changed in <tal:target content="target" />: </td>
+              <td colspan="2">
+                Changed in <tal:target content="target" />:
+              </td>
             </tr>
           </tal:target>
           <tr tal:repeat="activity activity_dict/activity">

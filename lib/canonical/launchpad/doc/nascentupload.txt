@@ -950,9 +950,10 @@ Now process the upload.
 
     >>> quodlibet.process()
 
-The upload fails due to the fact that it's destined for a copy archive.
+It goes through although destined for a copy archive because it's
+a binary upload.
 
     >>> quodlibet.is_rejected
+    False
+    >>> quodlibet.binaryful
     True
-    >>> print quodlibet.rejection_message
-    Uploads to copy archives are not allowed.

@@ -771,12 +771,12 @@ class POTemplate(SQLBase, RosettaStats):
                     'We got an error importing %s', self.title, exc_info=1)
             subject = 'Import problem - %s' % self.displayname
             template_mail = 'poimport-syntax-error.txt'
-            entry_to_import.status = RosettaImportStatus.FAILED
+            entry_to_import.setStatus(RosettaImportStatus.FAILED)
             error_text = str(exception)
-            entry_to_import.error_output = error_text
+            entry_to_import.setErrorOutput(error_text)
         else:
             error_text = None
-            entry_to_import.error_output = None
+            entry_to_import.setErrorOutput(None)
 
         replacements = {
             'dateimport': entry_to_import.dateimported.strftime('%F %R%z'),
@@ -791,7 +791,7 @@ class POTemplate(SQLBase, RosettaStats):
             replacements['error'] = error_text
 
         if entry_to_import.status != RosettaImportStatus.FAILED:
-            entry_to_import.status = RosettaImportStatus.IMPORTED
+            entry_to_import.setStatus(RosettaImportStatus.IMPORTED)
 
             # Assign karma to the importer if this is not an automatic import
             # (all automatic imports come from the rosetta expert team).

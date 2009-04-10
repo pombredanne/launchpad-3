@@ -351,7 +351,7 @@ To be sure that we are using the right entry from the import queue,
 we check that it contains only sample data entries.
 
     >>> translationimportqueue = getUtility(ITranslationImportQueue)
-    >>> translationimportqueue.entryCount()
+    >>> translationimportqueue.countEntries()
     2
     >>> for entry in translationimportqueue.getAllEntries():
     ...     print entry.id, entry.content.filename
@@ -379,7 +379,7 @@ Now, we do the upload.
 
 As we can see, we have now one entry added to our queue.
 
-    >>> translationimportqueue.entryCount()
+    >>> translationimportqueue.countEntries()
     3
 
 Get it and check that some attributes are set as they should.

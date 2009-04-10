@@ -1,4 +1,4 @@
-# Copyright 2007, 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2007-2009 Canonical Ltd.  All rights reserved.
 
 """Functional tests for XPI file format"""
 __metaclass__ = type
@@ -200,7 +200,7 @@ class XpiTestCase(unittest.TestCase):
             ).count()
 
         # Force the entry to be imported again:
-        entry.status = RosettaImportStatus.APPROVED
+        entry.setStatus(RosettaImportStatus.APPROVED)
         # Now, we tell the PO template to import from the file data it has.
         (subject, body) = self.firefox_template.importFromQueue(entry)
 
