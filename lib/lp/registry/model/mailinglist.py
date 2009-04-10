@@ -669,13 +669,15 @@ class MailingListSet:
         # Sort by team name.
         by_team = {}
         for email_address, subscription, participation in preferred:
-            # XXX Works this into the query somehow.
+            # XXX Work this into the query somehow.
             if subscription.mailing_list.team != participation.team:
                 continue
             team_name = subscription.mailing_list.team.name
             assert team_name in team_names, (
                 'Unexpected team name in results: %s' % team_name)
-            by_team.setdefault(team_name, set()).add(email_address.email)
+            full_name = email_address.person.displayname
+            address = email_address.email
+            by_team.setdefault(team_name, set()).add((full_name, address))
         tables = (
             EmailAddress,
             LeftJoin(Account, Account.id == EmailAddress.accountID),
@@ -699,7 +701,9 @@ class MailingListSet:
             team_name = mailing_list.team.name
             assert team_name in team_names, (
                 'Unexpected team name in results: %s' % team_name)
-            by_team.setdefault(team_name, set()).add(email_address.email)
+            full_name = email_address.person.displayname
+            address = email_address.email
+            by_team.setdefault(team_name, set()).add((full_name, address))
         # Turn the results into a mapping of lists.
         results = {}
         for team_name, address_set in by_team.items():
@@ -745,7 +749,9 @@ class MailingListSet:
             team_name = mailing_list.team.name
             assert team_name in team_names, (
                 'Unexpected team name in results: %s' % team_name)
-            by_team.setdefault(team_name, set()).add(email_address.email)
+            full_name = person.displayname
+            address = email_address.email
+            by_team.setdefault(team_name, set()).add((full_name, address))
         # Second, find all of the email addresses for all of the people who
         # have been explicitly approved for posting to the team mailing lists.
         # This occurs as part of first post moderation, but since they've
@@ -773,7 +779,9 @@ class MailingListSet:
             team_name = message_approval.mailing_list.team.name
             assert team_name in team_names, (
                 'Unexpected team name in results: %s' % team_name)
-            by_team.setdefault(team_name, set()).add(email_address.email)
+            full_name = person.displayname
+            address = email_address.email
+            by_team.setdefault(team_name, set()).add((full_name, address))
         # Turn the results into a mapping of lists.
         results = {}
         for team_name, address_set in by_team.items():

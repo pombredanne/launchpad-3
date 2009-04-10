@@ -132,9 +132,9 @@ special = {
         layer=LaunchpadZopelessLayer,
         ),
     'karmacache.txt': LayeredDocFileSuite(
-    '../doc/karmacache.txt',
-    layer=LaunchpadZopelessLayer,
-    setUp=setUp, tearDown=tearDown),
+        '../doc/karmacache.txt',
+        layer=LaunchpadZopelessLayer,
+        setUp=setUp, tearDown=tearDown),
     }
 
 

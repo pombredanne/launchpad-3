@@ -19,6 +19,7 @@ __all__ = [
 
 import xmlrpclib
 
+from email.Utils import formataddr
 from BeautifulSoup import BeautifulSoup, SoupStrainer
 from zope.component import getUtility
 
@@ -159,10 +160,14 @@ def print_addresses(data):
 
     This is used for the results returned by `IMailingListSet` methods
     `getSenderAddresses()` and `getSubscribedAddresses()`.
+
+    :param data: The data as returned by the above methods.
+    :type data: dictionary of 2-tuples
     """
     for team_name in sorted(data):
         print team_name
-        print COMMASPACE.join(sorted(data[team_name]))
+        print COMMASPACE.join(sorted(
+            address for (real_name, address) in data[team_name]))
 
 
 def new_team(team_name, with_list=False):
