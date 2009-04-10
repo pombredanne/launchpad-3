@@ -87,7 +87,8 @@ class BugComment:
     """
     implements(IBugComment)
 
-    def __init__(self, index, message, bugtask, display_if_from_bugwatch):
+    def __init__(self, index, message, bugtask, display_if_from_bugwatch,
+                 activity=None):
         self.index = index
         self.bugtask = bugtask
         self.bugwatch = None
@@ -101,6 +102,11 @@ class BugComment:
 
         self.chunks = []
         self.bugattachments = []
+
+        if activity is None:
+            activity = []
+
+        self.activity = activity
 
         self.synchronized = False
 
@@ -163,6 +169,14 @@ class BugComment:
     @property
     def add_comment_url(self):
         return canonical_url(self.bugtask, view_name='+addcomment')
+
+    @property
+    def show_footer(self):
+        """Return True if the footer should be shown for this comment."""
+        if len(self.activity) > 0 or self.bugwatch:
+            return True
+        else:
+            return False
 
 
 class BugCommentView(LaunchpadView):
