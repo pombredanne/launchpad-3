@@ -265,7 +265,6 @@ adapt.
 Up to now there was no browser request we could use, so no caching was
 done.
 
-    >>> from canonical.lazr.utils import get_current_browser_request
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> request = LaunchpadTestRequest()
     >>> print request.annotations.get('launchpad.person_to_account_cache')
