@@ -96,21 +96,6 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
         """See `HasMilestonesMixin`."""
         return (Milestone.productseries == self)
 
-    def _get_user_branch(self):
-        """Backwards compatibility for the 2.2.3 release."""
-        return self.branch
-
-    def _set_user_branch(self, branch):
-        """Backwards compatibility for the 2.2.3 release."""
-        self.branch = branch
-
-    user_branch = property(_get_user_branch, _set_user_branch)
-
-    @property
-    def series_branch(self):
-        """Backwards compatibility for the 2.2.3 release."""
-        return self.branch
-
     @property
     def releases(self):
         """See `IProductSeries`."""

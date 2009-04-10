@@ -5,7 +5,7 @@ representations of people and teams are supposed to have nearly the
 same keys.  I say nearly because some attributes are only made available
 for teams (as they're defined in the ITeam interface).
 
-    >>> from canonical.lazr.testing.webservice import pprint_entry
+    >>> from lazr.restful.testing.webservice import pprint_entry
     >>> salgado = webservice.get("/~salgado").jsonBody()
     >>> pprint_entry(salgado)
     admins_collection_link: u'http://.../~salgado/admins'

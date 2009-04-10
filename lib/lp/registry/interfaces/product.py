@@ -36,10 +36,10 @@ from canonical.launchpad.fields import (
     Description, IconImageUpload, LogoImageUpload, MugshotImageUpload,
     ProductBugTracker, ProductNameField, PublicPersonChoice,
     Summary, Title, URIField)
-from canonical.launchpad.interfaces.branch import IBranch
-from canonical.launchpad.interfaces.branchmergeproposal import (
+from lp.code.interfaces.branch import IBranch
+from lp.code.interfaces.branchmergeproposal import (
     IBranchMergeProposal, BranchMergeProposalStatus)
-from canonical.launchpad.interfaces.branchvisibilitypolicy import (
+from lp.code.interfaces.branchvisibilitypolicy import (
     IHasBranchVisibilityPolicy)
 from canonical.launchpad.interfaces.bugtarget import (
     IBugTarget, IOfficialBugTagTargetPublic, IOfficialBugTagTargetRestricted)
@@ -66,9 +66,9 @@ from canonical.launchpad.interfaces.translationgroup import (
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.webapp.interfaces import NameLookupFailed
-from canonical.lazr.fields import CollectionField, Reference, ReferenceChoice
-from canonical.lazr.interface import copy_field
-from canonical.lazr.rest.declarations import (
+from lazr.restful.fields import CollectionField, Reference, ReferenceChoice
+from lazr.restful.interface import copy_field
+from lazr.restful.declarations import (
     REQUEST_USER, call_with, collection_default_content,
     export_as_webservice_collection, export_as_webservice_entry,
     export_factory_operation, export_operation_as, export_read_operation,

@@ -36,15 +36,16 @@ from zope.schema import (
 from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import PublicPersonChoice
+from canonical.launchpad.fields import (
+    PublicPersonChoice, StrippedTextLine)
 from canonical.launchpad.interfaces import IHasOwner
 from canonical.launchpad.interfaces.buildrecords import IHasBuildRecords
 from lp.registry.interfaces.gpg import IGPGKey
 from lp.registry.interfaces.person import IPerson
 from canonical.launchpad.validators.name import name_validator
 
-from canonical.lazr.fields import Reference
-from canonical.lazr.rest.declarations import (
+from lazr.restful.fields import Reference
+from lazr.restful.declarations import (
     export_as_webservice_entry, exported, export_read_operation,
     export_factory_operation, export_write_operation, operation_parameters,
     operation_returns_collection_of, rename_parameters_as, webservice_error)
@@ -105,7 +106,7 @@ class IArchivePublic(IHasOwner):
             description=_("The name of this archive.")))
 
     displayname = exported(
-        TextLine(
+        StrippedTextLine(
             title=_("Displayname"), required=False,
             description=_("Displayname for this archive.")))
 
@@ -826,6 +827,10 @@ class IPPAActivateForm(Interface):
         title=_("PPA name"), required=True, constraint=name_validator,
         description=_("A unique name used to identify this PPA."))
 
+    displayname = StrippedTextLine(
+        title=_("Displayname"), required=True,
+        description=_("Displayname for this PPA."))
+
     description = Text(
         title=_("PPA contents description"), required=False,
         description=_(
@@ -879,7 +884,8 @@ class IArchiveSet(Interface):
         """
 
 
-    def new(purpose, owner, name=None, distribution=None, description=None):
+    def new(purpose, owner, name=None, displayname=None, distribution=None,
+            description=None):
         """Create a new archive.
 
         :param purpose: `ArchivePurpose`;
@@ -887,6 +893,9 @@ class IArchiveSet(Interface):
         :param name: optional text to be used as the archive name, if not
             given it uses the names defined in
             `IArchiveSet._getDefaultArchiveNameForPurpose`;
+        :param displayname: optional text that will be used as a reference
+            to this archive in the UI. If not provided a default text (
+            including the archive name and the owner displayname will be used.)
         :param distribution: optional `IDistribution` to which the archive
             will be attached;
         :param description: optional text to be set as the archive

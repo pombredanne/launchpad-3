@@ -921,6 +921,14 @@ class TeamMapView(LaunchpadView):
     known locations.
     """
 
+    def __init__(self, context, request):
+        """Accept the 'preview' parameter to limit mapped participants."""
+        super(TeamMapView, self).__init__(context, request)
+        if 'preview' in self.request.form:
+            self.limit = 24
+        else:
+            self.limit = None
+
     def initialize(self):
         # Tell our main-template to include Google's gmap2 javascript so that
         # we can render the map.
@@ -930,7 +938,7 @@ class TeamMapView(LaunchpadView):
     @cachedproperty
     def mapped_participants(self):
         """Participants with locations."""
-        return self.context.mapped_participants
+        return self.context.getMappedParticipants(limit=self.limit)
 
     @cachedproperty
     def mapped_participants_count(self):

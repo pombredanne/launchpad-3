@@ -1,4 +1,4 @@
-# Copyright 2008, 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2008-2009 Canonical Ltd.  All rights reserved.
 
 """Testing rosetta-branches cronscript.
 
@@ -15,7 +15,7 @@ from canonical.testing import ZopelessAppServerLayer
 import transaction
 from zope.component import getUtility
 
-from canonical.launchpad.database.branchjob import RosettaUploadJob
+from lp.code.model.branchjob import RosettaUploadJob
 from canonical.launchpad.interfaces.translations import (
     TranslationsBranchImportMode)
 from canonical.launchpad.interfaces.translationimportqueue import (
@@ -65,7 +65,7 @@ class TestRosettaBranchesScript(TestCaseWithFactory):
         self.assertEqual(0, return_code)
 
         queue = getUtility(ITranslationImportQueue)
-        self.assertEqual(1, queue.entryCount())
+        self.assertEqual(1, queue.countEntries())
         entry = list(queue)[0]
         self.assertEqual(RosettaImportStatus.APPROVED, entry.status)
         self.assertEqual(pot_path, entry.path)
@@ -85,7 +85,7 @@ class TestRosettaBranchesScript(TestCaseWithFactory):
         self.assertEqual(0, return_code)
 
         queue = getUtility(ITranslationImportQueue)
-        self.assertEqual(0, queue.entryCount())
+        self.assertEqual(0, queue.countEntries())
 
         oops_report = globalErrorUtility.getLastOopsReport()
         if previous_oops_report is not None:

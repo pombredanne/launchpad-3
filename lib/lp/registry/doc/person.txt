@@ -235,6 +235,9 @@ A Person may be linked to an Account.
     >>> person.account.openid_identifier
     u'no-priv_oid'
 
+
+==== Adapting an Account into a Person ====
+
 And when the person is linked to an account, it's possible to adapt that
 account into an IPerson.
 
@@ -249,6 +252,51 @@ We can't adapt an account which has no person associated with, though.
     ...     AccountCreationRationale.UNKNOWN, 'Display name')
     >>> print IPerson(personless_account, None)
     None
+
+Our security adapters expect to get passed an IPerson, but we use IAccounts to
+represent logged in users, so we need to adapt them into IPerson before
+passing that to the adapters.  Since our Account table has no reference to the
+Person table, the adaptation may end up hitting the DB, which is something we
+don't want our security adapters to be doing as they're called tons of times
+for every page we render.  For that reason, whenever there is a browser
+request, we will cache the IPerson objects associated to the accounts we
+adapt.
+
+Up to now there was no browser request we could use, so no caching was
+done.
+
+    >>> from canonical.lazr.utils import get_current_browser_request
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> request = LaunchpadTestRequest()
+    >>> print request.annotations.get('launchpad.person_to_account_cache')
+    None
+
+Now we log in with the request so that whenever we adapt an account into a
+Person, the Person is cached in the request.
+
+    >>> login('foo.bar@canonical.com', request)
+    >>> IPerson(person.account)
+    <Person...No Privileges Person)>
+    >>> cache = request.annotations.get('launchpad.person_to_account_cache')
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> cache[removeSecurityProxy(person.account)]
+    <Person...No Privileges Person)>
+
+If we manually change the cache, the adapter will be fooled and will return
+the wrong object.
+
+    >>> cache[removeSecurityProxy(person.account)] = 'foo'
+    >>> IPerson(person.account)
+    'foo'
+
+If the cached value is None, though, the adapter will look up the correct
+Person again and update the cache.
+
+    >>> cache[removeSecurityProxy(person.account)] = None
+    >>> IPerson(person.account)
+    <Person...No Privileges Person)>
+    >>> cache[removeSecurityProxy(person.account)]
+    <Person...No Privileges Person)>
 
 
 === Personal standing ===
@@ -415,8 +463,6 @@ entries into teams.
 
     >>> from canonical.launchpad.mail import stub
     >>> stub.test_emails = []
-
-    >>> from zope.security.proxy import removeSecurityProxy
 
     >>> not_a_person.convertToTeam(team_owner=ddaa)
     >>> not_a_person.isTeam()
@@ -1042,16 +1088,21 @@ English names.
     ja     Japanese
     cy     Welsh
 
-Person.translatable_languages yields the same list, except it leaves out
-US English and languages marked as non-visible such as 'zh' or 'de_DE'.
+ITranslationsPerson.translatable_languages yields the same list, except it
+leaves out US English and languages marked as non-visible such as 'zh' or
+'de_DE'.
 
-    >>> for language in daf.translatable_languages:
+    >>> from canonical.launchpad.interfaces.translationsperson import (
+    ...     ITranslationsPerson)
+    >>> translations_daf = ITranslationsPerson(daf)
+    >>> for language in translations_daf.translatable_languages:
     ...     print language.code, language.englishname
     en_GB  English (United Kingdom)
     ja     Japanese
     cy     Welsh
 
-    >>> for language in carlos.translatable_languages:
+    >>> translations_carlos = ITranslationsPerson(carlos)
+    >>> for language in translations_carlos.translatable_languages:
     ...     print language.code, language.englishname
     ca     Catalan
     es     Spanish
@@ -1059,7 +1110,7 @@ US English and languages marked as non-visible such as 'zh' or 'de_DE'.
 The IPerson interface offers a way of returning POFileTranslator records
 for a Person:
 
-    >>> for pt in carlos.translation_history:
+    >>> for pt in translations_carlos.translation_history:
     ...     print pt.pofile.title
     English (en) trans... of pkgconf-mozilla in Ubuntu Hoary package "mozilla"
     Spanish (es) translation of alsa-utils in alsa-utils trunk
@@ -1067,69 +1118,6 @@ for a Person:
     Spanish (es) translation of evolution-2.2 in Evolution trunk
     Japanese (ja) tran... of evolution-2.2 in Ubuntu Hoary package "evolution"
     Spanish (es) trans... of evolution-2.2 in Ubuntu Hoary package "evolution"
-
-The IPersonSet component contains a few convenience methods to return
-Person objects that have contributed translations.
-
-    >>> from canonical.launchpad.database import POFile
-    >>> pofile = POFile.get(12)
-    >>> [p.name for p in personset.getPOFileContributors(pofile)]
-    [u'carlos', u'name16', u'tsukimi']
-
-getPOFileContributorsByDistroSeries gives the list of people that did
-contributions to templates that are current in the given IDistroSeries
-and ILanguage.
-
-    >>> from canonical.launchpad.database import DistroSeries, Language
-    >>> hoary = DistroSeries.selectOneBy(name="hoary")
-    >>> spanish = Language.selectOneBy(code="es")
-    >>> [p.name for p in personset.getPOFileContributorsByDistroSeries(
-    ...     hoary, spanish)]
-    [u'jorge-gonzalez-gonzalez', u'carlos', u'valyag', u'danner', u'name16',
-     u'name12', u'tsukimi']
-
-    # We can see that there is another translator that doesn't appear in
-    # previous list because the template he translated is not current.
-
-    >>> non_current_pofile = POFile.get(31)
-    >>> non_current_pofile.potemplate.iscurrent
-    False
-
-    >>> [p.name for p in personset.getPOFileContributors(non_current_pofile)]
-    [u'jordi']
-
-    >>> non_current_pofile.potemplate.distroseries == hoary
-    True
-
-    >>> non_current_pofile.language == spanish
-    True
-
-
-=== Translators for a given language ===
-
-We can get the list of translators that did some translation in
-Launchpad and expressed their interest for a concrete language.
-
-    # Sample data is not complete for this test, so we need to note that
-    # another Spanish translator expressed its interest on doing Spanish
-    # translations.  That other person is Foo Bar (name16).
-
-    >>> personset = getUtility(IPersonSet)
-    >>> foo_bar = personset.getByName('name16')
-    >>> print foo_bar.displayname
-    Foo Bar
-
-    >>> spanish = languageset.getLanguageByCode('es')
-    >>> foo_bar.addLanguage(spanish)
-    >>> translators = personset.getTranslatorsByLanguage(spanish)
-    >>> for translator in translators:
-    ...     karma = 0
-    ...     for karma_category_cache in translator.karma_category_caches:
-    ...         if (karma_category_cache.category.name == 'translations'):
-    ...             karma = karma_category_cache.karmavalue
-    ...     print (translator.displayname, karma)
-    (u'Foo Bar', 164)
-    (u'Carlos Perell\xf3 Mar\xedn', 9)
 
 
 == Specification Lists ==

@@ -63,6 +63,11 @@
         factory="canonical.launchpad.webapp.dbpolicy.SSODatabasePolicy"
         />
 
+    <adapter
+        for="canonical.launchpad.layers.WebServiceLayer"
+        provides="canonical.launchpad.webapp.interfaces.IWebBrowserOriginatingRequest"
+        factory="canonical.launchpad.webapp.servers.web_service_request_to_browser_request"
+        />
 
     <!-- lazr.batchnavigator hook -->
     <adapter

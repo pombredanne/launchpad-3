@@ -32,8 +32,8 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import quote, SQLBase, sqlvalues
-from canonical.launchpad.database.branch import BranchSet
-from canonical.launchpad.database.branchvisibilitypolicy import (
+from lp.code.model.branch import BranchSet
+from lp.code.model.branchvisibilitypolicy import (
     BranchVisibilityPolicyMixin)
 from canonical.launchpad.database.bug import (
     BugSet, get_bug_tags, get_bug_tags_open_count)
@@ -71,9 +71,9 @@ from canonical.launchpad.database.structuralsubscription import (
     StructuralSubscriptionTargetMixin)
 from canonical.launchpad.helpers import shortlist
 
-from canonical.launchpad.interfaces.branch import (
+from lp.code.interfaces.branch import (
     DEFAULT_BRANCH_STATUS_IN_LISTING)
-from canonical.launchpad.interfaces.branchmergeproposal import (
+from lp.code.interfaces.branchmergeproposal import (
     BranchMergeProposalStatus, IBranchMergeProposalGetter)
 from canonical.launchpad.interfaces.bugsupervisor import IHasBugSupervisor
 from canonical.launchpad.interfaces.launchpad import (
