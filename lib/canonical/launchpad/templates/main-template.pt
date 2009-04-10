@@ -27,7 +27,7 @@
       is_demo modules/canonical.config/config/launchpad/is_demo;
       is_edge modules/canonical.config/config/launchpad/is_edge;
       is_lpnet modules/canonical.config/config/launchpad/is_lpnet;
-      CONTEXTS python:{'template':view.template, 'context': context, 'view':view};
+      CONTEXTS python:{'template':template, 'context': context, 'view':view};
   "
 >
   <head>

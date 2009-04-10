@@ -11,7 +11,7 @@
   tal:attributes="lang default_language|default;
                   xml:lang default_language|default;"
   tal:define="is_demo modules/canonical.config/config/launchpad/is_demo;
-	      CONTEXTS python:{'template':view.template, 'context': context, 'view':view};">
+	      CONTEXTS python:{'template':template, 'context': context, 'view':view};">
   <head>
     <title tal:content="CONTEXTS/fmt:pagetitle">Launchpad Login Service</title>
     <tal:x condition="nothing">Style is inline for maximum reliability.</tal:x>
