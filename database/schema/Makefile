@@ -51,7 +51,7 @@ build_new_sampledata=$(PYTHON) fti.py --null -d ${1} -q; \
 # to this baseline. This dump should be updated every production rollout
 # to ensure that the development database remains in sync with reality
 # on production. It is generated using newbaseline.py in
-# sftp://chinstrap/home/warthogs/archives/stub/dbascripts:
+# bzr+ssh://devpad.canonical.com/code/stub/dbascripts
 # 
 REV=2109
 BASELINE=launchpad-${REV}-00-0.sql
@@ -64,14 +64,10 @@ test: create
 	@ ${CREATEDB} ${EMPTY_DBNAME} ${TEMPLATE_WITH_TEST_SAMPLEDATA}
 	@ echo "* Loading sample data"
 	@ psql -v ON_ERROR_STOP=1 -d ${TEMPLATE_WITH_TEST_SAMPLEDATA} -f $(SAMPLEDATA) > /dev/null
-	@ echo "* Rebuilding full text indexes"
-	@ ${PYTHON} fti.py --force -q -d ${TEMPLATE_WITH_TEST_SAMPLEDATA}
 	@ echo "* Resetting sequences"
 	@ ${PYTHON} reset_sequences.py -d ${TEMPLATE_WITH_TEST_SAMPLEDATA}
-# XXX StuartBishop 20090304 - Disabling the vacuum step as we seem to be
-# getting buildbot hangs here. Ideally temporary.
-#	@ echo "* Vacuuming"
-#	@ psql -d ${TEMPLATE_WITH_TEST_SAMPLEDATA} -c 'vacuum full analyze' | grep : | cat
+	@ echo "* Vacuuming"
+	@ vacuumdb -fz ${TEMPLATE_WITH_TEST_SAMPLEDATA}
 
 # Create a launchpad_dev_template DB and load the dev sample data into it.
 # Also create a launchpad_ftest_playground DB as a copy of
@@ -81,17 +77,12 @@ dev: test
 	@ ${CREATEDB} ${EMPTY_DBNAME} ${TEMPLATE_WITH_DEV_SAMPLEDATA}
 	@ echo "* Loading sample data"
 	@ psql -v ON_ERROR_STOP=1 -d ${TEMPLATE_WITH_DEV_SAMPLEDATA} -f $(SAMPLEDATA_DEV) > /dev/null
-	@ echo "* Rebuilding full text indexes"
-	@ ${PYTHON} fti.py --force -q -d ${TEMPLATE_WITH_DEV_SAMPLEDATA}
 	@ echo "* Resetting sequences"
 	@ ${PYTHON} reset_sequences.py -d ${TEMPLATE_WITH_DEV_SAMPLEDATA}
-# XXX StuartBishop 20090304 - Disabling the vacuum step as we seem to be
-# getting buildbot hangs here. Ideally temporary.
-#	@ echo "* Vacuuming"
-#	@ psql -d ${TEMPLATE_WITH_DEV_SAMPLEDATA} -c 'vacuum full analyze' | grep : | cat
+	@ echo "* Vacuuming"
+	@ vacuumdb -fz ${TEMPLATE_WITH_DEV_SAMPLEDATA}
 	@ echo "* Creating ${DBNAME_DEV}"
 	@ ${CREATEDB} ${TEMPLATE_WITH_DEV_SAMPLEDATA} ${DBNAME_DEV}
-
 	@ echo "* Creating ${TEST_PLAYGROUND_DBNAME}"
 	@ ${CREATEDB} ${TEMPLATE_WITH_TEST_SAMPLEDATA} ${TEST_PLAYGROUND_DBNAME}
 
@@ -103,14 +94,8 @@ create: check
 	@ echo "* If this fails you need to run as the postgresql superuser"
 	@ echo "* eg. sudo -u postgres make create"
 	@ echo
-	@if [ "$$((`psql -l | grep -w ${EMPTY_DBNAME} | wc -l`))" = '1' ]; \
-	    then ${DROPDB} ${EMPTY_DBNAME} | grep : | cat ; \
-	fi
 	@ echo "* Creating database \"$(EMPTY_DBNAME)\"."
-	@if [ "$$((`psql -l | grep -w ${EMPTY_DBNAME} | wc -l`))" = '0' ]; \
-	    then ${CREATEDB} template1 ${EMPTY_DBNAME} ; \
-	    else echo ${EMPTY_DBNAME} already exists; \
-	fi
+	@ ${CREATEDB} template1 ${EMPTY_DBNAME}
 	@ if ! `createlang -l ${EMPTY_DBNAME} | grep -qs plpythonu`; then \
 		echo "* Installing PL/PythonU"; \
 		createlang -d ${EMPTY_DBNAME} plpythonu; \
@@ -131,7 +116,9 @@ create: check
 	@ echo "* Setting up full text indexes"
 	@ ${PYTHON} fti.py -q -d ${EMPTY_DBNAME}
 	@ echo "* Security setup"
-	@ ${PYTHON} security.py -d ${EMPTY_DBNAME}
+	@ ${PYTHON} security.py -q -d ${EMPTY_DBNAME}
+	@ echo "* Vacuuming"
+	@ vacuumdb -fz ${EMPTY_DBNAME}
 
 	@ echo "* Creating session databases '${SESSION_DBNAME}' (if necessary)"
 	@if [ "$$((`psql -l | grep -w ${SESSION_DBNAME} | wc -l`))" = '0' ]; \
@@ -140,9 +127,9 @@ create: check
 	    psql -q -d ${SESSION_DBNAME} -f launchpad_session.sql ; \
 	fi
 	@ echo "* Creating session database '${TEST_SESSION_DBNAME}'"
-	${CREATEDB} template1 ${TEST_SESSION_DBNAME} ; \
-	createlang plpgsql ${TEST_SESSION_DBNAME}; \
-	psql -q -d ${TEST_SESSION_DBNAME} -f launchpad_session.sql ; \
+	@ ${CREATEDB} template1 ${TEST_SESSION_DBNAME}
+	@ createlang plpgsql ${TEST_SESSION_DBNAME}
+	@ psql -q -d ${TEST_SESSION_DBNAME} -f launchpad_session.sql
 
 # Confirm that launchpad-XX-00-0.sql hasn't been messed with - this file
 # is our baseline telling us what was installed into production
