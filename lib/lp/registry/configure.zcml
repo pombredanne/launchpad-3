@@ -159,7 +159,7 @@
     <adapter
         provides="canonical.launchpad.interfaces.ILaunchpadUsage"
         for="lp.registry.interfaces.distroseries.IDistroSeries"
-        factory="lp.registry.adapters.distroseries.distroseries_to_launchpadusage"
+        factory="lp.registry.adapters.distroseries_to_launchpadusage"
         permission="zope.Public"/>
     <adapter
         provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
@@ -685,7 +685,7 @@
         <adapter
             for="canonical.launchpad.interfaces.ITeam"
             provides="lp.registry.interfaces.poll.IPollSubset"
-            factory="lp.registry.adapters.poll.PollSubset"
+            factory="lp.registry.adapters.PollSubset"
             permission="zope.Public"/>
 
         <!-- PollOptionSet -->
@@ -863,7 +863,7 @@
     <adapter
         for="canonical.launchpad.webapp.interfaces.ILaunchpadPrincipal"
         provides="lp.registry.interfaces.person.IPerson"
-        factory="lp.registry.adapters.person.personFromPrincipal"/>
+        factory="lp.registry.adapters.person_from_principal"/>
 
     <!-- Milestone -->
 
@@ -1298,12 +1298,12 @@
     <adapter
         provides="canonical.launchpad.interfaces.IHasExternalBugTracker"
         for="lp.registry.interfaces.productseries.IProductSeries"
-        factory="lp.registry.adapters.productseries.productseries_to_product"
+        factory="lp.registry.adapters.productseries_to_product"
         permission="zope.Public"/>
     <adapter
         provides="canonical.launchpad.interfaces.ILaunchpadUsage"
         for="lp.registry.interfaces.productseries.IProductSeries"
-        factory="lp.registry.adapters.productseries.productseries_to_product"
+        factory="lp.registry.adapters.productseries_to_product"
         permission="zope.Public"/>
     <adapter
         provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"

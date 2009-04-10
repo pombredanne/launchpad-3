@@ -1,16 +1,50 @@
-# Copyright 2004 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  All rights reserved.
+"""Adapters for regisrty objects."""
 
 __metaclass__ = type
 
-__all__ = ['PollSubset', 'PollOptionSubset']
+__all__ = [
+    'distroseries_to_launchpadusage',
+    'PollSubset',
+    'PollOptionSubset',
+    'productseries_to_product',
+    ]
 
-from zope.interface import implements
+
 from zope.component import getUtility
+from zope.component.interfaces import ComponentLookupError
+from zope.interface import implements
+
+from canonical.launchpad.webapp.interfaces import ILaunchpadPrincipal
 
 from lp.registry.interfaces.poll import (
     IPollSet, IPollSubset, PollAlgorithm, PollStatus)
-class PollSubset:
 
+
+def distroseries_to_launchpadusage(distroseries):
+    """Adapts `IDistroSeries` object to `ILaunchpadUsage`."""
+    return distroseries.distribution
+
+
+def person_from_principal(principal):
+    """Adapt `ILaunchpadPrincipal` to `IPerson`."""
+    if ILaunchpadPrincipal.providedBy(principal):
+        if principal.person is None:
+            raise ComponentLookupError
+        return principal.person
+    else:
+        # This is not actually necessary when this is used as an adapter
+        # from ILaunchpadPrincipal, as we know we always have an
+        # ILaunchpadPrincipal.
+        #
+        # When Zope3 interfaces allow returning None for "cannot adapt"
+        # we can return None here.
+        ##return None
+        raise ComponentLookupError
+
+
+class PollSubset:
+    """Adapt an `IPoll` to an `IPollSubset`."""
     implements(IPollSubset)
 
     title = 'Team polls'
@@ -56,3 +90,11 @@ class PollSubset:
             self.team, [PollStatus.NOT_YET_OPENED],
             orderBy='dateopens', when=when)
 
+
+def productseries_to_product(productseries):
+    """Adapts `IProductSeries` object to `IProduct`.
+
+    This is useful for adapting to `IHasExternalBugTracker`
+    or `ILaunchpadUsage`.
+    """
+    return productseries.product
