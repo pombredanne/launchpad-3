@@ -2376,8 +2376,8 @@ Celso's default PPA currently has no signing-key.
     >>> print cprov.archive.signing_key
     None
 
-When a named-ppa is created there is no keys to be shared, this case
-is worked out when generating ew signing key. See archive-signing.txt
+When a named-ppa is created there is no key to be shared, this case
+is worked out when generating new signing key. See archive-signing.txt
 for more information.
 
     >>> no_key_ppa = getUtility(IArchiveSet).new(
