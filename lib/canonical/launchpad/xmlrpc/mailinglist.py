@@ -137,7 +137,7 @@ class MailingListAPIView(LaunchpadXMLRPCView):
         # The above two results are dictionaries mapping team names to lists
         # of string addresses.  The expected response is a dictionary mapping
         # team names to lists of membership-tuples.  Each membership-tuple
-        # contains the email address, realname, flags (currently hardcoded to
+        # contains the email address, fullname, flags (currently hardcoded to
         # 0 to mean regular delivery, no self-post acknowledgements, receive
         # own posts, and no moderation), and status (either ENABLED meaning
         # they can post to the mailing list or BYUSER meaning they can't).
@@ -156,7 +156,7 @@ class MailingListAPIView(LaunchpadXMLRPCView):
             # values.
             flags = 0
             # Turn the lists of 2-tuples into two sets and a dictionary.  The
-            # dictionary maps email addresses to real names.
+            # dictionary maps email addresses to full names.
             posters = set()
             subscribers = set()
             full_names = dict()
