@@ -209,7 +209,7 @@ accepted.
     >>> user_browser.getLink('Previous').click()
     >>> contents = find_main_content(user_browser.contents)
     >>> contents.find(text='fnord').parent
-    <div lang="en-AU" id="msgset_1_en_AU_suggestion_702_0" ...>fnord</div>
+    <div lang="en-AU"...id="msgset_1_en_AU_suggestion_702_0"...>fnord</div>
 
 
 === Messages with new suggestions ===
