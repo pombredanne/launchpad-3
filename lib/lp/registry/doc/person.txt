@@ -649,7 +649,7 @@ BugSubscription.subscribed_by attributes.
 
     >>> login('foo.bar@canonical.com')
     >>> from canonical.launchpad.interfaces.bug import IBugSet
-    >>> from canonical.launchpad.interfaces.person import (
+    >>> from lp.registry.interfaces.person import (
     ...     IPersonSet, PersonVisibility)
     >>> from canonical.launchpad.database import BugSubscription
     >>> person_set = getUtility(IPersonSet)

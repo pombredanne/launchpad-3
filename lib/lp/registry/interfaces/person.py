@@ -36,6 +36,7 @@ __all__ = [
     'TeamContactMethod',
     'TeamMembershipRenewalPolicy',
     'TeamSubscriptionPolicy',
+    'validate_person_not_private_membership',
     'validate_public_person',
     ]
 
@@ -63,10 +64,10 @@ from canonical.launchpad import _
 
 from canonical.database.sqlbase import block_implicit_flushes
 from canonical.launchpad.fields import (
-    BlacklistableContentNameField, IconImageUpload,
-    is_valid_public_person, LogoImageUpload,
+    BlacklistableContentNameField, IconImageUpload, LogoImageUpload,
     MugshotImageUpload, ParticipatingPersonChoice, PasswordField,
-    PublicPersonChoice, StrippedTextLine)
+    PublicPersonChoice, StrippedTextLine, is_private_membership,
+    is_valid_public_person)
 from canonical.launchpad.interfaces.account import AccountStatus, IAccount
 from canonical.launchpad.interfaces.emailaddress import IEmailAddress
 from lp.registry.interfaces.irc import IIrcID
@@ -115,6 +116,26 @@ def validate_public_person(obj, attr, value):
     from lp.registry.model.person import Person
     person = Person.get(value)
     if not is_valid_public_person(person):
+        raise PrivatePersonLinkageError(
+            "Cannot link person (name=%s, visibility=%s) to %s (name=%s)"
+            % (person.name, person.visibility.name,
+               obj, getattr(obj, 'name', None)))
+    return value
+
+
+@block_implicit_flushes
+def validate_person_not_private_membership(obj, attr, value):
+    """Validate that the person (value) is not a private membership team."""
+    if value is None:
+        return None
+    assert isinstance(value, (int, long)), (
+        "Expected int for Person foreign key reference, got %r" % type(value))
+
+    # XXX sinzui 2009-04-03 bug=354881: We do not want to import from the
+    # DB. This needs cleaning up.
+    from lp.registry.model.person import Person
+    person = Person.get(value)
+    if is_private_membership(person):
         raise PrivatePersonLinkageError(
             "Cannot link person (name=%s, visibility=%s) to %s (name=%s)"
             % (person.name, person.visibility.name,
@@ -1488,8 +1509,11 @@ class IPersonCommAdminWriteRestricted(Interface):
     visibility = exported(
         Choice(title=_("Visibility"),
                description=_(
-                   "Public visibility is standard, and Private Membership"
-                   " means that a team's members are hidden."),
+                   "Public visibility is standard.  Private Membership"
+                   " means that a team's members are hidden."
+                   "Private means the team is completely "
+                   "hidden [experimental]."
+                   ),
                required=True, vocabulary=PersonVisibility,
                default=PersonVisibility.PUBLIC))
 
