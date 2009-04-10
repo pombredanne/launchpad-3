@@ -55,37 +55,43 @@ class PollSubset:
     def new(self, name, title, proposition, dateopens, datecloses,
             secrecy, allowspoilt, poll_type=PollAlgorithm.SIMPLE):
         """See IPollSubset."""
-        assert self.team is not None
+        assert self.team is not None, (
+            'team cannot be None to call this method.')
         return getUtility(IPollSet).new(
             self.team, name, title, proposition, dateopens,
             datecloses, secrecy, allowspoilt, poll_type)
 
     def getByName(self, name, default=None):
         """See IPollSubset."""
-        assert self.team is not None
+        assert self.team is not None, (
+            'team cannot be None to call this method.')
         pollset = getUtility(IPollSet)
         return pollset.getByTeamAndName(self.team, name, default)
 
     def getAll(self):
         """See IPollSubset."""
-        assert self.team is not None
+        assert self.team is not None, (
+            'team cannot be None to call this method.')
         return getUtility(IPollSet).selectByTeam(self.team)
 
     def getOpenPolls(self, when=None):
         """See IPollSubset."""
-        assert self.team is not None
+        assert self.team is not None, (
+            'team cannot be None to call this method.')
         return getUtility(IPollSet).selectByTeam(
             self.team, [PollStatus.OPEN], orderBy='datecloses', when=when)
 
     def getClosedPolls(self, when=None):
         """See IPollSubset."""
-        assert self.team is not None
+        assert self.team is not None, (
+            'team cannot be None to call this method.')
         return getUtility(IPollSet).selectByTeam(
             self.team, [PollStatus.CLOSED], orderBy='datecloses', when=when)
 
     def getNotYetOpenedPolls(self, when=None):
         """See IPollSubset."""
-        assert self.team is not None
+        assert self.team is not None, (
+            'team cannot be None to call this method.')
         return getUtility(IPollSet).selectByTeam(
             self.team, [PollStatus.NOT_YET_OPENED],
             orderBy='dateopens', when=when)
