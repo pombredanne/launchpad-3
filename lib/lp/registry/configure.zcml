@@ -935,7 +935,7 @@
     </class>
     <subscriber
         for="canonical.launchpad.interfaces.IProduct                 zope.lifecycleevent.interfaces.IObjectModifiedEvent"
-        handler="lp.registry.subscribers.productsubscribers.product_modified"/>
+        handler="lp.registry.subscribers.product_modified"/>
     <class
         class="canonical.launchpad.database.MailingList">
         <allow
