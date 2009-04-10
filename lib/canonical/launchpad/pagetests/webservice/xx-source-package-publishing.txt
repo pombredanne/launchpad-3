@@ -79,7 +79,7 @@ Search by distroseries and pocket:
 
 Each source publication exposes a number of properties.
 
-    >>> from canonical.lazr.testing.webservice import pprint_entry
+    >>> from lazr.restful.testing.webservice import pprint_entry
     >>> pprint_entry(pubs['entries'][0])
     archive_link: u'http://.../~cprov/+archive/ppa'
     component_name: u'main'

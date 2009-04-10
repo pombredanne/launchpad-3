@@ -6,7 +6,7 @@ import _pythonpath
 
 from canonical.config import config
 
-from canonical.launchpad.scripts.revisionkarma import RevisionKarmaAllocator
+from lp.code.scripts.revisionkarma import RevisionKarmaAllocator
 
 
 if __name__ == '__main__':

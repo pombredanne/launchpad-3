@@ -110,7 +110,7 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.config import config
 from lazr.delegates import delegates
 from lazr.config import as_timedelta
-from canonical.lazr.interface import copy_field, use_template
+from lazr.restful.interface import copy_field, use_template
 from canonical.lazr.utils import safe_hasattr
 from canonical.database.sqlbase import flush_database_updates
 
@@ -123,6 +123,7 @@ from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 
 from canonical.cachedproperty import cachedproperty
 
+from canonical.launchpad import helpers
 from canonical.launchpad.browser.archive import traverse_named_ppa
 from canonical.launchpad.browser.archivesubscription import (
     traverse_archive_subscription_for_subscriber)
@@ -164,7 +165,7 @@ from lp.registry.interfaces.teammembership import (
     DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT, ITeamMembership,
     ITeamMembershipSet, TeamMembershipStatus)
 from lp.registry.interfaces.wikiname import IWikiNameSet
-from canonical.launchpad.interfaces.branchnamespace import (
+from lp.code.interfaces.branchnamespace import (
     IBranchNamespaceSet, InvalidNamespace)
 from canonical.launchpad.interfaces.bugtask import IBugTaskSet
 from canonical.launchpad.interfaces.build import (
@@ -185,6 +186,8 @@ from canonical.launchpad.interfaces.sourcepackagerelease import (
 from canonical.launchpad.interfaces.translationrelicensingagreement import (
     ITranslationRelicensingAgreementEdit,
     TranslationRelicensingAgreementOptions)
+from canonical.launchpad.interfaces.translationsperson import (
+    ITranslationsPerson)
 
 from canonical.launchpad.browser.bugtask import BugTaskSearchListingView
 from canonical.launchpad.browser.feeds import FeedsMixin
@@ -1857,6 +1860,21 @@ class BugSubscriberPackageBugsSearchListingView(BugTaskSearchListingView):
         return BugTaskSearchListingView.search(
             self, searchtext=searchtext, context=distrosourcepackage)
 
+    def getMilestoneWidgetValues(self):
+        """See `BugTaskSearchListingView`.
+
+        We return only the active milestones on the current distribution
+        since any others are irrelevant.
+        """
+        current_distro = self.current_package.distribution
+        vocabulary_registry = getVocabularyRegistry()
+        vocabulary = vocabulary_registry.get(current_distro, 'Milestone')
+
+        return helpers.shortlist([
+            dict(title=milestone.title, value=milestone.token, checked=False)
+            for milestone in vocabulary],
+            longest_expected=10)
+
     @cachedproperty
     def total_bug_counts(self):
         """Return the totals of each type of package bug count as a dict."""
@@ -3272,8 +3290,9 @@ class PersonTranslationView(LaunchpadView):
 
     @cachedproperty
     def batchnav(self):
+        translations_person = ITranslationsPerson(self.context)
         batchnav = BatchNavigator(
-            self.context.translation_history, self.request)
+            translations_person.translation_history, self.request)
 
         pofiletranslatorset = getUtility(IPOFileTranslatorSet)
         batch = batchnav.currentBatch()
@@ -3285,12 +3304,14 @@ class PersonTranslationView(LaunchpadView):
     @cachedproperty
     def translation_groups(self):
         """Return translation groups a person is a member of."""
-        return list(self.context.translation_groups)
+        translations_person = ITranslationsPerson(self.context)
+        return list(translations_person.translation_groups)
 
     @cachedproperty
     def translators(self):
         """Return translators a person is a member of."""
-        return list(self.context.translators)
+        translations_person = ITranslationsPerson(self.context)
+        return list(translations_person.translators)
 
     @cachedproperty
     def person_filter_querystring(self):
@@ -3322,9 +3343,10 @@ class PersonTranslationRelicensingView(LaunchpadFormView):
     @property
     def initial_values(self):
         """Set the default value for the relicensing radio buttons."""
+        translations_person = ITranslationsPerson(self.context)
         # If the person has previously made a choice, we default to that.
         # Otherwise, we default to BSD, because that's what we'd prefer.
-        if self.context.translations_relicensing_agreement == False:
+        if translations_person.translations_relicensing_agreement == False:
             default = TranslationRelicensingAgreementOptions.REMOVE
         else:
             default = TranslationRelicensingAgreementOptions.BSD
@@ -3350,17 +3372,18 @@ class PersonTranslationRelicensingView(LaunchpadFormView):
         """Store person's decision about translations relicensing.
 
         Decision is stored through
-        `IPerson.translations_relicensing_agreement`
+        `ITranslationsPerson.translations_relicensing_agreement`
         which uses TranslationRelicensingAgreement table.
         """
+        translations_person = ITranslationsPerson(self.context)
         allow_relicensing = data['allow_relicensing']
         if allow_relicensing == TranslationRelicensingAgreementOptions.BSD:
-            self.context.translations_relicensing_agreement = True
+            translations_person.translations_relicensing_agreement = True
             self.request.response.addInfoNotification(_(
                 "Thank you for BSD-licensing your translations."))
         elif (allow_relicensing ==
             TranslationRelicensingAgreementOptions.REMOVE):
-            self.context.translations_relicensing_agreement = False
+            translations_person.translations_relicensing_agreement = False
             self.request.response.addInfoNotification(_(
                 "We respect your choice. "
                 "Your translations will be removed once we complete the "

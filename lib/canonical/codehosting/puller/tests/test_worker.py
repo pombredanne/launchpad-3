@@ -28,7 +28,7 @@ from canonical.codehosting.puller.worker import (
     install_worker_ui_factory)
 from canonical.codehosting.puller.tests import (
     AcceptAnythingPolicy, BlacklistPolicy, PullerWorkerMixin, WhitelistPolicy)
-from canonical.launchpad.interfaces.branch import BranchType
+from lp.code.interfaces.branch import BranchType
 from canonical.launchpad.testing import LaunchpadObjectFactory, TestCase
 from lazr.uri import URI
 from canonical.testing import reset_logging

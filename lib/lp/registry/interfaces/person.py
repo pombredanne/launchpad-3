@@ -49,15 +49,15 @@ from zope.interface.interface import invariant
 from zope.component import getUtility
 from lazr.enum import DBEnumeratedType, DBItem, EnumeratedType, Item
 
-from canonical.lazr.interface import copy_field
-from canonical.lazr.rest.declarations import (
-   call_with, collection_default_content, export_as_webservice_collection,
-   export_as_webservice_entry, export_factory_operation,
-   export_read_operation, export_write_operation, exported,
-   operation_parameters, operation_returns_collection_of,
-   operation_returns_entry, rename_parameters_as, REQUEST_USER,
-   webservice_error)
-from canonical.lazr.fields import CollectionField, Reference
+from lazr.restful.interface import copy_field
+from lazr.restful.declarations import (
+    LAZR_WEBSERVICE_EXPORTED, REQUEST_USER, call_with,
+    collection_default_content, export_as_webservice_collection,
+    export_as_webservice_entry, export_factory_operation,
+    export_read_operation, export_write_operation, exported,
+    operation_parameters, operation_returns_collection_of,
+    operation_returns_entry, rename_parameters_as, webservice_error)
+from lazr.restful.fields import CollectionField, Reference
 
 from canonical.launchpad import _
 
@@ -547,8 +547,6 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers, IHasLogo,
             title=_('List of languages known by this person'),
             readonly=True, required=False,
             value_type=Reference(schema=ILanguage)))
-    translatable_languages = Attribute(
-        _('Languages this person knows, apart from English'))
 
     hide_email_addresses = exported(
         Bool(title=_("Hide my email addresses from other Launchpad users"),
@@ -741,16 +739,6 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers, IHasLogo,
             "this is set to None, then this Person has not been merged "
             "into another and is still valid"))
 
-    translation_history = Attribute(
-        "The set of POFileTranslator objects that represent work done "
-        "by this translator.")
-
-    translation_groups = Attribute(
-        "The set of TranslationGroup objects this person is a member of.")
-
-    translators = Attribute(
-        "The set of Translator objects this person is a member of.")
-
     # title is required for the Launchpad Page Layout main template
     title = Attribute('Person Page Title')
 
@@ -769,10 +757,6 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers, IHasLogo,
 
     visibility_consistency_warning = Attribute(
         "Warning that a private team may leak membership info.")
-
-    translations_relicensing_agreement = Bool(
-        title=_("Whether person agrees to relicense their translations"),
-        readonly=False)
 
     sub_teams = exported(
         CollectionField(
@@ -1265,9 +1249,6 @@ class IPersonViewRestricted(Interface):
         exported_as='proposed_members')
     proposed_member_count = Attribute("Number of PROPOSED members")
 
-    mapped_participants = CollectionField(
-        title=_("List of participants with coordinates."),
-        value_type=Reference(schema=Interface))
     mapped_participants_count = Attribute(
         "The number of mapped participants")
     unmapped_participants = CollectionField(
@@ -1275,6 +1256,13 @@ class IPersonViewRestricted(Interface):
         value_type=Reference(schema=Interface))
     unmapped_participants_count = Attribute(
         "The number of unmapped participants")
+
+    def getMappedParticipants(limit=None):
+        """List of participants with coordinates.
+
+        :param limit: The optional maximum number of items to return.
+        :return: A list of `IPerson` objects
+        """
 
     def getMappedParticipantsBounds():
         """Return a dict of the bounding longitudes latitudes, and centers.
@@ -2015,7 +2003,7 @@ class NoSuchPerson(NameLookupFailed):
 # Fix value_type.schema of IPersonViewRestricted attributes.
 for name in ['allmembers', 'activemembers', 'adminmembers', 'proposedmembers',
              'invited_members', 'deactivatedmembers', 'expiredmembers',
-             'mapped_participants', 'unmapped_participants']:
+             'unmapped_participants']:
     IPersonViewRestricted[name].value_type.schema = IPerson
 
 IPersonPublic['sub_teams'].value_type.schema = ITeam
@@ -2038,14 +2026,14 @@ params_to_fix = [
     ]
 for method, name in params_to_fix:
     method.queryTaggedValue(
-        'lazr.webservice.exported')['params'][name].schema = IPerson
+        'lazr.restful.exported')['params'][name].schema = IPerson
 
 # Fix schema of operation return values.
 # XXX: salgado, 2008-08-01: Uncomment when findPathToTeam is exported again.
 # IPersonPublic['findPathToTeam'].queryTaggedValue(
 #     'lazr.webservice.exported')['return_type'].value_type.schema = IPerson
 IPersonViewRestricted['getMembersByStatus'].queryTaggedValue(
-    'lazr.webservice.exported')['return_type'].value_type.schema = IPerson
+    LAZR_WEBSERVICE_EXPORTED)['return_type'].value_type.schema = IPerson
 
 # Fix schema of ITeamMembership fields.  Has to be done here because of
 # circular dependencies.

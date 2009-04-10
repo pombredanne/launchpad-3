@@ -49,6 +49,8 @@ from canonical.launchpad.interfaces.translationimportqueue import (
     RosettaImportStatus)
 from canonical.launchpad.interfaces.translationmessage import (
     TranslationValidationStatus)
+from canonical.launchpad.interfaces.translationsperson import (
+    ITranslationsPerson)
 from canonical.launchpad.interfaces.translations import TranslationConstants
 from canonical.launchpad.interfaces.vpoexport import IVPOExportSet
 from canonical.launchpad.translationformat.translation_common_format import (
@@ -108,8 +110,9 @@ def _check_translation_perms(permission, translators, person):
 
 def _person_has_not_licensed_translations(person):
     """Whether a person has declined to BSD-license their translations."""
-    if (person.translations_relicensing_agreement is not None and
-        person.translations_relicensing_agreement is False):
+    t_p = ITranslationsPerson(person)
+    if (t_p.translations_relicensing_agreement is not None and
+        t_p.translations_relicensing_agreement is False):
         return True
     else:
         return False
@@ -810,7 +813,7 @@ class POFile(SQLBase, POFileMixIn):
                     'Error importing %s' % self.title, exc_info=1)
             template_mail = 'poimport-not-exported-from-rosetta.txt'
             import_rejected = True
-            entry_to_import.error_output = (
+            entry_to_import.setErrorOutput(
                 "File was not exported from Launchpad.")
         except (BrokenTextError, TranslationFormatSyntaxError,
                 TranslationFormatInvalidInputError), exception:
@@ -822,7 +825,7 @@ class POFile(SQLBase, POFileMixIn):
             template_mail = 'poimport-syntax-error.txt'
             import_rejected = True
             error_text = str(exception)
-            entry_to_import.error_output = error_text
+            entry_to_import.setErrorOutput(error_text)
             needs_notification_for_imported = True
         except OutdatedTranslationError, exception:
             # The attached file is older than the last imported one, we ignore
@@ -832,19 +835,19 @@ class POFile(SQLBase, POFileMixIn):
             template_mail = 'poimport-got-old-version.txt'
             import_rejected = True
             error_text = str(exception)
-            entry_to_import.error_output = (
+            entry_to_import.setErrorOutput(
                 "Outdated translation.  " + error_text)
         except TooManyPluralFormsError:
             if logger:
                 logger.warning("Too many plural forms.")
             template_mail = 'poimport-too-many-plural-forms.txt'
             import_rejected = True
-            entry_to_import.error_output = "Too many plural forms."
+            entry_to_import.setErrorOutput("Too many plural forms.")
         else:
             # The import succeeded.  There may still be non-fatal errors
             # or warnings for individual messages (kept as a list in
             # "errors"), but we compose the text for that later.
-            entry_to_import.error_output = None
+            entry_to_import.setErrorOutput(None)
 
         # Prepare the mail notification.
         msgsets_imported = TranslationMessage.select(
@@ -887,7 +890,7 @@ class POFile(SQLBase, POFileMixIn):
                     error_message,
                     pomessage)
 
-            entry_to_import.error_output = (
+            entry_to_import.setErrorOutput(
                 "Imported, but with errors:\n" + errorsdetails)
 
             replacements['numberoferrors'] = len(errors)
@@ -907,7 +910,7 @@ class POFile(SQLBase, POFileMixIn):
         if import_rejected:
             # There were no imports at all and the user needs to review that
             # file, we tag it as FAILED.
-            entry_to_import.status = RosettaImportStatus.FAILED
+            entry_to_import.setStatus(RosettaImportStatus.FAILED)
         else:
             if (entry_to_import.is_published and
                 not needs_notification_for_imported):
@@ -916,7 +919,7 @@ class POFile(SQLBase, POFileMixIn):
                 # are needed.
                 subject = None
 
-            entry_to_import.status = RosettaImportStatus.IMPORTED
+            entry_to_import.setStatus(RosettaImportStatus.IMPORTED)
             # Assign karma to the importer if this is not an automatic import
             # (all automatic imports come from the rosetta expert user) and
             # comes from upstream.

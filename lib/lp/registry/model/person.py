@@ -26,6 +26,7 @@ from operator import attrgetter
 import pytz
 import random
 import re
+import weakref
 
 from zope.lifecycleevent import ObjectCreatedEvent
 from zope.interface import alsoProvides, implementer, implements
@@ -51,7 +52,7 @@ from canonical.database.sqlbase import (
 
 from canonical.cachedproperty import cachedproperty
 
-from canonical.lazr.utils import safe_hasattr
+from canonical.lazr.utils import get_current_browser_request, safe_hasattr
 
 from canonical.launchpad.database.account import Account
 from canonical.launchpad.database.bugtarget import HasBugsBase
@@ -62,8 +63,6 @@ from canonical.launchpad.database.oauth import (
 from lp.registry.model.personlocation import PersonLocation
 from canonical.launchpad.database.structuralsubscription import (
     StructuralSubscription)
-from canonical.launchpad.database.translationrelicensingagreement import (
-    TranslationRelicensingAgreement)
 from lp.registry.event.karma import KarmaAssignedEvent
 from lp.registry.event.team import JoinTeamEvent, TeamInvitationEvent
 from canonical.launchpad.helpers import (
@@ -77,7 +76,7 @@ from canonical.launchpad.interfaces.archive import ArchivePurpose
 from canonical.launchpad.interfaces.archivepermission import (
     IArchivePermissionSet)
 from canonical.launchpad.interfaces.authtoken import LoginTokenType
-from canonical.launchpad.interfaces.branchmergeproposal import (
+from lp.code.interfaces.branchmergeproposal import (
     BranchMergeProposalStatus, IBranchMergeProposalGetter)
 from canonical.launchpad.interfaces.bugtask import (
     BugTaskSearchParams, IBugTaskSet)
@@ -120,9 +119,6 @@ from canonical.launchpad.interfaces.lpstorm import IStore
 from lp.registry.interfaces.ssh import ISSHKey, ISSHKeySet, SSHKeyType
 from lp.registry.interfaces.teammembership import (
     TeamMembershipStatus)
-from canonical.launchpad.interfaces.translationgroup import (
-    ITranslationGroupSet)
-from canonical.launchpad.interfaces.translator import ITranslatorSet
 from lp.registry.interfaces.wikiname import IWikiName, IWikiNameSet
 from canonical.launchpad.webapp.interfaces import (
     ILaunchBag, IStoreSelector, AUTH_STORE, MASTER_FLAVOR)
@@ -135,7 +131,6 @@ from canonical.launchpad.database.emailaddress import (
 from lp.registry.model.karma import KarmaCache, KarmaTotalCache
 from canonical.launchpad.database.logintoken import LoginToken
 from lp.registry.model.pillar import PillarName
-from canonical.launchpad.database.pofiletranslator import POFileTranslator
 from lp.registry.model.karma import KarmaAction, Karma
 from lp.registry.model.mentoringoffer import MentoringOffer
 from canonical.launchpad.database.sourcepackagerelease import (
@@ -543,37 +538,6 @@ class Person(
             getUtility(IPersonNotificationSet).addNotification(
                 self, subject, mail_text)
 
-    def get_translations_relicensing_agreement(self):
-        """Return whether translator agrees to relicense their translations.
-
-        If she has made no explicit decision yet, return None.
-        """
-        relicensing_agreement = TranslationRelicensingAgreement.selectOneBy(
-            person=self)
-        if relicensing_agreement is None:
-            return None
-        else:
-            return relicensing_agreement.allow_relicensing
-
-    def set_translations_relicensing_agreement(self, value):
-        """Set a translations relicensing decision by translator.
-
-        If she has already made a decision, overrides it with the new one.
-        """
-        relicensing_agreement = TranslationRelicensingAgreement.selectOneBy(
-            person=self)
-        if relicensing_agreement is None:
-            relicensing_agreement = TranslationRelicensingAgreement(
-                person=self,
-                allow_relicensing=value)
-        else:
-            relicensing_agreement.allow_relicensing = value
-
-    translations_relicensing_agreement = property(
-        get_translations_relicensing_agreement,
-        set_translations_relicensing_agreement,
-        doc="See `IPerson`.")
-
     # specification-related joins
     @property
     def assigned_specs(self):
@@ -794,16 +758,6 @@ class Person(
         if prejoin_people:
             results = results.prejoin(['assignee', 'approver', 'drafter'])
         return results
-
-    @property
-    def translatable_languages(self):
-        """See `IPerson`."""
-        return Language.select("""
-            Language.id = PersonLanguage.language AND
-            PersonLanguage.person = %s AND
-            Language.code <> 'en' AND
-            Language.visible""" % quote(self),
-            clauseTables=['PersonLanguage'], orderBy='englishname')
 
     # XXX: Tom Berger 2008-04-14 bug=191799:
     # The implementation of these functions
@@ -1568,7 +1522,7 @@ class Person(
             clauseTables=['Person'],
             orderBy=Person.sortingColumns)
 
-    def _mapped_participants_locations(self):
+    def _getMappedParticipantsLocations(self, limit=None):
         """See `IPersonViewRestricted`."""
         return PersonLocation.select("""
             PersonLocation.person = TeamParticipation.person AND
@@ -1581,17 +1535,16 @@ class Person(
             Person.teamowner IS NULL
             """ % sqlvalues(self.id),
             clauseTables=['TeamParticipation', 'Person'],
-            prejoins=['person',])
+            prejoins=['person',], limit=limit)
 
-    @property
-    def mapped_participants(self):
+    def getMappedParticipants(self, limit=None):
         """See `IPersonViewRestricted`."""
         # Pre-cache this location against its person.  Since we'll always
         # iterate over all persons returned by this property (to build the map
         # of team members), it becomes more important to cache their locations
         # than to return a lazy SelectResults (or similar) object that only
         # fetches the rows when they're needed.
-        locations = self._mapped_participants_locations()
+        locations = self._getMappedParticipantsLocations(limit=limit)
         for location in locations:
             location.person._location = location
         participants = set(location.person for location in locations)
@@ -1599,12 +1552,13 @@ class Person(
         if len(participants) > 0:
             sql = "id IN (%s)" % ",".join(sqlvalues(*participants))
             list(ValidPersonCache.select(sql))
+        getUtility(IPersonSet).cacheBrandingForPeople(participants)
         return list(participants)
 
     @property
     def mapped_participants_count(self):
         """See `IPersonViewRestricted`."""
-        return self._mapped_participants_locations().count()
+        return self._getMappedParticipantsLocations().count()
 
     def getMappedParticipantsBounds(self):
         """See `IPersonViewRestricted`."""
@@ -1612,7 +1566,7 @@ class Person(
         min_lat = 90.0
         max_lng = -180.0
         min_lng = 180.0
-        locations = self._mapped_participants_locations()
+        locations = self._getMappedParticipantsLocations()
         if self.mapped_participants_count == 0:
             raise AssertionError, (
                 'This method cannot be called when '
@@ -1983,23 +1937,6 @@ class Person(
             return datetime.now(pytz.timezone('UTC')) + timedelta(days)
         else:
             return None
-
-    @property
-    def translation_history(self):
-        """See `IPerson`."""
-        return POFileTranslator.select(
-            'POFileTranslator.person = %s' % sqlvalues(self),
-            orderBy='-date_last_touched')
-
-    @property
-    def translation_groups(self):
-        """See `IPerson`."""
-        return getUtility(ITranslationGroupSet).getByPerson(self)
-
-    @property
-    def translators(self):
-        """See `IPerson`."""
-        return getUtility(ITranslatorSet).getByTranslator(self)
 
     def validateAndEnsurePreferredEmail(self, email):
         """See `IPerson`."""
@@ -3648,11 +3585,35 @@ def generate_nick(email_addr, is_registered=_is_nick_registered):
 @adapter(IAccount)
 @implementer(IPerson)
 def person_from_account(account):
-    """Adapt an IAccount into an IPerson."""
-    # The IAccount interface does not publish the account.person reference.
-    naked_account = removeSecurityProxy(account)
-    person = ProxyFactory(IStore(Person).find(
-        Person, accountID=naked_account.id).one())
+    """Adapt an `IAccount` into an `IPerson`.
+
+    If there is a current browser request, we cache the looked up Person in
+    the request's annotations so that we don't have to hit the DB once again
+    when further adaptation is needed.  We know this cache may cross
+    transaction boundaries, but this should not be a problem as the Person ->
+    Account link can't be changed.
+
+    This cache is necessary because our security adapters may need to adapt
+    the Account representing the logged in user into an IPerson multiple
+    times.
+    """
+    request = get_current_browser_request()
+    person = None
+    # First we try to get the person from the cache, but only if there is a
+    # browser request.
+    if request is not None:
+        cache = request.annotations.setdefault(
+            'launchpad.person_to_account_cache', weakref.WeakKeyDictionary())
+        person = cache.get(account)
+
+    # If it's not in the cache, then we get it from the database, and in that
+    # case, if there is a browser request, we also store that person in the
+    # cache.
     if person is None:
-        raise ComponentLookupError
+        person = IStore(Person).find(Person, account=account).one()
+        if request is not None:
+            cache[account] = person
+
+    if person is None:
+        raise ComponentLookupError()
     return person
