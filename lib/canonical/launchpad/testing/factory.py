@@ -391,8 +391,8 @@ class LaunchpadObjectFactory(ObjectFactory):
                 MailingListAutoSubscribePolicy.NEVER
         account = IMasterStore(Account).get(Account, person.accountID)
         getUtility(IEmailAddressSet).new(
-            alternative_address, person,
-            EmailAddressStatus.VALIDATED, account)
+            alternative_address, person, EmailAddressStatus.VALIDATED,
+            account)
         transaction.commit()
         self._stuff_preferredemail_cache(person)
         return person
@@ -1354,11 +1354,13 @@ class LaunchpadObjectFactory(ObjectFactory):
 
         return subset.new(name, translation_domain, path, owner)
 
-    def makePOFile(self, language_code, potemplate=None, owner=None):
+    def makePOFile(self, language_code, potemplate=None, owner=None,
+                   variant=None):
         """Make a new translation file."""
         if potemplate is None:
             potemplate = self.makePOTemplate(owner=owner)
-        return potemplate.newPOFile(language_code, requester=potemplate.owner)
+        return potemplate.newPOFile(language_code, variant,
+                                    requester=potemplate.owner)
 
     def makePOTMsgSet(self, potemplate, singular=None, plural=None,
                       sequence=None):
@@ -1368,24 +1370,49 @@ class LaunchpadObjectFactory(ObjectFactory):
         potmsgset = potemplate.createMessageSetFromText(singular, plural)
         if sequence is not None:
             potmsgset.setSequence(potemplate, sequence)
+        naked_potmsgset = removeSecurityProxy(potmsgset)
+        naked_potmsgset.sync()
         return potmsgset
 
     def makeTranslationMessage(self, pofile=None, potmsgset=None,
-                               translator=None, reviewer=None,
-                               translations=None, lock_timestamp=None):
+                               translator=None, suggestion=False,
+                               reviewer=None, translations=None,
+                               lock_timestamp=None, date_updated=None,
+                               is_imported=False, force_shared=False,
+                               force_diverged=False):
         """Make a new `TranslationMessage` in the given PO file."""
         if pofile is None:
             pofile = self.makePOFile('sr')
         if potmsgset is None:
             potmsgset = self.makePOTMsgSet(pofile.potemplate)
+            potmsgset.setSequence(pofile.potemplate, 1)
         if translator is None:
             translator = self.makePerson()
         if translations is None:
             translations = [self.getUniqueString()]
+        translation_message = potmsgset.updateTranslation(
+            pofile, translator, translations, is_imported=is_imported,
+            lock_timestamp=lock_timestamp, force_suggestion=suggestion,
+            force_shared=force_shared, force_diverged=force_diverged)
+        if date_updated is not None:
+            naked_translation_message = removeSecurityProxy(
+                translation_message)
+            naked_translation_message.date_created = date_updated
+            if translation_message.reviewer is not None:
+                naked_translation_message.date_reviewed = date_updated
+            naked_translation_message.sync()
+        return translation_message
 
-        return potmsgset.updateTranslation(pofile, translator, translations,
-                                           is_imported=False,
-                                           lock_timestamp=lock_timestamp)
+    def makeSharedTranslationMessage(self, pofile=None, potmsgset=None,
+                                     translator=None, suggestion=False,
+                                     reviewer=None, translations=None,
+                                     date_updated=None, is_imported=False):
+        translation_message = self.makeTranslationMessage(
+            pofile=pofile, potmsgset=potmsgset, translator=translator,
+            suggestion=suggestion, reviewer=reviewer, is_imported=is_imported,
+            translations=translations, date_updated=date_updated,
+            force_shared=True)
+        return translation_message
 
     def makeTranslation(self, pofile, sequence,
                         english=None, translated=None,
