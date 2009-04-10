@@ -37,7 +37,7 @@
 
   <browser:page
       for="canonical.launchpad.interfaces.personproduct.IPersonProduct"
-      class="canonical.launchpad.browser.branchlisting.PersonProductOwnedBranchesView"
+      class="lp.code.browser.branchlisting.PersonProductOwnedBranchesView"
       permission="zope.Public"
       facet="branches"
       name="+branches"
@@ -46,7 +46,7 @@
 
   <browser:page
       for="canonical.launchpad.interfaces.personproduct.IPersonProduct"
-      class="canonical.launchpad.browser.branchlisting.PersonProductTeamBranchesView"
+      class="lp.code.browser.branchlisting.PersonProductTeamBranchesView"
       facet="branches"
       name="+portlet-teambranches"
       template="../templates/person-portlet-teambranches.pt"
@@ -55,7 +55,7 @@
 
   <browser:page
       for="canonical.launchpad.interfaces.personproduct.IPersonProduct"
-      class="canonical.launchpad.browser.branchlisting.PersonProductCodeSummaryView"
+      class="lp.code.browser.branchlisting.PersonProductCodeSummaryView"
       facet="branches"
       name="+codesummary"
       template="../templates/person-codesummary.pt"

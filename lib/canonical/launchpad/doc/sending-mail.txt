@@ -317,3 +317,27 @@ are ignored.
     'test@canonical.com'
     >>> sent_msg['CC']
     'foo.bar@canonical.com'
+
+Since sendmail() gets the addresses to send to from the e-mail header,
+it needs to take care of unfolding the headers, so that they don't
+contain any line breaks.
+
+    >>> folded_message = email.message_from_string("""Subject: required
+    ... From: Not used
+    ...  <from.address@example.com>
+    ... To: To Address
+    ...  <to.address@example.com>
+    ... CC: CC Address
+    ...  <cc.address@example.com>
+    ...
+    ... Content
+    ... """)
+    >>> msgid = sendmail(folded_message)
+    >>> transaction.commit()
+    >>> from_addr, to_addrs, raw_message = stub.test_emails.pop()
+    >>> from_addr
+    'bounces@canonical.com'
+    >>> sorted(to_addrs)
+    ['CC Address <cc.address@example.com>',
+     'To Address <to.address@example.com>']
+     

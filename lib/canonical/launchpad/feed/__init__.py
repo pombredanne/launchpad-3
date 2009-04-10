@@ -5,4 +5,4 @@
 
 from lp.registry.feed.announcement import *
 from canonical.launchpad.feed.bug import *
-from canonical.launchpad.feed.branch import *
+from lp.code.feed.branch import *

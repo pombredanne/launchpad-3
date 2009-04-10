@@ -55,7 +55,7 @@ a conference and would like to have some CDs to hand out there.
     >>> browser.getLink('special request').click()
     >>> browser.url
     'http://shipit.ubuntu.dev/specialrequest-server'
-    >>> browser.getControl(name='field.ubuntu_quantityx86').value = '90'
+    >>> browser.getControl(name='field.ubuntu_quantityamd64').value = '90'
     >>> browser.getControl(name='field.reason').value = 'Going to a conf.'
     >>> browser.getControl('Change Request').click()
     >>> for message in get_feedback_messages(browser.contents):

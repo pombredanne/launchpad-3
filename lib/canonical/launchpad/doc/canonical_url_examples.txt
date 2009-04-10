@@ -320,7 +320,7 @@ A bug from a remote bug tracker.
 
 An IBranch.
 
-    >>> from canonical.launchpad.interfaces.branchlookup import IBranchLookup
+    >>> from lp.code.interfaces.branchlookup import IBranchLookup
 
     >>> branch = getUtility(IBranchLookup).get(10)
 

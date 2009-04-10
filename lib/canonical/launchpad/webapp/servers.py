@@ -39,8 +39,8 @@ from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 
 from canonical.lazr.interfaces.feed import IFeed
-from canonical.lazr.interfaces.rest import IWebServiceConfiguration
-from canonical.lazr.rest.publisher import (
+from lazr.restful.interfaces import IWebServiceConfiguration
+from lazr.restful.publisher import (
     WebServicePublicationMixin, WebServiceRequestTraversal)
 
 from canonical.launchpad.interfaces import (
@@ -619,6 +619,18 @@ class BrowserFormNG:
         if not zope_isinstance(value, list):
             value = [value]
         return value
+
+
+def web_service_request_to_browser_request(webservice_request):
+    """Convert a given webservice request into a webapp one.
+
+    Simply overrides 'SERVER_URL' to the 'mainsite', preserving headers and
+    body.
+    """
+    body = webservice_request.bodyStream.getCacheStream().read()
+    environ = dict(webservice_request.environment)
+    environ['SERVER_URL'] = allvhosts.configs['mainsite'].rooturl
+    return LaunchpadBrowserRequest(body, environ)
 
 
 class Zope3WidgetsUseIBrowserFormNGMonkeyPatch:

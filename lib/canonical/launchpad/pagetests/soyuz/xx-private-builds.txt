@@ -351,8 +351,8 @@ users:
     ...     print "Did not get expected exception"
     Got expected exception
 
-Let's make the iceweasel package available in Warty.  First log in as
-an admin to be able to manipulate the source publishing.
+Let's make the iceweasel package available in breezy-autotest. 
+First log in as an admin to be able to manipulate the source publishing.
 
     >>> login("foo.bar@canonical.com")
     >>> from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
@@ -360,10 +360,14 @@ an admin to be able to manipulate the source publishing.
     >>> getUtility(IStoreSelector).push(MasterDatabasePolicy())
     >>> from lp.registry.interfaces.distribution import (
     ...     IDistributionSet)
-    >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
-    >>> warty = ubuntu['warty']
+    >>> ubuntutest = getUtility(IDistributionSet)['ubuntutest']
+    >>> breezy_autotest = ubuntutest['breezy-autotest']
     >>> new_pub = private_source_pub.copyTo(
-    ...     warty, private_source_pub.pocket, ubuntu.main_archive)
+    ...     breezy_autotest, private_source_pub.pocket, ubuntutest.main_archive)
+    >>> binary_pkg_release = test_publisher.uploadBinaryForBuild(
+    ...     private_build, 'privacy-test-bin')
+    >>> binary_pkg_pub_history = test_publisher.publishBinaryInArchive(
+    ...     binary_pkg_release, ubuntutest.main_archive)
     >>> flush_database_updates()
     >>> policy = getUtility(IStoreSelector).pop()
     >>> logout()
@@ -404,3 +408,29 @@ Accessing the build page will now also work:
     ...     private_build.id)
     >>> print browser.title
     i386 build of privacy-test ...
+
+When accessing the distroseries source package release page, the builds
+portlet will display a link to the newly unembargoed build:
+
+    >>> browser.open(
+    ...     "http://launchpad.dev/ubuntutest/breezy-autotest/"
+    ...     "+source/privacy-test/666")
+    >>> portlet = find_portlet(browser.contents, 'Builds')
+    >>> link = portlet.find('a', href="/~cprov/+archive/ppa/+build/%s" % (
+    ...     private_build.id))
+    >>> print extract_text(link)
+    breezy-autotest
+    i386
+
+Similarly, when accessing the distribution source package release page,
+the main content will display a link to the newly unembargoed build:
+
+    >>> browser.open(
+    ...     "http://launchpad.dev/ubuntutest/+source/privacy-test/666")
+    >>> main_content = find_main_content(browser.contents)
+    >>> link = main_content.find(
+    ...     'a', href="/~cprov/+archive/ppa/+build/%s" % (private_build.id))
+    >>> print extract_text(link)
+    breezy-autotest
+    i386
+

@@ -21,7 +21,7 @@ import bzrlib.ui
 from canonical.config import config
 from canonical.codehosting.vfs import get_puller_server
 from canonical.codehosting.puller import get_lock_id_for_branch_id
-from canonical.launchpad.interfaces.branch import (
+from lp.code.interfaces.branch import (
     BranchType, get_blacklisted_hostnames)
 from canonical.launchpad.webapp import errorlog
 from lazr.uri import URI, InvalidURIError

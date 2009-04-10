@@ -12,6 +12,21 @@
   <body>
     <div metal:fill-slot="main">
       <h1 class="exception">Timeout error</h1>
+      <div
+        id="redirect_notice" style="display:none" class="informational message">
+          <p>As a member of the Launchpad Beta Testers team, you will be
+          redirected to the beta site when viewing Launchpad pages.</p>
+          <p><button onclick="setBetaRedirect(false)">Disable redirection
+          for 2 hours</button></p>
+      </div>
+      <script type="text/javascript">
+        var edge_cookie = document.cookie.match('edge');
+        var edge_host = document.location.hostname.match('edge');
+        if (edge_cookie && edge_host) {
+          redirect_notice_div = document.getElementById('redirect_notice');
+          redirect_notice_div.style.display = "block";
+        };
+      </script>
       <p>
         Sorry, something just went wrong in Launchpad.
       </p>

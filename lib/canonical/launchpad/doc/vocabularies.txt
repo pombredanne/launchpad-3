@@ -423,10 +423,29 @@ through direct or indirect participations.
 
 All the milestone in a context.
 
-If no context is given, all milestones in the database are in the
-vocabulary.
+A MilestoneVolcabulary contains different milestones, depending on the
+current context. It is pointless to present the large number of all
+active milestones known in Launchpad in a vocabulary. Hence a
+MilestoneVolcabulary contains only those milestones that are related
+to the current context. If no context is given, or if the context does
+not have any milestones, a MilestoneVocabulary is empty...
 
-    >>> all_milestones = vocabulary_registry.get(None, 'Milestone')
+    >>> milestones = vocabulary_registry.get(None, 'Milestone')
+    >>> len(milestones)
+    0
+
+    >>> from canonical.launchpad.interfaces import IMaloneApplication
+    >>> malone = getUtility(IMaloneApplication)
+    >>> milestones = vocabulary_registry.get(malone, 'Milestone')
+    >>> len(milestones)
+    0
+
+...but if the context is an IPerson, the MilestoneVocabulary contains all
+milestones. IPerson related pages showing milestone lists retrieve the
+milestones from RelevantMilestonesMixin.getMilestoneWidgetValues()
+but we need the big default vocabulary for form input validation.
+
+    >>> all_milestones = vocabulary_registry.get(sample_person, 'Milestone')
     >>> len(all_milestones)
     3
     >>> for term in all_milestones:
@@ -503,13 +522,6 @@ The vocabulary contains only active milestones.
     u'1.0'
     >>> one_dot_o.active = False
 
-We have set two milestones to be not active, so there is only one left that
-is active in all_milestones.
-
-    >>> all_milestones = vocabulary_registry.get(None, 'Milestone')
-    >>> for term in all_milestones:
-    ...     print "%s: %s" % (term.value.target.name, term.value.name)
-    debian: 3.1-rc1
     >>> firefox_milestones = vocabulary_registry.get(firefox, 'Milestone')
     >>> len(firefox_milestones)
     0
@@ -995,7 +1007,7 @@ A search with the full branch unique name should also find the branch.
 The tokens used by terms retrieved from BranchVocabulary use the
 branch unique name as an ID:
 
-    >>> from canonical.launchpad.interfaces.branchlookup import IBranchLookup
+    >>> from lp.code.interfaces.branchlookup import IBranchLookup
     >>> branch = getUtility(IBranchLookup).get(15)
     >>> print branch.unique_name
     ~name12/gnome-terminal/main

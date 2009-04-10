@@ -20,7 +20,7 @@ from storm.store import Store
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import flush_database_updates, sqlvalues
-from canonical.launchpad.database.branch import Branch
+from lp.code.model.branch import Branch
 from canonical.launchpad.database.bug import get_bug_tags_open_count
 from canonical.launchpad.database.bugtarget import BugTargetBase
 from canonical.launchpad.database.bugtask import BugTask
@@ -35,7 +35,7 @@ from canonical.launchpad.database.publishing import (
     SourcePackagePublishingHistory)
 from lp.answers.model.question import (
     QuestionTargetMixin, QuestionTargetSearch)
-from canonical.launchpad.database.seriessourcepackagebranch import (
+from lp.code.model.seriessourcepackagebranch import (
     SeriesSourcePackageBranch)
 from canonical.launchpad.database.sourcepackagerelease import (
     SourcePackageRelease)
@@ -50,7 +50,7 @@ from canonical.launchpad.interfaces.publishing import (
     PackagePublishingPocket, PackagePublishingStatus)
 from lp.answers.interfaces.questioncollection import QUESTION_STATUS_DEFAULT_SEARCH
 from lp.answers.interfaces.questiontarget import IQuestionTarget
-from canonical.launchpad.interfaces.seriessourcepackagebranch import (
+from lp.code.interfaces.seriessourcepackagebranch import (
     ISeriesSourcePackageBranchSet)
 from lp.registry.interfaces.sourcepackage import (
     ISourcePackage, ISourcePackageFactory)
