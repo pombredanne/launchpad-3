@@ -19,7 +19,6 @@ __all__ = [
 
 import xmlrpclib
 
-from email.Utils import formataddr
 from BeautifulSoup import BeautifulSoup, SoupStrainer
 from zope.component import getUtility
 

@@ -19,7 +19,7 @@ from itertools import repeat
 from socket import getfqdn
 from string import Template
 
-from storm.expr import And, LeftJoin, Select
+from storm.expr import And, LeftJoin
 from storm.store import Store
 
 from sqlobject import ForeignKey, StringCol
