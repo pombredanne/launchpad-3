@@ -35,7 +35,7 @@ To be sure that we are using the right entry from the import queue,
 we check that it only has two items from sample data.
 
     >>> translationimportqueue = getUtility(ITranslationImportQueue)
-    >>> translationimportqueue.entryCount()
+    >>> translationimportqueue.countEntries()
     2
 
 The FileUpload class needs a class with the attributes: filename, file and
@@ -58,7 +58,7 @@ Now, we do the upload.
 
 As we can see, we have now three entries in our queue.
 
-    >>> translationimportqueue.entryCount()
+    >>> translationimportqueue.countEntries()
     3
 
 Get it and check that some attributes are set as they should. For instance,
@@ -88,7 +88,7 @@ We do the upload...
 
 As we can see, we have now another entry in our queue.
 
-    >>> translationimportqueue.entryCount()
+    >>> translationimportqueue.countEntries()
     4
 
 Get it and check that some attributes are set as they should. For instance,
