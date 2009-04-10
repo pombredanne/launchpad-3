@@ -155,6 +155,11 @@ def test_suite():
         os.path.normpath(os.path.join(here, os.path.pardir, 'doc'))
         )
 
+    # Add special needs tests
+    for key in sorted(special):
+        special_suite = special[key]
+        suite.addTest(special_suite)
+
     # Add tests using default setup/teardown
     filenames = [filename
                  for filename in os.listdir(testsdir)
