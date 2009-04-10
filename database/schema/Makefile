@@ -66,6 +66,8 @@ test: create
 	@ psql -v ON_ERROR_STOP=1 -d ${TEMPLATE_WITH_TEST_SAMPLEDATA} -f $(SAMPLEDATA) > /dev/null
 	@ echo "* Resetting sequences"
 	@ ${PYTHON} reset_sequences.py -d ${TEMPLATE_WITH_TEST_SAMPLEDATA}
+	@ echo "* Disabling autovacuum"
+	@ ${PYTHON} unautovacuumable.py -d ${TEMPLATE_WITH_TEST_SAMPLEDATA}
 	@ echo "* Vacuuming"
 	@ vacuumdb -fz ${TEMPLATE_WITH_TEST_SAMPLEDATA}
 
@@ -79,6 +81,8 @@ dev: test
 	@ psql -v ON_ERROR_STOP=1 -d ${TEMPLATE_WITH_DEV_SAMPLEDATA} -f $(SAMPLEDATA_DEV) > /dev/null
 	@ echo "* Resetting sequences"
 	@ ${PYTHON} reset_sequences.py -d ${TEMPLATE_WITH_DEV_SAMPLEDATA}
+	@ echo "* Disabling autovacuum"
+	@ ${PYTHON} unautovacuumable.py -d ${TEMPLATE_WITH_DEV_SAMPLEDATA}
 	@ echo "* Vacuuming"
 	@ vacuumdb -fz ${TEMPLATE_WITH_DEV_SAMPLEDATA}
 	@ echo "* Creating ${DBNAME_DEV}"
@@ -117,6 +121,8 @@ create: check
 	@ ${PYTHON} fti.py -q -d ${EMPTY_DBNAME}
 	@ echo "* Security setup"
 	@ ${PYTHON} security.py -q -d ${EMPTY_DBNAME}
+	@ echo "* Disabling autovacuum"
+	@ ${PYTHON} unautovacuumable.py -d ${EMPTY_DBNAME}
 	@ echo "* Vacuuming"
 	@ vacuumdb -fz ${EMPTY_DBNAME}
 
