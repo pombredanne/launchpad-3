@@ -4,19 +4,22 @@
 """Disable autovacuum on all tables in the database and kill off
 any autovacuum processes.
 
+We run this script on databases we require to be totally inactive with
+no open connections, such as the template databases we clone. If not
+disabled, autovacuum processes sometimes run and break our scripts.
+
 Don't run this on any production systems.
 """
 
 __metaclass__ = type
 __all__ = []
 
+# pylint: disable-msg=W0403
 import _pythonpath
 
 from optparse import OptionParser
 import sys
 import time
-
-import psycopg2
 
 from canonical.database.sqlbase import connect
 from canonical.launchpad.scripts import logger_options, db_options, logger
