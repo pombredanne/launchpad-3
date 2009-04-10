@@ -12,7 +12,9 @@ from canonical.launchpad.testing.pages import PageTestSuite
 from canonical.launchpad.testing.systemdocs import (
     LayeredDocFileSuite, setUp, tearDown)
 from canonical.testing import (
-    DatabaseLayer, LaunchpadFunctionalLayer, LaunchpadZopelessLayer)
+    DatabaseLayer, DatabaseFunctionalLayer, LaunchpadFunctionalLayer,
+    LaunchpadZopelessLayer)
+
 from lp.registry.tests import mailinglists_helper
 
 
@@ -110,6 +112,12 @@ special = {
         tearDown=tearDown,
         layer=LaunchpadFunctionalLayer,
         ),
+    'message-holds.txt': LayeredDocFileSuite(
+        '../doc/message-holds.txt',
+        setUp=setUp,
+        tearDown=tearDown,
+        layer=LaunchpadFunctionalLayer,
+        ),
     'message-holds-xmlrpc.txt': LayeredDocFileSuite(
         '../doc/message-holds-xmlrpc.txt',
         setUp=mailingListXMLRPCInternalSetUp,
@@ -119,6 +127,18 @@ special = {
     'message-holds-xmlrpc.txt-external': LayeredDocFileSuite(
         '../doc/message-holds-xmlrpc.txt',
         setUp=mailingListXMLRPCExternalSetUp,
+        tearDown=tearDown,
+        layer=LaunchpadFunctionalLayer,
+        ),
+    'productrelease.txt': LayeredDocFileSuite(
+        '../doc/productrelease.txt',
+        setUp=setUp,
+        tearDown=tearDown,
+        layer=LaunchpadFunctionalLayer,
+        ),
+    'productrelease-file-download.txt': LayeredDocFileSuite(
+        '../doc/productrelease-file-download.txt',
+        setUp=setUp,
         tearDown=tearDown,
         layer=LaunchpadFunctionalLayer,
         ),
@@ -170,7 +190,7 @@ def test_suite():
         path = os.path.join('../doc/', filename)
         one_test = LayeredDocFileSuite(
             path, setUp=setUp, tearDown=tearDown,
-            layer=LaunchpadFunctionalLayer,
+            layer=DatabaseFunctionalLayer,
             stdout_logging_level=logging.WARNING
             )
         suite.addTest(one_test)
