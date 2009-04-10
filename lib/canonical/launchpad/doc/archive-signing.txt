@@ -8,7 +8,7 @@ PPAs are created (activated, in production jargon) without a defined
 and attached to the corresponding `IArchive`.
 
 The secret part of the key will be stored in the path pointed by
-`config.personalpackagearchive.sigining_keys_root`, named by their
+`config.personalpackagearchive.signing_keys_root`, named by their
 fingerprint. E.g.: ABCDEF0123456789ABCDDCBA0000111112345678.key
 
 Once the signing key is available, the subsequent publications will
@@ -25,7 +25,7 @@ We will setup and use the test-keyserver (zeca).
     >>> z.setUp()
 
 
-== Querying 'pending sigining key' PPAs ==
+== Querying 'pending signing key' PPAs ==
 
 `IArchiveSet.getPPAsPendingSigningKey` allows call-sites to query for
 PPA pending signing key generation.
@@ -82,7 +82,7 @@ Disabled PPAs are excluded from the 'PendingSigningKey' pool:
     PPA for Celso Providelo
     PPA for Mark Shuttleworth
 
-Indeed, Marks's PPA does not have a defined 'sigining_key'.
+Indeed, Marks's PPA does not have a defined 'signing_key'.
 
     >>> sabdfl = getUtility(IPersonSet).getByName('sabdfl')
     >>> print sabdfl.archive.signing_key
@@ -98,7 +98,7 @@ We will select the only available IGPGKey from the sampledata.
     >>> print a_key.displayname
     1024D/12345678
 
-And use it as the Mark's PPA sigining key.
+And use it as the Mark's PPA signing key.
 
     >>> sabdfl.archive.signing_key = a_key
 
@@ -114,7 +114,7 @@ It will exclude Mark's PPA from the 'PendingSigningKey' pool as well.
 
 == Generating a PPA signing key ==
 
-As mentioned above, generated sigining_keys will be stored in a
+As mentioned above, generated signing_keys will be stored in a
 location defined by the system configuration.
 
     >>> from canonical.config import config
@@ -298,7 +298,7 @@ Instead of generating a new key, the signing key from the default ppa
     True
 
 
-== Sigining PPA repository ==
+== Signing PPA repository ==
 
 `IArchiveSigningKey.signRepository` can be user to sign repositories
 for archive which already contains a 'signing_key'.
