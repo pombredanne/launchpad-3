@@ -33,12 +33,14 @@ ML-FULL-TITLE
 
 <!-- Title for the main page. -->
 <TITLE>
-$ML-FULL-TITLE$ (by date)
+<p><a href="http://launchpad.net/"><img border="0" src="http://launchpad.net/@@/launchpad-logo-and-name.png" alt="Launchpad logo and name."/></a></p>
+<center>$ML-FULL-TITLE$ (by date)</center>
 </TITLE>
 
 <!-- Title for the thread page. -->
 <TTITLE>
-$ML-FULL-TITLE$ (by thread)
+<p><a href="http://launchpad.net/"><img border="0" src="http://launchpad.net/@@/launchpad-logo-and-name.png" alt="Launchpad logo and name."/></a></p>
+<center>$ML-FULL-TITLE$ (by thread)</center>
 </TTITLE>
 
 <IDXLABEL>
@@ -50,30 +52,30 @@ thread index
 </TIDXLABEL>
 
 <!-- What do the next/prev links look like? -->
+<PREVPGLINK>
+<a href="$PG(FIRST)$">&larr;First</a>&nbsp;&nbsp;&nbsp;<a href="$PG(PREV)$">&larr;Prev</a>
+</PREVPGLINK>
+<PREVPGLINKIA>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</PREVPGLINKIA>
+<TPREVPGLINK>
+<a href="$PG(TFIRST)$">&larr;First</a>&nbsp;&nbsp;&nbsp;<a href="$PG(TPREV)$">&larr;Prev</a>
+</TPREVPGLINK>
+<TPREVPGLINKIA>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</TPREVPGLINKIA>
 <NEXTPGLINK>
-<a href="$PG(NEXT)$">Next&rarr</a>
+<a href="$PG(NEXT)$">Next&rarr;</a>&nbsp;&nbsp;&nbsp;<a href="$PG(LAST)$">Last&rarr;</a>
 </NEXTPGLINK>
 <NEXTPGLINKIA>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 </NEXTPGLINKIA>
 <TNEXTPGLINK>
-<a href="$PG(TNEXT)$">Next&rarr</a>
+<a href="$PG(TNEXT)$">Next&rarr;</a>&nbsp;&nbsp;&nbsp;<a href="$PG(TLAST)$">Last&rarr;</a>
 </TNEXTPGLINK>
 <TNEXTPGLINKIA>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 </TNEXTPGLINKIA>
-<PREVPGLINK>
-<a href="$PG(PREV)$">&larr;Prev</a>
-</PREVPGLINK>
-<PREVPGLINKIA>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-</PREVPGLINKIA>
-<TPREVPGLINK>
-<a href="$PG(TPREV)$">&larr;Prev</a>
-</TPREVPGLINK>
-<TPREVPGLINKIA>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-</TPREVPGLINKIA>
 
 <!-- Formatting for the start of list page.
      See http://www.mhonarc.org/MHonArc/doc/resources/listbegin.html. -->
@@ -81,13 +83,13 @@ thread index
 <p>(<a href="$TIDXFNAME$">go to $TIDXLABEL$</a>)</p>
 <hr/>
 <div style="text-align: left;">$PGLINK(PREV)$&nbsp;&nbsp;&nbsp;$PGLINK(NEXT)$</div>
-<div style="text-align: center;">&nbsp;<a href="$PG(FIRST)$">&larr;</a>&nbsp;&nbsp;$PGLINKLIST(5;5)$&nbsp;&nbsp;<a href="$PG(LAST)$">&rarr;</a></div>
+<div style="text-align: center;">$PGLINKLIST(5;5)$</div>
 <ul>
 </LISTBEGIN>
 
 <LISTEND>
 </ul>
-<div style="text-align: center;">&nbsp;<a href="$PG(FIRST)$">&larr;</a>&nbsp;&nbsp;$PGLINKLIST(5;5)$&nbsp;&nbsp;<a href="$PG(LAST)$">&rarr;</a></div>
+<div style="text-align: center;">$PGLINKLIST(5;5)$</div>
 <div style="text-align: left;">$PGLINK(PREV)$&nbsp;&nbsp;&nbsp;$PGLINK(NEXT)$</div>
 </LISTEND>
 
@@ -97,13 +99,13 @@ thread index
 <p>(<a href="$IDXFNAME$">go to $IDXLABEL$</a>)</p>
 <hr/>
 <div style="text-align: left;">$PGLINK(TPREV)$&nbsp;&nbsp;&nbsp;$PGLINK(TNEXT)$</div>
-<div style="text-align: center;">&nbsp;<a href="$PG(TFIRST)$">&larr;</a>&nbsp;&nbsp;$PGLINKLIST(T5;T5)$&nbsp;&nbsp;<a href="$PG(TLAST)$">&rarr;</a></div>
+<div style="text-align: center;">$PGLINKLIST(T5;T5)$</div>
 <ul>
 </THEAD>
 
 <TFOOT>
 </ul>
-<div style="text-align: center;">&nbsp;<a href="$PG(TFIRST)$">&larr;</a>&nbsp;&nbsp;$PGLINKLIST(T5;T5)$&nbsp;&nbsp;<a href="$PG(TLAST)$">&rarr;</a></div>
+<div style="text-align: center;">$PGLINKLIST(T5;T5)$</div>
 <div style="text-align: left;">$PGLINK(TPREV)$&nbsp;&nbsp;&nbsp;$PGLINK(TNEXT)$</div>
 </TFOOT>
 
