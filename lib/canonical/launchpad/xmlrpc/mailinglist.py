@@ -129,10 +129,10 @@ class MailingListAPIView(LaunchpadXMLRPCView):
         response = {}
         # There are two sets of email addresses we need.  The first is the set
         # of all email addresses which can post to specific mailing lists.
-        posters = mailing_list_set.getSenderAddresses(teams)
+        poster_addresses = mailing_list_set.getSenderAddresses(teams)
         # The second is the set of all email addresses which will receive
         # messages posted to the mailing lists.
-        subscribers = mailing_list_set.getSubscribedAddresses(teams)
+        subscriber_addresses = mailing_list_set.getSubscribedAddresses(teams)
         # The above two results are dictionaries mapping team names to lists
         # of string addresses.  The expected response is a dictionary mapping
         # team names to lists of membership-tuples.  Each membership-tuple
@@ -141,11 +141,11 @@ class MailingListAPIView(LaunchpadXMLRPCView):
         # own posts, and no moderation), and status (either ENABLED meaning
         # they can post to the mailing list or BYUSER meaning they can't).
         for team_name in teams:
-            team_posters = posters.get(team_name)
-            team_subscribers = subscribers.get(team_name)
+            team_posters = poster_addresses.get(team_name)
+            team_subscribers = subscriber_addresses.get(team_name)
             if not team_posters and not team_subscribers:
-                # Mailman requested a bogus team, so ignore it.
-                continue
+                # Mailman requested a bogus team.
+                return faults.NoSuchTeamMailingList(team_name)
             # Map {address -> (full_name, flags, status)}
             members = {}
             # Hard code flags to 0 currently, meaning the member will get
