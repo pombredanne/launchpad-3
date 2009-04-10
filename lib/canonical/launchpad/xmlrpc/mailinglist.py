@@ -147,7 +147,7 @@ class MailingListAPIView(LaunchpadXMLRPCView):
             if not team_posters and not team_subscribers:
                 # Mailman requested a bogus team, so ignore it.
                 continue
-            # Map {address -> (real_name, flags, status)}
+            # Map {address -> (full_name, flags, status)}
             members = {}
             # Hard code flags to 0 currently, meaning the member will get
             # regular (not digest) delivery, will not get post
@@ -159,13 +159,13 @@ class MailingListAPIView(LaunchpadXMLRPCView):
             # dictionary maps email addresses to real names.
             posters = set()
             subscribers = set()
-            real_names = dict()
-            for real_name, address in team_posters:
+            full_names = dict()
+            for full_name, address in team_posters:
                 posters.add(address)
-                real_names[address] = real_name
-            for real_name, address in team_subscribers:
+                full_names[address] = full_name
+            for full_name, address in team_subscribers:
                 subscribers.add(address)
-                real_names[address] = real_name
+                full_names[address] = full_name
             # The team members is the union of all posters and subscribers.
             # Iterate through these addresses, creating the 3-tuple entry
             # required for the members map for this team.
@@ -174,7 +174,7 @@ class MailingListAPIView(LaunchpadXMLRPCView):
                     status = ENABLED
                 else:
                     status = BYUSER
-                members[address] = (real_names[address], flags, status)
+                members[address] = (full_names[address], flags, status)
             # Add the archive recipient if there is one, and if the team is
             # public.  This address should never be registered in Launchpad,
             # meaning specifically that the isRegisteredInLaunchpad() test
@@ -184,7 +184,7 @@ class MailingListAPIView(LaunchpadXMLRPCView):
             if config.mailman.archive_address and mailing_list.is_public:
                 members[config.mailman.archive_address] = ('', flags, ENABLED)
             # The response must be a dictionary mapping team names to lists of
-            # 4-tuples: (address, real_name, flags, status)
+            # 4-tuples: (address, full_name, flags, status)
             response[team_name] = [
                 (address, members[address][0],
                  members[address][1], members[address][2])
