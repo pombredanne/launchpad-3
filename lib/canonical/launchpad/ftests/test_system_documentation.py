@@ -343,11 +343,11 @@ special = {
             layer=LaunchpadZopelessLayer,
             stdout_logging_level=logging.WARNING
             ),
-#    'buildd-scoring.txt': LayeredDocFileSuite(
-#            '../doc/buildd-scoring.txt',
-#            setUp=builddmasterSetUp,
-#            layer=LaunchpadZopelessLayer,
-#            ),
+    'buildd-scoring.txt': LayeredDocFileSuite(
+            '../doc/buildd-scoring.txt',
+            setUp=builddmasterSetUp,
+            layer=LaunchpadZopelessLayer,
+            ),
     'close-account.txt': LayeredDocFileSuite(
             '../doc/close-account.txt', setUp=setUp, tearDown=tearDown,
             layer=LaunchpadZopelessLayer
