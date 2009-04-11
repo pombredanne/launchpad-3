@@ -64,6 +64,8 @@ test: create
 	@ ${CREATEDB} ${EMPTY_DBNAME} ${TEMPLATE_WITH_TEST_SAMPLEDATA}
 	@ echo "* Loading sample data"
 	@ psql -v ON_ERROR_STOP=1 -d ${TEMPLATE_WITH_TEST_SAMPLEDATA} -f $(SAMPLEDATA) > /dev/null
+	@ echo "* Rebuilding full text indexes"
+	@ ${PYTHON} fti.py --force -q -d ${TEMPLATE_WITH_TEST_SAMPLEDATA}
 	@ echo "* Resetting sequences"
 	@ ${PYTHON} reset_sequences.py -d ${TEMPLATE_WITH_TEST_SAMPLEDATA}
 	@ echo "* Disabling autovacuum"
@@ -79,6 +81,8 @@ dev: test
 	@ ${CREATEDB} ${EMPTY_DBNAME} ${TEMPLATE_WITH_DEV_SAMPLEDATA}
 	@ echo "* Loading sample data"
 	@ psql -v ON_ERROR_STOP=1 -d ${TEMPLATE_WITH_DEV_SAMPLEDATA} -f $(SAMPLEDATA_DEV) > /dev/null
+	@ echo "* Rebuilding full text indexes"
+	@ ${PYTHON} fti.py --force -q -d ${TEMPLATE_WITH_DEV_SAMPLEDATA}
 	@ echo "* Resetting sequences"
 	@ ${PYTHON} reset_sequences.py -d ${TEMPLATE_WITH_DEV_SAMPLEDATA}
 	@ echo "* Disabling autovacuum"
