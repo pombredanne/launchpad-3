@@ -138,11 +138,56 @@ def process_in_batches(input, task, logger, goal_seconds=60,
     loop_tuner.run()
 
 
+class PlainTempFile:
+
+    # Filename suffix.
+    suffix = ''
+    # File path built on initialization.
+    path = None
+
+    def __init__(self, temp_root, filename):
+        self.filename = filename + self.suffix
+
+        fd, self.path = tempfile.mkstemp(
+            dir=temp_root, prefix='%s_' % filename)
+
+        self._fd = self._buildFile(fd)
+
+    def _buildFile(self, fd):
+        return os.fdopen(fd, 'wb')
+
+    def write(self, content):
+        self._fd.write(content)
+
+    def close(self):
+        self._fd.close()
+
+    def __del__(self):
+        """Remove temporary file if it was left behind. """
+        if self.path is not None and os.path.exists(self.path):
+            os.remove(self.path)
+
+
+class GzipTempFile(PlainTempFile):
+    suffix = '.gz'
+
+    def _buildFile(self, fd):
+        return gzip.GzipFile(fileobj=os.fdopen(fd, "wb"))
+
+
+class Bzip2TempFile(PlainTempFile):
+    suffix = '.bz2'
+
+    def _buildFile(self, fd):
+        os.close(fd)
+        return bz2.BZ2File(self.path, mode='wb')
+
+
 class RepositoryIndexFile:
     """Facilitates the publication of repository index files.
 
     It allows callsites to publish index files in different medias
-    (plain, gzip and bzip) transparently and atomically.
+    (plain, gzip and bzip2) transparently and atomically.
     """
 
     def __init__(self, root, temp_root, filename):
@@ -155,78 +200,42 @@ class RepositoryIndexFile:
         'temp_root'.
         """
         self.root = root
-        self.temp_root = temp_root
-        self.filename = filename
-
-        self.temp_plain_path = None
-        self.temp_gz_path = None
-        self.temp_bz2_path = None
-
-        assert os.path.exists(self.temp_root), (
+        assert os.path.exists(temp_root), (
             'Temporary root does not exist.')
 
-        fd_bz2, self.temp_bz2_path = tempfile.mkstemp(
-            dir=self.temp_root, prefix='%s-bz2_' % filename)
-        os.close(fd_bz2)
-        self.bz2_fd = bz2.BZ2File(self.temp_bz2_path, mode='wb')
-
-        fd_gz, self.temp_gz_path = tempfile.mkstemp(
-            dir=self.temp_root, prefix='%s-gz_' % filename)
-        self.gz_fd = gzip.GzipFile(fileobj=os.fdopen(fd_gz, "wb"))
-
-        fd, self.temp_plain_path = tempfile.mkstemp(
-            dir=self.temp_root, prefix='%s_' % filename)
-        self.plain_fd = os.fdopen(fd, "wb")
-
-    def __del__(self):
-        """Remove temporary files if they were left behind. """
-        file_paths = (
-            self.temp_plain_path, self.temp_gz_path, self.temp_bz2_path)
-        for file_path in file_paths:
-            if file_path is not None and os.path.exists(file_path):
-                os.remove(file_path)
+        self.index_files = (
+            PlainTempFile(temp_root, filename),
+            GzipTempFile(temp_root, filename),
+            Bzip2TempFile(temp_root, filename),
+            )
 
     def write(self, content):
         """Write contents to all target medias."""
-        self.plain_fd.write(content)
-        self.gz_fd.write(content)
-        self.bz2_fd.write(content)
+        for index_file in self.index_files:
+            index_file.write(content)
 
     def close(self):
-        """Close both temporary medias and atomically publish them.
+        """Close temporary medias and atomically publish them.
+
+        If necessary the given 'root' destination is created at this point.
 
         It also fixes the final files permissions making them readable and
         writable by their group and readable by others.
-
-        If necessary the given 'root' destination is created at this point.
         """
-        self.plain_fd.close()
-        self.gz_fd.close()
-        self.bz2_fd.close()
-
         if os.path.exists(self.root):
             assert os.access(
                 self.root, os.W_OK), "%s not writeable!" % self.root
         else:
             os.makedirs(self.root)
 
-        # XXX julian 2007-10-03
-        # This is kinda papering over a problem somewhere that causes the
-        # files to get created with permissions that don't allow group/world
-        # read access.  See https://bugs.launchpad.net/soyuz/+bug/148471
-        def makeFileGroupWriteableAndWorldReadable(file_path):
-            mode = stat.S_IMODE(os.stat(file_path).st_mode)
-            os.chmod(
-                file_path, mode | stat.S_IWGRP | stat.S_IRGRP | stat.S_IROTH)
-
-        root_plain_path = os.path.join(self.root, self.filename)
-        os.rename(self.temp_plain_path, root_plain_path)
-        makeFileGroupWriteableAndWorldReadable(root_plain_path)
-
-        root_gz_path = os.path.join(self.root, "%s.gz" % self.filename)
-        os.rename(self.temp_gz_path, root_gz_path)
-        makeFileGroupWriteableAndWorldReadable(root_gz_path)
-
-        root_bz2_path = os.path.join(self.root, "%s.bz2" % self.filename)
-        os.rename(self.temp_bz2_path, root_bz2_path)
-        makeFileGroupWriteableAndWorldReadable(root_bz2_path)
+        for index_file in self.index_files:
+            index_file.close()
+            root_path = os.path.join(self.root, index_file.filename)
+            os.rename(index_file.path, root_path)
+            # XXX julian 2007-10-03
+            # This is kinda papering over a problem somewhere that causes the
+            # files to get created with permissions that don't allow group/world
+            # read access.  See https://bugs.launchpad.net/soyuz/+bug/148471
+            mode = stat.S_IMODE(os.stat(root_path).st_mode)
+            os.chmod(root_path,
+                     mode | stat.S_IWGRP | stat.S_IRGRP | stat.S_IROTH)
