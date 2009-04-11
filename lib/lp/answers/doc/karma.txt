@@ -9,7 +9,7 @@ actions we consider to be a reasonable contribution.
 
     >>> from canonical.launchpad.interfaces import (
     ...     IPersonSet, IProductSet)
-    >>> from canonical.launchpad.database.karma import KarmaCategory
+    >>> from lp.registry.model.karma import KarmaCategory
     >>> answers_category = KarmaCategory.byName('answers')
     >>> answers_karma_actions = answers_category.karmaactions
     >>> sorted([action.title for action in answers_karma_actions])

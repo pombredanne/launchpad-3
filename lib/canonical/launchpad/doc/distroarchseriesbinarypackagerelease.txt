@@ -45,7 +45,7 @@ Assemble our DARBPRs for fun and profit:
 
 Retrieving the parent object, a DistroArchSeriesBinaryPackage.
 
-    >>> from canonical.launchpad.interfaces.distribution import (
+    >>> from lp.registry.interfaces.distribution import (
     ...     IDistributionSet)
 
     >>> warty_i386 = getUtility(IDistributionSet)['ubuntu']['warty']['i386']

@@ -10,9 +10,9 @@ import unittest
 from zope.component import getUtility
 
 from canonical.launchpad.ftests import login, ANONYMOUS
-from canonical.launchpad.interfaces.distribution import IDistributionSet
-from canonical.launchpad.interfaces.product import IProductSet
-from canonical.launchpad.interfaces.project import IProjectSet
+from lp.registry.interfaces.distribution import IDistributionSet
+from lp.registry.interfaces.product import IProductSet
+from lp.registry.interfaces.project import IProjectSet
 from canonical.launchpad.testing.pages import PageTestSuite
 from canonical.launchpad.testing.systemdocs import (
     LayeredDocFileSuite, setUp, tearDown)

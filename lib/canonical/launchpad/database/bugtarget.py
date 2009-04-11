@@ -22,8 +22,8 @@ from canonical.launchpad.searchbuilder import any, NULL, not_equals
 from canonical.launchpad.interfaces import (
     ILaunchBag, IMasterObject, IMasterStore)
 from canonical.launchpad.interfaces.bugtarget import IOfficialBugTag
-from canonical.launchpad.interfaces.distribution import IDistribution
-from canonical.launchpad.interfaces.product import IProduct
+from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.product import IProduct
 from canonical.launchpad.interfaces.bugtask import (
     BugTagsSearchCombinator, BugTaskImportance, BugTaskSearchParams,
     BugTaskStatus, RESOLVED_BUGTASK_STATUSES, UNRESOLVED_BUGTASK_STATUSES)

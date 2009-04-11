@@ -1506,6 +1506,11 @@ div#signing-key p {
     padding-left: 18px;
 }
 
+/* build status links should always be padded. */
+td.build_status a {
+    margin: 0 0 0 0.4em;
+}
+
 div#signing-key a {
     font-weight: bold;
 }
@@ -1612,6 +1617,26 @@ body.tab-branches #actions h2, body.tab-branches #actions h2:hover {
   vertical-align: middle;
   text-align: center;
   height: 2.5em;
+}
+
+#branch-pending-writes {
+  background: #FFF59C;
+  width: 40em;
+  padding-left: 1em;
+  padding-right: 1em;
+  padding-top: 0.2em;
+  padding-bottom: 0.2em;
+  -moz-border-radius: 5px;
+  -o-border-radius: 5px;
+  -webkit-border-radius: 5px;
+}
+
+#branch-pending-writes h3 {
+  color: black;
+  font-weight: bold;
+  text-align: center;
+  font-size: 160%;
+  margin-top: 0.5em;
 }
 
 .mergeproposal p {margin: 0.5em 0 }

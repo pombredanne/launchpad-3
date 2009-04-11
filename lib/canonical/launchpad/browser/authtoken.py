@@ -38,7 +38,7 @@ from canonical.launchpad.interfaces.emailaddress import (
     EmailAddressStatus, IEmailAddressSet)
 from canonical.launchpad.interfaces.launchpad import UnexpectedFormData
 from canonical.launchpad.interfaces.openidserver import IOpenIDRPConfigSet
-from canonical.launchpad.interfaces.person import (
+from lp.registry.interfaces.person import (
     INewPersonForm, IPerson, IPersonSet, PersonCreationRationale)
 from canonical.launchpad.interfaces.shipit import ShipItConstants
 

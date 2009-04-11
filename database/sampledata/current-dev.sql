@@ -2251,7 +2251,7 @@ INSERT INTO distroserieslanguage (id, distroseries, language, currentcount, upda
 INSERT INTO distroserieslanguage (id, distroseries, language, currentcount, updatescount, rosettacount, contributorcount, dateupdated, unreviewed_count) VALUES (10, 3, 454, 0, 0, 0, 0, '2007-01-15 17:58:41.406949', 0);
 INSERT INTO distroserieslanguage (id, distroseries, language, currentcount, updatescount, rosettacount, contributorcount, dateupdated, unreviewed_count) VALUES (11, 3, 148, 3, 0, 0, 1, '2007-01-15 17:58:41.095497', 0);
 INSERT INTO distroserieslanguage (id, distroseries, language, currentcount, updatescount, rosettacount, contributorcount, dateupdated, unreviewed_count) VALUES (12, 3, 302, 63, 0, 0, 1, '2007-01-15 17:58:41.269372', 0);
-INSERT INTO distroserieslanguage (id, distroseries, language, currentcount, updatescount, rosettacount, contributorcount, dateupdated, unreviewed_count) VALUES (13, 3, 387, 67, 1, 0, 7, '2007-01-15 17:58:41.335782', 0);
+INSERT INTO distroserieslanguage (id, distroseries, language, currentcount, updatescount, rosettacount, contributorcount, dateupdated, unreviewed_count) VALUES (13, 3, 387, 66, 1, 2, 7, '2007-01-15 17:58:41.335782', 1);
 INSERT INTO distroserieslanguage (id, distroseries, language, currentcount, updatescount, rosettacount, contributorcount, dateupdated, unreviewed_count) VALUES (14, 3, 427, 6, 0, 0, 1, '2007-01-15 17:58:41.373856', 0);
 INSERT INTO distroserieslanguage (id, distroseries, language, currentcount, updatescount, rosettacount, contributorcount, dateupdated, unreviewed_count) VALUES (15, 3, 129, 9, 0, 0, 1, '2007-01-15 17:58:41.028301', 0);
 INSERT INTO distroserieslanguage (id, distroseries, language, currentcount, updatescount, rosettacount, contributorcount, dateupdated, unreviewed_count) VALUES (16, 3, 502, 0, 0, 0, 0, '2005-10-24 17:37:35.182173', 0);
@@ -4974,7 +4974,7 @@ Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 Report-Msgid-Bugs-To: serrador@hispalinux.es
 Plural-Forms: nplurals=2; plural=(n != 1);
-', true, 50, 7, 1, 0, NULL, 31, NULL, 'es.po', '2005-06-06 08:59:54.235169', NULL, 1, '2005-06-06 20:05:03.244905');
+', true, 50, 6, 1, 1, NULL, 31, NULL, 'es.po', '2005-06-06 08:59:54.235169', NULL, 1, '2005-06-06 20:05:03.244905');
 INSERT INTO pofile (id, potemplate, language, description, topcomment, header, fuzzyheader, lasttranslator, currentcount, updatescount, rosettacount, lastparsed, owner, variant, path, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (13, 5, 132, NULL, '
     Translators, if you are not familiar with the PO format, gettext
     documentation is worth reading, especially sections dedicated to
@@ -5363,7 +5363,7 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 Plural-Forms: nplurals=2; plural=n != 1
-', true, 13, 0, 0, 1, NULL, 13, NULL, 'po/alsa-utils-es.po', '2007-04-07 10:14:36.267119', NULL, 0, '2007-04-07 10:14:36.267119');
+', true, 13, 0, 0, 0, NULL, 13, NULL, 'po/alsa-utils-es.po', '2007-04-07 10:14:36.267119', NULL, 0, '2007-04-07 10:14:36.267119');
 INSERT INTO pofile (id, potemplate, language, description, topcomment, header, fuzzyheader, lasttranslator, currentcount, updatescount, rosettacount, lastparsed, owner, variant, path, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (34, 5, 119, NULL, ' English translation for mozilla
  Copyright (c) 2007 Rosetta Contributors and Canonical Ltd 2007
  This file is distributed under the same license as the mozilla package.
@@ -9040,7 +9040,6 @@ INSERT INTO teammembership (id, person, team, status, date_joined, date_expires,
 INSERT INTO teammembership (id, person, team, status, date_joined, date_expires, last_changed_by, last_change_comment, proposed_by, acknowledged_by, reviewed_by, date_proposed, date_last_changed, date_acknowledged, date_reviewed, proponent_comment, acknowledger_comment, reviewer_comment, date_created) VALUES (80, 28, 243620, 3, '2008-05-14 10:29:25.097554', NULL, NULL, NULL, 28, NULL, 28, '2008-05-14 10:29:25.097554', NULL, NULL, '2008-05-14 10:29:25.097554', NULL, NULL, NULL, '2008-05-14 10:29:17.539543');
 INSERT INTO teammembership (id, person, team, status, date_joined, date_expires, last_changed_by, last_change_comment, proposed_by, acknowledged_by, reviewed_by, date_proposed, date_last_changed, date_acknowledged, date_reviewed, proponent_comment, acknowledger_comment, reviewer_comment, date_created) VALUES (81, 16, 243620, 2, '2008-05-14 12:07:14.22745', NULL, NULL, NULL, 16, NULL, 16, '2008-05-14 12:07:14.22745', NULL, NULL, '2008-05-14 12:07:14.22745', NULL, NULL, NULL, '2008-05-14 12:07:14.140921');
 INSERT INTO teammembership (id, person, team, status, date_joined, date_expires, last_changed_by, last_change_comment, proposed_by, acknowledged_by, reviewed_by, date_proposed, date_last_changed, date_acknowledged, date_reviewed, proponent_comment, acknowledger_comment, reviewer_comment, date_created) VALUES (83, 243622, 243621, 3, '2008-05-12 17:40:08.720578', NULL, NULL, NULL, 16, NULL, 16, '2008-05-12 17:40:08.720578', NULL, NULL, '2008-05-12 17:40:08.720578', NULL, NULL, NULL, '2008-05-12 17:40:08.637114');
-INSERT INTO teammembership (id, person, team, status, date_joined, date_expires, last_changed_by, last_change_comment, proposed_by, acknowledged_by, reviewed_by, date_proposed, date_last_changed, date_acknowledged, date_reviewed, proponent_comment, acknowledger_comment, reviewer_comment, date_created) VALUES (84, 243623, 243624, 3, '2008-06-27 14:49:38.698594', NULL, NULL, NULL, 243623, NULL, 243623, '2008-06-27 14:49:38.698594', NULL, NULL, '2008-06-27 14:49:38.698594', NULL, NULL, NULL, '2008-06-27 14:49:38.676264');
 INSERT INTO teammembership (id, person, team, status, date_joined, date_expires, last_changed_by, last_change_comment, proposed_by, acknowledged_by, reviewed_by, date_proposed, date_last_changed, date_acknowledged, date_reviewed, proponent_comment, acknowledger_comment, reviewer_comment, date_created) VALUES (85, 243627, 243628, 3, '2009-03-17 07:29:13.30381', NULL, NULL, NULL, 243627, NULL, 243627, '2009-03-17 07:29:13.30381', NULL, NULL, '2009-03-17 07:29:13.30381', NULL, NULL, NULL, '2009-03-17 07:29:13.259033');
 
 
@@ -9215,8 +9214,6 @@ INSERT INTO teamparticipation (id, team, person) VALUES (182, 243621, 243622);
 INSERT INTO teamparticipation (id, team, person) VALUES (183, 243622, 243622);
 INSERT INTO teamparticipation (id, team, person) VALUES (184, 70, 70);
 INSERT INTO teamparticipation (id, team, person) VALUES (185, 243623, 243623);
-INSERT INTO teamparticipation (id, team, person) VALUES (186, 243624, 243624);
-INSERT INTO teamparticipation (id, team, person) VALUES (187, 243624, 243623);
 INSERT INTO teamparticipation (id, team, person) VALUES (188, 32, 1);
 INSERT INTO teamparticipation (id, team, person) VALUES (189, 32, 11);
 INSERT INTO teamparticipation (id, team, person) VALUES (190, 32, 26);
@@ -10182,6 +10179,7 @@ INSERT INTO translationtemplateitem (id, potemplate, sequence, potmsgset) VALUES
 INSERT INTO translationtemplateitem (id, potemplate, sequence, potmsgset) VALUES (193, 10, 2, 199);
 INSERT INTO translationtemplateitem (id, potemplate, sequence, potmsgset) VALUES (194, 10, 3, 200);
 INSERT INTO translationtemplateitem (id, potemplate, sequence, potmsgset) VALUES (195, 10, 4, 201);
+INSERT INTO translationtemplateitem (id, potemplate, sequence, potmsgset) VALUES (196, 1, 0, 21);
 
 
 ALTER TABLE translationtemplateitem ENABLE TRIGGER ALL;

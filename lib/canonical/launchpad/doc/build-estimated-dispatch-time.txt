@@ -108,7 +108,7 @@ of estimated dispatch times.
 
 We first add a build for the 'pmount' source package to cprov's PPA.
 
-    >>> from canonical.launchpad.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
     >>> [pmount_source] = cprov.archive.getPublishedSources(
     ...     name='pmount', version='0.1-1')

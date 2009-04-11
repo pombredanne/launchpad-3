@@ -7,7 +7,7 @@ from zope.schema import (
 from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces.person import IPerson
+from lp.registry.interfaces.person import IPerson
 from canonical.launchpad.interfaces.pofile import IPOFile
 from canonical.launchpad.interfaces.potemplate import IPOTemplate
 from canonical.launchpad.interfaces.potmsgset import IPOTMsgSet
@@ -88,7 +88,11 @@ class ITranslationMessage(Interface):
 
     pofile = Object(
         title=_("The translation file from where this translation comes"),
-        readonly=True, required=True, schema=IPOFile)
+        readonly=False, required=False, schema=IPOFile)
+
+    browser_pofile = Object(
+        title=_("The translation file from where this translation comes"),
+        readonly=False, required=False, schema=IPOFile)
 
     potemplate = Object(
         title=_("The template this translation is in"),
@@ -199,13 +203,21 @@ class ITranslationMessage(Interface):
         title=_("Whether this message has any translation"),
         readonly=True, required=True)
 
-    is_hidden = Bool(
-        title=_("Whether this is an unused, hidden suggestion"),
-        readonly=True, required=True)
-
     plural_forms = Int(
         title=_("Number of plural form translations in this translation."),
         readonly=True, required=True)
+
+    def setPOFile(pofile):
+        """Set a POFile for use in views."""
+
+    def getOnePOFile():
+        """Get any POFile containing this translation."""
+
+    def isHidden(pofile):
+        """Whether this is an unused, hidden suggestion in `pofile`.
+
+        A suggestion is hidden if it's older than the current translation.
+        """
 
     # Used in a script to remove upstream translations.
     def destroySelf():

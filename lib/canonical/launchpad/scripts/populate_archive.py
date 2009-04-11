@@ -22,7 +22,7 @@ from canonical.launchpad.interfaces.component import IComponentSet
 from canonical.launchpad.interfaces.packagecloner import IPackageCloner
 from canonical.launchpad.interfaces.packagecopyrequest import (
     IPackageCopyRequestSet)
-from canonical.launchpad.interfaces.person import IPersonSet
+from lp.registry.interfaces.person import IPersonSet
 from canonical.launchpad.interfaces.processor import IProcessorFamilySet
 from canonical.launchpad.scripts.ftpmasterbase import (
     SoyuzScript, SoyuzScriptError)
@@ -199,8 +199,10 @@ class ArchivePopulator(SoyuzScript):
             # done before creating the copy archive.
             proc_families = loadProcessorFamilies(proc_family_names)
             copy_archive = getUtility(IArchiveSet).new(
-                ArchivePurpose.COPY, registrant, to_archive,
-                the_destination.distribution, reason)
+                ArchivePurpose.COPY, registrant,
+                name=to_archive,
+                distribution=the_destination.distribution,
+                description=reason)
             the_destination.archive = copy_archive
             # Associate the newly created copy archive with the processor
             # families specified by the user.

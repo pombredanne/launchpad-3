@@ -92,32 +92,32 @@ from canonical.database.sqlbase import SQLBase, quote_like, quote, sqlvalues
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces import IStore
 from canonical.launchpad.interfaces.archive import ArchivePurpose
-from canonical.launchpad.interfaces.branch import IBranch
-from canonical.launchpad.interfaces.branchcollection import IAllBranches
+from lp.code.interfaces.branch import IBranch
+from lp.code.interfaces.branchcollection import IAllBranches
 from canonical.launchpad.interfaces.bugtask import (
     IBugTask, IDistroBugTask, IDistroSeriesBugTask, IProductSeriesBugTask,
     IUpstreamBugTask)
 from canonical.launchpad.interfaces.bugtracker import BugTrackerType
-from canonical.launchpad.interfaces.distribution import IDistribution
-from canonical.launchpad.interfaces.distributionsourcepackage import (
+from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage)
-from canonical.launchpad.interfaces.distroseries import (
+from lp.registry.interfaces.distroseries import (
     DistroSeriesStatus, IDistroSeries)
 from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
 from canonical.launchpad.interfaces.language import ILanguage
 from canonical.launchpad.interfaces.languagepack import LanguagePackType
-from canonical.launchpad.interfaces.mailinglist import (
+from lp.registry.interfaces.mailinglist import (
     IMailingListSet, MailingListStatus)
-from canonical.launchpad.interfaces.milestone import (
+from lp.registry.interfaces.milestone import (
     IMilestoneSet, IProjectMilestone)
-from canonical.launchpad.interfaces.person import (
+from lp.registry.interfaces.person import (
     IPerson, IPersonSet, ITeam, PersonVisibility)
-from canonical.launchpad.interfaces.pillar import IPillarName
-from canonical.launchpad.interfaces.product import (
+from lp.registry.interfaces.pillar import IPillarName
+from lp.registry.interfaces.product import (
     IProduct, IProductSet, License)
-from canonical.launchpad.interfaces.productseries import IProductSeries
-from canonical.launchpad.interfaces.project import IProject
-from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
+from lp.registry.interfaces.productseries import IProductSeries
+from lp.registry.interfaces.project import IProject
+from lp.registry.interfaces.sourcepackage import ISourcePackage
 from canonical.launchpad.interfaces.specification import (
     ISpecification, SpecificationFilter)
 from canonical.launchpad.interfaces.account import AccountStatus
@@ -1227,6 +1227,7 @@ class MilestoneVocabulary(SQLObjectVocabularyBase):
             target = milestone_context.target
         elif (IProject.providedBy(milestone_context) or
               IProduct.providedBy(milestone_context) or
+              IProductSeries.providedBy(milestone_context) or
               IDistribution.providedBy(milestone_context) or
               IDistroSeries.providedBy(milestone_context)):
             target = milestone_context
@@ -1253,12 +1254,12 @@ class MilestoneVocabulary(SQLObjectVocabularyBase):
             if IProject.providedBy(target):
                 milestones = shortlist(
                     (milestone for product in target.products
-                     for milestone in product.all_milestones),
+                     for milestone in product.milestones),
                     longest_expected=40)
             elif IProductSeries.providedBy(target):
-                series_milestones = shortlist(target.all_milestones,
+                series_milestones = shortlist(target.milestones,
                                               longest_expected=40)
-                product_milestones = shortlist(target.product.all_milestones,
+                product_milestones = shortlist(target.product.milestones,
                                                longest_expected=40)
                 # Some milestones are associtaed with a product
                 # and a product series; these should appear only
@@ -1266,37 +1267,52 @@ class MilestoneVocabulary(SQLObjectVocabularyBase):
                 milestones = set(series_milestones + product_milestones)
             else:
                 milestones = shortlist(
-                    target.all_milestones, longest_expected=40)
+                    target.milestones, longest_expected=40)
         else:
             # We can't use context to reasonably filter the
-            # milestones, so let's just grab all of them.
-            milestones = shortlist(
-                getUtility(IMilestoneSet), longest_expected=40)
+            # milestones, so let's either just grab all of them,
+            # or let's return an empty vocabulary.
+            # Generally, returning all milestones is a bad idea: We
+            # have at present (2009-04-08) nearly 2000 active milestones,
+            # and nobody really wants to search through such a huge list
+            # on a web page. This problem is fixed for an IPerson
+            # context by browser.person.RelevantMilestonesMixin.
+            # getMilestoneWidgetValues() which creates a "sane" milestone
+            # set. We need to create the big vocabulary of all visible
+            # milestones nevertheless, in order to allow the validation
+            # of submitted milestone values.
+            #
+            # For other targets, like MaloneApplication, we return an empty
+            # vocabulary.
+            if IPerson.providedBy(self.context):
+                milestones = shortlist(
+                    getUtility(IMilestoneSet).getVisibleMilestones(),
+                    longest_expected=40)
+            else:
+                milestones = []
 
-        visible_milestones = [
-            milestone for milestone in milestones if milestone.active]
         if (IBugTask.providedBy(milestone_context) and
             milestone_context.milestone is not None and
-            milestone_context.milestone not in visible_milestones):
+            milestone_context.milestone not in milestones):
             # Even if we inactivate a milestone, a bugtask might still be
             # linked to it. Include such milestones in the vocabulary to
             # ensure that the +editstatus page doesn't break.
-            visible_milestones.append(milestone_context.milestone)
+            milestones.append(milestone_context.milestone)
 
         # Prefetch products and distributions for rendering
         # milestones: optimization to reduce the number of queries.
         product_ids = set(
             removeSecurityProxy(milestone).productID
-            for milestone in visible_milestones)
+            for milestone in milestones)
         distro_ids = set(
             removeSecurityProxy(milestone).distributionID
-            for milestone in visible_milestones)
+            for milestone in milestones)
         if len(product_ids) > 0:
             list(Product.select("id IN %s" % sqlvalues(product_ids)))
         if len(distro_ids) > 0:
             list(Distribution.select("id IN %s" % sqlvalues(distro_ids)))
 
-        return sorted(visible_milestones, key=attrgetter('displayname'))
+        return sorted(milestones, key=attrgetter('displayname'))
 
     def __iter__(self):
         for milestone in self.visible_milestones:

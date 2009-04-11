@@ -23,14 +23,22 @@
     <allow interface="canonical.launchpad.interfaces.archivesubscriber.IArchiveSubscriberSet"/>
   </securedutility>
 
+  <!-- PersonalArchiveSubscription -->
+  <class 
+    class="canonical.launchpad.browser.archivesubscription.PersonalArchiveSubscription">
+    <require
+      permission="launchpad.View"
+      interface="canonical.launchpad.interfaces.archivesubscriber.IPersonalArchiveSubscription"/>
+  </class>
+
   <browser:url
-    for="canonical.launchpad.interfaces.archivesubscriber.IArchiveSubscriptionForOwner"
+    for="canonical.launchpad.interfaces.archivesubscriber.IArchiveSubscriber"
     path_expression="string:+subscriptions/${subscriber/name}/+edit"
     attribute_to_parent="archive"
   />
 
   <browser:url
-    for="canonical.launchpad.interfaces.archivesubscriber.IArchiveSubscriptionForSubscriber"
+    for="canonical.launchpad.interfaces.archivesubscriber.IPersonalArchiveSubscription"
     path_expression="string:+archivesubscriptions/${archive/id}"
     attribute_to_parent="subscriber"
   />
@@ -38,7 +46,7 @@
   <browser:page
     name="+edit"
     facet="overview"
-    for="canonical.launchpad.interfaces.archivesubscriber.IArchiveSubscriptionForOwner"
+    for="canonical.launchpad.interfaces.archivesubscriber.IArchiveSubscriber"
     class="canonical.launchpad.browser.archivesubscription.ArchiveSubscriptionEditView"
     permission="launchpad.Edit"
     template="../templates/archive-subscriber-edit.pt"
@@ -47,14 +55,14 @@
   <browser:page
     name="+index"
     facet="overview"
-    for="canonical.launchpad.interfaces.archivesubscriber.IArchiveSubscriptionForSubscriber"
+    for="canonical.launchpad.interfaces.archivesubscriber.IPersonalArchiveSubscription"
     class="canonical.launchpad.browser.archivesubscription.PersonArchiveSubscriptionView"
     permission="launchpad.View"
     template="../templates/person-archive-subscription.pt"
     />
 
   <browser:defaultView
-    for="canonical.launchpad.interfaces.archivesubscriber.IArchiveSubscriber"
+    for="canonical.launchpad.interfaces.archivesubscriber.IPersonalArchiveSubscription"
     name="+index"
     />
 
@@ -63,17 +71,4 @@
       provides="canonical.launchpad.interfaces.archivesubscriber.IArchiveSubscriberUI"
       factory="canonical.launchpad.browser.archivesubscription.archive_subscription_ui_adapter"
       />
-
-  <adapter
-      for="canonical.launchpad.interfaces.archivesubscriber.IArchiveSubscriber"
-      provides="canonical.launchpad.interfaces.archivesubscriber.IArchiveSubscriptionForOwner"
-      factory="canonical.launchpad.browser.archivesubscription.archive_subscription_for_owner_adapter"
-      />
-
-  <adapter
-      for="canonical.launchpad.interfaces.archivesubscriber.IArchiveSubscriber"
-      provides="canonical.launchpad.interfaces.archivesubscriber.IArchiveSubscriptionForSubscriber"
-      factory="canonical.launchpad.browser.archivesubscription.archive_subscription_for_subscriber_adapter"
-      />
-
 </configure>

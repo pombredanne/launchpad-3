@@ -10,7 +10,7 @@ from zope.testing.doctest import DocTestSuite
 from canonical.launchpad.browser import specification
 from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.launchpad.webapp.servers import StepsToGo
-from canonical.lazr.testing.webservice import FakeRequest
+from lazr.restful.testing.webservice import FakeRequest
 from canonical.testing.layers import DatabaseFunctionalLayer
 
 

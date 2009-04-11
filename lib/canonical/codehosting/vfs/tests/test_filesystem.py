@@ -16,7 +16,7 @@ from bzrlib.urlutils import escape
 
 from canonical.codehosting.vfs.branchfs import LaunchpadServer
 from canonical.codehosting.inmemory import InMemoryFrontend, XMLRPCWrapper
-from canonical.launchpad.interfaces.branchtarget import IBranchTarget
+from lp.code.interfaces.branchtarget import IBranchTarget
 
 
 class TestFilesystem(TestCaseWithTransport):

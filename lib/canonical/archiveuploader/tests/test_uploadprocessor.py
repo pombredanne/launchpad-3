@@ -32,7 +32,7 @@ from canonical.launchpad.database.binarypackagerelease import (
 from canonical.launchpad.database.component import Component
 from canonical.launchpad.database.publishing import (
     SourcePackagePublishingHistory, BinaryPackagePublishingHistory)
-from canonical.launchpad.database.sourcepackagename import SourcePackageName
+from lp.registry.model.sourcepackagename import SourcePackageName
 from canonical.launchpad.database.sourcepackagerelease import (
     SourcePackageRelease)
 from canonical.launchpad.ftests import import_public_test_keys
@@ -43,8 +43,8 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.interfaces.archivepermission import (
     ArchivePermissionType)
 from canonical.launchpad.interfaces.component import IComponentSet
-from canonical.launchpad.interfaces.person import IPersonSet
-from canonical.launchpad.interfaces.sourcepackagename import (
+from lp.registry.interfaces.person import IPersonSet
+from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageNameSet)
 from canonical.launchpad.mail import stub
 from canonical.launchpad.testing.fakepackager import FakePackager
@@ -867,6 +867,21 @@ class TestUploadProcessor(TestUploadProcessorBase):
             version="1.0-1", exact_match=True)
         [queue_item] = queue_items
         self.assertEqual(queue_item.sourcepackagerelease.section.name, "misc")
+
+    def testSourceUploadToBuilddPath(self):
+        """Source uploads to buildd upload paths are not permitted."""
+        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+        primary = ubuntu.main_archive
+
+        uploadprocessor = self.setupBreezyAndGetUploadProcessor()
+        upload_dir = self.queueUpload("bar_1.0-1", "%s/ubuntu" % primary.id)
+        self.processUpload(uploadprocessor, upload_dir)
+
+        # Check that the sourceful upload to the copy archive is rejected.
+        contents = [
+            "Invalid upload path (1/ubuntu) for this policy (insecure)"
+            ]
+        self.assertEmail(contents=contents, recipients=[])
 
     # Uploads that are new should have the component overridden
     # such that:
