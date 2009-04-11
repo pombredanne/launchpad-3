@@ -11,6 +11,7 @@ __all__ = [
     ]
 
 
+import bz2
 import gc
 import gzip
 from operator import itemgetter
@@ -141,7 +142,7 @@ class RepositoryIndexFile:
     """Facilitates the publication of repository index files.
 
     It allows callsites to publish index files in different medias
-    (plain and gzip) transparently and atomically.
+    (plain, gzip and bzip) transparently and atomically.
     """
 
     def __init__(self, root, temp_root, filename):
@@ -159,9 +160,15 @@ class RepositoryIndexFile:
 
         self.temp_plain_path = None
         self.temp_gz_path = None
+        self.temp_bz2_path = None
 
         assert os.path.exists(self.temp_root), (
             'Temporary root does not exist.')
+
+        fd_bz2, self.temp_bz2_path = tempfile.mkstemp(
+            dir=self.temp_root, prefix='%s-bz2_' % filename)
+        os.close(fd_bz2)
+        self.bz2_fd = bz2.BZ2File(self.temp_bz2_path, mode='wb')
 
         fd_gz, self.temp_gz_path = tempfile.mkstemp(
             dir=self.temp_root, prefix='%s-gz_' % filename)
@@ -173,15 +180,17 @@ class RepositoryIndexFile:
 
     def __del__(self):
         """Remove temporary files if they were left behind. """
-        file_paths = (self.temp_plain_path, self.temp_gz_path)
+        file_paths = (
+            self.temp_plain_path, self.temp_gz_path, self.temp_bz2_path)
         for file_path in file_paths:
             if file_path is not None and os.path.exists(file_path):
                 os.remove(file_path)
 
     def write(self, content):
-        """Write contents to both target temporary media (plain and gzip)."""
+        """Write contents to all target medias."""
         self.plain_fd.write(content)
         self.gz_fd.write(content)
+        self.bz2_fd.write(content)
 
     def close(self):
         """Close both temporary medias and atomically publish them.
@@ -193,6 +202,7 @@ class RepositoryIndexFile:
         """
         self.plain_fd.close()
         self.gz_fd.close()
+        self.bz2_fd.close()
 
         if os.path.exists(self.root):
             assert os.access(
@@ -216,3 +226,7 @@ class RepositoryIndexFile:
         root_gz_path = os.path.join(self.root, "%s.gz" % self.filename)
         os.rename(self.temp_gz_path, root_gz_path)
         makeFileGroupWriteableAndWorldReadable(root_gz_path)
+
+        root_bz2_path = os.path.join(self.root, "%s.bz2" % self.filename)
+        os.rename(self.temp_bz2_path, root_bz2_path)
+        makeFileGroupWriteableAndWorldReadable(root_bz2_path)
