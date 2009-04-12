@@ -51,7 +51,6 @@ with the edit emails form:
       These addresses are confirmed as being yours:
         new-user@example.com
     Add a new address:
-    ...
 
 The user can add a new email address with this form:
 
@@ -77,7 +76,6 @@ belonging to the user:
       These addresses may also be yours:
         second-email@example.com
     Add a new address:
-    ...
 
 To validate the new address, the user will need to respond to the
 email confirmation:
@@ -145,3 +143,100 @@ Removing other addresses works though:
     >>> for msg in get_feedback_messages(browser.contents):
     ...     print msg
     The email address 'new-user@example.com' has been removed.
+
+
+== Attempting to Add Existing Addresses ==
+
+A user can't add an email address that has already been claimed.
+There are a number of different states the other address could be in:
+
+=== Attempting to Add Own Address ===
+
+An error will be produced if a user attempts to add an address they
+already own:
+
+    >>> browser.open('http://openid.launchpad.dev/+edit-emails')
+    >>> browser.getControl('Add a new address').value = (
+    ...     'second-email@example.com')
+    >>> browser.getControl('Add', index=1).click()
+    >>> print browser.url
+    http://openid.launchpad.dev/+edit-emails
+    >>> for msg in get_feedback_messages(browser.contents):
+    ...     print msg
+    There is 1 error.
+    The email address 'second-email@example.com' is already registered
+    as your email address. This can be either because you already
+    added this email address before or because our system detected it
+    as being yours. If it was detected by our system, it's probably
+    shown on this page and is waiting to be confirmed as yours.
+
+
+=== Attempting to Add an Address Owned By Another Account ===
+
+If a user tries to add an address belonging to another account, it
+will fail:
+
+    >>> import transaction
+    >>> from canonical.launchpad.ftests import login, logout, ANONYMOUS
+    >>> from canonical.launchpad.testing.factory import LaunchpadObjectFactory
+    >>> login(ANONYMOUS)
+    >>> factory = LaunchpadObjectFactory()
+    >>> account = factory.makeAccount(
+    ...     'Some Other User', 'some-other-user@example.com')
+    >>> logout()
+    >>> transaction.commit()
+
+    >>> browser.open('http://openid.launchpad.dev/+edit-emails')
+    >>> browser.getControl('Add a new address').value = (
+    ...     'some-other-user@example.com')
+    >>> browser.getControl('Add', index=1).click()
+    >>> print browser.url
+    http://openid.launchpad.dev/+edit-emails
+    >>> for msg in get_feedback_messages(browser.contents):
+    ...     print msg
+    There is 1 error.
+    The email address 'some-other-user@example.com' is registered to
+    another user.
+
+
+=== Attempting to Add an Address Owned By A Launchpad User ===
+
+If a user tries to add an address belonging to another user that is
+using Launchpad, they'll be directed to the Launchpad merge person
+page:
+
+    >>> browser.open('http://openid.launchpad.dev/+edit-emails')
+    >>> browser.getControl('Add a new address').value = (
+    ...     'test@canonical.com')
+    >>> browser.getControl('Add', index=1).click()
+    >>> print browser.url
+    http://openid.launchpad.dev/+edit-emails
+    >>> for msg in get_feedback_messages(browser.contents):
+    ...     print msg
+    There is 1 error.
+    The email address 'test@canonical.com' is already registered to
+    Sample Person. If you think that is a duplicated account, you can
+    merge it into your account.
+    >>> print browser.getLink('merge it').url
+    http://launchpad.dev/people/+requestmerge?field.dupeaccount=name12
+
+
+=== Attempting to Add an Address Owned By A Launchpad Team ===
+
+If a user tries to add an address belonging to a Launchpad team,
+they'll get a similar error:
+
+    >>> browser.open('http://openid.launchpad.dev/+edit-emails')
+    >>> browser.getControl('Add a new address').value = (
+    ...     'support@ubuntu.com')
+    >>> browser.getControl('Add', index=1).click()
+    >>> print browser.url
+    http://openid.launchpad.dev/+edit-emails
+    >>> for msg in get_feedback_messages(browser.contents):
+    ...     print msg
+    There is 1 error.
+    The email address 'support@ubuntu.com' is already registered to
+    Ubuntu Team. If you think that is a duplicated account, you can
+    merge it into your account.
+    >>> print browser.getLink('merge it').url
+    http://launchpad.dev/people/+requestmerge?field.dupeaccount=ubuntu-team

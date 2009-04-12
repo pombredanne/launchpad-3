@@ -365,12 +365,16 @@ class AccountEditEmailsView(LaunchpadFormView):
                     "detected it as being yours. If it was detected by our "
                     "system, it's probably shown on this page and is waiting "
                     "to be confirmed as yours." % newemail)
-            else:
-                owner = email.person
+            elif email.personID is not None:
+                # We can't look up the reference directly, since email
+                # addresses and person objects come from different
+                # stores.
+                owner = getUtility(IPersonSet).get(email.personID)
                 owner_name = urllib.quote(owner.name)
                 merge_url = (
                     '%s/+requestmerge?field.dupeaccount=%s'
-                    % (canonical_url(getUtility(IPersonSet)), owner_name))
+                    % (canonical_url(getUtility(IPersonSet),
+                                     rootsite='mainsite'), owner_name))
                 self.addError(
                     structured(
                         "The email address '%s' is already registered to "
@@ -379,6 +383,12 @@ class AccountEditEmailsView(LaunchpadFormView):
                         "</a> into your account.",
                         newemail, canonical_url(owner), owner.browsername,
                         merge_url))
+            else:
+                # There is no way to merge accounts that don't use
+                # Launchpad.
+                self.addError(
+                    "The email address '%s' is registered to another user."
+                    % (newemail,))
         return self.errors
 
     @action(_("Add"), name="add_email", validator=validate_action_add_email)
