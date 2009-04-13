@@ -868,6 +868,21 @@ class TestUploadProcessor(TestUploadProcessorBase):
         [queue_item] = queue_items
         self.assertEqual(queue_item.sourcepackagerelease.section.name, "misc")
 
+    def testSourceUploadToBuilddPath(self):
+        """Source uploads to buildd upload paths are not permitted."""
+        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+        primary = ubuntu.main_archive
+
+        uploadprocessor = self.setupBreezyAndGetUploadProcessor()
+        upload_dir = self.queueUpload("bar_1.0-1", "%s/ubuntu" % primary.id)
+        self.processUpload(uploadprocessor, upload_dir)
+
+        # Check that the sourceful upload to the copy archive is rejected.
+        contents = [
+            "Invalid upload path (1/ubuntu) for this policy (insecure)"
+            ]
+        self.assertEmail(contents=contents, recipients=[])
+
     # Uploads that are new should have the component overridden
     # such that:
     #   'contrib' -> 'multiverse'
