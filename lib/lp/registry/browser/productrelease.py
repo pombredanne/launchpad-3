@@ -28,7 +28,7 @@ from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
 from lp.registry.interfaces.productrelease import (
     IProductRelease, IProductReleaseFileAddForm)
 
-from canonical.lazr.interface import copy_field
+from lazr.restful.interface import copy_field
 from canonical.launchpad import _
 from lp.registry.browser.product import ProductDownloadFileMixin
 from canonical.launchpad.webapp import (
