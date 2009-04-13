@@ -2364,3 +2364,49 @@ anyone with 'edit' permissions on the archive.
 
     >>> login('celso.providelo@canonical.com')
     >>> new_ppa.displayname = 'My testing packages for jaunty'
+
+
+== Signing-key propagation ==
+
+Signing keys are, by default, shared between PPAs owned by the same
+user/team.
+
+Celso's default PPA currently has no signing-key.
+
+    >>> print cprov.archive.signing_key
+    None
+
+When a named-ppa is created there is no key to be shared, this case
+is worked out when generating new signing key. See archive-signing.txt
+for more information.
+
+    >>> no_key_ppa = getUtility(IArchiveSet).new(
+    ...     owner=cprov, purpose=ArchivePurpose.PPA,
+    ...     distribution=ubuntu, name='no-key')
+
+    >>> print no_key_ppa.signing_key
+    None
+
+We will select the only available IGPGKey from the sampledata.
+
+    >>> foo_bar = getUtility(IPersonSet).getByName('name16')
+    >>> [a_key] = foo_bar.gpgkeys
+    >>> print a_key.displayname
+    1024D/12345678
+
+And use it as the Celso's default PPA signing key.
+
+    >>> login('foo.bar@canonical.com')
+    >>> cprov.archive.signing_key = a_key
+    >>> login('celso.providelo@canonical.com')
+
+Now there is a signing-key to be propagated and a new named-ppa is
+already created accordingly.
+
+    >>> ppa_with_key = getUtility(IArchiveSet).new(
+    ...     owner=cprov, purpose=ArchivePurpose.PPA,
+    ...     distribution=ubuntu, name='has-key')
+
+    >>> ppa_with_key.signing_key == cprov.archive.signing_key
+    True
+
