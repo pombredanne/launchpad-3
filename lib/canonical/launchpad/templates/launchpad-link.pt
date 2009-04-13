@@ -8,6 +8,10 @@
 </strong><tal:link-enabled
     xmlns:tal="http://xml.zope.org/namespaces/tal"
     condition="context/enabled"><a
+    style=""
+    href=""
+    class=""
+    title=""
     tal:condition="context/linked"
     tal:attributes="href context/url;
                     title context/summary;
