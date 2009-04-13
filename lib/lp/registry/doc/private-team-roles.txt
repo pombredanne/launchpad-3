@@ -2,12 +2,17 @@
 
 During the transitional period between having only public and private
 membership team visibility until the end goal of having only public
-and private team visibilty, there will be a time when teams can have
-a visibility of all three:  public, private membership, and private.
+and private team visibilty, there will be a time when teams can have a
+visibility set to one of the three: public, private membership, and
+private.
 
 Public teams can perform any role in Launchpad.  Private membership
 teams are very restricted in the roles they may play.  Private teams
-can play more roles.
+can play more roles.  Private membership teams were originally
+implemented in this manner since it was the most expedient way to
+provide the required functionality and nothing more.  With the advent
+of truly private teams their utility is increased but with more
+safeguards to prevent potential data leakage.
 
 
 == Bug subscriptions ==
@@ -59,6 +64,7 @@ unsubscribe people.
     PrivatePersonLinkageError: Cannot link person
     (name=private-membership-team, visibility=PRIVATE_MEMBERSHIP) to
     <BugActivity...
+
 
 == Bug task assignee ==
 

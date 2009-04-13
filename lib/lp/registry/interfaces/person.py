@@ -101,43 +101,36 @@ class PrivatePersonLinkageError(ValueError):
 
 
 @block_implicit_flushes
+def validate_person(obj, attr, value, validate_func):
+    """Validate the person using the supplied function."""
+    if value is None:
+        return None
+    assert isinstance(value, (int, long)), (
+        "Expected int for Person foreign key reference, got %r" % type(value))
+
+    # XXX sinzui 2009-04-03 bug=354881: We do not want to import from the
+    # DB. This needs cleaning up.
+    from lp.registry.model.person import Person
+    person = Person.get(value)
+    if validate_func(person):
+        raise PrivatePersonLinkageError(
+            "Cannot link person (name=%s, visibility=%s) to %s (name=%s)"
+            % (person.name, person.visibility.name,
+               obj, getattr(obj, 'name', None)))
+    return value
+
+
 def validate_public_person(obj, attr, value):
     """Validate that the person identified by value is public."""
-    if value is None:
-        return None
-    assert isinstance(value, (int, long)), (
-        "Expected int for Person foreign key reference, got %r" % type(value))
+    def validate(person):
+        return not is_valid_public_person(person)
 
-    # XXX sinzui 2009-04-03 bug=354881: We do not want to import from the
-    # DB. This needs cleaning up.
-    from lp.registry.model.person import Person
-    person = Person.get(value)
-    if not is_valid_public_person(person):
-        raise PrivatePersonLinkageError(
-            "Cannot link person (name=%s, visibility=%s) to %s (name=%s)"
-            % (person.name, person.visibility.name,
-               obj, getattr(obj, 'name', None)))
-    return value
+    return validate_person(obj, attr, value, validate)
 
 
-@block_implicit_flushes
 def validate_person_not_private_membership(obj, attr, value):
     """Validate that the person (value) is not a private membership team."""
-    if value is None:
-        return None
-    assert isinstance(value, (int, long)), (
-        "Expected int for Person foreign key reference, got %r" % type(value))
-
-    # XXX sinzui 2009-04-03 bug=354881: We do not want to import from the
-    # DB. This needs cleaning up.
-    from lp.registry.model.person import Person
-    person = Person.get(value)
-    if is_private_membership(person):
-        raise PrivatePersonLinkageError(
-            "Cannot link person (name=%s, visibility=%s) to %s (name=%s)"
-            % (person.name, person.visibility.name,
-               obj, getattr(obj, 'name', None)))
-    return value
+    return validate_person(obj, attr, value, is_private_membership)
 
 
 class PersonalStanding(DBEnumeratedType):

@@ -123,6 +123,7 @@ Of course, teams without mailing lists still have an editable name field.
     >>> browser.getControl(name='field.name').value
     'guadamen'
 
+
 == Private teams may not be renamed ==
 
     >>> # Create the necessary teams.

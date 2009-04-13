@@ -1368,7 +1368,6 @@ who just guesses team names.
     ...
     LookupError: ...
 
-
 Searching for all teams, which requires monkey-patching the
 `allow_null_search` property, will also return the private team.
 

@@ -823,8 +823,8 @@ def is_private_membership(person):
     if not IPerson.providedBy(person):
         raise ConstraintNotSatisfied("Expected a person.")
     if person.visibility == PersonVisibility.PRIVATE_MEMBERSHIP:
-        return True
         # PRIVATE_MEMBERSHIP.
+        return True
     else:
         # PUBLIC or PRIVATE.
         return False

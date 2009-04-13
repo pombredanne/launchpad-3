@@ -142,10 +142,9 @@ class BasePersonVocabulary:
     def toTerm(self, obj):
         """Return the term for this object."""
         try:
-            term = SimpleTerm(obj, obj.name, obj.displayname)
+            return SimpleTerm(obj, obj.name, obj.displayname)
         except Unauthorized:
-            term = None
-        return term
+            return None
 
     def getTermByToken(self, token):
         """Return the term for the given token.
@@ -729,9 +728,7 @@ class ValidPersonOrTeamVocabulary(
                 Person,
                 And(
                     Person.id.is_in(inner_select),
-                    Or(# Public team.
-                        # Public team.
-                       Person.visibility == PersonVisibility.PUBLIC,
+                    Or(Person.visibility == PersonVisibility.PUBLIC,
                        # Private team the logged in user is a member.
                        self._private_team_query,
                        ),
