@@ -553,6 +553,12 @@ class BranchEditFormView(LaunchpadEditFormView):
     cancel_url = next_url
 
 
+class BranchEditWhiteboardView(BranchEditFormView):
+    """A view for editing the whiteboard only."""
+
+    field_names = ['whiteboard']
+
+
 class BranchMirrorStatusView(LaunchpadFormView):
     """This view displays the mirror status of a branch.
 
