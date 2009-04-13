@@ -18,7 +18,8 @@ from lp.registry.scripts.listteammembers import process_team, NoSuchTeamError
 class ListTeamMembersScript(LaunchpadScript):
 
     description = "Create a list of members of a team."
-    usage = "usage: %s [-e|--email-only|-f|--full-details] team-name [team-name-2] .. [team-name-n]" % sys.argv[0]
+    usage = "usage: %s [-e|--email-only|-f|--full-details|-s|--ssh-keys] " \
+        "team-name [team-name-2] .. [team-name-n]" % sys.argv[0]
     loglevel = logging.INFO
 
     def add_my_options(self):

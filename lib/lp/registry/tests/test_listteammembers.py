@@ -14,8 +14,7 @@ ubuntuteam_default = [
     u'name16, foo.bar@canonical.com',
     u'sabdfl, mark@hbd.com',
     u'stevea, steve.alexander@ubuntulinux.com',
-    u'warty-gnome, --none--',
-    ]
+    u'warty-gnome, --none--']
 
 ubuntuteam_email = [
     u'admin@canonical.com',
@@ -42,6 +41,8 @@ ubuntuteam_full = [
     u'ubuntu-team|4|kamion|colin.watson@ubuntulinux.com|Colin Watson|no',
     u'ubuntu-team|6|jdub|jeff.waugh@ubuntulinux.com|Jeff Waugh|no']
 
+ubuntuteam_sshkeys = [
+    u'sabdfl: ssh-dss AAAAB3NzaC1kc3MAAABBAL5VoWG5sy3CnLYeOw47L8m9A15hA/PzdX2u0B7c2Z1ktFPcEaEuKbLqKVSkXpYm7YwKj9y88A9Qm61CdvI0c50AAAAVAKGY0YON9dEFH3DzeVYHVEBGFGfVAAAAQCoe0RhBcefm4YiyQVwMAxwTlgySTk7FSk6GZ95EZ5Q8/OTdViTaalvGXaRIsBdaQamHEBB+Vek/VpnF1UGGm8YAAABAaCXDl0r1k93JhnMdF0ap4UJQ2/NnqCyoE8Xd5KdUWWwqwGdMzqB1NOeKN6ladIAXRggLc2E00UsnUXh3GE3Rgw== Private key in lib/canonical/codehosting/tests/id_dsa']
 
 class ListTeamMembersTestCase(unittest.TestCase):
     """Test listing team members."""
@@ -61,6 +62,11 @@ class ListTeamMembersTestCase(unittest.TestCase):
         """Test the full details option."""
         self.assertEqual(
             listteammembers.process_team('ubuntu-team', 'full'), ubuntuteam_full)
+
+    def test_listteammembers_sshkeys(self):
+        """Test the ssh keys option."""
+        self.assertEqual(
+            listteammembers.process_team('ubuntu-team', 'sshkeys'), ubuntuteam_sshkeys)
 
     def test_listteammembers_unknown_team(self):
         """Test unknown team."""
