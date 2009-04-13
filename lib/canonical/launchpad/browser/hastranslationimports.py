@@ -1,4 +1,4 @@
-# Copyright 2005-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2005-2009 Canonical Ltd.  All rights reserved.
 
 """Browser view for IHasTranslationImports."""
 
@@ -23,7 +23,8 @@ from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
     IDistribution, IHasTranslationImports, IPillarNameSet,
-    ITranslationImportQueue, RosettaImportStatus, UnexpectedFormData)
+    ITranslationImportQueue, RosettaImportStatus,
+    SpecialTranslationImportTargetFilter, UnexpectedFormData)
 from canonical.launchpad.webapp import (
     LaunchpadFormView, action, custom_widget, safe_action)
 from canonical.launchpad.webapp.authorization import check_permission
@@ -213,17 +214,17 @@ class HasTranslationImportsView(LaunchpadFormView):
             # special permissions to change status.
             if (new_status_name == RosettaImportStatus.DELETED.name and
                 check_permission('launchpad.Edit', entry)):
-                entry.status = RosettaImportStatus.DELETED
+                entry.setStatus(RosettaImportStatus.DELETED)
             elif (new_status_name == RosettaImportStatus.BLOCKED.name and
                   check_permission('launchpad.Admin', entry)):
-                entry.status = RosettaImportStatus.BLOCKED
+                entry.setStatus(RosettaImportStatus.BLOCKED)
             elif (new_status_name == RosettaImportStatus.APPROVED.name and
                   check_permission('launchpad.Admin', entry) and
                   entry.import_into is not None):
-                entry.status = RosettaImportStatus.APPROVED
+                entry.setStatus(RosettaImportStatus.APPROVED)
             elif (new_status_name == RosettaImportStatus.NEEDS_REVIEW.name and
                   check_permission('launchpad.Admin', entry)):
-                entry.status = RosettaImportStatus.NEEDS_REVIEW
+                entry.setStatus(RosettaImportStatus.NEEDS_REVIEW)
             else:
                 # The user was not the importer or we are trying to set a
                 # status that must not be set from this form. That means that
@@ -255,6 +256,18 @@ class HasTranslationImportsView(LaunchpadFormView):
             pillar_name_set = getUtility(IPillarNameSet)
             if target == 'all':
                 target = None
+            elif target.startswith('[') and target.endswith(']'):
+                # This is a SpecialTranslationImportTargetFilter.
+                target_code = target[1:-1]
+                target = None
+                for enum_item in SpecialTranslationImportTargetFilter.items:
+                    if enum_item.name == target_code:
+                        target = enum_item
+
+                if target is None:
+                    raise UnexpectedFormData(
+                        "Got a bad special target option: %s" % target)
+
             elif '/' in target:
                 # It's a distroseries, for them we have
                 # 'distribution.name/distroseries.name' to identify it.

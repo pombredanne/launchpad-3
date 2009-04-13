@@ -30,6 +30,8 @@ from canonical.launchpad.browser.potemplate import POTemplateFacets
 from canonical.launchpad.interfaces import (
     IPersonSet, IPOFile, ITranslationImporter, ITranslationImportQueue,
     UnexpectedFormData, NotFoundError)
+from canonical.launchpad.interfaces.translationsperson import (
+    ITranslationsPerson)
 from canonical.launchpad.webapp import (
     canonical_url, enabled_with_permission, LaunchpadView,
     Link, Navigation, NavigationMenu)
@@ -366,8 +368,9 @@ class POFileTranslateView(BaseTranslationView):
 
     def initialize(self):
         self.pofile = self.context
+        translations_person = ITranslationsPerson(self.user, None)
         if (self.user is not None and
-            self.user.translations_relicensing_agreement is None):
+            translations_person.translations_relicensing_agreement is None):
             url = str(self.request.URL).decode('US-ASCII', 'replace')
             if self.request.get('QUERY_STRING', None):
                 url = url + '?' + self.request['QUERY_STRING']
@@ -401,9 +404,6 @@ class POFileTranslateView(BaseTranslationView):
 
         :return: TranslationGroup or None if not found.
         """
-        # XXX 2009-02-20 Danilo (bug #332044): potemplate.translationgroups
-        # provides a list of translation groups even if it can have at
-        # most one.
         translation_groups = self.context.potemplate.translationgroups
         if translation_groups is not None and len(translation_groups) > 0:
             group = translation_groups[0]

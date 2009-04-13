@@ -56,7 +56,7 @@ Once successfully logged in, they will see the details of their account.
     # currently it does.
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces.account import IAccountSet
-    >>> from canonical.launchpad.interfaces.person import IPerson
+    >>> from lp.registry.interfaces.person import IPerson
     >>> login(ANONYMOUS)
     >>> print IPerson(getUtility(IAccountSet).getByEmail(
     ...     'new-user@example.com'), None)

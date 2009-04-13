@@ -46,7 +46,7 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.nl_search import nl_phrase_search
 from canonical.database.enumcol import EnumCol
 
-from canonical.launchpad.database.pillar import pillar_sort_key
+from lp.registry.model.pillar import pillar_sort_key
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces.bugnomination import BugNominationStatus
 from canonical.launchpad.interfaces.bugtask import (
@@ -56,25 +56,25 @@ from canonical.launchpad.interfaces.bugtask import (
     INullBugTask, IProductSeriesBugTask, IUpstreamBugTask, IllegalTarget,
     RESOLVED_BUGTASK_STATUSES, UNRESOLVED_BUGTASK_STATUSES,
     UserCannotEditBugTaskImportance, UserCannotEditBugTaskStatus)
-from canonical.launchpad.interfaces.distribution import (
+from lp.registry.interfaces.distribution import (
     IDistribution, IDistributionSet)
-from canonical.launchpad.interfaces.distributionsourcepackage import (
+from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage)
-from canonical.launchpad.interfaces.distroseries import (
+from lp.registry.interfaces.distroseries import (
     IDistroSeries, IDistroSeriesSet)
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.interfaces.milestone import IProjectMilestone
-from canonical.launchpad.interfaces.product import IProduct, IProductSet
-from canonical.launchpad.interfaces.productseries import (
+from lp.registry.interfaces.milestone import IProjectMilestone
+from lp.registry.interfaces.product import IProduct, IProductSet
+from lp.registry.interfaces.productseries import (
     IProductSeries, IProductSeriesSet)
-from canonical.launchpad.interfaces.project import IProject
+from lp.registry.interfaces.project import IProject
 from canonical.launchpad.interfaces.publishing import PackagePublishingStatus
-from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
-from canonical.launchpad.interfaces.sourcepackagename import (
+from lp.registry.interfaces.sourcepackage import ISourcePackage
+from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageNameSet)
 from canonical.launchpad.searchbuilder import (
     all, any, greater_than, NULL, not_equals)
-from canonical.launchpad.validators.person import validate_public_person
+from lp.registry.interfaces.person import validate_public_person
 from canonical.launchpad.webapp.interfaces import (
         IStoreSelector, DEFAULT_FLAVOR, MAIN_STORE, NotFoundError)
 
@@ -134,19 +134,18 @@ def bugtask_sort_key(bugtask):
 class BugTaskDelta:
     """See `IBugTaskDelta`."""
     implements(IBugTaskDelta)
-    def __init__(self, bugtask, product=None,
-                 sourcepackagename=None, status=None, importance=None,
+    def __init__(self, bugtask, status=None, importance=None,
                  assignee=None, milestone=None, statusexplanation=None,
-                 bugwatch=None):
+                 bugwatch=None, target=None):
         self.bugtask = bugtask
-        self.product = product
-        self.sourcepackagename = sourcepackagename
-        self.status = status
-        self.importance = importance
+
         self.assignee = assignee
-        self.target = milestone
-        self.statusexplanation = statusexplanation
         self.bugwatch = bugwatch
+        self.importance = importance
+        self.milestone = milestone
+        self.status = status
+        self.statusexplanation = statusexplanation
+        self.target = target
 
 
 class BugTaskMixin:
@@ -850,8 +849,7 @@ class BugTask(SQLBase, BugTaskMixin):
             # No change to the assignee, so nothing to do.
             return
 
-        UTC = pytz.timezone('UTC')
-        now = datetime.datetime.now(UTC)
+        now = datetime.datetime.now(pytz.UTC)
         if self.assignee and not assignee:
             # The assignee is being cleared, so clear the date_assigned
             # value.
@@ -988,24 +986,20 @@ class BugTask(SQLBase, BugTaskMixin):
 
     def getDelta(self, old_task):
         """See `IBugTask`."""
-        changes = {}
-        if ((IUpstreamBugTask.providedBy(old_task) and
-             IUpstreamBugTask.providedBy(self)) or
-            (IProductSeriesBugTask.providedBy(old_task) and
-             IProductSeriesBugTask.providedBy(self))):
-            if old_task.product != self.product:
-                changes["product"] = {}
-                changes["product"]["old"] = old_task.product
-                changes["product"]["new"] = self.product
-        elif ((IDistroBugTask.providedBy(old_task) and
-               IDistroBugTask.providedBy(self)) or
-              (IDistroSeriesBugTask.providedBy(old_task) and
-               IDistroSeriesBugTask.providedBy(self))):
-            if old_task.sourcepackagename != self.sourcepackagename:
-                old = old_task
-                changes["sourcepackagename"] = {}
-                changes["sourcepackagename"]["new"] = self.sourcepackagename
-                changes["sourcepackagename"]["old"] = old.sourcepackagename
+        valid_interfaces = [
+            IUpstreamBugTask,
+            IProductSeriesBugTask,
+            IDistroBugTask,
+            IDistroSeriesBugTask,
+            ]
+
+        # This tries to find a matching pair of bug tasks, i.e. where
+        # both provide IUpstreamBugTask, or both IDistroBugTask.
+        # Failing that, it drops off the bottom of the loop and raises
+        # the TypeError.
+        for interface in valid_interfaces:
+            if interface.providedBy(self) and interface.providedBy(old_task):
+                break
         else:
             raise TypeError(
                 "Can't calculate delta on bug tasks of incompatible types: "
@@ -1013,7 +1007,8 @@ class BugTask(SQLBase, BugTaskMixin):
 
         # calculate the differences in the fields that both types of tasks
         # have in common
-        for field_name in ("status", "importance",
+        changes = {}
+        for field_name in ("target", "status", "importance",
                            "assignee", "bugwatch", "milestone"):
             old_val = getattr(old_task, field_name)
             new_val = getattr(self, field_name)
@@ -1765,7 +1760,7 @@ class BugTaskSet:
             return []
         else:
             # Import here because of cyclic references.
-            from canonical.launchpad.database.milestone import (
+            from lp.registry.model.milestone import (
                 Milestone, milestone_sort_key)
             milestones = search_results._store.find(
                 Milestone, In(Milestone.id, milestone_ids))

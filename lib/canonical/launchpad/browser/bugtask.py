@@ -41,8 +41,9 @@ from datetime import datetime, timedelta
 import cgi
 import pytz
 import re
+from simplejson import dumps
 import urllib
-from operator import attrgetter
+from operator import attrgetter, itemgetter
 
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser.itemswidgets import RadioWidget
@@ -72,6 +73,7 @@ from canonical.database.sqlbase import cursor
 from canonical.launchpad import _
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.fields import PublicPersonChoice
+from canonical.launchpad.mailnotification import get_unified_diff
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.vocabularies.dbobjects import MilestoneVocabulary
 from canonical.launchpad.webapp import (
@@ -81,6 +83,7 @@ from canonical.launchpad.webapp import (
 from lazr.uri import URI
 from canonical.launchpad.interfaces.bugattachment import (
     BugAttachmentType, IBugAttachmentSet)
+from canonical.launchpad.interfaces.bugactivity import IBugActivity
 from canonical.launchpad.interfaces.bugnomination import (
     BugNominationStatus, IBugNominationSet)
 from canonical.launchpad.interfaces.bug import IBug, IBugSet
@@ -95,16 +98,16 @@ from canonical.launchpad.interfaces.bugtask import (
     UNRESOLVED_BUGTASK_STATUSES)
 from canonical.launchpad.interfaces.bugtracker import BugTrackerType
 from canonical.launchpad.interfaces.cve import ICveSet
-from canonical.launchpad.interfaces.distribution import IDistribution
-from canonical.launchpad.interfaces.distributionsourcepackage import (
+from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage)
-from canonical.launchpad.interfaces.distroseries import IDistroSeries
+from lp.registry.interfaces.distroseries import IDistroSeries
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.interfaces.person import IPerson, IPersonSet
-from canonical.launchpad.interfaces.product import IProduct
-from canonical.launchpad.interfaces.productseries import IProductSeries
-from canonical.launchpad.interfaces.project import IProject
-from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
+from lp.registry.interfaces.person import IPerson, IPersonSet
+from lp.registry.interfaces.product import IProduct
+from lp.registry.interfaces.productseries import IProductSeries
+from lp.registry.interfaces.project import IProject
+from lp.registry.interfaces.sourcepackage import ISourcePackage
 from canonical.launchpad.interfaces.validation import (
     valid_upstreamtask, validate_distrotask)
 from canonical.launchpad.webapp.interfaces import (
@@ -118,7 +121,7 @@ from canonical.launchpad.browser.bug import BugContextMenu, BugTextView
 from canonical.launchpad.browser.bugcomment import build_comments_from_chunks
 from canonical.launchpad.browser.feeds import (
     BugTargetLatestBugsFeedLink, FeedsMixin, PersonLatestBugsFeedLink)
-from canonical.launchpad.browser.mentoringoffer import CanBeMentoredView
+from lp.registry.browser.mentoringoffer import CanBeMentoredView
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 
 from canonical.launchpad.webapp.authorization import check_permission
@@ -128,7 +131,7 @@ from canonical.launchpad.webapp.tales import PersonFormatterAPI
 from canonical.launchpad.webapp.vocabulary import vocab_factory
 
 from canonical.lazr.interfaces import IObjectPrivacy
-from canonical.lazr.interfaces.rest import IJSONRequestCache
+from lazr.restful.interfaces import IJSONRequestCache
 
 from canonical.widgets.bug import BugTagsWidget
 from canonical.widgets.bugtask import (
@@ -585,7 +588,7 @@ class BugTaskView(LaunchpadView, CanBeMentoredView, FeedsMixin):
         # will be prevented from calling methods on the main bug after
         # they unsubscribe from it!
         unsubed_dupes = self.context.bug.unsubscribeFromDupes(self.user)
-        self.context.bug.unsubscribe(self.user)
+        self.context.bug.unsubscribe(self.user, self.user)
 
         self.request.response.addNotification(
             structured(
@@ -609,7 +612,7 @@ class BugTaskView(LaunchpadView, CanBeMentoredView, FeedsMixin):
 
         # We'll also unsubscribe the other user from dupes of this bug,
         # otherwise they'll keep getting this bug's mail.
-        self.context.bug.unsubscribe(user)
+        self.context.bug.unsubscribe(user, self.user)
         unsubed_dupes = self.context.bug.unsubscribeFromDupes(user)
         self.request.response.addNotification(
             structured(
@@ -696,15 +699,12 @@ class BugTaskView(LaunchpadView, CanBeMentoredView, FeedsMixin):
             # context.
             if IUpstreamBugTask.providedBy(fake_task):
                 # Create a real upstream task in this context.
-                real_task = getUtility(IBugTaskSet).createTask(
-                    bug=fake_task.bug, owner=getUtility(ILaunchBag).user,
-                    product=fake_task.product)
+                real_task = fake_task.bug.addTask(
+                    getUtility(ILaunchBag).user, fake_task.product)
             elif IDistroBugTask.providedBy(fake_task):
                 # Create a real distro bug task in this context.
-                real_task = getUtility(IBugTaskSet).createTask(
-                    bug=fake_task.bug, owner=getUtility(ILaunchBag).user,
-                    distribution=fake_task.distribution,
-                    sourcepackagename=fake_task.sourcepackagename)
+                real_task = fake_task.bug.addTask(
+                    getUtility(ILaunchBag).user, fake_task.target)
             elif IDistroSeriesBugTask.providedBy(fake_task):
                 self._nominateBug(fake_task.distroseries)
                 return
@@ -767,6 +767,102 @@ class BugTaskView(LaunchpadView, CanBeMentoredView, FeedsMixin):
         comments[0].text_for_display = ''
         assert len(comments) > 0, "A bug should have at least one comment."
         return comments
+
+    @cachedproperty
+    def activity_by_date(self):
+        """Return a list of `BugActivityItem`s for the current bug.
+
+        The `BugActivityItem`s will be grouped by the date on which they
+        occurred.
+        """
+        activity_by_date = {}
+        bugtask_change_re = (
+            '[a-z0-9][a-z0-9\+\.\-]+( \([A-Za-z0-9\s]+\))?: '
+            '(assignee|importance|milestone|status)')
+        interesting_changes = [
+             'description',
+             'security vulnerability',
+             'summary',
+             'tags',
+             'visibility',
+             bugtask_change_re,
+             ]
+
+        # Turn the interesting_changes list into a regex so that we can
+        # do complex matches.
+        interesting_changes_expression = "|".join(interesting_changes)
+        interesting_changes_regex = re.compile(
+            "^(%s)$" % interesting_changes_expression)
+
+        for activity in self.context.bug.activity:
+            # If we're not interested in the change, skip it.
+            if interesting_changes_regex.match(activity.whatchanged) is None:
+                continue
+
+            activity = BugActivityItem(activity)
+            if activity.datechanged not in activity_by_date:
+                activity_by_date[activity.datechanged] = {
+                    activity.target: [activity]}
+            else:
+                activity_dict = activity_by_date[activity.datechanged]
+                if activity.target in activity_dict:
+                    activity_dict[activity.target].append(activity)
+                else:
+                    activity_dict[activity.target] = [activity]
+
+        # Sort all the lists to ensure that changes are written out in
+        # alphabetical order.
+        for date, activity_by_target in activity_by_date.items():
+            # We convert each {target: activty_list} mapping into a list
+            # of {target, activity_list} dicts for the sake of making
+            # them usable in templates.
+            activity_by_date[date] = [{
+                'target': target,
+                'activity': sorted(
+                    activity_list, key=attrgetter('attribute')),
+                }
+                for target, activity_list in activity_by_target.items()]
+
+        return activity_by_date
+
+    @cachedproperty
+    def activity_and_comments(self):
+        # Add the activity to the activity_and_comments list. For each
+        # activity dict we use the person responsible for the first
+        # activity item as the owner of the list of activities.
+        activity_by_date = [
+            {'activity': activity_dict, 'date': date,
+             'person': activity_dict[0]['activity'][0].person}
+            for date, activity_dict in self.activity_by_date.items()]
+
+        activity_and_comments = []
+        for comment in self.visible_comments_for_display:
+            # Check to see if there are any activities for this
+            # comment's datecreated.
+            activity_for_comment = []
+
+            # Loop over a copy of activity_by_date to ensure that we
+            # don't break the looping by removing things from the list
+            # over which we're iterating.
+            for activity_dict in list(activity_by_date):
+                if activity_dict['date'] == comment.datecreated:
+                    activity_for_comment.extend(activity_dict['activity'])
+
+                    # Remove the activity from the list of activity by date;
+                    # we don't need it there any more.
+                    activity_by_date.remove(activity_dict)
+
+            activity_for_comment.sort(key=itemgetter('target'))
+            comment.activity = activity_for_comment
+
+            activity_and_comments.append({
+                'comment': comment,
+                'date': comment.datecreated,
+                })
+
+        activity_and_comments.extend(activity_by_date)
+        activity_and_comments.sort(key=itemgetter('date'))
+        return activity_and_comments
 
     @cachedproperty
     def visible_comments(self):
@@ -849,6 +945,34 @@ class BugTaskView(LaunchpadView, CanBeMentoredView, FeedsMixin):
                 "days if no further activity occurs.")
 
         return message % days_to_expiration
+
+    @property
+    def official_tags(self):
+        """The list of official tags for this bug."""
+        target_official_tags = self.context.target.official_bug_tags
+        return [tag for tag in self.context.bug.tags
+                if tag in target_official_tags]
+
+    @property
+    def unofficial_tags(self):
+        """The list of unofficial tags for this bug."""
+        target_official_tags = self.context.target.official_bug_tags
+        return [tag for tag in self.context.bug.tags
+                if tag not in target_official_tags]
+
+    @property
+    def available_official_tags_js(self):
+        """Return the list of available official tags for the bug as JSON.
+
+        The list comprises of the official tags for all targets for which the
+        bug has a task. It is returned as Javascript snippet, to be ambedded in
+        the bug page.
+        """
+        available_tags = set()
+        for task in self.context.bug.bugtasks:
+            available_tags.update(task.target.official_bug_tags)
+        return 'var available_official_tags = %s;' % dumps(list(sorted(
+            available_tags)))
 
 
 class BugTaskPortletView:
@@ -3063,3 +3187,133 @@ class BugTaskExpirableListingView(LaunchpadView):
         return BugListingBatchNavigator(
             bugtasks, self.request, columns_to_show=self.columns_to_show,
             size=config.malone.buglist_batch_size)
+
+
+class BugActivityItem:
+    """A decorated BugActivity."""
+    delegates(IBugActivity, 'activity')
+
+    # The regular expression we use for matching bug task changes.
+    bugtask_change_re = re.compile(
+        '(?P<target>[a-z0-9][a-z0-9\+\.\-]+( \([A-Za-z0-9\s]+\))?): '
+        '(?P<attribute>assignee|importance|milestone|status)')
+
+    def __init__(self, activity):
+        self.activity = activity
+
+    @property
+    def target(self):
+        """Return the target of this BugActivityItem.
+
+        `target` is determined based on the `whatchanged` string of the
+        original BugAcitivity.
+
+        :return: The target name of the item if `whatchanged` is of the
+        form <target_name>: <attribute>. Otherwise, return None.
+        """
+        match = self.bugtask_change_re.match(self.whatchanged)
+        if match is None:
+            return None
+        else:
+            return match.groupdict()['target']
+
+    @property
+    def attribute(self):
+        """Return the attribute changed in this BugActivityItem.
+
+        `attribute` is determined based on the `whatchanged` string of the
+        original BugAcitivity.
+
+        :return: The attribute name of the item if `whatchanged` is of
+            the form <target_name>: <attribute>. Otherwise, return the
+            original `whatchanged` string.
+        """
+        match = self.bugtask_change_re.match(self.whatchanged)
+        if match is None:
+            return self.whatchanged
+        else:
+            return match.groupdict()['attribute']
+
+    @property
+    def change_summary(self):
+        """Return a formatted summary of the change."""
+        return self.attribute
+
+    @property
+    def _formatted_tags_change(self):
+        """Return a tags change as lists of added and removed tags."""
+        assert self.whatchanged == 'tags', (
+            "Can't return a formatted tags change for a change in %s."
+            % self.whatchanged)
+
+        # Turn the strings of newvalue and oldvalue into sets so we
+        # can work out the differences.
+        if self.newvalue != '':
+            new_tags = set(re.split('\s+', self.newvalue))
+        else:
+            new_tags = set()
+
+        if self.oldvalue != '':
+            old_tags = set(re.split('\s+', self.oldvalue))
+        else:
+            old_tags = set()
+
+        added_tags = sorted(new_tags.difference(old_tags))
+        removed_tags = sorted(old_tags.difference(new_tags))
+
+        return_string = ''
+        if len(added_tags) > 0:
+            return_string = "added: %s\n" % ' '.join(added_tags)
+        if len(removed_tags) > 0:
+            return_string = (
+                return_string + "removed: %s" % ' '.join(removed_tags))
+
+        # Trim any leading or trailing \ns and then convert the to
+        # <br />s so they're displayed correctly.
+        return return_string.strip('\n')
+
+    @property
+    def change_details(self):
+        """Return a detailed description of the change."""
+        # Our default return dict. We may mutate this depending on
+        # what's changed.
+        return_dict = {
+            'old_value': self.oldvalue,
+            'new_value': self.newvalue,
+            }
+        if self.attribute == 'summary':
+            # We display summary changes as a unified diff, replacing
+            # \ns with <br />s so that the lines are separated properly.
+            diff = cgi.escape(
+                get_unified_diff(self.oldvalue, self.newvalue, 72), True)
+            return diff.replace("\n", "<br />")
+
+        elif self.attribute == 'description':
+            # Description changes can be quite long, so we just return
+            # 'updated' rather than returning the whole new description
+            # or a diff.
+            return 'updated'
+
+        elif self.attribute == 'tags':
+            # We special-case tags because we can work out what's been
+            # added and what's been removed.
+            return self._formatted_tags_change.replace('\n', '<br />')
+
+        elif self.attribute == 'assignee':
+            for key in return_dict:
+                if return_dict[key] is None:
+                    return_dict[key] = 'nobody'
+
+        elif self.attribute == 'milestone':
+            for key in return_dict:
+                if return_dict[key] is None:
+                    return_dict[key] = 'none'
+
+        else:
+            # Our default state is to just return oldvalue and newvalue.
+            # Since we don't necessarily know what they are, we escape
+            # them.
+            for key in return_dict:
+                return_dict[key] = cgi.escape(return_dict[key])
+
+        return "%(old_value)s &#8594; %(new_value)s" % return_dict

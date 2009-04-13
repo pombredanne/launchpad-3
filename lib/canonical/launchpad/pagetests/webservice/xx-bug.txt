@@ -8,7 +8,7 @@ lot of state and many relationships to other objects.
 
 At the top level we provide a collection of bugs.
 
-  >>> from canonical.lazr.testing.webservice import (
+  >>> from lazr.restful.testing.webservice import (
   ...     pprint_collection, pprint_entry)
   >>> from operator import itemgetter
   >>> bugs = webservice.get("/bugs").jsonBody()
@@ -38,6 +38,7 @@ At the top level we provide a collection of bugs.
   subscriptions_collection_link: u'http://.../bugs/11/subscriptions'
   tags: []
   title: u'Make Jokosher use autoaudiosink'
+  users_affected_collection_link: u'http://.../bugs/11/users_affected'
   users_affected_count: 0
   users_unaffected_count: 0
   who_made_private_link: None
@@ -131,6 +132,53 @@ To mark a bug as private, we patch the `private` attribute of the bug.
   True
   >>> print webservice.patch(
   ...     bug_twelve['self_link'], 'application/json', dumps(dict(private=False)))
+  HTTP/1.1 209 Content Returned...
+
+Similarly, to mark a bug as a duplicate, we patch the `duplicate_of_link`
+attribute of the bug.
+
+  >>> print bug_twelve['duplicate_of_link']
+  None
+  >>> print webservice.patch(
+  ...       bug_twelve['self_link'], 'application/json',
+  ...       dumps(dict(duplicate_of_link=bug_one['self_link'])))
+  HTTP/1.1 209 Content Returned...
+  >>> bug_twelve = webservice.get("/bugs/12").jsonBody()
+  >>> print bug_twelve['duplicate_of_link']
+  http://api.launchpad.dev/beta/bugs/1
+
+Now set it back to none:
+
+  >>> print webservice.patch(
+  ...       bug_twelve['self_link'], 'application/json',
+  ...       dumps(dict(duplicate_of_link=None)))
+  HTTP/1.1 209 Content Returned...
+  >>> bug_twelve = webservice.get("/bugs/12").jsonBody()
+  >>> print bug_twelve['duplicate_of_link']
+  None
+
+Marking a bug as duplicate follows the same validation rules as available in
+the web UI. It is impossible, for example, to create circular relationships.
+
+  >>> print webservice.patch(
+  ...       webservice.getAbsoluteUrl('/bugs/16'), 'application/json',
+  ...       dumps(dict(
+  ...           duplicate_of_link=webservice.getAbsoluteUrl('/bugs/5'))))
+  HTTP/1.1 209 Content Returned...
+
+  >>> print webservice.patch(
+  ...       webservice.getAbsoluteUrl('/bugs/5'), 'application/json',
+  ...       dumps(dict(
+  ...           duplicate_of_link=webservice.getAbsoluteUrl('/bugs/16'))))
+  HTTP/1.1 417 Expectation Failed
+  ...
+  Bug 16 is already a duplicate of bug 5. You
+  can only mark a bug report as duplicate of one that
+  isn't a duplicate itself...
+
+  >>> print webservice.patch(
+  ...       webservice.getAbsoluteUrl('/bugs/16'), 'application/json',
+  ...       dumps(dict(duplicate_of_link=None)))
   HTTP/1.1 209 Content Returned...
 
 
@@ -240,15 +288,9 @@ The collection of bug tasks is not exposed as a resource:
 
 It's possible to change the task's assignee.
 
-  >>> print webservice.named_post(
-  ...     bugtask_path, 'transitionToAssignee',
-  ...     assignee=webservice.getAbsoluteUrl('/~cprov'))
-  HTTP/1.1 200 Ok
-  ...
-  Content-Type: application/json
-  ...
-  <BLANKLINE>
-  null
+  >>> patch = {u'assignee_link': webservice.getAbsoluteUrl('/~cprov')}
+  >>> print webservice.patch(bugtask_path, 'application/json', dumps(patch))
+  HTTP/1.1 209 Content Returned...
 
   >>> print webservice.get(bugtask_path).jsonBody()['assignee_link']
   http://.../~cprov
@@ -434,7 +476,7 @@ target, we reset it in order to avoid data inconsistencies.
 
 == Bug subscriptions ==
 
-We can get the the collection of subscriptions to a bug.
+We can get the collection of subscriptions to a bug.
 
   >>> bug_one_subscriptions_url = bug_one['subscriptions_collection_link']
   >>> subscriptions = webservice.get(bug_one_subscriptions_url).jsonBody()
@@ -593,6 +635,7 @@ Following the redirect, we can see the new bug watch:
   >>> bug_tracker = webservice.get(bug_watch['bug_tracker_link']).jsonBody()
 
   >>> pprint_entry(bug_tracker)
+  active: True
   base_url: u'https://bugzilla.mozilla.org/'
   base_url_aliases: []
   bug_tracker_type: u'Bugzilla'
@@ -648,6 +691,7 @@ renamed bug tracker.
   >>> bug_tracker_path = response.getHeader('Location')
   >>> bug_tracker = webservice.get(bug_tracker_path).jsonBody()
   >>> pprint_entry(bug_tracker)
+  active: True
   base_url: u'http://bugs.example.com/'
   base_url_aliases: [u'http://bugs.example.com/bugs/', u'http://www.example.com/bugtracker/']
   bug_tracker_type: u'Bugzilla'
@@ -660,6 +704,23 @@ renamed bug tracker.
   summary: u'Where Bob files his bugs.'
   title: u"Bob's Tracker"
   watches_collection_link: u'http://.../bugs/bugtrackers/bob/watches'
+
+Non-admins can't disable a bugtracker through the API.
+
+    >>> print public_webservice.patch(
+    ...     bug_tracker_path, 'application/json',
+    ...     dumps(dict(active=False))).jsonBody()
+    Traceback (most recent call last):
+      ...
+    ValueError: HTTP/1.1 401 Unauthorized...
+
+Admins can, however.
+
+    >>> bug_tracker = webservice.patch(
+    ...     bug_tracker_path, 'application/json',
+    ...     dumps(dict(active=False))).jsonBody()
+    >>> pprint_entry(bug_tracker)
+    active: False...
 
 
 == Bug attachments ==
@@ -953,6 +1014,16 @@ It is possible to mark a bug as affecting the user using the web service.
     >>> webservice.named_post(
     ...     bug_one['self_link'], 'isUserAffected').jsonBody()
     True
+    >>> pprint_collection(webservice.get(webservice.get(
+    ...     bug_one['self_link']).jsonBody()[
+    ...         'users_affected_collection_link']).jsonBody())
+    resource_type_link: u'http://api.launchpad.dev/beta/#person-page-resource'
+    start: 0
+    total_size: 1
+    ...
+    self_link: u'http://api.launchpad.dev/beta/~salgado'
+    ...
+
     >>> webservice.named_post(
     ...     bug_one['self_link'], 'markUserAffected',
     ...     affected=False).jsonBody()

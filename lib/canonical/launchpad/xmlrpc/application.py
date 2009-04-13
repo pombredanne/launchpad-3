@@ -22,7 +22,7 @@ from canonical.launchpad.interfaces import (
     IAuthServerApplication, ICodeImportSchedulerApplication, ILaunchBag,
     IMailingListApplication, IPrivateApplication,
     IPrivateMaloneApplication)
-from canonical.launchpad.interfaces.codehosting import (
+from lp.code.interfaces.codehosting import (
     IBranchFileSystemApplication, IBranchPullerApplication)
 from canonical.launchpad.webapp import LaunchpadXMLRPCView
 

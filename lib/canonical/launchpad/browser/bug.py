@@ -174,7 +174,7 @@ class BugContextMenu(ContextMenu):
 
     def markduplicate(self):
         """Return the 'Mark as duplicate' Link."""
-        return Link('+duplicate', '')
+        return Link('+duplicate', 'Mark as duplicate')
 
     def addupstream(self):
         """Return the 'lso affects project' Link."""
@@ -496,7 +496,7 @@ class BugEditView(BugEditViewBase):
             return
         bugtarget = self.context.target
         newly_defined_tags = set(data['tags']).difference(
-            bugtarget.getUsedBugTags())
+            bugtarget.getUsedBugTags() + bugtarget.official_bug_tags)
         # Display the confirm button in a notification message. We want
         # it to be slightly smaller than usual, so we can't simply let
         # it render itself.

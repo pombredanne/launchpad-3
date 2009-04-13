@@ -15,9 +15,9 @@ from canonical.codehosting.scanner.bzrsync import (
 from canonical.codehosting.scanner.tests.test_bzrsync import (
     BzrSyncTestCase, run_as_db_user)
 from canonical.config import config
-from canonical.launchpad.interfaces.branch import (
-    BranchLifecycleStatus, IBranchSet)
-from canonical.launchpad.interfaces.branchmergeproposal import (
+from lp.code.interfaces.branch import BranchLifecycleStatus
+from lp.code.interfaces.branchlookup import IBranchLookup
+from lp.code.interfaces.branchmergeproposal import (
     BranchMergeProposalStatus)
 from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.testing import LaunchpadZopelessLayer
@@ -41,9 +41,9 @@ class TestAutoMergeDetectionForMergeProposals(BzrSyncTestCase):
         branch_id = db_branch.id
         self.createProposal(db_branch, db_trunk)
         # Reget the objects due to transaction boundary.
-        branchset = getUtility(IBranchSet)
-        db_trunk = branchset[trunk_id]
-        db_branch = branchset[branch_id]
+        branch_lookup = getUtility(IBranchLookup)
+        db_trunk = branch_lookup.get(trunk_id)
+        db_branch = branch_lookup.get(branch_id)
         proposal = list(db_branch.landing_targets)[0]
         return proposal, db_trunk, db_branch, branch_tree
 
@@ -231,7 +231,7 @@ class TestBranchMergeDetectionHandler(TestCaseWithFactory):
         # merged, and the source branch lifecycle status set as merged.
         product = self.factory.makeProduct()
         proposal = self.factory.makeBranchMergeProposal(product=product)
-        product.development_focus.user_branch = proposal.target_branch
+        product.development_focus.branch = proposal.target_branch
         self.assertNotEqual(
             BranchMergeProposalStatus.MERGED, proposal.queue_status)
         self.assertNotEqual(
@@ -276,7 +276,7 @@ class TestBranchMergeDetectionHandler(TestCaseWithFactory):
         product = self.factory.makeProduct()
         source = self.factory.makeProductBranch(product=product)
         target = self.factory.makeProductBranch(product=product)
-        product.development_focus.user_branch = target
+        product.development_focus.branch = target
         self.handler.mergeOfTwoBranches(source, target)
         self.assertEqual(
             BranchLifecycleStatus.MERGED, source.lifecycle_status)
@@ -287,9 +287,9 @@ class TestBranchMergeDetectionHandler(TestCaseWithFactory):
         product = self.factory.makeProduct()
         source = self.factory.makeProductBranch(product=product)
         target = self.factory.makeProductBranch(product=product)
-        product.development_focus.user_branch = target
+        product.development_focus.branch = target
         series = product.newSeries(product.owner, 'new', '')
-        series.user_branch = source
+        series.branch = source
 
         self.handler.mergeOfTwoBranches(source, target)
         self.assertNotEqual(

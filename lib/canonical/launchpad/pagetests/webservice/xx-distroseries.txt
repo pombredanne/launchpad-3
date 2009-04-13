@@ -43,7 +43,7 @@ And via a direct query of a named series:
 
 For distroseries we publish a subset of its attributes.
 
-    >>> from canonical.lazr.testing.webservice import pprint_entry
+    >>> from lazr.restful.testing.webservice import pprint_entry
     >>> pprint_entry(current_series)
     active: True
     active_milestones_collection_link:
@@ -60,6 +60,7 @@ For distroseries we publish a subset of its attributes.
     fullseriesname: u'Ubuntu Hoary'
     main_archive_link: u'http://.../ubuntu/+archive/primary'
     name: u'hoary'
+    official_bug_tags: []
     owner_link: u'http://.../~sabdfl'
     parent_series_link: u'http://.../ubuntu/warty'
     resource_type_link: ...

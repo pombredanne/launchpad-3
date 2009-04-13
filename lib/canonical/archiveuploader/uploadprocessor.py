@@ -50,6 +50,9 @@ __metaclass__ = type
 import os
 import shutil
 import stat
+import sys
+
+from sqlobject import SQLObjectNotFound
 
 from zope.component import getUtility
 
@@ -57,9 +60,13 @@ from canonical.archiveuploader.nascentupload import (
     NascentUpload, FatalUploadError, EarlyReturnUploadError)
 from canonical.archiveuploader.uploadpolicy import (
     findPolicyByOptions, UploadPolicyError)
-from canonical.launchpad.interfaces.distribution import IDistributionSet
-from canonical.launchpad.interfaces.person import IPersonSet
+from canonical.launchpad.interfaces.archive import IArchiveSet
+from lp.registry.interfaces.distribution import IDistributionSet
+from lp.registry.interfaces.person import IPersonSet
+from canonical.launchpad.webapp.errorlog import (
+    ErrorReportingUtility, ScriptRequest)
 from canonical.launchpad.webapp.interfaces import NotFoundError
+
 from contrib.glock import GlobalLock
 
 __all__ = [
@@ -165,9 +172,14 @@ class UploadProcessor:
             except (KeyboardInterrupt, SystemExit):
                 raise
             except:
-                self.log.error(
-                    "Unhandled exception from processing an upload",
-                    exc_info=True)
+                info = sys.exc_info()
+                message = (
+                    'Exception while processing upload %s' % upload_path)
+                properties = [('error-explanation', message)]
+                request = ScriptRequest(properties)
+                error_utility = ErrorReportingUtility()
+                error_utility.raising(info, request)
+                self.log.error('%s (%s)' % (message, request.oopsid))
                 some_failed = True
 
         if some_failed:
@@ -280,6 +292,7 @@ class UploadProcessor:
         self.options.distro = distribution.name
         policy = findPolicyByOptions(self.options)
         policy.archive = archive
+
         # DistroSeries overriding respect the following precedence:
         #  1. process-upload.py command-line option (-r),
         #  2. upload path,
@@ -291,6 +304,15 @@ class UploadProcessor:
         # containing the changes file (and the other files referenced by it).
         changesfile_path = os.path.join(upload_path, changes_file)
         upload = NascentUpload(changesfile_path, policy, self.log)
+
+        # Reject source upload to buildd upload paths.
+        first_path = relative_path.split(os.path.sep)[0]
+        if first_path.isdigit() and policy.name != 'buildd':
+            error_message = (
+                "Invalid upload path (%s) for this policy (%s)" %
+                (relative_path, policy.name))
+            upload.reject(error_message)
+            self.log.error(error_message)
 
         # Store archive lookup error in the upload if it was the case.
         if error is not None:
@@ -429,12 +451,21 @@ def _getDistributionAndSuite(parts, exc_type):
     :raises: the given `exc_type` if the corresponding distribution or suite
         could not be found.
     """
-    assert len(parts) > 0 and len(parts) <= 2, (
-        "'%s' does not correspond to a <distribution>[/suite]." % parts)
+    # This assertion should never happens when this method is called from
+    # 'parse_upload_path'.
+    assert len(parts) <= 2, (
+        "'%s' does not correspond to a [distribution[/suite]]."
+        % '/'.join(parts))
 
-    distribution = getUtility(IDistributionSet).getByName(parts[0])
+    # Uploads with undefined distribution defaults to 'ubuntu'.
+    if len(parts) == 0 or parts[0] is '':
+        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+        return (ubuntu, None)
+
+    distribution_name = parts[0]
+    distribution = getUtility(IDistributionSet).getByName(distribution_name)
     if distribution is None:
-        raise exc_type("Could not find distribution '%s'" % parts[0])
+        raise exc_type("Could not find distribution '%s'" % distribution_name)
 
     if len(parts) == 1:
         return (distribution, None)
@@ -470,13 +501,8 @@ def parse_upload_path(relative_path):
 
     first_path = parts[0]
 
-    # Root upload, defaults to 'ubuntu' primary archive, nothing else to
-    # check, return the default upload location.
-    if first_path is '':
-        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-        return (ubuntu, None, ubuntu.main_archive)
-
-    if not first_path.startswith('~') and len(parts) <= 2:
+    if (not first_path.startswith('~') and not first_path.isdigit()
+        and len(parts) <= 2):
         # Distribution upload (<distro>[/distroseries]). Always targeted to
         # the corresponding primary archive.
         distribution, suite_name = _getDistributionAndSuite(
@@ -513,7 +539,7 @@ def parse_upload_path(relative_path):
 
         if not archive.enabled:
             raise PPAUploadPathError(
-                "%s is disabled" % archive.title)
+                "%s is disabled" % archive.displayname)
 
         distribution, suite_name = _getDistributionAndSuite(
             distribution_and_suite, PPAUploadPathError)
@@ -521,8 +547,18 @@ def parse_upload_path(relative_path):
         if archive.distribution != distribution:
             raise PPAUploadPathError(
                 "%s only supports uploads to '%s'"
-                % (archive.title, archive.distribution.name))
-
+                % (archive.displayname, archive.distribution.name))
+    elif first_path.isdigit():
+        # This must be a binary upload from a build slave.
+        try:
+            archive = getUtility(IArchiveSet).get(int(first_path))
+        except SQLObjectNotFound:
+            raise UploadPathError(
+                "Could not find archive with id=%s" % first_path)
+        if not archive.enabled:
+            raise UploadPathError("%s is disabled" % archive.displayname)
+        distribution, suite_name = _getDistributionAndSuite(
+            parts[1:], UploadPathError)
     else:
         # Upload path does not match anything we support.
         raise UploadPathError(

@@ -22,16 +22,16 @@ from lazr.enum import DBEnumeratedType, DBItem, EnumeratedType, Item
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.archive import IArchive
 from canonical.launchpad.interfaces.builder import IBuilder
-from canonical.launchpad.interfaces.distribution import IDistribution
+from lp.registry.interfaces.distribution import IDistribution
 from canonical.launchpad.interfaces.distroarchseries import IDistroArchSeries
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 from canonical.launchpad.interfaces.processor import IProcessor
 from canonical.launchpad.interfaces.publishing import (
-    PackagePublishingPocket)
+    PackagePublishingPocket, ISourcePackagePublishingHistory)
 from canonical.launchpad.interfaces.sourcepackagerelease import (
     ISourcePackageRelease)
-from canonical.lazr.fields import Reference
-from canonical.lazr.rest.declarations import (
+from lazr.restful.fields import Reference
+from lazr.restful.declarations import (
     export_as_webservice_entry, exported)
 
 
@@ -219,6 +219,13 @@ class IBuild(Interface):
                           "Will be None if there was no failure.")))
 
     # Properties
+    current_source_publication = exported(
+        Reference(
+            title=_("Source publication"),
+            schema=ISourcePackagePublishingHistory,
+            required=False, readonly=True,
+            description=_("The current source publication for this build.")))
+
     current_component = Attribute(
         "Component where the ISourcePackageRelease related to "
         "this build was published.")
@@ -426,9 +433,6 @@ class IBuildSet(Interface):
         satisfied at this point will be automatically retried and re-scored.
         """
 
-    def getCurrentPublication():
-        """Return the publishing record for this build."""
-
     def getBuildsBySourcePackageRelease(sourcepackagerelease_ids,
                                         buildstate=None):
         """Return all builds related with the given list of source releases.
@@ -459,21 +463,6 @@ class IBuildSet(Interface):
                     'builds':[build3]
                 }
         :rtype: ``dict``.
-        """
-
-    def prefetchBuildData(build_ids):
-        """Used to pre-populate the cache with build related data.
-
-        When dealing with a group of Build records we can't use the
-        prejoin facility to also fetch BuildQueue, SourcePackageRelease
-        and LibraryFileAlias records in a single query because the
-        result set is too large and the queries time out too often.
-
-        So this method receives a list of Build IDs (the current batch
-        to be displayed on the GUI) and fetches the corresponding
-        BuildQueue, SourcePackageRelease and LibraryFileAlias rows
-        (prejoined with the appropriate Builder, SourcePackageName and
-        LibraryFileContent respectively).
         """
 
 

@@ -15,22 +15,18 @@
 <div metal:fill-slot="main"
      tal:define="branches view/branches">
 
-  <div style="float:right" id="floating-buttons"
-       tal:condition="view/user_in_context_team">
-    <div>
-      <a href="+addbranch" id="register-branch">
-        <img alt="Register a branch"
-             src="/+icing/but-lrg-registerabranch.gif"/>
-      </a>
-    </div>
+  <div style="float:right" id="floating-links"
+       tal:define="menu context/menu:branches">
+    <div tal:define="link menu/addbranch"
+         tal:condition="link/enabled"
+         tal:content="structure link/render" />
   </div>
 
   <h1 tal:content="view/heading">Bazaar branches</h1>
 
   <div id="no-branch-message" tal:condition="not: view/has_branches">
-    <p>
-      There are no branches related to
-      <tal:user replace="context/fmt:displayname"/> today.
+    <p tal:content="view/no_branch_message">
+      There are no branches related to Eric the Viking today.
     </p>
   </div>
 
@@ -43,7 +39,6 @@
   </tal:has-branches>
 
   <div tal:replace="structure context/@@+portlet-teambranches" />
-
 </div>
 </body>
 </html>

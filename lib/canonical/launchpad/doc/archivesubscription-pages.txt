@@ -1,3 +1,6 @@
+Archive Subscriptions
+=====================
+
 Activating a subscription for a private archive is a two-step process.
 First the archive owner needs to add a subscription for a person or
 team - this is the purpose of the ArchiveSubscribersView.
@@ -7,7 +10,9 @@ needs to activate their subscription, which will update the
 private-ppas-sources.list file displayed to them. This is the purpose
 of the PersonArchiveSubscriptions View.
 
-== ArchiveSubscribersView ==
+
+ArchiveSubscribersView
+----------------------
 
 The ArchiveSubscribersView presents all the subscribers for an archive, as
 well as allowing the addition of new subscribers.
@@ -15,7 +20,7 @@ well as allowing the addition of new subscribers.
 First, ensure that the archives we'll be using are private:
 
     >>> login('foo.bar@canonical.com')
-    >>> from canonical.launchpad.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> cprov = getUtility(IPersonSet).getByName("cprov")
     >>> cprov.archive.buildd_secret = 'boing'
     >>> cprov.archive.private = True
@@ -36,19 +41,21 @@ using the has_subscriptions property:
 POSTing with out data just causes the validation to display:
 
     >>> view = create_initialized_view(
-    ...     cprov.archive, name="+subscriptions", method="POST",
+    ...     cprov.archive, name="+subscriptions",
     ...     server_url=
     ...         "https://launchpad.dev/~cprov/+archive/ppa/+subscriptions",
-    ...     form={'field.actions.add': 'Add'})
+    ...     form={
+    ...         'field.actions.add': 'Add',
+    ...         'field.date_expires': '',
+    ...         'field.subscriber': ''})
     >>> for error in view.errors:
-    ...     print error
-    Required field is missing
-
+    ...     print error.field_name, view.getFieldError(error.field_name)
+    subscriber Required input is missing.
 
 The view can be used to add a new subscriber:
 
     >>> view = create_initialized_view(
-    ...     cprov.archive, name="+subscriptions", method="POST",
+    ...     cprov.archive, name="+subscriptions",
     ...     server_url=
     ...         "https://launchpad.dev/~cprov/+archive/ppa/+subscriptions",
     ...     form={
@@ -68,6 +75,12 @@ successfully:
     >>> view.has_subscriptions
     True
 
+After adding a subscriber, the view includes a relevant notification:
+
+    >>> for notification in view.request.notifications:
+    ...     print notification.message
+    You have subscribed Andrew Bennetts to PPA for Celso Providelo.
+
 The view includes a subscribers property that returns all the current
 subscribers:
 
@@ -80,7 +93,7 @@ subscribers:
 The same subscriber cannot be added a second time:
 
     >>> view = create_initialized_view(
-    ...     cprov.archive, name="+subscriptions", method="POST",
+    ...     cprov.archive, name="+subscriptions",
     ...     form={
     ...         'field.subscriber': 'spiv',
     ...         'field.description': "spiv's still my friend",
@@ -98,7 +111,7 @@ But the same person can be a subscriber of other archives:
 
     >>> login('mark@hbd.com')
     >>> view = create_initialized_view(
-    ...     sabdfl.archive, name="+subscriptions", method="POST",
+    ...     sabdfl.archive, name="+subscriptions",
     ...     form={
     ...         'field.subscriber': 'spiv',
     ...         'field.description': "spiv's still my friend",
@@ -115,7 +128,7 @@ subscriber, but the date_expires must be in the future:
 
     >>> transaction.commit()
     >>> view = create_initialized_view(
-    ...     sabdfl.archive, name="+subscriptions", method="POST",
+    ...     sabdfl.archive, name="+subscriptions",
     ...     server_url=
     ...         "https://launchpad.dev/~cprov/+archive/ppa/+subscriptions",
     ...     form={
@@ -133,7 +146,7 @@ So we try again with an expiry date in the future:
     >>> import datetime
     >>> future_date = datetime.date.today() + datetime.timedelta(30)
     >>> view = create_initialized_view(
-    ...     sabdfl.archive, name="+subscriptions", method="POST",
+    ...     sabdfl.archive, name="+subscriptions",
     ...     server_url=
     ...         "https://launchpad.dev/~cprov/+archive/ppa/+subscriptions",
     ...     form={
@@ -149,11 +162,97 @@ So we try again with an expiry date in the future:
     Launchpad Developers
     Andrew Bennetts
 
+== ArchiveSubscriptionEditView ==
 
-== PersonArchiveSubscriptions View ==
+The ArchiveSubscriptionEditView presents the expiry and description ready
+for editing, together with Update and Cancel actions:
 
-The PersonArchiveSubscriptions view provides all the archive subscriptions
-for a person, as well as the ability to activate subscriptions.
+    >>> login('celso.providelo@canonical.com')
+    >>> from canonical.launchpad.interfaces.archivesubscriber import (
+    ...     IArchiveSubscriberSet)
+    >>> spiv_subscription = getUtility(IArchiveSubscriberSet).getByArchive(
+    ...     cprov.archive).one()
+    >>> view = create_initialized_view(spiv_subscription, name="+edit")
+    >>> view.field_names
+    ['date_expires', 'description']
+    >>> for action in view.actions:
+    ...     print action.label
+    Save
+    Cancel subscription
+
+The ArchiveSubscriptionEditView has a next_url helper property.
+
+    >>> print view.next_url
+    http://launchpad.dev/~cprov/+archive/ppa/+subscriptions
+
+The ArchiveSubscriptionEditView can be used to update the description field:
+
+    >>> view = create_initialized_view(
+    ...     spiv_subscription, name="+edit", method="POST",
+    ...     form={
+    ...         'field.description': "Updated description",
+    ...         'field.date_expires': '',
+    ...         'field.actions.update': 'Update'
+    ...     })
+    >>> print spiv_subscription.description
+    Updated description
+
+Like the create view, the update view will not accept a date in the past:
+
+    >>> view = create_initialized_view(
+    ...     spiv_subscription, name="+edit", method="POST",
+    ...     form={
+    ...         'field.description': "Updated description",
+    ...         'field.date_expires': '1984-01-01',
+    ...         'field.actions.update': 'Update'
+    ...     })
+    >>> for error in view.errors:
+    ...     print error
+    The expiry date must be in the future.
+
+But a date in the future is fine:
+
+    >>> view = create_initialized_view(
+    ...     spiv_subscription, name="+edit", method="POST",
+    ...     form={
+    ...         'field.description': "spiv's my friend",
+    ...         'field.date_expires': str(future_date),
+    ...         'field.actions.update': 'Update'
+    ...     })
+    >>> view.errors
+    []
+
+The ArchiveSubscriptionEditView can be used to cancel a subscription:
+
+    >>> current_status = spiv_subscription.status
+    >>> print current_status.name
+    CURRENT
+    >>> view = create_initialized_view(
+    ...     spiv_subscription, name="+edit", method="POST",
+    ...     form={'field.actions.cancel': 'Cancel subscription'})
+    >>> print spiv_subscription.status.name
+    CANCELLED
+    >>> print spiv_subscription.cancelled_by.name
+    cprov
+
+After canceling a subscription, a relevant notification is added to the view.
+
+    >>> for notification in view.request.notifications:
+    ...     print notification.message
+    You have cancelled Andrew Bennetts's subscription to PPA for
+    Celso Providelo.
+
+Just uncancel the subscription before continuing on.
+
+    >>> spiv_subscription.status = current_status
+    >>> spiv_subscription.cancelled_by = None
+    >>> spiv_subscription.date_cancelled = None
+
+PersonArchiveSubscriptions View
+-------------------------------
+
+The PersonArchiveSubscriptions view displays all the archive subscriptions
+for a person.
 
     >>> view = create_initialized_view(sabdfl, name="+archivesubscriptions")
     >>> view.subscriptions_with_tokens
@@ -166,153 +265,115 @@ But spiv is subscribed to a number of archives:
     >>> view = create_initialized_view(spiv, name="+archivesubscriptions")
     >>> len(view.subscriptions_with_tokens)
     2
-    >>> view.active_subscriptions_with_tokens
-    []
-    >>> len(view.pending_subscriptions)
-    2
 
 The subscriptions_with_tokens property returns all the current archive
-subscriptions for the person, with a corresponding token for each:
+subscriptions for the person, with the corresponding token for each - 
+if one exists:
 
     >>> def print_subscriptions_with_tokens():
     ...     for subscription_and_token in view.subscriptions_with_tokens:
     ...         subscription = subscription_and_token['subscription']
     ...         token = subscription_and_token['token']
-    ...         print subscription.archive.title
-    ...         print subscription.description
+    ...         print subscription.archive.displayname
     ...         token_text = "None"
     ...         if token:
     ...             token_text = "Token"
     ...         print token_text
 
     >>> print_subscriptions_with_tokens()
-    Private PPA for Mark Shuttleworth       spiv's still my friend   None
-    Private PPA for Celso Providelo         spiv's my friend         None
+    PPA for Mark Shuttleworth       None
+    PPA for Celso Providelo         None
 
-As long as there are no active subscriptions, the private_ppa_sources_list
-property will not contain any repo urls:
+After activating a subscription, the token will be included in the
+subscriptions_with_tokens property:
+
+    >>> spiv = getUtility(IPersonSet).getByName('spiv')
+    >>> new_token = cprov.archive.newAuthToken(spiv)
+    >>> view = create_initialized_view(spiv, name="+archivesubscriptions")
+    >>> print_subscriptions_with_tokens()
+    PPA for Mark Shuttleworth       None
+    PPA for Celso Providelo         Token
+
+Just deactivate the new token again for the remaining tests.
+
+    >>> new_token.deactivate()
+
+
+== PersonArchiveSubscription View ==
+
+This view displays a single subscription of a person, as well as the
+corresponding token information.
+
+Initially the subscription does not have an active token:
+
+    >>> from canonical.launchpad.browser.archivesubscription import (
+    ...     PersonalArchiveSubscription)
+    >>> spiv_subscription = PersonalArchiveSubscription(
+    ...     spiv_subscription.subscriber, spiv_subscription.archive)
+    >>> view = create_initialized_view(spiv_subscription, name="+index")
+    >>> print view.active_token
+    None
+
+Therefore, it will not return a sources_list entry either:
 
     >>> print view.private_ppa_sources_list
-    # Personal subscriptions for private PPAs
 
-Posting an Archive ID to the PersonArchiveSubscriptionView will
-generate a token for that archive:
+But if 'activate' is posted, the view will generate a new token and
+redirect:
 
     >>> view = create_initialized_view(
-    ...     spiv,
-    ...     name="+archivesubscriptions",
-    ...     server_url=
-    ...         "https://launchpad.dev/~cprov/+archivesubscriptions",
-    ...     method="post",
-    ...     form={"archive_id": str(sabdfl.archive.id)})
-
-The view redirects to itself after activating the subscription:
-
+    ...     spiv_subscription, name="+index", form={'activate': '1'})
     >>> view.request.response.getStatus()
     302
-    >>> print view.request.response.getHeader('location')
-    https://launchpad.dev/~cprov/+archivesubscriptions
-
-And the subscription has been activated:
-
-    >>> print_subscriptions_with_tokens()
-    Private PPA for Mark Shuttleworth       spiv's still my friend   Token
-    Private PPA for Celso Providelo         spiv's my friend         None
-
-    >>> len(view.subscriptions_with_tokens)
-    2
-    >>> len(view.active_subscriptions_with_tokens)
-    1
-    >>> len(view.pending_subscriptions)
-    1
-
-The user will also see a notification of the subscription activation:
-
     >>> for notification in view.request.notifications:
     ...     print notification.message
-    Your subscription to 'Private PPA for Mark Shuttleworth' has been
-    activated. Please update your custom sources.list as described below.
+    You have confirmed your subscription to...
 
-The PersonArchiveSubscriptionsView also provides an 
-active_subscriptions_with_tokens property:
+Now the view can then access the token and the source list entries:
 
-    >>> for subs_with_token in view.active_subscriptions_with_tokens:
-    ...     print subs_with_token['subscription'].archive.title
-    ...     if subs_with_token['token'] is not None:
-    ...         print "Token"
-    Private PPA for Mark Shuttleworth              Token
-
-Now the private_ppa_sources_list property should contain Mark's repo:
+    >>> view = create_initialized_view(spiv_subscription, name="+index")
+    >>> print view.active_token.person.displayname
+    Andrew Bennetts
 
     >>> print view.private_ppa_sources_list
-    # Personal subscriptions for private PPAs
-    # Private PPA for Mark Shuttleworth
-    deb http://spiv:...@private-ppa.launchpad.dev/sabdfl/ppa/ubuntu hoary main
-    deb-src http://spiv:...@private-ppa.launchpad.dev/sabdfl/ppa/ubuntu hoary main
-
-Activate the second subscription and then verify that there are no more
-pending subscriptions:
-
-    >>> view = create_initialized_view(
-    ...     spiv,
-    ...     name="+archivesubscriptions",
-    ...     server_url=
-    ...         "https://launchpad.dev/~cprov/+archivesubscriptions",
-    ...     method="post",
-    ...     form={"archive_id": str(cprov.archive.id)})
-    >>> view.pending_subscriptions
-    []
-
-Now the private_ppa_sources_list property should contain both repos:
-
-    >>> print view.private_ppa_sources_list
-    # Personal subscriptions for private PPAs
-    # Private PPA for Mark Shuttleworth
-    deb http://spiv:...@private-ppa.launchpad.dev/sabdfl/ppa/ubuntu hoary main
-    deb-src http://spiv:...@private-ppa.launchpad.dev/sabdfl/ppa/ubuntu hoary main
-    # Private PPA for Celso Providelo
+    # Personal subscription of Andrew Bennetts to PPA for Celso
+        Providelo
     deb http://spiv:...@private-ppa.launchpad.dev/cprov/ppa/ubuntu hoary main
-    deb-src http://spiv:...@private-ppa.launchpad.dev/cprov/ppa/ubuntu hoary main
+    deb-src http://spiv:...@private-ppa.launchpad.dev/cprov/ppa/ubuntu hoary
+        main
 
-If a user fiddles with the POST data and sends a bad archive_id or an
-archive_id corresponding to an archive to which the user is not subscribed
-then the view simply redirects to a GET request without doing anything:
+The view can also be used to regenerate the source.list entries.
 
-To ensure no tokens have been created, we'll count the number of tokens
-before and after the bad requests:
-
-    >>> from storm.store import Store
-    >>> from canonical.launchpad.interfaces.distribution import (
-    ...     IDistributionSet)
-    >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
-    >>> store = Store.of(ubuntu)
-    >>> from canonical.launchpad.database.archiveauthtoken import (
-    ...     ArchiveAuthToken)
-    >>> store.find(ArchiveAuthToken).count()
-    2
-
-Now do the bad requests, ensuring a 302 is issued each time:
-
-    >>> view = create_initialized_view(spiv, name="+archivesubscriptions",
-    ...     method="post", form={"archive_id": "abcd"})
+    >>> original_token = view.active_token.token
+    >>> view = create_initialized_view(
+    ...     spiv_subscription, name="+index", form={'regenerate': '1'})
     >>> view.request.response.getStatus()
     302
-    >>> view = create_initialized_view(spiv, name="+archivesubscriptions",
-    ...     method="post", form={"archive_wrong": "abcd"})
-    >>> view.request.response.getStatus()
-    302
-    >>> view = create_initialized_view(spiv, name="+archivesubscriptions",
-    ...     method="post", form={"archive_id": "99999"})
-    >>> view.request.response.getStatus()
-    302
-    >>> view = create_initialized_view(spiv, name="+archivesubscriptions",
-    ...     method="post", form={"archive_id": str(ubuntu.main_archive.id)})
-    >>> view.request.response.getStatus()
-    302
+    >>> for notification in view.request.notifications:
+    ...     print notification.message
+    Launchpad has generated the new password you...
 
-After all the bad requests, the number of tokens in the database should
-remain unchange:
+    >>> view = create_initialized_view(spiv_subscription, name="+index")
+    >>> view.active_token.token == original_token
+    False
 
-    >>> store.find(ArchiveAuthToken).count()
-    2
+The security for the PersonalArchiveSubscription provides spiv, as the
+subscriber, with view access:
+
+    >>> from canonical.launchpad.webapp.authorization import check_permission
+    >>> check_permission('launchpad.View', spiv_subscription)
+    True
+
+but as a default security setting, other logged in users cannot.
+
+    >>> login('no-priv@canonical.com')
+    >>> check_permission('launchpad.View', spiv_subscription)
+    False
+
+Celso, on the other hand, will be granted view access as he has append privs
+on the archive:
+
+    >>> login('celso.providelo@canonical.com')
+    >>> check_permission('launchpad.View', spiv_subscription)
+    True
 

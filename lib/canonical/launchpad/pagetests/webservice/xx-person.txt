@@ -5,7 +5,7 @@ representations of people and teams are supposed to have nearly the
 same keys.  I say nearly because some attributes are only made available
 for teams (as they're defined in the ITeam interface).
 
-    >>> from canonical.lazr.testing.webservice import pprint_entry
+    >>> from lazr.restful.testing.webservice import pprint_entry
     >>> salgado = webservice.get("/~salgado").jsonBody()
     >>> pprint_entry(salgado)
     admins_collection_link: u'http://.../~salgado/admins'
@@ -548,3 +548,16 @@ participant, use the 'findPathToTeam' custom operation.
     # ...     print entry['self_link']
     # http://.../~admins
     # http://.../~mailing-list-experts
+
+
+== Restrictions ==
+
+A team can't be its own owner.
+
+  >>> import simplejson
+  >>> doc = {'team_owner_link' : webservice.getAbsoluteUrl("/~admins")}
+  >>> print webservice.patch(
+  ...    "/~admins", 'application/json', simplejson.dumps(doc))
+  HTTP/1.1 400 Bad Request
+  ...
+  team_owner_link: Constraint not satisfied.

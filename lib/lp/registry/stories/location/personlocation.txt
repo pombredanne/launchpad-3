@@ -1,0 +1,42 @@
+= Person Locations =
+
+People can have a location and time zone in Launchpad.  In some cases, a
+person has a time zone, but no location. We test that their home page renders
+without problems.
+
+    >>> login('test@canonical.com')
+    >>> zzz = factory.makePerson(name='zzz', time_zone='Africa/Maseru',
+    ...                          latitude=None, longitude=None)
+    >>> logout()
+    >>> nopriv_browser = setupBrowser(auth='Basic no-priv@canonical.com:test')
+    >>> nopriv_browser.open('http://launchpad.dev/~zzz')
+
+They should see a link to the +editlocation page (around the map image)
+and the person's time zone.
+
+    >>> editlink = nopriv_browser.getLink(url='+editlocation')
+    >>> editlink.text
+    '[IMG]'
+    >>> print extract_text(find_tag_by_id(nopriv_browser.contents, 'portlet-map'))
+    Location
+    Time zone: Africa/Maseru
+
+If a person has a location, they should have a little map portlet in their
+home page. We can't test all the google javascript, but we can make sure
+there's a map, and the scripts are loaded.
+
+    >>> login('test@canonical.com')
+    >>> yyy = factory.makePerson(name='yyy', time_zone='Europe/London',
+    ...                          latitude=52.2, longitude=0.3)
+    >>> logout()
+    >>> nopriv_browser = setupBrowser(auth='Basic no-priv@canonical.com:test')
+    >>> nopriv_browser.open('http://launchpad.dev/~yyy')
+    >>> markup = str(nopriv_browser.contents)
+    >>> print extract_text(find_tag_by_id(markup, 'portlet-map'), skip_tags=[])
+    Location
+    Time zone: Europe/London...
+    Y.lp.mapping.renderPersonMapSmall(...
+    >>> 'src="http://maps.google.com/maps' in markup
+    True
+    >>> 'build/lp/mapping.js' in markup
+    True

@@ -20,7 +20,7 @@ from canonical.config import config
 from canonical.launchpad.interfaces.archivesigningkey import (
     IArchiveSigningKey)
 from canonical.launchpad.interfaces.gpghandler import IGPGHandler
-from canonical.launchpad.interfaces.gpg import IGPGKeySet, GPGKeyAlgorithm
+from lp.registry.interfaces.gpg import IGPGKeySet, GPGKeyAlgorithm
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 
 
@@ -63,7 +63,15 @@ class ArchiveSigningKey:
         assert self.archive.signing_key is None, (
             "Cannot override signing_keys.")
 
-        key_displayname = "Launchpad %s" % self.archive.title
+        # Default PPAs are always created first, their signing-key will
+        # be always available when a named-ppa gets processed. In this case,
+        # instead of generating a new key we reuse the existing one.
+        default_ppa = self.archive.owner.archive
+        if self.archive is not default_ppa:
+            self.archive.signing_key = default_ppa.signing_key
+            return
+
+        key_displayname = "Launchpad %s" % self.archive.displayname
         secret_key = getUtility(IGPGHandler).generateKey(key_displayname)
         self._setupSigningKey(secret_key)
 
@@ -101,7 +109,7 @@ class ArchiveSigningKey:
     def signRepository(self, suite):
         """See `IArchiveSigningKey`."""
         assert self.archive.signing_key is not None, (
-            "No signing key available for %s" % self.archive.title)
+            "No signing key available for %s" % self.archive.displayname)
 
         suite_path = os.path.join(self._archive_root_path, 'dists', suite)
         release_file_path = os.path.join(suite_path, 'Release')

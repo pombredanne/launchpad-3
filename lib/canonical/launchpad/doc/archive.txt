@@ -20,12 +20,12 @@ records to disk, including configuration and indexes.
     ppa
     >>> print cprov_archive.purpose.name
     PPA
+    >>> print cprov_archive.displayname
+    PPA for Celso Providelo
     >>> cprov_archive.enabled
     True
     >>> cprov_archive.authorized_size
     1024
-    >>> print cprov_archive.whiteboard
-    It is not my fault.
     >>> print cprov_archive.signing_key
     None
     >>> print cprov_archive.signing_key_fingerprint
@@ -110,9 +110,6 @@ make Celso's PPA public again.
 
 Useful properties:
 
-    >>> print cprov_archive.title
-    PPA for Celso Providelo
-
     >>> print cprov_archive.archive_url
     http://ppa.launchpad.dev/cprov/ppa/ubuntu
 
@@ -181,11 +178,10 @@ Valid names work as expected.
 
     >>> login(ANONYMOUS)
 
-Please note that copy archive titles include the owner name as well as
-the archive's name.
+Please note that copy archive displayname doesn't follow the name change.
 
-    >>> rebuild_archive.title
-    u'Copy archive there-we-go for J\xc3\xbcrgen'
+    >>> rebuild_archive.displayname
+    u'Copy archive editable-rebuild for J\xc3\xbcrgen'
 
 The "is_copy" property allows us to ask an archive whether it's a copy
 archive.
@@ -334,6 +330,12 @@ Combining 'name' and 'distroseries' filters:
     0
     >>> cprov_archive.getPublishedSources(
     ...     name='cd', distroseries=breezy_autotest).count()
+    1
+
+Using the 'published_since_date' filter:
+
+    >>> cprov_archive.getPublishedSources(
+    ...     published_since_date='2007-07-09 14:00:00').count()
     1
 
 
@@ -1059,7 +1061,7 @@ required dependencies when building.
     ...         print "No dependencies recorded."
     ...         return
     ...     for dep in dependencies:
-    ...         print dep.dependency.title
+    ...         print dep.dependency.displayname
 
 Celso's PPA has no dependencies stored in the sampledata.
 
@@ -1081,14 +1083,14 @@ RELEASE pocket and 'main' component.
 
 The `IArchiveDependency` object simply maps the desired relationship.
 
-    >>> print archive_dependency.archive.title
+    >>> print archive_dependency.archive.displayname
     PPA for Celso Providelo
 
-    >>> print archive_dependency.dependency.title
+    >>> print archive_dependency.dependency.displayname
     PPA for Mark Shuttleworth
 
 The `IArchiveDependency` object itself implement a 'title'
-property. For PPA dependencies the title defaults to the PPA title.
+property. For PPA dependencies the title defaults to the PPA displayname.
 
     >>> print archive_dependency.title
     PPA for Mark Shuttleworth
@@ -1102,7 +1104,7 @@ The archive dependency is immediately recorded on Celso's PPA.
 for a given 'dependency', otherwise it returns None.
 
     >>> print cprov.archive.getArchiveDependency(
-    ...     sabdfl.archive).dependency.title
+    ...     sabdfl.archive).dependency.displayname
     PPA for Mark Shuttleworth
 
     >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
@@ -1234,7 +1236,7 @@ dependency for PPAs.
 
     >>> def print_expanded_archive_dependencies(archive):
     ...     for dep in archive.expanded_archive_dependencies:
-    ...         print dep.title
+    ...         print dep.displayname
 
     >>> print_expanded_archive_dependencies(ubuntu.main_archive)
     Primary Archive for Ubuntu Linux
@@ -1402,7 +1404,7 @@ at some point, but it's not needed right now.
 
     >>> partner_archive = getUtility(IArchiveSet).getByDistroAndName(
     ...     ubuntutest, 'partner')
-    >>> print partner_archive.title
+    >>> print partner_archive.displayname
     Partner Archive for Ubuntu Test
 
 Passing an invalid name will cause an empty result set.
@@ -1564,8 +1566,8 @@ user is allowed to upload or copy packages to.
 In the sampledata, 'cprov' only participates in his own PPA.
 
     >>> for ppa in archive_set.getPPAsForUser(cprov):
-    ...     print ppa.title
-    Private PPA for Celso Providelo
+    ...     print ppa.displayname
+    PPA for Celso Providelo
 
 However 'cprov' is also a member of 'launchpad-buildd-admins' team,
 which doesn't have a PPA yet.
@@ -1587,8 +1589,8 @@ immediately recognises 'cprov' rights on it.
     ...     distribution=ubuntu, description='Yo !')
 
     >>> for ppa in archive_set.getPPAsForUser(cprov):
-    ...     print ppa.title
-    Private PPA for Celso Providelo
+    ...     print ppa.displayname
+    PPA for Celso Providelo
     PPA for Launchpad Buildd Admins
 
 When there is no active PPA for the team a user participates the
@@ -1600,6 +1602,14 @@ method returns an empty SelectResults.
 
     >>> jblack_ppas.count()
     0
+
+The method getPrivatePPAs() will return a result set of all PPAs that are
+private.
+
+    >>> p3as = archive_set.getPrivatePPAs()
+    >>> for p3a in p3as:
+    ...     print p3a.displayname
+    PPA for Celso Providelo
 
 For the next test we will make Celso's PPA public again, so it can
 appear in public lists. We do that because that PPA contains relevant
@@ -1697,7 +1707,8 @@ are old.
     ...     most_active_ppas = (
     ...         archive_set.getMostActivePPAsForDistribution(ubuntu))
     ...     for most_active in most_active_ppas:
-    ...         print most_active['archive'].title, most_active['uploads']
+    ...         print most_active[
+    ...             'archive'].displayname, most_active['uploads']
 
     >>> print_most_active_ppas()
     PPA for Mark Shuttleworth 2
@@ -1845,7 +1856,7 @@ First we create three copy archives for ubuntu:
 
 One of the new copy archives will be owned by a team:
 
-    >>> from canonical.launchpad.interfaces.person import (
+    >>> from lp.registry.interfaces.person import (
     ...     TeamSubscriptionPolicy)
     >>> team = getUtility(IPersonSet).newTeam(sabdfl, 't1', 't1',
     ...     subscriptionpolicy=TeamSubscriptionPolicy.OPEN)
@@ -2098,9 +2109,7 @@ Repeating this source copy gives an error:
     >>> sabdfl.archive.syncSources(sources, cprov.archive, "release")
     Traceback (most recent call last):
     ...
-    CannotCopy:
-        package1 1.1 in hoary (same version already building...
-        package2 1.0 in hoary (same version already building...
+    CannotCopy: Packages already copied.
 
 Repeating this copy with binaries also gives an error:
 
@@ -2240,7 +2249,7 @@ archives.
 
 The names of PPAs must be unique per owner and distribution.
 
-    >>> print sabdfl.archive.title
+    >>> print sabdfl.archive.displayname
     PPA for Mark Shuttleworth
 
     >>> print sabdfl.archive.name
@@ -2269,17 +2278,30 @@ to a single IArchive.
 
 `IPerson.archive` is still pointing to the PPA named 'ppa'.
 
-    >>> print sabdfl.archive.title
+    >>> print sabdfl.archive.displayname
     PPA for Mark Shuttleworth
 
     >>> print sabdfl.archive.name
     ppa
 
 The ppas named differently than the default ('ppa') have a slightly
-different title format, including their names.
+different displayname format, including their names.
 
-    >>> print another_ppa.title
+    >>> print another_ppa.displayname
     PPA named nightly for Mark Shuttleworth
+
+Additionally, archives, despite of their purpose, cannot have the same
+name as their distribution.
+
+    >>> boingolinux = factory.makeDistribution(name='boingolinux')
+
+    >>> getUtility(IArchiveSet).new(
+    ...     owner=sabdfl, purpose=ArchivePurpose.PRIMARY,
+    ...     distribution=boingolinux, name=boingolinux.name)
+    Traceback (most recent call last):
+    ...
+    AssertionError: Archives cannot have the same name as their
+    distribution.
 
 
 == Looking up named PPAs ==
@@ -2310,3 +2332,81 @@ When there are not matching PPAs, None is returned.
 
     >>> print sabdfl.getPPAByName('not-found')
     None
+
+
+== Editable displayname ==
+
+If 'displayname' is omitted on archive created, a default form is
+automatically used.
+    >>> new_ppa = getUtility(IArchiveSet).new(
+    ...     owner=cprov, purpose=ArchivePurpose.PPA,
+    ...     distribution=ubuntu, name='test-ppa')
+    >>> print new_ppa.displayname
+    PPA named test-ppa for Celso Providelo
+
+When provided 'displayname' is used as given.
+
+    >>> new_copy = getUtility(IArchiveSet).new(
+    ...     owner=cprov, purpose=ArchivePurpose.COPY,
+    ...     displayname='Rock and roll with rebuilds!',
+    ...     distribution=ubuntu, name='test-rebuild')
+    >>> print new_copy.displayname
+    Rock and roll with rebuilds!
+
+After archive creation, the 'displayname' can be edited by the archive
+anyone with 'edit' permissions on the archive.
+
+    >>> login("no-priv@canonical.com")
+    >>> new_ppa.displayname = 'No-way!'
+    Traceback (most recent call last):
+    ...
+    Unauthorized: (<Archive at ...>, 'displayname', 'launchpad.Edit')
+
+    >>> login('celso.providelo@canonical.com')
+    >>> new_ppa.displayname = 'My testing packages for jaunty'
+
+
+== Signing-key propagation ==
+
+Signing keys are, by default, shared between PPAs owned by the same
+user/team.
+
+Celso's default PPA currently has no signing-key.
+
+    >>> print cprov.archive.signing_key
+    None
+
+When a named-ppa is created there is no key to be shared, this case
+is worked out when generating new signing key. See archive-signing.txt
+for more information.
+
+    >>> no_key_ppa = getUtility(IArchiveSet).new(
+    ...     owner=cprov, purpose=ArchivePurpose.PPA,
+    ...     distribution=ubuntu, name='no-key')
+
+    >>> print no_key_ppa.signing_key
+    None
+
+We will select the only available IGPGKey from the sampledata.
+
+    >>> foo_bar = getUtility(IPersonSet).getByName('name16')
+    >>> [a_key] = foo_bar.gpgkeys
+    >>> print a_key.displayname
+    1024D/12345678
+
+And use it as the Celso's default PPA signing key.
+
+    >>> login('foo.bar@canonical.com')
+    >>> cprov.archive.signing_key = a_key
+    >>> login('celso.providelo@canonical.com')
+
+Now there is a signing-key to be propagated and a new named-ppa is
+already created accordingly.
+
+    >>> ppa_with_key = getUtility(IArchiveSet).new(
+    ...     owner=cprov, purpose=ArchivePurpose.PPA,
+    ...     distribution=ubuntu, name='has-key')
+
+    >>> ppa_with_key.signing_key == cprov.archive.signing_key
+    True
+

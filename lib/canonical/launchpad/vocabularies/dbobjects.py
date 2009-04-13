@@ -25,7 +25,6 @@ __all__ = [
     'DistributionUsingMaloneVocabulary',
     'DistributionVocabulary',
     'DistroSeriesVocabulary',
-    'FAQVocabulary',
     'FeaturedProjectVocabulary',
     'FilteredDeltaLanguagePackVocabulary',
     'FilteredDistroArchSeriesVocabulary',
@@ -83,46 +82,42 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.database import (
-    Account, Archive, Branch, BranchSet, Bounty, Bug, BugTracker, BugWatch,
-    Component, Country, Distribution, DistroArchSeries, DistroSeries,
-    EmailAddress, FeaturedProject, KarmaCategory, Language, LanguagePack,
-    MailingList, Milestone, Person, PillarName, POTemplate,
-    Processor, ProcessorFamily,
+    Account, Archive, Bounty, Branch, Bug, BugTracker, BugWatch, Component,
+    Country, Distribution, DistroArchSeries, DistroSeries, EmailAddress,
+    FeaturedProject, KarmaCategory, Language, LanguagePack, MailingList,
+    Milestone, Person, PillarName, POTemplate, Processor, ProcessorFamily,
     Product, ProductRelease, ProductSeries, Project, SourcePackageRelease,
     Specification, Sprint, TranslationGroup, TranslationMessage)
-
 from canonical.database.sqlbase import SQLBase, quote_like, quote, sqlvalues
 from canonical.launchpad.helpers import shortlist
+from canonical.launchpad.interfaces import IStore
 from canonical.launchpad.interfaces.archive import ArchivePurpose
-from canonical.launchpad.interfaces.branch import IBranch
-from canonical.launchpad.interfaces.branchcollection import IAllBranches
+from lp.code.interfaces.branch import IBranch
+from lp.code.interfaces.branchcollection import IAllBranches
 from canonical.launchpad.interfaces.bugtask import (
     IBugTask, IDistroBugTask, IDistroSeriesBugTask, IProductSeriesBugTask,
     IUpstreamBugTask)
 from canonical.launchpad.interfaces.bugtracker import BugTrackerType
-from canonical.launchpad.interfaces.distribution import IDistribution
-from canonical.launchpad.interfaces.distributionsourcepackage import (
+from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage)
-from canonical.launchpad.interfaces.distroseries import (
+from lp.registry.interfaces.distroseries import (
     DistroSeriesStatus, IDistroSeries)
-from canonical.launchpad.interfaces.emailaddress import (
-    EmailAddressStatus, IEmailAddressSet)
-from canonical.launchpad.interfaces.faq import IFAQ
-from canonical.launchpad.interfaces.faqtarget import IFAQTarget
+from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
 from canonical.launchpad.interfaces.language import ILanguage
 from canonical.launchpad.interfaces.languagepack import LanguagePackType
-from canonical.launchpad.interfaces.mailinglist import (
+from lp.registry.interfaces.mailinglist import (
     IMailingListSet, MailingListStatus)
-from canonical.launchpad.interfaces.milestone import (
+from lp.registry.interfaces.milestone import (
     IMilestoneSet, IProjectMilestone)
-from canonical.launchpad.interfaces.person import (
+from lp.registry.interfaces.person import (
     IPerson, IPersonSet, ITeam, PersonVisibility)
-from canonical.launchpad.interfaces.pillar import IPillarName
-from canonical.launchpad.interfaces.product import (
+from lp.registry.interfaces.pillar import IPillarName
+from lp.registry.interfaces.product import (
     IProduct, IProductSet, License)
-from canonical.launchpad.interfaces.productseries import IProductSeries
-from canonical.launchpad.interfaces.project import IProject
-from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
+from lp.registry.interfaces.productseries import IProductSeries
+from lp.registry.interfaces.project import IProject
+from lp.registry.interfaces.sourcepackage import ISourcePackage
 from canonical.launchpad.interfaces.specification import (
     ISpecification, SpecificationFilter)
 from canonical.launchpad.interfaces.account import AccountStatus
@@ -154,7 +149,12 @@ class BasePersonVocabulary:
         if "@" in token:
             # This looks like an email token, so let's do an object
             # lookup based on that.
-            email = getUtility(IEmailAddressSet).getByEmail(token)
+            # We retrieve the email address via the main store, so 
+            # we can easily traverse to email.person to retrieve the
+            # result from the main Store as expected by our call sites.
+            email = IStore(Person).find(
+                EmailAddress,
+                EmailAddress.email.lower() == token.strip().lower()).one()
             if email is None:
                 raise LookupError(token)
             return self.toTerm(email.person)
@@ -290,62 +290,6 @@ class WebBugTrackerVocabulary(BugTrackerVocabulary):
     """All web-based bug tracker types."""
 
     _filter = BugTracker.q.bugtrackertype != BugTrackerType.EMAILADDRESS
-
-
-class FAQVocabulary:
-    """Vocabulary containing all the FAQs in an `IFAQTarget`."""
-
-    implements(IHugeVocabulary)
-
-    displayname = 'Select a FAQ'
-
-    def __init__(self, context):
-        """Create a new vocabulary for the context.
-
-        :param context: It should adaptable to `IFAQTarget`.
-        """
-        self.context = IFAQTarget(context)
-
-    def __len__(self):
-        """See `IIterableVocabulary`."""
-        return self.context.searchFAQs().count()
-
-    def __iter__(self):
-        """See `IIterableVocabulary`."""
-        for faq in self.context.searchFAQs():
-            yield self.toTerm(faq)
-
-    def __contains__(self, value):
-        """See `IVocabulary`."""
-        if not IFAQ.providedBy(value):
-            return False
-        return self.context.getFAQ(value.id) is not None
-
-    def getTerm(self, value):
-        """See `IVocabulary`."""
-        if value not in self:
-            raise LookupError(value)
-        return self.toTerm(value)
-
-    def getTermByToken(self, token):
-        """See `IVocabularyTokenized`."""
-        try:
-            faq_id = int(token)
-        except ValueError:
-            raise LookupError(token)
-        faq = self.context.getFAQ(token)
-        if faq is None:
-            raise LookupError(token)
-        return self.toTerm(faq)
-
-    def toTerm(self, faq):
-        """Return the term for a FAQ."""
-        return SimpleTerm(faq, faq.id, faq.title)
-
-    def searchForTerms(self, query=None):
-        """See `IHugeVocabulary`."""
-        results = self.context.findSimilarFAQs(query)
-        return CountableIterator(results.count(), results, self.toTerm)
 
 
 class LanguageVocabulary(SQLObjectVocabularyBase):
@@ -1076,8 +1020,7 @@ class ProductReleaseVocabulary(SQLObjectVocabularyBase):
     # Sorting by version won't give the expected results, because it's just a
     # text field.  e.g. ["1.0", "2.0", "11.0"] would be sorted as ["1.0",
     # "11.0", "2.0"].
-    _orderBy = [Product.q.name, ProductSeries.q.name,
-                ProductRelease.q.version]
+    _orderBy = [Product.q.name, ProductSeries.q.name, Milestone.q.name]
     _clauseTables = ['Product', 'ProductSeries']
 
     def toTerm(self, obj):
@@ -1101,11 +1044,11 @@ class ProductReleaseVocabulary(SQLObjectVocabularyBase):
             raise LookupError(token)
 
         obj = ProductRelease.selectOne(
-            AND(ProductRelease.q.productseriesID == ProductSeries.q.id,
+            AND(ProductRelease.q.milestoneID == Milestone.q.id,
+                Milestone.q.productseriesID == ProductSeries.q.id,
                 ProductSeries.q.productID == Product.q.id,
                 Product.q.name == productname,
-                ProductSeries.q.name == productseriesname,
-                ProductRelease.q.version == productreleaseversion
+                ProductSeries.q.name == productseriesname
                 )
             )
         try:
@@ -1121,12 +1064,12 @@ class ProductReleaseVocabulary(SQLObjectVocabularyBase):
         query = query.lower()
         objs = self._table.select(
             AND(
-                ProductSeries.q.id == ProductRelease.q.productseriesID,
+                Milestone.q.id == ProductRelease.q.milestoneID,
+                ProductSeries.q.id == Milestone.q.productseriesID,
                 Product.q.id == ProductSeries.q.productID,
                 OR(
                     CONTAINSSTRING(Product.q.name, query),
                     CONTAINSSTRING(ProductSeries.q.name, query),
-                    CONTAINSSTRING(ProductRelease.q.version, query)
                     )
                 ),
             orderBy=self._orderBy
@@ -1284,6 +1227,7 @@ class MilestoneVocabulary(SQLObjectVocabularyBase):
             target = milestone_context.target
         elif (IProject.providedBy(milestone_context) or
               IProduct.providedBy(milestone_context) or
+              IProductSeries.providedBy(milestone_context) or
               IDistribution.providedBy(milestone_context) or
               IDistroSeries.providedBy(milestone_context)):
             target = milestone_context
@@ -1310,12 +1254,12 @@ class MilestoneVocabulary(SQLObjectVocabularyBase):
             if IProject.providedBy(target):
                 milestones = shortlist(
                     (milestone for product in target.products
-                     for milestone in product.all_milestones),
+                     for milestone in product.milestones),
                     longest_expected=40)
             elif IProductSeries.providedBy(target):
-                series_milestones = shortlist(target.all_milestones,
+                series_milestones = shortlist(target.milestones,
                                               longest_expected=40)
-                product_milestones = shortlist(target.product.all_milestones,
+                product_milestones = shortlist(target.product.milestones,
                                                longest_expected=40)
                 # Some milestones are associtaed with a product
                 # and a product series; these should appear only
@@ -1323,37 +1267,52 @@ class MilestoneVocabulary(SQLObjectVocabularyBase):
                 milestones = set(series_milestones + product_milestones)
             else:
                 milestones = shortlist(
-                    target.all_milestones, longest_expected=40)
+                    target.milestones, longest_expected=40)
         else:
             # We can't use context to reasonably filter the
-            # milestones, so let's just grab all of them.
-            milestones = shortlist(
-                getUtility(IMilestoneSet), longest_expected=40)
+            # milestones, so let's either just grab all of them,
+            # or let's return an empty vocabulary.
+            # Generally, returning all milestones is a bad idea: We
+            # have at present (2009-04-08) nearly 2000 active milestones,
+            # and nobody really wants to search through such a huge list
+            # on a web page. This problem is fixed for an IPerson
+            # context by browser.person.RelevantMilestonesMixin.
+            # getMilestoneWidgetValues() which creates a "sane" milestone
+            # set. We need to create the big vocabulary of all visible
+            # milestones nevertheless, in order to allow the validation
+            # of submitted milestone values.
+            #
+            # For other targets, like MaloneApplication, we return an empty
+            # vocabulary.
+            if IPerson.providedBy(self.context):
+                milestones = shortlist(
+                    getUtility(IMilestoneSet).getVisibleMilestones(),
+                    longest_expected=40)
+            else:
+                milestones = []
 
-        visible_milestones = [
-            milestone for milestone in milestones if milestone.visible]
         if (IBugTask.providedBy(milestone_context) and
             milestone_context.milestone is not None and
-            milestone_context.milestone not in visible_milestones):
+            milestone_context.milestone not in milestones):
             # Even if we inactivate a milestone, a bugtask might still be
             # linked to it. Include such milestones in the vocabulary to
             # ensure that the +editstatus page doesn't break.
-            visible_milestones.append(milestone_context.milestone)
+            milestones.append(milestone_context.milestone)
 
         # Prefetch products and distributions for rendering
         # milestones: optimization to reduce the number of queries.
         product_ids = set(
             removeSecurityProxy(milestone).productID
-            for milestone in visible_milestones)
+            for milestone in milestones)
         distro_ids = set(
             removeSecurityProxy(milestone).distributionID
-            for milestone in visible_milestones)
+            for milestone in milestones)
         if len(product_ids) > 0:
             list(Product.select("id IN %s" % sqlvalues(product_ids)))
         if len(distro_ids) > 0:
             list(Distribution.select("id IN %s" % sqlvalues(distro_ids)))
 
-        return sorted(visible_milestones, key=attrgetter('displayname'))
+        return sorted(milestones, key=attrgetter('displayname'))
 
     def __iter__(self):
         for milestone in self.visible_milestones:
@@ -1442,9 +1401,9 @@ class CommercialProjectsVocabulary(NamedSQLObjectVocabulary):
             return self.emptySelectResults()
         if check_permission('launchpad.Commercial', user):
             product_set = getUtility(IProductSet)
-            projects = product_set.forReview(search_text=query,
-                                             licenses=[License.OTHER_PROPRIETARY],
-                                             active=True)
+            projects = product_set.forReview(
+                search_text=query, licenses=[License.OTHER_PROPRIETARY],
+                active=True)
         else:
             projects = user.getOwnedProjects(match_name=query)
             projects = self._filter_projs(projects)
@@ -1645,7 +1604,7 @@ class PPAVocabulary(SQLObjectVocabularyBase):
     implements(IHugeVocabulary)
 
     _table = Archive
-    _orderBy = ['Person.name']
+    _orderBy = ['Person.name, Archive.name']
     _clauseTables = ['Person']
     _filter = AND(
         Person.q.id == Archive.q.ownerID,
@@ -1659,11 +1618,22 @@ class PPAVocabulary(SQLObjectVocabularyBase):
             summary = description.splitlines()[0]
         else:
             summary = "No description available"
-        return SimpleTerm(archive, archive.owner.name, summary)
+
+        token = '%s/%s' % (archive.owner.name, archive.name)
+
+        return SimpleTerm(archive, token, summary)
 
     def getTermByToken(self, token):
         """See `IVocabularyTokenized`."""
-        clause = AND(self._filter, Person.name == token)
+        try:
+            owner_name, archive_name = token.split('/')
+        except ValueError:
+            raise LookupError(token)
+
+        clause = AND(
+            self._filter,
+            Person.name == owner_name,
+            Archive.name == archive_name)
 
         obj = self._table.selectOne(
             clause, clauseTables=self._clauseTables)
@@ -1682,9 +1652,19 @@ class PPAVocabulary(SQLObjectVocabularyBase):
             return self.emptySelectResults()
 
         query = query.lower()
-        clause = AND(self._filter,
-                     SQL("(Archive.fti @@ ftq(%s) OR Person.fti @@ ftq(%s))"
-                         % (quote(query), quote(query))))
+
+        try:
+            owner_name, archive_name = query.split('/')
+        except ValueError:
+            clause = AND(
+                self._filter,
+                SQL("(Archive.fti @@ ftq(%s) OR Person.fti @@ ftq(%s))"
+                    % (quote(query), quote(query))))
+        else:
+            clause = AND(
+                self._filter,
+                Person.name == owner_name,
+                Archive.name == archive_name)
 
         return self._table.select(
             clause, orderBy=self._orderBy, clauseTables=self._clauseTables)
@@ -1934,7 +1914,7 @@ class DistributionOrProductVocabulary(PillarVocabularyBase):
     displayname = 'Select a project'
     _filter = """
         -- An active product/distro.
-        (active IS TRUE
+        ((active IS TRUE
          AND (product IS NOT NULL OR distribution IS NOT NULL)
         )
         OR
@@ -1943,7 +1923,7 @@ class DistributionOrProductVocabulary(PillarVocabularyBase):
             SELECT id FROM PillarName
             WHERE active IS TRUE AND
                 (product IS NOT NULL OR distribution IS NOT NULL))
-        )
+        ))
         """
 
     def __contains__(self, obj):

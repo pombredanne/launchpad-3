@@ -1,0 +1,218 @@
+= Product Set Page =
+
+Under "/projects" there are several pages for various administration tasks.
+
+The pages are "+review-licenses", "+new", and "+all".
+
+== Review project licenses ==
+
+The page +review-licenses is accessible from the /projects page via
+the "Review licenses" link, which is conditionally available
+based on permissions.
+
+A logged in, unprivileged person cannot see the "Review
+licenses" link.
+
+    >>> user_browser.open('http://launchpad.dev/projects')
+    >>> user_browser.getLink("Review licenses")
+    Traceback (most recent call last):
+      ...
+    LinkNotFoundError
+
+The unprivileged person cannot navigate directly to the link.
+
+    >>> user_browser.open('http://launchpad.dev/projects/+review-licenses')
+    Traceback (most recent call last):
+      ...
+    Unauthorized:...
+
+A member of the Launchpad commercial team may successfully access the
++review-licenses via the link.
+
+    >>> commercial_browser = setupBrowser(
+    ...     auth='Basic commercial-member@canonical.com:test')
+    >>> commercial_browser.open(
+    ...     'http://launchpad.dev/projects/')
+    >>> commercial_browser.getLink("Review licenses").click()
+    >>> commercial_browser.url
+    'http://launchpad.dev/projects/+review-licenses'
+    >>> commercial_browser.title
+    'Review licenses of projects'
+
+
+== Searching from +review_licenses ==
+
+The search parameters that filter on a boolean value can
+be left unspecified to get results with either value.
+
+    >>> for name in ('active', 'license_reviewed', 'has_zero_licenses',
+    ...              'license_info_is_empty'):
+    ...     control = commercial_browser.getControl(name='field.%s' % name)
+    ...     for option in control.displayOptions:
+    ...         print option.decode('utf-8').encode('ascii', 'replace'),
+    ...     print
+    ?(do not filter) ?True ?False
+    ?(do not filter) ?True ?False
+    ?(do not filter) ?True ?False
+    ?(do not filter) ?Empty ?Not Empty
+
+The default form values will search for active projects that have not
+been reviewed and that have an Other/Open-Source or Other/Proprietary
+license.
+
+    >>> commercial_browser.getControl(name='field.active').value
+    ['True']
+    >>> commercial_browser.getControl(name='field.license_reviewed').value
+    ['False']
+    >>> commercial_browser.getControl(name='field.licenses').value
+    ['OTHER_PROPRIETARY', 'OTHER_OPEN_SOURCE']
+
+If there are no products that match the search conditions, a warning
+message will be displayed.
+
+    >>> commercial_browser.getControl(name='field.active').value = ['False']
+    >>> commercial_browser.getControl(name='search').click()
+    >>> find_tags_by_class(commercial_browser.contents, 'warning message')
+    [<div...No items found with these search options...
+
+If enough projects are found, the results are paginated. A link
+is provided for each product pointint to its +review-license page.
+
+    >>> commercial_browser.getControl(name='field.active').value = ['True']
+    >>> commercial_browser.getControl(name='field.licenses').value = []
+    >>> commercial_browser.getControl(
+    ...     name='field.license_info_is_empty').value = ['Empty']
+    >>> commercial_browser.getControl(name='field.created_before').value = (
+    ...     '2007-01-01')
+    >>> commercial_browser.getControl(name='search').click()
+    >>> pagination = find_tags_by_class(commercial_browser.contents,
+    ...                                 'batch-navigation-index')
+    >>> text_in_elements = pagination[0].findAll(text=True)
+    >>> print ' '.join(text.strip() for text in text_in_elements)
+    1 ... 10 of 14 results
+    >>> table = find_tag_by_id(commercial_browser.contents, 'product-listing')
+    >>> for tr in table.findAll('tr'):
+    ...     td_list = tr.findAll('td')
+    ...     print td_list[5].a
+    <a href="/arch-mirrors/+review-license">Review</a>
+    <a href="/bazaar/+review-license">Review</a>
+    <a href="/evolution/+review-license">Review</a>
+    <a href="/gnome-terminal/+review-license">Review</a>
+    <a href="/applets/+review-license">Review</a>
+    <a href="/launchpad/+review-license">Review</a>
+    <a href="/firefox/+review-license">Review</a>
+    <a href="/thunderbird/+review-license">Review</a>
+    <a href="/netapplet/+review-license">Review</a>
+    <a href="/landscape/+review-license">Review</a>
+    >>> commercial_browser.getLink('Next').click()
+    >>> print commercial_browser.url
+    http://launchpad.dev/projects/+review-licenses?field...&start=10
+
+Now, we can click on the Review link, which will take us to the
+$project/+review-license page. Then clicking on the Change button
+will take us back to the page we came from.
+
+    >>> review_link = commercial_browser.getLink(
+    ...     url='/tomcat/+review-license')
+    >>> review_link.text
+    'Review'
+    >>> review_link.click()
+    >>> print commercial_browser.url
+    http://launchpad.dev/tomcat/+review-license
+    >>> commercial_browser.getControl(name='field.actions.change').click()
+    >>> print commercial_browser.url
+    http://launchpad.dev/projects/+review-licenses?field...&start=10
+
+
+= Project list shows license status =
+
+The project list will show (Proprietary) next to projects with a
+proprietary license, (Unspecified) next to projects without
+any license and (Unreviewed) next to projects with an unreviewed
+Other/OpenSource license.
+
+First, add a product with a Other/Open Source license.
+
+    >>> user_browser.open('http://launchpad.dev/products/+new')
+    >>> user_browser.getControl('Name', index=0).value = 'other-open-source'
+    >>> user_browser.getControl('Display Name').value = 'Other-Open-Source Product'
+    >>> user_browser.getControl('Title').value = 'title'
+    >>> user_browser.getControl('Summary').value = 'summary'
+    >>> user_browser.getControl(name='field.description').value = 'description'
+    >>> user_browser.getControl(name='field.licenses').value = [
+    ...     'OTHER_OPEN_SOURCE']
+    >>> user_browser.getControl(name='field.license_info').value = 'foo'
+    >>> user_browser.getControl('Publish this Project').click()
+    >>> print user_browser.url
+    http://launchpad.dev/other-open-source
+
+    >>> user_browser.open('http://launchpad.dev/projects/+all')
+    >>> div = find_tag_by_id(user_browser.contents, 'product-listing')
+    >>> for subdiv in div.next.findNextSiblings('div'):
+    ...     pillar = subdiv.find()
+    ...     print ''.join(pillar.findAll(text=True))
+    ...     print '     ', pillar.get('title')
+    &nbsp;Other-Open-Source Product (Unreviewed)
+          This project&rsquo;s license has not been reviewed.
+    &nbsp;Launchpad Translations (Unspecified)
+          This project&rsquo;s license has not been specified.
+    &nbsp;Mega Money Maker (Proprietary)
+          This project&rsquo;s license is proprietary.
+    &nbsp;Derby
+          None
+    &nbsp;Redfish (Unspecified)
+          This project&rsquo;s license has not been specified.
+
+If an open source project adds a proprietary license then the project
+will be displayed as proprietary.
+
+    >>> user_browser.open('http://launchpad.dev/other-open-source')
+    >>> user_browser.getLink('Change details').click()
+    >>> user_browser.getControl(name='field.licenses').value = [
+    ...     'OTHER_OPEN_SOURCE', 'OTHER_PROPRIETARY']
+    >>> user_browser.getControl('Change').click()
+    >>> user_browser.open('http://launchpad.dev/projects/+all')
+    >>> div = find_tag_by_id(user_browser.contents, 'product-listing')
+    >>> for subdiv in div.next.findNextSiblings('div'):
+    ...     pillar = subdiv.find()
+    ...     print ''.join(pillar.findAll(text=True))
+    ...     print '     ', pillar.get('title')
+    &nbsp;Other-Open-Source Product (Proprietary)
+          This project&rsquo;s license is proprietary.
+    &nbsp;Launchpad Translations (Unspecified)
+          This project&rsquo;s license has not been specified.
+    &nbsp;Mega Money Maker (Proprietary)
+          This project&rsquo;s license is proprietary.
+    &nbsp;Derby
+          None
+    &nbsp;Redfish (Unspecified)
+          This project&rsquo;s license has not been specified.
+
+
+== View all projects ==
+
+The unprivileged user can see "+all".
+
+    >>> user_browser.open('http://launchpad.dev/projects/+all')
+    >>> user_browser.title
+    'Upstream projects registered in Launchpad'
+
+The commercial user can also view "+all".
+
+    >>> commercial_browser.open('http://launchpad.dev/projects/+all')
+    >>> commercial_browser.title
+    'Upstream projects registered in Launchpad'
+
+== Create a project ==
+
+The unprivileged user can see "+new".
+
+    >>> user_browser.open('http://launchpad.dev/projects/+new')
+    >>> user_browser.title
+    'Register a project in Launchpad'
+
+The commercial user can also view "+new".
+
+    >>> commercial_browser.open('http://launchpad.dev/projects/+new')
+    >>> commercial_browser.title
+    'Register a project in Launchpad'

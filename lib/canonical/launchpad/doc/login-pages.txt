@@ -6,7 +6,7 @@ operates within the Launchpad workflows.
     # Import some stuff we'll use througout the test.
     >>> from zope.component import getMultiAdapter, getUtility
     >>> from zope.security.proxy import removeSecurityProxy
-    >>> from canonical.launchpad.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> from canonical.launchpad.webapp.publisher import rootObject
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> person_set = getUtility(IPersonSet)
@@ -118,7 +118,10 @@ explains the problem.
     ...     email='bad-user@canonical.com',
     ...     name='bad-user',
     ...     password='password')
-    >>> bad_user.account.status = AccountStatus.SUSPENDED
+    >>> from canonical.launchpad.interfaces import IMasterObject
+    >>> IMasterObject(bad_user.account).status = AccountStatus.SUSPENDED
+    >>> import transaction
+    >>> transaction.commit()
 
     >>> login(ANONYMOUS, request)
     >>> request = create_request(

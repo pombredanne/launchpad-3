@@ -25,7 +25,7 @@ __all__ = [
 import sha
 import sets
 from email.Encoders import encode_base64
-from email.Utils import make_msgid, formatdate, formataddr
+from email.Utils import getaddresses, make_msgid, formatdate, formataddr
 from email.Message import Message
 from email.Header import Header
 from email.MIMEText import MIMEText
@@ -72,6 +72,9 @@ def do_paranoid_email_content_validation(from_addr, to_addrs, subject, body):
     for addr in to_addrs:
         assert zisinstance(addr, basestring) and bool(addr), \
                 'Invalid recipient: %r in %r' % (addr, to_addrs)
+        assert '\n' not in addr, (
+            "Address contains carriage returns: %r" % (addr,))
+
 
 def format_address(name, address):
     r"""Formats a name and address to be used as an email header.
@@ -90,10 +93,21 @@ def format_address(name, address):
 
         >>> format_address('Foo [Baz] Bar', 'foo.bar@canonical.com')
         '"Foo \\[Baz\\] Bar" <foo.bar@canonical.com>'
+
+    Really long names doesn't get folded, since we're not constructing
+    an e-mail header here.
+
+        >>> formatted_address = format_address(
+        ...     'a '*100, 'long.name@example.com')
+        >>> '\n' in formatted_address
+        False
     """
     if not name:
         return str(address)
     name = str(Header(name))
+    # Using Header to encode the name has the side-effect that long
+    # names are folded, so let's unfold it again.
+    name = ''.join(name.splitlines())
     return str(formataddr((name, address)))
 
 
@@ -166,8 +180,7 @@ class MailController(object):
             msg = MIMEText(self.body.encode('utf-8'), 'plain', 'utf-8')
         else:
             msg = MIMEMultipart()
-            body_part = Message()
-            body_part.set_payload(self.body)
+            body_part = MIMEText(self.body.encode('utf-8'), 'plain', 'utf-8')
             msg.attach(body_part)
             for attachment in self.attachments:
                 msg.attach(attachment)
@@ -205,6 +218,28 @@ def simple_sendmail_from_person(
         from_addr, to_addrs, subject, body, headers=headers)
 
 
+def get_addresses_from_header(email_header):
+    r"""Get the e-mail addresses specificed in an e-mail header.
+
+        >>> get_addresses_from_header('one@example.com')
+        ['one@example.com']
+        >>> get_addresses_from_header('one@example.com, two@example.com')
+        ['one@example.com', 'two@example.com']
+        >>> get_addresses_from_header('One\n <one@example.com>')
+        ['One <one@example.com>']
+        >>> get_addresses_from_header('One\r\n <one@example.com>')
+        ['One <one@example.com>']
+        >>> get_addresses_from_header(
+        ...     '"One, A" <one.a@example.com>,\n'
+        ...     ' "Two, B" <two.b@example.com>')
+        ['"One, A" <one.a@example.com>', '"Two, B" <two.b@example.com>']
+
+    """
+    return [
+        formataddr((name, address))
+        for name, address in getaddresses([email_header])]
+
+
 def sendmail(message, to_addrs=None, bulk=True):
     """Send an email.Message.Message
 
@@ -234,11 +269,10 @@ def sendmail(message, to_addrs=None, bulk=True):
     assert 'subject' in message and bool(message['subject']), \
             'No Subject: header'
 
-    from_addr = message['from']
     if to_addrs is None:
-        to_addrs = message['to'].split(',')
+        to_addrs = get_addresses_from_header(message['to'])
         if message['cc']:
-            to_addrs = to_addrs + message['cc'].split(',')
+            to_addrs = to_addrs + get_addresses_from_header(message['cc'])
 
     # Add a Message-Id: header if it isn't already there
     if 'message-id' not in message:

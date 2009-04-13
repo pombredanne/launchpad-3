@@ -24,7 +24,7 @@ from canonical.codehosting.bzrutils import ensure_base
 from canonical.codehosting.tests.helpers import (
     create_branch_with_one_revision, LoomTestMixin)
 from canonical.config import config
-from canonical.launchpad.interfaces import IBranchSet
+from lp.code.interfaces.branchlookup import IBranchLookup
 from canonical.testing import ZopelessAppServerLayer
 
 
@@ -38,7 +38,7 @@ class BranchScannerTest(TestCaseWithTransport, LoomTestMixin):
 
     def setUp(self):
         TestCaseWithTransport.setUp(self)
-        self.db_branch = getUtility(IBranchSet)[self.branch_id]
+        self.db_branch = getUtility(IBranchLookup).get(self.branch_id)
         assert self.db_branch.revision_history.count() == 0
 
     def getWarehouseLocation(self, db_branch):

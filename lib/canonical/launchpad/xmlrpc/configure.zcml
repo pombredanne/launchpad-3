@@ -25,27 +25,27 @@
 
   <securedutility
     class="canonical.launchpad.systemhomes.BranchPullerApplication"
-    provides="canonical.launchpad.interfaces.codehosting.IBranchPullerApplication">
-    <allow interface="canonical.launchpad.interfaces.codehosting.IBranchPullerApplication"/>
+    provides="lp.code.interfaces.codehosting.IBranchPullerApplication">
+    <allow interface="lp.code.interfaces.codehosting.IBranchPullerApplication"/>
   </securedutility>
 
   <xmlrpc:view
-    for="canonical.launchpad.interfaces.codehosting.IBranchPullerApplication"
-    interface="canonical.launchpad.interfaces.codehosting.IBranchPuller"
-    class="canonical.launchpad.xmlrpc.codehosting.BranchPuller"
+    for="lp.code.interfaces.codehosting.IBranchPullerApplication"
+    interface="lp.code.interfaces.codehosting.IBranchPuller"
+    class="lp.code.xmlrpc.codehosting.BranchPuller"
     permission="zope.Public"
     />
 
   <securedutility
     class="canonical.launchpad.systemhomes.BranchFileSystemApplication"
-    provides="canonical.launchpad.interfaces.codehosting.IBranchFileSystemApplication">
-    <allow interface="canonical.launchpad.interfaces.codehosting.IBranchFileSystemApplication"/>
+    provides="lp.code.interfaces.codehosting.IBranchFileSystemApplication">
+    <allow interface="lp.code.interfaces.codehosting.IBranchFileSystemApplication"/>
   </securedutility>
 
   <xmlrpc:view
-    for="canonical.launchpad.interfaces.codehosting.IBranchFileSystemApplication"
-    interface="canonical.launchpad.interfaces.codehosting.IBranchFileSystem"
-    class="canonical.launchpad.xmlrpc.codehosting.BranchFileSystem"
+    for="lp.code.interfaces.codehosting.IBranchFileSystemApplication"
+    interface="lp.code.interfaces.codehosting.IBranchFileSystem"
+    class="lp.code.xmlrpc.codehosting.BranchFileSystem"
     permission="zope.Public"
     />
 
@@ -145,11 +145,11 @@
     <require like_class="xmlrpclib.Fault" />
   </class>
 
-  <class class="canonical.launchpad.xmlrpc.faults.NoBranchForSeries">
+  <class class="canonical.launchpad.xmlrpc.faults.NoLinkedBranch">
     <require like_class="xmlrpclib.Fault" />
   </class>
 
-  <class class="canonical.launchpad.xmlrpc.faults.NoSuchSeries">
+  <class class="canonical.launchpad.xmlrpc.faults.NoSuchProductSeries">
     <require like_class="xmlrpclib.Fault" />
   </class>
 
@@ -161,7 +161,7 @@
     <require like_class="xmlrpclib.Fault" />
   </class>
 
-  <class class="canonical.launchpad.xmlrpc.faults.NoDefaultBranchForPillar">
+  <class class="canonical.launchpad.xmlrpc.faults.CannotHaveLinkedBranch">
     <require like_class="xmlrpclib.Fault" />
   </class>
 
@@ -198,6 +198,18 @@
   </class>
 
   <class class="canonical.launchpad.xmlrpc.faults.NotFound">
+    <require like_class="xmlrpclib.Fault" />
+  </class>
+
+  <class class="canonical.launchpad.xmlrpc.faults.InvalidBranchUniqueName">
+    <require like_class="xmlrpclib.Fault" />
+  </class>
+
+  <class class="canonical.launchpad.xmlrpc.faults.NoSuchDistroSeries">
+    <require like_class="xmlrpclib.Fault" />
+  </class>
+
+  <class class="canonical.launchpad.xmlrpc.faults.NoSuchSourcePackageName">
     <require like_class="xmlrpclib.Fault" />
   </class>
 

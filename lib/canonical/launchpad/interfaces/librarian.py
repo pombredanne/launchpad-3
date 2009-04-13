@@ -7,18 +7,23 @@ __metaclass__ = type
 
 __all__ = [
     'ILibraryFileAlias',
-    'ILibraryFileContent',
     'ILibraryFileAliasSet',
+    'ILibraryFileContent',
+    'ILibraryFileDownloadCount',
+    'IParsedApacheLog',
     'NEVER_EXPIRES',
     ]
 
 from datetime import datetime
 from pytz import utc
 
-from zope.interface import Interface, Attribute
-from zope.schema import Datetime, Int, TextLine, Bool
+from zope.interface import Attribute, Interface
+from zope.schema import Bool, Choice, Date, Datetime, Int, TextLine
+
+from lazr.restful.fields import Reference
 
 from canonical.launchpad import _
+from canonical.librarian.interfaces import LIBRARIAN_SERVER_DEFAULT_TIMEOUT
 
 # Set the expires attribute to this constant to flag a file that
 # should never be removed from the Librarian.
@@ -33,24 +38,22 @@ class ILibraryFileAlias(Interface):
         title=_('Date created'), required=True, readonly=True)
     content = Attribute('Library file content')
     filename = TextLine(
-            title=_('Filename'), required=True, readonly=True
-            )
+        title=_('Filename'), required=True, readonly=True)
     mimetype = TextLine(
-            title=_('MIME type'), required=True, readonly=True
-            )
+        title=_('MIME type'), required=True, readonly=True)
     last_accessed = Datetime(
-            title=_('Date last accessed'), required=False, readonly=True
-            )
+        title=_('Date last accessed'), required=False, readonly=True)
     expires = Datetime(
-            title=_('Expiry time'), required=False, readonly=True,
-            description=_('''
-                When file can be removed. Set to None if the file
-                should only be removed when it is no longer referenced
-                in the database. Set it to NEVER_EXPIRES to keep it in
-                the Librarian permanently.
-                ''')
-            )
-
+        title=_('Expiry time'), required=False, readonly=True,
+        description=_('''
+            When file can be removed. Set to None if the file
+            should only be removed when it is no longer referenced
+            in the database. Set it to NEVER_EXPIRES to keep it in
+            the Librarian permanently.
+            '''))
+    hits = Int(
+        title=_('Number of times this file has been downloaded'),
+        required=False, readonly=True)
     restricted = Bool(
         title=_('Is this file alias restricted.'),
         required=True, readonly=True,
@@ -74,17 +77,38 @@ class ILibraryFileAlias(Interface):
         https URL. Otherwise return the http URL.
         """
 
-    def open():
-        """Open this file for reading."""
+    def open(timeout=LIBRARIAN_SERVER_DEFAULT_TIMEOUT):
+        """Open this file for reading.
 
-    def read(chunksize=None):
+        :param timeout: The number of seconds the method retries to open
+            a connection to the Librarian server. If the connection
+            cannot be established in the given time, a
+            LibrarianServerError is raised.
+        :return: None
+        """
+
+    def read(chunksize=None, timeout=LIBRARIAN_SERVER_DEFAULT_TIMEOUT):
         """Read up to `chunksize` bytes from the file.
 
-        `chunksize` defaults to the entire file.
+        :param chunksize: The maximum number of bytes to be read.
+            Defaults to the entire file.
+        :param timeout: The number of seconds the method retries to open
+            a connection to the Librarian server. If the connection
+            cannot be established in the given time, a
+            LibrarianServerError is raised.
+        :return: the data read from the Librarian file.
         """
 
     def close():
         """Close this file."""
+
+    def updateDownloadCount(day, country, count):
+        """Update this file's download count for the given country and day.
+
+        If there's no `ILibraryFileDownloadCount` entry for this file, and the
+        given day/country, we create one with the given count.  Otherwise we
+        just increase the count of the existing one by the given count.
+        """
 
 
 class ILibraryFileContent(Interface):
@@ -136,3 +160,32 @@ class ILibraryFileAliasSet(Interface):
         """Return all LibraryFileAlias whose content's sha1 match the given
         sha1.
         """
+
+
+class ILibraryFileDownloadCount(Interface):
+    """Download count of a given file in a given day."""
+
+    libraryfilealias = Reference(
+        title=_('The file'), schema=ILibraryFileAlias, required=True,
+        readonly=True)
+    day = Date(
+        title=_('The day of the downloads'), required=True, readonly=True)
+    count = Int(
+        title=_('The number of downloads'), required=True, readonly=False)
+    country = Choice(
+        title=_('Country'), required=False, vocabulary='CountryName')
+
+
+class IParsedApacheLog(Interface):
+    """An apache log file parsed to extract download counts of files.
+
+    This is used so that we don't parse log files more than once.
+    """
+
+    first_line = TextLine(
+        title=_("The log file's first line"), required=True,
+        readonly=True)
+    bytes_read = Int(
+        title=_('Number of bytes read'), required=True, readonly=False)
+    date_last_parsed = Datetime(
+        title=_('Date last parsed'), required=False, readonly=False)

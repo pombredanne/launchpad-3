@@ -697,12 +697,11 @@ Editing an attachment.
 
 Adding a branch.
 
-    >>> from canonical.launchpad.interfaces import IBranchSet
-
+    >>> from lp.code.interfaces.branchlookup import IBranchLookup
     >>> firefox_bug.bug_branches.count()
     0
 
-    >>> branch_one = getUtility(IBranchSet).get(1)
+    >>> branch_one = getUtility(IBranchLookup).get(1)
     >>> current_date_last_updated = firefox_bug.date_last_updated
 
     >>> bug_branch = firefox_bug.addBranch(branch_one, foobar)
@@ -790,7 +789,8 @@ Editing the external bug watch.
     >>> bugwatch.remotebug = '5678'
 
     >>> bugwatch_changed = ObjectModifiedEvent(
-    ...     bugwatch, bugwatch_before_modification, ["remotebug"])
+    ...     bugwatch, bugwatch_before_modification, ["remotebug"],
+    ...     bugwatch.bug.owner)
 
     >>> current_date_last_updated = firefox_bug.date_last_updated
 
@@ -818,7 +818,7 @@ IBug.date_last_updated.
 
     >>> current_date_last_updated = firefox_bug.date_last_updated
 
-    >>> firefox_bug.unsubscribe(ubuntu_team)
+    >>> firefox_bug.unsubscribe(ubuntu_team, ubuntu_team)
 
     >>> firefox_bug.date_last_updated == current_date_last_updated
     True
@@ -1054,7 +1054,11 @@ number of users not affected by it.
     >>> affected_user = factory.makePerson()
     >>> unaffected_user = factory.makePerson()
 
-Initially, users are neither marked as affected nor as unaffected.
+Initially, only the bug reporter is marked as affected. Other users are neither
+marked as affected nor as unaffected.
+
+    >>> print test_bug.isUserAffected(test_bug.owner)
+    True
 
     >>> print test_bug.isUserAffected(affected_user)
     None
@@ -1066,14 +1070,14 @@ increments.
     >>> test_bug.isUserAffected(affected_user)
     True
     >>> test_bug.users_affected_count
-    1
+    2
 
 A bug can only affect a user once. Calling markUserAffect() with the
 same user more than once does not increment users_affect_count.
 
     >>> test_bug.markUserAffected(affected_user, affected=True)
     >>> test_bug.users_affected_count
-    1
+    2
 
 We can mark a user as unaffected by a bug.
 
@@ -1093,4 +1097,17 @@ And we can change whether a user is marked as affected or unaffected.
     >>> test_bug.users_unaffected_count
     0
     >>> test_bug.users_affected_count
-    2
+    3
+
+We can also get the collection of users affected by a bug.
+
+    >>> for user in test_bug.users_affected:
+    ...     print user.name
+    person-name9
+    person-name14
+    person-name17
+
+    >>> unaffecting_bug = factory.makeBug()
+    >>> print unaffecting_bug.users_affected
+    [<Person at ...>]
+

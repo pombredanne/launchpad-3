@@ -79,8 +79,8 @@ Revisions are associated to branches through the BranchRevision table. A given
 revision may appear in different positions in different branches thanks to
 Bazaar converge-on-pull logic.
 
->>> from canonical.launchpad.interfaces import IBranchSet
->>> branch = getUtility(IBranchSet).get(1)
+>>> from lp.code.interfaces.branchlookup import IBranchLookup
+>>> branch = getUtility(IBranchLookup).get(1)
 >>> branch.revision_history.count()
 0
 
@@ -93,8 +93,7 @@ True
 
 === Accessing BranchRevision ===
 
-  >>> from canonical.launchpad.interfaces import IBranchSet
-  >>> branch = getUtility(IBranchSet).getByUniqueName(
+  >>> branch = getUtility(IBranchLookup).getByUniqueName(
   ...     '~name12/+junk/junk.contrib')
 
 The full ancestry of a branch is recorded. That includes the history commits on
@@ -180,8 +179,8 @@ method.
 First, get a branch:
 
   >>> from zope.component import getUtility
-  >>> from canonical.launchpad.interfaces import IBranchSet
-  >>> branch = getUtility(IBranchSet).getByUniqueName('~name12/+junk/junk.dev')
+  >>> branch = getUtility(IBranchLookup).getByUniqueName(
+  ...     '~name12/+junk/junk.dev')
 
 The last commit on this branch has the revision number 6.
 
@@ -208,7 +207,7 @@ Note that while the BranchRevision object linking the revision to the
 branch has been destroyed, the associated revision object is not (it
 may be referenced by some other branch):
 
-  >>> from canonical.launchpad.interfaces import IBranchSet, IRevisionSet
+  >>> from canonical.launchpad.interfaces import IRevisionSet
   >>> revision = getUtility(IRevisionSet).getByRevisionId(
   ...     'foo@localhost-20051031170357-1301ad6d387feb23')
   >>> print revision.revision_id

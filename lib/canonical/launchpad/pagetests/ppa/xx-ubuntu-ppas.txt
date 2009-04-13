@@ -497,24 +497,19 @@ An empty PPA doesn't list any packages and it also doesn't present the
 link to a repository that doesn't exist yet.
 
     >>> anon_browser.open("http://launchpad.dev/~no-priv/+archive/ppa")
-    >>> print extract_text(anon_browser.contents)
-    PPA for No Privileges Person
-    ...
+    >>> print extract_text(find_main_content(anon_browser.contents))
     This archive is public
     PPA for No Privileges Person
-    URL: http://ppa.launchpad.dev/no-priv/ppa/ubuntu
     Description
     I am not allowed to say, I have no privs.
-    This PPA does not contain any packages yet.
-    ...
+    This PPA does not contain
+    any packages yet. Find more information about how to upload
+    packages in the PPA help page
 
-Note that the 'URL' page section contains the URL to the repository
-but it's not linkified.
+It also contains a link to the 'PPA help page'.
 
-    >>> anon_browser.getLink("http://ppa.launchpad.dev/no-priv/ubuntu")
-    Traceback (most recent call last):
-    ...
-    LinkNotFoundError
+    >>> print anon_browser.getLink('PPA help page').url
+    https://help.launchpad.net/Packaging/PPA
 
 The "sources list" widget isn't presented for empty PPAs either.
 
@@ -538,7 +533,7 @@ published source.
     deb http://ppa.launchpad.dev/no-priv/ppa/ubuntu warty main
     deb-src http://ppa.launchpad.dev/no-priv/ppa/ubuntu warty main
 
-Also the repository URL is an actual link.
+Also the repository URL, within the sources.list snippet, is an actual link.
 
     >>> print anon_browser.getLink(
     ...     "http://ppa.launchpad.dev/no-priv/ppa/ubuntu").url
@@ -609,8 +604,6 @@ it presents NEEDSBUILD records by default, which is the most accessed
 status in the PPA workflow.
 
     >>> print extract_text(find_main_content(anon_browser.contents))
-    Profile /
-    ...
     Builds for PPA for Celso Providelo
     ...
     No 'Needs building' build records.
@@ -677,6 +670,8 @@ the package. First we need to set up a team PPA and publish something to it.
 
     >>> foo_browser = setupBrowser(auth="Basic foo.bar@canonical.com:test")
     >>> foo_browser.open("http://launchpad.dev/~ubuntu-team/+activate-ppa")
+    >>> foo_browser.getControl(name="field.displayname").value = (
+    ...     'PPA for Ubuntu team')
     >>> foo_browser.getControl(name="field.accepted").value = True
     >>> foo_browser.getControl('Activate').click()
     >>> ubuntu_ppa_url = foo_browser.url

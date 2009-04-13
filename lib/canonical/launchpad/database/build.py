@@ -12,13 +12,15 @@ import logging
 
 from zope.interface import implements
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from sqlobject import (
     StringCol, ForeignKey, IntervalCol, SQLObjectNotFound)
 from sqlobject.sqlbuilder import AND, IN
 
-from storm.expr import In, LeftJoin
+from storm.expr import Desc, In, LeftJoin
 from storm.references import Reference
+from storm.store import Store
 
 from canonical.config import config
 
@@ -29,6 +31,8 @@ from canonical.database.sqlbase import cursor, quote_like, SQLBase, sqlvalues
 
 from canonical.launchpad.components.archivedependencies import (
     get_components_for_building)
+from canonical.launchpad.components.decoratedresultset import (
+    DecoratedResultSet)
 from canonical.launchpad.database.binarypackagerelease import (
     BinaryPackageRelease)
 from canonical.launchpad.database.builder import Builder
@@ -48,9 +52,9 @@ from canonical.launchpad.interfaces.launchpad import (
     NotFoundError, ILaunchpadCelebrities)
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.interfaces.publishing import (
-    PackagePublishingPocket, PackagePublishingStatus)
+    PackagePublishingPocket, active_publishing_status)
 from canonical.launchpad.mail import simple_sendmail, format_address
-from canonical.launchpad.webapp import canonical_url, urlappend
+from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from canonical.launchpad.webapp.tales import DurationFormatterAPI
@@ -89,40 +93,54 @@ class Build(SQLBase):
     upload_log = ForeignKey(
         dbName='upload_log', foreignKey='LibraryFileAlias', default=None)
 
+    def _getProxiedFileURL(self, library_file):
+        """Return the 'http_url' of a `ProxiedLibraryFileAlias`."""
+        # Avoiding circular imports.
+        from canonical.launchpad.browser.librarian import (
+            ProxiedLibraryFileAlias)
+
+        proxied_file = ProxiedLibraryFileAlias(library_file, self)
+        return proxied_file.http_url
+
     @property
     def upload_log_url(self):
         """See `IBuild`."""
         if self.upload_log is None:
             return None
+        return self._getProxiedFileURL(self.upload_log)
 
-        url = urlappend(canonical_url(self), "+files")
-        url = urlappend(url, self.upload_log.filename)
-        return url
+    @property
+    def build_log_url(self):
+        """See `IBuild`."""
+        if self.buildlog is None:
+            return None
+        return self._getProxiedFileURL(self.buildlog)
 
     @property
     def current_component(self):
         """See `IBuild`."""
-        pub = self.getCurrentPublication()
+        pub = self.current_source_publication
         if pub is not None:
             return pub.component
         return self.sourcepackagerelease.component
 
-    def getCurrentPublication(self):
+    @property
+    def current_source_publication(self):
         """See `IBuild`."""
-        allowed_status = (
-            PackagePublishingStatus.PENDING,
-            PackagePublishingStatus.PUBLISHED)
-        query = """
-        SourcePackagePublishingHistory.distroseries = %s AND
-        SourcePackagePublishingHistory.sourcepackagerelease = %s AND
-        SourcePackagePublishingHistory.archive = %s AND
-        SourcePackagePublishingHistory.status IN %s
-        """ % sqlvalues(
-            self.distroseries, self.sourcepackagerelease,
-            self.archive, allowed_status)
+        store = Store.of(self)
+        results = store.find(
+            SourcePackagePublishingHistory,
+            SourcePackagePublishingHistory.archive == self.archive,
+            SourcePackagePublishingHistory.distroseries == self.distroseries,
+            SourcePackagePublishingHistory.sourcepackagerelease ==
+                self.sourcepackagerelease,
+            SourcePackagePublishingHistory.status.is_in(
+                active_publishing_status))
 
-        return SourcePackagePublishingHistory.selectFirst(
-            query, orderBy='-datecreated')
+        current_publication = results.order_by(
+            Desc(SourcePackagePublishingHistory.id)).first()
+
+        return current_publication
 
     @property
     def changesfile(self):
@@ -544,18 +562,6 @@ class Build(SQLBase):
         """See `IBuild`"""
         return BuildQueue(build=self)
 
-    @property
-    def build_log_url(self):
-        """See `IBuild`."""
-        if self.buildlog is None:
-            return None
-
-        # The librarian URL is explicitly not used here because if
-        # the build is a private one then it would be in the
-        # restricted librarian.  It's proxied through the webapp and
-        # security applied accordingly.
-        return canonical_url(self) + "/+files/" + self.buildlog.filename
-
     def notify(self, extra_info=None):
         """See `IBuild`"""
         if not config.builddmaster.send_build_notification:
@@ -835,8 +841,8 @@ class BuildSet:
         queries.append("archive=%s" % sqlvalues(archive))
         clause = " AND ".join(queries)
 
-        return Build.select(
-            clause, clauseTables=clauseTables,orderBy=orderBy)
+        return self._decorate_with_prejoins(
+            Build.select(clause, clauseTables=clauseTables, orderBy=orderBy))
 
     def getBuildsByArchIds(self, arch_ids, status=None, name=None,
                            pocket=None):
@@ -899,9 +905,17 @@ class BuildSet:
             """ % ','.join(
                 sqlvalues(ArchivePurpose.PRIMARY, ArchivePurpose.PARTNER)))
 
-        return Build.select(' AND '.join(condition_clauses),
-                            clauseTables=clauseTables,
-                            orderBy=orderBy)
+        return self._decorate_with_prejoins(
+            Build.select(' AND '.join(condition_clauses),
+            clauseTables=clauseTables, orderBy=orderBy))
+
+    def _decorate_with_prejoins(self, result_set):
+        """Decorate build records with related data prefetch functionality."""
+        # Grab the native storm result set.
+        result_set = removeSecurityProxy(result_set)._result_set
+        decorated_results = DecoratedResultSet(
+            result_set, pre_iter_hook=self._prefetchBuildData)
+        return decorated_results
 
     def retryDepWaiting(self, distroarchseries):
         """See `IBuildSet`. """
@@ -995,12 +1009,30 @@ class BuildSet:
                 'builds': builds,
                 }
 
-    def prefetchBuildData(self, build_ids):
-        """See `IBuildSet`."""
-        from canonical.launchpad.database.sourcepackagename import (
+    def _prefetchBuildData(self, results):
+        """Used to pre-populate the cache with build related data.
+
+        When dealing with a group of Build records we can't use the
+        prejoin facility to also fetch BuildQueue, SourcePackageRelease
+        and LibraryFileAlias records in a single query because the
+        result set is too large and the queries time out too often.
+
+        So this method receives a list of Build instances and fetches the
+        corresponding SourcePackageRelease and LibraryFileAlias rows
+        (prejoined with the appropriate SourcePackageName and
+        LibraryFileContent respectively) as well as builders related to the
+        Builds at hand.
+        """
+        from lp.registry.model.sourcepackagename import (
             SourcePackageName)
         from canonical.launchpad.database.sourcepackagerelease import (
             SourcePackageRelease)
+
+        # Prefetching is not needed if the original result set is empty.
+        if len(results) == 0:
+            return
+
+        build_ids = [build.id for build in results]
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         origin = (
             Build,
@@ -1016,15 +1048,17 @@ class BuildSet:
             LeftJoin(LibraryFileContent,
                      LibraryFileContent.id == LibraryFileAlias.contentID),
             LeftJoin(
-                BuildQueue,
-                BuildQueue.buildID == Build.id),
-            LeftJoin(
                 Builder,
-                BuildQueue.builderID == Builder.id),
+                Builder.id == Build.builderID),
             )
         result_set = store.using(*origin).find(
-            (Build.id, BuildQueue, SourcePackageRelease, LibraryFileAlias,
-             SourcePackageName, LibraryFileContent, Builder),
+            (SourcePackageRelease, LibraryFileAlias, SourcePackageName,
+             LibraryFileContent, Builder),
             In(Build.id, build_ids))
 
-        return result_set
+        # Force query execution so that the ancillary data gets fetched
+        # and added to StupidCache.
+        # We are doing this here because there is no "real" caller of
+        # this (pre_iter_hook()) method that will iterate over the
+        # result set and force the query execution that way.
+        return list(result_set)

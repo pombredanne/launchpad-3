@@ -4,8 +4,61 @@
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   omit-tag="">
 
-<tal:subs define="subscriptions context/subscriptions">
-  <div class="portlet" id="portlet-subscribers" tal:condition="subscriptions">
+<div tal:define="subscriptions context/subscriptions"
+     metal:define-macro="custom"
+     class="portlet">
+  <div class="section">
+    <div tal:define="link context/menu:context/retarget"
+         tal:condition="link/enabled"
+         tal:content="structure link/render"
+    >Retarget</div>
+    <div tal:define="link context/menu:context/supersede"
+         tal:condition="link/enabled"
+         tal:content="structure link/render"
+    >Mark superseded</div>
+  </div>
+  <div class="section">
+    <h2>Registered by</h2>
+    <dl>
+       <dt>
+         <tal:registrant tal:replace="structure context/owner/fmt:link" /><br/>
+         <div style="text-align:right;">
+           on <tal:registrant_date
+               tal:replace="structure context/datecreated/fmt:approximatedate" />
+         </div>
+      </dt>
+    </dl>
+    <tal:started condition="context/starter">
+      <h2>Started by</h2>
+      <dl>
+         <dt>
+           <tal:registrant tal:replace="structure context/starter/fmt:link" /><br/>
+           <div style="text-align:right;">
+             on <tal:started_date
+                 tal:replace="structure context/date_started/fmt:approximatedate" />
+           </div>
+        </dt>
+      </dl>
+    </tal:started>
+    <tal:completed condition="context/completer">
+      <h2>Completed by</h2>
+      <dl>
+         <dt>
+           <tal:registrant tal:replace="structure context/completer/fmt:link" /><br/>
+           <div style="text-align:right;">
+             on <tal:registrant_date
+                 tal:replace="structure context/date_completed/fmt:approximatedate" />
+           </div>
+        </dt>
+      </dl>
+    </tal:completed>
+  </div>
+  <div class="section" tal:define="context_menu context/menu:context"
+       metal:define-slot="heading">
+    <div tal:content="structure context_menu/subscription/render" />
+    <div tal:content="structure context_menu/subscribeanother/render" />
+  </div>
+  <div id="portlet-subscribers" tal:condition="subscriptions">
     <h2>Subscribers</h2>
     <div class="portletBody">
       <tal:comment replace="nothing">
@@ -15,7 +68,8 @@
         essentiality indicator needs to be clickable to edit, otherwise not.
         Hence all the duplication.
       </tal:comment>
-      <div tal:repeat="subscription subscriptions">
+      <div tal:repeat="subscription subscriptions"
+           class="subscriber">
         <a tal:condition="subscription/required:launchpad.Edit"
            tal:attributes="href subscription/fmt:url">
           <img
@@ -45,9 +99,11 @@
            <img tal:condition="not: subscription/essential"
              src="/@@/subscriber-inessential" />
         </tal:no_edit>
-        <a tal:replace="structure subscription/person/fmt:link" />
+        <a tal:attributes="href subscription/person/fmt:url"
+           tal:content="subscription/person/fmt:displayname"
+        />
       </div>
     </div>
   </div>
-</tal:subs>
+</div>
 </tal:root>

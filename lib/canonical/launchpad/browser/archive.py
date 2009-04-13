@@ -8,11 +8,13 @@ __all__ = [
     'ArchiveAdminView',
     'ArchiveActivateView',
     'ArchiveBadges',
+    'ArchiveBreadcrumbBuilder',
     'ArchiveBuildsView',
     'ArchiveContextMenu',
     'ArchiveEditDependenciesView',
     'ArchiveEditView',
     'ArchiveNavigation',
+    'ArchiveNavigationMenu',
     'ArchivePackageCopyingView',
     'ArchivePackageDeletionView',
     'ArchiveView',
@@ -47,20 +49,22 @@ from canonical.launchpad.interfaces.archive import (
     IArchiveSet, IArchiveSourceSelectionForm, IPPAActivateForm)
 from canonical.launchpad.interfaces.archivepermission import (
     ArchivePermissionType, IArchivePermissionSet)
+from canonical.launchpad.interfaces.archivesubscriber import (
+    IArchiveSubscriberSet)
 from canonical.launchpad.interfaces.build import (
     BuildStatus, IBuildSet)
 from canonical.launchpad.interfaces.buildrecords import IHasBuildRecords
 from canonical.launchpad.interfaces.component import IComponentSet
-from canonical.launchpad.interfaces.distroseries import DistroSeriesStatus
+from lp.registry.interfaces.distroseries import DistroSeriesStatus
 from canonical.launchpad.interfaces.launchpad import (
     ILaunchpadCelebrities, NotFoundError)
 from canonical.launchpad.interfaces.packagecopyrequest import (
     IPackageCopyRequestSet)
-from canonical.launchpad.interfaces.person import IPersonSet
+from lp.registry.interfaces.person import IPersonSet
 from canonical.launchpad.interfaces.publishing import (
     PackagePublishingPocket, active_publishing_status,
     inactive_publishing_status, IPublishingSet)
-from canonical.launchpad.interfaces.sourcepackagename import (
+from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageNameSet)
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, enabled_with_permission,
@@ -71,8 +75,9 @@ from canonical.launchpad.scripts.packagecopier import (
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.badge import HasBadgeBase
 from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
-from canonical.launchpad.webapp.menu import structured
+from canonical.launchpad.webapp.menu import structured, NavigationMenu
 from canonical.widgets import (
     LabeledMultiCheckBoxWidget, PlainMultiCheckBoxWidget)
 from canonical.widgets.itemswidgets import (
@@ -104,7 +109,7 @@ def traverse_distro_archive(distribution, name):
 
 
 def traverse_named_ppa(person_name, ppa_name):
-    """For PPAs, traverse the the right place.
+    """For PPAs, traverse the right place.
 
     :param person_name: The person part of the URL
     :param ppa_name: The PPA name part of the URL
@@ -140,7 +145,7 @@ class DistributionArchiveURL:
 
     @property
     def path(self):
-        return u"+archive/%s" % self.context.name.lower()
+        return u"+archive/%s" % self.context.name
 
 
 class PPAURL:
@@ -189,6 +194,25 @@ class ArchiveNavigation(Navigation, FileNavigationMixin):
             pub_id, self.context)
         if results.count() == 1:
             return results[0]
+
+        return None
+
+    @stepthrough('+subscriptions')
+    def traverse_subscription(self, person_name):
+        try:
+            person = getUtility(IPersonSet).getByName(person_name)
+        except NotFoundError:
+            return None
+
+        subscriptions = getUtility(IArchiveSubscriberSet).getBySubscriber(
+            person, archive=self.context)
+
+        # If a person is subscribed with a direct subscription as well as
+        # via a team, subscriptions will contain both, so need to grab
+        # the direct subscription:
+        for subscription in subscriptions:
+            if subscription.subscriber == person:
+                return subscription
 
         return None
 
@@ -258,10 +282,6 @@ class ArchiveContextMenu(ContextMenu):
         if not self.context.private:
             link.enabled = False
 
-        # XXX: noodles 2009-03-10 bug=340405. This link is disabled until
-        # the cron-job supporting private archive subscriptions is enabled.
-        link.enabled = False
-
         return link
 
     @enabled_with_permission('launchpad.Edit')
@@ -299,6 +319,25 @@ class ArchiveContextMenu(ContextMenu):
     def edit_dependencies(self):
         text = 'Edit dependencies'
         return Link('+edit-dependencies', text, icon='edit')
+
+
+class ArchiveNavigationMenu(NavigationMenu):
+    """IArchive navigation menu.
+
+    Deliberately empty.
+    """
+    usedfor = IArchive
+    facet = 'overview'
+    links = []
+
+
+class ArchiveBreadcrumbBuilder(BreadcrumbBuilder):
+    """Builds a breadcrumb for an `IArchive`."""
+
+    @property
+    def text(self):
+        return self.context.displayname
+
 
 class ArchiveViewBase(LaunchpadView):
     """Common features for Archive view classes."""
@@ -791,7 +830,9 @@ class ArchivePackageCopyingView(ArchiveSourceSelectionFormView):
             if self.can_copy_to_context_ppa and self.context == ppa:
                 required = False
                 continue
-            terms.append(SimpleTerm(ppa, str(ppa.owner.name), ppa.title))
+            token = '%s/%s' % (ppa.owner.name, ppa.name)
+            terms.append(
+                SimpleTerm(ppa, token, ppa.displayname))
 
         return form.Fields(
             Choice(__name__='destination_archive',
@@ -926,12 +967,12 @@ class ArchivePackageCopyingView(ArchiveSourceSelectionFormView):
                 '<p>All packages already copied to '
                 '<a href="%s">%s</a>.</p>' % (
                     canonical_url(destination_archive),
-                    destination_archive.title))
+                    destination_archive.displayname))
         else:
             messages.append(
                 '<p>Packages copied to <a href="%s">%s</a>:</p>' % (
                     canonical_url(destination_archive),
-                    destination_archive.title))
+                    destination_archive.displayname))
             messages.append('<ul>')
             messages.append(
                 "\n".join(['<li>%s</li>' % copy.displayname
@@ -1001,8 +1042,10 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
                 continue
             dependency_label = '<a href="%s">%s</a>' % (
                 canonical_url(dependency), archive_dependency.title)
+            dependency_token = '%s/%s' % (
+                dependency.owner.name, dependency.name)
             term = SimpleTerm(
-                dependency, dependency.owner.name, dependency_label)
+                dependency, dependency_token, dependency_label)
             terms.append(term)
         return form.Fields(
             List(__name__='selected_dependencies',
@@ -1148,7 +1191,7 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
         # Present a page notification describing the action.
         self._messages.append('<p>Dependencies removed:')
         for dependency in selected_dependencies:
-            self._messages.append('<br/>%s' % dependency.title)
+            self._messages.append('<br/>%s' % dependency.displayname)
         self._messages.append('</p>')
 
     def _add_ppa_dependencies(self, data):
@@ -1162,7 +1205,7 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
             getUtility(IComponentSet)['main'])
 
         self._messages.append(
-            '<p>Dependency added: %s</p>' % dependency_candidate.title)
+            '<p>Dependency added: %s</p>' % dependency_candidate.displayname)
 
     def _add_primary_dependencies(self, data):
         """Record the selected dependency."""
@@ -1275,45 +1318,78 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
 
 
 class ArchiveActivateView(LaunchpadFormView):
-    """PPA activation view class.
-
-    Ensure user has accepted the PPA Terms of Use by clicking in the
-    'accepted' checkbox.
-
-    It redirects to PPA page when PPA is already activated.
-    """
+    """PPA activation view class."""
 
     schema = IPPAActivateForm
     custom_widget('description', TextAreaWidget, height=3)
 
-    def initialize(self):
-        """Redirects user to the PPA page if it is already activated."""
-        LaunchpadFormView.initialize(self)
-        self.distribution = getUtility(ILaunchpadCelebrities).ubuntu
+    def setUpFields(self):
+        """Override `LaunchpadFormView`.
+
+        Reorder the fields in a way the make more sense to users and also
+        omit 'name' and present a checkbox for acknowledging the PPA-ToS
+        if the user is creating his first PPA.
+        """
+        LaunchpadFormView.setUpFields(self)
+
         if self.context.archive is not None:
-            self.request.response.redirect(
-                canonical_url(self.context.archive))
+            self.form_fields = self.form_fields.select(
+                'name', 'displayname', 'description')
+        else:
+            self.form_fields = self.form_fields.select(
+                'displayname', 'accepted', 'description')
 
     def validate(self, data):
         """Ensure user has checked the 'accepted' checkbox."""
-        if len(self.errors) == 0:
-            if not data.get('accepted'):
-                self.addError(
-                    "PPA Terms of Service must be accepted to activate "
-                    "your PPA.")
+        if len(self.errors) > 0:
+            return
+
+        default_ppa = self.context.archive
+
+        proposed_name = data.get('name')
+        if proposed_name is None and default_ppa is not None:
+            self.addError(
+                'The default PPA is already activated. Please specify a '
+                'name for the new PPA and resubmit the form.')
+
+        # XXX cprov 2009-03-27 bug=188564: We currently only create PPAs
+        # for Ubuntu distribution. This check should be revisited when we
+        # start supporting PPAs for other distribution (debian, mainly).
+        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        if proposed_name is not None and proposed_name == ubuntu.name:
+            self.setFieldError(
+                'name',
+                "Archives cannot have the same name as its distribution.")
+
+        if self.context.getPPAByName(proposed_name):
+            self.setFieldError(
+                'name',
+                "You already have a PPA named '%s'." % proposed_name)
+
+        if default_ppa is None and not data.get('accepted'):
+            self.setFieldError(
+                'accepted',
+                "PPA Terms of Service must be accepted to activate a PPA.")
 
     @action(_("Activate"), name="activate")
     def action_save(self, action, data):
-        """Activate PPA and moves to its page."""
-        if self.context.archive is None:
-            getUtility(IArchiveSet).new(
-                owner=self.context, purpose=ArchivePurpose.PPA,
-                description=data['description'], distribution=None)
-        self.next_url = canonical_url(self.context.archive)
+        """Activate a PPA and moves to its page."""
 
-    @action(_("Cancel"), name="cancel", validator='validate_cancel')
-    def action_cancel(self, action, data):
-        self.next_url = canonical_url(self.context)
+        # 'name' field is omitted from the form data for default PPAs and
+        # it's dealt with by IArchive.new(), which will use the default
+        # PPA name.
+        name = data.get('name', None)
+
+        # XXX cprov 2009-03-27 bug=188564: We currently only create PPAs
+        # for Ubuntu distribution. PPA creation should be revisited when we
+        # start supporting other distribution (debian, mainly).
+        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+
+        ppa = getUtility(IArchiveSet).new(
+            owner=self.context, purpose=ArchivePurpose.PPA,
+            distribution=ubuntu, name=name,
+            displayname=data['displayname'], description=data['description'])
+        self.next_url = canonical_url(ppa)
 
 
 class ArchiveBuildsView(ArchiveViewBase, BuildRecordsView):
@@ -1350,7 +1426,7 @@ class BaseArchiveEditView(LaunchpadEditFormView, ArchiveViewBase):
 
 class ArchiveEditView(BaseArchiveEditView):
 
-    field_names = ['description', 'whiteboard']
+    field_names = ['displayname', 'description']
     custom_widget(
         'description', TextAreaWidget, height=10, width=30)
 
@@ -1358,9 +1434,7 @@ class ArchiveEditView(BaseArchiveEditView):
 class ArchiveAdminView(BaseArchiveEditView):
 
     field_names = ['enabled', 'private', 'require_virtualized',
-                   'buildd_secret', 'authorized_size', 'whiteboard']
-    custom_widget(
-        'whiteboard', TextAreaWidget, height=10, width=30)
+                   'buildd_secret', 'authorized_size']
 
     def validate_save(self, action, data):
         """Validate the save action on ArchiveAdminView.

@@ -449,22 +449,17 @@ distroseries and archive are shown.
     ...    find_tag_by_id(anon_browser.contents, 'publishing-summary'))
     Date           Status     Target    Pocket  Component Section Version
     2006-02-15 ... Pending    Warty     release main      editors 1.0.9a-4ubuntu1
-      Copied from ubuntu hoary in Primary Archive for The Test Distribution
-    ...
+      Copied from ubuntu hoary in Primary Archive for Ubuntu Linux
     2005-09-16 ... Published  Warty     release main      base    1.0.9a-4
       Published on 2005-09-16
-      Copied from debian sid in Primary Archive for The Test Distribution
-    ...
+      Copied from debian sid in Primary Archive for Ubuntu Linux
     2005-09-15 ... Superseded Hoary     release main      editors 1.0.9a-4
       Removed from disk on 2005-09-15.
       Removal requested on 2005-09-15.
       Superseded on 2005-09-15 by alsa-utils - 1.0.9a-4ubuntu1
       Published on 2005-09-15
-      Copied from debian sid in Primary Archive for The Test Distribution
-    ...
+      Copied from debian sid in Primary Archive for Ubuntu Linux
     2005-09-15 ... Published  Hoary     release main      base    1.0.9a-4ubuntu1
       Published on 2005-09-15
-    ...
     2005-09-15 ... Published  Warty     release main      base    1.0.8-1ubuntu1
       Published on 2005-09-15
-    ...

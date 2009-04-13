@@ -76,10 +76,16 @@
     <td style="margin: 0; padding: 0; vertical-align: middle">
       <tal:has_watch condition="context/bugwatch">
         <div style="text-decoration: none; padding: 0.25em">
-          <img tal:condition="not:context/bugwatch/last_error_type"
-               alt="Linked to " src="/@@/bug-remote" />
-          <img tal:condition="context/bugwatch/last_error_type"
-            alt="Error updating bug watch" src="/@@/warning" />
+          <tal:bugtracker-active
+              condition="context/bugwatch/bugtracker/active">
+            <img tal:condition="not:context/bugwatch/last_error_type"
+                 alt="Linked to " src="/@@/bug-remote" />
+            <img tal:condition="context/bugwatch/last_error_type"
+              alt="Error updating bug watch" src="/@@/warning" />
+          </tal:bugtracker-active>
+          <img tal:condition="not:context/bugwatch/bugtracker/active"
+              tal:attributes="alt string:Bug watch updates for ${context/bugwatch/bugtracker/title} are disabled.; title string:Bug watch updates for ${context/bugwatch/bugtracker/title} are disabled."
+              src="/@@/warning" />
           <a tal:replace="structure context/bugwatch/fmt:external-link">
             Zilla #123
           </a>
@@ -92,9 +98,10 @@
             style="display: block; padding: 0.25em; text-decoration: none;"
             tal:attributes="href string:${context/assignee/fmt:url}/+assignedbugs"
           >
-            <span tal:replace="structure context/assignee/fmt:link">
-              icon and assignee.browsername
-            </span>
+            <img tal:attributes="src context/assignee/fmt:icon_url" />
+            <tal:name replace="context/assignee/fmt:displayname">
+              assignee.displayname
+            </tal:name>
           </a>
         </tal:has_assignee>
       </tal:has_no_watch>

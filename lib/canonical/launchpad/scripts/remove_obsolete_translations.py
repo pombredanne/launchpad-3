@@ -14,7 +14,7 @@ from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.looptuner import ITunableLoop
 
 from canonical.launchpad.scripts.base import LaunchpadScript
-from canonical.launchpad.utilities.looptuner import LoopTuner
+from canonical.launchpad.utilities.looptuner import DBLoopTuner
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
 
@@ -269,10 +269,6 @@ class RemoveObsoleteTranslations(LaunchpadScript):
             '-l', '--loop-timing', dest='loop_time',
             default=5, help="Time in seconds for the loop to run.")
 
-        self.parser.add_option(
-            '-t', '--throttle', dest='throttle',
-            default=5, help="Time in seconds to sleep between commits.")
-
     def main(self):
         removal_traits = {
             'TranslationMessage' :
@@ -351,8 +347,7 @@ class RemoveObsoleteTranslations(LaunchpadScript):
             loop = DeletionLoopRunner(
                 entry, self.txn, self.logger, store,
                 dry_run=self.options.dry_run)
-            LoopTuner(loop, self.options.loop_time,
-                      cooldown_time=float(self.options.throttle)).run()
+            DBLoopTuner(loop, self.options.loop_time, log=self.logger).run()
             self._commit_count += loop.getTotalCommits()
 
         self.logger.info("Done with %d commits." % self._commit_count)

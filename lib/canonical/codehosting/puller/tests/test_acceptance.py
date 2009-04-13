@@ -289,7 +289,7 @@ class TestBranchPuller(PullerBranchTestCase):
             branch_type=branch_type)
         # Make it the default stacked-on branch.
         series = removeSecurityProxy(product.development_focus)
-        series.user_branch = default_branch
+        series.branch = default_branch
         # Arrange for it to be pulled.
         if branch_type == BranchType.HOSTED:
             puller_type = 'upload'
@@ -453,5 +453,8 @@ class TestBranchPuller(PullerBranchTestCase):
     # - expected output on non-quiet runs
 
 
+# XXX: JonathanLange 2009-03-27 bug=349316: Disable these tests because they
+# are leaking threads, causing intermittent test failures.
 def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
+#    return unittest.TestLoader().loadTestsFromName(__name__)
+    return unittest.TestSuite()

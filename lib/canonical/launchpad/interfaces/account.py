@@ -22,7 +22,7 @@ from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import StrippedTextLine, PasswordField
-from canonical.lazr.fields import Reference
+from lazr.restful.fields import CollectionField, Reference
 
 
 class AccountStatus(DBEnumeratedType):
@@ -202,6 +202,53 @@ class IAccountPublic(Interface):
                       "The one we'll use to communicate with them."),
         readonly=True, required=False, schema=Interface)
 
+    validated_emails = CollectionField(
+        title=_("Confirmed e-mails of this account."),
+        description=_(
+            "Confirmed e-mails are the ones in the VALIDATED state.  The "
+            "user has confirmed that they are active and that they control "
+            "them."),
+        readonly=True, required=False,
+        value_type=Reference(schema=Interface))
+
+    guessed_emails = CollectionField(
+        title=_("Guessed e-mails of this account."),
+        description=_(
+            "Guessed e-mails are the ones in the NEW state.  We believe "
+            "that the user owns the address, but they have not confirmed "
+            "the fact."),
+        readonly=True, required=False,
+        value_type=Reference(schema=Interface))
+
+    def getUnvalidatedEmails():
+        """Get a list of the unvalidated email addresses for this account.
+
+        An unvalidated email address is one which the user has tried
+        to add to their account but has not yet replied to the
+        corresponding confirmation email."""
+
+    def setPreferredEmail(email):
+        """Set the given email address as this accounts's preferred one.
+
+        If ``email`` is None, the preferred email address is unset, which
+        will make the account invalid.
+        """
+
+    def validateAndEnsurePreferredEmail(email):
+        """Ensure this account has a preferred email.
+
+        If this account doesn't have a preferred email, <email> will be set as
+        this account's preferred one. Otherwise it'll be set as VALIDATED and
+        this account will keep their old preferred email.
+
+        This method is meant to be the only one to change the status of an
+        email address, but as we all know the real world is far from ideal
+        and we have to deal with this in one more place, which is the case
+        when people explicitly want to change their preferred email address.
+        On that case, though, all we have to do is use
+        account.setPreferredEmail().
+        """
+
 
 class IAccountPrivate(Interface):
     """Private information on an `IAccount`."""
@@ -312,7 +359,7 @@ class IAccountSet(Interface):
 
          :param open_identifier: An ascii compatible string that is either
              the old or new openid_identifier that belongs to an account.
-         :return: An `IAccount`, or None if the the openid_identifier does
+         :return: An `IAccount`, or None if the openid_identifier does
              not belong to an account.
          """
 
