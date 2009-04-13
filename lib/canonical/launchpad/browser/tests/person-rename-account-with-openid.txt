@@ -9,8 +9,7 @@ into these third party sites using your old identity.
 
 Because of this, we warn users about to rename their account of the risks.
 
-    >>> from zope.app.pagetemplate.viewpagetemplatefile import (
-    ...     ViewPageTemplateFile)
+    >>> from z3c.ptcompat import ViewPageTemplateFile
     >>> from canonical.launchpad.browser.person import PersonEditView
     >>> from canonical.launchpad.ftests import (
     ...     LaunchpadFormHarness, login_person)
