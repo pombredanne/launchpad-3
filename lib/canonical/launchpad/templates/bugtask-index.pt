@@ -392,7 +392,7 @@ function update_bug_duplicate(data) {
             </span>
             <form id="tags-form" style="display: inline">
                 <input type="text" id="tag-input" style="display: none; width: 25em;" />
-                <img src="/@@/spinner" id="tags-edit-spinner" style="visibility: hidden; display: none" />
+                <img src="/@@/spinner" id="tags-edit-spinner" style="display: none" />
                 <a href="+edit" title="Edit tags" id="edit-tags-trigger"><img src="/@@/edit" /></a>
                 <button class="lazr-pos lazr-btn yui-ieditor-submit_button"
                         id="edit-tags-ok" style="display: none"
