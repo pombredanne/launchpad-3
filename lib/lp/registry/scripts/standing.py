@@ -10,7 +10,6 @@ __all__ = [
 
 from zope.component import getUtility
 
-from lp.registry.interfaces.person import IPersonSet
 from canonical.launchpad.scripts.base import LaunchpadCronScript
 
 
@@ -32,6 +31,8 @@ class UpdatePersonalStanding(LaunchpadCronScript):
         """Main script entry point."""
         self.logger.info('Updating personal standings')
         self.txn.begin()
+        # Avoid circular imports.
+        from lp.registry.interfaces.person import IPersonSet
         getUtility(IPersonSet).updatePersonalStandings()
         self.txn.commit()
         self.logger.info('Done.')

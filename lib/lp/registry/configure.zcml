@@ -7,12 +7,12 @@
     <include
         package=".browser"/>
     <class
-        class="canonical.launchpad.database.TeamMembershipSet">
+        class="lp.registry.model.teammembership.TeamMembershipSet">
         <allow
             interface="lp.registry.interfaces.teammembership.ITeamMembershipSet"/>
     </class>
     <securedutility
-        class="canonical.launchpad.database.TeamMembershipSet"
+        class="lp.registry.model.teammembership.TeamMembershipSet"
         provides="lp.registry.interfaces.teammembership.ITeamMembershipSet">
         <allow
             interface="lp.registry.interfaces.teammembership.ITeamMembershipSet"/>
@@ -22,7 +22,7 @@
                                                         into specific interfaces for each persmission. -->
 
     <class
-        class="canonical.launchpad.database.TeamMembership">
+        class="lp.registry.model.teammembership.TeamMembership">
         <require
             permission="zope.Public"
             attributes="
@@ -80,7 +80,7 @@
     <!-- Location -->
 
     <class
-        class="canonical.launchpad.database.PersonLocation">
+        class="lp.registry.model.personlocation.PersonLocation">
         <require
             permission="zope.Public"
             attributes="
@@ -96,7 +96,7 @@
                 person"/>
     </class>
     <class
-        class="canonical.launchpad.database.DistroSeries">
+        class="lp.registry.model.distroseries.DistroSeries">
         <allow
             interface="lp.registry.interfaces.distroseries.IDistroSeriesPublic"/>
         <allow
@@ -151,7 +151,7 @@
                 removeBugSubscription"/>
     </class>
     <securedutility
-        class="canonical.launchpad.database.DistroSeriesSet"
+        class="lp.registry.model.distroseries.DistroSeriesSet"
         provides="lp.registry.interfaces.distroseries.IDistroSeriesSet">
         <allow
             interface="lp.registry.interfaces.distroseries.IDistroSeriesSet"/>
@@ -159,7 +159,7 @@
     <adapter
         provides="canonical.launchpad.interfaces.ILaunchpadUsage"
         for="lp.registry.interfaces.distroseries.IDistroSeries"
-        factory="lp.registry.adapters.distroseries.distroseries_to_launchpadusage"
+        factory="lp.registry.adapters.distroseries_to_launchpadusage"
         permission="zope.Public"/>
     <adapter
         provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
@@ -178,7 +178,7 @@
         <!-- CodeofConduct -->
 
         <class
-            class="canonical.launchpad.database.CodeOfConduct">
+            class="lp.registry.model.codeofconduct.CodeOfConduct">
             <allow
                 interface="lp.registry.interfaces.codeofconduct.ICodeOfConduct"/>
             <require
@@ -189,7 +189,7 @@
         <!-- CodeOfConductConf -->
 
         <securedutility
-            class="canonical.launchpad.database.CodeOfConductConf"
+            class="lp.registry.model.codeofconduct.CodeOfConductConf"
             provides="lp.registry.interfaces.codeofconduct.ICodeOfConductConf">
             <allow
                 interface="lp.registry.interfaces.codeofconduct.ICodeOfConductConf"/>
@@ -198,7 +198,7 @@
         <!-- CodeOfConductSet -->
 
         <securedutility
-            class="canonical.launchpad.database.CodeOfConductSet"
+            class="lp.registry.model.codeofconduct.CodeOfConductSet"
             provides="lp.registry.interfaces.codeofconduct.ICodeOfConductSet">
             <allow
                 interface="lp.registry.interfaces.codeofconduct.ICodeOfConductSet"/>
@@ -207,7 +207,7 @@
         <!-- SignedCodeofConduct -->
 
         <class
-            class="canonical.launchpad.database.SignedCodeOfConduct">
+            class="lp.registry.model.codeofconduct.SignedCodeOfConduct">
             <allow
                 interface="lp.registry.interfaces.codeofconduct.ISignedCodeOfConduct"/>
             <require
@@ -218,12 +218,12 @@
         <!-- SignedCodeOfConductSet -->
 
         <class
-            class="canonical.launchpad.database.SignedCodeOfConductSet">
+            class="lp.registry.model.codeofconduct.SignedCodeOfConductSet">
             <allow
                 interface="lp.registry.interfaces.codeofconduct.ISignedCodeOfConductSet"/>
         </class>
         <securedutility
-            class="canonical.launchpad.database.SignedCodeOfConductSet"
+            class="lp.registry.model.codeofconduct.SignedCodeOfConductSet"
             provides="lp.registry.interfaces.codeofconduct.ISignedCodeOfConductSet">
             <allow
                 interface="lp.registry.interfaces.codeofconduct.ISignedCodeOfConductSet"/>
@@ -233,7 +233,7 @@
 
     </facet>
     <class
-        class="canonical.launchpad.database.IrcID">
+        class="lp.registry.model.person.IrcID">
         <allow
             interface="canonical.launchpad.interfaces.IHasOwner"/>
         <allow
@@ -244,26 +244,26 @@
                 nickname"/>
         <require
             permission="launchpad.Edit"
-            set_schema="canonical.launchpad.interfaces.IIrcID"
+            set_schema="lp.registry.interfaces.irc.IIrcID"
             attributes="
                 destroySelf"/>
     </class>
     <class
-        class="canonical.launchpad.database.IrcIDSet">
+        class="lp.registry.model.person.IrcIDSet">
         <allow
-            interface="canonical.launchpad.interfaces.IIrcIDSet"/>
+            interface="lp.registry.interfaces.irc.IIrcIDSet"/>
     </class>
     <securedutility
-        class="canonical.launchpad.database.IrcIDSet"
-        provides="canonical.launchpad.interfaces.IIrcIDSet">
+        class="lp.registry.model.person.IrcIDSet"
+        provides="lp.registry.interfaces.irc.IIrcIDSet">
         <allow
-            interface="canonical.launchpad.interfaces.IIrcIDSet"/>
+            interface="lp.registry.interfaces.irc.IIrcIDSet"/>
     </securedutility>
 
     <!-- Project -->
 
     <class
-        class="canonical.launchpad.database.Project">
+        class="lp.registry.model.project.Project">
         <allow
             interface="lp.registry.interfaces.project.IProject"/>
         <allow
@@ -328,12 +328,12 @@
     <!-- ProjectSet-->
 
     <class
-        class="canonical.launchpad.database.ProjectSet">
+        class="lp.registry.model.project.ProjectSet">
         <allow
             interface="lp.registry.interfaces.project.IProjectSet"/>
     </class>
     <securedutility
-        class="canonical.launchpad.database.ProjectSet"
+        class="lp.registry.model.project.ProjectSet"
         provides="lp.registry.interfaces.project.IProjectSet">
         <allow
             interface="lp.registry.interfaces.project.IProjectSet"/>
@@ -342,7 +342,7 @@
     <!-- ProjectSeries -->
 
     <class
-        class="canonical.launchpad.database.ProjectSeries">
+        class="lp.registry.model.project.ProjectSeries">
         <allow
             interface="lp.registry.interfaces.project.IProjectSeries"/>
     </class>
@@ -350,7 +350,7 @@
     <!-- DistributionSourcePackage -->
 
     <class
-        class="canonical.launchpad.database.DistributionSourcePackage">
+        class="lp.registry.model.distributionsourcepackage.DistributionSourcePackage">
         <allow
             attributes="
                 distribution
@@ -440,7 +440,7 @@
     <!-- CommercialSubscription -->
 
     <class
-        class="canonical.launchpad.database.CommercialSubscription">
+        class="lp.registry.model.commercialsubscription.CommercialSubscription">
         <require
             permission="launchpad.View"
             interface="lp.registry.interfaces.commercialsubscription.ICommercialSubscription"/>
@@ -449,12 +449,12 @@
             set_schema="lp.registry.interfaces.commercialsubscription.ICommercialSubscription"/>
     </class>
     <class
-        class="canonical.launchpad.database.TeamParticipation">
+        class="lp.registry.model.teammembership.TeamParticipation">
         <allow
-            interface="canonical.launchpad.interfaces.ITeamParticipation"/>
+            interface="lp.registry.interfaces.teammembership.ITeamParticipation"/>
     </class>
     <class
-        class="canonical.launchpad.database.JabberID">
+        class="lp.registry.model.person.JabberID">
         <allow
             interface="canonical.launchpad.interfaces.IHasOwner"/>
         <allow
@@ -464,20 +464,20 @@
                 jabberid"/>
         <require
             permission="launchpad.Edit"
-            set_schema="canonical.launchpad.interfaces.IJabberID"
+            set_schema="lp.registry.interfaces.jabber.IJabberID"
             attributes="
                 destroySelf"/>
     </class>
     <class
-        class="canonical.launchpad.database.JabberIDSet">
+        class="lp.registry.model.person.JabberIDSet">
         <allow
-            interface="canonical.launchpad.interfaces.IJabberIDSet"/>
+            interface="lp.registry.interfaces.jabber.IJabberIDSet"/>
     </class>
     <securedutility
-        class="canonical.launchpad.database.JabberIDSet"
-        provides="canonical.launchpad.interfaces.IJabberIDSet">
+        class="lp.registry.model.person.JabberIDSet"
+        provides="lp.registry.interfaces.jabber.IJabberIDSet">
         <allow
-            interface="canonical.launchpad.interfaces.IJabberIDSet"/>
+            interface="lp.registry.interfaces.jabber.IJabberIDSet"/>
     </securedutility>
     <class
         class="canonical.launchpad.utilities.SalesforceVoucherProxy">
@@ -496,12 +496,12 @@
             interface="lp.registry.interfaces.salesforce.ISalesforceVoucherProxy"/>
     </securedutility>
     <class
-        class="canonical.launchpad.database.PillarName">
+        class="lp.registry.model.pillar.PillarName">
         <allow
             interface="lp.registry.interfaces.pillar.IPillarName"/>
     </class>
     <securedutility
-        class="canonical.launchpad.database.PillarNameSet"
+        class="lp.registry.model.pillar.PillarNameSet"
         provides="lp.registry.interfaces.pillar.IPillarNameSet">
         <allow
             interface="lp.registry.interfaces.pillar.IPillarNameSet"/>
@@ -518,7 +518,7 @@
     <!-- SourcePackageName -->
 
     <class
-        class="canonical.launchpad.database.SourcePackageName">
+        class="lp.registry.model.sourcepackagename.SourcePackageName">
         <allow
             interface="lp.registry.interfaces.sourcepackagename.ISourcePackageName"/>
     </class>
@@ -526,13 +526,13 @@
     <!-- SourcePackageNameSet -->
 
     <securedutility
-        class="canonical.launchpad.database.SourcePackageNameSet"
+        class="lp.registry.model.sourcepackagename.SourcePackageNameSet"
         provides="lp.registry.interfaces.sourcepackagename.ISourcePackageNameSet">
         <allow
             interface="lp.registry.interfaces.sourcepackagename.ISourcePackageNameSet"/>
     </securedutility>
     <class
-        class="canonical.launchpad.database.SourcePackageNameSet">
+        class="lp.registry.model.sourcepackagename.SourcePackageNameSet">
         <allow
             interface="lp.registry.interfaces.sourcepackagename.ISourcePackageNameSet"/>
     </class>
@@ -546,7 +546,7 @@
         <!-- Karma -->
 
         <class
-            class="canonical.launchpad.database.Karma">
+            class="lp.registry.model.karma.Karma">
             <allow
                 interface="lp.registry.interfaces.karma.IKarma"/>
         </class>
@@ -554,7 +554,7 @@
         <!-- KarmaCache -->
 
         <class
-            class="canonical.launchpad.database.KarmaCache">
+            class="lp.registry.model.karma.KarmaCache">
             <allow
                 interface="lp.registry.interfaces.karma.IKarmaCache"/>
         </class>
@@ -562,7 +562,7 @@
         <!-- KarmaTotalCache -->
 
         <class
-            class="canonical.launchpad.database.KarmaTotalCache">
+            class="lp.registry.model.karma.KarmaTotalCache">
             <allow
                 interface="lp.registry.interfaces.karma.IKarmaTotalCache"/>
         </class>
@@ -570,7 +570,7 @@
         <!-- KarmaCategory -->
 
         <class
-            class="canonical.launchpad.database.KarmaCategory">
+            class="lp.registry.model.karma.KarmaCategory">
             <allow
                 interface="lp.registry.interfaces.karma.IKarmaCategory"/>
             <require
@@ -581,7 +581,7 @@
         <!-- KarmaAction -->
 
         <class
-            class="canonical.launchpad.database.KarmaAction">
+            class="lp.registry.model.karma.KarmaAction">
             <allow
                 interface="lp.registry.interfaces.karma.IKarmaAction"/>
             <require
@@ -592,12 +592,12 @@
         <!-- KarmaCacheManager -->
 
         <class
-            class="canonical.launchpad.database.KarmaCacheManager">
+            class="lp.registry.model.karma.KarmaCacheManager">
             <allow
                 interface="lp.registry.interfaces.karma.IKarmaCacheManager"/>
         </class>
         <securedutility
-            class="canonical.launchpad.database.KarmaCacheManager"
+            class="lp.registry.model.karma.KarmaCacheManager"
             provides="lp.registry.interfaces.karma.IKarmaCacheManager">
             <allow
                 interface="lp.registry.interfaces.karma.IKarmaCacheManager"/>
@@ -606,12 +606,12 @@
         <!-- KarmaActionSet -->
 
         <class
-            class="canonical.launchpad.database.KarmaActionSet">
+            class="lp.registry.model.karma.KarmaActionSet">
             <allow
                 interface="lp.registry.interfaces.karma.IKarmaActionSet"/>
         </class>
         <securedutility
-            class="canonical.launchpad.database.KarmaActionSet"
+            class="lp.registry.model.karma.KarmaActionSet"
             provides="lp.registry.interfaces.karma.IKarmaActionSet">
             <allow
                 interface="lp.registry.interfaces.karma.IKarmaActionSet"/>
@@ -623,7 +623,7 @@
         <!-- Poll -->
 
         <class
-            class="canonical.launchpad.database.Poll">
+            class="lp.registry.model.poll.Poll">
             <allow
                 interface="lp.registry.interfaces.poll.IPoll"/>
             <require
@@ -634,7 +634,7 @@
         <!-- PollOption -->
 
         <class
-            class="canonical.launchpad.database.PollOption">
+            class="lp.registry.model.poll.PollOption">
             <allow
                 interface="lp.registry.interfaces.poll.IPollOption"/>
             <require
@@ -650,7 +650,7 @@
                 against the logged in user. -->
 
         <class
-            class="canonical.launchpad.database.Vote">
+            class="lp.registry.model.poll.Vote">
             <allow
                 interface="lp.registry.interfaces.poll.IVote"/>
             <require
@@ -661,7 +661,7 @@
         <!-- VoteCast -->
 
         <class
-            class="canonical.launchpad.database.VoteCast">
+            class="lp.registry.model.poll.VoteCast">
             <allow
                 interface="lp.registry.interfaces.poll.IVoteCast"/>
         </class>
@@ -669,12 +669,12 @@
         <!-- PollSet -->
 
         <class
-            class="canonical.launchpad.database.PollSet">
+            class="lp.registry.model.poll.PollSet">
             <allow
                 interface="lp.registry.interfaces.poll.IPollSet"/>
         </class>
         <securedutility
-            class="canonical.launchpad.database.PollSet"
+            class="lp.registry.model.poll.PollSet"
             provides="lp.registry.interfaces.poll.IPollSet">
             <allow
                 interface="lp.registry.interfaces.poll.IPollSet"/>
@@ -685,30 +685,30 @@
         <adapter
             for="canonical.launchpad.interfaces.ITeam"
             provides="lp.registry.interfaces.poll.IPollSubset"
-            factory="lp.registry.adapters.poll.PollSubset"
+            factory="lp.registry.adapters.PollSubset"
             permission="zope.Public"/>
 
         <!-- PollOptionSet -->
 
         <class
-            class="canonical.launchpad.database.PollOptionSet">
+            class="lp.registry.model.poll.PollOptionSet">
             <allow
                 interface="lp.registry.interfaces.poll.IPollOptionSet"/>
         </class>
         <securedutility
-            class="canonical.launchpad.database.PollOptionSet"
+            class="lp.registry.model.poll.PollOptionSet"
             provides="lp.registry.interfaces.poll.IPollOptionSet">
             <allow
                 interface="lp.registry.interfaces.poll.IPollOptionSet"/>
         </securedutility>
         <securedutility
-            class="canonical.launchpad.database.VoteSet"
+            class="lp.registry.model.poll.VoteSet"
             provides="lp.registry.interfaces.poll.IVoteSet">
             <allow
                 interface="lp.registry.interfaces.poll.IVoteSet"/>
         </securedutility>
         <securedutility
-            class="canonical.launchpad.database.VoteCastSet"
+            class="lp.registry.model.poll.VoteCastSet"
             provides="lp.registry.interfaces.poll.IVoteCastSet">
             <allow
                 interface="lp.registry.interfaces.poll.IVoteCastSet"/>
@@ -718,7 +718,7 @@
     <!-- Announcement -->
 
     <class
-        class="canonical.launchpad.database.Announcement">
+        class="lp.registry.model.announcement.Announcement">
         <allow
             attributes="
                 id
@@ -747,7 +747,7 @@
     <!-- AnnouncementSet -->
 
     <securedutility
-        class="canonical.launchpad.database.AnnouncementSet"
+        class="lp.registry.model.announcement.AnnouncementSet"
         provides="lp.registry.interfaces.announcement.IAnnouncementSet">
         <allow
             interface="lp.registry.interfaces.announcement.IAnnouncementSet"/>
@@ -789,7 +789,7 @@
             factory="lp.registry.model.person.person_from_account"
             trusted="yes"/>
         <class
-            class="canonical.launchpad.database.Person">
+            class="lp.registry.model.person.Person">
             <allow
                 interface="lp.registry.interfaces.person.IPersonPublic"/>
             <allow
@@ -841,12 +841,12 @@
         <!-- PersonSet -->
 
         <class
-            class="canonical.launchpad.database.PersonSet">
+            class="lp.registry.model.person.PersonSet">
             <allow
                 interface="lp.registry.interfaces.person.IPersonSet"/>
         </class>
         <securedutility
-            class="canonical.launchpad.database.PersonSet"
+            class="lp.registry.model.person.PersonSet"
             provides="lp.registry.interfaces.person.IPersonSet">
             <allow
                 interface="lp.registry.interfaces.person.IPersonSet"/>
@@ -863,12 +863,12 @@
     <adapter
         for="canonical.launchpad.webapp.interfaces.ILaunchpadPrincipal"
         provides="lp.registry.interfaces.person.IPerson"
-        factory="lp.registry.adapters.person.personFromPrincipal"/>
+        factory="lp.registry.adapters.person_from_principal"/>
 
     <!-- Milestone -->
 
     <class
-        class="canonical.launchpad.database.Milestone">
+        class="lp.registry.model.milestone.Milestone">
         <allow
             attributes="
                 id
@@ -922,7 +922,7 @@
     <!-- IMilestoneSet -->
 
     <securedutility
-        class="canonical.launchpad.database.MilestoneSet"
+        class="lp.registry.model.milestone.MilestoneSet"
         provides="lp.registry.interfaces.milestone.IMilestoneSet">
         <allow
             interface="lp.registry.interfaces.milestone.IMilestoneSet"/>
@@ -937,9 +937,9 @@
     </class>
     <subscriber
         for="canonical.launchpad.interfaces.IProduct                 zope.lifecycleevent.interfaces.IObjectModifiedEvent"
-        handler="lp.registry.subscribers.productsubscribers.product_modified"/>
+        handler="lp.registry.subscribers.product_modified"/>
     <class
-        class="canonical.launchpad.database.MailingList">
+        class="lp.registry.model.mailinglist.MailingList">
         <allow
             interface="lp.registry.interfaces.mailinglist.IMailingList"/>
         <require
@@ -947,17 +947,17 @@
             set_attributes="welcome_message"/>
     </class>
     <class
-        class="canonical.launchpad.database.MailingListSubscription">
+        class="lp.registry.model.mailinglist.MailingListSubscription">
         <allow
             interface="lp.registry.interfaces.mailinglist.IMailingListSubscription"/>
     </class>
     <class
-        class="canonical.launchpad.database.MessageApproval">
+        class="lp.registry.model.mailinglist.MessageApproval">
         <allow
             interface="lp.registry.interfaces.mailinglist.IMessageApproval"/>
     </class>
     <securedutility
-        class="canonical.launchpad.database.MailingListSet"
+        class="lp.registry.model.mailinglist.MailingListSet"
         provides="lp.registry.interfaces.mailinglist.IMailingListSet">
         <allow
             interface="lp.registry.interfaces.mailinglist.IMailingListSet"/>
@@ -969,7 +969,7 @@
             interface="lp.registry.interfaces.mailinglist.IMailingListApplication"/>
     </securedutility>
     <securedutility
-        class="canonical.launchpad.database.MessageApprovalSet"
+        class="lp.registry.model.mailinglist.MessageApprovalSet"
         provides="lp.registry.interfaces.mailinglist.IMessageApprovalSet">
         <allow
             interface="lp.registry.interfaces.mailinglist.IMessageApprovalSet"/>
@@ -989,7 +989,7 @@
         for="lp.registry.interfaces.mailinglist.IMessageApproval                                        lazr.lifecycle.interfaces.IObjectCreatedEvent"
         handler="canonical.launchpad.mailnotification.notify_message_held"/>
     <class
-        class="canonical.launchpad.database.WikiName">
+        class="lp.registry.model.person.WikiName">
         <allow
             interface="canonical.launchpad.interfaces.IHasOwner"/>
         <allow
@@ -1006,18 +1006,18 @@
                 destroySelf"/>
     </class>
     <class
-        class="canonical.launchpad.database.WikiNameSet">
+        class="lp.registry.model.person.WikiNameSet">
         <allow
             interface="lp.registry.interfaces.wikiname.IWikiNameSet"/>
     </class>
     <securedutility
-        class="canonical.launchpad.database.WikiNameSet"
+        class="lp.registry.model.person.WikiNameSet"
         provides="lp.registry.interfaces.wikiname.IWikiNameSet">
         <allow
             interface="lp.registry.interfaces.wikiname.IWikiNameSet"/>
     </securedutility>
     <class
-        class="canonical.launchpad.database.GPGKey">
+        class="lp.registry.model.gpgkey.GPGKey">
         <allow
             interface="canonical.launchpad.interfaces.IGPGKey"/>
         <require
@@ -1028,12 +1028,12 @@
     <!-- GPGKeySet -->
 
     <class
-        class="canonical.launchpad.database.GPGKeySet">
+        class="lp.registry.model.gpgkey.GPGKeySet">
         <allow
             interface="canonical.launchpad.interfaces.IGPGKeySet"/>
     </class>
     <securedutility
-        class="canonical.launchpad.database.GPGKeySet"
+        class="lp.registry.model.gpgkey.GPGKeySet"
         provides="canonical.launchpad.interfaces.IGPGKeySet">
         <allow
             interface="canonical.launchpad.interfaces.IGPGKeySet"/>
@@ -1042,7 +1042,7 @@
     <!-- Product -->
 
     <class
-        class="canonical.launchpad.database.Product">
+        class="lp.registry.model.product.Product">
         <allow
             interface="lp.registry.interfaces.product.IProductPublic"/>
         <allow
@@ -1165,7 +1165,7 @@
         -->
 
     <class
-        class="canonical.launchpad.database.ProductWithLicenses">
+        class="lp.registry.model.product.ProductWithLicenses">
         <allow
             interface="lp.registry.interfaces.product.IProduct"/>
     </class>
@@ -1195,7 +1195,7 @@
     <!-- ProductSet-->
 
     <class
-        class="canonical.launchpad.database.ProductSet">
+        class="lp.registry.model.product.ProductSet">
         <allow
             attributes="
                 title
@@ -1219,7 +1219,7 @@
                 count_codified"/>
     </class>
     <securedutility
-        class="canonical.launchpad.database.ProductSet"
+        class="lp.registry.model.product.ProductSet"
         provides="lp.registry.interfaces.product.IProductSet">
         <allow
             interface="lp.registry.interfaces.product.IProductSet"/>
@@ -1232,7 +1232,7 @@
     <!-- SSHKey -->
 
     <class
-        class="canonical.launchpad.database.SSHKey">
+        class="lp.registry.model.person.SSHKey">
         <allow
             interface="canonical.launchpad.interfaces.ISSHKey"/>
         <require
@@ -1243,12 +1243,12 @@
     <!-- SSHKeySet -->
 
     <class
-        class="canonical.launchpad.database.SSHKeySet">
+        class="lp.registry.model.person.SSHKeySet">
         <allow
             interface="canonical.launchpad.interfaces.ISSHKeySet"/>
     </class>
     <securedutility
-        class="canonical.launchpad.database.SSHKeySet"
+        class="lp.registry.model.person.SSHKeySet"
         provides="canonical.launchpad.interfaces.ISSHKeySet">
         <allow
             interface="canonical.launchpad.interfaces.ISSHKeySet"/>
@@ -1263,7 +1263,7 @@
     <!-- This is class ProductSeries -->
 
     <class
-        class="canonical.launchpad.database.ProductSeries">
+        class="lp.registry.model.productseries.ProductSeries">
         <allow
             interface="lp.registry.interfaces.productseries.IProductSeriesPublic"/>
         <require
@@ -1300,12 +1300,12 @@
     <adapter
         provides="canonical.launchpad.interfaces.IHasExternalBugTracker"
         for="lp.registry.interfaces.productseries.IProductSeries"
-        factory="lp.registry.adapters.productseries.productseries_to_product"
+        factory="lp.registry.adapters.productseries_to_product"
         permission="zope.Public"/>
     <adapter
         provides="canonical.launchpad.interfaces.ILaunchpadUsage"
         for="lp.registry.interfaces.productseries.IProductSeries"
-        factory="lp.registry.adapters.productseries.productseries_to_product"
+        factory="lp.registry.adapters.productseries_to_product"
         permission="zope.Public"/>
     <adapter
         provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
@@ -1316,12 +1316,12 @@
     <!-- ProductSeriesSet -->
 
     <class
-        class="canonical.launchpad.database.ProductSeriesSet">
+        class="lp.registry.model.productseries.ProductSeriesSet">
         <allow
             interface="lp.registry.interfaces.productseries.IProductSeriesSet"/>
     </class>
     <securedutility
-        class="canonical.launchpad.database.ProductSeriesSet"
+        class="lp.registry.model.productseries.ProductSeriesSet"
         provides="lp.registry.interfaces.productseries.IProductSeriesSet">
         <allow
             interface="lp.registry.interfaces.productseries.IProductSeriesSet"/>
@@ -1330,7 +1330,7 @@
     <!-- Distribution -->
 
     <class
-        class="canonical.launchpad.database.Distribution">
+        class="lp.registry.model.distribution.Distribution">
         <allow
             interface="lp.registry.interfaces.distribution.IDistributionPublic"/>
         <allow
@@ -1436,12 +1436,12 @@
     <!-- DistributionSet -->
 
     <class
-        class="canonical.launchpad.database.DistributionSet">
+        class="lp.registry.model.distribution.DistributionSet">
         <allow
             interface="lp.registry.interfaces.distribution.IDistributionSet"/>
     </class>
     <securedutility
-        class="canonical.launchpad.database.DistributionSet"
+        class="lp.registry.model.distribution.DistributionSet"
         provides="lp.registry.interfaces.distribution.IDistributionSet">
         <allow
             interface="lp.registry.interfaces.distribution.IDistributionSet"/>
@@ -1450,7 +1450,7 @@
     <!-- SourcePackage -->
 
     <class
-        class="canonical.launchpad.database.SourcePackage">
+        class="lp.registry.model.sourcepackage.SourcePackage">
         <allow
             interface="lp.registry.interfaces.sourcepackage.ISourcePackage"/>
         <allow
@@ -1506,7 +1506,7 @@
     <!-- This is class ProductReleaseSet -->
 
     <class
-        class="canonical.launchpad.database.ProductReleaseSet">
+        class="lp.registry.model.productrelease.ProductReleaseSet">
         <allow
             interface="lp.registry.interfaces.productrelease.IProductReleaseSet"/>
         <require
@@ -1514,7 +1514,7 @@
             set_schema="lp.registry.interfaces.productrelease.IProductReleaseSet"/>
     </class>
     <securedutility
-        class="canonical.launchpad.database.ProductReleaseSet"
+        class="lp.registry.model.productrelease.ProductReleaseSet"
         provides="lp.registry.interfaces.productrelease.IProductReleaseSet">
         <allow
             interface="lp.registry.interfaces.productrelease.IProductReleaseSet"/>
@@ -1523,7 +1523,7 @@
     <!-- This is class ProductRelease -->
 
     <class
-        class="canonical.launchpad.database.ProductRelease">
+        class="lp.registry.model.productrelease.ProductRelease">
         <allow
             interface="lp.registry.interfaces.productrelease.IProductReleasePublic"/>
         <require
@@ -1537,7 +1537,7 @@
     <!-- This is class ProductReleaseFile -->
 
     <class
-        class="canonical.launchpad.database.ProductReleaseFile">
+        class="lp.registry.model.productrelease.ProductReleaseFile">
         <allow
             interface="lp.registry.interfaces.productrelease.IProductReleaseFilePublic"/>
         <require
@@ -1545,7 +1545,7 @@
             interface="lp.registry.interfaces.productrelease.IProductReleaseFileEditRestricted"/>
     </class>
     <class
-        class="canonical.launchpad.database.Entitlement">
+        class="lp.registry.model.entitlement.Entitlement">
         <require
             permission="launchpad.View"
             interface="lp.registry.interfaces.entitlement.IEntitlement"/>
@@ -1557,12 +1557,12 @@
     <!-- EntitlementSet -->
 
     <class
-        class="canonical.launchpad.database.EntitlementSet">
+        class="lp.registry.model.entitlement.EntitlementSet">
         <allow
             interface="lp.registry.interfaces.entitlement.IEntitlementSet"/>
     </class>
     <securedutility
-        class="canonical.launchpad.database.EntitlementSet"
+        class="lp.registry.model.entitlement.EntitlementSet"
         provides="lp.registry.interfaces.entitlement.IEntitlementSet">
         <allow
             interface="lp.registry.interfaces.entitlement.IEntitlementSet"/>
