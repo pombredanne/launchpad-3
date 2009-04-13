@@ -720,7 +720,7 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
     """The main branch view for editing the branch attributes."""
 
     field_names = [
-        'owner', 'product', 'name', 'private', 'url', 'title', 'summary',
+        'owner', 'product', 'name', 'private', 'url', 'title',
         'lifecycle_status']
 
     custom_widget('lifecycle_status', LaunchpadRadioWidgetWithDescription)
@@ -860,7 +860,7 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
     schema = IBranch
     for_input = True
     field_names = ['owner', 'product', 'name', 'branch_type', 'url', 'title',
-                   'summary', 'lifecycle_status']
+                   'lifecycle_status']
 
     branch = None
     custom_widget('branch_type', LaunchpadRadioWidgetWithDescription)
@@ -890,7 +890,6 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
                 registrant=self.user,
                 url=data.get('url'),
                 title=data['title'],
-                summary=data['summary'],
                 lifecycle_status=data['lifecycle_status'])
             if self.branch.branch_type == BranchType.MIRRORED:
                 self.branch.requestMirror()
