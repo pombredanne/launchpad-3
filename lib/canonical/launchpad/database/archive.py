@@ -1269,10 +1269,15 @@ class ArchiveSet:
                     "Person '%s' already has a PPA named '%s'." %
                     (owner.name, name))
 
+        # Signing-key for the default PPA is reused when it's already present.
+        signing_key = None
+        if purpose == ArchivePurpose.PPA and owner.archive is not None:
+            signing_key = owner.archive.signing_key
+
         new_archive = Archive(
             owner=owner, distribution=distribution, name=name,
             displayname=displayname, description=description,
-            purpose=purpose, publish=publish)
+            purpose=purpose, publish=publish, signing_key=signing_key)
 
         return new_archive
 

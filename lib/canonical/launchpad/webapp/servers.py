@@ -39,8 +39,8 @@ from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 
 from canonical.lazr.interfaces.feed import IFeed
-from canonical.lazr.interfaces.rest import IWebServiceConfiguration
-from canonical.lazr.rest.publisher import (
+from lazr.restful.interfaces import IWebServiceConfiguration
+from lazr.restful.publisher import (
     WebServicePublicationMixin, WebServiceRequestTraversal)
 
 from canonical.launchpad.interfaces import (

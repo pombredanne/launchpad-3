@@ -11,12 +11,14 @@ __all__ = [
     'IrcIDSet',
     'JabberID',
     'JabberIDSet',
+    'JoinTeamEvent',
     'Owner',
     'Person',
     'PersonLanguage',
     'PersonSet',
     'SSHKey',
     'SSHKeySet',
+    'TeamInvitationEvent',
     'ValidPersonCache',
     'WikiName',
     'WikiNameSet']
@@ -63,8 +65,8 @@ from canonical.launchpad.database.oauth import (
 from lp.registry.model.personlocation import PersonLocation
 from canonical.launchpad.database.structuralsubscription import (
     StructuralSubscription)
-from lp.registry.event.karma import KarmaAssignedEvent
-from lp.registry.event.team import JoinTeamEvent, TeamInvitationEvent
+from canonical.launchpad.event.interfaces import (
+    IJoinTeamEvent, ITeamInvitationEvent)
 from canonical.launchpad.helpers import (
     get_contact_email_addresses, get_email_template, shortlist)
 
@@ -131,7 +133,7 @@ from canonical.launchpad.database.emailaddress import (
 from lp.registry.model.karma import KarmaCache, KarmaTotalCache
 from canonical.launchpad.database.logintoken import LoginToken
 from lp.registry.model.pillar import PillarName
-from lp.registry.model.karma import KarmaAction, Karma
+from lp.registry.model.karma import KarmaAction, KarmaAssignedEvent, Karma
 from lp.registry.model.mentoringoffer import MentoringOffer
 from canonical.launchpad.database.sourcepackagerelease import (
     SourcePackageRelease)
@@ -145,6 +147,26 @@ from lp.registry.model.teammembership import (
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.validators.name import sanitize_name, valid_name
 from lp.registry.interfaces.person import validate_public_person
+
+
+class JoinTeamEvent:
+    """See `IJoinTeamEvent`."""
+
+    implements(IJoinTeamEvent)
+
+    def __init__(self, person, team):
+        self.person = person
+        self.team = team
+
+
+class TeamInvitationEvent:
+    """See `IJoinTeamEvent`."""
+
+    implements(ITeamInvitationEvent)
+
+    def __init__(self, member, team):
+        self.member = member
+        self.team = team
 
 
 class ValidPersonCache(SQLBase):
@@ -1522,7 +1544,7 @@ class Person(
             clauseTables=['Person'],
             orderBy=Person.sortingColumns)
 
-    def _mapped_participants_locations(self):
+    def _getMappedParticipantsLocations(self, limit=None):
         """See `IPersonViewRestricted`."""
         return PersonLocation.select("""
             PersonLocation.person = TeamParticipation.person AND
@@ -1535,17 +1557,16 @@ class Person(
             Person.teamowner IS NULL
             """ % sqlvalues(self.id),
             clauseTables=['TeamParticipation', 'Person'],
-            prejoins=['person',])
+            prejoins=['person',], limit=limit)
 
-    @property
-    def mapped_participants(self):
+    def getMappedParticipants(self, limit=None):
         """See `IPersonViewRestricted`."""
         # Pre-cache this location against its person.  Since we'll always
         # iterate over all persons returned by this property (to build the map
         # of team members), it becomes more important to cache their locations
         # than to return a lazy SelectResults (or similar) object that only
         # fetches the rows when they're needed.
-        locations = self._mapped_participants_locations()
+        locations = self._getMappedParticipantsLocations(limit=limit)
         for location in locations:
             location.person._location = location
         participants = set(location.person for location in locations)
@@ -1553,12 +1574,13 @@ class Person(
         if len(participants) > 0:
             sql = "id IN (%s)" % ",".join(sqlvalues(*participants))
             list(ValidPersonCache.select(sql))
+        getUtility(IPersonSet).cacheBrandingForPeople(participants)
         return list(participants)
 
     @property
     def mapped_participants_count(self):
         """See `IPersonViewRestricted`."""
-        return self._mapped_participants_locations().count()
+        return self._getMappedParticipantsLocations().count()
 
     def getMappedParticipantsBounds(self):
         """See `IPersonViewRestricted`."""
@@ -1566,7 +1588,7 @@ class Person(
         min_lat = 90.0
         max_lng = -180.0
         min_lng = 180.0
-        locations = self._mapped_participants_locations()
+        locations = self._getMappedParticipantsLocations()
         if self.mapped_participants_count == 0:
             raise AssertionError, (
                 'This method cannot be called when '

@@ -425,17 +425,22 @@ class RosettaUploadJob(BranchJobDerived):
         self.translation_files_changed = []
 
     @staticmethod
-    def getMetadata(from_revision_id):
+    def getMetadata(from_revision_id, do_translations_upload):
         return {
             'from_revision_id': from_revision_id,
+            'do_translations_upload': do_translations_upload,
         }
 
     @property
     def from_revision_id(self):
         return self.metadata['from_revision_id']
 
+    @property
+    def do_translations_upload(self):
+        return self.metadata['do_translations_upload']
+
     @classmethod
-    def create(klass, branch, from_revision_id):
+    def create(klass, branch, from_revision_id, do_translations_upload=False):
         """See `IRosettaUploadJobSource`."""
         if branch is None:
             return None
@@ -448,7 +453,8 @@ class RosettaUploadJob(BranchJobDerived):
             ProductSeries.translations_autoimport_mode !=
                TranslationsBranchImportMode.NO_IMPORT).any()
         if productseries is not None:
-            metadata = klass.getMetadata(from_revision_id)
+            metadata = klass.getMetadata(from_revision_id,
+                                         do_translations_upload)
             branch_job = BranchJob(
                 branch, BranchJobType.ROSETTA_UPLOAD, metadata)
             return klass(branch_job)
@@ -467,7 +473,7 @@ class RosettaUploadJob(BranchJobDerived):
         yield (self.template_file_names, self.template_files_changed)
         yield (self.translation_file_names, self.translation_files_changed)
 
-    def _iter_lists_and_uploaders(self, productseries=None):
+    def _iter_lists_and_uploaders(self, productseries):
         """Iterate through all files for a productseries.
 
         File names and files are stored in different lists according to their
@@ -481,11 +487,20 @@ class RosettaUploadJob(BranchJobDerived):
         the file type.
         """
         if productseries.translations_autoimport_mode in (
-            TranslationsBranchImportMode.IMPORT_TEMPLATES,):
+            TranslationsBranchImportMode.IMPORT_TEMPLATES,
+            TranslationsBranchImportMode.IMPORT_TRANSLATIONS):
+            #
             yield (self.template_file_names,
                    self.template_files_changed,
                    self._uploader_person_pot(productseries))
-            # Handling for other modes will go here.
+
+        if (productseries.translations_autoimport_mode ==
+            TranslationsBranchImportMode.IMPORT_TRANSLATIONS or
+            self.do_translations_upload):
+            #
+            yield (self.translation_file_names,
+                   self.translation_files_changed,
+                   self._uploader_person_po(productseries))
 
     @property
     def file_names(self):
@@ -552,7 +567,10 @@ class RosettaUploadJob(BranchJobDerived):
     def _uploader_person_po(self, series):
         """Determine which person is the uploader for a po file."""
         # For po files, try to determine the author of the latest push.
-        uploader = self.branch.getTipRevision().revision_author.person
+        uploader = None
+        revision = self.branch.getTipRevision()
+        if revision is not None and revision.revision_author is not None:
+            uploader = revision.revision_author.person
         if uploader is None:
             uploader = self._uploader_person_pot(series)
         return uploader
