@@ -772,6 +772,16 @@ class ValidPersonOrTeamVocabulary(
         text = text.lower()
         return self._doSearch(text=text)
 
+    def searchForTerms(self, query=None):
+        """See `IHugeVocabulary`."""
+        results = self.search(query)
+        # XXX: BradCrittenden 2009-04-13 bug=217644: Storm ResultSet
+        # aggregates (count, sum, avg) do not respect distinct option.  This
+        # work-around forces the call to count to do the right thing.
+        from storm.expr import Column
+        id = Column('id', Person)
+        num = results.count(expr=id, distinct=True)
+        return CountableIterator(num, results, self.toTerm)
 
 class ValidTeamVocabulary(ValidPersonOrTeamVocabulary):
     """The set of all valid, public teams in Launchpad."""
