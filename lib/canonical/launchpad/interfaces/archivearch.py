@@ -16,7 +16,7 @@ from zope.schema import Int
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.archive import IArchive
 from canonical.launchpad.interfaces.processor import IProcessorFamily
-from canonical.lazr.fields import Reference
+from lazr.restful.fields import Reference
 
 
 class IArchiveArch(Interface):

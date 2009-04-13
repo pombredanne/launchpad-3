@@ -8,7 +8,7 @@ notifications and sending them.
 
     >>> from canonical.launchpad.interfaces.personnotification import (
     ...     IPersonNotification, IPersonNotificationSet)
-    >>> from canonical.launchpad.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> notification_set = getUtility(IPersonNotificationSet)
     >>> sabdfl = getUtility(IPersonSet).getByName('sabdfl')

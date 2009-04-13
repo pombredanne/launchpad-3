@@ -7,24 +7,29 @@ __metaclass__ = type
 __all__ = [
     'ArchiveSubscribersView',
     'PersonArchiveSubscriptionsView',
+    'traverse_archive_subscription_for_subscriber'
     ]
 
 import datetime
 
 import pytz
 
-from sqlobject import SQLObjectNotFound
-
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser import TextWidget
 from zope.component import getUtility
 from zope.formlib import form
+from zope.interface import alsoProvides, implements
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.cachedproperty import cachedproperty
-from canonical.launchpad.browser.archive import ArchiveViewBase
+from canonical.launchpad.components.decoratedresultset import (
+    DecoratedResultSet)
 from canonical.launchpad.interfaces.archive import IArchiveSet
+from canonical.launchpad.interfaces.archiveauthtoken import (
+    IArchiveAuthTokenSet)
 from canonical.launchpad.interfaces.archivesubscriber import (
-    IArchiveSubscriberUI, IArchiveSubscriberSet)
+    IArchiveSubscriberSet, IArchiveSubscriberUI,
+    IPersonalArchiveSubscription)
 from canonical.launchpad.webapp.launchpadform import (
     action, custom_widget, LaunchpadFormView, LaunchpadEditFormView)
 from canonical.launchpad.webapp.menu import structured
@@ -42,7 +47,36 @@ def archive_subscription_ui_adapter(archive_subscription):
     return archive_subscription
 
 
-class ArchiveSubscribersView(ArchiveViewBase, LaunchpadFormView):
+class PersonalArchiveSubscription:
+    """See `IPersonalArchiveSubscription`."""
+
+    implements(IPersonalArchiveSubscription)
+
+    def __init__(self, subscriber, archive):
+        self.subscriber = subscriber
+        self.archive = archive
+
+    @property
+    def displayname(self):
+        """See `IPersonalArchiveSubscription`."""
+        return "%s's subscription to %s" % (
+            self.subscriber.displayname, self.archive.displayname)
+
+def traverse_archive_subscription_for_subscriber(subscriber, archive_id):
+    """Return the subscription for a subscriber to an archive."""
+    subscription = None
+    archive = getUtility(IArchiveSet).get(archive_id)
+    if archive:
+        subscription = getUtility(IArchiveSubscriberSet).getBySubscriber(
+            subscriber, archive=archive).first()
+
+    if subscription is None:
+        return None
+    else:
+        return PersonalArchiveSubscription(subscriber, archive)
+
+
+class ArchiveSubscribersView(LaunchpadFormView):
     """A view for listing and creating archive subscribers."""
 
     schema = IArchiveSubscriberUI
@@ -63,17 +97,18 @@ class ArchiveSubscribersView(ArchiveViewBase, LaunchpadFormView):
 
         super(ArchiveSubscribersView, self).initialize()
 
-    @cachedproperty
+    @property
     def subscriptions(self):
         """Return all the subscriptions for this archive."""
-        return getUtility(IArchiveSubscriberSet).getByArchive(self.context)
+        return getUtility(IArchiveSubscriberSet).getByArchive(
+            self.context)
 
     @cachedproperty
     def has_subscriptions(self):
         """Return whether this archive has any subscribers."""
         # XXX noodles 20090212 bug=246200: use bool() when it gets fixed
         # in storm.
-        return self.subscriptions.count() > 0
+        return self.subscriptions.any() is not None
 
     def validate_new_subscription(self, action, data):
         """Ensure the subscriber isn't already subscribed.
@@ -91,7 +126,7 @@ class ArchiveSubscribersView(ArchiveViewBase, LaunchpadFormView):
 
             # XXX noodles 20090212 bug=246200: use bool() when it gets fixed
             # in storm.
-            if current_subscription.count() > 0:
+            if current_subscription.any() is not None:
                 self.setFieldError('subscriber',
                     "%s is already subscribed." % subscriber.displayname)
 
@@ -119,8 +154,8 @@ class ArchiveSubscribersView(ArchiveViewBase, LaunchpadFormView):
             description=data['description'],
             date_expires=date_expires)
 
-        notification = "%s has been added as a subscriber." % (
-            data['subscriber'].displayname)
+        notification = "You have subscribed %s to %s." % (
+            data['subscriber'].displayname, self.context.displayname)
         self.request.response.addNotification(structured(notification))
 
         # Just ensure a redirect happens (back to ourselves).
@@ -146,7 +181,7 @@ class ArchiveSubscriptionEditView(LaunchpadEditFormView):
                     "The expiry date must be in the future.")
 
     @action(
-        u'Update', name='update', validator="validate_update_subscription")
+        u'Save', name='update', validator="validate_update_subscription")
     def update_subscription(self, action, data):
         """Update the context subscription with the new data."""
         # As we present a date selection to the user for expiry, we
@@ -171,8 +206,9 @@ class ArchiveSubscriptionEditView(LaunchpadEditFormView):
         """Cancel the context subscription."""
         self.context.cancel(self.user)
 
-        notification = "The subscription for %s has been canceled." % (
-            self.context.subscriber.displayname)
+        notification = "You have cancelled %s's subscription to %s." % (
+            self.context.subscriber.displayname,
+            self.context.archive.displayname)
         self.request.response.addNotification(structured(notification))
 
     @property
@@ -180,16 +216,14 @@ class ArchiveSubscriptionEditView(LaunchpadEditFormView):
         """Calculate and return the url to which we want to redirect."""
         return canonical_url(self.context.archive) + "/+subscriptions"
 
+    @property
+    def cancel_url(self):
+        """Return the url to which we want to go to if user cancels."""
+        return self.next_url
+
 
 class PersonArchiveSubscriptionsView(LaunchpadView):
-    """A view for managing a persons archive subscriptions."""
-
-    def initialize(self):
-        """Check for any POSTed subscription activations."""
-        super(PersonArchiveSubscriptionsView, self).initialize()
-
-        if self.request.method == "POST":
-            self.processSubscriptionActivation()
+    """A view for displaying a persons archive subscriptions."""
 
     @cachedproperty
     def subscriptions_with_tokens(self):
@@ -206,111 +240,81 @@ class PersonArchiveSubscriptionsView(LaunchpadView):
         # Turn the result set into a list of dicts so it can be easily
         # accessed in TAL:
         return [
-            {"subscription": subscription, "token": token}
-                for subscription, token in subs_with_tokens]
+            dict(subscription=PersonalArchiveSubscription(self.context,
+                                                          subscr.archive),
+                 token=token)
+            for subscr, token in subs_with_tokens]
+
+
+class PersonArchiveSubscriptionView(LaunchpadView):
+    """Display a user's archive subscription and relevant info.
+
+    This includes the current sources.list entries (if the subscription
+    has a current token), and the ability to generate and re-generate
+    tokens.
+    """
+
+    def initialize(self):
+        """Process any posted actions."""
+        super(PersonArchiveSubscriptionView, self).initialize()
+
+        # If an activation was requested and there isn't a currently
+        # active token, then create a token, provided a notification
+        # and redirect.
+        if self.request.form.get('activate') and not self.active_token:
+            token = self.context.archive.newAuthToken(self.context.subscriber)
+
+            self.request.response.addNotification(structured(
+                "You have confirmed your subscription to the archive %s. "
+                "Before you can install software from the archive you need "
+                "to follow the instructions below to update your custom "
+                " \"sources.list\"." % self.context.archive.displayname))
+
+            self.request.response.redirect(self.request.getURL())
+
+        # Otherwise, if a regeneration was requested and there is an
+        # active token, then cancel the old token, create a new one,
+        # provide a notification and redirect.
+        elif self.request.form.get('regenerate') and self.active_token:
+            self.active_token.deactivate()
+
+            token = self.context.archive.newAuthToken(self.context.subscriber)
+
+            self.request.response.addNotification(structured(
+                "Launchpad has generated the new password you requested "
+                "for your subscription to the archive %s. Please follow "
+                "the instructions below to update your custom "
+                "\"sources.list\"." % self.context.archive.displayname))
+
+            self.request.response.redirect(self.request.getURL())
 
     @cachedproperty
-    def active_subscriptions_with_tokens(self):
-        """Return the active subscriptions, each with it's token.
+    def active_token(self):
+        """Returns the corresponding current token for this subscription."""
+        token_set = getUtility(IArchiveAuthTokenSet)
+        return token_set.getActiveTokenForArchiveAndPerson(
+            self.context.archive, self.context.subscriber)
 
-        The result is formatted as a list of dicts to make the TALS code
-        cleaner.
-        """
-        return [
-            subs_with_token
-                for subs_with_token in self.subscriptions_with_tokens
-                    if subs_with_token["token"] is not None]
-
-    @cachedproperty
-    def pending_subscriptions(self):
-        """Return the pending subscriptions for this user.
-
-        This is all subscriptions for the user, for which they do not have
-        an active token.
-        """
-        return [
-            subs_with_token["subscription"]
-                for subs_with_token in self.subscriptions_with_tokens
-                    if subs_with_token["token"] is None]
 
     @property
     def private_ppa_sources_list(self):
-        """Return all the private ppa sources.list entries as a string."""
-        sources_list_text = "# Personal subscriptions for private PPAs\n\n"
-        active_sources_entries = []
-        for subs_with_token in self.active_subscriptions_with_tokens:
-            subscription = subs_with_token['subscription']
-            token = subs_with_token['token']
-            archive = subscription.archive
-            series_name = archive.distribution.currentseries.name
-            active_sources_entries.append(
-                "# %(title)s\n"
-                "deb %(archive_url)s %(series_name)s main\n"
-                "deb-src %(archive_url)s %(series_name)s main\n" % {
-                    'title': archive.displayname,
-                    'archive_url': token.archive_url,
-                    'series_name': series_name})
+        """Return the private ppa sources.list entries as a string."""
 
-        sources_list_text += "\n".join(active_sources_entries)
-        return sources_list_text
+        if self.active_token is None:
+            return ""
 
-    def processSubscriptionActivation(self):
-        """Process any posted data that activates a subscription."""
-        # Just for clarity, define a redirectToSelf() helper.
-        def redirectToSelf():
-            self.request.response.redirect(self.request.getURL())
+        token = self.active_token
+        archive = self.context.archive
+        series_name = archive.distribution.currentseries.name
+        title = "Personal subscription of %s to %s" % (
+            self.context.subscriber.displayname, archive.displayname)
+        return (
+            "# %(title)s\n"
+            "deb %(archive_url)s %(series_name)s main\n"
+            "deb-src %(archive_url)s %(series_name)s main" % {
+                'title': title,
+                'archive_url': token.archive_url,
+                'series_name': series_name})
 
-        # NOTE: as there isn't any form input to validate, but just simple
-        # buttons, any bad data here should only be the result of either
-        # (1) users fiddling with form post data, or (2) timing issues between
-        # subscription expiries/cancellations and activations, so in all
-        # cases below, we just redirect to a normal GET request in the event
-        # of bad data.
 
-        # Check first for a valid archive_id in the post data - if none
-        # is found simply redirect to a normal GET request.
-        archive_id = self.request.form.get('archive_id')
-        if archive_id:
-            try:
-                archive_id = int(archive_id)
-            except ValueError:
-                redirectToSelf()
-                return
-        else:
-            redirectToSelf()
-            return
 
-        # Next, try to grab the corresponding archive. Again, if none
-        # is found, redirect to a normal GET request.
-        try:
-            archive = getUtility(IArchiveSet).get(archive_id)
-        except SQLObjectNotFound:
-            # Just ignore as it should only happen if the user
-            # is fiddling with POST params.
-            redirectToSelf()
-            return
-
-        # Grab the current user's subscriptions for this
-        # particular archive, as well as any token that already
-        # exists:
-        subscriber_set = getUtility(IArchiveSubscriberSet)
-        subscriptions_with_token = \
-            subscriber_set.getBySubscriberWithActiveToken(
-                self.context, archive=archive)
-
-        if subscriptions_with_token.count() == 0:
-            # The user does not have a current subscription, so no token.
-            redirectToSelf()
-            return
-
-        # Note: there may be multiple subscriptions for a user (through
-        # teams), but there should only ever be one token generated.
-        subscription, token = subscriptions_with_token[0]
-        if token is None:
-            token = archive.newAuthToken(self.context)
-            # Message the user and redirect:
-            self.request.response.addNotification(structured(
-                "Your subscription to '%s' has been activated. "
-                "Please update your custom sources.list as "
-                "described below." % archive.displayname))
-            redirectToSelf()

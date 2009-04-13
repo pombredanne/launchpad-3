@@ -74,6 +74,8 @@ Y.on('domready', function() {
                 duplicate_form_overlay.show();
             }
         });
+        // Add a class denoting them as js-action links.
+        update_dupe_links.addClass('js-action');
     }
 });
 
@@ -88,10 +90,10 @@ function createBugDuplicateFormOverlay(form_content) {
         form_submit_button: Y.Node.create(
             '<button type=\'submit\' name=\'field.actions.change\' ' +
             'value=\'Change\' class=\'lazr-pos lazr-btn\' >OK</button>'),
-        align: {
-            points: 
-                [Y.WidgetPositionExt.CC, Y.WidgetPositionExt.CC]
-        },
+        form_cancel_button: Y.Node.create(
+            '<button type=\'button\' name=\'field.actions.cancel\' ' +
+            'class=\'lazr-neg lazr-btn\' >Cancel</button>'),
+        centered: true,
         form_submit_callback: update_bug_duplicate,
         visible: false
     });
@@ -128,6 +130,7 @@ function update_bug_duplicate(data) {
         var last_slash_index = self_link.lastIndexOf('/');
         new_dup_url = self_link.slice(0, last_slash_index+1) + new_dup_id;
     }
+    var old_dup_url = lp_bug_entry.get('duplicate_of_link');
     lp_bug_entry.set('duplicate_of_link', new_dup_url);
 
     // Create a config for the lp_save method
@@ -147,13 +150,13 @@ function update_bug_duplicate(data) {
                     dupe_span.set('innerHTML', [
                         'Duplicate of <a href=\'/bugs/' + new_dup_id + '\'>',
                         'bug #' + new_dup_id +'</a> ',
-                        '<a class=\'menu-link-mark-dupe\' ',
+                        '<a class=\'menu-link-mark-dupe js-action\' ',
                         'href=\'' + update_dupe_url + '\'>',
                         '<img src=\'/@@/edit\' /></a>'
                         ].join(''));
                 } else {
                     dupe_span.set('innerHTML',
-                        '<a class=\'menu-link-mark-dupe\' href=\'' +
+                        '<a class=\'menu-link-mark-dupe js-action\' href=\'' +
                         update_dupe_url + '\'>' +
                         '<img src=\'/@@/bug-dupe-icon\' /> ' +
                         'Mark as duplicate</a>');
@@ -176,6 +179,11 @@ function update_bug_duplicate(data) {
                     duplicate_form_overlay.showError(request.responseText);
                 }
                 duplicate_form_overlay.show();
+
+                // Reset the lp_bug_entry.duplicate_of_link as it wasn't
+                // updated.
+                lp_bug_entry.set('duplicate_of_link', old_dup_url);
+
             }
         }
     };
@@ -491,12 +499,26 @@ function update_bug_duplicate(data) {
       </div>
 
       <tal:comments>
-        <tal:comment repeat="comment view/visible_comments_for_display">
-          <tal:comment-box condition="comment/can_be_shown">
-            <metal:comment-box
-                metal:use-macro="context/@@bugcomment-macros/comment-box" />
-          </tal:comment-box>
+        <tal:comment repeat="comment_or_activity view/activity_and_comments">
+          <tal:is-comment
+              define="comment comment_or_activity/comment|nothing"
+              condition="comment">
+            <tal:comment-box condition="comment/can_be_shown">
+              <metal:comment-box
+                  metal:use-macro="context/@@bugcomment-macros/comment-box" />
+            </tal:comment-box>
+          </tal:is-comment>
+
+          <tal:is-activity
+              define="activity_list comment_or_activity/activity|nothing;
+                      activity_date comment_or_activity/date|nothing;
+                      activity_person comment_or_activity/person|nothing"
+              condition="activity_list">
+              <metal:comment-box
+                  metal:use-macro="context/@@bugcomment-macros/activity-box" />
+          </tal:is-activity>
         </tal:comment>
+
         <tal:comment-list-complete
             tal:condition="not:view/visible_comments_truncated_for_display">
           <tal:logged-in condition="view/user">
@@ -505,6 +527,7 @@ function update_bug_duplicate(data) {
               <div tal:content="structure context/@@+addcomment-form" />
             </fieldset>
           </tal:logged-in>
+
           <tal:not-logged-in condition="not: view/user">
             <div align="center" id="add-comment-login-first">
               To post a comment you must <a

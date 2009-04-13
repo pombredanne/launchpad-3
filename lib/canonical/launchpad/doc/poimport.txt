@@ -127,7 +127,7 @@ transaction to make sure it's stored properly.
 
 The entry gets approved, so it can be imported.
 
-    >>> entry.status = RosettaImportStatus.APPROVED
+    >>> entry.setStatus(RosettaImportStatus.APPROVED)
 
     >>> import datetime
     >>> import pytz
@@ -203,7 +203,7 @@ The entry must have been approved for import.
 The entry indicates what file it is to be imported to; importing it to
 any other file would be an error.
 
-    >>> entry.status = RosettaImportStatus.APPROVED
+    >>> entry.setStatus(RosettaImportStatus.APPROVED)
     >>> from canonical.launchpad.interfaces import IPOTemplateSet
     >>> other_product = getUtility(IProductSet).getByName('netapplet')
     >>> other_productseries = other_product.getSeries('trunk')
@@ -306,7 +306,7 @@ Set it as the place where the entry should be imported.
 
 We must approve the entry to be able to import it.
 
-    >>> entry.status = RosettaImportStatus.APPROVED
+    >>> entry.setStatus(RosettaImportStatus.APPROVED)
 
 And we do the import.
 
@@ -459,7 +459,7 @@ Set it as the place where the entry should be imported.
 
 We must approve the entry to be able to import it.
 
-    >>> entry.status = RosettaImportStatus.APPROVED
+    >>> entry.setStatus(RosettaImportStatus.APPROVED)
 
 At this point, the statistics note that we have 3 translations coming
 from imported files (currentCount), and none updated or added in
@@ -544,7 +544,7 @@ The entry must have been approved for import.
 The entry indicates what file it is to be imported to; importing it to
 any other file would be an error.
 
-    >>> entry.status = RosettaImportStatus.APPROVED
+    >>> entry.setStatus(RosettaImportStatus.APPROVED)
     >>> other_pofile = potemplate.newPOFile('de')
     >>> other_pofile.importFromQueue(entry)
     Traceback (most recent call last):
@@ -574,7 +574,7 @@ in this test; We don't touch entries that were in the queue previously.
     ...     if (entry.status == RosettaImportStatus.IMPORTED or
     ...         entry.status == RosettaImportStatus.FAILED) and (
     ...         entry.productseries == series):
-    ...         entry.status = RosettaImportStatus.APPROVED
+    ...         entry.setStatus(RosettaImportStatus.APPROVED)
     ...     syncUpdate(entry)
     >>> transaction.commit()
 
@@ -674,7 +674,7 @@ We flush the entry contents.
 
     >>> for entry in translation_import_queue:
     ...     translation_import_queue.remove(entry)
-    >>> translation_import_queue.entryCount()
+    >>> translation_import_queue.countEntries()
     0
 
 Attach the first version of the file.
@@ -688,7 +688,7 @@ Attach the first version of the file.
 
 It's in the queue now.
 
-    >>> translation_import_queue.entryCount()
+    >>> translation_import_queue.countEntries()
     1
 
 For the second version, we need a new importer, in this case, Jordi.
@@ -706,7 +706,7 @@ Attach the second version of the file.
 
 It's in the queue now.
 
-    >>> translation_import_queue.entryCount()
+    >>> translation_import_queue.countEntries()
     2
     >>> print entry.status.name
     NEEDS_REVIEW
@@ -760,7 +760,7 @@ message translations were ignored.
 Imports so far have been associated with a product series. We can also
 submit translations for a distroseries.
 
-    >>> from canonical.launchpad.interfaces.distribution import (
+    >>> from lp.registry.interfaces.distribution import (
     ...     IDistributionSet)
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> warty = ubuntu.getSeries('warty')
@@ -792,7 +792,7 @@ normal:
     ...     potemplate.path, potemplate_contents, True, potemplate.owner,
     ...     sourcepackagename=firefox_name, distroseries=warty,
     ...     potemplate=potemplate)
-    >>> entry.status = RosettaImportStatus.APPROVED
+    >>> entry.setStatus(RosettaImportStatus.APPROVED)
     >>> syncUpdate(entry)
     >>> transaction.commit()
 
@@ -872,7 +872,7 @@ We now import this POFile as Divehi translation of Firefox trunk:
     >>> # Allow Librarian to see the change.
     >>> transaction.commit()
     >>> entry.pofile = firefox_dv
-    >>> entry.status = RosettaImportStatus.APPROVED
+    >>> entry.setStatus(RosettaImportStatus.APPROVED)
     >>> (subject, body) = firefox_dv.importFromQueue(entry, FakeLogger())
     >>> flush_database_updates()
     >>> print entry.status.name
@@ -919,7 +919,7 @@ approve and import it.
     ...     productseries=pofile.potemplate.productseries,
     ...     potemplate=pofile.potemplate, pofile=pofile)
     >>> transaction.commit()
-    >>> entry.status = RosettaImportStatus.APPROVED
+    >>> entry.setStatus(RosettaImportStatus.APPROVED)
     >>> (subject, message) = pofile.importFromQueue(entry)
 
 Import succeeds but no email is sent out.
@@ -938,7 +938,7 @@ For syntax errors, failure notification is still sent out.
     ...     productseries=pofile.potemplate.productseries,
     ...     potemplate=pofile.potemplate, pofile=pofile)
     >>> transaction.commit()
-    >>> entry.status = RosettaImportStatus.APPROVED
+    >>> entry.setStatus(RosettaImportStatus.APPROVED)
     >>> (subject, message) = pofile.importFromQueue(entry)
 
 Import fails and email is sent out even though it's a published upload.

@@ -1,20 +1,35 @@
-= Source Package Publishing =
+=========================
+Source Package Publishing
+=========================
+
+Finding source publications
+===========================
 
 Source package publishing details are available via a custom operation on
 archives, getPublishedSources().
+
+We need to insert some dependent fake data before continuing.
+
+    >>> login("foo.bar@canonical.com")
+    >>> from canonical.archiveuploader.tests import (
+    ...     insertFakeChangesFileForAllPackageUploads)
+    >>> insertFakeChangesFileForAllPackageUploads()
+    >>> transaction.commit()
+    >>> logout()
 
     >>> cprov_archive = webservice.get("/~cprov/+archive/ppa").jsonBody()
     >>> pubs = webservice.named_get(
     ...     cprov_archive['self_link'], 'getPublishedSources').jsonBody()
 
     >>> def print_publications(pubs):
-    ...     for entry in sorted(pubs['entries']):
-    ...         print entry['displayname']
+    ...     for displayname in sorted(
+    ...         entry['displayname'] for entry in pubs['entries']):
+    ...         print displayname
 
     >>> print_publications(pubs)
+    cdrkit 1.0 in breezy-autotest
     iceweasel 1.0 in warty
     pmount 0.1-1 in warty
-    cdrkit 1.0 in breezy-autotest
 
 getPublishedSources() can accept some optional filtering paramters to reduce
 the number of returned publications.
@@ -33,9 +48,9 @@ Search by date published:
     ...     cprov_archive['self_link'], 'getPublishedSources',
     ...     published_since_date='2007-01-01 00:00:00+00:00').jsonBody()
     >>> print_publications(pubs)
+    cdrkit 1.0 in breezy-autotest
     iceweasel 1.0 in warty
     pmount 0.1-1 in warty
-    cdrkit 1.0 in breezy-autotest
 
 Search by publishing status:
 
@@ -43,9 +58,9 @@ Search by publishing status:
     ...     cprov_archive['self_link'], 'getPublishedSources',
     ...     status="Published").jsonBody()
     >>> print_publications(pubs)
+    cdrkit 1.0 in breezy-autotest
     iceweasel 1.0 in warty
     pmount 0.1-1 in warty
-    cdrkit 1.0 in breezy-autotest
 
 Search by distroseries and pocket:
 
@@ -62,9 +77,9 @@ Search by distroseries and pocket:
     iceweasel 1.0 in warty
     pmount 0.1-1 in warty
 
-Each source publication exposes a number of properties:
+Each source publication exposes a number of properties.
 
-    >>> from canonical.lazr.testing.webservice import pprint_entry
+    >>> from lazr.restful.testing.webservice import pprint_entry
     >>> pprint_entry(pubs['entries'][0])
     archive_link: u'http://.../~cprov/+archive/ppa'
     component_name: u'main'
@@ -91,7 +106,7 @@ When Celso's PPA becomes private ...
     >>> login("foo.bar@canonical.com")
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
 
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
     >>> cprov.archive.buildd_secret = 'boing'
@@ -118,8 +133,18 @@ Any other user attempt would result in a 401 error.
     HTTP/1.1 401 Unauthorized
     ...
 
+If the user attempts to access the publication URL directly they will
+also fail in their quest.
 
-== getBuilds() ==
+    >>> private_publication_url = pubs['entries'][0]['self_link']
+    >>> response = user_webservice.get(private_publication_url)
+    >>> print response.getOutput()
+    HTTP/1.1 401 Unauthorized
+    ...
+
+
+Finding related Builds
+======================
 
 The source publication object has a custom operation called 'getBuilds' and
 it returns the build records in the context of that publication.
@@ -132,7 +157,8 @@ it returns the build records in the context of that publication.
     i386 build of iceweasel 1.0 in ubuntu warty RELEASE
 
 
-== IArchive.getBuildSummariesForSourceIds() ==
+Build status summaries
+======================
 
 A summary of the build statuses for source packages in an archive is
 available via a custom operation on IArchive,

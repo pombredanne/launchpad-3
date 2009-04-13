@@ -14,47 +14,35 @@ from zope.interface import Interface
 class IAuthServer(Interface):
     """A storage for details about users.
 
-    Many of the methods defined here return *user dicts*.  A user dict is a
-    dictionary containing:
-        :id:             person id (integer, doesn't change ever)
-        :displayname:    full name, for display
-        :emailaddresses: list of email addresses, preferred email first, the
-                         rest alphabetically sorted.
-        :teams:          a list of team dicts for each team the user is a
-                         member of (including the user themself).
+    A user dict is a dictionary containing:
 
-    A *team dict* contains:
-        :id:            team id (integer, doesn't change ever)
-        :name:          nickname for the team
-        :displayname:   full name of the team, for display
-
-    Differences from version 1 (IUserDetailsStorage):
-        - no salts in user dicts
-        - no SSHA digests, just cleartext passwords
-        - teams in user dicts.
+        :id:   person id (integer, doesn't change ever)
+        :name: person nickname
     """
 
-    def getUser(loginID):
+    def getUser(login_id):
         """Get a user
 
-        :param loginID: A login ID (an email address, nickname, or numeric
+        :param login_id: A login ID (an email address, nickname, or numeric
             person ID from a user dict).
 
-        :returns: user dict if loginID exists, otherwise empty dict
+        :returns: user dict if login_id exists, otherwise empty dict
         """
 
-    def authUser(loginID, password):
-        """Authenticate a user
-
-        :param loginID: A login ID, same as for getUser.
-        :param password: A password, in clear text.
-        :returns: user dict if authenticated, otherwise empty dict
-        """
-
-    def getSSHKeys(archiveName):
+    def getSSHKeys(login_id):
         """Retrieve SSH public keys for a given push mirror archive
 
-        :param archive: an archive name.
+        :param login_id: A login ID (an email address, nickname, or numeric
+            person ID from a user dict).
         :returns: list of 2-tuples of (key type, key text).  This list will be
             empty if the user has no keys or does not exist.
+        """
+
+    def getUserAndSSHKeys(name):
+        """Get details about a person, including their SSH keys.
+
+        :param name: The username to look up.
+        :returns: A dictionary {id: person-id, username: person-name, keys:
+            [(key-type, key-text)]}, or NoSuchPersonWithName if there is no
+            person with the given name.
         """

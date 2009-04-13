@@ -3,7 +3,8 @@
 # Copyright 2009 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=C0103,W0403
 
-import crypt, filecmp, os, tempfile
+import crypt, filecmp, os, pytz, tempfile
+from datetime import datetime
 from operator import attrgetter
 
 from zope.component import getUtility
@@ -13,14 +14,14 @@ from canonical.launchpad.interfaces.archive import IArchiveSet
 from canonical.launchpad.interfaces.archiveauthtoken import (
     IArchiveAuthTokenSet)
 from canonical.launchpad.interfaces.archivesubscriber import (
-    IArchiveSubscriberSet)
+    ArchiveSubscriberStatus, IArchiveSubscriberSet)
 from canonical.launchpad.scripts.base import LaunchpadCronScript
 
 
 HTACCESS_TEMPLATE = """
 AuthType           Basic
 AuthName           "Token Required"
-AuthUserFile       .htpasswd
+AuthUserFile       %(path)s/.htpasswd
 Require            valid-user
 """
 
@@ -72,8 +73,9 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
             # It's not there, so create it.
             if not os.path.exists(pub_config.htaccessroot):
                 os.makedirs(pub_config.htaccessroot)
+            interpolations = {"path" : pub_config.htaccessroot}
             file = open(htaccess_filename, "w")
-            file.write(HTACCESS_TEMPLATE)
+            file.write(HTACCESS_TEMPLATE % interpolations)
             file.close()
             self.logger.debug("Created .htaccess for %s" % ppa.displayname)
 
@@ -147,11 +149,29 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
                 valid_tokens.append(token)
         return valid_tokens
 
+    def expireSubscriptions(self, ppa):
+        """Expire subscriptions as necessary.
+
+        If an `ArchiveSubscriber`'s date_expires has passed, then
+        set its status to EXPIRED.
+
+        :param ppa: The PPA to expire subscriptons for.
+        """
+        now = datetime.now(pytz.UTC)
+        subscribers = getUtility(IArchiveSubscriberSet).getByArchive(ppa)
+        for subscriber in subscribers:
+            date_expires = subscriber.date_expires
+            if date_expires is not None and date_expires <= now:
+                self.logger.info(
+                    "Expiring subscription: %s" % subscriber.displayname)
+                subscriber.status = ArchiveSubscriberStatus.EXPIRED
+
     def main(self):
         """Script entry point."""
         self.logger.info('Starting the PPA .htaccess generation')
         ppas = getUtility(IArchiveSet).getPrivatePPAs()
         for ppa in ppas:
+            self.expireSubscriptions(ppa)
             valid_tokens = self.deactivateTokens(ppa)
             self.ensureHtaccess(ppa)
             temp_htpasswd = self.generateHtpasswd(ppa, valid_tokens)
