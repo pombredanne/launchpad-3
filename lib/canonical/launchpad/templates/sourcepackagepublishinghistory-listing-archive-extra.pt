@@ -62,8 +62,7 @@
   <ul style="margin-top: 0; margin-bottom: 0">
     <li tal:repeat="file published_source_and_binary_files"
         tal:attributes="class string: package ${file/class}">
-      <a tal:attributes ="href string:+files/${file/filename}"
-         tal:content="file/filename"></a>
+      <a tal:attributes ="href file/url" tal:content="file/filename"></a>
          (<span tal:replace="file/filesize/fmt:bytes" />)
     </li>
   </ul>

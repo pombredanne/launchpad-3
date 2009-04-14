@@ -17,6 +17,7 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.cachedproperty import cachedproperty
+from canonical.launchpad.browser.librarian import ProxiedLibraryFileAlias
 from canonical.launchpad.interfaces.build import IBuildSet, BuildSetStatus
 from canonical.launchpad.interfaces.publishing import (
     PackagePublishingStatus, IBinaryPackagePublishingHistory,
@@ -217,7 +218,8 @@ class SourcePublishingRecordView(BasePublishingRecordView):
     def published_source_and_binary_files(self):
         """Return list of dictionaries representing published files."""
         files = sorted(
-            self.context.getSourceAndBinaryLibraryFiles(),
+            (ProxiedLibraryFileAlias(lfa, self.context.archive)
+             for lfa in self.context.getSourceAndBinaryLibraryFiles()),
             key=attrgetter('filename'))
         result = []
         urls = set()
