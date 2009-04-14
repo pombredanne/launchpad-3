@@ -19,6 +19,7 @@ from zope.interface import implements
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.browser.librarian import ProxiedLibraryFileAlias
 from canonical.launchpad.interfaces.build import IBuildSet, BuildSetStatus
+from canonical.launchpad.interfaces.packagediff import IPackageDiff
 from canonical.launchpad.interfaces.publishing import (
     PackagePublishingStatus, IBinaryPackagePublishingHistory,
     ISourcePackagePublishingHistory)
@@ -26,6 +27,7 @@ from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from canonical.launchpad.webapp.publisher import LaunchpadView
 
+from lazr.delegates import delegates
 
 class SourcePublicationURL:
     """Dynamic URL declaration for `ISourcePackagePublishingHistory`"""
@@ -42,6 +44,26 @@ class SourcePublicationURL:
     @property
     def path(self):
         return u"+sourcepub/%s" % self.context.id
+
+
+class ProxiedPackageDiff:
+    """A `PackageDiff` extension.
+
+    Instead of `LibraryFileAlias` returns `ProxiedLibraryFileAlias`, so
+    their 'http_url' attribute can be used in the template.
+    """
+    delegates(IPackageDiff)
+
+    def __init__(self, context, parent):
+        self.context = context
+        self.parent = parent
+
+    @property
+    def diff_content(self):
+        library_file = self.context.diff_content
+        if library_file is None:
+            return None
+        return ProxiedLibraryFileAlias(library_file, self.parent)
 
 
 class BasePublishingRecordView(LaunchpadView):
@@ -245,6 +267,13 @@ class SourcePublishingRecordView(BasePublishingRecordView):
             result.append(custom_dict)
 
         return result
+
+    @property
+    def available_diffs(self):
+        package_diffs = self.context.sourcepackagerelease.package_diffs
+        return [
+            ProxiedPackageDiff(package_diff, self.context.archive)
+            for package_diff in package_diffs]
 
     @property
     def built_packages(self):
