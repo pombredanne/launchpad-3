@@ -196,11 +196,15 @@ class BranchContextMenu(ContextMenu):
 
     usedfor = IBranch
     facet = 'branches'
-    links = ['edit', 'delete_branch', 'browse_revisions',
+    links = ['edit_whiteboard', 'edit', 'delete_branch', 'browse_revisions',
              'subscription', 'add_subscriber', 'associations',
              'register_merge', 'landing_candidates',
              'link_bug', 'link_blueprint', 'edit_import', 'reviewer'
              ]
+
+    def edit_whiteboard(self):
+        text = 'Edit whiteboard'
+        return Link('+whiteboard', text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -316,6 +320,13 @@ class BranchView(LaunchpadView, FeedsMixin):
     def owner_is_registrant(self):
         """Is the branch owner the registrant?"""
         return self.context.owner == self.context.registrant
+
+    def show_whiteboard(self):
+        """Return whether or not the whiteboard should be shown.
+
+        The whiteboard is only shown for import branches.
+        """
+        return False
 
     @property
     def codebrowse_url(self):
