@@ -4,6 +4,8 @@
 
 __metaclass__ = type
 
+
+import bz2
 import gzip
 import os
 import shutil
@@ -435,7 +437,6 @@ class TestPublisher(TestPublisherBase):
             index_compressed_contents = gzip.GzipFile(
                 filename=index_compressed_path).read().splitlines()
         elif index_compressed_path.endswith('.bz2'):
-            import bz2
             index_compressed_contents = bz2.BZ2File(
                 filename=index_compressed_path).read().splitlines()
         else:

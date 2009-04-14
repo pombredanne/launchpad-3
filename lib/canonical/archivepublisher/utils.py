@@ -234,8 +234,9 @@ class RepositoryIndexFile:
             os.rename(index_file.path, root_path)
             # XXX julian 2007-10-03
             # This is kinda papering over a problem somewhere that causes the
-            # files to get created with permissions that don't allow group/world
-            # read access.  See https://bugs.launchpad.net/soyuz/+bug/148471
+            # files to get created with permissions that don't allow
+            # group/world read access.
+            # See https://bugs.launchpad.net/soyuz/+bug/148471
             mode = stat.S_IMODE(os.stat(root_path).st_mode)
             os.chmod(root_path,
                      mode | stat.S_IWGRP | stat.S_IRGRP | stat.S_IROTH)
