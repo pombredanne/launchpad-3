@@ -71,6 +71,19 @@ class TestSourcePackage(TestCaseWithFactory):
         sourcepackage.setBranch(pocket, branch, registrant)
         self.assertEqual(branch, sourcepackage.getBranch(pocket))
 
+    def test_change_branch_once_set(self):
+        # We can change the official branch for a a pocket of a source package
+        # even after it has already been set.
+        sourcepackage = self.factory.makeSourcePackage()
+        pocket = PackagePublishingPocket.RELEASE
+        registrant = self.factory.makePerson()
+        branch = self.factory.makePackageBranch(sourcepackage=sourcepackage)
+        new_branch = self.factory.makePackageBranch(
+            sourcepackage=sourcepackage)
+        sourcepackage.setBranch(pocket, branch, registrant)
+        sourcepackage.setBranch(pocket, new_branch, registrant)
+        self.assertEqual(new_branch, sourcepackage.getBranch(pocket))
+
     def test_unsetBranch(self):
         # Setting the official branch for a pocket to 'None' breaks the link
         # between the branch and pocket.
