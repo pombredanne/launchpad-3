@@ -632,7 +632,7 @@ class MailingListSet:
         # used (i.e. where MailingListSubscription.email_address is NULL), we
         # need to UNION, those using a specific address and those using the
         # preferred address.
-        team = ClassAlias(Person)
+        Team = ClassAlias(Person)
         tables = (
             EmailAddress,
             LeftJoin(Account, Account.id == EmailAddress.accountID),
@@ -645,8 +645,10 @@ class MailingListSet:
             LeftJoin(TeamParticipation,
                      TeamParticipation.personID
                      == MailingListSubscription.personID),
-            LeftJoin(team,
-                     team.id == MailingList.teamID),
+            LeftJoin(Person,
+                     Person.id == TeamParticipation.personID),
+            LeftJoin(Team,
+                     Team.id == MailingList.teamID),
             )
         team_ids = set(
             team.id for team in store.find(
@@ -660,7 +662,8 @@ class MailingListSet:
                 MailingList.teamID.is_in(team_ids)))
         # Find all the people who are subscribed with their preferred address.
         preferred = store.using(*tables).find(
-            (EmailAddress, MailingListSubscription, TeamParticipation, team),
+            (EmailAddress, MailingListSubscription, TeamParticipation,
+             Person, Team),
             And(MailingListSubscription.mailing_listID.is_in(list_ids),
                 TeamParticipation.teamID.is_in(team_ids),
                 MailingList.teamID == TeamParticipation.teamID,
@@ -670,11 +673,11 @@ class MailingListSet:
                 Account.status == AccountStatus.ACTIVE))
         # Sort by team name.
         by_team = {}
-        for email_address, subscription, participation, team in preferred:
+        for address, subscription, participation, person, team in preferred:
             assert team.name in team_names, (
                 'Unexpected team name in results: %s' % team.name)
-            full_name = email_address.person.displayname
-            address = email_address.email
+            address = address.email
+            full_name = person.displayname
             by_team.setdefault(team.name, set()).add((full_name, address))
         tables = (
             EmailAddress,
@@ -688,20 +691,23 @@ class MailingListSet:
             LeftJoin(TeamParticipation,
                      TeamParticipation.personID
                      == MailingListSubscription.personID),
+            LeftJoin(Person,
+                     Person.id == TeamParticipation.personID),
+            LeftJoin(Team,
+                     Team.id == MailingList.teamID),
             )
         explicit = store.using(*tables).find(
-            (EmailAddress, MailingList),
+            (EmailAddress, MailingList, Person, Team),
             And(MailingListSubscription.mailing_listID.is_in(list_ids),
                 TeamParticipation.teamID.is_in(team_ids),
                 MailingList.status != MailingListStatus.INACTIVE,
                 Account.status == AccountStatus.ACTIVE))
-        for email_address, mailing_list in explicit:
-            team_name = mailing_list.team.name
-            assert team_name in team_names, (
-                'Unexpected team name in results: %s' % team_name)
-            full_name = email_address.person.displayname
-            address = email_address.email
-            by_team.setdefault(team_name, set()).add((full_name, address))
+        for address, mailing_list, person, team in explicit:
+            assert team.name in team_names, (
+                'Unexpected team name in results: %s' % team.name)
+            address = address.email
+            full_name = person.displayname
+            by_team.setdefault(team.name, set()).add((full_name, address))
         # Turn the results into a mapping of lists.
         results = {}
         for team_name, address_set in by_team.items():
@@ -715,7 +721,7 @@ class MailingListSet:
         # the given teams.  Find all of their validated and preferred email
         # addresses of those team members.  Every one of those email addresses
         # are allowed to post to the mailing list.
-        team = ClassAlias(Person)
+        Team = ClassAlias(Person)
         tables = (
             Person,
             LeftJoin(Account, Account.id == Person.accountID),
@@ -724,8 +730,8 @@ class MailingListSet:
                      TeamParticipation.personID == Person.id),
             LeftJoin(MailingList,
                      MailingList.teamID == TeamParticipation.teamID),
-            LeftJoin(team,
-                     team.id == MailingList.teamID),
+            LeftJoin(Team,
+                     Team.id == MailingList.teamID),
             )
         team_ids = set(
             team.id for team in store.find(
@@ -734,7 +740,7 @@ class MailingListSet:
                     Person.teamowner != None))
             )
         team_members = store.using(*tables).find(
-            (EmailAddress, Person, MailingList, team),
+            (EmailAddress, MailingList, Person, Team),
             And(TeamParticipation.teamID.is_in(team_ids),
                 MailingList.status != MailingListStatus.INACTIVE,
                 Person.teamowner == None,
@@ -743,11 +749,11 @@ class MailingListSet:
                 ))
         # Sort allowed posters by team/mailing list.
         by_team = {}
-        for email_address, person, mailing_list, team in team_members:
+        for address, mailing_list, person, team in team_members:
             assert team.name in team_names, (
                 'Unexpected team name in results: %s' % team.name)
             full_name = person.displayname
-            address = email_address.email
+            address = address.email
             by_team.setdefault(team.name, set()).add((full_name, address))
         # Second, find all of the email addresses for all of the people who
         # have been explicitly approved for posting to the team mailing lists.
@@ -760,25 +766,28 @@ class MailingListSet:
             LeftJoin(EmailAddress, EmailAddress.personID == Person.id),
             LeftJoin(MessageApproval,
                      MessageApproval.posted_byID == Person.id),
+            LeftJoin(MailingList,
+                     MailingList.id == MessageApproval.mailing_listID),
+            LeftJoin(Team,
+                     Team.id == MailingList.teamID),
             )
         list_ids = set(
             mailing_list.id for mailing_list in store.find(
                 MailingList,
                 MailingList.teamID.is_in(team_ids)))
         approved_posters = store.using(*tables).find(
-            (EmailAddress, Person, MessageApproval),
+            (EmailAddress, MessageApproval, Person, Team),
             And(MessageApproval.mailing_listID.is_in(list_ids),
                 MessageApproval.status.is_in(MESSAGE_APPROVAL_STATUSES),
                 EmailAddress.status.is_in(EMAIL_ADDRESS_STATUSES),
                 Account.status == AccountStatus.ACTIVE,
                 ))
-        for email_address, person, message_approval in approved_posters:
-            team_name = message_approval.mailing_list.team.name
-            assert team_name in team_names, (
-                'Unexpected team name in results: %s' % team_name)
+        for address, message_approval, person, team in approved_posters:
+            assert team.name in team_names, (
+                'Unexpected team name in results: %s' % team.name)
+            address = address.email
             full_name = person.displayname
-            address = email_address.email
-            by_team.setdefault(team_name, set()).add((full_name, address))
+            by_team.setdefault(team.name, set()).add((full_name, address))
         # Turn the results into a mapping of lists.
         results = {}
         for team_name, address_set in by_team.items():
