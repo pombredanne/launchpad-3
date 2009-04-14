@@ -69,29 +69,6 @@ The parent gets set to the initial message of the bug:
     True
 
 
-== Bug visibility ==
-
-A bug message has a visible field, which is True by default.
-
-    >>> new_message = bugmessageset.createMessage(
-    ...     subject="new message for visibility test",
-    ...     content="new message for visibility test",
-    ...     owner=sample_person,
-    ...     bug=bug_one)
-    >>> new_message.visible
-    True
-
-Admins can hide bug messages using the visible field.
-
-    >>> login('foo.bar@canonical.com')
-    >>> abugmessage = bugmessageset.get(1)
-    >>> abugmessage.visible
-    True
-    >>> abugmessage.visible = False
-    >>> abugmessage.visible
-    False
-
-
 == Links and CVEs in bug messages ==
 
 If a bug message contains links to an external bug report or a CVE,
