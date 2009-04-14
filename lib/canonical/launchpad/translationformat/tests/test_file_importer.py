@@ -6,6 +6,7 @@ __metaclass__ = type
 import unittest
 import transaction
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.interfaces import (
     IPersonSet, ITranslationImportQueue)
@@ -244,8 +245,9 @@ class FileImporterTestCase(unittest.TestCase):
             pot_importer, TEST_TRANSLATION_EXPORTED, is_published=True,
             person=unprivileged_person)
 
-        po_importer.translation_import_queue_entry.importer = (
-            po_importer.translation_import_queue_entry.importer)
+        entry = removeSecurityProxy(
+            po_importer.translation_import_queue_entry)
+        entry.importer = po_importer.translation_import_queue_entry.importer
         is_editor = po_importer.pofile.canEditTranslations(
             unprivileged_person)
         self.assertFalse(is_editor,

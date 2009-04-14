@@ -18,166 +18,181 @@ class TestTranslationBranchApprover(TestCaseWithFactory):
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
-        TestCaseWithFactory.setUp(self)
+        super(TestTranslationBranchApprover, self).setUp()
         self.queue = getUtility(ITranslationImportQueue)
         self.series = self.factory.makeProductSeries()
 
-    def _upload_template(self, upload_path,
-                         existing_domain=None, existing_path=None):
-        # Put a template in the import queue and possibly create an existing
-        # POTemplate entry in the database.
-        if existing_path is None:
-            existing_path = upload_path
-        if existing_domain is not None:
-            self.potemplate = self.factory.makePOTemplate(
-                productseries=self.series,
-                name=existing_domain.replace('_', '-'),
-                translation_domain=existing_domain,
-                path=existing_path)
-        self.entry = self.queue.addOrUpdateEntry(upload_path,
+    def _upload_file(self, upload_path):
+        # Put a template or translation file in the import queue.
+        return self.queue.addOrUpdateEntry(upload_path,
             self.factory.getUniqueString(), True, self.series.owner,
             productseries=self.series)
-        self.approver = TranslationBranchApprover((upload_path,),
-                                                  productseries=self.series)
+
+    def _create_template(self, path, domain):
+        # Create a template in the database
+        return self.factory.makePOTemplate(
+            productseries=self.series,
+            name=domain.replace('_', '-'),
+            translation_domain=domain,
+            path=path)
+
+    def _create_approver(self, file_or_files):
+        if not isinstance(file_or_files, (tuple, list)):
+            paths = (file_or_files,)
+        else:
+            paths = file_or_files
+        return TranslationBranchApprover(paths, productseries=self.series)
 
     def test_new_template_approved(self):
-        translation_domain = self.factory.getUniqueString()
-        self._upload_template(translation_domain + u'.pot')
-        self.approver.approve(self.entry)
-        self.assertEqual(RosettaImportStatus.APPROVED, self.entry.status)
+        # The approver puts new entries in the Approved state.
+        template_path = self.factory.getUniqueString() + u'.pot'
+        entry = self._upload_file(template_path)
+        self.assertEqual(RosettaImportStatus.NEEDS_REVIEW, entry.status)
+        approver = self._create_approver(template_path)
+        approver.approve(entry)
+        self.assertEqual(RosettaImportStatus.APPROVED, entry.status)
 
     def test_new_template_missing_domain(self):
-        self._upload_template(u'messages.pot')
-        self.approver.approve(self.entry)
-        self.assertEqual(RosettaImportStatus.NEEDS_REVIEW, self.entry.status)
+        # A file can only be approved if the file path contains the
+        # translation domain and is not generic.
+        template_path = u'messages.pot'
+        entry = self._upload_file(template_path)
+        approver = self._create_approver(template_path)
+        approver.approve(entry)
+        self.assertEqual(RosettaImportStatus.NEEDS_REVIEW, entry.status)
 
     def test_new_template_not_a_template(self):
-        self._upload_template(u'eo.po')
-        self.approver.approve(self.entry)
-        self.assertEqual(RosettaImportStatus.NEEDS_REVIEW, self.entry.status)
+        # Only template files will be approved currently.
+        path = u'eo.po'
+        entry = self._upload_file(path)
+        approver = self._create_approver(path)
+        approver.approve(entry)
+        self.assertEqual(RosettaImportStatus.NEEDS_REVIEW, entry.status)
 
     def test_new_template_domain(self):
+        # The approver gets the translation domain for the entry from the
+        # file path.
         translation_domain = self.factory.getUniqueString()
-        self._upload_template(translation_domain + '.pot')
-        self.approver.approve(self.entry)
+        template_path = translation_domain + u'.pot'
+        entry = self._upload_file(template_path)
+        approver = self._create_approver(template_path)
+        approver.approve(entry)
         self.assertEqual(
-            translation_domain, self.entry.potemplate.translation_domain)
+            translation_domain, entry.potemplate.translation_domain)
 
     def test_new_template_domain_with_xpi(self):
+        # For xpi files the domain is taken from the directory.
         translation_domain = self.factory.getUniqueString()
-        self._upload_template(
-                translation_domain + '/en-US.xpi')
-        self.approver.approve(self.entry)
+        template_path = translation_domain + '/en-US.xpi'
+        entry = self._upload_file(template_path)
+        approver = self._create_approver(template_path)
+        approver.approve(entry)
         self.assertEqual(
-            translation_domain, self.entry.potemplate.translation_domain)
+            translation_domain, entry.potemplate.translation_domain)
 
     def test_template_name(self):
         # The name should not contain underscores any more.
         translation_domain = ('translation_domain_with_underscores')
         template_name = translation_domain.replace('_', '-')
-        self._upload_template(translation_domain + '.pot')
-        self.approver.approve(self.entry)
-        self.assertEqual(template_name, self.entry.potemplate.name)
+        template_path = translation_domain + u'.pot'
+        entry = self._upload_file(template_path)
+        approver = self._create_approver(template_path)
+        approver.approve(entry)
+        self.assertEqual(template_name, entry.potemplate.name)
 
     def test_replace_existing_approved(self):
+        # Template files that replace existing entries are approved.
         translation_domain = self.factory.getUniqueString()
-        self._upload_template(translation_domain + '.pot', translation_domain)
-        self.approver.approve(self.entry)
-        self.assertEqual(RosettaImportStatus.APPROVED, self.entry.status)
+        template_path = translation_domain + u'.pot'
+        self._create_template(template_path, translation_domain)
+        entry = self._upload_file(template_path)
+        approver = self._create_approver(template_path)
+        approver.approve(entry)
+        self.assertEqual(RosettaImportStatus.APPROVED, entry.status)
 
     def test_replace_existing_potemplate(self):
+        # When replacing an existing template, the queue entry is linked to
+        # that existing entry.
         translation_domain = self.factory.getUniqueString()
-        self._upload_template(translation_domain + '.pot', translation_domain)
-        self.approver.approve(self.entry)
-        self.assertEqual(self.potemplate, self.entry.potemplate)
+        template_path = translation_domain + u'.pot'
+        potemplate = self._create_template(template_path, translation_domain)
+        entry = self._upload_file(template_path)
+        approver = self._create_approver(template_path)
+        approver.approve(entry)
+        self.assertEqual(potemplate, entry.potemplate)
 
     def test_replace_existing_any_path(self):
         # If just one template file is found in the tree and just one
         # POTemplate object is in the database, the upload is always approved.
         existing_domain = self.factory.getUniqueString()
-        self._upload_template(self.factory.getUniqueString() + '.pot',
-            existing_domain, existing_domain + '.pot')
-        self.approver.approve(self.entry)
-        self.assertEqual(RosettaImportStatus.APPROVED, self.entry.status)
+        existing_path = existing_domain + u'.pot'
+        potemplate = self._create_template(existing_path, existing_domain)
+        template_path = self.factory.getUniqueString() + u'.pot'
+        entry = self._upload_file(template_path)
+        approver = self._create_approver(template_path)
+        approver.approve(entry)
+        self.assertEqual(RosettaImportStatus.APPROVED, entry.status)
+        self.assertEqual(potemplate, entry.potemplate)
 
     def test_replace_existing_generic_path_approved(self):
         # If an upload file has a generic path that does not yield a
         # translation domain it is still approved if an entry with the same
         # file name exists.
-        existing_domain = self.factory.getUniqueString()
-        self._upload_template('po/messages.pot',
-                               existing_domain, 'po/messages.pot')
-        self.approver.approve(self.entry)
-        self.assertEqual(RosettaImportStatus.APPROVED, self.entry.status)
+        translation_domain = self.factory.getUniqueString()
+        generic_path = u'po/messages.pot'
+        potemplate = self._create_template(generic_path, translation_domain)
+        entry = self._upload_file(generic_path)
+        approver = self._create_approver(generic_path)
+        approver.approve(entry)
+        self.assertEqual(RosettaImportStatus.APPROVED, entry.status)
 
     def test_replace_existing_generic_path_domain(self):
         # Uploads with a generic path do not overwrite the translation domain
         # on the existing POTemplate entry.
-        existing_domain = self.factory.getUniqueString()
-        self._upload_template('po/messages.pot',
-                               existing_domain, 'po/messages.pot')
-        self.approver.approve(self.entry)
-        self.assertIsNot(None, self.entry.potemplate)
+        translation_domain = self.factory.getUniqueString()
+        generic_path = u'po/messages.pot'
+        potemplate = self._create_template(generic_path, translation_domain)
+        entry = self._upload_file(generic_path)
+        approver = self._create_approver(generic_path)
+        approver.approve(entry)
         self.assertEqual(
-            existing_domain, self.entry.potemplate.translation_domain)
+            translation_domain, entry.potemplate.translation_domain)
 
-    def _upload_second_template(self, new_domain):
-        # Upload a second template when there is one in the database already.
+    def test_add_template(self):
+        # When adding a template to an existing one it is approved if the
+        # approver is told about both template files in the tree.
         existing_domain = self.factory.getUniqueString()
         existing_path = u"%s/%s.pot" % (existing_domain, existing_domain)
-        existing_potemplate = self.factory.makePOTemplate(
-            productseries=self.series,
-            name=existing_domain.replace('_', '-'),
-            translation_domain=existing_domain,
-            path=existing_path)
+        self._create_template(existing_path, existing_domain)
+        new_domain = self.factory.getUniqueString()
         new_path = u"%s/%s.pot" % (new_domain, new_domain)
-        self.entry = self.queue.addOrUpdateEntry(new_path,
-            self.factory.getUniqueString(), True, self.series.owner,
-            productseries=self.series)
-        self.approver = TranslationBranchApprover(
-            (new_path,existing_path), productseries=self.series)
-
-    def test_add_approved(self):
-        self._upload_second_template(self.factory.getUniqueString())
-        self.approver.approve(self.entry)
-        self.assertEqual(RosettaImportStatus.APPROVED, self.entry.status)
-
-    def test_add_potemplate(self):
-        translation_domain = self.factory.getUniqueString()
-        self._upload_second_template(translation_domain)
-        self.approver.approve(self.entry)
-        self.assertEqual(
-            translation_domain, self.entry.potemplate.translation_domain)
+        entry = self._upload_file(new_path)
+        approver = self._create_approver((existing_path, new_path))
+        approver.approve(entry)
+        self.assertEqual(RosettaImportStatus.APPROVED, entry.status)
+        self.assertEqual(new_domain, entry.potemplate.translation_domain)
 
     def test_upload_multiple_new_templates(self):
         # Multiple new templates can be added using the same
         # TranslationBranchApprover instance.
         pot_path1 = self.factory.getUniqueString() + ".pot"
         pot_path2 = self.factory.getUniqueString() + ".pot"
-        entry1 = self.queue.addOrUpdateEntry(pot_path1,
-            self.factory.getUniqueString(), True, self.series.owner,
-            productseries=self.series)
-        entry2 = self.queue.addOrUpdateEntry(pot_path2,
-            self.factory.getUniqueString(), True, self.series.owner,
-            productseries=self.series)
-        approver = TranslationBranchApprover((pot_path1, pot_path2),
-                                             productseries=self.series)
+        entry1 = self._upload_file(pot_path1)
+        entry2 = self._upload_file(pot_path2)
+        approver = self._create_approver((pot_path1, pot_path2))
         approver.approve(entry1)
         self.assertEqual(RosettaImportStatus.APPROVED, entry1.status)
         approver.approve(entry2)
         self.assertEqual(RosettaImportStatus.APPROVED, entry2.status)
 
     def test_duplicate_template_name(self):
+        # If two templates in the branch indicate the same translation
+        # domain they are in conflict and will not be approved.
         pot_path1 = "po/foo_domain.pot"
         pot_path2 = "foo_domain/messages.pot"
-        entry1 = self.queue.addOrUpdateEntry(pot_path1,
-            self.factory.getUniqueString(), True, self.series.owner,
-            productseries=self.series)
-        entry2 = self.queue.addOrUpdateEntry(pot_path2,
-            self.factory.getUniqueString(), True, self.series.owner,
-            productseries=self.series)
-        approver = TranslationBranchApprover((pot_path1, pot_path2),
-                                             productseries=self.series)
+        entry1 = self._upload_file(pot_path1)
+        entry2 = self._upload_file(pot_path2)
+        approver = self._create_approver((pot_path1, pot_path2))
         approver.approve(entry1)
         self.assertEqual(RosettaImportStatus.NEEDS_REVIEW, entry1.status)
         approver.approve(entry2)
