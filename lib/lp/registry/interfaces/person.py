@@ -1232,9 +1232,6 @@ class IPersonViewRestricted(Interface):
         exported_as='proposed_members')
     proposed_member_count = Attribute("Number of PROPOSED members")
 
-    mapped_participants = CollectionField(
-        title=_("List of participants with coordinates."),
-        value_type=Reference(schema=Interface))
     mapped_participants_count = Attribute(
         "The number of mapped participants")
     unmapped_participants = CollectionField(
@@ -1242,6 +1239,13 @@ class IPersonViewRestricted(Interface):
         value_type=Reference(schema=Interface))
     unmapped_participants_count = Attribute(
         "The number of unmapped participants")
+
+    def getMappedParticipants(limit=None):
+        """List of participants with coordinates.
+
+        :param limit: The optional maximum number of items to return.
+        :return: A list of `IPerson` objects
+        """
 
     def getMappedParticipantsBounds():
         """Return a dict of the bounding longitudes latitudes, and centers.
@@ -1980,7 +1984,7 @@ class NoSuchPerson(NameLookupFailed):
 # Fix value_type.schema of IPersonViewRestricted attributes.
 for name in ['allmembers', 'activemembers', 'adminmembers', 'proposedmembers',
              'invited_members', 'deactivatedmembers', 'expiredmembers',
-             'mapped_participants', 'unmapped_participants']:
+             'unmapped_participants']:
     IPersonViewRestricted[name].value_type.schema = IPerson
 
 IPersonPublic['sub_teams'].value_type.schema = ITeam
