@@ -19,6 +19,7 @@ from itertools import repeat
 from socket import getfqdn
 from string import Template
 
+from storm.info import ClassAlias
 from storm.expr import And, LeftJoin
 from storm.store import Store
 
@@ -631,6 +632,7 @@ class MailingListSet:
         # used (i.e. where MailingListSubscription.email_address is NULL), we
         # need to UNION, those using a specific address and those using the
         # preferred address.
+        team = ClassAlias(Person)
         tables = (
             EmailAddress,
             LeftJoin(Account, Account.id == EmailAddress.accountID),
@@ -643,6 +645,8 @@ class MailingListSet:
             LeftJoin(TeamParticipation,
                      TeamParticipation.personID
                      == MailingListSubscription.personID),
+            LeftJoin(team,
+                     team.id == MailingList.teamID),
             )
         team_ids = set(
             team.id for team in store.find(
@@ -656,7 +660,7 @@ class MailingListSet:
                 MailingList.teamID.is_in(team_ids)))
         # Find all the people who are subscribed with their preferred address.
         preferred = store.using(*tables).find(
-            (EmailAddress, MailingListSubscription, TeamParticipation),
+            (EmailAddress, MailingListSubscription, TeamParticipation, team),
             And(MailingListSubscription.mailing_listID.is_in(list_ids),
                 TeamParticipation.teamID.is_in(team_ids),
                 MailingList.teamID == TeamParticipation.teamID,
@@ -666,13 +670,12 @@ class MailingListSet:
                 Account.status == AccountStatus.ACTIVE))
         # Sort by team name.
         by_team = {}
-        for email_address, subscription, participation in preferred:
-            team_name = subscription.mailing_list.team.name
-            assert team_name in team_names, (
-                'Unexpected team name in results: %s' % team_name)
+        for email_address, subscription, participation, team in preferred:
+            assert team.name in team_names, (
+                'Unexpected team name in results: %s' % team.name)
             full_name = email_address.person.displayname
             address = email_address.email
-            by_team.setdefault(team_name, set()).add((full_name, address))
+            by_team.setdefault(team.name, set()).add((full_name, address))
         tables = (
             EmailAddress,
             LeftJoin(Account, Account.id == EmailAddress.accountID),
@@ -712,6 +715,7 @@ class MailingListSet:
         # the given teams.  Find all of their validated and preferred email
         # addresses of those team members.  Every one of those email addresses
         # are allowed to post to the mailing list.
+        team = ClassAlias(Person)
         tables = (
             Person,
             LeftJoin(Account, Account.id == Person.accountID),
@@ -720,6 +724,8 @@ class MailingListSet:
                      TeamParticipation.personID == Person.id),
             LeftJoin(MailingList,
                      MailingList.teamID == TeamParticipation.teamID),
+            LeftJoin(team,
+                     team.id == MailingList.teamID),
             )
         team_ids = set(
             team.id for team in store.find(
@@ -728,7 +734,7 @@ class MailingListSet:
                     Person.teamowner != None))
             )
         team_members = store.using(*tables).find(
-            (EmailAddress, Person, MailingList),
+            (EmailAddress, Person, MailingList, team),
             And(TeamParticipation.teamID.is_in(team_ids),
                 MailingList.status != MailingListStatus.INACTIVE,
                 Person.teamowner == None,
@@ -737,13 +743,12 @@ class MailingListSet:
                 ))
         # Sort allowed posters by team/mailing list.
         by_team = {}
-        for email_address, person, mailing_list in team_members:
-            team_name = mailing_list.team.name
-            assert team_name in team_names, (
-                'Unexpected team name in results: %s' % team_name)
+        for email_address, person, mailing_list, team in team_members:
+            assert team.name in team_names, (
+                'Unexpected team name in results: %s' % team.name)
             full_name = person.displayname
             address = email_address.email
-            by_team.setdefault(team_name, set()).add((full_name, address))
+            by_team.setdefault(team.name, set()).add((full_name, address))
         # Second, find all of the email addresses for all of the people who
         # have been explicitly approved for posting to the team mailing lists.
         # This occurs as part of first post moderation, but since they've
