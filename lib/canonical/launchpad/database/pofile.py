@@ -652,6 +652,13 @@ class POFile(SQLBase, POFileMixIn):
         translated_clauses, clause_tables = self._getTranslatedMessagesQuery()
         translated_clauses.append(
             'POTMsgSet.id=TranslationTemplateItem.potmsgset')
+        # Even though this seems silly, Postgres prefers
+        # TranslationTemplateItem index if we add it (and on staging we
+        # get more than a 10x speed improvement: from 8s to 0.7s).  We
+        # also need to put it before any other clauses to be actually useful.
+        translated_clauses.insert(0,
+            'TranslationTemplateItem.potmsgset ='
+            ' TranslationTemplateItem.potmsgset')
         translated_query = (
             "(SELECT POTMsgSet.id"
             "   FROM TranslationTemplateItem, TranslationMessage, POTMsgSet"
@@ -662,7 +669,9 @@ class POFile(SQLBase, POFileMixIn):
             'TranslationTemplateItem.potmsgset = POTMsgSet.id',
             'TranslationTemplateItem.sequence > 0',
             ]
-        clauses.append('POTMsgSet.id NOT IN (' + translated_query + ')')
+        clauses.append(
+            'TranslationTemplateItem.potmsgset NOT IN (%s)' % (
+                translated_query))
         return POTMsgSet.select(' AND '.join(clauses),
                                 clauseTables=['TranslationTemplateItem'],
                                 orderBy='POTMsgSet.sequence')
