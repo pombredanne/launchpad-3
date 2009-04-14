@@ -22,7 +22,7 @@ from canonical.launchpad.interfaces.publishing import PackagePublishingPocket
 from lp.code.interfaces.seriessourcepackagebranch import (
     ISeriesSourcePackageBranch, ISeriesSourcePackageBranchSet)
 from canonical.launchpad.webapp.interfaces import (
-     IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
+     DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
 
 
 class SeriesSourcePackageBranch(Storm):
@@ -77,3 +77,13 @@ class SeriesSourcePackageBranchSet:
         store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
         store.add(sspb)
         return sspb
+
+    def getLinks(self, sourcepackage):
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        distroseries = sourcepackage.distroseries
+        sourcepackagename = sourcepackage.sourcepackagename
+        return store.find(
+            SeriesSourcePackageBranch,
+            SeriesSourcePackageBranch.distroseries == distroseries.id,
+            SeriesSourcePackageBranch.sourcepackagename ==
+            sourcepackagename.id)

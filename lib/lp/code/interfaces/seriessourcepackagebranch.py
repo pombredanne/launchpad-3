@@ -47,6 +47,13 @@ class ISeriesSourcePackageBranchSet(Interface):
     the rest of Launchpad.
     """
 
+    def getLinks(sourcepackage):
+        """Get the links to branches from a source package.
+
+        :param sourcepackage: An `ISourcePackage`.
+        :return: An `IResultSet` of `ISeriesSourcePackageBranch` objects.
+        """
+
     def new(distroseries, pocket, sourcepackagename, branch, registrant,
             date_created=None):
         """Link a source package in a distribution suite to a branch."""

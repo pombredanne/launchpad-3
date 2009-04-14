@@ -84,6 +84,13 @@ class TestSeriesSourcePackageBranch(TestCaseWithFactory):
             branch, registrant)
         self.assertProvides(sspb, ISeriesSourcePackageBranch)
 
+    def test_getLinks(self):
+        # ISeriesSourcePackageBranchSet.getLinks returns a ResultSet of
+        # ISeriesSourcePackageBranch objects.
+        series_set = getUtility(ISeriesSourcePackageBranchSet)
+        package = self.factory.makeSourcePackage()
+        self.assertEqual([], list(series_set.getLinks(package)))
+
     def test_cannot_edit_branch_link(self):
         # You can only edit an ISeriesSourcePackageBranch if you have edit
         # permissions, which almost no one has.
