@@ -215,7 +215,7 @@ class RepositoryIndexFile:
             index_file.write(content)
 
     def close(self):
-        """Close temporary medias and atomically publish them.
+        """Close temporary media and atomically publish them.
 
         If necessary the given 'root' destination is created at this point.
 

@@ -417,7 +417,7 @@ class TestPublisher(TestPublisherBase):
                              uncompressed_file_path):
         """Assert that a compressed file is equal to its uncompressed version.
 
-        Check that a compressed file, such as Packages.gz and Sources.gz
+        Check that a compressed file, such as Packages.gz and Sources.gz,
         and bz2 variations, matches its uncompressed partner.  The file
         paths are relative to breezy-autotest/main under the
         archive_publisher's configured dist root. 'breezy-autotest' is
