@@ -67,6 +67,7 @@ class Branch(SQLBase):
     branch_type = EnumCol(enum=BranchType, notNull=True)
 
     name = StringCol(notNull=False)
+    title = StringCol(notNull=False)
     summary = StringCol(notNull=False)
     url = StringCol(dbName='url')
     branch_format = EnumCol(enum=BranchFormat)

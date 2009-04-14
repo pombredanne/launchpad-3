@@ -612,6 +612,14 @@ class IBranch(IHasOwner, IHasBranchTarget):
                 "be used in URLs.  "
                 "Examples: main, devel, release-1.0, gnome-vfs.")))
 
+    title = exported(
+        Title(
+            title=_('Title'), required=False,
+            description=_(
+                "Describe the branch as clearly as possible in up to 70 "
+                "characters. This title is displayed in every branch list "
+                "or report.")))
+
     summary = exported(
         Summary(
             title=_('Summary'), required=False,
