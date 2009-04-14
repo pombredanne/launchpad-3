@@ -233,7 +233,7 @@ That should give us the form back with an error message.
     >>> for message in get_feedback_messages(browser.contents):
     ...     print extract_text(message)
     There is 1 error.
-    You already have a branch for gnome-terminal called main.
+    You already have a branch for GNOME Terminal called main.
 
 If the user is trying to add a branch for a team that conflicts,
 then the team name is given in the error message.
@@ -260,7 +260,7 @@ Now registering again with the same name.
     >>> for message in get_feedback_messages(browser.contents):
     ...     print extract_text(message)
     There is 1 error.
-    Landscape Developers already has a branch for gnome-terminal called main.
+    Landscape Developers already has a branch for GNOME Terminal called main.
 
 
 == Checking URLs ==
