@@ -659,6 +659,7 @@ class MailingListSet:
             (EmailAddress, MailingListSubscription, TeamParticipation),
             And(MailingListSubscription.mailing_listID.is_in(list_ids),
                 TeamParticipation.teamID.is_in(team_ids),
+                MailingList.teamID == TeamParticipation.teamID,
                 MailingList.status != MailingListStatus.INACTIVE,
                 MailingListSubscription.email_addressID == None,
                 EmailAddress.status == EmailAddressStatus.PREFERRED,
@@ -666,9 +667,6 @@ class MailingListSet:
         # Sort by team name.
         by_team = {}
         for email_address, subscription, participation in preferred:
-            # XXX Work this into the query somehow.
-            if subscription.mailing_list.team != participation.team:
-                continue
             team_name = subscription.mailing_list.team.name
             assert team_name in team_names, (
                 'Unexpected team name in results: %s' % team_name)
