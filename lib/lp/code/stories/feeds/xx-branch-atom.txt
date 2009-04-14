@@ -207,7 +207,7 @@ different entry.
     ...              browser.headers['content-type'], browser.url)
     No Errors
     >>> BSS(browser.contents).title.contents
-    [u'Latest Revisions for Branch Mozilla Firefox 0.9.1']
+    [u'Latest Revisions for Branch ~sabdfl/firefox/release--0.9.1']
     >>> print browser.url
     http://feeds.launchpad.dev/~sabdfl/firefox/release--0.9.1/branch.atom
 
