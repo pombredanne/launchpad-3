@@ -647,6 +647,13 @@ class LaunchpadObjectFactory(ObjectFactory):
             product = self.makeProduct()
         return self.makeBranch(product=product, **kwargs)
 
+    def makeImportBranch(self, **kwargs):
+        """Make a in import branch on an arbitrary product.
+
+        See `makeBranch` for more information on arguments.
+        """
+        return self.makeBranch(branch_type=BranchType.IMPORTED, **kwargs)
+
     def makeAnyBranch(self, **kwargs):
         """Make a branch without caring about its container.
 
