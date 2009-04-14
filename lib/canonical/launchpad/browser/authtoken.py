@@ -223,6 +223,13 @@ class ResetPasswordView(BaseAuthTokenView, LaunchpadFormView):
             self.next_url = self.context.redirection_url
         elif person is not None:
             self.next_url = canonical_url(person)
+        elif not self.has_openid_request:
+            # XXX: salgado, 2009-04-02: We shouldn't reach this path when
+            # account is a personless account, but unfortunately our OpenID
+            # server doesn't store a fallback redirection_url in the
+            # AuthTokens it creates (bug=353974), so we need this hack here.
+            assert person is None
+            self.next_url = self.request.getApplicationURL()
         else:
             assert self.has_openid_request, (
                 'No redirection URL specified and this is not part of an '
