@@ -706,7 +706,7 @@ class MailingListSet:
         for team_name, address_set in by_team.items():
             results[team_name] = list(address_set)
         return results
-        
+
     def getSenderAddresses(self, team_names):
         """See `IMailingListSet`."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, SLAVE_FLAVOR)
