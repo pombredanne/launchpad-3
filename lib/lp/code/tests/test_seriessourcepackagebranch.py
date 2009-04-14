@@ -84,23 +84,24 @@ class TestSeriesSourcePackageBranch(TestCaseWithFactory):
             branch, registrant)
         self.assertProvides(sspb, ISeriesSourcePackageBranch)
 
-    def test_getLinks(self):
-        # ISeriesSourcePackageBranchSet.getLinks returns an empty result set
-        # if there are no links from that source package.
+    def test_findForSourcePackage(self):
+        # ISeriesSourcePackageBranchSet.findForSourcePackage returns an empty
+        # result set if there are no links from that source package.
         series_set = getUtility(ISeriesSourcePackageBranchSet)
         package = self.factory.makeSourcePackage()
-        self.assertEqual([], list(series_set.getLinks(package)))
+        self.assertEqual([], list(series_set.findForSourcePackage(package)))
 
-    def test_getLinks_non_empty(self):
-        # ISeriesSourcePackageBranchSet.getLinks returns a list of links from
-        # the source package. Each link is an ISeriesSourcePackageBranch.
+    def test_findForSourcePackage_non_empty(self):
+        # ISeriesSourcePackageBranchSet.findForSourcePackage returns a list of
+        # links from the source package. Each link is an
+        # ISeriesSourcePackageBranch.
         series_set = getUtility(ISeriesSourcePackageBranchSet)
         branch = self.factory.makePackageBranch()
         package = branch.sourcepackage
         series_set.new(
             package.distroseries, PackagePublishingPocket.RELEASE,
             package.sourcepackagename, branch, self.factory.makePerson())
-        [link] = list(series_set.getLinks(package))
+        [link] = list(series_set.findForSourcePackage(package))
         self.assertEqual(PackagePublishingPocket.RELEASE, link.pocket)
         self.assertEqual(branch, link.branch)
         self.assertEqual(link.distroseries, package.distroseries)
@@ -116,7 +117,7 @@ class TestSeriesSourcePackageBranch(TestCaseWithFactory):
             package.distroseries, PackagePublishingPocket.RELEASE,
             package.sourcepackagename, branch, self.factory.makePerson())
         series_set.delete(package, PackagePublishingPocket.RELEASE)
-        self.assertEqual([], list(series_set.getLinks(package)))
+        self.assertEqual([], list(series_set.findForSourcePackage(package)))
 
     def test_cannot_edit_branch_link(self):
         # You can only edit an ISeriesSourcePackageBranch if you have edit

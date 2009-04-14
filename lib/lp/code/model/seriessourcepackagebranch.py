@@ -78,7 +78,7 @@ class SeriesSourcePackageBranchSet:
         store.add(sspb)
         return sspb
 
-    def getLinks(self, sourcepackage):
+    def findForSourcePackage(self, sourcepackage):
         """See `ISeriesSourcePackageBranchSet`."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         distroseries = sourcepackage.distroseries

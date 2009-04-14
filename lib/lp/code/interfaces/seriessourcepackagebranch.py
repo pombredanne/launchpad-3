@@ -54,7 +54,7 @@ class ISeriesSourcePackageBranchSet(Interface):
         :param pocket: A `PackagePublishingPocket` enum item.
         """
 
-    def getLinks(sourcepackage):
+    def findForSourcePackage(sourcepackage):
         """Get the links to branches from a source package.
 
         :param sourcepackage: An `ISourcePackage`.
