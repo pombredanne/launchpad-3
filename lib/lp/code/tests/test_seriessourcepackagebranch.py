@@ -92,8 +92,8 @@ class TestSeriesSourcePackageBranch(TestCaseWithFactory):
         self.assertEqual([], list(series_set.findForSourcePackage(package)))
 
     def test_findForSourcePackage_non_empty(self):
-        # ISeriesSourcePackageBranchSet.findForSourcePackage returns a list of
-        # links from the source package. Each link is an
+        # ISeriesSourcePackageBranchSet.findForSourcePackage returns a result
+        # set of links from the source package. Each link is an
         # ISeriesSourcePackageBranch.
         series_set = getUtility(ISeriesSourcePackageBranchSet)
         branch = self.factory.makePackageBranch()
@@ -102,6 +102,22 @@ class TestSeriesSourcePackageBranch(TestCaseWithFactory):
             package.distroseries, PackagePublishingPocket.RELEASE,
             package.sourcepackagename, branch, self.factory.makePerson())
         [link] = list(series_set.findForSourcePackage(package))
+        self.assertEqual(PackagePublishingPocket.RELEASE, link.pocket)
+        self.assertEqual(branch, link.branch)
+        self.assertEqual(link.distroseries, package.distroseries)
+        self.assertEqual(link.sourcepackagename, package.sourcepackagename)
+
+    def test_findForBranch(self):
+        # ISeriesSourcePackageBranchSet.findForBranch returns a result set of
+        # links from the branch to source packages & pockets. Each link is an
+        # ISeriesSourcePackageBranch.
+        series_set = getUtility(ISeriesSourcePackageBranchSet)
+        branch = self.factory.makePackageBranch()
+        package = branch.sourcepackage
+        series_set.new(
+            package.distroseries, PackagePublishingPocket.RELEASE,
+            package.sourcepackagename, branch, self.factory.makePerson())
+        [link] = list(series_set.findForBranch(branch))
         self.assertEqual(PackagePublishingPocket.RELEASE, link.pocket)
         self.assertEqual(branch, link.branch)
         self.assertEqual(link.distroseries, package.distroseries)

@@ -78,6 +78,13 @@ class SeriesSourcePackageBranchSet:
         store.add(sspb)
         return sspb
 
+    def findForBranch(self, branch):
+        """See `ISeriesSourcePackageBranchSet`."""
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        return store.find(
+            SeriesSourcePackageBranch,
+            SeriesSourcePackageBranch.branch == branch.id)
+
     def findForSourcePackage(self, sourcepackage):
         """See `ISeriesSourcePackageBranchSet`."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
