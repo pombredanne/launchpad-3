@@ -809,8 +809,8 @@ class ValidTeamVocabulary(ValidPersonOrTeamVocabulary):
             LeftJoin(TeamParticipation,
                      TeamParticipation.teamID == Person.id),
             ]
-        if not text:
 
+        if not text:
             query = And(base_query,
                         self.extra_clause)
             result = self.store.using(*tables).find(Person, query)
@@ -820,7 +820,6 @@ class ValidTeamVocabulary(ValidPersonOrTeamVocabulary):
                 base_query,
                 self.extra_clause,
                 )
-            name_matches = self.store.find(Person, name_match_query)
 
             # Note that we must use lower(email) LIKE rather than ILIKE
             # as ILIKE no longer appears to be hitting the index under PG8.0
@@ -833,10 +832,9 @@ class ValidTeamVocabulary(ValidPersonOrTeamVocabulary):
                 )
 
             tables.append(EmailAddress)
-            email_matches = self.store.using(*tables).find(
-                    Person, email_match_query)
-            #print "email_matches: ", email_matches.count()
-            result =  name_matches.union(email_matches)
+
+            result = self.store.using(*tables).find(
+                Person, Or(name_match_query, email_match_query))
 
         result.config(distinct=True)
         result.order_by(Person.displayname, Person.name)
