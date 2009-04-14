@@ -494,7 +494,8 @@ class BranchNameValidationMixin:
             prefix = "%s already has" % cgi.escape(owner.displayname)
         message = (
             "%s a branch for <em>%s</em> called <em>%s</em>."
-            % (prefix, existing_branch.target.name, existing_branch.name))
+            % (prefix, existing_branch.target.displayname,
+               existing_branch.name))
         self.setFieldError('name', structured(message))
 
 
