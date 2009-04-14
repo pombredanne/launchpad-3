@@ -676,9 +676,8 @@ class MailingListSet:
         for address, subscription, participation, person, team in preferred:
             assert team.name in team_names, (
                 'Unexpected team name in results: %s' % team.name)
-            address = address.email
-            full_name = person.displayname
-            by_team.setdefault(team.name, set()).add((full_name, address))
+            value = (person.displayname, address.email)
+            by_team.setdefault(team.name, set()).add(value)
         tables = (
             EmailAddress,
             LeftJoin(Account, Account.id == EmailAddress.accountID),
@@ -705,9 +704,8 @@ class MailingListSet:
         for address, mailing_list, person, team in explicit:
             assert team.name in team_names, (
                 'Unexpected team name in results: %s' % team.name)
-            address = address.email
-            full_name = person.displayname
-            by_team.setdefault(team.name, set()).add((full_name, address))
+            value = (person.displayname, address.email)
+            by_team.setdefault(team.name, set()).add(value)
         # Turn the results into a mapping of lists.
         results = {}
         for team_name, address_set in by_team.items():
@@ -752,9 +750,8 @@ class MailingListSet:
         for address, mailing_list, person, team in team_members:
             assert team.name in team_names, (
                 'Unexpected team name in results: %s' % team.name)
-            full_name = person.displayname
-            address = address.email
-            by_team.setdefault(team.name, set()).add((full_name, address))
+            value = (person.displayname, address.email)
+            by_team.setdefault(team.name, set()).add(value)
         # Second, find all of the email addresses for all of the people who
         # have been explicitly approved for posting to the team mailing lists.
         # This occurs as part of first post moderation, but since they've
@@ -785,9 +782,8 @@ class MailingListSet:
         for address, message_approval, person, team in approved_posters:
             assert team.name in team_names, (
                 'Unexpected team name in results: %s' % team.name)
-            address = address.email
-            full_name = person.displayname
-            by_team.setdefault(team.name, set()).add((full_name, address))
+            value = (person.displayname, address.email)
+            by_team.setdefault(team.name, set()).add(value)
         # Turn the results into a mapping of lists.
         results = {}
         for team_name, address_set in by_team.items():
