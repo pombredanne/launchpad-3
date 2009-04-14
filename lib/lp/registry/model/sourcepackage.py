@@ -618,9 +618,13 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
 
     def setBranch(self, pocket, branch, registrant):
         """See `ISourcePackage`."""
-        getUtility(ISeriesSourcePackageBranchSet).new(
-            self.distroseries, pocket, self.sourcepackagename, branch,
-            registrant)
+        series_set = getUtility(ISeriesSourcePackageBranchSet)
+        if branch is None:
+            series_set.delete(self, pocket)
+        else:
+            series_set.new(
+                self.distroseries, pocket, self.sourcepackagename, branch,
+                registrant)
 
     @property
     def linked_branches(self):
