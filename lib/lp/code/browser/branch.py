@@ -326,7 +326,10 @@ class BranchView(LaunchpadView, FeedsMixin):
 
         The whiteboard is only shown for import branches.
         """
-        return False
+        if self.context.branch_type == BranchType.IMPORTED:
+            return True
+        else:
+            return False
 
     @property
     def codebrowse_url(self):
