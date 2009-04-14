@@ -50,7 +50,7 @@ from lp.code.interfaces.branchnamespace import IBranchNamespaceSet
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.publishing import PackagePublishingPocket
 from canonical.launchpad.testing import (
-    LaunchpadObjectFactory, TestCaseWithFactory)
+    LaunchpadObjectFactory, run_with_login, TestCaseWithFactory)
 from canonical.launchpad.webapp.interfaces import IOpenLaunchBag
 
 from canonical.testing import DatabaseFunctionalLayer, LaunchpadZopelessLayer
@@ -515,6 +515,21 @@ class TestBranchDeletion(TestCaseWithFactory):
         branch.destroySelf()
         # Need to commit the transaction to fire off the constraint checks.
         transaction.commit()
+
+    def test_official_package_branch_deleted(self):
+        # A branch that's an official package branch can be deleted if you are
+        # allowed to modify package branch links.
+        branch = self.factory.makePackageBranch()
+        package = branch.sourcepackage
+        pocket = PackagePublishingPocket.RELEASE
+        ubuntu_branches = getUtility(ILaunchpadCelebrities).ubuntu_branches
+        run_with_login(
+            ubuntu_branches.teamowner,
+            package.development_version.setBranch,
+            pocket, branch, ubuntu_branches.teamowner)
+        self.assertEqual(True, branch.canBeDeleted())
+        branch.destroySelf()
+        self.assertIs(None, package.getBranch(pocket))
 
 
 class TestBranchDeletionConsequences(TestCase):
