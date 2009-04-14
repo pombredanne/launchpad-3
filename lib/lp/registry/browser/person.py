@@ -131,6 +131,8 @@ from canonical.launchpad.browser.launchpad import get_launchpad_views
 from canonical.launchpad.components.openidserver import CurrentOpenIDEndPoint
 from canonical.launchpad.interfaces.account import IAccount
 from canonical.launchpad.interfaces.account import AccountStatus
+from canonical.launchpad.interfaces.archivesubscriber import (
+    IArchiveSubscriberSet)
 from canonical.launchpad.interfaces.authtoken import LoginTokenType
 from canonical.launchpad.interfaces.bugtask import (
     BugTaskSearchParams, BugTaskStatus, UNRESOLVED_BUGTASK_STATUSES)

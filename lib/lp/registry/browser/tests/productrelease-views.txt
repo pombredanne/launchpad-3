@@ -45,9 +45,9 @@ Submitting the form data creates the release and deactivates the milestone.
     {}
     >>> for notification in view.request.response.notifications:
     ...     print notification.message
-    The <a href="/app/+milestone/0.1/"><img...>&nbsp;Milestone 0.1 for App</a>
-    for this project release was deactivated so that bugs and blueprints cannot
-    be associated with this release.
+    The <a href="http://launchpad.dev/app/+milestone/0.1">0.1 milestone</a>
+    for this project release was deactivated so that bugs and blueprints
+    cannot be associated with this release.
     >>> print milestone.active
     False
     >>> for release in series.releases:
