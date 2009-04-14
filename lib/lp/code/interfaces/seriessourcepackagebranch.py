@@ -47,6 +47,13 @@ class ISeriesSourcePackageBranchSet(Interface):
     the rest of Launchpad.
     """
 
+    def delete(sourcepackage, pocket):
+        """Remove the SeriesSourcePackageBranch for sourcepackage and pocket.
+
+        :param sourcepackage: An `ISourcePackage`.
+        :param pocket: A `PackagePublishingPocket` enum item.
+        """
+
     def getLinks(sourcepackage):
         """Get the links to branches from a source package.
 

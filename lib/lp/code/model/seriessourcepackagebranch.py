@@ -79,6 +79,7 @@ class SeriesSourcePackageBranchSet:
         return sspb
 
     def getLinks(self, sourcepackage):
+        """See `ISeriesSourcePackageBranchSet`."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         distroseries = sourcepackage.distroseries
         sourcepackagename = sourcepackage.sourcepackagename
@@ -87,3 +88,14 @@ class SeriesSourcePackageBranchSet:
             SeriesSourcePackageBranch.distroseries == distroseries.id,
             SeriesSourcePackageBranch.sourcepackagename ==
             sourcepackagename.id)
+
+    def delete(self, sourcepackage, pocket):
+        """See `ISeriesSourcePackageBranchSet`."""
+        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+        distroseries = sourcepackage.distroseries
+        sourcepackagename = sourcepackage.sourcepackagename
+        return store.find(
+            SeriesSourcePackageBranch,
+            SeriesSourcePackageBranch.distroseries == distroseries.id,
+            SeriesSourcePackageBranch.sourcepackagename ==
+            sourcepackagename.id).remove()

@@ -85,10 +85,37 @@ class TestSeriesSourcePackageBranch(TestCaseWithFactory):
         self.assertProvides(sspb, ISeriesSourcePackageBranch)
 
     def test_getLinks(self):
-        # ISeriesSourcePackageBranchSet.getLinks returns a ResultSet of
-        # ISeriesSourcePackageBranch objects.
+        # ISeriesSourcePackageBranchSet.getLinks returns an empty result set
+        # if there are no links from that source package.
         series_set = getUtility(ISeriesSourcePackageBranchSet)
         package = self.factory.makeSourcePackage()
+        self.assertEqual([], list(series_set.getLinks(package)))
+
+    def test_getLinks_non_empty(self):
+        # ISeriesSourcePackageBranchSet.getLinks returns a list of links from
+        # the source package. Each link is an ISeriesSourcePackageBranch.
+        series_set = getUtility(ISeriesSourcePackageBranchSet)
+        branch = self.factory.makePackageBranch()
+        package = branch.sourcepackage
+        series_set.new(
+            package.distroseries, PackagePublishingPocket.RELEASE,
+            package.sourcepackagename, branch, self.factory.makePerson())
+        [link] = list(series_set.getLinks(package))
+        self.assertEqual(PackagePublishingPocket.RELEASE, link.pocket)
+        self.assertEqual(branch, link.branch)
+        self.assertEqual(link.distroseries, package.distroseries)
+        self.assertEqual(link.sourcepackagename, package.sourcepackagename)
+
+    def test_delete(self):
+        # `delete` ensures that there is no branch associated with that
+        # sourcepackage and pocket.
+        series_set = getUtility(ISeriesSourcePackageBranchSet)
+        branch = self.factory.makePackageBranch()
+        package = branch.sourcepackage
+        series_set.new(
+            package.distroseries, PackagePublishingPocket.RELEASE,
+            package.sourcepackagename, branch, self.factory.makePerson())
+        series_set.delete(package, PackagePublishingPocket.RELEASE)
         self.assertEqual([], list(series_set.getLinks(package)))
 
     def test_cannot_edit_branch_link(self):
