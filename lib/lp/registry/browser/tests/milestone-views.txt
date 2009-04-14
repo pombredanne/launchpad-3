@@ -13,6 +13,8 @@ Users can directly see and edit milestones through the milestone views.
 The MilestoneView provides access to the milestone and to its release if
 it has one.
 
+    >>> print view.milestone.name
+    kakapo
     >>> print view.release
     None
 
