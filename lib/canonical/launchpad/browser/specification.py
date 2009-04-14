@@ -51,9 +51,9 @@ from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 
-from canonical.launchpad.interfaces.branchnamespace import IBranchNamespaceSet
-from canonical.launchpad.interfaces.distribution import IDistribution
-from canonical.launchpad.interfaces.product import IProduct
+from lp.code.interfaces.branchnamespace import IBranchNamespaceSet
+from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.product import IProduct
 from canonical.launchpad.interfaces.specification import (
     INewSpecification, INewSpecificationSeriesGoal, INewSpecificationSprint,
     INewSpecificationTarget, INewSpecificationProjectTarget, ISpecification,
@@ -72,7 +72,7 @@ from canonical.launchpad.webapp import (
     safe_action, stepthrough, stepto, custom_widget)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import ILaunchBag
-from canonical.launchpad.browser.mentoringoffer import CanBeMentoredView
+from lp.registry.browser.mentoringoffer import CanBeMentoredView
 from canonical.launchpad.browser.launchpad import AppFrontPageSearchView
 
 
@@ -300,10 +300,12 @@ class SpecificationContextMenu(ContextMenu):
         text = 'Change priority'
         return Link('+priority', text, icon='edit')
 
+    @enabled_with_permission('launchpad.AnyPerson')
     def requestfeedback(self):
         text = 'Request feedback'
-        return Link('+requestfeedback', text, icon='edit')
+        return Link('+requestfeedback', text, icon='add')
 
+    @enabled_with_permission('launchpad.AnyPerson')
     def proposegoal(self):
         text = 'Propose as goal'
         if self.context.goal is not None:
@@ -341,30 +343,38 @@ class SpecificationContextMenu(ContextMenu):
         return Link('+retractmentoring', text, icon='remove', enabled=enabled)
 
     def subscribeanother(self):
+        """Return the 'Subscribe someone else' Link."""
         text = 'Subscribe someone else'
         return Link('+addsubscriber', text, icon='add')
 
     def subscription(self):
+        """Return the 'Edit Subscription' Link."""
         user = self.user
-        if user is not None and self.context.subscription(user) is not None:
-            text = 'Modify subscription'
+        if user is None:
+            text = 'Edit subscription'
+            icon = 'edit'
+        elif self.context.isSubscribed(user):
+            text = 'Unsubscribe'
+            icon = 'remove'
         else:
-            text = 'Subscribe yourself'
-        return Link('+subscribe', text, icon='edit')
+            text = 'Subscribe'
+            icon = 'add'
+        return Link('+subscribe', text, icon=icon)
 
     @enabled_with_permission('launchpad.Edit')
     def supersede(self):
         text = 'Mark superseded'
         return Link('+supersede', text, icon='edit')
 
+    @enabled_with_permission('launchpad.AnyPerson')
     def linkbug(self):
-        text = 'Link to bug report'
+        text = 'Link a bug report'
         return Link('+linkbug', text, icon='add')
 
     def unlinkbug(self):
-        text = 'Remove bug link'
+        text = 'Unlink a bug'
         enabled = bool(self.context.bugs)
-        return Link('+unlinkbug', text, icon='add', enabled=enabled)
+        return Link('+unlinkbug', text, icon='remove', enabled=enabled)
 
     @enabled_with_permission('launchpad.Edit')
     def adddependency(self):
@@ -383,22 +393,27 @@ class SpecificationContextMenu(ContextMenu):
                    bool(self.context.blocked_specs))
         return Link('+deptree', text, icon='info', enabled=enabled)
 
+    @enabled_with_permission('launchpad.AnyPerson')
     def linksprint(self):
-        text = 'Propose for meeting agenda'
+        text = 'Propose for sprint'
         return Link('+linksprint', text, icon='add')
 
     @enabled_with_permission('launchpad.Edit')
     def retarget(self):
-        text = 'Retarget'
+        text = 'Re-target blueprint'
         return Link('+retarget', text, icon='edit')
 
+    @enabled_with_permission('launchpad.AnyPerson')
     def whiteboard(self):
         text = 'Edit whiteboard'
         return Link('+whiteboard', text, icon='edit')
 
     @enabled_with_permission('launchpad.AnyPerson')
     def linkbranch(self):
-        text = 'Link to branch'
+        if self.context.branch_links.count() > 0:
+            text = 'Link to another branch'
+        else:
+            text = 'Link a related branch'
         return Link('+linkbranch', text, icon='add')
 
 class SpecificationSimpleView(LaunchpadView, CanBeMentoredView):
@@ -427,6 +442,11 @@ class SpecificationSimpleView(LaunchpadView, CanBeMentoredView):
     def branch_links(self):
         return [branch_link for branch_link in self.context.branch_links
                 if check_permission('launchpad.View', branch_link.branch)]
+
+    @cachedproperty
+    def bug_links(self):
+        return [bug_link for bug_link in self.context.bug_links
+                if check_permission('launchpad.View', bug_link.bug)]
 
 
 class SpecificationView(SpecificationSimpleView):

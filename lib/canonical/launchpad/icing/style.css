@@ -106,15 +106,21 @@ label, p {max-width: 60em;}
 html {background: #fff; color: #000; font: 83.33% sans-serif;}
 /* Monospace text uses the reciprocal of this percentage, so that it
 exactly obeys your preferred monospace font size: */
-code, pre, samp, tt, #bug-description, .bug-comment {font: 120% monospace;}
+code, pre, samp, tt, #bug-description, .bug-comment, .bug-activity {
+  font: 120% monospace;
+}
+
+.bug-activity {
+  color: #555;
+}
 
 /* Links are blue, brighter when clicked, and greyer once visited: */
 :link, :visited               {color: #03a;    text-decoration: none;}
 :link:hover, :visited:hover   {                text-decoration: underline;}
 :link:active, :visited:active {color: #36c;}
 /* Links that don't open separate pages are green to denote their behavior: */
-a[onclick], .collapsible legend a               {color: #063;}
-a[onclick]:active, .collapsible legend a:active {color: #093;}
+a[onclick], .collapsible legend a, a.js-action               {color: #063;}
+a[onclick]:active, .collapsible legend a:active, a.js-action {color: #093;}
 
 /* Help links */
 a.help {
@@ -1145,7 +1151,7 @@ div.aside {clear: right; float: right; margin-left: 20px; width: 200px;}
 a.official-tag { /* Looks just like a normal link */ }
 
 a.unofficial-tag {
-  color: #333;
+  color: #6699ee;
 }
 
 /* === Portlets === */
@@ -1280,6 +1286,27 @@ ul.translation, li.translation       {list-style-image: url(/@@/translation);}
 ul.link, li.link                     {list-style-image: url(/@@/link);}
 ul.webref, li.webref                 {list-style-image: url(/@@/link);}
 
+/* --- A list with icons instead of bullets --- */
+ul.iconed {
+  list-style-type: none;
+  padding-left: 0 !important;
+  margin: 0 !important;
+}
+
+/* Various custom link icons */
+a.info {
+    background: url('/@@/info') no-repeat scroll left center;
+    padding-left:18px;
+}
+a.edit {
+    background: url('/@@/edit') no-repeat scroll left center;
+    padding-left:18px;
+}
+a.add {
+    background: url('/@@/add') no-repeat scroll left center;
+    padding-left:18px;
+}
+
 /* == Application-specific styles == */
 
 #application-footer strong {font-weight: normal;}
@@ -1292,10 +1319,26 @@ ul.webref, li.webref                 {list-style-image: url(/@@/link);}
 .boardCommentSummary {margin: 0.3em 0 0.3em 0;}
 .remoteBugComment {background-color: #f6f6f6;}
 * html .boardComment {float: left; clear: both; width: 99%;} /* IE float bug */
-.boardCommentDetails {background-color: #eee; padding: 0.5em 12px;}
+.boardCommentDetails {
+  background-color: #eee;
+  padding: 0.5em 12px;
+  border-bottom: 1px solid #ddd
+}
 .boardCommentBody {padding: 0.5em 12px 0;}
+.boardBugActivityBody {
+  padding: 0.5em 12px;
+  background-color: #fafafa;
+}
+.boardBugActivityBody table {
+  margin-bottom: 0.5em;
+  margin-top: 0.5em;
+}
 .boardCommentContent { line-height: 1.5em;}
-.boardCommentFooter {background-color: #eee; padding: 0.5em 12px;}
+.boardCommentFooter {
+  background-color: #eee;
+  padding: 0.5em 12px;
+  border-top: 1px solid #ddd;
+}
 dl.faq dt {font-weight: bold;}
 dl.faq dd {margin: 1em 0 2em 4em;}
 
@@ -1472,6 +1515,11 @@ div#signing-key p {
     padding-left: 18px;
 }
 
+/* build status links should always be padded. */
+td.build_status a {
+    margin: 0 0 0 0.4em;
+}
+
 div#signing-key a {
     font-weight: bold;
 }
@@ -1578,6 +1626,26 @@ body.tab-branches #actions h2, body.tab-branches #actions h2:hover {
   vertical-align: middle;
   text-align: center;
   height: 2.5em;
+}
+
+#branch-pending-writes {
+  background: #FFF59C;
+  width: 40em;
+  padding-left: 1em;
+  padding-right: 1em;
+  padding-top: 0.2em;
+  padding-bottom: 0.2em;
+  -moz-border-radius: 5px;
+  -o-border-radius: 5px;
+  -webkit-border-radius: 5px;
+}
+
+#branch-pending-writes h3 {
+  color: black;
+  font-weight: bold;
+  text-align: center;
+  font-size: 160%;
+  margin-top: 0.5em;
 }
 
 .mergeproposal p {margin: 0.5em 0 }

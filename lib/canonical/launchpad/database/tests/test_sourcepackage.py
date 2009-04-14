@@ -11,9 +11,10 @@ from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.ftests import login_person, logout
+from lp.registry.interfaces.distroseries import DistroSeriesStatus
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.publishing import PackagePublishingPocket
-from canonical.launchpad.interfaces.seriessourcepackagebranch import (
+from lp.code.interfaces.seriessourcepackagebranch import (
     ISeriesSourcePackageBranchSet)
 from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.testing.layers import DatabaseFunctionalLayer
@@ -69,6 +70,56 @@ class TestSourcePackage(TestCaseWithFactory):
         branch = self.factory.makePackageBranch(sourcepackage=sourcepackage)
         sourcepackage.setBranch(pocket, branch, registrant)
         self.assertEqual(branch, sourcepackage.getBranch(pocket))
+
+    def test_linked_branches(self):
+        # ISourcePackage.linked_branches is a mapping of pockets to branches.
+        sourcepackage = self.factory.makeSourcePackage()
+        pocket = PackagePublishingPocket.RELEASE
+        registrant = self.factory.makePerson()
+        branch = self.factory.makePackageBranch(sourcepackage=sourcepackage)
+        sourcepackage.setBranch(pocket, branch, registrant)
+        self.assertEqual(
+            [(pocket, branch)], list(sourcepackage.linked_branches))
+
+    def test_path_to_release_pocket(self):
+        # ISourcePackage.getPocketPath returns the path to a pocket. For the
+        # RELEASE pocket, it's the same as the package path.
+        sourcepackage = self.factory.makeSourcePackage()
+        pocket = PackagePublishingPocket.RELEASE
+        self.assertEqual(
+            sourcepackage.path, sourcepackage.getPocketPath(pocket))
+
+    def test_path_to_non_release_pocket(self):
+        # ISourcePackage.getPocketPath returns the path to a pocket. For a
+        # non-RELEASE pocket, it's the same as the package path, except with
+        # series-pocket for the middle component.
+        sourcepackage = self.factory.makeSourcePackage()
+        pocket = PackagePublishingPocket.SECURITY
+        path = '%s/%s-%s/%s' % (
+            sourcepackage.distribution.name,
+            sourcepackage.distroseries.name,
+            pocket.name.lower(),
+            sourcepackage.name)
+        self.assertEqual(path, sourcepackage.getPocketPath(pocket))
+
+    def test_development_version(self):
+        # ISourcePackage.development_version gets the development version of
+        # the source package.
+        distribution = self.factory.makeDistribution()
+        dev_series = self.factory.makeDistroRelease(
+            distribution=distribution, status=DistroSeriesStatus.DEVELOPMENT)
+        other_series = self.factory.makeDistroRelease(
+            distribution=distribution, status=DistroSeriesStatus.OBSOLETE)
+        self.assertEqual(dev_series, distribution.currentseries)
+        dev_sourcepackage = self.factory.makeSourcePackage(
+            distroseries=dev_series)
+        other_sourcepackage = self.factory.makeSourcePackage(
+            distroseries=other_series,
+            sourcepackagename=dev_sourcepackage.sourcepackagename)
+        self.assertEqual(
+            dev_sourcepackage, other_sourcepackage.development_version)
+        self.assertEqual(
+            dev_sourcepackage, dev_sourcepackage.development_version)
 
 
 class TestSourcePackageSecurity(TestCaseWithFactory):

@@ -2,7 +2,13 @@
 # pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
-__all__ = ['LibraryFileContent', 'LibraryFileAlias', 'LibraryFileAliasSet']
+__all__ = [
+    'LibraryFileAlias',
+    'LibraryFileAliasSet',
+    'LibraryFileContent',
+    'LibraryFileDownloadCount',
+    'ParsedApacheLog',
+    ]
 
 from datetime import datetime, timedelta
 import pytz
@@ -10,15 +16,21 @@ import pytz
 from zope.component import getUtility
 from zope.interface import implements
 
+from sqlobject import StringCol, ForeignKey, IntCol, SQLRelatedJoin, BoolCol
+from storm.locals import Date, Int, Reference, Storm, Store, Unicode
+
 from canonical.config import config
 from canonical.launchpad.interfaces import (
-    ILibraryFileContent, ILibraryFileAlias, ILibraryFileAliasSet)
+    ILibraryFileAlias, ILibraryFileAliasSet, ILibraryFileContent,
+    ILibraryFileDownloadCount, IMasterStore, IParsedApacheLog)
 from canonical.librarian.interfaces import (
-    DownloadFailed, ILibrarianClient, IRestrictedLibrarianClient)
+    DownloadFailed, ILibrarianClient, IRestrictedLibrarianClient,
+    LIBRARIAN_SERVER_DEFAULT_TIMEOUT)
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import UTC_NOW, DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
-from sqlobject import StringCol, ForeignKey, IntCol, SQLRelatedJoin, BoolCol
+from canonical.launchpad.webapp.interfaces import (
+    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 
 
 class LibraryFileContent(SQLBase):
@@ -53,6 +65,7 @@ class LibraryFileAlias(SQLBase):
     expires = UtcDateTimeCol(notNull=False, default=None)
     restricted = BoolCol(notNull=True, default=False)
     last_accessed = UtcDateTimeCol(notNull=True, default=DEFAULT)
+    hits = IntCol(notNull=True, default=0)
 
     products = SQLRelatedJoin('ProductRelease', joinColumn='libraryfile',
                            otherColumn='productrelease',
@@ -93,7 +106,7 @@ class LibraryFileAlias(SQLBase):
 
     _datafile = None
 
-    def open(self, timeout=5):
+    def open(self, timeout=LIBRARIAN_SERVER_DEFAULT_TIMEOUT):
         """See ILibraryFileAlias."""
         self._datafile = self.client.getFileByAlias(self.id, timeout)
         if self._datafile is None:
@@ -101,7 +114,7 @@ class LibraryFileAlias(SQLBase):
                     "Unable to retrieve LibraryFileAlias %d" % self.id
                     )
 
-    def read(self, chunksize=None, timeout=5):
+    def read(self, chunksize=None, timeout=LIBRARIAN_SERVER_DEFAULT_TIMEOUT):
         """See ILibraryFileAlias."""
         if not self._datafile:
             if chunksize is not None:
@@ -142,6 +155,19 @@ class LibraryFileAlias(SQLBase):
         if self.last_accessed + precision < now:
             self.last_accessed = UTC_NOW
 
+    def updateDownloadCount(self, day, country, count):
+        """See ILibraryFileAlias."""
+        store = Store.of(self)
+        entry = store.find(
+            LibraryFileDownloadCount, libraryfilealias=self,
+            day=day, country=country).one()
+        if entry is None:
+            entry = LibraryFileDownloadCount(
+                libraryfilealias=self, day=day, country=country, count=count)
+        else:
+            entry.count += count
+        self.hits += count
+
     products = SQLRelatedJoin('ProductRelease', joinColumn='libraryfile',
                            otherColumn='productrelease',
                            intermediateTable='ProductReleaseFile')
@@ -171,7 +197,10 @@ class LibraryFileAliasSet(object):
         else:
             client = getUtility(ILibrarianClient)
         fid = client.addFile(name, size, file, contentType, expires, debugID)
-        return LibraryFileAlias.get(fid)
+        lfa = IMasterStore(LibraryFileAlias).find(
+            LibraryFileAlias, LibraryFileAlias.id == fid).one()
+        assert lfa is not None, "client.addFile didn't!"
+        return lfa
 
     def __getitem__(self, key):
         """See ILibraryFileAliasSet.__getitem__"""
@@ -184,3 +213,35 @@ class LibraryFileAliasSet(object):
             AND LibraryFileContent.sha1 = '%s'
             """ % sha1, clauseTables=['LibraryFileContent'])
 
+
+class LibraryFileDownloadCount(SQLBase):
+    """See `ILibraryFileDownloadCount`"""
+
+    implements(ILibraryFileDownloadCount)
+    __storm_table__ = 'LibraryFileDownloadCount'
+
+    id = Int(primary=True)
+    libraryfilealias_id = Int(name='libraryfilealias', allow_none=False)
+    libraryfilealias = Reference(libraryfilealias_id, 'LibraryFileAlias.id')
+    day = Date(allow_none=False)
+    count = Int(allow_none=False)
+    country_id = Int(name='country', allow_none=True)
+    country = Reference(country_id, 'Country.id')
+
+
+class ParsedApacheLog(Storm):
+    """See `IParsedApacheLog`"""
+
+    implements(IParsedApacheLog)
+    __storm_table__ = 'ParsedApacheLog'
+
+    id = Int(primary=True)
+    first_line = Unicode(allow_none=False)
+    bytes_read = Int(allow_none=False)
+    date_last_parsed = UtcDateTimeCol(notNull=True, default=UTC_NOW)
+
+    def __init__(self, first_line, bytes_read):
+        super(ParsedApacheLog, self).__init__()
+        self.first_line = unicode(first_line)
+        self.bytes_read = bytes_read
+        getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR).add(self)

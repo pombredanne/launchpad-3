@@ -74,7 +74,7 @@ That's a syntax error.
 
 We must approve the entry to be able to import it.
 
-    >>> entry.status = RosettaImportStatus.APPROVED
+    >>> entry.setStatus(RosettaImportStatus.APPROVED)
 
 The import fails.
 
@@ -142,7 +142,7 @@ submits a translation with a nonsensical plurals definition.
     ...     pofile.path, pofile_contents, False, person,
     ...     productseries=series, potemplate=potemplate, pofile=pofile)
     >>> transaction.commit()
-    >>> entry.status = RosettaImportStatus.APPROVED
+    >>> entry.setStatus(RosettaImportStatus.APPROVED)
     >>> (subject, message) = pofile.importFromQueue(entry)
 
 
@@ -185,7 +185,7 @@ forms.  He receives an email notifying him of a syntax error.
     ...     pofile.path, pofile_contents, False, person,
     ...     productseries=series, potemplate=potemplate, pofile=pofile)
     >>> transaction.commit()
-    >>> entry.status = RosettaImportStatus.APPROVED
+    >>> entry.setStatus(RosettaImportStatus.APPROVED)
     >>> (subject, message) = pofile.importFromQueue(entry)
 
     >>> print entry.status.name
@@ -223,7 +223,7 @@ forms.  The same error is given.
     ...     pofile.path, pofile_contents, False, person,
     ...     productseries=series, potemplate=potemplate, pofile=pofile)
     >>> transaction.commit()
-    >>> entry.status = RosettaImportStatus.APPROVED
+    >>> entry.setStatus(RosettaImportStatus.APPROVED)
     >>> (subject, message) = pofile.importFromQueue(entry)
 
     >>> print entry.status.name
@@ -276,7 +276,7 @@ to get that information corrected if need be.
     ...     pofile.path, pofile_contents, False, person,
     ...     productseries=series, potemplate=potemplate, pofile=pofile)
     >>> transaction.commit()
-    >>> entry.status = RosettaImportStatus.APPROVED
+    >>> entry.setStatus(RosettaImportStatus.APPROVED)
     >>> (subject, message) = pofile.importFromQueue(entry)
 
     >>> print entry.status.name
@@ -338,7 +338,7 @@ plural forms, the file imports just fine.
     ...     pofile.path, pofile_contents, False, person,
     ...     productseries=series, potemplate=potemplate, pofile=pofile)
     >>> transaction.commit()
-    >>> entry.status = RosettaImportStatus.APPROVED
+    >>> entry.setStatus(RosettaImportStatus.APPROVED)
     >>> (subject, message) = pofile.importFromQueue(entry)
 
     >>> print entry.status.name

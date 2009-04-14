@@ -52,7 +52,7 @@ class ProductBugTrackerWidget(LaunchpadRadioWidget):
             context=field.context)
         if self.bugtracker_widget.extra is None:
             self.bugtracker_widget.extra = ''
-        ## Select the the corresponding radio option automatically if
+        ## Select the corresponding radio option automatically if
         ## the user selects a bug tracker.
         self.bugtracker_widget.extra += (
             ' onchange="selectWidget(\'%s.2\', event);"' % self.name)
@@ -69,7 +69,7 @@ class ProductBugTrackerWidget(LaunchpadRadioWidget):
             self, 'upstream_email_address', self.upstream_email_address,
             IInputWidget, prefix=self.name, value='',
             context=self.upstream_email_address.context)
-        ## Select the the corresponding radio option automatically if
+        ## Select the corresponding radio option automatically if
         ## the user starts typing.
         if self.upstream_email_address_widget.extra is None:
             self.upstream_email_address_widget.extra = ''

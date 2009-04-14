@@ -1,4 +1,4 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
 
 """Tests for the virtual filesystem presented by Launchpad codehosting."""
 
@@ -16,7 +16,7 @@ from bzrlib.urlutils import escape
 
 from canonical.codehosting.vfs.branchfs import LaunchpadServer
 from canonical.codehosting.inmemory import InMemoryFrontend, XMLRPCWrapper
-
+from lp.code.interfaces.branchtarget import IBranchTarget
 
 
 class TestFilesystem(TestCaseWithTransport):
@@ -136,7 +136,7 @@ class TestFilesystem(TestCaseWithTransport):
             % (self.requester.name, product.name))
         self.assertEqual(
             'default_stack_on = /%s'
-            % product.default_stacked_on_branch.unique_name,
+            % IBranchTarget(product).default_stacked_on_branch.unique_name,
             control_file.strip())
 
     def test_can_open_product_control_dir(self):

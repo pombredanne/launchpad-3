@@ -17,7 +17,10 @@ from canonical.launchpad.interfaces.bug import IBug
 from canonical.launchpad.interfaces.cve import ICveSet
 from canonical.launchpad.interfaces.bugtask import (
     BugTaskImportance, BugTaskStatus)
+from canonical.launchpad.interfaces.structuralsubscription import (
+    BugNotificationLevel)
 from canonical.launchpad.testing.factory import LaunchpadObjectFactory
+from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.testing import LaunchpadFunctionalLayer
 
 
@@ -29,11 +32,28 @@ class TestBugChanges(unittest.TestCase):
         login('foo.bar@canonical.com')
         self.factory = LaunchpadObjectFactory()
         self.user = self.factory.makePerson(displayname='Arthur Dent')
-
-        product = self.factory.makeProduct(owner=self.user)
-        self.bug = self.factory.makeBug(product=product, owner=self.user)
+        self.product = self.factory.makeProduct(
+            owner=self.user, official_malone=True)
+        self.bug = self.factory.makeBug(product=self.product, owner=self.user)
         self.bug_task = self.bug.bugtasks[0]
+
+        # Add some structural subscribers to show that notifications
+        # aren't sent to LIFECYCLE subscribers by default.
+        self.product_lifecycle_subscriber = self.newSubscriber(
+            self.product, "product-lifecycle",
+            BugNotificationLevel.LIFECYCLE)
+        self.product_metadata_subscriber = self.newSubscriber(
+            self.product, "product-metadata",
+            BugNotificationLevel.METADATA)
+
         self.saveOldChanges()
+
+    def newSubscriber(self, target, name, level):
+        # Create a new bug subscription with a new person.
+        subscriber = self.factory.makePerson(name=name)
+        subscription = target.addBugSubscription(subscriber, subscriber)
+        subscription.bug_notification_level = level
+        return subscriber
 
     def saveOldChanges(self, bug=None):
         """Save the old changes to a bug.
@@ -74,6 +94,7 @@ class TestBugChanges(unittest.TestCase):
         new_notifications = [
             notification for notification in bug_notifications
             if notification.id not in self.old_notification_ids]
+
         if expected_activity is None:
             self.assertEqual(len(new_activities), 0)
         else:
@@ -115,7 +136,17 @@ class TestBugChanges(unittest.TestCase):
                 self.assertEqual(
                     added_notification.message.owner,
                     expected_notification['person'])
-                self.assertFalse(added_notification.is_comment)
+                self.assertEqual(
+                    added_notification.is_comment,
+                    expected_notification.get('is_comment', False))
+                expected_recipients = expected_notification.get('recipients')
+                if expected_recipients is None:
+                    expected_recipients = bug.getBugNotificationRecipients(
+                        level=BugNotificationLevel.METADATA)
+                self.assertEqual(
+                    set(recipient.person
+                        for recipient in added_notification.recipients),
+                    set(expected_recipients))
 
     def test_subscribe(self):
         # Subscribing someone to a bug adds an item to the activity log,
@@ -215,6 +246,46 @@ class TestBugChanges(unittest.TestCase):
             expected_notification=bugwatch_notification,
             expected_activity=bugwatch_activity)
 
+    def test_bugwatch_added_from_comment(self):
+        # Adding a bug comment containing a URL that looks like a link
+        # to a remote bug causes a BugWatch to be added to the
+        # bug. This adds to the activity log and sends a notification.
+        self.assertEqual(self.bug.watches.count(), 0)
+        self.bug.newMessage(
+            content="http://bugs.example.com/view.php?id=1234",
+            owner=self.user)
+        self.assertEqual(self.bug.watches.count(), 1)
+        [bug_watch] = self.bug.watches
+
+        bugwatch_activity = {
+            'person': self.user,
+            'whatchanged': 'bug watch added',
+            'newvalue': bug_watch.url,
+            }
+
+        bugwatch_notification = {
+            'text': (
+                "** Bug watch added: %s #%s\n"
+                "   %s" % (
+                    bug_watch.bugtracker.title, bug_watch.remotebug,
+                    bug_watch.url)),
+            'person': self.user,
+            'recipients': [
+                self.user, self.product_metadata_subscriber],
+            }
+
+        comment_notification = {
+            'text': "http://bugs.example.com/view.php?id=1234",
+            'person': self.user,
+            'is_comment': True,
+            'recipients': [self.user],
+            }
+
+        self.assertRecordedChange(
+            expected_activity=bugwatch_activity,
+            expected_notification=[
+                bugwatch_notification, comment_notification])
+
     def test_bugwatch_removed(self):
         # Removing a BugWatch from a bug adds items to the activity
         # log and the Bug's notifications.
@@ -312,6 +383,13 @@ class TestBugChanges(unittest.TestCase):
             expected_activity=added_activity,
             expected_notification=added_notification)
 
+    def test_link_private_branch(self):
+        # Linking a *private* branch to a bug adds *nothing* to the
+        # activity log and does *not* send an e-mail notification.
+        branch = self.factory.makeBranch(private=True)
+        self.bug.addBranch(branch, self.user)
+        self.assertRecordedChange()
+
     def test_unlink_branch(self):
         # Unlinking a branch from a bug adds both to the activity log and
         # sends an e-mail notification.
@@ -331,6 +409,15 @@ class TestBugChanges(unittest.TestCase):
         self.assertRecordedChange(
             expected_activity=added_activity,
             expected_notification=added_notification)
+
+    def test_unlink_private_branch(self):
+        # Unlinking a *private* branch from a bug adds *nothing* to
+        # the activity log and does *not* send an e-mail notification.
+        branch = self.factory.makeBranch(private=True)
+        self.bug.addBranch(branch, self.user)
+        self.saveOldChanges()
+        self.bug.removeBranch(branch, self.user)
+        self.assertRecordedChange()
 
     def test_make_private(self):
         # Marking a bug as private adds items to the bug's activity log
@@ -609,9 +696,9 @@ class TestBugChanges(unittest.TestCase):
             expected_notification=task_added_notification,
             expected_activity=task_added_activity)
 
-    def test_bugtask_added_assignee(self):
-        # Adding a bug task adds entries in both BugActivity and
-        # BugNotification.
+    def test_bugtask_added_with_assignee(self):
+        # Adding an assigned bug task adds entries in both BugActivity
+        # and BugNotification.
         target = self.factory.makeProduct()
         added_task = self.bug.addTask(self.user, target)
         added_task.transitionToAssignee(self.factory.makePerson())
@@ -639,9 +726,9 @@ class TestBugChanges(unittest.TestCase):
             expected_notification=task_added_notification,
             expected_activity=task_added_activity)
 
-    def test_bugtask_added_bugwatch(self):
-        # Adding a bug task adds entries in both BugActivity and
-        # BugNotification.
+    def test_bugtask_added_with_bugwatch(self):
+        # Adding a bug task with a bug watch adds entries in both
+        # BugActivity and BugNotification.
         target = self.factory.makeProduct()
         bug_watch = self.factory.makeBugWatch(bug=self.bug)
         self.saveOldChanges()
@@ -742,24 +829,36 @@ class TestBugChanges(unittest.TestCase):
             self.bug_task, bug_task_before_modification,
             ['target', 'product'], user=self.user))
 
-        expected_notification = {
-            'text': (
-                u'** Changed in: %s\n      '
-                'Product: %s => %s' % (
-                self.bug_task.bugtargetname,
-                bug_task_before_modification.bugtargetdisplayname,
-                self.bug_task.bugtargetdisplayname)),
+        expected_activity = {
             'person': self.user,
+            'whatchanged': 'affects',
+            'oldvalue': bug_task_before_modification.bugtargetname,
+            'newvalue': self.bug_task.bugtargetname,
             }
 
+        expected_notification = {
+            'text': u"** Project changed: %s => %s" % (
+                bug_task_before_modification.bugtargetname,
+                self.bug_task.bugtargetname),
+            'person': self.user,
+            'recipients': [
+                self.user, self.product_metadata_subscriber],
+            }
+
+        # The person who was subscribed to meta data changes for the old
+        # product was notified.
         self.assertRecordedChange(
-            expected_activity=None,
+            expected_activity=expected_activity,
             expected_notification=expected_notification)
 
     def test_target_bugtask_to_sourcepackage(self):
         # When a bugtask's target is changed, BugActivity and
         # BugNotification get updated.
         target = self.factory.makeDistributionSourcePackage()
+        metadata_subscriber = self.newSubscriber(
+            target, "dsp-metadata", BugNotificationLevel.METADATA)
+        lifecycle_subscriber = self.newSubscriber(
+            target, "dsp-lifecycle", BugNotificationLevel.LIFECYCLE)
         new_target = self.factory.makeDistributionSourcePackage(
             distribution=target.distribution)
 
@@ -777,57 +876,82 @@ class TestBugChanges(unittest.TestCase):
             source_package_bug_task, bug_task_before_modification,
             ['target', 'sourcepackagename'], user=self.user))
 
-        expected_notification = {
-            'text': (
-                u'** Changed in: %s\nSourcepackagename: %s => %s' % (
-                source_package_bug_task.bugtargetname,
-                bug_task_before_modification.target.name,
-                source_package_bug_task.target.name)),
+        expected_activity = {
             'person': self.user,
+            'whatchanged': 'affects',
+            'oldvalue': bug_task_before_modification.bugtargetname,
+            'newvalue': source_package_bug_task.bugtargetname,
+            }
+
+        expected_recipients = [self.user, metadata_subscriber]
+        expected_recipients.extend(
+            bug_task.pillar.owner
+            for bug_task in source_package_bug.bugtasks)
+
+        expected_notification = {
+            'text': u"** Package changed: %s => %s" % (
+                bug_task_before_modification.bugtargetname,
+                source_package_bug_task.bugtargetname),
+            'person': self.user,
+            'recipients': expected_recipients,
             }
 
         self.assertRecordedChange(
-            expected_activity=None,
+            expected_activity=expected_activity,
             expected_notification=expected_notification,
             bug=source_package_bug)
 
     def test_add_bugwatch_to_bugtask(self):
-        # Adding a BugWatch to a bug task only records an entry in the
-        # BugNotification table.
+        # Adding a BugWatch to a bug task records an entry in
+        # BugActivity and BugNotification.
         bug_watch = self.factory.makeBugWatch()
         self.saveOldChanges()
 
         self.changeAttribute(self.bug_task, 'bugwatch', bug_watch)
 
+        expected_activity = {
+            'person': self.user,
+            'whatchanged': '%s: remote watch' % self.product.bugtargetname,
+            'oldvalue': None,
+            'newvalue': bug_watch.title,
+            }
+
         expected_notification = {
             'text': (
-                u'** Changed in: %s\n     Bugwatch: None => %s' % (
+                u'** Changed in: %s\n Remote watch: None => %s' % (
                 self.bug_task.bugtargetname, bug_watch.title)),
             'person': self.user,
             }
 
         self.assertRecordedChange(
-            expected_activity=None,
+            expected_activity=expected_activity,
             expected_notification=expected_notification)
 
     def test_remove_bugwatch_from_bugtask(self):
-        # Removing a BugWatch from a bug task only records an entry in the
-        # BugNotification table.
+        # Removing a BugWatch from a bug task records an entry in
+        # BugActivity and BugNotification.
         bug_watch = self.factory.makeBugWatch()
         self.changeAttribute(self.bug_task, 'bugwatch', bug_watch)
         self.saveOldChanges()
 
         self.changeAttribute(self.bug_task, 'bugwatch', None)
 
+        expected_activity = {
+            'person': self.user,
+            'whatchanged': '%s: remote watch' % self.product.bugtargetname,
+            'oldvalue': bug_watch.title,
+            'newvalue': None,
+            }
+
         expected_notification = {
             'text': (
-                u'** Changed in: %s\n     Bugwatch: %s => None' % (
+                u'** Changed in: %s\n Remote watch: %s => None' % (
                 self.bug_task.bugtargetname, bug_watch.title)),
             'person': self.user,
             }
 
         self.assertRecordedChange(
-            expected_activity=None,
+            expected_activity=expected_activity,
             expected_notification=expected_notification)
 
     def test_assign_bugtask(self):
@@ -845,16 +969,16 @@ class TestBugChanges(unittest.TestCase):
             'person': self.user,
             'whatchanged': '%s: assignee' % self.bug_task.bugtargetname,
             'oldvalue': None,
-            'newvalue': self.user.name,
+            'newvalue': self.user.unique_displayname,
             'message': None,
             }
 
         expected_notification = {
             'text': (
-                u'** Changed in: %s\n     Assignee: (unassigned) => '
-                '%s (%s)' % (
-                self.bug_task.bugtargetname, self.user.displayname,
-                self.user.name)),
+                u'** Changed in: %s\n'
+                u'     Assignee: (unassigned) => %s' % (
+                    self.bug_task.bugtargetname,
+                    self.user.unique_displayname)),
             'person': self.user,
             }
 
@@ -865,7 +989,8 @@ class TestBugChanges(unittest.TestCase):
     def test_unassign_bugtask(self):
         # Unassigning a bug task to someone adds entries to the bug
         # activity and notifications sets.
-        self.bug_task.transitionToAssignee(self.user)
+        old_assignee = self.factory.makePerson()
+        self.bug_task.transitionToAssignee(old_assignee)
         self.saveOldChanges()
 
         bug_task_before_modification = Snapshot(
@@ -880,18 +1005,24 @@ class TestBugChanges(unittest.TestCase):
         expected_activity = {
             'person': self.user,
             'whatchanged': '%s: assignee' % self.bug_task.bugtargetname,
-            'oldvalue': self.user.name,
+            'oldvalue': old_assignee.unique_displayname,
             'newvalue': None,
             'message': None,
             }
 
+        # The old assignee got notified about the change, in addition
+        # to the default recipients.
+        expected_recipients = [
+            self.user, self.product_metadata_subscriber, old_assignee]
+
         expected_notification = {
             'text': (
-                u'** Changed in: %s\n     Assignee: %s (%s) => '
-                '(unassigned)' % (
-                self.bug_task.bugtargetname, self.user.displayname,
-                self.user.name)),
+                u'** Changed in: %s\n'
+                u'     Assignee: %s => (unassigned)' % (
+                    self.bug_task.bugtargetname,
+                    old_assignee.unique_displayname)),
             'person': self.user,
+            'recipients': expected_recipients,
             }
 
         self.assertRecordedChange(
@@ -901,7 +1032,7 @@ class TestBugChanges(unittest.TestCase):
     def test_target_bugtask_to_milestone(self):
         # When a bugtask is targetted to a milestone BugActivity and
         # BugNotification records will be created.
-        milestone = self.factory.makeMilestone(product=self.bug_task.product)
+        milestone = self.factory.makeMilestone(product=self.product)
         self.changeAttribute(self.bug_task, 'milestone', milestone)
 
         expected_activity = {
@@ -926,9 +1057,12 @@ class TestBugChanges(unittest.TestCase):
     def test_untarget_bugtask_from_milestone(self):
         # When a bugtask is untargetted from a milestone both
         # BugActivity and BugNotification records will be created.
-        milestone = self.factory.makeMilestone(product=self.bug_task.product)
+        milestone = self.factory.makeMilestone(product=self.product)
         self.changeAttribute(self.bug_task, 'milestone', milestone)
         self.saveOldChanges()
+        old_milestone_subscriber = self.factory.makePerson()
+        milestone.addBugSubscription(
+            old_milestone_subscriber, old_milestone_subscriber)
 
         self.changeAttribute(self.bug_task, 'milestone', None)
 
@@ -945,11 +1079,279 @@ class TestBugChanges(unittest.TestCase):
                 u'** Changed in: %s\n    Milestone: %s => None' % (
                 self.bug_task.bugtargetname, milestone.name)),
             'person': self.user,
+            'recipients': [
+                self.user, self.product_metadata_subscriber,
+                old_milestone_subscriber,
+                ],
             }
 
         self.assertRecordedChange(
             expected_activity=expected_activity,
             expected_notification=expected_notification)
+
+    def test_change_bugtask_milestone(self):
+        # When a bugtask is retargeted from one milestone to another,
+        # both BugActivity and BugNotification records are created.
+        old_milestone = self.factory.makeMilestone(product=self.product)
+        old_milestone_subscriber = self.factory.makePerson()
+        old_milestone.addBugSubscription(
+            old_milestone_subscriber, old_milestone_subscriber)
+        new_milestone = self.factory.makeMilestone(product=self.product)
+        new_milestone_subscriber = self.factory.makePerson()
+        new_milestone.addBugSubscription(
+            new_milestone_subscriber, new_milestone_subscriber)
+
+        self.changeAttribute(self.bug_task, 'milestone', old_milestone)
+        self.saveOldChanges()
+        self.changeAttribute(self.bug_task, 'milestone', new_milestone)
+
+        expected_activity = {
+            'person': self.user,
+            'whatchanged': '%s: milestone' % self.bug_task.bugtargetname,
+            'newvalue': new_milestone.name,
+            'oldvalue': old_milestone.name,
+            }
+
+        expected_notification = {
+            'text': (
+                u'** Changed in: %s\n'
+                u'    Milestone: %s => %s' % (
+                    self.bug_task.bugtargetname,
+                    old_milestone.name, new_milestone.name)),
+            'person': self.user,
+            'recipients': [
+                self.user, self.product_metadata_subscriber,
+                old_milestone_subscriber, new_milestone_subscriber,
+                ],
+            }
+
+        self.assertRecordedChange(
+            expected_activity=expected_activity,
+            expected_notification=expected_notification)
+
+    def test_product_series_nominated(self):
+        # Nominating a bug to be fixed in a product series adds an item
+        # to the activity log only.
+        product = self.factory.makeProduct()
+        series = self.factory.makeProductSeries(product=product)
+        self.bug.addTask(self.user, product)
+        self.saveOldChanges()
+
+        nomination = self.bug.addNomination(self.user, series)
+        self.assertFalse(nomination.isApproved())
+
+        expected_activity = {
+            'person': self.user,
+            'whatchanged': 'nominated for series',
+            'newvalue': series.bugtargetname,
+            }
+
+        self.assertRecordedChange(expected_activity=expected_activity)
+
+    def test_distro_series_nominated(self):
+        # Nominating a bug to be fixed in a product series adds an item
+        # to the activity log only.
+        distribution = self.factory.makeDistribution()
+        series = self.factory.makeDistroRelease(distribution=distribution)
+        self.bug.addTask(self.user, distribution)
+        self.saveOldChanges()
+
+        nomination = self.bug.addNomination(self.user, series)
+        self.assertFalse(nomination.isApproved())
+
+        expected_activity = {
+            'person': self.user,
+            'whatchanged': 'nominated for series',
+            'newvalue': series.bugtargetname,
+            }
+
+        self.assertRecordedChange(expected_activity=expected_activity)
+
+    def test_series_nominated_and_approved(self):
+        # When adding a nomination that is approved automatically, it's
+        # like adding a new bug task for the series directly.
+        product = self.factory.makeProduct(owner=self.user)
+        product.driver = self.user
+        series = self.factory.makeProductSeries(product=product)
+        self.bug.addTask(self.user, product)
+        self.saveOldChanges()
+
+        nomination = self.bug.addNomination(self.user, series)
+        self.assertTrue(nomination.isApproved())
+
+        expected_activity = {
+            'person': self.user,
+            'newvalue': series.bugtargetname,
+            'whatchanged': 'bug task added',
+            'newvalue': series.bugtargetname,
+            }
+
+        task_added_notification = {
+            'person': self.user,
+            'text': (
+                '** Also affects: %s\n'
+                '   Importance: Undecided\n'
+                '       Status: New' % (
+                    series.bugtargetname)),
+            }
+
+        self.assertRecordedChange(
+            expected_activity=expected_activity,
+            expected_notification=task_added_notification)
+
+    def test_nomination_approved(self):
+        # When a nomination is approved, it's like adding a new bug
+        # task for the series directly.
+        product = self.factory.makeProduct()
+        product.driver = product.owner
+        series = self.factory.makeProductSeries(product=product)
+        self.bug.addTask(self.user, product)
+
+        nomination = self.bug.addNomination(self.user, series)
+        self.assertFalse(nomination.isApproved())
+        self.saveOldChanges()
+        nomination.approve(product.owner)
+
+        expected_activity = {
+            'person': product.owner,
+            'newvalue': series.bugtargetname,
+            'whatchanged': 'bug task added',
+            'newvalue': series.bugtargetname,
+            }
+
+        task_added_notification = {
+            'person': product.owner,
+            'text': (
+                '** Also affects: %s\n'
+                '   Importance: Undecided\n'
+                '       Status: New' % (
+                    series.bugtargetname)),
+            }
+
+        self.assertRecordedChange(
+            expected_activity=expected_activity,
+            expected_notification=task_added_notification)
+
+    def test_marked_as_duplicate(self):
+        # When a bug is marked as a duplicate, activity is recorded
+        # and a notification is sent.
+        duplicate_bug = self.factory.makeBug()
+        self.saveOldChanges()
+        self.changeAttribute(duplicate_bug, 'duplicateof', self.bug)
+
+        expected_activity = {
+            'person': self.user,
+            'whatchanged': 'marked as duplicate',
+            'oldvalue': None,
+            'newvalue': str(self.bug.id),
+            }
+
+        expected_notification = {
+            'person': self.user,
+            'text': ("** This bug has been marked a duplicate of bug %d\n"
+                     "   %s" % (self.bug.id, self.bug.title)),
+            }
+
+        self.assertRecordedChange(
+            expected_activity=expected_activity,
+            expected_notification=expected_notification,
+            bug=duplicate_bug)
+
+    def test_unmarked_as_duplicate(self):
+        # When a bug is unmarked as a duplicate, activity is recorded
+        # and a notification is sent.
+        duplicate_bug = self.factory.makeBug()
+        duplicate_bug.duplicateof = self.bug
+        self.saveOldChanges()
+        self.changeAttribute(duplicate_bug, 'duplicateof', None)
+
+        expected_activity = {
+            'person': self.user,
+            'whatchanged': 'removed duplicate marker',
+            'oldvalue': str(self.bug.id),
+            'newvalue': None,
+            }
+
+        expected_notification = {
+            'person': self.user,
+            'text': ("** This bug is no longer a duplicate of bug %d\n"
+                     "   %s" % (self.bug.id, self.bug.title)),
+            }
+
+        self.assertRecordedChange(
+            expected_activity=expected_activity,
+            expected_notification=expected_notification,
+            bug=duplicate_bug)
+
+    def test_changed_duplicate(self):
+        # When a bug is changed from being a duplicate of one bug to
+        # being a duplicate of another, activity is recorded and a
+        # notification is sent.
+        bug_one = self.factory.makeBug()
+        bug_two = self.factory.makeBug()
+        self.bug.duplicateof = bug_one
+        self.saveOldChanges()
+        self.changeAttribute(self.bug, 'duplicateof', bug_two)
+
+        expected_activity = {
+            'person': self.user,
+            'whatchanged': 'changed duplicate marker',
+            'oldvalue': str(bug_one.id),
+            'newvalue': str(bug_two.id),
+            }
+
+        expected_notification = {
+            'person': self.user,
+            'text': ("** This bug is no longer a duplicate of bug %d\n"
+                     "   %s\n"
+                     "** This bug has been marked a duplicate of bug %d\n"
+                     "   %s" % (bug_one.id, bug_one.title,
+                                bug_two.id, bug_two.title)),
+            }
+
+        self.assertRecordedChange(
+            expected_activity=expected_activity,
+            expected_notification=expected_notification)
+
+    def test_convert_to_question_no_comment(self):
+        # When a bug task is converted to a question, its status is
+        # first set to invalid, which causes the normal notifications for
+        # that to be added to the activity log and sent out as e-mail
+        # notification. After that another item is added to the activity
+        # log saying that the bug was converted to a question.
+        self.bug.convertToQuestion(self.user)
+        converted_question = self.bug.getQuestionCreatedFromBug()
+
+        conversion_activity = {
+            'person': self.user,
+            'whatchanged': 'converted to question',
+            'newvalue': str(converted_question.id),
+            }
+        status_activity = {
+            'person': self.user,
+            'whatchanged': '%s: status' % self.bug_task.bugtargetname,
+            'newvalue': 'Invalid',
+            'oldvalue': 'New',
+            }
+
+        conversion_notification = {
+            'person': self.user,
+            'text': (
+                '** Converted to question:\n'
+                '   %s' % canonical_url(converted_question))
+            }
+        status_notification = {
+            'text': (
+                '** Changed in: %s\n'
+                '       Status: New => Invalid' %
+                self.bug_task.bugtargetname),
+            'person': self.user,
+            }
+
+        self.assertRecordedChange(
+            expected_activity=[status_activity, conversion_activity],
+            expected_notification=[status_notification,
+                                   conversion_notification])
 
 
 def test_suite():

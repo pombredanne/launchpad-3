@@ -10,7 +10,7 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.testing import (
     DatabaseFunctionalLayer, LaunchpadFunctionalLayer)
 
-from canonical.launchpad.components.branch import BranchMergeProposalDelta
+from lp.code.adapters.branch import BranchMergeProposalDelta
 from canonical.launchpad.database import CodeReviewVoteReference
 from canonical.launchpad.database.diff import StaticDiff
 from lazr.lifecycle.event import ObjectModifiedEvent

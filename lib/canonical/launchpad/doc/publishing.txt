@@ -63,6 +63,27 @@ This is mostly as a convenience to API users.
     >>> print spph.section_name
     base
 
+There is also a property that returns the changesfile.  This is proxied
+through the webapp rather than being a librarian URL because the changesfile
+could be private and thus in the restricted librarian.
+
+    >>> from canonical.archiveuploader.tests import (
+    ...     insertFakeChangesFileForAllPackageUploads)
+    >>> insertFakeChangesFileForAllPackageUploads()
+
+The pmount source has no packageupload in the sampledata:
+
+    >>> print spph.changes_file_text
+    None
+
+The iceweasel source has good data:
+
+    >>> pub = spph.archive.getPublishedSources(name="iceweasel")[0]
+    >>> print pub.changes_file_text
+    -----BEGIN PGP SIGNED MESSAGE-----
+    Hash: SHA1
+    ...
+
 
 == Stanza generation ==
 
@@ -724,6 +745,7 @@ Generating respective "Packages" stanzas:
     Filename: pool/universe/m/mozilla-firefox/mozilla-firefox_0.9_i386.deb
     Size: 3
     MD5sum: 01234567890123456789012345678926
+    SHA1: 5a04c7b5ea3f0fdbc95d0dd47f3c5bc275da8a33
     Description: Mozilla Firefox Web Browser
      Mozilla Firefox Web Browser is .....
 
@@ -1305,7 +1327,7 @@ is used via the API via IArchive.getBuildSummariesForSourceIds).
 
 First we'll grab two source publishing history records:
 
-    >>> from canonical.launchpad.interfaces.distribution import (
+    >>> from lp.registry.interfaces.distribution import (
     ...     IDistributionSet)
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
     >>> firefox_source = ubuntu.getSourcePackage('mozilla-firefox')

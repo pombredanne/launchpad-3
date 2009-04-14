@@ -26,7 +26,7 @@ from canonical.database.sqlbase import (
 from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 
-from canonical.launchpad.validators.person import validate_public_person
+from lp.registry.interfaces.person import validate_public_person
 from canonical.launchpad.database.sprintattendance import SprintAttendance
 from canonical.launchpad.database.sprintspecification import (
     SprintSpecification)

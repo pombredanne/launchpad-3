@@ -18,7 +18,7 @@ from zope.interface import implements
 from canonical.database.constants import UTC_NOW
 from canonical.database.enumcol import DBEnum
 from canonical.launchpad.database.archiveauthtoken import ArchiveAuthToken
-from canonical.launchpad.database.teammembership import TeamParticipation
+from lp.registry.model.teammembership import TeamParticipation
 from canonical.launchpad.interfaces.archivesubscriber import (
     ArchiveSubscriberStatus, IArchiveSubscriber)
 
@@ -58,9 +58,9 @@ class ArchiveSubscriber(Storm):
     cancelled_by = Reference(cancelled_by_id, 'Person.id')
 
     @property
-    def title(self):
+    def displayname(self):
         """See `IArchiveSubscriber`."""
-        return "Subscription of %s to %s" % (
+        return "%s's subscription to %s" % (
             self.subscriber.displayname, self.archive.displayname)
 
     def cancel(self, cancelled_by):

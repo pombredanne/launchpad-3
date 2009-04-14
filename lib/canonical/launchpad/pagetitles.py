@@ -135,7 +135,7 @@ archive_edit_dependencies = ContextDisplayName('Edit dependencies for %s')
 
 archive_index = ContextDisplayName('%s')
 
-archive_subscriber_edit = ContextTitle('Edit %s')
+archive_subscriber_edit = ContextDisplayName('Edit %s')
 
 archive_subscribers = ContextDisplayName('Manage subscriptions for %s')
 
@@ -199,11 +199,14 @@ branchmergeproposal_delete = 'Delete proposal to merge branch'
 
 branchmergeproposal_edit = ViewLabel()
 
+branchmergeproposal_commitmessage_edit = ViewLabel()
+
 branchmergeproposal_editstatus = ViewLabel()
 
 branchmergeproposal_enqueue = 'Queue branch for merging'
 
-branchmergeproposal_index = 'Proposal to merge branch'
+def branchmergeproposal_index(context, view):
+    return 'Proposal to merge %s' % context.source_branch.bzr_identity
 
 branchmergeproposal_request_review = ViewLabel()
 
@@ -799,6 +802,8 @@ milestone_index = ContextTitle('%s')
 
 milestone_edit = ContextTitle('Edit %s')
 
+milestone_delete = ContextTitle('Delete %s')
+
 announcement_add = 'Make an announcement'
 
 announcement_delete = 'Permanently delete this announcement'
@@ -880,8 +885,10 @@ people_requestmerge = 'Merge Launchpad accounts'
 
 people_requestmerge_multiple = 'Merge Launchpad accounts'
 
+person_archive_subscription = ContextDisplayName('%s')
+
 person_archive_subscriptions = ContextDisplayName(
-    'Private archive subscriptions for %s')
+    '%s\'s private archive subscriptions')
 
 person_answer_contact_for = ContextDisplayName(
     'Projects for which %s is an answer contact')
@@ -983,6 +990,10 @@ person_uploaded_packages = ContextDisplayName('Software uploaded by %s')
 person_vouchers = ContextDisplayName(
     'Commercial subscription vouchers for %s')
 
+def personproduct_branches(context, view):
+    """Return the view's heading."""
+    return view.heading
+
 pofile_edit = ContextTitle(smartquote('Edit "%s" details'))
 
 pofile_export = ContextTitle(smartquote('Download translation for "%s"'))
@@ -1031,7 +1042,7 @@ potemplate_upload = ContextTitle(smartquote('Upload files for "%s"'))
 
 potemplate_export = ContextTitle(smartquote('Download translations for "%s"'))
 
-product_active_reviews = 'Pending proposals'
+product_active_reviews = ContextDisplayName('Pending proposals for %s')
 
 product_add_from_project = 'Register a project in your project group'
 
@@ -1078,7 +1089,7 @@ product_translations = ContextTitle('Translations of %s in Launchpad')
 
 product_translators = ContextTitle('Set translation group for %s')
 
-productrelease_add = ContextTitle('Register a new %s release in Launchpad')
+productrelease_add = ContextDisplayName('Publish the release of %s')
 
 productrelease_delete = ContextTitle('Delete %s in Launchpad')
 
@@ -1106,6 +1117,8 @@ productseries_packaging = ContextDisplayName(
 productseries_review = ContextTitle('Review %s')
 
 productseries_translations_upload = 'Request new translations upload'
+
+productseries_translations_settings = 'Settings for translations'
 
 productseries_ubuntupkg = 'Ubuntu source package'
 
@@ -1250,6 +1263,8 @@ shipit_index_edubuntu = 'Getting Edubuntu'
 shipit_index_ubuntu = 'Request an Ubuntu CD'
 
 shipit_login = 'ShipIt'
+
+shipit_login_error = 'ShipIt - Unsuccessful login'
 
 shipit_myrequest = "Your ShipIt order"
 

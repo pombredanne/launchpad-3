@@ -36,7 +36,7 @@ from canonical.launchpad.interfaces import (
     IProduct, IProject, ISprint, LicenseStatus, NotFoundError)
 from canonical.launchpad.interfaces.launchpad import (
     IHasIcon, IHasLogo, IHasMugshot)
-from canonical.launchpad.interfaces.person import IPerson, IPersonSet
+from lp.registry.interfaces.person import IPerson, IPersonSet
 from canonical.launchpad.webapp.interfaces import (
     IApplicationMenu, IContextMenu, IFacetMenu, ILaunchBag, INavigationMenu,
     IPrimaryContext, NoCanonicalUrl)
@@ -2112,6 +2112,24 @@ class FormattersAPI:
         return '&nbsp;' * len(groups[0])
 
     @staticmethod
+    def _split_url_and_trailers(url):
+        """Given a URL return a tuple of the URL and punctuation trailers.
+
+        :return: an unescaped url, an unescaped trailer.
+        """
+        # The text will already have been cgi escaped.  We temporarily
+        # unescape it so that we can strip common trailing characters
+        # that aren't part of the URL.
+        url = xml_unescape(url)
+        match = FormattersAPI._re_url_trailers.search(url)
+        if match:
+            trailers = match.group(1)
+            url = url[:-len(trailers)]
+        else:
+            trailers = ''
+        return url, trailers
+
+    @staticmethod
     def _linkify_substitution(match):
         if match.group('bug') is not None:
             bugnum = match.group('bugnum')
@@ -2136,13 +2154,8 @@ class FormattersAPI:
             # The text will already have been cgi escaped.  We temporarily
             # unescape it so that we can strip common trailing characters
             # that aren't part of the URL.
-            url = xml_unescape(match.group('url'))
-            match = FormattersAPI._re_url_trailers.search(url)
-            if match:
-                trailers = match.group(1)
-                url = url[:-len(trailers)]
-            else:
-                trailers = ''
+            url = match.group('url')
+            url, trailers = FormattersAPI._split_url_and_trailers(url)
             # We use nofollow for these links to reduce the value of
             # adding spam URLs to our comments; it's a way of moderately
             # devaluing the return on effort for spammers that consider
@@ -2169,6 +2182,16 @@ class FormattersAPI:
             root_url = config.launchpad.oops_root_url
             url = root_url + match.group('oopscode')
             return '<a href="%s">%s</a>' % (url, text)
+        elif match.group('lpbranchurl') is not None:
+            lp_url = match.group('lpbranchurl')
+            lp_url, trailers = FormattersAPI._split_url_and_trailers(lp_url)
+            path = match.group('branch')
+            url = '/+branch/%s' % path
+            url, trailers = FormattersAPI._split_url_and_trailers(url)
+            return '<a href="%s">%s</a>%s' % (
+                cgi.escape(url, quote=True),
+                cgi.escape(lp_url),
+                cgi.escape(trailers))
         else:
             raise AssertionError("Unknown pattern matched.")
 
@@ -2276,16 +2299,20 @@ class FormattersAPI:
         )?
       ) |
       (?P<bug>
-        \bbug(?:\s|<br\s*/>)*(?:\#|report|number\.?|num\.?|no\.?)?(?:\s|<br\s*/>)*
+        \bbug(?:[\s=-]|<br\s*/>)*(?:\#|report|number\.?|num\.?|no\.?)?(?:[\s=-]|<br\s*/>)*
         0*(?P<bugnum>\d+)
       ) |
       (?P<faq>
-        \bfaq(?:\s|<br\s*/>)*(?:\#|item|number\.?|num\.?|no\.?)?(?:\s|<br\s*/>)*
+        \bfaq(?:[\s=-]|<br\s*/>)*(?:\#|item|number\.?|num\.?|no\.?)?(?:[\s=-]|<br\s*/>)*
         0*(?P<faqnum>\d+)
       ) |
       (?P<oops>
         \boops\s*-?\s*
         (?P<oopscode> \d* [a-z]+ \d+)
+      ) |
+      (?P<lpbranchurl>
+        \blp:(?:///|/)?
+        (?P<branch>[%(unreserved)s][%(unreserved)s/]*)
       )
     ''' % {'unreserved': "-a-zA-Z0-9._~%!$&'()*+,;="},
                              re.IGNORECASE | re.VERBOSE)
@@ -2305,7 +2332,6 @@ class FormattersAPI:
         #    only if the first is between 60 and 80 characters and the
         #    second does not begin with white space.
         # 3. Use <br /> to split logical lines within a paragraph.
-
         output = []
         first_para = True
         for para in split_paragraphs(self._stringtoformat):

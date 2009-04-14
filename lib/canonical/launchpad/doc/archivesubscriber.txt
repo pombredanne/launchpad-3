@@ -13,7 +13,7 @@ First, create a person 'joesmith' and a team 'team_cprov':
     >>> login('foo.bar@canonical.com')
     >>> joesmith = factory.makePerson(name="joesmith", displayname="Joe Smith",
     ...     password="test", email="joe@example.com")
-    >>> from canonical.launchpad.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> cprov = getUtility(IPersonSet).getByName("cprov")
     >>> team_cprov = factory.makeTeam(cprov, "Team Cprov")
     >>> logout()
@@ -53,8 +53,8 @@ If we log in as cprov it will work:
 
 The new subscription is returned and reflects the data:
 
-    >>> print new_sub.title
-    Subscription of Joe Smith to PPA for Celso Providelo
+    >>> print new_sub.displayname
+    Joe Smith's subscription to PPA for Celso Providelo
 
     >>> print new_sub.registrant.name
     cprov
@@ -189,7 +189,7 @@ to which the provided subscriber belongs:
 Finally, many callsites of getBySubscriber() will be interested not only
 in each subscription of the subscriber, but also the generated
 ArchiveAuthToken for each subscription of the subscriber. These can
-be returned as well using the the getBySubscriberWithActiveToken():
+be returned as well using the getBySubscriberWithActiveToken():
 
 First create a token for joesmith's subscription for cprov's archive:
 

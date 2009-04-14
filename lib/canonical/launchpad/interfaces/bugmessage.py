@@ -112,3 +112,7 @@ class IBugComment(IMessage):
         'Has the comment been synchronized with a remote bug tracker?')
     add_comment_url = Attribute(
         'The URL for submitting replies to this comment.')
+    activity = Attribute(
+        "A list of BugActivityItems associated with this comment.")
+    show_footer = Attribute(
+        "Whether or not to show a footer for the comment.")

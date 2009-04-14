@@ -115,7 +115,7 @@ And this is the order we use when generating the widgets matrix.
     ['Ubuntu', u'PC', None]
     ['Kubuntu', u'PC', None]
     ['Edubuntu', u'PC', None]
-    ['Ubuntu Server Edition', u'PC', u'64-bit PC']
+    ['Ubuntu Server Edition', None, u'64-bit PC']
 
 Similarly to the quantity widgets, we use a table to display the quantities
 requested by the user. But in this case, the shipit admins are not supposed to
@@ -138,7 +138,7 @@ widgets.
     >>> sorted(review_request_view.initial_values.items())
     [('edubuntu_quantityx86approved', 5), ('highpriority', True),
      ('kubuntu_quantityx86approved', 5), ('server_quantityamd64approved', 0),
-     ('server_quantityx86approved', 0), ('ubuntu_quantityx86approved', 0)]
+     ('ubuntu_quantityx86approved', 0)]
 
     >>> pending_approval_request = ShippingRequest.get(12)
     >>> review_request_view = create_view(
@@ -153,4 +153,4 @@ widgets.
     >>> sorted(review_request_view.initial_values.items())
     [('edubuntu_quantityx86approved', 0), ('highpriority', False),
      ('kubuntu_quantityx86approved', 0), ('server_quantityamd64approved', 0),
-     ('server_quantityx86approved', 0), ('ubuntu_quantityx86approved', 10)]
+     ('ubuntu_quantityx86approved', 10)]

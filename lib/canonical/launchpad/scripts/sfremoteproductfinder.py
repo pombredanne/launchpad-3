@@ -7,7 +7,6 @@ __all__ = [
     'SourceForgeRemoteProductFinder',
     ]
 
-import re
 import urllib
 
 from BeautifulSoup import BeautifulSoup
@@ -15,7 +14,7 @@ from urllib2 import HTTPError, urlopen
 
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces.product import IProductSet
+from lp.registry.interfaces.product import IProductSet
 from canonical.launchpad.interfaces.launchpad import (
     ILaunchpadCelebrities)
 from canonical.launchpad.scripts.logger import log as default_log
