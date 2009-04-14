@@ -54,12 +54,6 @@
          ><img tal:attributes="alt link/text;title link/text" src="/@@/edit" /></a>
     </h1>
 
-    <div tal:condition="context/summary" id="branch-summary"
-         tal:content="structure context/summary/fmt:text-to-html">
-      $Branch.summary goes here. This should be quite short, just a single
-      paragraph of text really, giving the branch highlights.
-    </div>
-
   <table id="branch-details-table">
     <tbody>
       <tal:not-junk-branch tal:condition="context/product">

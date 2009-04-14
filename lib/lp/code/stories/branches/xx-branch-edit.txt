@@ -47,17 +47,10 @@ The form should have been filled with sample data values.
     Klingon support in GNOME Terminal
     >>> print browser.getControl('Branch URL').value
     http://trekkies.example.com/gnome-terminal/klingon
-    >>> print browser.getControl('Summary').value
-    Experimental feature branch for developping and testing Klingon
-    support in GNOME Terminal.
-    Home page: http://trekkies.example.com/k12n
 
 Then, post the changes to the summary. Also add a trailing
 slash to the URL.
 
-    >>> browser.getControl('Summary').value = (
-    ...     "Warriors' branch for developping and testing Klingon support"
-    ...     " in GNOME Terminal.")
     >>> browser.getControl('Branch URL').value += '/'
     >>> browser.getControl('Change Branch').click()
 
@@ -81,10 +74,6 @@ are no subscribers so there whould be no emails.
     Location: http://trekkies.example.com/gnome-terminal/klingon
     Last mirrored: ...
 
-    >>> print extract_text(find_tag_by_id(browser.contents, 'branch-summary'))
-    Warriors' branch for developping and testing Klingon support
-    in GNOME Terminal.
-
 
 == Editing the Lifecycle Status ==
 
@@ -101,18 +90,13 @@ The form displays the branch current status.
     ( ) Mature
     ( ) Merged
     ( ) Abandoned
-    >>> browser.getControl('Whiteboard').value
-    ''
 
-The user selects the new status value and enters a more complete status message
-in the 'Whiteboard':
+The user selects the new status value:
 
     >>> browser.getControl('Merged').click()
-    >>> browser.getControl('Whiteboard').value = \
-    ...     "The brave shall prevail. Ka'plah!"
     >>> browser.getControl('Change Branch').click()
 
-The branch page is displayed with the new status and the whiteboard content:
+The branch page is displayed with the new status:
 
     >>> browser.url
     'http://code.launchpad.dev/~name12/gnome-terminal/klingon'
@@ -120,16 +104,12 @@ The branch page is displayed with the new status and the whiteboard content:
     >>> status_tag = find_tag_by_id(contents, 'branch-details-status-value')
     >>> print status_tag.renderContents()
     Merged
-    >>> whiteboard_tag = find_tag_by_id(contents, 'branch-whiteboard-value')
-    >>> print extract_text(whiteboard_tag)
-    The brave shall prevail. Ka'plah!
 
 Set the branch status back to its initial state.
 
     >>> browser.open('http://launchpad.dev'
     ...     '/~name12/gnome-terminal/klingon/+edit')
     >>> browser.getControl('Experimental').click()
-    >>> browser.getControl('Whiteboard').value = ''
     >>> browser.getControl('Change Branch').click()
 
 
@@ -314,11 +294,23 @@ Check that when editing a hosted branch the URL field is not shown.
 
 == Editing the whiteboard ==
 
-The whiteboard is now editable by any logged in user.
+
+The whiteboard is only visible and editable on import branches, and is editable
+by any user.
+
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> login('foo.bar@canonical.com')
+    >>> sample_person = getUtility(IPersonSet).getByName('name12')
+    >>> foogoo = factory.makeProduct(
+    ...     name='foogoo', owner=sample_person)
+    >>> foogoo_svn = factory.makeImportBranch(
+    ...     name='foogoo-svn', product=foogoo, owner=sample_person)
+    >>> logout()
 
     >>> nopriv_browser = setupBrowser(auth='Basic no-priv@canonical.com:test')
     >>> nopriv_browser.open('http://launchpad.dev'
-    ...     '/~name12/gnome-terminal/main')
+    ...     '/~name12/foogoo/foogoo-svn')
     >>> whiteboard_tag = find_tag_by_id(
     ...     nopriv_browser.contents, 'branch-whiteboard-value')
 
@@ -328,8 +320,6 @@ set.
     >>> print whiteboard_tag
     None
 
-    >>> # Reset the stub emails.
-    >>> stub.test_emails = []
     >>> nopriv_browser.getLink('Edit whiteboard').click()
 
     >>> nopriv_browser.getControl('Whiteboard').value = (
@@ -340,29 +330,6 @@ set.
     ...     nopriv_browser.contents, 'branch-whiteboard-value')
     >>> print extract_text(whiteboard_tag)
     New whiteboard value
-
-Even though there are no subscribers, the owner of the branch is notified
-that someone else has modified the details of the branch.
-
-    >>> len(stub.test_emails)
-    1
-    >>> print stub.test_emails[0][2]
-    Content-Type: ...
-    ...
-    To: Sample Person <test@canonical.com>
-    From: No Privileges Person <no-priv@canonical.com>
-    Subject: [Branch ~name12/gnome-terminal/main] GNOME Terminal Mainline
-    ...
-    Whiteboard changed to:
-    <BLANKLINE>
-    New whiteboard value
-    <BLANKLINE>
-    --
-    GNOME Terminal Mainline
-    http://code.launchpad.dev/~name12/gnome-terminal/main
-    <BLANKLINE>
-    You are getting this email as you are the owner of the branch and someone h=
-    as edited the details.
 
 
 == Changing the branch owner ==
@@ -427,3 +394,11 @@ to any valid person or team.
     >>> admin_browser.getControl('Change Branch').click()
     >>> print admin_browser.url
     http://code.launchpad.dev/~sabdfl/firefox/main
+
+
+
+>>> #whiteboard_tag = find_tag_by_id(contents, 'branch-whiteboard-value')
+>>> #print extract_text(whiteboard_tag)
+The brave shall prevail. Ka'plah!
+
+
