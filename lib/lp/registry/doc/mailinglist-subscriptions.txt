@@ -38,6 +38,10 @@ will not get deliveries.
     >>> anne.join(team_one)
     >>> bart.join(team_one)
 
+    # The IMailingListSet APIs use the SLAVE_FLAVOR since they are read-only.
+    # Commit the transaction so that the changes are visible there.
+    >>> transaction.commit()
+
     # No Privileges Person shows up as a team member because he created the
     # team (in the doctest infrastructure).
     >>> sorted(member.displayname for member in team_one.allmembers)
@@ -73,6 +77,8 @@ Anne subscribes to the mailing list for team one.  Because Anne does not
 provide an email address when she subscribes, her preferred address is used.
 
     >>> list_one.subscribe(anne)
+    >>> transaction.commit()
+
     >>> sorted(email.email for email in list_one.getSubscribedAddresses())
     [u'anne.person@example.com']
     >>> sorted(person.displayname for person in list_one.getSubscribers())
@@ -89,6 +95,7 @@ other than his preferred email address.
     >>> alternative_email.email
     u'bperson@example.org'
     >>> list_one.subscribe(bart, alternative_email)
+    >>> transaction.commit()
 
     >>> sorted(email.email for email in list_one.getSubscribedAddresses())
     [u'anne.person@example.com', u'bperson@example.org']
@@ -209,6 +216,7 @@ Now, by virtue of her indirect membership in team-one, Cris can subscribe to
 team-one's mailing list.
 
     >>> list_one.subscribe(cris)
+    >>> transaction.commit()
 
     >>> sorted(email.email for email in list_one.getSubscribedAddresses())
     [u'anne.person@example.com', u'bperson@example.org',
@@ -289,6 +297,7 @@ mailing list.
     >>> lars.join(sub_team)
     >>> super_team_list.subscribe(lars)
     >>> sub_team_list.subscribe(lars)
+    >>> transaction.commit()
 
     >>> sorted(email.email
     ...        for email in super_team_list.getSubscribedAddresses())
@@ -328,6 +337,7 @@ allowed due to indirect membership in the superteam.
     >>> dirk.join(team_three)
     >>> list_one.subscribe(dirk)
     >>> list_three.subscribe(dirk)
+    >>> transaction.commit()
 
     >>> sorted(email.email for email in list_one.getSubscribedAddresses())
     [u'anne.person@example.com', u'bperson@example.org',
@@ -461,6 +471,7 @@ preferred address.
 
     >>> elle.join(team_four)
     >>> list_four.subscribe(elle)
+    >>> transaction.commit()
 
     >>> sorted(email.email for email in list_four.getSubscribedAddresses())
     [u'elle.person@example.com']
@@ -550,6 +561,8 @@ Any list member can unsubscribe from the mailing list.
      u'cris.person@example.com']
 
     >>> list_one.unsubscribe(anne)
+    >>> transaction.commit()
+
     >>> sorted(email.email for email in list_one.getSubscribedAddresses())
     [u'bperson@example.org', u'cris.person@example.com']
 
@@ -594,6 +607,8 @@ But someone who is not a member cannot unsubscribe.
 When someone leaves a direct team, they automatically get unsubscribed.
 
     >>> bart.leave(team_one)
+    >>> transaction.commit()
+
     >>> sorted(email.email for email in list_one.getSubscribedAddresses())
     [u'cris.person@example.com']
 
@@ -632,6 +647,8 @@ re-subscribed to that mailing list automatically.  See the section on
 persistence of preferences below for more examples of this.
 
     >>> bart.join(team_two)
+    >>> transaction.commit()
+
     >>> sorted(email.email for email in list_one.getSubscribedAddresses())
     [u'bperson@example.org', u'cris.person@example.com']
 
@@ -669,6 +686,8 @@ When someone is a member of a mailing list through an indirect team, and they
 leave that indirect team, they also get unsubscribed from the mailing list.
 
     >>> cris.leave(team_two)
+    >>> transaction.commit()
+
     >>> sorted(email.email for email in list_one.getSubscribedAddresses())
     [u'bperson@example.org']
 
@@ -709,6 +728,7 @@ more than one subteam.
     >>> list_one.subscribe(gwen)
     >>> list_one.subscribe(hank)
     >>> list_one.subscribe(iona)
+    >>> transaction.commit()
 
     >>> sorted(email.email for email in list_one.getSubscribedAddresses())
     [u'bperson@example.org', u'gwen.person@example.com',
@@ -733,6 +753,7 @@ unsubscribed from the superteam's mailing list.
 
     >>> team_one.setMembershipData(team_five,
     ...     TeamMembershipStatus.DEACTIVATED, salgado)
+    >>> transaction.commit()
 
     >>> sorted(email.email for email in list_one.getSubscribedAddresses())
     [u'bperson@example.org', u'iona.person@example.com']
@@ -784,8 +805,8 @@ list are dropped.
     >>> list_one.deactivate()
     >>> from canonical.launchpad.interfaces import MailingListStatus
     >>> list_one.transitionToStatus(MailingListStatus.INACTIVE)
-    >>> from canonical.launchpad.ftests import sync
-    >>> sync(list_one)
+    >>> transaction.commit()
+
     >>> sorted(email.email for email in list_one.getSubscribedAddresses())
     []
 
@@ -822,6 +843,7 @@ only relevant preference.
     >>> jack = factory.makePersonByName('Jack')
     >>> jack.join(team_six)
     >>> list_six.subscribe(jack)
+    >>> transaction.commit()
 
     >>> sorted(email.email for email in list_six.getSubscribedAddresses())
     [u'jack.person@example.com']
@@ -839,6 +861,8 @@ only relevant preference.
         dirk.person@example.com
 
     >>> jack.leave(team_six)
+    >>> transaction.commit()
+
     >>> sorted(email.email for email in list_six.getSubscribedAddresses())
     []
 
@@ -853,6 +877,8 @@ only relevant preference.
         dirk.person@example.com
 
     >>> jack.join(team_six)
+    >>> transaction.commit()
+
     >>> sorted(email.email for email in list_six.getSubscribedAddresses())
     [u'jack.person@example.com']
 
@@ -877,6 +903,7 @@ their preferred email address.
     >>> kara_alternative.email
     u'kperson@example.org'
     >>> list_six.subscribe(kara, kara_alternative)
+    >>> transaction.commit()
 
     >>> sorted(email.email for email in list_six.getSubscribedAddresses())
     [u'jack.person@example.com', u'kperson@example.org']
@@ -894,6 +921,8 @@ their preferred email address.
         dirk.person@example.com
 
     >>> kara.leave(team_six)
+    >>> transaction.commit()
+
     >>> sorted(email.email for email in list_six.getSubscribedAddresses())
     [u'jack.person@example.com']
 
@@ -910,6 +939,8 @@ their preferred email address.
         dirk.person@example.com
 
     >>> kara.join(team_six)
+    >>> transaction.commit()
+
     >>> sorted(email.email for email in list_six.getSubscribedAddresses())
     [u'jack.person@example.com', u'kperson@example.org']
 
@@ -997,6 +1028,7 @@ changes to her preferred email address.
     >>> address = address_set.getByEmail('kperson@example.org')
     >>> list_six.changeAddress(kara, address)
     >>> kara.setPreferredEmail(address)
+    >>> transaction.commit()
 
     >>> sorted(email.email for email in list_six.getSubscribedAddresses())
     [u'kperson@example.org']
@@ -1092,6 +1124,7 @@ his team membership is approved.
     <security ...MailingListSubscription instance ...>
 
     >>> sam.join(team_seven)
+    >>> transaction.commit()
 
     >>> sorted(email.email for email in list_seven.getSubscribedAddresses())
     [u'samuel.person@example.com']
@@ -1138,6 +1171,7 @@ returned either as recipients or senders.
 
     >>> from zope.security.proxy import removeSecurityProxy
     >>> removeSecurityProxy(list_seven).status = MailingListStatus.INACTIVE
+    >>> transaction.commit()
 
     >>> sorted(email.email for email in list_seven.getSubscribedAddresses())
     []
@@ -1251,6 +1285,7 @@ post to the mailing list, nor will she receive mailing list posts.
     >>> vera = factory.makePersonByName('Vera')
     >>> vera.join(team_nine)
     >>> list_nine.subscribe(vera)
+    >>> transaction.commit()
 
     >>> print sorted(
     ...     email.email for email in list_nine.getSubscribedAddresses())

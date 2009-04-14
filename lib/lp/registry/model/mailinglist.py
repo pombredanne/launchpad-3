@@ -46,7 +46,7 @@ from canonical.launchpad.interfaces.emailaddress import (
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.account import AccountStatus
 from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, MASTER_FLAVOR, SLAVE_FLAVOR)
+    IStoreSelector, MAIN_STORE, SLAVE_FLAVOR)
 from canonical.lazr.interfaces.objectprivacy import IObjectPrivacy
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.interfaces.mailinglist import (
@@ -626,10 +626,7 @@ class MailingListSet:
 
     def getSubscribedAddresses(self, team_names):
         """See `IMailingListSet`."""
-        # This is a read-only query, so the slave is fine.  XXX Except that
-        # the test fails if it uses the SLAVE_FLAVOR, because mailing_list_ids
-        # below is empty.
-        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+        store = getUtility(IStoreSelector).get(MAIN_STORE, SLAVE_FLAVOR)
         # In order to handle the case where the preferred email address is
         # used (i.e. where MailingListSubscription.email_address is NULL), we
         # need to UNION, those using a specific address and those using the
@@ -653,14 +650,14 @@ class MailingListSet:
                 And(Person.name.is_in(team_names),
                     Person.teamowner != None))
             )
-        mailing_list_ids = set(
+        list_ids = set(
             mailing_list.id for mailing_list in store.find(
                 MailingList,
                 MailingList.teamID.is_in(team_ids)))
         # Find all the people who are subscribed with their preferred address.
         preferred = store.using(*tables).find(
             (EmailAddress, MailingListSubscription, TeamParticipation),
-            And(MailingListSubscription.mailing_listID.is_in(mailing_list_ids),
+            And(MailingListSubscription.mailing_listID.is_in(list_ids),
                 TeamParticipation.teamID.is_in(team_ids),
                 MailingList.status != MailingListStatus.INACTIVE,
                 MailingListSubscription.email_addressID == None,
@@ -693,7 +690,7 @@ class MailingListSet:
             )
         explicit = store.using(*tables).find(
             (EmailAddress, MailingList),
-            And(MailingListSubscription.mailing_listID.is_in(mailing_list_ids),
+            And(MailingListSubscription.mailing_listID.is_in(list_ids),
                 TeamParticipation.teamID.is_in(team_ids),
                 MailingList.status != MailingListStatus.INACTIVE,
                 Account.status == AccountStatus.ACTIVE))
@@ -712,10 +709,7 @@ class MailingListSet:
         
     def getSenderAddresses(self, team_names):
         """See `IMailingListSet`."""
-        # This is a read-only query, so the slave is fine.  XXX Except that
-        # the test fails if it uses the SLAVE_FLAVOR, because mailing_list_ids
-        # below is empty.
-        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+        store = getUtility(IStoreSelector).get(MAIN_STORE, SLAVE_FLAVOR)
         # First, we need to find all the members of all the mailing lists for
         # the given teams.  Find all of their validated and preferred email
         # addresses of those team members.  Every one of those email addresses
@@ -764,13 +758,13 @@ class MailingListSet:
             LeftJoin(MessageApproval,
                      MessageApproval.posted_byID == Person.id),
             )
-        mailing_list_ids = set(
+        list_ids = set(
             mailing_list.id for mailing_list in store.find(
                 MailingList,
                 MailingList.teamID.is_in(team_ids)))
         approved_posters = store.using(*tables).find(
             (EmailAddress, Person, MessageApproval),
-            And(MessageApproval.mailing_listID.is_in(mailing_list_ids),
+            And(MessageApproval.mailing_listID.is_in(list_ids),
                 MessageApproval.status.is_in(MESSAGE_APPROVAL_STATUSES),
                 EmailAddress.status.is_in(EMAIL_ADDRESS_STATUSES),
                 Account.status == AccountStatus.ACTIVE,

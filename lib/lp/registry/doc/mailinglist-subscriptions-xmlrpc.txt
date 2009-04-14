@@ -37,7 +37,9 @@ create and populate some teams to demonstrate.
     >>> for person in people:
     ...     person.join(team_one)
     ...     list_one.subscribe(person)
-    >>> import transaction
+
+    # The IMailingListSet APIs use the SLAVE_FLAVOR since they are read-only.
+    # Commit the transaction so that the changes are visible there.
     >>> transaction.commit()
 
 Asking for the membership information for team-one's list returns all the
@@ -82,6 +84,8 @@ at a time.  Mix things up for the fun of it.
     ...         continue
     ...     person.join(team_two)
     ...     list_two.subscribe(person)
+    >>> transaction.commit()
+
     >>> info = mailinglist_api.getMembershipInformation(
     ...     ('team-one', 'team-two'))
     >>> print_info(info)
@@ -178,14 +182,16 @@ standing.
 
     >>> from canonical.launchpad.interfaces import PersonalStanding
     >>> anne.personal_standing = PersonalStanding.POOR
-    >>> flush_database_updates()
+    >>> transaction.commit()
+
     >>> mailinglist_api.inGoodStanding('anne.person@example.com')
     False
 
 Anne makes amends and the Launchpad administrator improves her standing.
 
     >>> anne.personal_standing = PersonalStanding.GOOD
-    >>> flush_database_updates()
+    >>> transaction.commit()
+
     >>> mailinglist_api.inGoodStanding('anne.person@example.com')
     True
 
@@ -193,7 +199,8 @@ It turns out that Anne is a wonderful person!  Her standing is really
 excellent.
 
     >>> anne.personal_standing = PersonalStanding.EXCELLENT
-    >>> flush_database_updates()
+    >>> transaction.commit()
+
     >>> mailinglist_api.inGoodStanding('anne.person@example.com')
     True
 
@@ -266,7 +273,8 @@ Launchpad.
     >>> new_address = emailset.new(
     ...     config.mailman.archive_address, fred,
     ...     EmailAddressStatus.VALIDATED)
-    >>> flush_database_updates()
+    >>> transaction.commit()
+
     >>> mailinglist_api.isRegisteredInLaunchpad(config.mailman.archive_address)
     False
 
@@ -302,7 +310,8 @@ included.
     False
     >>> anne.join(team_three)
     >>> list_three.subscribe(anne)
-    >>> flush_database_updates()
+    >>> transaction.commit()
+
     >>> info = mailinglist_api.getMembershipInformation(
     ...     ('team-one', 'team-two', 'team-three'))
     >>> print_info(info, full=True)
