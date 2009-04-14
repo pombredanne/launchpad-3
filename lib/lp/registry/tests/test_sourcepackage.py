@@ -71,6 +71,17 @@ class TestSourcePackage(TestCaseWithFactory):
         sourcepackage.setBranch(pocket, branch, registrant)
         self.assertEqual(branch, sourcepackage.getBranch(pocket))
 
+    def test_unsetBranch(self):
+        # Setting the official branch for a pocket to 'None' breaks the link
+        # between the branch and pocket.
+        sourcepackage = self.factory.makeSourcePackage()
+        pocket = PackagePublishingPocket.RELEASE
+        registrant = self.factory.makePerson()
+        branch = self.factory.makePackageBranch(sourcepackage=sourcepackage)
+        sourcepackage.setBranch(pocket, branch, registrant)
+        sourcepackage.setBranch(pocket, None, registrant)
+        self.assertIs(None, sourcepackage.getBranch(pocket))
+
     def test_linked_branches(self):
         # ISourcePackage.linked_branches is a mapping of pockets to branches.
         sourcepackage = self.factory.makeSourcePackage()
