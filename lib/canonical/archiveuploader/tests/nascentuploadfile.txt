@@ -128,15 +128,40 @@ filenames:
     >>> from canonical.archiveuploader.utils import (
     ...     re_isadeb, re_issource)
 
-    >>> bin_match = re_isadeb.match('foo-bar_1.0_i386.deb')
-    >>> bin_match.group(0)
+The binary regexp matches 'deb', 'ddeb' and 'udeb' filenames.
+
+    >>> deb_match = re_isadeb.match('foo-bar_1.0_i386.deb')
+    >>> deb_match.group(0)
     'foo-bar_1.0_i386.deb'
-    >>> bin_match.group(1)
+    >>> deb_match.group(1)
     'foo-bar'
-    >>> bin_match.group(2)
+    >>> deb_match.group(2)
     '1.0'
-    >>> bin_match.group(3)
+    >>> deb_match.group(3)
     'i386'
+
+    >>> ddeb_match = re_isadeb.match('foo-bar_1.0_i386.ddeb')
+    >>> ddeb_match.group(0)
+    'foo-bar_1.0_i386.ddeb'
+    >>> ddeb_match.group(1)
+    'foo-bar'
+    >>> ddeb_match.group(2)
+    '1.0'
+    >>> ddeb_match.group(3)
+    'i386'
+
+    >>> udeb_match = re_isadeb.match('foo-bar_1.0_i386.udeb')
+    >>> udeb_match.group(0)
+    'foo-bar_1.0_i386.udeb'
+    >>> udeb_match.group(1)
+    'foo-bar'
+    >>> udeb_match.group(2)
+    '1.0'
+    >>> udeb_match.group(3)
+    'i386'
+
+The source regexp matches 'orig.tar.gz', 'tar.gz', 'diff.gz' and 'dsc'
+filenames.
 
     >>> src_match = re_issource.match('foo_1.0.orig.tar.gz')
     >>> src_match.group(0)
@@ -178,13 +203,16 @@ filenames:
     >>> src_match.group(3)
     'dsc'
 
-And finally a failure:
+And finally some failures:
+
+    >>> re_isadeb.match('foo-bar_1.0_i386.bed') is None
+    True
 
     >>> re_issource.match('foo_1.0.c') is None
     True
 
-However a custom upload is essencially a tarball, so it matches the
-is_source regexp:
+However a custom upload is essencially a tarball, so it also matches
+the is_source regexp:
 
     >>> src_match = re_issource.match('dist-upgrader_1.0.tar.gz')
     >>> src_match.group(0)
