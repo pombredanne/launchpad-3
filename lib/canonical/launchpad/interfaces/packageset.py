@@ -1,14 +1,7 @@
 # Copyright 2008 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0211,E0213
 
-"""Packageset interfaces.
-
-From http://en.wikipedia.org/wiki/Glossary_of_graph_theory:
-
-If v is reachable from u, then u is a predecessor of v and v is a successor
-of u. If there is an arc/edge from u to v, then u is a direct predecessor of
-v, and v is a direct successor of u.
-"""
+"""Packageset interfaces."""
 
 __metaclass__ = type
 
