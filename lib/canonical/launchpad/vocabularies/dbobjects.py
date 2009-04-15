@@ -665,7 +665,7 @@ class ValidPersonOrTeamVocabulary(
                 Person.visibility == PersonVisibility.PRIVATE
                 )
         else:
-            private_query = True
+            private_query = False
         return private_query
 
     def _doSearch(self, text=""):

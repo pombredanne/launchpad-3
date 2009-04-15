@@ -1358,6 +1358,14 @@ The PRIVATE team is not returned for a user who is not part of the team.
      u'otherteam', u'simple-team', u'testing-spanish-team',
      u'ubuntu-team', u'warty-gnome']
 
+The anonymous user will not see the private team either.
+
+    >>> login(ANONYMOUS)
+    >>> sorted(person.name for person in vocab.search('team'))
+    [u'name18', u'name20', u'name21', u'no-team-memberships',
+     u'otherteam', u'simple-team', u'testing-spanish-team',
+     u'ubuntu-team', u'warty-gnome']
+
 Attempting to lookup the team via getTermByToken results in a
 LookupError, the same as if the team didn't exist, which is really
 important to avoid leaking information about private teams to someone
