@@ -1,6 +1,6 @@
 = Package sets =
 
-The `Packageset` table allows the specification of package set. These
+The `Packageset` table allows the specification of a package set. These
 facilitate the grouping of packages for purposes like the control of upload
 permissions, the calculation of build and runtime package dependencies etc.
 
@@ -293,3 +293,13 @@ Likewise for removal:
     Traceback (most recent call last):
     ...
     PackagesetError: Package set: cannot remove data of type 'int'.
+
+An attempt to add cycles to the package set graph also results in a failure:
+
+    >>> mozilla_ps.add((umbrella_ps,))
+    Traceback (most recent call last):
+    ...
+    InternalError: Package set umbrella already includes mozilla.
+    Adding (mozilla -> umbrella) would introduce a cycle in the
+    package set graph (DAG).
+    <BLANKLINE>
