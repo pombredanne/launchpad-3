@@ -82,6 +82,7 @@ from canonical.widgets import (
     LabeledMultiCheckBoxWidget, PlainMultiCheckBoxWidget)
 from canonical.widgets.itemswidgets import (
     LaunchpadDropdownWidget, LaunchpadRadioWidget)
+from canonical.widgets.lazrjs import TextLineEditorWidget
 from canonical.widgets.textwidgets import StrippedTextWidget
 
 
@@ -576,6 +577,12 @@ class ArchiveView(ArchiveSourcePackageListViewBase):
                 canonical_url(self.context.distribution))
             return
         super(ArchiveView, self).initialize()
+
+        self.displayname_edit_widget = TextLineEditorWidget(
+            self.context, 'displayname',
+            canonical_url(self.context, view_name='+edit'),
+            id="displayname", title="Edit this displayname")
+
         self.setupSourcesListEntries()
 
     def setupSourcesListEntries(self):
