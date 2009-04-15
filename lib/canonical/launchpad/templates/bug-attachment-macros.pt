@@ -5,10 +5,10 @@
     metal:define-macro="attachment-form">
 
   <legend style="margin-left: 1em; font-weight: normal;">
-    <span class="fieldRequired">Include an attachment (Optional)</span>
+    <span class="fieldOptional">Include an attachment (Optional)</span>
   </legend>
 
-  <table>
+  <table metal:define-macro="attachment-form-bare">
     <tal:filecontent
         tal:define="widget nocall:view/widgets/filecontent|nothing"
         tal:condition="widget">
