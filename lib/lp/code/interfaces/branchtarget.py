@@ -42,6 +42,8 @@ class IBranchTarget(IPrimaryContext):
         "most-general to most-specific. In a URL, these would normally "
         "appear from left to right.")
 
+    displayname = Attribute("The display name of this branch target.")
+
     default_stacked_on_branch = Reference(
         # Should be an IBranch, but circular imports prevent it.
         schema=Interface,

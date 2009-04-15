@@ -86,6 +86,12 @@ class TestPackageBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
             ubuntu_branches.teamowner)
         self.assertEqual(default_branch, target.default_stacked_on_branch)
 
+    def test_displayname(self):
+        # The display name of a source package target is the display name of
+        # the source package.
+        target = IBranchTarget(self.original)
+        self.assertEqual(self.original.displayname, target.displayname)
+
 
 class TestPersonBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
 
@@ -119,6 +125,11 @@ class TestPersonBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
         # Junk branches are not stacked by default, ever.
         target = IBranchTarget(self.original)
         self.assertIs(None, target.default_stacked_on_branch)
+
+    def test_displayname(self):
+        # The display name of a person branch target is ~$USER/+junk.
+        target = IBranchTarget(self.original)
+        self.assertEqual('~%s/+junk' % self.original.name, target.displayname)
 
 
 class TestProductBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
@@ -174,6 +185,12 @@ class TestProductBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
         branch.mirrorComplete('rev1')
         target = IBranchTarget(self.original)
         self.assertEqual(branch, target.default_stacked_on_branch)
+
+    def test_displayname(self):
+        # The display name of a product branch target is the display name of
+        # the product.
+        target = IBranchTarget(self.original)
+        self.assertEqual(self.original.displayname, target.displayname)
 
 
 class TestCheckDefaultStackedOnBranch(TestCaseWithFactory):
