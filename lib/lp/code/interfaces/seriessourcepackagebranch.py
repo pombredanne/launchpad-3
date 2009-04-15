@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'IFindOfficialBranchLinks',
     'ISeriesSourcePackageBranch',
     'ISeriesSourcePackageBranchSet',
     ]
@@ -42,19 +43,9 @@ class ISeriesSourcePackageBranch(Interface):
         title=_("When the branch was linked to the distribution suite."))
 
 
-class ISeriesSourcePackageBranchSet(Interface):
-    """A set of links from source packages in distribution suites to branches.
-
-    This doesn't really make sense as an interface, but is provided to match
-    the rest of Launchpad.
+class IFindOfficialBranchLinks(Interface):
+    """Find the links for official branches for pockets on source packages.
     """
-
-    def delete(sourcepackage, pocket):
-        """Remove the SeriesSourcePackageBranch for sourcepackage and pocket.
-
-        :param sourcepackage: An `ISourcePackage`.
-        :param pocket: A `PackagePublishingPocket` enum item.
-        """
 
     def findForBranch(branch):
         """Get the links to source packages from a branch.
@@ -68,6 +59,21 @@ class ISeriesSourcePackageBranchSet(Interface):
 
         :param sourcepackage: An `ISourcePackage`.
         :return: An `IResultSet` of `ISeriesSourcePackageBranch` objects.
+        """
+
+
+class ISeriesSourcePackageBranchSet(Interface):
+    """A set of links from source packages in distribution suites to branches.
+
+    This doesn't really make sense as an interface, but is provided to match
+    the rest of Launchpad.
+    """
+
+    def delete(sourcepackage, pocket):
+        """Remove the SeriesSourcePackageBranch for sourcepackage and pocket.
+
+        :param sourcepackage: An `ISourcePackage`.
+        :param pocket: A `PackagePublishingPocket` enum item.
         """
 
     def new(distroseries, pocket, sourcepackagename, branch, registrant,

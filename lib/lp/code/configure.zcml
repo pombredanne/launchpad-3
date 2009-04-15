@@ -280,6 +280,11 @@
         provides="lp.code.interfaces.seriessourcepackagebranch.ISeriesSourcePackageBranchSet">
         <allow
             interface="lp.code.interfaces.seriessourcepackagebranch.ISeriesSourcePackageBranchSet"/>
+        <allow
+            interface="lp.code.interfaces.seriessourcepackagebranch.IFindOfficialBranchLinks"/>
+        <require
+            permission="launchpad.Edit"
+            interface="lp.code.interfaces.seriessourcepackagebranch.ISeriesSourcePackageBranchSet"/>
         <require
             permission="launchpad.Edit"
             interface="lp.code.interfaces.seriessourcepackagebranch.ISeriesSourcePackageBranchSet"/>

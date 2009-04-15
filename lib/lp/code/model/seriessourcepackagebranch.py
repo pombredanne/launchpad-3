@@ -20,7 +20,8 @@ from zope.interface import implements
 from canonical.database.enumcol import DBEnum
 from canonical.launchpad.interfaces.publishing import PackagePublishingPocket
 from lp.code.interfaces.seriessourcepackagebranch import (
-    ISeriesSourcePackageBranch, ISeriesSourcePackageBranchSet)
+    IFindOfficialBranchLinks, ISeriesSourcePackageBranch,
+    ISeriesSourcePackageBranchSet)
 from canonical.launchpad.webapp.interfaces import (
      DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
 
@@ -68,7 +69,7 @@ class SeriesSourcePackageBranch(Storm):
 class SeriesSourcePackageBranchSet:
     """See `ISeriesSourcePackageBranchSet`."""
 
-    implements(ISeriesSourcePackageBranchSet)
+    implements(IFindOfficialBranchLinks, ISeriesSourcePackageBranchSet)
 
     def new(self, distroseries, pocket, sourcepackagename, branch, registrant,
             date_created=None):
