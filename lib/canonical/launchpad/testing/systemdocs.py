@@ -24,6 +24,7 @@ import pprint25
 
 import transaction
 from zope.component import getUtility, getMultiAdapter
+from zope.security.management import endInteraction, newInteraction
 from zope.testing import doctest
 from zope.testing.loggingsupport import Handler
 
@@ -34,6 +35,7 @@ from canonical.launchpad.ftests import ANONYMOUS, login, login_person, logout
 from canonical.launchpad.interfaces import ILaunchBag
 from canonical.launchpad.layers import setFirstLayer
 from canonical.launchpad.testing import LaunchpadObjectFactory
+from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing import reset_logging
@@ -155,7 +157,8 @@ class SpecialOutputChecker(doctest.OutputChecker):
 
 
 def create_view(context, name, form=None, layer=None, server_url=None,
-                method='GET', principal=None, query_string=None, cookie=None):
+                method='GET', principal=None, query_string='', cookie='',
+                path_info='/', current_request=False, **kwargs):
     """Return a view based on the given arguments.
 
     :param context: The context for the view.
@@ -164,18 +167,29 @@ def create_view(context, name, form=None, layer=None, server_url=None,
     :param layer: The layer where the page we are interested in is located.
     :param server_url: The URL from where this request was done.
     :param method: The method used in the request. Defaults to 'GET'.
-    :param principal: The principal for the request, if there is one.
+    :param principal: The principal for the request, default to the
+        unauthenticated principal.
     :param query_string: The query string for the request.
     :patam cookie: The HTTP_COOKIE value for the request.
+    :param path_info: The PATH_INFO value for the request.
+    :param current_request: If True, the request will be set as the current
+        interaction.
+    :param **kwargs: Any other parameter for the request.
     :return: The view class for the given context and the name.
     """
     request = LaunchpadTestRequest(
         form=form, SERVER_URL=server_url, QUERY_STRING=query_string,
-        HTTP_COOKIE=cookie, method=method)
+        HTTP_COOKIE=cookie, method=method, **kwargs)
     if principal is not None:
         request.setPrincipal(principal)
+    else:
+        request.setPrincipal(
+            getUtility(IPlacelessAuthUtility).unauthenticatedPrincipal())
     if layer is not None:
         setFirstLayer(request, layer)
+    if current_request:
+        endInteraction()
+        newInteraction(request)
     return getMultiAdapter((context, request), name=name)
 
 
