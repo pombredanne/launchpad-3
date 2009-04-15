@@ -815,26 +815,21 @@ class ValidTeamVocabulary(ValidPersonOrTeamVocabulary):
                         self.extra_clause)
             result = self.store.using(*tables).find(Person, query)
         else:
-            name_match_query = And(
-                SQL("Person.fti @@ ftq(%s)" % quote(text)),
-                base_query,
-                self.extra_clause,
-                )
+            name_match_query = SQL("Person.fti @@ ftq(%s)" % quote(text))
 
-            # Note that we must use lower(email) LIKE rather than ILIKE
-            # as ILIKE no longer appears to be hitting the index under PG8.0
-            match_pattern = "%s%%" % text
             email_match_query = And(
                 EmailAddress.person == Person.id,
                 StartsWith(Lower(EmailAddress.email), text),
-                base_query,
-                self.extra_clause,
                 )
 
             tables.append(EmailAddress)
 
+            query = And(base_query,
+                        self.extra_clause,
+                        Or(name_match_query, email_match_query),
+                        )
             result = self.store.using(*tables).find(
-                Person, Or(name_match_query, email_match_query))
+                Person, query)
 
         result.config(distinct=True)
         result.order_by(Person.displayname, Person.name)
