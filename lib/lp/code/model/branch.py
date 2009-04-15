@@ -51,6 +51,8 @@ from lp.code.interfaces.branchmergeproposal import (
      BranchMergeProposalStatus, InvalidBranchMergeProposal)
 from lp.code.interfaces.branchpuller import IBranchPuller
 from lp.code.interfaces.branchtarget import IBranchTarget
+from lp.code.interfaces.seriessourcepackagebranch import (
+    ISeriesSourcePackageBranchSet)
 from canonical.launchpad.mailnotification import NotificationRecipientSet
 from lp.registry.interfaces.person import validate_public_person
 from canonical.launchpad.webapp import urlappend
@@ -449,6 +451,10 @@ class Branch(SQLBase):
                     spec_link.destroySelf))
         for series in self.associatedProductSeries():
             alteration_operations.append(ClearSeriesBranch(series, self))
+
+        series_set = getUtility(ISeriesSourcePackageBranchSet)
+        alteration_operations.extend(
+            map(ClearOfficialPackageBranch, series_set.findForBranch(self)))
         if self.code_import is not None:
             deletion_operations.append(DeleteCodeImport(self.code_import))
         return (alteration_operations, deletion_operations)
@@ -791,7 +797,6 @@ class DeletionOperation:
     def __init__(self, affected_object, rationale):
         self.affected_object = affected_object
         self.rationale = rationale
-
     def __call__(self):
         """Perform the deletion operation."""
         raise NotImplementedError(DeletionOperation.__call__)
@@ -832,6 +837,19 @@ class ClearSeriesBranch(DeletionOperation):
         if self.affected_object.branch == self.branch:
             self.affected_object.branch = None
         self.affected_object.syncUpdate()
+
+
+class ClearOfficialPackageBranch(DeletionOperation):
+    """Deletion operation that clears an official package branch."""
+
+    def __init__(self, sspb):
+        DeletionOperation.__init__(
+            self, sspb, _('Branch is officially linked to a source package.'))
+
+    def __call__(self):
+        package = self.affected_object.sourcepackage
+        pocket = self.affected_object.pocket
+        package.setBranch(pocket, None, None)
 
 
 class DeleteCodeImport(DeletionOperation):

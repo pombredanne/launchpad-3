@@ -60,6 +60,10 @@ class SeriesSourcePackageBranch(Storm):
         self.registrant = registrant
         self.date_created = date_created
 
+    @property
+    def sourcepackage(self):
+        return self.distroseries.getSourcePackage(self.sourcepackagename)
+
 
 class SeriesSourcePackageBranchSet:
     """See `ISeriesSourcePackageBranchSet`."""

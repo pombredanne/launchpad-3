@@ -28,6 +28,8 @@ class ISeriesSourcePackageBranch(Interface):
     pocket = Choice(
         title=_("Pocket"), required=True, vocabulary=PackagePublishingPocket)
 
+    sourcepackage = Attribute('The source package')
+
     sourcepackagename = Choice(
         title=_("Package"), required=True, vocabulary='SourcePackageName')
 
