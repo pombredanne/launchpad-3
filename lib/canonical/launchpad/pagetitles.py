@@ -1091,6 +1091,8 @@ product_translators = ContextTitle('Set translation group for %s')
 
 productrelease_add = ContextDisplayName('Publish the release of %s')
 
+productrelease_add_from_series = productrelease_add
+
 productrelease_delete = ContextTitle('Delete %s in Launchpad')
 
 productrelease_file_add = ContextDisplayName('Add a file to %s')

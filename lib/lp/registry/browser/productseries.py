@@ -117,7 +117,8 @@ class ProductSeriesOverviewMenu(ApplicationMenu):
     facet = 'overview'
     links = [
         'edit', 'driver', 'link_branch', 'ubuntupkg',
-        'add_package', 'add_milestone', 'rdf', 'subscribe'
+        'add_package', 'create_milestone', 'create_release',
+        'rdf', 'subscribe'
         ]
 
     @enabled_with_permission('launchpad.Edit')
@@ -145,10 +146,15 @@ class ProductSeriesOverviewMenu(ApplicationMenu):
         return Link('+addpackage', text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
-    def add_milestone(self):
-        text = 'Add milestone'
+    def create_milestone(self):
+        text = 'Create milestone'
         summary = 'Register a new milestone for this series'
         return Link('+addmilestone', text, summary, icon='add')
+
+    @enabled_with_permission('launchpad.Edit')
+    def create_release(self):
+        text = 'Create release'
+        return Link('+addrelease', text, icon='add')
 
     def rdf(self):
         text = 'Download RDF metadata'

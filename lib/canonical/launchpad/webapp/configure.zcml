@@ -435,6 +435,12 @@
         name="fmt"
         />
     <adapter
+        for="canonical.launchpad.interfaces.IProductRelease"
+        provides="zope.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.ProductReleaseFormatterAPI"
+        name="fmt"
+        />
+    <adapter
         for="canonical.launchpad.interfaces.IProductSeries"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.ProductSeriesFormatterAPI"
