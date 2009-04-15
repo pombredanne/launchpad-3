@@ -9,9 +9,6 @@
        interface="canonical.launchpad.interfaces.packageset.IPackagesetView" />
     <require
        permission="launchpad.Edit"
-       set_attributes="description" />
-    <require
-       permission="launchpad.Edit"
        interface="canonical.launchpad.interfaces.packageset.IPackagesetEdit" />
   </class>
  
