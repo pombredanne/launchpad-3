@@ -42,10 +42,4 @@ class TranslationsBranchImportMode(DBEnumeratedType):
         Import all translation template files found in the branch.
         """)
 
-    IMPORT_TRANSLATIONS = DBItem(3, """
-        Import template and translation files.
-
-        Import all translation files found in the branch.
-        """)
-
 

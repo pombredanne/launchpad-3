@@ -158,7 +158,7 @@ class DistroSeriesOverviewMenu(ApplicationMenu):
 
     @enabled_with_permission('launchpad.Edit')
     def add_milestone(self):
-        text = 'Add milestone'
+        text = 'Create milestone'
         summary = 'Register a new milestone for this series'
         return Link('+addmilestone', text, summary, icon='add')
 
