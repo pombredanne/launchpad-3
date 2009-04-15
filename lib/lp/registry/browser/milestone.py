@@ -201,7 +201,7 @@ class MilestoneEditView(LaunchpadEditFormView):
         its productseries. The distribution milestone may change its
         distroseries.
         """
-        names = ['name', 'active', 'dateexpected', 'summary']
+        names = ['name', 'code_name', 'active', 'dateexpected', 'summary']
         if self.context.product is None:
             # This is a distribution milestone.
             names.append('distroseries')
