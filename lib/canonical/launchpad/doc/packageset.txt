@@ -280,7 +280,7 @@ predecessor 'mozilla' as well.
     25 -> language-pack-de
     26 -> iceweasel
 
-Let's see what sources the umbrella and the mozilla package set have in
+Let's see what sources the 'umbrella' and the 'mozilla' package set have in
 common:
 
     >>> print_data(umbrella_ps.sourcesSharedBy(mozilla_ps))
@@ -311,6 +311,24 @@ Again, asking the question the other way around works as well.
     ...     mozilla_ps.sourcesSharedBy(umbrella_ps, direct_inclusion=True))
      16 -> mozilla
     
+How many sources are in the 'mozilla' package set but not in 'umbrella'?
+
+    >>> len(mozilla_ps.sourcesNotSharedBy(umbrella_ps)) == 0
+    True
+
+What sources are included by the 'mozilla' package set but not by 'firefox'?
+
+    >>> print_data(mozilla_ps.sourcesNotSharedBy(firefox_ps))
+     16 -> mozilla
+     18 -> thunderbird
+     25 -> language-pack-de
+
+What sources are *directly* included by 'mozilla' but not by 'firefox'?
+
+    >>> print_data(
+    ...     mozilla_ps.sourcesNotSharedBy(firefox_ps, direct_inclusion=True))
+     16 -> mozilla
+
 
 == Various errors ==
 

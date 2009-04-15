@@ -212,6 +212,33 @@ class Packageset(Storm):
 
     def sourcesNotSharedBy(self, other_package_set, direct_inclusion=False):
         """See `IPackageset`."""
+        if direct_inclusion == False:
+            query = '''
+                SELECT pss_this.sourcepackagename
+                FROM packagesetsources pss_this, 
+                    flatpackagesetinclusion fpsi_this
+                WHERE pss_this.packageset = fpsi_this.child
+                    AND fpsi_this.parent = ?
+                EXCEPT
+                SELECT pss_other.sourcepackagename
+                FROM packagesetsources pss_other, 
+                    flatpackagesetinclusion fpsi_other
+                WHERE pss_other.packageset = fpsi_other.child
+                    AND fpsi_other.parent = ?
+            '''
+        else:
+            query = '''
+                SELECT pss_this.sourcepackagename
+                FROM packagesetsources pss_this WHERE pss_this.packageset = ?
+                EXCEPT
+                SELECT pss_other.sourcepackagename
+                FROM packagesetsources pss_other
+                WHERE pss_other.packageset = ?
+            '''
+        store = IStore(SourcePackageName)
+        spns = SQL(query, (self.id, other_package_set.id))
+        return list(
+            store.find(SourcePackageName, In(SourcePackageName.id, spns)))
 
 
 class PackagesetSet:
