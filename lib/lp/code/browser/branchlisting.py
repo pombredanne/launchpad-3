@@ -47,7 +47,7 @@ from lp.registry.browser.product import (
     ProductDownloadFileMixin, SortSeriesMixin)
 from lp.registry.model.sourcepackage import SourcePackage
 from canonical.launchpad.interfaces.bugbranch import IBugBranchSet
-from canonical.launchpad.interfaces.revision import IRevisionSet
+from lp.code.interfaces.revision import IRevisionSet
 from canonical.launchpad.interfaces.specificationbranch import ISpecificationBranchSet
 from lp.registry.interfaces.productseries import IProductSeriesSet
 from lp.code.interfaces.branch import (

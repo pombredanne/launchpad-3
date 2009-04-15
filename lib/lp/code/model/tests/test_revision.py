@@ -17,10 +17,10 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.sqlbase import cursor
 from lp.registry.model.karma import Karma
-from canonical.launchpad.database.revision import RevisionSet
+from lp.code.model.revision import RevisionSet
 from canonical.launchpad.ftests import login, logout
 from canonical.launchpad.interfaces.lpstorm import IMasterObject
-from canonical.launchpad.interfaces.revision import IRevisionSet
+from lp.code.interfaces.revision import IRevisionSet
 from canonical.launchpad.interfaces.account import AccountStatus
 from lp.code.interfaces.branch import BranchLifecycleStatus
 from lp.code.interfaces.branchlookup import IBranchLookup

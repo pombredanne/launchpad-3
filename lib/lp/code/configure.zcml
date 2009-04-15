@@ -847,4 +847,32 @@
         <allow
             interface="lp.code.interfaces.codeimportevent.ICodeImportEventToken"/>
     </class>
+
+  <class class="canonical.launchpad.database.Revision">
+    <allow interface="canonical.launchpad.interfaces.IRevision"/>
+  </class>
+
+  <class class="canonical.launchpad.database.RevisionAuthor">
+    <allow interface="canonical.launchpad.interfaces.IRevisionAuthor"/>
+  </class>
+
+  <class class="canonical.launchpad.database.RevisionParent">
+    <allow interface="canonical.launchpad.interfaces.IRevisionParent" />
+  </class>
+
+  <class class="canonical.launchpad.database.RevisionProperty">
+    <allow interface="canonical.launchpad.interfaces.IRevisionProperty" />
+  </class>
+
+  <!-- RevisionSet -->
+  <class class="canonical.launchpad.database.RevisionSet">
+    <allow interface="canonical.launchpad.interfaces.IRevisionSet" />
+  </class>
+
+  <securedutility
+      class="canonical.launchpad.database.RevisionSet"
+      provides="canonical.launchpad.interfaces.IRevisionSet" >
+    <allow interface="canonical.launchpad.interfaces.IRevisionSet" />
+  </securedutility>
+
 </configure>

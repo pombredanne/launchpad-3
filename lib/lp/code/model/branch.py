@@ -36,7 +36,7 @@ from lp.code.model.branchmergeproposal import (
 from lp.code.model.branchrevision import BranchRevision
 from lp.code.model.branchsubscription import BranchSubscription
 from canonical.launchpad.database.job import Job
-from canonical.launchpad.database.revision import Revision
+from lp.code.model.revision import Revision
 from lp.code.event.branchmergeproposal import (
     NewBranchMergeProposalEvent)
 from lp.code.interfaces.branch import (

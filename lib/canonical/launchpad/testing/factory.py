@@ -93,7 +93,7 @@ from lp.registry.interfaces.product import (
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.project import IProjectSet
 from canonical.launchpad.interfaces.publishing import PackagePublishingPocket
-from canonical.launchpad.interfaces.revision import IRevisionSet
+from lp.code.interfaces.revision import IRevisionSet
 from canonical.launchpad.interfaces.shipit import (
     IShippingRequestSet, IStandardShipItRequestSet, ShipItFlavour,
     ShippingRequestStatus)

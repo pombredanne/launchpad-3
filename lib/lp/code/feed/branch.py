@@ -30,7 +30,7 @@ from lp.code.interfaces.branchcollection import IAllBranches
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.project import IProject
-from canonical.launchpad.interfaces.revision import IRevisionSet
+from lp.code.interfaces.revision import IRevisionSet
 from canonical.launchpad.webapp import canonical_url, LaunchpadView, urlparse
 
 from canonical.lazr.feed import (

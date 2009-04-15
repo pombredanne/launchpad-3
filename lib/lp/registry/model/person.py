@@ -111,7 +111,7 @@ from canonical.launchpad.interfaces.personnotification import (
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.project import IProject
-from canonical.launchpad.interfaces.revision import IRevisionSet
+from lp.code.interfaces.revision import IRevisionSet
 from lp.registry.interfaces.salesforce import (
     ISalesforceVoucherProxy, VOUCHER_STATUSES)
 from canonical.launchpad.interfaces.specification import (

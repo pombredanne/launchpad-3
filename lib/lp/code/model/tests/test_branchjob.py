@@ -19,7 +19,7 @@ from lp.code.model.branchjob import (
     BranchDiffJob, BranchJob, BranchJobType, RevisionsAddedJob,
     RevisionMailJob, RosettaUploadJob)
 from lp.code.model.branchrevision import BranchRevision
-from canonical.launchpad.database.revision import RevisionSet
+from lp.code.model.revision import RevisionSet
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.testing import verifyObject
 from lp.code.interfaces.branchsubscription import (
