@@ -233,7 +233,7 @@ This should have displayed an error message next to the name field.
     >>> for msg in get_feedback_messages(browser.contents):
     ...     print msg
     There is 1 error.
-    You already have a branch for firefox called main.
+    You already have a branch for Mozilla Firefox called main.
 
 Since we are clearly in a substance-induced state of altered consciousness, we
 will now try to rename this branch in a way that conflicts with an existing
@@ -252,7 +252,7 @@ branch, and changing the product and the branch name at the same time.
     >>> for msg in get_feedback_messages(browser.contents):
     ...     print msg
     There is 1 error.
-    You already have a junk branch called junk.dev.
+    You already have a branch for ~name12/+junk called junk.dev.
 
 Finally, let's try just to change the name of the branch to the name of some
 branch we already own in the same product. So we have tested all the
@@ -267,7 +267,7 @@ combinations of changing name and product that can cause an error.
     >>> for msg in get_feedback_messages(browser.contents):
     ...     print msg
     There is 1 error.
-    You already have a branch for gnome-terminal called 2.6.
+    You already have a branch for GNOME Terminal called 2.6.
 
 If the user enters an invalid product name they will get an error
 message about that, but no error about the branch name since we don't

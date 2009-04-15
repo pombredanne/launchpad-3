@@ -98,6 +98,23 @@
         attribute="__call__"
         />
 
+  <browser:page
+      for="canonical.launchpad.interfaces.launchpad.IOpenIDApplication"
+      layer="canonical.launchpad.layers.OpenIDLayer"
+      class="canonical.launchpad.browser.launchpad.DoesNotExistView"
+      permission="zope.Public"
+      name="+login"
+      />
+
+  <!-- Unauthorized customization for the SSO -->
+  <browser:page
+      for="zope.exceptions.IUnauthorized"
+      layer="canonical.launchpad.layers.OpenIDLayer"
+      name="index.html"
+      permission="zope.Public"
+      class="canonical.launchpad.browser.openidserver.LoginServiceUnauthorizedView"
+      />
+
     <!-- OpenID persistent identity URLs -->
     <class
         class="canonical.launchpad.components.openidserver.OpenIDPersistentIdentity">

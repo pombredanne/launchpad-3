@@ -51,7 +51,7 @@ class MilestoneContextMenu(ContextMenu):
 
     usedfor = IMilestone
 
-    links = ['edit', 'subscribe', 'publish_release', 'view_release']
+    links = ['edit', 'subscribe', 'create_release', 'view_release']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -67,8 +67,8 @@ class MilestoneContextMenu(ContextMenu):
                     icon='edit', enabled=enabled)
 
     @enabled_with_permission('launchpad.Edit')
-    def publish_release(self):
-        text = 'Publish release'
+    def create_release(self):
+        text = 'Create release'
         # Releases only exist for products.
         # A milestone can only have a single product release.
         enabled = (not IProjectMilestone.providedBy(self.context)
@@ -159,7 +159,7 @@ class MilestoneAddView(LaunchpadFormView):
     """A view for creating a new Milestone."""
 
     schema = IMilestone
-    field_names = ['name', 'dateexpected', 'summary']
+    field_names = ['name', 'code_name', 'dateexpected', 'summary']
     label = "Register a new milestone"
 
     custom_widget('dateexpected', DateWidget)
@@ -169,6 +169,7 @@ class MilestoneAddView(LaunchpadFormView):
         """Use the newMilestone method on the context to make a milestone."""
         milestone = self.context.newMilestone(
             name=data.get('name'),
+            code_name=data.get('code_name'),
             dateexpected=data.get('dateexpected'),
             summary=data.get('summary'))
         self.next_url = canonical_url(self.context)
@@ -200,7 +201,7 @@ class MilestoneEditView(LaunchpadEditFormView):
         its productseries. The distribution milestone may change its
         distroseries.
         """
-        names = ['name', 'active', 'dateexpected', 'summary']
+        names = ['name', 'code_name', 'active', 'dateexpected', 'summary']
         if self.context.product is None:
             # This is a distribution milestone.
             names.append('distroseries')
