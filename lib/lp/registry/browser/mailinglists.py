@@ -11,6 +11,7 @@ __all__ = [
 
 
 from cgi import escape
+from operator import itemgetter
 from textwrap import TextWrapper
 from urllib import quote
 
@@ -40,31 +41,39 @@ class MailingListsReviewView(LaunchpadFormView):
 
     @cachedproperty
     def registered_lists(self):
-        """Return a concrete list of mailing lists pending approval.
+        """Return a list of mailing list information dictionaries.
 
-        The context's property of the same name returns a query, which for
-        purposes of rendering in the view needs to be turned into a concrete,
-        sorted list object.
+        The view needs a sorted list of dictionaries of information pertaining
+        to each mailing list pending approval.  The dictionaries have three
+        keys:
 
-        :return: The list of mailing lists pending review.
-        :rtype: security proxy removed mailing lists
+        * the mailing list's team
+        * the mailing list's team's name
+        * the registrant of the mailing list request
+
+        The dictionaries are sorted by team name.
+
+        :return: Information about all the pending mailing list requests.
+        :rtype: list of dictionaries
         """
-        def team_name(mailing_list):
-            return removeSecurityProxy(mailing_list.team).name
-        return sorted(
-            (removeSecurityProxy(mailing_list)
-             for mailing_list in self.context.registered_lists),
-            key=team_name)
+        list_info = []
+        for mailing_list in self.context.registered_lists:
+            list_info.append(dict(
+                team=mailing_list.team,
+                name=removeSecurityProxy(mailing_list.team).name,
+                registrant=mailing_list.registrant,
+                ))
+        return sorted(list_info, key=itemgetter('name'))
 
     @action(_('Submit'), name='submit')
     def submit_action(self, action, data):
         """Process the mailing list review form."""
-        for mailing_list in self.registered_lists:
+        for mailing_list in self.context.registered_lists:
+            naked_team = removeSecurityProxy(mailing_list.team)
             # Find out which disposition the administrator chose for this
             # mailing list.  If there is no data in the form for this mailing
             # list, just treat it as having been deferred.
-            action = self.request.form_ng.getOne(
-                'field.%s' % mailing_list.team.name)
+            action = self.request.form_ng.getOne('field.%s' % naked_team.name)
             # This essentially acts like a switch statement or if/elifs.  It
             # looks the action up in a map of allowed actions, watching out
             # for bogus input.
@@ -77,14 +86,14 @@ class MailingListsReviewView(LaunchpadFormView):
             except KeyError:
                 raise UnexpectedFormData(
                     'Invalid review action for mailing list %s: %s' %
-                    (mailing_list.team.displayname, action))
+                    (naked_team.displayname, action))
             if status is not None:
                 mailing_list.review(self.user, status)
                 self.request.response.addInfoNotification(
                     structured(
                         '<a href="%s">%s</a> mailing list was %s',
-                            canonical_url(mailing_list.team),
-                            mailing_list.team.displayname,
+                            canonical_url(naked_team),
+                            naked_team.displayname,
                             status.title.lower()))
         # Redirect to prevent double posts (and not require
         # flush_database_updates() :)
