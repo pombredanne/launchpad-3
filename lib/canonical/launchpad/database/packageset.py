@@ -16,7 +16,7 @@ from canonical.launchpad.interfaces import IStore
 from canonical.launchpad.interfaces.packageset import (
     IPackageset, IPackagesetSet, PackagesetError)
 from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR, MASTER_FLAVOR)
+    IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
 
 
 def _extract_type_name(value):
@@ -39,23 +39,6 @@ class Packageset(Storm):
     name = Unicode(name='name', allow_none=False)
     description = Unicode(name='description', allow_none=False)
 
-    def _add_or_remove(self, data, types_and_handlers, action_name):
-        if len(data) <= 0:
-            return
-
-        datum = data[0]
-        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
-
-        for data_type, handler in types_and_handlers.iteritems():
-            if isinstance(datum, data_type):
-                handler(data, store)
-                break
-        else:
-            # This is an unsupported data type.
-            raise(
-                PackagesetError("Package set: cannot %s data of type '%s'."
-                % (action_name, _extract_type_name(datum))))
-
     def add(self, data):
         """See `IPackageset`."""
         handlers = dict((
@@ -69,6 +52,35 @@ class Packageset(Storm):
             (SourcePackageName, self._removeSourcePackageNames),
             (Packageset, self._removeDirectSuccessors)))
         self._add_or_remove(data, handlers, 'remove')
+
+    def _add_or_remove(self, data, types_and_handlers, action_name):
+        """Add or remove source package names or package sets from this one.
+
+        :param data: an iterable with `SourcePackageName` XOR `Packageset`
+            instances
+        :param types_and_handlers: a dict whose keys are valid types for
+            the 'data' passed and the values are the handlers to invoke
+            respectively.
+        :param action_name: needed for the exception text; 'add' or 'remove'.
+        """
+        if len(data) <= 0:
+            return
+
+        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+
+        datum = data[0]
+        for data_type, handler in types_and_handlers.iteritems():
+            if isinstance(datum, data_type):
+                # The type matches, call the corresponding handler and
+                # exit the loop.
+                handler(data, store)
+                break
+        else:
+            # The loop was not exited via a 'break'. This must be an
+            # unsupported data type.
+            raise(
+                PackagesetError("Package set: cannot %s data of type '%s'."
+                % (action_name, _extract_type_name(datum))))
 
     def _addSourcePackageNames(self, spns, store):
         """Add the given source package names to the package set.
@@ -132,7 +144,7 @@ class Packageset(Storm):
             FROM packagesetsources pss, flatpackagesetinclusion fpsi
             WHERE pss.packageset = fpsi.child AND fpsi.parent = ?
         '''
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        store = IStore(SourcePackageName)
         spns = SQL(spn_query, (self.id,))
         return list(
             store.find(SourcePackageName, In(SourcePackageName.id, spns)))
@@ -147,7 +159,7 @@ class Packageset(Storm):
             SELECT fpsi.parent FROM flatpackagesetinclusion fpsi
             WHERE fpsi.child = ? AND fpsi.parent != ?
         '''
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        store = IStore(Packageset)
         predecessors = SQL(query, (self.id, self.id))
         return list(store.find(Packageset, In(Packageset.id, predecessors)))
 
@@ -157,7 +169,7 @@ class Packageset(Storm):
         query = '''
             SELECT psi.parent FROM packagesetinclusion psi WHERE psi.child = ?
         '''
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        store = IStore(Packageset)
         predecessors = SQL(query, (self.id, ))
         return list(store.find(Packageset, In(Packageset.id, predecessors)))
 
@@ -171,7 +183,7 @@ class Packageset(Storm):
             SELECT fpsi.child FROM flatpackagesetinclusion fpsi
             WHERE fpsi.parent = ? AND fpsi.child != ?
         '''
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        store = IStore(Packageset)
         successors = SQL(query, (self.id, self.id))
         return list(store.find(Packageset, In(Packageset.id, successors)))
 
@@ -181,7 +193,7 @@ class Packageset(Storm):
         query = '''
             SELECT psi.child FROM packagesetinclusion psi WHERE psi.parent = ?
         '''
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        store = IStore(Packageset)
         successors = SQL(query, (self.id, ))
         return list(store.find(Packageset, In(Packageset.id, successors)))
 
@@ -192,7 +204,7 @@ class PackagesetSet:
 
     def new(self, name, description, owner):
         """See `IPackagesetSet`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
         packageset = Packageset()
         packageset.name = name
         packageset.description = description
@@ -202,10 +214,10 @@ class PackagesetSet:
 
     def getByName(self, name):
         """See `IPackagesetSet`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        store = IStore(Packageset)
         return store.find(Packageset, Packageset.name == name).one()
 
     def getByOwner(self, owner):
         """See `IPackagesetSet`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        store = IStore(Packageset)
         return store.find(Packageset, Packageset.owner == owner)
