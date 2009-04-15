@@ -64,7 +64,7 @@ First associate *all* source package names with the umbrella package set.
 
     >>> all_spns = store.find(SourcePackageName)
     >>> umbrella_ps = removeSecurityProxy(umbrella_ps)
-    >>> umbrella_ps.addSourcePackageNames(all_spns)
+    >>> umbrella_ps.add(list(all_spns))
 
 Let's see what we got:
 
@@ -74,7 +74,7 @@ Let's see what we got:
     >>> def print_data(iterable):
     ...     for datum in sort_by_id(iterable):
     ...          print('%3d -> %s' % (datum.id, datum.name))
-    >>> umbrella_spns = list(umbrella_ps.getDirectSourcePackageNames())
+    >>> umbrella_spns = umbrella_ps.sources_included_directly
     >>> print_data(umbrella_spns)
      1 -> mozilla-firefox
      9 -> evolution
@@ -100,36 +100,36 @@ set:
     >>> kernel_ps = removeSecurityProxy(kernel_ps)
     >>> kernel_spns = store.find(
     ...     SourcePackageName, SourcePackageName.name.like('li%'))
-    >>> kernel_ps.addSourcePackageNames(kernel_spns)
-    >>> kernel_spns = list(kernel_ps.getDirectSourcePackageNames())
+    >>> kernel_ps.add(list(kernel_spns))
+    >>> kernel_spns = kernel_ps.sources_included_directly
     >>> print_data(kernel_spns)
     21 -> libstdc++
     22 -> linux-source-2.6.15
 
 Adding source package names to a package set repeatedly has no effect.
 
-    >>> umbrella_ps.addSourcePackageNames(kernel_spns)
-    >>> umbrella_spns2 = umbrella_ps.getDirectSourcePackageNames()
+    >>> umbrella_ps.add((kernel_spns))
+    >>> umbrella_spns2 = umbrella_ps.sources_included_directly
     >>> sort_by_id(umbrella_spns) == sort_by_id(umbrella_spns2)
     True
 
 Removing source package names is easy.
 
-    >>> umbrella_ps.removeSourcePackageNames(kernel_spns)
-    >>> reduced = list(umbrella_ps.getDirectSourcePackageNames())
+    >>> umbrella_ps.remove(list(kernel_spns))
+    >>> reduced = umbrella_ps.sources_included_directly
     >>> sort_by_id(umbrella_spns) == sort_by_id(reduced + kernel_spns)
     True
 
 Trying to remove source package names that are *not* associated with a
 package set from the latter has no effect.
 
-    >>> umbrella_ps.removeSourcePackageNames(kernel_spns)
-    >>> sort_by_id(reduced) == sort_by_id(umbrella_ps.getDirectSourcePackageNames())
+    >>> umbrella_ps.remove(list(kernel_spns))
+    >>> sort_by_id(reduced) == sort_by_id(umbrella_ps.sources_included_directly)
     True
 
 Add the removed source package names back to 'umbrella'.
 
-    >>> umbrella_ps.addSourcePackageNames(kernel_spns)
+    >>> umbrella_ps.add(list(kernel_spns))
 
 
 == Package set hierarchies ==
@@ -153,16 +153,14 @@ We need more package sets to play with however.
 
 Now we can set up the package set hierarchy.
 
-    >>> umbrella_ps.addDirectSuccessor(gnome_ps)
-    >>> mozilla_ps.addDirectSuccessor(firefox_ps)
-    >>> mozilla_ps.addDirectSuccessor(thunderbird_ps)
-    >>> mozilla_ps.addDirectSuccessor(languagepack_ps)
-    >>> umbrella_ps.addDirectSuccessor(mozilla_ps)
-    >>> gnome_ps.addDirectSuccessor(languagepack_ps)
+    >>> umbrella_ps.add((gnome_ps,))
+    >>> mozilla_ps.add((firefox_ps, thunderbird_ps, languagepack_ps))
+    >>> umbrella_ps.add((mozilla_ps,))
+    >>> gnome_ps.add((languagepack_ps,))
 
 The 'umbrella' package set has two *direct* successors..
 
-    >>> print_data(umbrella_ps.getDirectSuccessors())
+    >>> print_data(umbrella_ps.sets_included_directly)
      3 -> gnome
      4 -> mozilla
 
@@ -170,7 +168,7 @@ The 'umbrella' package set has two *direct* successors..
 sets are included via 'mozilla' whereas the 'languagepack' package set comes
 in via 'gnome' and/or 'mozilla'.
 
-    >>> u_successors = umbrella_ps.getSuccessors()
+    >>> u_successors = umbrella_ps.sets_included
     >>> print_data(u_successors)
      3 -> gnome
      4 -> mozilla
@@ -180,14 +178,14 @@ in via 'gnome' and/or 'mozilla'.
 
 These are the *direct* predecessors of the 'languagepack' package set.
 
-    >>> print_data(languagepack_ps.getDirectPredecessors())
+    >>> print_data(languagepack_ps.sets_included_directly_by)
      3 -> gnome
      4 -> mozilla
 
 These are *all* predecessors of the 'languagepack' package set. Please not
 that the 'umbrella' package set is listed as well.
 
-    >>> print_data(languagepack_ps.getPredecessors())
+    >>> print_data(languagepack_ps.sets_included_by)
      1 -> umbrella
      3 -> gnome
      4 -> mozilla
@@ -195,24 +193,24 @@ that the 'umbrella' package set is listed as well.
 When 'mozilla' stops including 'languagepack' it is still included by
 'umbrella' (via the 'gnome' package set).
 
-    >>> mozilla_ps.removeDirectSuccessor(languagepack_ps)
-    >>> print_data(languagepack_ps.getDirectPredecessors())
+    >>> mozilla_ps.remove((languagepack_ps,))
+    >>> print_data(languagepack_ps.sets_included_directly_by)
      3 -> gnome
-    >>> print_data(languagepack_ps.getPredecessors())
+    >>> print_data(languagepack_ps.sets_included_by)
      1 -> umbrella
      3 -> gnome
 
 The 'umbrella' successors are still the same ('languagepack' is still
 included via 'gnome').
 
-    >>> sort_by_id(u_successors) == sort_by_id(umbrella_ps.getSuccessors())
+    >>> sort_by_id(u_successors) == sort_by_id(umbrella_ps.sets_included)
     True
 
 Removing direct successors is pretty tolerant i.e. if you try to remove 'Q'
 from 'P' and 'Q' is *not* a *direct* successor of 'P' nothing will happen.
 
-    >>> umbrella_ps.removeDirectSuccessor(languagepack_ps)
-    >>> sort_by_id(u_successors) == sort_by_id(umbrella_ps.getSuccessors())
+    >>> umbrella_ps.remove((languagepack_ps,))
+    >>> sort_by_id(u_successors) == sort_by_id(umbrella_ps.sets_included)
     True
 
 == Package set hierarchies and source names ==
@@ -220,24 +218,24 @@ from 'P' and 'Q' is *not* a *direct* successor of 'P' nothing will happen.
 In order to demonstrate how included package sets play together
 with source package names we'll "populate" the former.
 
-    >>> mozilla_ps.addSourcePackageNames(
-    ... store.find(SourcePackageName, SourcePackageName.name.like('moz%a')))
-    >>> print_data(mozilla_ps.getDirectSourcePackageNames())
+    >>> def populate(packageset, pattern):
+    ...     rs = store.find(
+    ...         SourcePackageName, SourcePackageName.name.like(pattern))
+    ...     packageset.add(list(rs))
+
+    >>> populate(mozilla_ps, 'moz%a')
+    >>> print_data(mozilla_ps.sources_included_directly)
     16 -> mozilla
 
-    >>> firefox_ps.addSourcePackageNames(
-    ... store.find(SourcePackageName, SourcePackageName.name.like('%fire%')))
-    >>> firefox_ps.addSourcePackageNames(
-    ... store.find(SourcePackageName, SourcePackageName.name.like('%ice%')))
-    >>> print_data(firefox_ps.getDirectSourcePackageNames())
+    >>> populate(firefox_ps, '%fire%')
+    >>> populate(firefox_ps, '%ice%')
+    >>> print_data(firefox_ps.sources_included_directly)
      1 -> mozilla-firefox
     26 -> iceweasel
 
-    >>> thunderbird_ps.addSourcePackageNames(
-    ... store.find(SourcePackageName, SourcePackageName.name.like('%thunder%')))
-    >>> thunderbird_ps.addSourcePackageNames(
-    ... store.find(SourcePackageName, SourcePackageName.name.like('%ice%')))
-    >>> print_data(thunderbird_ps.getDirectSourcePackageNames())
+    >>> populate(thunderbird_ps , '%thunder%')
+    >>> populate(thunderbird_ps , '%ice%')
+    >>> print_data(thunderbird_ps.sources_included_directly)
     18 -> thunderbird
     26 -> iceweasel
 
@@ -248,7 +246,7 @@ associated with we see
       with but also
     * the union set of source package names of its successor package sets
 
-    >>> print_data(mozilla_ps.getSourcePackageNames())
+    >>> print_data(mozilla_ps.sources_included)
      1 -> mozilla-firefox
     16 -> mozilla
     18 -> thunderbird
@@ -257,17 +255,16 @@ associated with we see
 We extend the package set hierarchy by including 'languagepack' into
 'thunderbird' ..
 
-    >>> languagepack_ps.addSourcePackageNames(
-    ... store.find(SourcePackageName, SourcePackageName.name.like('lang%')))
-    >>> thunderbird_ps.addDirectSuccessor(languagepack_ps)
+    >>> populate(languagepack_ps , 'lang%')
+    >>> thunderbird_ps.add((languagepack_ps,))
 
 .. and see that the 'thunderbird' package set is (indirectly) associated
 with the 'language-pack-de' source package name.
 
-    >>> print_data(thunderbird_ps.getDirectSourcePackageNames())
+    >>> print_data(thunderbird_ps.sources_included_directly)
     18 -> thunderbird
     26 -> iceweasel
-    >>> print_data(thunderbird_ps.getSourcePackageNames())
+    >>> print_data(thunderbird_ps.sources_included)
     18 -> thunderbird
     25 -> language-pack-de
     26 -> iceweasel
@@ -275,7 +272,7 @@ with the 'language-pack-de' source package name.
 Furthermore, the 'language-pack-de' source package name is picked up by its
 predecessor 'mozilla' as well.
 
-    >>> print_data(mozilla_ps.getSourcePackageNames())
+    >>> print_data(mozilla_ps.sources_included)
      1 -> mozilla-firefox
     16 -> mozilla
     18 -> thunderbird

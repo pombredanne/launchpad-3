@@ -15,6 +15,7 @@ __metaclass__ = type
 __all__ = [
     'IPackageset',
     'IPackagesetSet',
+    'PackagesetError',
     ]
 
 from zope.interface import Interface
@@ -24,6 +25,14 @@ from canonical.launchpad import _
 from lp.registry.interfaces.person import IPerson
 from canonical.launchpad.validators.name import name_validator
 from lazr.restful.fields import Reference
+
+
+class PackagesetError(Exception):
+    '''Raised upon the attempt to add invalid data to a package set.
+
+    Only source package names or other package sets can be added at
+    present.
+    '''
 
 
 class IPackageset(Interface):
@@ -47,19 +56,30 @@ class IPackageset(Interface):
         title=_("Description"), required=True, readonly=True,
         description=_("The description for the package set at hand."))
 
-    def addSourcePackageNames(spns):
-        """Add the passed `SourcePackageName` instances to the package set.
+    def add(data):
+        """Add source package names or other package sets to this one.
 
-        :param spns: an iterable with `SourcePackageName` instances
+        Any passed `SourcePackageName` or `Packageset` instances will become
+        *directly* associated with the package set at hand.
+
+        This function is idempotent in the sense that entities that are
+        already directly associated with a package set will be ignored.
+
+        :param data: an iterable with `SourcePackageName` XOR `Packageset`
+            instances
         """
 
-    def removeSourcePackageNames(spns):
-        """Remove the passed source package names from the package set.
+    def remove(data):
+        """Remove source package names or other package sets from this one.
 
-        :param spns: an iterable with `SourcePackageName` instances
+        Only source package names or package subsets *directly* included by
+        this package set can be removed. Any others will be ignored.
+
+        :param data: an iterable with `SourcePackageName` XOR `Packageset`
+            instances
         """
 
-    def getDirectSourcePackageNames():
+    def sources_included_directly():
         """Get the source names *directly* associated with this package set.
 
         This method only returns the source package names that are directly
@@ -70,7 +90,7 @@ class IPackageset(Interface):
             instances.
         """
 
-    def getSourcePackageNames():
+    def sources_included():
         """Get all source names associated with this package set.
 
         This method returns the source package names that are directly
@@ -81,25 +101,7 @@ class IPackageset(Interface):
             instances.
         """
 
-    def addDirectSuccessor(package_set):
-        """Add the passed package set as a direct successor.
-
-        The passed `Packageset` instance will become a *direct* subset of
-        the package set at hand.
-
-        :param package_set: the child `Packageset` instance to include.
-        """
-
-    def removeDirectSuccessor(package_set):
-        """Remove the passed package set as a director successor.
-
-        If the passed `Packageset` instance is *directly* included by the
-        package set at hand it will be removed as a direct successor.
-
-        :param package_set: the direct successor to remove.
-        """
-
-    def getPredecessors():
+    def sets_included_by():
         """Get all package sets that include this one.
         
         Return all package sets that directly or indirectly include this one.
@@ -108,14 +110,14 @@ class IPackageset(Interface):
             instances.
         """
 
-    def getDirectPredecessors():
+    def sets_included_directly_by():
         """Get all package sets that *directly* include this one.
         
         :return: A (potentially empty) result set of `IPackageset`
             instances.
         """
 
-    def getSuccessors():
+    def sets_included():
         """Get all package sets that are included by this one.
         
         Return all package sets that are directly or indirectly
@@ -125,7 +127,7 @@ class IPackageset(Interface):
             instances.
         """
 
-    def getDirectSuccessors():
+    def sets_included_directly():
         """Get all package sets that are *directly* included by this one.
         
         :return: A (potentially empty) result set of `IPackageset`
