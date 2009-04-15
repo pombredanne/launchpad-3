@@ -300,12 +300,19 @@ by any user.
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.code.interfaces.branchsubscription import (
+    ...     BranchSubscriptionNotificationLevel, BranchSubscriptionDiffSize,
+    ...     CodeReviewNotificationLevel)
     >>> login('foo.bar@canonical.com')
     >>> sample_person = getUtility(IPersonSet).getByName('name12')
     >>> foogoo = factory.makeProduct(
     ...     name='foogoo', owner=sample_person)
     >>> foogoo_svn = factory.makeImportBranch(
     ...     name='foogoo-svn', product=foogoo, owner=sample_person)
+    >>> foogoo_svn.subscribe(sample_person,
+    ...     BranchSubscriptionNotificationLevel.ATTRIBUTEONLY,
+    ...     BranchSubscriptionDiffSize.NODIFF,
+    ...     CodeReviewNotificationLevel.NOEMAIL)
     >>> logout()
 
     >>> nopriv_browser = setupBrowser(auth='Basic no-priv@canonical.com:test')
@@ -317,6 +324,8 @@ by any user.
 There is no whiteboard section shown if there is no whiteboard value
 set.
 
+    >>> # Reset the stub emails.
+    >>> stub.test_emails = []
     >>> print whiteboard_tag
     None
 
@@ -330,6 +339,29 @@ set.
     ...     nopriv_browser.contents, 'branch-whiteboard-value')
     >>> print extract_text(whiteboard_tag)
     New whiteboard value
+
+Even though there are no subscribers, the owner of the branch is notified
+that someone else has modified the details of the branch.
+
+    >>> len(stub.test_emails)
+    1
+    >>> print stub.test_emails[0][2]
+    Content-Type: ...
+    ...
+    To: Sample Person <test@canonical.com>
+    From: No Privileges Person <no-priv@canonical.com>
+    Subject: [Branch ~name12/gnome-terminal/main] GNOME Terminal Mainline
+    ...
+    Whiteboard changed to:
+    <BLANKLINE>
+    New whiteboard value
+    <BLANKLINE>
+    --
+    GNOME Terminal Mainline
+    http://code.launchpad.dev/~name12/gnome-terminal/main
+    <BLANKLINE>
+    You are getting this email as you are the owner of the branch and someone h=
+    as edited the details.
 
 
 == Changing the branch owner ==
@@ -394,11 +426,3 @@ to any valid person or team.
     >>> admin_browser.getControl('Change Branch').click()
     >>> print admin_browser.url
     http://code.launchpad.dev/~sabdfl/firefox/main
-
-
-
->>> #whiteboard_tag = find_tag_by_id(contents, 'branch-whiteboard-value')
->>> #print extract_text(whiteboard_tag)
-The brave shall prevail. Ka'plah!
-
-
