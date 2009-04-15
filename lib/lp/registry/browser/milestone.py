@@ -32,6 +32,7 @@ from canonical.launchpad.webapp import (
 
 from canonical.widgets import DateWidget
 
+from lp.registry.browser.product import ProductDownloadFileMixin
 
 class MilestoneSetNavigation(GetitemNavigation):
 
@@ -97,7 +98,7 @@ class MilestoneOverviewNavigationMenu(NavigationMenu):
     links = ()
 
 
-class MilestoneView(LaunchpadView):
+class MilestoneView(LaunchpadView, ProductDownloadFileMixin):
 
     def __init__(self, context, request):
         """See `LaunchpadView`.
@@ -106,8 +107,8 @@ class MilestoneView(LaunchpadView):
         and release (if it exists) are accessible are attributes. The context
         attribute will always be the milestone.
 
-        :param context: `IMilestone` or `IProductRelease`
-        :param request: `ILaunchpadRequest`
+        :param context: `IMilestone` or `IProductRelease`.
+        :param request: `ILaunchpadRequest`.
         """
         super(LaunchpadView, self).__init__(context, request)
         if IMilestone.providedBy(context):

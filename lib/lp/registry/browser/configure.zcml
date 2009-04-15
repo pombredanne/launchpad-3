@@ -2945,8 +2945,8 @@
         facet="overview"
         permission="zope.Public"
         name="+index"
-        class="lp.registry.browser.productrelease.ProductReleaseView"
-        template="../templates/productrelease-index.pt"/>
+        class="lp.registry.browser.milestone.MilestoneView"
+        template="../templates/milestone-index.pt"/>
     <browser:page
         for="lp.registry.interfaces.productrelease.IProductRelease"
         class="lp.registry.browser.productrelease.ProductReleaseRdfView"
