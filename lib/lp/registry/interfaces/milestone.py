@@ -77,6 +77,11 @@ class IMilestone(IHasBugs):
             description=_(
                 "Only letters, numbers, and simple punctuation are allowed."),
             constraint=name_validator))
+    code_name = exported(
+        TextLine(
+            title=_('Code name'),
+            description=_("An alternative to the name attribute."),
+            required=False))
     product = Choice(
         title=_("Project"),
         description=_("The project to which this milestone is associated"),
@@ -128,8 +133,6 @@ class IMilestone(IHasBugs):
                  readonly=True))
     specifications = Attribute("A list of the specifications targeted to "
         "this milestone.")
-
-    code_name = Attribute("An alternative to the name attribute.")
 
     product_release = Reference(
         schema=IProductRelease,

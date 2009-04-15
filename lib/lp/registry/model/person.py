@@ -11,12 +11,14 @@ __all__ = [
     'IrcIDSet',
     'JabberID',
     'JabberIDSet',
+    'JoinTeamEvent',
     'Owner',
     'Person',
     'PersonLanguage',
     'PersonSet',
     'SSHKey',
     'SSHKeySet',
+    'TeamInvitationEvent',
     'ValidPersonCache',
     'WikiName',
     'WikiNameSet']
@@ -63,8 +65,8 @@ from canonical.launchpad.database.oauth import (
 from lp.registry.model.personlocation import PersonLocation
 from canonical.launchpad.database.structuralsubscription import (
     StructuralSubscription)
-from lp.registry.event.karma import KarmaAssignedEvent
-from lp.registry.event.team import JoinTeamEvent, TeamInvitationEvent
+from canonical.launchpad.event.interfaces import (
+    IJoinTeamEvent, ITeamInvitationEvent)
 from canonical.launchpad.helpers import (
     get_contact_email_addresses, get_email_template, shortlist)
 
@@ -131,7 +133,7 @@ from canonical.launchpad.database.emailaddress import (
 from lp.registry.model.karma import KarmaCache, KarmaTotalCache
 from canonical.launchpad.database.logintoken import LoginToken
 from lp.registry.model.pillar import PillarName
-from lp.registry.model.karma import KarmaAction, Karma
+from lp.registry.model.karma import KarmaAction, KarmaAssignedEvent, Karma
 from lp.registry.model.mentoringoffer import MentoringOffer
 from canonical.launchpad.database.sourcepackagerelease import (
     SourcePackageRelease)
@@ -145,6 +147,26 @@ from lp.registry.model.teammembership import (
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.validators.name import sanitize_name, valid_name
 from lp.registry.interfaces.person import validate_public_person
+
+
+class JoinTeamEvent:
+    """See `IJoinTeamEvent`."""
+
+    implements(IJoinTeamEvent)
+
+    def __init__(self, person, team):
+        self.person = person
+        self.team = team
+
+
+class TeamInvitationEvent:
+    """See `IJoinTeamEvent`."""
+
+    implements(ITeamInvitationEvent)
+
+    def __init__(self, member, team):
+        self.member = member
+        self.team = team
 
 
 class ValidPersonCache(SQLBase):

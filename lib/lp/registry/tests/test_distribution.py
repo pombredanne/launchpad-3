@@ -6,7 +6,7 @@ __metaclass__ = type
 
 import unittest
 
-from lp.registry.model.tests.test_distroseries import (
+from lp.registry.tests.test_distroseries import (
     TestDistroSeriesCurrentSourceReleases)
 from canonical.launchpad.interfaces.distributionsourcepackagerelease import (
     IDistributionSourcePackageRelease)
