@@ -285,11 +285,11 @@ name or package set:
     >>> mozilla_ps.add('This will fail'.split())
     Traceback (most recent call last):
     ...
-    PackagesetError: Don't know how to add a 'str' to a package set.
+    PackagesetError: Package set: cannot add data of type 'str'.
 
 Likewise for removal:
 
     >>> mozilla_ps.remove(range(10))
     Traceback (most recent call last):
     ...
-    PackagesetError: Don't know how to remove a 'int' from a package set.
+    PackagesetError: Package set: cannot remove data of type 'int'.

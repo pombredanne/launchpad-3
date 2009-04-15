@@ -12,10 +12,11 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from lp.registry.model.sourcepackagename import SourcePackageName
+from canonical.launchpad.interfaces import IStore
 from canonical.launchpad.interfaces.packageset import (
     IPackageset, IPackagesetSet, PackagesetError)
 from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
+    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR, MASTER_FLAVOR)
 
 
 def _extract_type_name(value):
@@ -38,47 +39,41 @@ class Packageset(Storm):
     name = Unicode(name='name', allow_none=False)
     description = Unicode(name='description', allow_none=False)
 
-    def add(self, data):
-        """See `IPackageset`."""
+    def _add_or_remove(self, data, types_and_handlers, action_name):
         if len(data) <= 0:
             return
 
         datum = data[0]
-        if isinstance(datum, SourcePackageName):
-            # We are supposed to add source package names.
-            self._addSourcePackageNames(data)
-        elif isinstance(datum, Packageset):
-            # We are supposed to add other package sets.
-            self._addDirectSuccessors(data)
+        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+
+        for data_type, handler in types_and_handlers.iteritems():
+            if isinstance(datum, data_type):
+                handler(data, store)
+                break
         else:
             # This is an unsupported data type.
             raise(
-                PackagesetError("Don't know how to add a '%s' to a package "
-                "set." % _extract_type_name(datum)))
+                PackagesetError("Package set: cannot %s data of type '%s'."
+                % (action_name, _extract_type_name(datum))))
+
+    def add(self, data):
+        """See `IPackageset`."""
+        handlers = dict((
+            (SourcePackageName, self._addSourcePackageNames),
+            (Packageset, self._addDirectSuccessors)))
+        self._add_or_remove(data, handlers, 'add')
 
     def remove(self, data):
         """See `IPackageset`."""
-        if len(data) <= 0:
-            return
+        handlers = dict((
+            (SourcePackageName, self._removeSourcePackageNames),
+            (Packageset, self._removeDirectSuccessors)))
+        self._add_or_remove(data, handlers, 'remove')
 
-        datum = data[0]
-        if isinstance(datum, SourcePackageName):
-            # We are supposed to remove source package names.
-            self._removeSourcePackageNames(data)
-        elif isinstance(datum, Packageset):
-            # We are supposed to remove other package sets.
-            self._removeDirectSuccessors(data)
-        else:
-            # This is an unsupported data type.
-            raise(
-                PackagesetError("Don't know how to remove a '%s' from a "
-                "package set." % _extract_type_name(datum)))
-
-    def _addSourcePackageNames(self, spns):
+    def _addSourcePackageNames(self, spns, store):
         """Add the given source package names to the package set.
 
         Souce package names already *directly* associated are ignored."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         query = '''
             INSERT INTO packagesetsources(packageset, sourcepackagename) (
                 SELECT ? AS packageset, spn.id AS sourcepackagename
@@ -89,18 +84,16 @@ class Packageset(Storm):
         ''' % ','.join(str(spn.id) for spn in spns)
         store.execute(query, (self.id, self.id), noresult=True)
 
-    def _removeSourcePackageNames(self, spns):
+    def _removeSourcePackageNames(self, spns, store):
         """Remove the given source package names from the package set."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         query = '''
             DELETE FROM packagesetsources
             WHERE packageset = ? AND sourcepackagename IN (%s)
         ''' % ','.join(str(spn.id) for spn in spns)
         store.execute(query, (self.id,), noresult=True)
 
-    def _addDirectSuccessors(self, packagesets):
+    def _addDirectSuccessors(self, packagesets, store):
         """Add the given package sets as directly included subsets."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         adsq = '''
             INSERT INTO packagesetinclusion(parent, child) (
                 SELECT ? AS parent, cps.id AS child
@@ -111,9 +104,8 @@ class Packageset(Storm):
         ''' % ','.join(str(packageset.id) for packageset in packagesets)
         store.execute(adsq, (self.id, self.id), noresult=True)
 
-    def _removeDirectSuccessors(self, packagesets):
+    def _removeDirectSuccessors(self, packagesets, store):
         """Remove the given package sets as directly included subsets."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         rdsq = '''
             DELETE FROM packagesetinclusion
             WHERE parent = ? AND child IN (%s)
@@ -127,7 +119,7 @@ class Packageset(Storm):
             SELECT pss.sourcepackagename FROM packagesetsources pss
             WHERE pss.packageset = ?
         '''
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        store = IStore(SourcePackageName)
         spns = SQL(spn_query, (self.id,))
         return list(
             store.find(SourcePackageName, In(SourcePackageName.id, spns)))
