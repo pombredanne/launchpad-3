@@ -762,28 +762,27 @@ class Branch(SQLBase):
         from lp.code.model.branchjob import BranchJob
         if break_references:
             self._breakReferences()
-        if self.canBeDeleted():
-            # BranchRevisions are taken care of a cascading delete
-            # in the database.
-            store = Store.of(self)
-            # Delete the branch subscriptions.
-            subscriptions = store.find(
-                BranchSubscription, BranchSubscription.branch == self)
-            subscriptions.remove()
-            # Delete any linked jobs.
-            # Using a sub-select here as joins in delete statements is not
-            # valid standard sql.
-            jobs = store.find(
-                Job,
-                Job.id.is_in(Select([BranchJob.jobID],
-                                    And(BranchJob.job == Job.id,
-                                        BranchJob.branch == self))))
-            jobs.remove()
-            # Now destroy the branch.
-            SQLBase.destroySelf(self)
-        else:
+        if not self.canBeDeleted():
             raise CannotDeleteBranch(
                 "Cannot delete branch: %s" % self.unique_name)
+        # BranchRevisions are taken care of a cascading delete
+        # in the database.
+        store = Store.of(self)
+        # Delete the branch subscriptions.
+        subscriptions = store.find(
+            BranchSubscription, BranchSubscription.branch == self)
+        subscriptions.remove()
+        # Delete any linked jobs.
+        # Using a sub-select here as joins in delete statements is not
+        # valid standard sql.
+        jobs = store.find(
+            Job,
+            Job.id.is_in(Select([BranchJob.jobID],
+                                And(BranchJob.job == Job.id,
+                                    BranchJob.branch == self))))
+        jobs.remove()
+        # Now destroy the branch.
+        SQLBase.destroySelf(self)
 
 
 class DeletionOperation:
