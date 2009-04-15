@@ -1,7 +1,6 @@
 = Registry vocabularies =
 
-    >>> from zope.component import getUtility
-    >>> from canonical.launchpad.ftests import ANONYMOUS, login
+    >>> from canonical.launchpad.ftests import login
     >>> from canonical.launchpad.interfaces import (
     ...     IPersonSet, IOpenLaunchBag, IProductSet, IProjectSet)
     >>> from canonical.database.sqlbase import flush_database_updates
@@ -14,6 +13,7 @@
     >>> from zope.schema.vocabulary import getVocabularyRegistry
     >>> vocabulary_registry = getVocabularyRegistry()
     >>> product_vocabulary = vocabulary_registry.get(None, "Product")
+
 
 == ActiveMailingList ==
 
@@ -428,7 +428,6 @@ it'll still show up on the vocabulary so that users can change it.
 If the context is a specification, only milestones from that specification
 target are in the vocabulary.
 
-    >>> from canonical.launchpad.interfaces import ISpecificationSet
     >>> canvas_spec = firefox.getSpecification('canvas')
     >>> spec_target_milestones = vocabulary_registry.get(
     ...     canvas_spec, 'Milestone')
