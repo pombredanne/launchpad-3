@@ -52,7 +52,7 @@ from lp.code.interfaces.branchmergeproposal import (
 from lp.code.interfaces.branchpuller import IBranchPuller
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.seriessourcepackagebranch import (
-    ISeriesSourcePackageBranchSet)
+    IFindOfficialBranchLinks)
 from canonical.launchpad.mailnotification import NotificationRecipientSet
 from lp.registry.interfaces.person import validate_public_person
 from canonical.launchpad.webapp import urlappend
@@ -452,7 +452,7 @@ class Branch(SQLBase):
         for series in self.associatedProductSeries():
             alteration_operations.append(ClearSeriesBranch(series, self))
 
-        series_set = getUtility(ISeriesSourcePackageBranchSet)
+        series_set = getUtility(IFindOfficialBranchLinks)
         alteration_operations.extend(
             map(ClearOfficialPackageBranch, series_set.findForBranch(self)))
         if self.code_import is not None:

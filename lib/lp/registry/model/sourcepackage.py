@@ -48,10 +48,11 @@ from canonical.launchpad.interfaces.packaging import PackagingType
 from canonical.launchpad.interfaces.potemplate import IHasTranslationTemplates
 from canonical.launchpad.interfaces.publishing import (
     PackagePublishingPocket, PackagePublishingStatus)
-from lp.answers.interfaces.questioncollection import QUESTION_STATUS_DEFAULT_SEARCH
+from lp.answers.interfaces.questioncollection import (
+    QUESTION_STATUS_DEFAULT_SEARCH)
 from lp.answers.interfaces.questiontarget import IQuestionTarget
 from lp.code.interfaces.seriessourcepackagebranch import (
-    ISeriesSourcePackageBranchSet)
+    IMakeOfficialBranchLinks)
 from lp.registry.interfaces.sourcepackage import (
     ISourcePackage, ISourcePackageFactory)
 
@@ -618,7 +619,7 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
 
     def setBranch(self, pocket, branch, registrant):
         """See `ISourcePackage`."""
-        series_set = getUtility(ISeriesSourcePackageBranchSet)
+        series_set = getUtility(IMakeOfficialBranchLinks)
         series_set.delete(self, pocket)
         if branch is not None:
             series_set.new(

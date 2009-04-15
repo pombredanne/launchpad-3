@@ -42,7 +42,7 @@ from lp.code.interfaces.branchmergeproposal import InvalidBranchMergeProposal
 from lp.code.interfaces.branchsubscription import (
     BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel)
 from lp.code.interfaces.seriessourcepackagebranch import (
-    ISeriesSourcePackageBranchSet)
+    IFindOfficialBranchLinks)
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
 from lp.code.interfaces.branch import (
@@ -703,7 +703,7 @@ class TestBranchDeletionConsequences(TestCase):
             ubuntu_branches.teamowner,
             package.development_version.setBranch,
             pocket, branch, ubuntu_branches.teamowner)
-        series_set = getUtility(ISeriesSourcePackageBranchSet)
+        series_set = getUtility(IFindOfficialBranchLinks)
         [link] = list(series_set.findForBranch(branch))
         self.assertEqual(
             {link: ('alter',
@@ -775,7 +775,7 @@ class TestBranchDeletionConsequences(TestCase):
             ubuntu_branches.teamowner,
             package.development_version.setBranch,
             pocket, branch, ubuntu_branches.teamowner)
-        series_set = getUtility(ISeriesSourcePackageBranchSet)
+        series_set = getUtility(IFindOfficialBranchLinks)
         [link] = list(series_set.findForBranch(branch))
         ClearOfficialPackageBranch(link)()
         self.assertIs(None, package.getBranch(pocket))

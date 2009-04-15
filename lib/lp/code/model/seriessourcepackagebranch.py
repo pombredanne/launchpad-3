@@ -20,8 +20,8 @@ from zope.interface import implements
 from canonical.database.enumcol import DBEnum
 from canonical.launchpad.interfaces.publishing import PackagePublishingPocket
 from lp.code.interfaces.seriessourcepackagebranch import (
-    IFindOfficialBranchLinks, ISeriesSourcePackageBranch,
-    ISeriesSourcePackageBranchSet)
+    IFindOfficialBranchLinks, IMakeOfficialBranchLinks,
+    ISeriesSourcePackageBranch)
 from canonical.launchpad.webapp.interfaces import (
      DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
 
@@ -69,11 +69,11 @@ class SeriesSourcePackageBranch(Storm):
 class SeriesSourcePackageBranchSet:
     """See `ISeriesSourcePackageBranchSet`."""
 
-    implements(IFindOfficialBranchLinks, ISeriesSourcePackageBranchSet)
+    implements(IFindOfficialBranchLinks, IMakeOfficialBranchLinks)
 
     def new(self, distroseries, pocket, sourcepackagename, branch, registrant,
             date_created=None):
-        """See `ISeriesSourcePackageBranchSet`."""
+        """See `IMakeOfficialBranchLinks`."""
         if date_created is None:
             date_created = datetime.now(pytz.UTC)
         sspb = SeriesSourcePackageBranch(
@@ -84,14 +84,14 @@ class SeriesSourcePackageBranchSet:
         return sspb
 
     def findForBranch(self, branch):
-        """See `ISeriesSourcePackageBranchSet`."""
+        """See `IFindOfficialBranchLinks`."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         return store.find(
             SeriesSourcePackageBranch,
             SeriesSourcePackageBranch.branch == branch.id)
 
     def findForSourcePackage(self, sourcepackage):
-        """See `ISeriesSourcePackageBranchSet`."""
+        """See `IFindOfficialBranchLinks`."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         distroseries = sourcepackage.distroseries
         sourcepackagename = sourcepackage.sourcepackagename
@@ -102,7 +102,7 @@ class SeriesSourcePackageBranchSet:
             sourcepackagename.id)
 
     def delete(self, sourcepackage, pocket):
-        """See `ISeriesSourcePackageBranchSet`."""
+        """See `IMakeOfficialBranchLinks`."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
         distroseries = sourcepackage.distroseries
         sourcepackagename = sourcepackage.sourcepackagename

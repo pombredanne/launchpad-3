@@ -15,7 +15,7 @@ from lp.registry.interfaces.distroseries import DistroSeriesStatus
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.publishing import PackagePublishingPocket
 from lp.code.interfaces.seriessourcepackagebranch import (
-    ISeriesSourcePackageBranchSet)
+    IMakeOfficialBranchLinks)
 from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.testing.layers import DatabaseFunctionalLayer
 
@@ -55,7 +55,7 @@ class TestSourcePackage(TestCaseWithFactory):
         sourcepackage = self.factory.makeSourcePackage()
         registrant = self.factory.makePerson()
         branch = self.factory.makePackageBranch(sourcepackage=sourcepackage)
-        getUtility(ISeriesSourcePackageBranchSet).new(
+        getUtility(IMakeOfficialBranchLinks).new(
             sourcepackage.distroseries, PackagePublishingPocket.RELEASE,
             sourcepackage.sourcepackagename, branch, registrant)
         official_branch = sourcepackage.getBranch(

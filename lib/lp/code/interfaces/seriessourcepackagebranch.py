@@ -7,7 +7,7 @@ __metaclass__ = type
 __all__ = [
     'IFindOfficialBranchLinks',
     'ISeriesSourcePackageBranch',
-    'ISeriesSourcePackageBranchSet',
+    'IMakeOfficialBranchLinks',
     ]
 
 
@@ -62,7 +62,7 @@ class IFindOfficialBranchLinks(Interface):
         """
 
 
-class ISeriesSourcePackageBranchSet(Interface):
+class IMakeOfficialBranchLinks(Interface):
     """A set of links from source packages in distribution suites to branches.
 
     This doesn't really make sense as an interface, but is provided to match
