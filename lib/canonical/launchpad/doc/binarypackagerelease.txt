@@ -12,7 +12,6 @@ across build records.
    >>> verifyObject(IBinaryPackageRelease, firefox_bin_release)
    True
 
-
 Useful properties:
 
    >>> firefox_bin_release.name, firefox_bin_release.version
@@ -207,3 +206,55 @@ getByNameInDistroSeries
 XXX: bug 5947, still lacking tests for getByNameVersion, getByArchTag,
      getDistroSeriesPackages and getBySourceName -- kiko, 2006-02-22
 
+
+== Binary file association ==
+
+BinaryPackageRelease.addFile() associate given `LibraryFileAlias` with
+the context binarypackage release.
+
+We will use `SoyuzTestPublisher` for creating a fresh binary package
+release.
+
+    >>> login('foo.bar@canonical.com')
+
+    >>> from canonical.launchpad.tests.test_publishing import (
+    ...      SoyuzTestPublisher)
+    >>> test_publisher = SoyuzTestPublisher()
+    >>> test_publisher.prepareBreezyAutotest()
+
+    >>> pubs = test_publisher.getPubBinaries()
+    >>> a_binary = pubs[0].binarypackagerelease
+
+The just-create package already has a 'DEB' file associtated to
+it. We will create a helper function to inspect binary packagefiles.
+
+    >>> def print_files(binary):
+    ...     for bin_file in binary.files:
+    ...         print bin_file.libraryfile.filename, bin_file.filetype.name
+
+    >>> print_files(a_binary)
+    foo-bin_666_all.deb DEB
+
+Additionally to DEB files, UDEB and DDEB extensions are also supported.
+
+    >>> deb = test_publisher.addMockFile('foo-extra_666_all.deb')
+    >>> udeb = test_publisher.addMockFile('foo-inst_666_all.udeb')
+    >>> ddeb = test_publisher.addMockFile('foo-dbg_666_all.ddeb')
+
+    >>> unused = a_binary.addFile(deb)
+    >>> unused = a_binary.addFile(udeb)
+    >>> unused = a_binary.addFile(ddeb)
+
+    >>> print_files(a_binary)
+    foo-dbg_666_all.ddeb DDEB
+    foo-inst_666_all.udeb UDEB
+    foo-extra_666_all.deb DEB
+    foo-bin_666_all.deb DEB
+
+An error is raised if a file with an unsupported extension is given.
+
+    >>> boing = test_publisher.addMockFile('foo-dbg_666_all.boing')
+    >>> unused = a_binary.addFile(boing)
+    Traceback (most recent call last):
+    ...
+    AssertionError: Unsupported file type: foo-dbg_666_all.boing
