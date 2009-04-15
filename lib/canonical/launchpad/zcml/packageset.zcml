@@ -4,26 +4,26 @@
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
 
- <class class="canonical.launchpad.database.packageset.Packageset">
-   <allow
-       interface="canonical.launchpad.interfaces.packageset.IPackagesetRead" />
-   <require
+  <class class="canonical.launchpad.database.packageset.Packageset">
+    <allow
+       interface="canonical.launchpad.interfaces.packageset.IPackagesetView" />
+    <require
        permission="launchpad.Edit"
        set_attributes="description" />
-   <require
+    <require
        permission="launchpad.Edit"
-       interface="canonical.launchpad.interfaces.packageset.IPackagesetMutate" />
- </class>
-
- <class class="canonical.launchpad.database.packageset.PackagesetSet">
-   <allow interface="canonical.launchpad.interfaces.packageset.IPackagesetSet" />
- </class>
-
+       interface="canonical.launchpad.interfaces.packageset.IPackagesetEdit" />
+  </class>
+ 
+  <class class="canonical.launchpad.database.packageset.PackagesetSet">
+    <implements interface="canonical.launchpad.interfaces.packageset.IPackagesetSet" />
+  </class>
 
   <securedutility
     class="canonical.launchpad.database.packageset.PackagesetSet"
     provides="canonical.launchpad.interfaces.packageset.IPackagesetSet">
-    <allow interface="canonical.launchpad.interfaces.packageset.IPackagesetSet" />
+    <allow attributes="getByName getByOwner" />
+    <require permission="launchpad.Edit" attributes="new" />
   </securedutility>
 </configure>
 

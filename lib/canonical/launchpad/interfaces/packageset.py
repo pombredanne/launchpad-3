@@ -7,7 +7,9 @@ __metaclass__ = type
 
 __all__ = [
     'IPackageset',
+    'IPackagesetRead',
     'IPackagesetSet',
+    'IPackagesetView',
     'PackagesetError',
     ]
 
@@ -29,7 +31,7 @@ class PackagesetError(Exception):
     '''
 
 
-class IPackagesetRead(IHasOwner):
+class IPackagesetView(IHasOwner):
     """A read-only interface for package sets."""
 
     id = Int(title=_('ID'), required=True, readonly=True)
@@ -111,7 +113,7 @@ class IPackagesetRead(IHasOwner):
         """
 
 
-class IPackagesetMutate(Interface):
+class IPackagesetEdit(Interface):
     """A writeable interface for package sets."""
     def add(data):
         """Add source package names or other package sets to this one.
@@ -137,7 +139,7 @@ class IPackagesetMutate(Interface):
         """
 
 
-class IPackageset(IPackagesetRead, IPackagesetMutate):
+class IPackageset(IPackagesetView, IPackagesetEdit):
     """An interface for package sets."""
 
 
