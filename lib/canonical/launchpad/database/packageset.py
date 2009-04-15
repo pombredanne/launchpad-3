@@ -184,6 +184,35 @@ class Packageset(Storm):
         successors = SQL(query, params)
         return list(store.find(Packageset, In(Packageset.id, successors)))
 
+    def sourcesSharedBy(self, other_package_set, direct_inclusion=False):
+        """See `IPackageset`."""
+        if direct_inclusion == False:
+            query = '''
+                SELECT pss_this.sourcepackagename
+                FROM
+                    packagesetsources pss_this, packagesetsources pss_other,
+                    flatpackagesetinclusion fpsi_this,
+                    flatpackagesetinclusion fpsi_other
+                WHERE pss_this.sourcepackagename = pss_other.sourcepackagename
+                    AND pss_this.packageset = fpsi_this.child
+                    AND pss_other.packageset = fpsi_other.child
+                    AND fpsi_this.parent = ?  AND fpsi_other.parent = ?
+            '''
+        else:
+            query = '''
+                SELECT pss_this.sourcepackagename
+                FROM packagesetsources pss_this, packagesetsources pss_other
+                WHERE pss_this.sourcepackagename = pss_other.sourcepackagename
+                    AND pss_this.packageset = ? AND pss_other.packageset = ?
+            '''
+        store = IStore(SourcePackageName)
+        spns = SQL(query, (self.id, other_package_set.id))
+        return list(
+            store.find(SourcePackageName, In(SourcePackageName.id, spns)))
+
+    def sourcesNotSharedBy(self, other_package_set, direct_inclusion=False):
+        """See `IPackageset`."""
+
 
 class PackagesetSet:
     """See `IPackagesetSet`."""
