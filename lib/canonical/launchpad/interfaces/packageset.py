@@ -23,7 +23,7 @@ from zope.schema import Datetime, Int, TextLine
 from canonical.launchpad import _
 from lp.registry.interfaces.person import IPerson
 from canonical.launchpad.validators.name import name_validator
-from canonical.lazr.fields import Reference
+from lazr.restful.fields import Reference
 
 
 class IPackageset(Interface):
