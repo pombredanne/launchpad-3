@@ -1763,8 +1763,7 @@
         class="canonical.launchpad.browser.ProductReleaseAddView"
         facet="overview"
         permission="launchpad.Edit"
-        template="../templates/productrelease-add.pt">
-                </browser:page>
+        template="../templates/productrelease-add.pt"/>
     <browser:menus
         classes="
             MilestoneContextMenu
@@ -2285,10 +2284,10 @@
     <browser:page
         name="+addrelease"
         for="lp.registry.interfaces.productseries.IProductSeries"
-        class="canonical.launchpad.browser.ProductReleaseAddView"
+        class="canonical.launchpad.browser.ProductReleaseFromSeriesAddView"
         facet="overview"
         permission="launchpad.Edit"
-        template="../templates/productrelease-add.pt"/>
+        template="../templates/productrelease-add-from-series.pt"/>
     <browser:page
         name="+addmilestone"
         facet="overview"

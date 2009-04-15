@@ -78,10 +78,8 @@ class IMilestone(IHasBugs):
                 "Only letters, numbers, and simple punctuation are allowed."),
             constraint=name_validator))
     code_name = exported(
-        TextLine(
-            title=_('Code name'),
-            description=_("An alternative to the name attribute."),
-            required=False))
+        TextLine(title=u'Code name', required=False,
+                 description=_('An alternative name for the milestone.')))
     product = Choice(
         title=_("Project"),
         description=_("The project to which this milestone is associated"),

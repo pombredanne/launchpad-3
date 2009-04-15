@@ -15,15 +15,15 @@
 <div metal:fill-slot="main">
   <div metal:use-macro="context/@@launchpad_form/form">
     <div id="other-releases"
-      metal:fill-slot="extra_info" tal:condition="view/releases">
+         metal:fill-slot="extra_info"
+         tal:condition="context/productseries/releases"
+         style="border-bottom: solid 1px black">
       The following releases have been made for the
       <tal:series replace="context/productseries/displayname" /> series:
       <ul>
-        <li tal:repeat="release view/releases">
-           <a tal:attributes="href release/fmt:url"
-             ><tal:version replace="release/version" />
-             <tal:codename replace="release/codename">seamonkey</tal:codename></a>
-           <tal:released replace="release/datereleased/fmt:date" />
+        <li tal:repeat="release context/productseries/releases">
+          <tal:link replace="structure release/fmt:link"/>
+          <tal:released replace="release/datereleased/fmt:date" />
         </li>
       </ul>
     </div>
@@ -32,4 +32,3 @@
 
 </body>
 </html>
-
