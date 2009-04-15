@@ -39,7 +39,8 @@ So, let's start by creating a few package sets.
     >>> person1 = factory.makePerson(
     ...     name='hacker', displayname=u'Happy Hacker')
     >>> person2 = factory.makePerson(
-    ...     name='juergen', displayname=u'J\xc3\xbcrgen Schmidt')
+    ...     name='juergen', displayname=u'J\xc3\xbcrgen Schmidt',
+    ...     email='js@example.com')
     >>> ps_factory = getUtility(IPackagesetSet)
     >>> umbrella_ps = ps_factory.new(
     ...     u'umbrella', u'Umbrella set, contains all packages', person1)
@@ -386,3 +387,62 @@ An attempt to add cycles to the package set graph also results in a failure:
     Adding (mozilla -> umbrella) would introduce a cycle in the
     package set graph (DAG).
     <BLANKLINE>
+
+    >>> store.rollback()
+
+== Amending package sets ==
+
+There are some methods that will enable the caller to add and delete
+package sets.  They currently require launchpad.Edit permission to
+use, which enforces the user to be an admin or a member of the "techboard"
+(Ubuntu Technical Board) team.
+
+    >>> from zope.security.checker import canAccess
+    >>> restricted_methods = ('new',)
+    >>> def checkAccess(true_or_false):
+    ...     for method in restricted_methods:
+    ...         assert(canAccess(ps_factory, method) == true_or_false)
+
+If, for some reason, the techboard team is missing, the security adapter
+will not allow access and generates an OOPS.
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     IPersonSet, TeamSubscriptionPolicy)
+    >>> personset = getUtility(IPersonSet)
+    >>> login('js@example.com')
+    >>> from zope.app.error.interfaces import IErrorReportingUtility
+    >>> report = getUtility(IErrorReportingUtility).getLastOopsReport()
+    >>> checkAccess(False)
+    >>> report2 = getUtility(IErrorReportingUtility).getLastOopsReport()
+    >>> print report.id == report2.id
+    False
+    >>> print report2.value
+    'techboard' team is missing, has it been renamed?
+
+Set up the techboard team:
+
+    >>> login("foo.bar@canonical.com")
+    >>> owner = personset.getByName("name16")
+    >>> techboard = personset.newTeam(
+    ...     owner, "techboard", "techboard",
+    ...     subscriptionpolicy=TeamSubscriptionPolicy.OPEN)
+
+Ordinary users have no access:
+
+    >>> login('js@example.com')
+    >>> checkAccess(False)
+
+Admins have access:
+
+    >>> login("foo.bar@canonical.com")
+    >>> checkAccess(True)
+
+Now add "test@canonical.com" to the techboard team and log in as him.
+
+    >>> person2.join(techboard)
+    >>> login_person(person2)
+
+Create a new package set.
+
+    >>> kde_ps = ps_factory.new(
+    ...     u'kde', u'Contains all KDE packages', person2)
