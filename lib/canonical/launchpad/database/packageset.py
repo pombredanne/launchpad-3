@@ -18,6 +18,11 @@ from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 
 
+def _extract_type_name(value):
+    """Extract the type name of the given value."""
+    return str(type(value)).split("'")[-2]
+
+
 class Packageset(Storm):
     """See `IPackageset`."""
     implements(IPackageset)
@@ -49,7 +54,7 @@ class Packageset(Storm):
             # This is an unsupported data type.
             raise(
                 PackagesetError("Don't know how to add a '%s' to a package "
-                "set." % str(type(datum)).split("'")[-2]))
+                "set." % _extract_type_name(datum)))
 
     def remove(self, data):
         """See `IPackageset`."""
@@ -58,16 +63,16 @@ class Packageset(Storm):
 
         datum = data[0]
         if isinstance(datum, SourcePackageName):
-            # We are supposed to add source package names.
+            # We are supposed to remove source package names.
             self._removeSourcePackageNames(data)
         elif isinstance(datum, Packageset):
-            # We are supposed to add other package sets.
+            # We are supposed to remove other package sets.
             self._removeDirectSuccessors(data)
         else:
             # This is an unsupported data type.
             raise(
                 PackagesetError("Don't know how to remove a '%s' from a "
-                "package set." % str(type(datum)).split("'")[-2]))
+                "package set." % _extract_type_name(datum)))
 
     def _addSourcePackageNames(self, spns):
         """Add the given source package names to the package set.

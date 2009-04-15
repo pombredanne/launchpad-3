@@ -278,3 +278,18 @@ predecessor 'mozilla' as well.
     18 -> thunderbird
     25 -> language-pack-de
     26 -> iceweasel
+
+Here's what happens if we try to add something that is not a source package
+name or package set:
+
+    >>> mozilla_ps.add('This will fail'.split())
+    Traceback (most recent call last):
+    ...
+    PackagesetError: Don't know how to add a 'str' to a package set.
+
+Likewise for removal:
+
+    >>> mozilla_ps.remove(range(10))
+    Traceback (most recent call last):
+    ...
+    PackagesetError: Don't know how to remove a 'int' from a package set.
