@@ -58,7 +58,7 @@ class IPackagesetView(IHasOwner):
         This method returns the source package names that are directly
         or indirectly associated with the package set at hand. Indirect
         associations may be defined through package set successors.
-        
+
         :param direct_inclusion: if this flag is set to True only sources
             directly included by this package set will be considered.
         :return: A (potentially empty) sequence of `ISourcePackageName`
@@ -67,9 +67,9 @@ class IPackagesetView(IHasOwner):
 
     def setsIncludedBy(direct_inclusion=False):
         """Get all package sets that include this one.
-        
+
         Return all package sets that directly or indirectly include this one.
-        
+
         :param direct_inclusion: if this flag is set to True only sets
             directly including this one will be considered.
         :return: A (potentially empty) sequence of `IPackageset` instances.
@@ -77,7 +77,7 @@ class IPackagesetView(IHasOwner):
 
     def setsIncluded(direct_inclusion=False):
         """Get all package sets that are included by this one.
-        
+
         Return all package sets that are directly or indirectly
         included by this one.
 
@@ -91,7 +91,7 @@ class IPackagesetView(IHasOwner):
 
         What source package names does this package set have in common with
         the 'other_package_set'?
-        
+
         :param other_package_set: the other package set
         :param direct_inclusion: if this flag is set to True only directly
             included sources will be considered.
@@ -104,7 +104,7 @@ class IPackagesetView(IHasOwner):
 
         Which source package names included by this package are *not*
         included by the 'other_package_set'?
-        
+
         :param other_package_set: the other package set
         :param direct_inclusion: if this flag is set to True only directly
             included sources will be considered.
