@@ -9,6 +9,7 @@ __all__ = [
     'LoginTokenSetNavigation',
     'LoginTokenView',
     'MergePeopleView',
+    'ResetPersonPasswordView',
     'ValidateTeamEmailView',
     'ValidateGPGKeyView',
     ]
@@ -32,7 +33,7 @@ from canonical.launchpad.webapp import (
     LaunchpadEditFormView, LaunchpadFormView, LaunchpadView)
 
 from canonical.launchpad.browser.authtoken import (
-    AuthTokenView, BaseAuthTokenView, ValidateEmailView)
+    AuthTokenView, BaseAuthTokenView, ResetPasswordView, ValidateEmailView)
 from lp.registry.browser.team import HasRenewalPolicyMixin
 from canonical.launchpad.interfaces import (
     EmailAddressStatus, GPGKeyAlgorithm, GPGKeyNotFoundError,
@@ -71,6 +72,17 @@ class LoginTokenView(AuthTokenView):
             LoginTokenType.TEAMCLAIM: '+claimteam',
             LoginTokenType.BUGTRACKER: '+bugtracker-handshake',
             })
+
+
+class ResetPersonPasswordView(ResetPasswordView):
+
+    def reactivate(self, data):
+        emailaddress = getUtility(IEmailAddressSet).getByEmail(
+            self.context.email)
+        removeSecurityProxy(self.context.requester).reactivate(
+            comment="User reactivated the account using reset password.",
+            password=data['password'],
+            preferred_email=emailaddress)
 
 
 class ClaimProfileView(BaseAuthTokenView, LaunchpadFormView):
@@ -113,7 +125,7 @@ class ClaimProfileView(BaseAuthTokenView, LaunchpadFormView):
 
         naked_email = removeSecurityProxy(email)
 
-        naked_person.activateAccount(
+        removeSecurityProxy(IMasterObject(email.account)).activate(
             comment="Activated by claim profile.",
             password=data['password'],
             preferred_email=naked_email)

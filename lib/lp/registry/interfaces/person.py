@@ -1429,15 +1429,6 @@ class IPersonCommAdminWriteRestricted(Interface):
 class IPersonSpecialRestricted(Interface):
     """IPerson methods that require launchpad.Special permission to use."""
 
-    def activateAccount(comment, password, preferred_email):
-        """Activate this person's Launchpad account.
-
-        :param comment: An explanation of why the account status changed.
-        :param password: The user's password.
-        :param preferred_email: The `EmailAddress` to set as the user's
-            preferred email address.
-        """
-
     def deactivateAccount(comment):
         """Deactivate this person's Launchpad account.
 

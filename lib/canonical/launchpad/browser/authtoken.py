@@ -31,6 +31,7 @@ from canonical.launchpad.webapp import (
     LaunchpadFormView, LaunchpadView)
 
 from canonical.launchpad.browser.openidserver import OpenIDMixin
+from canonical.launchpad.interfaces import IMasterObject
 from canonical.launchpad.interfaces.account import AccountStatus, IAccountSet
 from canonical.launchpad.interfaces.authtoken import (
     IAuthToken, IAuthTokenSet, LoginTokenType)
@@ -190,14 +191,21 @@ class ResetPasswordView(BaseAuthTokenView, LaunchpadFormView):
                 "The email address you provided didn't match the address "
                 "you provided when requesting the password reset."))
 
+    def reactivate(self, data):
+        emailaddress = getUtility(IEmailAddressSet).getByEmail(
+            self.context.email)
+        naked_account = removeSecurityProxy(self.context.requester_account)
+        naked_account.reactivate(
+            comment="User reactivated the account using reset password.",
+            password=data['password'],
+            preferred_email=emailaddress)
+
     @action(_('Continue'), name='continue')
     def continue_action(self, action, data):
         """Reset the user's password. When password is successfully changed,
         the AuthToken (self.context) used is consumed, so nobody can use
         it again.
         """
-        emailaddress = getUtility(IEmailAddressSet).getByEmail(
-            self.context.email)
         account = self.context.requester_account
         # Suspended accounts cannot reset their password.
         reason = ('Your password cannot be reset because your account '
@@ -208,10 +216,7 @@ class ResetPasswordView(BaseAuthTokenView, LaunchpadFormView):
         naked_account = removeSecurityProxy(account)
         # Reset password can be used to reactivate a deactivated account.
         if account.status == AccountStatus.DEACTIVATED:
-            naked_account.reactivate(
-                comment="User reactivated the account using reset password.",
-                password=data['password'],
-                preferred_email=emailaddress)
+            self.reactivate(data)
             self.request.response.addInfoNotification(
                 _('Welcome back to Launchpad.'))
         else:
@@ -447,7 +452,8 @@ class NewAccountView(BaseAuthTokenView, LaunchpadFormView):
                 return
             naked_person.displayname = data['displayname']
             naked_person.hide_email_addresses = data['hide_email_addresses']
-            naked_person.activateAccount(
+            account = removeSecurityProxy(IMasterObject(person.account))
+            account.activate(
                 "Activated by new account.",
                 password=data['password'],
                 preferred_email=self.email)
