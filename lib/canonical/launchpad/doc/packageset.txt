@@ -1,0 +1,283 @@
+= Package sets =
+
+The `Packageset` table allows the specification of package set. These
+facilitate the grouping of packages for purposes like the control of upload
+permissions, the calculation of build and runtime package dependencies etc.
+
+Initially, package sets will be used to enforce upload permissions to source
+packages. Later they may be put to other uses as well. Please see also the
+following URL for user stories and scenarios:
+https://dev.launchpad.net/VersionThreeDotO/Soyuz/StoryCards#packagesetacl
+
+It is also possible to define hierarchical relationships between package
+sets i.e. include package sets into other package sets and remove them
+respectively.
+
+This effectively allows the users to arrange package sets in a directed
+acyclic graph (DAG, http://en.wikipedia.org/wiki/Directed_acyclic_graph)
+where each arc/edge (A,B) carries the following meaning:
+package set 'A' includes another package set 'B' as a subset.
+
+The following passage may also make it easier to understand the nomenclature
+used (from http://en.wikipedia.org/wiki/Glossary_of_graph_theory):
+
+    "If v is reachable from u, then u is a predecessor of v and v is a
+     successor of u. If there is an arc/edge from u to v, then u is a direct
+     predecessor of v, and v is a direct successor of u."
+
+
+== Package set basics ==
+
+So, let's start by creating a few package sets.
+
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces.packageset import (
+    ...     IPackagesetSet)
+
+    >>> person1 = factory.makePerson(
+    ...     name='hacker', displayname=u'Happy Hacker')
+    >>> person2 = factory.makePerson(
+    ...     name='juergen', displayname=u'J\xc3\xbcrgen Schmidt')
+    >>> ps_factory = getUtility(IPackagesetSet)
+    >>> umbrella_ps = ps_factory.new(
+    ...     u'umbrella', u'Umbrella set, contains all packages', person1)
+    >>> kernel_ps = ps_factory.new(
+    ...     u'kernel', u'Contains all OS kernel packages', person2)
+
+Now 'juergen' and 'hacker' have a package set each.
+
+    >>> ps_factory.getByOwner(person1).count() == 1
+    True
+    >>> ps_factory.getByOwner(person2).count() == 1
+    True
+
+In a next step we will associate source package names with the package sets
+just created.
+
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> from canonical.launchpad.webapp.interfaces import (
+    ...     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
+    >>> from lp.registry.model.sourcepackagename import SourcePackageName
+    >>> store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+
+First associate *all* source package names with the umbrella package set.
+
+    >>> all_spns = store.find(SourcePackageName)
+    >>> umbrella_ps = removeSecurityProxy(umbrella_ps)
+    >>> umbrella_ps.addSourcePackageNames(all_spns)
+
+Let's see what we got:
+
+    >>> import operator
+    >>> def sort_by_id(iterable):
+    ...     return sorted(iterable, key=operator.attrgetter('id'))
+    >>> def print_data(iterable):
+    ...     for datum in sort_by_id(iterable):
+    ...          print('%3d -> %s' % (datum.id, datum.name))
+    >>> umbrella_spns = list(umbrella_ps.getDirectSourcePackageNames())
+    >>> print_data(umbrella_spns)
+     1 -> mozilla-firefox
+     9 -> evolution
+    10 -> netapplet
+    14 -> pmount
+    15 -> a52dec
+    16 -> mozilla
+    17 -> at
+    18 -> thunderbird
+    19 -> alsa-utils
+    20 -> cnews
+    21 -> libstdc++
+    22 -> linux-source-2.6.15
+    23 -> foobar
+    24 -> cdrkit
+    25 -> language-pack-de
+    26 -> iceweasel
+    27 -> commercialpackage
+
+Now let's put a few selected source package names into the 'kernel' package
+set:
+
+    >>> kernel_ps = removeSecurityProxy(kernel_ps)
+    >>> kernel_spns = store.find(
+    ...     SourcePackageName, SourcePackageName.name.like('li%'))
+    >>> kernel_ps.addSourcePackageNames(kernel_spns)
+    >>> kernel_spns = list(kernel_ps.getDirectSourcePackageNames())
+    >>> print_data(kernel_spns)
+    21 -> libstdc++
+    22 -> linux-source-2.6.15
+
+Adding source package names to a package set repeatedly has no effect.
+
+    >>> umbrella_ps.addSourcePackageNames(kernel_spns)
+    >>> umbrella_spns2 = umbrella_ps.getDirectSourcePackageNames()
+    >>> sort_by_id(umbrella_spns) == sort_by_id(umbrella_spns2)
+    True
+
+Removing source package names is easy.
+
+    >>> umbrella_ps.removeSourcePackageNames(kernel_spns)
+    >>> reduced = list(umbrella_ps.getDirectSourcePackageNames())
+    >>> sort_by_id(umbrella_spns) == sort_by_id(reduced + kernel_spns)
+    True
+
+Trying to remove source package names that are *not* associated with a
+package set from the latter has no effect.
+
+    >>> umbrella_ps.removeSourcePackageNames(kernel_spns)
+    >>> sort_by_id(reduced) == sort_by_id(umbrella_ps.getDirectSourcePackageNames())
+    True
+
+Add the removed source package names back to 'umbrella'.
+
+    >>> umbrella_ps.addSourcePackageNames(kernel_spns)
+
+
+== Package set hierarchies ==
+
+The next step in organizing package sets is to arrange them in a hierarchy
+i.e. for package sets to include others as subsets.
+
+We need more package sets to play with however.
+
+    >>> gnome_ps = removeSecurityProxy(ps_factory.new(
+    ...     u'gnome', u'Contains all gnome desktop packages', person2))
+    >>> mozilla_ps = removeSecurityProxy(ps_factory.new(
+    ...     u'mozilla', u'Contains all mozilla packages', person2))
+    >>> firefox_ps = removeSecurityProxy(ps_factory.new(
+    ...     u'firefox', u'Contains all firefox packages', person2))
+    >>> thunderbird_ps = removeSecurityProxy(ps_factory.new(
+    ...     u'thunderbird', u'Contains all thunderbird packages', person2))
+    >>> languagepack_ps = removeSecurityProxy(ps_factory.new(
+    ...     u'languagepack', u'Contains all language packs', person2))
+    >>> store.commit()
+
+Now we can set up the package set hierarchy.
+
+    >>> umbrella_ps.addDirectSuccessor(gnome_ps)
+    >>> mozilla_ps.addDirectSuccessor(firefox_ps)
+    >>> mozilla_ps.addDirectSuccessor(thunderbird_ps)
+    >>> mozilla_ps.addDirectSuccessor(languagepack_ps)
+    >>> umbrella_ps.addDirectSuccessor(mozilla_ps)
+    >>> gnome_ps.addDirectSuccessor(languagepack_ps)
+
+The 'umbrella' package set has two *direct* successors..
+
+    >>> print_data(umbrella_ps.getDirectSuccessors())
+     3 -> gnome
+     4 -> mozilla
+
+.. but five successors in total. The 'firefox' and 'thunderbird' package
+sets are included via 'mozilla' whereas the 'languagepack' package set comes
+in via 'gnome' and/or 'mozilla'.
+
+    >>> u_successors = umbrella_ps.getSuccessors()
+    >>> print_data(u_successors)
+     3 -> gnome
+     4 -> mozilla
+     5 -> firefox
+     6 -> thunderbird
+     7 -> languagepack
+
+These are the *direct* predecessors of the 'languagepack' package set.
+
+    >>> print_data(languagepack_ps.getDirectPredecessors())
+     3 -> gnome
+     4 -> mozilla
+
+These are *all* predecessors of the 'languagepack' package set. Please not
+that the 'umbrella' package set is listed as well.
+
+    >>> print_data(languagepack_ps.getPredecessors())
+     1 -> umbrella
+     3 -> gnome
+     4 -> mozilla
+
+When 'mozilla' stops including 'languagepack' it is still included by
+'umbrella' (via the 'gnome' package set).
+
+    >>> mozilla_ps.removeDirectSuccessor(languagepack_ps)
+    >>> print_data(languagepack_ps.getDirectPredecessors())
+     3 -> gnome
+    >>> print_data(languagepack_ps.getPredecessors())
+     1 -> umbrella
+     3 -> gnome
+
+The 'umbrella' successors are still the same ('languagepack' is still
+included via 'gnome').
+
+    >>> sort_by_id(u_successors) == sort_by_id(umbrella_ps.getSuccessors())
+    True
+
+Removing direct successors is pretty tolerant i.e. if you try to remove 'Q'
+from 'P' and 'Q' is *not* a *direct* successor of 'P' nothing will happen.
+
+    >>> umbrella_ps.removeDirectSuccessor(languagepack_ps)
+    >>> sort_by_id(u_successors) == sort_by_id(umbrella_ps.getSuccessors())
+    True
+
+== Package set hierarchies and source names ==
+
+In order to demonstrate how included package sets play together
+with source package names we'll "populate" the former.
+
+    >>> mozilla_ps.addSourcePackageNames(
+    ... store.find(SourcePackageName, SourcePackageName.name.like('moz%a')))
+    >>> print_data(mozilla_ps.getDirectSourcePackageNames())
+    16 -> mozilla
+
+    >>> firefox_ps.addSourcePackageNames(
+    ... store.find(SourcePackageName, SourcePackageName.name.like('%fire%')))
+    >>> firefox_ps.addSourcePackageNames(
+    ... store.find(SourcePackageName, SourcePackageName.name.like('%ice%')))
+    >>> print_data(firefox_ps.getDirectSourcePackageNames())
+     1 -> mozilla-firefox
+    26 -> iceweasel
+
+    >>> thunderbird_ps.addSourcePackageNames(
+    ... store.find(SourcePackageName, SourcePackageName.name.like('%thunder%')))
+    >>> thunderbird_ps.addSourcePackageNames(
+    ... store.find(SourcePackageName, SourcePackageName.name.like('%ice%')))
+    >>> print_data(thunderbird_ps.getDirectSourcePackageNames())
+    18 -> thunderbird
+    26 -> iceweasel
+
+When looking at *all* source package names the 'mozilla' package set is
+associated with we see
+
+    * 'mozilla' i.e. the source package name it is *directly* associated
+      with but also
+    * the union set of source package names of its successor package sets
+
+    >>> print_data(mozilla_ps.getSourcePackageNames())
+     1 -> mozilla-firefox
+    16 -> mozilla
+    18 -> thunderbird
+    26 -> iceweasel
+
+We extend the package set hierarchy by including 'languagepack' into
+'thunderbird' ..
+
+    >>> languagepack_ps.addSourcePackageNames(
+    ... store.find(SourcePackageName, SourcePackageName.name.like('lang%')))
+    >>> thunderbird_ps.addDirectSuccessor(languagepack_ps)
+
+.. and see that the 'thunderbird' package set is (indirectly) associated
+with the 'language-pack-de' source package name.
+
+    >>> print_data(thunderbird_ps.getDirectSourcePackageNames())
+    18 -> thunderbird
+    26 -> iceweasel
+    >>> print_data(thunderbird_ps.getSourcePackageNames())
+    18 -> thunderbird
+    25 -> language-pack-de
+    26 -> iceweasel
+
+Furthermore, the 'language-pack-de' source package name is picked up by its
+predecessor 'mozilla' as well.
+
+    >>> print_data(mozilla_ps.getSourcePackageNames())
+     1 -> mozilla-firefox
+    16 -> mozilla
+    18 -> thunderbird
+    25 -> language-pack-de
+    26 -> iceweasel

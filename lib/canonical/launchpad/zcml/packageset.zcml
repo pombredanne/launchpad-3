@@ -1,0 +1,19 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    xmlns:i18n="http://namespaces.zope.org/i18n"
+    i18n_domain="launchpad">
+
+  <securedutility
+    class="canonical.launchpad.database.packageset.Packageset"
+    provides="canonical.launchpad.interfaces.packageset.IPackageset">
+    <allow interface="canonical.launchpad.interfaces.packageset.IPackageset" />
+  </securedutility>
+
+  <securedutility
+    class="canonical.launchpad.database.packageset.PackagesetSet"
+    provides="canonical.launchpad.interfaces.packageset.IPackagesetSet">
+    <allow interface="canonical.launchpad.interfaces.packageset.IPackagesetSet" />
+  </securedutility>
+</configure>
+
