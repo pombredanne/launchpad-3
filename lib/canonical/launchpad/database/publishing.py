@@ -509,7 +509,7 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         return [build for source, build, arch in result_set]
 
     @property
-    def changes_file_text(self):
+    def changes_file_url(self):
         """See `ISourcePackagePublishingHistory`."""
         # Imported locally to avoid circular dependencies.
         from canonical.launchpad.database.queue import (
@@ -537,7 +537,16 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
             # not blow up because of bad data.
             return None
         
-        return changesfile.read()
+        # Return a webapp-proxied LibraryFileAlias so that restricted
+        # librarian files are accessible.  Non-restricted files will get
+        # a 302 so that webapp threads are not tied up.
+
+        # Avoid circular imports.
+        from canonical.launchpad.browser.librarian import (
+            ProxiedLibraryFileAlias)
+
+        proxied_file = ProxiedLibraryFileAlias(changesfile, self.archive)
+        return proxied_file.http_url
 
     def createMissingBuilds(self, architectures_available=None,
                             pas_verify=None, logger=None):

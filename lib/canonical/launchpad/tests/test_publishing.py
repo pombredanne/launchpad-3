@@ -114,6 +114,13 @@ class SoyuzTestPublisher:
             'application/text', restricted=restricted)
         return library_file
 
+    def addPackageUpload(self, archive, distroseries,
+                         pocket=PackagePublishingPocket.RELEASE,
+                         changes_file_name="foo_666_source.changes",
+                         changes_file_content="fake changes file content"):
+        return distroseries.createQueueEntry(
+            pocket, changes_file_name, changes_file_content, archive, None)
+
     def getPubSource(self, sourcename=None, version='666', component='main',
                      filename=None, section='base',
                      filecontent='I do not care about sources.',
@@ -165,6 +172,9 @@ class SoyuzTestPublisher:
             dsc_format=dsc_format,
             dsc_binaries=dsc_binaries,
             archive=archive, dateuploaded=date_uploaded)
+
+        package_upload = self.addPackageUpload(archive, distroseries, pocket)
+        package_upload.addSource(spr)
 
         if filename is None:
             filename = "%s_%s.dsc" % (sourcename, version)

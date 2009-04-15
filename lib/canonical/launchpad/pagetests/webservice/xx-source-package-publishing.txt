@@ -77,11 +77,34 @@ Search by distroseries and pocket:
     iceweasel 1.0 in warty
     pmount 0.1-1 in warty
 
-Each source publication exposes a number of properties.
+Each source publication exposes a number of properties.  We'll create a new
+publication to play with first.
+
+    >>> login("foo.bar@canonical.com")
+    >>> from canonical.launchpad.tests.test_publishing import (
+    ...     SoyuzTestPublisher)
+    >>> stp = SoyuzTestPublisher()
+    >>> stp.prepareBreezyAutotest()
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from zope.component import getUtility
+    >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
+    >>> warty_series = ubuntu['warty']
+    >>> cprov_ppa = getUtility(IPersonSet).getByName("cprov").archive
+    >>> discard = stp.getPubSource(
+    ...     archive=cprov_ppa, sourcename="testwebservice",
+    ...     distroseries=warty_series)
+    >>> logout()
+
+    >>> pubs = webservice.named_get(
+    ...     cprov_archive['self_link'], 'getPublishedSources',
+    ...     distro_series=warty['self_link'],
+    ...     source_name="testwebservice").jsonBody()
 
     >>> from lazr.restful.testing.webservice import pprint_entry
     >>> pprint_entry(pubs['entries'][0])
     archive_link: u'http://.../~cprov/+archive/ppa'
+    changes_file_url: http://launchpad.dev/ubuntu/+archive/primary/+files/mozilla-firefox_0.9_i386.changes
     component_name: u'main'
     datecreated: u'2007-07-09T12:00:00+00:00'
     datemadepending: None
@@ -101,12 +124,13 @@ Each source publication exposes a number of properties.
     source_package_version: u'1.0'
     status: u'Published'
 
+
+Privacy
+=======
+
 When Celso's PPA becomes private ...
 
     >>> login("foo.bar@canonical.com")
-
-    >>> from zope.component import getUtility
-    >>> from lp.registry.interfaces.person import IPersonSet
 
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
     >>> cprov.archive.buildd_secret = 'boing'
