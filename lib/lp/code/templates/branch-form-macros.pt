@@ -13,6 +13,8 @@
   <div metal:use-macro="context/@@launchpad_form/form">
   </div>
 
+<script type='text/javascript' tal:content="string:var target_name='${view/target/name}';" />
+
 <script type="text/javascript">
 //<![CDATA[
 function update_branch_url()
@@ -35,15 +37,11 @@ function update_branch_unique_name()
   // change.
   var unique_name = document.getElementById("branch-unique-name")
   var owner = document.getElementById("field.owner")
-  var product_name = document.getElementById("field.product").value
-  if (product_name == '') {
-    product_name = '+junk'
-  }
   var name = document.getElementById("field.name").value
   if (name == '') {
     name = '&lt;name&gt;'
   }
-  var branch_name = "~" + owner.value + "/" + product_name + "/" + name
+  var branch_name = "~" + owner.value + "/" + target_name + "/" + name
   unique_name.innerHTML = branch_name
 }
 
@@ -71,9 +69,6 @@ function populate_branch_name_from_url()
 
 function hookUpBranchFieldFunctions()
 {
-  connect('field.product', 'onkeyup', update_branch_unique_name);
-  connect('field.product', 'onchange', update_branch_unique_name);
-  connect('field.product', 'onfocus', update_branch_unique_name);
   connect('field.owner', 'onkeyup', update_branch_unique_name);
   connect('field.owner', 'onchange', update_branch_unique_name);
   connect('field.name', 'onkeyup', update_branch_unique_name);
