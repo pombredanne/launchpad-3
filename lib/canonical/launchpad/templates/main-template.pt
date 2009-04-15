@@ -96,6 +96,10 @@
         />
     <link rel="stylesheet" type="text/css"
         tal:attributes="href
+        string:${icingroot}/lazr/build/formoverlay/assets/formoverlay.css"
+        />
+    <link rel="stylesheet" type="text/css"
+        tal:attributes="href
         string:${icingroot}/lazr/build/picker/assets/skins/sam/picker.css"
         />
     <link rel="stylesheet" type="text/css"
@@ -450,7 +454,7 @@
           src="/+popcalxp/ipopeng.htm"
           scrolling="no"
           frameborder="0"
-          style="visibility:visible; z-index:999; position:absolute;
+          style="visibility:visible; z-index:9999; position:absolute;
                  top:-500px; left:-500px;">
       </iframe>
     </tal:datetimepicker>
@@ -474,7 +478,7 @@
           src="/+popcalxp/ipopeng.htm"
           scrolling="no"
           frameborder="0"
-          style="visibility:visible; z-index:999; position:absolute;
+          style="visibility:visible; z-index:9999; position:absolute;
                  top:-500px; left:-500px;">
       </iframe>
     </tal:datepicker>

@@ -136,7 +136,7 @@ class _BaseNamespace:
 
         if not self.checkCreationPolicy(registrant):
             raise BranchCreationForbidden(
-                "You cannot create branches in %r"% self.name)
+                "You cannot create branches in %r" % self.name)
 
     def validateBranchName(self, name):
         """See `IBranchNamespace`."""

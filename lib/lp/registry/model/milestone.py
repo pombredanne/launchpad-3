@@ -252,7 +252,9 @@ class ProjectMilestone(HasBugsBase):
 
     def __init__(self, target, name, dateexpected, active):
         self.name = name
+        self.code_name = None
         self.id = None
+        self.code_name = None
         self.product = None
         self.distribution = None
         self.productseries = None

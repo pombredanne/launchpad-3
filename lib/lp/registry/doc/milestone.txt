@@ -302,6 +302,12 @@ The name, dateexpected, summary, and active, attributes are editable.
     >>> print fizzy_milestone.name
     fizzy
 
+    >>> print fizzy_milestone.code_name
+    None
+    >>> fizzy_milestone.code_name = 'dizzy'
+    >>> print fizzy_milestone.code_name
+    dizzy
+
     >>> fizzy_milestone.summary = 'fizzy love'
     >>> print fizzy_milestone.summary
     fizzy love
