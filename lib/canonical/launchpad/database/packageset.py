@@ -124,77 +124,64 @@ class Packageset(Storm):
         ''' % ','.join(str(packageset.id) for packageset in packagesets)
         store.execute(rdsq, (self.id,), noresult=True)
 
-    @property
-    def sources_included_directly(self):
+    def sourcesIncluded(self, direct_inclusion=False):
         """See `IPackageset`."""
-        spn_query = '''
-            SELECT pss.sourcepackagename FROM packagesetsources pss
-            WHERE pss.packageset = ?
-        '''
+        if direct_inclusion == False:
+            spn_query = '''
+                SELECT pss.sourcepackagename
+                FROM packagesetsources pss, flatpackagesetinclusion fpsi
+                WHERE pss.packageset = fpsi.child AND fpsi.parent = ?
+            '''
+        else:
+            spn_query = '''
+                SELECT pss.sourcepackagename FROM packagesetsources pss
+                WHERE pss.packageset = ?
+            '''
         store = IStore(SourcePackageName)
         spns = SQL(spn_query, (self.id,))
         return list(
             store.find(SourcePackageName, In(SourcePackageName.id, spns)))
 
-    @property
-    def sources_included(self):
+    def setsIncludedBy(self, direct_inclusion=False):
         """See `IPackageset`."""
-        spn_query = '''
-            SELECT pss.sourcepackagename
-            FROM packagesetsources pss, flatpackagesetinclusion fpsi
-            WHERE pss.packageset = fpsi.child AND fpsi.parent = ?
-        '''
-        store = IStore(SourcePackageName)
-        spns = SQL(spn_query, (self.id,))
-        return list(
-            store.find(SourcePackageName, In(SourcePackageName.id, spns)))
-
-    @property
-    def sets_included_by(self):
-        """See `IPackageset`."""
-        # The very last clause in the query is necessary because each
-        # package set is also a predecessor of itself in the flattened
-        # hierarchy.
-        query = '''
-            SELECT fpsi.parent FROM flatpackagesetinclusion fpsi
-            WHERE fpsi.child = ? AND fpsi.parent != ?
-        '''
+        if direct_inclusion == False:
+            # The very last clause in the query is necessary because each
+            # package set is also a predecessor of itself in the flattened
+            # hierarchy.
+            query = '''
+                SELECT fpsi.parent FROM flatpackagesetinclusion fpsi
+                WHERE fpsi.child = ? AND fpsi.parent != ?
+            '''
+            params = (self.id, self.id)
+        else:
+            query = '''
+                SELECT psi.parent FROM packagesetinclusion psi
+                WHERE psi.child = ?
+            '''
+            params = (self.id,)
         store = IStore(Packageset)
-        predecessors = SQL(query, (self.id, self.id))
+        predecessors = SQL(query, params)
         return list(store.find(Packageset, In(Packageset.id, predecessors)))
 
-    @property
-    def sets_included_directly_by(self):
+    def setsIncluded(self, direct_inclusion=False):
         """See `IPackageset`."""
-        query = '''
-            SELECT psi.parent FROM packagesetinclusion psi WHERE psi.child = ?
-        '''
+        if direct_inclusion == False:
+            # The very last clause in the query is necessary because each
+            # package set is also a successor of itself in the flattened
+            # hierarchy.
+            query = '''
+                SELECT fpsi.child FROM flatpackagesetinclusion fpsi
+                WHERE fpsi.parent = ? AND fpsi.child != ?
+            '''
+            params = (self.id, self.id)
+        else:
+            query = '''
+                SELECT psi.child FROM packagesetinclusion psi
+                WHERE psi.parent = ?
+            '''
+            params = (self.id,)
         store = IStore(Packageset)
-        predecessors = SQL(query, (self.id, ))
-        return list(store.find(Packageset, In(Packageset.id, predecessors)))
-
-    @property
-    def sets_included(self):
-        """See `IPackageset`."""
-        # The very last clause in the query is necessary because each
-        # package set is also a successor of itself in the flattened
-        # hierarchy.
-        query = '''
-            SELECT fpsi.child FROM flatpackagesetinclusion fpsi
-            WHERE fpsi.parent = ? AND fpsi.child != ?
-        '''
-        store = IStore(Packageset)
-        successors = SQL(query, (self.id, self.id))
-        return list(store.find(Packageset, In(Packageset.id, successors)))
-
-    @property
-    def sets_included_directly(self):
-        """See `IPackageset`."""
-        query = '''
-            SELECT psi.child FROM packagesetinclusion psi WHERE psi.parent = ?
-        '''
-        store = IStore(Packageset)
-        successors = SQL(query, (self.id, ))
+        successors = SQL(query, params)
         return list(store.find(Packageset, In(Packageset.id, successors)))
 
 
@@ -220,4 +207,4 @@ class PackagesetSet:
     def getByOwner(self, owner):
         """See `IPackagesetSet`."""
         store = IStore(Packageset)
-        return store.find(Packageset, Packageset.owner == owner)
+        return list(store.find(Packageset, Packageset.owner == owner))

@@ -79,58 +79,63 @@ class IPackageset(Interface):
             instances
         """
 
-    def sources_included_directly():
-        """Get the source names *directly* associated with this package set.
-
-        This method only returns the source package names that are directly
-        associated with the package set at hand i.e. source names related to
-        successors of the latter are ignored.
-        
-        :return: A (potentially empty) result set of `ISourcePackageName`
-            instances.
-        """
-
-    def sources_included():
+    def sourcesIncluded(direct_inclusion=False):
         """Get all source names associated with this package set.
 
         This method returns the source package names that are directly
         or indirectly associated with the package set at hand. Indirect
         associations may be defined through package set successors.
         
-        :return: A (potentially empty) result set of `ISourcePackageName`
+        :param direct_inclusion: if this flag is set to True only sources
+            directly included by this package set will be considered.
+        :return: A (potentially empty) sequence of `ISourcePackageName`
             instances.
         """
 
-    def sets_included_by():
+    def setsIncludedBy(direct_inclusion=False):
         """Get all package sets that include this one.
         
         Return all package sets that directly or indirectly include this one.
         
-        :return: A (potentially empty) result set of `IPackageset`
-            instances.
+        :param direct_inclusion: if this flag is set to True only sets
+            directly including this one will be considered.
+        :return: A (potentially empty) sequence of `IPackageset` instances.
         """
 
-    def sets_included_directly_by():
-        """Get all package sets that *directly* include this one.
-        
-        :return: A (potentially empty) result set of `IPackageset`
-            instances.
-        """
-
-    def sets_included():
+    def setsIncluded(direct_inclusion=False):
         """Get all package sets that are included by this one.
         
         Return all package sets that are directly or indirectly
         included by this one.
 
-        :return: A (potentially empty) result set of `IPackageset`
+        :param direct_inclusion: if this flag is set to True only sets
+            directly included by this one will be considered.
+        :return: A (potentially empty) sequence of `IPackageset` instances.
+        """
+
+    def sourcesSharedBy(other_package_set, direct_inclusion=False):
+        """Get source package names also included by another package set.
+
+        What source package names does this package set have in common with
+        the 'other_package_set'?
+        
+        :param other_package_set: the other package set
+        :param direct_inclusion: if this flag is set to True only directly
+            included sources will be considered.
+        :return: A (potentially empty) sequence of `ISourcePackageName`
             instances.
         """
 
-    def sets_included_directly():
-        """Get all package sets that are *directly* included by this one.
+    def sourcesNotSharedBy(other_package_set, direct_inclusion=False):
+        """Get source package names not included by another package set.
+
+        Which source package names included by this package are *not*
+        included by the 'other_package_set'?
         
-        :return: A (potentially empty) result set of `IPackageset`
+        :param other_package_set: the other package set
+        :param direct_inclusion: if this flag is set to True only directly
+            included sources will be considered.
+        :return: A (potentially empty) sequence of `ISourcePackageName`
             instances.
         """
 
@@ -160,5 +165,5 @@ class IPackagesetSet(Interface):
 
         :param owner: the owner of the package sets sought.
 
-        :return: A (potentially empty) result set of `IPackageset` instances.
+        :return: A (potentially empty) sequence of `IPackageset` instances.
         """
