@@ -15,6 +15,7 @@ from zope.interface import Interface
 from zope.schema import Datetime, Int, TextLine
 
 from canonical.launchpad import _
+from canonical.launchpad.interfaces.launchpad import IHasOwner
 from lp.registry.interfaces.person import IPerson
 from canonical.launchpad.validators.name import name_validator
 from lazr.restful.fields import Reference
@@ -28,8 +29,8 @@ class PackagesetError(Exception):
     '''
 
 
-class IPackageset(Interface):
-    """An interface for package sets."""
+class IPackagesetRead(IHasOwner):
+    """A read-only interface for package sets."""
 
     id = Int(title=_('ID'), required=True, readonly=True)
 
@@ -48,29 +49,6 @@ class IPackageset(Interface):
     description = TextLine(
         title=_("Description"), required=True, readonly=True,
         description=_("The description for the package set at hand."))
-
-    def add(data):
-        """Add source package names or other package sets to this one.
-
-        Any passed `SourcePackageName` or `Packageset` instances will become
-        *directly* associated with the package set at hand.
-
-        This function is idempotent in the sense that entities that are
-        already directly associated with a package set will be ignored.
-
-        :param data: an iterable with `SourcePackageName` XOR `Packageset`
-            instances
-        """
-
-    def remove(data):
-        """Remove source package names or other package sets from this one.
-
-        Only source package names or package subsets *directly* included by
-        this package set can be removed. Any others will be ignored.
-
-        :param data: an iterable with `SourcePackageName` XOR `Packageset`
-            instances
-        """
 
     def sourcesIncluded(direct_inclusion=False):
         """Get all source names associated with this package set.
@@ -131,6 +109,36 @@ class IPackageset(Interface):
         :return: A (potentially empty) sequence of `ISourcePackageName`
             instances.
         """
+
+
+class IPackagesetMutate(Interface):
+    """A writeable interface for package sets."""
+    def add(data):
+        """Add source package names or other package sets to this one.
+
+        Any passed `SourcePackageName` or `Packageset` instances will become
+        *directly* associated with the package set at hand.
+
+        This function is idempotent in the sense that entities that are
+        already directly associated with a package set will be ignored.
+
+        :param data: an iterable with `SourcePackageName` XOR `Packageset`
+            instances
+        """
+
+    def remove(data):
+        """Remove source package names or other package sets from this one.
+
+        Only source package names or package subsets *directly* included by
+        this package set can be removed. Any others will be ignored.
+
+        :param data: an iterable with `SourcePackageName` XOR `Packageset`
+            instances
+        """
+
+
+class IPackageset(IPackagesetRead, IPackagesetMutate):
+    """An interface for package sets."""
 
 
 class IPackagesetSet(Interface):

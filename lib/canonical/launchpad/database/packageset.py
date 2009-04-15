@@ -10,6 +10,7 @@ from storm.locals import DateTime, Int, Reference, Storm, Unicode
 
 from zope.component import getUtility
 from zope.interface import implements
+from zope.security.proxy import removeSecurityProxy
 
 from lp.registry.model.sourcepackagename import SourcePackageName
 from canonical.launchpad.interfaces import IStore
@@ -67,8 +68,7 @@ class Packageset(Storm):
             return
 
         store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
-
-        datum = data[0]
+        datum = removeSecurityProxy(data[0])
         for data_type, handler in types_and_handlers.iteritems():
             if isinstance(datum, data_type):
                 # The type matches, call the corresponding handler and

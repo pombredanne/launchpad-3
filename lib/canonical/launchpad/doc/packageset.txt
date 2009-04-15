@@ -34,6 +34,8 @@ So, let's start by creating a few package sets.
     >>> from canonical.launchpad.interfaces.packageset import (
     ...     IPackagesetSet)
 
+    >>> login('foo.bar@canonical.com')
+
     >>> person1 = factory.makePerson(
     ...     name='hacker', displayname=u'Happy Hacker')
     >>> person2 = factory.makePerson(
@@ -54,7 +56,6 @@ Now 'juergen' and 'hacker' have a package set each.
 In a next step we will associate source package names with the package sets
 just created.
 
-    >>> from zope.security.proxy import removeSecurityProxy
     >>> from canonical.launchpad.webapp.interfaces import (
     ...     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR, MASTER_FLAVOR)
     >>> from lp.registry.model.sourcepackagename import SourcePackageName
@@ -63,7 +64,6 @@ just created.
 First associate *all* source package names with the umbrella package set.
 
     >>> all_spns = store.find(SourcePackageName)
-    >>> umbrella_ps = removeSecurityProxy(umbrella_ps)
     >>> umbrella_ps.add(list(all_spns))
 
 Let's see what we got:
@@ -97,7 +97,6 @@ Let's see what we got:
 Now let's put a few selected source package names into the 'kernel' package
 set:
 
-    >>> kernel_ps = removeSecurityProxy(kernel_ps)
     >>> kernel_spns = store.find(
     ...     SourcePackageName, SourcePackageName.name.like('li%'))
     >>> kernel_ps.add(list(kernel_spns))
@@ -140,16 +139,16 @@ i.e. for package sets to include others as subsets.
 
 We need more package sets to play with however.
 
-    >>> gnome_ps = removeSecurityProxy(ps_factory.new(
-    ...     u'gnome', u'Contains all gnome desktop packages', person2))
-    >>> mozilla_ps = removeSecurityProxy(ps_factory.new(
-    ...     u'mozilla', u'Contains all mozilla packages', person2))
-    >>> firefox_ps = removeSecurityProxy(ps_factory.new(
-    ...     u'firefox', u'Contains all firefox packages', person2))
-    >>> thunderbird_ps = removeSecurityProxy(ps_factory.new(
-    ...     u'thunderbird', u'Contains all thunderbird packages', person2))
-    >>> languagepack_ps = removeSecurityProxy(ps_factory.new(
-    ...     u'languagepack', u'Contains all language packs', person2))
+    >>> gnome_ps = ps_factory.new(
+    ...     u'gnome', u'Contains all gnome desktop packages', person2)
+    >>> mozilla_ps = ps_factory.new(
+    ...     u'mozilla', u'Contains all mozilla packages', person2)
+    >>> firefox_ps = ps_factory.new(
+    ...     u'firefox', u'Contains all firefox packages', person2)
+    >>> thunderbird_ps = ps_factory.new(
+    ...     u'thunderbird', u'Contains all thunderbird packages', person2)
+    >>> languagepack_ps = ps_factory.new(
+    ...     u'languagepack', u'Contains all language packs', person2)
     >>> store.commit()
 
 Now we can set up the package set hierarchy.
