@@ -100,6 +100,11 @@ class BinaryPackageRelease(SQLBase):
             determined_filetype = BinaryPackageFileType.RPM
         elif file.filename.endswith(".udeb"):
             determined_filetype = BinaryPackageFileType.UDEB
+        elif file.filename.endswith(".ddeb"):
+            determined_filetype = BinaryPackageFileType.DDEB
+        else:
+            raise AssertionError(
+                'Unsupported file type: %s' % file.filename)
 
         return BinaryPackageFile(binarypackagerelease=self,
                                  filetype=determined_filetype,
