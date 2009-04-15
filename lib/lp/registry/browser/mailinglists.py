@@ -16,6 +16,7 @@ from urllib import quote
 
 from zope.component import getUtility
 from zope.interface import Interface
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
@@ -45,14 +46,15 @@ class MailingListsReviewView(LaunchpadFormView):
         purposes of rendering in the view needs to be turned into a concrete,
         sorted list object.
 
-        :return: list of IMailingList objects pending review.
+        :return: The list of mailing lists pending review.
+        :rtype: security proxy removed mailing lists
         """
-        # Use a lambda here for succinctness.  Sure, we could have defined a
-        # nested function that did the same thing.  Won't it be nice when in
-        # Python 2.6, operator.attrgetter() will chase chained property
-        # references?
-        return sorted(self.context.registered_lists,
-                      key=lambda mlist: mlist.team.name)
+        def team_name(mailing_list):
+            return removeSecurityProxy(mailing_list.team).name
+        return sorted(
+            (removeSecurityProxy(mailing_list)
+             for mailing_list in self.context.registered_lists),
+            key=team_name)
 
     @action(_('Submit'), name='submit')
     def submit_action(self, action, data):
