@@ -34,7 +34,7 @@
               style="text-align: center">
               <tal:block tal:define=
                "team mailing_list/team;
-                team_name mailing_list/team/name;
+                team_name mailing_list/name;
                 registrant mailing_list/registrant;
                 action_name string:field.${team_name}"
                 >
