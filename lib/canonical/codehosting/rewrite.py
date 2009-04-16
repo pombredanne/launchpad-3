@@ -9,7 +9,7 @@ from bzrlib import urlutils
 from canonical.codehosting.vfs import (
     branch_id_to_path, BranchFileSystemClient)
 from canonical.config import config
-from canonical.launchpad.interfaces.codehosting import (
+from lp.code.interfaces.codehosting import (
     BRANCH_TRANSPORT, LAUNCHPAD_ANONYMOUS)
 from canonical.launchpad.xmlrpc import faults
 from canonical.twistedsupport import extract_result

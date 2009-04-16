@@ -45,7 +45,7 @@ A new view should have the new user.
     >>> print view.account
     <...launchpad.database.account.Account instance ...>
     >>> print view.user
-    <...launchpad.database.person.Person instance ...>
+    <...lp.registry.model.person.Person instance ...>
     >>> print view.user.name
     name16
 

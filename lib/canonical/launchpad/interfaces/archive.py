@@ -36,15 +36,16 @@ from zope.schema import (
 from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import PublicPersonChoice
+from canonical.launchpad.fields import (
+    PublicPersonChoice, StrippedTextLine)
 from canonical.launchpad.interfaces import IHasOwner
 from canonical.launchpad.interfaces.buildrecords import IHasBuildRecords
-from canonical.launchpad.interfaces.gpg import IGPGKey
-from canonical.launchpad.interfaces.person import IPerson
+from lp.registry.interfaces.gpg import IGPGKey
+from lp.registry.interfaces.person import IPerson
 from canonical.launchpad.validators.name import name_validator
 
-from canonical.lazr.fields import Reference
-from canonical.lazr.rest.declarations import (
+from lazr.restful.fields import Reference
+from lazr.restful.declarations import (
     export_as_webservice_entry, exported, export_read_operation,
     export_factory_operation, export_write_operation, operation_parameters,
     operation_returns_collection_of, rename_parameters_as, webservice_error)
@@ -105,7 +106,7 @@ class IArchivePublic(IHasOwner):
             description=_("The name of this archive.")))
 
     displayname = exported(
-        TextLine(
+        StrippedTextLine(
             title=_("Displayname"), required=False,
             description=_("Displayname for this archive.")))
 
@@ -826,6 +827,10 @@ class IPPAActivateForm(Interface):
         title=_("PPA name"), required=True, constraint=name_validator,
         description=_("A unique name used to identify this PPA."))
 
+    displayname = StrippedTextLine(
+        title=_("Displayname"), required=True,
+        description=_("Displayname for this PPA."))
+
     description = Text(
         title=_("PPA contents description"), required=False,
         description=_(
@@ -879,14 +884,21 @@ class IArchiveSet(Interface):
         """
 
 
-    def new(purpose, owner, name=None, distribution=None, description=None):
+    def new(purpose, owner, name=None, displayname=None, distribution=None,
+            description=None):
         """Create a new archive.
+
+        On named-ppa creation, the signing key for the default PPA for the
+        given owner will be used if it is present.
 
         :param purpose: `ArchivePurpose`;
         :param owner: `IPerson` owning the Archive;
         :param name: optional text to be used as the archive name, if not
             given it uses the names defined in
             `IArchiveSet._getDefaultArchiveNameForPurpose`;
+        :param displayname: optional text that will be used as a reference
+            to this archive in the UI. If not provided a default text (
+            including the archive name and the owner displayname will be used.)
         :param distribution: optional `IDistribution` to which the archive
             will be attached;
         :param description: optional text to be set as the archive
@@ -1057,7 +1069,7 @@ from canonical.launchpad.components.apihelpers import (
     patch_plain_parameter_type, patch_choice_parameter_type,
     patch_reference_property)
 
-from canonical.launchpad.interfaces.distribution import IDistribution
+from lp.registry.interfaces.distribution import IDistribution
 patch_reference_property(IArchive, 'distribution', IDistribution)
 
 from canonical.launchpad.interfaces.archivepermission import (
@@ -1078,7 +1090,7 @@ patch_entry_return_type(IArchive, 'newQueueAdmin', IArchivePermission)
 patch_plain_parameter_type(IArchive, 'syncSources', 'from_archive', IArchive)
 patch_plain_parameter_type(IArchive, 'syncSource', 'from_archive', IArchive)
 
-from canonical.launchpad.interfaces.distroseries import IDistroSeries
+from lp.registry.interfaces.distroseries import IDistroSeries
 from canonical.launchpad.interfaces.publishing import (
     ISourcePackagePublishingHistory, PackagePublishingPocket,
     PackagePublishingStatus)
@@ -1093,6 +1105,6 @@ patch_choice_parameter_type(
 
 # This is patched here to avoid even more circular imports in
 # interfaces/person.py.
-from canonical.launchpad.interfaces.person import IPersonPublic
+from lp.registry.interfaces.person import IPersonPublic
 patch_reference_property(IPersonPublic, 'archive', IArchive)
 

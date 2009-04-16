@@ -10,7 +10,7 @@ from zope.interface import implements
 from sqlobject import ForeignKey
 
 from canonical.launchpad.interfaces import ISprintAttendance
-from canonical.launchpad.validators.person import validate_public_person
+from lp.registry.interfaces.person import validate_public_person
 
 from canonical.database.datetimecol import UtcDateTimeCol
 

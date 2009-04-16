@@ -1856,7 +1856,7 @@ First we create three copy archives for ubuntu:
 
 One of the new copy archives will be owned by a team:
 
-    >>> from canonical.launchpad.interfaces.person import (
+    >>> from lp.registry.interfaces.person import (
     ...     TeamSubscriptionPolicy)
     >>> team = getUtility(IPersonSet).newTeam(sabdfl, 't1', 't1',
     ...     subscriptionpolicy=TeamSubscriptionPolicy.OPEN)
@@ -2334,36 +2334,79 @@ When there are not matching PPAs, None is returned.
     None
 
 
-== Transition to editable displayname ==
+== Editable displayname ==
 
-We are currently in a transition period for user-editable
-'displayname' for Archive. The 'displayname' column exists in the
-database and the existing archives were migrated.
-
-    >>> for archive in ubuntu.all_distro_archives:
-    ...     print archive.displayname
-    Primary Archive for Ubuntu Linux
-    Partner Archive for Ubuntu Linux
-
-New archives have their displayname automatically set.
-
+If 'displayname' is omitted on archive created, a default form is
+automatically used.
     >>> new_ppa = getUtility(IArchiveSet).new(
     ...     owner=cprov, purpose=ArchivePurpose.PPA,
     ...     distribution=ubuntu, name='test-ppa')
     >>> print new_ppa.displayname
     PPA named test-ppa for Celso Providelo
 
+When provided 'displayname' is used as given.
+
     >>> new_copy = getUtility(IArchiveSet).new(
     ...     owner=cprov, purpose=ArchivePurpose.COPY,
+    ...     displayname='Rock and roll with rebuilds!',
     ...     distribution=ubuntu, name='test-rebuild')
     >>> print new_copy.displayname
-    Copy archive test-rebuild for Celso Providelo
+    Rock and roll with rebuilds!
 
-During this transition period nobody can edit 'displayname'.
+After archive creation, the 'displayname' can be edited by the archive
+anyone with 'edit' permissions on the archive.
 
-    >>> login("foo.bar@canonical.com")
+    >>> login("no-priv@canonical.com")
     >>> new_ppa.displayname = 'No-way!'
     Traceback (most recent call last):
     ...
-    ForbiddenAttribute: ('displayname', <Archive at ...>)
+    Unauthorized: (<Archive at ...>, 'displayname', 'launchpad.Edit')
+
+    >>> login('celso.providelo@canonical.com')
+    >>> new_ppa.displayname = 'My testing packages for jaunty'
+
+
+== Signing-key propagation ==
+
+Signing keys are, by default, shared between PPAs owned by the same
+user/team.
+
+Celso's default PPA currently has no signing-key.
+
+    >>> print cprov.archive.signing_key
+    None
+
+When a named-ppa is created there is no key to be shared, this case
+is worked out when generating new signing key. See archive-signing.txt
+for more information.
+
+    >>> no_key_ppa = getUtility(IArchiveSet).new(
+    ...     owner=cprov, purpose=ArchivePurpose.PPA,
+    ...     distribution=ubuntu, name='no-key')
+
+    >>> print no_key_ppa.signing_key
+    None
+
+We will select the only available IGPGKey from the sampledata.
+
+    >>> foo_bar = getUtility(IPersonSet).getByName('name16')
+    >>> [a_key] = foo_bar.gpgkeys
+    >>> print a_key.displayname
+    1024D/12345678
+
+And use it as the Celso's default PPA signing key.
+
+    >>> login('foo.bar@canonical.com')
+    >>> cprov.archive.signing_key = a_key
+    >>> login('celso.providelo@canonical.com')
+
+Now there is a signing-key to be propagated and a new named-ppa is
+already created accordingly.
+
+    >>> ppa_with_key = getUtility(IArchiveSet).new(
+    ...     owner=cprov, purpose=ArchivePurpose.PPA,
+    ...     distribution=ubuntu, name='has-key')
+
+    >>> ppa_with_key.signing_key == cprov.archive.signing_key
+    True
 

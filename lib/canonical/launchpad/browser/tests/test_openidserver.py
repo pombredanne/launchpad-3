@@ -20,7 +20,7 @@ from zope.testing import doctest
 from canonical.launchpad.browser.openidserver import OpenIDMixin
 from canonical.launchpad.ftests import ANONYMOUS, login, logout
 from canonical.launchpad.database.openidserver import OpenIDAuthorization
-from canonical.launchpad.interfaces.person import IPersonSet
+from lp.registry.interfaces.person import IPersonSet
 from canonical.launchpad.interfaces.openidserver import IOpenIDRPConfigSet
 from canonical.launchpad.interfaces.shipit import IShipitAccount
 from canonical.launchpad.testing import TestCase, TestCaseWithFactory
@@ -298,6 +298,7 @@ def test_suite():
     suite.addTest(LayeredDocFileSuite(
         'loginservice.txt',
         'loginservice-dissect-radio-button.txt',
+        'loginservice-unauthorized-view.txt',
         setUp=setUp, tearDown=tearDown,
         layer=DatabaseFunctionalLayer))
     return suite

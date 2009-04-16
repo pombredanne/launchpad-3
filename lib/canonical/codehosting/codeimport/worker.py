@@ -30,7 +30,7 @@ from canonical.codehosting.codeimport.foreigntree import (
 from canonical.codehosting.codeimport.tarball import (
     create_tarball, extract_tarball)
 from canonical.config import config
-from canonical.launchpad.interfaces.codeimport import RevisionControlSystems
+from lp.code.interfaces.codeimport import RevisionControlSystems
 
 from cscvs.cmds import totla
 import cscvs

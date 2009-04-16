@@ -98,6 +98,14 @@ default PPA (the one named 'ppa').
     Distribution: ubuntu
     Suite: None
 
+PPA upload paths missing the 'distribution' part default to 'ubuntu'
+distribution.
+
+    >>> check_upload('~cprov/ppa')
+    Archive: ppa
+    Distribution: ubuntu
+    Suite: None
+
 PPA uploads also support overrides to the changesfile suite when it's
 valid. It's also supported for uploads omitting the PPA name.
 
@@ -129,7 +137,7 @@ We will disable Celso's default PPA and uploads to it will result in
 an error.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
 
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
     >>> cprov_ppa = cprov.getPPAByName('ppa')
@@ -218,3 +226,46 @@ A named PPA upload missing '~'.
     UploadPathError: Path mismatch 'cprov/ppa/ubuntu'. Use
     ~<person>/<ppa_name>/<distro>[/distroseries]/[files] for PPAs and
     <distro>/[files] for normal uploads.
+
+
+== Binary uploads from build slaves ==
+
+A relative path for a binary upload from a build slave will have the
+following format: <archive_id>/<distribution_name> where archive_id
+is the database key of the archive in question.
+
+So, here is a binary upload path to the primary archive:
+
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
+    >>> primary = getUtility(IArchiveSet).getByDistroPurpose(
+    ...     ubuntu, ArchivePurpose.PRIMARY, 'primary')
+    >>> check_upload('%s/ubuntu' % primary.id)
+    Archive: primary
+    Distribution: ubuntu
+    Suite: None
+
+The same for a PPA:
+
+    >>> cprov_ppa.enabled = True
+    >>> check_upload('%s/ubuntu' % cprov_ppa.id)
+    Archive: ppa
+    Distribution: ubuntu
+    Suite: None
+
+And, last but not least, for a copy archive:
+
+    >>> copy_archive = getUtility(IArchiveSet).new(
+    ...     ArchivePurpose.COPY, cprov, 'samplecopyarchive')
+    >>> check_upload('%s/ubuntu' % copy_archive.id)
+    Archive: samplecopyarchive
+    Distribution: ubuntu
+    Suite: None
+
+In the case where an archive cannot be found an 'UploadPathError' exception
+is raised.
+
+    >>> check_upload('1234567890/ubuntu')
+    Traceback (most recent call last):
+    ...
+    UploadPathError: Could not find archive with id=1234567890

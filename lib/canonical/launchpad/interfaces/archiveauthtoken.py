@@ -15,8 +15,8 @@ from zope.schema import Datetime, Int, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.archive import IArchive
-from canonical.launchpad.interfaces.person import IPerson
-from canonical.lazr.fields import Reference
+from lp.registry.interfaces.person import IPerson
+from lazr.restful.fields import Reference
 
 
 class IArchiveAuthTokenView(Interface):
@@ -53,10 +53,7 @@ class IArchiveAuthTokenView(Interface):
 
 
 class IArchiveAuthTokenEdit(Interface):
-    """Interface for Archive Auth Tokens requiring launchpad.Edit.
-
-    Users can set all the attributes in IArchiveAuthTokenView.
-    """
+    """Interface for Archive Auth Tokens requiring launchpad.Edit."""
 
 
 class IArchiveAuthToken(IArchiveAuthTokenView, IArchiveAuthTokenEdit):

@@ -9,7 +9,7 @@ __all__ = [
 
 import logging
 
-from canonical.launchpad.interfaces.branch import BranchLifecycleStatus
+from lp.code.interfaces.branch import BranchLifecycleStatus
 
 
 class BranchMergeDetectionHandler:

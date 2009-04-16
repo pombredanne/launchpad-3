@@ -21,15 +21,15 @@ from canonical.codehosting.jobs import JobRunner
 from canonical.launchpad.interfaces import (
     BranchSubscriptionNotificationLevel, BranchType,
     CodeReviewNotificationLevel, CodeReviewVote)
-from canonical.launchpad.interfaces.branchlookup import IBranchLookup
-from canonical.launchpad.interfaces.branchmergeproposal import (
+from lp.code.interfaces.branchlookup import IBranchLookup
+from lp.code.interfaces.branchmergeproposal import (
     BranchMergeProposalStatus)
 from canonical.launchpad.database import MessageSet
-from canonical.launchpad.database.branchmergeproposal import (
+from lp.code.model.branchmergeproposal import (
     CreateMergeProposalJob, MergeProposalCreatedJob)
 from canonical.launchpad.interfaces.mail import (
     EmailProcessingError, IWeaklyAuthenticatedPrincipal)
-from canonical.launchpad.mail.codehandler import (
+from lp.code.mail.codehandler import (
     AddReviewerEmailCommand, CodeEmailCommands, CodeHandler,
     CodeReviewEmailCommandExecutionContext,
     InvalidBranchMergeProposalAddress,

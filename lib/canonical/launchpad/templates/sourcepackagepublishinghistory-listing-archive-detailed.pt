@@ -26,7 +26,7 @@
       <tal:view_changesfile
         define="changesfile context/sourcepackagerelease/upload_changesfile">
         <a tal:condition="changesfile"
-           tal:attributes="href string:+files/${changesfile/filename};
+           tal:attributes="href changesfile/http_url;
                            title changesfile/filename"
           >(changesfile)</a>
       </tal:view_changesfile>

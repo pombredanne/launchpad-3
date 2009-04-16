@@ -37,7 +37,7 @@ from canonical.launchpad.database.archiveauthtoken import ArchiveAuthToken
 from canonical.launchpad.database.archivesubscriber import (
     ArchiveSubscriber)
 from canonical.launchpad.database.build import Build
-from canonical.launchpad.database.distributionsourcepackagecache import (
+from lp.registry.model.distributionsourcepackagecache import (
     DistributionSourcePackageCache)
 from canonical.launchpad.database.distroseriespackagecache import (
     DistroSeriesPackageCache)
@@ -51,7 +51,7 @@ from canonical.launchpad.database.publishing import (
     SourcePackagePublishingHistory, BinaryPackagePublishingHistory)
 from canonical.launchpad.database.queue import (
     PackageUpload, PackageUploadSource)
-from canonical.launchpad.database.teammembership import TeamParticipation
+from lp.registry.model.teammembership import TeamParticipation
 from canonical.launchpad.interfaces.archive import (
     ArchiveDependencyError, ArchivePurpose, DistroSeriesNotFound,
     IArchive, IArchiveSet, IDistributionArchive, IPPA, MAIN_ARCHIVE_PURPOSES,
@@ -66,7 +66,7 @@ from canonical.launchpad.interfaces.build import (
     BuildStatus, IBuildSet)
 from canonical.launchpad.interfaces.buildrecords import IHasBuildRecords
 from canonical.launchpad.interfaces.component import IComponentSet
-from canonical.launchpad.interfaces.distroseries import IDistroSeriesSet
+from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from canonical.launchpad.interfaces.launchpad import (
     IHasOwner, ILaunchpadCelebrities, NotFoundError)
 from canonical.launchpad.interfaces.package import PackageUploadStatus
@@ -74,7 +74,7 @@ from canonical.launchpad.interfaces.packagecopyrequest import (
     IPackageCopyRequestSet)
 from canonical.launchpad.interfaces.publishing import (
     PackagePublishingPocket, PackagePublishingStatus, IPublishingSet)
-from canonical.launchpad.interfaces.sourcepackagename import (
+from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageNameSet)
 from canonical.launchpad.scripts.packagecopier import (
     CannotCopy, check_copy, do_copy)
@@ -82,7 +82,7 @@ from canonical.launchpad.webapp.interfaces import (
         IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from canonical.launchpad.webapp.url import urlappend
 from canonical.launchpad.validators.name import valid_name
-from canonical.launchpad.validators.person import validate_public_person
+from lp.registry.interfaces.person import validate_public_person
 
 
 class Archive(SQLBase):
@@ -1222,8 +1222,8 @@ class ArchiveSet:
 
         return '%s for %s' % (purpose.title, distribution.title)
 
-    def new(self, purpose, owner, name=None, distribution=None,
-            description=None):
+    def new(self, purpose, owner, name=None, displayname=None,
+            distribution=None, description=None):
         """See `IArchiveSet`."""
         if distribution is None:
             distribution = getUtility(ILaunchpadCelebrities).ubuntu
@@ -1236,6 +1236,12 @@ class ArchiveSet:
         if name == distribution.name:
             raise AssertionError(
                 'Archives cannot have the same name as their distribution.')
+
+        # If displayname is not given, create a default one.
+        if displayname is None:
+            displayname = self._getDefaultDisplayname(
+                name=name, owner=owner, distribution=distribution,
+                purpose=purpose)
 
         # Copy archives are to be instantiated with the 'publish' flag turned
         # off.
@@ -1263,16 +1269,15 @@ class ArchiveSet:
                     "Person '%s' already has a PPA named '%s'." %
                     (owner.name, name))
 
-        # XXX cprov bug=340457: Use the default'displayname' until we
-        # allow users to edit it.
-        default_displayname = self._getDefaultDisplayname(
-            name=name, owner=owner, distribution=distribution,
-            purpose=purpose)
+        # Signing-key for the default PPA is reused when it's already present.
+        signing_key = None
+        if purpose == ArchivePurpose.PPA and owner.archive is not None:
+            signing_key = owner.archive.signing_key
 
         new_archive = Archive(
             owner=owner, distribution=distribution, name=name,
-            displayname=default_displayname, description=description,
-            purpose=purpose, publish=publish)
+            displayname=displayname, description=description,
+            purpose=purpose, publish=publish, signing_key=signing_key)
 
         return new_archive
 

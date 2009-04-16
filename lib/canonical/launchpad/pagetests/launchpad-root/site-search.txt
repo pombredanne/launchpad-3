@@ -235,7 +235,7 @@ the user. The text field is focused so that the user can try another
 search.
 
     >>> search_for('fnord')
-    >>> print extract_text(find_main_content(anon_browser.contents))
+    >>> print extract_text(find_main_content(anon_browser.contents), skip_tags=[])
     Pages matching "fnord" in Launchpad
     <!-- setFocusByName('field.text'); // -->
     Your search for &ldquo;fnord&rdquo; did not return any results.
