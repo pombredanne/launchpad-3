@@ -463,6 +463,19 @@ vocabulary.
     ...     print "%s: %s" % (term.value.target.name, term.value.name)
     firefox: 1.0
 
+If the context is a productseries, milestones for the series and for the
+product itself are included in the vocabulary.
+
+    >>> firefox_trunk = firefox.getSeries('trunk')
+    >>> firefox_milestone = factory.makeMilestone(
+    ...     product=firefox, name='firefox-milestone-no-series')
+    >>> firefox_trunk_milestones = vocabulary_registry.get(firefox_trunk,
+    ...                                                    'Milestone')
+    >>> for term in firefox_trunk_milestones:
+    ...     print "%s: %s" % (term.value.target.name, term.value.name)
+    firefox: 1.0
+    firefox: firefox-milestone-no-series
+
 If the context is a bugtask, only the bugtask's target's milestones are
 in the vocabulary.
 
@@ -476,6 +489,7 @@ in the vocabulary.
     >>> for term in firefox_task_milestones:
     ...     print "%s: %s" % (term.value.target.name, term.value.name)
     firefox: 1.0
+    firefox: firefox-milestone-no-series
 
     >>> bug_two = getUtility(IBugSet).get(2)
     >>> debian_woody_task = bug_two.bugtasks[-1]
@@ -504,6 +518,35 @@ it'll still show up on the vocabulary so that users can change it.
     >>> len(vocabulary_registry.get(debian_woody_task, 'Milestone'))
     2
 
+This is true for inactive milestones used in bugtasks for products and
+product serieses as well.
+
+    >>> product_bugtask = factory.makeBugTask(target=firefox)
+    >>> product_bugtask.milestone = firefox_milestone
+    >>> product_target_milestones = vocabulary_registry.get(
+    ...     product_bugtask, 'Milestone')
+    >>> for term in product_target_milestones:
+    ...     print "%s: %s" % (term.value.target.name, term.value.name)
+    firefox: 1.0
+    firefox: firefox-milestone-no-series
+
+    >>> firefox_milestone.active = False
+    >>> product_target_milestones = vocabulary_registry.get(
+    ...     product_bugtask, 'Milestone')
+    >>> for term in product_target_milestones:
+    ...     print "%s: %s" % (term.value.target.name, term.value.name)
+    firefox: 1.0
+    firefox: firefox-milestone-no-series
+
+    >>> productseries_bugtask = factory.makeBugTask(target=firefox_trunk)
+    >>> productseries_bugtask.milestone = firefox_milestone
+    >>> productseries_target_milestones = vocabulary_registry.get(
+    ...     productseries_bugtask, 'Milestone')
+    >>> for term in productseries_target_milestones:
+    ...     print "%s: %s" % (term.value.target.name, term.value.name)
+    firefox: 1.0
+    firefox: firefox-milestone-no-series
+
 If the context is a specification, only milestones from that specification
 target are in the vocabulary.
 
@@ -517,6 +560,10 @@ target are in the vocabulary.
 
 The vocabulary contains only active milestones.
 
+    >>> for milestone in firefox.milestones:
+    ...     print milestone.name, milestone.active
+    1.0 True
+
     >>> one_dot_o = firefox.milestones[0]
     >>> one_dot_o.name
     u'1.0'
@@ -529,16 +576,6 @@ The vocabulary contains only active milestones.
     ...     firefox_task, 'Milestone')
     >>> len(firefox_task_milestones)
     0
-
-There's one exception, though; if a bugtask is assigned to an
-inactive milestone, that milestone will be in the vocabulary.
-
-    >>> firefox_task_milestones = vocabulary_registry.get(
-    ...     firefox_task, 'Milestone')
-    >>> firefox_task.milestone = one_dot_o
-    >>> for term in firefox_task_milestones:
-    ...     print "%s: %s" % (term.value.target.name, term.value.name)
-    firefox: 1.0
 
 
 === BugNominatableSeriesVocabulary ===
