@@ -123,7 +123,8 @@ from lp.registry.interfaces.teammembership import (
     TeamMembershipStatus)
 from lp.registry.interfaces.wikiname import IWikiName, IWikiNameSet
 from canonical.launchpad.webapp.interfaces import (
-    ILaunchBag, IStoreSelector, AUTH_STORE, MASTER_FLAVOR)
+    AUTH_STORE, ILaunchBag, IStoreSelector, MASTER_FLAVOR)
+
 
 from canonical.launchpad.database.archive import Archive
 from lp.registry.model.codeofconduct import SignedCodeOfConduct
@@ -208,6 +209,8 @@ class Person(
 
     sortingColumns = SQLConstant(
         "person_sort_key(Person.displayname, Person.name)")
+    # Redefine the default ordering into Storm syntax.
+    _storm_sortingColumns = ('Person.displayname', 'Person.name')
     # When doing any sort of set operations (union, intersect, except_) with
     # SQLObject we can't use sortingColumns because the table name Person is
     # not available in that context, so we use this one.
@@ -1971,7 +1974,7 @@ class Person(
             EmailAddress,
             EmailAddress.personID == self.id,
             EmailAddress.status == EmailAddressStatus.PREFERRED).one()
-        
+
         # This email is already validated and is this person's preferred
         # email, so we have nothing to do.
         if preferred_email == email:
@@ -2476,6 +2479,48 @@ class PersonSet:
         """See `IPersonSet`."""
         return getUtility(ILaunchpadStatisticSet).value('teams_count')
 
+    def _teamPrivacyQuery(self):
+        """Generate the query needed for privacy filtering.
+
+        If the visibility is not PUBLIC ensure the logged in user is a member
+        of the team.
+        """
+        logged_in_user = getUtility(ILaunchBag).user
+        if logged_in_user is not None:
+            private_query = """
+                TeamParticipation.person = %s AND
+                TeamParticipation.team = Person.id AND
+                Person.teamowner IS NOT NULL AND
+                Person.visibility != %s
+                """ % (sqlvalues(logged_in_user, PersonVisibility.PUBLIC))
+        else:
+            private_query = "1=0"
+        base_query = """
+            (Person.visibility = %s OR
+            %s)""" % (quote(PersonVisibility.PUBLIC), private_query)
+        return base_query
+
+    def _teamEmailQuery(self, text, privacy_query):
+        """Product the query for team email addresses."""
+        team_email_query = """
+            %s
+            AND Person.teamowner IS NOT NULL
+            AND Person.merged IS NULL
+            AND EmailAddress.person = Person.id
+            AND lower(EmailAddress.email) LIKE %s || '%%%%'
+            """ % (privacy_query, quote_like(text),)
+        return team_email_query
+
+    def _teamNameQuery(self, text, privacy_query):
+        """Produce the query for team names."""
+        team_name_query = """
+            %s
+            AND Person.teamowner IS NOT NULL
+            AND Person.merged IS NULL
+            AND Person.fti @@ ftq(%s)
+            """ % (privacy_query, quote(text),)
+        return team_name_query
+
     def find(self, text, orderBy=None):
         """See `IPersonSet`."""
         if not text:
@@ -2483,7 +2528,17 @@ class PersonSet:
             return EmptyResultSet()
         if orderBy is None:
             orderBy = Person._sortingColumnsForSetOperations
+        else:
+            # Convert the given string to a SQLConstant.
+            orderBy = SQLConstant("person_sort_key(%s)" % orderBy)
+
         text = text.lower()
+
+        private_query = self._teamPrivacyQuery()
+
+        base_query = """
+            (Person.visibility = %s OR
+            %s)""" % (quote(PersonVisibility.PUBLIC), private_query)
 
         # Teams may not have email addresses, so we need to either use a LEFT
         # OUTER JOIN or do a UNION between four queries. Using a UNION makes
@@ -2510,22 +2565,20 @@ class PersonSet:
         results = results.union(Person.select(
             person_name_query, clauseTables=['Account']))
 
-        team_email_query = """
-            Person.teamowner IS NOT NULL
-            AND Person.merged IS NULL
-            AND EmailAddress.person = Person.id
-            AND lower(EmailAddress.email) LIKE %s || '%%%%'
-            """ % (quote_like(text),)
-        results = results.union(Person.select(
-            team_email_query, clauseTables=['EmailAddress']))
+        privacy_query = self._teamPrivacyQuery()
 
-        team_name_query = """
-            Person.teamowner IS NOT NULL
-            AND Person.merged IS NULL
-            AND Person.fti @@ ftq(%s)
-            """ % (quote(text),)
+        team_email_query = self._teamEmailQuery(text, privacy_query)
+
+        results = results.union(Person.select(
+            team_email_query, clauseTables=['EmailAddress',
+                                            'TeamParticipation']))
+
+        team_name_query = self._teamNameQuery(text, privacy_query)
+
         results = results.union(
-                Person.select(team_name_query), orderBy=orderBy)
+                Person.select(team_name_query,
+                              clauseTables=['TeamParticipation']),
+                orderBy=orderBy)
         return results
 
     def findPerson(
@@ -2534,6 +2587,10 @@ class PersonSet:
         """See `IPersonSet`."""
         if orderBy is None:
             orderBy = Person._sortingColumnsForSetOperations
+        else:
+            # Convert the given string to a SQLConstant.
+            orderBy = SQLConstant("person_sort_key(%s)" % orderBy)
+
         text = text.lower()
 
         base_query = [
@@ -2580,21 +2637,25 @@ class PersonSet:
         """See `IPersonSet`."""
         if orderBy is None:
             orderBy = Person._sortingColumnsForSetOperations
+        else:
+            orderBy = SQLConstant("person_sort_key(%s)" % orderBy)
         text = text.lower()
         # Teams may not have email addresses, so we need to either use a LEFT
         # OUTER JOIN or do a UNION between two queries. Using a UNION makes
         # it a lot faster than with a LEFT OUTER JOIN.
-        email_query = """
-            Person.teamowner IS NOT NULL AND
-            EmailAddress.person = Person.id AND
-            lower(EmailAddress.email) LIKE %s || '%%'
-            """ % quote_like(text)
-        results = Person.select(email_query, clauseTables=['EmailAddress'])
-        name_query = """
-             Person.teamowner IS NOT NULL AND
-             Person.fti @@ ftq(%s)
-            """ % quote(text)
-        return results.union(Person.select(name_query), orderBy=orderBy)
+        privacy_query = self._teamPrivacyQuery()
+
+        email_query = self._teamEmailQuery(text, privacy_query)
+
+        email_results = Person.select(email_query,
+                                      clauseTables=['EmailAddress',
+                                                    'TeamParticipation'])
+        name_query = self._teamNameQuery(text, privacy_query)
+
+        name_results = Person.select(name_query,
+                                     clauseTables=['TeamParticipation'])
+        combined_results = email_results.union(name_results, orderBy=orderBy)
+        return combined_results
 
     def get(self, personid):
         """See `IPersonSet`."""
