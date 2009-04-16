@@ -27,6 +27,11 @@
               <tal:block replace="structure subscription/person/image:icon" />
               <tal:block replace="subscription/person/fmt:displayname" />
             </a>
+            <a tal:condition="python: subscription.canBeUnsubscribedByUser(view.user)"
+               href="+subscribe"
+               tal:attributes="title string:Unsubscribe ${subscription/person/fmt:displayname}">
+              <img src="/@@/remove" />
+            </a>
 
         </metal:subscriber>
       </div>
