@@ -761,51 +761,13 @@ class FileBugAdvancedView(FileBugViewBase):
         return self.template()
 
 
-class FileBugGuidedView(FileBugViewBase):
-    schema = IBugAddForm
-    # XXX: Brad Bollenbach 2006-10-04: This assignment to actions is a
-    # hack to make the action decorator Just Work across inheritance.
-    actions = FileBugViewBase.actions
-    custom_widget('title', TextWidget, displayWidth=40)
-    custom_widget('tags', BugTagsWidget)
-
+class ShowSimilarBugsMixin:
+    """A mixin for displaying possible duplicates for a bug."""
     _MATCHING_BUGS_LIMIT = 10
-    _SEARCH_FOR_DUPES = ViewPageTemplateFile(
-        "../templates/bugtarget-filebug-search.pt")
-    _FILEBUG_FORM = ViewPageTemplateFile(
-        "../templates/bugtarget-filebug-submit-bug.pt")
-
-    template = _SEARCH_FOR_DUPES
-
-    focused_element_id = 'field.title'
-
-    @safe_action
-    @action("Continue", name="search", validator="validate_search")
-    def search_action(self, action, data):
-        """Search for similar bug reports."""
-        # Don't give focus to any widget, to ensure that the browser
-        # won't scroll past the "possible duplicates" list.
-        self.initial_focus_widget = None
-        return self.showFileBugForm()
 
     def getSearchContext(self):
         """Return the context used to search for similar bugs."""
-        if IDistributionSourcePackage.providedBy(self.context):
-            return self.context
-
-        search_context = self.getMainContext()
-        if IProject.providedBy(search_context):
-            assert self.widgets['product'].hasValidInput(), (
-                "This method should be called only when we know which"
-                " product the user selected.")
-            search_context = self.widgets['product'].getInputValue()
-        elif IMaloneApplication.providedBy(search_context):
-            if self.widgets['bugtarget'].hasValidInput():
-                search_context = self.widgets['bugtarget'].getInputValue()
-            else:
-                search_context = None
-
-        return search_context
+        return self.context
 
     @cachedproperty
     def similar_bugs(self):
@@ -860,6 +822,65 @@ class FileBugGuidedView(FileBugViewBase):
                     break
 
         return matching_bugs
+
+    def getSearchText(self):
+        """Return the search string entered by the user."""
+        return self.request.get('title')
+
+
+class FilebugShowSimilarBugsView(ShowSimilarBugsMixin, FileBugViewBase):
+    """A view for showing possible dupes for a bug.
+
+    This view will only be used to populate asynchronously-driven parts
+    of a page.
+    """
+    schema = IBugAddForm
+
+
+class FileBugGuidedView(ShowSimilarBugsMixin, FileBugViewBase):
+    schema = IBugAddForm
+    # XXX: Brad Bollenbach 2006-10-04: This assignment to actions is a
+    # hack to make the action decorator Just Work across inheritance.
+    actions = FileBugViewBase.actions
+    custom_widget('title', TextWidget, displayWidth=40)
+    custom_widget('tags', BugTagsWidget)
+
+    _SEARCH_FOR_DUPES = ViewPageTemplateFile(
+        "../templates/bugtarget-filebug-search.pt")
+    _FILEBUG_FORM = ViewPageTemplateFile(
+        "../templates/bugtarget-filebug-submit-bug.pt")
+
+    template = _SEARCH_FOR_DUPES
+
+    focused_element_id = 'field.title'
+
+    @safe_action
+    @action("Continue", name="search", validator="validate_search")
+    def search_action(self, action, data):
+        """Search for similar bug reports."""
+        # Don't give focus to any widget, to ensure that the browser
+        # won't scroll past the "possible duplicates" list.
+        self.initial_focus_widget = None
+        return self.showFileBugForm()
+
+    def getSearchContext(self):
+        """Return the context used to search for similar bugs."""
+        if IDistributionSourcePackage.providedBy(self.context):
+            return self.context
+
+        search_context = self.getMainContext()
+        if IProject.providedBy(search_context):
+            assert self.widgets['product'].hasValidInput(), (
+                "This method should be called only when we know which"
+                " product the user selected.")
+            search_context = self.widgets['product'].getInputValue()
+        elif IMaloneApplication.providedBy(search_context):
+            if self.widgets['bugtarget'].hasValidInput():
+                search_context = self.widgets['bugtarget'].getInputValue()
+            else:
+                search_context = None
+
+        return search_context
 
     @cachedproperty
     def most_common_bugs(self):

@@ -1,0 +1,3 @@
+  <metal:display-similar-bugs
+      use-macro="context/@@+filebug-macros/display-similar-bugs" />
+

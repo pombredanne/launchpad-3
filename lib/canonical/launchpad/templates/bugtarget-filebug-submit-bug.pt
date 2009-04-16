@@ -50,83 +50,10 @@
       </div>
 
       <div tal:condition="view/similar_bugs">
-
-        <tal:similar-bugs condition="view/contextUsesMalone">
-
-          <metal:display-similar-bugs
-              use-macro="context/@@+filebug-macros/display_similar_bugs" />
-
-        </tal:similar-bugs>
-
-        <tal:submit-new-bug>
-          <div id="bug_reporting_form">
-            <a name="form-start" />
-            <table class="form">
-              <metal:basic_filebug_widgets
-                  metal:use-macro="context/@@+filebug-macros/basic_filebug_widgets" />
-            </table>
-            <div class="actions">
-              <input tal:replace="structure view/submit_bug_action/render" />
-            </div>
-          </div>
-        </tal:submit-new-bug>
+        <metal:display-similar-bugs
+            use-macro="context/@@+filebug-macros/show-similar-bugs-and-filebug-form"
+        />
       </div>
-
-      <script type="text/javascript" tal:condition="view/similar_bugs">
-        /*
-         * Arrange the bug form for either the state where the user is selecting
-         * an existing bug report, or for where they're filing a new bug.
-         */
-        function arrangeBugForm(event) {
-          var no_radiobtn = $('bug-not-already-reported');
-          var bugtarget_package_btn = $('field.bugtarget.option.package');
-
-          if (no_radiobtn.checked) {
-            showElement('bug_reporting_form');
-            // Try to get the whole bug form into view.
-            $('field.actions.submit_bug').focus();
-            window.location.href = '#form-start';
-
-            if (bugtarget_package_btn != null) {
-              if (bugtarget_package_btn.checked) {
-                $('field.bugtarget.package').focus();
-              } else {
-                $('field.comment').focus();
-              }
-            } else {
-              var package_name = $('field.packagename')
-              if (package_name != null) {
-                package_name.focus();
-              } else {
-                $('field.comment').focus();
-              }
-            }
-          } else {
-            hideElement('bug_reporting_form');
-          }
-
-          // Disable "Subscribe to This Bug Report" to avoid accidental use.
-          $('field.actions.this_is_my_bug').disabled = no_radiobtn.checked;
-        }
-
-        /*
-         * On-load, make sure that the 'No' stuff is displayed correctly.
-         * We must always work from the data in the form, not just from
-         * events. Some browsers (e.g. Firefox) refill the form when a page
-         * is refreshed and you don't get onchange/onkeypress events.
-         */
-        connect(window, 'onload', arrangeBugForm);
-
-        /*
-         * Arrange the form if any of the radio buttons are clicked.
-         */
-        forEach(
-          getElementsByTagAndClassName('input', null, 'similar-bugs'),
-          function(element) {
-            connect(element, 'onclick', arrangeBugForm);
-          });
-        connect('bug-not-already-reported', 'onclick', arrangeBugForm);
-      </script>
 
     </metal:widgets>
 
