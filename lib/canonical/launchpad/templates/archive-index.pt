@@ -102,8 +102,8 @@ div#package_counters p {
 
       <tal:privacy replace="structure context/@@+portlet-privacy" />
 
-      <h1 id="archive-heading" tal:content="CONTEXTS/fmt:pagetitle"
-        tal:condition="context/enabled">
+      <h1 id="archive-heading" tal:condition="context/enabled"
+          tal:content="structure view/displayname_edit_widget">
         PPA for user
       </h1>
       <h1 id="archive-heading" tal:content="CONTEXTS/fmt:pagetitle"
