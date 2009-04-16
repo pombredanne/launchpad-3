@@ -33,16 +33,18 @@
         </ul>
         <div id="page-intro-top"></div>
         <div id="page-intro">
-            <h1>Distribute software<br /> from your own APT repository</h1>
+            <h1>Distribute software with updates<br /> directly to Ubuntu users</h1>
             <p>
                 <img src="images/ppa/main-image.jpg" alt="Collaborate with free software communities." />
             </p>
             <p class="intro-text">
-                <strong>Your Personal Package Archive (&ldquo;PPA&rdquo;) simplifies publishing your software.</strong> Now you no longer need to ask testers on Ubuntu to compile your code from source. Instead, upload a source package to Launchpad and it will build then publish an installable binary in your own APT repository. 
-<br /><br />
-Installing your package is just as easy as with any other Ubuntu software and when you publish a new version your users receive automatic updates.
+                <strong>Publishing your software is simple with Launchpad's Personal Package Archives.</strong><br /><br />
+                
+                Launchpad builds installable Ubuntu packages for multiple architectures and hosts them in your own software repository.
+                <br /><br />
+                Installing applications from a PPA is just as easy as standard Ubuntu software, with updates automatically pushed to your users.
             </p>
-            <div id="link-holder"><a href="https://launchpad.net/ubuntu/+ppas">Search PPAs &gt;</a><br /><a href="https://launchpad.net/projects/+new-guided">Add your project to Launchpad &gt;</a></div>
+            <div id="link-holder"><a href="https://launchpad.net/ubuntu/+ppas">Browse PPAs &gt;</a><br /><a href="https://help.launchpad.net/PPA">Read our PPA user guide &gt;</a></div>
         </div>
         <div id="page-intro-bottom"></div>
         <ul id="secondary-navigation">
@@ -55,23 +57,30 @@ Installing your package is just as easy as with any other Ubuntu software and wh
                 <div class="furthur-information-block-top"></div>
                 <div class="furthur-information-block-mid">
                     <div class="block">
-                        <h3>Automatic software distribution - with updates&#33;</h3>
-                        <h4>Publishing your software into a PPA is the best way to make sure it will reach a wide audience of Ubuntu users.</h4>
+                        <h3>Automatic software distribution &mdash; with updates&#33;</h3>
+                        <h4>Publishing your software using a PPA is the easiest way to reach a wide audience of Ubuntu users.</h4>
                         <p class="screen-holder">
                             <img src="images/ppa/1.png" alt="Automatic software distribution - with updates!" />                        </p>
                         <p>
-                            Instead of downloading individual packages, the archive enables your users to retrieve all your packages and their dependencies from a single reliable source.
-</p><p>
-When you publish a new version of one of your packages, Ubuntu notifies all of your users that an update is available and it can even automatically install the updated version for them if they prefer. This helps to keep all your users up to date, especially if you want to push the latest code to beta testers.
+                            PPAs are the easiest and quickest way to get your software directly to Ubuntu users. Once they've added your archive to their Ubuntu system,
+                            all of your PPA's packages are just a few clicks away.
+                            <br /><br />
+                            Ubuntu and your PPA take care of any dependencies, either from the primary Ubuntu repositories or from other PPAs that you specify.
+                            <br /><br />
+                            And when you publish a new version of one of your packages, Ubuntu notifies all of your users of the update. It can even automatically install
+                            the updates if they prefer.
                         </p>
                     </div>
                     <div class="block odd">
-                        <h3>Team PPAs</h3>
-                        <h4>Teams can have their own package archives.</h4>
+                        <h3>Team and multiple PPAs</h3>
+                        <h4>Create multiple PPAs to serve different audiences. Use a team PPA to work with others.</h4>
                         <p class="screen-holder">
                             <img src="images/ppa/2.png" alt="Team PPAs" />                        </p>
                         <p>
-                            Any member of a team can upload new packages to its PPA, making it a great way for groups of people to publish software collectively. The Kubuntu project did just that to distribute their first builds of the KDE 4 environment. If you have a team of developers working on a set of related packages, consider setting up a team PPA as a way to simplify coordination across each of those pieces of software.
+                            Want to distribute nightly builds to your developer community, beta versions to your test team and backports to another group? No problem, you can create a PPA to serve each group. That way, there's no confusion over who gets which version.
+                            <br /><br />
+                            You can also create PPAs for the teams you run. Any member of a team can upload new packages to its PPAs, making it a great way for groups of people to publish software collectively. The Kubuntu project did just that to distribute their first builds of the KDE 4 environment.<br /><br />
+                            If you have a team of developers working on a set of related packages, consider setting up a team PPA as a way to simplify coordination across each of those pieces of software.
                         </p>
                     </div>
                     <div class="clear"></div>
