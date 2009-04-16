@@ -16,7 +16,7 @@ from canonical.database.sqlbase import sqlvalues
 from lp.code.model.codeimportresult import CodeImportResult
 from canonical.launchpad.database.oauth import OAuthNonce
 from canonical.launchpad.database.openidconsumer import OpenIDConsumerNonce
-from canonical.launchpad.interfaces import IMasterStore
+from canonical.launchpad.interfaces import IMasterStore, IRevisionSet
 from canonical.launchpad.interfaces.looptuner import ITunableLoop
 from canonical.launchpad.scripts.base import LaunchpadCronScript
 from canonical.launchpad.utilities.looptuner import LoopTuner
@@ -104,6 +104,14 @@ class OpenIDConsumerNoncePruner(TunableLoop):
         transaction.commit()
 
 
+class RevisionCachePruner:
+    """A non-tunable loop to remove old revisions from the cache."""
+
+    def run():
+        """Delegate to the `IRevisionSet` implementation."""
+        getUtility(IRevisionSet).pruneRevisionCache()
+
+
 class CodeImportResultPruner(TunableLoop):
     """A TunableLoop to prune unwanted CodeImportResult rows.
 
@@ -172,6 +180,7 @@ class HourlyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
     tunable_loops = [
         OAuthNoncePruner,
         OpenIDConsumerNoncePruner,
+        RevisionCachePruner,
         ]
 
 class DailyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):

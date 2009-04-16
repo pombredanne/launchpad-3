@@ -1,9 +1,13 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
 __all__ = [
-    'Revision', 'RevisionAuthor', 'RevisionParent', 'RevisionProperty',
+    'Revision',
+    'RevisionAuthor',
+    'RevisionCache',
+    'RevisionParent',
+    'RevisionProperty',
     'RevisionSet']
 
 from datetime import datetime, timedelta
@@ -11,10 +15,11 @@ import email
 
 import pytz
 from storm.expr import And, Asc, Desc, Exists, Join, Not, Select
-from storm.locals import Min
+from storm.locals import Bool, DateTime, Int, Min, Reference, Storm
 from storm.store import Store
 from zope.component import getUtility
 from zope.interface import implements
+from zope.security.proxy import removeSecurityProxy
 from sqlobject import (
     BoolCol, ForeignKey, IntCol, StringCol, SQLObjectNotFound,
     SQLMultipleJoin)
@@ -298,7 +303,6 @@ class RevisionSet:
 
     def checkNewVerifiedEmail(self, email):
         """See `IRevisionSet`."""
-        from zope.security.proxy import removeSecurityProxy
         # Bypass zope's security because IEmailAddress.email is not public.
         naked_email = removeSecurityProxy(email)
         for author in RevisionAuthor.selectBy(email=naked_email.email):
@@ -438,6 +442,70 @@ class RevisionSet:
         """See `IRevisionSet`."""
         return cls._getPublicRevisionsHelper(project, day_limit)
 
+    @staticmethod
+    def updateRevisionCacheForBranch(branch):
+        """See `IRevisionSet`."""
+        # Hand crafting the sql insert statement as storm doesn't handle the
+        # INSERT INTO ... SELECT ... syntax.  Also there is no public api yet
+        # for storm to get the select statement.
+
+        # Remove the security proxy to get access to the ID columns.
+        naked_branch = removeSecurityProxy(branch)
+
+        insert_columns = ['Revision.id', 'revision_author', 'revision_date']
+        subselect_clauses = []
+        if branch.product is None:
+            insert_columns.append('NULL')
+            subselect_clauses.append('product IS NULL')
+        else:
+            insert_columns.append(str(naked_branch.productID))
+            subselect_clauses.append('product = %s' % naked_branch.productID)
+
+        if branch.distroseries is None:
+            insert_columns.extend(['NULL', 'NULL'])
+            subselect_clauses.extend(
+                ['distroseries IS NULL', 'sourcepackagename IS NULL'])
+        else:
+            insert_columns.extend(
+                [str(naked_branch.distroseriesID),
+                 str(naked_branch.sourcepackagenameID)])
+            subselect_clauses.extend(
+                ['distroseries = %s' % naked_branch.distroseriesID,
+                 'sourcepackagename = %s' % naked_branch.sourcepackagenameID])
+
+        insert_columns.append(str(branch.private))
+        if branch.private:
+            subselect_clauses.append('private')
+        else:
+            subselect_clauses.append('NOT private')
+
+        insert_statement = """
+            INSERT INTO RevisionCache
+            (revision, revision_author, revision_date,
+             product, distroseries, sourcepackagename, private)
+            SELECT %(columns)s FROM Revision
+            JOIN BranchRevision ON BranchRevision.revision = Revision.id
+            WHERE Revision.revision_date > (
+                CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - interval '30 days')
+            AND BranchRevision.branch = %(branch_id)s
+            AND Revision.id NOT IN (
+                SELECT revision FROM RevisionCache
+                WHERE %(subselect_where)s)
+            """ % {
+            'columns': ', '.join(insert_columns),
+            'branch_id': branch.id,
+            'subselect_where': ' AND '.join(subselect_clauses),
+            }
+        Store.of(branch).execute(insert_statement)
+
+    @staticmethod
+    def pruneRevisionCache():
+        """See `IRevisionSet`."""
+        epoch = datetime.now(pytz.UTC) - timedelta(days=30)
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        store.find(
+            RevisionCache, RevisionCache.revision_date < epoch).remove()
+
 
 def revision_time_limit(day_limit):
     """The storm fragment to limit the revision_date field of the Revision."""
@@ -447,3 +515,32 @@ def revision_time_limit(day_limit):
     return And(
         Revision.revision_date <= now,
         Revision.revision_date > earliest)
+
+
+class RevisionCache(Storm):
+    """A cached version of a recent revision."""
+
+    __storm_table__ = 'RevisionCache'
+
+    id = Int(primary=True)
+
+    revision_id = Int(name='revision', allow_none=False)
+    revision = Reference(revision_id, 'Revision.id')
+
+    revision_author_id = Int(name='revision_author', allow_none=False)
+    revision_author = Reference(revision_author_id, 'RevisionAuthor.id')
+
+    revision_date = DateTime(
+        name='revision_date', allow_none=False, tzinfo=pytz.UTC)
+
+    product_id = Int(name='product', allow_none=True)
+    product = Reference(product_id, 'Product.id')
+
+    distroseries_id = Int(name='distroseries', allow_none=True)
+    distroseries = Reference(distroseries_id, 'DistroSeries.id')
+
+    sourcepackagename_id = Int(name='sourcepackagename', allow_none=True)
+    sourcepackagename = Reference(
+        sourcepackagename_id, 'SourcePackageName.id')
+
+    private = Bool(allow_none=False, default=False)
