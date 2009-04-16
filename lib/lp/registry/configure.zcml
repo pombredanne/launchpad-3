@@ -5,6 +5,8 @@
     xmlns:xmlrpc="http://namespaces.zope.org/xmlrpc"
     i18n_domain="launchpad">
     <include
+        file="vocabularies.zcml"/>
+    <include
         package=".browser"/>
     <class
         class="lp.registry.model.teammembership.TeamMembershipSet">
@@ -873,6 +875,7 @@
             attributes="
                 id
                 name
+                code_name
                 product
                 distribution
                 productseries
@@ -897,7 +900,8 @@
             interface="canonical.launchpad.webapp.interfaces.IAuthorization"/>
         <require
             permission="launchpad.Edit"
-            set_attributes="name dateexpected summary active                                                                                                                 product_release productseries distroseries"/>
+            set_attributes="name code_name dateexpected summary active
+                            product_release productseries distroseries"/>
 
         <!-- IStructuralSubscriptionTarget -->
 

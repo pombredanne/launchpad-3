@@ -28,7 +28,7 @@ owner or driver. This means that No Privileges Person won't be able to
 see the link to add a milestone nor access the page directly.
 
     >>> user_browser.open('http://launchpad.dev/alsa-utils/trunk')
-    >>> user_browser.getLink('Add milestone').click()
+    >>> user_browser.getLink('Create milestone').click()
     Traceback (most recent call last):
       ...
     LinkNotFoundError
@@ -39,7 +39,7 @@ see the link to add a milestone nor access the page directly.
     Unauthorized: ...
 
     >>> user_browser.open('http://launchpad.dev/ubuntu/hoary')
-    >>> user_browser.getLink('Add milestone').click()
+    >>> user_browser.getLink('Create milestone').click()
     Traceback (most recent call last):
       ...
     LinkNotFoundError
@@ -48,17 +48,17 @@ see the link to add a milestone nor access the page directly.
       ...
     Unauthorized: ...
 
-But Sample Person will be able to use the 'Add milestone' link to
+But Sample Person will be able to use the 'Create milestone' link to
 create a new milestone.
 
     >>> test_browser = setupBrowser(auth='Basic test@canonical.com:test')
     >>> test_browser.open('http://launchpad.dev/alsa-utils/trunk')
-    >>> test_browser.getLink('Add milestone').click()
+    >>> test_browser.getLink('Create milestone').click()
     >>> test_browser.url
     'http://launchpad.dev/alsa-utils/trunk/+addmilestone'
 
     >>> test_browser.open('http://launchpad.dev/ubuntu/hoary')
-    >>> test_browser.getLink('Add milestone').click()
+    >>> test_browser.getLink('Create milestone').click()
     >>> test_browser.url
     'http://launchpad.dev/ubuntu/hoary/+addmilestone'
 
@@ -270,7 +270,7 @@ the series.
     Mozilla Firefox Series: trunk's milestones
     >>> print extract_text(find_tag_by_id(
     ...     driver_browser.contents, 'milestones'))
-    Milestone  Date Targeted  Series Target  Summary
+    Milestone  Codename Date Targeted  Series Target  Summary
     0.9.2...
     0.9.1...
     0.9...
@@ -306,6 +306,6 @@ successful.
     >>> driver_browser.getLink('See all milestones').click()
     >>> print extract_text(find_tag_by_id(
     ...     driver_browser.contents, 'milestones'))
-    Milestone  Date Targeted  Series Target  Summary
+    Milestone  Codename Date Targeted  Series Target  Summary
     0.9.1...
     0.9...
