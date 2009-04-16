@@ -111,6 +111,7 @@ in it, and therefore guessPackageNames will still fail:
 It will find packages that are at the PENDING publishing state in
 addition to PUBLISHED ones:
 
+    >>> login("admin@canonical.com")
     >>> from canonical.launchpad.tests.test_publishing import (
     ...     SoyuzTestPublisher)
     >>> test_publisher = SoyuzTestPublisher()
@@ -119,6 +120,7 @@ addition to PUBLISHED ones:
     >>> ignore = test_publisher.getPubSource(
     ...     sourcename="pendingpackage",
     ...     status=PackagePublishingStatus.PENDING)
+    >>> login(ANONYMOUS)
     >>> (source, binary) = ubuntu.guessPackageNames("pendingpackage")
     >>> print source.name
     pendingpackage
