@@ -176,8 +176,10 @@ class SoyuzTestPublisher:
             dsc_binaries=dsc_binaries,
             archive=archive, dateuploaded=date_uploaded)
 
+        changes_file_name = "%s_%s_source.changes" % (sourcename, version)
         package_upload = self.addPackageUpload(
             archive, distroseries, pocket,
+            changes_file_name=changes_file_name,
             changes_file_content=changes_file_content)
         package_upload.addSource(spr)
 
