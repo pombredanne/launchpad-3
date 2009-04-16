@@ -126,6 +126,7 @@ class SoyuzTestPublisher:
     def getPubSource(self, sourcename=None, version='666', component='main',
                      filename=None, section='base',
                      filecontent='I do not care about sources.',
+                     changes_file_content="Fake: fake changes file content",
                      status=PackagePublishingStatus.PENDING,
                      pocket=PackagePublishingPocket.RELEASE,
                      urgency=SourcePackageUrgency.LOW,
@@ -175,7 +176,9 @@ class SoyuzTestPublisher:
             dsc_binaries=dsc_binaries,
             archive=archive, dateuploaded=date_uploaded)
 
-        package_upload = self.addPackageUpload(archive, distroseries, pocket)
+        package_upload = self.addPackageUpload(
+            archive, distroseries, pocket,
+            changes_file_content=changes_file_content)
         package_upload.addSource(spr)
 
         if filename is None:
@@ -207,6 +210,7 @@ class SoyuzTestPublisher:
                        suggests=None, conflicts=None, replaces=None,
                        provides=None, pre_depends=None, enhances=None,
                        breaks=None, filecontent='bbbiiinnnaaarrryyy',
+                       changes_file_content="Fake: fake changes file",
                        status=PackagePublishingStatus.PENDING,
                        pocket=PackagePublishingPocket.RELEASE,
                        format=BinaryPackageFormat.DEB,
@@ -242,6 +246,7 @@ class SoyuzTestPublisher:
             published_binaries.extend(pub_binaries)
             package_upload = self.addPackageUpload(
                 archive, distroseries, pocket,
+                changes_file_content=changes_file_content,
                 changes_file_name='%s_%s_%s.changes' %
                     (binaryname, binarypackagerelease.version,
                      build.arch_tag))

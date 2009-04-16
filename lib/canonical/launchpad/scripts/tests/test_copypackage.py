@@ -279,6 +279,9 @@ class TestCopyPackage(TestCase):
             pocket=PackagePublishingPocket.SECURITY,
             status=PackagePublishingStatus.PUBLISHED)
 
+        # Commit to ensure librarian files are written.
+        self.layer.txn.commit()
+
         # Perform the copy.
         copy_helper = self.getCopier(
             sourcename='firefox', include_binaries=False,
@@ -391,6 +394,8 @@ class TestCopyPackage(TestCase):
         ppa_binaries = test_publisher.getPubBinaries(
             pub_source=ppa_source, distroseries=hoary,
             status=PackagePublishingStatus.PUBLISHED)
+        # Commit to ensure librarian files are written.
+        self.layer.txn.commit()
 
         copy_helper = self.getCopier(
             sourcename='foo', from_ppa='cprov', include_binaries=False,
@@ -430,6 +435,8 @@ class TestCopyPackage(TestCase):
         ppa_binaries = test_publisher.getPubBinaries(
             pub_source=ppa_source, distroseries=hoary,
             status=PackagePublishingStatus.PENDING)
+        # Commit to ensure librarian files are written.
+        self.layer.txn.commit()
 
         copy_helper = self.getCopier(
             sourcename='boing', from_ppa='cprov', include_binaries=True,
@@ -482,6 +489,8 @@ class TestCopyPackage(TestCase):
         ppa_binaries = test_publisher.getPubBinaries(
             pub_source=ppa_source, distroseries=warty,
             status=PackagePublishingStatus.PUBLISHED)
+        # Commit to ensure librarian files are written.
+        self.layer.txn.commit()
 
     def testCopyArchitectureIndependentBinaries(self):
         """Architecture independent binaries are propagated in the detination.
@@ -663,6 +672,9 @@ class TestCopyPackage(TestCase):
         # The i386 build is completed and the hppa one pending.
         self.assertEqual(build_hppa.buildstate, BuildStatus.NEEDSBUILD)
         self.assertEqual(build_i386.buildstate, BuildStatus.FULLYBUILT)
+
+        # Commit to ensure librarian files are written.
+        self.layer.txn.commit()
 
         return test_publisher, security_source
 
@@ -999,25 +1011,14 @@ class TestCopyPackage(TestCase):
             cprov, ppa_source.sourcepackagerelease)
         package_diff.diff_content = diff_file
 
-        # Also create a PackageUpload item with a fake changesfile,
-        # one for the source and one for the builds.
-        ppa_queue_item = warty.createQueueEntry(
-            pocket=PackagePublishingPocket.RELEASE, archive=cprov.archive,
-            changesfilename='foo_source.changes', changesfilecontent='x')
-        ppa_queue_item.addSource(ppa_source.sourcepackagerelease)
-        ppa_queue_item.setDone()
-        binary_queue_item = warty.createQueueEntry(
-            pocket=PackagePublishingPocket.RELEASE, archive=cprov.archive,
-            changesfilename="foo_binary.changes", changesfilecontent='x')
-
         # Prepare a *restricted* buildlog file for the Build instances.
         fake_buildlog = test_publisher.addMockFile(
             'foo_source.buildlog', restricted=True)
 
         for build in ppa_source.getBuilds():
             build.buildlog = fake_buildlog
-            binary_queue_item.addBuild(build)
-        binary_queue_item.setDone()
+            #binary_queue_item.addBuild(build)
+        #binary_queue_item.setDone()
 
         # Create ancestry environment in the primary archive, so we can
         # test unembargoed overrides.
@@ -1135,11 +1136,14 @@ class TestCopyPackage(TestCase):
         hoary = ubuntu.getSeries('hoary')
         test_publisher.addFakeChroots(hoary)
 
-        def create_source(version, archive, pocket):
+        def create_source(version, archive, pocket, changes_file_content):
             source = test_publisher.getPubSource(
                 sourcename='buggy-source', version=version,
                 distroseries=warty, archive=archive, pocket=pocket,
+                changes_file_content=changes_file_content,
                 status=PackagePublishingStatus.PUBLISHED)
+            source.sourcepackagerelease.changelog_entry = (
+                "Required for close_bugs_for_sourcepublication")
             binaries = test_publisher.getPubBinaries(
                 pub_source=source, distroseries=warty, archive=archive,
                 pocket=pocket, status=PackagePublishingStatus.PUBLISHED)
@@ -1172,12 +1176,19 @@ class TestCopyPackage(TestCase):
             "Format: 1.7\n"
             "Launchpad-bugs-fixed: %s\n")
 
-        # Copies to -updates close bugs when they exist.
+        # Create a dummy first package version so we can file bugs on it.
+        dummy_changesfile = "Format: 1.7\n"
         proposed_source = create_source(
-            '666', warty.main_archive, PackagePublishingPocket.PROPOSED)
+            '666', warty.main_archive, PackagePublishingPocket.PROPOSED,
+            dummy_changesfile)
+
+        # Copies to -updates close bugs when they exist.
         updates_bug_id = create_bug('bug in -proposed')
         closing_bug_changesfile = changes_template % updates_bug_id
-        create_upload(proposed_source, closing_bug_changesfile)
+        proposed_source = create_source(
+            '667', warty.main_archive, PackagePublishingPocket.PROPOSED,
+            closing_bug_changesfile)
+        self.layer.txn.commit()
 
         copy_helper = self.getCopier(
             sourcename='buggy-source', include_binaries=True,
@@ -1193,11 +1204,12 @@ class TestCopyPackage(TestCase):
         publish_copies(copied)
 
         # Copies to the development distroseries close bugs.
-        dev_source = create_source(
-            '667', warty.main_archive, PackagePublishingPocket.UPDATES)
         dev_bug_id = create_bug('bug in development')
         closing_bug_changesfile = changes_template % dev_bug_id
-        create_upload(dev_source, closing_bug_changesfile)
+        dev_source = create_source(
+            '668', warty.main_archive, PackagePublishingPocket.UPDATES,
+            closing_bug_changesfile)
+        self.layer.txn.commit()
 
         copy_helper = self.getCopier(
             sourcename='buggy-source', include_binaries=True,
@@ -1213,11 +1225,12 @@ class TestCopyPackage(TestCase):
         publish_copies(copied)
 
         # Copies to -proposed do not close bugs
-        ppa_source = create_source(
-            '668', cprov.archive, PackagePublishingPocket.RELEASE)
         ppa_bug_id = create_bug('bug in PPA')
         closing_bug_changesfile = changes_template % ppa_bug_id
-        create_upload(ppa_source, closing_bug_changesfile)
+        ppa_source = create_source(
+            '669', cprov.archive, PackagePublishingPocket.RELEASE,
+            closing_bug_changesfile)
+        self.layer.txn.commit()
 
         copy_helper = self.getCopier(
             sourcename='buggy-source', include_binaries=True,
@@ -1233,11 +1246,12 @@ class TestCopyPackage(TestCase):
         publish_copies(copied)
 
         # Copies to PPA do not close bugs.
-        release_source = create_source(
-            '669', warty.main_archive, PackagePublishingPocket.RELEASE)
         proposed_bug_id = create_bug('bug in PPA')
         closing_bug_changesfile = changes_template % proposed_bug_id
-        create_upload(release_source, closing_bug_changesfile)
+        release_source = create_source(
+            '670', warty.main_archive, PackagePublishingPocket.RELEASE,
+            closing_bug_changesfile)
+        self.layer.txn.commit()
 
         copy_helper = self.getCopier(
             sourcename='buggy-source', include_binaries=True,
