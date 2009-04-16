@@ -4,10 +4,8 @@ SET client_min_messages=ERROR;
 -- only one of these per sourcepackage, pocket.
 
 ALTER TABLE ONLY seriessourcepackagebranch
-  DROP CONSTRAINT branchsourcepackageseries__ds__spn__pocket__branch__key;
-
-ALTER TABLE ONLY seriessourcepackagebranch
-  ADD CONSTRAINT branchsourcepackageseries__ds__spn__pocket__key
+  DROP CONSTRAINT branchsourcepackageseries__ds__spn__pocket__branch__key,
+  ADD CONSTRAINT seriessourcepackagebranch__ds__spn__pocket__key
   UNIQUE (distroseries, sourcepackagename, pocket);
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2109, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (2109, 51, 0);
