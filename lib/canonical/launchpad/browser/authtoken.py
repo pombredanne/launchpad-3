@@ -412,10 +412,10 @@ class NewAccountView(BaseAuthTokenView, LaunchpadFormView):
                         mapping=dict(email=self.context.email)))
             else:
                 self.addError(_(
-                    'The email address ${email} belongs to an existing '
-                    'Launchpad Login Service (used by the Ubuntu shop '
-                    'and other OpenID sites) account, so you can just use '
-                    "that account's credentials to log into Launchpad.",
+                    'The email address ${email} is already registered in '
+                    'the Launchpad Login Service (used by the Ubuntu shop '
+                    'and other OpenID sites). Please use the same email and '
+                    'password to log into Launchpad.',
                     mapping=dict(email=self.context.email)))
 
 

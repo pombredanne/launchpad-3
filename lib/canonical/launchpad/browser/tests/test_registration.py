@@ -24,10 +24,10 @@ class TestEmailsOfPersonlessAccountsCantBeUsedToRegister(TestCaseWithFactory):
         TestCaseWithFactory.setUp(self)
         self.email = u'testX@example.com'
         self.expected_error = (
-            "The email address testX@example.com belongs to an existing "
-            "Launchpad Login Service (used by the Ubuntu shop and other "
-            "OpenID sites) account, so you can just use that account's "
-            "credentials to log into Launchpad.")
+            'The email address %s is already registered in the '
+            'Launchpad Login Service (used by the Ubuntu shop and '
+            'other OpenID sites). Please use the same email and '
+            'password to log into Launchpad.' % self.email)
         self.personless_account = self.factory.makeAccount(
             'Test account', email=self.email)
 

@@ -330,10 +330,10 @@ class LoginOrRegister:
                     "This email address should be linked to the person who "
                     "owns it.")
                 self.registration_error = (
-                    "The email address %s belongs to an existing Launchpad "
-                    "Login Service (used by the Ubuntu shop and other OpenID "
-                    "sites) account, so you can just use that account's "
-                    "credentials to log into Launchpad."
+                    'The email address %s is already registered in the '
+                    'Launchpad Login Service (used by the Ubuntu shop and '
+                    'other OpenID sites). Please use the same email and '
+                    'password to log into Launchpad.'
                     % cgi.escape(self.email))
                 return
 
