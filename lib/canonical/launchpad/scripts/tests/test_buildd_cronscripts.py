@@ -123,8 +123,16 @@ class TestQueueBuilder(TestCronscriptBase):
              for distroseries in qb.calculateDistroseries()])
 
         # Invalid suite arguments result in a error.
-        qb = self.getQueueBuilder(suites=('boing',))
+        qb = self.getQueueBuilder(suites=('hoary-test',))
         self.assertRaises(LaunchpadScriptFailure, qb.calculateDistroseries)
+
+        # Distribution name can also be redefined.
+        qb = self.getQueueBuilder(
+            distribution='ubuntutest', suites=('hoary-test',))
+        self.assertEqual(
+            ['hoary-test'],
+            [distroseries.name
+             for distroseries in qb.calculateDistroseries()])
 
 
 class TestRetryDepwait(TestCronscriptBase):
