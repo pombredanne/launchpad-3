@@ -1494,7 +1494,7 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin):
         return self.user.inTeam(vcs_imports)
 
     def setUpFields(self):
-        super(ProductAddView, self).setUpFields()
+        super(ProjectAddStepTwo, self).setUpFields()
         if not self.isVCSImport():
             # vcs-imports members get it easy and are able to change
             # the owner and reviewed status during the edit process;
