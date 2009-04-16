@@ -21,11 +21,21 @@ portion of the authentication process:
 Next we'll set up the trust root we're using to have its requests
 automatically authorized:
 
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.ftests import login, logout
+    >>> from canonical.launchpad.interfaces import IOpenIDRPConfigSet
+
+    >>> login('admin@canonical.com')
+    >>> rpconfig = getUtility(IOpenIDRPConfigSet).new(
+    ...     trust_root='http://launchpad.dev/',
+    ...     displayname='Test RP', description='A test RP')
+
     # XXX 2009-04-16 jamesh bug=362149: a related merge to
     # db-devel is needed to switch this to a database column.
     >>> from canonical.launchpad.database.openidserver import (
     ...     AUTO_AUTHORIZE_TRUST_ROOTS)
     >>> AUTO_AUTHORIZE_TRUST_ROOTS.add('http://launchpad.dev/')
+    >>> logout()
 
 Now we'lll authenticate before starting the authentication request so
 we aren't presented with a login screen:
@@ -44,7 +54,7 @@ without user interaction:
     ...     'http://launchpad.dev/', 'http://launchpad.dev/+openid-consumer'))
 
     >>> print browser.url
-    http://localhost/+openid-consumer?...
+    http://launchpad.dev/+openid-consumer?...
 
     >>> info = complete_from_browser(
     ...     consumer, browser, 'http://openid.launchpad.dev/+id/sabdfl_oid')
