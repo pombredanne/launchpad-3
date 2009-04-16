@@ -194,6 +194,8 @@ class ResetPasswordView(BaseAuthTokenView, LaunchpadFormView):
     def reactivate(self, data):
         emailaddress = getUtility(IEmailAddressSet).getByEmail(
             self.context.email)
+        # Need to remove the security proxy of the account because at this
+        # point the user is not logged in.
         naked_account = removeSecurityProxy(self.context.requester_account)
         naked_account.reactivate(
             comment="User reactivated the account using reset password.",
@@ -226,14 +228,7 @@ class ResetPasswordView(BaseAuthTokenView, LaunchpadFormView):
 
         if self.context.redirection_url is not None:
             self.next_url = self.context.redirection_url
-        elif person is not None:
-            self.next_url = canonical_url(person)
         elif not self.has_openid_request:
-            # XXX: salgado, 2009-04-02: We shouldn't reach this path when
-            # account is a personless account, but unfortunately our OpenID
-            # server doesn't store a fallback redirection_url in the
-            # AuthTokens it creates (bug=353974), so we need this hack here.
-            assert person is None
             self.next_url = self.request.getApplicationURL()
         else:
             assert self.has_openid_request, (
@@ -452,6 +447,8 @@ class NewAccountView(BaseAuthTokenView, LaunchpadFormView):
                 return
             naked_person.displayname = data['displayname']
             naked_person.hide_email_addresses = data['hide_email_addresses']
+            # Need to remove the security proxy of the account because at this
+            # point the user is not logged in.
             account = removeSecurityProxy(IMasterObject(person.account))
             account.activate(
                 "Activated by new account.",
