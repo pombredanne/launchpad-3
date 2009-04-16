@@ -150,17 +150,17 @@ class MilestoneView(LaunchpadView, ProductDownloadFileMixin):
     def bugtask_count_text(self):
         count = len(self.bugtasks)
         if count == 1:
-            return "1 bug targeted"
+            return '<strong class="count">1</strong> bug'
         else:
-            return "%d bugs targeted" % count
+            return '<strong class="count">%d</strong> bugs' % count
 
     @property
     def specification_count_text(self):
         count = len(self.specifications)
         if count == 1:
-            return "1 blueprint targeted"
+            return '<strong class="count">1</strong> blueprint'
         else:
-            return "%d blueprints targeted" % count
+            return '<strong class="count">%d</strong> blueprints' % count
 
     @property
     def is_project_milestone(self):
@@ -197,6 +197,10 @@ class MilestoneAddView(LaunchpadFormView):
     @property
     def action_url(self):
         return "%s/+addmilestone" % canonical_url(self.context)
+
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
 
 
 class MilestoneEditView(LaunchpadEditFormView):
@@ -254,6 +258,10 @@ class MilestoneEditView(LaunchpadEditFormView):
     def update_action(self, action, data):
         self.updateContextFromData(data)
         self.next_url = canonical_url(self.context)
+
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
 
 
 class MilestoneDeleteView(LaunchpadFormView):

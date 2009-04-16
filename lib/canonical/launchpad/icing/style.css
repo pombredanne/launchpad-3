@@ -1376,7 +1376,17 @@ body.tab-overview #actions h2, body.tab-overview #actions h2:hover {
   background: none;
   color: #83ad23;
 }
-
+.tab-overview strong.count {
+  color: #83ad23;
+}
+body.tab-overview #description {
+    width: 50em;
+}
+body.tab-overview #description fieldset {
+    border: 1px solid gray;
+    padding: 0 1em;
+    margin:0 1em 1em 0;
+}
 /* The top-most Person portlet, Contact Details, is allowed to float up and
 beside the mugshot. */
 #contact-details {clear: none;}

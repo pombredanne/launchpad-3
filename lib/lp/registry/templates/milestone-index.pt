@@ -19,10 +19,10 @@
     has_edit context/required:launchpad.Edit">
 
     <h1>
-      <tal:title tal:content="view/release/title"
-        condition="view/release" />
-      <tal:title tal:content="context/title"
-        condition="not: view/release" />
+      <tal:title tal:content="view/milestone/name"  />
+      <tal:code_name condition="view/milestone/code_name">
+        "<tal:title tal:content="view/milestone/code_name"  />"
+      </tal:code_name>
       <a tal:condition="context/required:launchpad.Edit"
         tal:attributes="href context/fmt:url/+delete"
         title="Delete this release"
@@ -30,14 +30,15 @@
       <a tal:replace="structure milestone_menu/edit/fmt:icon" />
     </h1>
 
-    <table id="Release-details">
+    <table id="Release-details" style="margin-bottom: 1em;">
       <tr>
         <th>Project:</th>
         <td><tal:link replace="structure context/product/fmt:link" /></td>
       </tr>
       <tr>
         <th>Series:</th>
-        <td><span tal:replace="context/productseries/name" /></td>
+        <td><a tal:attributes="href context/productseries/fmt:url"
+          tal:content="context/productseries/displayname" /></td>
       </tr>
       <tr>
         <th>Release version:</th>
@@ -51,7 +52,10 @@
         <th>Expected:</th>
         <td><span
           tal:attributes="title context/dateexpected/fmt:datetime"
-          tal:content="context/dateexpected/fmt:approximatedate" /></td>
+          tal:content="context/dateexpected/fmt:approximatedate" />
+          <a tal:replace="structure milestone_menu/create_release/fmt:icon-link"
+            >Release this milestone</a>
+          </td>
       </tr>
       <tal:has_release condition="view/release">
       <tr>
@@ -80,114 +84,134 @@
     </table>
 
     <tal:no_release condition="not: view/release">
-      <p class="informational message" tal:condition="not: context/active">
-        This is an inactive milestone.
+      <p tal:condition="not: context/active">
+        <img src="/@@/info"/> This is an inactive milestone.
       </p>
     </tal:no_release>
 
-    <p class="documentDescription"
-      tal:content="structure context/summary/fmt:text-to-html"
-      tal:condition="context/summary">
-        $ProductRelease.summary goes here. This should be quite short,
-        just a single paragraph of text really, giving a summary of
-        this release highlights.
-    </p>
+    <div id="description" tal:condition="view/milestone/summary">
+      <fieldset>
+        <legend>Summary</legend>
+        <p class="documentDescription"
+          tal:content="structure view/milestone/summary/fmt:text-to-html">
+            Milestone.summary goes here. This should be quite short,
+            just a single paragraph of text really, giving a summary of
+            this release highlights.
+        </p>
+      </fieldset>
+    </div>
 
     <tal:has_release condition="view/release">
-    <h2>Release notes <a tal:replace="structure release_menu/edit/fmt:icon" /></h2>
-    <div id="release_notes"
-         tal:content="structure view/release/release_notes/fmt:text-to-html">
-        $ProductRelease.release_notes go here.
-    </div>
+      <form method="POST"
+            tal:attributes="action request/URL">
 
-    <p tal:condition="not: view/release/release_notes">
-      <em>This release does not have release notes.
-        <tal:add-release-notes condition="has_edit">
-          You may want to edit it and add release notes, including new
-          features and other highlights.
-        </tal:add-release-notes></em>
-    </p>
+        <h2 style="margin-top: 2em;">Download files for this release</h2>
 
-    <form method="POST"
-          tal:attributes="action request/URL">
+        <table id="downloads" class="listing">
+          <thead>
+            <tr>
+              <th>Download</th>
+              <th>Description</th>
+              <th tal:condition="has_edit" width="10%">Delete</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr tal:repeat="file view/release/files">
+              <td>
+                <img alt="download icon" src="/@@/download" />
+                <strong><a
+                  tal:attributes="href python:view.fileURL(file.libraryfile)"
+                  tal:content="file/libraryfile/filename"
+                  >filename</a></strong>
+                (<a tal:attributes="href python:view.md5URL(file.libraryfile)"
+                >md5</a><tal:signature condition="file/signature">,
+                <a tal:attributes="href python:view.fileURL(file.signature)">
+                sig</a></tal:signature>)
+              </td>
+              <td tal:content="file/description">Installer for i386</td>
+              <td tal:condition="has_edit"
+                  align="center">
+                <input type="checkbox"
+                       tal:define="cbnum string:${repeat/file/index}"
+                       tal:attributes="value file/libraryfile/id;
+                                       name string:checkbox_${cbnum}" />
+              </td>
+            </tr>
+          </tbody>
+        </table>
 
-      <h2>Download files for this release</h2>
-
-      <table id="downloads" class="listing">
-        <thead>
-          <tr>
-            <th>Download</th>
-            <th>Description</th>
-            <th tal:condition="has_edit" width="10%">Delete</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr tal:repeat="file view/release/files">
-            <td>
-              <img alt="download icon" src="/@@/download" />
-              <strong><a
-                tal:attributes="href python:view.fileURL(file.libraryfile)"
-                tal:content="file/libraryfile/filename"
-                >filename</a></strong>
-              (<a tal:attributes="href python:view.md5URL(file.libraryfile)"
-              >md5</a><tal:signature condition="file/signature">,
-              <a tal:attributes="href python:view.fileURL(file.signature)">
-              sig</a></tal:signature>)
-            </td>
-            <td tal:content="file/description">Installer for i386</td>
-            <td tal:condition="has_edit"
-                align="center">
-              <input type="checkbox"
-                     tal:define="cbnum string:${repeat/file/index}"
-                     tal:attributes="value file/libraryfile/id;
-                                     name string:checkbox_${cbnum}" />
-            </td>
-          </tr>
-        </tbody>
-      </table>
-
-      <div tal:condition="has_edit">
-        <div style="float:right">
-          <input type="submit" name="delete_files" value="Delete Files"
-            tal:condition="view/release/files"/>
+        <div style="margin-top: .4em;" tal:condition="has_edit">
+          <div style="float:right">
+            <input type="submit" name="delete_files" value="Delete Files"
+              tal:condition="view/release/files"/>
+          </div>
+          <div
+            tal:define="link release_menu/add_file"
+            tal:condition="link/enabled">
+            <a tal:replace="structure link/render">Add a file</a>
+          </div>
         </div>
-        <div
-          tal:define="link release_menu/add_file"
-          tal:condition="link/enabled">
-          <a tal:replace="structure link/render">Add a file</a>
-        </div>
+      </form>
+
+      <h2 style="margin-top: 2em;">Release notes
+        <a tal:replace="structure release_menu/edit/fmt:icon" /></h2>
+
+      <div id="release_notes"
+        tal:content="structure view/release/release_notes/fmt:text-to-html"
+        tal:condition="view/release/release_notes">
+        ProductRelease.release_notes go here.
       </div>
-    </form>
 
-    <h2>Changelog <a tal:replace="structure release_menu/edit/fmt:icon" /></h2>
-    <div id="changelog"
-         tal:content="structure view/release/changelog/fmt:obfuscate-email/fmt:text-to-html">
-        $ProductRelease.changelog go here.
-    </div>
+      <p tal:condition="not: view/release/release_notes">
+        <em>This release does not have release notes.</em>
+      </p>
 
-    <p tal:condition="not: view/release/changelog">
-      <em>This release does not have a changelog.</em>
-    </p>
-  </tal:has_release>
+      <h2 style="margin-top: 2em;">Changelog
+        <a tal:replace="structure release_menu/edit/fmt:icon" /></h2>
+
+      <fieldset class="collapsible collapsed" style="padding: 0px;"
+        tal:condition="view/release/changelog">
+        <legend>View the full changelog</legend>
+
+        <div id="changelog"
+          tal:content="structure view/release/changelog/fmt:obfuscate-email/fmt:text-to-html">
+          ProductRelease.changelog go here.
+        </div>
+      </fieldset>
+
+      <p tal:condition="not: view/release/changelog">
+        <em>This release does not have a changelog.</em>
+      </p>
+    </tal:has_release>
+
+  <p style="margin-top: 2em; font-size: 120%">
+    <span id="specification-count"
+      tal:content="structure view/specification_count_text">2</span>
+    <tal:and condition="view/has_bugs_or_specs">and</tal:and>
+    <span id="bug-count"
+      tal:content="structure view/bugtask_count_text">2</span>
+    targeted
+  </p>
 
   <tal:has_specs condition="specs">
-
-    <h2 id="specification-count" tal:content="view/specification_count_text" />
-
-    <table class="listing sortable" id="milestone_specs">
+    <table class="listing sortable" id="milestone_specs"
+      style="margin-bottom: 2em;">
       <thead>
         <tr>
-          <th>Specification</th>
+          <th colspan="2">Specification</th>
           <th tal:condition="view/is_project_milestone">
             Product
           </th>
-          <th>Priority</th>
-          <th>Assignee</th>
-          <th>Delivery</th>
+          <th style="width: 9em;">Priority</th>
+          <th style="width: 14em;">Assignee</th>
+          <th style="width: 10em;">Delivery</th>
         </tr>
       </thead>
       <tbody>
         <tr tal:repeat="spec specs">
+          <td class="icon left">
+            <span tal:content="structure spec/image:icon" />
+          </td>
           <td>
             <a tal:content="spec/title/fmt:shorten/60"
                tal:attributes="
@@ -223,13 +247,9 @@
         </tr>
       </tbody>
     </table>
-
   </tal:has_specs>
 
   <tal:has_bugtasks condition="bugtasks">
-
-    <h2 id="bug-count" tal:content="view/bugtask_count_text" />
-
     <table class="listing sortable" id="milestone_bugtasks">
       <thead>
         <tr>
@@ -237,9 +257,9 @@
           <th tal:condition="view/is_project_milestone">
             Product
           </th>
-          <th>Importance</th>
-          <th>Assignee</th>
-          <th>Status</th>
+          <th style="width: 9em;">Importance</th>
+          <th style="width: 14em;">Assignee</th>
+          <th style="width: 10em;">Status</th>
         </tr>
       </thead>
       <tbody>
@@ -248,7 +268,7 @@
             <span class="sortkey" tal:content="bugtask/bug/id" />
             <span tal:content="structure bugtask/image:icon" />
           </td>
-          <td tal:content="bugtask/bug/id" class="amount">12345</td>
+          <td tal:content="string:#${bugtask/bug/id}" class="amount">12345</td>
           <td>
             <a tal:attributes="href bugtask/bug/fmt:url"
                tal:content="bugtask/bug/title/fmt:shorten/65">
@@ -262,7 +282,9 @@
           </td>
           <td>
             <span class="sortkey" tal:content="bugtask/importance/sortkey" />
-            <span tal:replace="bugtask/importance/title">High</span>
+            <span tal:content="bugtask/importance/title"
+                  tal:attributes="
+                  class string:importance${bugtask/importance/name}">High</span>
           </td>
           <td>
             <a tal:condition="bugtask/assignee"
@@ -279,17 +301,35 @@
       </tbody>
     </table>
 
+    <div style="margin-top: .4em;">
+        <a tal:replace="structure milestone_menu/subscribe/fmt:icon-link">Subcribe</a>
+    </div>
   </tal:has_bugtasks>
 
   <tal:neither_bugs_nor_specs condition="not: view/has_bugs_or_specs">
-    <h2>No blueprints or bugs targeted</h2>
     <p>
-      You do not have any feature specifications or bug tasks targeted
-      to this milestone. For any given specification or bug task, you
-      can target it to a milestone to keep a handy listing of things you
-      want to get done in that milestone.
+      There are no feature specifications or bug tasks targeted to this
+      milestone. The project's maintainer, driver, or bug supervisor
+      can target specifications and bug tasks to this milestone to track
+      the things that are expected to be completed for the release.
     </p>
   </tal:neither_bugs_nor_specs>
+
+  <h2 style="margin-top: 2em;">Related milestones and releases</h2>
+
+  <ul>
+    <li>
+      <a tal:attributes="
+        href view/milestone/product/fmt:url/+milestones">All milestones for the
+        <tal:project replace="view/milestone/product/displayname" /> project</a>
+    </li>
+    <li>
+      <a tal:attributes="
+        href view/milestone/productseries/fmt:url">All releases for the
+        <tal:project replace="view/milestone/product/displayname" />
+        <tal:project replace="view/milestone/productseries/displayname" /> series</a>
+    </li>
+  </ul>
 
   <tal:has_release condition="view/release">
     <p style="clear: both"
