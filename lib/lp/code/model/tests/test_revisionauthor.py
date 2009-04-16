@@ -1,4 +1,4 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2008-2009 Canonical Ltd.  All rights reserved.
 
 """Tests for RevisionAuthors."""
 
@@ -7,14 +7,14 @@ __metaclass__ = type
 import transaction
 from unittest import TestLoader
 
+from zope.component import getUtility
+
 from canonical.config import config
-from lp.code.model.revision import RevisionAuthor, RevisionSet
 from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
-from lp.registry.interfaces.person import IPersonSet
 from canonical.launchpad.testing import LaunchpadObjectFactory, TestCase
 from canonical.testing import LaunchpadZopelessLayer
-
-from zope.component import getUtility
+from lp.code.model.revision import RevisionAuthor, RevisionSet
+from lp.registry.interfaces.person import IPersonSet
 
 
 class TestRevisionEmailExtraction(TestCase):
