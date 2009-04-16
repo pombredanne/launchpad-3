@@ -181,21 +181,22 @@ if __name__ == '__main__':
     else:
         args = sys.argv
 
-    if '--load-list' in args:
-        position = args.index('--load-list')
-        list_name = args[position + 1]
-        del args[position:position+2]
+    def load_list(option, opt_str, list_name, parser):
         patch_find_tests(filter_tests(list_name))
+    testrunner.parser.add_option(
+        '--load-list', type=str, action='callback', callback=load_list)
 
-    if '--list' in args:
-        args.remove('--list')
+    def list_test_option(option, opt, value, parser):
         patch_find_tests(list_tests)
+    testrunner.parser.add_option(
+        '--list', action='callback', callback=list_test_option)
 
-    if '--subunit' in args:
-        args.remove('--subunit')
+    def use_subunit(option, opt, value, parser):
         patch_zope_testresult(TestProtocolClient(sys.stdout))
-    elif '--progress' in args:
-        args.remove('--progress')
+    testrunner.parser.add_option(
+        '--subunit', action='callback', callback=use_subunit)
+
+    if '--bzr-progress' in args:
         # XXX: provide a decent way of allowing the default result object.
         # XXX: the summary for this is not being called.
         import bzrlib.ui
