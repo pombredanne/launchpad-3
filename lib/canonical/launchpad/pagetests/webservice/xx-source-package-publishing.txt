@@ -104,7 +104,7 @@ publication to play with first.
     >>> from lazr.restful.testing.webservice import pprint_entry
     >>> pprint_entry(pubs['entries'][0])
     archive_link: u'http://.../~cprov/+archive/ppa'
-    changes_file_url: u'http://launchpad.dev/~cprov/+archive/ppa/+files/foo_666_source.changes'
+    changes_file_url: u'http://launchpad.dev/~cprov/+archive/ppa/+files/testwebservice_666_source.changes'
     component_name: u'main'
     datecreated: ...
     datemadepending: None
