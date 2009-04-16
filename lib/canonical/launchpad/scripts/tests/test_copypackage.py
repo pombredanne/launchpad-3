@@ -1017,8 +1017,6 @@ class TestCopyPackage(TestCase):
 
         for build in ppa_source.getBuilds():
             build.buildlog = fake_buildlog
-            #binary_queue_item.addBuild(build)
-        #binary_queue_item.setDone()
 
         # Create ancestry environment in the primary archive, so we can
         # test unembargoed overrides.
