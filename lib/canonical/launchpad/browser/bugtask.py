@@ -75,6 +75,7 @@ from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.fields import PublicPersonChoice
 from canonical.launchpad.mailnotification import get_unified_diff
 from canonical.launchpad.validators import LaunchpadValidationError
+from canonical.launchpad.vocabularies.dbobjects import MilestoneVocabulary
 from canonical.launchpad.webapp import (
     action, custom_widget, canonical_url, GetitemNavigation,
     LaunchpadEditFormView, LaunchpadFormView, LaunchpadView, Navigation,
@@ -140,8 +141,6 @@ from canonical.widgets.bugtask import (
 from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 from canonical.widgets.lazrjs import TextLineEditorWidget
 from canonical.widgets.project import ProjectScopeWidget
-
-from lp.registry.vocabularies import MilestoneVocabulary
 
 
 def unique_title(title):

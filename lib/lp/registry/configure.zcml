@@ -5,8 +5,6 @@
     xmlns:xmlrpc="http://namespaces.zope.org/xmlrpc"
     i18n_domain="launchpad">
     <include
-        file="vocabularies.zcml"/>
-    <include
         package=".browser"/>
     <class
         class="lp.registry.model.teammembership.TeamMembershipSet">

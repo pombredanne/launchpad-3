@@ -9,16 +9,15 @@ from unittest import TestCase, TestLoader
 from zope.component import getUtility
 
 from canonical.launchpad.ftests import login, logout
-from canonical.launchpad.interfaces.bugtask import IBugTaskSet
-from canonical.launchpad.interfaces.specification import ISpecificationSet
-from canonical.launchpad.testing import LaunchpadObjectFactory
-from canonical.testing import DatabaseFunctionalLayer
-
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.project import IProjectSet
 from lp.registry.interfaces.product import IProductSet
 from lp.registry.interfaces.distribution import IDistributionSet
-from lp.registry.vocabularies import MilestoneVocabulary
+from canonical.launchpad.interfaces.bugtask import IBugTaskSet
+from canonical.launchpad.interfaces.specification import ISpecificationSet
+from canonical.launchpad.testing import LaunchpadObjectFactory
+from canonical.launchpad.vocabularies.dbobjects import MilestoneVocabulary
+from canonical.testing import DatabaseFunctionalLayer
 
 
 class TestMilestoneVocabulary(TestCase):
