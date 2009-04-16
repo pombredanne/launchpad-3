@@ -44,6 +44,7 @@
                 <br /><br />
                 Installing applications from a PPA is just as easy as standard Ubuntu software, with updates automatically pushed to your users.
             </p>
+            <div id="left-link-holder"><strong>Need a private PPA with restricted access?</strong><br /><a href="mailto:feedback@launchpad.net">Talk to us about our beta for commercial subscribers &gt;</a></div>
             <div id="link-holder"><a href="https://launchpad.net/ubuntu/+ppas">Browse PPAs &gt;</a><br /><a href="https://help.launchpad.net/PPA">Read our PPA user guide &gt;</a></div>
         </div>
         <div id="page-intro-bottom"></div>
