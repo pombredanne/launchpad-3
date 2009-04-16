@@ -18,7 +18,8 @@ from canonical.launchpad.database.publishing import (
 from canonical.launchpad.interfaces.build import BuildStatus
 from canonical.launchpad.interfaces.component import IComponentSet
 from canonical.launchpad.scripts.logger import QuietFakeLogger
-from canonical.launchpad.scripts.buildd import RetryDepwait
+from canonical.launchpad.scripts.buildd import (
+    QueueBuilder, RetryDepwait)
 from canonical.launchpad.scripts.base import LaunchpadScriptFailure
 from canonical.testing import (
     DatabaseLayer, LaunchpadLayer, LaunchpadZopelessLayer)
@@ -83,11 +84,47 @@ class TestSlaveScanner(TestCronscriptBase):
 
 class TestQueueBuilder(TestCronscriptBase):
     """Test QueueBuilder buildd script class."""
-    layer = LaunchpadLayer
+    layer = LaunchpadZopelessLayer
 
     def testRunQueueBuilder(self):
         """Check if buildd-queue-builder runs without errors."""
         self.assertRuns(runner=self.runBuilddQueueBuilder)
+
+    def getQueueBuilder(self, distribution=None, suites=None):
+
+        test_args = ['-n']
+        if distribution is not None:
+            test_args.extend(['-d', distribution])
+
+        if suites is not None:
+            for suite in suites:
+                test_args.extend(['-s', suite])
+
+        queue_builder = QueueBuilder(
+            name='queue-builder', test_args=test_args)
+        queue_builder.logger = QuietFakeLogger()
+
+        return queue_builder
+
+    def testCalculateDistroseries(self):
+        # A single valid suite argument results in a list with one
+        # distroseries (pockets are completely ignored).
+        qb = self.getQueueBuilder(suites=('warty-security',))
+        self.assertEqual(
+            ['warty'],
+            [distroseries.name
+             for distroseries in qb.calculateDistroseries()])
+
+        # Multiple suite arguments result in a ordered list of distroseries.
+        qb = self.getQueueBuilder(suites=('hoary', 'warty-security'))
+        self.assertEqual(
+            ['warty', 'hoary'],
+            [distroseries.name
+             for distroseries in qb.calculateDistroseries()])
+
+        # Invalid suite arguments result in a error.
+        qb = self.getQueueBuilder(suites=('boing',))
+        self.assertRaises(LaunchpadScriptFailure, qb.calculateDistroseries)
 
 
 class TestRetryDepwait(TestCronscriptBase):
