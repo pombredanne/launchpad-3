@@ -11,13 +11,15 @@ __all__ = [
 
 from zope.component import getUtility
 
-from canonical.archivepublisher.debversion import Version
 from canonical.buildmaster.master import BuilddMaster
-from canonical.launchpad.interfaces import (
-    DistroSeriesStatus, IBuilderSet, IBuildSet, IDistributionSet,
-    IDistroArchSeriesSet, NotFoundError)
+from canonical.launchpad.interfaces.build import IBuildSet
+from canonical.launchpad.interfaces.builder import IBuilderSet
+from canonical.launchpad.interfaces.launchpad import NotFoundError
 from canonical.launchpad.scripts.base import (
     LaunchpadCronScript, LaunchpadScriptFailure)
+from lp.registry.interfaces.distribution import IDistributionSet
+from lp.registry.interfaces.distroseries import (
+    DistroSeriesStatus, distroseries_sort_key)
 
 
 class QueueBuilder(LaunchpadCronScript):
@@ -29,8 +31,8 @@ class QueueBuilder(LaunchpadCronScript):
             help="Whether to treat this as a dry-run or not.")
 
         self.parser.add_option(
-            "--only-score", action="store_true",
-            dest="only_score", default=False,
+            "--score-only", action="store_true",
+            dest="score_only", default=False,
             help="Skip build creation, only score existing builds.")
 
         self.parser.add_option(
@@ -65,51 +67,50 @@ class QueueBuilder(LaunchpadCronScript):
             self.logger.info("Dry run: changes will not be committed.")
             self.txn = _FakeZTM()
 
-        self.logger.info("Initializing BuilddMaster.")
+        sorted_distroseries = self.calculateDistroseries()
         buildMaster = BuilddMaster(self.logger, self.txn)
-        for archseries in getUtility(IDistroArchSeriesSet):
-            buildMaster.addDistroArchSeries(archseries)
+        # Initialize BuilddMaster with the relevant architectures.
+        # it's needed even for 'score-only' mode.
+        for series in sorted_distroseries:
+            for archseries in series.architectures:
+                buildMaster.addDistroArchSeries(archseries)
 
-        if not self.options.only_score:
+        if not self.options.score_only:
             # For each distroseries we care about; scan for
             # sourcepackagereleases with no build associated
             # with the distroarchserieses we're interested in.
-            sorted_distroseries = self.calculateDistroseries()
             self.logger.info("Rebuilding build queue.")
             for distroseries in sorted_distroseries:
                 buildMaster.createMissingBuilds(distroseries)
 
-        # For each build record in NEEDSBUILD, ensure it has a
-        # buildqueue entry
-        self.logger.info("Creating missing build queue items.")
+        # Ensure all NEEDSBUILD builds have a buildqueue entry
+        # and re-score them.
         buildMaster.addMissingBuildQueueEntries()
-
-        # Re-score the NEEDSBUILD properly
-        self.logger.info("Scoring build queue items.")
         buildMaster.scoreCandidates()
 
         self.txn.commit()
 
     def calculateDistroseries(self):
         """Return a ordered list of distroseries for the given arguments."""
-        try:
-            distribution = getUtility(IDistributionSet).getByName(
-                self.options.distribution)
-        except NotFoundError:
+        distribution = getUtility(IDistributionSet).getByName(
+            self.options.distribution)
+        if distribution is None:
             raise LaunchpadScriptFailure(
                 "Could not find distribution: %s" % self.options.distribution)
 
-        distroserieses = set()
+        if len(self.options.suite) == 0:
+            return sorted(distribution.serieses, key=distroseries_sort_key)
+
+        distroseries_set = set()
         for suite in self.options.suite:
             try:
                 distroseries, pocket = distribution.getDistroSeriesAndPocket(
                     suite)
             except NotFoundError, err:
                 raise LaunchpadScriptFailure("Could not find suite %s" % err)
-            distroserieses.add(distroseries)
+            distroseries_set.add(distroseries)
 
-        return sorted(distroserieses,
-                      key=lambda x: (x.distribution, Version(x.version)))
+        return sorted(distroseries_set, key=distroseries_sort_key)
 
 
 class RetryDepwait(LaunchpadCronScript):

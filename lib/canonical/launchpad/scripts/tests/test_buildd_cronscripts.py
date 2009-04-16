@@ -21,8 +21,10 @@ from canonical.launchpad.scripts.logger import QuietFakeLogger
 from canonical.launchpad.scripts.buildd import (
     QueueBuilder, RetryDepwait)
 from canonical.launchpad.scripts.base import LaunchpadScriptFailure
+from canonical.launchpad.tests.test_publishing import SoyuzTestPublisher
 from canonical.testing import (
     DatabaseLayer, LaunchpadLayer, LaunchpadZopelessLayer)
+from lp.registry.interfaces.distribution import IDistributionSet
 
 
 class TestCronscriptBase(unittest.TestCase):
@@ -86,12 +88,9 @@ class TestQueueBuilder(TestCronscriptBase):
     """Test QueueBuilder buildd script class."""
     layer = LaunchpadZopelessLayer
 
-    def testRunQueueBuilder(self):
-        """Check if buildd-queue-builder runs without errors."""
-        self.assertRuns(runner=self.runBuilddQueueBuilder)
-
-    def getQueueBuilder(self, distribution=None, suites=None):
-
+    def getQueueBuilder(self, distribution=None, suites=None,
+                        score_only=False):
+        """Return a configured `QueueBuilder` script object."""
         test_args = ['-n']
         if distribution is not None:
             test_args.extend(['-d', distribution])
@@ -100,13 +99,56 @@ class TestQueueBuilder(TestCronscriptBase):
             for suite in suites:
                 test_args.extend(['-s', suite])
 
+        if score_only:
+            test_args.append('--score-only')
+
         queue_builder = QueueBuilder(
             name='queue-builder', test_args=test_args)
         queue_builder.logger = QuietFakeLogger()
 
         return queue_builder
 
+    def getSourceWithoutBuilds(self):
+        """Create a source publication without builds in ubuntu/hoary.
+
+        Once the source is created add the chroots needed for build
+        creation.
+        """
+        test_publisher = SoyuzTestPublisher()
+
+        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+        hoary = ubuntu.getSeries('hoary')
+        test_publisher.setUpDefaultDistroSeries(hoary)
+
+        source = test_publisher.getPubSource()
+        self.assertEqual(0, len(source.getBuilds()))
+
+        test_publisher.addFakeChroots()
+        return source
+
     def testCalculateDistroseries(self):
+        # Distribution defaults to ubuntu and when suite is omitted
+        # all series are considered in the crescent order.
+        qb = self.getQueueBuilder()
+        self.assertEqual(
+            ['warty', 'hoary', 'grumpy', 'breezy-autotest'],
+            [distroseries.name
+             for distroseries in qb.calculateDistroseries()])
+
+        # Distribution name can be defined.
+        qb = self.getQueueBuilder(distribution='ubuntutest')
+        self.assertEqual(
+            ['breezy-autotest', 'hoary-test'],
+            [distroseries.name
+             for distroseries in qb.calculateDistroseries()])
+
+        # Distribution/Suite arguments mismatch result in a error.
+        qb = self.getQueueBuilder(distribution='boing')
+        self.assertRaises(LaunchpadScriptFailure, qb.calculateDistroseries)
+
+        qb = self.getQueueBuilder(suites=('hoary-test',))
+        self.assertRaises(LaunchpadScriptFailure, qb.calculateDistroseries)
+
         # A single valid suite argument results in a list with one
         # distroseries (pockets are completely ignored).
         qb = self.getQueueBuilder(suites=('warty-security',))
@@ -122,17 +164,60 @@ class TestQueueBuilder(TestCronscriptBase):
             [distroseries.name
              for distroseries in qb.calculateDistroseries()])
 
-        # Invalid suite arguments result in a error.
-        qb = self.getQueueBuilder(suites=('hoary-test',))
-        self.assertRaises(LaunchpadScriptFailure, qb.calculateDistroseries)
+    def testOtherDistribution(self):
+        # Restricting the build creation to another distribution
+        # does not create any builds either.
+        source = self.getSourceWithoutBuilds()
+        queue_builder = self.getQueueBuilder(distribution='ubuntutest')
+        queue_builder.main()
+        self.assertEqual(0, len(source.getBuilds()))
 
-        # Distribution name can also be redefined.
-        qb = self.getQueueBuilder(
-            distribution='ubuntutest', suites=('hoary-test',))
-        self.assertEqual(
-            ['hoary-test'],
-            [distroseries.name
-             for distroseries in qb.calculateDistroseries()])
+    def testOtherDistroseries(self):
+        # Restricting the build creation to another distroseries
+        # does not create any builds.
+        source = self.getSourceWithoutBuilds()
+        queue_builder = self.getQueueBuilder(suites=('warty',))
+        queue_builder.main()
+        self.assertEqual(0, len(source.getBuilds()))
+
+    def testRightDistroseries(self):
+        # A build is created when queue-builder is restricted to the
+        # distroseries where the testing source is published
+        source = self.getSourceWithoutBuilds()
+        queue_builder = self.getQueueBuilder(suites=('hoary',))
+        queue_builder.main()
+        self.assertEqual(1, len(source.getBuilds()))
+
+    def testAllSeries(self):
+        # A build is created when queue-builder is not restricted to any
+        # specific distroseries.
+        source = self.getSourceWithoutBuilds()
+        queue_builder = self.getQueueBuilder()
+        queue_builder.main()
+        self.assertEqual(1, len(source.getBuilds()))
+
+    def testScoringOnlyDoesNotCreateBuilds(self):
+        # Passing '--score-only' doesn't create builds.
+        source = self.getSourceWithoutBuilds()
+        queue_builder = self.getQueueBuilder(score_only=True)
+        queue_builder.main()
+        self.assertEqual(0, len(source.getBuilds()))
+
+    def testScoringOnlyWorks(self):
+        # The source now has a build but lacks the corresponding
+        # buildqueue record. It is created and scored in '--score-only'
+        # mode.
+        source = self.getSourceWithoutBuilds()
+        [build] = source.createMissingBuilds()
+        build.buildqueue_record.destroySelf()
+
+        queue_builder = self.getQueueBuilder(score_only=True)
+        queue_builder.main()
+        self.assertEqual(4005, build.buildqueue_record.lastscore)
+
+    def testRunQueueBuilder(self):
+        # buildd-queue-builder script runs without errors.
+        self.assertRuns(runner=self.runBuilddQueueBuilder)
 
 
 class TestRetryDepwait(TestCronscriptBase):
