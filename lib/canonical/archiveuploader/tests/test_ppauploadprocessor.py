@@ -740,20 +740,6 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
             'Further error '
             'processing not possible because of a critical previous error.')
 
-    def testUploadWithBadSection(self):
-        """Uploads with a bad section are rejected."""
-        upload_dir = self.queueUpload(
-            "bar_1.0-1_bad_section", "~name16/ubuntu")
-        self.processUpload(self.uploadprocessor, upload_dir)
-
-        self.assertEqual(
-            self.uploadprocessor.last_processed_upload.rejection_message,
-            "bar_1.0-1.dsc: Section 'badsection' is not valid\n"
-            "bar_1.0.orig.tar.gz: Section 'badsection' is not valid\n"
-            "bar_1.0-1.diff.gz: Section 'badsection' is not valid\n"
-            "Further error processing not possible because of a "
-            "critical previous error.")
-
     def testMixedUpload(self):
         """Mixed PPA uploads are rejected with a appropriate message."""
         upload_dir = self.queueUpload(

@@ -295,26 +295,13 @@ class PackageUploadFile(NascentUploadFile):
         valid_sections = [section.name for section in getUtility(ISectionSet)]
 
         if self.section_name not in valid_sections:
-            # We used to reject invalid sections; when testing stuff we
-            # were forced to accept a package with a broken section
-            # (linux-meta_2.6.12.16_i386). Result: packages with invalid
-            # sections now get put into misc -- cprov 20060119
-            if self.policy.archive.purpose == ArchivePurpose.PPA:
-                # PPA uploads should not override because it will probably
-                # make the section inconsistent with the one in the .dsc.
-                raise UploadError(
-                    "%s: Section %r is not valid" % (
-                    self.filename, self.section_name))
-            else:
-                default_section = 'misc'
-                self.logger.warn("Unable to grok section %r, "
-                                 "overriding it with %s"
-                          % (self.section_name, default_section))
-                self.section_name = default_section
+            raise UploadError(
+                "%s: Unknown section %r" % (
+                self.filename, self.section_name))
 
         if self.component_name not in valid_components:
             raise UploadError(
-                "%s: Component %r is not valid" % (
+                "%s: Unknown component %r" % (
                 self.filename, self.component_name))
 
 
