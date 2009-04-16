@@ -2521,21 +2521,15 @@ class PersonSet:
             """ % (privacy_query, quote(text),)
         return team_name_query
 
-    def find(self, text, orderBy=None):
+    def find(self, text):
         """See `IPersonSet`."""
         if not text:
             # Return an empty result set.
             return EmptyResultSet()
-        if orderBy is None:
-            orderBy = Person._sortingColumnsForSetOperations
-        else:
-            # Convert the given string to a SQLConstant.
-            orderBy = SQLConstant("person_sort_key(%s)" % orderBy)
 
+        orderBy = Person._sortingColumnsForSetOperations
         text = text.lower()
-
         private_query = self._teamPrivacyQuery()
-
         base_query = """
             (Person.visibility = %s OR
             %s)""" % (quote(PersonVisibility.PUBLIC), private_query)
@@ -2582,17 +2576,11 @@ class PersonSet:
         return results
 
     def findPerson(
-            self, text="", orderBy=None, exclude_inactive_accounts=True,
+            self, text="", exclude_inactive_accounts=True,
             must_have_email=False):
         """See `IPersonSet`."""
-        if orderBy is None:
-            orderBy = Person._sortingColumnsForSetOperations
-        else:
-            # Convert the given string to a SQLConstant.
-            orderBy = SQLConstant("person_sort_key(%s)" % orderBy)
-
+        orderBy = Person._sortingColumnsForSetOperations
         text = text.lower()
-
         base_query = [
                 'Person.teamowner IS NULL',
                 'Person.merged IS NULL',
@@ -2633,12 +2621,9 @@ class PersonSet:
 
         return results.orderBy(orderBy)
 
-    def findTeam(self, text="", orderBy=None):
+    def findTeam(self, text=""):
         """See `IPersonSet`."""
-        if orderBy is None:
-            orderBy = Person._sortingColumnsForSetOperations
-        else:
-            orderBy = SQLConstant("person_sort_key(%s)" % orderBy)
+        orderBy = Person._sortingColumnsForSetOperations
         text = text.lower()
         # Teams may not have email addresses, so we need to either use a LEFT
         # OUTER JOIN or do a UNION between two queries. Using a UNION makes
