@@ -1640,6 +1640,9 @@ class Person(
             clauseTables=['Person'],
             orderBy=Person.sortingColumns)
 
+    # XXX: salgado, 2009-04-16: This should be called just deactivate(),
+    # because it not only deactivates this person's account but also the
+    # person.
     def deactivateAccount(self, comment):
         """See `IPersonSpecialRestricted`."""
         assert self.is_valid_person, (

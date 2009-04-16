@@ -1443,6 +1443,21 @@ class IPersonSpecialRestricted(Interface):
         :param comment: An explanation of why the account status changed.
         """
 
+    def reactivate(comment, password, preferred_email):
+        """Reactivate this person and its account.
+
+        Set the account status to ACTIVE, the account's password to the given
+        one and its preferred email address.
+
+        If the person's name contains a -deactivatedaccount suffix (usually
+        added by `IPerson`.deactivateAccount(), it is removed.
+
+        :param comment: An explanation of why the account status changed.
+        :param password: The user's password.
+        :param preferred_email: The `EmailAddress` to set as the account's
+            preferred email address. It cannot be None.
+        """
+
 
 class IPerson(IPersonPublic, IPersonViewRestricted, IPersonEditRestricted,
               IPersonCommAdminWriteRestricted, IPersonSpecialRestricted,
