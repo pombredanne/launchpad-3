@@ -160,6 +160,9 @@ class BazaarProductView:
         return value_to_cutoffs
 
     def products(self, num_products=None):
+        # The product_info ends up sorted on product name, as the product name
+        # is the first item of the tuple returned, and is guaranteed to be
+        # unique by the sql query.
         product_info = sorted(
             list(getUtility(IBranchCloud).getProductsWithInfo(num_products)))
         now = datetime.today()
