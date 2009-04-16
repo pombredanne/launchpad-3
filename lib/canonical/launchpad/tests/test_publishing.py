@@ -25,7 +25,6 @@ from canonical.launchpad.interfaces import (
     IDistributionSet, ILibraryFileAliasSet, IPersonSet, ISectionSet,
     ISourcePackageNameSet, NotFoundError, PackagePublishingPocket,
     PackagePublishingPriority, PackagePublishingStatus, SourcePackageUrgency)
-from canonical.launchpad.interfaces.package import PackageUploadStatus
 from canonical.launchpad.scripts import FakeLogger
 from canonical.launchpad.testing.factory import LaunchpadObjectFactory
 from canonical.testing import LaunchpadZopelessLayer
@@ -121,7 +120,7 @@ class SoyuzTestPublisher:
                          changes_file_content="fake changes file content"):
         package_upload = distroseries.createQueueEntry(
             pocket, changes_file_name, changes_file_content, archive, None)
-        package_upload.status = PackageUploadStatus.DONE
+        package_upload.setDone()
         return package_upload
 
     def getPubSource(self, sourcename=None, version='666', component='main',
@@ -241,6 +240,12 @@ class SoyuzTestPublisher:
                 binarypackagerelease, archive, status, pocket,
                 scheduleddeletiondate, dateremoved)
             published_binaries.extend(pub_binaries)
+            package_upload = self.addPackageUpload(
+                archive, distroseries, pocket,
+                changes_file_name='%s_%s_%s.changes' %
+                    (binaryname, binarypackagerelease.version,
+                     build.arch_tag))
+            package_upload.addBuild(build)
 
         return sorted(
             published_binaries, key=operator.attrgetter('id'), reverse=True)

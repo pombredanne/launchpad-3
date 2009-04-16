@@ -1011,7 +1011,7 @@ publications.
     ...     cprov_sources)
 
     >>> cprov_changes.count()
-    1
+    6
 
 The returned ResultSet element is tuple containing:
 
@@ -1021,7 +1021,7 @@ The returned ResultSet element is tuple containing:
  * `LibraryFileAlias`;
  * `LibraryFileContent`.
 
-    >>> [the_change] = cprov_changes
+    >>> the_change = cprov_changes[0]
 
     >>> source_pub, upload, source, file, content = the_change
 
