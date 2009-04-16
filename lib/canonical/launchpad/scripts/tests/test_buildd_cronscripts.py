@@ -26,14 +26,6 @@ from canonical.testing import (
 
 class TestCronscriptBase(unittest.TestCase):
     """Buildd cronscripts test classes."""
-    layer = LaunchpadLayer
-
-    def setUp(self):
-        super(TestCronscriptBase, self).setUp()
-        # All of these tests commit to the launchpad_ftest database in
-        # subprocesses, so we need to tell the layer to fully tear down and
-        # restore the database.
-        DatabaseLayer.force_dirty_database()
 
     def runCronscript(self, name, extra_args):
         """Run given cronscript, returning the result and output.
@@ -71,22 +63,34 @@ class TestCronscriptBase(unittest.TestCase):
         """
         rc, out, err = runner()
         self.assertEqual(0, rc, "Err:\n%s" % err)
+
+        # 'runners' commit to the launchpad_ftest database in
+        # subprocesses, so we need to tell the layer to fully
+        # tear down and restore the database.
+        DatabaseLayer.force_dirty_database()
+
         return rc, out, err
+
+
+class TestSlaveScanner(TestCronscriptBase):
+    """Test SlaveScanner buildd script class."""
+    layer = LaunchpadLayer
 
     def testRunSlaveScanner(self):
         """Check if buildd-slave-scanner runs without errors."""
         self.assertRuns(runner=self.runBuilddSlaveScanner)
 
+
+class TestQueueBuilder(TestCronscriptBase):
+    """Test QueueBuilder buildd script class."""
+    layer = LaunchpadLayer
+
     def testRunQueueBuilder(self):
         """Check if buildd-queue-builder runs without errors."""
         self.assertRuns(runner=self.runBuilddQueueBuilder)
 
-    def testRunRetryDepwait(self):
-        """Check if buildd-retry-depwait runs without errors."""
-        self.assertRuns(runner=self.runBuilddRetryDepwait)
 
-
-class TestRetryDepwait(unittest.TestCase):
+class TestRetryDepwait(TestCronscriptBase):
     """Test RetryDepwait buildd script class."""
     layer = LaunchpadZopelessLayer
 
@@ -117,6 +121,10 @@ class TestRetryDepwait(unittest.TestCase):
         """A error is raised on unknown distributions."""
         retry_depwait = self.getRetryDepwait(distribution='foobar')
         self.assertRaises(LaunchpadScriptFailure, retry_depwait.main)
+
+    def testRunRetryDepwait(self):
+        """Check if actual buildd-retry-depwait script runs without errors."""
+        self.assertRuns(runner=self.runBuilddRetryDepwait)
 
     def testEmptyRun(self):
         """Check the results of a run against pristine sampledata.
@@ -157,6 +165,7 @@ class TestRetryDepwait(unittest.TestCase):
             self.getPendingBuilds().count())
         self.assertEqual(depwait_build.buildstate.name, 'NEEDSBUILD')
         self.assertEqual(depwait_build.buildqueue_record.lastscore, 3255)
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
