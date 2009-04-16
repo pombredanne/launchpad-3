@@ -8,7 +8,7 @@ from email.Utils import make_msgid
 
 from zope.interface import implements
 
-from sqlobject import ForeignKey, StringCol
+from sqlobject import BoolCol, ForeignKey, StringCol
 from storm.store import Store
 
 from canonical.database.sqlbase import SQLBase, sqlvalues
@@ -28,6 +28,7 @@ class BugMessage(SQLBase):
     bugwatch = ForeignKey(dbName='bugwatch', foreignKey='BugWatch',
         notNull=False, default=None)
     remote_comment_id = StringCol(notNull=False, default=None)
+    visible = BoolCol(notNull=True, default=True)
 
 
 class BugMessageSet:
