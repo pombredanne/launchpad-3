@@ -28,11 +28,27 @@ class QueueBuilder(LaunchpadCronScript):
             dest="dryrun", metavar="DRY_RUN", default=False,
             help="Whether to treat this as a dry-run or not.")
 
-    def main(self):
-        """Invoke rebuildQueue.
+        self.parser.add_option(
+            "--only-score", action="store_true",
+            dest="only_score", default=False,
+            help="Skip build creation, only score existing builds.")
 
-        Check if the cron.daily is running, quietly exits if true.
-        Force isolation level to ISOLATION_LEVEL_READ_COMMITTED.
+        self.parser.add_option(
+            "-d", "--distribution", default="ubuntu",
+            help="Context distribution.")
+
+        self.parser.add_option(
+            '-s', '--suite', metavar='SUITE', dest='suite',
+            action='append', type='string', default=[],
+            help='The suite to process')
+
+    def main(self):
+        """Use BuildMaster for processing the build queue.
+
+        Callers my specify a specific set of distroseries to be processed
+        and also decide whether or not the queue-rebuild (expensive
+        procedure) should be execute.
+
         Deals with the current transaction according the dry-run option.
         """
         if self.args:
@@ -49,34 +65,51 @@ class QueueBuilder(LaunchpadCronScript):
             self.logger.info("Dry run: changes will not be committed.")
             self.txn = _FakeZTM()
 
-        self.rebuildQueue()
-        self.txn.commit()
-
-    def rebuildQueue(self):
-        """Look for and initialise new build jobs."""
-
-        self.logger.info("Rebuilding Build Queue.")
+        self.logger.info("Initializing BuilddMaster.")
         buildMaster = BuilddMaster(self.logger, self.txn)
-
-        # For every distroarchseries we can find; put it into the build master
-        distroserieses = set()
         for archseries in getUtility(IDistroArchSeriesSet):
-            distroserieses.add(archseries.distroseries)
             buildMaster.addDistroArchSeries(archseries)
 
-        # For each distroseries we care about; scan for sourcepackagereleases
-        # with no build associated with the distroarchserieses we're
-        # interested in
-        for distroseries in sorted(distroserieses,
-            key=lambda x: (x.distribution, Version(x.version))):
-            buildMaster.createMissingBuilds(distroseries)
+        if not self.options.only_score:
+            # For each distroseries we care about; scan for
+            # sourcepackagereleases with no build associated
+            # with the distroarchserieses we're interested in.
+            sorted_distroseries = self.calculateDistroseries()
+            self.logger.info("Rebuilding build queue.")
+            for distroseries in sorted_distroseries:
+                buildMaster.createMissingBuilds(distroseries)
 
         # For each build record in NEEDSBUILD, ensure it has a
         # buildqueue entry
+        self.logger.info("Creating missing build queue items.")
         buildMaster.addMissingBuildQueueEntries()
 
         # Re-score the NEEDSBUILD properly
+        self.logger.info("Scoring build queue items.")
         buildMaster.scoreCandidates()
+
+        self.txn.commit()
+
+    def calculateDistroseries(self):
+        """Return a ordered list of distroseries for the given arguments."""
+        try:
+            distribution = getUtility(IDistributionSet).getByName(
+                self.options.distribution)
+        except NotFoundError:
+            raise LaunchpadScriptFailure(
+                "Could not find distribution: %s" % self.options.distribution)
+
+        distroserieses = set()
+        for suite in self.options.suite:
+            try:
+                distroseries, pocket = distribution.getDistroSeriesAndPocket(
+                    suite)
+            except NotFoundError, err:
+                raise LaunchpadScriptFailure("Could not find suite %s" % err)
+            distroserieses.add(distroseries)
+
+        return sorted(distroserieses,
+                      key=lambda x: (x.distribution, Version(x.version)))
 
 
 class RetryDepwait(LaunchpadCronScript):
