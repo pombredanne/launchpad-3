@@ -36,7 +36,7 @@ def list_tests(tests_by_layer_name):
 
 def filter_tests(list_name):
     def do_filter(tests_by_layer_name):
-        tests = set(line.strip() for line in open(list_name, 'rb'))
+        tests = sorted(set(line.strip() for line in open(list_name, 'rb')))
         result = {}
         for layer_name, suite in tests_by_layer_name.iteritems():
             new_suite = TestSuite()
@@ -61,6 +61,9 @@ def patch_zope_testresult(result):
     old_zope_factory = testrunner.TestResult
     def zope_result_factory(options, tests, layer_name=None):
         zope_result = old_zope_factory(options, tests, layer_name=layer_name)
-        zope_result.options.output = Anything()
-        return MultiTestResult(result, zope_result)
+        if isinstance(zope_result, MultiTestResult):
+            return zope_result
+        else:
+            zope_result.options.output = Anything()
+            return MultiTestResult(result, zope_result)
     testrunner.TestResult = zope_result_factory
