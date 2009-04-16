@@ -949,12 +949,13 @@ class BranchCloud:
         # Get all products, the count of all hosted & mirrored branches and
         # the last revision date.
         result = store.find(
-            (Product, Count(Branch.id), Max(Revision.revision_date)),
+            (Product.name, Count(Branch.id), Max(Revision.revision_date)),
             Branch.private == False,
             Branch.product == Product.id,
             Or(Branch.branch_type == BranchType.HOSTED,
                Branch.branch_type == BranchType.MIRRORED),
-            Branch.last_scanned_id == Revision.revision_id).group_by(Product)
+            Branch.last_scanned_id == Revision.revision_id)
+        result = result.group_by(Product.name)
         result = result.order_by(Desc(Count(Branch.id)))
         if num_products:
             result.config(limit=num_products)
