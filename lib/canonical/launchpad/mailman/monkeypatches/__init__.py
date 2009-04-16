@@ -151,10 +151,8 @@ PRIVATE_EXTERNAL_ARCHIVER = PUBLIC_EXTERNAL_ARCHIVER
     here = os.path.dirname(__file__)
     # Install the MHonArc control file.
     mhonarc_rc_file = os.path.join(here, 'lp-mhonarc-common.mrc')
-    mailman_data_dir = os.path.join(mailman_path, 'data')
-    if not os.path.isdir(mailman_data_dir):
-      os.mkdir(mailman_data_dir)
-    shutil.copy(mhonarc_rc_file, mailman_data_dir)
+    runtime_data_dir = os.path.join(config.mailman.build_var_dir, 'data')
+    shutil.copy(mhonarc_rc_file, runtime_data_dir)
     # Install the launchpad site templates.
     launchpad_template_path = os.path.join(here, 'sitetemplates')
     site_template_path = os.path.join(mailman_path, 'templates', 'site')
