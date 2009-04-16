@@ -198,11 +198,17 @@ class ArchivePopulator(SoyuzScript):
             # name was specified on the command line; that's why it should be
             # done before creating the copy archive.
             proc_families = loadProcessorFamilies(proc_family_names)
+
+            # The copy archive is created in disabled mode. This gives the
+            # archive owner the chance to tweak the build dependencies and
+            # other settings for the newly created copy archive (e.g. whether
+            # the builds should be carried out on virtual builders) before the
+            # switch is flipped and build activity starts.
             copy_archive = getUtility(IArchiveSet).new(
                 ArchivePurpose.COPY, registrant,
                 name=to_archive,
                 distribution=the_destination.distribution,
-                description=reason)
+                description=reason, enabled=False)
             the_destination.archive = copy_archive
             # Associate the newly created copy archive with the processor
             # families specified by the user.

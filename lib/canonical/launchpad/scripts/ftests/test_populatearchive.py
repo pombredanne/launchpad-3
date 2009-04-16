@@ -116,6 +116,10 @@ class TestPopulateArchiveScript(TestCase):
             distro, ArchivePurpose.COPY, archive_name)
         self.assertTrue(copy_archive is not None)
 
+        # Ascertain that the new copy archive was created with the 'enabled'
+        # flag turned off.
+        self.assertFalse(copy_archive.enabled)
+
         # Make sure the right source packages were cloned.
         self._verifyClonedSourcePackages(copy_archive, hoary)
 
@@ -443,6 +447,8 @@ class TestPopulateArchiveScript(TestCase):
         extra_args = [
             '--merge-copy', '--from-archive', second_stage.name]
 
+        # We need to enable the copy archive before we can copy to it.
+        copy_archive.enabled = True
         # An empty 'reason' string is passed to runScript() i.e. the latter
         # will not pass a '--reason' command line argument to the script which
         # is OK since this is a repeated population of an *existing* COPY
