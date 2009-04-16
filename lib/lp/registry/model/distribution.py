@@ -14,7 +14,6 @@ from sqlobject.sqlbuilder import SQLConstant
 from storm.locals import Desc, In, Join, SQL
 from storm.store import Store
 
-from canonical.archivepublisher.debversion import Version
 from canonical.cachedproperty import cachedproperty
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -80,6 +79,7 @@ from canonical.launchpad.interfaces.build import IBuildSet
 from canonical.launchpad.interfaces.buildrecords import IHasBuildRecords
 from lp.registry.interfaces.distribution import (
     IDistribution, IDistributionSet)
+from lp.registry.interfaces.distroseries import distroseries_sort_key
 from canonical.launchpad.interfaces.distributionmirror import (
     IDistributionMirror, MirrorContent, MirrorStatus)
 from lp.registry.interfaces.distroseries import (
@@ -325,7 +325,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
     def serieses(self):
         """See `IDistribution`."""
         ret = DistroSeries.selectBy(distribution=self)
-        return sorted(ret, key=lambda a: Version(a.version), reverse=True)
+        return sorted(ret, key=distroseries_sort_key, reverse=True)
 
     @property
     def mentoring_offers(self):

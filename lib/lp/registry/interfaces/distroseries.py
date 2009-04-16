@@ -12,6 +12,7 @@ __all__ = [
     'IDistroSeriesPublic',
     'IDistroSeriesSet',
     'NoSuchDistroSeries',
+    'distroseries_sort_key',
     ]
 
 from zope.schema import Bool, Datetime, Choice, Object, TextLine
@@ -42,6 +43,19 @@ from lazr.restful.declarations import (
     LAZR_WEBSERVICE_EXPORTED, export_as_webservice_entry,
     export_read_operation, exported, operation_parameters,
     operation_returns_entry)
+
+
+def distroseries_sort_key(series):
+    """Sort `DistroSeries` by version.
+
+    See `canonical.archivepublisher.debversion.Version` for more
+    information.
+    """
+    # XXX cprov 2009-04-16: is there a better place for miscelaneous
+    # functions like this ?
+    # Avoid circular imports.
+    from canonical.archivepublisher.debversion import Version
+    return Version(series.version)
 
 
 # XXX: salgado, 2008-06-02: We should use a more generic name here as this
