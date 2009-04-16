@@ -38,6 +38,8 @@ class BugSubscription(SQLBase):
 
     def canBeUnsubscribedByUser(self, user):
         """See `IBugSubscription`."""
+        if user is None:
+            return False
         if self.person.is_team:
             return user.inTeam(self.person)
         return user == self.person

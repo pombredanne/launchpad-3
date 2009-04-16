@@ -600,6 +600,11 @@ unsubscribe him.
     >>> subscription.canBeUnsubscribedByUser(subscribed_by)
     False
 
+The anonymous user (represented by None) also can't unsubscribe him.
+
+    >>> subscription.canBeUnsubscribedByUser(None)
+    False
+
 A user can unsubscribe a team he's a member of.
 
     >>> team = factory.makeTeam()
@@ -612,6 +617,12 @@ A user can unsubscribe a team he's a member of.
     >>> non_member = factory.makePerson()
     >>> subscription.canBeUnsubscribedByUser(non_member)
     False
+
+The anonymous user (represented by None) also can't unsubscribe the team.
+
+    >>> subscription.canBeUnsubscribedByUser(None)
+    False
+
 
 == Automatic Subscriptions on Bug Creation ==
 
