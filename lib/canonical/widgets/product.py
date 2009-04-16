@@ -241,9 +241,20 @@ class ProductNameWidget(TextWidget):
     """
     template = ViewPageTemplateFile('templates/project-url.pt')
 
+    def __init__(self, *args):
+        self.read_only = False
+        super(ProductNameWidget, self).__init__(*args)
+
     def __call__(self):
         return self.template()
 
     @property
     def product_name(self):
         return self.request.form.get('name', '')
+
+    @property
+    def widget_type(self):
+        if self.read_only:
+            return 'hidden'
+        else:
+            return 'text'

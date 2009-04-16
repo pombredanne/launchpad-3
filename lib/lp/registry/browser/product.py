@@ -1484,8 +1484,13 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin):
 
     product = None
 
+    custom_widget('displayname', TextWidget, displayWidth=50, label='Name')
+    custom_widget('name', ProductNameWidget, label='URL')
+
     custom_widget('project', VocabularyPickerWidget,
                   header="Select a project group")
+    custom_widget('licenses', LicenseWidget, column_count=3,
+                  orientation='vertical')
 
     def isVCSImport(self):
         if self.user is None:
@@ -1500,8 +1505,17 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin):
             # the owner and reviewed status during the edit process;
             # this saves time wasted on getting to product/+admin.
             # The fields are not displayed for other people though.
-            self.form_fields = self.form_fields.omit('owner',
-                                                     'license_reviewed')
+            self.form_fields = self.form_fields.omit(
+                'owner', 'license_reviewed')
+
+    def setUpWidgets(self):
+        super(ProjectAddStepTwo, self).setUpWidgets()
+        self.widgets['name'].read_only = True
+        # The "hint" is really more of an explanation at this point, but the
+        # phrasing is different.
+        self.widgets['name'].hint = ('When published, '
+                                     "this will be the project's URL.")
+        self.widgets['displayname'].visible = False
 
     @action(_('Publish this Project'), name='add')
     def add_action(self, action, data):
@@ -1511,10 +1525,11 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin):
         if not self.isVCSImport():
             # Zope makes sure these are never set, since they are not in
             # self.form_fields
-            assert "owner" not in data
-            assert "license_reviewed" not in data
+            assert "owner" not in data, 'Unexpected form data'
+            assert "license_reviewed" not in data, 'Unexpected form data'
             data['owner'] = self.user
             data['license_reviewed'] = False
+
         self.product = getUtility(IProductSet).createProduct(
             name=data['name'],
             title=data['title'],
@@ -1544,11 +1559,6 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin):
 
     def validateStep(self, data):
         ProductLicenseMixin.validate(self, data)
-
-    custom_widget('licenses', LicenseWidget, column_count=3,
-                  orientation='vertical')
-    custom_widget('displayname', TextWidget, displayWidth=50, label='Name')
-    custom_widget('name', ProductNameWidget, label='URL')
 
     @property
     def label(self):

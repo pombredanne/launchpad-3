@@ -3,9 +3,13 @@
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   omit-tag="">
-http://launchpad.net/
+http://launchpad.net/<div
+        tal:condition="view/read_only"
+        tal:replace="view/product_name">foo</div>
 <input id="field.name" name="field.name"
-       class="textType" type="text" size="30"
+       class="textType" type="type" size="30"
        value=""
-       tal:attributes="value view/product_name"/>
+       tal:attributes="value view/product_name;
+                       type view/widget_type"
+       />
 </tal:root>
