@@ -26,8 +26,30 @@ def test_filebug_extra_options():
         xpath=u"//form[@name='launchpadform']//p",
         validator=u'No similar bug reports were found.')
 
+    # Check out the expander.
+    _test_expander(client)
+
+
+def test_advanced_filebug_extra_options():
+    """Test the extra options area on +filebug-advanced pages.
+
+    See `test_filebug_extra_options`.
+    """
+    client = WindmillTestClient("File bug extra options test")
+    lpuser.SAMPLE_PERSON.ensure_login(client)
+
+    # Open a +filebug-advanced page and wait for it to finish loading.
+    client.open(
+        url=u'http://bugs.launchpad.dev:8085/firefox/+filebug-advanced')
+    client.waits.forPageLoad(timeout=u'20000')
+
+    # Check out the expander.
+    _test_expander(client)
+
+
+def _test_expander(client):
     # The collapsible area is present and collapsed.
-    collapsible_area_xpath=(
+    collapsible_area_xpath = (
         u"//form[@name='launchpadform']"
         u"//fieldset[contains(.//legend,'Include an attachment')]")
     client.asserts.assertProperty(
