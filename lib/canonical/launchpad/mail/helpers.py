@@ -12,11 +12,10 @@ from canonical.launchpad.interfaces import (
     IUpstreamBugTask)
 from canonical.launchpad.interfaces.mail import (
     EmailProcessingError, IWeaklyAuthenticatedPrincipal)
+from canonical.launchpad.vocabularies import ValidPersonOrTeamVocabulary
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.interaction import get_current_principal
-
-from lp.registry.vocabularies import ValidPersonOrTeamVocabulary
 
 
 class IncomingEmailError(Exception):
