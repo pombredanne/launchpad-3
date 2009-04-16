@@ -40,7 +40,7 @@
       <tal:submit replace="structure view/continue_action/render" />
     </div>
 
-    <input name="redirect_url" value=""
+    <input name="redirect_url" type="hiddent" value=""
         tal:attributes="value request/redirect_url|nothing" />
   </div>
 </metal:login-or-register>
