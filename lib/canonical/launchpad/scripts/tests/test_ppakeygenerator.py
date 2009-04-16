@@ -8,9 +8,9 @@ import unittest
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces.archive import IArchiveSet
-from canonical.launchpad.interfaces.distribution import IDistributionSet
-from canonical.launchpad.interfaces.gpg import IGPGKeySet
-from canonical.launchpad.interfaces.person import IPersonSet
+from lp.registry.interfaces.distribution import IDistributionSet
+from lp.registry.interfaces.gpg import IGPGKeySet
+from lp.registry.interfaces.person import IPersonSet
 from canonical.launchpad.scripts.base import LaunchpadScriptFailure
 from canonical.launchpad.scripts.ppakeygenerator import PPAKeyGenerator
 from canonical.launchpad.testing import TestCase

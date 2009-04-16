@@ -65,7 +65,7 @@ class TestBranchTraversal(TestCaseWithFactory):
         # branch that is the development focus branch for that product.
         branch = self.factory.makeProductBranch()
         product = removeSecurityProxy(branch.product)
-        product.development_focus.user_branch = branch
+        product.development_focus.branch = branch
         self.assertRedirects(product.name, canonical_url(branch))
 
     def test_nonexistent_product(self):
@@ -90,7 +90,7 @@ class TestBranchTraversal(TestCaseWithFactory):
         branch = self.factory.makeProductBranch()
         product = branch.product
         series = self.factory.makeProductSeries(product=product)
-        removeSecurityProxy(series).user_branch = branch
+        removeSecurityProxy(series).branch = branch
         self.assertRedirects(
             '%s/%s' % (product.name, series.name), canonical_url(branch))
 
@@ -104,6 +104,16 @@ class TestBranchTraversal(TestCaseWithFactory):
         # If there's no branch for a product series, generate a 404.
         series = self.factory.makeProductSeries()
         self.assertNotFound('%s/%s' % (series.product.name, series.name))
+
+    def test_too_short_branch_name(self):
+        # 404 if the thing following +branch is a unique name that's too short
+        # to be a real unique name.
+        owner = self.factory.makePerson()
+        self.assertNotFound('~%s' % owner.name)
+
+    def test_invalid_product_name(self):
+        # 404 if the thing following +branch has an invalid product name.
+        self.assertNotFound('a')
 
 
 def test_suite():

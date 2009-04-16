@@ -63,7 +63,7 @@ Search by distroseries and pocket:
 
 Each binary publication exposes a number of properties:
 
-    >>> from canonical.lazr.testing.webservice import pprint_entry
+    >>> from lazr.restful.testing.webservice import pprint_entry
     >>> pprint_entry(pubs['entries'][0])
     archive_link: u'http://.../~cprov/+archive/ppa'
     binary_package_name: u'mozilla-firefox'
@@ -95,7 +95,7 @@ When Celso's PPA becomes private ...
     >>> login("foo.bar@canonical.com")
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
 
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
     >>> cprov.archive.buildd_secret = 'boing'

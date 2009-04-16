@@ -769,6 +769,7 @@ Generating respective "Packages" stanzas:
     Filename: pool/universe/m/mozilla-firefox/mozilla-firefox_0.9_i386.deb
     Size: 3
     MD5sum: 01234567890123456789012345678926
+    SHA1: 5a04c7b5ea3f0fdbc95d0dd47f3c5bc275da8a33
     Description: Mozilla Firefox Web Browser
      Mozilla Firefox Web Browser is .....
 
@@ -1350,7 +1351,7 @@ is used via the API via IArchive.getBuildSummariesForSourceIds).
 
 First we'll grab two source publishing history records:
 
-    >>> from canonical.launchpad.interfaces.distribution import (
+    >>> from lp.registry.interfaces.distribution import (
     ...     IDistributionSet)
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
     >>> firefox_source = ubuntu.getSourcePackage('mozilla-firefox')

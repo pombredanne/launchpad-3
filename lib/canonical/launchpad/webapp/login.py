@@ -16,9 +16,9 @@ from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.account import AccountStatus
-from canonical.launchpad.interfaces.logintoken import (
-    ILoginTokenSet, LoginTokenType)
-from canonical.launchpad.interfaces.person import (
+from canonical.launchpad.interfaces.authtoken import LoginTokenType
+from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
+from lp.registry.interfaces.person import (
     IPersonSet, PersonCreationRationale)
 from canonical.launchpad.interfaces.shipit import ShipItConstants
 from canonical.launchpad.interfaces.validation import valid_password
@@ -37,6 +37,8 @@ class UnauthorizedView(SystemErrorView):
 
     forbidden_page = ViewPageTemplateFile(
         '../templates/launchpad-forbidden.pt')
+
+    notification_message = _('To continue, you must log in to Launchpad.')
 
     def __call__(self):
         if IUnauthenticatedPrincipal.providedBy(self.request.principal):
@@ -58,29 +60,36 @@ class UnauthorizedView(SystemErrorView):
                         'page that requires authentication.')
             # If we got any query parameters, then preserve them in the
             # new URL. Except for the BrowserNotifications
-            query_string = self.request.get('QUERY_STRING', '')
-            if query_string:
-                query_string = '?' + query_string
-            target = self.request.getURL()
+            current_url = self.request.getURL()
             while True:
                 nextstep = self.request.stepstogo.consume()
                 if nextstep is None:
                     break
-                target = urlappend(target, nextstep)
-            target = urlappend(target, '+login' + query_string)
+                current_url = urlappend(current_url, nextstep)
+            query_string = self.request.get('QUERY_STRING', '')
+            if query_string:
+                query_string = '?' + query_string
+            target = self.getRedirectURL(current_url, query_string)
             # A dance to assert that we want to break the rules about no
             # unauthenticated sessions. Only after this next line is it safe
             # to use the ``addNoticeNotification`` method.
             allowUnauthenticatedSession(self.request)
-            self.request.response.addNoticeNotification(_(
-                    'To continue, you must log in to Launchpad.'
-                    ))
+            self.request.response.addNoticeNotification(
+                self.notification_message)
             self.request.response.redirect(target)
             # Maybe render page with a link to the redirection?
             return ''
         else:
             self.request.response.setStatus(403) # Forbidden
             return self.forbidden_page()
+
+    def getRedirectURL(self, current_url, query_string):
+        """Get the URL to redirect to.
+        :param current_url: The URL of the current page.
+        :param query_string: The string that should be appended to the current
+            url.
+        """
+        return urlappend(current_url, '+login' + query_string)
 
 
 class BasicLoginPage:
@@ -227,7 +236,6 @@ class LoginOrRegister:
                 "The password provided contains non-ASCII characters.")
             return
 
-        appurl = self.getApplicationURL()
         loginsource = getUtility(IPlacelessLoginSource)
         principal = loginsource.getPrincipalByLogin(email)
         if principal is None or not principal.validate(password):
@@ -259,7 +267,7 @@ class LoginOrRegister:
                     ) % email
                 token = getUtility(ILoginTokenSet).new(
                     person, email, email, LoginTokenType.VALIDATEEMAIL)
-                token.sendEmailValidationRequest(appurl)
+                token.sendEmailValidationRequest()
                 return
             if person.is_valid_person:
                 logInPrincipal(self.request, principal, email)

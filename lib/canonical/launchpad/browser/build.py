@@ -17,7 +17,8 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.launchpad import _
-from canonical.launchpad.browser.librarian import FileNavigationMixin
+from canonical.launchpad.browser.librarian import (
+    FileNavigationMixin, ProxiedLibraryFileAlias)
 from canonical.launchpad.interfaces.build import (
     BuildStatus, IBuild, IBuildRescoreForm)
 from canonical.launchpad.interfaces.buildqueue import IBuildQueueSet
@@ -156,6 +157,16 @@ class BuildView(LaunchpadView):
             return True
 
         return False
+
+    @property
+    def changesfile(self):
+        """Return a `ProxiedLibraryFileAlias` for the Build changesfile."""
+        changesfile = self.context.changesfile
+        if changesfile is None:
+            return None
+
+        return ProxiedLibraryFileAlias(changesfile, self.context)
+
 
 class BuildRescoringView(LaunchpadFormView):
     """View class for build rescoring."""

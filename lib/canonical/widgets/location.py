@@ -21,7 +21,7 @@ from canonical.lazr.utils import safe_js_escape
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.geoip import IGeoIPRecord
-from canonical.launchpad.interfaces.location import IObjectWithLocation
+from lp.registry.interfaces.location import IObjectWithLocation
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp.interfaces import (
     ILaunchBag, IMultiLineWidgetLayout)

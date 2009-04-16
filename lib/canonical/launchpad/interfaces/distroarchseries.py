@@ -15,15 +15,14 @@ from zope.interface import Interface, Attribute
 from zope.schema import Bool, Choice, Int, TextLine
 
 from canonical.launchpad.interfaces.archive import IArchive
-from canonical.launchpad.interfaces.distroseries import IDistroSeries
-from canonical.launchpad.interfaces.person import IPerson
 from canonical.launchpad.interfaces import IHasOwner
 from canonical.launchpad import _
-
-from canonical.lazr.fields import Reference
-from canonical.lazr.rest.declarations import (
+from lazr.restful.fields import Reference
+from lazr.restful.declarations import (
     export_as_webservice_entry, exported)
 
+from lp.registry.interfaces.distroseries import IDistroSeries
+from lp.registry.interfaces.person import IPerson
 
 class IDistroArchSeries(IHasOwner):
     """DistroArchSeries Table Interface"""

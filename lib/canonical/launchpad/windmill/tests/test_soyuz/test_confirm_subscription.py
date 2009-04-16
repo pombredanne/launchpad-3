@@ -11,15 +11,10 @@ def test_confirm_subscription():
     """
     client = WindmillTestClient("P3a confirm subscription test")
 
-    # Currently all the p3a subscription work is hidden behind admin,
-    # so login as foo.bar and activate our ppa.
+    # A ppa needs to be private for p3a subscriptions, so login as
+    # admin and make celso's ppa private.
     lpuser.FOO_BAR.ensure_login(client)
-    client.open(url='http://launchpad.dev:8085/~name16/+activate-ppa')
-    client.check(id=u'field.accepted')
-    client.click(id=u'field.actions.activate')
-    client.waits.forPageLoad(timeout=u'20000')
-
-    # The PPA also needs to be private to use archive subscriptions:
+    client.open(url='http://launchpad.dev:8085/~cprov/+archive/ppa')
     client.waits.forElement(link=u'Administer archive', timeout=u'8000')
     client.click(link=u'Administer archive')
     client.waits.forPageLoad(timeout=u'20000')
@@ -28,22 +23,29 @@ def test_confirm_subscription():
     client.type(text=u'secret', id=u'field.buildd_secret')
     client.click(id=u'field.actions.save')
     client.waits.forPageLoad(timeout=u'20000')
+    client.open(url='http://launchpad.dev:8085/~cprov')
 
-    # Now add ourselves as a subscriber (as we don't have any other admins
-    # to test with).
+    # Now login as Celso
+    cprov = lpuser.LaunchpadUser('Celso', 'celso.providelo@canonical.com',
+        'cprov')
+    cprov.ensure_login(client)
+
+    # Now add SamplePerson as a subscriber.
     client.open(
-        url='http://launchpad.dev:8085/~name16/+archive/ppa/+subscriptions')
+        url='http://launchpad.dev:8085/~cprov/+archive/ppa/+subscriptions')
     client.click(id=u'field.subscriber')
-    client.type(text=u'name16', id=u'field.subscriber')
+    client.type(text=u'name12', id=u'field.subscriber')
     client.click(id=u'field.actions.add')
     client.waits.forPageLoad(timeout=u'20000')
+    client.open(url='http://launchpad.dev:8085/~cprov')
 
-    # Next, look at all the private archive subscriptions for foobar
+    # Login as Sample Person and confirm the subscription:
+    lpuser.SAMPLE_PERSON.ensure_login(client)
     client.open(
-        url='http://launchpad.dev:8085/~name16/+archivesubscriptions')
+        url='http://launchpad.dev:8085/~name12/+archivesubscriptions')
 
     # Click on the Confirm now link... this brings up the form overlay
-    client.click(link=u'                  Confirm now                 ')
+    client.click(link=u'Confirm')
 
     # Click on the form overlay's 'activate' button.
     client.click(name=u'activate')
@@ -52,5 +54,5 @@ def test_confirm_subscription():
     # Now the subscription has been confirmed.
     client.asserts.assertNode(xpath=u"//div[@id='container']/div[3]/h1")
     client.asserts.assertText(xpath=u"//div[@id='container']/div[3]/h1",
-        validator=u"Foo Bar's subscription to Private PPA for Foo Bar")
+        validator=u"Sample Person's subscription to PPA for Celso Providelo")
 

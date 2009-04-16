@@ -10,8 +10,8 @@ from canonical.launchpad.interfaces import (
 
 from canonical.database.sqlbase import cursor
 
-from canonical.launchpad.database.distribution import Distribution
-from canonical.launchpad.database.product import Product
+from lp.registry.model.distribution import Distribution
+from lp.registry.model.product import Product
 
 class TranslationsOverview:
     implements(ITranslationsOverview)

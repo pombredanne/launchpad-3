@@ -18,8 +18,8 @@ from canonical.config import config
 from canonical.launchpad.scripts.logger import QuietFakeLogger
 from canonical.launchpad.interfaces.archive import (
     ArchivePurpose, IArchiveSet)
-from canonical.launchpad.interfaces.distribution import IDistributionSet
-from canonical.launchpad.interfaces.person import IPersonSet
+from lp.registry.interfaces.distribution import IDistributionSet
+from lp.registry.interfaces.person import IPersonSet
 from canonical.launchpad.interfaces.publishing import PackagePublishingStatus
 from canonical.launchpad.scripts import publishdistro
 from canonical.launchpad.scripts.base import LaunchpadScriptFailure

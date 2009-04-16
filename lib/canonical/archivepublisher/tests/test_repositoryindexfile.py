@@ -4,7 +4,7 @@
 
 __metaclass__ = type
 
-
+import bz2
 import gzip
 import os
 import shutil
@@ -43,7 +43,7 @@ class TestRepositoryArchiveIndex(unittest.TestCase):
     def testWorkflow(self):
         """`RepositoryIndexFile` workflow.
 
-        On creation, 2 temporary files are atomically created in the
+        On creation, 3 temporary files are atomically created in the
         'temp_root' location (mkstemp). One for storing the plain contents
         and other for the corresponding compressed contents. At this point,
         no files were created in the 'root' location yet.
@@ -57,16 +57,16 @@ class TestRepositoryArchiveIndex(unittest.TestCase):
         repo_file = self.getRepoFile('boing')
 
         self.assertEqual(0, len(os.listdir(self.root)))
-        self.assertEqual(2, len(os.listdir(self.temp_root)))
+        self.assertEqual(3, len(os.listdir(self.temp_root)))
 
         repo_file.close()
 
-        self.assertEqual(2, len(os.listdir(self.root)))
+        self.assertEqual(3, len(os.listdir(self.root)))
         self.assertEqual(0, len(os.listdir(self.temp_root)))
 
         resulting_files = sorted(os.listdir(self.root))
         self.assertEqual(
-            ['boing', 'boing.gz'], resulting_files)
+            ['boing', 'boing.bz2', 'boing.gz'], resulting_files)
 
         for filename in resulting_files:
             file_path = os.path.join(self.root, filename)
@@ -88,7 +88,10 @@ class TestRepositoryArchiveIndex(unittest.TestCase):
 
         plain_content = open(os.path.join(self.root, 'boing')).read()
         gzip_content = gzip.open(os.path.join(self.root, 'boing.gz')).read()
+        bz2_content = bz2.decompress(
+            open(os.path.join(self.root, 'boing.bz2')).read())
 
+        self.assertEqual(plain_content, bz2_content)
         self.assertEqual(plain_content, gzip_content)
         self.assertEqual('hello', plain_content)
 
@@ -101,7 +104,7 @@ class TestRepositoryArchiveIndex(unittest.TestCase):
         repo_file = self.getRepoFile('boing')
 
         self.assertEqual(0, len(os.listdir(self.root)))
-        self.assertEqual(2, len(os.listdir(self.temp_root)))
+        self.assertEqual(3, len(os.listdir(self.temp_root)))
 
         del repo_file
 
@@ -119,7 +122,8 @@ class TestRepositoryArchiveIndex(unittest.TestCase):
         repo_file.close()
 
         self.assertEqual(
-            ['boing', 'boing.gz'], sorted(os.listdir(missing_root)))
+            ['boing', 'boing.bz2', 'boing.gz'],
+            sorted(os.listdir(missing_root)))
 
     def testMissingTempRoot(self):
         """`RepositoryIndexFile` cannot be given a missing 'temp_root'."""

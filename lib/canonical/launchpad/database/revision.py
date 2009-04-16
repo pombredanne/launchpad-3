@@ -19,21 +19,21 @@ from sqlobject import (
     BoolCol, ForeignKey, IntCol, StringCol, SQLObjectNotFound,
     SQLMultipleJoin)
 
-from canonical.database.constants import DEFAULT, UTC_NOW
+from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import quote, SQLBase, sqlvalues
 
 from canonical.launchpad.interfaces import (
     EmailAddressStatus, IEmailAddressSet, IRevision, IRevisionAuthor,
     IRevisionParent, IRevisionProperty, IRevisionSet)
-from canonical.launchpad.interfaces.branch import (
+from lp.code.interfaces.branch import (
     DEFAULT_BRANCH_STATUS_IN_LISTING)
-from canonical.launchpad.interfaces.product import IProduct
-from canonical.launchpad.interfaces.project import IProject
+from lp.registry.interfaces.product import IProduct
+from lp.registry.interfaces.project import IProject
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.webapp.interfaces import (
         IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
-from canonical.launchpad.validators.person import validate_public_person
+from lp.registry.interfaces.person import validate_public_person
 
 
 class Revision(SQLBase):
@@ -95,8 +95,8 @@ class Revision(SQLBase):
 
     def getBranch(self, allow_private=False, allow_junk=True):
         """See `IRevision`."""
-        from canonical.launchpad.database.branch import Branch
-        from canonical.launchpad.database.branchrevision import BranchRevision
+        from lp.code.model.branch import Branch
+        from lp.code.model.branchrevision import BranchRevision
 
         store = Store.of(self)
 
@@ -152,7 +152,7 @@ class RevisionAuthor(SQLBase):
             return False
         # Only accept an email address that is validated.
         if lp_email.status != EmailAddressStatus.NEW:
-            self.person = lp_email.person
+            self.personID = lp_email.personID
             return True
         else:
             return False
@@ -302,7 +302,7 @@ class RevisionSet:
         # Bypass zope's security because IEmailAddress.email is not public.
         naked_email = removeSecurityProxy(email)
         for author in RevisionAuthor.selectBy(email=naked_email.email):
-            author.person = email.person
+            author.personID = email.personID
 
     def getTipRevisionsForBranches(self, branches):
         """See `IRevisionSet`."""
@@ -320,8 +320,8 @@ class RevisionSet:
     def getRecentRevisionsForProduct(product, days):
         """See `IRevisionSet`."""
         # Here to stop circular imports.
-        from canonical.launchpad.database.branch import Branch
-        from canonical.launchpad.database.branchrevision import BranchRevision
+        from lp.code.model.branch import Branch
+        from lp.code.model.branchrevision import BranchRevision
 
         revision_subselect = Select(
             Min(Revision.id), revision_time_limit(days))
@@ -342,9 +342,9 @@ class RevisionSet:
     def getRevisionsNeedingKarmaAllocated():
         """See `IRevisionSet`."""
         # Here to stop circular imports.
-        from canonical.launchpad.database.branch import Branch
-        from canonical.launchpad.database.branchrevision import BranchRevision
-        from canonical.launchpad.database.person import ValidPersonCache
+        from lp.code.model.branch import Branch
+        from lp.code.model.branchrevision import BranchRevision
+        from lp.registry.model.person import ValidPersonCache
 
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
 
@@ -366,9 +366,9 @@ class RevisionSet:
     def getPublicRevisionsForPerson(person, day_limit=30):
         """See `IRevisionSet`."""
         # Here to stop circular imports.
-        from canonical.launchpad.database.branch import Branch
-        from canonical.launchpad.database.branchrevision import BranchRevision
-        from canonical.launchpad.database.teammembership import (
+        from lp.code.model.branch import Branch
+        from lp.code.model.branchrevision import BranchRevision
+        from lp.registry.model.teammembership import (
             TeamParticipation)
 
         store = Store.of(person)
@@ -401,9 +401,9 @@ class RevisionSet:
     def _getPublicRevisionsHelper(obj, day_limit):
         """Helper method for Products and Projects."""
         # Here to stop circular imports.
-        from canonical.launchpad.database.branch import Branch
-        from canonical.launchpad.database.product import Product
-        from canonical.launchpad.database.branchrevision import BranchRevision
+        from lp.code.model.branch import Branch
+        from lp.registry.model.product import Product
+        from lp.code.model.branchrevision import BranchRevision
 
         origin = [
             Revision,

@@ -13,7 +13,7 @@ distribution archives.
 
 We publish a subset of their attributes.
 
-    >>> from canonical.lazr.testing.webservice import pprint_entry
+    >>> from lazr.restful.testing.webservice import pprint_entry
     >>> pprint_entry(cprov_archive)
     description: u'packages to help my friends.'
     displayname: u'PPA for Celso Providelo'
@@ -31,7 +31,7 @@ While the Archive signing key is being generated its
 We can quickly assign a random OpenPGP key to Celso's PPA.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
 
     >>> login('foo.bar@canonical.com')
     >>> foo_bar = getUtility(IPersonSet).getByName('name16')
@@ -434,7 +434,7 @@ For testing purpose we will create some publications.
 
     >>> login('foo.bar@canonical.com')
 
-    >>> from canonical.launchpad.interfaces.distribution import (
+    >>> from lp.registry.interfaces.distribution import (
     ...     IDistributionSet)
 
     >>> ubuntu_distro = getUtility(IDistributionSet).getByName('ubuntu')
@@ -618,7 +618,7 @@ the IArchive context, in this case only Celso has it.
 
     >>> pprint_entry(user_webservice.get("/~cprov/+archive/ppa").jsonBody())
     description: u'tag:launchpad.net:2008:redacted'
-    displayname: u'Private PPA for Celso Providelo'
+    displayname: u'PPA for Celso Providelo'
     distribution_link: u'http://.../ubuntu'
     name: u'ppa'
     owner_link: u'http://.../~cprov'
@@ -629,7 +629,7 @@ the IArchive context, in this case only Celso has it.
 
     >>> pprint_entry(cprov_webservice.get("/~cprov/+archive/ppa").jsonBody())
     description: u'packages to help my friends.'
-    displayname: u'Private PPA for Celso Providelo'
+    displayname: u'PPA for Celso Providelo'
     distribution_link: u'http://.../ubuntu'
     name: u'ppa'
     owner_link: u'http://.../~cprov'
@@ -637,7 +637,6 @@ the IArchive context, in this case only Celso has it.
     resource_type_link: u'http://.../#archive'
     self_link: u'http://.../~cprov/+archive/ppa'
     signing_key_fingerprint: u'ABCDEF0123456789ABCDDCBA0000111112345678'
-
 
 == Modifying privacy ==
 

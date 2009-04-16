@@ -129,7 +129,7 @@ An ISourcePackage.
 
 An IDistributionSourcePackage.
 
-    >>> from canonical.launchpad.interfaces.sourcepackagename import (
+    >>> from lp.registry.interfaces.sourcepackagename import (
     ...     ISourcePackageNameSet)
     >>> sourcepackagenameset = getUtility(ISourcePackageNameSet)
     >>> ubuntu_firefox = celebs.ubuntu.getSourcePackage(
@@ -320,7 +320,7 @@ A bug from a remote bug tracker.
 
 An IBranch.
 
-    >>> from canonical.launchpad.interfaces.branchlookup import IBranchLookup
+    >>> from lp.code.interfaces.branchlookup import IBranchLookup
 
     >>> branch = getUtility(IBranchLookup).get(10)
 
