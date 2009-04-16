@@ -783,6 +783,16 @@ COMMENT ON COLUMN RevisionAuthor.name IS 'The exact text extracted from the bran
 COMMENT ON COLUMN RevisionAuthor.email IS 'A valid email address extracted from the name.  This email address may or may not be associated with a Launchpad user at this stage.';
 COMMENT ON COLUMN RevisionAuthor.person IS 'The Launchpad person that has a verified email address that matches the email address of the revision author.';
 
+-- RevisionCache
+COMMENT ON TABLE RevisionCache IS 'A cache of revisions where the revision date is in the last 30 days.';
+COMMENT ON COLUMN RevisionCache.revision IS 'A reference to the actual revision.';
+COMMENT ON COLUMN RevisionCache.revision_author IS 'A refernce to the revision author for the revision.';
+COMMENT ON COLUMN RevisionCache.revision_date IS 'The date the revision was made.  Should be within 30 days of today (or the cleanup code is not cleaning up).';
+COMMENT ON COLUMN RevisionCache.product IS 'The product that the revision is found in (if it is indeed in a particular product).';
+COMMENT ON COLUMN RevisionCache.distroseries IS 'The distroseries for which a source package branch contains the revision.';
+COMMENT ON COLUMN RevisionCache.sourcepackagename IS 'The sourcepackagename for which a source package branch contains the revision.';
+COMMENT ON COLUMN RevisionCache.private IS 'True if the revision is only found in private branches, False if it can be found in a non-private branch.';
+
 -- Sprint
 COMMENT ON TABLE Sprint IS 'A meeting, sprint or conference. This is a convenient way to keep track of a collection of specs that will be discussed, and the people that will be attending.';
 COMMENT ON COLUMN Sprint.driver IS 'The driver (together with the registrant or owner) is responsible for deciding which topics will be accepted onto the agenda of the sprint.';
