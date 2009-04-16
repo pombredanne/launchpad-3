@@ -873,6 +873,7 @@
             attributes="
                 id
                 name
+                code_name
                 product
                 distribution
                 productseries
@@ -884,7 +885,6 @@
                 series_target
                 displayname
                 title
-                code_name
                 specifications
                 product_release"/>
         <require

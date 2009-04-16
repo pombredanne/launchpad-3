@@ -1,0 +1,25 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="view/macro:page/onecolumn"
+  i18n:domain="launchpad"
+>
+
+<body>
+
+<div metal:fill-slot="main">
+
+  <h1>Register a branch on
+    <tal:target-name tal:replace="view/target/displayname"/></h1>
+
+  <metal:add-branch use-macro="context/@@branch-form-macros/add-branch-content"/>
+
+</div><tal:comment condition="nothing"><!-- end main slot --></tal:comment>
+
+</body>
+</html>
