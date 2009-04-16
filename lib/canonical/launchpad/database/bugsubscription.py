@@ -4,7 +4,6 @@
 __metaclass__ = type
 __all__ = ['BugSubscription']
 
-from zope.component import getUtility
 from zope.interface import implements
 
 from sqlobject import ForeignKey
@@ -12,7 +11,6 @@ from sqlobject import ForeignKey
 from canonical.database.sqlbase import SQLBase
 
 from canonical.launchpad.interfaces.bugsubscription import IBugSubscription
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.person import validate_public_person
 
 
@@ -40,8 +38,6 @@ class BugSubscription(SQLBase):
 
     def canBeUnsubscribedByUser(self, user):
         """See `IBugSubscription`."""
-        if user.inTeam(getUtility(ILaunchpadCelebrities).admin):
-            return True
         if self.person.is_team:
             return user.inTeam(self.person)
         return user == self.person

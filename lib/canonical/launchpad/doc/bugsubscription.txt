@@ -600,16 +600,6 @@ unsubscribe him.
     >>> subscription.canBeUnsubscribedByUser(subscribed_by)
     False
 
-An LP admin has permission to subscribe anyone.
-
-    >>> from canonical.launchpad.interfaces.launchpad import (
-    ...     ILaunchpadCelebrities)
-    >>> lp_admins = getUtility(ILaunchpadCelebrities).admin
-    >>> foobar.inTeam(lp_admins)
-    True
-    >>> subscription.canBeUnsubscribedByUser(foobar)
-    True
-
 A user can unsubscribe a team he's a member of.
 
     >>> team = factory.makeTeam()
