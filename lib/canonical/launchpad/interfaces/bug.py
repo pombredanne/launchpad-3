@@ -279,6 +279,7 @@ class IBug(ICanBeMentored):
             title=_('Users affected'),
             value_type=Reference(schema=IPerson),
             readonly=True))
+    bug_messages = Attribute('SQLObject.Multijoin of IBugMessage')
 
     messages = CollectionField(
             title=_("The messages related to this object, in reverse "
