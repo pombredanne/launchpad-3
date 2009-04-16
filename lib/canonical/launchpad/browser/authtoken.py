@@ -31,6 +31,7 @@ from canonical.launchpad.webapp import (
     LaunchpadFormView, LaunchpadView)
 
 from canonical.launchpad.browser.openidserver import OpenIDMixin
+from canonical.launchpad.interfaces import IMasterObject
 from canonical.launchpad.interfaces.account import AccountStatus, IAccountSet
 from canonical.launchpad.interfaces.authtoken import (
     IAuthToken, IAuthTokenSet, LoginTokenType)
@@ -403,14 +404,20 @@ class NewAccountView(BaseAuthTokenView, LaunchpadFormView):
     def validate(self, form_values):
         """Verify if the email address is not used by an existing account."""
         if self.email is not None:
-            # Better spelt as IMasterObject(self.email.person), but that
-            # issues an unnecessary database call.
-            person = getUtility(IPersonSet).get(
-                removeSecurityProxy(self.email).personID)
-            if person.is_valid_person:
+            if self.email.person is not None:
+                person = IMasterObject(self.email.person)
+                if person.is_valid_person:
+                    self.addError(_(
+                        'The email address ${email} is already registered.',
+                        mapping=dict(email=self.context.email)))
+            else:
                 self.addError(_(
-                    'The email address ${email} is already registered.',
+                    'The email address ${email} belongs to an existing '
+                    'Launchpad Login Service (used by the Ubuntu shop '
+                    'and other OpenID sites) account, so you can just use '
+                    "that account's credentials to log into Launchpad.",
                     mapping=dict(email=self.context.email)))
+
 
     @action(_('Continue'), name='continue')
     def continue_action(self, action, data):
@@ -423,6 +430,10 @@ class NewAccountView(BaseAuthTokenView, LaunchpadFormView):
         nobody can use it again.
         """
         if self.email is not None:
+            assert self.email.person is not None, (
+                "People trying to register using emails associated with "
+                "personless accounts should be told to just use their Login "
+                "Service credentials to log into LP")
             # This is a placeholder profile automatically created by one of
             # our scripts, let's just confirm its email address and set a
             # password.
