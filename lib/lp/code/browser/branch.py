@@ -525,6 +525,18 @@ class BranchEditFormView(LaunchpadEditFormView):
                     self.request.response.addNotification(
                         "The project for this branch has been changed to %s "
                         "(%s)" % (new_product.displayname, new_product.name))
+        if 'private' in data:
+            private = data.pop('private')
+            if private != self.context.private:
+                # We only want to show notifications if it actually changed.
+                self.context.setPrivate(private)
+                if private:
+                    self.request.response.addNotification(
+                        "The branch is now private, and only visible to the "
+                        "owner and to subscribers.")
+                else:
+                    self.request.response.addNotification(
+                        "The branch is now publicly accessible.")
         if self.updateContextFromData(data):
             # Only specify that the context was modified if there
             # was in fact a change.
