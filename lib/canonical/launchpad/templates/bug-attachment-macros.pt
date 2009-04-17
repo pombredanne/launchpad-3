@@ -8,7 +8,7 @@
     <span class="fieldOptional">Include an attachment (Optional)</span>
   </legend>
 
-  <table metal:define-macro="attachment-form-bare">
+  <table>
     <tal:filecontent
         tal:define="widget nocall:view/widgets/filecontent|nothing"
         tal:condition="widget">
