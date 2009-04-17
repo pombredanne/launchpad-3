@@ -58,17 +58,23 @@ def _test_expander(client):
     client.asserts.assertNode(
         xpath=collapsible_area_xpath + u"/div[@class='collapsed']")
 
+    # The extra options are not visible.
+    extra_options_ids = (
+        u"field.filecontent",
+        u"field.patch",
+        u"field.attachment_description",
+        )
+    for extra_option_id in extra_options_ids:
+        client.asserts.assertElemJS(
+            id=extra_option_id, js=u"element.clientWidth == 0")
+
     # Click on the legend and it expands.
     client.click(
         xpath=collapsible_area_xpath + u"/legend/a")
-    expanded_div_xpath = collapsible_area_xpath + u"/div[@class='expanded']"
-    client.waits.forElement(xpath=expanded_div_xpath)
+    client.waits.forElement(
+        xpath=collapsible_area_xpath + u"/div[@class='expanded']")
 
-    # All users can see the attachment options.
-    client.asserts.assertNode(
-        xpath=expanded_div_xpath + u"//input[@name='field.filecontent']")
-    client.asserts.assertNode(
-        xpath=expanded_div_xpath + u"//input[@name='field.patch']")
-    client.asserts.assertNode(
-        xpath=(expanded_div_xpath +
-               u"//input[@name='field.attachment_description']"))
+    # The extra options are visible now.
+    for extra_option_id in extra_options_ids:
+        client.asserts.assertElemJS(
+            id=extra_option_id, js=u"element.clientWidth > 0")
