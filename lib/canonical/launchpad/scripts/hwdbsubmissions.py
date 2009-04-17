@@ -975,9 +975,12 @@ class SubmissionParser(object):
         :param submission: An IHWSubmission instance.
         """
         raw_submission = submission.raw_submission
-        # Try for 30 minutes to reach the Librarian.
-        raw_submission.open(timeout=1800)
-        submission_data = raw_submission.read(timeout=1800)
+        # This script runs once per day and can need a few hours to run.
+        # Short-lived Librarian server failures or a server restart should
+        # not break this script, so let's wait for 10 minutes for a
+        # response from the Librarian.
+        raw_submission.open(timeout=600)
+        submission_data = raw_submission.read(timeout=600)
         raw_submission.close()
 
         # We assume that the data has been sent bzip2-compressed,
