@@ -37,19 +37,27 @@ automatically authorized:
     >>> AUTO_AUTHORIZE_TRUST_ROOTS.add('http://launchpad.dev/')
     >>> logout()
 
-Now we'lll authenticate before starting the authentication request so
-we aren't presented with a login screen:
-
-    >>> browser.addHeader('Authorization', 'Basic mark@hbd.com:test')
-
-Starting an authentication request will pass back to the relying party
-without user interaction:
+If we are not logged in, automatically authorized sites act the same
+as normal ones, and the user is presented with the login page:
 
     >>> openid_store = MemoryStore()
     >>> consumer = Consumer(session={}, store=openid_store)
     >>> request = consumer.beginWithoutDiscovery(
     ...     make_identifier_select_endpoint(PROTOCOL_URI))
 
+    >>> browser.open(request.redirectURL(
+    ...     'http://launchpad.dev/', 'http://launchpad.dev/+openid-consumer'))
+
+    >>> print browser.title
+    Launchpad Login Service
+
+However, if the user is logged in, they will be directed back to the
+relying party immediately.
+
+    >>> browser.addHeader('Authorization', 'Basic mark@hbd.com:test')
+
+    >>> request = consumer.beginWithoutDiscovery(
+    ...     make_identifier_select_endpoint(PROTOCOL_URI))
     >>> browser.open(request.redirectURL(
     ...     'http://launchpad.dev/', 'http://launchpad.dev/+openid-consumer'))
 
