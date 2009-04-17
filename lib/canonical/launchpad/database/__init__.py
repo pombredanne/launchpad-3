@@ -131,7 +131,7 @@ from lp.answers.model.questionmessage import *
 from lp.answers.model.questionreopening import *
 from lp.answers.model.questionsubscription import *
 from canonical.launchpad.database.poexportrequest import *
-from canonical.launchpad.database.revision import *
+from lp.code.model.revision import *
 from lp.registry.model.gpgkey import *
 from canonical.launchpad.database.archive import *
 from canonical.launchpad.database.emailaddress import *

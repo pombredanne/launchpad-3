@@ -265,7 +265,6 @@ adapt.
 Up to now there was no browser request we could use, so no caching was
 done.
 
-    >>> from canonical.lazr.utils import get_current_browser_request
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> request = LaunchpadTestRequest()
     >>> print request.annotations.get('launchpad.person_to_account_cache')
@@ -675,11 +674,21 @@ direct member of that team.
 
 A Team can have its visibility attribute set to
 PersonVisibility.PUBLIC, PersonVisibility.PRIVATE_MEMBERSHIP, or
-PersonVisibility.PRIVATE. To prevent leaking of private membership
-information, private-membership teams are only allowed to be connected
-with a few different database objects. This is enforced in the model,
-but there are also checks in the form handling to provide clearer
-error messages.
+PersonVisibility.PRIVATE.
+
+A PRIVATE_MEMBERSHIP team is a team that exists for the sole purpose
+of providing a membership list for the purpose of single sign on,
+etc.  PRIVATE_MEMBERSHIP teams can have mailing lists but cannot
+participate in Launchpad in other ways.
+
+Like PRIVATE_MEMBERSHIP teams, PRIVATE teams are hidden from view from
+non-members but they are allowed to actually do things in Launchpad.
+
+To prevent leaking of private membership information,
+private-membership teams are only allowed to be connected with a few
+different database objects. This is enforced in the model, but there
+are also checks in the form handling to provide clearer error
+messages.
 
 The PublicPersonChoice for interface classes and the
 validate_public_person for database classes only allow public teams to
@@ -731,7 +740,6 @@ And they can subscribe others to bugs.
     >>> bug_subscription = BugSubscription(bug=bug, person=guadamen,
     ...     subscribed_by=private_team)
 
-
 Teams also have a 'private' attribute that is true if the team is
 private membership or private and false for public teams.  It is also
 false for people.
@@ -747,6 +755,21 @@ false for people.
 
     >>> salgado.private
     False
+
+The visibility attribute may only be modified if the user has launchpad.Commercial permissions.
+
+    >>> login('commercial-member@canonical.com')
+    >>> print myteam.visibility.name
+    PRIVATE_MEMBERSHIP
+    >>> myteam.visibility = PersonVisibility.PUBLIC
+    >>> print myteam.visibility.name
+    PUBLIC
+
+    >>> login('no-priv@canonical.com')
+    >>> myteam.visibility = PersonVisibility.PRIVATE
+    Traceback (most recent call last):
+      ...
+    Unauthorized: ...
 
 
 == Latest Team Memberships ==

@@ -38,28 +38,43 @@ from canonical.launchpad.components.packagelocation import PackageLocation
 from canonical.launchpad.database.account import Account
 from canonical.launchpad.database.emailaddress import EmailAddress
 from canonical.launchpad.database.message import Message, MessageChunk
-from lp.registry.model.milestone import Milestone
 from canonical.launchpad.database.processor import ProcessorFamilySet
 from canonical.launchpad.interfaces import IMasterStore
 from canonical.launchpad.interfaces.account import (
     AccountCreationRationale, AccountStatus, IAccountSet)
-from canonical.launchpad.interfaces.archive import (
-    IArchiveSet, ArchivePurpose)
-from lp.code.interfaces.branch import (
-    BranchType, UnknownBranchTypeError)
-from lp.code.interfaces.branchmergeproposal import (
-    BranchMergeProposalStatus)
-from lp.code.interfaces.branchmergequeue import (
-    IBranchMergeQueueSet)
-from lp.code.interfaces.branchnamespace import (
-    get_branch_namespace)
-from lp.code.interfaces.branchsubscription import (
-    BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel)
+from canonical.launchpad.interfaces.archive import IArchiveSet, ArchivePurpose
 from canonical.launchpad.interfaces.bug import CreateBugParams, IBugSet
 from canonical.launchpad.interfaces.bugtask import BugTaskStatus
 from canonical.launchpad.interfaces.bugtracker import (
     BugTrackerType, IBugTrackerSet)
 from canonical.launchpad.interfaces.bugwatch import IBugWatchSet
+from canonical.launchpad.interfaces.country import ICountrySet
+from canonical.launchpad.interfaces.emailaddress import (
+    EmailAddressStatus, IEmailAddressSet)
+from canonical.launchpad.interfaces.gpghandler import IGPGHandler
+from canonical.launchpad.interfaces.hwdb import (
+    HWSubmissionFormat, IHWSubmissionSet)
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+from canonical.launchpad.interfaces.potemplate import IPOTemplateSet
+from canonical.launchpad.interfaces.publishing import PackagePublishingPocket
+from canonical.launchpad.interfaces.shipit import (
+    IShippingRequestSet, IStandardShipItRequestSet, ShipItFlavour,
+    ShippingRequestStatus)
+from canonical.launchpad.interfaces.specification import (
+    ISpecificationSet, SpecificationDefinitionStatus)
+from canonical.launchpad.interfaces.translationgroup import (
+    ITranslationGroupSet)
+from canonical.launchpad.ftests import syncUpdate
+from canonical.launchpad.mail.signedmessage import SignedMessage
+from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
+from canonical.launchpad.webapp.interfaces import IStoreSelector
+from lp.code.interfaces.branch import BranchType, UnknownBranchTypeError
+from lp.code.interfaces.branchmergeproposal import BranchMergeProposalStatus
+from lp.code.interfaces.branchmergequeue import IBranchMergeQueueSet
+from lp.code.interfaces.branchnamespace import get_branch_namespace
+from lp.code.interfaces.branchsubscription import (
+    BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel)
 from lp.code.interfaces.codeimport import ICodeImportSet
 from lp.code.interfaces.codeimportevent import ICodeImportEventSet
 from lp.code.interfaces.codeimportmachine import (
@@ -68,49 +83,27 @@ from lp.code.interfaces.codeimportresult import (
     CodeImportResultStatus, ICodeImportResultSet)
 from lp.code.interfaces.codeimport import (
     CodeImportReviewStatus, RevisionControlSystems)
-from canonical.launchpad.interfaces.country import ICountrySet
+from lp.code.interfaces.revision import IRevisionSet
+from lp.registry.model.distributionsourcepackage import (
+    DistributionSourcePackage)
+from lp.registry.model.milestone import Milestone
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.distroseries import (
     DistroSeriesStatus, IDistroSeries)
-from canonical.launchpad.interfaces.emailaddress import (
-    EmailAddressStatus, IEmailAddressSet)
-from canonical.launchpad.interfaces.gpghandler import IGPGHandler
-from canonical.launchpad.interfaces.hwdb import (
-    HWSubmissionFormat, IHWSubmissionSet)
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from lp.registry.interfaces.mailinglist import (
     IMailingListSet, MailingListStatus)
 from lp.registry.interfaces.mailinglistsubscription import (
     MailingListAutoSubscribePolicy)
-from lp.registry.interfaces.poll import (
-    IPollSet, PollAlgorithm, PollSecrecy)
-from canonical.launchpad.interfaces.potemplate import IPOTemplateSet
 from lp.registry.interfaces.person import (
     IPersonSet, PersonCreationRationale, TeamSubscriptionPolicy)
-from lp.registry.interfaces.product import (
-    IProductSet, License)
+from lp.registry.interfaces.poll import IPollSet, PollAlgorithm, PollSecrecy
+from lp.registry.interfaces.product import IProductSet, License
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.project import IProjectSet
-from canonical.launchpad.interfaces.publishing import PackagePublishingPocket
-from canonical.launchpad.interfaces.revision import IRevisionSet
-from canonical.launchpad.interfaces.shipit import (
-    IShippingRequestSet, IStandardShipItRequestSet, ShipItFlavour,
-    ShippingRequestStatus)
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageNameSet)
 from lp.registry.interfaces.ssh import ISSHKeySet, SSHKeyType
-from canonical.launchpad.interfaces.specification import (
-    ISpecificationSet, SpecificationDefinitionStatus)
-from canonical.launchpad.interfaces.translationgroup import (
-    ITranslationGroupSet)
-from lp.registry.model.distributionsourcepackage import (
-    DistributionSourcePackage)
-from canonical.launchpad.ftests import syncUpdate
-from canonical.launchpad.mail.signedmessage import SignedMessage
-from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
-from canonical.launchpad.webapp.interfaces import IStoreSelector
 
 SPACE = ' '
 
@@ -340,7 +333,7 @@ class LaunchpadObjectFactory(ObjectFactory):
             account.status = AccountStatus.ACTIVE
 
         email.status = email_address_status
-        
+
         # Ensure updated ValidPersonCache
         flush_database_updates()
         return person
@@ -391,8 +384,8 @@ class LaunchpadObjectFactory(ObjectFactory):
                 MailingListAutoSubscribePolicy.NEVER
         account = IMasterStore(Account).get(Account, person.accountID)
         getUtility(IEmailAddressSet).new(
-            alternative_address, person,
-            EmailAddressStatus.VALIDATED, account)
+            alternative_address, person, EmailAddressStatus.VALIDATED,
+            account)
         transaction.commit()
         self._stuff_preferredemail_cache(person)
         return person
@@ -866,7 +859,7 @@ class LaunchpadObjectFactory(ObjectFactory):
                 BugTaskStatus.FIXRELEASED, owner, when=date_closed)
         return bug
 
-    def makeBugTask(self, bug=None, target=None):
+    def makeBugTask(self, bug=None, target=None, owner=None):
         """Create and return a bug task.
 
         If the bug is already targeted to the given target, the existing
@@ -884,7 +877,9 @@ class LaunchpadObjectFactory(ObjectFactory):
         existing_bugtask = bug.getBugTask(target)
         if existing_bugtask is not None:
             return existing_bugtask
-        owner = self.makePerson()
+
+        if owner is None:
+            owner = self.makePerson()
 
         if IProductSeries.providedBy(target):
             # We can't have a series task without a distribution task.
@@ -1354,11 +1349,13 @@ class LaunchpadObjectFactory(ObjectFactory):
 
         return subset.new(name, translation_domain, path, owner)
 
-    def makePOFile(self, language_code, potemplate=None, owner=None):
+    def makePOFile(self, language_code, potemplate=None, owner=None,
+                   variant=None):
         """Make a new translation file."""
         if potemplate is None:
             potemplate = self.makePOTemplate(owner=owner)
-        return potemplate.newPOFile(language_code, requester=potemplate.owner)
+        return potemplate.newPOFile(language_code, variant,
+                                    requester=potemplate.owner)
 
     def makePOTMsgSet(self, potemplate, singular=None, plural=None,
                       sequence=None):
@@ -1368,24 +1365,49 @@ class LaunchpadObjectFactory(ObjectFactory):
         potmsgset = potemplate.createMessageSetFromText(singular, plural)
         if sequence is not None:
             potmsgset.setSequence(potemplate, sequence)
+        naked_potmsgset = removeSecurityProxy(potmsgset)
+        naked_potmsgset.sync()
         return potmsgset
 
     def makeTranslationMessage(self, pofile=None, potmsgset=None,
-                               translator=None, reviewer=None,
-                               translations=None, lock_timestamp=None):
+                               translator=None, suggestion=False,
+                               reviewer=None, translations=None,
+                               lock_timestamp=None, date_updated=None,
+                               is_imported=False, force_shared=False,
+                               force_diverged=False):
         """Make a new `TranslationMessage` in the given PO file."""
         if pofile is None:
             pofile = self.makePOFile('sr')
         if potmsgset is None:
             potmsgset = self.makePOTMsgSet(pofile.potemplate)
+            potmsgset.setSequence(pofile.potemplate, 1)
         if translator is None:
             translator = self.makePerson()
         if translations is None:
             translations = [self.getUniqueString()]
+        translation_message = potmsgset.updateTranslation(
+            pofile, translator, translations, is_imported=is_imported,
+            lock_timestamp=lock_timestamp, force_suggestion=suggestion,
+            force_shared=force_shared, force_diverged=force_diverged)
+        if date_updated is not None:
+            naked_translation_message = removeSecurityProxy(
+                translation_message)
+            naked_translation_message.date_created = date_updated
+            if translation_message.reviewer is not None:
+                naked_translation_message.date_reviewed = date_updated
+            naked_translation_message.sync()
+        return translation_message
 
-        return potmsgset.updateTranslation(pofile, translator, translations,
-                                           is_imported=False,
-                                           lock_timestamp=lock_timestamp)
+    def makeSharedTranslationMessage(self, pofile=None, potmsgset=None,
+                                     translator=None, suggestion=False,
+                                     reviewer=None, translations=None,
+                                     date_updated=None, is_imported=False):
+        translation_message = self.makeTranslationMessage(
+            pofile=pofile, potmsgset=potmsgset, translator=translator,
+            suggestion=suggestion, reviewer=reviewer, is_imported=is_imported,
+            translations=translations, date_updated=date_updated,
+            force_shared=True)
+        return translation_message
 
     def makeTranslation(self, pofile, sequence,
                         english=None, translated=None,
@@ -1510,7 +1532,7 @@ class LaunchpadObjectFactory(ObjectFactory):
         return msg
 
     def makeBundleMergeDirectiveEmail(self, source_branch, target_branch,
-                                      signing_context=None):
+                                      signing_context=None, sender=None):
         """Create a merge directive email from two bzr branches.
 
         :param source_branch: The source branch for the merge directive.
@@ -1518,6 +1540,7 @@ class LaunchpadObjectFactory(ObjectFactory):
         :param signing_context: A GPGSigningContext instance containing the
             gpg key to sign with.  If None, the message is unsigned.  The
             context also contains the password and gpg signing mode.
+        :param sender: The `Person` that is sending the email.
         """
         from bzrlib.merge_directive import MergeDirective2
         md = MergeDirective2.from_objects(
@@ -1526,10 +1549,13 @@ class LaunchpadObjectFactory(ObjectFactory):
             target_branch=target_branch.warehouse_url,
             local_target_branch=target_branch.warehouse_url, time=0,
             timezone=0)
+        email = None
+        if sender is not None:
+            email = sender.preferredemail.email
         return self.makeSignedMessage(
             body='My body', subject='My subject',
             attachment_contents=''.join(md.to_lines()),
-            signing_context=signing_context)
+            signing_context=signing_context, email_address=email)
 
     def makeMergeDirective(self, source_branch=None, target_branch=None,
         source_branch_url=None, target_branch_url=None):

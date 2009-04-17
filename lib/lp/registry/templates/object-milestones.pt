@@ -20,6 +20,7 @@
     <table tal:condition="milestones" id="milestones" class="listing">
       <thead>
         <th colspan="2">Milestone</th>
+        <th>Codename</th>
         <th>Date Targeted</th>
         <th>Series Target</th>
         <th>Summary</th>
@@ -42,6 +43,9 @@
               title="Inactive">
                 milestone name
             </a>
+          </td>
+          <td tal:content="milestone/code_name">
+            code name
           </td>
           <td>
             <tal:date condition="milestone/dateexpected"

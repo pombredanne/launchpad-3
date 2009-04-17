@@ -17,9 +17,10 @@ from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.account import AccountStatus
 from canonical.launchpad.interfaces.authtoken import LoginTokenType
+from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
 from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
 from lp.registry.interfaces.person import (
-    IPersonSet, PersonCreationRationale)
+    IPerson, IPersonSet, PersonCreationRationale)
 from canonical.launchpad.interfaces.shipit import ShipItConstants
 from canonical.launchpad.interfaces.validation import valid_password
 from canonical.launchpad.validators.email import valid_email
@@ -37,6 +38,8 @@ class UnauthorizedView(SystemErrorView):
 
     forbidden_page = ViewPageTemplateFile(
         '../templates/launchpad-forbidden.pt')
+
+    notification_message = _('To continue, you must log in to Launchpad.')
 
     def __call__(self):
         if IUnauthenticatedPrincipal.providedBy(self.request.principal):
@@ -58,29 +61,36 @@ class UnauthorizedView(SystemErrorView):
                         'page that requires authentication.')
             # If we got any query parameters, then preserve them in the
             # new URL. Except for the BrowserNotifications
-            query_string = self.request.get('QUERY_STRING', '')
-            if query_string:
-                query_string = '?' + query_string
-            target = self.request.getURL()
+            current_url = self.request.getURL()
             while True:
                 nextstep = self.request.stepstogo.consume()
                 if nextstep is None:
                     break
-                target = urlappend(target, nextstep)
-            target = urlappend(target, '+login' + query_string)
+                current_url = urlappend(current_url, nextstep)
+            query_string = self.request.get('QUERY_STRING', '')
+            if query_string:
+                query_string = '?' + query_string
+            target = self.getRedirectURL(current_url, query_string)
             # A dance to assert that we want to break the rules about no
             # unauthenticated sessions. Only after this next line is it safe
             # to use the ``addNoticeNotification`` method.
             allowUnauthenticatedSession(self.request)
-            self.request.response.addNoticeNotification(_(
-                    'To continue, you must log in to Launchpad.'
-                    ))
+            self.request.response.addNoticeNotification(
+                self.notification_message)
             self.request.response.redirect(target)
             # Maybe render page with a link to the redirection?
             return ''
         else:
             self.request.response.setStatus(403) # Forbidden
             return self.forbidden_page()
+
+    def getRedirectURL(self, current_url, query_string):
+        """Get the URL to redirect to.
+        :param current_url: The URL of the current page.
+        :param query_string: The string that should be appended to the current
+            url.
+        """
+        return urlappend(current_url, '+login' + query_string)
 
 
 class BasicLoginPage:
@@ -298,20 +308,34 @@ class LoginOrRegister:
                 "Please verify it and try again.")
             return
 
-        person = getUtility(IPersonSet).getByEmail(self.email)
-        if person is not None:
-            if person.is_valid_person:
+        registered_email = getUtility(IEmailAddressSet).getByEmail(self.email)
+        if registered_email is not None:
+            person = registered_email.person
+            if person is not None:
+                if person.is_valid_person:
+                    self.registration_error = (
+                        "Sorry, someone with the address %s already has a "
+                        "Launchpad account. If this is you and you've "
+                        "forgotten your password, Launchpad can "
+                        '<a href="/+forgottenpassword">reset it for you.</a>'
+                        % cgi.escape(self.email))
+                    return
+                else:
+                    # This is an unvalidated profile; let's move on with the
+                    # registration process as if we had never seen it.
+                    pass
+            else:
+                account = registered_email.account
+                assert IPerson(account, None) is None, (
+                    "This email address should be linked to the person who "
+                    "owns it.")
                 self.registration_error = (
-                    "Sorry, someone with the address %s already has a "
-                    "Launchpad account. If this is you and you've "
-                    "forgotten your password, Launchpad can "
-                    '<a href="/+forgottenpassword">reset it for you.</a>'
+                    'The email address %s is already registered in the '
+                    'Launchpad Login Service (used by the Ubuntu shop and '
+                    'other OpenID sites). Please use the same email and '
+                    'password to log into Launchpad.'
                     % cgi.escape(self.email))
                 return
-            else:
-                # This is an unvalidated profile; let's move on with the
-                # registration process as if we had never seen it.
-                pass
 
         logintokenset = getUtility(ILoginTokenSet)
         token = logintokenset.new(

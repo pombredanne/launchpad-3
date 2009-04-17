@@ -27,7 +27,7 @@ The view allows the user to modify the mutable milestone fields.
     Modify milestone details
 
     >>> view.field_names
-    ['name', 'active', 'dateexpected', 'summary', 'productseries']
+    ['name', 'code_name', 'active', 'dateexpected', 'summary', 'productseries']
 
 This milestone belongs to a product, so the productseries field is
 included in the list of field names. The user can change the field values.
@@ -90,12 +90,13 @@ instead of a productseries field.
     >>> milestone = hoary_series.newMilestone('alpha')
     >>> view = create_initialized_view(milestone, '+edit')
     >>> view.field_names
-    ['name', 'active', 'dateexpected', 'summary', 'distroseries']
+    ['name', 'code_name', 'active', 'dateexpected', 'summary', 'distroseries']
 
 The distroseries milestone can be updated too.
 
     >>> form = {
     ...     'field.name': 'omega',
+    ...     'field.code_name': 'omega-licious',
     ...     'field.dateexpected': '2007-05-11',
     ...     'field.summary': 'a summary',
     ...     'field.active': 'False',
@@ -106,6 +107,8 @@ The distroseries milestone can be updated too.
 
     >>> print milestone.name
     omega
+    >>> print milestone.code_name
+    omega-licious
     >>> print milestone.dateexpected
     2007-05-11
     >>> print milestone.summary

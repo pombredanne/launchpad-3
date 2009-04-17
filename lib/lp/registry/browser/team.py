@@ -197,6 +197,8 @@ class TeamEditView(TeamFormMixin, HasRenewalPolicyMixin,
             # Abort must be called or changes to fields before the one causing
             # the error will be committed.  If we have a database validation
             # error we want to abort the transaction.
+            # XXX: BradCrittenden 2009-04-13 bug=360540: Remove the call to
+            # abort if it is moved up to updateContextFromData.
             self._abort()
         else:
             self.next_url = canonical_url(self.context)

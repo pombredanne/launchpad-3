@@ -1873,7 +1873,6 @@ COMMENT ON COLUMN Archive.displayname IS 'User defined displayname for this arch
 COMMENT ON COLUMN Archive.description IS 'Allow users to describe their PPAs content.';
 COMMENT ON COLUMN Archive.enabled IS 'Whether or not the PPA is enabled for accepting uploads.';
 COMMENT ON COLUMN Archive.authorized_size IS 'Size, in MiB, allowed for this PPA.';
-COMMENT ON COLUMN Archive.whiteboard IS 'Administrator comments about interventions made in the PPA configuration.';
 COMMENT ON COLUMN Archive.distribution IS 'The distribution that uses this archive.';
 COMMENT ON COLUMN Archive.purpose IS 'The purpose of this archive, e.g. COMMERCIAL.  See the ArchivePurpose DBSchema item.';
 COMMENT ON COLUMN Archive.private IS 'Whether or not the archive is private. This affects the global visibility of the archive.';
@@ -1917,6 +1916,8 @@ COMMENT ON COLUMN ArchivePermission.permission IS 'The permission type being gra
 COMMENT ON COLUMN ArchivePermission.person IS 'The person or team to whom the permission is being granted.';
 COMMENT ON COLUMN ArchivePermission.component IS 'The component to which this upload permission applies.';
 COMMENT ON COLUMN ArchivePermission.sourcepackagename IS 'The source package name to which this permission applies.  This can be used to provide package-level permissions to single users.';
+COMMENT ON COLUMN ArchivePermission.packageset IS 'The package set to which this permission applies.';
+COMMENT ON COLUMN ArchivePermission.explicit IS 'This flag is set for package sets containing high-profile packages that must not break and/or require specialist skills for proper handling e.g. the kernel.';
 
 -- ArchiveSubscriber
 
@@ -2253,3 +2254,27 @@ COMMENT ON COLUMN UserToUserEmail.recipient IS 'The person receiving this email.
 COMMENT ON COLUMN UserToUserEmail.date_sent IS 'The date the email was sent.';
 COMMENT ON COLUMN UserToUserEmail.subject IS 'The Subject: header.';
 COMMENT ON COLUMN UserToUserEmail.message_id IS 'The Message-ID: header.';
+
+-- Packageset
+
+COMMENT ON TABLE Packageset IS 'Package sets facilitate the grouping of packages for purposes like the control of upload permissions, et.';
+COMMENT ON COLUMN Packageset.date_created IS 'Date and time of creation.';
+COMMENT ON COLUMN Packageset.owner IS 'The Person or team who owns the package set';
+COMMENT ON COLUMN Packageset.name IS 'The name for the package set on hand.';
+COMMENT ON COLUMN Packageset.description IS 'The description for the package set on hand.';
+
+-- PackagesetSources
+
+COMMENT ON TABLE PackagesetSources IS 'This table associates package sets and source package names.';
+COMMENT ON COLUMN PackagesetSources.packageset IS 'The associated package set.';
+COMMENT ON COLUMN PackagesetSources.sourcepackagename IS 'The associated source package name.';
+
+-- PackagesetInclusion
+COMMENT ON TABLE PackagesetInclusion IS 'sets may form a set-subset hierarchy; this table facilitates the definition of these set-subset relationships.';
+COMMENT ON COLUMN PackagesetInclusion.parent IS 'The package set that is including a subset.';
+COMMENT ON COLUMN PackagesetInclusion.child IS 'The package set that is being included as a subset.';
+
+-- FlatPackagesetInclusion
+COMMENT ON TABLE FlatPackagesetInclusion IS 'In order to facilitate the querying of set-subset relationships an expanded or flattened representation of the set-subset hierarchy is provided by this table.';
+COMMENT ON COLUMN FlatPackagesetInclusion.parent IS 'The package set that is (directly or indirectly) including a subset.';
+COMMENT ON COLUMN FlatPackagesetInclusion.child IS 'The package set that is being included as a subset.';

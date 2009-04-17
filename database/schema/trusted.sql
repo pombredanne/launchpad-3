@@ -351,7 +351,7 @@ DECLARE
 BEGIN
     -- If we are deleting a row, we need to remove the existing
     -- POFileTranslator row and reinsert the historical data if it exists.
-    -- We also treat UPDATEs that change the key (submitter, pofile) the same
+    -- We also treat UPDATEs that change the key (submitter) the same
     -- as deletes. UPDATEs that don't change these columns are treated like
     -- INSERTs below.
     IF TG_OP = 'INSERT' THEN
@@ -360,7 +360,7 @@ BEGIN
         v_trash_old := TRUE;
     ELSE -- UPDATE
         v_trash_old = (
-            OLD.submitter != NEW.submitter OR OLD.pofile != NEW.pofile
+            OLD.submitter != NEW.submitter
             );
     END IF;
 
@@ -378,14 +378,36 @@ BEGIN
             INSERT INTO POFileTranslator (
                 person, pofile, latest_message, date_last_touched
                 )
-            SELECT DISTINCT ON (person, pofile)
-                submitter AS person,
-                pofile,
-                id,
-                greatest(date_created, date_reviewed)
-            FROM TranslationMessage
-            WHERE pofile = OLD.pofile AND submitter = OLD.submitter
-            ORDER BY submitter, pofile, date_created DESC, id DESC;
+            SELECT DISTINCT ON (person, pofile.id)
+                new_latest_message.submitter AS person,
+                pofile.id,
+                new_latest_message.id,
+                greatest(new_latest_message.date_created,
+                         new_latest_message.date_reviewed)
+              FROM POFile
+              JOIN TranslationTemplateItem AS old_template_item
+                ON (OLD.potmsgset =
+                     old_template_item.potmsgset) AND
+                   (old_template_item.potemplate = pofile.potemplate) AND
+                   (pofile.language
+                     IS NOT DISTINCT FROM OLD.language) AND
+                   (pofile.variant
+                     IS NOT DISTINCT FROM OLD.variant)
+              JOIN TranslationTemplateItem AS new_template_item
+                ON (old_template_item.potemplate =
+                     new_template_item.potemplate)
+              JOIN TranslationMessage AS new_latest_message
+                ON (new_latest_message.potmsgset =
+                     new_template_item.potmsgset) AND
+                   (new_latest_message.language
+                     IS NOT DISTINCT FROM OLD.language AND
+                   (new_latest_message.variant)
+                     IS NOT DISTINCT FROM OLD.variant)
+              WHERE
+                new_latest_message.submitter=OLD.submitter
+              ORDER BY new_latest_message.submitter, pofile.id,
+                       new_latest_message.date_created DESC,
+                       new_latest_message.id DESC;
         END IF;
 
         -- No NEW with DELETE, so we can short circuit and leave.
@@ -400,14 +422,28 @@ BEGIN
         SET
             date_last_touched = CURRENT_TIMESTAMP AT TIME ZONE 'UTC',
             latest_message = NEW.id
-        WHERE person = NEW.submitter AND pofile = NEW.pofile;
+        FROM POFile, TranslationTemplateItem
+        WHERE person = NEW.submitter AND
+              TranslationTemplateItem.potmsgset=NEW.potmsgset AND
+              TranslationTemplateItem.potemplate=pofile.potemplate AND
+              pofile.language=NEW.language AND
+              pofile.variant IS NOT DISTINCT FROM NEW.variant AND
+              POFileTranslator.pofile = pofile.id;
         IF found THEN
             RETURN NULL; -- Return value ignored as this is an AFTER trigger
         END IF;
 
         BEGIN
             INSERT INTO POFileTranslator (person, pofile, latest_message)
-            VALUES (NEW.submitter, NEW.pofile, NEW.id);
+            SELECT DISTINCT ON (NEW.submitter, pofile.id)
+                NEW.submitter, pofile.id, NEW.id
+              FROM TranslationTemplateItem
+              JOIN POFile
+                ON pofile.language = NEW.language AND
+                   pofile.variant IS NOT DISTINCT FROM NEW.variant AND
+                   pofile.potemplate = translationtemplateitem.potemplate
+              WHERE
+                TranslationTemplateItem.potmsgset = NEW.potmsgset;
             RETURN NULL; -- Return value ignored as this is an AFTER trigger
         EXCEPTION WHEN unique_violation THEN
             -- do nothing
@@ -890,3 +926,167 @@ $$;
 
 COMMENT ON FUNCTION set_bugtask_date_milestone_set() IS
 'Update BugTask.date_milestone_set when BugTask.milestone is changed.';
+
+CREATE OR REPLACE FUNCTION packageset_inserted_trig() RETURNS TRIGGER
+LANGUAGE plpgsql AS
+$$
+BEGIN
+    -- A new package set was inserted; make it a descendent of itself in
+    -- the flattened package set inclusion table in order to facilitate
+    -- querying.
+    INSERT INTO flatpackagesetinclusion(parent, child)
+      VALUES (NEW.id, NEW.id);
+    RETURN NULL;
+END;
+$$;
+
+COMMENT ON FUNCTION packageset_inserted_trig() IS
+'Insert self-referencing DAG edge when a new package set is inserted.';
+
+CREATE OR REPLACE FUNCTION packageset_deleted_trig() RETURNS TRIGGER
+LANGUAGE plpgsql AS
+$$
+BEGIN
+    DELETE FROM flatpackagesetinclusion
+      WHERE parent = OLD.id AND child = OLD.id;
+
+    -- A package set was deleted; it may have participated in package set
+    -- inclusion relations in a sub/superset role; delete all inclusion
+    -- relationships in which it participated.
+    DELETE FROM packagesetinclusion
+      WHERE parent = OLD.id OR child = OLD.id;
+    RETURN OLD;
+END;
+$$;
+
+COMMENT ON FUNCTION packageset_deleted_trig() IS
+'Remove any DAG edges leading to/from the deleted package set.';
+
+CREATE OR REPLACE FUNCTION packagesetinclusion_inserted_trig() RETURNS TRIGGER
+LANGUAGE plpgsql AS
+$$
+BEGIN
+    DECLARE
+        parent_name text;
+        child_name text;
+    BEGIN
+        IF EXISTS(
+            SELECT * FROM flatpackagesetinclusion
+            WHERE parent = NEW.child AND child = NEW.parent LIMIT 1)
+        THEN
+            SELECT name INTO parent_name FROM packageset WHERE id = NEW.parent;
+            SELECT name INTO child_name FROM packageset WHERE id = NEW.child;
+            RAISE EXCEPTION 'Package set % already includes %. Adding (% -> %) would introduce a cycle in the package set graph (DAG).', child_name, parent_name, parent_name, child_name;
+        END IF;
+    END;
+    -- A new package set inclusion relationship was inserted i.e. a set M
+    -- now includes another set N as a subset.
+    -- For an explanation of the queries below please see page 4 of
+    -- "Maintaining Transitive Closure of Graphs in SQL"
+    -- http://www.comp.nus.edu.sg/~wongls/psZ/dlsw-ijit97-16.ps
+    CREATE TEMP TABLE tmp_fpsi_new(
+        parent integer NOT NULL,
+        child integer NOT NULL);
+
+    INSERT INTO tmp_fpsi_new (
+        SELECT
+            X.parent AS parent, NEW.child AS child
+        FROM flatpackagesetinclusion X WHERE X.child = NEW.parent
+      UNION
+        SELECT
+            NEW.parent AS parent, X.child AS child
+        FROM flatpackagesetinclusion X WHERE X.parent = NEW.child
+      UNION
+        SELECT
+            X.parent AS parent, Y.child AS child
+        FROM flatpackagesetinclusion X, flatpackagesetinclusion Y
+        WHERE X.child = NEW.parent AND Y.parent = NEW.child
+        );
+    INSERT INTO tmp_fpsi_new(parent, child) VALUES(NEW.parent, NEW.child);
+
+    INSERT INTO flatpackagesetinclusion(parent, child) (
+        SELECT
+            parent, child FROM tmp_fpsi_new
+        EXCEPT
+        SELECT F.parent, F.child FROM flatpackagesetinclusion F
+        );
+
+    DROP TABLE tmp_fpsi_new;
+
+    RETURN NULL;
+END;
+$$;
+
+COMMENT ON FUNCTION packagesetinclusion_inserted_trig() IS
+'Maintain the transitive closure in the DAG for a newly inserted edge leading to/from a package set.';
+
+CREATE OR REPLACE FUNCTION packagesetinclusion_deleted_trig() RETURNS TRIGGER
+LANGUAGE plpgsql AS
+$$
+BEGIN
+    -- A package set inclusion relationship was deleted i.e. a set M
+    -- ceases to include another set N as a subset.
+    -- For an explanation of the queries below please see page 5 of
+    -- "Maintaining Transitive Closure of Graphs in SQL"
+    -- http://www.comp.nus.edu.sg/~wongls/psZ/dlsw-ijit97-16.ps
+    CREATE TEMP TABLE tmp_fpsi_suspect(
+        parent integer NOT NULL,
+        child integer NOT NULL);
+    CREATE TEMP TABLE tmp_fpsi_trusted(
+        parent integer NOT NULL,
+        child integer NOT NULL);
+    CREATE TEMP TABLE tmp_fpsi_good(
+        parent integer NOT NULL,
+        child integer NOT NULL);
+
+    INSERT INTO tmp_fpsi_suspect (
+        SELECT X.parent, Y.child
+        FROM flatpackagesetinclusion X, flatpackagesetinclusion Y
+        WHERE X.child = OLD.parent AND Y.parent = OLD.child
+      UNION
+        SELECT X.parent, OLD.child FROM flatpackagesetinclusion X
+        WHERE X.child = OLD.parent
+      UNION
+        SELECT OLD.parent, X.child FROM flatpackagesetinclusion X
+        WHERE X.parent = OLD.child
+      UNION
+        SELECT OLD.parent, OLD.child
+        );
+
+    INSERT INTO tmp_fpsi_trusted (
+        SELECT parent, child FROM flatpackagesetinclusion
+        EXCEPT
+        SELECT parent, child FROM tmp_fpsi_suspect
+      UNION
+        SELECT parent, child FROM packagesetinclusion psi
+        WHERE psi.parent != OLD.parent AND psi.child != OLD.child
+        );
+
+    INSERT INTO tmp_fpsi_good (
+        SELECT parent, child FROM tmp_fpsi_trusted
+      UNION
+        SELECT T1.parent, T2.child
+        FROM tmp_fpsi_trusted T1, tmp_fpsi_trusted T2
+        WHERE T1.child = T2.parent
+      UNION
+        SELECT T1.parent, T3.child
+        FROM tmp_fpsi_trusted T1, tmp_fpsi_trusted T2, tmp_fpsi_trusted T3
+        WHERE T1.child = T2.parent AND T2.child = T3.parent
+        );
+
+    DELETE FROM flatpackagesetinclusion fpsi
+    WHERE NOT EXISTS (
+        SELECT * FROM tmp_fpsi_good T
+        WHERE T.parent = fpsi.parent AND T.child = fpsi.child);
+
+    DROP TABLE tmp_fpsi_good;
+    DROP TABLE tmp_fpsi_trusted;
+    DROP TABLE tmp_fpsi_suspect;
+
+    RETURN OLD;
+END;
+$$;
+
+COMMENT ON FUNCTION packagesetinclusion_deleted_trig() IS
+'Maintain the transitive closure in the DAG when an edge leading to/from a package set is deleted.';
+

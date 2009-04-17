@@ -24,8 +24,8 @@ class BugSubscription(SQLBase):
 
     person = ForeignKey(
         dbName='person', foreignKey='Person',
-        notNull=True,
-        storm_validator=validate_person_not_private_membership
+        storm_validator=validate_person_not_private_membership,
+        notNull=True
         )
     bug = ForeignKey(dbName='bug', foreignKey='Bug', notNull=True)
     subscribed_by = ForeignKey(

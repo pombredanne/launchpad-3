@@ -19,15 +19,14 @@ admins and members of that team can see the team.
     >>> cprov = person_set.getByName('cprov')
     >>> login_person(owner)
     >>> priv_team.addMember(cprov, reviewer=owner)
-    >>> from canonical.database.sqlbase import flush_database_updates
-    >>> flush_database_updates()
     >>> logout()
 
     >>> admin_browser.open('http://launchpad.dev/~private-team')
     >>> admin_browser.title
     'Private Team in Launchpad'
 
-    >>> cprov_browser = setupBrowser(auth='Basic celso.providelo@canonical.com:cprov')
+    >>> cprov_browser = setupBrowser(
+    ...     auth='Basic celso.providelo@canonical.com:cprov')
     >>> cprov_browser.open('http://launchpad.dev/~private-team')
     >>> cprov_browser.title
     'Private Team in Launchpad'

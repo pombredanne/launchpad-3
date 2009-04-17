@@ -6,10 +6,11 @@ __all__ = [
     'AppFrontPageSearchView',
     'ApplicationButtons',
     'BrowserWindowDimensions',
-    'IcingContribFolder',
+    'DoesNotExistView',
     'EdubuntuIcingFolder',
     'get_launchpad_views',
     'Hierarchy',
+    'IcingContribFolder',
     'IcingFolder',
     'KubuntuIcingFolder',
     'LaunchpadRootNavigation',
@@ -40,6 +41,7 @@ from zope.datetime import parseDatetimetz, tzinfo, DateTimeError
 from zope.component import getUtility, queryAdapter
 from zope.interface import implements
 from zope.publisher.interfaces import NotFound
+from zope.publisher.interfaces.browser import IBrowserPublisher
 from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
 from zope.security.interfaces import Unauthorized
 from zope.traversing.interfaces import ITraversable
@@ -1085,3 +1087,27 @@ def get_launchpad_views(cookies):
             # part of a page. Any other value is considered to be 'true'.
             views[key] = value != 'false'
     return views
+
+
+class DoesNotExistView:
+    """A view that simply raises NotFound when rendered.
+
+    Useful to register as a view that shouldn't appear on a particular
+    virtual host.
+    """
+    implements(IBrowserPublisher)
+
+    def __init__(self, context, request):
+        self.context = context
+
+    def publishTraverse(self, request, name):
+        """See `IBrowserPublisher`."""
+        return self
+
+    def browserDefault(self, request):
+        """See `IBrowserPublisher`."""
+        return self, ()
+
+    def __call__(self):
+        raise NotFound(self.context, self.__name__)
+

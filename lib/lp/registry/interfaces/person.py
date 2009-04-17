@@ -101,43 +101,36 @@ class PrivatePersonLinkageError(ValueError):
 
 
 @block_implicit_flushes
+def validate_person(obj, attr, value, validate_func):
+    """Validate the person using the supplied function."""
+    if value is None:
+        return None
+    assert isinstance(value, (int, long)), (
+        "Expected int for Person foreign key reference, got %r" % type(value))
+
+    # XXX sinzui 2009-04-03 bug=354881: We do not want to import from the
+    # DB. This needs cleaning up.
+    from lp.registry.model.person import Person
+    person = Person.get(value)
+    if validate_func(person):
+        raise PrivatePersonLinkageError(
+            "Cannot link person (name=%s, visibility=%s) to %s (name=%s)"
+            % (person.name, person.visibility.name,
+               obj, getattr(obj, 'name', None)))
+    return value
+
+
 def validate_public_person(obj, attr, value):
     """Validate that the person identified by value is public."""
-    if value is None:
-        return None
-    assert isinstance(value, (int, long)), (
-        "Expected int for Person foreign key reference, got %r" % type(value))
+    def validate(person):
+        return not is_valid_public_person(person)
 
-    # XXX sinzui 2009-04-03 bug=354881: We do not want to import from the
-    # DB. This needs cleaning up.
-    from lp.registry.model.person import Person
-    person = Person.get(value)
-    if not is_valid_public_person(person):
-        raise PrivatePersonLinkageError(
-            "Cannot link person (name=%s, visibility=%s) to %s (name=%s)"
-            % (person.name, person.visibility.name,
-               obj, getattr(obj, 'name', None)))
-    return value
+    return validate_person(obj, attr, value, validate)
 
 
-@block_implicit_flushes
 def validate_person_not_private_membership(obj, attr, value):
     """Validate that the person (value) is not a private membership team."""
-    if value is None:
-        return None
-    assert isinstance(value, (int, long)), (
-        "Expected int for Person foreign key reference, got %r" % type(value))
-
-    # XXX sinzui 2009-04-03 bug=354881: We do not want to import from the
-    # DB. This needs cleaning up.
-    from lp.registry.model.person import Person
-    person = Person.get(value)
-    if is_private_membership(person):
-        raise PrivatePersonLinkageError(
-            "Cannot link person (name=%s, visibility=%s) to %s (name=%s)"
-            % (person.name, person.visibility.name,
-               obj, getattr(obj, 'name', None)))
-    return value
+    return validate_person(obj, attr, value, is_private_membership)
 
 
 class PersonalStanding(DBEnumeratedType):
@@ -1470,15 +1463,6 @@ class IPersonCommAdminWriteRestricted(Interface):
 class IPersonSpecialRestricted(Interface):
     """IPerson methods that require launchpad.Special permission to use."""
 
-    def activateAccount(comment, password, preferred_email):
-        """Activate this person's Launchpad account.
-
-        :param comment: An explanation of why the account status changed.
-        :param password: The user's password.
-        :param preferred_email: The `EmailAddress` to set as the user's
-            preferred email address.
-        """
-
     def deactivateAccount(comment):
         """Deactivate this person's Launchpad account.
 
@@ -1491,6 +1475,21 @@ class IPersonSpecialRestricted(Interface):
             - Changing the ownership of products/projects/teams owned by him.
 
         :param comment: An explanation of why the account status changed.
+        """
+
+    def reactivate(comment, password, preferred_email):
+        """Reactivate this person and its account.
+
+        Set the account status to ACTIVE, the account's password to the given
+        one and its preferred email address.
+
+        If the person's name contains a -deactivatedaccount suffix (usually
+        added by `IPerson`.deactivateAccount(), it is removed.
+
+        :param comment: An explanation of why the account status changed.
+        :param password: The user's password.
+        :param preferred_email: The `EmailAddress` to set as the account's
+            preferred email address. It cannot be None.
         """
 
 

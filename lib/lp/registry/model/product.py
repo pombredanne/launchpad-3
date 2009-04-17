@@ -186,7 +186,8 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         notNull=True)
     bug_supervisor = ForeignKey(
         dbName='bug_supervisor', foreignKey='Person',
-        storm_validator=validate_person_not_private_membership, notNull=False,
+        storm_validator=validate_person_not_private_membership,
+        notNull=False,
         default=None)
     security_contact = ForeignKey(
         dbName='security_contact', foreignKey='Person',

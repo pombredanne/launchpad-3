@@ -18,7 +18,7 @@
 
       <div id="project-tags">
         <a tal:repeat="product view/products"
-           tal:attributes="href product/fmt:url;
+           tal:attributes="href product/url;
                            class product/html_class;
                            title product/html_title"
            tal:content="product/name">project</a>

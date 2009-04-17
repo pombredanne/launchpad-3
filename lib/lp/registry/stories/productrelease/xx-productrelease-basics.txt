@@ -6,7 +6,7 @@ Firefox trunk series. No Privileges Person won't see the link to add a
 release nor can access the page directly.
 
     >>> user_browser.open('http://launchpad.dev/firefox/+milestone/1.0')
-    >>> user_browser.getLink('Publish release').click()
+    >>> user_browser.getLink('Create release').click()
     Traceback (most recent call last):
       ...
     LinkNotFoundError
@@ -21,7 +21,7 @@ release in the series.
 
     >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
     >>> browser.open('http://launchpad.dev/firefox/+milestone/1.0')
-    >>> browser.getLink('Publish release').click()
+    >>> browser.getLink('Create release').click()
     >>> browser.url
     'http://launchpad.dev/firefox/+milestone/1.0/+addrelease'
 
@@ -33,9 +33,9 @@ Links to previous releases from the series are listed.
     >>> other_releases = find_tag_by_id(browser.contents, 'other-releases')
     >>> print extract_text(other_releases)
     The following releases have been made for the trunk series:
-    0.9.2 One (secure) Tree Hill 2004-10-16
-    0.9.1 One Tree Hill (v2) 2004-10-16
-    0.9 One Tree Hill 2004-10-16
+    Mozilla Firefox: 0.9.2 (One (secure) Tree Hill) 2004-10-16
+    Mozilla Firefox: 0.9.1 (One Tree Hill (v2)) 2004-10-16
+    Mozilla Firefox: 0.9 (One Tree Hill) 2004-10-16
 
     >>> print browser.getLink('0.9.1').url
     http://launchpad.dev/firefox/trunk/0.9.1
@@ -45,13 +45,12 @@ Sample Person completes the release.
     >>> browser.getControl('Date released').value = '2008-01-01'
     >>> browser.getControl('Release notes').value = 'Released 1.0'
     >>> browser.getControl('Changelog').value = 'Fix Foo'
-    >>> browser.getControl('Publish release').click()
+    >>> browser.getControl('Create release').click()
+
+After creating the release, you are taken back to the series page.
+
     >>> browser.url
-    'http://launchpad.dev/firefox/trunk/1.0'
-    >>> print extract_text(find_tag_by_id(browser.contents, 'release_notes'))
-    Released 1.0
-    >>> print extract_text(find_tag_by_id(browser.contents, 'changelog'))
-    Fix Foo
+    'http://launchpad.dev/firefox/trunk'
 
 After creating a product release on an active milestone, the user
 will be warned that the milestone has been deactivated.
@@ -59,7 +58,21 @@ will be warned that the milestone has been deactivated.
     >>> print get_feedback_messages(browser.contents)
     [u'The 1.0 milestone for this project release was deactivated so
        that bugs and blueprints cannot be associated with this release.']
-    >>> browser.open('http://launchpad.dev/firefox/+milestone/1.0/+addrelease')
+
+The newly created release will be accessible via a link on the series page.
+
+    >>> browser.getLink('1.0', index=1).click()
+    >>> browser.url
+    'http://launchpad.dev/firefox/trunk/1.0'
+    >>> print extract_text(find_tag_by_id(browser.contents, 'release_notes'))
+    Released 1.0
+    >>> print extract_text(find_tag_by_id(browser.contents, 'changelog'))
+    Fix Foo
+
+Only one release can be created for each milestone.
+
+    >>> browser.open(
+    ...     'http://launchpad.dev/firefox/+milestone/1.0/+addrelease')
     >>> print get_feedback_messages(browser.contents)
     [u'A project release already exists for this milestone.']
 
@@ -72,7 +85,7 @@ the "Keep the milestone <name> active" checkbox.
     >>> browser.open('http://launchpad.dev/firefox/+milestone/bar/+addrelease')
     >>> browser.getControl("Date released").value = '2009-01-01'
     >>> browser.getControl("Keep the bar milestone active.").selected = True
-    >>> browser.getControl('Publish release').click()
+    >>> browser.getControl('Create release').click()
     >>> print get_feedback_messages(browser.contents)
     []
     >>> browser.open('http://launchpad.dev/firefox/trunk/bar')
@@ -86,7 +99,7 @@ Now let's try to create a productrelease on a milestone that already
 has a productrelease.
 
     >>> browser.open('http://launchpad.dev/firefox/+milestone/1.0')
-    >>> browser.getLink('Publish release').click()
+    >>> browser.getLink('Create release').click()
     Traceback (most recent call last):
     ...
     LinkNotFoundError
@@ -130,12 +143,12 @@ Let's add a release as Jeff:
     >>> browser.getControl('Name').value = '0.6.6.6'
     >>> browser.getControl('Register milestone').click()
     >>> browser.getLink(url='+milestone/0.6.6.6').click()
-    >>> browser.getLink('Publish release').click()
+    >>> browser.getLink('Create release').click()
     >>> browser.getControl('Date released').value = '2008-12-01'
     >>> browser.getControl('Changelog').value = 'Fix Foo'
-    >>> browser.getControl('Publish release').click()
+    >>> browser.getControl('Create release').click()
     >>> print browser.url
-    http://launchpad.dev/tomcat/trunk/0.6.6.6
+    http://launchpad.dev/tomcat/trunk
 
 Celso is a member of ubuntu-team, so he can edit this release too:
 

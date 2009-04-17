@@ -1,4 +1,4 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2008-2009 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 
@@ -7,23 +7,20 @@ import re
 import transaction
 
 from bzrlib.branch import Branch
-from bzrlib.errors import NotAMergeDirective, NotBranchError
+from bzrlib.errors import (
+    NotAMergeDirective, NotBranchError, NotStacked)
 from bzrlib.merge_directive import MergeDirective
 from bzrlib.transport import get_transport
+from bzrlib.urlutils import escape
+from bzrlib.urlutils import join as urljoin
 from sqlobject import SQLObjectNotFound
 
 from zope.component import getUtility
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
-from lp.code.interfaces.branch import BranchType
-from lp.code.interfaces.branchlookup import IBranchLookup
-from lp.code.interfaces.branchmergeproposal import (
-    BranchMergeProposalExists, IBranchMergeProposalGetter,
-    ICreateMergeProposalJobSource, UserNotBranchReviewer)
-from lp.code.interfaces.branchnamespace import (
-    lookup_branch_namespace, split_unique_name)
-from lp.code.interfaces.codereviewcomment import CodeReviewVote
+from canonical.codehosting.bzrutils import is_branch_stackable
+from canonical.codehosting.vfs import get_lp_server
 from canonical.launchpad.interfaces.diff import IStaticDiffSource
 from canonical.launchpad.interfaces.mail import (
     IMailHandler, EmailProcessingError)
@@ -39,6 +36,15 @@ from canonical.launchpad.mailnotification import (
 from canonical.launchpad.webapp import urlparse
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lazr.uri import URI
+from lp.code.interfaces.branch import BranchType
+from lp.code.interfaces.branchlookup import IBranchLookup
+from lp.code.interfaces.branchmergeproposal import (
+    BranchMergeProposalExists, IBranchMergeProposalGetter,
+    ICreateMergeProposalJobSource, UserNotBranchReviewer)
+from lp.code.interfaces.branchnamespace import (
+    lookup_branch_namespace, split_unique_name)
+from lp.code.interfaces.branchtarget import check_default_stacked_on
+from lp.code.interfaces.codereviewcomment import CodeReviewVote
 
 
 class BadBranchMergeProposalAddress(Exception):
@@ -362,9 +368,9 @@ class CodeHandler:
         mp_target = getUtility(IBranchLookup).getByUrl(md.target_branch)
         if mp_target is None:
             raise NonLaunchpadTarget()
-        # XXX TimPenhey 2009-04-01 bug 352800
-        # Disabled pull processing until we can create stacked branches.
-        if True: # md.bundle is None:
+        # If the target branch cannot be stacked upon, then don't try to stack
+        # upon it or get revisions form it.
+        if md.bundle is None or check_default_stacked_on(mp_target) is None:
             mp_source = self._getSourceNoBundle(
                 md, mp_target, submitter)
         else:
@@ -421,40 +427,101 @@ class CodeHandler:
 
     def _getSourceNoBundle(self, md, target, submitter):
         """Get a source branch for a merge directive with no bundle."""
-        mp_source = None
-        if md.source_branch is not None:
-            mp_source = getUtility(IBranchLookup).getByUrl(md.source_branch)
-        if mp_source is None:
-            mp_source = self._getNewBranch(
+        source_db_branch = getUtility(IBranchLookup).getByUrl(
+            md.source_branch)
+        if source_db_branch is None:
+            source_db_branch = self._getNewBranch(
                 BranchType.REMOTE, md.source_branch, target, submitter)
-        return mp_source
+        return source_db_branch
 
-    def _getSourceWithBundle(self, md, target, submitter):
-        """Get a source branch for a merge directive with a bundle."""
-        mp_source = None
+    def _getOrCreateDBBranch(self, md, db_target, submitter):
+        """Return the source branch, creating a new branch if necessary."""
+        db_source = None
         if md.source_branch is not None:
-            mp_source = getUtility(IBranchLookup).getByUrl(md.source_branch)
-        if mp_source is None:
-            mp_source = self._getNewBranch(
-                BranchType.HOSTED, md.source_branch, target,
-                submitter)
-        transaction.commit()
-        assert mp_source.branch_type == BranchType.HOSTED
+            db_source = getUtility(IBranchLookup).getByUrl(md.source_branch)
+        if db_source is None:
+            db_source = self._getNewBranch(
+                BranchType.HOSTED, md.source_branch, db_target, submitter)
+            # Commit the transaction to make sure the new source branch is
+            # visible to the XMLRPC server which provides the virtual file
+            # system information.
+            transaction.commit()
+        return db_source
+
+    def _openSourceBzrBranch(self, source_url, target_url, stacked_url):
+        """Open the source bzr branch, creating a new branch if necessary."""
         try:
-            bzr_branch = Branch.open(mp_source.getPullURL())
+            return Branch.open(source_url)
         except NotBranchError:
-            bzr_target = removeSecurityProxy(target).getBzrBranch()
+            bzr_target = Branch.open(target_url)
             transport = get_transport(
-                mp_source.getPullURL(),
+                source_url,
                 possible_transports=[bzr_target.bzrdir.root_transport])
-            bzrdir = bzr_target.bzrdir.clone_on_transport(transport)
+            bzrdir = bzr_target.bzrdir.sprout(
+                transport.base, bzr_target.last_revision(),
+                force_new_repo=True, stacked=True, create_tree_if_local=False,
+                possible_transports=[transport], source_branch=bzr_target)
             bzr_branch = bzrdir.open_branch()
-        # Don't attempt to use public-facing urls.
-        md.target_branch = target.warehouse_url
+            # Set the stacked url to be the relative url for the target.
+            bzr_branch.set_stacked_on_url(stacked_url)
+            return bzr_branch
+
+    def _getSourceWithBundle(self, md, db_target, submitter):
+        """Get a source branch for a merge directive with a bundle."""
+        db_source = self._getOrCreateDBBranch(md, db_target, submitter)
+        # Make sure that the target branch is stackable so that we only
+        # install the revisions unique to the source branch. If the target
+        # branch is not stackable, return the existing branch or a new hosted
+        # source branch - one that has *no* Bazaar data.  Together these
+        # prevent users from using Launchpad disk space at a rate that is
+        # disproportionately greater than data uploaded.
+        mirrored_bzr_target = removeSecurityProxy(db_target).getBzrBranch()
+        if not is_branch_stackable(mirrored_bzr_target):
+            return db_source
+        assert db_source.branch_type == BranchType.HOSTED, (
+            "Source branch is not hosted.")
+
+        # Create the LP server as if the submitter was pushing a branch to LP.
+        lp_server = get_lp_server(submitter.id)
+        lp_server.setUp()
+        try:
+            source_url = urljoin(lp_server.get_url(), db_source.unique_name)
+            target_url = urljoin(lp_server.get_url(), db_target.unique_name)
+            stacked_url = escape('/' + db_target.unique_name)
+            bzr_source = self._openSourceBzrBranch(
+                source_url, target_url, stacked_url)
+            if is_branch_stackable(bzr_source):
+                # Set the stacked on URL if not set.
+                try:
+                    bzr_source.get_stacked_on_url()
+                except NotStacked:
+                    # We don't currently support pulling in the revisions if
+                    # the source branch exists and isn't stacked.
+                    return db_source
+                self._pullRevisionsFromMergeDirectiveIntoSourceBranch(
+                    md, target_url, bzr_source)
+                # Get the puller to pull the branch into the mirrored area.
+                db_source.requestMirror()
+            return db_source
+        finally:
+            lp_server.tearDown()
+
+    def _pullRevisionsFromMergeDirectiveIntoSourceBranch(self, md,
+                                                         target_url,
+                                                         bzr_branch):
+        """Pull the revisions from the merge directive into the branch.
+
+        :param md: The merge directive
+        :param target_url: The URL of the branch that the merge directive is
+            targetting using the user's LP transport.
+        :param bzr_branch: The bazaar branch entity for the branch that the
+            revisions from the merge directive are being pulled into.
+        """
+        # Tell the merge directive to use the user's LP transport URL to get
+        # access to any needed but not supplied revisions.
+        md.target_branch = target_url
         md.install_revisions(bzr_branch.repository)
         bzr_branch.pull(bzr_branch, stop_revision=md.revision_id)
-        mp_source.requestMirror()
-        return mp_source
 
     def findMergeDirectiveAndComment(self, message):
         """Extract the comment and Merge Directive from a SignedMessage."""

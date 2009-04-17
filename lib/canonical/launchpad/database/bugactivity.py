@@ -16,6 +16,7 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from lp.registry.interfaces.person import (
     validate_person_not_private_membership)
 
+
 class BugActivity(SQLBase):
     """Bug activity log entry."""
 
@@ -26,7 +27,8 @@ class BugActivity(SQLBase):
     datechanged = UtcDateTimeCol(notNull=True)
     person = ForeignKey(
         dbName='person', foreignKey='Person',
-        storm_validator=validate_person_not_private_membership, notNull=True)
+        storm_validator=validate_person_not_private_membership,
+        notNull=True)
     whatchanged = StringCol(notNull=True)
     oldvalue = StringCol(default=None)
     newvalue = StringCol(default=None)

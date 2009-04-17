@@ -722,6 +722,12 @@ SET search_path = public, pg_catalog;
 
 
 
+
+
+
+
+
+
 ALTER TABLE account DISABLE TRIGGER ALL;
 
 INSERT INTO account (id, date_created, creation_rationale, status, date_status_set, displayname, openid_identifier, status_comment, old_openid_identifier) VALUES (11, '2005-06-06 08:59:51.591618', 8, 20, '2005-06-06 08:59:51.591618', 'Mark Shuttleworth', 'sabdfl_oid', NULL, '123/sabdfl');
@@ -925,19 +931,19 @@ ALTER TABLE answercontact ENABLE TRIGGER ALL;
 
 ALTER TABLE archive DISABLE TRIGGER ALL;
 
-INSERT INTO archive (id, owner, description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, fti, buildd_secret, require_virtualized, name, publish, date_updated, total_count, pending_count, succeeded_count, failed_count, building_count, date_created, signing_key, removed_binary_retention_days, num_old_versions_published, displayname) VALUES (1, 17, NULL, true, NULL, NULL, 1, 1, false, NULL, NULL, NULL, NULL, NULL, false, 'primary', true, '2008-05-27 18:15:12.241774', 15, 1, 8, 5, 1, '2008-09-23 17:29:03.442606', NULL, NULL, NULL, 'Primary Archive for Ubuntu Linux');
-INSERT INTO archive (id, owner, description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, fti, buildd_secret, require_virtualized, name, publish, date_updated, total_count, pending_count, succeeded_count, failed_count, building_count, date_created, signing_key, removed_binary_retention_days, num_old_versions_published, displayname) VALUES (2, 1, NULL, true, NULL, NULL, 2, 1, false, NULL, NULL, NULL, NULL, NULL, false, 'primary', true, '2008-05-27 18:15:15.863812', 0, 0, 0, 0, 0, '2008-09-23 17:29:03.445921', NULL, NULL, NULL, 'Primary Archive for Redhat Advanced Server');
-INSERT INTO archive (id, owner, description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, fti, buildd_secret, require_virtualized, name, publish, date_updated, total_count, pending_count, succeeded_count, failed_count, building_count, date_created, signing_key, removed_binary_retention_days, num_old_versions_published, displayname) VALUES (3, 1, NULL, true, NULL, NULL, 3, 1, false, NULL, NULL, NULL, NULL, NULL, false, 'primary', true, '2008-05-27 18:15:15.864941', 0, 0, 0, 0, 0, '2008-09-23 17:29:03.446557', NULL, NULL, NULL, 'Primary Archive for Debian GNU/Linux');
-INSERT INTO archive (id, owner, description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, fti, buildd_secret, require_virtualized, name, publish, date_updated, total_count, pending_count, succeeded_count, failed_count, building_count, date_created, signing_key, removed_binary_retention_days, num_old_versions_published, displayname) VALUES (4, 1, NULL, true, NULL, NULL, 4, 1, false, NULL, NULL, NULL, NULL, NULL, false, 'primary', true, '2008-05-27 18:15:15.865502', 0, 0, 0, 0, 0, '2008-09-23 17:29:03.44689', NULL, NULL, NULL, 'Primary Archive for The Gentoo Linux');
-INSERT INTO archive (id, owner, description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, fti, buildd_secret, require_virtualized, name, publish, date_updated, total_count, pending_count, succeeded_count, failed_count, building_count, date_created, signing_key, removed_binary_retention_days, num_old_versions_published, displayname) VALUES (5, 1, NULL, true, NULL, NULL, 5, 1, false, NULL, NULL, NULL, NULL, NULL, false, 'primary', true, '2008-05-27 18:15:15.866015', 0, 0, 0, 0, 0, '2008-09-23 17:29:03.447202', NULL, NULL, NULL, 'Primary Archive for Kubuntu - Free KDE-based Linux');
-INSERT INTO archive (id, owner, description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, fti, buildd_secret, require_virtualized, name, publish, date_updated, total_count, pending_count, succeeded_count, failed_count, building_count, date_created, signing_key, removed_binary_retention_days, num_old_versions_published, displayname) VALUES (7, 4, NULL, true, NULL, NULL, 7, 1, false, NULL, NULL, NULL, NULL, NULL, false, 'primary', true, '2008-05-27 18:15:15.866529', 0, 0, 0, 0, 0, '2008-09-23 17:29:03.447515', NULL, NULL, NULL, 'Primary Archive for GuadaLinex: Linux for Andalucia');
-INSERT INTO archive (id, owner, description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, fti, buildd_secret, require_virtualized, name, publish, date_updated, total_count, pending_count, succeeded_count, failed_count, building_count, date_created, signing_key, removed_binary_retention_days, num_old_versions_published, displayname) VALUES (8, 17, NULL, true, NULL, NULL, 8, 1, false, NULL, NULL, NULL, NULL, NULL, false, 'primary', true, '2008-05-27 18:15:15.867154', 0, 0, 0, 0, 0, '2008-09-23 17:29:03.447851', NULL, NULL, NULL, 'Primary Archive for Ubuntu Test');
-INSERT INTO archive (id, owner, description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, fti, buildd_secret, require_virtualized, name, publish, date_updated, total_count, pending_count, succeeded_count, failed_count, building_count, date_created, signing_key, removed_binary_retention_days, num_old_versions_published, displayname) VALUES (9, 28, 'packages to help my friends.', true, 1024, 'It is not my fault.', 1, 2, false, 3, 3, NULL, NULL, NULL, true, 'ppa', true, '2008-05-27 18:15:15.867684', 4, 0, 3, 1, 0, '2008-09-23 17:29:03.448178', NULL, NULL, NULL, 'PPA for Celso Providelo');
-INSERT INTO archive (id, owner, description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, fti, buildd_secret, require_virtualized, name, publish, date_updated, total_count, pending_count, succeeded_count, failed_count, building_count, date_created, signing_key, removed_binary_retention_days, num_old_versions_published, displayname) VALUES (10, 1, 'packages to help the humanity (you know, ubuntu)', true, 1024, NULL, 1, 2, false, 1, 1, NULL, NULL, NULL, true, 'ppa', true, '2008-05-27 18:15:15.868202', 0, 0, 0, 0, 0, '2008-09-23 17:29:03.448488', NULL, NULL, NULL, 'PPA for Mark Shuttleworth');
-INSERT INTO archive (id, owner, description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, fti, buildd_secret, require_virtualized, name, publish, date_updated, total_count, pending_count, succeeded_count, failed_count, building_count, date_created, signing_key, removed_binary_retention_days, num_old_versions_published, displayname) VALUES (11, 52, 'I am not allowed to say, I have no privs.', true, 1024, NULL, 1, 2, false, 0, 0, NULL, NULL, NULL, true, 'ppa', true, '2008-05-27 18:15:15.868709', 1, 0, 0, 1, 0, '2008-09-23 17:29:03.448797', NULL, NULL, NULL, 'PPA for No Privileges Person');
-INSERT INTO archive (id, owner, description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, fti, buildd_secret, require_virtualized, name, publish, date_updated, total_count, pending_count, succeeded_count, failed_count, building_count, date_created, signing_key, removed_binary_retention_days, num_old_versions_published, displayname) VALUES (12, 17, 'Partner archive', true, NULL, NULL, 1, 4, false, NULL, NULL, NULL, NULL, NULL, false, 'partner', true, '2008-05-27 18:15:15.869209', 1, 0, 1, 0, 0, '2008-09-23 17:29:03.449157', NULL, NULL, NULL, 'Partner Archive for Ubuntu Linux');
-INSERT INTO archive (id, owner, description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, fti, buildd_secret, require_virtualized, name, publish, date_updated, total_count, pending_count, succeeded_count, failed_count, building_count, date_created, signing_key, removed_binary_retention_days, num_old_versions_published, displayname) VALUES (13, 17, 'Partner archive', true, NULL, NULL, 8, 4, false, NULL, NULL, NULL, NULL, NULL, false, 'partner', true, '2008-05-27 18:15:15.869732', 0, 0, 0, 0, 0, '2008-09-23 17:29:03.449471', NULL, NULL, NULL, 'Partner Archive for Ubuntu Test');
-INSERT INTO archive (id, owner, description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, fti, buildd_secret, require_virtualized, name, publish, date_updated, total_count, pending_count, succeeded_count, failed_count, building_count, date_created, signing_key, removed_binary_retention_days, num_old_versions_published, displayname) VALUES (14, 17, 'Sample copy archive', true, NULL, NULL, 8, 6, false, NULL, NULL, NULL, NULL, NULL, false, 'samplecopyarchive', false, '2008-11-19 18:15:15.869732', 0, 0, 0, 0, 0, '2008-11-18 17:29:03.449471', NULL, NULL, NULL, 'Copy archive samplecopyarchive for Ubuntu Team');
+INSERT INTO archive (id, owner, description, enabled, authorized_size, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, fti, buildd_secret, require_virtualized, name, publish, date_updated, total_count, pending_count, succeeded_count, failed_count, building_count, date_created, signing_key, removed_binary_retention_days, num_old_versions_published, displayname) VALUES (1, 17, NULL, true, NULL, 1, 1, false, NULL, NULL, NULL, NULL, NULL, false, 'primary', true, '2008-05-27 18:15:12.241774', 15, 1, 8, 5, 1, '2008-09-23 17:29:03.442606', NULL, NULL, NULL, 'Primary Archive for Ubuntu Linux');
+INSERT INTO archive (id, owner, description, enabled, authorized_size, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, fti, buildd_secret, require_virtualized, name, publish, date_updated, total_count, pending_count, succeeded_count, failed_count, building_count, date_created, signing_key, removed_binary_retention_days, num_old_versions_published, displayname) VALUES (2, 1, NULL, true, NULL, 2, 1, false, NULL, NULL, NULL, NULL, NULL, false, 'primary', true, '2008-05-27 18:15:15.863812', 0, 0, 0, 0, 0, '2008-09-23 17:29:03.445921', NULL, NULL, NULL, 'Primary Archive for Redhat Advanced Server');
+INSERT INTO archive (id, owner, description, enabled, authorized_size, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, fti, buildd_secret, require_virtualized, name, publish, date_updated, total_count, pending_count, succeeded_count, failed_count, building_count, date_created, signing_key, removed_binary_retention_days, num_old_versions_published, displayname) VALUES (3, 1, NULL, true, NULL, 3, 1, false, NULL, NULL, NULL, NULL, NULL, false, 'primary', true, '2008-05-27 18:15:15.864941', 0, 0, 0, 0, 0, '2008-09-23 17:29:03.446557', NULL, NULL, NULL, 'Primary Archive for Debian GNU/Linux');
+INSERT INTO archive (id, owner, description, enabled, authorized_size, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, fti, buildd_secret, require_virtualized, name, publish, date_updated, total_count, pending_count, succeeded_count, failed_count, building_count, date_created, signing_key, removed_binary_retention_days, num_old_versions_published, displayname) VALUES (4, 1, NULL, true, NULL, 4, 1, false, NULL, NULL, NULL, NULL, NULL, false, 'primary', true, '2008-05-27 18:15:15.865502', 0, 0, 0, 0, 0, '2008-09-23 17:29:03.44689', NULL, NULL, NULL, 'Primary Archive for The Gentoo Linux');
+INSERT INTO archive (id, owner, description, enabled, authorized_size, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, fti, buildd_secret, require_virtualized, name, publish, date_updated, total_count, pending_count, succeeded_count, failed_count, building_count, date_created, signing_key, removed_binary_retention_days, num_old_versions_published, displayname) VALUES (5, 1, NULL, true, NULL, 5, 1, false, NULL, NULL, NULL, NULL, NULL, false, 'primary', true, '2008-05-27 18:15:15.866015', 0, 0, 0, 0, 0, '2008-09-23 17:29:03.447202', NULL, NULL, NULL, 'Primary Archive for Kubuntu - Free KDE-based Linux');
+INSERT INTO archive (id, owner, description, enabled, authorized_size, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, fti, buildd_secret, require_virtualized, name, publish, date_updated, total_count, pending_count, succeeded_count, failed_count, building_count, date_created, signing_key, removed_binary_retention_days, num_old_versions_published, displayname) VALUES (7, 4, NULL, true, NULL, 7, 1, false, NULL, NULL, NULL, NULL, NULL, false, 'primary', true, '2008-05-27 18:15:15.866529', 0, 0, 0, 0, 0, '2008-09-23 17:29:03.447515', NULL, NULL, NULL, 'Primary Archive for GuadaLinex: Linux for Andalucia');
+INSERT INTO archive (id, owner, description, enabled, authorized_size, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, fti, buildd_secret, require_virtualized, name, publish, date_updated, total_count, pending_count, succeeded_count, failed_count, building_count, date_created, signing_key, removed_binary_retention_days, num_old_versions_published, displayname) VALUES (8, 17, NULL, true, NULL, 8, 1, false, NULL, NULL, NULL, NULL, NULL, false, 'primary', true, '2008-05-27 18:15:15.867154', 0, 0, 0, 0, 0, '2008-09-23 17:29:03.447851', NULL, NULL, NULL, 'Primary Archive for Ubuntu Test');
+INSERT INTO archive (id, owner, description, enabled, authorized_size, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, fti, buildd_secret, require_virtualized, name, publish, date_updated, total_count, pending_count, succeeded_count, failed_count, building_count, date_created, signing_key, removed_binary_retention_days, num_old_versions_published, displayname) VALUES (9, 28, 'packages to help my friends.', true, 1024, 1, 2, false, 3, 3, NULL, NULL, NULL, true, 'ppa', true, '2008-05-27 18:15:15.867684', 4, 0, 3, 1, 0, '2008-09-23 17:29:03.448178', NULL, NULL, NULL, 'PPA for Celso Providelo');
+INSERT INTO archive (id, owner, description, enabled, authorized_size, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, fti, buildd_secret, require_virtualized, name, publish, date_updated, total_count, pending_count, succeeded_count, failed_count, building_count, date_created, signing_key, removed_binary_retention_days, num_old_versions_published, displayname) VALUES (10, 1, 'packages to help the humanity (you know, ubuntu)', true, 1024, 1, 2, false, 1, 1, NULL, NULL, NULL, true, 'ppa', true, '2008-05-27 18:15:15.868202', 0, 0, 0, 0, 0, '2008-09-23 17:29:03.448488', NULL, NULL, NULL, 'PPA for Mark Shuttleworth');
+INSERT INTO archive (id, owner, description, enabled, authorized_size, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, fti, buildd_secret, require_virtualized, name, publish, date_updated, total_count, pending_count, succeeded_count, failed_count, building_count, date_created, signing_key, removed_binary_retention_days, num_old_versions_published, displayname) VALUES (11, 52, 'I am not allowed to say, I have no privs.', true, 1024, 1, 2, false, 0, 0, NULL, NULL, NULL, true, 'ppa', true, '2008-05-27 18:15:15.868709', 1, 0, 0, 1, 0, '2008-09-23 17:29:03.448797', NULL, NULL, NULL, 'PPA for No Privileges Person');
+INSERT INTO archive (id, owner, description, enabled, authorized_size, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, fti, buildd_secret, require_virtualized, name, publish, date_updated, total_count, pending_count, succeeded_count, failed_count, building_count, date_created, signing_key, removed_binary_retention_days, num_old_versions_published, displayname) VALUES (12, 17, 'Partner archive', true, NULL, 1, 4, false, NULL, NULL, NULL, NULL, NULL, false, 'partner', true, '2008-05-27 18:15:15.869209', 1, 0, 1, 0, 0, '2008-09-23 17:29:03.449157', NULL, NULL, NULL, 'Partner Archive for Ubuntu Linux');
+INSERT INTO archive (id, owner, description, enabled, authorized_size, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, fti, buildd_secret, require_virtualized, name, publish, date_updated, total_count, pending_count, succeeded_count, failed_count, building_count, date_created, signing_key, removed_binary_retention_days, num_old_versions_published, displayname) VALUES (13, 17, 'Partner archive', true, NULL, 8, 4, false, NULL, NULL, NULL, NULL, NULL, false, 'partner', true, '2008-05-27 18:15:15.869732', 0, 0, 0, 0, 0, '2008-09-23 17:29:03.449471', NULL, NULL, NULL, 'Partner Archive for Ubuntu Test');
+INSERT INTO archive (id, owner, description, enabled, authorized_size, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, fti, buildd_secret, require_virtualized, name, publish, date_updated, total_count, pending_count, succeeded_count, failed_count, building_count, date_created, signing_key, removed_binary_retention_days, num_old_versions_published, displayname) VALUES (14, 17, 'Sample copy archive', true, NULL, 8, 6, false, NULL, NULL, NULL, NULL, NULL, false, 'samplecopyarchive', false, '2008-11-19 18:15:15.869732', 0, 0, 0, 0, 0, '2008-11-18 17:29:03.449471', NULL, NULL, NULL, 'Copy archive samplecopyarchive for Ubuntu Team');
 
 
 ALTER TABLE archive ENABLE TRIGGER ALL;
@@ -2252,7 +2258,7 @@ INSERT INTO distroserieslanguage (id, distroseries, language, currentcount, upda
 INSERT INTO distroserieslanguage (id, distroseries, language, currentcount, updatescount, rosettacount, contributorcount, dateupdated, unreviewed_count) VALUES (10, 3, 454, 0, 0, 0, 0, '2007-01-15 17:58:41.406949', 0);
 INSERT INTO distroserieslanguage (id, distroseries, language, currentcount, updatescount, rosettacount, contributorcount, dateupdated, unreviewed_count) VALUES (11, 3, 148, 3, 0, 0, 1, '2007-01-15 17:58:41.095497', 0);
 INSERT INTO distroserieslanguage (id, distroseries, language, currentcount, updatescount, rosettacount, contributorcount, dateupdated, unreviewed_count) VALUES (12, 3, 302, 63, 0, 0, 1, '2007-01-15 17:58:41.269372', 0);
-INSERT INTO distroserieslanguage (id, distroseries, language, currentcount, updatescount, rosettacount, contributorcount, dateupdated, unreviewed_count) VALUES (13, 3, 387, 67, 1, 0, 7, '2007-01-15 17:58:41.335782', 0);
+INSERT INTO distroserieslanguage (id, distroseries, language, currentcount, updatescount, rosettacount, contributorcount, dateupdated, unreviewed_count) VALUES (13, 3, 387, 66, 1, 2, 7, '2007-01-15 17:58:41.335782', 1);
 INSERT INTO distroserieslanguage (id, distroseries, language, currentcount, updatescount, rosettacount, contributorcount, dateupdated, unreviewed_count) VALUES (14, 3, 427, 6, 0, 0, 1, '2007-01-15 17:58:41.373856', 0);
 INSERT INTO distroserieslanguage (id, distroseries, language, currentcount, updatescount, rosettacount, contributorcount, dateupdated, unreviewed_count) VALUES (15, 3, 129, 9, 0, 0, 1, '2007-01-15 17:58:41.028301', 0);
 INSERT INTO distroserieslanguage (id, distroseries, language, currentcount, updatescount, rosettacount, contributorcount, dateupdated, unreviewed_count) VALUES (16, 3, 502, 0, 0, 0, 0, '2005-10-24 17:37:35.182173', 0);
@@ -2522,6 +2528,20 @@ ALTER TABLE hwdevicenamevariant DISABLE TRIGGER ALL;
 ALTER TABLE hwdevicenamevariant ENABLE TRIGGER ALL;
 
 
+ALTER TABLE hwdmihandle DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE hwdmihandle ENABLE TRIGGER ALL;
+
+
+ALTER TABLE hwdmivalue DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE hwdmivalue ENABLE TRIGGER ALL;
+
+
 ALTER TABLE hwdriver DISABLE TRIGGER ALL;
 
 INSERT INTO hwdriver (id, package_name, name, license) VALUES (1, 'linux-image-2.6.24-19-generic', 'ehci_hcd', NULL);
@@ -2777,9 +2797,9 @@ INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (6, 
 INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (7, 2, 15, 'bugcverefadded', 'Bug CVE Link Added', 'The user has linked a bug report to a specific entry in the CVE database.');
 INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (8, 2, 10, 'bugfixed', 'Bug Marked as Fixed', 'The user marked a bug as fixed.');
 INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (9, 2, 10, 'bugtaskcreated', 'Bug Task Created', 'The user has created a new task on a bug. This means that they have indicated that the same bug exists in another place (for example, upstream) and have reported that in Malone.');
-INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (10, 3, 10, 'translationtemplateimport', 'Import of Translation Template', 'The user updated a translation template, providing a newer version to be imported in Rosetta.');
-INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (11, 3, 30, 'translationimportupstream', 'Upstream Translation Imported', 'The user imported a set of upstream translations into Rosetta');
-INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (12, 3, 5, 'translationtemplatedescriptionchanged', 'Edited Translation Template Description', 'The user updated the description of a specific translation template.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (10, 3, 1, 'translationtemplateimport', 'Import of Translation Template', 'The user updated a translation template, providing a newer version to be imported in Rosetta.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (11, 3, 0, 'translationimportupstream', 'Upstream Translation Imported', 'The user imported a set of upstream translations into Rosetta');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (12, 3, 2, 'translationtemplatedescriptionchanged', 'Edited Translation Template Description', 'The user updated the description of a specific translation template.');
 INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (13, 3, 1, 'translationsuggestionadded', 'Translation Suggestion', 'The user contributed a new suggested translation. That may not yet have been accepted, but is valued nonetheless.');
 INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (14, 3, 1, 'translationsuggestionapproved', 'Translation Suggestion Approved', 'The user approved a translation suggestion that was previously contributed by someone else.');
 INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (15, 3, 1, 'translationreview', 'Translation Review', 'The user has completed a review of suggested translations.');
@@ -4442,6 +4462,20 @@ ALTER TABLE openidauthorization DISABLE TRIGGER ALL;
 ALTER TABLE openidauthorization ENABLE TRIGGER ALL;
 
 
+ALTER TABLE openidconsumerassociation DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE openidconsumerassociation ENABLE TRIGGER ALL;
+
+
+ALTER TABLE openidconsumernonce DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE openidconsumernonce ENABLE TRIGGER ALL;
+
+
 ALTER TABLE openidnonce DISABLE TRIGGER ALL;
 
 
@@ -4978,7 +5012,7 @@ Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 Report-Msgid-Bugs-To: serrador@hispalinux.es
 Plural-Forms: nplurals=2; plural=(n != 1);
-', true, 50, 7, 1, 0, NULL, 31, NULL, 'es.po', '2005-06-06 08:59:54.235169', NULL, 1, '2005-06-06 20:05:03.244905');
+', true, 50, 6, 1, 1, NULL, 31, NULL, 'es.po', '2005-06-06 08:59:54.235169', NULL, 1, '2005-06-06 20:05:03.244905');
 INSERT INTO pofile (id, potemplate, language, description, topcomment, header, fuzzyheader, lasttranslator, currentcount, updatescount, rosettacount, lastparsed, owner, variant, path, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (13, 5, 132, NULL, '
     Translators, if you are not familiar with the PO format, gettext
     documentation is worth reading, especially sections dedicated to
@@ -5367,7 +5401,7 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 Plural-Forms: nplurals=2; plural=n != 1
-', true, 13, 0, 0, 1, NULL, 13, NULL, 'po/alsa-utils-es.po', '2007-04-07 10:14:36.267119', NULL, 0, '2007-04-07 10:14:36.267119');
+', true, 13, 0, 0, 0, NULL, 13, NULL, 'po/alsa-utils-es.po', '2007-04-07 10:14:36.267119', NULL, 0, '2007-04-07 10:14:36.267119');
 INSERT INTO pofile (id, potemplate, language, description, topcomment, header, fuzzyheader, lasttranslator, currentcount, updatescount, rosettacount, lastparsed, owner, variant, path, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (34, 5, 119, NULL, ' English translation for mozilla
  Copyright (c) 2007 Rosetta Contributors and Canonical Ltd 2007
  This file is distributed under the same license as the mozilla package.
@@ -10190,6 +10224,7 @@ INSERT INTO translationtemplateitem (id, potemplate, sequence, potmsgset) VALUES
 INSERT INTO translationtemplateitem (id, potemplate, sequence, potmsgset) VALUES (193, 10, 2, 199);
 INSERT INTO translationtemplateitem (id, potemplate, sequence, potmsgset) VALUES (194, 10, 3, 200);
 INSERT INTO translationtemplateitem (id, potemplate, sequence, potmsgset) VALUES (195, 10, 4, 201);
+INSERT INTO translationtemplateitem (id, potemplate, sequence, potmsgset) VALUES (196, 1, 0, 21);
 
 
 ALTER TABLE translationtemplateitem ENABLE TRIGGER ALL;

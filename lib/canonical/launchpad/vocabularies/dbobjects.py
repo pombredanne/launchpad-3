@@ -142,10 +142,9 @@ class BasePersonVocabulary:
     def toTerm(self, obj):
         """Return the term for this object."""
         try:
-            term = SimpleTerm(obj, obj.name, obj.displayname)
+            return SimpleTerm(obj, obj.name, obj.displayname)
         except Unauthorized:
-            term = None
-        return term
+            return None
 
     def getTermByToken(self, token):
         """Return the term for the given token.
@@ -666,7 +665,7 @@ class ValidPersonOrTeamVocabulary(
                 Person.visibility == PersonVisibility.PRIVATE
                 )
         else:
-            private_query = True
+            private_query = False
         return private_query
 
     def _doSearch(self, text=""):
@@ -729,9 +728,7 @@ class ValidPersonOrTeamVocabulary(
                 Person,
                 And(
                     Person.id.is_in(inner_select),
-                    Or(# Public team.
-                        # Public team.
-                       Person.visibility == PersonVisibility.PUBLIC,
+                    Or(Person.visibility == PersonVisibility.PUBLIC,
                        # Private team the logged in user is a member.
                        self._private_team_query,
                        ),
@@ -772,6 +769,16 @@ class ValidPersonOrTeamVocabulary(
         text = text.lower()
         return self._doSearch(text=text)
 
+    def searchForTerms(self, query=None):
+        """See `IHugeVocabulary`."""
+        results = self.search(query)
+        # XXX: BradCrittenden 2009-04-13 bug=217644: Storm ResultSet
+        # aggregates (count, sum, avg) do not respect distinct option.  This
+        # work-around forces the call to count to do the right thing.
+        from storm.expr import Column
+        id = Column('id', Person)
+        num = results.count(expr=id, distinct=True)
+        return CountableIterator(num, results, self.toTerm)
 
 class ValidTeamVocabulary(ValidPersonOrTeamVocabulary):
     """The set of all valid, public teams in Launchpad."""
@@ -802,34 +809,27 @@ class ValidTeamVocabulary(ValidPersonOrTeamVocabulary):
             LeftJoin(TeamParticipation,
                      TeamParticipation.teamID == Person.id),
             ]
-        if not text:
 
+        if not text:
             query = And(base_query,
                         self.extra_clause)
             result = self.store.using(*tables).find(Person, query)
         else:
-            name_match_query = And(
-                SQL("Person.fti @@ ftq(%s)" % quote(text)),
-                base_query,
-                self.extra_clause,
-                )
-            name_matches = self.store.find(Person, name_match_query)
+            name_match_query = SQL("Person.fti @@ ftq(%s)" % quote(text))
 
-            # Note that we must use lower(email) LIKE rather than ILIKE
-            # as ILIKE no longer appears to be hitting the index under PG8.0
-            match_pattern = "%s%%" % text
             email_match_query = And(
                 EmailAddress.person == Person.id,
                 StartsWith(Lower(EmailAddress.email), text),
-                base_query,
-                self.extra_clause,
                 )
 
             tables.append(EmailAddress)
-            email_matches = self.store.using(*tables).find(
-                    Person, email_match_query)
-            #print "email_matches: ", email_matches.count()
-            result =  name_matches.union(email_matches)
+
+            query = And(base_query,
+                        self.extra_clause,
+                        Or(name_match_query, email_match_query),
+                        )
+            result = self.store.using(*tables).find(
+                Person, query)
 
         result.config(distinct=True)
         result.order_by(Person.displayname, Person.name)
@@ -1307,14 +1307,15 @@ class MilestoneVocabulary(SQLObjectVocabularyBase):
                      for milestone in product.milestones),
                     longest_expected=40)
             elif IProductSeries.providedBy(target):
-                series_milestones = shortlist(target.milestones,
-                                              longest_expected=40)
-                product_milestones = shortlist(target.product.milestones,
-                                               longest_expected=40)
-                # Some milestones are associtaed with a product
-                # and a product series; these should appear only
-                # once.
-                milestones = set(series_milestones + product_milestones)
+                # While some milestones may be associated with a
+                # productseries, we want to show all milestones for
+                # the product. Since the database constraint
+                # "valid_target" ensures that a milestone associated
+                # with a series is also associated with the product
+                # itself, we don't need to look up series-related
+                # milestones.
+                milestones = shortlist(target.product.milestones,
+                                       longest_expected=40)
             else:
                 milestones = shortlist(
                     target.milestones, longest_expected=40)
