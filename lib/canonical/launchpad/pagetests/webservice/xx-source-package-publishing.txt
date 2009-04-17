@@ -1,7 +1,4 @@
-=========================
-Source Package Publishing
-=========================
-
+===========================
 Finding source publications
 ===========================
 
@@ -22,9 +19,9 @@ We need to insert some dependent fake data before continuing.
     ...     cprov_archive['self_link'], 'getPublishedSources').jsonBody()
 
     >>> def print_publications(pubs):
-    ...     for displayname in sorted(
-    ...         entry['displayname'] for entry in pubs['entries']):
-    ...         print displayname
+    ...     for display_name in sorted(
+    ...         entry['display_name'] for entry in pubs['entries']):
+    ...         print display_name
 
     >>> print_publications(pubs)
     cdrkit 1.0 in breezy-autotest
@@ -83,18 +80,18 @@ Each source publication exposes a number of properties.
     >>> pprint_entry(pubs['entries'][0])
     archive_link: u'http://.../~cprov/+archive/ppa'
     component_name: u'main'
-    datecreated: u'2007-07-09T12:00:00+00:00'
-    datemadepending: None
-    datepublished: u'2007-07-09T12:00:01+00:00'
-    dateremoved: None
-    datesuperseded: None
-    displayname: u'iceweasel 1.0 in warty'
-    distroseries_link: u'http://.../ubuntu/warty'
+    date_created: u'2007-07-09T12:00:00+00:00'
+    date_made_pending: None
+    date_published: u'2007-07-09T12:00:01+00:00'
+    date_removed: None
+    date_superseded: None
+    display_name: u'iceweasel 1.0 in warty'
+    distro_series_link: u'http://.../ubuntu/warty'
     pocket: u'Release'
     removal_comment: None
     removed_by_link: None
     resource_type_link: u'http://.../#source_package_publishing_history'
-    scheduleddeletiondate: None
+    scheduled_deletion_date: None
     section_name: u'editors'
     self_link: u'http://.../~cprov/+archive/ppa/+sourcepub/28'
     source_package_name: u'iceweasel'
