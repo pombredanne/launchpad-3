@@ -915,7 +915,7 @@ class IArchiveSet(Interface):
 
 
     def new(purpose, owner, name=None, displayname=None, distribution=None,
-            description=None):
+            description=None, enabled=True, require_virtualized=True):
         """Create a new archive.
 
         On named-ppa creation, the signing key for the default PPA for the
@@ -933,6 +933,9 @@ class IArchiveSet(Interface):
             will be attached;
         :param description: optional text to be set as the archive
             description;
+        :param enabled: whether the archive shall be enabled post creation
+        :param require_virtualized: whether builds for the new archive shall
+            be carried out on virtual builders
 
         :return: an `IArchive` object.
         :raises AssertionError if name is already taken within distribution.
