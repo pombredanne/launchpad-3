@@ -44,11 +44,11 @@ ML-FULL-TITLE
 </TTITLE>
 
 <IDXLABEL>
-date index
+Date Index
 </IDXLABEL>
 
 <TIDXLABEL>
-thread index
+Thread Index
 </TIDXLABEL>
 
 <!-- What do the next/prev links look like? -->
@@ -171,6 +171,18 @@ thread index
 </TIDXPGEND>
 
 <!-- Message pages -->
+<MSGPGBEGIN>
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+        "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<title>$SUBJECTNA$</title>
+<link rev="made" href="mailto:$FROMADDR$">
+</head>
+<body text="#000000" bgcolor="#FFFFFF">
+<p><a href="http://launchpad.net/"><img border="0" src="http://launchpad.net/@@/launchpad-logo-and-name.png" alt="Launchpad logo and name."/></a></p>
+</MSGPGBEGIN>
+
 <MSGPGEND>
 <hr/>
 (<em>$ML-FULL-TITLE$, formatted by <a href="$DOCURL$">MHonArc</a>)
