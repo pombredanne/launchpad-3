@@ -18,7 +18,6 @@ class Anything:
         return lambda *args, **kwargs: None
 
 
-
 def patch_find_tests(hook):
     """Add a post-processing hook to zope.testing.testrunner.find_tests."""
     real_find_tests = testrunner.find_tests
