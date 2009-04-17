@@ -118,11 +118,7 @@ class SoyuzTestPublisher:
                          pocket=PackagePublishingPocket.RELEASE,
                          changes_file_name="foo_666_source.changes",
                          changes_file_content="fake changes file content"):
-        try:
-            signing_key =  self.person.gpgkeys[0]
-        except:
-            signing_key = None
-
+        signing_key =  self.person.gpgkeys[0]
         package_upload = distroseries.createQueueEntry(
             pocket, changes_file_name, changes_file_content, archive,
             signing_key)

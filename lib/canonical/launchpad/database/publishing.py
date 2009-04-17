@@ -514,11 +514,12 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         results = getUtility(IPublishingSet).getChangesFilesForSources(
             self)
 
-        if results.count() == 0:
+        result = results.one()
+        if result is None:
             # This should not happen in practice, but the code should
             # not blow up because of bad data.
             return None
-        source, packageupload, spr, changesfile, lfc = results.one()
+        source, packageupload, spr, changesfile, lfc = result
         
         # Return a webapp-proxied LibraryFileAlias so that restricted
         # librarian files are accessible.  Non-restricted files will get

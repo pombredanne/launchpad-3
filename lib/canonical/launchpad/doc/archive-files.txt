@@ -177,7 +177,10 @@ And unreachable files in `NotFoundError`.
 Retrieving a binary changesfile.  "test_1.0_i386.changes" is created when
 SoyuzTestPublisher creates the "test" binary publication.
 
-    >>> build.changesfile == build.getFileByName('test_1.0_i386.changes')
+    >>> print build.changesfile.filename
+    test_1.0_i386.changes
+
+    >>> build.changesfile == build.getFileByName(build.changesfile.filename)
     True
 
 Adding and retrieving a buildlog.
