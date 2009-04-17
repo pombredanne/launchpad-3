@@ -6,7 +6,7 @@
 __metaclass__ = type
 __all__ = [
     'get_branch_namespace',
-    'IBranchCreationPolicy',
+    'IBranchNamespacePolicy',
     'IBranchNamespace',
     'IBranchNamespaceSet',
     'InvalidNamespace',
@@ -69,7 +69,7 @@ class IBranchNamespace(Interface):
         """Is 'name' already used in this namespace?"""
 
 
-class IBranchCreationPolicy(Interface):
+class IBranchNamespacePolicy(Interface):
     """Methods relating to branch creation and validation."""
 
     def getPrivacySubscriber():

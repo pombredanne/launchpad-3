@@ -29,7 +29,7 @@ from lp.code.interfaces.branch import (
     BranchCreatorNotOwner, BranchExists, BranchLifecycleStatus,
     BranchMergeControlStatus, IBranch, NoSuchBranch)
 from lp.code.interfaces.branchnamespace import (
-    IBranchCreationPolicy, IBranchNamespace, InvalidNamespace)
+    IBranchNamespace, IBranchNamespacePolicy, InvalidNamespace)
 from lp.code.interfaces.branchsubscription import (
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
     CodeReviewNotificationLevel)
@@ -228,7 +228,7 @@ class PersonalNamespace(_BaseNamespace):
     Branches in this namespace have names like '~foo/+junk/bar'.
     """
 
-    implements(IBranchNamespace, IBranchCreationPolicy)
+    implements(IBranchNamespace, IBranchNamespacePolicy)
 
     def __init__(self, person):
         self.owner = person
@@ -272,7 +272,7 @@ class ProductNamespace(_BaseNamespace):
     particular product.
     """
 
-    implements(IBranchNamespace, IBranchCreationPolicy)
+    implements(IBranchNamespace, IBranchNamespacePolicy)
 
     def __init__(self, person, product):
         self.owner = person
@@ -363,7 +363,7 @@ class PackageNamespace(_BaseNamespace):
     particular source package in a particular distroseries.
     """
 
-    implements(IBranchNamespace, IBranchCreationPolicy)
+    implements(IBranchNamespace, IBranchNamespacePolicy)
 
     def __init__(self, person, sourcepackage):
         if not config.codehosting.package_branches_enabled:

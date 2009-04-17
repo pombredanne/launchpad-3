@@ -17,7 +17,7 @@ from lp.code.interfaces.branch import (
     BranchCreatorNotOwner, BranchExists, BranchLifecycleStatus, BranchType,
     NoSuchBranch)
 from lp.code.interfaces.branchnamespace import (
-    get_branch_namespace, IBranchCreationPolicy, IBranchNamespace,
+    get_branch_namespace, IBranchNamespacePolicy, IBranchNamespace,
     IBranchNamespaceSet, lookup_branch_namespace, InvalidNamespace)
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.branchvisibilitypolicy import (
@@ -1286,7 +1286,7 @@ class BranchVisibilityPolicyTestCase(TestCaseWithFactory):
         :param owner: The person or team that will be the owner of the branch.
         :param subscriber: The expected implicit subscriber to the branch.
         """
-        policy = IBranchCreationPolicy(
+        policy = IBranchNamespacePolicy(
             get_branch_namespace(owner, product=self.product))
         self.assertTrue(policy.canBranchesBePrivate())
         if subscriber is None:
@@ -1301,7 +1301,7 @@ class BranchVisibilityPolicyTestCase(TestCaseWithFactory):
         :param creator: The user creating the branch.
         :param owner: The person or team that will be the owner of the branch.
         """
-        policy = IBranchCreationPolicy(
+        policy = IBranchNamespacePolicy(
             get_branch_namespace(owner, product=self.product))
         self.assertRaises(
             error,
