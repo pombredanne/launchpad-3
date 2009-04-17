@@ -33,12 +33,22 @@ this.
   ...   print tag.renderContents()
   You have been subscribed to this bug.
 
+There's also now a link to unsubscribe the user next to the name. It's a
+relative URL to +subscribe, so it will only work when the portlet is
+in the context of the bug page.
+
   >>> browser.open(
   ...     'http://bugs.launchpad.dev/bugs/1/+bug-portlet-subscribers-content')
   >>> print_direct_subscribers(browser.contents)
-  Foo Bar (Subscribed themselves)
+  Foo Bar (Subscribed themselves) (Unsubscribe Foo Bar)
   Sample Person (Subscribed by Launchpad Janitor)
   Steve Alexander (Subscribed by Launchpad Janitor)
+
+  >>> browser.open(
+  ...     'http://bugs.launchpad.dev/bugs/1/+bug-portlet-subscribers-content')
+  >>> link = browser.getLink(id='unsubscribe-name16')
+  >>> link.mech_link.url # Use mech_link to get the relative URL.
+  '+subscribe'
 
   >>> browser.open('http://bugs.launchpad.dev/firefox/+bug/1/')
   >>> browser.getLink('Unsubscribe').click()
@@ -46,6 +56,7 @@ this.
   Bug #1 - Subscription options
   >>> browser.url
   'http://bugs.launchpad.dev/firefox/+bug/1/+subscribe'
+
 
 Clicking the "Continue" button from the +subscribe page will unsubscribe
 the user this time, and inform the user.
@@ -74,18 +85,27 @@ first subscribing one of Foo Bar's teams.
   >>> browser.url
   'http://bugs.launchpad.dev/firefox/+bug/1'
 
+There's an unsubscribe link next to the team name.
+
   >>> browser.open(
   ...     'http://bugs.launchpad.dev/bugs/1/+bug-portlet-subscribers-content')
   >>> print_direct_subscribers(browser.contents)
-  Launchpad Developers (Subscribed by Foo Bar)
+  Launchpad Developers (Subscribed by Foo Bar) (Unsubscribe Launchpad
+                                                Developers)
   Sample Person (Subscribed by Launchpad Janitor)
   Steve Alexander (Subscribed by Launchpad Janitor)
 
-Clicking the subscribe link gives us the option of both subscribing Foo Bar,
-and unsubscribing the Launchpad team.
+Clicking either the subscribe link (for subscribing the user to the bug)
+or the unsubscribe link for the team gives us the option of both
+subscribing Foo Bar, and unsubscribing the Launchpad team.
+
+  >>> browser.open(
+  ...     'http://bugs.launchpad.dev/bugs/1/+bug-portlet-subscribers-content')
+  >>> browser.getLink(id='unsubscribe-launchpad').mech_link.url
+  '+subscribe'
 
   >>> browser.open('http://bugs.launchpad.dev/firefox/+bug/1')
-  >>> browser.getLink('Subscribe/Unsubscribe').click()
+  >>> browser.getLink('Subscribe').click()
   >>> browser.url
   'http://bugs.launchpad.dev/firefox/+bug/1/+subscribe'
 
@@ -171,9 +191,13 @@ is presented with the Unsubscribe link instead.
 
   >>> print_indirect_subscribers(stevea_browser.contents)
   From duplicates:
-  Steve Alexander (Subscribed by Launchpad Janitor)
+  Steve Alexander (Subscribed by Launchpad Janitor) (Unsubscribe
+                                                     Steve Alexander)
   Also notified:
   Mark Shuttleworth
+
+  >>> stevea_browser.getLink(id='unsubscribe-stevea').mech_link.url
+  '+subscribe'
 
 When he chooses to unsubscribe, he will be unsubscribed from bug #2, the
 dupe of bug #3, so he'll no longer get mail from bug #3.
@@ -223,12 +247,12 @@ previous example.)
   >>> print_indirect_subscribers(stevea_browser.contents)
   From duplicates:
   Sample Person (Subscribed ...)
-  Steve Alexander (Subscribed ...)
+  Steve Alexander (Subscribed ...) (Unsubscribe Steve Alexander)
   Also notified:
   Mark Shuttleworth
 
   >>> stevea_browser.open("http://launchpad.dev/bugs/3")
-  >>> stevea_browser.getLink('Unsubscribe').click()
+  >>> stevea_browser.getLink("Unsubscribe").click()
   >>> stevea_browser.getControl("Continue").click()
 
   >>> for tag in find_tags_by_class(
@@ -261,16 +285,17 @@ include that team.
 
   >>> print_indirect_subscribers(foobar_browser.contents)
   From duplicates:
-  Ubuntu Team (Subscribed by Foo Bar)
+  Ubuntu Team (Subscribed by Foo Bar) (Unsubscribe Ubuntu Team)
   Also notified:
   Mark Shuttleworth
 
-The subscribe link for Foo Bar now says "Subscribe/Unsubscribe", because
-Foo Bar can subscribe himself directly to this bug, or unsubscribe
-ubuntu-team.
+The subscribe link for Foo Bar still says "Subscribe", because
+Foo Bar can subscribe himself directly to this bug. For unsubscribing
+the team, the (-) icon can be used. In reality, the two links point to
+the same page, but that is changed when the page is AJAX enabled.
 
   >>> foobar_browser.open("http://launchpad.dev/bugs/3")
-  >>> foobar_browser.getLink('Subscribe/Unsubscribe').click()
+  >>> foobar_browser.getLink('Subscribe').click()
 
 Foo Bar can unsubscribe ubuntu-team, and ubuntu-team will no longer show
 up in the indirect subscriptions.

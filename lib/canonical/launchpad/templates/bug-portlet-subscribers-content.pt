@@ -15,15 +15,26 @@
         tal:condition="direct_subscriptions"
         tal:repeat="subscription direct_subscriptions"
       >
-        <a tal:condition="subscription/person/name|nothing"
-           tal:attributes="
-             href subscription/person/fmt:url;
-             title subscription/display_subscribed_by;
-           "
-        >
-          <tal:block replace="structure subscription/person/image:icon" />
-          <tal:block replace="subscription/person/fmt:displayname" />
-        </a>
+        <metal:subscriber  metal:define-macro="subscriber-row">
+
+            <a
+               tal:condition="subscription/person/name|nothing"
+               tal:attributes="
+                 href subscription/person/fmt:url;
+                 title subscription/display_subscribed_by;
+               "
+            >
+              <tal:block replace="structure subscription/person/image:icon" />
+              <tal:block replace="subscription/person/fmt:displayname" />
+            </a>
+            <a tal:condition="python: subscription.canBeUnsubscribedByUser(view.user)"
+               href="+subscribe"
+               tal:attributes="title string:Unsubscribe ${subscription/person/fmt:displayname};
+                               id string:unsubscribe-${subscription/person/name}">
+              <img src="/@@/remove" />
+            </a>
+
+        </metal:subscriber>
       </div>
       <div tal:condition="not:direct_subscriptions">None</div>
   </div>
@@ -34,15 +45,7 @@
   >
     <h2>From duplicates</h2>
     <div tal:repeat="subscription from_dupes_subscriptions">
-      <a tal:condition="subscription/person/name|nothing"
-         tal:attributes="
-           href subscription/person/fmt:url;
-           title subscription/display_subscribed_by;
-        "
-      >
-        <tal:block replace="structure subscription/person/image:icon" />
-        <tal:block replace="subscription/person/fmt:displayname" />
-      </a>
+      <metal:subscriber metal:use-macro="template/macros/subscriber-row" />
     </div>
   </div>
   <div

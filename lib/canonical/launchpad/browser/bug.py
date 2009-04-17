@@ -198,15 +198,8 @@ class BugContextMenu(ContextMenu):
             text = 'Unsubscribe'
             icon = 'remove'
         else:
-            for team in user.teams_participated_in:
-                if (self.context.bug.isSubscribed(team) or
-                    self.context.bug.isSubscribedToDupes(team)):
-                    text = 'Subscribe/Unsubscribe'
-                    icon = 'edit'
-                    break
-            else:
-                text = 'Subscribe'
-                icon = 'add'
+            text = 'Subscribe'
+            icon = 'add'
         return Link('+subscribe', text, icon=icon)
 
     def addsubscriber(self):
