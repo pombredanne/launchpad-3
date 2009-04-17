@@ -43,6 +43,10 @@ class MultiStepView(LaunchpadView):
     that subsequent views will need.
     """
 
+    # The total number of steps in this wizard.
+    total_steps = 0
+    step_number = 1
+
     @property
     def step_one(self):
         """Return the view class for the first step in the wizard.
@@ -65,10 +69,16 @@ class MultiStepView(LaunchpadView):
         # hidden widget unless we inject before calling initialize().
         view.injectStepNameInRequest()
         view.initialize()
+        view.step_number = self.step_number
+        view.total_steps = self.total_steps
+        self.step_number += 1
         while view.next_step is not None:
             view = view.next_step(self.context, self.request)
             assert isinstance(view, StepView), 'Not a StepView: %s' % view
             view.initialize()
+            view.step_number = self.step_number
+            view.total_steps = self.total_steps
+            self.step_number += 1
             view.injectStepNameInRequest()
         self.view = view
 
@@ -96,6 +106,10 @@ class StepView(LaunchpadFormView):
     step_name = ''
     main_action_label = u'Continue'
     next_step = None
+
+    # Step information.  These get filled in by the controller view.
+    step_number = None
+    total_steps = None
 
     # Define this here so it can be overridden in subclasses, if for some
     # crazy reason you need step names with vertical bars in them.

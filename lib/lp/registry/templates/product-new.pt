@@ -26,7 +26,43 @@
       </form>
     </div>
 
-    <div metal:use-macro="context/@@launchpad_form/form" />
+    <div metal:use-macro="context/@@launchpad_form/form">
+      <metal:step fill-slot="extra_info">
+      <h2 class="legend">Step <tal:step_number tal:replace="view/step_number"/>
+          (of <tal:total_steps tal:replace="view/total_steps"/>):
+          <tal:step_description tal:replace="view/step_description"/></h2>
+      </metal:step>
+
+      <metal:extra metal:fill-slot="extra_top">
+        <tal:search tal:condition="view/search_results_count">
+          <div style="font-size: larger"><em>
+          A search of existing registered projects found these
+          possible matches.  Is project
+          <tal:displayname tal:replace="view/request/displayname" />
+          (<tal:name  tal:replace="view/request/name" />)
+          one of these?
+          </em></div>
+
+          <table tal:define="results view/search_results"
+                 id="search-results">
+            <tbody>
+              <tr tal:repeat="pillar_name results"
+                  tal:replace="structure pillar_name/@@+listing-simple">
+              </tr>
+            </tbody>
+          </table>
+          <h2>Haven't found your project?</h2>
+        </tal:search>
+        <div style="font-size: larger"
+             tal:condition="python: view.step_number == 2">
+          Select the licenses for project
+          <tal:displayname tal:replace="view/request/displayname" />
+          (<tal:name  tal:replace="view/request/name" />)
+          and complete the registration.  If necessary, you may refine the
+          project's summary.
+        </div>
+      </metal:extra>
+    </div>
 
   </div>
 

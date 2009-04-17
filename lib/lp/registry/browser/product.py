@@ -108,6 +108,9 @@ from canonical.widgets.product import (
 from canonical.widgets.textwidgets import StrippedTextWidget
 
 
+OR = '|'
+
+
 class ProductNavigation(
     Navigation, BugTargetTraversalMixin,
     FAQTargetNavigationMixin, QuestionTargetTraversalMixin):
@@ -1482,6 +1485,8 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin):
     step_name = 'projectaddstep2'
     template = ViewPageTemplateFile('../templates/product-new.pt')
 
+    step_description = 'Project registration'
+
     product = None
 
     custom_widget('displayname', TextWidget, displayWidth=50, label='Name')
@@ -1517,7 +1522,32 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin):
                                      "this will be the project's URL.")
         self.widgets['displayname'].visible = False
 
-    @action(_('Publish this Project'), name='add')
+    @cachedproperty
+    def _search_string(self):
+        search_text = (self.request.form['name'] + ' ' +
+                       self.request.form['displayname'] + ' ' +
+                       self.request.form['summary'])
+        # OR all the terms together.
+        return OR.join(search_text.split())
+
+    @cachedproperty
+    def search_results(self):
+        """The full text search results.
+
+        Search the pillars for any match on the name, display name, or
+        summary.
+        """
+        # XXX BarryWarsaw 16-Apr-2009 do we need batching and should we return
+        # more than 7 hits?
+        pillar_set = getUtility(IPillarNameSet)
+        return pillar_set.search(self._search_string, 7)
+
+    @cachedproperty
+    def search_results_count(self):
+        pillar_set = getUtility(IPillarNameSet)
+        return pillar_set.count_search_matches(self._search_string)
+
+    @action(_('Register this Project'), name='add')
     def add_action(self, action, data):
         if self.user is None:
             raise zope.security.interfaces.Unauthorized(
@@ -1582,6 +1612,9 @@ class ProjectAddStepOne(StepView):
     custom_widget('displayname', TextWidget, displayWidth=50, label='Name')
     custom_widget('name', ProductNameWidget, label='URL')
 
+    step_description = 'Project basics'
+    search_results_count = 0
+
     def main_action(self, data):
         self.next_step = ProjectAddStepTwo
         self.request.form['displayname'] = data['displayname']
@@ -1591,6 +1624,8 @@ class ProjectAddStepOne(StepView):
 
 class ProductAddView(MultiStepView):
     """The controlling view for product/+new."""
+
+    total_steps = 2
 
     @property
     def step_one(self):
