@@ -68,8 +68,7 @@ def build_comments_from_chunks(chunks, bugtask, truncate=False):
             bug_message.remote_comment_id is not None)
 
     for bug_message in bugtask.bug.bug_messages:
-        message_id = bug_message.message.id
-        comments[message_id].visible = bug_message.visible
+        comments[bug_message.messageID].visible = bug_message.visible
 
     for comment in comments.values():
         # Once we have all the chunks related to a comment set up,
