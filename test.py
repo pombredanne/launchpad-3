@@ -162,7 +162,6 @@ from canonical.testing.customresult import (
     patch_zope_testresult,
     )
 from subunit import TestProtocolClient
-from bzrlib.tests import TextTestResult
 
 
 if __name__ == '__main__':
@@ -195,18 +194,6 @@ if __name__ == '__main__':
         patch_zope_testresult(TestProtocolClient(sys.stdout))
     testrunner.parser.add_option(
         '--subunit', action='callback', callback=use_subunit)
-
-    if '--bzr-progress' in args:
-        # XXX: provide a decent way of allowing the default result object.
-        # XXX: the summary for this is not being called.
-        import bzrlib.ui
-        bzrlib.ui.ui_factory = bzrlib.ui.make_ui_for_terminal(
-            sys.stdin, sys.stdout, sys.stderr)
-        # XXX: need to provide num_tests -- but don't know the number right
-        # here.
-        # XXX: layer summary junk screws up the progress bar.
-        result = TextTestResult(sys.stdout, False, 1)
-        patch_zope_testresult(result)
 
     options = testrunner.get_options(args=args, defaults=defaults)
 
