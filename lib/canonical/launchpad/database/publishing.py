@@ -519,35 +519,28 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         return [build for source, build, arch in result_set]
 
     @property
-    def changes_file_text(self):
+    def changes_file_url(self):
         """See `ISourcePackagePublishingHistory`."""
-        # Imported locally to avoid circular dependencies.
-        from canonical.launchpad.database.queue import (
-            PackageUpload, PackageUploadSource)
-        from canonical.launchpad.database.sourcepackagerelease import (
-            SourcePackageRelease)
+        results = getUtility(IPublishingSet).getChangesFilesForSources(
+            self)
 
-        store = Store.of(self)
-        results = store.find(
-            LibraryFileAlias,
-            PackageUpload.changesfile == LibraryFileAlias.id,
-            SourcePackageRelease.upload_distroseriesID ==
-                PackageUpload.distroseriesID,
-            PackageUploadSource.packageupload == PackageUpload.id,
-            PackageUploadSource.sourcepackagerelease ==
-                SourcePackageRelease.id,
-            SourcePackagePublishingHistory.sourcepackagerelease ==
-                SourcePackageRelease.id,
-            SourcePackagePublishingHistory.id == self.id)
-
-        changesfile = results.one()
-
-        if changesfile is None:
+        result = results.one()
+        if result is None:
             # This should not happen in practice, but the code should
             # not blow up because of bad data.
             return None
+        source, packageupload, spr, changesfile, lfc = result
         
-        return changesfile.read()
+        # Return a webapp-proxied LibraryFileAlias so that restricted
+        # librarian files are accessible.  Non-restricted files will get
+        # a 302 so that webapp threads are not tied up.
+
+        # Avoid circular imports.
+        from canonical.launchpad.browser.librarian import (
+            ProxiedLibraryFileAlias)
+
+        proxied_file = ProxiedLibraryFileAlias(changesfile, self.archive)
+        return proxied_file.http_url
 
     def createMissingBuilds(self, architectures_available=None,
                             pas_verify=None, logger=None):
