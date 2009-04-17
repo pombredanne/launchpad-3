@@ -69,16 +69,6 @@
   <metal:bug_reporting_guidelines
       use-macro="context/@@+filebug-macros/bug_reporting_guidelines" />
 
-  <tr>
-    <td colspan="2">
-      <fieldset class="collapsible collapsed">
-        <legend>Extra options</legend>
-        <metal:attachment-form
-            use-macro="context/@@bug-attachment-macros/attachment-form-bare" />
-      </fieldset>
-    </td>
-  </tr>
-
   <tr tal:define="security_context view/getSecurityContext">
     <td colspan="2" width="100%"
         tal:define="widget nocall: view/widgets/security_related">
@@ -114,6 +104,16 @@
           </tr>
         </tbody>
       </table>
+    </td>
+  </tr>
+
+  <tr>
+    <td colspan="2">
+      <fieldset class="collapsible collapsed">
+        <legend>Extra options</legend>
+        <metal:attachment-form
+            use-macro="context/@@bug-attachment-macros/attachment-form-bare" />
+      </fieldset>
     </td>
   </tr>
 
