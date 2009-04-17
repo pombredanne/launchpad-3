@@ -61,12 +61,12 @@ class MailingListsReviewView(LaunchpadFormView):
         for mailing_list in self.context.registered_lists:
             naked_team = removeSecurityProxy(mailing_list.team)
             list_info.append(dict(
-                # Use PersonFormatterAPI to avoid the redaction of team names
-                # and links.  The mailing list expert needs a non-redacted
-                # link, but the TeamFormatterAPI forces a permission check.
-                # Note that the MLE may still not have permission to follow
-                # the link, but that's a different issue and not one important
-                # enough to fix for now.
+                # Use PersonFormatterAPI so that private team names aren't
+                # redacted, which doesn't help a mailing list expert much.
+                # This just ensures that the team name is not redacted, even
+                # though the MLE may (still) not have permission to visit the
+                # team page via the link.  That's a different issue and not
+                # one important enough to fix for now.
                 team_link=PersonFormatterAPI(naked_team).link(None),
                 name=naked_team.name,
                 registrant=mailing_list.registrant,
