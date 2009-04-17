@@ -309,7 +309,7 @@ by any user.
     ...     name='foogoo', owner=sample_person)
     >>> foogoo_svn = factory.makeImportBranch(
     ...     name='foogoo-svn', product=foogoo, owner=sample_person)
-    >>> foogoo_svn.subscribe(sample_person,
+    >>> _unused = foogoo_svn.subscribe(sample_person,
     ...     BranchSubscriptionNotificationLevel.ATTRIBUTEONLY,
     ...     BranchSubscriptionDiffSize.NODIFF,
     ...     CodeReviewNotificationLevel.NOEMAIL)
@@ -340,8 +340,8 @@ set.
     >>> print extract_text(whiteboard_tag)
     New whiteboard value
 
-Even though there are no subscribers, the owner of the branch is notified
-that someone else has modified the details of the branch.
+The subscribers of the branch are notified that someone else has modified the
+details of the branch.
 
     >>> len(stub.test_emails)
     1
@@ -350,18 +350,17 @@ that someone else has modified the details of the branch.
     ...
     To: Sample Person <test@canonical.com>
     From: No Privileges Person <no-priv@canonical.com>
-    Subject: [Branch ~name12/gnome-terminal/main] GNOME Terminal Mainline
+    Subject: [Branch ~name12/foogoo/foogoo-svn]
     ...
-    Whiteboard changed to:
-    <BLANKLINE>
     New whiteboard value
     <BLANKLINE>
     --
-    GNOME Terminal Mainline
-    http://code.launchpad.dev/~name12/gnome-terminal/main
+    http://code.launchpad.dev/~name12/foogoo/foogoo-svn
     <BLANKLINE>
-    You are getting this email as you are the owner of the branch and someone h=
-    as edited the details.
+    You are subscribed to branch lp://dev/~name12/foogoo/foogoo-svn.
+    To unsubscribe from this branch go to http://code.launchpad.dev/~name12/foo=
+    goo/foogoo-svn/+edit-subscription.
+    <BLANKLINE>
 
 
 == Changing the branch owner ==
