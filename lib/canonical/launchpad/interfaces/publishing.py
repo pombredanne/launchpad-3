@@ -521,7 +521,7 @@ class ISourcePackagePublishingHistory(ISecureSourcePackagePublishingHistory):
 
     changes_file_url = exported(
         Text(
-            title=_("Changes File Text"),
+            title=_("Changes File URL"),
             description=_("A URL for this source publication's changes file "
                           "for the source upload.")))
 

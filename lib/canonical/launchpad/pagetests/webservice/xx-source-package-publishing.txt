@@ -88,8 +88,8 @@ publication to play with first.
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> from zope.component import getUtility
-    >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
-    >>> warty_series = ubuntu['warty']
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> warty_series = ubuntu.getSeries('warty')
     >>> cprov_ppa = getUtility(IPersonSet).getByName("cprov").archive
     >>> discard = stp.getPubSource(
     ...     archive=cprov_ppa, sourcename="testwebservice",
@@ -132,9 +132,8 @@ When Celso's PPA becomes private ...
 
     >>> login("foo.bar@canonical.com")
 
-    >>> cprov = getUtility(IPersonSet).getByName('cprov')
-    >>> cprov.archive.buildd_secret = 'boing'
-    >>> cprov.archive.private = True
+    >>> cprov_ppa.buildd_secret = 'boing'
+    >>> cprov_ppa.private = True
 
     >>> transaction.commit()
 

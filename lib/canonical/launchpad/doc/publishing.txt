@@ -1021,9 +1021,9 @@ The returned ResultSet element is tuple containing:
  * `LibraryFileAlias`;
  * `LibraryFileContent`.
 
-    >>> the_change = cprov_changes[0]
+    >>> a_change = cprov_changes[0]
 
-    >>> source_pub, upload, source, file, content = the_change
+    >>> source_pub, upload, source, file, content = a_change
 
     >>> print source_pub.displayname
     iceweasel 1.0 in warty

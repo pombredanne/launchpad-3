@@ -511,31 +511,14 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
     @property
     def changes_file_url(self):
         """See `ISourcePackagePublishingHistory`."""
-        # Imported locally to avoid circular dependencies.
-        from canonical.launchpad.database.queue import (
-            PackageUpload, PackageUploadSource)
-        from canonical.launchpad.database.sourcepackagerelease import (
-            SourcePackageRelease)
+        results = getUtility(IPublishingSet).getChangesFilesForSources(
+            self)
 
-        store = Store.of(self)
-        results = store.find(
-            LibraryFileAlias,
-            PackageUpload.changesfile == LibraryFileAlias.id,
-            SourcePackageRelease.upload_distroseriesID ==
-                PackageUpload.distroseriesID,
-            PackageUploadSource.packageupload == PackageUpload.id,
-            PackageUploadSource.sourcepackagerelease ==
-                SourcePackageRelease.id,
-            SourcePackagePublishingHistory.sourcepackagerelease ==
-                SourcePackageRelease.id,
-            SourcePackagePublishingHistory.id == self.id)
-
-        changesfile = results.one()
-
-        if changesfile is None:
+        if results.count() == 0:
             # This should not happen in practice, but the code should
             # not blow up because of bad data.
             return None
+        source, packageupload, spr, changesfile, lfc = results.one()
         
         # Return a webapp-proxied LibraryFileAlias so that restricted
         # librarian files are accessible.  Non-restricted files will get

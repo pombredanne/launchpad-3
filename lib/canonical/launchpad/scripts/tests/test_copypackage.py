@@ -1145,6 +1145,7 @@ class TestCopyPackage(TestCase):
             binaries = test_publisher.getPubBinaries(
                 pub_source=source, distroseries=warty, archive=archive,
                 pocket=pocket, status=PackagePublishingStatus.PUBLISHED)
+            self.layer.txn.commit()
             return source
 
         def create_bug(summary):
@@ -1154,17 +1155,6 @@ class TestCopyPackage(TestCase):
             [bug_task] = bug.bugtasks
             self.assertEqual(bug_task.status, BugTaskStatus.NEW)
             return bug.id
-
-        def create_upload(pub_source, changesfilecontent):
-            pub_source.sourcepackagerelease.changelog_entry = "Boing!"
-            queue_item = warty.createQueueEntry(
-                archive=pub_source.archive,
-                changesfilename='foo_source.changes',
-                pocket=pub_source.pocket,
-                changesfilecontent=changesfilecontent)
-            queue_item.addSource(pub_source.sourcepackagerelease)
-            queue_item.setDone()
-            self.layer.txn.commit()
 
         def publish_copies(copies):
             for pub in copies:
@@ -1186,7 +1176,6 @@ class TestCopyPackage(TestCase):
         proposed_source = create_source(
             '667', warty.main_archive, PackagePublishingPocket.PROPOSED,
             closing_bug_changesfile)
-        self.layer.txn.commit()
 
         copy_helper = self.getCopier(
             sourcename='buggy-source', include_binaries=True,
@@ -1207,7 +1196,6 @@ class TestCopyPackage(TestCase):
         dev_source = create_source(
             '668', warty.main_archive, PackagePublishingPocket.UPDATES,
             closing_bug_changesfile)
-        self.layer.txn.commit()
 
         copy_helper = self.getCopier(
             sourcename='buggy-source', include_binaries=True,
@@ -1228,7 +1216,6 @@ class TestCopyPackage(TestCase):
         ppa_source = create_source(
             '669', cprov.archive, PackagePublishingPocket.RELEASE,
             closing_bug_changesfile)
-        self.layer.txn.commit()
 
         copy_helper = self.getCopier(
             sourcename='buggy-source', include_binaries=True,
@@ -1249,7 +1236,6 @@ class TestCopyPackage(TestCase):
         release_source = create_source(
             '670', warty.main_archive, PackagePublishingPocket.RELEASE,
             closing_bug_changesfile)
-        self.layer.txn.commit()
 
         copy_helper = self.getCopier(
             sourcename='buggy-source', include_binaries=True,
