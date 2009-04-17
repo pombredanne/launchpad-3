@@ -21,9 +21,10 @@ from canonical.launchpad.scripts.base import (
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.distroseries import DistroSeriesStatus
 
-# XXX cprov 2009-04-16: Should leave in lp.registry.interfaces.distroseries.
-# It cannot be done right now because we haven't decided if
-# archivepublisher.debversion will be released as FOSS yet.
+# XXX cprov 2009-04-16: This function should live in
+# lp.registry.interfaces.distroseries. It cannot be done right now
+# because we haven't decided if archivepublisher.debversion will be
+# released as FOSS yet.
 def distroseries_sort_key(series):
     """Sort `DistroSeries` by version.
 
