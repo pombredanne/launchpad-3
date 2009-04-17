@@ -32,10 +32,19 @@ from canonical.archiveuploader.utils import (
     re_no_epoch, re_no_revision, re_valid_version, re_valid_pkg_name,
     re_extract_src_version)
 from canonical.encoding import guess as guess_encoding
-from canonical.launchpad.interfaces import (
-    ArchivePurpose, BinaryPackageFormat, BuildStatus, IComponentSet,
-    ISectionSet, IBuildSet, ILibraryFileAliasSet, IBinaryPackageNameSet,
-    PackagePublishingPriority, PackageUploadCustomFormat, PackageUploadStatus)
+from canonical.launchpad.interfaces.binarypackagename import (
+    IBinaryPackageNameSet)
+from canonical.launchpad.interfaces.binarypackagerelease import (
+    BinaryPackageFormat)
+from canonical.launchpad.interfaces.build import (
+    BuildStatus, IBuildSet)
+from canonical.launchpad.interfaces.component import IComponentSet
+from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+from canonical.launchpad.interfaces.package import (
+    PackageUploadCustomFormat, PackageUploadStatus)
+from canonical.launchpad.interfaces.publishing import (
+    PackagePublishingPriority)
+from canonical.launchpad.interfaces.section import ISectionSet
 from canonical.librarian.utils import filechunks
 
 
