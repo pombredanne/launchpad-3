@@ -85,8 +85,8 @@ class IBranchCreationPolicy(Interface):
         :return: A Boolean value.
         """
 
-    def areNewBranchesPrivate():
-        """Are new branches by the user created private?
+    def canBranchesBePrivate():
+        """Can branches by the user be private in this namespace?
 
         No check is made about whether or not a user can create branches.
 

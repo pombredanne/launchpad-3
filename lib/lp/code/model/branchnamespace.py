@@ -83,7 +83,8 @@ class _BaseNamespace:
             distroseries = sourcepackage.distroseries
             sourcepackagename = sourcepackage.sourcepackagename
 
-        private = self.areNewBranchesPrivate()
+        # If branches can be private, make them private initially.
+        private = self.canBranchesBePrivate()
 
         branch = Branch(
             registrant=registrant,
@@ -201,9 +202,9 @@ class _BaseNamespace:
         else:
             return True
 
-    def areNewBranchesPrivate(self):
+    def canBranchesBePrivate(self):
         """See `IBranchNamespace`."""
-        raise NotImplementedError(self.areNewBranchesPrivate)
+        raise NotImplementedError(self.canBranchesBePrivate)
 
     def getPrivacySubscriber(self):
         """See `IBranchNamespace`."""
@@ -238,7 +239,7 @@ class PersonalNamespace(_BaseNamespace):
         """See `IBranchNamespace`."""
         return '~%s/+junk' % (self.owner.name,)
 
-    def areNewBranchesPrivate(self):
+    def canBranchesBePrivate(self):
         """See `IBranchNamespace`."""
         return False
 
@@ -318,7 +319,7 @@ class ProductNamespace(_BaseNamespace):
         base_rule = self.product.getBaseBranchVisibilityRule()
         return base_rule == BranchVisibilityRule.PUBLIC
 
-    def areNewBranchesPrivate(self):
+    def canBranchesBePrivate(self):
         """See `IBranchNamespace`."""
         # If there is a rule for the namespace owner, use that.
         private = (
@@ -363,7 +364,7 @@ class PackageNamespace(_BaseNamespace):
         """See `IBranchNamespace`."""
         return IBranchTarget(self.sourcepackage)
 
-    def areNewBranchesPrivate(self):
+    def canBranchesBePrivate(self):
         """See `IBranchNamespace`."""
         return False
 

@@ -869,7 +869,7 @@ class TestProductNamespaceCanCreateBranches(TestCaseWithFactory,
             BranchVisibilityRule.PRIVATE_ONLY)
 
 
-class TestPersonalNamespaceAreNewBranchesPrivate(TestCaseWithFactory):
+class TestPersonalNamespaceCanBranchesBePrivate(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
@@ -877,10 +877,10 @@ class TestPersonalNamespaceAreNewBranchesPrivate(TestCaseWithFactory):
         # No +junk branches are private.
         person = self.factory.makePerson()
         namespace = PersonalNamespace(person)
-        self.assertFalse(namespace.areNewBranchesPrivate())
+        self.assertFalse(namespace.canBranchesBePrivate())
 
 
-class TestPackageNamespaceAreNewBranchesPrivate(TestCaseWithFactory):
+class TestPackageNamespaceCanBranchesBePrivate(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
@@ -889,10 +889,10 @@ class TestPackageNamespaceAreNewBranchesPrivate(TestCaseWithFactory):
         source_package = self.factory.makeSourcePackage()
         person = self.factory.makePerson()
         namespace = PackageNamespace(person, source_package)
-        self.assertFalse(namespace.areNewBranchesPrivate())
+        self.assertFalse(namespace.canBranchesBePrivate())
 
 
-class TestProductNamespaceAreNewBranchesPrivate(TestCaseWithFactory):
+class TestProductNamespaceCanBranchesBePrivate(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
@@ -906,12 +906,12 @@ class TestProductNamespaceAreNewBranchesPrivate(TestCaseWithFactory):
     def assertNewBranchesPublic(self, owner):
         # Assert that new branches in the owner namespace are public.
         namespace = self._getNamespace(owner)
-        self.assertFalse(namespace.areNewBranchesPrivate())
+        self.assertFalse(namespace.canBranchesBePrivate())
 
     def assertNewBranchesPrivate(self, owner):
         # Assert that new branches in the owner namespace are private.
         namespace = self._getNamespace(owner)
-        self.assertTrue(namespace.areNewBranchesPrivate())
+        self.assertTrue(namespace.canBranchesBePrivate())
 
     def test_no_policies(self):
         # If there are no defined policies, any personal branch is not
@@ -1155,7 +1155,7 @@ class BranchVisibilityPolicyTestCase(TestCaseWithFactory):
         :param owner: The person or team that will be the owner of the branch.
         """
         namespace = get_branch_namespace(owner, product=self.product)
-        self.assertFalse(namespace.areNewBranchesPrivate())
+        self.assertFalse(namespace.canBranchesBePrivate())
 
     def assertPrivateSubscriber(self, creator, owner, subscriber):
         """Assert that the policy check results in a private branch.
@@ -1166,7 +1166,7 @@ class BranchVisibilityPolicyTestCase(TestCaseWithFactory):
         """
         policy = IBranchCreationPolicy(
             get_branch_namespace(owner, product=self.product))
-        self.assertTrue(policy.areNewBranchesPrivate())
+        self.assertTrue(policy.canBranchesBePrivate())
         if subscriber is None:
             self.assertIs(None, policy.getPrivacySubscriber())
         else:
