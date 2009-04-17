@@ -7,9 +7,7 @@ __metaclass__ = type
 
 __all__ = [
     'IPackageset',
-    'IPackagesetRead',
     'IPackagesetSet',
-    'IPackagesetView',
     'PackagesetError',
     ]
 
@@ -31,7 +29,7 @@ class PackagesetError(Exception):
     '''
 
 
-class IPackagesetView(IHasOwner):
+class IPackagesetViewOnly(IHasOwner):
     """A read-only interface for package sets."""
 
     id = Int(title=_('ID'), required=True, readonly=True)
@@ -90,7 +88,7 @@ class IPackagesetView(IHasOwner):
         """Get source package names also included by another package set.
 
         What source package names does this package set have in common with
-        the 'other_package_set'?
+        the `other_package_set`?
 
         :param other_package_set: the other package set
         :param direct_inclusion: if this flag is set to True only directly
@@ -103,7 +101,7 @@ class IPackagesetView(IHasOwner):
         """Get source package names not included by another package set.
 
         Which source package names included by this package are *not*
-        included by the 'other_package_set'?
+        included by the `other_package_set`?
 
         :param other_package_set: the other package set
         :param direct_inclusion: if this flag is set to True only directly
@@ -139,7 +137,7 @@ class IPackagesetEdit(Interface):
         """
 
 
-class IPackageset(IPackagesetView, IPackagesetEdit):
+class IPackageset(IPackagesetViewOnly, IPackagesetEdit):
     """An interface for package sets."""
 
 

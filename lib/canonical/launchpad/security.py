@@ -2230,7 +2230,7 @@ class EditPackagesetSet(AuthorizationBase):
             error = AssertionError(
                 "'techboard' team is missing, has it been renamed?")
             info = (error.__class__, error, None)
-            globalErrorUtility = getUtility(IErrorReportingUtility)
-            globalErrorUtility.raising(info)
+            global_error_utility = getUtility(IErrorReportingUtility)
+            global_error_utility.raising(info)
             return False
         return user.inTeam(techboard)

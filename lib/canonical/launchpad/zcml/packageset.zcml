@@ -6,7 +6,7 @@
 
   <class class="canonical.launchpad.database.packageset.Packageset">
     <allow
-       interface="canonical.launchpad.interfaces.packageset.IPackagesetView" />
+       interface="canonical.launchpad.interfaces.packageset.IPackagesetViewOnly" />
     <require
        permission="launchpad.Edit"
        interface="canonical.launchpad.interfaces.packageset.IPackagesetEdit" />

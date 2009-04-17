@@ -65,7 +65,7 @@ just created.
 First associate *all* source package names with the umbrella package set.
 
     >>> all_spns = store.find(SourcePackageName)
-    >>> umbrella_ps.add(list(all_spns))
+    >>> umbrella_ps.add(all_spns)
 
 Let's see what we got:
 
@@ -100,7 +100,7 @@ set:
 
     >>> kernel_spns = store.find(
     ...     SourcePackageName, SourcePackageName.name.like('li%'))
-    >>> kernel_ps.add(list(kernel_spns))
+    >>> kernel_ps.add(kernel_spns)
     >>> kernel_spns = kernel_ps.sourcesIncluded(direct_inclusion=True)
     >>> print_data(kernel_spns)
     21 -> libstdc++
@@ -108,14 +108,14 @@ set:
 
 Adding source package names to a package set repeatedly has no effect.
 
-    >>> umbrella_ps.add((kernel_spns))
+    >>> umbrella_ps.add(kernel_spns)
     >>> umbrella_spns2 = umbrella_ps.sourcesIncluded(direct_inclusion=True)
     >>> sort_by_id(umbrella_spns) == sort_by_id(umbrella_spns2)
     True
 
 Removing source package names is easy.
 
-    >>> umbrella_ps.remove(list(kernel_spns))
+    >>> umbrella_ps.remove(kernel_spns)
     >>> reduced = umbrella_ps.sourcesIncluded(direct_inclusion=True)
     >>> sort_by_id(umbrella_spns) == sort_by_id(reduced + kernel_spns)
     True
@@ -123,14 +123,14 @@ Removing source package names is easy.
 Trying to remove source package names that are *not* associated with a
 package set from the latter has no effect.
 
-    >>> umbrella_ps.remove(list(kernel_spns))
+    >>> umbrella_ps.remove(kernel_spns)
     >>> (sort_by_id(reduced) ==
     ...  sort_by_id(umbrella_ps.sourcesIncluded(direct_inclusion=True)))
     True
 
 Add the removed source package names back to 'umbrella'.
 
-    >>> umbrella_ps.add(list(kernel_spns))
+    >>> umbrella_ps.add(kernel_spns)
 
 
 == Package set hierarchies ==
@@ -253,7 +253,7 @@ with source package names we'll "populate" the former.
     >>> def populate(packageset, pattern):
     ...     rs = store.find(
     ...         SourcePackageName, SourcePackageName.name.like(pattern))
-    ...     packageset.add(list(rs))
+    ...     packageset.add(rs)
 
     >>> populate(mozilla_ps, 'moz%a')
     >>> print_data(mozilla_ps.sourcesIncluded(direct_inclusion=True))
@@ -399,9 +399,6 @@ use, which enforces the user to be an admin or a member of the "techboard"
 
     >>> from zope.security.checker import canAccess
     >>> restricted_methods = ('new',)
-    >>> def checkAccess(true_or_false):
-    ...     for method in restricted_methods:
-    ...         assert(canAccess(ps_factory, method) == true_or_false)
 
 If, for some reason, the techboard team is missing, the security adapter
 will not allow access and generates an OOPS.
@@ -412,7 +409,8 @@ will not allow access and generates an OOPS.
     >>> login('js@example.com')
     >>> from zope.app.error.interfaces import IErrorReportingUtility
     >>> report = getUtility(IErrorReportingUtility).getLastOopsReport()
-    >>> checkAccess(False)
+    >>> canAccess(ps_factory, 'new')
+    False
     >>> report2 = getUtility(IErrorReportingUtility).getLastOopsReport()
     >>> print report.id == report2.id
     False
@@ -430,12 +428,14 @@ Set up the techboard team:
 Ordinary users have no access:
 
     >>> login('js@example.com')
-    >>> checkAccess(False)
+    >>> canAccess(ps_factory, 'new')
+    False
 
 Admins have access:
 
     >>> login("foo.bar@canonical.com")
-    >>> checkAccess(True)
+    >>> canAccess(ps_factory, 'new')
+    True
 
 Now add "test@canonical.com" to the techboard team and log in as him.
 
