@@ -7,7 +7,7 @@ __metaclass__ = type
 
 from sqlobject import ForeignKey
 from canonical.database.sqlbase import SQLBase
-from canonical.launchpad.validators.person import validate_public_person
+from lp.registry.interfaces.person import validate_public_person
 
 
 # This class is not currently in use. It is reserved for future

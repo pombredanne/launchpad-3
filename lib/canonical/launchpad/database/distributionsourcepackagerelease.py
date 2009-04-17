@@ -9,14 +9,20 @@ __all__ = [
     'DistributionSourcePackageRelease',
     ]
 
+from zope.component import getUtility
 from zope.interface import implements
+
+from storm.expr import Desc
 
 from canonical.launchpad.interfaces import(
     IDistributionSourcePackageRelease, ISourcePackageRelease)
 
 from canonical.database.sqlbase import sqlvalues
 
+from canonical.launchpad.database.archive import Archive
 from canonical.launchpad.database.binarypackagename import BinaryPackageName
+from canonical.launchpad.database.binarypackagerelease import (
+    BinaryPackageRelease)
 from canonical.launchpad.database.distroseriesbinarypackage import (
     DistroSeriesBinaryPackage)
 from canonical.launchpad.database.publishing import (
@@ -24,6 +30,9 @@ from canonical.launchpad.database.publishing import (
 from canonical.launchpad.database.build import Build
 from canonical.launchpad.database.publishing import \
     SourcePackagePublishingHistory
+from canonical.launchpad.interfaces.archive import MAIN_ARCHIVE_PURPOSES
+from canonical.launchpad.webapp.interfaces import (
+    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 
 from lazr.delegates import delegates
 
@@ -77,15 +86,49 @@ class DistributionSourcePackageRelease:
     @property
     def builds(self):
         """See IDistributionSourcePackageRelease."""
-        return Build.select("""
-            Build.sourcepackagerelease = %s AND
-            Build.distroarchseries = DistroArchSeries.id AND
-            DistroArchSeries.distroseries = DistroSeries.id AND
-            DistroSeries.distribution = %s
-            """ % sqlvalues(self.sourcepackagerelease.id,
-                            self.distribution.id),
-            orderBy='-datecreated',
-            clauseTables=['distroarchseries', 'distroseries'])
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+
+        # Import DistroArchSeries here to avoid circular imports.
+        from canonical.launchpad.database.distroarchseries import (
+            DistroArchSeries)
+        from lp.registry.model.distroseries import DistroSeries
+
+        # We want to return all the builds for this distribution that
+        # were built for a main archive together with the builds for this
+        # distribution that were built for a PPA but have been published
+        # in a main archive.
+        builds_for_distro_exprs = (
+            Build.sourcepackagerelease == self.sourcepackagerelease,
+            Build.distroarchseries == DistroArchSeries.id,
+            DistroArchSeries.distroseries == DistroSeries.id,
+            DistroSeries.distribution == self.distribution,
+            )
+
+        # First, get all the builds built in a main archive (this will
+        # include new and failed builds.)
+        builds_built_in_main_archives = store.find(
+            Build,
+            builds_for_distro_exprs,
+            Build.archive == Archive.id,
+            Archive.purpose.is_in(MAIN_ARCHIVE_PURPOSES))
+
+        # Next get all the builds that have a binary published in the
+        # main archive... this will include many of those in the above
+        # query, but not the new/failed ones. It will also include
+        # ppa builds that have been published in main archives.
+        builds_published_in_main_archives = store.find(
+            Build,
+            builds_for_distro_exprs,
+            BinaryPackageRelease.build == Build.id,
+            BinaryPackagePublishingHistory.binarypackagerelease ==
+                BinaryPackageRelease.id,
+            BinaryPackagePublishingHistory.archive == Archive.id,
+            Archive.purpose.is_in(MAIN_ARCHIVE_PURPOSES)).config(
+                distinct=True)
+
+        return builds_built_in_main_archives.union(
+            builds_published_in_main_archives).order_by(
+                Desc(Build.datecreated), Desc(Build.id))
 
     @property
     def binary_package_names(self):

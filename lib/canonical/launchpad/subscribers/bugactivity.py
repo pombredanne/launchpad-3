@@ -23,16 +23,7 @@ vocabulary_registry = getVocabularyRegistry()
 
 
 BUG_INTERESTING_FIELDS = [
-    'duplicateof',
     'name',
-    ]
-
-
-BUGTASK_INTERESTING_FIELDS = [
-    'assignee',
-    'bugwatch',
-    'milestone',
-    'target',
     ]
 
 
@@ -108,21 +99,11 @@ def record_bug_edited(bug_edited, sqlobject_modified_event):
     changes = what_changed(sqlobject_modified_event)
     for changed_field in changes:
         oldvalue, newvalue = changes[changed_field]
-        if changed_field == 'duplicateof':
-            if oldvalue is None and newvalue is not None:
-                whatchanged = 'marked as duplicate'
-            elif oldvalue is not None and newvalue is not None:
-                whatchanged = 'changed duplicate marker'
-            elif oldvalue is not None and newvalue is None:
-                whatchanged = 'removed duplicate marker'
-        else:
-            whatchanged = changed_field
-
         getUtility(IBugActivitySet).new(
             bug=bug_edited.id,
             datechanged=UTC_NOW,
             person=IPerson(sqlobject_modified_event.user),
-            whatchanged=whatchanged,
+            whatchanged=changed_field,
             oldvalue=oldvalue,
             newvalue=newvalue,
             message="")
@@ -146,62 +127,6 @@ def record_cve_unlinked_from_bug(bug_cve, event):
             when=None,
             person=IPerson(event.user),
             cve=bug_cve.cve))
-
-
-@block_implicit_flushes
-def record_bug_task_edited(bug_task_edited, sqlobject_modified_event):
-    """Make an activity note that a bug task was edited."""
-    # If the event was triggered by a web service named operation, its
-    # edited_fields will be empty. We'll need to check all fields to
-   # see which were actually changed.
-    sqlobject_modified_event.edited_fields = BUGTASK_INTERESTING_FIELDS
-    changes = what_changed(sqlobject_modified_event)
-    if changes:
-        task_title = ""
-        bug_task_before = sqlobject_modified_event.object_before_modification
-        if bug_task_edited.product:
-            if bug_task_before.product is None:
-                task_title = None
-            else:
-                task_title = bug_task_before.bugtargetname
-        else:
-            if bug_task_before.sourcepackagename is None:
-                task_title = None
-            else:
-                task_title = bug_task_before.bugtargetname
-        for changed_field in changes.keys():
-            oldvalue, newvalue = changes[changed_field]
-            if oldvalue is not None:
-                oldvalue = unicode(oldvalue)
-            if newvalue is not None:
-                newvalue = unicode(newvalue)
-            getUtility(IBugActivitySet).new(
-                bug=bug_task_edited.bug,
-                datechanged=UTC_NOW,
-                person=IPerson(sqlobject_modified_event.user),
-                whatchanged="%s: %s" % (task_title, changed_field),
-                oldvalue=oldvalue,
-                newvalue=newvalue)
-
-
-@block_implicit_flushes
-def record_product_task_edited(product_task_edited, sqlobject_modified_event):
-    # If the event was triggered by a web service named operation, its
-    # edited_fields will be empty. We'll need to check all fields to
-    # see which were actually changed.
-    sqlobject_modified_event.edited_fields = BUGTASK_INTERESTING_FIELDS
-    changes = what_changed(sqlobject_modified_event)
-    if changes:
-        product = sqlobject_modified_event.object_before_modification.product
-        for changed_field in changes.keys():
-            oldvalue, newvalue = changes[changed_field]
-            getUtility(IBugActivitySet).new(
-                bug=product_task_edited.bug,
-                datechanged=UTC_NOW,
-                person=IPerson(sqlobject_modified_event.user),
-                whatchanged="%s: %s" % (product.name, changed_field),
-                oldvalue=oldvalue,
-                newvalue=newvalue)
 
 
 @block_implicit_flushes

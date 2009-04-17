@@ -1,0 +1,86 @@
+= ProductRelease pages =
+
+Views that support the ProductRelease object.
+
+
+== Adding a product release ==
+
+A new ProductRelease can be created using ProductReleaseAddView.
+
+    >>> owner = factory.makePerson(name='app-owner')
+    >>> product = factory.makeProduct(name='app', owner=owner)
+    >>> series = factory.makeSeries(name='simple', product=product)
+    >>> milestone = series.newMilestone('0.1')
+    >>> print milestone.active
+    True
+
+The view explains what that the user is creating a release, and lists the
+other releases for the series. There are no other releases yet.
+
+    >>> login_person(owner)
+    >>> view = create_initialized_view(milestone, '+addrelease')
+    >>> print view.label
+    Create a new release for App
+
+The view creates a checkbox to allow the user to keep the milestone active,
+which is normally deactivated when a release is made.
+
+    >>> print view.widgets['keep_milestone_active'].hint
+    Only select this if bugs or blueprints still need to be targeted to this
+    project release's milestone.
+
+Submitting the form data creates the release and deactivates the milestone.
+
+    >>> form = {
+    ...     'field.datereleased': '2007-05-11',
+    ...     'field.release_notes': 'Initial release.',
+    ...     'field.changelog': 'commits',
+    ...     'field.actions.create': 'Create release',
+    ...     'field.keep_milestone_active.used': '', # false
+    ...     }
+    >>> view = create_initialized_view(milestone, '+addrelease', form=form)
+    >>> print view.errors
+    []
+    >>> print view.widget_errors
+    {}
+    >>> for notification in view.request.response.notifications:
+    ...     print notification.message
+    The <a href="http://launchpad.dev/app/+milestone/0.1">0.1 milestone</a>
+    for this project release was deactivated so that bugs and blueprints
+    cannot be associated with this release.
+    >>> print milestone.active
+    False
+    >>> for release in series.releases:
+    ...     print release.version, release.release_notes, release.datereleased
+    0.1 Initial release. 2007-05-11 00:00:00+00:00
+    >>> transaction.commit()
+
+Only one release can be created for the milestone.
+
+    >>> view = create_initialized_view(milestone, '+addrelease', form=form)
+    >>> for notice in view.request.response.notifications:
+    ...     print notice.message
+    A project release already exists for this milestone.
+
+
+== Editing a a product release ==
+
+A ProductRelease can be edited using the ProductReleaseEditView.
+
+    >>> release = series.getRelease('0.1')
+    >>> print release.release_notes
+    Initial release.
+
+    >>> form = {
+    ...     'field.datereleased': '2007-05-11',
+    ...     'field.release_notes': 'revised',
+    ...     'field.changelog': 'commits',
+    ...     'field.actions.change': 'Change',
+    ...     }
+    >>> view = create_initialized_view(release, '+edit', form=form)
+    >>> print view.errors
+    []
+    >>> print view.widget_errors
+    {}
+    >>> print release.release_notes
+    revised

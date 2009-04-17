@@ -20,7 +20,7 @@ of blueprints attached to Mozilla Firefox by following the "Blueprints" tab:
 
     >>> user_browser.open('http://launchpad.dev/firefox')
     >>> user_browser.getLink('Blueprints').click()
-    >>> main = find_main_content(user_browser.contents)  
+    >>> main = find_main_content(user_browser.contents)
     >>> print extract_text(main).encode('ascii', 'backslashreplace')
     Blueprints for Mozilla Firefox...
     Priority...Blueprint...Design  ...Delivery      ...
@@ -36,7 +36,7 @@ the blueprints page for 1.0:
 
     >>> user_browser.open('http://launchpad.dev/firefox/1.0')
     >>> user_browser.getLink('Blueprints').click()
-    >>> main = find_main_content(user_browser.contents)  
+    >>> main = find_main_content(user_browser.contents)
     >>> print extract_text(main).encode('ascii', 'backslashreplace')
     Blueprints for 1.0
     Launchpad lets projects track the features they intend to implement...
@@ -46,18 +46,18 @@ Let's target an existing Mozilla Firefox blueprint to the 1.0 series:
     >>> browser = admin_browser
     >>> browser.open('http://launchpad.dev/firefox/+specs')
     >>> browser.getLink('svg-support').click()
-    >>> main = find_main_content(browser.contents)  
+    >>> main = find_main_content(browser.contents)
     >>> print extract_text(main).encode('ascii', 'backslashreplace')
     Support Native SVG Objects...
     >>> browser.getLink('Propose as goal').click()
-    >>> main = find_main_content(browser.contents)  
+    >>> main = find_main_content(browser.contents)
     >>> print extract_text(main).encode('ascii', 'backslashreplace')
     Support Native SVG Objects
     Target to a product series...
     >>> series = browser.getControl('Series Goal')
     >>> series.displayValue = ['firefox 1.0']
     >>> browser.getControl('Continue').click()
-    >>> main = find_main_content(browser.contents)  
+    >>> main = find_main_content(browser.contents)
     >>> print extract_text(main).encode('ascii', 'backslashreplace')
     Support Native SVG Objects...
     Series goal: Accepted for 1.0...
@@ -65,45 +65,45 @@ Let's target an existing Mozilla Firefox blueprint to the 1.0 series:
 We'll also target the blueprint to a milestone. First we'll create a milestone:
 
     >>> browser.open('http://launchpad.dev/firefox/1.0')
-    >>> browser.getLink('Add milestone').click()
-    >>> browser.getControl('Name').value = '1.0.0'
+    >>> browser.getLink('Create milestone').click()
+    >>> browser.getControl('Name').value = '1.0.9'
     >>> browser.getControl('Date Targeted').value = '2050-05-05'
-    >>> browser.getControl('Description').value = 'First ever milestone!'
+    >>> browser.getControl('Summary').value = 'First ever milestone!'
     >>> browser.getControl('Register milestone').click()
 
 Now we'll target our chosen blueprint to the new milestone:
-    
+
     >>> browser.open('http://launchpad.dev/firefox/+specs')
     >>> browser.getLink('svg-support').click()
     >>> browser.getLink('Target milestone').click()
-    >>> main = find_main_content(browser.contents)  
+    >>> main = find_main_content(browser.contents)
     >>> print extract_text(main).encode('ascii', 'backslashreplace')
     Support Native SVG Objects
     Target to a milestone...
     >>> milestones = browser.getControl('Milestone')
-    >>> milestones.displayValue = ['Mozilla Firefox: 1.0.0']
+    >>> milestones.displayValue = ['Mozilla Firefox: 1.0.9']
     >>> browser.getControl('Change').click()
-    >>> main = find_main_content(browser.contents)  
+    >>> main = find_main_content(browser.contents)
     >>> print extract_text(main).encode('ascii', 'backslashreplace')
     Support Native SVG Objects...
-    Milestone target:...1.0.0...
- 
+    Milestone target:...1.0.9...
+
 Now the blueprint listing for the 1.0 series includes an entry for our chosen
 blueprint. It also lists the milestone to which the blueprint is targeted:
 
     >>> user_browser.open('http://launchpad.dev/firefox/1.0')
     >>> user_browser.getLink('Blueprints').click()
-    >>> main = find_main_content(user_browser.contents)  
+    >>> main = find_main_content(user_browser.contents)
     >>> print extract_text(main).encode('ascii', 'backslashreplace')
     Blueprints for 1.0...
     Priority...Blueprint...Design  ...Delivery...Assignee...Milestone...
-    High    ...svg-support  ...Approved...Beta    ...Carlos  ...1.0.0    ...
+    High    ...svg-support  ...Approved...Beta    ...Carlos  ...1.0.9    ...
 
 It's possible to navigate to the milestone directly:
 
-    >>> user_browser.getLink('1.0.0').click()
+    >>> user_browser.getLink('1.0.9').click()
     >>> print user_browser.title
-    Milestone 1.0.0 for Mozilla Firefox...
+    Milestone 1.0.9 for Mozilla Firefox...
 
 
 === Viewing blueprints targeted to a distribution ===
@@ -119,7 +119,7 @@ blueprints attached to Ubuntu Linux by following the "Blueprints" tab:
     Priority ...Blueprint        ...Design    ...Delivery...
     Undefined...media-integrity-check...Discussion...Unknown
 
-    
+
 === Viewing blueprints targeted to a distribution series ===
 
 As before, it's possible to narrow down the list of blueprints to show only
@@ -129,7 +129,7 @@ blueprints page for Grumpy:
 
     >>> user_browser.open('http://launchpad.dev/ubuntu/grumpy')
     >>> user_browser.getLink('Blueprints').click()
-    >>> main = find_main_content(user_browser.contents)  
+    >>> main = find_main_content(user_browser.contents)
     >>> print extract_text(main).encode('ascii', 'backslashreplace')
     Blueprints for Grumpy
     Launchpad lets projects track the features they intend to implement...
@@ -139,18 +139,18 @@ Let's target an existing Ubuntu blueprint to the Grumpy series:
     >>> browser = admin_browser
     >>> browser.open('http://launchpad.dev/ubuntu/+specs')
     >>> browser.getLink('media-integrity-check').click()
-    >>> main = find_main_content(browser.contents)  
+    >>> main = find_main_content(browser.contents)
     >>> print extract_text(main).encode('ascii', 'backslashreplace')
     CD Media Integrity Check...
     >>> browser.getLink('Propose as goal').click()
-    >>> main = find_main_content(browser.contents)  
+    >>> main = find_main_content(browser.contents)
     >>> print extract_text(main).encode('ascii', 'backslashreplace')
     CD Media Integrity Check
     Target to a distribution series...
     >>> series = browser.getControl('Series Goal')
     >>> series.displayValue = ['ubuntu grumpy']
     >>> browser.getControl('Continue').click()
-    >>> main = find_main_content(browser.contents)  
+    >>> main = find_main_content(browser.contents)
     >>> print extract_text(main).encode('ascii', 'backslashreplace')
     CD Media Integrity Check...
     Series goal: Accepted for grumpy...
@@ -158,12 +158,12 @@ Let's target an existing Ubuntu blueprint to the Grumpy series:
 We'll also target the blueprint to a milestone. First we'll create a milestone:
 
     >>> browser.open('http://launchpad.dev/ubuntu/grumpy/')
-    >>> browser.getLink('Add milestone').click()
+    >>> browser.getLink('Create milestone').click()
     >>> browser.getControl('Name').value = 'drift-1'
     >>> browser.getControl('Date Targeted').value = '2050-05-05'
-    >>> browser.getControl('Description').value = 'First drift of groundhogs!'
+    >>> browser.getControl('Summary').value = 'First drift of groundhogs!'
     >>> browser.getControl('Register milestone').click()
-    
+
 Now we'll target our chosen blueprint to the new milestone:
 
     >>> browser.open('http://launchpad.dev/ubuntu/+specs')
@@ -175,7 +175,7 @@ Now we'll target our chosen blueprint to the new milestone:
     >>> milestones = browser.getControl('Milestone')
     >>> milestones.displayValue = ['Ubuntu: drift-1']
     >>> browser.getControl('Change').click()
-    >>> main = find_main_content(browser.contents)  
+    >>> main = find_main_content(browser.contents)
     >>> print extract_text(main).encode('ascii', 'backslashreplace')
     CD Media Integrity Check...
     Milestone target:...drift-1...
@@ -185,7 +185,7 @@ blueprint. It also lists the milestone to which the blueprint is targeted:
 
     >>> user_browser.open('http://launchpad.dev/ubuntu/grumpy')
     >>> user_browser.getLink('Blueprints').click()
-    >>> main = find_main_content(user_browser.contents)  
+    >>> main = find_main_content(user_browser.contents)
     >>> print extract_text(main).encode('ascii', 'backslashreplace')
     Blueprints for Grumpy...
     Priority ...Blueprint        ...Design    ...Delivery...Milestone...

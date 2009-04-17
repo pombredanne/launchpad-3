@@ -13,6 +13,9 @@ from psycopg2.extensions import (
 import pytz
 import storm
 from storm.databases.postgres import compile as postgres_compile
+from storm.locals import Storm, Store
+from storm.zope.interfaces import IZStorm
+
 from sqlobject.sqlbuilder import sqlrepr
 import transaction
 
@@ -20,9 +23,11 @@ from twisted.python.util import mergeFunctionMetadata
 
 from zope.component import getUtility
 from zope.interface import implements
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.database.interfaces import ISQLBase
+
 
 __all__ = [
     'alreadyInstalledMsg',
@@ -150,16 +155,7 @@ class LaunchpadStyle(storm.sqlobject.SQLObjectStyle):
 
 
 class SQLBase(storm.sqlobject.SQLObjectBase):
-    """Base class to use instead of SQLObject/SQLOS.
-
-    Annoying hack to allow us to use SQLOS features in Zope, and plain
-    SQLObject outside of Zope.  ("Zope" in this case means the Zope 3 Component
-    Architecture, i.e. the basic suite of services should be accessible via
-    zope.component.getService)
-
-    By default, this will act just like SQLOS.  Use a
-    ZopelessTransactionManager object to disable all the tricksy
-    per-thread connection stuff that SQLOS does.
+    """Base class emulating SQLObject for legacy database classes.
     """
     implements(ISQLBase)
     _style = LaunchpadStyle()
@@ -168,9 +164,49 @@ class SQLBase(storm.sqlobject.SQLObjectBase):
     # SQLBase-derived objects missing an id.
     id = None
 
-    @staticmethod
-    def _get_store():
-        return _get_sqlobject_store()
+    def __init__(self, *args, **kwargs):
+        """Extended version of the SQLObjectBase constructor.
+        
+        We we force use of the the master Store.
+
+        We refetch any parameters from different stores from the
+        correct master Store.
+        """
+        from canonical.launchpad.interfaces import IMasterStore
+        store = IMasterStore(self.__class__)
+
+        # The constructor will fail if objects from a different Store
+        # are passed in. We need to refetch these objects from the correct
+        # master Store if necessary so the foreign key references can be
+        # constructed.
+        # XXX StuartBishop 2009-03-02 bug=336867: We probably want to remove
+        # this code - there are enough other places developers have to be
+        # aware of the replication # set boundaries. Why should
+        # Person(..., account=an_account) work but
+        # some_person.account = an_account fail?
+        for key, argument in kwargs.items():
+            argument = removeSecurityProxy(argument)
+            if not isinstance(argument, Storm):
+                continue
+            argument_store = Store.of(argument)
+            if argument_store is not store:
+                new_argument = store.find(
+                    argument.__class__, id=argument.id).one()
+                assert new_argument is not None, (
+                    '%s not yet synced to this store' % repr(argument))
+                kwargs[key] = new_argument
+                
+        store.add(self)
+        try:
+            self._create(None, **kwargs)
+        except:
+            store.remove(self)
+            raise
+
+    @classmethod
+    def _get_store(cls):
+        from canonical.launchpad.interfaces import IStore
+        return IStore(cls)
 
     def __repr__(self):
         # XXX jamesh 2008-05-09:
@@ -178,6 +214,37 @@ class SQLBase(storm.sqlobject.SQLObjectBase):
         # A number of the doctests rely on this formatting.
         return '<%s at 0x%x>' % (self.__class__.__name__, id(self))
 
+    def destroySelf(self):
+        from canonical.launchpad.interfaces import IMasterObject
+        my_master = IMasterObject(self)
+        if self is my_master:
+            super(SQLBase, self).destroySelf()
+        else:
+            my_master.destroySelf()
+
+    def __eq__(self, other):
+        """Equality operator.
+
+        Objects compare equal if:
+            - They are the same instance, or
+            - They have the same class and id, and the id is not None.
+
+        These rules allows objects retrieved from different stores to
+        compare equal. The 'is' comparison is to support newly created
+        objects that don't yet have an id (and by definition only exist
+        in the Master store).
+        """
+        naked_self = removeSecurityProxy(self)
+        naked_other = removeSecurityProxy(other)
+        return (
+            (naked_self is naked_other)
+            or (naked_self.__class__ == naked_other.__class__
+                and naked_self.id is not None
+                and naked_self.id == naked_other.id))
+
+    def __ne__(self, other):
+        """Inverse of __eq__."""
+        return not (self == other)
 
 alreadyInstalledMsg = ("A ZopelessTransactionManager with these settings is "
 "already installed.  This is probably caused by calling initZopeless twice.")
@@ -513,11 +580,7 @@ quoteIdentifier = quote_identifier # Backwards compatibility for now.
 
 
 def flush_database_updates():
-    """Flushes all pending database updates for the MAIN DEFAULT store.
-
-    We only bother with the MAIN DEFAULT store as this is all that is needed
-    for the SQLObject compatibility layer. Storm aware code should be using
-    the Storm stores directly.
+    """Flushes all pending database updates.
 
     When SQLObject's _lazyUpdate flag is set, then it's possible to have
     changes written to objects that aren't flushed to the database, leading to
@@ -539,12 +602,13 @@ def flush_database_updates():
         assert Beer.select("name LIKE 'Vic%'").count() == 0  # This will pass
 
     """
-    _get_sqlobject_store().flush()
+    zstorm = getUtility(IZStorm)
+    for name, store in zstorm.iterstores():
+        store.flush()
 
 
 def flush_database_caches():
-    """Flush all cached values from the database for the current connection.
-    SQLObject compatibility - DEPRECATED.
+    """Flush all database caches.
 
     SQLObject caches field values from the database in SQLObject
     instances.  If SQL statements are issued that change the state of
@@ -555,9 +619,10 @@ def flush_database_caches():
     connection's cache, and synchronises them with the database.  This
     ensures that they all reflect the values in the database.
     """
-    store = _get_sqlobject_store()
-    store.flush()
-    store.invalidate()
+    zstorm = getUtility(IZStorm)
+    for name, store in zstorm.iterstores():
+        store.flush()
+        store.invalidate()
 
 
 def block_implicit_flushes(func):

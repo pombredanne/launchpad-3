@@ -14,8 +14,6 @@
       registerLaunchpadFunction(insertAllExpansionButtons);
 
       YUI().use('node', 'cookie', 'anim', function(Y) {
-          var dismiss_notice_cookie = ('translation-docs-for-' +
-                                       documentation_cookie);
 
           var hide_notification = function(node) {
               var hide_anim = new Y.Anim({
@@ -35,6 +33,8 @@
           var updateNotificationBox = function(e) {
               var notice = Y.get('.important-notice-container');
               var balloon = notice.query('.important-notice-balloon');
+              var dismiss_notice_cookie = ('translation-docs-for-' +
+                                           documentation_cookie);
 
               // Check the cookie to see if the user has already dismissed
               // the notification box for this session.
@@ -64,6 +64,9 @@
             tal:content="string:var documentation_cookie =
                             '${view/translation_group/name}' + '_'  +
                             '${context/language/code}';" />
+      <script type="text/javascript"
+            tal:condition="not:view/translation_group"
+            tal:content="string:var documentation_cookie = 'others';" />
       <div>
         <a tal:attributes="href context/potemplate/fmt:url"
            tal:content="context/potemplate/title">

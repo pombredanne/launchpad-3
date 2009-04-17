@@ -37,7 +37,7 @@ from canonical.launchpad.database.archiveauthtoken import ArchiveAuthToken
 from canonical.launchpad.database.archivesubscriber import (
     ArchiveSubscriber)
 from canonical.launchpad.database.build import Build
-from canonical.launchpad.database.distributionsourcepackagecache import (
+from lp.registry.model.distributionsourcepackagecache import (
     DistributionSourcePackageCache)
 from canonical.launchpad.database.distroseriespackagecache import (
     DistroSeriesPackageCache)
@@ -51,7 +51,7 @@ from canonical.launchpad.database.publishing import (
     SourcePackagePublishingHistory, BinaryPackagePublishingHistory)
 from canonical.launchpad.database.queue import (
     PackageUpload, PackageUploadSource)
-from canonical.launchpad.database.teammembership import TeamParticipation
+from lp.registry.model.teammembership import TeamParticipation
 from canonical.launchpad.interfaces.archive import (
     ArchiveDependencyError, ArchivePurpose, DistroSeriesNotFound,
     IArchive, IArchiveSet, IDistributionArchive, IPPA, MAIN_ARCHIVE_PURPOSES,
@@ -66,7 +66,7 @@ from canonical.launchpad.interfaces.build import (
     BuildStatus, IBuildSet)
 from canonical.launchpad.interfaces.buildrecords import IHasBuildRecords
 from canonical.launchpad.interfaces.component import IComponentSet
-from canonical.launchpad.interfaces.distroseries import IDistroSeriesSet
+from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from canonical.launchpad.interfaces.launchpad import (
     IHasOwner, ILaunchpadCelebrities, NotFoundError)
 from canonical.launchpad.interfaces.package import PackageUploadStatus
@@ -74,7 +74,7 @@ from canonical.launchpad.interfaces.packagecopyrequest import (
     IPackageCopyRequestSet)
 from canonical.launchpad.interfaces.publishing import (
     PackagePublishingPocket, PackagePublishingStatus, IPublishingSet)
-from canonical.launchpad.interfaces.sourcepackagename import (
+from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageNameSet)
 from canonical.launchpad.scripts.packagecopier import (
     CannotCopy, check_copy, do_copy)
@@ -82,7 +82,7 @@ from canonical.launchpad.webapp.interfaces import (
         IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from canonical.launchpad.webapp.url import urlappend
 from canonical.launchpad.validators.name import valid_name
-from canonical.launchpad.validators.person import validate_public_person
+from lp.registry.interfaces.person import validate_public_person
 
 
 class Archive(SQLBase):
@@ -107,6 +107,8 @@ class Archive(SQLBase):
     name = StringCol(
         dbName='name', notNull=True, storm_validator=_validate_archive_name)
 
+    displayname = StringCol(dbName='displayname', notNull=True)
+
     description = StringCol(dbName='description', notNull=False, default=None)
 
     distribution = ForeignKey(
@@ -126,8 +128,6 @@ class Archive(SQLBase):
 
     authorized_size = IntCol(
         dbName='authorized_size', notNull=False, default=1024)
-
-    whiteboard = StringCol(dbName='whiteboard', notNull=False, default=None)
 
     sources_cached = IntCol(
         dbName='sources_cached', notNull=False, default=0)
@@ -183,30 +183,6 @@ class Archive(SQLBase):
     def is_main(self):
         """See `IArchive`."""
         return self.purpose in MAIN_ARCHIVE_PURPOSES
-
-    @property
-    def displayname(self):
-        """See `IArchive`."""
-        if self.is_ppa:
-            if self.name == default_name_by_purpose.get(ArchivePurpose.PPA):
-                displayname = 'PPA for %s' % self.owner.displayname
-            else:
-                displayname = 'PPA named %s for %s' % (
-                    self.name, self.owner.displayname)
-            if self.private:
-                displayname = "Private %s" % displayname
-            return displayname
-
-        if self.is_copy:
-            if self.private:
-                displayname = "Private copy archive %s for %s" % (
-                    self.name, self.owner.displayname)
-            else:
-                displayname = "Copy archive %s for %s" % (
-                    self.name, self.owner.displayname)
-            return displayname
-
-        return '%s for %s' % (self.purpose.title, self.distribution.title)
 
     @property
     def series_with_sources(self):
@@ -1229,14 +1205,44 @@ class ArchiveSet:
             Archive.purpose != %s
             """ % sqlvalues(distribution, name, ArchivePurpose.PPA))
 
-    def new(self, purpose, owner, name=None, distribution=None,
-            description=None):
+    def _getDefaultDisplayname(self, name, owner, distribution, purpose):
+        """See `IArchive`."""
+        if purpose == ArchivePurpose.PPA:
+            if name == default_name_by_purpose.get(purpose):
+                displayname = 'PPA for %s' % owner.displayname
+            else:
+                displayname = 'PPA named %s for %s' % (
+                    name, owner.displayname)
+            return displayname
+
+        if purpose == ArchivePurpose.COPY:
+            displayname = "Copy archive %s for %s" % (
+                name, owner.displayname)
+            return displayname
+
+        return '%s for %s' % (purpose.title, distribution.title)
+
+    def new(self, purpose, owner, name=None, displayname=None,
+            distribution=None, description=None, enabled=True,
+            require_virtualized=True):
         """See `IArchiveSet`."""
         if distribution is None:
             distribution = getUtility(ILaunchpadCelebrities).ubuntu
 
         if name is None:
             name = self._getDefaultArchiveNameByPurpose(purpose)
+
+        # Deny Archives names equal their distribution names. This conflict
+        # results in archives with awkward repository URLs
+        if name == distribution.name:
+            raise AssertionError(
+                'Archives cannot have the same name as their distribution.')
+
+        # If displayname is not given, create a default one.
+        if displayname is None:
+            displayname = self._getDefaultDisplayname(
+                name=name, owner=owner, distribution=distribution,
+                purpose=purpose)
 
         # Copy archives are to be instantiated with the 'publish' flag turned
         # off.
@@ -1264,9 +1270,19 @@ class ArchiveSet:
                     "Person '%s' already has a PPA named '%s'." %
                     (owner.name, name))
 
-        return Archive(
+        # Signing-key for the default PPA is reused when it's already present.
+        signing_key = None
+        if purpose == ArchivePurpose.PPA and owner.archive is not None:
+            signing_key = owner.archive.signing_key
+
+        new_archive = Archive(
             owner=owner, distribution=distribution, name=name,
-            description=description, purpose=purpose, publish=publish)
+            displayname=displayname, description=description,
+            purpose=purpose, publish=publish, signing_key=signing_key,
+            enabled=enabled, require_virtualized=require_virtualized)
+
+        return new_archive
+
 
     def __iter__(self):
         """See `IArchiveSet`."""

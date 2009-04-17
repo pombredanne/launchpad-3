@@ -33,17 +33,17 @@
 
     <browser:page
         for="canonical.launchpad.interfaces.ILoginToken"
-        name="+validateemail"
+        name="+resetpassword"
         permission="zope.Public"
-        class="canonical.launchpad.browser.ValidateEmailView"
-        template="../templates/logintoken-validateemail.pt"
+        class="canonical.launchpad.browser.logintoken.ResetPersonPasswordView"
+        template="../templates/logintoken-resetpassword.pt"
         />
 
     <browser:page
         for="canonical.launchpad.interfaces.ILoginToken"
         name="+validateteamemail"
         permission="zope.Public"
-        class="canonical.launchpad.browser.ValidateEmailView"
+        class="canonical.launchpad.browser.logintoken.ValidateTeamEmailView"
         template="../templates/logintoken-validateteamemail.pt"
         />
 
@@ -61,14 +61,6 @@
         permission="zope.Public"
         class="canonical.launchpad.browser.ValidateGPGKeyView"
         template="../templates/logintoken-validatesignonlygpg.pt"
-        />
-
-    <browser:page
-        for="canonical.launchpad.interfaces.ILoginToken"
-        name="+resetpassword"
-        permission="zope.Public"
-        class="canonical.launchpad.browser.ResetPasswordView"
-        template="../templates/logintoken-resetpassword.pt"
         />
 
     <browser:page
@@ -92,14 +84,6 @@
         permission="launchpad.AnyPerson"
         class="canonical.launchpad.browser.ClaimTeamView"
         template="../templates/logintoken-claimteam.pt" />
-
-    <browser:page
-        name="+newaccount"
-        for="canonical.launchpad.interfaces.ILoginToken"
-        class="canonical.launchpad.browser.NewAccountView"
-        permission="zope.Public"
-        template="../templates/logintoken-newaccount.pt"
-        />
 
     <browser:page
         name="+bugtracker-handshake"

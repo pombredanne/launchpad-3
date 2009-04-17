@@ -18,10 +18,10 @@ from canonical.config import config
 from canonical.launchpad.database.publishing import (
     SecureSourcePackagePublishingHistory,
     SecureBinaryPackagePublishingHistory)
-from canonical.launchpad.interfaces.distribution import IDistributionSet
+from lp.registry.interfaces.distribution import IDistributionSet
 from canonical.launchpad.interfaces.publishing import (
     PackagePublishingStatus, active_publishing_status)
-from canonical.launchpad.interfaces.person import IPersonSet
+from lp.registry.interfaces.person import IPersonSet
 from canonical.launchpad.scripts import FakeLogger
 from canonical.launchpad.scripts.ftpmaster import (
     SoyuzScriptError, PackageRemover)

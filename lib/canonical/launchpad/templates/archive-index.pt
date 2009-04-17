@@ -69,7 +69,7 @@ function dispatchUpdate () {
 
     var container = Y.get('#package_counters div');
     container.set('innerHTML', '');
-    container.appendChild(in_progress_message)
+    container.appendChild(in_progress_message);
 
     var uri = '+repository-size';
     var xhr_config = {
@@ -134,15 +134,6 @@ div#package_counters p {
           condition="link/enabled"
           replace="structure link/render" />
       </div>
-
-      <tal:whiteboard condition="context/required:launchpad.Edit">
-         <div id="whiteboard" class="informational"
-              tal:condition="context/whiteboard">
-           <p><tal:archive_label replace="archive_label" /> whiteboard:</p>
-           <tal:archive-whiteboard
-              replace="structure context/whiteboard/fmt:text-to-html" />
-         </div>
-      </tal:whiteboard>
 
       <div tal:define="archive context"
            tal:condition="archive_active"
