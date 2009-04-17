@@ -206,6 +206,10 @@ class _BaseNamespace:
         """See `IBranchNamespace`."""
         raise NotImplementedError(self.canBranchesBePrivate)
 
+    def canBranchesBePublic(self):
+        """See `IBranchNamespace`."""
+        raise NotImplementedError(self.canBranchesBePublic)
+
     def getPrivacySubscriber(self):
         """See `IBranchNamespace`."""
         raise NotImplementedError(self.getPrivacySubscriber)
@@ -242,6 +246,10 @@ class PersonalNamespace(_BaseNamespace):
     def canBranchesBePrivate(self):
         """See `IBranchNamespace`."""
         return False
+
+    def canBranchesBePublic(self):
+        """See `IBranchNamespace`."""
+        return True
 
     def getPrivacySubscriber(self):
         """See `IBranchNamespace`."""
@@ -332,6 +340,21 @@ class ProductNamespace(_BaseNamespace):
         # PRIVATE_ONLY rule, then the branches are private.
         return len(self._getRelatedPrivatePolicies()) > 0
 
+    def canBranchesBePublic(self):
+        """See `IBranchNamespace`."""
+        # If there is an explicit rule for the namespace owner, use that.
+        rule = self.product.getBranchVisibilityRuleForTeam(self.owner)
+        if rule is not None:
+            return rule != BranchVisibilityRule.PRIVATE_ONLY
+        # If there is another policy that allows public, then branches can be
+        # public.
+        for policy in self._getRelatedPolicies():
+            if policy.rule != BranchVisibilityRule.PRIVATE_ONLY:
+                return True
+        # If the default is public, then we can have public branches.
+        base_rule = self.product.getBaseBranchVisibilityRule()
+        return base_rule == BranchVisibilityRule.PUBLIC
+
 
 class PackageNamespace(_BaseNamespace):
     """A namespace for source package branches.
@@ -367,6 +390,10 @@ class PackageNamespace(_BaseNamespace):
     def canBranchesBePrivate(self):
         """See `IBranchNamespace`."""
         return False
+
+    def canBranchesBePublic(self):
+        """See `IBranchNamespace`."""
+        return True
 
     def getPrivacySubscriber(self):
         """See `IBranchNamespace`."""
