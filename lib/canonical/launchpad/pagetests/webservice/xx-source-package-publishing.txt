@@ -1,7 +1,4 @@
-=========================
-Source Package Publishing
-=========================
-
+===========================
 Finding source publications
 ===========================
 
@@ -22,9 +19,9 @@ We need to insert some dependent fake data before continuing.
     ...     cprov_archive['self_link'], 'getPublishedSources').jsonBody()
 
     >>> def print_publications(pubs):
-    ...     for displayname in sorted(
-    ...         entry['displayname'] for entry in pubs['entries']):
-    ...         print displayname
+    ...     for display_name in sorted(
+    ...         entry['display_name'] for entry in pubs['entries']):
+    ...         print display_name
 
     >>> print_publications(pubs)
     cdrkit 1.0 in breezy-autotest
@@ -106,18 +103,18 @@ publication to play with first.
     archive_link: u'http://.../~cprov/+archive/ppa'
     changes_file_url: u'http://launchpad.dev/~cprov/+archive/ppa/+files/testwebservice_666_source.changes'
     component_name: u'main'
-    datecreated: ...
-    datemadepending: None
-    datepublished: None
-    dateremoved: None
-    datesuperseded: None
-    displayname: u'testwebservice 666 in warty'
-    distroseries_link: u'http://.../ubuntu/warty'
+    date_created: ...
+    date_made_pending: None
+    date_published: None
+    date_removed: None
+    date_superseded: None
+    display_name: u'testwebservice 666 in warty'
+    distro_series_link: u'http://.../ubuntu/warty'
     pocket: u'Release'
     removal_comment: None
     removed_by_link: None
     resource_type_link: u'http://.../#source_package_publishing_history'
-    scheduleddeletiondate: None
+    scheduled_deletion_date: None
     section_name: u'base'
     self_link: u'http://.../~cprov/+archive/ppa/+sourcepub/...'
     source_package_name: u'testwebservice'

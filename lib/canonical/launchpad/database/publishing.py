@@ -391,6 +391,16 @@ class ArchivePublisherBase:
         """See `IArchivePublisher`."""
         return datetime.now(pytz.timezone('UTC')) - self.datecreated
 
+    @property
+    def component_name(self):
+        """See `ISourcePackagePublishingHistory`"""
+        return self.component.name
+
+    @property
+    def section_name(self):
+        """See `ISourcePackagePublishingHistory`"""
+        return self.section.name
+
 
 class IndexStanzaFields:
     """Store and format ordered Index Stanza fields."""
@@ -649,16 +659,6 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         return self.sourcepackagerelease.version
 
     @property
-    def component_name(self):
-        """See `ISourcePackagePublishingHistory`"""
-        return self.component.name
-
-    @property
-    def section_name(self):
-        """See `ISourcePackagePublishingHistory`"""
-        return self.section.name
-
-    @property
     def displayname(self):
         """See `IPublishing`."""
         release = self.sourcepackagerelease
@@ -806,6 +806,21 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
 
         return BinaryPackageFilePublishing.selectBy(
             binarypackagepublishing=self).prejoin(preJoins)
+
+    @property
+    def binary_package_name(self):
+        """See `ISourcePackagePublishingHistory`"""
+        return self.binarypackagerelease.name
+
+    @property
+    def binary_package_version(self):
+        """See `ISourcePackagePublishingHistory`"""
+        return self.binarypackagerelease.version
+
+    @property
+    def priority_name(self):
+        """See `ISourcePackagePublishingHistory`"""
+        return self.priority.name
 
     @property
     def displayname(self):
@@ -1004,12 +1019,16 @@ class PublishingSet:
 
         return result_set
 
-    def getByIdAndArchive(self, id, archive):
+    def getByIdAndArchive(self, id, archive, source=True):
         """See `IPublishingSet`."""
+        if source:
+            baseclass = SourcePackagePublishingHistory
+        else:
+            baseclass = BinaryPackagePublishingHistory
         return Store.of(archive).find(
-            SourcePackagePublishingHistory,
-            SourcePackagePublishingHistory.id == id,
-            SourcePackagePublishingHistory.archive == archive.id)
+            baseclass,
+            baseclass.id == id,
+            baseclass.archive == archive.id)
 
     def _extractIDs(self, one_or_more_source_publications):
         """Return a list of database IDs for the given list or single object.
