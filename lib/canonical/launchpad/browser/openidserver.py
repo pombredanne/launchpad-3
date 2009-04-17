@@ -505,6 +505,10 @@ class OpenIDView(OpenIDMixin, LaunchpadView):
         if self.account is None or not self.isIdentityOwner():
             return False
 
+        # Sites set to auto authorize are always authorized.
+        if self.rpconfig is not None and self.rpconfig.auto_authorize:
+            return True
+
         client_id = getUtility(IClientIdManager).getClientId(self.request)
         auth_set = getUtility(IOpenIDAuthorizationSet)
 

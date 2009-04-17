@@ -200,6 +200,9 @@ normally wouldn't have permission to view the team.
 The mailing list expert can still approve this request.
 
     >>> browser.open('http://launchpad.dev/+mailinglists')
+    >>> mailinglists_helper.print_review_table(browser.contents)
+    App Dec Hol Team                         Requester
+    ( ) ( ) (*) Test Six <.../~test-six>     Foo Bar... <.../~name16>
     >>> browser.getControl(name='field.test-six').value = ['approve']
     >>> browser.getControl('Submit').click()
 
