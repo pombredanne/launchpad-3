@@ -7,17 +7,18 @@ import pytz
 
 from storm.expr import In, SQL
 from storm.locals import DateTime, Int, Reference, Storm, Unicode
+from storm.store import Store
 
 from zope.component import getUtility
 from zope.interface import implements
-from zope.security.proxy import removeSecurityProxy
+from zope.security.proxy import isinstance as zope_isinstance
 
+from lp.registry.interfaces.sourcepackagename import ISourcePackageName
 from lp.registry.model.sourcepackagename import SourcePackageName
-from canonical.launchpad.interfaces import IStore
+
+from canonical.launchpad.interfaces import IMasterStore, IStore
 from canonical.launchpad.interfaces.packageset import (
     IPackageset, IPackagesetSet, PackagesetError)
-from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
 
 
 def _extract_type_name(value):
@@ -42,45 +43,38 @@ class Packageset(Storm):
 
     def add(self, data):
         """See `IPackageset`."""
-        handlers = dict((
-            (SourcePackageName, self._addSourcePackageNames),
-            (Packageset, self._addDirectSuccessors)))
-        self._add_or_remove(data, handlers, 'add')
+        handlers = (
+            (ISourcePackageName, self._addSourcePackageNames),
+            (IPackageset, self._addDirectSuccessors))
+        self._add_or_remove(data, handlers)
 
     def remove(self, data):
         """See `IPackageset`."""
-        handlers = dict((
-            (SourcePackageName, self._removeSourcePackageNames),
-            (Packageset, self._removeDirectSuccessors)))
-        self._add_or_remove(data, handlers, 'remove')
+        handlers = (
+            (ISourcePackageName, self._removeSourcePackageNames),
+            (IPackageset, self._removeDirectSuccessors))
+        self._add_or_remove(data, handlers)
 
-    def _add_or_remove(self, data, types_and_handlers, action_name):
+    def _add_or_remove(self, data, handlers):
         """Add or remove source package names or package sets from this one.
 
-        :param data: an iterable with `SourcePackageName` XOR `Packageset`
+        :param data: an iterable with `ISourcePackageName` XOR `IPackageset`
             instances
-        :param types_and_handlers: a dict whose keys are valid types for
+        :param handlers: a dict whose keys are valid types for
             the 'data' passed and the values are the handlers to invoke
             respectively.
-        :param action_name: needed for the exception text; 'add' or 'remove'.
         """
-        if len(data) <= 0:
-            return
-
-        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
-        datum = removeSecurityProxy(data[0])
-        for data_type, handler in types_and_handlers.iteritems():
-            if isinstance(datum, data_type):
-                # The type matches, call the corresponding handler and
-                # exit the loop.
-                handler(data, store)
-                break
-        else:
-            # The loop was not exited via a 'break'. This must be an
-            # unsupported data type.
-            raise(
-                PackagesetError("Package set: cannot %s data of type '%s'."
-                % (action_name, _extract_type_name(datum))))
+        store = IMasterStore(Packageset)
+        if not isinstance(data, (list, tuple)):
+            data = list(data)
+        count = len(data)
+        for iface, handler in handlers:
+            iface_data = [datum for datum in data if iface.providedBy(datum)]
+            if len(iface_data) > 0:
+                handler(iface_data, store)
+                count -= len(iface_data)
+        if count != 0:
+            raise AssertionError("Not all data was handled.")
 
     def _addSourcePackageNames(self, spns, store):
         """Add the given source package names to the package set.
@@ -137,7 +131,7 @@ class Packageset(Storm):
                 SELECT pss.sourcepackagename FROM packagesetsources pss
                 WHERE pss.packageset = ?
             '''
-        store = IStore(SourcePackageName)
+        store = Store.of(self)
         spns = SQL(spn_query, (self.id,))
         return list(
             store.find(SourcePackageName, In(SourcePackageName.id, spns)))
@@ -159,7 +153,7 @@ class Packageset(Storm):
                 WHERE psi.child = ?
             '''
             params = (self.id,)
-        store = IStore(Packageset)
+        store = Store.of(self)
         predecessors = SQL(query, params)
         return list(store.find(Packageset, In(Packageset.id, predecessors)))
 
@@ -180,7 +174,7 @@ class Packageset(Storm):
                 WHERE psi.parent = ?
             '''
             params = (self.id,)
-        store = IStore(Packageset)
+        store = Store.of(self)
         successors = SQL(query, params)
         return list(store.find(Packageset, In(Packageset.id, successors)))
 
@@ -205,7 +199,7 @@ class Packageset(Storm):
                 WHERE pss_this.sourcepackagename = pss_other.sourcepackagename
                     AND pss_this.packageset = ? AND pss_other.packageset = ?
             '''
-        store = IStore(SourcePackageName)
+        store = Store.of(self)
         spns = SQL(query, (self.id, other_package_set.id))
         return list(
             store.find(SourcePackageName, In(SourcePackageName.id, spns)))
@@ -235,7 +229,7 @@ class Packageset(Storm):
                 FROM packagesetsources pss_other
                 WHERE pss_other.packageset = ?
             '''
-        store = IStore(SourcePackageName)
+        store = Store.of(self)
         spns = SQL(query, (self.id, other_package_set.id))
         return list(
             store.find(SourcePackageName, In(SourcePackageName.id, spns)))
@@ -247,7 +241,7 @@ class PackagesetSet:
 
     def new(self, name, description, owner):
         """See `IPackagesetSet`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+        store = IMasterStore(Packageset)
         packageset = Packageset()
         packageset.name = name
         packageset.description = description

@@ -369,14 +369,14 @@ name or package set:
     >>> mozilla_ps.add('This will fail'.split())
     Traceback (most recent call last):
     ...
-    PackagesetError: Package set: cannot add data of type 'str'.
+    AssertionError: Not all data was handled.
 
 Likewise for removal:
 
     >>> mozilla_ps.remove(range(10))
     Traceback (most recent call last):
     ...
-    PackagesetError: Package set: cannot remove data of type 'int'.
+    AssertionError: Not all data was handled.
 
 An attempt to add cycles to the package set graph also results in a failure:
 
