@@ -351,6 +351,16 @@ class IDistroSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
         given architecturetag.
         """
 
+    @operation_parameters(
+        archtag=TextLine(
+            title=_("The architecture tag"), required=True))
+    @operation_returns_entry(Interface)
+    @export_read_operation()
+    def getDistroArchSeries(archtag):
+        """Return the distroarchseries for this distroseries with the
+        given architecturetag.
+        """
+
     def updateStatistics(ztm):
         """Update all the Rosetta stats for this distro series."""
 
@@ -753,3 +763,10 @@ class NoSuchDistroSeries(NameLookupFailed):
     """Raised when we try to find a DistroSeries that doesn't exist."""
 
     _message_prefix = "No such distribution series"
+
+
+# Monkey patch for circular import avoidance.
+from canonical.launchpad.components.apihelpers import patch_entry_return_type
+from canonical.launchpad.interfaces.distroarchseries import IDistroArchSeries
+patch_entry_return_type(
+    IDistroSeries, 'getDistroArchSeries', IDistroArchSeries)
