@@ -30,9 +30,9 @@ Adding a private branch that is only visible by No Privileges Person
     >>> landscape = getUtility(IProductSet).getByName('landscape')
     >>> branch = factory.makePersonalBranch(
     ...     branch_type=BranchType.HOSTED, name='testing-branch',
-    ...     owner=no_priv, title='A Private Branch')
-    >>> branch.private = True
-    >>> branch.product = landscape
+    ...     owner=no_priv, title='A Private Branch', private=True)
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> removeSecurityProxy(branch).product = landscape
     >>> flush_database_updates()
     >>> logout()
 

@@ -548,7 +548,7 @@ class BranchEditFormView(LaunchpadEditFormView):
                         "owner and to subscribers.")
                 else:
                     self.request.response.addNotification(
-                        "The branch is now publicly accessible.")
+                        "The branch is now publically accessible.")
         if self.updateContextFromData(data):
             # Only specify that the context was modified if there
             # was in fact a change.
