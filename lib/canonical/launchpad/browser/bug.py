@@ -198,8 +198,8 @@ class BugContextMenu(ContextMenu):
             text = 'Unsubscribe'
             icon = 'remove'
         else:
-                text = 'Subscribe'
-                icon = 'add'
+            text = 'Subscribe'
+            icon = 'add'
         return Link('+subscribe', text, icon=icon)
 
     def addsubscriber(self):
