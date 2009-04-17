@@ -6,8 +6,8 @@
 __metaclass__ = type
 __all__ = [
     'get_branch_namespace',
-    'IBranchNamespacePolicy',
     'IBranchNamespace',
+    'IBranchNamespacePolicy',
     'IBranchNamespaceSet',
     'InvalidNamespace',
     'lookup_branch_namespace',
