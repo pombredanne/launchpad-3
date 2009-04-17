@@ -131,7 +131,7 @@ class Packageset(Storm):
                 SELECT pss.sourcepackagename FROM packagesetsources pss
                 WHERE pss.packageset = ?
             '''
-        store = Store.of(self)
+        store = IStore(Packageset)
         spns = SQL(spn_query, (self.id,))
         return list(
             store.find(SourcePackageName, In(SourcePackageName.id, spns)))
@@ -153,7 +153,7 @@ class Packageset(Storm):
                 WHERE psi.child = ?
             '''
             params = (self.id,)
-        store = Store.of(self)
+        store = IStore(Packageset)
         predecessors = SQL(query, params)
         return list(store.find(Packageset, In(Packageset.id, predecessors)))
 
@@ -174,7 +174,7 @@ class Packageset(Storm):
                 WHERE psi.parent = ?
             '''
             params = (self.id,)
-        store = Store.of(self)
+        store = IStore(Packageset)
         successors = SQL(query, params)
         return list(store.find(Packageset, In(Packageset.id, successors)))
 
@@ -199,7 +199,7 @@ class Packageset(Storm):
                 WHERE pss_this.sourcepackagename = pss_other.sourcepackagename
                     AND pss_this.packageset = ? AND pss_other.packageset = ?
             '''
-        store = Store.of(self)
+        store = IStore(Packageset)
         spns = SQL(query, (self.id, other_package_set.id))
         return list(
             store.find(SourcePackageName, In(SourcePackageName.id, spns)))
@@ -229,7 +229,7 @@ class Packageset(Storm):
                 FROM packagesetsources pss_other
                 WHERE pss_other.packageset = ?
             '''
-        store = Store.of(self)
+        store = IStore(Packageset)
         spns = SQL(query, (self.id, other_package_set.id))
         return list(
             store.find(SourcePackageName, In(SourcePackageName.id, spns)))
