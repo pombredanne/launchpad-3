@@ -60,9 +60,9 @@ class Packageset(Storm):
 
         :param data: an iterable with `ISourcePackageName` XOR `IPackageset`
             instances
-        :param handlers: a dict whose keys are valid types for
-            the 'data' passed and the values are the handlers to invoke
-            respectively.
+        :param handlers: a 2-tuple Sequence where the first member is the
+            interface a datum should implement and the second is the handler
+            to invoke in that case respectively.
         """
         store = IMasterStore(Packageset)
         if not isinstance(data, (list, tuple)):
