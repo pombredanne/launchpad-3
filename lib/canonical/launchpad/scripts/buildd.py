@@ -11,6 +11,7 @@ __all__ = [
 
 from zope.component import getUtility
 
+from canonical.archivepublisher.debversion import Version
 from canonical.buildmaster.master import BuilddMaster
 from canonical.launchpad.interfaces.build import IBuildSet
 from canonical.launchpad.interfaces.builder import IBuilderSet
@@ -18,8 +19,18 @@ from canonical.launchpad.interfaces.launchpad import NotFoundError
 from canonical.launchpad.scripts.base import (
     LaunchpadCronScript, LaunchpadScriptFailure)
 from lp.registry.interfaces.distribution import IDistributionSet
-from lp.registry.interfaces.distroseries import (
-    DistroSeriesStatus, distroseries_sort_key)
+
+
+# XXX cprov 2009-04-16: Should leave in lp.registry.interfaces.distroseries.
+# It cannot be done right now because we haven't decided if
+# archivepublisher.debversion will be released as FOSS yet.
+def distroseries_sort_key(series):
+    """Sort `DistroSeries` by version.
+
+    See `canonical.archivepublisher.debversion.Version` for more
+    information.
+    """
+    return Version(series.version)
 
 
 class QueueBuilder(LaunchpadCronScript):
@@ -47,11 +58,11 @@ class QueueBuilder(LaunchpadCronScript):
     def main(self):
         """Use BuildMaster for processing the build queue.
 
-        Callers my specify a specific set of distroseries to be processed
+        Callers my define a specific set of distroseries to be processed
         and also decide whether or not the queue-rebuild (expensive
-        procedure) should be execute.
+        procedure) should be executed.
 
-        Deals with the current transaction according the dry-run option.
+        Deals with the current transaction according to the dry-run option.
         """
         if self.args:
             raise LaunchpadScriptFailure("Unhandled arguments %r" % self.args)
@@ -76,7 +87,7 @@ class QueueBuilder(LaunchpadCronScript):
                 buildMaster.addDistroArchSeries(archseries)
 
         if not self.options.score_only:
-            # For each distroseries we care about; scan for
+            # For each distroseries we care about, scan for
             # sourcepackagereleases with no build associated
             # with the distroarchserieses we're interested in.
             self.logger.info("Rebuilding build queue.")
@@ -91,7 +102,7 @@ class QueueBuilder(LaunchpadCronScript):
         self.txn.commit()
 
     def calculateDistroseries(self):
-        """Return a ordered list of distroseries for the given arguments."""
+        """Return an ordered list of distroseries for the given arguments."""
         distribution = getUtility(IDistributionSet).getByName(
             self.options.distribution)
         if distribution is None:

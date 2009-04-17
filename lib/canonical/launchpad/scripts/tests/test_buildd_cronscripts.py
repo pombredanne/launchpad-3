@@ -128,7 +128,7 @@ class TestQueueBuilder(TestCronscriptBase):
 
     def testCalculateDistroseries(self):
         # Distribution defaults to ubuntu and when suite is omitted
-        # all series are considered in the crescent order.
+        # all series are considered in the ascending order.
         qb = self.getQueueBuilder()
         self.assertEqual(
             ['warty', 'hoary', 'grumpy', 'breezy-autotest'],
