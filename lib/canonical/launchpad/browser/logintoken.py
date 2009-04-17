@@ -9,6 +9,7 @@ __all__ = [
     'LoginTokenSetNavigation',
     'LoginTokenView',
     'MergePeopleView',
+    'ResetPersonPasswordView',
     'ValidateTeamEmailView',
     'ValidateGPGKeyView',
     ]
@@ -32,7 +33,7 @@ from canonical.launchpad.webapp import (
     LaunchpadEditFormView, LaunchpadFormView, LaunchpadView)
 
 from canonical.launchpad.browser.authtoken import (
-    AuthTokenView, BaseAuthTokenView, ValidateEmailView)
+    AuthTokenView, BaseAuthTokenView, ResetPasswordView, ValidateEmailView)
 from lp.registry.browser.team import HasRenewalPolicyMixin
 from canonical.launchpad.interfaces import (
     EmailAddressStatus, GPGKeyAlgorithm, GPGKeyNotFoundError,
@@ -71,6 +72,28 @@ class LoginTokenView(AuthTokenView):
             LoginTokenType.TEAMCLAIM: '+claimteam',
             LoginTokenType.BUGTRACKER: '+bugtracker-handshake',
             })
+
+
+class ResetPersonPasswordView(ResetPasswordView):
+    """View for resetting a person's password on Launchpad."""
+
+    def reactivate(self, data):
+        """Reactivate the person (and account) of this token.
+
+        The regular view for resetting a user's password (ResetPasswordView)
+        can't make changes to the user's profile on Launchpad (as that view is
+        part of the SSO service, which doesn't have access to anything outside
+        the auth store), so we override the reactivate() method here and make
+        it call IPerson.reactivate() instead of IAccount.reactivate().
+        """
+        emailaddress = getUtility(IEmailAddressSet).getByEmail(
+            self.context.email)
+        # Need to remove the security proxy of the account because at this
+        # point the user is not logged in.
+        removeSecurityProxy(self.context.requester).reactivate(
+            comment="User reactivated the account using reset password.",
+            password=data['password'],
+            preferred_email=emailaddress)
 
 
 class ClaimProfileView(BaseAuthTokenView, LaunchpadFormView):
@@ -113,7 +136,7 @@ class ClaimProfileView(BaseAuthTokenView, LaunchpadFormView):
 
         naked_email = removeSecurityProxy(email)
 
-        naked_person.activateAccount(
+        removeSecurityProxy(IMasterObject(email.account)).activate(
             comment="Activated by claim profile.",
             password=data['password'],
             preferred_email=naked_email)

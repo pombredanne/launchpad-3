@@ -78,7 +78,7 @@
                   content="build/buildduration/fmt:approximateduration" />
                 <tal:log condition="build/buildlog">
                   &mdash;
-                  <a tal:attributes="href string: ${build/fmt:url}/+files/${build/buildlog/filename}"
+                  <a tal:attributes="href build/build_log_url"
                     >see the log</a>
                 </tal:log>
               </tal:date_built>

@@ -1,12 +1,11 @@
-# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
 
 """Branch views."""
 
 __metaclass__ = type
 
 __all__ = [
-    'PersonBranchAddView',
-    'ProductBranchAddView',
+    'BranchAddView',
     'BranchContextMenu',
     'BranchDeletionView',
     'BranchEditView',
@@ -37,6 +36,7 @@ from zope.publisher.interfaces import NotFound
 from zope.schema import Choice, Text
 from lazr.delegates import delegates
 from lazr.enum import EnumeratedType, Item
+from lazr.uri import URI
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
@@ -44,7 +44,6 @@ from canonical.database.constants import UTC_NOW
 
 from lazr.restful.interface import copy_field
 from canonical.launchpad import _
-from lp.code.browser.branchref import BranchRef
 from canonical.launchpad.browser.feeds import BranchFeedLink, FeedsMixin
 from canonical.launchpad.browser.launchpad import Hierarchy
 from canonical.launchpad.helpers import truncate_text
@@ -52,23 +51,6 @@ from canonical.launchpad.interfaces.bug import IBugSet
 from canonical.launchpad.interfaces.bugbranch import IBugBranch
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.specificationbranch import ISpecificationBranch
-from lp.code.interfaces.branch import (
-    BranchCreationForbidden, BranchExists, BranchType, IBranch,
-    IBranchNavigationMenu, UICreatableBranchType)
-from lp.code.interfaces.branchmergeproposal import (
-    IBranchMergeProposal, InvalidBranchMergeProposal)
-from lp.code.interfaces.branchsubscription import IBranchSubscription
-from lp.code.interfaces.branchvisibilitypolicy import BranchVisibilityRule
-from lp.code.interfaces.codeimportjob import (
-    CodeImportJobState, ICodeImportJobWorkflow)
-from lp.code.interfaces.codereviewcomment import ICodeReviewComment
-from lp.registry.interfaces.person import IPersonSet
-from lp.registry.interfaces.productseries import IProductSeries
-from lp.code.interfaces.branchnamespace import (
-    get_branch_namespace)
-from lp.code.interfaces.branchtarget import IHasBranchTarget
-from lp.code.interfaces.codereviewvote import (
-    ICodeReviewVoteReference)
 from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, enabled_with_permission,
     LaunchpadView, Navigation, NavigationMenu, stepto, stepthrough,
@@ -76,9 +58,26 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from canonical.launchpad.webapp.menu import structured
-from lazr.uri import URI
 from canonical.widgets.branch import TargetBranchWidget
 from canonical.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
+
+from lp.code.browser.branchref import BranchRef
+from lp.code.interfaces.branch import (
+    BranchCreationForbidden, BranchExists, BranchType, IBranch,
+    IBranchNavigationMenu, UICreatableBranchType)
+from lp.code.interfaces.branchmergeproposal import (
+    IBranchMergeProposal, InvalidBranchMergeProposal)
+from lp.code.interfaces.branchsubscription import IBranchSubscription
+from lp.code.interfaces.branchtarget import IBranchTarget
+from lp.code.interfaces.branchvisibilitypolicy import BranchVisibilityRule
+from lp.code.interfaces.codeimportjob import (
+    CodeImportJobState, ICodeImportJobWorkflow)
+from lp.code.interfaces.codereviewcomment import ICodeReviewComment
+from lp.code.interfaces.branchnamespace import get_branch_namespace
+from lp.code.interfaces.branchtarget import IHasBranchTarget
+from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
+from lp.registry.interfaces.person import IPerson, IPersonSet
+from lp.registry.interfaces.productseries import IProductSeries
 
 
 def quote(text):
@@ -498,35 +497,16 @@ class BranchNameValidationMixin:
     """Provide name validation logic used by several branch view classes."""
 
     def _setBranchExists(self, existing_branch):
-        # XXX: JonathanLange 2008-12-04 spec=package-branches: Assumes that
-        # branches have products, which is now wrong.
         owner = existing_branch.owner
-        product = existing_branch.product
-        branch_name = existing_branch.name
         if owner == self.user:
             prefix = "You already have"
         else:
             prefix = "%s already has" % cgi.escape(owner.displayname)
-
-        if product is None:
-            message = (
-                "%s a junk branch called <em>%s</em>."
-                % (prefix, branch_name))
-        else:
-            message = (
-                "%s a branch for <em>%s</em> called "
-                "<em>%s</em>." % (prefix, product.name, branch_name))
+        message = (
+            "%s a branch for <em>%s</em> called <em>%s</em>."
+            % (prefix, existing_branch.target.displayname,
+               existing_branch.name))
         self.setFieldError('name', structured(message))
-
-    def validate_branch_name(self, owner, product, branch_name):
-        # XXX: JonathanLange 2008-11-27 spec=package-branches: Don't look
-        # before you leap. Instead try to create the branch and then populate
-        # the error field.
-        namespace = get_branch_namespace(owner, product=product)
-        existing_branch = namespace.getByName(branch_name)
-        if existing_branch is not None:
-            # There is a branch that has the branch_name specified already.
-            self._setBranchExists(existing_branch)
 
 
 class BranchEditFormView(LaunchpadEditFormView):
@@ -794,6 +774,16 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
             self.form_fields = self.form_fields.omit('owner')
             self.form_fields = any_owner_field + self.form_fields
 
+    def validate_branch_name(self, owner, product, branch_name):
+        # XXX: JonathanLange 2009-03-30 spec=package-branches: Don't look
+        # before you leap. Instead try to move the branch and then populate
+        # the error field.
+        namespace = get_branch_namespace(owner, product=product)
+        existing_branch = namespace.getByName(branch_name)
+        if existing_branch is not None:
+            # There is a branch that has the branch_name specified already.
+            self._setBranchExists(existing_branch)
+
     def validate(self, data):
         # Check that we're not moving a team branch to the +junk
         # pseudo project.
@@ -879,16 +869,34 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
 
     schema = IBranch
     for_input = True
-    field_names = ['owner', 'product', 'name', 'branch_type', 'url', 'title',
+    field_names = ['owner', 'name', 'branch_type', 'url', 'title',
                    'lifecycle_status']
 
     branch = None
     custom_widget('branch_type', LaunchpadRadioWidgetWithDescription)
     custom_widget('lifecycle_status', LaunchpadRadioWidgetWithDescription)
 
+    initial_focus_widget = 'name'
+
     @property
     def initial_values(self):
-        return {'branch_type': UICreatableBranchType.MIRRORED}
+        return {
+            'owner': self.default_owner,
+            'branch_type': UICreatableBranchType.MIRRORED}
+
+    @property
+    def target(self):
+        """The branch target for the context."""
+        return IBranchTarget(self.context)
+
+    @property
+    def default_owner(self):
+        """The default owner of branches in this context.
+
+        If the context is a person, then it's the context. If the context is
+        not a person, then the default owner is the currently logged-in user.
+        """
+        return IPerson(self.context, self.user)
 
     def showOptionalMarker(self, field_name):
         """Don't show the optional marker for url."""
@@ -902,8 +910,7 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
         """Handle a request to create a new branch for this product."""
         try:
             ui_branch_type = data['branch_type']
-            namespace = get_branch_namespace(
-                data['owner'], product=data['product'])
+            namespace = self.target.getNamespace(data['owner'])
             self.branch = namespace.createBranch(
                 branch_type=BranchType.items[ui_branch_type.name],
                 name=data['name'],
@@ -914,21 +921,13 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
             if self.branch.branch_type == BranchType.MIRRORED:
                 self.branch.requestMirror()
         except BranchCreationForbidden:
-            self.setForbiddenError(data['product'])
+            self.addError(
+                "You are not allowed to create branches in %s." %
+                self.context.displayname)
         except BranchExists, e:
             self._setBranchExists(e.existing_branch)
         else:
             self.next_url = canonical_url(self.branch)
-
-    def setForbiddenError(self, product):
-        """Method provided so the error handling can be overridden."""
-        assert product is not None, (
-            "BranchCreationForbidden should never be raised for "
-            "junk branches.")
-        self.setFieldError(
-            'product',
-            "You are not allowed to create branches in %s." %
-            product.displayname)
 
     def validate(self, data):
         owner = data['owner']
@@ -967,29 +966,6 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
             pass
         else:
             raise AssertionError('Unknown branch type')
-
-
-class PersonBranchAddView(BranchAddView):
-    """See `BranchAddView`."""
-
-    initial_focus_widget = 'product'
-
-    @property
-    def initial_values(self):
-        return {'owner': self.context,
-                'branch_type': UICreatableBranchType.MIRRORED}
-
-
-class ProductBranchAddView(BranchAddView):
-    """See `BranchAddView`."""
-
-    initial_focus_widget = 'name'
-
-    @property
-    def initial_values(self):
-        return {'owner' : self.user,
-                'branch_type': UICreatableBranchType.MIRRORED,
-                'product': self.context}
 
     @property
     def cancel_url(self):
