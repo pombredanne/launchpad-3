@@ -747,7 +747,7 @@ class IBranch(IHasOwner, IHasBranchTarget):
     displayname = exported(
         Text(title=_('Display name'), readonly=True,
              description=_(
-                "The branch title if provided, or the unique_name.")),
+                "The branch unique_name.")),
         exported_as='display_name')
 
     # Stats and status attributes

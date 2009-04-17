@@ -365,10 +365,7 @@ class Branch(SQLBase):
     @property
     def displayname(self):
         """See `IBranch`."""
-        if self.title:
-            return self.title
-        else:
-            return self.unique_name
+        return self.unique_name
 
     @property
     def code_reviewer(self):

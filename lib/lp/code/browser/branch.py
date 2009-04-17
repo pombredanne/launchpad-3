@@ -710,7 +710,7 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
     """The main branch view for editing the branch attributes."""
 
     field_names = [
-        'owner', 'product', 'name', 'private', 'url', 'title', 'summary',
+        'owner', 'product', 'name', 'private', 'url', 'summary',
         'lifecycle_status', 'whiteboard']
 
     custom_widget('lifecycle_status', LaunchpadRadioWidgetWithDescription)
@@ -859,9 +859,8 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
 
     schema = IBranch
     for_input = True
-    field_names = [
-        'owner', 'name', 'branch_type', 'url', 'title', 'summary',
-        'lifecycle_status', 'whiteboard']
+    field_names = ['owner', 'name', 'branch_type', 'url',
+                   'summary', 'lifecycle_status', 'whiteboard']
 
     branch = None
     custom_widget('branch_type', LaunchpadRadioWidgetWithDescription)
@@ -907,7 +906,6 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
                 name=data['name'],
                 registrant=self.user,
                 url=data.get('url'),
-                title=data['title'],
                 summary=data['summary'],
                 lifecycle_status=data['lifecycle_status'],
                 whiteboard=data['whiteboard'])
