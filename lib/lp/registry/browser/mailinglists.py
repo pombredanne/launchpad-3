@@ -28,6 +28,7 @@ from canonical.launchpad.webapp import (
     LaunchpadFormView, LaunchpadView, action, canonical_url)
 from canonical.launchpad.webapp.interfaces import UnexpectedFormData
 from canonical.launchpad.webapp.menu import structured
+from canonical.launchpad.webapp.tales import PersonFormatterAPI
 
 
 class ReviewForm(Interface):
@@ -58,9 +59,16 @@ class MailingListsReviewView(LaunchpadFormView):
         """
         list_info = []
         for mailing_list in self.context.registered_lists:
+            naked_team = removeSecurityProxy(mailing_list.team)
             list_info.append(dict(
-                team=mailing_list.team,
-                name=removeSecurityProxy(mailing_list.team).name,
+                # Use PersonFormatterAPI to avoid the redaction of team names
+                # and links.  The mailing list expert needs a non-redacted
+                # link, but the TeamFormatterAPI forces a permission check.
+                # Note that the MLE may still not have permission to follow
+                # the link, but that's a different issue and not one important
+                # enough to fix for now.
+                team_link=PersonFormatterAPI(naked_team).link(None),
+                name=naked_team.name,
                 registrant=mailing_list.registrant,
                 ))
         return sorted(list_info, key=itemgetter('name'))
