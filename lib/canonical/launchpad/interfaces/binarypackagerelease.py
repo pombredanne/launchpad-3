@@ -103,6 +103,13 @@ class BinaryPackageFileType(DBEnumeratedType):
         similar operating systems.
         """)
 
+    RPM = DBItem(2, """
+        RPM Format
+
+        This format is used on mandrake, Red Hat, Suse and other similar
+        distributions.
+        """)
+
     UDEB = DBItem(3, """
         UDEB Format
 
@@ -110,11 +117,11 @@ class BinaryPackageFileType(DBEnumeratedType):
         similar operating systems for the installation system.
         """)
 
-    RPM = DBItem(2, """
-        RPM Format
+    DDEB = DBItem(4, """
+        DDEB Format
 
-        This format is used on mandrake, Red Hat, Suse and other similar
-        distributions.
+        This format is the standard package format used on Ubuntu and other
+        similar operating systems for distributing debug symbols.
         """)
 
 
@@ -137,7 +144,7 @@ class BinaryPackageFormat(DBEnumeratedType):
     UDEB = DBItem(2, """
         Ubuntu Installer Package
 
-        This is the binary package format use by the installer in Ubuntu and
+        This is the binary package format used by the installer in Ubuntu and
         similar distributions.  """)
 
     EBUILD = DBItem(3, """
@@ -154,3 +161,8 @@ class BinaryPackageFormat(DBEnumeratedType):
         This is the format used by Mandrake and other similar distributions.
         It does not include dependency tracking information.  """)
 
+    DDEB = DBItem(5, """
+        Ubuntu Debug Package
+
+        This is the binary package format used for shipping debug symbols
+        in Ubuntu and similar distributions.""")

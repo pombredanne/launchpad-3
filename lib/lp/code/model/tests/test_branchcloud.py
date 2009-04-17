@@ -113,7 +113,7 @@ class TestBranchCloud(TestCaseWithFactory):
             last_commit_date=last_commit_date)
         products_with_info = self.getProductsWithInfo()
         self.assertEqual(
-            [(product, 2, last_commit_date)], list(products_with_info))
+            [(product.name, 2, last_commit_date)], list(products_with_info))
 
     def test_includes_products_with_branches_with_revisions(self):
         # getProductsWithInfo includes all products that have branches with
@@ -122,7 +122,7 @@ class TestBranchCloud(TestCaseWithFactory):
         branch = self.makeBranch(last_commit_date=last_commit_date)
         products_with_info = self.getProductsWithInfo()
         self.assertEqual(
-            [(branch.product, 1, last_commit_date)],
+            [(branch.product.name, 1, last_commit_date)],
             list(products_with_info))
 
     def test_uses_latest_revision_date(self):
@@ -135,7 +135,7 @@ class TestBranchCloud(TestCaseWithFactory):
         self.makeBranch(product=product, last_commit_date=last_commit_date)
         products_with_info = self.getProductsWithInfo()
         self.assertEqual(
-            [(product, 2, last_commit_date)], list(products_with_info))
+            [(product.name, 2, last_commit_date)], list(products_with_info))
 
     def test_sorted_by_branch_count(self):
         # getProductsWithInfo returns a result set sorted so that the products
@@ -147,8 +147,8 @@ class TestBranchCloud(TestCaseWithFactory):
         for i in range(5):
             self.makeBranch(product=product2)
         self.assertEqual(
-            [product2, product1],
-            [product for product, count, last_commit
+            [product2.name, product1.name],
+            [name for name, count, last_commit
              in self.getProductsWithInfo()])
 
     def test_limit(self):
@@ -165,8 +165,8 @@ class TestBranchCloud(TestCaseWithFactory):
         for i in range(7):
             self.makeBranch(product=product3)
         self.assertEqual(
-            [product3, product2],
-            [product for product, count, last_commit
+            [product3.name, product2.name],
+            [name for name, count, last_commit
              in self.getProductsWithInfo(num_products=2)])
 
 
