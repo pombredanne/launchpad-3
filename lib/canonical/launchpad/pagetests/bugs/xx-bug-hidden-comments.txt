@@ -43,5 +43,6 @@ visible has been set False.
     >>> main_content = find_main_content(user_browser.contents)
     >>> last_comment = main_content('div', 'boardCommentBody')[-1]
     >>> last_comment_text = extract_text(last_comment.div)
-    >>> last_comment_text == new_comment_text
-    False
+    >>> print last_comment_text
+    This title, however, is the same as the bug title and so it will
+    be suppressed in the UI.
