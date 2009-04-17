@@ -56,7 +56,7 @@ class BinaryPackageRelease(SQLBase):
     datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
 
     files = SQLMultipleJoin('BinaryPackageFile',
-        joinColumn='binarypackagerelease')
+        joinColumn='binarypackagerelease', orderBy="libraryfile")
 
     @property
     def title(self):

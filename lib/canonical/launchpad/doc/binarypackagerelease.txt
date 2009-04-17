@@ -246,10 +246,10 @@ Additionally to DEB files, UDEB and DDEB extensions are also supported.
     >>> unused = a_binary.addFile(ddeb)
 
     >>> print_files(a_binary)
-    foo-dbg_666_all.ddeb DDEB
-    foo-inst_666_all.udeb UDEB
-    foo-extra_666_all.deb DEB
     foo-bin_666_all.deb DEB
+    foo-extra_666_all.deb DEB
+    foo-inst_666_all.udeb UDEB
+    foo-dbg_666_all.ddeb DDEB
 
 An error is raised if a file with an unsupported extension is given.
 
