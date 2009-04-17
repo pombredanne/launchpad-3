@@ -491,15 +491,15 @@
   </class>
   <class class="lp.code.model.branchnamespace.PackageNamespace">
     <allow interface="lp.code.interfaces.branchnamespace.IBranchNamespace"/>
-    <allow interface="lp.code.interfaces.branchnamespace.IBranchCreationPolicy"/>
+    <allow interface="lp.code.interfaces.branchnamespace.IBranchNamespacePolicy"/>
   </class>
   <class class="lp.code.model.branchnamespace.PersonalNamespace">
     <allow interface="lp.code.interfaces.branchnamespace.IBranchNamespace"/>
-    <allow interface="lp.code.interfaces.branchnamespace.IBranchCreationPolicy"/>
+    <allow interface="lp.code.interfaces.branchnamespace.IBranchNamespacePolicy"/>
   </class>
   <class class="lp.code.model.branchnamespace.ProductNamespace">
     <allow interface="lp.code.interfaces.branchnamespace.IBranchNamespace"/>
-    <allow interface="lp.code.interfaces.branchnamespace.IBranchCreationPolicy"/>
+    <allow interface="lp.code.interfaces.branchnamespace.IBranchNamespacePolicy"/>
   </class>
   <securedutility
       class="lp.code.model.branchnamespace.BranchNamespaceSet"
