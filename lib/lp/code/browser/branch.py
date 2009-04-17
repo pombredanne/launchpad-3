@@ -42,7 +42,7 @@ from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
 
-from lazr.restful.interface import copy_field
+from lazr.restful.interface import copy_field, use_template
 from canonical.launchpad import _
 from canonical.launchpad.browser.feeds import BranchFeedLink, FeedsMixin
 from canonical.launchpad.browser.launchpad import Hierarchy
@@ -69,11 +69,11 @@ from lp.code.interfaces.branchmergeproposal import (
     IBranchMergeProposal, InvalidBranchMergeProposal)
 from lp.code.interfaces.branchsubscription import IBranchSubscription
 from lp.code.interfaces.branchtarget import IBranchTarget
-from lp.code.interfaces.branchvisibilitypolicy import BranchVisibilityRule
 from lp.code.interfaces.codeimportjob import (
     CodeImportJobState, ICodeImportJobWorkflow)
 from lp.code.interfaces.codereviewcomment import ICodeReviewComment
-from lp.code.interfaces.branchnamespace import get_branch_namespace
+from lp.code.interfaces.branchnamespace import (
+    get_branch_namespace, IBranchNamespacePolicy)
 from lp.code.interfaces.branchtarget import IHasBranchTarget
 from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
 from lp.registry.interfaces.person import IPerson, IPersonSet
@@ -499,11 +499,23 @@ class BranchNameValidationMixin:
         self.setFieldError('name', structured(message))
 
 
+class BranchEditSchema(Interface):
+    use_template(IBranch, include=[
+            'owner', 'product', 'name', 'url', 'title', 'summary',
+            'lifecycle_status', 'whiteboard'])
+    private = copy_field(IBranch['private'], readonly=False)
+
+
 class BranchEditFormView(LaunchpadEditFormView):
     """Base class for forms that edit a branch."""
 
-    schema = IBranch
+    schema = BranchEditSchema
     field_names = None
+
+    @property
+    def adapters(self):
+        """See `LaunchpadFormView`"""
+        return {BranchEditSchema: self.context}
 
     @action('Change Branch', name='change')
     def change_action(self, action, data):
@@ -735,14 +747,14 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
         if branch.branch_type in (BranchType.HOSTED, BranchType.IMPORTED):
             self.form_fields = self.form_fields.omit('url')
 
-        namespace = branch.namespace
+        policy = IBranchNamespacePolicy(branch.namespace)
         if branch.private:
             # If the branch is private, and can be public, show the field.
-            show_private_field = namespace.canBranchesBePublic()
+            show_private_field = policy.canBranchesBePublic()
         else:
             # If the branch is public, and can be made private, show the
             # field.
-            show_private_field = namespace.canBranchBePrivate()
+            show_private_field = policy.canBranchesBePrivate()
 
         if not show_private_field:
             self.form_fields = self.form_fields.omit('private')
