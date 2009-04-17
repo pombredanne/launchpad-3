@@ -59,7 +59,7 @@
           <tal:displayname tal:replace="view/request/displayname" />
           (<tal:name  tal:replace="view/request/name" />)
           and complete the registration.  If necessary, you may refine the
-          project's summary.
+          project's title and summary.
         </div>
       </metal:extra>
     </div>

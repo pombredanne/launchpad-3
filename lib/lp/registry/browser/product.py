@@ -1479,7 +1479,8 @@ class ProductAddViewBase(ProductLicenseMixin, LaunchpadFormView):
 class ProjectAddStepTwo(StepView, ProductLicenseMixin):
     """Step 2 (of 2) in the +new project add wizard."""
 
-    _field_names = ['displayname', 'name', 'summary', 'licenses']
+    _field_names = ['displayname', 'name', 'title', 'summary',
+                    'licenses', 'license_info']
     main_action_label = u'Complete Registration'
     schema = IProduct
     step_name = 'projectaddstep2'
@@ -1547,39 +1548,6 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin):
         pillar_set = getUtility(IPillarNameSet)
         return pillar_set.count_search_matches(self._search_string)
 
-    @action(_('Register this Project'), name='add')
-    def add_action(self, action, data):
-        if self.user is None:
-            raise zope.security.interfaces.Unauthorized(
-                "Need an authenticated Launchpad owner")
-        if not self.isVCSImport():
-            # Zope makes sure these are never set, since they are not in
-            # self.form_fields
-            assert "owner" not in data, 'Unexpected form data'
-            assert "license_reviewed" not in data, 'Unexpected form data'
-            data['owner'] = self.user
-            data['license_reviewed'] = False
-
-        self.product = getUtility(IProductSet).createProduct(
-            name=data['name'],
-            title=data['title'],
-            summary=data['summary'],
-            description=data['description'],
-            displayname=data['displayname'],
-            homepageurl=data['homepageurl'],
-            downloadurl=data['downloadurl'],
-            screenshotsurl=data['screenshotsurl'],
-            wikiurl=data['wikiurl'],
-            freshmeatproject=data['freshmeatproject'],
-            sourceforgeproject=data['sourceforgeproject'],
-            programminglang=data['programminglang'],
-            project=data['project'],
-            owner=data['owner'],
-            registrant=self.user,
-            license_reviewed=data['license_reviewed'],
-            licenses = data['licenses'],
-            license_info=data['license_info'])
-
     # StepView requires that its validate() method not be overridden, so make
     # sure this calls the right method.  validateStep() will call the license
     # validation code.
@@ -1596,14 +1564,32 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin):
             self.request.form['displayname'], self.request.form['name'])
 
     def main_action(self, data):
+        if not self.isVCSImport():
+            # Zope makes sure these are never set, since they are not in
+            # self.form_fields
+            assert "owner" not in data, 'Unexpected form data'
+            assert "license_reviewed" not in data, 'Unexpected form data'
+            data['owner'] = self.user
+            data['license_reviewed'] = False
+
+        self.product = getUtility(IProductSet).createProduct(
+            owner=self.user,
+            name=data['name'],
+            title=data['title'],
+            summary=data['summary'],
+            displayname=data['displayname'],
+            licenses = data['licenses'],
+            license_info=data['license_info'])
+
         self.notifyFeedbackMailingList()
         notify(ObjectCreatedEvent(self.product))
+        self.next_url = canonical_url(self.product)
 
 
 class ProjectAddStepOne(StepView):
     """product/+new view class for creating a new project."""
 
-    _field_names = ['displayname', 'name', 'summary']
+    _field_names = ['displayname', 'name', 'title', 'summary']
     label = "Register a project in Launchpad"
     schema = IProduct
     step_name = 'projectaddstep1'
@@ -1689,4 +1675,3 @@ class ProductEditPeopleView(LaunchpadEditFormView):
         for release in product.releases:
             if release.owner == oldOwner:
                 release.owner = newOwner
-
