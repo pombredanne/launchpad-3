@@ -279,7 +279,10 @@ class IBug(ICanBeMentored):
             title=_('Users affected'),
             value_type=Reference(schema=IPerson),
             readonly=True))
-    bug_messages = Attribute('SQLObject.Multijoin of IBugMessage')
+
+    # Adding related BugMessages provides a hook for getting at
+    # BugMessage.visible when building bug comments.
+    bug_messages = Attribute('The bug messages related to this object.')
 
     messages = CollectionField(
             title=_("The messages related to this object, in reverse "
