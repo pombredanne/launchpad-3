@@ -23,19 +23,19 @@ from zope.security.interfaces import Unauthorized
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
+from canonical.launchpad.webapp import canonical_url, LaunchpadView, urlparse
+from canonical.lazr.feed import (
+    FeedBase, FeedEntry, FeedPerson, FeedTypedData, MINUTES)
+from canonical.lazr.interfaces import IFeedPerson
+
 from lp.code.browser.branch import BranchView
 from lp.code.interfaces.branch import (
     DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch)
 from lp.code.interfaces.branchcollection import IAllBranches
+from lp.code.interfaces.revision import IRevisionSet
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.project import IProject
-from canonical.launchpad.interfaces.revision import IRevisionSet
-from canonical.launchpad.webapp import canonical_url, LaunchpadView, urlparse
-
-from canonical.lazr.feed import (
-    FeedBase, FeedEntry, FeedPerson, FeedTypedData, MINUTES)
-from canonical.lazr.interfaces import IFeedPerson
 
 
 class BranchFeedEntry(FeedEntry):

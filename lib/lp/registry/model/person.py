@@ -111,7 +111,7 @@ from canonical.launchpad.interfaces.personnotification import (
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.project import IProject
-from canonical.launchpad.interfaces.revision import IRevisionSet
+from lp.code.interfaces.revision import IRevisionSet
 from lp.registry.interfaces.salesforce import (
     ISalesforceVoucherProxy, VOUCHER_STATUSES)
 from canonical.launchpad.interfaces.specification import (
@@ -1643,27 +1643,9 @@ class Person(
             clauseTables=['Person'],
             orderBy=Person.sortingColumns)
 
-    def activateAccount(self, comment, password, preferred_email):
-        """See `IPersonSpecialRestricted`.
-
-        :raise AssertionError: if the Person is a Team.
-        """
-        # XXX sinzui 2008-07-14 bug=248518:
-        # This method would assert the password is not None, but
-        # setPreferredEmail() passes the Person's current password.
-        if self.is_team:
-            raise AssertionError(
-                "Teams cannot be activated with this method.")
-        account = IMasterStore(Account).get(Account, self.accountID)
-        account.status = AccountStatus.ACTIVE
-        account.status_comment = comment
-        account.password = password
-        if preferred_email is not None:
-            self.validateAndEnsurePreferredEmail(
-                IMasterObject(preferred_email))
-        # sync so validpersoncache updates.
-        account.sync()
-
+    # XXX: salgado, 2009-04-16: This should be called just deactivate(),
+    # because it not only deactivates this person's account but also the
+    # person.
     def deactivateAccount(self, comment):
         """See `IPersonSpecialRestricted`."""
         assert self.is_valid_person, (
@@ -1953,6 +1935,23 @@ class Person(
         else:
             return None
 
+    def reactivate(self, comment, password, preferred_email):
+        """See `IPersonSpecialRestricted`."""
+        account = IMasterObject(self.account)
+        account.reactivate(comment, password, preferred_email)
+        if '-deactivatedaccount' in self.name:
+            # The name was changed by deactivateAccount(). Restore the
+            # name, but we must ensure it does not conflict with a current
+            # user.
+            name_parts = self.name.split('-deactivatedaccount')
+            base_new_name = name_parts[0]
+            self.name = self._ensureNewName(base_new_name)
+        # XXX: salgado, bug=356092 2009-04-15: The lines below won't be
+        # needed once the bug is fixed.
+        email = removeSecurityProxy(preferred_email)
+        getUtility(IRevisionSet).checkNewVerifiedEmail(email)
+        getUtility(IHWSubmissionSet).setOwnership(email)
+
     def validateAndEnsurePreferredEmail(self, email):
         """See `IPerson`."""
         email = IMasterObject(email)
@@ -2025,7 +2024,8 @@ class Person(
             # This is a hack to preserve this function's behaviour before
             # Account was split from Person. This can be removed when
             # all the callsites ensure that the account is ACTIVE first.
-            self.activateAccount(
+            account = IMasterStore(Account).get(Account, self.accountID)
+            account.activate(
                 "Activated when the preferred email was set.",
                 password=self.password,
                 preferred_email=email)

@@ -659,6 +659,10 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     def __getitem__(self, archtag):
         """See `IDistroSeries`."""
+        return self.getDistroArchSeries(archtag)
+
+    def getDistroArchSeries(self, archtag):
+        """See `IDistroSeries`."""
         item = DistroArchSeries.selectOneBy(
             distroseries=self, architecturetag=archtag)
         if item is None:

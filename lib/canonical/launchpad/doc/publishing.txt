@@ -18,6 +18,7 @@ Verify if the object follows its interface contracts:
     >>> from canonical.launchpad.interfaces import (
     ...     ISourcePackageRelease, IDistroSeries,
     ...     ISourcePackagePublishingHistory,
+    ...     IBinaryPackagePublishingHistory,
     ...     ISourcePackage,
     ...     IDistributionSourcePackageRelease)
 
@@ -49,7 +50,8 @@ Verify if the object follows its interface contracts:
 
 ISourcePackagePublishingHistory has some handy shortcuts to get textual
 representations of the source package name, version, component and section.
-This is mostly as a convenience to API users.
+This is mostly as a convenience to API users so that we don't need to export
+tiny 2-column content classes and force the users to retrieve those.
 
     >>> print spph.source_package_name
     pmount
@@ -61,6 +63,28 @@ This is mostly as a convenience to API users.
     main
 
     >>> print spph.section_name
+    base
+
+IBinaryPackagePublishingHistory also contains similar API conveniences.
+
+    >>> from canonical.launchpad.tests.test_publishing import (
+    ...     SoyuzTestPublisher)
+    >>> stp = SoyuzTestPublisher()
+    >>> stp.prepareBreezyAutotest()
+    >>> bpph = stp.getPubBinaries()[0]
+    >>> verifyObject(IBinaryPackagePublishingHistory, bpph)
+    True
+
+    >>> print bpph.binary_package_name
+    foo-bin
+
+    >>> print bpph.binary_package_version
+    666
+
+    >>> print bpph.component_name
+    main
+
+    >>> print bpph.section_name
     base
 
 There is also a property that returns the changesfile.  This is proxied

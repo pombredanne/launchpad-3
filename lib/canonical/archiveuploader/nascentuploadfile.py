@@ -4,16 +4,17 @@
 __metaclass__ = type
 
 __all__ = [
+    'BaseBinaryUploadFile',
+    'CustomUploadFile',
+    'DdebBinaryUploadFile',
+    'DebBinaryUploadFile',
+    'NascentUploadFile',
+    'PackageUploadFile',
+    'SourceUploadFile',
+    'UdebBinaryUploadFile',
     'UploadError',
     'UploadWarning',
     'splitComponentAndSection',
-    'NascentUploadFile',
-    'CustomUploadFile',
-    'PackageUploadFile',
-    'SourceUploadFile',
-    'BaseBinaryUploadFile',
-    'UdebBinaryUploadFile',
-    'DebBinaryUploadFile',
     ]
 
 import apt_inst
@@ -913,3 +914,7 @@ class DebBinaryUploadFile(BaseBinaryUploadFile):
             self.verifyFormat,
             self.verifyDebTimestamp,
             ]
+
+class DdebBinaryUploadFile(DebBinaryUploadFile):
+    """Represents an uploaded binary package file in ddeb format."""
+    format = BinaryPackageFormat.DDEB
