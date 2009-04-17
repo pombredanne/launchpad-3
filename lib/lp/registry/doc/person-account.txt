@@ -29,7 +29,7 @@ The account can only be activated by the user who is claiming
 the profile. Mark cannot claim it.
 
     >>> login('mark@hbd.com')
-    >>> matsubara.activateAccount(
+    >>> matsubara.account.activate(
     ...     comment="test", password='ok', preferred_email=emailaddress)
     Traceback (most recent call last):
     ...
@@ -39,36 +39,19 @@ Matsubara can. A password and a preferred email address must be passed
 as arguments.
 
     >>> from zope.security.proxy import removeSecurityProxy
-
     >>> login('matsubara@async.com.br')
-    >>> matsubara.activateAccount(
+    >>> matsubara.account.activate(
     ...     comment="test", password='ok', preferred_email=emailaddress)
     >>> import transaction
     >>> transaction.commit()
     >>> matsubara.is_valid_person
     True
-    >>> matsubara.account_status
+    >>> matsubara.account.status
     <DBItem AccountStatus.ACTIVE, ...>
-    >>> matsubara.account_status_comment
+    >>> matsubara.account.status_comment
     u'test'
-    >>> removeSecurityProxy(matsubara.preferredemail).email
+    >>> removeSecurityProxy(matsubara.account.preferredemail).email
     u'matsubara@async.com.br'
-
-An error is raised if activateAccount() is called on a team.
-
-    >>> personset = getUtility(IPersonSet)
-    >>> ubuntu_team = personset.getByName('ubuntu-team')
-
-    # It's only the person (in this case, team) himself that is authorized to
-    # call activateAccount(), but it's obviously not possible to login as a
-    # team, so we have to remove the security proxy here.
-    >>> removeSecurityProxy(ubuntu_team).activateAccount(
-    ...     comment="test", password='ok', preferred_email=emailaddress)
-    Traceback (most recent call last):
-    ...
-    AssertionError: Teams cannot be activated with this method.
-
-    >>> login(ANONYMOUS)
 
 
 == Deactivating user accounts ==
@@ -83,6 +66,7 @@ him, so we'll assign one just to prove that deactivating his account
 will cause this spec to be reassigned.
 
 
+    >>> personset = getUtility(IPersonSet)
     >>> foobar_preferredemail = emailset.getByEmail('foo.bar@canonical.com')
     >>> foobar = personset.get(foobar_preferredemail.personID)
     >>> foobar.specifications().count() > 0
@@ -91,7 +75,6 @@ will cause this spec to be reassigned.
     >>> from canonical.launchpad.database import Person, Specification
     >>> spec = Specification.selectFirst("assignee IS NULL", orderBy='id')
     >>> spec.assignee = foobar
-    >>> flush_database_updates()
 
     >>> [membership.team.name for membership in foobar.myactivememberships]
     [u'canonical-partner-dev', u'guadamen', u'admins',
@@ -147,9 +130,6 @@ even launchpad admins can use it.
 
     >>> login('foo.bar@canonical.com')
     >>> foobar.deactivateAccount(comment)
-    >>> flush_database_updates()
-    >>> from canonical.database.sqlbase import flush_database_caches
-    >>> flush_database_caches()
 
 Deactivating an account changes many of the person's attributes.  It
 adds a '-deactivatedaccount' suffix to the person's name...
@@ -241,14 +221,13 @@ email address cannot not be None.
     ...     'This will raise an error.', password='ok', preferred_email=None)
     Traceback (most recent call last):
      ...
-    AssertionError: Account ... cannot be reactivated without a preferred
+    AssertionError: Account ... cannot be activated without a preferred
                     email address.
 
 The account can be reactivated after the password and preferred email
 address are set.
 
-    >>> from canonical.launchpad.interfaces import IMasterObject
-    >>> IMasterObject(foobar.account).reactivate(
+    >>> foobar.reactivate(
     ...     'User reactivated the account using reset password.',
     ...     password="ok",
     ...     preferred_email=foobar_preferredemail)
