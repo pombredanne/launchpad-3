@@ -2488,13 +2488,13 @@ class PersonSet:
         logged_in_user = getUtility(ILaunchBag).user
         if logged_in_user is not None:
             private_query = """
-                TeamParticipation.person = %s AND
-                TeamParticipation.team = Person.id AND
-                Person.teamowner IS NOT NULL AND
-                Person.visibility != %s
+                TeamParticipation.person = %s
+                AND TeamParticipation.team = Person.id
+                AND Person.teamowner IS NOT NULL
+                AND Person.visibility != %s
                 """ % (sqlvalues(logged_in_user, PersonVisibility.PUBLIC))
         else:
-            private_query = "1=0"
+            private_query = "1 = 0"
         base_query = """
             (Person.visibility = %s OR
             %s)""" % (quote(PersonVisibility.PUBLIC), private_query)
@@ -2507,7 +2507,7 @@ class PersonSet:
             AND Person.teamowner IS NOT NULL
             AND Person.merged IS NULL
             AND EmailAddress.person = Person.id
-            AND lower(EmailAddress.email) LIKE %s || '%%%%'
+            AND lower(EmailAddress.email) LIKE %s || '%%'
             """ % (privacy_query, quote_like(text),)
         return team_email_query
 
@@ -2529,10 +2529,6 @@ class PersonSet:
 
         orderBy = Person._sortingColumnsForSetOperations
         text = text.lower()
-        private_query = self._teamPrivacyQuery()
-        base_query = """
-            (Person.visibility = %s OR
-            %s)""" % (quote(PersonVisibility.PUBLIC), private_query)
 
         # Teams may not have email addresses, so we need to either use a LEFT
         # OUTER JOIN or do a UNION between four queries. Using a UNION makes
@@ -2542,10 +2538,11 @@ class PersonSet:
             Person.teamowner IS NULL
             AND Person.merged IS NULL
             AND EmailAddress.person = Person.id
-            AND lower(EmailAddress.email) LIKE %s || '%%%%'
+            AND lower(EmailAddress.email) LIKE %s || '%%'
             AND Person.account = Account.id
             AND Account.status NOT IN %s
             """ % args
+
         results = Person.select(
             person_email_query, clauseTables=['EmailAddress', 'Account'])
 

@@ -768,6 +768,15 @@ address:
     >>> print_people(personset.find('steve.alexander'))
     Steve Alexander (stevea): [u'steve.alexander@ubuntulinux.com']
 
+    >>> print_people(personset.find('steve.alexander@'))
+    Steve Alexander (stevea): [u'steve.alexander@ubuntulinux.com']
+
+    >>> list(personset.find('eve.alexander@'))
+    []
+
+    >>> list(personset.find('eve.alexander'))
+    []
+
 The teams returned are dependent upon the team's visibility (privacy)
 and whether the logged in user is a member of those teams.
 
@@ -808,7 +817,7 @@ But Owner, a member of that team, will see it in the results.
     Warty Gnome Team (warty-gnome): []
     Warty Security Team (name20): []
 
-    Searching for people and teams without specifying some text to filter
+Searching for people and teams without specifying some text to filter
 the results will cause no people/teams to be returned.
 
     >>> list(personset.find(''))
