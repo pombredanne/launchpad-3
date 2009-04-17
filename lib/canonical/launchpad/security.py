@@ -78,7 +78,7 @@ from lp.registry.interfaces.productrelease import (
     IProductRelease, IProductReleaseFile)
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.code.interfaces.seriessourcepackagebranch import (
-    ISeriesSourcePackageBranch, ISeriesSourcePackageBranchSet)
+    ISeriesSourcePackageBranch, IMakeOfficialBranchLinks)
 from canonical.launchpad.interfaces.shipit import (
     IRequestedCDs, IShippingRequest, IShippingRequestSet, IShippingRun,
     IStandardShipItRequest, IStandardShipItRequestSet)
@@ -2182,7 +2182,7 @@ class LinkOfficialSourcePackageBranches(AuthorizationBase):
     """
 
     permission = 'launchpad.Edit'
-    usedfor = ISeriesSourcePackageBranchSet
+    usedfor = IMakeOfficialBranchLinks
 
     def checkUnauthenticated(self):
         return False
