@@ -51,7 +51,7 @@ def _test_expander(client):
     # The collapsible area is present and collapsed.
     collapsible_area_xpath = (
         u"//form[@name='launchpadform']"
-        u"//fieldset[contains(.//legend,'Include an attachment')]")
+        u"//fieldset[contains(.//legend,'Extra options')]")
     client.asserts.assertProperty(
         xpath=collapsible_area_xpath,
         validator="className|collapsible")
