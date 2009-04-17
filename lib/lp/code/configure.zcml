@@ -277,12 +277,18 @@
     </class>
     <securedutility
         class="lp.code.model.seriessourcepackagebranch.SeriesSourcePackageBranchSet"
-        provides="lp.code.interfaces.seriessourcepackagebranch.ISeriesSourcePackageBranchSet">
+        provides="lp.code.interfaces.seriessourcepackagebranch.IMakeOfficialBranchLinks">
         <allow
-            interface="lp.code.interfaces.seriessourcepackagebranch.ISeriesSourcePackageBranchSet"/>
+            interface="lp.code.interfaces.seriessourcepackagebranch.IMakeOfficialBranchLinks"/>
         <require
             permission="launchpad.Edit"
-            interface="lp.code.interfaces.seriessourcepackagebranch.ISeriesSourcePackageBranchSet"/>
+            interface="lp.code.interfaces.seriessourcepackagebranch.IMakeOfficialBranchLinks"/>
+    </securedutility>
+    <securedutility
+        class="lp.code.model.seriessourcepackagebranch.SeriesSourcePackageBranchSet"
+        provides="lp.code.interfaces.seriessourcepackagebranch.IFindOfficialBranchLinks">
+        <allow
+            interface="lp.code.interfaces.seriessourcepackagebranch.IFindOfficialBranchLinks"/>
     </securedutility>
     
     <!-- CodeImportResult -->

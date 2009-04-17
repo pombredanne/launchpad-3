@@ -155,12 +155,25 @@ We will create a COPY archive and modify its name.
     ...     name='juergen', displayname=u'J\xc3\xbcrgen')
     >>> rebuild_archive = getUtility(IArchiveSet).new(
     ...     owner=rebuild_owner, purpose=ArchivePurpose.COPY,
-    ...     distribution=ubuntu, name='editable-rebuild')
+    ...     distribution=ubuntu, name='editable-rebuild',
+    ...     enabled=False, require_virtualized=False)
 
 By default, copy archives are created with their 'publish' flag
 turned off, so that the publisher ignores them.
 
     >>> rebuild_archive.publish
+    False
+
+Also, copy archives are typically disabled upon creation so that the owner
+has a chance to tweak the archive's dependencies before build activity
+starts.
+
+    >>> rebuild_archive.enabled
+    False
+
+And, builds for copy archives are to be carried out on non-virtual builders.
+
+    >>> rebuild_archive.require_virtualized
     False
 
 Only 'valid' (traversable) names can be set.
