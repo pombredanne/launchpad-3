@@ -133,8 +133,8 @@ is disabled.
     >>> print anon_browser.title
     Copy archive disabled-security-rebuild for Marty Jupiter
 
-    >>> tag = find_tag_by_id(anon_browser.contents, 'archive-heading')
-    >>> print tag['class']
+    >>> main_content = find_main_content(anon_browser.contents)
+    >>> print main_content.h1['class']
     disabled
 
     >>> tag = first_tag_by_class(anon_browser.contents, 'warning message')
