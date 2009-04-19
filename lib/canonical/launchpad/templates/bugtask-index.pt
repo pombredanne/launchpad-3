@@ -227,6 +227,11 @@ Y.on('load', function() {
  * Subscribe the current user via the LP API
  */
 function subscribe_current_user(subscription_link) {
+    //TODO: 1) Add spinner.
+    //      2) Subscribe the user.
+    //      3) Remove spinner.
+    //      4) On success, add subscriber row, flash the menu link green.
+    //      5) Change menu link to Unsubcribe.
     subscription_link.set('innerHTML', 'Unsubscribe');
 }
 
@@ -234,6 +239,11 @@ function subscribe_current_user(subscription_link) {
  * Unubscribe the current user via the LP API
  */
 function unsubscribe_current_user(subscription_link) {
+    //TODO: 1) Add spinner.
+    //      2) Unubscribe the user.
+    //      3) Remove spinner.
+    //      4) On success, remove subscriber row, flash the menu link green.
+    //      5) Change menu link to Unsubcribe.
     subscription_link.set('innerHTML', 'Subscribe');
 }
 
