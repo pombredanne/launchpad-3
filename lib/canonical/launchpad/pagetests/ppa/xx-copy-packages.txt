@@ -985,7 +985,7 @@ foo_2.0 version to his PPA.
     >>> print_ppa_packages(jblack_browser.contents)
     Source          Published   Status     Series           Section  Build
         Status
-    foo - 2.0                   Published  Hoary            Base
+    foo - 2.0 (changesfile)     Published  Hoary            Base
 
     >>> foo_pub_id = getPPAPubIDsFor('no-priv', 'foo')[0]
     >>> jblack_browser.getControl(
@@ -1014,7 +1014,7 @@ packages since they would not be published in the destination anyway.
     Source            Published   Status     Series           Section  Build
         Status
     cdrkit - 1.0      2007-07-09  Published  Breezy-autotest  Editors  i386
-    foo - 1.1                     Published  Hoary            Base
+    foo - 1.1   (...)             Published  Hoary            Base
     iceweasel...(...) 2007-07-09  Published  Warty            Editors
     pmount - 0.1-1    2007-07-09  Published  Warty            Editors
 
@@ -1057,8 +1057,8 @@ do not enforce coherent version ordering across suites.
     >>> print_ppa_packages(jblack_browser.contents)
     Source          Published   Status     Series           Section  Build
         Status
-    foo - 2.0                   Pending    Hoary            Base
-    foo - 1.1                   Pending    Warty            Base
+    foo - 2.0  (changesfile)    Pending    Hoary            Base
+    foo - 1.1  (changesfile)    Pending    Warty            Base
     pmount - 0.1-1              Pending    Hoary            Editors
     pmount - 0.1-1              Pending    Warty            Editors
     pmount - 0.1-1              Pending    Grumpy           Editors
@@ -1073,7 +1073,7 @@ to copy the *same* version with different contents to grumpy in his PPA.
     >>> print_ppa_packages(jblack_browser.contents)
     Source            Published   Status     Series           Section  Build
         Status
-    foo - 1.1                     Published  Hoary            Base
+    foo - 1.1 (changesfile)       Published  Hoary            Base
     iceweasel...(...) 2007-07-09  Published  Breezy-autotest  Editors
 
     >>> foo_pub_id = getPPAPubIDsFor('sabdfl', 'foo')[0]
@@ -1104,8 +1104,8 @@ foo-9.9 source from 'James-Friend's PPA.
     >>> jblack_browser.getControl("Filter").click()
 
     >>> print_ppa_packages(jblack_browser.contents)
-    Source     Uploader  Published   Status     Series   Section  Build Status
-    foo - 9.9  name16                Published  Hoary    Base     i386
+    Source          Uploader  Published  Status     Series  Section Build Status
+    foo - 9.9 (...) name16               Published  Hoary   Base    i386
 
 But James doesn't think straight, he sees that foo-9.9 failed to build
 in i386, but even though, he tries to copy it including binaries. He

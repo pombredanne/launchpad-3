@@ -114,6 +114,13 @@ class OpenIDAuthorizationSet:
         return result
 
 
+AUTO_AUTHORIZE_TRUST_ROOTS = set([
+        u'https://pastebin.canonical.com/',
+        u'https://directory.canonical.com/',
+        u'https://wiki.canonical.com/',
+        ])
+
+
 class OpenIDRPConfig(SQLBase):
     implements(IOpenIDRPConfig)
 
@@ -143,6 +150,13 @@ class OpenIDRPConfig(SQLBase):
         self._allowed_sreg = ','.join(sorted(value))
 
     allowed_sreg = property(allowed_sreg, _set_allowed_sreg)
+
+    @property
+    def auto_authorize(self):
+        """See `IOpenIDRPConfig`"""
+        # XXX 2009-04-16 jamesh bug=362149: a related merge to
+        # db-devel is needed to switch this to a database column.
+        return self.trust_root in AUTO_AUTHORIZE_TRUST_ROOTS
 
 
 class OpenIDRPConfigSet:
