@@ -8,6 +8,14 @@ to add things to the bug, inlined within the main content area.
   ...Activity log...
   ...Mark as duplicate...
 
+On other bug views, the 'Mark as duplicate' link can be found in the actions
+menu.
+
+  >>> user_browser.getLink(url='+edit').click()
+  >>> print find_tags_by_class(
+  ...     user_browser.contents, 'menu-link-markduplicate')[0].renderContents()
+  Mark as duplicate
+
   Tests the marking of a bug that is a duplicate of a duplicate.
 
   >>> user_browser.getLink('Mark as duplicate').click()

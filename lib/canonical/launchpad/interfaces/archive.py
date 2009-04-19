@@ -47,8 +47,9 @@ from canonical.launchpad.validators.name import name_validator
 from lazr.restful.fields import Reference
 from lazr.restful.declarations import (
     export_as_webservice_entry, exported, export_read_operation,
-    export_factory_operation, export_write_operation, operation_parameters,
-    operation_returns_collection_of, rename_parameters_as, webservice_error)
+    export_factory_operation, export_operation_as, export_write_operation,
+    operation_parameters, operation_returns_collection_of,
+    rename_parameters_as, webservice_error)
 
 
 class ArchiveDependencyError(Exception):
@@ -246,24 +247,6 @@ class IArchivePublic(IHasOwner):
         architecture-independent publication for other architetures than the
         nominatedarchindep. In few words it represents the binary files
         published in the archive disk pool.
-
-        :param: name: binary name filter (exact match or SQL LIKE controlled
-                      by 'exact_match' argument).
-        :param: version: binary version filter (always exact match).
-        :param: status: `PackagePublishingStatus` filter, can be a list.
-        :param: distroarchseries: `IDistroArchSeries` filter, can be a list.
-        :param: pocket: `PackagePublishingPocket` filter.
-        :param: exact_match: either or not filter source names by exact
-                             matching.
-
-        :return: SelectResults containing `IBinaryPackagePublishingHistory`.
-        """
-
-    def getAllPublishedBinaries(name=None, version=None, status=None,
-                                distroarchseries=None, exact_match=False):
-        """All `IBinaryPackagePublishingHistory` target to this archive.
-
-        See getUniquePublishedBinaries for further information.
 
         :param: name: binary name filter (exact match or SQL LIKE controlled
                       by 'exact_match' argument).
@@ -660,6 +643,53 @@ class IArchiveView(IHasBuildRecords):
         :return: SelectResults containing `ISourcePackagePublishingHistory`.
         """
 
+    @rename_parameters_as(
+        name="binary_name", distroarchseries="distro_arch_series")
+    @operation_parameters(
+        name=TextLine(title=_("Binary Package Name"), required=False),
+        version=TextLine(title=_("Version"), required=False),
+        status=Choice(
+            title=_("Package Publishing Status"),
+            description=_("The status of this publishing record"),
+            # Really PackagePublishingStatus, circular import fixed below.
+            vocabulary=DBEnumeratedType,
+            required=False),
+        distroarchseries=Reference(
+            # Really IDistroArchSeries, circular import fixed below.
+            Interface,
+            title=_("Distro Arch Series"), required=False),
+        pocket=Choice(
+            title=_("Pocket"),
+            description=_("The pocket into which this entry is published"),
+            # Really PackagePublishingPocket, circular import fixed below.
+            vocabulary=DBEnumeratedType,
+            required=False, readonly=True),
+        exact_match=Bool(
+            description=_("Whether or not to filter binary names by exact "
+                          "matching."),
+            required=False))
+    # Really returns ISourcePackagePublishingHistory, see below for
+    # patch to avoid circular import.
+    @operation_returns_collection_of(Interface)
+    @export_operation_as("getPublishedBinaries")
+    @export_read_operation()
+    def getAllPublishedBinaries(name=None, version=None, status=None,
+                                distroarchseries=None, pocket=None,
+                                exact_match=False):
+        """All `IBinaryPackagePublishingHistory` target to this archive.
+
+        :param: name: binary name filter (exact match or SQL LIKE controlled
+                      by 'exact_match' argument).
+        :param: version: binary version filter (always exact match).
+        :param: status: `PackagePublishingStatus` filter, can be a list.
+        :param: distroarchseries: `IDistroArchSeries` filter, can be a list.
+        :param: pocket: `PackagePublishingPocket` filter.
+        :param: exact_match: either or not filter source names by exact
+                             matching.
+
+        :return: A collection containing `BinaryPackagePublishingHistory`.
+        """
+
     @operation_parameters(
         include_needsbuild=Bool(
             title=_("Include builds with state NEEDSBUILD"), required=False))
@@ -885,8 +915,11 @@ class IArchiveSet(Interface):
 
 
     def new(purpose, owner, name=None, displayname=None, distribution=None,
-            description=None):
+            description=None, enabled=True, require_virtualized=True):
         """Create a new archive.
+
+        On named-ppa creation, the signing key for the default PPA for the
+        given owner will be used if it is present.
 
         :param purpose: `ArchivePurpose`;
         :param owner: `IPerson` owning the Archive;
@@ -900,6 +933,9 @@ class IArchiveSet(Interface):
             will be attached;
         :param description: optional text to be set as the archive
             description;
+        :param enabled: whether the archive shall be enabled post creation
+        :param require_virtualized: whether builds for the new archive shall
+            be carried out on virtual builders
 
         :return: an `IArchive` object.
         :raises AssertionError if name is already taken within distribution.
@@ -1099,6 +1135,19 @@ patch_choice_parameter_type(
     IArchive, 'getPublishedSources', 'status', PackagePublishingStatus)
 patch_choice_parameter_type(
     IArchive, 'getPublishedSources', 'pocket', PackagePublishingPocket)
+
+from canonical.launchpad.interfaces.distroarchseries import IDistroArchSeries
+from canonical.launchpad.interfaces.publishing import (
+    IBinaryPackagePublishingHistory)
+patch_plain_parameter_type(
+    IArchive, 'getAllPublishedBinaries', 'distroarchseries',
+    IDistroArchSeries)
+patch_collection_return_type(
+    IArchive, 'getAllPublishedBinaries', IBinaryPackagePublishingHistory)
+patch_choice_parameter_type(
+    IArchive, 'getAllPublishedBinaries', 'status', PackagePublishingStatus)
+patch_choice_parameter_type(
+    IArchive, 'getAllPublishedBinaries', 'pocket', PackagePublishingPocket)
 
 # This is patched here to avoid even more circular imports in
 # interfaces/person.py.

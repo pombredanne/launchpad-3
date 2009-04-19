@@ -113,7 +113,7 @@ class DistroSeriesStatus(DBEnumeratedType):
 class IDistroSeriesEditRestricted(Interface):
     """IDistroSeries properties which require launchpad.Edit."""
 
-    def newMilestone(name, dateexpected=None, summary=None):
+    def newMilestone(name, dateexpected=None, summary=None, code_name=None):
         """Create a new milestone for this DistroSeries."""
 
 
@@ -347,6 +347,16 @@ class IDistroSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
         """
 
     def __getitem__(archtag):
+        """Return the distroarchseries for this distroseries with the
+        given architecturetag.
+        """
+
+    @operation_parameters(
+        archtag=TextLine(
+            title=_("The architecture tag"), required=True))
+    @operation_returns_entry(Interface)
+    @export_read_operation()
+    def getDistroArchSeries(archtag):
         """Return the distroarchseries for this distroseries with the
         given architecturetag.
         """
@@ -753,3 +763,10 @@ class NoSuchDistroSeries(NameLookupFailed):
     """Raised when we try to find a DistroSeries that doesn't exist."""
 
     _message_prefix = "No such distribution series"
+
+
+# Monkey patch for circular import avoidance.
+from canonical.launchpad.components.apihelpers import patch_entry_return_type
+from canonical.launchpad.interfaces.distroarchseries import IDistroArchSeries
+patch_entry_return_type(
+    IDistroSeries, 'getDistroArchSeries', IDistroArchSeries)

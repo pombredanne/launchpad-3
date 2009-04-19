@@ -330,10 +330,13 @@ class IProductReleasePublic(Interface):
             value_type=Reference(schema=IProductReleaseFile)))
 
     milestone = exported(
-        Reference(
-            title=u"The milestone for this release.",
+        ReferenceChoice(
+            title=u"Milestone for this release",
+            description=_("A release requires a corresponding milestone "
+                          "that is not attached to another release."),
             # Schema is set to IMilestone in interfaces/milestone.py.
             schema=Interface,
+            vocabulary='Milestone',
             required=True))
 
     def getFileAliasByName(name):

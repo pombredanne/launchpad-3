@@ -154,15 +154,15 @@ the list.
     >>> # Add a release to the empty series.
     >>> firefox_owner.open('http://launchpad.dev/firefox')
     >>> firefox_owner.getLink('3.0').click()
-    >>> firefox_owner.getLink('Add milestone').click()
+    >>> firefox_owner.getLink('Create milestone').click()
     >>> firefox_owner.getControl('Name').value = '3.14159'
     >>> firefox_owner.getControl('Register milestone').click()
     >>> firefox_owner.getLink(url='+milestone/3.14159').click()
-    >>> firefox_owner.getLink('Publish release').click()
+    >>> firefox_owner.getLink('Create release').click()
     >>> firefox_owner.getControl('Date released').value = '2000-01-01'
-    >>> firefox_owner.getControl('Publish release').click()
+    >>> firefox_owner.getControl('Create release').click()
     >>> print firefox_owner.url
-    http://launchpad.dev/firefox/3.0/3.14159
+    http://launchpad.dev/firefox/3.0
     >>> # See that it now appears in the list.
     >>> firefox_owner.open('http://launchpad.dev/firefox/+download')
     >>> extract_series_release(firefox_owner.contents,

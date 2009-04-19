@@ -11,12 +11,14 @@ __all__ = [
     'IrcIDSet',
     'JabberID',
     'JabberIDSet',
+    'JoinTeamEvent',
     'Owner',
     'Person',
     'PersonLanguage',
     'PersonSet',
     'SSHKey',
     'SSHKeySet',
+    'TeamInvitationEvent',
     'ValidPersonCache',
     'WikiName',
     'WikiNameSet']
@@ -63,8 +65,8 @@ from canonical.launchpad.database.oauth import (
 from lp.registry.model.personlocation import PersonLocation
 from canonical.launchpad.database.structuralsubscription import (
     StructuralSubscription)
-from lp.registry.event.karma import KarmaAssignedEvent
-from lp.registry.event.team import JoinTeamEvent, TeamInvitationEvent
+from canonical.launchpad.event.interfaces import (
+    IJoinTeamEvent, ITeamInvitationEvent)
 from canonical.launchpad.helpers import (
     get_contact_email_addresses, get_email_template, shortlist)
 
@@ -109,7 +111,7 @@ from canonical.launchpad.interfaces.personnotification import (
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.project import IProject
-from canonical.launchpad.interfaces.revision import IRevisionSet
+from lp.code.interfaces.revision import IRevisionSet
 from lp.registry.interfaces.salesforce import (
     ISalesforceVoucherProxy, VOUCHER_STATUSES)
 from canonical.launchpad.interfaces.specification import (
@@ -121,7 +123,8 @@ from lp.registry.interfaces.teammembership import (
     TeamMembershipStatus)
 from lp.registry.interfaces.wikiname import IWikiName, IWikiNameSet
 from canonical.launchpad.webapp.interfaces import (
-    ILaunchBag, IStoreSelector, AUTH_STORE, MASTER_FLAVOR)
+    AUTH_STORE, ILaunchBag, IStoreSelector, MASTER_FLAVOR)
+
 
 from canonical.launchpad.database.archive import Archive
 from lp.registry.model.codeofconduct import SignedCodeOfConduct
@@ -131,7 +134,7 @@ from canonical.launchpad.database.emailaddress import (
 from lp.registry.model.karma import KarmaCache, KarmaTotalCache
 from canonical.launchpad.database.logintoken import LoginToken
 from lp.registry.model.pillar import PillarName
-from lp.registry.model.karma import KarmaAction, Karma
+from lp.registry.model.karma import KarmaAction, KarmaAssignedEvent, Karma
 from lp.registry.model.mentoringoffer import MentoringOffer
 from canonical.launchpad.database.sourcepackagerelease import (
     SourcePackageRelease)
@@ -145,6 +148,26 @@ from lp.registry.model.teammembership import (
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.validators.name import sanitize_name, valid_name
 from lp.registry.interfaces.person import validate_public_person
+
+
+class JoinTeamEvent:
+    """See `IJoinTeamEvent`."""
+
+    implements(IJoinTeamEvent)
+
+    def __init__(self, person, team):
+        self.person = person
+        self.team = team
+
+
+class TeamInvitationEvent:
+    """See `IJoinTeamEvent`."""
+
+    implements(ITeamInvitationEvent)
+
+    def __init__(self, member, team):
+        self.member = member
+        self.team = team
 
 
 class ValidPersonCache(SQLBase):
@@ -186,6 +209,8 @@ class Person(
 
     sortingColumns = SQLConstant(
         "person_sort_key(Person.displayname, Person.name)")
+    # Redefine the default ordering into Storm syntax.
+    _storm_sortingColumns = ('Person.displayname', 'Person.name')
     # When doing any sort of set operations (union, intersect, except_) with
     # SQLObject we can't use sortingColumns because the table name Person is
     # not available in that context, so we use this one.
@@ -1522,7 +1547,7 @@ class Person(
             clauseTables=['Person'],
             orderBy=Person.sortingColumns)
 
-    def _mapped_participants_locations(self):
+    def _getMappedParticipantsLocations(self, limit=None):
         """See `IPersonViewRestricted`."""
         return PersonLocation.select("""
             PersonLocation.person = TeamParticipation.person AND
@@ -1535,17 +1560,16 @@ class Person(
             Person.teamowner IS NULL
             """ % sqlvalues(self.id),
             clauseTables=['TeamParticipation', 'Person'],
-            prejoins=['person',])
+            prejoins=['person',], limit=limit)
 
-    @property
-    def mapped_participants(self):
+    def getMappedParticipants(self, limit=None):
         """See `IPersonViewRestricted`."""
         # Pre-cache this location against its person.  Since we'll always
         # iterate over all persons returned by this property (to build the map
         # of team members), it becomes more important to cache their locations
         # than to return a lazy SelectResults (or similar) object that only
         # fetches the rows when they're needed.
-        locations = self._mapped_participants_locations()
+        locations = self._getMappedParticipantsLocations(limit=limit)
         for location in locations:
             location.person._location = location
         participants = set(location.person for location in locations)
@@ -1553,12 +1577,13 @@ class Person(
         if len(participants) > 0:
             sql = "id IN (%s)" % ",".join(sqlvalues(*participants))
             list(ValidPersonCache.select(sql))
+        getUtility(IPersonSet).cacheBrandingForPeople(participants)
         return list(participants)
 
     @property
     def mapped_participants_count(self):
         """See `IPersonViewRestricted`."""
-        return self._mapped_participants_locations().count()
+        return self._getMappedParticipantsLocations().count()
 
     def getMappedParticipantsBounds(self):
         """See `IPersonViewRestricted`."""
@@ -1566,7 +1591,7 @@ class Person(
         min_lat = 90.0
         max_lng = -180.0
         min_lng = 180.0
-        locations = self._mapped_participants_locations()
+        locations = self._getMappedParticipantsLocations()
         if self.mapped_participants_count == 0:
             raise AssertionError, (
                 'This method cannot be called when '
@@ -1618,27 +1643,9 @@ class Person(
             clauseTables=['Person'],
             orderBy=Person.sortingColumns)
 
-    def activateAccount(self, comment, password, preferred_email):
-        """See `IPersonSpecialRestricted`.
-
-        :raise AssertionError: if the Person is a Team.
-        """
-        # XXX sinzui 2008-07-14 bug=248518:
-        # This method would assert the password is not None, but
-        # setPreferredEmail() passes the Person's current password.
-        if self.is_team:
-            raise AssertionError(
-                "Teams cannot be activated with this method.")
-        account = IMasterStore(Account).get(Account, self.accountID)
-        account.status = AccountStatus.ACTIVE
-        account.status_comment = comment
-        account.password = password
-        if preferred_email is not None:
-            self.validateAndEnsurePreferredEmail(
-                IMasterObject(preferred_email))
-        # sync so validpersoncache updates.
-        account.sync()
-
+    # XXX: salgado, 2009-04-16: This should be called just deactivate(),
+    # because it not only deactivates this person's account but also the
+    # person.
     def deactivateAccount(self, comment):
         """See `IPersonSpecialRestricted`."""
         assert self.is_valid_person, (
@@ -1928,6 +1935,23 @@ class Person(
         else:
             return None
 
+    def reactivate(self, comment, password, preferred_email):
+        """See `IPersonSpecialRestricted`."""
+        account = IMasterObject(self.account)
+        account.reactivate(comment, password, preferred_email)
+        if '-deactivatedaccount' in self.name:
+            # The name was changed by deactivateAccount(). Restore the
+            # name, but we must ensure it does not conflict with a current
+            # user.
+            name_parts = self.name.split('-deactivatedaccount')
+            base_new_name = name_parts[0]
+            self.name = self._ensureNewName(base_new_name)
+        # XXX: salgado, bug=356092 2009-04-15: The lines below won't be
+        # needed once the bug is fixed.
+        email = removeSecurityProxy(preferred_email)
+        getUtility(IRevisionSet).checkNewVerifiedEmail(email)
+        getUtility(IHWSubmissionSet).setOwnership(email)
+
     def validateAndEnsurePreferredEmail(self, email):
         """See `IPerson`."""
         email = IMasterObject(email)
@@ -1949,7 +1973,7 @@ class Person(
             EmailAddress,
             EmailAddress.personID == self.id,
             EmailAddress.status == EmailAddressStatus.PREFERRED).one()
-        
+
         # This email is already validated and is this person's preferred
         # email, so we have nothing to do.
         if preferred_email == email:
@@ -1999,7 +2023,8 @@ class Person(
             # This is a hack to preserve this function's behaviour before
             # Account was split from Person. This can be removed when
             # all the callsites ensure that the account is ACTIVE first.
-            self.activateAccount(
+            account = IMasterStore(Account).get(Account, self.accountID)
+            account.activate(
                 "Activated when the preferred email was set.",
                 password=self.password,
                 preferred_email=email)
@@ -2450,13 +2475,55 @@ class PersonSet:
         """See `IPersonSet`."""
         return getUtility(ILaunchpadStatisticSet).value('teams_count')
 
-    def find(self, text, orderBy=None):
+    def _teamPrivacyQuery(self):
+        """Generate the query needed for privacy filtering.
+
+        If the visibility is not PUBLIC ensure the logged in user is a member
+        of the team.
+        """
+        logged_in_user = getUtility(ILaunchBag).user
+        if logged_in_user is not None:
+            private_query = """
+                TeamParticipation.person = %s
+                AND TeamParticipation.team = Person.id
+                AND Person.teamowner IS NOT NULL
+                AND Person.visibility != %s
+                """ % (sqlvalues(logged_in_user, PersonVisibility.PUBLIC))
+        else:
+            private_query = "1 = 0"
+        base_query = """
+            (Person.visibility = %s OR
+            %s)""" % (quote(PersonVisibility.PUBLIC), private_query)
+        return base_query
+
+    def _teamEmailQuery(self, text, privacy_query):
+        """Product the query for team email addresses."""
+        team_email_query = """
+            %s
+            AND Person.teamowner IS NOT NULL
+            AND Person.merged IS NULL
+            AND EmailAddress.person = Person.id
+            AND lower(EmailAddress.email) LIKE %s || '%%'
+            """ % (privacy_query, quote_like(text),)
+        return team_email_query
+
+    def _teamNameQuery(self, text, privacy_query):
+        """Produce the query for team names."""
+        team_name_query = """
+            %s
+            AND Person.teamowner IS NOT NULL
+            AND Person.merged IS NULL
+            AND Person.fti @@ ftq(%s)
+            """ % (privacy_query, quote(text),)
+        return team_name_query
+
+    def find(self, text):
         """See `IPersonSet`."""
         if not text:
             # Return an empty result set.
             return EmptyResultSet()
-        if orderBy is None:
-            orderBy = Person._sortingColumnsForSetOperations
+
+        orderBy = Person._sortingColumnsForSetOperations
         text = text.lower()
 
         # Teams may not have email addresses, so we need to either use a LEFT
@@ -2467,10 +2534,11 @@ class PersonSet:
             Person.teamowner IS NULL
             AND Person.merged IS NULL
             AND EmailAddress.person = Person.id
-            AND lower(EmailAddress.email) LIKE %s || '%%%%'
+            AND lower(EmailAddress.email) LIKE %s || '%%'
             AND Person.account = Account.id
             AND Account.status NOT IN %s
             """ % args
+
         results = Person.select(
             person_email_query, clauseTables=['EmailAddress', 'Account'])
 
@@ -2484,32 +2552,28 @@ class PersonSet:
         results = results.union(Person.select(
             person_name_query, clauseTables=['Account']))
 
-        team_email_query = """
-            Person.teamowner IS NOT NULL
-            AND Person.merged IS NULL
-            AND EmailAddress.person = Person.id
-            AND lower(EmailAddress.email) LIKE %s || '%%%%'
-            """ % (quote_like(text),)
-        results = results.union(Person.select(
-            team_email_query, clauseTables=['EmailAddress']))
+        privacy_query = self._teamPrivacyQuery()
 
-        team_name_query = """
-            Person.teamowner IS NOT NULL
-            AND Person.merged IS NULL
-            AND Person.fti @@ ftq(%s)
-            """ % (quote(text),)
+        team_email_query = self._teamEmailQuery(text, privacy_query)
+
+        results = results.union(Person.select(
+            team_email_query, clauseTables=['EmailAddress',
+                                            'TeamParticipation']))
+
+        team_name_query = self._teamNameQuery(text, privacy_query)
+
         results = results.union(
-                Person.select(team_name_query), orderBy=orderBy)
+                Person.select(team_name_query,
+                              clauseTables=['TeamParticipation']),
+                orderBy=orderBy)
         return results
 
     def findPerson(
-            self, text="", orderBy=None, exclude_inactive_accounts=True,
+            self, text="", exclude_inactive_accounts=True,
             must_have_email=False):
         """See `IPersonSet`."""
-        if orderBy is None:
-            orderBy = Person._sortingColumnsForSetOperations
+        orderBy = Person._sortingColumnsForSetOperations
         text = text.lower()
-
         base_query = [
                 'Person.teamowner IS NULL',
                 'Person.merged IS NULL',
@@ -2550,25 +2614,26 @@ class PersonSet:
 
         return results.orderBy(orderBy)
 
-    def findTeam(self, text="", orderBy=None):
+    def findTeam(self, text=""):
         """See `IPersonSet`."""
-        if orderBy is None:
-            orderBy = Person._sortingColumnsForSetOperations
+        orderBy = Person._sortingColumnsForSetOperations
         text = text.lower()
         # Teams may not have email addresses, so we need to either use a LEFT
         # OUTER JOIN or do a UNION between two queries. Using a UNION makes
         # it a lot faster than with a LEFT OUTER JOIN.
-        email_query = """
-            Person.teamowner IS NOT NULL AND
-            EmailAddress.person = Person.id AND
-            lower(EmailAddress.email) LIKE %s || '%%'
-            """ % quote_like(text)
-        results = Person.select(email_query, clauseTables=['EmailAddress'])
-        name_query = """
-             Person.teamowner IS NOT NULL AND
-             Person.fti @@ ftq(%s)
-            """ % quote(text)
-        return results.union(Person.select(name_query), orderBy=orderBy)
+        privacy_query = self._teamPrivacyQuery()
+
+        email_query = self._teamEmailQuery(text, privacy_query)
+
+        email_results = Person.select(email_query,
+                                      clauseTables=['EmailAddress',
+                                                    'TeamParticipation'])
+        name_query = self._teamNameQuery(text, privacy_query)
+
+        name_results = Person.select(name_query,
+                                     clauseTables=['TeamParticipation'])
+        combined_results = email_results.union(name_results, orderBy=orderBy)
+        return combined_results
 
     def get(self, personid):
         """See `IPersonSet`."""

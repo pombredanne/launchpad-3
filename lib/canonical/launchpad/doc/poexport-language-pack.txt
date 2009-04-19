@@ -183,8 +183,8 @@ Attach the es.xpi file (the translation) file.
 Before we are ready to import the attached files, we need to approve
 them first.
 
-    >>> template_entry.status = RosettaImportStatus.APPROVED
-    >>> translation_entry.status = RosettaImportStatus.APPROVED
+    >>> template_entry.setStatus(RosettaImportStatus.APPROVED)
+    >>> translation_entry.setStatus(RosettaImportStatus.APPROVED)
 
 Given that the files are attached to Librarian, we need to commit the
 transaction to make sure it's stored properly and available.

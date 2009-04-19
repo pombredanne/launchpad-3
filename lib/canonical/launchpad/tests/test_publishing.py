@@ -114,9 +114,21 @@ class SoyuzTestPublisher:
             'application/text', restricted=restricted)
         return library_file
 
+    def addPackageUpload(self, archive, distroseries,
+                         pocket=PackagePublishingPocket.RELEASE,
+                         changes_file_name="foo_666_source.changes",
+                         changes_file_content="fake changes file content"):
+        signing_key =  self.person.gpgkeys[0]
+        package_upload = distroseries.createQueueEntry(
+            pocket, changes_file_name, changes_file_content, archive,
+            signing_key)
+        package_upload.setDone()
+        return package_upload
+
     def getPubSource(self, sourcename=None, version='666', component='main',
                      filename=None, section='base',
                      filecontent='I do not care about sources.',
+                     changes_file_content="Fake: fake changes file content",
                      status=PackagePublishingStatus.PENDING,
                      pocket=PackagePublishingPocket.RELEASE,
                      urgency=SourcePackageUrgency.LOW,
@@ -166,6 +178,13 @@ class SoyuzTestPublisher:
             dsc_binaries=dsc_binaries,
             archive=archive, dateuploaded=date_uploaded)
 
+        changes_file_name = "%s_%s_source.changes" % (sourcename, version)
+        package_upload = self.addPackageUpload(
+            archive, distroseries, pocket,
+            changes_file_name=changes_file_name,
+            changes_file_content=changes_file_content)
+        package_upload.addSource(spr)
+
         if filename is None:
             filename = "%s_%s.dsc" % (sourcename, version)
         alias = self.addMockFile(
@@ -195,6 +214,7 @@ class SoyuzTestPublisher:
                        suggests=None, conflicts=None, replaces=None,
                        provides=None, pre_depends=None, enhances=None,
                        breaks=None, filecontent='bbbiiinnnaaarrryyy',
+                       changes_file_content="Fake: fake changes file",
                        status=PackagePublishingStatus.PENDING,
                        pocket=PackagePublishingPocket.RELEASE,
                        format=BinaryPackageFormat.DEB,
@@ -228,6 +248,13 @@ class SoyuzTestPublisher:
                 binarypackagerelease, archive, status, pocket,
                 scheduleddeletiondate, dateremoved)
             published_binaries.extend(pub_binaries)
+            package_upload = self.addPackageUpload(
+                archive, distroseries, pocket,
+                changes_file_content=changes_file_content,
+                changes_file_name='%s_%s_%s.changes' %
+                    (binaryname, binarypackagerelease.version,
+                     build.arch_tag))
+            package_upload.addBuild(build)
 
         return sorted(
             published_binaries, key=operator.attrgetter('id'), reverse=True)

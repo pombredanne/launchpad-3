@@ -1,1 +1,0 @@
-"""Vocabularies for registry objects."""
