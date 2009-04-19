@@ -152,7 +152,7 @@ also reactivate the project at the same time.
     >>> form = {
     ...     'field.active': 'on',
     ...     'field.private_bugs': 'on',
-    ...     'field.reviewer_whiteboard': 'Reinstated Canonical project',
+    ...     'field.reviewer_whiteboard': 'Reinstated old project',
     ...     'field.actions.change': 'Change',
     ...     }
     >>> view = create_initialized_view(
@@ -164,7 +164,7 @@ also reactivate the project at the same time.
     >>> firefox.private_bugs
     True
     >>> print firefox.reviewer_whiteboard
-    Reinstated Canonical project
+    Reinstated old project
 
 A project with proprietary license cannot be approved; the owner must
 purchase a commercial subscription.

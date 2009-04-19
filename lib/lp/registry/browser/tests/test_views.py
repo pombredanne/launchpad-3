@@ -15,6 +15,9 @@ from canonical.testing import (
 
 here = os.path.dirname(os.path.realpath(__file__))
 
+# The default layer of view tests is the DatabaseFunctionalLayer. Tests
+# that require something special like the librarian or mailman must run
+# on a layer that sets those services up.
 special_test_layer = {
     'milestone-views.txt': LaunchpadFunctionalLayer,
     'person-views.txt': LaunchpadFunctionalLayer,
