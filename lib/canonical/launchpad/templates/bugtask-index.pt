@@ -194,6 +194,52 @@ function update_bug_duplicate(data) {
 
 });
       </script>" />
+
+      <js tal:replace="structure string:<script type='text/javascript'>
+YUI({base: yui_base + '/'}).use(
+    'io-base', 'node', 'lazr.anim', function(Y) {
+
+
+Y.on('load', function() {
+    // If the user is not logged in, then we need to defer to the
+    // default behaviour.
+    if (LP.client.links['me'] === undefined){
+        return;
+    }
+    var subscription_links = Y.all('.menu-link-subscription');
+
+    subscription_links.on('click', function(e) {
+        e.halt();
+        if (e.target.get('innerHTML') == 'Subscribe') {
+            subscribe_current_user(e.target);
+        }
+        else {
+            unsubscribe_current_user(e.target);
+        }
+    });
+
+    // Add a class denoting them as js-action links.
+    subscription_links.addClass('js-action');
+}, window);
+
+
+/*
+ * Subscribe the current user via the LP API
+ */
+function subscribe_current_user(subscription_link) {
+    subscription_link.set('innerHTML', 'Unsubscribe');
+}
+
+/*
+ * Unubscribe the current user via the LP API
+ */
+function unsubscribe_current_user(subscription_link) {
+    subscription_link.set('innerHTML', 'Subscribe');
+}
+
+});
+
+      </script>" />
     </metal:block>
 
     <div metal:fill-slot="main" tal:define="context_menu context/menu:context">
