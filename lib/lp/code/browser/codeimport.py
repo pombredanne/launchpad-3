@@ -125,6 +125,7 @@ class CodeImportBaseView(LaunchpadFormView):
     custom_widget('cvs_root', StrippedTextWidget, displayWidth=50)
     custom_widget('cvs_module', StrippedTextWidget, displayWidth=20)
     custom_widget('svn_branch_url', URIWidget, displayWidth=50)
+    custom_widget('git_repo_url', URIWidget, displayWidth=50)
 
     @cachedproperty
     def _super_user(self):
@@ -196,6 +197,7 @@ class CodeImportNewView(CodeImportBaseView):
     label = 'Request a code import'
     field_names = [
         'product', 'rcs_type', 'svn_branch_url', 'cvs_root', 'cvs_module',
+        'git_repo_url',
         ]
 
     custom_widget('rcs_type', LaunchpadRadioWidget)
@@ -230,14 +232,15 @@ class CodeImportNewView(CodeImportBaseView):
         # display them separately in the form.
         soup = BeautifulSoup(self.widgets['rcs_type']())
         fields = soup.findAll('input')
-        [cvs_button, svn_button, empty_marker] = [
+        [cvs_button, svn_button, git_button, empty_marker] = [
             field for field in fields
-            if field.get('value') in ['CVS', 'SVN', '1']]
+            if field.get('value') in ['CVS', 'SVN', 'GIT', '1']]
         cvs_button['onclick'] = 'updateWidgets()'
         svn_button['onclick'] = 'updateWidgets()'
         # The following attributes are used only in the page template.
         self.rcs_type_cvs = str(cvs_button)
         self.rcs_type_svn = str(svn_button)
+        self.rcs_type_git = str(git_button)
         self.rcs_type_emptymarker = str(empty_marker)
 
     def _create_import(self, data, status):
