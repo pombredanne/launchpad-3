@@ -12,6 +12,7 @@ __all__ = [
     'MilestoneNavigation',
     'MilestoneOverviewNavigationMenu',
     'MilestoneSetNavigation',
+    'RegistryDeleteViewMixin',
     ]
 
 from zope.component import getUtility
@@ -236,27 +237,56 @@ class MilestoneEditView(LaunchpadEditFormView):
         self.next_url = canonical_url(self.context)
 
 
-class MilestoneDeleteView(LaunchpadFormView):
-    """A view for deleting an `IMilestone`."""
-    schema = IMilestone
-    field_names = []
+class RegistryDeleteViewMixin:
+    """A mixin class that provides common behaviour for registry deletions."""
 
     @property
     def label(self):
         """The form label."""
         return 'Delete %s' % self.context.title
 
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
+
+    def _getBugtasks(self, milestone):
+        """Return the list `IBugTask`s targeted to the milestone."""
+        params = BugTaskSearchParams(milestone=milestone, user=None)
+        bugtasks = getUtility(IBugTaskSet).search(params)
+        return list(bugtasks)
+
+    def _getSpecifications(self, milestone):
+        """Return the list `ISpecification`s targeted to the milestone."""
+        return list(milestone.specifications)
+
+    def _deleteMilestone(self, milestone):
+        """Delete a milestone and unlink releated objects."""
+        for bugtask in self._getBugtasks(milestone):
+            bugtask.milestone = None
+        for spec in self._getSpecifications(milestone):
+            spec.milestone = None
+        # Any associated product release and its files are deleted.
+        product_release = milestone.product_release
+        if product_release is not None:
+            for release_file in product_release.files:
+                release_file.destroySelf()
+            milestone.product_release.destroySelf()
+
+
+class MilestoneDeleteView(LaunchpadFormView, RegistryDeleteViewMixin):
+    """A view for deleting an `IMilestone`."""
+    schema = IMilestone
+    field_names = []
+
     @cachedproperty
     def bugtasks(self):
         """The list `IBugTask`s targeted to the milestone."""
-        params = BugTaskSearchParams(milestone=self.context, user=None)
-        bugtasks = getUtility(IBugTaskSet).search(params)
-        return list(bugtasks)
+        return self._getBugtasks(self.context)
 
     @cachedproperty
     def specifications(self):
         """The list `ISpecification`s targeted to the milestone."""
-        return list(self.context.specifications)
+        return self._getSpecifications(self.context)
 
     @cachedproperty
     def product_release(self):
@@ -274,20 +304,10 @@ class MilestoneDeleteView(LaunchpadFormView):
     @action('Delete this Milestone', name='delete')
     def delete_action(self, action, data):
         # Any associated bugtasks and specifications are untargeted.
-        for bugtask in self.bugtasks:
-            bugtask.milestone = None
-        for spec in self.context.specifications:
-            spec.milestone = None
-        # Any associated product release and its files are deleted.
-        for release_file in self.product_release_files:
-            release_file.destroySelf()
-        if self.product_release is not None:
-            self.product_release.destroySelf()
+        self._deleteMilestone(self.context)
         self.request.response.addInfoNotification(
             "Milestone %s deleted." % self.context.name)
         self.next_url = canonical_url(self.context.productseries)
         self.context.destroySelf()
 
-    @property
-    def cancel_url(self):
-        return canonical_url(self.context)
+
