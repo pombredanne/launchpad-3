@@ -141,8 +141,8 @@ class MailingListAPIView(LaunchpadXMLRPCView):
         # own posts, and no moderation), and status (either ENABLED meaning
         # they can post to the mailing list or BYUSER meaning they can't).
         for team_name in teams:
-            team_posters = poster_addresses.get(team_name)
-            team_subscribers = subscriber_addresses.get(team_name)
+            team_posters = poster_addresses.get(team_name, [])
+            team_subscribers = subscriber_addresses.get(team_name, [])
             if not team_posters and not team_subscribers:
                 # Mailman requested a bogus team.
                 return faults.NoSuchTeamMailingList(team_name)
