@@ -1202,11 +1202,9 @@ class PackageUploadBuild(SQLBase):
                 raise QueueBuildAcceptError(
                     'Component "%s" is not allowed in %s'
                     % (binary.component.name, distroseries.name))
-            if binary.section not in distroseries.sections:
-                raise QueueBuildAcceptError(
-                    'Section "%s" is not allowed in %s' %
-                        (binary.section.name,
-                         distroseries.name))
+            # At this point (uploads are already processed) sections are
+            # guaranteed to exist in the DB. We don't care if sections are
+            # not official.
 
     def verifyBeforeAccept(self):
         """See `IPackageUploadBuild`."""
@@ -1423,10 +1421,9 @@ class PackageUploadSource(SQLBase):
                 'Component "%s" is not allowed in %s' % (component.name,
                                                          distroseries.name))
 
-        if section not in distroseries.sections:
-            raise QueueSourceAcceptError(
-                'Section "%s" is not allowed in %s' % (section.name,
-                                                       distroseries.name))
+        # At this point (uploads are already processed) sections are
+        # guaranteed to exist in the DB. We don't care if sections are
+        # not official.
 
     def publish(self, logger=None):
         """See `IPackageUploadSource`."""
