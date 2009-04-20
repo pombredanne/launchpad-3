@@ -150,17 +150,17 @@ class MilestoneView(LaunchpadView, ProductDownloadFileMixin):
     def bugtask_count_text(self):
         count = len(self.bugtasks)
         if count == 1:
-            return '<strong class="count">1</strong> bug'
+            return '<strong>1 bug </strong>'
         else:
-            return '<strong class="count">%d</strong> bugs' % count
+            return '<strong>%d bugs</strong>' % count
 
     @property
     def specification_count_text(self):
         count = len(self.specifications)
         if count == 1:
-            return '<strong class="count">1</strong> blueprint'
+            return '<strong>1 blueprint</strong>'
         else:
-            return '<strong class="count">%d</strong> blueprints' % count
+            return '<strong>%d blueprints</strong>' % count
 
     @property
     def is_project_milestone(self):

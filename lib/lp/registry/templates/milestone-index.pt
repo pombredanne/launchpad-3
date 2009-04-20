@@ -53,7 +53,7 @@
         <td><span
           tal:attributes="title context/dateexpected/fmt:datetime"
           tal:content="context/dateexpected/fmt:approximatedate" />
-          <a tal:replace="structure milestone_menu/create_release/fmt:icon-link"
+          &nbsp; <a tal:replace="structure milestone_menu/create_release/fmt:icon-link"
             >Release this milestone</a>
           </td>
       </tr>
@@ -63,7 +63,7 @@
         <td><span
           tal:attributes="title view/release/datereleased/fmt:datetime"
           tal:content="view/release/datereleased/fmt:approximatedate" />
-          <a tal:condition="view/release/required:launchpad.Edit"
+          &nbsp; <a tal:condition="view/release/required:launchpad.Edit"
             tal:attributes="href view/release/fmt:url/+delete"
             title="Delete this release"
             ><img src="/@@/trash-icon" title="Delete this release" /></a>
@@ -166,29 +166,30 @@
         <em>This release does not have release notes.</em>
       </p>
 
-      <h2 style="margin-top: 2em;">Changelog
-        <a tal:replace="structure release_menu/edit/fmt:icon" /></h2>
+      <h2 style="margin-top: 2em;">Changelog</h2>
 
       <fieldset class="collapsible collapsed" style="padding: 0px;"
         tal:condition="view/release/changelog">
         <legend>View the full changelog</legend>
-
-        <div id="changelog"
+        <div id="changelog" style="margin-bottom: 0px;"
           tal:content="structure view/release/changelog/fmt:obfuscate-email/fmt:text-to-html">
           ProductRelease.changelog go here.
         </div>
+        <div style="margin-top: -0.5em;">
+          <a 
+          tal:attributes="href release_menu/edit/url">Edit the changelog</a> &nbsp; <a tal:replace="structure release_menu/edit/fmt:icon" /></div>
       </fieldset>
 
       <p tal:condition="not: view/release/changelog">
-        <em>This release does not have a changelog.</em>
+        <em>This release does not have a changelog.</em> &nbsp; <a tal:replace="structure release_menu/edit/fmt:icon" />
       </p>
     </tal:has_release>
 
   <p style="margin-top: 2em; font-size: 120%">
-    <span id="specification-count"
+    <span id="specification-count" style="color: #3594bb;"
       tal:content="structure view/specification_count_text">2</span>
     <tal:and condition="view/has_bugs_or_specs">and</tal:and>
-    <span id="bug-count"
+    <span id="bug-count" style="color: #9f2b33;"
       tal:content="structure view/bugtask_count_text">2</span>
     targeted
   </p>
@@ -302,7 +303,7 @@
     </table>
 
     <div style="margin-top: .4em;">
-        <a tal:replace="structure milestone_menu/subscribe/fmt:icon-link">Subcribe</a>
+        <a tal:replace="structure milestone_menu/subscribe/fmt:link-icon">Subcribe</a>
     </div>
   </tal:has_bugtasks>
 
