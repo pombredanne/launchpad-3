@@ -153,7 +153,7 @@
               </thead>
               <tbody>
                 <tr tal:repeat="person bn/currentBatch">
-                  <td><a tal:content="person/browsername"
+                  <td><a tal:content="person/displayname"
                          tal:attributes="href person/fmt:url"/>
                   </td>
                   <td tal:content="person/name">foobar</td>
