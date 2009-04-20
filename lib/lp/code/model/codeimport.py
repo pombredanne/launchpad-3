@@ -216,7 +216,7 @@ class CodeImportSet:
             registrant=registrant, owner=registrant, branch=import_branch,
             rcs_type=rcs_type, svn_branch_url=svn_branch_url,
             cvs_root=cvs_root, cvs_module=cvs_module,
-            review_status=review_status)
+            review_status=review_status, git_repo_url=git_repo_url)
 
         getUtility(ICodeImportEventSet).newCreate(code_import, registrant)
         notify(ObjectCreatedEvent(code_import))
