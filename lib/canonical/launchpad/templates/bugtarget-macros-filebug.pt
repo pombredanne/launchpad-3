@@ -54,14 +54,6 @@
     <metal:row use-macro="context/@@launchpad_form/widget_row" />
   </metal:summary>
 
-  <tal:tags tal:condition="view/advanced_form"
-            tal:define="widget nocall:view/widgets/tags">
-    <metal:row use-macro="context/@@launchpad_form/widget_row" />
-  </tal:tags>
-
-  <tal:hidden_tags tal:condition="not: view/advanced_form"
-            tal:replace="structure view/widgets/tags/hidden" />
-
   <metal:description tal:define="widget nocall:view/widgets/comment">
     <metal:row use-macro="context/@@launchpad_form/widget_row" />
   </metal:description>
@@ -109,8 +101,13 @@
 
   <tr>
     <td colspan="2">
-      <fieldset class="collapsible collapsed" style="padding: 0">
+      <fieldset class="collapsible collapsed">
         <legend>Extra options</legend>
+        <table>
+          <tal:tags tal:define="widget nocall:view/widgets/tags">
+            <metal:row use-macro="context/@@launchpad_form/widget_row" />
+          </tal:tags>
+        </table>
         <metal:attachment-form
             use-macro="context/@@bug-attachment-macros/attachment-form" />
       </fieldset>
