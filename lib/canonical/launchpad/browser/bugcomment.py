@@ -124,7 +124,12 @@ class BugComment:
 
     @property
     def show_for_admin(self):
-        """Returns True for hidden comments that admins should see."""
+        """Show hidden comments for Launchpad admins.
+
+        This is used in templates to add a class to hidden
+        comments to enable display for admins, so the admin
+        can see the comment even after it is hidden.
+        """
         user = getUtility(ILaunchBag).user
         is_admin = check_permission('launchpad.Admin', user)
         if is_admin and not self.visible:
