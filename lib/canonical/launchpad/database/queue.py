@@ -1264,8 +1264,10 @@ class PackageUploadBuild(SQLBase):
                     binary.binarypackagename.name,
                     binary.version))
 
-            # DDEBs are published in the corresponding DEBUG archive.
+
             archive = self.packageupload.archive
+            # DDEBs targeted to the PRIMARY archive are published in the
+            # corresponding DEBUG archive.
             if (archive.purpose == ArchivePurpose.PRIMARY and
                 binary.binpackageformat == BinaryPackageFormat.DDEB):
                 distribution = self.packageupload.distroseries.distribution

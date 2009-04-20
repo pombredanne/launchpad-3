@@ -923,9 +923,12 @@ class DdebBinaryUploadFile(DebBinaryUploadFile):
     # Override the 'new' flag in a way any values set are ignored and
     # it always return False.
     def _get_new(self):
+        """DDEBs are never considered NEW."""
         return False
 
     def _set_new(self, value):
+        """DDEBs cannot be made NEW."""
         pass
 
-    new = property(_get_new, _set_new)
+    new = property(
+        _get_new, _set_new, doc="DDEBs are never flagged as NEW.")

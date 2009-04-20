@@ -9,10 +9,10 @@ On a client system, DDEB installation is optional, it's only necessary
 for obtaining extra information about crashes in the corresponding
 feature.
 
-First we will create a source and corresponding binary publication in
-the database, 'debug' and 'debug-bin' version '0.9', which will play
-as an ancestry for the subsequent upload containing a 'debug-dbg'
-DDEB. It's done using `SoyuzTestPublisher`.
+First we will create a source and a corresponding binary publication
+in the database, 'debug' and 'debug-bin' version '0.9', which will be
+an ancestor for the subsequent upload containing a 'debug-dbg' DDEB.
+This is done using `SoyuzTestPublisher`.
 
     >>> from canonical.launchpad.tests.test_publishing import (
     ...     SoyuzTestPublisher)
@@ -43,7 +43,7 @@ We need a slightly different database setup for creating binaries.
     >>> LaunchpadZopelessLayer.txn.commit()
     >>> LaunchpadZopelessLayer.switchDbUser('uploader')
 
-That done, we now upload a new source, 'debug - 1.0', which is
+With that done, we now upload a new source, 'debug - 1.0', which is
 immediately accepted and stands pending publication.
 
     >>> src = getUploadForSource(
@@ -66,10 +66,9 @@ binary uploads with only ordinary debs.
     >>> bin = getUploadForBinary(
     ...     'suite/debug_1.0/debug_1.0_i386.changes')
 
-DDEBs are submitted to exactly the same checks we submit ordinary
-DEBs, except that they are never considered NEW, so the binary upload
-has a 'never-seen-before' DDEB but even though it isn't parked in
-queue for review.
+DDEBs undergo exactly the same checks as ordinary DEBs. These are
+never considered NEW, so the binary upload has a 'never-seen-before'
+DDEB even though it isn't parked in queue for review.
 
     >>> bin.process()
     >>> result = bin.do_accept()
@@ -95,11 +94,9 @@ Now, both, binary and debug-symbol packages are pending publication.
     debug-bin 1.0 in hoary i386 PENDING PRIMARY
     debug-dbg 1.0 in hoary i386 PENDING DEBUG
 
-Note that while the DEB is in the primary archive, the DDEB goes to a
-separate one with DEBUG purpose. We do that because having DDEBs in
-the primary archive would cause a size impact on mirrors that we can't
-afford. So, official DDEBs for ubuntu are published in a separate
-repository.
+DEBs and DDEBs are uploaded to separate archives, because the size
+impact of uploading them to a single archive on mirrors would be
+unacceptable.
 
 The DDEB is stored appropriately in the database.
 
@@ -123,7 +120,7 @@ And its corresponding file is also stored as DDEB filetype.
 
 == DDEBs in other archives ==
 
-DDEBs can be produced in other contexts than the primary archive, for
+DDEBs can be produced in other contexts than the primary archive. For
 instance, a COPY (test-rebuild) archive. In this case, they will be
 published in the same archive.
 
@@ -154,8 +151,8 @@ Now we upload the DEB and the DDEB, which are auto-accepted.
     >>> print bin.queue_root.status.name
     ACCEPTED
 
-When published, differently than the one in the primary archive, the
-DDEB ends up in the same archive than the DEB, the COPY archive.
+When published, DDEB ends up in the same archive as the DEB, unlike
+the ones in the primary archive.
 
     >>> LaunchpadZopelessLayer.txn.commit()
     >>> LaunchpadZopelessLayer.switchDbUser(config.uploadqueue.dbuser)
