@@ -198,6 +198,12 @@
         <tal:status replace="code_import/review_status/title"/>
         </p>
 
+        <tal:git-import condition="code_import/rcs_type/enumvalue:GIT">
+          <p>This branch is an import of the MASTER branch from the Git repo at
+            <span tal:replace="code_import/git_repo_url" />.
+          </p>
+        </tal:git-import>
+
         <tal:svn-import condition="code_import/rcs_type/enumvalue:SVN">
           <p>This branch is an import of the Subversion branch from
           <tal:is-web-url condition="view/svn_url_is_web">

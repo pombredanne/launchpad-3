@@ -90,11 +90,8 @@ When the user clicks continue, the import branch is created
 
     >>> print extract_text(find_tag_by_id(browser.contents, "import-details"))
     Import Status: Pending Review
-    This branch is an import of the Subversion branch
-    from http://svn.example.com/firefox/trunk.
-    >>> browser.getLink("http://svn.example.com/firefox/trunk")
-    <Link text='http://svn.example.com/firefox/trunk'
-           url='http://svn.example.com/firefox/trunk'>
+    This branch is an import of the MASTER branch from the Git repo at
+    git://example.com/firefox.git.
 
 The user is also subscribed to the branch to get notifications.
 
