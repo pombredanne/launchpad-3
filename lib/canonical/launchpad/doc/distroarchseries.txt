@@ -1,4 +1,6 @@
-= Distro Arch Release =
+==================
+Distro Arch Series
+==================
 
    >>> from canonical.launchpad.webapp.testing import verifyObject
 
@@ -10,13 +12,21 @@
    >>> from canonical.launchpad.interfaces import IDistributionSet
    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
    >>> hoary = ubuntu.getSeries('hoary')
+
+DistroArchSeries are retrieved via __getitem__:
+
    >>> hoary_i386 = hoary['i386']
+
+or getDistroArchSeries():
+
+    >>> hoary_hppa = hoary.getDistroArchSeries('hppa')
 
 # XXX: daniels 2005-10-17 bug=3257:
 #      This needs many more tests to be effective.
 
 
-== DistroArchSeries can tell you about their published releases ==
+DistroArchSeries can tell you about their published releases
+============================================================
 
 DistroArchSeries has a number of releases of any given binary
 package in them. This can be due to various reasons such as uploads in
@@ -123,7 +133,8 @@ Supersede current publication:
    SUPERSEDED True
 
 
-== Binary publishing lookups ==
+Binary publishing lookups
+=========================
 
 IDistroArchseries allows binary publishing lookup via
 getReleasedPackages method which returns a shortlist of
@@ -253,7 +264,8 @@ pockets.
     >>> soyuz_helper.checkPubList(all_ppa_pubs, result)
     True
 
-== DistroArchSeries Lookup ==
+DistroArchSeries Lookup
+=======================
 
 The architectures related to a specific distroseries can be retrieved
 via the 'architectures' property.
