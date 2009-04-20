@@ -1,12 +1,56 @@
 = Bug filing options for bug supervisors =
 
 During the bug filing process, normal or advanced, bug supervisors are
-given extra options.
+able to set the status and importance of the bug being filed, can
+target it to a milestone, and assign it to a user.
 
-    >>> from canonical.launchpad.ftests.bug import print_bug_affects_table
+Users who are not bug supervisors do not see any of these options:
+
+    >>> user_browser.open('http://bugs.launchpad.dev/firefox/+filebug-advanced')
+    >>> user_browser.getControl('Status')
+    Traceback (most recent call last):
+    ...
+    LookupError: label 'Status'
+
+    >>> user_browser.getControl('Importance')
+    Traceback (most recent call last):
+    ...
+    LookupError: label 'Importance'
+
+    >>> user_browser.getControl('Milestone')
+    Traceback (most recent call last):
+    ...
+    LookupError: label 'Milestone'
+
+    >>> user_browser.getControl('Assignee')
+    Traceback (most recent call last):
+    ...
+    LookupError: label 'Assignee'
+
+Users who are, can:
+
+    >>> admin_browser.open('http://bugs.launchpad.dev/firefox/+bugsupervisor')
+    >>> admin_browser.getControl('Bug Supervisor').value = "no-priv"
+    >>> admin_browser.getControl('Change').click()
+
+    >>> user_browser.open('http://bugs.launchpad.dev/firefox/+filebug-advanced')
+
+    >>> user_browser.getControl('Status') is not None
+    True
+
+    >>> user_browser.getControl('Importance') is not None
+    True
+
+    >>> user_browser.getControl('Milestone') is not None
+    True
+
+    >>> user_browser.getControl('Assignee') is not None
+    True
 
 
 == Setting the importance ==
+
+    >>> from canonical.launchpad.ftests.bug import print_bug_affects_table
 
 Bug supervisors can set the importance of bugs as they are being
 filed.
