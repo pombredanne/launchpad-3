@@ -29,6 +29,7 @@ CREATE TABLE RevisionCache (
 -- Populate RevisionCache with some initial data. We use a hardcoded
 -- date as we can't use CURRENT_TIMESTAMP, as this would be
 -- non-deterministic and break replication.
+/* Taking too long so leave this for the branch scanner to rebuild
 INSERT INTO RevisionCache (
     revision, revision_author, revision_date, product, distroseries,
     sourcepackagename, private)
@@ -43,7 +44,7 @@ WHERE
     Revision.revision_date > '2009-03-20'
 ORDER BY
     Revision.id, Branch.product, Branch.distroseries, Branch.sourcepackagename;
-
+*/
 
 CREATE UNIQUE INDEX revisioncache__product__revision__key
     ON RevisionCache(product, revision) WHERE product IS NOT NULL;
