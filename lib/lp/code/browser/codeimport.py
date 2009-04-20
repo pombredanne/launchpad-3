@@ -14,6 +14,7 @@ __all__ = [
     'CodeImportView',
     ]
 
+from cgi import escape
 
 from BeautifulSoup import BeautifulSoup
 from zope.app.form import CustomWidgetFactory
@@ -190,7 +191,7 @@ class CodeImportBaseView(LaunchpadFormView):
                     code_import.branch.unique_name))
 
     def _validateGit(self, git_repo_url, existing_import=None):
-        """If the user has specified a subversion url, we need
+        """If the user has specified a git repo url, we need
         to make sure that there isn't already an import with
         that url."""
         if git_repo_url is None:
@@ -206,8 +207,8 @@ class CodeImportBaseView(LaunchpadFormView):
                     structured("""
                     This Git repository URL is already specified for
                     the imported branch <a href="%s">%s</a>.""",
-                    canonical_url(code_import.branch),
-                    code_import.branch.unique_name))
+                    escape(canonical_url(code_import.branch)),
+                    escape(code_import.branch.unique_name)))
 
 
 class CodeImportNewView(CodeImportBaseView):
