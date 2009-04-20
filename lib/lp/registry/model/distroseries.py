@@ -659,6 +659,10 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     def __getitem__(self, archtag):
         """See `IDistroSeries`."""
+        return self.getDistroArchSeries(archtag)
+
+    def getDistroArchSeries(self, archtag):
+        """See `IDistroSeries`."""
         item = DistroArchSeries.selectOneBy(
             distroseries=self, architecturetag=archtag)
         if item is None:
@@ -1179,10 +1183,12 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             supports_virtualized=supports_virtualized)
         return distroarchseries
 
-    def newMilestone(self, name, dateexpected=None, summary=None):
+    def newMilestone(self, name, dateexpected=None, summary=None,
+                     code_name=None):
         """See `IDistroSeries`."""
         return Milestone(
-            name=name, dateexpected=dateexpected, summary=summary,
+            name=name, code_name=code_name,
+            dateexpected=dateexpected, summary=summary,
             distribution=self.distribution, distroseries=self)
 
     def getLatestUploads(self):

@@ -1,4 +1,4 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0611,W0212
 """Database classes that implement SourcePacakge items."""
 
@@ -20,7 +20,7 @@ from storm.store import Store
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import flush_database_updates, sqlvalues
-from canonical.launchpad.database.branch import Branch
+from lp.code.model.branch import Branch
 from canonical.launchpad.database.bug import get_bug_tags_open_count
 from canonical.launchpad.database.bugtarget import BugTargetBase
 from canonical.launchpad.database.bugtask import BugTask
@@ -35,7 +35,7 @@ from canonical.launchpad.database.publishing import (
     SourcePackagePublishingHistory)
 from lp.answers.model.question import (
     QuestionTargetMixin, QuestionTargetSearch)
-from canonical.launchpad.database.seriessourcepackagebranch import (
+from lp.code.model.seriessourcepackagebranch import (
     SeriesSourcePackageBranch)
 from canonical.launchpad.database.sourcepackagerelease import (
     SourcePackageRelease)
@@ -48,10 +48,11 @@ from canonical.launchpad.interfaces.packaging import PackagingType
 from canonical.launchpad.interfaces.potemplate import IHasTranslationTemplates
 from canonical.launchpad.interfaces.publishing import (
     PackagePublishingPocket, PackagePublishingStatus)
-from lp.answers.interfaces.questioncollection import QUESTION_STATUS_DEFAULT_SEARCH
+from lp.answers.interfaces.questioncollection import (
+    QUESTION_STATUS_DEFAULT_SEARCH)
 from lp.answers.interfaces.questiontarget import IQuestionTarget
-from canonical.launchpad.interfaces.seriessourcepackagebranch import (
-    ISeriesSourcePackageBranchSet)
+from lp.code.interfaces.seriessourcepackagebranch import (
+    IMakeOfficialBranchLinks)
 from lp.registry.interfaces.sourcepackage import (
     ISourcePackage, ISourcePackageFactory)
 
@@ -618,9 +619,12 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
 
     def setBranch(self, pocket, branch, registrant):
         """See `ISourcePackage`."""
-        getUtility(ISeriesSourcePackageBranchSet).new(
-            self.distroseries, pocket, self.sourcepackagename, branch,
-            registrant)
+        series_set = getUtility(IMakeOfficialBranchLinks)
+        series_set.delete(self, pocket)
+        if branch is not None:
+            series_set.new(
+                self.distroseries, pocket, self.sourcepackagename, branch,
+                registrant)
 
     @property
     def linked_branches(self):

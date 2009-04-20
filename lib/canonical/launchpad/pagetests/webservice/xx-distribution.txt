@@ -14,7 +14,7 @@ Ubuntu and its flavours being the first on the list.
 
 And for every distribution we publish most of its attributes.
 
-    >>> from canonical.lazr.testing.webservice import pprint_entry
+    >>> from lazr.restful.testing.webservice import pprint_entry
     >>> distro = distros['entries'][0]
     >>> ubuntu = webservice.get(distro['self_link']).jsonBody()
     >>> pprint_entry(ubuntu)

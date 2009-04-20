@@ -31,9 +31,9 @@ from canonical.testing import LaunchpadZopelessLayer
 from canonical.testing.layers import DatabaseLayer
 
 
-def get_spn(binary_package):
-    """Return the SourcePackageName of the binary."""
-    pub = binary_package.getCurrentPublication()
+def get_spn(build):
+    """Return the SourcePackageName of the given Build."""
+    pub = build.current_source_publication
     return pub.sourcepackagerelease.sourcepackagename
 
 
@@ -115,6 +115,14 @@ class TestPopulateArchiveScript(TestCase):
         copy_archive = getUtility(IArchiveSet).getByDistroPurpose(
             distro, ArchivePurpose.COPY, archive_name)
         self.assertTrue(copy_archive is not None)
+
+        # Ascertain that the new copy archive was created with the 'enabled'
+        # flag turned off.
+        self.assertFalse(copy_archive.enabled)
+
+        # Also, make sure that the builds for the new copy archive will be
+        # carried out on non-virtual builders.
+        self.assertFalse(copy_archive.require_virtualized)
 
         # Make sure the right source packages were cloned.
         self._verifyClonedSourcePackages(copy_archive, hoary)
@@ -311,9 +319,9 @@ class TestPopulateArchiveScript(TestCase):
         # Verify that we have the right source packages in the sample data.
         self._verifyPackagesInSampleData(hoary)
 
-        # Restrict the builds to be created to the 'hppa' architecture
+        # Restrict the builds to be created to the 'amd64' architecture
         # only. This should result in zero builds.
-        extra_args = ['-a', 'hppa']
+        extra_args = ['-a', 'amd64']
         copy_archive = self.runScript(
             extra_args=extra_args, exists_after=True, reason="zero builds")
 
@@ -359,7 +367,7 @@ class TestPopulateArchiveScript(TestCase):
         packages = self._getPendingPackageNames(ppa, warty)
 
         # Take a snapshot of the PPA.
-        extra_args = ['-a', 'hppa', '--from-user', 'cprov']
+        extra_args = ['-a', 'amd64', '--from-user', 'cprov']
         copy_archive = self.runScript(
             suite='warty', extra_args=extra_args, exists_after=True)
 
@@ -374,7 +382,7 @@ class TestPopulateArchiveScript(TestCase):
         self._verifyPackagesInSampleData(hoary)
 
         # Take a snapshot of ubuntu/hoary first.
-        extra_args = ['-a', 'hppa']
+        extra_args = ['-a', 'amd64']
         first_stage = self.runScript(
             extra_args=extra_args, exists_after=True,
             copy_archive_name='first-stage')
@@ -408,7 +416,7 @@ class TestPopulateArchiveScript(TestCase):
         self._verifyPackagesInSampleData(hoary)
 
         # Take a snapshot of ubuntu/hoary first.
-        extra_args = ['-a', 'hppa']
+        extra_args = ['-a', 'amd64']
         first_stage = self.runScript(
             extra_args=extra_args, exists_after=True,
             copy_archive_name='first-stage')
@@ -433,7 +441,7 @@ class TestPopulateArchiveScript(TestCase):
 
         # Now populate a 3rd copy archive from the first ubuntu/hoary
         # snapshot.
-        extra_args = ['-a', 'hppa', '--from-archive', first_stage.name]
+        extra_args = ['-a', 'amd64', '--from-archive', first_stage.name]
         copy_archive = self.runScript(
             extra_args=extra_args, exists_after=True)
         self._verifyClonedSourcePackages(copy_archive, hoary)
@@ -443,6 +451,8 @@ class TestPopulateArchiveScript(TestCase):
         extra_args = [
             '--merge-copy', '--from-archive', second_stage.name]
 
+        # We need to enable the copy archive before we can copy to it.
+        copy_archive.enabled = True
         # An empty 'reason' string is passed to runScript() i.e. the latter
         # will not pass a '--reason' command line argument to the script which
         # is OK since this is a repeated population of an *existing* COPY
@@ -464,7 +474,7 @@ class TestPopulateArchiveScript(TestCase):
 
         This test should provoke a `SoyuzScriptError` exception.
         """
-        extra_args = ['-a', 'hppa', '--from-archive', '9th-level-cache']
+        extra_args = ['-a', 'amd64', '--from-archive', '9th-level-cache']
         copy_archive = self.runScript(
             extra_args=extra_args,
             exception_type=SoyuzScriptError,
@@ -475,7 +485,7 @@ class TestPopulateArchiveScript(TestCase):
 
         This test should provoke a `SoyuzScriptError` exception.
         """
-        extra_args = ['-a', 'hppa', '--from-user', 'king-kong']
+        extra_args = ['-a', 'amd64', '--from-user', 'king-kong']
         copy_archive = self.runScript(
             extra_args=extra_args,
             exception_type=SoyuzScriptError,
@@ -487,7 +497,7 @@ class TestPopulateArchiveScript(TestCase):
         This test should provoke a `SoyuzScriptError` exception.
         """
         extra_args = [
-            '-a', 'hppa', '--from-archive', '//']
+            '-a', 'amd64', '--from-archive', '//']
         copy_archive = self.runScript(
             extra_args=extra_args,
             exception_type=SoyuzScriptError,
@@ -514,11 +524,11 @@ class TestPopulateArchiveScript(TestCase):
 
         This test should provoke a `SoyuzScriptError` exception.
         """
-        extra_args = ['-a', 'x86', '-a', 'hppa']
+        extra_args = ['-a', 'x86', '-a', 'amd64']
         copy_archive = self.runScript(
             extra_args=extra_args, exists_before=False)
 
-        extra_args = ['--merge-copy', '-a', 'x86', '-a', 'hppa']
+        extra_args = ['--merge-copy', '-a', 'x86', '-a', 'amd64']
         copy_archive = self.runScript(
             extra_args=extra_args, copy_archive_name=copy_archive.name,
             exception_type=SoyuzScriptError,
@@ -536,7 +546,7 @@ class TestPopulateArchiveScript(TestCase):
         copy archive exists already and hence no archive creation reason is
         needed.
         """
-        extra_args = ['-a', 'hppa']
+        extra_args = ['-a', 'amd64']
         copy_archive = self.runScript(
             # Pass an empty reason parameter string to indicate that no
             # '--reason' command line argument is to be provided.
@@ -553,7 +563,7 @@ class TestPopulateArchiveScript(TestCase):
         command line option. The latter specifies the repeated population of
         *existing* archives.
         """
-        extra_args = ['--merge-copy', '-a', 'hppa']
+        extra_args = ['--merge-copy', '-a', 'amd64']
         copy_archive = self.runScript(
             extra_args=extra_args,
             exception_type=SoyuzScriptError,
@@ -568,11 +578,11 @@ class TestPopulateArchiveScript(TestCase):
         non-PPA archives i.e. we do not allow the creation of a second archive
         with the same name and distribution.
         """
-        extra_args = ['-a', 'hppa']
+        extra_args = ['-a', 'amd64']
         copy_archive = self.runScript(
             extra_args=extra_args, exists_after=True,
             copy_archive_name='hello-1')
-        extra_args = ['-a', 'hppa']
+        extra_args = ['-a', 'amd64']
         copy_archive = self.runScript(
             extra_args=extra_args,
             copy_archive_name='hello-1', exception_type=SoyuzScriptError,
@@ -605,11 +615,11 @@ class TestPopulateArchiveScript(TestCase):
         self._verifyPackagesInSampleData(hoary)
 
         # Please note:
-        #   * the 'hppa' DistroArchSeries has no resulting builds.
+        #   * the 'amd64' DistroArchSeries has no resulting builds.
         #   * the '-a' command line parameter is cumulative in nature
-        #     i.e. the 'hppa' architecture tag specified after the 'i386'
+        #     i.e. the 'amd64' architecture tag specified after the 'i386'
         #     tag does not overwrite the latter but is added to it.
-        extra_args = ['-a', 'x86', '-a', 'hppa']
+        extra_args = ['-a', 'x86', '-a', 'amd64']
         copy_archive = self.runScript(
             extra_args=extra_args, exists_after=True)
 
@@ -636,7 +646,7 @@ class TestPopulateArchiveScript(TestCase):
         # Make sure that the processor family names specified for the copy
         # archive at hand were stored in the database.
         rset = getUtility(IArchiveArchSet).getByArchive(copy_archive)
-        self.assertEqual(get_family_names(rset), [u'hppa', u'x86'])
+        self.assertEqual(get_family_names(rset), [u'amd64', u'x86'])
 
     def testPrivateOriginArchive(self):
         """Try copying from a private archive.
@@ -652,7 +662,7 @@ class TestPopulateArchiveScript(TestCase):
         ppa.buildd_secret = 'super-secret-123'
         ppa.private = True
 
-        extra_args = ['--from-user', 'cprov', '-a', 'hppa']
+        extra_args = ['--from-user', 'cprov', '-a', 'amd64']
         copy_archive = self.runScript(
             extra_args=extra_args, exception_type=SoyuzScriptError,
             exception_text=(

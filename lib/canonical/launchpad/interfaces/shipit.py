@@ -234,6 +234,12 @@ class ShipItDistroSeries(DBEnumeratedType):
         The Intrepid Ibex release.
         """)
 
+    JAUNTY = DBItem(8, """
+        9.04 (Jaunty Jackalope)
+
+        The Jaunty Jackalope release.
+        """)
+
 
 def _validate_positive_int(value):
     """Return True if the given value is a positive integer.
@@ -254,7 +260,7 @@ class ShipItConstants:
     kubuntu_url = 'https://shipit.kubuntu.com'
     edubuntu_url = 'https://shipit.edubuntu.com'
     faq_url = 'http://www.ubuntu.com/getubuntu/shipit-faq'
-    current_distroseries = ShipItDistroSeries.INTREPID
+    current_distroseries = ShipItDistroSeries.JAUNTY
     max_size_for_auto_approval = config.shipit.max_cds_for_auto_approval
 
 
@@ -295,6 +301,9 @@ class IShippingRequest(Interface):
     id = Int(title=_('The unique ID'), required=True, readonly=True)
 
     recipient = Int(title=_('Recipient'), required=True, readonly=True)
+
+    is_admin_request = Bool(
+        title=_('Is this an admin request?'), readonly=True)
 
     daterequested = Datetime(
         title=_('Date of Request'), required=True, readonly=True)

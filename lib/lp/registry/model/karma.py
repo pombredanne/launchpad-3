@@ -6,6 +6,7 @@ __all__ = [
     'Karma',
     'KarmaAction',
     'KarmaActionSet',
+    'KarmaAssignedEvent',
     'KarmaCache',
     'KarmaCacheManager',
     'KarmaTotalCache',
@@ -23,13 +24,27 @@ from sqlobject.sqlbuilder import AND
 from canonical.database.sqlbase import SQLBase, sqlvalues, cursor
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.constants import UTC_NOW
+from canonical.launchpad.event.interfaces import IKarmaAssignedEvent
 from canonical.launchpad.webapp.interfaces import NotFoundError
+
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.karma import (
     IKarma, IKarmaAction, IKarmaActionSet, IKarmaCache, IKarmaCacheManager,
     IKarmaCategory, IKarmaContext, IKarmaTotalCache)
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.project import IProject
+
+
+class KarmaAssignedEvent:
+    """See `IKarmaAssignedEvent`."""
+
+    implements(IKarmaAssignedEvent)
+
+    def __init__(self, object, karma):
+        self.object = object
+        self.karma = karma
+
+
 class Karma(SQLBase):
     """See IKarma."""
     implements(IKarma)

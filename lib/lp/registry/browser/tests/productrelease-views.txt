@@ -22,9 +22,6 @@ other releases for the series. There are no other releases yet.
     >>> print view.label
     Create a new release for App
 
-    >>> print view.releases
-    None
-
 The view creates a checkbox to allow the user to keep the milestone active,
 which is normally deactivated when a release is made.
 
@@ -38,7 +35,7 @@ Submitting the form data creates the release and deactivates the milestone.
     ...     'field.datereleased': '2007-05-11',
     ...     'field.release_notes': 'Initial release.',
     ...     'field.changelog': 'commits',
-    ...     'field.actions.publish': 'Publish release',
+    ...     'field.actions.create': 'Create release',
     ...     'field.keep_milestone_active.used': '', # false
     ...     }
     >>> view = create_initialized_view(milestone, '+addrelease', form=form)
@@ -65,13 +62,30 @@ Only one release can be created for the milestone.
     ...     print notice.message
     A project release already exists for this milestone.
 
-The ProductReleaseAddView's releases attribute shows the newly created
-release if another milestone in the same series is viewed.
+The milestone can be kept active when a release is created by submitting the
+keep_milestone_active option as 'on' (the value of the checkbox).
 
-    >>> milestone = series.newMilestone('0.2')
-    >>> view = create_view(milestone, '+addrelease')
-    >>> [release.version for release in view.releases]
-    [u'0.1']
+    >>> active_milestone = series.newMilestone('0.2')
+    >>> print active_milestone.active
+    True
+
+    >>> form = {
+    ...     'field.datereleased': '2007-05-11',
+    ...     'field.release_notes': 'Initial release.',
+    ...     'field.changelog': 'commits',
+    ...     'field.actions.create': 'Create release',
+    ...     'field.keep_milestone_active': 'on',
+    ...     }
+    >>> view = create_initialized_view(
+    ...     active_milestone, '+addrelease', form=form)
+    >>> print view.errors
+    []
+    >>> print view.widget_errors
+    {}
+    >>> view.request.response.notifications
+    []
+    >>> print active_milestone.active
+    True
 
 
 == Editing a a product release ==

@@ -174,18 +174,13 @@ And unreachable files in `NotFoundError`.
     ...
     NotFoundError: 'boing.changes'
 
-Adding and retrieving a binary changesfile.
+Retrieving a binary changesfile.  "test_1.0_i386.changes" is created when
+SoyuzTestPublisher creates the "test" binary publication.
 
-    >>> binary_upload = test_source.distroseries.createQueueEntry(
-    ...     pocket=PackagePublishingPocket.RELEASE,
-    ...     changesfilename='test-pkg_1.0_all.changes',
-    ...     changesfilecontent='Bogus',
-    ...     archive=cprov.archive)
+    >>> print build.changesfile.filename
+    test_1.0_i386.changes
 
-    >>> unused = binary_upload.addBuild(build)
-
-    >>> binary_upload.changesfile == build.getFileByName(
-    ...     'test-pkg_1.0_all.changes')
+    >>> build.changesfile == build.getFileByName(build.changesfile.filename)
     True
 
 Adding and retrieving a buildlog.

@@ -6,10 +6,11 @@ __all__ = [
     'AppFrontPageSearchView',
     'ApplicationButtons',
     'BrowserWindowDimensions',
-    'IcingContribFolder',
+    'DoesNotExistView',
     'EdubuntuIcingFolder',
     'get_launchpad_views',
     'Hierarchy',
+    'IcingContribFolder',
     'IcingFolder',
     'KubuntuIcingFolder',
     'LaunchpadRootNavigation',
@@ -40,6 +41,7 @@ from zope.datetime import parseDatetimetz, tzinfo, DateTimeError
 from zope.component import getUtility, queryAdapter
 from zope.interface import implements
 from zope.publisher.interfaces import NotFound
+from zope.publisher.interfaces.browser import IBrowserPublisher
 from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
 from zope.security.interfaces import Unauthorized
 from zope.traversing.interfaces import ITraversable
@@ -53,13 +55,13 @@ from lp.registry.interfaces.announcement import IAnnouncementSet
 from canonical.launchpad.interfaces.binarypackagename import (
     IBinaryPackageNameSet)
 from canonical.launchpad.interfaces.bounty import IBountySet
-from canonical.launchpad.interfaces.branchlookup import (
+from lp.code.interfaces.branchlookup import (
     CannotHaveLinkedBranch, IBranchLookup, NoLinkedBranch)
-from canonical.launchpad.interfaces.branchnamespace import InvalidNamespace
+from lp.code.interfaces.branchnamespace import InvalidNamespace
 from canonical.launchpad.interfaces.bug import IBugSet
 from canonical.launchpad.interfaces.bugtracker import IBugTrackerSet
 from canonical.launchpad.interfaces.builder import IBuilderSet
-from canonical.launchpad.interfaces.codeimport import ICodeImportSet
+from lp.code.interfaces.codeimport import ICodeImportSet
 from lp.registry.interfaces.codeofconduct import ICodeOfConductSet
 from canonical.launchpad.interfaces.cve import ICveSet
 from lp.registry.interfaces.distribution import IDistributionSet
@@ -1085,3 +1087,27 @@ def get_launchpad_views(cookies):
             # part of a page. Any other value is considered to be 'true'.
             views[key] = value != 'false'
     return views
+
+
+class DoesNotExistView:
+    """A view that simply raises NotFound when rendered.
+
+    Useful to register as a view that shouldn't appear on a particular
+    virtual host.
+    """
+    implements(IBrowserPublisher)
+
+    def __init__(self, context, request):
+        self.context = context
+
+    def publishTraverse(self, request, name):
+        """See `IBrowserPublisher`."""
+        return self
+
+    def browserDefault(self, request):
+        """See `IBrowserPublisher`."""
+        return self, ()
+
+    def __call__(self):
+        raise NotFound(self.context, self.__name__)
+

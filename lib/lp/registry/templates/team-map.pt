@@ -15,14 +15,15 @@
 <div metal:fill-slot="main">
 
   <h1>Members' location</h1>
-  <tal:unmapped condition="view/unmapped_participants">
+
+  <tal:unmapped condition="view/unmapped_participants_count">
     <div style="margin: 4px;">
       <h2>Complete the map!</h2>
       Do you know the current location for these team members? Set their
       locations!
     </div>
 
-    <div>
+    <div style="margin-bottom: 2em;">
       <span style="float: left; width: 15em"
             tal:repeat="person view/unmapped_participants">
         <a tal:condition="person/name|nothing"
@@ -34,26 +35,27 @@
       </span>
     </div>
   </tal:unmapped>
-  <br /><br /><br />
+
   <div style="height:420px;">
-    <div tal:condition="not: view/mapped_participants">
+    <div tal:condition="not: view/has_mapped_participants">
       None of the current participants in
-      <tal:teamname replace="context/browsername" /> have a recorded
+      <tal:teamname replace="context/fmt:displayname" /> have a recorded
       location.
     </div>
 
     <div>
-      <tal:some_mapped condition="view/mapped_participants">
+      <tal:some_mapped condition="view/has_mapped_participants">
         <div id="team_map_div"
            style="width: 75%; height: 250px; border: 1px; float: left;
            margin: 0 14px 0 0;">
         </div>
         <tal:map replace="structure view/map_html" />
-
       </tal:some_mapped>
 
-      <div tal:condition="view/mapped_participants" style="float:left;">
-        <div style="margin-bottom: 4px;"><strong>Members' current local time:</strong></div>
+      <div tal:condition="view/has_mapped_participants" style="float:left;">
+        <div style="margin-bottom: 4px;">
+          <strong>Members' current local time:</strong>
+        </div>
         <tal:time_set repeat="time view/times">
           <tal:times replace="time" /><br />
         </tal:time_set>

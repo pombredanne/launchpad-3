@@ -34,14 +34,14 @@ from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.publisher.browser import FileUpload
 
 from canonical.launchpad import _
-from canonical.launchpad.browser.branchref import BranchRef
+from lp.code.browser.branchref import BranchRef
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.poexportrequest import BaseExportView
 from canonical.launchpad.browser.translations import TranslationsMixin
 from canonical.launchpad.helpers import browserLanguages, is_tar_filename
-from canonical.launchpad.interfaces.codeimport import (
+from lp.code.interfaces.codeimport import (
     ICodeImportSet)
-from canonical.launchpad.interfaces.branchjob import IRosettaUploadJobSource
+from lp.code.interfaces.branchjob import IRosettaUploadJobSource
 from canonical.launchpad.interfaces.country import ICountry
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.potemplate import IPOTemplateSet
@@ -117,7 +117,8 @@ class ProductSeriesOverviewMenu(ApplicationMenu):
     facet = 'overview'
     links = [
         'edit', 'driver', 'link_branch', 'ubuntupkg',
-        'add_package', 'add_milestone', 'rdf', 'subscribe'
+        'add_package', 'create_milestone', 'create_release',
+        'rdf', 'subscribe'
         ]
 
     @enabled_with_permission('launchpad.Edit')
@@ -145,10 +146,15 @@ class ProductSeriesOverviewMenu(ApplicationMenu):
         return Link('+addpackage', text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
-    def add_milestone(self):
-        text = 'Add milestone'
+    def create_milestone(self):
+        text = 'Create milestone'
         summary = 'Register a new milestone for this series'
         return Link('+addmilestone', text, summary, icon='add')
+
+    @enabled_with_permission('launchpad.Edit')
+    def create_release(self):
+        text = 'Create release'
+        return Link('+addrelease', text, icon='add')
 
     def rdf(self):
         text = 'Download RDF metadata'

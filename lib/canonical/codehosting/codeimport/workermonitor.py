@@ -21,8 +21,7 @@ from canonical.config import config
 from canonical.database.sqlbase import begin, commit, rollback
 from canonical.codehosting.codeimport.worker import CodeImportSourceDetails
 from canonical.launchpad.interfaces import (
-    CodeImportResultStatus, ICodeImportJobSet, ICodeImportJobWorkflow,
-    ILibraryFileAliasSet)
+     ICodeImportJobSet, ICodeImportJobWorkflow, ILibraryFileAliasSet)
 from canonical.launchpad.ftests import login, logout, ANONYMOUS
 from canonical.launchpad.webapp.interaction import Participation
 from canonical.launchpad.webapp import canonical_url
@@ -31,6 +30,7 @@ from canonical.twistedsupport.loggingsupport import (
     log_oops_from_failure)
 from canonical.twistedsupport.processmonitor import (
     ProcessMonitorProtocolWithTimeout)
+from lp.code.interfaces.codeimportresult import CodeImportResultStatus
 
 
 class CodeImportWorkerMonitorProtocol(ProcessMonitorProtocolWithTimeout):

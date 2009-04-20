@@ -232,6 +232,9 @@ class MilestoneSet:
             return default
         return milestone
 
+    def getVisibleMilestones(self):
+        """See lp.registry.interfaces.milestone.IMilestoneSet."""
+        return Milestone.selectBy(active=True, orderBy='id')
 
 class ProjectMilestone(HasBugsBase):
     """A virtual milestone implementation for project.
@@ -249,7 +252,9 @@ class ProjectMilestone(HasBugsBase):
 
     def __init__(self, target, name, dateexpected, active):
         self.name = name
+        self.code_name = None
         self.id = None
+        self.code_name = None
         self.product = None
         self.distribution = None
         self.productseries = None

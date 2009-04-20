@@ -75,7 +75,7 @@ from lp.registry.interfaces.productseries import (
 from canonical.launchpad import helpers
 from lp.registry.browser.announcement import HasAnnouncementsView
 from canonical.launchpad.browser.branding import BrandingChangeView
-from canonical.launchpad.browser.branchref import BranchRef
+from lp.code.browser.branchref import BranchRef
 from canonical.launchpad.browser.bugtask import (
     BugTargetTraversalMixin, get_buglisting_search_filter_url)
 from lp.registry.browser.distribution import UsesLaunchpadMixin
@@ -561,7 +561,7 @@ class ProductSetContextMenu(ContextMenu):
     usedfor = IProductSet
 
     links = ['products', 'distributions', 'people', 'meetings',
-             'all', 'register', 'register_team']
+             'all', 'register', 'register_team', 'review_licenses']
 
     def register(self):
         text = 'Register a project'
@@ -589,6 +589,10 @@ class ProductSetContextMenu(ContextMenu):
 
     def meetings(self):
         return Link('/sprints/', 'View meetings')
+
+    @enabled_with_permission('launchpad.Commercial')
+    def review_licenses(self):
+        return Link('+review-licenses', 'Review licenses')
 
 
 class SortSeriesMixin:
@@ -1576,10 +1580,11 @@ class ProductEditPeopleView(LaunchpadEditFormView):
         by oldOwner of the product.
 
         """
+        from zope.security.proxy import removeSecurityProxy
         import_queue = getUtility(ITranslationImportQueue)
         for entry in import_queue.getAllEntries(target=product):
             if entry.importer == oldOwner:
-                entry.importer = newOwner
+                removeSecurityProxy(entry).importer = newOwner
         for series in product.serieses:
             if series.owner == oldOwner:
                 series.owner = newOwner

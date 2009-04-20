@@ -21,8 +21,8 @@ from zope.interface import Attribute, Interface
 from zope.schema import Bool, Choice, Datetime, Float, Object
 
 from canonical.launchpad import _
-from canonical.lazr.interface import copy_field
-from canonical.lazr.rest.declarations import (
+from lazr.restful.interface import copy_field
+from lazr.restful.declarations import (
    call_with, export_write_operation, exported, operation_parameters,
    REQUEST_USER)
 

@@ -9,7 +9,7 @@ __all__ = [
     'IDistributionSourcePackageRelease',
     ]
 
-from zope.interface import Interface, Attribute
+from zope.interface import Attribute
 
 from canonical.launchpad.interfaces.sourcepackagerelease import (
     ISourcePackageRelease)
@@ -43,7 +43,7 @@ class IDistributionSourcePackageRelease(ISourcePackageRelease):
     builds = Attribute("The builds we have for this sourcepackage release "
         "specifically in this distribution. Note that binaries could "
         "be inherited from a parent distribution, not necessarily built "
-        "here.")
+        "here, but must be published in a main archive.")
 
     binary_package_names = Attribute("The binary package names of "
         "packages that were built from this source package release.")

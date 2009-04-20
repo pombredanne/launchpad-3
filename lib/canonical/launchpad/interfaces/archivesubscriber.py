@@ -22,7 +22,7 @@ from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice
 from canonical.launchpad.interfaces.archive import IArchive
 from lp.registry.interfaces.person import IPerson
-from canonical.lazr.fields import Reference
+from lazr.restful.fields import Reference
 
 
 class ArchiveSubscriberStatus(DBEnumeratedType):

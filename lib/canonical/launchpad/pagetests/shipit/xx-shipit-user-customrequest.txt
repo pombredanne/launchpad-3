@@ -168,7 +168,7 @@ be auto approved.
   >>> browser.getControl(name='field.organization').value
   'Baz'
 
-  >>> browser.getControl(name='field.ubuntu_quantityx86').value = '10'
+  >>> browser.getControl(name='field.ubuntu_quantityamd64').value = '10'
   >>> browser.getControl(name='field.reason').value = 'foo'
   >>> browser.getControl('Submit Request').click()
 
@@ -251,16 +251,18 @@ For Kubuntu we also ship only X86.
   LookupError: name 'field.ubuntu_quantityppc'
 
 
-And for Server, we ship X86 and AMD64.
+And for Server, we ship only AMD64.
 
   >>> browser.open('http://shipit.ubuntu.dev/specialrequest-server')
   >>> browser.url
   'http://shipit.ubuntu.dev/specialrequest-server'
 
-  >>> browser.getControl(name='field.ubuntu_quantityx86')
-  <Control name='field.ubuntu_quantityx86' type='text'>
   >>> browser.getControl(name='field.ubuntu_quantityamd64')
   <Control name='field.ubuntu_quantityamd64' type='text'>
+  >>> browser.getControl(name='field.ubuntu_quantityx86')
+  Traceback (most recent call last):
+  ...
+  LookupError: name 'field.ubuntu_quantityx86'
   >>> browser.getControl(name='field.ubuntu_quantityppc')
   Traceback (most recent call last):
   ...

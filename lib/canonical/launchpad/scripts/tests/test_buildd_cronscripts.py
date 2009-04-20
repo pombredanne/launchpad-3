@@ -18,22 +18,17 @@ from canonical.launchpad.database.publishing import (
 from canonical.launchpad.interfaces.build import BuildStatus
 from canonical.launchpad.interfaces.component import IComponentSet
 from canonical.launchpad.scripts.logger import QuietFakeLogger
-from canonical.launchpad.scripts.buildd import RetryDepwait
+from canonical.launchpad.scripts.buildd import (
+    QueueBuilder, RetryDepwait)
 from canonical.launchpad.scripts.base import LaunchpadScriptFailure
+from canonical.launchpad.tests.test_publishing import SoyuzTestPublisher
 from canonical.testing import (
     DatabaseLayer, LaunchpadLayer, LaunchpadZopelessLayer)
+from lp.registry.interfaces.distribution import IDistributionSet
 
 
 class TestCronscriptBase(unittest.TestCase):
     """Buildd cronscripts test classes."""
-    layer = LaunchpadLayer
-
-    def setUp(self):
-        super(TestCronscriptBase, self).setUp()
-        # All of these tests commit to the launchpad_ftest database in
-        # subprocesses, so we need to tell the layer to fully tear down and
-        # restore the database.
-        DatabaseLayer.force_dirty_database()
 
     def runCronscript(self, name, extra_args):
         """Run given cronscript, returning the result and output.
@@ -71,22 +66,161 @@ class TestCronscriptBase(unittest.TestCase):
         """
         rc, out, err = runner()
         self.assertEqual(0, rc, "Err:\n%s" % err)
+
+        # 'runners' commit to the launchpad_ftest database in
+        # subprocesses, so we need to tell the layer to fully
+        # tear down and restore the database.
+        DatabaseLayer.force_dirty_database()
+
         return rc, out, err
+
+
+class TestSlaveScanner(TestCronscriptBase):
+    """Test SlaveScanner buildd script class."""
+    layer = LaunchpadLayer
 
     def testRunSlaveScanner(self):
         """Check if buildd-slave-scanner runs without errors."""
         self.assertRuns(runner=self.runBuilddSlaveScanner)
 
+
+class TestQueueBuilder(TestCronscriptBase):
+    """Test QueueBuilder buildd script class."""
+    layer = LaunchpadZopelessLayer
+
+    def getQueueBuilder(self, distribution=None, suites=None,
+                        score_only=False):
+        """Return a configured `QueueBuilder` script object."""
+        test_args = ['-n']
+        if distribution is not None:
+            test_args.extend(['-d', distribution])
+
+        if suites is not None:
+            for suite in suites:
+                test_args.extend(['-s', suite])
+
+        if score_only:
+            test_args.append('--score-only')
+
+        queue_builder = QueueBuilder(
+            name='queue-builder', test_args=test_args)
+        queue_builder.logger = QuietFakeLogger()
+
+        return queue_builder
+
+    def getSourceWithoutBuilds(self):
+        """Create a source publication without builds in ubuntu/hoary.
+
+        Once the source is created add the chroots needed for build
+        creation.
+        """
+        test_publisher = SoyuzTestPublisher()
+
+        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+        hoary = ubuntu.getSeries('hoary')
+        test_publisher.setUpDefaultDistroSeries(hoary)
+
+        source = test_publisher.getPubSource()
+        self.assertEqual(0, len(source.getBuilds()))
+
+        test_publisher.addFakeChroots()
+        return source
+
+    def testCalculateDistroseries(self):
+        # Distribution defaults to ubuntu and when suite is omitted
+        # all series are considered in the ascending order.
+        qb = self.getQueueBuilder()
+        self.assertEqual(
+            ['warty', 'hoary', 'grumpy', 'breezy-autotest'],
+            [distroseries.name
+             for distroseries in qb.calculateDistroseries()])
+
+        # Distribution name can be defined.
+        qb = self.getQueueBuilder(distribution='ubuntutest')
+        self.assertEqual(
+            ['breezy-autotest', 'hoary-test'],
+            [distroseries.name
+             for distroseries in qb.calculateDistroseries()])
+
+        # Distribution/Suite arguments mismatch result in a error.
+        qb = self.getQueueBuilder(distribution='boing')
+        self.assertRaises(LaunchpadScriptFailure, qb.calculateDistroseries)
+
+        qb = self.getQueueBuilder(suites=('hoary-test',))
+        self.assertRaises(LaunchpadScriptFailure, qb.calculateDistroseries)
+
+        # A single valid suite argument results in a list with one
+        # distroseries (pockets are completely ignored).
+        qb = self.getQueueBuilder(suites=('warty-security',))
+        self.assertEqual(
+            ['warty'],
+            [distroseries.name
+             for distroseries in qb.calculateDistroseries()])
+
+        # Multiple suite arguments result in a ordered list of distroseries.
+        qb = self.getQueueBuilder(suites=('hoary', 'warty-security'))
+        self.assertEqual(
+            ['warty', 'hoary'],
+            [distroseries.name
+             for distroseries in qb.calculateDistroseries()])
+
+    def testOtherDistribution(self):
+        # Restricting the build creation to another distribution
+        # does not create any builds either.
+        source = self.getSourceWithoutBuilds()
+        queue_builder = self.getQueueBuilder(distribution='ubuntutest')
+        queue_builder.main()
+        self.assertEqual(0, len(source.getBuilds()))
+
+    def testOtherDistroseries(self):
+        # Restricting the build creation to another distroseries
+        # does not create any builds.
+        source = self.getSourceWithoutBuilds()
+        queue_builder = self.getQueueBuilder(suites=('warty',))
+        queue_builder.main()
+        self.assertEqual(0, len(source.getBuilds()))
+
+    def testRightDistroseries(self):
+        # A build is created when queue-builder is restricted to the
+        # distroseries where the testing source is published
+        source = self.getSourceWithoutBuilds()
+        queue_builder = self.getQueueBuilder(suites=('hoary',))
+        queue_builder.main()
+        self.assertEqual(1, len(source.getBuilds()))
+
+    def testAllSeries(self):
+        # A build is created when queue-builder is not restricted to any
+        # specific distroseries.
+        source = self.getSourceWithoutBuilds()
+        queue_builder = self.getQueueBuilder()
+        queue_builder.main()
+        self.assertEqual(1, len(source.getBuilds()))
+
+    def testScoringOnlyDoesNotCreateBuilds(self):
+        # Passing '--score-only' doesn't create builds.
+        source = self.getSourceWithoutBuilds()
+        queue_builder = self.getQueueBuilder(score_only=True)
+        queue_builder.main()
+        self.assertEqual(0, len(source.getBuilds()))
+
+    def testScoringOnlyWorks(self):
+        # The source now has a build but lacks the corresponding
+        # buildqueue record. It is created and scored in '--score-only'
+        # mode.
+        source = self.getSourceWithoutBuilds()
+        [build] = source.createMissingBuilds()
+        build.buildqueue_record.destroySelf()
+
+        queue_builder = self.getQueueBuilder(score_only=True)
+        queue_builder.main()
+        self.assertEqual(4005, build.buildqueue_record.lastscore)
+
     def testRunQueueBuilder(self):
-        """Check if buildd-queue-builder runs without errors."""
+        # buildd-queue-builder script runs without errors.
         self.assertRuns(runner=self.runBuilddQueueBuilder)
 
-    def testRunRetryDepwait(self):
-        """Check if buildd-retry-depwait runs without errors."""
-        self.assertRuns(runner=self.runBuilddRetryDepwait)
 
-
-class TestRetryDepwait(unittest.TestCase):
+class TestRetryDepwait(TestCronscriptBase):
     """Test RetryDepwait buildd script class."""
     layer = LaunchpadZopelessLayer
 
@@ -117,6 +251,10 @@ class TestRetryDepwait(unittest.TestCase):
         """A error is raised on unknown distributions."""
         retry_depwait = self.getRetryDepwait(distribution='foobar')
         self.assertRaises(LaunchpadScriptFailure, retry_depwait.main)
+
+    def testRunRetryDepwait(self):
+        """Check if actual buildd-retry-depwait script runs without errors."""
+        self.assertRuns(runner=self.runBuilddRetryDepwait)
 
     def testEmptyRun(self):
         """Check the results of a run against pristine sampledata.
@@ -157,6 +295,7 @@ class TestRetryDepwait(unittest.TestCase):
             self.getPendingBuilds().count())
         self.assertEqual(depwait_build.buildstate.name, 'NEEDSBUILD')
         self.assertEqual(depwait_build.buildqueue_record.lastscore, 3255)
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

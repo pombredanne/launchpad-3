@@ -49,15 +49,15 @@ from zope.interface.interface import invariant
 from zope.component import getUtility
 from lazr.enum import DBEnumeratedType, DBItem, EnumeratedType, Item
 
-from canonical.lazr.interface import copy_field
-from canonical.lazr.rest.declarations import (
-   call_with, collection_default_content, export_as_webservice_collection,
-   export_as_webservice_entry, export_factory_operation,
-   export_read_operation, export_write_operation, exported,
-   operation_parameters, operation_returns_collection_of,
-   operation_returns_entry, rename_parameters_as, REQUEST_USER,
-   webservice_error)
-from canonical.lazr.fields import CollectionField, Reference
+from lazr.restful.interface import copy_field
+from lazr.restful.declarations import (
+    LAZR_WEBSERVICE_EXPORTED, REQUEST_USER, call_with,
+    collection_default_content, export_as_webservice_collection,
+    export_as_webservice_entry, export_factory_operation,
+    export_read_operation, export_write_operation, exported,
+    operation_parameters, operation_returns_collection_of,
+    operation_returns_entry, rename_parameters_as, webservice_error)
+from lazr.restful.fields import CollectionField, Reference
 
 from canonical.launchpad import _
 
@@ -1232,9 +1232,6 @@ class IPersonViewRestricted(Interface):
         exported_as='proposed_members')
     proposed_member_count = Attribute("Number of PROPOSED members")
 
-    mapped_participants = CollectionField(
-        title=_("List of participants with coordinates."),
-        value_type=Reference(schema=Interface))
     mapped_participants_count = Attribute(
         "The number of mapped participants")
     unmapped_participants = CollectionField(
@@ -1242,6 +1239,13 @@ class IPersonViewRestricted(Interface):
         value_type=Reference(schema=Interface))
     unmapped_participants_count = Attribute(
         "The number of unmapped participants")
+
+    def getMappedParticipants(limit=None):
+        """List of participants with coordinates.
+
+        :param limit: The optional maximum number of items to return.
+        :return: A list of `IPerson` objects
+        """
 
     def getMappedParticipantsBounds():
         """Return a dict of the bounding longitudes latitudes, and centers.
@@ -1425,15 +1429,6 @@ class IPersonCommAdminWriteRestricted(Interface):
 class IPersonSpecialRestricted(Interface):
     """IPerson methods that require launchpad.Special permission to use."""
 
-    def activateAccount(comment, password, preferred_email):
-        """Activate this person's Launchpad account.
-
-        :param comment: An explanation of why the account status changed.
-        :param password: The user's password.
-        :param preferred_email: The `EmailAddress` to set as the user's
-            preferred email address.
-        """
-
     def deactivateAccount(comment):
         """Deactivate this person's Launchpad account.
 
@@ -1446,6 +1441,21 @@ class IPersonSpecialRestricted(Interface):
             - Changing the ownership of products/projects/teams owned by him.
 
         :param comment: An explanation of why the account status changed.
+        """
+
+    def reactivate(comment, password, preferred_email):
+        """Reactivate this person and its account.
+
+        Set the account status to ACTIVE, the account's password to the given
+        one and its preferred email address.
+
+        If the person's name contains a -deactivatedaccount suffix (usually
+        added by `IPerson`.deactivateAccount(), it is removed.
+
+        :param comment: An explanation of why the account status changed.
+        :param password: The user's password.
+        :param preferred_email: The `EmailAddress` to set as the account's
+            preferred email address. It cannot be None.
         """
 
 
@@ -1720,14 +1730,12 @@ class IPersonSet(Interface):
         text=TextLine(title=_("Search text"), default=u""))
     @operation_returns_collection_of(IPerson)
     @export_read_operation()
-    def find(text="", orderBy=None):
+    def find(text=""):
         """Return all non-merged Persons and Teams whose name, displayname or
         email address match <text>.
 
-        <orderBy> can be either a string with the column name you want to sort
-        or a list of column names as strings.
-        If no orderBy is specified the results will be ordered using the
-        default ordering specified in Person._defaultOrder.
+        The results will be ordered using the default ordering specified in
+        Person._defaultOrder.
 
         While we don't have Full Text Indexes in the emailaddress table, we'll
         be trying to match the text only against the beginning of an email
@@ -1738,7 +1746,7 @@ class IPersonSet(Interface):
         text=TextLine(title=_("Search text"), default=u""))
     @operation_returns_collection_of(IPerson)
     @export_read_operation()
-    def findPerson(text="", orderBy=None, exclude_inactive_accounts=True,
+    def findPerson(text="", exclude_inactive_accounts=True,
                    must_have_email=False):
         """Return all non-merged Persons with at least one email address whose
         name, displayname or email address match <text>.
@@ -1746,10 +1754,8 @@ class IPersonSet(Interface):
         If text is an empty string, all persons with at least one email
         address will be returned.
 
-        <orderBy> can be either a string with the column name you want to sort
-        or a list of column names as strings.
-        If no orderBy is specified the results will be ordered using the
-        default ordering specified in Person._defaultOrder.
+        The results will be ordered using the default ordering specified in
+        Person._defaultOrder.
 
         If exclude_inactive_accounts is True, any accounts whose
         account_status is any of INACTIVE_ACCOUNT_STATUSES will not be in the
@@ -1767,14 +1773,12 @@ class IPersonSet(Interface):
         text=TextLine(title=_("Search text"), default=u""))
     @operation_returns_collection_of(IPerson)
     @export_read_operation()
-    def findTeam(text="", orderBy=None):
+    def findTeam(text=""):
         """Return all Teams whose name, displayname or email address
         match <text>.
 
-        <orderBy> can be either a string with the column name you want to sort
-        or a list of column names as strings.
-        If no orderBy is specified the results will be ordered using the
-        default ordering specified in Person._defaultOrder.
+        The results will be ordered using the default ordering specified in
+        Person._defaultOrder.
 
         While we don't have Full Text Indexes in the emailaddress table, we'll
         be trying to match the text only against the beginning of an email
@@ -1980,7 +1984,7 @@ class NoSuchPerson(NameLookupFailed):
 # Fix value_type.schema of IPersonViewRestricted attributes.
 for name in ['allmembers', 'activemembers', 'adminmembers', 'proposedmembers',
              'invited_members', 'deactivatedmembers', 'expiredmembers',
-             'mapped_participants', 'unmapped_participants']:
+             'unmapped_participants']:
     IPersonViewRestricted[name].value_type.schema = IPerson
 
 IPersonPublic['sub_teams'].value_type.schema = ITeam
@@ -2003,14 +2007,14 @@ params_to_fix = [
     ]
 for method, name in params_to_fix:
     method.queryTaggedValue(
-        'lazr.webservice.exported')['params'][name].schema = IPerson
+        'lazr.restful.exported')['params'][name].schema = IPerson
 
 # Fix schema of operation return values.
 # XXX: salgado, 2008-08-01: Uncomment when findPathToTeam is exported again.
 # IPersonPublic['findPathToTeam'].queryTaggedValue(
 #     'lazr.webservice.exported')['return_type'].value_type.schema = IPerson
 IPersonViewRestricted['getMembersByStatus'].queryTaggedValue(
-    'lazr.webservice.exported')['return_type'].value_type.schema = IPerson
+    LAZR_WEBSERVICE_EXPORTED)['return_type'].value_type.schema = IPerson
 
 # Fix schema of ITeamMembership fields.  Has to be done here because of
 # circular dependencies.

@@ -39,8 +39,8 @@ from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 
 from canonical.lazr.interfaces.feed import IFeed
-from canonical.lazr.interfaces.rest import IWebServiceConfiguration
-from canonical.lazr.rest.publisher import (
+from lazr.restful.interfaces import IWebServiceConfiguration
+from lazr.restful.publisher import (
     WebServicePublicationMixin, WebServiceRequestTraversal)
 
 from canonical.launchpad.interfaces import (
@@ -621,6 +621,18 @@ class BrowserFormNG:
         return value
 
 
+def web_service_request_to_browser_request(webservice_request):
+    """Convert a given webservice request into a webapp one.
+
+    Simply overrides 'SERVER_URL' to the 'mainsite', preserving headers and
+    body.
+    """
+    body = webservice_request.bodyStream.getCacheStream().read()
+    environ = dict(webservice_request.environment)
+    environ['SERVER_URL'] = allvhosts.configs['mainsite'].rooturl
+    return LaunchpadBrowserRequest(body, environ)
+
+
 class Zope3WidgetsUseIBrowserFormNGMonkeyPatch:
     """Make Zope3 widgets use IBrowserFormNG.
 
@@ -1020,10 +1032,8 @@ class AnswersBrowserRequest(LaunchpadBrowserRequest):
 
 # ---- openid
 
-class IdPublication(LaunchpadBrowserPublication):
-    """The publication used for OpenID requests."""
-
-    root_object_interface = IOpenIDApplication
+class AccountPrincipalMixin:
+    """Mixin for publication that works with person-less accounts."""
 
     def getPrincipal(self, request):
         """Return the authenticated principal for this request.
@@ -1038,6 +1048,14 @@ class IdPublication(LaunchpadBrowserPublication):
             principal = auth_utility.unauthenticatedPrincipal()
             assert principal is not None, "Missing unauthenticated principal."
         return principal
+
+
+class IdPublication(AccountPrincipalMixin, LaunchpadBrowserPublication):
+    """The publication used for OpenID requests."""
+
+    def getApplication(self, request):
+        """Return the `IOpenIDApplication`."""
+        return getUtility(IOpenIDApplication)
 
 
 class IdBrowserRequest(LaunchpadBrowserRequest):
@@ -1058,7 +1076,7 @@ class OpenIDBrowserRequest(LaunchpadBrowserRequest):
 
 # ---- shipit
 
-class ShipItPublication(IdPublication):
+class ShipItPublication(AccountPrincipalMixin, LaunchpadBrowserPublication):
     """The publication used for the ShipIt sites."""
 
     root_object_interface = IShipItApplication
