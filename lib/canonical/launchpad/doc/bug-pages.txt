@@ -939,7 +939,7 @@ The +filebug-show-similar view takes a single parameter, 'title'. It
 uses this to search for similar bugs.
 
     >>> request = LaunchpadTestRequest(
-    ...     method="POST",
+    ...     method="GET",
     ...     form={'title': 'a'})
     >>> view = getMultiAdapter(
     ...     (firefox, request), name="+filebug-show-similar")
@@ -958,7 +958,7 @@ searched for.
 If we refine the search critera, we'll get different results.
 
     >>> request = LaunchpadTestRequest(
-    ...     method="POST",
+    ...     method="GET",
     ...     form={'title': 'problems'})
     >>> view = getMultiAdapter(
     ...     (firefox, request), name="+filebug-show-similar")
