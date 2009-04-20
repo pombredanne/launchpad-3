@@ -1,0 +1,78 @@
+= Single-Signon Workflow: Automatic Authorization =
+
+For sites that are intended to look like an integrated part of
+Canonical's single sign on system, we would like to avoid actively
+asking the user to authenticate to the site.
+
+As the user is likely to consider the sites to be part of a single
+larger system, it just causes confusion.
+
+First we will set up the helper view that lets us test the final
+portion of the authentication process:
+
+    >>> from openid.consumer.consumer import Consumer
+    >>> from openid.fetchers import setDefaultFetcher
+    >>> from openid.store.memstore import MemoryStore
+    >>> from canonical.launchpad.testing.openidhelpers import (
+    ...     complete_from_browser, make_identifier_select_endpoint,
+    ...     PublisherFetcher)
+    >>> setDefaultFetcher(PublisherFetcher())
+
+Next we'll set up the trust root we're using to have its requests
+automatically authorized:
+
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.ftests import login, logout
+    >>> from canonical.launchpad.interfaces import IOpenIDRPConfigSet
+
+    >>> login('admin@canonical.com')
+    >>> rpconfig = getUtility(IOpenIDRPConfigSet).new(
+    ...     trust_root='http://launchpad.dev/',
+    ...     displayname='Test RP', description='A test RP')
+
+    # XXX 2009-04-16 jamesh bug=362149: a related merge to
+    # db-devel is needed to switch this to a database column.
+    >>> from canonical.launchpad.database.openidserver import (
+    ...     AUTO_AUTHORIZE_TRUST_ROOTS)
+    >>> AUTO_AUTHORIZE_TRUST_ROOTS.add('http://launchpad.dev/')
+    >>> logout()
+
+If we are not logged in, automatically authorized sites act the same
+as normal ones, and the user is presented with the login page:
+
+    >>> openid_store = MemoryStore()
+    >>> consumer = Consumer(session={}, store=openid_store)
+    >>> request = consumer.beginWithoutDiscovery(
+    ...     make_identifier_select_endpoint(PROTOCOL_URI))
+
+    >>> browser.open(request.redirectURL(
+    ...     'http://launchpad.dev/', 'http://launchpad.dev/+openid-consumer'))
+
+    >>> print browser.title
+    Launchpad Login Service
+
+However, if the user is logged in, they will be directed back to the
+relying party immediately.
+
+    >>> browser.addHeader('Authorization', 'Basic mark@hbd.com:test')
+
+    >>> request = consumer.beginWithoutDiscovery(
+    ...     make_identifier_select_endpoint(PROTOCOL_URI))
+    >>> browser.open(request.redirectURL(
+    ...     'http://launchpad.dev/', 'http://launchpad.dev/+openid-consumer'))
+
+    >>> print browser.url
+    http://launchpad.dev/+openid-consumer?...
+
+    >>> info = complete_from_browser(
+    ...     consumer, browser, 'http://openid.launchpad.dev/+id/sabdfl_oid')
+    >>> print info.status
+    success
+    >>> print info.endpoint.claimed_id
+    http://openid.launchpad.dev/+id/sabdfl_oid
+
+
+== Cleanup ==
+
+    >>> AUTO_AUTHORIZE_TRUST_ROOTS.remove('http://launchpad.dev/')
+    >>> setDefaultFetcher(None)

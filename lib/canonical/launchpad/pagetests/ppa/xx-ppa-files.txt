@@ -43,31 +43,14 @@ Include a source tarball.
     ...     'test-pkg_1.0.tar.gz', filecontent='TAR', restricted=True)
     >>> unused = test_source.sourcepackagerelease.addFile(tar_gz)
 
-Create a corresponding upload changesfile.
-
-    >>> source_upload = test_source.distroseries.createQueueEntry(
-    ...     pocket=PackagePublishingPocket.RELEASE,
-    ...     changesfilename='test-pkg_1.0_source.changes',
-    ...     changesfilecontent='Bogus source changesfile',
-    ...     archive=no_priv.archive)
-    >>> unused = source_upload.addSource(test_source.sourcepackagerelease)
-    >>> source_upload.setDone()
-
 Create a corresponding binary publication and its changesfile.
 
     >>> binary_pubs = test_publisher.getPubBinaries(
     ...     binaryname='test-bin', pub_source=test_source)
     >>> deb_file = binary_pubs[0].binarypackagerelease.files[0].libraryfile
 
-    >>> binary_upload = test_source.distroseries.createQueueEntry(
-    ...     pocket=PackagePublishingPocket.RELEASE,
-    ...     changesfilename='test-pkg_1.0_all.changes',
-    ...     changesfilecontent='Bogus binary changesfile',
-    ...     archive=no_priv.archive)
-
     >>> [build] = test_source.getBuilds()
     >>> build.datebuilt = build.datecreated
-    >>> unused = binary_upload.addBuild(build)
 
 Create a buildlog and a binary upload_log.
 
@@ -110,7 +93,8 @@ Commit everything.
 Links to files accessible via +files/ proxy in the PPA page.
 
     >>> ppa_links = [
-    ...     ('(changesfile)', source_upload.changesfile),
+    ...     ('(changesfile)',
+    ...         another_test_source.sourcepackagerelease.upload_changesfile),
     ...     ]
 
     >>> ppa_1_0_links = [
@@ -131,7 +115,7 @@ Links to files accessible via +files/ proxy in the Build page.
     ...     ]
 
     >>> build_links = [
-    ...     ('test-pkg_1.0_all.changes', binary_upload.changesfile),
+    ...     ('test-bin_1.0_i386.changes', build.changesfile),
     ...     (buildlog_name, build.buildlog),
     ...     (upload_log_name, build.upload_log),
     ...     ]
@@ -171,18 +155,18 @@ Source changesfiles are served on the PPA '+files' traversal.
 
     >>> check_urls(no_priv_browser, ppa_links,
     ...            'http://launchpad.dev/~no-priv/+archive/ppa')
-    test-pkg_1.0_source.changes: OK
+    test-pkg_1.1_source.changes: OK
 
     >>> no_priv_browser.getLink('Copy packages').click()
     >>> check_urls(no_priv_browser, ppa_links,
     ...            'http://launchpad.dev/~no-priv/+archive/ppa')
-    test-pkg_1.0_source.changes: OK
+    test-pkg_1.1_source.changes: OK
 
     >>> no_priv_browser.getLink('PPA').click()
     >>> no_priv_browser.getLink('Delete packages').click()
     >>> check_urls(no_priv_browser, ppa_links,
     ...            'http://launchpad.dev/~no-priv/+archive/ppa')
-    test-pkg_1.0_source.changes: OK
+    test-pkg_1.1_source.changes: OK
 
 Buildlogs are served on the Build '+files' traversal, when the PPA
 builds list is presented.
@@ -220,7 +204,7 @@ Buildlog, upload_log and binary changesfile are served via the Build
 
     >>> check_urls(no_priv_browser, build_links,
     ...            'http://launchpad.dev/~no-priv/+archive/ppa/+build/31')
-    test-pkg_1.0_all.changes:    OK
+    test-bin_1.0_i386.changes:    OK
     buildlog_...txt.gz:          OK
     upload_..._log.txt:          OK
 
@@ -361,7 +345,7 @@ proxy redirects to the public http url.
     ... """ % file_lp_url.replace('http://launchpad.dev', ''))
     HTTP/1.1 303 See Other
     ...
-    Location: http://localhost:58000/95/test-pkg_1.0.dsc
+    Location: http://localhost:58000/.../test-pkg_1.0.dsc
     ...
 
 == Compatibility URL Redirection ==

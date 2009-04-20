@@ -34,7 +34,7 @@ def getPPAUploadForSource(upload_path, ppa):
     return NascentUpload(datadir(upload_path), policy, mock_logger_quiet)
 
 def getUploadForBinary(upload_path):
-    """Return a NascentUpload object for binaries of bar 1:1.0-9 source."""
+    """Return a NascentUpload object for binaries."""
     policy = getPolicy(name='sync', distro='ubuntu', distroseries='hoary')
     policy.can_upload_binaries = True
     policy.can_upload_mixed = True
