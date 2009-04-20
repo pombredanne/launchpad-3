@@ -1,9 +1,12 @@
-# Copyright 2005 Canonical Ltd.  All rights reserved.
+# Copyright 2005,2009 Canonical Ltd.  All rights reserved.
 
 """Views for BugSubscription."""
 
 __metaclass__ = type
-__all__ = ['BugSubscriptionAddView']
+__all__ = [
+    'BugPortletSubcribersContents',
+    'BugSubscriptionAddView',
+    ]
 
 from zope.event import notify
 
@@ -11,7 +14,7 @@ from lazr.lifecycle.event import ObjectCreatedEvent
 
 from canonical.launchpad.interfaces import IBugSubscription
 from canonical.launchpad.webapp import (
-    action, canonical_url, LaunchpadFormView)
+    action, canonical_url, LaunchpadFormView, LaunchpadView)
 
 
 class BugSubscriptionAddView(LaunchpadFormView):
@@ -43,3 +46,15 @@ class BugSubscriptionAddView(LaunchpadFormView):
         return canonical_url(self.context)
 
     cancel_url = next_url
+
+
+class BugPortletSubcribersContents(LaunchpadView):
+    """View for the contents for the subscribers portlet."""
+
+    def getSortedDirectSubscriptions(self):
+        return self.context.getDirectSubscriptions()
+
+    def getSortedSubscriptionsFromDuplicates(self):
+        return self.context.getSubscriptionsFromDuplicates()
+
+

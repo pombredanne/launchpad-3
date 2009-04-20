@@ -160,7 +160,7 @@
     <browser:page
         for="canonical.launchpad.interfaces.IBug"
         name="+bug-portlet-subscribers-content"
-        class="canonical.launchpad.webapp.publisher.LaunchpadView"
+        class="canonical.launchpad.browser.bugsubscription.BugPortletSubcribersContents"
         template="../templates/bug-portlet-subscribers-content.pt" 
         permission="zope.Public" />
 

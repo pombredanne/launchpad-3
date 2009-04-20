@@ -5,8 +5,8 @@
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   tal:define="
     bug context/bug|context;
-    direct_subscriptions bug/getDirectSubscriptions;
-    from_dupes_subscriptions bug/getSubscriptionsFromDuplicates;
+    direct_subscriptions view/getSortedDirectSubscriptions;
+    from_dupes_subscriptions view/getSortedSubscriptionsFromDuplicates;
     also_notified_subscribers bug/getAlsoNotifiedSubscribers
   ">
   <div class="section" id="subscribers-direct">
