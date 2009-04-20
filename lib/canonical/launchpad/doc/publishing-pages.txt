@@ -65,7 +65,7 @@ for each file related with the alsa-utils source publication in ubuntu.
     ...    name="+listing-archive-detailed")
 
     >>> view.published_source_and_binary_files
-    [{'url': 'http://.../alsa-utils_1.0.9a-4ubuntu1.dsc',
+    [{'url': u'http://launchpad.dev/ubuntu/+archive/primary/+files/alsa-utils_1.0.9a-4ubuntu1.dsc',
      'class': 'source',
      'filesize': 3,
      'filename': u'alsa-utils_1.0.9a-4ubuntu1.dsc'}]
@@ -84,15 +84,15 @@ inspected.
     ...     name="+listing-archive-detailed")
 
     >>> ppa_source_view.published_source_and_binary_files
-    [{'url': 'http://localhost:58000/3/firefox-0.9.2.orig.tar.gz',
+    [{'url': u'http://launchpad.dev/~cprov/+archive/ppa/+files/firefox-0.9.2.orig.tar.gz',
       'class': 'source',
       'filesize': 9922560,
       'filename': u'firefox-0.9.2.orig.tar.gz'},
-     {'url': 'http://localhost:58000/62/iceweasel-1.0.dsc',
+     {'url': u'http://launchpad.dev/~cprov/+archive/ppa/+files/iceweasel-1.0.dsc',
       'class': 'source',
       'filesize': 123,
       'filename': u'iceweasel-1.0.dsc'},
-     {'url': 'http://localhost:58000/40/mozilla-firefox_0.9_i386.deb',
+     {'url': u'http://launchpad.dev/~cprov/+archive/ppa/+files/mozilla-firefox_0.9_i386.deb',
       'class': 'binary',
       'filesize': 3,
       'filename': u'mozilla-firefox_0.9_i386.deb'}]

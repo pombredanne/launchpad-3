@@ -228,7 +228,7 @@ class IAccountPublic(Interface):
         corresponding confirmation email."""
 
     def setPreferredEmail(email):
-        """Set the given email address as this accounts's preferred one.
+        """Set the given email address as this account's preferred one.
 
         If ``email`` is None, the preferred email address is unset, which
         will make the account invalid.
@@ -295,16 +295,28 @@ class IAccountPrivate(Interface):
 class IAccountSpecialRestricted(Interface):
     """Attributes of `IAccount` protected with launchpad.Special."""
 
-    def reactivate(comment, password, preferred_email):
-        """Reactivate the given account.
+    # XXX sinzui 2008-07-14 bug=248518:
+    # This method would assert the password is not None, but
+    # setPreferredEmail() passes the Person's current password, which may
+    # be None.  Once that callsite is fixed, we will be able to check that the
+    # password is not None here and get rid of the reactivate() method below.
+    def activate(comment, password, preferred_email):
+        """Activate this account.
 
-        Set the account status to ACTIVE and possibly restore its name.
-        The preferred email address is set.
+        Set the account status to ACTIVE, the account's password to the given
+        one and its preferred email address.
 
         :param comment: An explanation of why the account status changed.
-        :param password: The user's password, it cannot be None.
+        :param password: The user's password.
         :param preferred_email: The `EmailAddress` to set as the account's
             preferred email address. It cannot be None.
+        """
+
+    def reactivate(comment, password, preferred_email):
+        """Reactivate this account.
+
+        Just like `IAccountSpecialRestricted`.activate() above, but here the
+        password can't be None or the empty string.
         """
 
 

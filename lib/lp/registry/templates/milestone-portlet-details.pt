@@ -11,6 +11,11 @@
     <b>Name:</b>
     <span tal:replace="context/name">foo</span><br />
 
+    <tal:hascodename condition="context/code_name">
+        <b>Codename:</b>
+        <tal:codename replace="context/code_name" /><br/>
+    </tal:hascodename>
+
     <b>Date expected:</b>
     <span
       tal:replace="context/dateexpected/fmt:approximatedate|nothing">
