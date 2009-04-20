@@ -15,7 +15,7 @@ from lp.registry.interfaces.distroseries import DistroSeriesStatus
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.publishing import PackagePublishingPocket
 from lp.code.interfaces.seriessourcepackagebranch import (
-    ISeriesSourcePackageBranchSet)
+    IMakeOfficialBranchLinks)
 from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.testing.layers import DatabaseFunctionalLayer
 
@@ -55,7 +55,7 @@ class TestSourcePackage(TestCaseWithFactory):
         sourcepackage = self.factory.makeSourcePackage()
         registrant = self.factory.makePerson()
         branch = self.factory.makePackageBranch(sourcepackage=sourcepackage)
-        getUtility(ISeriesSourcePackageBranchSet).new(
+        getUtility(IMakeOfficialBranchLinks).new(
             sourcepackage.distroseries, PackagePublishingPocket.RELEASE,
             sourcepackage.sourcepackagename, branch, registrant)
         official_branch = sourcepackage.getBranch(
@@ -70,6 +70,30 @@ class TestSourcePackage(TestCaseWithFactory):
         branch = self.factory.makePackageBranch(sourcepackage=sourcepackage)
         sourcepackage.setBranch(pocket, branch, registrant)
         self.assertEqual(branch, sourcepackage.getBranch(pocket))
+
+    def test_change_branch_once_set(self):
+        # We can change the official branch for a a pocket of a source package
+        # even after it has already been set.
+        sourcepackage = self.factory.makeSourcePackage()
+        pocket = PackagePublishingPocket.RELEASE
+        registrant = self.factory.makePerson()
+        branch = self.factory.makePackageBranch(sourcepackage=sourcepackage)
+        new_branch = self.factory.makePackageBranch(
+            sourcepackage=sourcepackage)
+        sourcepackage.setBranch(pocket, branch, registrant)
+        sourcepackage.setBranch(pocket, new_branch, registrant)
+        self.assertEqual(new_branch, sourcepackage.getBranch(pocket))
+
+    def test_unsetBranch(self):
+        # Setting the official branch for a pocket to 'None' breaks the link
+        # between the branch and pocket.
+        sourcepackage = self.factory.makeSourcePackage()
+        pocket = PackagePublishingPocket.RELEASE
+        registrant = self.factory.makePerson()
+        branch = self.factory.makePackageBranch(sourcepackage=sourcepackage)
+        sourcepackage.setBranch(pocket, branch, registrant)
+        sourcepackage.setBranch(pocket, None, registrant)
+        self.assertIs(None, sourcepackage.getBranch(pocket))
 
     def test_linked_branches(self):
         # ISourcePackage.linked_branches is a mapping of pockets to branches.

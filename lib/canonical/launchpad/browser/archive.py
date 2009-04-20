@@ -82,6 +82,7 @@ from canonical.widgets import (
     LabeledMultiCheckBoxWidget, PlainMultiCheckBoxWidget)
 from canonical.widgets.itemswidgets import (
     LaunchpadDropdownWidget, LaunchpadRadioWidget)
+from canonical.widgets.lazrjs import TextLineEditorWidget
 from canonical.widgets.textwidgets import StrippedTextWidget
 
 
@@ -183,6 +184,13 @@ class ArchiveNavigation(Navigation, FileNavigationMixin):
 
     @stepthrough('+sourcepub')
     def traverse_sourcepub(self, name):
+        return self._traverse_publication(name, source=True)
+
+    @stepthrough('+binarypub')
+    def traverse_binarypub(self, name):
+        return self._traverse_publication(name, source=False)
+
+    def _traverse_publication(self, name, source):
         try:
             pub_id = int(name)
         except ValueError:
@@ -191,7 +199,7 @@ class ArchiveNavigation(Navigation, FileNavigationMixin):
         # The ID is not enough on its own to identify the publication,
         # we need to make sure it matches the context archive as well.
         results = getUtility(IPublishingSet).getByIdAndArchive(
-            pub_id, self.context)
+            pub_id, self.context, source)
         if results.count() == 1:
             return results[0]
 
@@ -576,6 +584,12 @@ class ArchiveView(ArchiveSourcePackageListViewBase):
                 canonical_url(self.context.distribution))
             return
         super(ArchiveView, self).initialize()
+
+        self.displayname_edit_widget = TextLineEditorWidget(
+            self.context, 'displayname',
+            canonical_url(self.context, view_name='+edit'),
+            id="displayname", title="Edit this displayname")
+
         self.setupSourcesListEntries()
 
     def setupSourcesListEntries(self):
