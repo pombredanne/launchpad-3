@@ -500,6 +500,13 @@ class BranchNameValidationMixin:
 
 
 class BranchEditSchema(Interface):
+    """Defines the fields for the edit form.
+
+    This is necessary so as to make an editable field for the branch privacy.
+    Normally the field is not editable through the interface in order to stop
+    direct setting of the private attribute, but in this case we actually want
+    the user to be able to edit it.
+    """
     use_template(IBranch, include=[
             'owner', 'product', 'name', 'url', 'title', 'summary',
             'lifecycle_status', 'whiteboard'])
