@@ -60,6 +60,7 @@ def _test_expander(client):
 
     # The extra options are not visible.
     extra_options_ids = (
+        u"field.tags",
         u"field.filecontent",
         u"field.patch",
         u"field.attachment_description",
