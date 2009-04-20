@@ -5,6 +5,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'assignee_renderer',
     'BugListingBatchNavigator',
     'BugListingPortletView',
     'BugNominationsView',
@@ -45,6 +46,7 @@ from simplejson import dumps
 import urllib
 from operator import attrgetter, itemgetter
 
+from zope import component
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser.itemswidgets import RadioWidget
 from zope.app.form.interfaces import (
@@ -54,7 +56,7 @@ from zope.app.pagetemplate import ViewPageTemplateFile
 from zope.component import getUtility, getMultiAdapter
 from zope.event import notify
 from zope import formlib
-from zope.interface import implements, providedBy
+from zope.interface import implementer, implements, providedBy
 from zope.schema import Choice
 from zope.schema.interfaces import IContextSourceBinder, IList
 
@@ -67,6 +69,8 @@ from lazr.enum import EnumeratedType, Item
 
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
+from lazr.restful.interfaces import (
+    IFieldHTMLRenderer, IReferenceChoice, IWebServiceClientRequest)
 
 from canonical.config import config
 from canonical.database.sqlbase import cursor
@@ -145,6 +149,14 @@ from canonical.widgets.lazrjs import (
 from canonical.widgets.project import ProjectScopeWidget
 
 
+@component.adapter(IBugTask, IReferenceChoice, IWebServiceClientRequest)
+@implementer(IFieldHTMLRenderer)
+def assignee_renderer(context, field, request):
+    """Render a bugtask assignee as a link."""
+    def render(value):
+        return PersonFormatterAPI(context.assignee).link('+assignedbugs')
+    return render
+
 def unique_title(title):
     """Canonicalise a message title to help identify messages with new
     information in their titles.
@@ -155,7 +167,6 @@ def unique_title(title):
     if title.startswith('re:'):
         title = title[3:]
     return title.strip()
-
 
 def get_comments_for_bugtask(bugtask, truncate=False):
     """Return BugComments related to a bugtask.
