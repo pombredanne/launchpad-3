@@ -765,17 +765,23 @@ class ShowSimilarBugsMixin:
     """A mixin for displaying possible duplicates for a bug."""
     _MATCHING_BUGS_LIMIT = 10
 
-    def getSearchContext(self):
+    @property
+    def search_context(self):
         """Return the context used to search for similar bugs."""
         return self.context
+
+    @property
+    def search_text(self):
+        """Return the search string entered by the user."""
+        return self.request.get('title')
 
     @cachedproperty
     def similar_bugs(self):
         """Return the similar bugs based on the user search."""
-        title = self.getSearchText()
+        title = self.search_text
         if not title:
             return []
-        search_context = self.getSearchContext()
+        search_context = self.search_context
         if search_context is None:
             return []
         elif IProduct.providedBy(search_context):
@@ -823,10 +829,6 @@ class ShowSimilarBugsMixin:
 
         return matching_bugs
 
-    def getSearchText(self):
-        """Return the search string entered by the user."""
-        return self.request.get('title')
-
 
 class FilebugShowSimilarBugsView(ShowSimilarBugsMixin, FileBugViewBase):
     """A view for showing possible dupes for a bug.
@@ -863,7 +865,8 @@ class FileBugGuidedView(ShowSimilarBugsMixin, FileBugViewBase):
         self.initial_focus_widget = None
         return self.showFileBugForm()
 
-    def getSearchContext(self):
+    @property
+    def search_context(self):
         """Return the context used to search for similar bugs."""
         if IDistributionSourcePackage.providedBy(self.context):
             return self.context
@@ -885,7 +888,7 @@ class FileBugGuidedView(ShowSimilarBugsMixin, FileBugViewBase):
     @cachedproperty
     def most_common_bugs(self):
         """Return a list of the most duplicated bugs."""
-        search_context = self.getSearchContext()
+        search_context = self.search_context
         if search_context is None:
             return []
         else:
@@ -896,7 +899,8 @@ class FileBugGuidedView(ShowSimilarBugsMixin, FileBugViewBase):
     def found_possible_duplicates(self):
         return self.similar_bugs or self.most_common_bugs
 
-    def getSearchText(self):
+    @property
+    def search_text(self):
         """Return the search string entered by the user."""
         try:
             return self.widgets['title'].getInputValue()

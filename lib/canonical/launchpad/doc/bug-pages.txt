@@ -158,6 +158,7 @@ grab a new view to actually see them:
      (1, u'name16', u'I can reproduce this bug.'),
      (2, u'name16', u'I can reproduce this bug.')]
 
+
 == Description and Comment Display ==
 
 When a user posts a new bug, the first comment and the description are
@@ -927,3 +928,41 @@ comment.
     Changed in testproduct:
                 importance: Undecided => High
                     status: New => Confirmed
+
+
+== Getting the list of possible duplicates for a new bug ==
+
+It's possible to get a list of the possible duplicates for a new bug by
+using the +filebug-show-similar view of a BugTarget.
+
+The +filebug-show-similar view takes a single parameter, 'title'. It
+uses this to search for similar bugs.
+
+    >>> request = LaunchpadTestRequest(
+    ...     method="POST",
+    ...     form={'title': 'a'})
+    >>> view = getMultiAdapter(
+    ...     (firefox, request), name="+filebug-show-similar")
+    >>> view.initialize()
+
+The view offers a list of bugs similar to the one whose title we just
+searched for.
+
+    >>> for bug in view.similar_bugs:
+    ...     print "Bug %s: %s" % (bug.id, bug.title)
+    Bug 1:  New title
+    Bug 4:  Reflow problems with complex page layouts
+    Bug 5:  Firefox install instructions should be complete
+    Bug 17: a firefox bug
+
+If we refine the search critera, we'll get different results.
+
+    >>> request = LaunchpadTestRequest(
+    ...     method="POST",
+    ...     form={'title': 'problems'})
+    >>> view = getMultiAdapter(
+    ...     (firefox, request), name="+filebug-show-similar")
+    >>> view.initialize()
+    >>> for bug in view.similar_bugs:
+    ...     print "Bug %s: %s" % (bug.id, bug.title)
+    Bug 4:  Reflow problems with complex page layouts
