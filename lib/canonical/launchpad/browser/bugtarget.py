@@ -761,8 +761,14 @@ class FileBugAdvancedView(FileBugViewBase):
         return self.template()
 
 
-class ShowSimilarBugsMixin:
-    """A mixin for displaying possible duplicates for a bug."""
+class FilebugShowSimilarBugsView(FileBugViewBase):
+    """A view for showing possible dupes for a bug.
+
+    This view will only be used to populate asynchronously-driven parts
+    of a page.
+    """
+    schema = IBugAddForm
+
     _MATCHING_BUGS_LIMIT = 10
 
     @property
@@ -830,17 +836,7 @@ class ShowSimilarBugsMixin:
         return matching_bugs
 
 
-class FilebugShowSimilarBugsView(ShowSimilarBugsMixin, FileBugViewBase):
-    """A view for showing possible dupes for a bug.
-
-    This view will only be used to populate asynchronously-driven parts
-    of a page.
-    """
-    schema = IBugAddForm
-
-
-class FileBugGuidedView(ShowSimilarBugsMixin, FileBugViewBase):
-    schema = IBugAddForm
+class FileBugGuidedView(FilebugShowSimilarBugsView):
     # XXX: Brad Bollenbach 2006-10-04: This assignment to actions is a
     # hack to make the action decorator Just Work across inheritance.
     actions = FileBugViewBase.actions
