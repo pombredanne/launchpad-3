@@ -38,6 +38,10 @@ from canonical.launchpad.database.publishing import (
     BinaryPackagePublishingHistory, SecureBinaryPackagePublishingHistory,
     SecureSourcePackagePublishingHistory, SourcePackagePublishingHistory)
 from canonical.launchpad.helpers import get_email_template
+from canonical.launchpad.interfaces.archive import (
+    ArchivePurpose, IArchiveSet)
+from canonical.launchpad.interfaces.binarypackagerelease import (
+    BinaryPackageFormat)
 from canonical.launchpad.interfaces.component import IComponentSet
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.package import (
@@ -1259,26 +1263,39 @@ class PackageUploadBuild(SQLBase):
                 debug(logger, "... %s/%s (Arch Specific)" % (
                     binary.binarypackagename.name,
                     binary.version))
+
+            # DDEBs are published in the corresponding DEBUG archive.
+            archive = self.packageupload.archive
+            if (archive.purpose == ArchivePurpose.PRIMARY and
+                binary.binpackageformat == BinaryPackageFormat.DDEB):
+                distribution = self.packageupload.distroseries.distribution
+                archive = getUtility(IArchiveSet).getByDistroPurpose(
+                    distribution, ArchivePurpose.DEBUG)
+                if archive is None:
+                    raise QueueInconsistentStateError(
+                        "Could not find the corresponding DEBUG archive "
+                        "for %s" % (distribution.title))
+
+            # We override PPA to always publish in the main component.
+            if self.packageupload.archive.is_ppa:
+                component = main_component
+            else:
+                component = binary.component
+
             for each_target_dar in target_dars:
                 # XXX: dsilvers 2005-10-20 bug=3408:
                 # What do we do about embargoed binaries here?
-                if self.packageupload.archive.is_ppa:
-                    # We override PPA to always publish in the main component.
-                    component = main_component
-                else:
-                    component = binary.component
-
                 sbpph = SecureBinaryPackagePublishingHistory(
                     binarypackagerelease=binary,
                     distroarchseries=each_target_dar,
-                    component=component,
                     section=binary.section,
                     priority=binary.priority,
                     status=PackagePublishingStatus.PENDING,
                     datecreated=UTC_NOW,
                     pocket=self.packageupload.pocket,
                     embargo=False,
-                    archive=self.packageupload.archive
+                    component=component,
+                    archive=archive,
                     )
                 bpph = BinaryPackagePublishingHistory.get(sbpph.id)
                 published_binaries.append(bpph)

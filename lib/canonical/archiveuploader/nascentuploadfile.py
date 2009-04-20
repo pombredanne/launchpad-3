@@ -911,6 +911,21 @@ class DebBinaryUploadFile(BaseBinaryUploadFile):
             self.verifyDebTimestamp,
             ]
 
+
 class DdebBinaryUploadFile(DebBinaryUploadFile):
-    """Represents an uploaded binary package file in ddeb format."""
+    """Represents an uploaded binary package file in ddeb format.
+
+    DDEBs are never considered 'NEW', they don't require review since
+    they are automatically generated.
+    """
     format = BinaryPackageFormat.DDEB
+
+    # Override the 'new' flag in a way any values set are ignored and
+    # it always return False.
+    def _get_new(self):
+        return False
+
+    def _set_new(self, value):
+        pass
+
+    new = property(_get_new, _set_new)
