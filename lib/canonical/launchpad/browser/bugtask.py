@@ -84,6 +84,7 @@ from lazr.uri import URI
 from canonical.launchpad.interfaces.bugattachment import (
     BugAttachmentType, IBugAttachmentSet)
 from canonical.launchpad.interfaces.bugactivity import IBugActivity
+from canonical.launchpad.interfaces.bugmessage import IBugComment
 from canonical.launchpad.interfaces.bugnomination import (
     BugNominationStatus, IBugNominationSet)
 from canonical.launchpad.interfaces.bug import IBug, IBugSet
@@ -139,7 +140,8 @@ from canonical.widgets.bugtask import (
     BugTaskSourcePackageNameWidget, DBItemDisplayWidget,
     NewLineToSpacesWidget, NominationReviewActionWidget)
 from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
-from canonical.widgets.lazrjs import TextLineEditorWidget
+from canonical.widgets.lazrjs import (
+    InlineEditPickerWidget, TextLineEditorWidget)
 from canonical.widgets.project import ProjectScopeWidget
 
 
@@ -2975,6 +2977,31 @@ class BugTaskTableRowView(LaunchpadView):
         """Return true if the BugTask edit form should be shown."""
         # Hide the edit form when the bug is viewed in a CVE context
         return self.request.getNearest(ICveSet) == (None, None)
+
+    @property
+    def bugtask_canonical_url(self):
+        """Return the canonical url for the bugtask."""
+        return canonical_url(self.context)
+
+    @property
+    def assignee_picker_widget(self):
+        assignee_content_id = 'assignee-content-box-%s' % self.context.id
+        if self.context.assignee is None:
+            assignee_html = 'None'
+        else:
+            assignee_html = PersonFormatterAPI(self.context.assignee).link(
+                '+assignedbugs')
+        return InlineEditPickerWidget(
+            context=self.context,
+            request=self.request,
+            py_attribute='assignee',
+            json_attribute='assignee_link',
+            json_attribute_uri_base='/~',
+            vocabulary=IBugTask['assignee'].vocabularyName,
+            default_html=assignee_html,
+            id=assignee_content_id,
+            header='Change assignee',
+            step_title='Search for people or teams');
 
 
 class BugsBugTaskSearchListingView(BugTaskSearchListingView):

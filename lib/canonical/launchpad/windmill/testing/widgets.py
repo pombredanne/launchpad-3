@@ -102,6 +102,100 @@ def _search_picker_widget(client, search_text, result_index):
                "//ul[@class='yui-picker-results']/li[%d]/span" % result_index)
 
 
+class InlinePickerWidgetTest:
+    """Test that the Picker widget edits a value inline."""
+
+    def __init__(self, url, activator_id, search_text, result_index,
+                 new_value, name=None, suite='inline_picker',
+                 user=lpuser.FOO_BAR):
+        """Create a new InlinePickerWidgetTest.
+
+        :param url: The URL to the page on which the widget lives.
+        :param activator_id: The HTML id of the activator widget.
+        :param search_text: Picker search value.
+        :param result_index: Item in picker result to select.
+        :param new_value: The value to change the field to.
+        :param name: Override the test name, if necessary.
+        :param suite: The suite in which this test is part of.
+        :param user: The user who should be logged in.
+        """
+        self.url = url
+        if name is None:
+            self.__name__ = 'test_%s_inline_picker' % (
+                activator_id.replace('-', '_'),)
+        else:
+            self.__name__ = name
+        self.activator_id = activator_id
+        self.search_text = search_text
+        self.result_index = result_index
+        self.new_value = new_value
+        self.suite = suite
+        self.user = user
+
+    def __call__(self):
+        client = WindmillTestClient(self.suite)
+        self.user.ensure_login(client)
+
+        # Load page.
+        client.open(url=self.url)
+        client.waits.forPageLoad(timeout=u'20000')
+
+        # Click on assignee edit button.
+        client.waits.forElement(
+            xpath=u"//span[@id='%s']/button" % self.activator_id,
+            timeout=u'20000')
+        client.click(
+            xpath=u"//span[@id='%s']/button" % self.activator_id)
+
+        # Search picker.
+        _search_picker_widget(client, self.search_text,
+                              self.result_index)
+
+        # Verify update.
+        client.waits.sleep(milliseconds=u'2000')
+        client.asserts.assertText(
+            xpath=u"//span[@id='%s']//a" % self.activator_id,
+            validator=self.new_value)
+
+        # Reload the page to verify that the selected value is persisted.
+        client.open(url=self.url)
+        client.waits.forPageLoad(timeout=u'20000')
+
+        # Verify update, again.
+        client.waits.forElement(
+            xpath=u"//span[@id='%s']//a" % self.activator_id,
+            timeout=u'20000')
+        client.asserts.assertText(
+            xpath=u"//span[@id='%s']//a" % self.activator_id,
+            validator=self.new_value)
+
+        # Click on assignee delete button.
+        client.click(
+            xpath=u"//span[@id='%s']/img[@class='delete-button']"
+                  % self.activator_id)
+        client.waits.sleep(milliseconds=u'2000')
+
+        # Verify delete.
+        client.asserts.assertText(
+            xpath=u"//span[@id='%s']/span[@class='yui-activator-data-box']"
+                  % self.activator_id,
+            validator='deleted')
+
+        # Reload the page to verify that the selected value is persisted.
+        client.open(url=self.url)
+        client.waits.forPageLoad(timeout=u'20000')
+
+        # Verify delete, again.
+        client.waits.forElement(
+            xpath=u"//span[@id='%s']/span[@class='yui-activator-data-box']"
+                  % self.activator_id,
+            timeout=u'20000')
+        client.asserts.assertText(
+            xpath=u"//span[@id='%s']/span[@class='yui-activator-data-box']"
+                  % self.activator_id,
+            validator='None')
+
+
 class FormPickerWidgetTest:
     """Test that the Picker widget edits a form value properly."""
 

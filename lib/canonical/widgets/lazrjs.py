@@ -4,13 +4,17 @@
 
 __metaclass__ = type
 __all__ = [
+    'InlineEditPickerWidget',
     'TextLineEditorWidget',
     ]
 
 import cgi
+import simplejson
 from textwrap import dedent
+from xml.sax.saxutils import escape as xml_escape
 
 from zope.security.checker import canWrite
+from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
 from canonical.launchpad.webapp.publisher import canonical_url
 
@@ -108,4 +112,67 @@ class TextLineEditorWidget:
         if canWrite(self.context, self.attribute):
             params['trigger'] = self.TRIGGER_TEMPLATE % params
             params['activation_script'] = self.ACTIVATION_TEMPLATE % params
-        return self.WIDGET_TEMPLATE % params 
+        return self.WIDGET_TEMPLATE % params
+
+
+class InlineEditPickerWidget:
+    """Wrapper for the lazr-js picker widget.
+
+    This widget is not for editing form values like the
+    VocabularyPickerWidget.
+    """
+
+    __call__ = ViewPageTemplateFile('templates/inline-picker.pt')
+
+    def __init__(self, context, request, py_attribute, json_attribute,
+                 json_attribute_uri_base,
+                 vocabulary, default_html, id=None,
+                 header='Select an item', step_title='Search'):
+        """Create a widget wrapper.
+
+        :param context: The object that is being edited.
+        :param request: Request object.
+        :param py_attribute: The name of the attribute being edited in python.
+        :param json_attribute: The name of the attribute in json. Sometimes
+                               "_link" is added to the attribute name. For
+                               example, "assignee" becomes "assignee_link".
+        :param json_attribute_uri_base: For example, 'person' needs to be
+                                        '/~person', so the base is '/~'.
+        :param vocabulary: The vocabulary that the picker will search.
+        :param default_html: Default display of attribute.
+        :param id: The HTML id to use for this widget. Automatically
+            generated if this is not provided.
+        :param title: The string to use as the link title. Defaults to 'Edit'.
+        """
+        self.context = context
+        self.request = request
+        self.py_attribute = py_attribute
+        self.json_attribute = json_attribute
+        self.json_attribute_uri_base = json_attribute_uri_base
+        self.vocabulary = vocabulary
+        self.default_html = default_html
+        self.header = header
+        self.step_title = step_title
+        if id is None:
+            self.id = self._generate_id()
+        else:
+            self.id = id
+
+    @classmethod
+    def delete_button_id(self):
+        return 'delete-button-%s' % self.id
+
+    @classmethod
+    def _generate_id(cls):
+        """Return a presumably unique id for this widget."""
+        cls.last_id += 1
+        return 'inline-picker-activator-id-%d' % cls.last_id
+
+    @property
+    def config(self):
+        return simplejson.dumps(
+            dict(header=self.header, step_title=self.step_title))
+
+    @property
+    def resource_uri(self):
+        return canonical_url(self.context, path_only_if_possible=True)
