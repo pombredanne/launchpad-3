@@ -29,6 +29,7 @@ user back to the main code page.
 The default foreign VCS type is Subversion.
 
     >>> print_radio_button_field(browser.contents, "rcs_type")
+    ( ) Git
     (*) Subversion
     ( ) CVS
 
@@ -39,6 +40,50 @@ a name for the import branch, and a subversion branch location.
     >>> browser.getControl('Branch Name').value = "imported"
     >>> browser.getControl('Branch URL').value = (
     ...     "http://svn.example.com/firefox/trunk")
+    >>> browser.getControl('Request Import').click()
+
+When the user clicks continue, the import branch is created
+
+    >>> print extract_text(find_tag_by_id(browser.contents, "import-details"))
+    Import Status: Pending Review
+    This branch is an import of the Subversion branch
+    from http://svn.example.com/firefox/trunk.
+    >>> browser.getLink("http://svn.example.com/firefox/trunk")
+    <Link text='http://svn.example.com/firefox/trunk'
+           url='http://svn.example.com/firefox/trunk'>
+
+The user is also subscribed to the branch to get notifications.
+
+    >>> def print_subscribers(contents):
+    ...     subscriptions = find_tag_by_id(contents, 'subscriptions')
+    ...     if subscriptions == None:
+    ...         print subscriptions
+    ...         return
+    ...     for subscriber in subscriptions.fetch('dt'):
+    ...         print extract_text(subscriber.renderContents())
+    >>> print_subscribers(browser.contents)
+    No Privileges Person
+    VCS imports
+
+
+== Requesting a Git import ==
+
+The default foreign VCS type is Subversion.
+
+    >>> browser.open("http://code.launchpad.dev/+code-imports/+new")
+    >>> print_radio_button_field(browser.contents, "rcs_type")
+    ( ) Git
+    (*) Subversion
+    ( ) CVS
+
+The user is required to enter a project that the import is for,
+a name for the import branch, and a subversion branch location.
+
+    >>> browser.getControl('Project').value = "firefox"
+    >>> browser.getControl('Branch Name').value = "git-import"
+    >>> browser.getControl('Git').click()
+    >>> browser.getControl('Repo URL').value = (
+    ...     "git://example.com/firefox.git")
     >>> browser.getControl('Request Import').click()
 
 When the user clicks continue, the import branch is created

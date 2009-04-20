@@ -189,6 +189,26 @@ class CodeImportBaseView(LaunchpadFormView):
                     canonical_url(code_import.branch),
                     code_import.branch.unique_name))
 
+    def _validateGit(self, git_repo_url, existing_import=None):
+        """If the user has specified a subversion url, we need
+        to make sure that there isn't already an import with
+        that url."""
+        if git_repo_url is None:
+            self.setSecondaryFieldError(
+                'git_repo_url', 'Enter the URL of a Git repo.')
+        else:
+            code_import = getUtility(ICodeImportSet).getByGitDetails(
+                git_repo_url)
+            if (code_import is not None and
+                code_import != existing_import):
+                self.setFieldError(
+                    'git_repo_url',
+                    structured("""
+                    This Git repository URL is already specified for
+                    the imported branch <a href="%s">%s</a>.""",
+                    canonical_url(code_import.branch),
+                    code_import.branch.unique_name))
+
 
 class CodeImportNewView(CodeImportBaseView):
     """The view to request a new code import."""
@@ -254,7 +274,8 @@ class CodeImportNewView(CodeImportBaseView):
             svn_branch_url=data['svn_branch_url'],
             cvs_root=data['cvs_root'],
             cvs_module=data['cvs_module'],
-            review_status=status)
+            review_status=status,
+            git_repo_url=data['git_repo_url'])
 
     def _setBranchExists(self, existing_branch):
         """Set a field error indicating that the branch already exists."""
@@ -320,11 +341,18 @@ class CodeImportNewView(CodeImportBaseView):
         # are blanked out:
         if rcs_type == RevisionControlSystems.CVS:
             data['svn_branch_url'] = None
+            data['git_repo_url'] = None
             self._validateCVS(data.get('cvs_root'), data.get('cvs_module'))
         elif rcs_type == RevisionControlSystems.SVN:
             data['cvs_root'] = None
             data['cvs_module'] = None
+            data['git_repo_url'] = None
             self._validateSVN(data.get('svn_branch_url'))
+        elif rcs_type == RevisionControlSystems.GIT:
+            data['cvs_root'] = None
+            data['cvs_module'] = None
+            data['svn_branch_url'] = None
+            self._validateGit(data.get('git_repo_url'))
         else:
             raise AssertionError('Unknown revision control type.')
 
