@@ -43,7 +43,7 @@
   </div>
 
     <h1>
-      <tal:branch replace="context/displayname" />
+      <tal:branch replace="context/bzr_identity" />
       <a tal:define="link context_menu/delete_branch"
          tal:condition="link/enabled"
          tal:attributes="href link/url"

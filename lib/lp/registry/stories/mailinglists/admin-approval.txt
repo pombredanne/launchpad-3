@@ -184,3 +184,28 @@ The Launchpad administrator can approve them all at once.
     Test Five mailing list was approved
     Test Four mailing list was approved
     Test Three mailing list was approved
+
+
+== Private membership teams ==
+
+When there is a private membership team that needs approval, a mailing list
+expert can perform this action even if they are not members of the team and
+normally wouldn't have permission to view the team.
+
+    >>> mailinglists_helper.apply_for_list(
+    ...     admin_browser, 'test-six', private=True)
+    >>> admin_browser.open('http://launchpad.dev/~test-six/+edit')
+    >>> admin_browser.getControl('Save').click()
+
+The mailing list expert can still approve this request.
+
+    >>> browser.open('http://launchpad.dev/+mailinglists')
+    >>> mailinglists_helper.print_review_table(browser.contents)
+    App Dec Hol Team                         Requester
+    ( ) ( ) (*) Test Six <.../~test-six>     Foo Bar... <.../~name16>
+    >>> browser.getControl(name='field.test-six').value = ['approve']
+    >>> browser.getControl('Submit').click()
+
+    >>> for message in sorted(get_feedback_messages(browser.contents)):
+    ...     print message
+    Test Six mailing list was approved

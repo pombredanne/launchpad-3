@@ -20,9 +20,10 @@ from zope.interface import implements
 from canonical.database.enumcol import DBEnum
 from canonical.launchpad.interfaces.publishing import PackagePublishingPocket
 from lp.code.interfaces.seriessourcepackagebranch import (
-    ISeriesSourcePackageBranch, ISeriesSourcePackageBranchSet)
+    IFindOfficialBranchLinks, IMakeOfficialBranchLinks,
+    ISeriesSourcePackageBranch)
 from canonical.launchpad.webapp.interfaces import (
-     IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
+     DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
 
 
 class SeriesSourcePackageBranch(Storm):
@@ -60,15 +61,19 @@ class SeriesSourcePackageBranch(Storm):
         self.registrant = registrant
         self.date_created = date_created
 
+    @property
+    def sourcepackage(self):
+        return self.distroseries.getSourcePackage(self.sourcepackagename)
+
 
 class SeriesSourcePackageBranchSet:
     """See `ISeriesSourcePackageBranchSet`."""
 
-    implements(ISeriesSourcePackageBranchSet)
+    implements(IFindOfficialBranchLinks, IMakeOfficialBranchLinks)
 
     def new(self, distroseries, pocket, sourcepackagename, branch, registrant,
             date_created=None):
-        """See `ISeriesSourcePackageBranchSet`."""
+        """See `IMakeOfficialBranchLinks`."""
         if date_created is None:
             date_created = datetime.now(pytz.UTC)
         sspb = SeriesSourcePackageBranch(
@@ -77,3 +82,32 @@ class SeriesSourcePackageBranchSet:
         store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
         store.add(sspb)
         return sspb
+
+    def findForBranch(self, branch):
+        """See `IFindOfficialBranchLinks`."""
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        return store.find(
+            SeriesSourcePackageBranch,
+            SeriesSourcePackageBranch.branch == branch.id)
+
+    def findForSourcePackage(self, sourcepackage):
+        """See `IFindOfficialBranchLinks`."""
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        distroseries = sourcepackage.distroseries
+        sourcepackagename = sourcepackage.sourcepackagename
+        return store.find(
+            SeriesSourcePackageBranch,
+            SeriesSourcePackageBranch.distroseries == distroseries.id,
+            SeriesSourcePackageBranch.sourcepackagename ==
+            sourcepackagename.id)
+
+    def delete(self, sourcepackage, pocket):
+        """See `IMakeOfficialBranchLinks`."""
+        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+        distroseries = sourcepackage.distroseries
+        sourcepackagename = sourcepackage.sourcepackagename
+        return store.find(
+            SeriesSourcePackageBranch,
+            SeriesSourcePackageBranch.distroseries == distroseries.id,
+            SeriesSourcePackageBranch.sourcepackagename ==
+            sourcepackagename.id).remove()
