@@ -61,15 +61,15 @@ class TestBug358498(TestCaseWithFactory):
         self.assertEqual(browser.url, 'http://openid.launchpad.dev')
 
     def test_redirection_for_full_fledged_account(self):
-        # Full-fledged accounts are always redirected back to their home page
-        # once the password is reset and no redirection_url was stored in the
-        # token.
+        # Full-fledged accounts are always redirected back to Launchpad's
+        # front page once the password is reset and no redirection_url was
+        # stored in the token.
         token = getUtility(ILoginTokenSet).new(
             self.person, self.person_email, self.person_email,
             LoginTokenType.PASSWORDRECOVERY, redirection_url=None)
         browser = self._finishPasswordReset(token, 'http://launchpad.dev')
 
-        self.assertEqual(browser.url, 'http://launchpad.dev/~test-person')
+        self.assertEqual(browser.url, 'http://launchpad.dev')
 
 
 def test_suite():

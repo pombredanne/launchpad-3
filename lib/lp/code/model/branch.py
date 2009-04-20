@@ -31,20 +31,23 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad import _
+from canonical.launchpad.database.job import Job
+from canonical.launchpad.mailnotification import NotificationRecipientSet
+from canonical.launchpad.webapp import urlappend
+from canonical.launchpad.webapp.interfaces import (
+    IStoreSelector, MAIN_STORE, SLAVE_FLAVOR)
+
 from lp.code.model.branchmergeproposal import (
      BranchMergeProposal)
 from lp.code.model.branchrevision import BranchRevision
 from lp.code.model.branchsubscription import BranchSubscription
-from canonical.launchpad.database.job import Job
-from canonical.launchpad.database.revision import Revision
-from lp.code.event.branchmergeproposal import (
-    NewBranchMergeProposalEvent)
+from lp.code.model.revision import Revision
+from lp.code.event.branchmergeproposal import NewBranchMergeProposalEvent
 from lp.code.interfaces.branch import (
-    BranchFormat, BranchLifecycleStatus, BranchMergeControlStatus,
-    BranchType, BranchTypeError, CannotDeleteBranch, ControlFormat,
-    DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch, IBranchSet, RepositoryFormat)
-from lp.code.interfaces.branch import (
-    bazaar_identity, IBranchNavigationMenu)
+    bazaar_identity, BranchFormat, BranchLifecycleStatus,
+    BranchMergeControlStatus, BranchType, BranchTypeError, CannotDeleteBranch,
+    ControlFormat, DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch,
+    IBranchNavigationMenu, IBranchSet, RepositoryFormat)
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.interfaces.branchmergeproposal import (
      BRANCH_MERGE_PROPOSAL_FINAL_STATES, BranchMergeProposalExists,
@@ -53,11 +56,7 @@ from lp.code.interfaces.branchpuller import IBranchPuller
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.seriessourcepackagebranch import (
     IFindOfficialBranchLinks)
-from canonical.launchpad.mailnotification import NotificationRecipientSet
 from lp.registry.interfaces.person import validate_public_person
-from canonical.launchpad.webapp import urlappend
-from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, SLAVE_FLAVOR)
 
 
 class Branch(SQLBase):
@@ -966,12 +965,13 @@ class BranchCloud:
         # Get all products, the count of all hosted & mirrored branches and
         # the last revision date.
         result = store.find(
-            (Product, Count(Branch.id), Max(Revision.revision_date)),
+            (Product.name, Count(Branch.id), Max(Revision.revision_date)),
             Branch.private == False,
             Branch.product == Product.id,
             Or(Branch.branch_type == BranchType.HOSTED,
                Branch.branch_type == BranchType.MIRRORED),
-            Branch.last_scanned_id == Revision.revision_id).group_by(Product)
+            Branch.last_scanned_id == Revision.revision_id)
+        result = result.group_by(Product.name)
         result = result.order_by(Desc(Count(Branch.id)))
         if num_products:
             result.config(limit=num_products)
