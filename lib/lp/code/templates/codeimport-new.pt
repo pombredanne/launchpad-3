@@ -99,6 +99,8 @@
               break;
             }
           }
+          // GIT
+          updateField(form['field.git_repo_url'], rcs_type == 'GIT');
           // CVS
           updateField(form['field.cvs_root'], rcs_type == 'CVS');
           updateField(form['field.cvs_module'], rcs_type == 'CVS');

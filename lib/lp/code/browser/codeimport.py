@@ -237,6 +237,7 @@ class CodeImportNewView(CodeImportBaseView):
             if field.get('value') in ['CVS', 'SVN', 'GIT', '1']]
         cvs_button['onclick'] = 'updateWidgets()'
         svn_button['onclick'] = 'updateWidgets()'
+        git_button['onclick'] = 'updateWidgets()'
         # The following attributes are used only in the page template.
         self.rcs_type_cvs = str(cvs_button)
         self.rcs_type_svn = str(svn_button)
