@@ -39,7 +39,6 @@ in the list once visible has been set False.
     >>> user_browser.open(
     ...     'http://bugs.launchpad.dev'
     ...     '/jokosher/+bug/11')
-    >>> comments = find_tags_by_class(user_browser.contents, 'boardComment')
     >>> main_content = find_main_content(user_browser.contents)
     >>> last_comment = main_content('div', 'boardCommentBody')[-1]
     >>> last_comment_text = extract_text(last_comment.div)
@@ -52,7 +51,6 @@ For admin users, the message is still visible.
     >>> admin_browser.open(
     ...     'http://bugs.launchpad.dev'
     ...     '/jokosher/+bug/11')
-    >>> comments = find_tags_by_class(admin_browser.contents, 'boardComment')
     >>> main_content = find_main_content(admin_browser.contents)
     >>> last_comment = main_content('div', 'boardCommentBody')[-1]
     >>> last_comment_text = extract_text(last_comment.div)
