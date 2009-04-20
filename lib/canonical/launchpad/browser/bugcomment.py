@@ -18,6 +18,7 @@ from canonical.launchpad.interfaces.bugmessage import (
 from lp.registry.interfaces.person import IPersonSet
 from canonical.launchpad.webapp import canonical_url, LaunchpadView
 from canonical.launchpad.webapp.interfaces import ILaunchBag
+from canonical.launchpad.webapp.authorization import check_permission
 
 from canonical.config import config
 
@@ -120,6 +121,16 @@ class BugComment:
             return False
         else:
             return True
+
+    @property
+    def show_for_admin(self):
+        """Returns True for hidden comments that admins should see."""
+        user = getUtility(ILaunchBag).user
+        is_admin = check_permission('launchpad.Admin', user)
+        if is_admin and not self.visible:
+            return True
+        else:
+            return False
 
     def setupText(self, truncate=False):
         """Set the text for display and truncate it if necessary.

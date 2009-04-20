@@ -56,3 +56,9 @@ For admin users, the message is still visible.
     >>> last_comment_text = extract_text(last_comment.div)
     >>> print last_comment_text
     This comment will not visible when the test completes.
+
+Also, admin users will see the hidden message grayed out via an
+'adminHiddenComment' style.
+
+    >>> print last_comment.parent['class']
+    boardComment adminHiddenComment

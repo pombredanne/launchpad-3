@@ -104,6 +104,9 @@ class IBugComment(IMessage):
     can_be_shown = Bool(
         title=u'Whether or not the comment can be displayed',
         readonly=True)
+    show_for_admin = Bool(
+        title=u'A hidden comment still displayed for admins.',
+        readonly=True)
     index = Int(title=u'The comment number', required=True, readonly=True)
     was_truncated = Bool(
         title=u'Whether the displayed text was truncated for display.',
