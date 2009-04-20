@@ -207,7 +207,8 @@ def new_list_for_team(team):
     return team_list
 
 
-def apply_for_list(browser, team_name, rooturl='http://launchpad.dev/'):
+def apply_for_list(browser, team_name, rooturl='http://launchpad.dev/',
+                   private=False):
     """Create a team and apply for its mailing list.
 
     This should only be used in page tests.
@@ -216,9 +217,13 @@ def apply_for_list(browser, team_name, rooturl='http://launchpad.dev/'):
     browser.open(rooturl + 'people/+newteam')
     browser.getControl(name='field.name').value = team_name
     browser.getControl('Display Name').value = displayname
-    # Use an open team for simplicity.
-    browser.getControl(
-        name='field.subscriptionpolicy').displayValue = ['Open Team']
+    if private:
+        browser.getControl('Visibility').value = ['PRIVATE_MEMBERSHIP']
+        browser.getControl(name='field.subscriptionpolicy').value = [
+            'RESTRICTED']
+    else:
+        browser.getControl(
+            name='field.subscriptionpolicy').displayValue = ['Open Team']
     browser.getControl('Create').click()
     # Apply for the team's mailing list'
     browser.open(rooturl + '~%s' % team_name)
