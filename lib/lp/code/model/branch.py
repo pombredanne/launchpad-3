@@ -88,16 +88,12 @@ class Branch(SQLBase):
         if private == self.private:
             return
         policy = IBranchNamespacePolicy(self.namespace)
-        if private:
-            if policy.canBranchesBePrivate():
-                self.private = True
-            else:
-                raise BranchCannotBePrivate()
-        else:
-            if policy.canBranchesBePublic():
-                self.private = False
-            else:
-                raise BranchCannotBePublic()
+
+        if private and not policy.canBranchesBePrivate():
+            raise BranchCannotBePrivate()
+        if not private and not policy.canBranchesBePublic():
+            raise BranchCannotBePublic()
+        self.private = private
 
     registrant = ForeignKey(
         dbName='registrant', foreignKey='Person',

@@ -68,7 +68,7 @@ reverts to its normal presentation.
 A notification is added to say the branch is now public.
 
     >>> print_feedback_messages(browser.contents)
-    The branch is now publically accessible.
+    The branch is now publicly accessible.
 
 
 == Private Only branches ==
