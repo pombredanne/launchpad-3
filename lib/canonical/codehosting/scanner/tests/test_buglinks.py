@@ -14,11 +14,11 @@ from canonical.codehosting.scanner.tests.test_bzrsync import BzrSyncTestCase
 from canonical.config import config
 from canonical.launchpad.interfaces import (
     BugBranchStatus, IBugBranchSet, IBugSet, NotFoundError)
-from canonical.launchpad.testing import LaunchpadObjectFactory
+from canonical.launchpad.testing import LaunchpadObjectFactory, TestCase
 from canonical.testing import LaunchpadZopelessLayer
 
 
-class RevisionPropertyParsing(BzrSyncTestCase):
+class RevisionPropertyParsing(TestCase):
     """Tests for parsing the bugs revision property.
 
     The bugs revision property holds information about Launchpad bugs which are
@@ -40,8 +40,8 @@ class RevisionPropertyParsing(BzrSyncTestCase):
     """
 
     def setUp(self):
-        BzrSyncTestCase.setUp(self)
-        self.bug_linker = BugBranchLinker(self.db_branch)
+        TestCase.setUp(self)
+        self.bug_linker = BugBranchLinker(None)
 
     def test_single(self):
         # Parsing a single line should give a dict with a single entry,
