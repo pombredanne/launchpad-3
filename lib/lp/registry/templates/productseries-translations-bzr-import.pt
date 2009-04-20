@@ -21,7 +21,7 @@
 
 <div metal:fill-slot="main">
 
-  <h1>Translations settings</h1>
+  <h1>Request one-time import of translations</h1>
 
   <p
     class="not-translated-in-launchpad"
@@ -38,16 +38,16 @@
 
   <tal:rosetta condition="context/product/official_rosetta">
   <p>
-    You can ask Launchpad to continuously import any translation
-    files (templates and translations) that it finds in 
+    You can ask Launchpad for a one-time import of all the translation files
+    (templates and translations) that it finds in 
     <strong><tal:series replace="structure view/series_title">
       Evolution Series:trunk</tal:series>'s</strong> official Bazaar branch.
-    After the initial import, Launchpad will continue to scan your Bazaar
-    branch for updates to template and translation files.
+      
   </p>
-  <p><img src="/@@/info" class="inline-icon" />
-      If you only need a a one-time import, please request it 
-    <a tal:attributes="href view/request_bzr_import_url">here</a>.
+  <p tal:condition="not:view/has_imports_enabled">
+  <img src="/@@/info" class="inline-icon" />
+    To enable continuous imports please change the settings
+    <a tal:attributes="href view/translations_settings_url">here</a>.
   </p>
   <p tal:condition="view/context/branch"
      tal:define="branch view/context/branch">
@@ -62,10 +62,12 @@
                        ><img src="/@@/edit" class="inline-icon" /></a>
   </p>
   <p tal:condition="not:view/context/branch">
-    This series does not have an official Bazaar branch. 
-    <a tal:attributes="href view/link_branch_url">Set it now</a>
-  </p>
-  <div metal:use-macro="context/@@launchpad_form/form"></div>
+    This series does not have an official Bazaar branch.
+     <a tal:attributes="href view/link_branch_url">
+       Please set it first.</a></p>
+  <tal:form tal:condition="view/context/branch">
+    <div metal:use-macro="context/@@launchpad_form/form"></div>
+  </tal:form>
   </tal:rosetta>
 </div>
 
