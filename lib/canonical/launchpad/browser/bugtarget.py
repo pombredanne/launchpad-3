@@ -26,7 +26,6 @@ from simplejson import dumps
 import tempfile
 import urllib
 
-from zope import formlib
 from zope.app.form.browser import TextWidget
 from zope.app.form.interfaces import InputErrors
 from zope.app.pagetemplate import ViewPageTemplateFile
@@ -35,7 +34,6 @@ from zope.event import notify
 from zope.interface import implements
 from zope.publisher.interfaces import NotFound
 from zope.publisher.interfaces.browser import IBrowserPublisher
-from zope.schema import Choice
 
 from lazr.lifecycle.event import ObjectCreatedEvent
 
@@ -47,8 +45,7 @@ from canonical.launchpad.browser.feeds import (
 from canonical.launchpad.interfaces.bugsupervisor import IHasBugSupervisor
 from canonical.launchpad.interfaces.bugtarget import (
     IBugTarget, IOfficialBugTagTargetPublic, IOfficialBugTagTargetRestricted)
-from canonical.launchpad.interfaces.bugtask import (
-    BugTaskImportance, BugTaskStatus)
+from canonical.launchpad.interfaces.bugtask import BugTaskStatus
 from canonical.launchpad.interfaces.launchpad import (
     IHasExternalBugTracker, ILaunchpadUsage)
 from canonical.launchpad.interfaces import (
@@ -67,7 +64,6 @@ from canonical.widgets.launchpadtarget import LaunchpadTargetWidget
 from canonical.launchpad.validators.name import valid_name_pattern
 from canonical.launchpad.vocabularies import ValidPersonOrTeamVocabulary
 from canonical.launchpad.webapp.menu import structured
-from canonical.launchpad.webapp.vocabulary import vocab_factory
 
 
 class FileBugDataParser:
