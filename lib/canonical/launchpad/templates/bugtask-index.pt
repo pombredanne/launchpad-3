@@ -109,6 +109,7 @@ Y.on('domready', function() {
             if (privacy_form_overlay) {
                 e.preventDefault();
                 privacy_form_overlay.show();
+                document.getElementById('field.private').focus();
             }
         });
         privacy_link.addClass('js-action');
