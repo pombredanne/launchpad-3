@@ -338,6 +338,13 @@ class RepositoryFormat(DBEnumeratedType):
         "1.6.1-subtree with B+Tree indices.\n"
         )
 
+    BZR_CHK1 = DBItem(400,
+        "Bazaar development format - group compression and chk inventory"
+        " (needs bzr.dev from 1.14)\n",
+        "Development repository format - rich roots, group compression"
+        " and chk inventories\n",
+        )
+
 
 class ControlFormat(DBEnumeratedType):
     """Control directory (BzrDir) format.
