@@ -484,8 +484,16 @@ happy hacker.
 Now we see that person 'hacker' has upload permissions to the 'mozilla'
 package set.
 
-    >>> print_permission(ap_set.packagesetsForUploader(person1))
+    >>> permissions = ap_set.packagesetsForUploader(person1)
+    >>> print_permission(permissions)
           hacker:         mozilla ->               UPLOAD (False)
+
+The 'package_set_name' property allows easy access to the package set
+name.
+
+    >>> [archp] = permissions
+    >>> archp.package_set_name
+    u'mozilla'
 
 'hacker' is also listed as one of the 'mozilla' uploaders.
 
@@ -573,3 +581,12 @@ And the other way around:
     ...
     ValueError: Permission for package set 'firefox' already exists but
     with a different 'explicit' flag value (True)
+
+Removing package set based permissions is straight-forward.
+
+    >>> ap_set.deletePackagesetUploader(sabdfl, firefox_ps, True)
+    >>> print_permission(ap_set.packagesetsForUploader(sabdfl))
+          sabdfl:     thunderbird ->               UPLOAD (False)
+
+    >>> ap_set.deletePackagesetUploader(sabdfl, thunderbird_ps)
+    >>> print_permission(ap_set.packagesetsForUploader(sabdfl))
