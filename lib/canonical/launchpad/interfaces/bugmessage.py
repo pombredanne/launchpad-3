@@ -27,6 +27,7 @@ class IBugMessage(IHasBug):
     """A link between a bug and a message."""
 
     bug = Object(schema=IBug, title=u"The bug.")
+    messageID = Int(title=u"The message id.", readonly=True)
     message = Object(schema=IMessage, title=u"The message.")
     bugwatch = Object(schema=IBugWatch,
         title=u"A bugwatch to which the message pertains.")
