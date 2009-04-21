@@ -381,40 +381,6 @@ class FileBugViewBase(LaunchpadFormView):
                 "%s does not use Launchpad as its bug tracker " %
                 product_or_distro.displayname)
 
-    def setUpFields(self):
-        """Sets up the fields for the bug filing form."""
-        super(FileBugViewBase, self).setUpFields()
-
-        if 'status' in self.field_names:
-            # Users shouldn't be able to set a bugtask's status to
-            # `UNKNOWN`.
-            status_noshow = [BugTaskStatus.UNKNOWN]
-            status_vocab_factory = vocab_factory(
-                BugTaskStatus, noshow=status_noshow)
-            status_field = Choice(
-                __name__='status',
-                title=self.schema['status'].title,
-                vocabulary=status_vocab_factory(None),
-                default=self.schema['status'].default)
-
-            self.form_fields = self.form_fields.omit('status')
-            self.form_fields += formlib.form.Fields(status_field)
-
-        if 'importance' in self.field_names:
-            # Users shouldn't be able to set a bugtask's importance to
-            # `UNKNOWN`.
-            importance_noshow = [BugTaskImportance.UNKNOWN]
-            importance_vocab_factory = vocab_factory(
-                BugTaskImportance, noshow=importance_noshow)
-            importance_field = Choice(
-                __name__='importance',
-                title=self.schema['importance'].title,
-                vocabulary=importance_vocab_factory(None),
-                default=self.schema['importance'].default)
-
-            self.form_fields = self.form_fields.omit('importance')
-            self.form_fields += formlib.form.Fields(importance_field)
-
     def setUpWidgets(self):
         """Customize the onKeyPress event of the package name chooser."""
         LaunchpadFormView.setUpWidgets(self)

@@ -30,7 +30,7 @@ from canonical.launchpad.fields import (
 from canonical.launchpad.interfaces.bugattachment import IBugAttachment
 from canonical.launchpad.interfaces.bugtarget import IBugTarget
 from canonical.launchpad.interfaces.bugtask import (
-    BugTaskImportance, BugTaskStatus, IBugTask)
+    BugTaskImportanceUserSettable, BugTaskStatusUserSettable, IBugTask)
 from canonical.launchpad.interfaces.bugwatch import IBugWatch
 from canonical.launchpad.interfaces.cve import ICve
 from canonical.launchpad.interfaces.launchpad import NotFoundError
@@ -750,11 +750,15 @@ class IBugAddForm(IBug):
         default=False)
     attachment_description = Title(title=u'Description', required=False)
     status = Choice(
-        title=_('Status'), vocabulary=BugTaskStatus,
-        default=IBugTask['status'].default)
+        title=_('Status'),
+        vocabulary=BugTaskStatusUserSettable,
+        default=BugTaskStatusUserSettable.items[
+            IBugTask['status'].default.name])
     importance = Choice(
-        title=_('Importance'), vocabulary=BugTaskImportance,
-        default=IBugTask['importance'].default)
+        title=_('Importance'),
+        vocabulary=BugTaskImportanceUserSettable,
+        default=BugTaskImportanceUserSettable.items[
+            IBugTask['importance'].default.name])
     milestone = Choice(
         title=_('Milestone'), required=False,
         vocabulary='Milestone')
