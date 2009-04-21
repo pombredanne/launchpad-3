@@ -14,13 +14,14 @@ __all__ = [
     ]
 
 from zope.interface import Interface, Attribute
-from zope.schema import Choice, Datetime, TextLine
+from zope.schema import Bool, Choice, Datetime, TextLine
 from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice
 from canonical.launchpad.interfaces.archive import IArchive
 from canonical.launchpad.interfaces.component import IComponent
+from canonical.launchpad.interfaces.packageset import IPackageset
 from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageName)
 from lazr.restful.fields import Reference
@@ -103,6 +104,26 @@ class IArchivePermission(Interface):
             title=_("Source Package Name"),
             required=True))
 
+    packageset = Reference(
+            IPackageset,
+            title=_("Packageset"),
+            description=_("The package set that this permission is for."))
+
+    explicit = exported(
+        Bool(
+            title=_("Explicit"),
+            description=_(
+                "Set this flag for package sets with high-profile packages "
+                "requiring specialist skills for proper handling")))
+
+    # This is the *text* package set name, as opposed to `packageset`
+    # which is the `IPackageset` and we don't want to export
+    # that.
+    package_set_name = exported(
+        TextLine(
+            title=_("Package set name"),
+            required=True))
+
 
 class IArchiveUploader(IArchivePermission):
     """Marker interface for URL traversal of uploader permissions."""
@@ -144,6 +165,7 @@ class IArchivePermissionSet(Interface):
             return records for uploaders to that component, otherwise
             all components are considered.  You can also supply a string
             component name instead.
+        :raises ComponentNotFound: if the named component does not exist.
 
         :return: `ArchivePermission` records for all the uploaders who
             are authorised for the supplied component.
@@ -177,10 +199,30 @@ class IArchivePermissionSet(Interface):
         :param archive: The context `IArchive` for the permission check.
         :param sourcepackagename: An `ISourcePackageName` or a string
             package name.
-        :raises NotFoundError: if the string package name does not exist.
+        :raises SourceNotFound: if the string package name does not exist.
 
         :return: `ArchivePermission` records for all the uploaders who are
             authorised to upload the named source package.
+        """
+
+    def packagesetsForUploader(person):
+        """The `ArchivePermission` records for the person's package sets.
+
+        :param person: An `IPerson` for whom you want to find out which
+            package sets he has access to.
+
+        :return: `ArchivePermission` records for all the package sets that
+            'person' is allowed to upload to.
+        """
+
+    def uploadersForPackageset(packageset):
+        """The `ArchivePermission` records for uploaders to the package set.
+
+        :param packageset: An `IPackageset` or a string package set name.
+        :raises NotFoundError: if the string package set name does not exist.
+
+        :return: `ArchivePermission` records for all the uploaders who are
+            authorised to upload to the named source package set.
         """
 
     def queueAdminsForComponent(archive, component):
@@ -217,6 +259,21 @@ class IArchivePermissionSet(Interface):
             already exists.
         """
 
+    def newPackagesetUploader(person, packageset, explicit):
+        """Create and return a new `ArchivePermission` for an uploader.
+
+        :param person: An `IPerson` for whom you want to add permission.
+        :param packageset: An `IPackageset` or a string package set name.
+        :param explicit: True if the package set in question requires
+            specialist skills for proper handling.
+        :raises ValueError: if an `ArchivePermission` record for this
+            person and packageset already exists *but* with a different
+            'explicit' flag value.
+
+        :return: The new `ArchivePermission`, or the existing one if it
+            already exists.
+        """
+
     def newComponentUploader(archive, person, component):
         """Create and return a new `ArchivePermission` for an uploader.
 
@@ -246,6 +303,15 @@ class IArchivePermissionSet(Interface):
         :param person: An `IPerson` for whom you want to revoke permission.
         :param sourcepackagename: An `ISourcePackageName` or a string
             package name.
+        """
+
+    def deletePackagesetUploader(person, packageset, explicit):
+        """Revoke upload permissions for a person.
+
+        :param person: An `IPerson` for whom you want to revoke permission.
+        :param packageset: An `IPackageset` or a string package set name.
+        :param explicit: The value of the 'explicit' flag for the permission
+            to be revoked.
         """
 
     def deleteComponentUploader(archive, person, component):

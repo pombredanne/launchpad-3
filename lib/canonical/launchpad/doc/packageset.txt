@@ -446,3 +446,14 @@ Create a new package set.
 
     >>> kde_ps = ps_factory.new(
     ...     u'kde', u'Contains all KDE packages', person2)
+
+
+== Permissions and package sets ==
+
+As it stands package sets will first be used for governing source package
+uploads i.e. in conjunction with `ArchivePermission` data.
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     ArchivePermissionType, IArchivePermission, IArchivePermissionSet)
+    >>> from canonical.launchpad.database import ArchivePermission
+    >>> archp_set = getUtility(IArchivePermissionSet)
