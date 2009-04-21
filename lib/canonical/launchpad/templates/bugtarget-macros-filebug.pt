@@ -104,9 +104,29 @@
       <fieldset class="collapsible collapsed">
         <legend>Extra options</legend>
         <table>
+          <tal:status
+              define="widget nocall:view/widgets/status|nothing"
+              condition="widget">
+            <metal:row use-macro="context/@@launchpad_form/widget_row" />
+          </tal:status>
+          <tal:importance
+              define="widget nocall:view/widgets/importance|nothing"
+              condition="widget">
+            <metal:row use-macro="context/@@launchpad_form/widget_row" />
+          </tal:importance>
+          <tal:milestone
+              define="widget nocall:view/widgets/milestone|nothing"
+              condition="widget">
+            <metal:row use-macro="context/@@launchpad_form/widget_row" />
+          </tal:milestone>
           <tal:tags tal:define="widget nocall:view/widgets/tags">
             <metal:row use-macro="context/@@launchpad_form/widget_row" />
           </tal:tags>
+          <tal:assignee
+              define="widget nocall:view/widgets/assignee|nothing"
+              condition="widget">
+            <metal:row use-macro="context/@@launchpad_form/widget_row" />
+          </tal:assignee>
         </table>
         <metal:attachment-form
             use-macro="context/@@bug-attachment-macros/attachment-form" />

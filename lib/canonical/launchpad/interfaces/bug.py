@@ -29,7 +29,8 @@ from canonical.launchpad.fields import (
     BugField, ContentNameField, DuplicateBug, PublicPersonChoice, Tag, Title)
 from canonical.launchpad.interfaces.bugattachment import IBugAttachment
 from canonical.launchpad.interfaces.bugtarget import IBugTarget
-from canonical.launchpad.interfaces.bugtask import IBugTask
+from canonical.launchpad.interfaces.bugtask import (
+    BugTaskImportance, BugTaskStatus, IBugTask)
 from canonical.launchpad.interfaces.bugwatch import IBugWatch
 from canonical.launchpad.interfaces.cve import ICve
 from canonical.launchpad.interfaces.launchpad import NotFoundError
@@ -749,6 +750,18 @@ class IBugAddForm(IBug):
     patch = Bool(title=u"This attachment is a patch", required=False,
         default=False)
     attachment_description = Title(title=u'Description', required=False)
+    status = Choice(
+        title=_('Status'), vocabulary=BugTaskStatus,
+        default=IBugTask['status'].default)
+    importance = Choice(
+        title=_('Importance'), vocabulary=BugTaskImportance,
+        default=IBugTask['importance'].default)
+    milestone = Choice(
+        title=_('Milestone'), required=False,
+        vocabulary='Milestone')
+    assignee = PublicPersonChoice(
+        title=_('Assign to'), required=False,
+        vocabulary='ValidAssignee')
 
 
 class IProjectBugAddForm(IBugAddForm):

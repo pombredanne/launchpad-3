@@ -22,10 +22,10 @@ Users who are not bug supervisors do not see any of these options:
     ...
     LookupError: label 'Milestone'
 
-    >>> user_browser.getControl('Assignee')
+    >>> user_browser.getControl('Assign to')
     Traceback (most recent call last):
     ...
-    LookupError: label 'Assignee'
+    LookupError: label 'Assign to'
 
 Users who are, can:
 
@@ -44,7 +44,7 @@ Users who are, can:
     >>> user_browser.getControl('Milestone') is not None
     True
 
-    >>> user_browser.getControl('Assignee') is not None
+    >>> user_browser.getControl('Assign to') is not None
     True
 
 
