@@ -3,8 +3,11 @@
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   metal:define-macro="comment-box"
   tal:define="remote_bug_comment_class
-              python: comment.bugwatch and 'remoteBugComment' or ''"
-  tal:attributes="class string:boardComment ${remote_bug_comment_class}">
+              python: comment.bugwatch and 'remoteBugComment' or '';
+              admin_comment_hidden_class
+              python: comment.show_for_admin and 'adminHiddenComment' or ''"
+  tal:attributes="class string:boardComment ${remote_bug_comment_class}
+                 ${admin_comment_hidden_class}">
   <div class="boardCommentDetails" tal:condition="not: comment/bugwatch">
     <tal:comment_has_owner>
       <tal:comment_owner replace="structure comment/owner/fmt:link" />

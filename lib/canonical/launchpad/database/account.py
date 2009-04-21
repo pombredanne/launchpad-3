@@ -64,7 +64,7 @@ class Account(SQLBase):
         """Get related `EmailAddress` objects with the given status."""
         result = IStore(EmailAddress).find(
             EmailAddress, accountID=self.id, status=status)
-        result.order_by(EmailAddress.email)
+        result.order_by(EmailAddress.email.lower())
         return result
 
     @property
