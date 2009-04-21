@@ -33,16 +33,32 @@ is now set to be hidden.
     >>> transaction.commit()
     >>> logout()
 
-The newly created message no longer appears in the list once
-visible has been set False.
+For ordinary users, the newly created message no longer appears
+in the list once visible has been set False.
 
     >>> user_browser.open(
     ...     'http://bugs.launchpad.dev'
     ...     '/jokosher/+bug/11')
-    >>> comments = find_tags_by_class(user_browser.contents, 'boardComment')
     >>> main_content = find_main_content(user_browser.contents)
     >>> last_comment = main_content('div', 'boardCommentBody')[-1]
     >>> last_comment_text = extract_text(last_comment.div)
     >>> print last_comment_text
     This title, however, is the same as the bug title and so it will
     be suppressed in the UI.
+
+For admin users, the message is still visible.
+
+    >>> admin_browser.open(
+    ...     'http://bugs.launchpad.dev'
+    ...     '/jokosher/+bug/11')
+    >>> main_content = find_main_content(admin_browser.contents)
+    >>> last_comment = main_content('div', 'boardCommentBody')[-1]
+    >>> last_comment_text = extract_text(last_comment.div)
+    >>> print last_comment_text
+    This comment will not visible when the test completes.
+
+Also, admin users will see the hidden message grayed out via an
+'adminHiddenComment' style.
+
+    >>> print last_comment.parent['class']
+    boardComment adminHiddenComment
