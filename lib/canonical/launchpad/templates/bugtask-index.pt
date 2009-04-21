@@ -95,12 +95,11 @@ Y.on('domready', function() {
     if (privacy_link) {
         var privacy_link_url = privacy_link.getAttribute('href') + '/++form++';
         var privacy_div = Y.get('#privacy-text');
-        var privacy_text = privacy_link.get('innerHTML');
-        privacy_div.set(
-            'innerHTML',
-            '<span id=\'privacy-text\'>' + privacy_text + ' </span>');
+        var privacy_text = privacy_link.get('innerHTML') + ' ';
+        privacy_div.set('innerHTML', privacy_text);
         privacy_link = Y.Node.create(
-            '<a href=\'' + privacy_link_url + '\'><img src=\'/@@/edit\'></a>');
+            '<a href=\'' + privacy_link_url + '\' id=\'privacy-link\'>' +
+            '<img src=\'/@@/edit\'></a>');
         privacy_div.appendChild(privacy_link);
         var privacy_form_id = Y.io(privacy_link_url);
         form_load_callbacks[privacy_form_id.id] = createPrivacyFormOverlay;
@@ -109,6 +108,7 @@ Y.on('domready', function() {
             if (privacy_form_overlay) {
                 e.preventDefault();
                 privacy_form_overlay.show();
+                // Y.get('#field.private') returns null. No idea why...
                 document.getElementById('field.private').focus();
             }
         });
@@ -319,8 +319,7 @@ var update_privacy_settings = function(data) {
             },
             failure: function(id, request) {
                 privacy_text.removeClass('update-in-progress-message');
-                var privacy_link = Y.get('#privacy-link');
-                Y.lazr.anim.red_flash({node: privacy_link}).run();
+                Y.lazr.anim.red_flash({node: privacy_div}).run();
                 privacy_form_overlay.showError(request.responseText);
                 privacy_form_overlay.show();
             }

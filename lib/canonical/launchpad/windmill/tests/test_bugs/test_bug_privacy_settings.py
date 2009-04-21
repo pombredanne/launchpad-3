@@ -22,7 +22,8 @@ CANCEL_BUTTON = (
     u'//div[@id="privacy-form-container"]'
     '//button[@name="field.actions.cancel"]')
 PRIVACY_LINK = u'privacy-link'
-PRIVACY_LINK_STRONG = u'//a[@id="privacy-link"]/strong'
+PRIVACY_TEXT = u'privacy-text'
+PRIVACY_TEXT_STRONG = u'//div[@id="privacy-text"]/strong'
 SECURITY_MESSAGE = u'security-message'
 
 def test_security_settings_form_overlay():
@@ -59,8 +60,8 @@ def test_security_settings_form_overlay():
     client.click(name=FIELD_PRIVATE)
     client.click(xpath=CHANGE_BUTTON)
     client.waits.sleep(milliseconds=WAIT_SUBMIT_CHANGE)
-    client.asserts.assertText(id=PRIVACY_LINK, validator=u'This report is')
-    client.asserts.assertText(xpath=PRIVACY_LINK_STRONG, validator=u'private')
+    client.asserts.assertText(id=PRIVACY_TEXT, validator=u'This report is')
+    client.asserts.assertText(xpath=PRIVACY_TEXT_STRONG, validator=u'private')
 
     # The form overlay is not longer visible.
     client.asserts.assertElemJS(xpath=MAIN_FORM_ELEMENT, js=FORM_NOT_VISIBLE)
@@ -75,8 +76,8 @@ def test_security_settings_form_overlay():
     client.waits.forPageLoad(timeout=WAIT_PAGELOAD)
     client.waits.forElement(
         xpath=MAIN_FORM_ELEMENT, timeout=WAIT_FORM_COMPLETE)
-    client.asserts.assertText(id=PRIVACY_LINK, validator=u'This report is')
-    client.asserts.assertText(xpath=PRIVACY_LINK_STRONG, validator=u'private')
+    client.asserts.assertText(id=PRIVACY_TEXT, validator=u'This report is')
+    client.asserts.assertText(xpath=PRIVACY_TEXT_STRONG, validator=u'private')
 
     # The checkboxes for "privacy" and "security" reflect these
     # settings too.
@@ -97,7 +98,7 @@ def test_security_settings_form_overlay():
     # this bug is a security vulnerability.
     client.waits.sleep(milliseconds=WAIT_SUBMIT_CHANGE)
     client.asserts.assertText(
-        id=PRIVACY_LINK, validator=u'This report is public')
+        id=PRIVACY_TEXT, validator=u'This report is public')
     client.asserts.assertText(
         id=SECURITY_MESSAGE, validator=u'Security vulnerability')
 
@@ -112,7 +113,7 @@ def test_security_settings_form_overlay():
     client.waits.forElement(
         xpath=MAIN_FORM_ELEMENT, timeout=WAIT_FORM_COMPLETE)
     client.asserts.assertText(
-        id=PRIVACY_LINK, validator=u'This report is public')
+        id=PRIVACY_TEXT, validator=u'This report is public')
     client.asserts.assertText(
         id=SECURITY_MESSAGE, validator=u'Security vulnerability')
 
