@@ -461,7 +461,6 @@ uploads i.e. in conjunction with `ArchivePermission` data.
 
     >>> from canonical.launchpad.interfaces import (
     ...     ArchivePermissionType, IArchivePermissionSet)
-    >>> from canonical.launchpad.database import ArchivePermission
     >>> ap_set = getUtility(IArchivePermissionSet)
 
 So, let's assign upload permissios for the 'mozilla' package set to our
