@@ -3,12 +3,15 @@
 # stuff still here when you are ready to land, the items should probably
 # be converted to bugs so they can be scheduled.
 
+Jaunty problems:
+   - jaunty: lib/CVS: import sqlite fails
+     (python-sqlite doesn't provide python2.4)
+   - svn_oo: expecting opt_revision_kind object for rich compare
+
 Landing bzr 1.14:
  - make build needs zlib1g-dev
    - patch launchpad-dependencies
    - file RT to get it installed everywhere
-   - CVS: missing sqlite?
-   - svn_oo: expecting opt_revision_kind object for rich compare
    
  - looks like we need to update bzr-loom
    * sent off to pqm
