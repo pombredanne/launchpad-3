@@ -35,17 +35,14 @@ Users who are, can:
 
     >>> user_browser.open('http://bugs.launchpad.dev/firefox/+filebug-advanced')
 
-    >>> user_browser.getControl('Status') is not None
-    True
-
-    >>> user_browser.getControl('Importance') is not None
-    True
-
-    >>> user_browser.getControl('Milestone') is not None
-    True
-
-    >>> user_browser.getControl('Assign to') is not None
-    True
+    >>> user_browser.getControl('Status')
+    <ListControl name='field.status' type='select'>
+    >>> user_browser.getControl('Importance')
+    <ListControl name='field.importance' type='select'>
+    >>> user_browser.getControl('Milestone')
+    <ListControl name='field.milestone' type='select'>
+    >>> user_browser.getControl('Assign to')
+    <Control name='field.assignee' type='text'>
 
 
 == Setting the importance ==
