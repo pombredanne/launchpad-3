@@ -26,6 +26,7 @@ from simplejson import dumps
 import tempfile
 import urllib
 
+from zope import formlib
 from zope.app.form.browser import TextWidget
 from zope.app.form.interfaces import InputErrors
 from zope.app.pagetemplate import ViewPageTemplateFile
@@ -34,6 +35,7 @@ from zope.event import notify
 from zope.interface import implements
 from zope.publisher.interfaces import NotFound
 from zope.publisher.interfaces.browser import IBrowserPublisher
+from zope.schema import Choice
 
 from lazr.lifecycle.event import ObjectCreatedEvent
 
@@ -45,6 +47,8 @@ from canonical.launchpad.browser.feeds import (
 from canonical.launchpad.interfaces.bugsupervisor import IHasBugSupervisor
 from canonical.launchpad.interfaces.bugtarget import (
     IBugTarget, IOfficialBugTagTargetPublic, IOfficialBugTagTargetRestricted)
+from canonical.launchpad.interfaces.bugtask import (
+    BugTaskImportance, BugTaskStatus)
 from canonical.launchpad.interfaces.launchpad import (
     IHasExternalBugTracker, ILaunchpadUsage)
 from canonical.launchpad.interfaces import (
@@ -52,8 +56,7 @@ from canonical.launchpad.interfaces import (
     IProject, IDistributionSourcePackage, NotFoundError,
     CreateBugParams, IBugAddForm, ILaunchpadCelebrities,
     IProductSeries, ITemporaryStorageManager, IMaloneApplication,
-    IFrontPageBugAddForm, IProjectBugAddForm, UNRESOLVED_BUGTASK_STATUSES,
-    BugTaskStatus)
+    IFrontPageBugAddForm, IProjectBugAddForm, UNRESOLVED_BUGTASK_STATUSES)
 from canonical.launchpad.webapp import (
     LaunchpadEditFormView, LaunchpadFormView, LaunchpadView, action,
     canonical_url, custom_widget, safe_action, urlappend)
@@ -64,6 +67,7 @@ from canonical.widgets.launchpadtarget import LaunchpadTargetWidget
 from canonical.launchpad.validators.name import valid_name_pattern
 from canonical.launchpad.vocabularies import ValidPersonOrTeamVocabulary
 from canonical.launchpad.webapp.menu import structured
+from canonical.launchpad.webapp.vocabulary import vocab_factory
 
 
 class FileBugDataParser:
@@ -376,6 +380,40 @@ class FileBugViewBase(LaunchpadFormView):
                 'bugtarget',
                 "%s does not use Launchpad as its bug tracker " %
                 product_or_distro.displayname)
+
+    def setUpFields(self):
+        """Sets up the fields for the bug filing form."""
+        super(FileBugViewBase, self).setUpFields()
+
+        if 'status' in self.field_names:
+            # Users shouldn't be able to set a bugtask's status to
+            # `UNKNOWN`.
+            status_noshow = [BugTaskStatus.UNKNOWN]
+            status_vocab_factory = vocab_factory(
+                BugTaskStatus, noshow=status_noshow)
+            status_field = Choice(
+                __name__='status',
+                title=self.schema['status'].title,
+                vocabulary=status_vocab_factory(None),
+                default=self.schema['status'].default)
+
+            self.form_fields = self.form_fields.omit('status')
+            self.form_fields += formlib.form.Fields(status_field)
+
+        if 'importance' in self.field_names:
+            # Users shouldn't be able to set a bugtask's importance to
+            # `UNKNOWN`.
+            importance_noshow = [BugTaskImportance.UNKNOWN]
+            importance_vocab_factory = vocab_factory(
+                BugTaskImportance, noshow=importance_noshow)
+            importance_field = Choice(
+                __name__='importance',
+                title=self.schema['importance'].title,
+                vocabulary=importance_vocab_factory(None),
+                default=self.schema['importance'].default)
+
+            self.form_fields = self.form_fields.omit('importance')
+            self.form_fields += formlib.form.Fields(importance_field)
 
     def setUpWidgets(self):
         """Customize the onKeyPress event of the package name chooser."""
