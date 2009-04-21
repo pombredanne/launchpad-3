@@ -133,8 +133,6 @@ has been stripped.
     >>> user_browser.getControl('Name').value = 'main'
     >>> user_browser.getControl('Title').value = 'Gnome Panel Applets Mainline'
     >>> user_browser.getControl('Experimental').click()
-    >>> user_browser.getControl('Summary').value = (
-    ...     'Main branch of development for GNOME Panel Applets.')
     >>> user_browser.getControl('Register Branch').click()
 
 Posting the form should succeed and redirect to the page of the newly
