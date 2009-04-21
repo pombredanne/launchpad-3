@@ -2509,7 +2509,6 @@ class PersonSet:
         if logged_in_user is not None:
             private_query = """
                 TeamParticipation.person = %s
-                AND TeamParticipation.team = Person.id
                 AND Person.teamowner IS NOT NULL
                 AND Person.visibility != %s
                 """ % (sqlvalues(logged_in_user, PersonVisibility.PUBLIC))
@@ -2517,13 +2516,14 @@ class PersonSet:
             private_query = "1 = 0"
         base_query = """
             (Person.visibility = %s OR
-            %s)""" % (quote(PersonVisibility.PUBLIC), private_query)
+            (%s))""" % (quote(PersonVisibility.PUBLIC), private_query)
         return base_query
 
     def _teamEmailQuery(self, text, privacy_query):
         """Product the query for team email addresses."""
         team_email_query = """
             %s
+            AND TeamParticipation.team = Person.id
             AND Person.teamowner IS NOT NULL
             AND Person.merged IS NULL
             AND EmailAddress.person = Person.id
@@ -2535,6 +2535,7 @@ class PersonSet:
         """Produce the query for team names."""
         team_name_query = """
             %s
+            AND TeamParticipation.team = Person.id
             AND Person.teamowner IS NOT NULL
             AND Person.merged IS NULL
             AND Person.fti @@ ftq(%s)
@@ -2573,6 +2574,7 @@ class PersonSet:
             AND Person.account = Account.id
             AND Account.status NOT IN %s
             """ % sqlvalues(text, INACTIVE_ACCOUNT_STATUSES)
+
         results = results.union(Person.select(
             person_name_query, clauseTables=['Account']))
 
