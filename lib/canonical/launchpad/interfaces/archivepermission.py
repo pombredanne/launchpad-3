@@ -215,10 +215,13 @@ class IArchivePermissionSet(Interface):
             'person' is allowed to upload to.
         """
 
-    def uploadersForPackageset(packageset):
+    def uploadersForPackageset(packageset, direct_permissions=True):
         """The `ArchivePermission` records for uploaders to the package set.
 
         :param packageset: An `IPackageset` or a string package set name.
+        :param no_inclusions: If True only consider permissions granted
+            directly for the package set at hand. Otherwise, include any
+            uploaders for package sets that include this one.
         :raises NotFoundError: if the string package set name does not exist.
 
         :return: `ArchivePermission` records for all the uploaders who are
@@ -259,7 +262,7 @@ class IArchivePermissionSet(Interface):
             already exists.
         """
 
-    def newPackagesetUploader(person, packageset, explicit):
+    def newPackagesetUploader(person, packageset, explicit=False):
         """Create and return a new `ArchivePermission` for an uploader.
 
         :param person: An `IPerson` for whom you want to add permission.
@@ -305,7 +308,7 @@ class IArchivePermissionSet(Interface):
             package name.
         """
 
-    def deletePackagesetUploader(person, packageset, explicit):
+    def deletePackagesetUploader(person, packageset, explicit=False):
         """Revoke upload permissions for a person.
 
         :param person: An `IPerson` for whom you want to revoke permission.

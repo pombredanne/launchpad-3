@@ -329,19 +329,24 @@ class ArchivePermissionSet:
         query = SQL(query, (person.id, person.id))
         return store.find(ArchivePermission, In(ArchivePermission.id, query))
 
-    def uploadersForPackageset(self, packageset):
+    def uploadersForPackageset(self, packageset, direct_permissions=True):
         """See `IArchivePermissionSet`."""
         packageset = self._nameToPackageset(packageset)
         store = IStore(ArchivePermission)
-        query = '''
-            SELECT ap.id
-            FROM archivepermission ap, flatpackagesetinclusion fpsi
-            WHERE fpsi.parent = ? AND ap.packageset = fpsi.child
-        '''
+        if direct_permissions == True:
+            query = '''
+                SELECT ap.id FROM archivepermission ap WHERE ap.packageset = ?
+            '''
+        else:
+            query = '''
+                SELECT ap.id
+                FROM archivepermission ap, flatpackagesetinclusion fpsi
+                WHERE fpsi.child = ? AND ap.packageset = fpsi.parent
+            '''
         query = SQL(query, (packageset.id,))
         return store.find(ArchivePermission, In(ArchivePermission.id, query))
 
-    def newPackagesetUploader(self, person, packageset, explicit):
+    def newPackagesetUploader(self, person, packageset, explicit=False):
         """See `IArchivePermissionSet`."""
         packageset = self._nameToPackageset(packageset)
         store = IMasterStore(ArchivePermission)
@@ -373,7 +378,7 @@ class ArchivePermissionSet:
 
         return permission
 
-    def deletePackagesetUploader(self, person, packageset, explicit):
+    def deletePackagesetUploader(self, person, packageset, explicit=False):
         """See `IArchivePermissionSet`."""
         packageset = self._nameToPackageset(packageset)
         store = IMasterStore(ArchivePermission)
