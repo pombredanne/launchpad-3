@@ -595,14 +595,14 @@ The base class allows security bugs to be filed.
 
 Bug supervisors are offered several extra options when filing bugs.
 
-    >>> person = factory.makePerson()
-    >>> project = factory.makeProduct(owner=person)
+    >>> person = factory.makePerson(name=u'bug-superdude')
+    >>> product = factory.makeProduct(owner=person)
 
     >>> login_person(person)
 
-    >>> filebug_view = create_view(project, LaunchpadTestRequest())
+    >>> filebug_view = create_view(product, LaunchpadTestRequest())
     >>> normal_fields = set(filebug_view.field_names)
-    >>> project.setBugSupervisor(person, person)
+    >>> product.setBugSupervisor(person, person)
     >>> supervisor_fields = set(filebug_view.field_names)
 
 Supervisors get all the same fields as normal users, plus a few extra.
@@ -616,6 +616,32 @@ Supervisors get all the same fields as normal users, plus a few extra.
     importance
     milestone
     status
+
+Bugs can be filed with settings for all these extra fields.
+
+    >>> from canonical.launchpad.interfaces.bugtask import (
+    ...     BugTaskImportance, BugTaskStatus)
+
+    >>> milestone = factory.makeMilestone(
+    ...     product=product, name=u'bug-superdude-milestone')
+
+    >>> bug_data = dict(
+    ...     title=u'Extra Fields Bug', comment=u'Test description.',
+    ...     assignee=person, importance=BugTaskImportance.HIGH,
+    ...     milestone=milestone, status=BugTaskStatus.TRIAGED)
+    >>> print filebug_view.validate(bug_data)
+    None
+    >>> filebug_view.submit_bug_action.success(bug_data)
+    >>> [added_bugtask] = filebug_view.added_bug.bugtasks
+
+    >>> print added_bugtask.status.title
+    Triaged
+    >>> print added_bugtask.importance.title
+    High
+    >>> print added_bugtask.assignee
+    bug-superdude
+    >>> print added_bugtask.milestone
+    bug-superdude-milestone
 
 
 == Validation ==
