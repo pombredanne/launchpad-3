@@ -9,12 +9,10 @@ __all__ = [
     'BUG_SUPERVISOR_BUGTASK_STATUSES',
     'BugTagsSearchCombinator',
     'BugTaskImportance',
-    'BugTaskImportanceUserSettable',
     'BugTaskSearchParams',
     'BugTaskStatus',
     'BugTaskStatusSearch',
     'BugTaskStatusSearchDisplay',
-    'BugTaskStatusUserSettable',
     'ConjoinedBugTaskEditError',
     'IAddBugTaskForm',
     'IAddBugTaskWithProductCreationForm',
@@ -133,15 +131,6 @@ class BugTaskImportance(DBEnumeratedType):
         """)
 
 
-class BugTaskImportanceUserSettable(DBEnumeratedType):
-    """Bug Task Importance.
-
-    Importance that can be set by users; UNKNOWN is only for internal
-    use.
-    """
-    use_template(BugTaskImportance, exclude=('UNKNOWN'))
-
-
 class BugTaskStatus(DBEnumeratedType):
     """Bug Task Status
 
@@ -222,14 +211,6 @@ class BugTaskStatus(DBEnumeratedType):
 
         The status of this bug task is unknown.
         """)
-
-
-class BugTaskStatusUserSettable(DBEnumeratedType):
-    """Bug Task Status.
-
-    Status that can be set by users; UNKNOWN is only for internal use.
-    """
-    use_template(BugTaskStatus, exclude=('UNKNOWN'))
 
 
 class BugTaskStatusSearch(DBEnumeratedType):
