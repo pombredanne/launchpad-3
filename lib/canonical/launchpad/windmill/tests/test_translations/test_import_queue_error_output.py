@@ -32,7 +32,7 @@ class ImportQueueErrorOutputTest:
         self.suite = suite
         self.user = user
 
-    def _checkOutputPanel(self, panel_xpath):
+    def _checkOutputPanel(self, client, panel_xpath):
         client.waits.forElement(xpath=panel_xpath, timeout=u'5000')
         # XXX: Check contents
 
@@ -60,7 +60,7 @@ class ImportQueueErrorOutputTest:
 
         output_panel = (
             u"//div[@id='1']//tr[@class='discreet secondary output-panel]'")
-        self._checkOutputPanel(output_panel)
+        self._checkOutputPanel(client, output_panel)
 
 
         # Hide output panel.
@@ -70,7 +70,7 @@ class ImportQueueErrorOutputTest:
         # Reveal output panel again.  This brings us back to the same
         # state as when it was first revealed.
         client.click(xpath=show_button)
-        self._checkOutputPanel(output_panel)
+        self._checkOutputPanel(client, output_panel)
 
 
 test_import_queue_error_output = ImportQueueErrorOutputTest(
