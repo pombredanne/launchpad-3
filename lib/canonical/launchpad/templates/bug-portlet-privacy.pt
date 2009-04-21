@@ -9,24 +9,30 @@
   tal:define="link context/menu:context/visibility"
 >
   <div tal:condition="not:context/private">
-    <a
-      tal:condition="link/enabled"
-      tal:attributes="href link/url; title link/text"
-      style="
-        padding-right: 18px; background: url(/@@/edit) center right no-repeat;
-      "
-    >This report is public</a>
+    <span id="privacy-text">
+      <a
+        tal:condition="link/enabled"
+        tal:attributes="href link/url; title link/text"
+        style="
+          padding-right: 18px; background: url(/@@/edit) center right no-repeat;
+        "
+        id="privacy-link"
+      >This report is public</a>
+    </span>
     <tal:unchangeable condition="not:link/enabled"
     >This report is public</tal:unchangeable>
   </div>
   <div tal:condition="context/private">
-    <a
-      tal:condition="link/enabled"
-      tal:attributes="href link/url; title link/text"
-      style="
-        padding-right: 18px; background: url(/@@/edit) center right no-repeat;
-      "
-    >This report is <strong>private</strong></a>
+    <span id="privacy-text">
+      <a
+        tal:condition="link/enabled"
+        tal:attributes="href link/url; title link/text"
+        style="
+          padding-right: 18px; background: url(/@@/edit) center right no-repeat;
+        "
+        id="privacy-link"
+      >This report is <strong>private</strong></a>
+    </span>
     <tal:unchangeable condition="not:link/enabled"
     >This report is private</tal:unchangeable>
   </div>
@@ -37,5 +43,6 @@
       padding-right: 18px;
       background:url(/@@/security) center right no-repeat;
     "
+    id="security-message"
   >Security vulnerability</div>
 </div>
