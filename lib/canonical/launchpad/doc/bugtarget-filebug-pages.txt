@@ -638,9 +638,9 @@ Bugs can be filed with settings for all these extra fields.
     Triaged
     >>> print added_bugtask.importance.title
     High
-    >>> print added_bugtask.assignee
+    >>> print added_bugtask.assignee.name
     bug-superdude
-    >>> print added_bugtask.milestone
+    >>> print added_bugtask.milestone.name
     bug-superdude-milestone
 
 

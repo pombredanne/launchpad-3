@@ -494,6 +494,19 @@ class FileBugViewBase(LaunchpadFormView):
             params.private = extra_data.private
 
         self.added_bug = bug = context.createBug(params)
+
+        # Apply any extra options given by a bug supervisor.
+        bugtask = self.added_bug.default_bugtask
+        if 'assignee' in data:
+            bugtask.transitionToAssignee(data['assignee'])
+        if 'status' in data:
+            bugtask.transitionToStatus(data['status'], self.user)
+        if 'importance' in data:
+            bugtask.transitionToImportance(data['importance'], self.user)
+        if 'milestone' in data:
+            bugtask.milestone = data['milestone']
+
+        # Tell everyone.
         notify(ObjectCreatedEvent(bug))
 
         for comment in extra_data.comments:
