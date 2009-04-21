@@ -53,7 +53,8 @@
                         unsubscribeFromDupes subscribe unsubscribe addNomination
                         expireNotifications setStatus setPrivate
                         convertToQuestion isUserAffected
-                        markUserAffected addTask addChange markAsDuplicate"
+                        markUserAffected addTask addChange markAsDuplicate
+                        setCommentVisibility"
             set_attributes="datecreated date_last_updated name title description
                             ownerID owner duplicateof communityscore
                             communitytimestamp hits hitstimestamp activityscore
