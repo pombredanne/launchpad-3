@@ -34,6 +34,7 @@ from canonical.widgets import DateWidget
 
 from lp.registry.browser.product import ProductDownloadFileMixin
 
+
 class MilestoneSetNavigation(GetitemNavigation):
 
     usedfor = IMilestoneSet
@@ -118,6 +119,15 @@ class MilestoneView(LaunchpadView, ProductDownloadFileMixin):
             self.milestone = context.milestone
             self.release = context
         self.context = self.milestone
+
+    def initialize(self):
+        """See `LaunchpadFormView`."""
+        self.form = self.request.form
+        self.processDeleteFiles()
+
+    def getReleases(self):
+        """See `ProductDownloadFileMixin`."""
+        return set([self.release])
 
     # Listify and cache the specifications and bugtasks to avoid making
     # the same query over and over again when evaluating in the template.
