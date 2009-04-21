@@ -750,10 +750,16 @@ class IBugAddForm(IBug):
         default=False)
     attachment_description = Title(title=u'Description', required=False)
     status = Choice(
-        title=_('Status'), vocabulary=BugTaskStatus,
+        title=_('Status'),
+        values=list(
+            item for item in BugTaskStatus.items.items
+            if item != BugTaskStatus.UNKNOWN),
         default=IBugTask['status'].default)
     importance = Choice(
-        title=_('Importance'), vocabulary=BugTaskImportance,
+        title=_('Importance'),
+        values=list(
+            item for item in BugTaskImportance.items.items
+            if item != BugTaskImportance.UNKNOWN),
         default=IBugTask['importance'].default)
     milestone = Choice(
         title=_('Milestone'), required=False,
