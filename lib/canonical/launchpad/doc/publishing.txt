@@ -84,12 +84,53 @@ The iceweasel source has good data:
     >>> print pub.changes_file_url
     http://launchpad.dev/ubuntu/+archive/primary/+files/mozilla-firefox_0.9_i386.changes
 
-IBinaryPackagePublishingHistory also contains similar API conveniences.
+A helper is also included to create a summary of the build statuses for
+the spph's related builds, getStatusSummaryForBuilds(), which just
+augments the IBuildSet.getStatusSummaryForBuilds() method to include the
+'pending' state when builds are fully built but not yet published.
 
     >>> from canonical.launchpad.tests.test_publishing import (
     ...     SoyuzTestPublisher)
+    >>> from canonical.launchpad.interfaces.build import BuildStatus
     >>> stp = SoyuzTestPublisher()
     >>> stp.prepareBreezyAutotest()
+    >>> spph = stp.getPubSource(architecturehintlist='any')
+    >>> builds = spph.createMissingBuilds()
+    >>> for build in builds:
+    ...     build.buildstate = BuildStatus.FULLYBUILT
+
+Create a helper for printing the build status summary:
+
+    >>> def print_build_status_summary(summary):
+    ...     print summary['status'].title
+    ...     for build in summary['builds']:
+    ...         print build.title
+    >>> build_status_summary = spph.getStatusSummaryForBuilds()
+    >>> print_build_status_summary(build_status_summary)
+    Pending
+    hppa build of foo 666 in ubuntutest breezy-autotest RELEASE
+    i386 build of foo 666 in ubuntutest breezy-autotest RELEASE
+
+If one of the builds becomes published, it will not appear in the summary:
+
+    >>> bpr = stp.uploadBinaryForBuild(builds[0], 'foo-bin')
+    >>> bpph = stp.publishBinaryInArchive(bpr, spph.archive)
+    >>> print_build_status_summary(spph.getStatusSummaryForBuilds())
+    Pending
+    i386 build of foo 666 in ubuntutest breezy-autotest RELEASE
+
+After publishing the second binary, the status changes to FULLYBUILT as
+per normal:
+
+    >>> bpr = stp.uploadBinaryForBuild(builds[1], 'foo-bin')
+    >>> bpph = stp.publishBinaryInArchive(bpr, spph.archive)
+    >>> print_build_status_summary(spph.getStatusSummaryForBuilds())
+    FULLYBUILT
+    hppa build of foo 666 in ubuntutest breezy-autotest RELEASE
+    i386 build of foo 666 in ubuntutest breezy-autotest RELEASE
+
+IBinaryPackagePublishingHistory also contains similar API conveniences.
+
     >>> bpph = stp.getPubBinaries()[0]
     >>> verifyObject(IBinaryPackagePublishingHistory, bpph)
     True

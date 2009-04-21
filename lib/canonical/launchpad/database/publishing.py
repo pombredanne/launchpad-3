@@ -752,6 +752,30 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
             embargo=False)
         return SourcePackagePublishingHistory.get(secure_copy.id)
 
+    def getStatusSummaryForBuilds(self):
+        """See `ISourcePackagePublishingHistory`."""
+        from canonical.launchpad.interfaces.build import BuildSetStatus
+        builds = self.getBuilds()
+        summary = getUtility(IBuildSet).getStatusSummaryForBuilds(
+            builds)
+
+        # If all the builds are fully-built, we check to see if they
+        # are published, if not, we return a PENDING status.
+        augmented_summary = summary
+        if summary['status'] == BuildSetStatus.FULLYBUILT:
+            published_bins = self.getPublishedBinaries()
+            published_builds = [bin.binarypackagerelease.build
+                                    for bin in published_bins]
+            unpublished_builds = list(
+                set(builds).difference(published_builds))
+            import pdb;pdb.set_trace()
+            if unpublished_builds:
+                augmented_summary = {
+                    'status': PackagePublishingStatus.PENDING,
+                    'builds': unpublished_builds
+                }
+        return augmented_summary
+
 
 class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
     """A binary package publishing record. (excluding embargoed packages)"""
