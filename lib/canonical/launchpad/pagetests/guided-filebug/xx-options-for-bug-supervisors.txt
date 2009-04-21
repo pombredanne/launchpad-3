@@ -6,7 +6,8 @@ target it to a milestone, and assign it to a user.
 
 Users who are not bug supervisors do not see any of these options:
 
-    >>> user_browser.open('http://bugs.launchpad.dev/firefox/+filebug-advanced')
+    >>> user_browser.open(
+    ...     'http://bugs.launchpad.dev/firefox/+filebug-advanced')
     >>> user_browser.getControl('Status')
     Traceback (most recent call last):
     ...
@@ -29,11 +30,13 @@ Users who are not bug supervisors do not see any of these options:
 
 Users who are, can:
 
-    >>> admin_browser.open('http://bugs.launchpad.dev/firefox/+bugsupervisor')
+    >>> admin_browser.open(
+    ...     'http://bugs.launchpad.dev/firefox/+bugsupervisor')
     >>> admin_browser.getControl('Bug Supervisor').value = "no-priv"
     >>> admin_browser.getControl('Change').click()
 
-    >>> user_browser.open('http://bugs.launchpad.dev/firefox/+filebug-advanced')
+    >>> user_browser.open(
+    ...     'http://bugs.launchpad.dev/firefox/+filebug-advanced')
 
     >>> user_browser.getControl('Status')
     <ListControl name='field.status' type='select'>

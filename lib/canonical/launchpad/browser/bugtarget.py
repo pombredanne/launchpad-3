@@ -45,15 +45,16 @@ from canonical.launchpad.browser.feeds import (
 from canonical.launchpad.interfaces.bugsupervisor import IHasBugSupervisor
 from canonical.launchpad.interfaces.bugtarget import (
     IBugTarget, IOfficialBugTagTargetPublic, IOfficialBugTagTargetRestricted)
-from canonical.launchpad.interfaces.bugtask import BugTaskStatus
+from canonical.launchpad.interfaces.bugtask import (
+    BugTaskStatus, IBugTaskSet, UNRESOLVED_BUGTASK_STATUSES)
 from canonical.launchpad.interfaces.launchpad import (
     IHasExternalBugTracker, ILaunchpadUsage)
 from canonical.launchpad.interfaces import (
-    IBug, IBugTaskSet, ILaunchBag, IDistribution, IDistroSeries, IProduct,
-    IProject, IDistributionSourcePackage, NotFoundError,
-    CreateBugParams, IBugAddForm, ILaunchpadCelebrities,
-    IProductSeries, ITemporaryStorageManager, IMaloneApplication,
-    IFrontPageBugAddForm, IProjectBugAddForm, UNRESOLVED_BUGTASK_STATUSES)
+    CreateBugParams, IBug, IBugAddForm, IDistribution,
+    IDistributionSourcePackage, IDistroSeries, IFrontPageBugAddForm,
+    ILaunchBag, ILaunchpadCelebrities, IMaloneApplication, IProduct,
+    IProductSeries, IProject, IProjectBugAddForm, ITemporaryStorageManager,
+    NotFoundError)
 from canonical.launchpad.webapp import (
     LaunchpadEditFormView, LaunchpadFormView, LaunchpadView, action,
     canonical_url, custom_widget, safe_action, urlappend)
