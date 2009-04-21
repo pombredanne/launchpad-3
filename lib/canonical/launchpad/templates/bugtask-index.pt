@@ -44,7 +44,7 @@ var submit_button_html =
 var cancel_button_html =
     '<button type=\'button\' name=\'field.actions.cancel\' ' +
     'class=\'lazr-neg lazr-btn\' >Cancel</button>';
-
+var privacy_link;
 
 /*
  * Check the page for links related to overlay forms and request the HTML
@@ -90,10 +90,18 @@ Y.on('domready', function() {
         update_dupe_links.addClass('js-action');
     }
 
-    var privacy_link = Y.get('#privacy-link');
+    privacy_link = Y.get('#privacy-link');
 
     if (privacy_link) {
         var privacy_link_url = privacy_link.getAttribute('href') + '/++form++';
+        var privacy_div = Y.get('#privacy-text');
+        var privacy_text = privacy_link.get('innerHTML');
+        privacy_div.set(
+            'innerHTML',
+            '<span id=\'privacy-text\'>' + privacy_text + ' </span>');
+        privacy_link = Y.Node.create(
+            '<a href=\'' + privacy_link_url + '\'><img src=\'/@@/edit\'></a>');
+        privacy_div.appendChild(privacy_link);
         var privacy_form_id = Y.io(privacy_link_url);
         form_load_callbacks[privacy_form_id.id] = createPrivacyFormOverlay;
 
@@ -259,6 +267,7 @@ var update_privacy_settings = function(data) {
     var config = {
         on: {
             success: function (updated_entry) {
+                var privacy_text = Y.get('#privacy-text');
                 privacy_text.removeClass('update-in-progress-message');
                 lp_bug_entry = updated_entry;
 
@@ -268,29 +277,32 @@ var update_privacy_settings = function(data) {
                 // precondition failed' error.
                 lp_bug_entry.removeAtt('http_etag');
 
-                var privacy_link = Y.get('#privacy-link');
+                var privacy_text = Y.get('#privacy-text');
                 var privacy_div = Y.get('#privacy');
                 if (private) {
                     privacy_div.removeClass('public');
                     privacy_div.addClass('private');
-                    privacy_link.set(
-                    'innerHTML', 'This report is <strong>private</strong>');
+                    privacy_text.set(
+                        'innerHTML',
+                        'This report is <strong>private</strong> ');
                 } else {
                     privacy_div.removeClass('private');
                     privacy_div.addClass('public');
-                    privacy_link.set('innerHTML', 'This report is public');
+                    privacy_text.set(
+                        'innerHTML', 'This report is public ');
                 }
+                privacy_text.appendChild(privacy_link);
 
                 if (security_related) {
                     var security_message = Y.get('#security-message');
                     if (security_message === null) {
                         var security_message_html = [
-                            '<div stype=\'',
+                            '<div style=\'',
                             '    margin-top: 0.5em;',
                             '    padding-right: 18px;',
                             '    background:url(/@@/security)',
-                            'center right no-repeat;\'',
-                            'id=\'security-message\'',
+                            '    center right no-repeat;\'',
+                            '    id=\'security-message\'',
                             '>Security vulnerability</div>'
                         ].join('');
                         security_message = Y.Node.create(security_message_html);
@@ -302,7 +314,7 @@ var update_privacy_settings = function(data) {
                         privacy_div.removeChild(security_message);
                     }
                 }
-                Y.lazr.anim.green_flash({node: privacy_link}).run();
+                Y.lazr.anim.green_flash({node: privacy_div}).run();
             },
             failure: function(id, request) {
                 privacy_text.removeClass('update-in-progress-message');
