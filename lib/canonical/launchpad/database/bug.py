@@ -41,8 +41,7 @@ from canonical.launchpad.components.bugchange import (
 from canonical.launchpad.fields import DuplicateBug
 from canonical.launchpad.interfaces import IQuestionTarget
 from canonical.launchpad.interfaces.bug import (
-    IBug, IBugBecameQuestionEvent, IBugSet, InvalidDuplicateValue,
-    UserCannotSetCommentVisibility)
+    IBug, IBugBecameQuestionEvent, IBugSet, InvalidDuplicateValue)
 from canonical.launchpad.interfaces.bugactivity import IBugActivitySet
 from canonical.launchpad.interfaces.bugattachment import (
     BugAttachmentType, IBugAttachmentSet)
@@ -1326,15 +1325,10 @@ class Bug(SQLBase):
 
     def setCommentVisibility(self, user, comment_number, visible):
         """See `IBug`."""
-        is_admin = check_permission('launchpad.Admin', user)
-        if not is_admin:
-            raise UserCannotSetCommentVisibility(
-                'User does not have permission to set '
-                'the visibility of bug comments.')
-        bugmessageset = getUtility(IBugMessageSet)
-        bugmessage = bugmessageset.getByBugAndMessage(
+        bug_message_set = getUtility(IBugMessageSet)
+        bug_message = bug_message_set.getByBugAndMessage(
             self, self.messages[comment_number])
-        bugmessage.visible = visible
+        bug_message.visible = visible
 
 
 class BugSet:

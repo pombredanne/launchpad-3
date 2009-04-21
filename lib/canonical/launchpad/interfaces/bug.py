@@ -17,7 +17,6 @@ __all__ = [
     'IProjectBugAddForm',
     'InvalidBugTargetType',
     'InvalidDuplicateValue',
-    'UserCannotSetCommentVisibility',
     ]
 
 from zope.component import getUtility
@@ -669,7 +668,7 @@ class IBug(ICanBeMentored):
         comment_number=Int(
             title=_('The number of the comment in the list of messages.'),
             required=True),
-        visible=Bool(title=_('Hide this comment?'), required=True))
+        visible=Bool(title=_('Show this comment?'), required=True))
     @call_with(user=REQUEST_USER)
     @export_write_operation()
     def setCommentVisibility(user, comment_number, visible):
@@ -679,12 +678,6 @@ class IBug(ICanBeMentored):
 class InvalidDuplicateValue(Exception):
     """A bug cannot be set as the duplicate of another."""
     webservice_error(417)
-
-
-class UserCannotSetCommentVisibility(Exception):
-    """Bug comment visibility can only be set by admins."""
-    webservice_error(401)
-
 
 
 # We are forced to define these now to avoid circular import problems.
