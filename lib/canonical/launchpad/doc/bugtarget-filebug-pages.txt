@@ -591,6 +591,33 @@ The base class allows security bugs to be filed.
     True
 
 
+== Extra fields for bug supervisors ==
+
+Bug supervisors are offered several extra options when filing bugs.
+
+    >>> person = factory.makePerson()
+    >>> project = factory.makeProduct(owner=person)
+
+    >>> login_person(person)
+
+    >>> filebug_view = create_view(project, LaunchpadTestRequest())
+    >>> normal_fields = set(filebug_view.field_names)
+    >>> project.setBugSupervisor(person, person)
+    >>> supervisor_fields = set(filebug_view.field_names)
+
+Supervisors get all the same fields as normal users, plus a few extra.
+
+    >>> supervisor_fields.issuperset(normal_fields)
+    True
+
+    >>> for field in sorted(supervisor_fields - normal_fields):
+    ...     print field
+    assignee
+    importance
+    milestone
+    status
+
+
 == Validation ==
 
 

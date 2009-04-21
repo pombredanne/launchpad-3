@@ -42,6 +42,7 @@ from canonical.launchpad.browser.bugtask import BugTaskSearchListingView
 from canonical.launchpad.browser.feeds import (
     BugFeedLink, BugTargetLatestBugsFeedLink, FeedsMixin,
     PersonLatestBugsFeedLink)
+from canonical.launchpad.interfaces.bugsupervisor import IHasBugSupervisor
 from canonical.launchpad.interfaces.bugtarget import (
     IBugTarget, IOfficialBugTagTargetPublic, IOfficialBugTagTargetRestricted)
 from canonical.launchpad.interfaces.launchpad import (
@@ -276,6 +277,11 @@ class FileBugViewBase(LaunchpadFormView):
             field_names.append('product')
         elif not IProduct.providedBy(context):
             raise AssertionError('Unknown context: %r' % context)
+
+        if IHasBugSupervisor.providedBy(context):
+            if self.user.inTeam(context.bug_supervisor):
+                field_names.extend([
+                        'assignee', 'importance', 'milestone', 'status'])
 
         return field_names
 
