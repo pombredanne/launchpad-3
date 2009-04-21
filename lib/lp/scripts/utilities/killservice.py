@@ -1,12 +1,9 @@
-#!/usr/bin/python2.4
+#!../bin/py
 
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 # This module uses relative imports.
 # pylint: disable-msg=W0403
-
 __metaclass__ = type
-
-import _pythonpath
 
 import os, logging
 from signal import SIGTERM
@@ -17,7 +14,7 @@ from canonical.launchpad.scripts import logger_options, logger
 from canonical.launchpad.mailman.runmailman import stop_mailman
 
 
-if __name__ == '__main__':
+def script():
     parser = OptionParser('Usage: %prog [options] [SERVICE ...]')
     logger_options(parser, logging.INFO)
     (options, args) = parser.parse_args()

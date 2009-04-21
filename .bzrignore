@@ -38,3 +38,11 @@ lib/canonical/launchpad/apidoc/wadl-test-playground.xml
 lib/canonical/launchpad/icing/build/*
 trace.log
 test-appserver-layer-trace.log
+bin
+develop-eggs
+.installed.cfg
+parts
+*.egg-info
+build
+*.egg
+dist
