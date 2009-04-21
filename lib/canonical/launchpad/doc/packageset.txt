@@ -460,7 +460,7 @@ As it stands package sets will first be used for governing source package
 uploads i.e. in conjunction with `ArchivePermission` data.
 
     >>> from canonical.launchpad.interfaces import (
-    ...     ArchivePermissionType, IArchivePermission, IArchivePermissionSet)
+    ...     ArchivePermissionType, IArchivePermissionSet)
     >>> from canonical.launchpad.database import ArchivePermission
     >>> ap_set = getUtility(IArchivePermissionSet)
 
