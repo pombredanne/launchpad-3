@@ -2,3 +2,94 @@
 # landing. There is a test to ensure it is empty in trunk. If there is
 # stuff still here when you are ready to land, the items should probably
 # be converted to bugs so they can be scheduled.
+
+Landing bzr 1.14:
+ - make build needs zlib1g-dev
+   - patch launchpad-dependencies
+   - file RT to get it installed everywhere
+ - looks like we need to update bzr-loom
+   * sent off to pqm
+ - the hooks changes break a _lot_ of tests.
+ - find out other fallout!
+   - from the 'canonical.codehosting' tests:
+
+    Tests with errors:
+       testAllowedRelativeNested (canonical.codehosting.puller.tests.test_worker.TestBranchMirrorerStacking)
+       testAllowedRelativeURL (canonical.codehosting.puller.tests.test_worker.TestBranchMirrorerStacking)
+       testAllowedURL (canonical.codehosting.puller.tests.test_worker.TestBranchMirrorerStacking)
+       testForbiddenURL (canonical.codehosting.puller.tests.test_worker.TestBranchMirrorerStacking)
+       testForbiddenURLNested (canonical.codehosting.puller.tests.test_worker.TestBranchMirrorerStacking)
+       testLoopStackedBranch (canonical.codehosting.puller.tests.test_worker.TestBranchMirrorerStacking)
+       testSelfStackedBranch (canonical.codehosting.puller.tests.test_worker.TestBranchMirrorerStacking)
+       testUnstackableRepository (canonical.codehosting.puller.tests.test_worker.TestBranchMirrorerStacking)
+       testCanMirrorWhenDestDirExists (canonical.codehosting.puller.tests.test_worker.TestPullerWorker)
+       testDoesntSendStackedInfoNotStacked (canonical.codehosting.puller.tests.test_worker.TestPullerWorker)
+       testDoesntSendStackedInfoUnstackableFormat (canonical.codehosting.puller.tests.test_worker.TestPullerWorker)
+       testHttpTransportStillThere (canonical.codehosting.puller.tests.test_worker.TestPullerWorker)
+       testMirrorActuallyMirrors (canonical.codehosting.puller.tests.test_worker.TestPullerWorker)
+       testMirrorEmptyBranch (canonical.codehosting.puller.tests.test_worker.TestPullerWorker)
+       testRaisesStackedOnBranchNotFoundInitialMirror (canonical.codehosting.puller.tests.test_worker.TestPullerWorker)
+       testRaisesStackedOnBranchNotFoundRemirror (canonical.codehosting.puller.tests.test_worker.TestPullerWorker)
+       testSendsStackedInfo (canonical.codehosting.puller.tests.test_worker.TestPullerWorker)
+       testSendsStackedInfoBasedOnDestinationURL (canonical.codehosting.puller.tests.test_worker.TestPullerWorker)
+       test_defaultStackedOnBranchDoesNotForceStacking (canonical.codehosting.puller.tests.test_worker.TestPullerWorker)
+       testMirrorKnitAsKnit (canonical.codehosting.puller.tests.test_worker_formats.TestPullerWorkerFormats)
+       testMirrorMetaweaveAsMetaweave (canonical.codehosting.puller.tests.test_worker_formats.TestPullerWorkerFormats)
+       testMirrorWeaveAsWeave (canonical.codehosting.puller.tests.test_worker_formats.TestPullerWorkerFormats)
+       testSourceFormatChange (canonical.codehosting.puller.tests.test_worker_formats.TestPullerWorkerFormats)
+       test_loomBranch (canonical.codehosting.puller.tests.test_worker_formats.TestPullerWorkerFormats)
+       test_reStackedBranch (canonical.codehosting.puller.tests.test_worker_formats.TestPullerWorkerFormats)
+       test_stackedBranch (canonical.codehosting.puller.tests.test_worker_formats.TestPullerWorkerFormats)
+       canonical.codehosting.tests.test_bzrutils.TestGetBranchStackedOnURL.testGetBranchStackedOnUrl(BzrBranchLoomFormat7)
+       test_import (canonical.codehosting.codeimport.tests.test_worker.TestCVSImport)
+       test_sync (canonical.codehosting.codeimport.tests.test_worker.TestCVSImport)
+       test_import (canonical.codehosting.codeimport.tests.test_worker.TestSubversionImport)
+       test_sync (canonical.codehosting.codeimport.tests.test_worker.TestSubversionImport)
+       test_empty_branch (canonical.codehosting.scanner.tests.test_bzrsync.TestBzrSync)
+       test_import_recommit (canonical.codehosting.scanner.tests.test_bzrsync.TestBzrSync)
+       test_import_revision (canonical.codehosting.scanner.tests.test_bzrsync.TestBzrSync)
+       test_import_revision_with_url (canonical.codehosting.scanner.tests.test_bzrsync.TestBzrSync)
+       test_import_uncommit (canonical.codehosting.scanner.tests.test_bzrsync.TestBzrSync)
+       test_new_author (canonical.codehosting.scanner.tests.test_bzrsync.TestBzrSync)
+       test_new_parent (canonical.codehosting.scanner.tests.test_bzrsync.TestBzrSync)
+       test_sync_updates_branch (canonical.codehosting.scanner.tests.test_bzrsync.TestBzrSync)
+       test_sync_with_merged_branches (canonical.codehosting.scanner.tests.test_bzrsync.TestBzrSync)
+       test_timestamp_parsing (canonical.codehosting.scanner.tests.test_bzrsync.TestBzrSync)
+       test_upload_on_new_revision (canonical.codehosting.scanner.tests.test_bzrsync.TestBzrTranslationsUploadJob)
+       test_upload_on_new_revision_no_series (canonical.codehosting.scanner.tests.test_bzrsync.TestBzrTranslationsUploadJob)
+       test_upload_on_new_revision_series_not_configured (canonical.codehosting.scanner.tests.test_bzrsync.TestBzrTranslationsUploadJob)
+       test_revision_properties (canonical.codehosting.scanner.tests.test_bzrsync.TestRevisionProperty)
+       testStackedBranch (canonical.codehosting.scanner.tests.test_bzrsync.TestScanStackedBranches)
+       testStackedBranchBadURL (canonical.codehosting.scanner.tests.test_bzrsync.TestScanStackedBranches)
+       test_empty_branch (canonical.codehosting.scanner.tests.test_email.TestBzrSyncEmail)
+       test_import_recommit (canonical.codehosting.scanner.tests.test_email.TestBzrSyncEmail)
+       test_import_revision (canonical.codehosting.scanner.tests.test_email.TestBzrSyncEmail)
+       test_import_uncommit (canonical.codehosting.scanner.tests.test_email.TestBzrSyncEmail)
+       test_empty_branch (canonical.codehosting.scanner.tests.test_email.TestBzrSyncNoEmail)
+       test_import_recommit (canonical.codehosting.scanner.tests.test_email.TestBzrSyncNoEmail)
+       test_import_revision (canonical.codehosting.scanner.tests.test_email.TestBzrSyncNoEmail)
+       test_import_uncommit (canonical.codehosting.scanner.tests.test_email.TestBzrSyncNoEmail)
+       testRecognizeDevelopment (canonical.codehosting.scanner.tests.test_formats.TestScanBranchFormat7)
+       testRecognizeKnit (canonical.codehosting.scanner.tests.test_formats.TestScanFormatKnit)
+       testRecognizePack (canonical.codehosting.scanner.tests.test_formats.TestScanFormatPack)
+       testRecognizeWeave (canonical.codehosting.scanner.tests.test_formats.TestScanFormatWeave)
+       test_autoMergeProposals_not_merged_proposal (canonical.codehosting.scanner.tests.test_mergedetection.TestAutoMergeDetectionForMergeProposals)
+       test_autoMergeProposals_not_merged_with_updated_source (canonical.codehosting.scanner.tests.test_mergedetection.TestAutoMergeDetectionForMergeProposals)
+       test_autoMergeProposals_real_merge (canonical.codehosting.scanner.tests.test_mergedetection.TestAutoMergeDetectionForMergeProposals)
+       test_autoMergeProposals_real_merge_target_scanned_first (canonical.codehosting.scanner.tests.test_mergedetection.TestAutoMergeDetectionForMergeProposals)
+       test_autoMergeProposals_rejected_proposal (canonical.codehosting.scanner.tests.test_mergedetection.TestAutoMergeDetectionForMergeProposals)
+       test_autoMergeProposals_rejected_proposal_target_scanned_first (canonical.codehosting.scanner.tests.test_mergedetection.TestAutoMergeDetectionForMergeProposals)
+       test_branchScannerLooms (canonical.codehosting.scanner.tests.test_acceptance.BranchScannerTest)
+       canonical.codehosting.tests.test_acceptance.AcceptanceTests.test_can_push_loom_branch(sftp)
+       canonical.codehosting.tests.test_acceptance.AcceptanceTests.test_can_push_loom_branch(bzr+ssh)
+       test_import_cvs (canonical.codehosting.codeimport.tests.test_workermonitor.TestWorkerMonitorIntegration)
+       test_import_cvs (canonical.codehosting.codeimport.tests.test_workermonitor.TestWorkerMonitorIntegrationScript)
+       canonical.codehosting.puller.tests.test_scheduler.TestPullerMasterIntegration.test_mirror
+       canonical.codehosting.puller.tests.test_scheduler.TestPullerMasterIntegration.test_mirror_with_destination_locked_by_another
+       canonical.codehosting.puller.tests.test_scheduler.TestPullerMasterIntegration.test_mirror_with_destination_self_locked
+
+    Tests with failures:
+       test_connect_twice_is_same_content (canonical.codehosting.vfs.tests.test_transport.TestLaunchpadTransportImplementation)
+       test_import_script (canonical.codehosting.codeimport.tests.test_worker.TestCVSImport)
+       test_import_script (canonical.codehosting.codeimport.tests.test_worker.TestSubversionImport)
+       test_branchScannerScript (canonical.codehosting.scanner.tests.test_acceptance.BranchScannerTest)
