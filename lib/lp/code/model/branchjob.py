@@ -440,7 +440,8 @@ class RosettaUploadJob(BranchJobDerived):
         return self.metadata['do_translations_upload']
 
     @classmethod
-    def create(klass, branch, from_revision_id, do_translations_upload=False):
+    def create(klass, branch, from_revision_id,
+               do_translations_upload=False):
         """See `IRosettaUploadJobSource`."""
         if branch is None:
             return None
