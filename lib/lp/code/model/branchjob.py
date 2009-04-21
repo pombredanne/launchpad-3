@@ -447,11 +447,16 @@ class RosettaUploadJob(BranchJobDerived):
         if from_revision_id is None:
             from_revision_id = NULL_REVISION
         store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
-        productseries = store.find(
-            (ProductSeries),
-            ProductSeries.branch == branch,
-            ProductSeries.translations_autoimport_mode !=
-               TranslationsBranchImportMode.NO_IMPORT).any()
+        if do_translations_upload:
+            productseries = store.find(
+                (ProductSeries),
+                ProductSeries.branch == branch).any()
+        else:
+            productseries = store.find(
+                (ProductSeries),
+                ProductSeries.branch == branch,
+                ProductSeries.translations_autoimport_mode !=
+                   TranslationsBranchImportMode.NO_IMPORT).any()
         if productseries is not None:
             metadata = klass.getMetadata(from_revision_id,
                                          do_translations_upload)

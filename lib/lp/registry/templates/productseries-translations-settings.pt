@@ -45,12 +45,14 @@
     After the initial import, Launchpad will continue to scan your Bazaar
     branch for updates to template and translation files.
   </p>
-  <p><img src="/@@/info" class="inline-icon" />
+  <p id="bzr-request-display">
+    <img src="/@@/info" class="inline-icon" />
       If you only need a a one-time import, please request it 
     <a tal:attributes="href view/request_bzr_import_url">here</a>.
   </p>
   <p tal:condition="view/context/branch"
-     tal:define="branch view/context/branch">
+     tal:define="branch view/context/branch"
+     id="branch-display">
     The official Bazaar branch is:
     <img src="/@@/branch" class="inline-icon" />
     <a tal:attributes="href branch/fmt:url; title branch/displayname"
@@ -61,9 +63,10 @@
                        title string:Change official branch"
                        ><img src="/@@/edit" class="inline-icon" /></a>
   </p>
-  <p tal:condition="not:view/context/branch">
+  <p tal:condition="not:view/context/branch"
+     id="no-branch-display">
     This series does not have an official Bazaar branch. 
-    <a tal:attributes="href view/link_branch_url">Set it now</a>
+    <a tal:attributes="href view/link_branch_url">Set it now!</a>
   </p>
   <div metal:use-macro="context/@@launchpad_form/form"></div>
   </tal:rosetta>

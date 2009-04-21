@@ -715,7 +715,8 @@ class ProductSeriesTranslationsMixin(object):
 
     @property
     def request_bzr_import_url(self):
-        return canonical_url(self.context, view_name="+request-bzr-import")
+        return canonical_url(self.context,
+                             view_name="+request-bzr-import")
 
     @property
     def link_branch_url(self):
@@ -724,7 +725,8 @@ class ProductSeriesTranslationsMixin(object):
 
     @property
     def translations_settings_url(self):
-        return canonical_url(self.context, view_name="+translations-settings")
+        return canonical_url(self.context,
+                             view_name="+translations-settings")
 
     @property
     def product_edit_url(self):
@@ -789,9 +791,13 @@ class ProductSeriesTranslationsBzrImportView(LaunchpadFormView,
 
     @action(u"Request one-time import", name="request_import")
     def request_import_action(self, action, data):
-            # Request an upload of translation files.
-        getUtility(IRosettaUploadJobSource).create(
+        """ Request an upload of translation files. """
+        job = getUtility(IRosettaUploadJobSource).create(
             self.context.branch, NULL_REVISION, True)
-        self.request.response.addInfoNotification(
-            _("The import has been requested."))
+        if job is None:
+            self.addError(
+                _("Your request could not be filed."))
+        else:
+            self.request.response.addInfoNotification(
+                _("The import has been requested."))
 

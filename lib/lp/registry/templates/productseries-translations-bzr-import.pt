@@ -44,13 +44,14 @@
       Evolution Series:trunk</tal:series>'s</strong> official Bazaar branch.
       
   </p>
-  <p tal:condition="not:view/has_imports_enabled">
+  <p tal:condition="not:view/has_imports_enabled" id="settings-display">
   <img src="/@@/info" class="inline-icon" />
     To enable continuous imports please change the settings
     <a tal:attributes="href view/translations_settings_url">here</a>.
   </p>
   <p tal:condition="view/context/branch"
-     tal:define="branch view/context/branch">
+     tal:define="branch view/context/branch"
+     id="branch-display">
     The official Bazaar branch is:
     <img src="/@@/branch" class="inline-icon" />
     <a tal:attributes="href branch/fmt:url; title branch/displayname"
@@ -61,7 +62,8 @@
                        title string:Change official branch"
                        ><img src="/@@/edit" class="inline-icon" /></a>
   </p>
-  <p tal:condition="not:view/context/branch">
+  <p tal:condition="not:view/context/branch"
+     id="no-branch-display">
     This series does not have an official Bazaar branch.
      <a tal:attributes="href view/link_branch_url">
        Please set it first.</a></p>
