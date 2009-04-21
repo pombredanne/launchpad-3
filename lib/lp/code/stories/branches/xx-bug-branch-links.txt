@@ -45,7 +45,7 @@ if the user is not logged in, they will be asked to log in.
 
     >>> browser.getLink('Link to a bug report').click()
     >>> browser.title
-    'Link branch ...Klingon support in GNOME Terminal... to a bug report'
+    'Link branch \xe2\x80\x9c~name12/gnome-terminal/klingon\xe2\x80\x9d to a bug report'
 
 When linking from a branch to a bug, the bug widget is used.  This
 requires the user to enter a bug number.

@@ -98,7 +98,7 @@ time goes on.
     date_created: ...
     date_last_modified: ...
     dependent_branches_collection_link: u'.../~eric/fooix/trunk/dependent_branches'
-    display_name: u'The Fooix Trunk'
+    display_name: u'~eric/fooix/trunk'
     landing_candidates_collection_link: u'.../~eric/fooix/trunk/landing_candidates'
     landing_targets_collection_link: u'.../~eric/fooix/trunk/landing_targets'
     last_scanned: None
@@ -107,6 +107,7 @@ time goes on.
     mirror_status_message: None
     name: u'trunk'
     owner_link: u'.../~eric'
+    private: False
     project_link: u'.../fooix'
     registrant_link: u'.../~eric'
     repository_format: None

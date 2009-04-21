@@ -270,13 +270,8 @@ If no branch is found for the specified URL, getByUrl returns None.
 
 == Branch names ==
 
-Branches have a display name that is the Branch.title if it's provided, and the
-unique_name otherwise.
+Branches have a display name that is the unique_name otherwise.
 
-    >>> titled_branch = factory.makeAnyBranch(
-    ...     title=factory.getUniqueString())
-    >>> titled_branch.displayname == titled_branch.title
-    True
     >>> untitled_branch = factory.makeAnyBranch(title=None)
     >>> untitled_branch.displayname == untitled_branch.unique_name
     True

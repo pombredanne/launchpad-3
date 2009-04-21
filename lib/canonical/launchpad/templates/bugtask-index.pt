@@ -461,7 +461,9 @@ function update_bug_duplicate(data) {
           <tal:is-comment
               define="comment comment_or_activity/comment|nothing"
               condition="comment">
-            <tal:comment-box condition="comment/can_be_shown">
+            <tal:comment-box condition="python: comment.can_be_shown and
+                                       (view.user_is_admin or
+                                       comment.visible)">
               <metal:comment-box
                   metal:use-macro="context/@@bugcomment-macros/comment-box" />
             </tal:comment-box>
