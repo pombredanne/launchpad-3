@@ -34,7 +34,7 @@ class ImportQueueErrorOutputTest:
 
     def _checkOutputPanel(self, client, panel_xpath):
         client.waits.forElement(xpath=panel_xpath, timeout=u'5000')
-        # XXX: Check contents
+        # XXX Jeroen Vermeulen 2009-04-21: Check panel contents here!
 
     def __call__(self):
         """Run test.
