@@ -30,6 +30,7 @@ automatically authorized:
     ...     trust_root='http://launchpad.dev/',
     ...     displayname='Test RP', description='A test RP',
     ...     auto_authorize=True)
+    >>> logout()
 
 If we are not logged in, automatically authorized sites act the same
 as normal ones, and the user is presented with the login page:
