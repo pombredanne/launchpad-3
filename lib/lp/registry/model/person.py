@@ -1987,7 +1987,6 @@ class Person(
         else:
             email.status = EmailAddressStatus.VALIDATED
             # Automated processes need access to set the account().
-            removeSecurityProxy(email).accountID = self.accountID
             getUtility(IHWSubmissionSet).setOwnership(email)
         # Now that we have validated the email, see if this can be
         # matched to an existing RevisionAuthor.
@@ -2029,9 +2028,6 @@ class Person(
                 "Activated when the preferred email was set.",
                 password=self.password,
                 preferred_email=email)
-        # Anonymous users may claim their profile; remove the proxy
-        # to set the account.
-        removeSecurityProxy(email).accountID = self.accountID
         self._setPreferredEmail(email)
 
     def _setPreferredEmail(self, email):

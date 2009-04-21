@@ -100,7 +100,7 @@ class TestRevisionKarma(TestCaseWithFactory):
 
         # Now link the revision author to the author.
         author.validateAndEnsurePreferredEmail(
-            EmailAddressSet().new(email, author))
+            EmailAddressSet().new(email, author, account=author.account))
         transaction.commit()
         # Now that the revision author is linked to the person, the revision
         # needs karma allocated.
