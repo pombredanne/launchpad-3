@@ -116,6 +116,15 @@ class SlaveOnlyDatabasePolicy(BaseDatabasePolicy):
             name, SLAVE_FLAVOR)
 
 
+def LaunchpadDatabasePolicyFactory(request):
+    """Return the Launchpad IDatabasePolicy for the current appserver state.
+    """
+    if config.launchpad.read_only:
+        return ReadOnlyLaunchpadDatabasePolicy(request)
+    else:
+        return LaunchpadDatabasePolicy(request)
+
+
 class LaunchpadDatabasePolicy(BaseDatabasePolicy):
     """Default database policy for web requests.
 
@@ -246,6 +255,22 @@ class SSODatabasePolicy(BaseDatabasePolicy):
             raise DisallowedStore(name, flavor)
 
         return super(SSODatabasePolicy, self).getStore(name, flavor)
+
+
+class ReadOnlyLaunchpadDatabasePolicy(BaseDatabasePolicy):
+    """Policy for Launchpad web requests when running in read-only mode.
+
+    Access to the lpmain master store is blocked.
+    """
+    def getStore(self, name, flavor):
+        if name == AUTH_STORE and flavor == DEFAULT_FLAVOR:
+            flavor = MASTER_FLAVOR
+        elif name == MAIN_STORE:
+            if flavor == MASTER_FLAVOR:
+                raise ReadOnlyModeDisallowedStore(name, flavor)
+            flavor = SLAVE_FLAVOR
+        return super(ReadOnlyLaunchpadDatabasePolicy, self).getStore(
+            name, flavor)
 
 
 class WhichDbView(LaunchpadView):

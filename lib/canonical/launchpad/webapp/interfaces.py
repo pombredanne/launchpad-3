@@ -842,6 +842,12 @@ class DisallowedStore(Exception):
     """
 
 
+class ReadOnlyModeDisallowedStore(DisallowedStore):
+    """A request was made to access a Store that cannot be granted
+    because we are running in read-only mode.
+    """
+
+
 class IStoreSelector(Interface):
     """Get a Storm store with a desired flavor.
 
