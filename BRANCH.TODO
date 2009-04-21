@@ -7,6 +7,9 @@ Landing bzr 1.14:
  - make build needs zlib1g-dev
    - patch launchpad-dependencies
    - file RT to get it installed everywhere
+   - CVS: missing sqlite?
+   - svn_oo: expecting opt_revision_kind object for rich compare
+   
  - looks like we need to update bzr-loom
    * sent off to pqm
  - the hooks changes break a _lot_ of tests.
