@@ -327,6 +327,7 @@ class ValidateGPGKeyView(BaseAuthTokenView, LaunchpadFormView):
         """
         emailset = getUtility(IEmailAddressSet)
         requester = self.context.requester
+        account = self.context.requester_account
         emails = chain(requester.validatedemails, [requester.preferredemail])
         # Must remove the security proxy because the user may not be logged in
         # and thus won't be allowed to view the requester's email addresses.
@@ -350,7 +351,7 @@ class ValidateGPGKeyView(BaseAuthTokenView, LaunchpadFormView):
                 else:
                     # The email is not yet registered, so we register it for
                     # our user.
-                    email = emailset.new(uid, requester)
+                    email = emailset.new(uid, requester, account=account)
                     created.append(uid)
 
         return created, existing_and_owned_by_others

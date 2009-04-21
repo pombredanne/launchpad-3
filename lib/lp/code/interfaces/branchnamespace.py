@@ -6,8 +6,8 @@
 __metaclass__ = type
 __all__ = [
     'get_branch_namespace',
-    'IBranchCreationPolicy',
     'IBranchNamespace',
+    'IBranchNamespacePolicy',
     'IBranchNamespaceSet',
     'InvalidNamespace',
     'lookup_branch_namespace',
@@ -69,7 +69,7 @@ class IBranchNamespace(Interface):
         """Is 'name' already used in this namespace?"""
 
 
-class IBranchCreationPolicy(Interface):
+class IBranchNamespacePolicy(Interface):
     """Methods relating to branch creation and validation."""
 
     def getPrivacySubscriber():
@@ -85,8 +85,16 @@ class IBranchCreationPolicy(Interface):
         :return: A Boolean value.
         """
 
-    def areNewBranchesPrivate():
-        """Are new branches by the user created private?
+    def canBranchesBePrivate():
+        """Can branches by the user be private in this namespace?
+
+        No check is made about whether or not a user can create branches.
+
+        :return: A Boolean value.
+        """
+
+    def canBranchesBePublic():
+        """Can branches by the user be public in this namespace?
 
         No check is made about whether or not a user can create branches.
 

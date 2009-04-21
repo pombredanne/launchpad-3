@@ -270,7 +270,8 @@ Or I can look for anything that is approved.
 If the branch is private it is not visible to an unpriveleged user.
 
     >>> login('admin@canonical.com')
-    >>> fixit_proposal.source_branch.private = True
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> removeSecurityProxy(fixit_proposal.source_branch).private = True
     >>> branch_owner = fixit_proposal.source_branch.owner
     >>> logout()
 
@@ -289,7 +290,7 @@ the proposal if they have allowed the API to access private bits.
     http://.../~source/fooix/fix-it/+merge/1 - Approved
 
     >>> login('foo.bar@canonical.com')
-    >>> fixit_proposal.source_branch.private = False
+    >>> removeSecurityProxy(fixit_proposal.source_branch).private = False
     >>> logout()
 
 
