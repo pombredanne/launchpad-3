@@ -178,7 +178,7 @@ transitioned to their permanent states.
 Private membership teams
 ------------------------
 
-When a private membership team has a mailing list, its messages too can be
+When a private membership team has a mailing list, its messages can also be
 held for moderator approval.
 
     >>> from lp.registry.interfaces.person import (
