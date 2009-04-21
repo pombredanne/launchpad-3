@@ -54,16 +54,15 @@ class CreateBugParams:
     """The parameters used to create a bug."""
 
     def __init__(self, owner, title, comment=None, description=None, msg=None,
-                 status=None, assignee=None, datecreated=None,
-                 security_related=False, private=False, subscribers=(),
-                 binarypackagename=None, tags=None, subscribe_reporter=True):
+                 status=None, datecreated=None, security_related=False,
+                 private=False, subscribers=(), binarypackagename=None,
+                 tags=None, subscribe_reporter=True):
         self.owner = owner
         self.title = title
         self.comment = comment
         self.description = description
         self.msg = msg
         self.status = status
-        self.assignee = assignee
         self.datecreated = datecreated
         self.security_related = security_related
         self.private = private
