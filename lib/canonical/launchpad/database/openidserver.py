@@ -114,13 +114,6 @@ class OpenIDAuthorizationSet:
         return result
 
 
-AUTO_AUTHORIZE_TRUST_ROOTS = set([
-        u'https://pastebin.canonical.com/',
-        u'https://directory.canonical.com/',
-        u'https://wiki.canonical.com/',
-        ])
-
-
 class OpenIDRPConfig(SQLBase):
     implements(IOpenIDRPConfig)
 
@@ -137,6 +130,7 @@ class OpenIDRPConfig(SQLBase):
         default=PersonCreationRationale.OWNER_CREATED_UNKNOWN_TRUSTROOT)
     can_query_any_team = BoolCol(
         dbName='can_query_any_team', notNull=True, default=False)
+    auto_authorize = BoolCol()
 
     def allowed_sreg(self):
         value = self._allowed_sreg
@@ -150,13 +144,6 @@ class OpenIDRPConfig(SQLBase):
         self._allowed_sreg = ','.join(sorted(value))
 
     allowed_sreg = property(allowed_sreg, _set_allowed_sreg)
-
-    @property
-    def auto_authorize(self):
-        """See `IOpenIDRPConfig`"""
-        # XXX 2009-04-16 jamesh bug=362149: a related merge to
-        # db-devel is needed to switch this to a database column.
-        return self.trust_root in AUTO_AUTHORIZE_TRUST_ROOTS
 
 
 class OpenIDRPConfigSet:
@@ -175,7 +162,7 @@ class OpenIDRPConfigSet:
             allowed_sreg=None,
             creation_rationale=
                 PersonCreationRationale.OWNER_CREATED_UNKNOWN_TRUSTROOT,
-            can_query_any_team=False):
+            can_query_any_team=False, auto_authorize=False):
         """See `IOpenIDRPConfigSet`"""
         if allowed_sreg:
             allowed_sreg = ','.join(sorted(allowed_sreg))
@@ -186,7 +173,8 @@ class OpenIDRPConfigSet:
             trust_root=trust_root, displayname=displayname,
             description=description, logo=logo,
             _allowed_sreg=allowed_sreg, creation_rationale=creation_rationale,
-            can_query_any_team=can_query_any_team)
+            can_query_any_team=can_query_any_team,
+            auto_authorize=auto_authorize)
 
     def get(self, id):
         """See `IOpenIDRPConfigSet`"""
