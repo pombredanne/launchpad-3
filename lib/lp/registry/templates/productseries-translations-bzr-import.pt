@@ -54,8 +54,8 @@
      id="branch-display">
     The official Bazaar branch is:
     <img src="/@@/branch" class="inline-icon" />
-    <a tal:attributes="href branch/fmt:url; title branch/displayname"
-       tal:content="branch/bzr_identity">
+    <a tal:attributes="href branch/fmt:url; title branch/bzr_identity"
+       tal:content="branch/displayname">
           branchname
     </a>
     <a tal:attributes="href view/link_branch_url;
