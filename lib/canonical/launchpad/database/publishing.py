@@ -1238,12 +1238,16 @@ class PublishingSet:
         if not source_ids:
             return {}
 
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        source_pubs = store.find(
+            SourcePackagePublishingHistory,
+            SourcePackagePublishingHistory.id.is_in(source_ids),
+            SourcePackagePublishingHistory.archive == archive)
+
         source_build_statuses = {}
-        for source_id in source_ids:
-            source_pub = SourcePackagePublishingHistory.get(source_id)
-            if source_pub.archive == archive:
-                status_summary = source_pub.getStatusSummaryForBuilds()
-                source_build_statuses[source_id] = status_summary
+        for source_pub in source_pubs:
+            status_summary = source_pub.getStatusSummaryForBuilds()
+            source_build_statuses[source_pub.id] = status_summary
 
         return source_build_statuses
 
