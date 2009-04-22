@@ -5,11 +5,13 @@
 __metaclass__ = type
 __all__ = ['TestBranchView', 'test_suite']
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from textwrap import dedent
 import unittest
 
 import pytz
+import simplejson
+
 
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -18,7 +20,8 @@ from canonical.config import config
 from canonical.database.constants import UTC_NOW
 
 from lp.code.browser.branch import (
-    BranchAddView, BranchMirrorStatusView, BranchReviewerEditView, BranchView)
+    BranchAddView, BranchMirrorStatusView, BranchReviewerEditView,
+    BranchSparkView, BranchView)
 from lp.code.browser.branchlisting import PersonOwnedBranchesView
 from canonical.launchpad.helpers import truncate_text
 from lp.code.interfaces.branch import BranchLifecycleStatus, BranchType
@@ -260,6 +263,37 @@ class TestBranchBzrIdentity(TestCaseWithFactory):
         navigator = view.branches()
         [decorated_branch] = navigator.branches()
         self.assertEqual("lp://dev/fooix", decorated_branch.bzr_identity)
+
+
+class TestBranchSparkView(TestCaseWithFactory):
+    """Tests for the BranchSparkView class."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_empty_branch(self):
+        # A branch with no commits produces...
+        branch = self.factory.makeAnyBranch()
+        view = BranchSparkView(branch, LaunchpadTestRequest())
+        json = simplejson.loads(view.render())
+        self.assertEqual(0, json['count'])
+        self.assertEqual('empty branch', json['last_commit'])
+
+    def test_old_commits(self):
+        # A branch with a commit older than the COMMIT_DAYS will create a list
+        # of commits that all say zero.
+        branch = self.factory.makeAnyBranch()
+        revision = self.factory.makeRevision(
+            revision_date=datetime(
+                year=2008, month=9, day=10, tzinfo=pytz.UTC))
+        branch.createBranchRevision(1, revision)
+        branch.updateScannedDetails(revision, 1)
+
+        view = BranchSparkView(branch, LaunchpadTestRequest())
+        json = simplejson.loads(view.render())
+
+        self.assertEqual(0, json['count'])
+        self.assertEqual([0] * BranchSparkView.COMMIT_DAYS, json['commits'])
+        self.assertEqual('2008-09-10', json['last_commit'])
 
 
 def test_suite():
