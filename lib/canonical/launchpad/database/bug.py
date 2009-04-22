@@ -220,6 +220,8 @@ class Bug(SQLBase):
                            intermediateTable='BugMessage',
                            prejoins=['owner'],
                            orderBy=['datecreated', 'id'])
+    bug_messages = SQLMultipleJoin(
+        'BugMessage', joinColumn='bug',orderBy='id')
     watches = SQLMultipleJoin(
         'BugWatch', joinColumn='bug', orderBy=['bugtracker', 'remotebug'])
     cves = SQLRelatedJoin('Cve', intermediateTable='BugCve',

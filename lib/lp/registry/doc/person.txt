@@ -130,40 +130,30 @@ createPersonAndEmail() method.
 
 The user can add additional email addresses. The
 validateAndEnsurePreferredEmail() method verifies that the email belongs
-to the person, and it updates the email address's status and account.
+to the person, and it updates the email address's status.
 
     >>> emailset = getUtility(IEmailAddressSet)
-    >>> validated_email = emailset.new('validated@canonical.com', p)
+    >>> validated_email = emailset.new(
+    ...     'validated@canonical.com', p, account=p.account)
     >>> validated_email.status
     <DBItem EmailAddressStatus.NEW...
-
-    >>> print validated_email.account
-    None
 
     >>> login('randomuser@randomhost.com')
     >>> p.validateAndEnsurePreferredEmail(validated_email)
     >>> validated_email.status
     <DBItem EmailAddressStatus.VALIDATED...
 
-    >>> validated_email.accountID == p.accountID
-    True
-
 The user can add a new address and set it as the preferred address. The
-setPreferredEmail() method updated the address's status and account.
+setPreferredEmail() method updated the address's status.
 
-    >>> preferred_email = emailset.new('preferred@canonical.com', p)
+    >>> preferred_email = emailset.new(
+    ...     'preferred@canonical.com', p, account=p.account)
     >>> preferred_email.status
     <DBItem EmailAddressStatus.NEW...
-
-    >>> print preferred_email.account
-    None
 
     >>> p.setPreferredEmail(preferred_email)
     >>> preferred_email.status
     <DBItem EmailAddressStatus.PREFERRED...
-
-    >>> preferred_email.accountID == p.accountID
-    True
 
     >>> login(ANONYMOUS)
 

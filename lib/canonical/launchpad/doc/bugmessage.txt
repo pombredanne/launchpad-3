@@ -155,3 +155,12 @@ to compare this value for every bug in a large set.
     >>> bug_one.date_last_message == test_message.datecreated
     True
 
+
+== Retrieving IMessage.id from IBugMessage ==
+
+Each IBugMessage has a messageID attribute, which allows access
+to IBugMessage.IMessage.id without the additional query.
+
+    >>> bugmessage_one = bugmessageset.get(1)
+    >>> bugmessage_one.messageID == bugmessage_one.message.id
+    True
