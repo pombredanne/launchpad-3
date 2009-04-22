@@ -166,10 +166,11 @@ class IPackagesetSet(Interface):
         Return all package sets that directly or indirectly include the
         given source package name.
 
-        :param sourcepackagename: the included source package name, can be
+        :param sourcepackagename: the included source package name; can be
             either a string or a `ISourcePackageName`.
-        :param direct_inclusion: if this flag is set to True only sets
-            directly including this source package name will be considered.
+        :param direct_inclusion: if this flag is set to True, then only
+            package sets that directly include this source package name will
+            be considered.
 
         :raises NoSuchSourcePackageName: if a source package with the given
             name cannot be found.
