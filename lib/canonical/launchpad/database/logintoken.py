@@ -53,7 +53,7 @@ class LoginToken(SQLBase):
     @property
     def requester_account(self):
         """See `ILoginToken`."""
-        if self.requester is None:
+        if self.requester is None or self.requester.account is None:
             return None
         return IMasterObject(self.requester.account)
 
