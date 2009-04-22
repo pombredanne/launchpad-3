@@ -316,9 +316,9 @@ class BuildRecordsView(LaunchpadView):
                 name = 'All states'
 
             if state == self.state:
-                selected = True
+                selected = 'selected'
             else:
-                selected = False
+                selected = None
 
             self.available_states.append(
                 dict(name=name, value=tag, selected=selected)

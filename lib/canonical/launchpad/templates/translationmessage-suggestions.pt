@@ -48,6 +48,7 @@
       </div>
       <label
         style="white-space: normal"
+        lang="" id="" dir="" for=""
         tal:condition="context/user_is_official_translator"
         tal:attributes="
           lang submission/language/dashedcode;
