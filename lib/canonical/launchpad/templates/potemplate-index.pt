@@ -6,16 +6,19 @@
   xml:lang="en"
   lang="en"
   dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/onecolumn"
   i18n:domain="rosetta"
 >
 
 <body>
-
-<metal:leftportlets fill-slot="portlets">
-  <div tal:replace="structure context/@@+portlet-details" />
-  <div tal:replace="structure context/@@+portlet-preflangs" />
-</metal:leftportlets>
+<div metal:fill-slot="head_epilogue">
+  <style type="text/css">
+  .inline-icon {
+    position: relative;
+    bottom: -3px;
+    }
+  </style>
+</div>
 
 <div metal:fill-slot="main">
   <h1>
@@ -37,14 +40,18 @@
     <p tal:condition="context/description">
       <tal:description content="context/description">A brief paragraph
         describing the potemplate would go here.</tal:description>
-      <a href="+edit"><img src="/@@/edit" title="Update this description"
-        /></a>
+      <a href="+edit"><img src="/@@/edit"
+                           title="Update this description"
+                           class="inline-icon" /></a>
     </p>
     <p tal:condition="not: context/description">
-      This template has no description, you can <a href="+edit">create
-      one</a> now.
+      This template has no description. <a href="+edit">Create it now!</a>
     </p>
-    <p tal:condition="context/relatives_by_source">
+    <p tal:condition="context/owner" id="potemplate-owner">
+      This template is owned by 
+      <a tal:replace="structure context/owner/fmt:link">owner name</a>
+    </p>
+    <p tal:condition="context/relatives_by_source" id="potemplate-relatives">
       Other templates from the same source:
       <tal:relatives_by_source repeat="pot context/relatives_by_source">
         <a href=""
@@ -53,7 +60,7 @@
         </a>.
       </tal:relatives_by_source>
     </p>
-    <p tal:condition="context/relatives_by_name">
+    <p tal:condition="context/relatives_by_name"  id="potemplate-rel-by-name">
       See the same template in:
       <tal:relatives_by_name repeat="pot context/relatives_by_name">
         <tal:product condition="pot/productseries">
