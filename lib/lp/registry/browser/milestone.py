@@ -32,6 +32,8 @@ from canonical.launchpad.webapp import (
 
 from canonical.widgets import DateWidget
 
+from lp.registry.browser.product import ProductDownloadFileMixin
+
 
 class MilestoneSetNavigation(GetitemNavigation):
 
@@ -97,7 +99,7 @@ class MilestoneOverviewNavigationMenu(NavigationMenu):
     links = ()
 
 
-class MilestoneView(LaunchpadView):
+class MilestoneView(LaunchpadView, ProductDownloadFileMixin):
 
     def __init__(self, context, request):
         """See `LaunchpadView`.
@@ -106,8 +108,8 @@ class MilestoneView(LaunchpadView):
         and release (if it exists) are accessible are attributes. The context
         attribute will always be the milestone.
 
-        :param context: `IMilestone` or `IProductRelease`
-        :param request: `ILaunchpadRequest`
+        :param context: `IMilestone` or `IProductRelease`.
+        :param request: `ILaunchpadRequest`.
         """
         super(LaunchpadView, self).__init__(context, request)
         if IMilestone.providedBy(context):
@@ -117,6 +119,37 @@ class MilestoneView(LaunchpadView):
             self.milestone = context.milestone
             self.release = context
         self.context = self.milestone
+
+    def initialize(self):
+        """See `LaunchpadFormView`."""
+        self.form = self.request.form
+        self.processDeleteFiles()
+
+    def getReleases(self):
+        """See `ProductDownloadFileMixin`."""
+        return set([self.release])
+
+    @property
+    def target(self):
+        """The `IProduct`, `IProject`, or `IDistribution`."""
+        if self.milestone.distribution is not None:
+            return self.milestone.distribution
+        elif self.milestone.product is not None:
+            return self.milestone.product
+        else:
+            # This is an `IProjectMilestone`.
+            return self.milestone.target
+
+    @property
+    def target_series(self):
+        """The `IProductSeries` or `IDistroseries`."""
+        if self.milestone.distribution is not None:
+            return self.milestone.distroseries
+        elif self.milestone.product is not None:
+            return self.milestone.productseries
+        else:
+            # This is an `IProjectMilestone`. It does not have a series.
+            return None
 
     # Listify and cache the specifications and bugtasks to avoid making
     # the same query over and over again when evaluating in the template.
@@ -149,17 +182,17 @@ class MilestoneView(LaunchpadView):
     def bugtask_count_text(self):
         count = len(self.bugtasks)
         if count == 1:
-            return "1 bug targeted"
+            return '<strong>1 bug </strong>'
         else:
-            return "%d bugs targeted" % count
+            return '<strong>%d bugs</strong>' % count
 
     @property
     def specification_count_text(self):
         count = len(self.specifications)
         if count == 1:
-            return "1 blueprint targeted"
+            return '<strong>1 blueprint</strong>'
         else:
-            return "%d blueprints targeted" % count
+            return '<strong>%d blueprints</strong>' % count
 
     @property
     def is_project_milestone(self):
@@ -196,6 +229,10 @@ class MilestoneAddView(LaunchpadFormView):
     @property
     def action_url(self):
         return "%s/+addmilestone" % canonical_url(self.context)
+
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
 
 
 class MilestoneEditView(LaunchpadEditFormView):
@@ -253,6 +290,10 @@ class MilestoneEditView(LaunchpadEditFormView):
     def update_action(self, action, data):
         self.updateContextFromData(data)
         self.next_url = canonical_url(self.context)
+
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
 
 
 class MilestoneDeleteView(LaunchpadFormView):
