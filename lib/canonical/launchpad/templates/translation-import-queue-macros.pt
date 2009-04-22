@@ -10,31 +10,18 @@
 >
 <body>
   <metal:translation-import-queue define-macro="translation-import-queue-content">
-    <script type="text/javascript" src="/+icing-contrib/yui/3.0.0pr2/build/yui/yui.js"></script>
-    <script type="text/javascript" src="/+icing-contrib/yui/3.0.0pr2/build/dom/dom-base.js"></script>
-    <script type="text/javascript" src="/+icing-contrib/yui/3.0.0pr2/build/dom/selector.js"></script>
-    <script type="text/javascript" src="/+icing-contrib/yui/3.0.0pr2/build/event/event.js"></script>
-    <script type="text/javascript" src="/+icing-contrib/yui/3.0.0pr2/build/io/io.js"></script>
-    <script type="text/javascript" src="/+icing-contrib/yui/3.0.0pr2/build/node/node-base.js"></script>
-    <script type="text/javascript" src="/+icing/launchpad-ajax.js"></script>
-
-
-    <script type="text/javascript" src="/+icing/launchpad-ajax.js"></script>
-
     <script
       type="text/javascript"
+      tal:condition="devmode"
       tal:attributes="src string:${icingroot}/build/translations/translations.js">
     </script>
 
       <script type="text/javascript">
-          YUI().use(
-              'yui-base', 'event', 'dom-base', 'selector', 'io-base',
-              'io-form', 'io-queue', 'io-xdr', 'node-base', 'translations',
-              function(Y) {
-                  Y.on('domready', function(e) {
-                      Y.translations.initialize_import_queue_page(Y);
-                  });
+          YUI().use( 'translations', 'event', function(Y) {
+              Y.on('domready', function(e) {
+                  Y.translations.initialize_import_queue_page(Y);
               });
+          });
       </script>
 
       <!-- Filtering options. -->
