@@ -9,10 +9,20 @@ import unittest
 
 from canonical.launchpad.testing.systemdocs import (
     LayeredDocFileSuite, setUp, tearDown)
-from canonical.testing import LaunchpadFunctionalLayer
+from canonical.testing import (
+    DatabaseFunctionalLayer, LaunchpadFunctionalLayer)
 
 
 here = os.path.dirname(os.path.realpath(__file__))
+
+# The default layer of view tests is the DatabaseFunctionalLayer. Tests
+# that require something special like the librarian or mailman must run
+# on a layer that sets those services up.
+special_test_layer = {
+    'milestone-views.txt': LaunchpadFunctionalLayer,
+    'person-views.txt': LaunchpadFunctionalLayer,
+    'user-to-user-views.txt': LaunchpadFunctionalLayer,
+}
 
 
 def test_suite():
@@ -27,9 +37,12 @@ def test_suite():
     filenames.sort()
     for filename in filenames:
         path = filename
+        if path in special_test_layer:
+            layer = special_test_layer[path]
+        else:
+            layer = DatabaseFunctionalLayer
         one_test = LayeredDocFileSuite(
-            path, setUp=setUp, tearDown=tearDown,
-            layer=LaunchpadFunctionalLayer,
+            path, setUp=setUp, tearDown=tearDown, layer=layer,
             stdout_logging_level=logging.WARNING
             )
         suite.addTest(one_test)
