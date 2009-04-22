@@ -281,6 +281,9 @@ class ICodeImportSet(Interface):
     def getByCVSDetails(cvs_root, cvs_module):
         """Get the CodeImport with the specified CVS details."""
 
+    def getByGitDetails(git_repo_url):
+        """Get the CodeImport with the specified Git details."""
+
     def getBySVNDetails(svn_branch_url):
         """Get the CodeImport with the specified SVN details."""
 

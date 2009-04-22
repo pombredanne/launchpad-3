@@ -295,6 +295,10 @@ class CodeImportSet:
         return CodeImport.selectOneBy(
             cvs_root=cvs_root, cvs_module=cvs_module)
 
+    def getByGitDetails(self, git_repo_url):
+        """See `ICodeImportSet`."""
+        return CodeImport.selectOneBy(git_repo_url=git_repo_url)
+
     def getBySVNDetails(self, svn_branch_url):
         """See `ICodeImportSet`."""
         return CodeImport.selectOneBy(svn_branch_url=svn_branch_url)
