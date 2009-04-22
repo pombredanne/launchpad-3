@@ -122,9 +122,8 @@ Then we try to change milestone2's name to milestone3.
     ...     'http://launchpad.dev/ubuntu/+milestone/milestone2/+edit')
     >>> test_browser.getControl('Name').value = 'milestone3'
     >>> test_browser.getControl('Update').click()
-    >>> print milestones_in_portlet(test_browser)
+    >>> print extract_text(find_main_content(test_browser.contents).h1)
     milestone3
-    milestone1
 
 Now we do the same for a product instead of a distro.
 
@@ -183,9 +182,8 @@ Then we try to change milestone2's name to milestone3.
     ...     'http://launchpad.dev/alsa-utils/+milestone/milestone2/+edit')
     >>> test_browser.getControl('Name').value = 'milestone3'
     >>> test_browser.getControl('Update').click()
-    >>> print milestones_in_portlet(test_browser)
+    >>> print extract_text(find_main_content(test_browser.contents).h1)
     milestone3
-    milestone1
 
 Now let's mark milestone3 as inactive to ensure it hides the milestone
 
@@ -193,8 +191,8 @@ Now let's mark milestone3 as inactive to ensure it hides the milestone
     ...     'http://launchpad.dev/alsa-utils/+milestone/milestone3/+edit')
     >>> test_browser.getControl('Active').click()
     >>> test_browser.getControl('Update').click()
-    >>> print milestones_in_portlet(test_browser)
-    milestone1
+    >>> print extract_text(find_main_content(test_browser.contents).h1)
+    milestone3
 
 
 == Admin Edit Functionality ==
@@ -214,10 +212,11 @@ then verify it works correctly by checking the portlet details.
     >>> admin_browser.getControl(name='field.distroseries').displayValue = [
     ...     'ubuntu warty']
     >>> admin_browser.getControl('Update').click()
-    >>> print_portlet_links(admin_browser.contents,
-    ...     'Milestone milestone3 for Ubuntu details')
-    Ubuntu: /ubuntu
-    Warty: /ubuntu/warty
+    >>> table = find_tag_by_id(admin_browser.contents, 'Release-details')
+    >>> for tr in table.findAll('tr'):
+    ...     print extract_text(tr)
+    Project: Ubuntu
+    Series: Warty ...
 
 
 === Test Product Series ===
@@ -239,10 +238,11 @@ and then verify it works correctly by checking the portlet details.
     >>> admin_browser.getControl(name='field.productseries').displayValue = [
     ...     'alsa-utils main']
     >>> admin_browser.getControl('Update').click()
-    >>> print_portlet_links(admin_browser.contents,
-    ...     'Milestone milestone1 for alsa-utils details')
-    alsa-utils: /alsa-utils
-    main: /alsa-utils/main
+    >>> table = find_tag_by_id(admin_browser.contents, 'Release-details')
+    >>> for tr in table.findAll('tr'):
+    ...     print extract_text(tr)
+    Project: alsa-utils ...
+    Series: main ...
 
 
 == Milestone bug subscriptions ==

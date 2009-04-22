@@ -129,6 +129,28 @@ class MilestoneView(LaunchpadView, ProductDownloadFileMixin):
         """See `ProductDownloadFileMixin`."""
         return set([self.release])
 
+    @property
+    def target(self):
+        """The `IProduct`, `IProject`, or `IDistribution`."""
+        if self.milestone.distribution is not None:
+            return self.milestone.distribution
+        elif self.milestone.product is not None:
+            return self.milestone.product
+        else:
+            # This is an `IProjectMilestone`.
+            return self.milestone.target
+
+    @property
+    def target_series(self):
+        """The `IProductSeries` or `IDistroseries`."""
+        if self.milestone.distribution is not None:
+            return self.milestone.distroseries
+        elif self.milestone.product is not None:
+            return self.milestone.productseries
+        else:
+            # This is an `IProjectMilestone`. It does not have a series.
+            return None
+
     # Listify and cache the specifications and bugtasks to avoid making
     # the same query over and over again when evaluating in the template.
     @cachedproperty

@@ -33,12 +33,13 @@
     <table id="Release-details" style="margin-bottom: 1em;">
       <tr>
         <th>Project:</th>
-        <td><tal:link replace="structure context/product/fmt:link" /></td>
+        <td><tal:link replace="structure view/target/fmt:link" /></td>
       </tr>
       <tr>
         <th>Series:</th>
-        <td><a tal:attributes="href context/productseries/fmt:url"
-          tal:content="context/productseries/displayname" /></td>
+        <td><a tal:attributes="href view/target_series/fmt:url"
+          tal:content="view/target_series/displayname"
+          tal:condition="view/target_series" /></td>
       </tr>
       <tr>
         <th>Release version:</th>
@@ -301,10 +302,6 @@
         </tr>
       </tbody>
     </table>
-
-    <div style="margin-top: .4em;">
-        <a tal:replace="structure milestone_menu/subscribe/fmt:link-icon">Subcribe</a>
-    </div>
   </tal:has_bugtasks>
 
   <tal:neither_bugs_nor_specs condition="not: view/has_bugs_or_specs">
@@ -316,19 +313,24 @@
     </p>
   </tal:neither_bugs_nor_specs>
 
+  <div style="margin-top: .4em;">
+    <a tal:replace="structure milestone_menu/subscribe/fmt:link-icon">Subcribe</a>
+  </div>
+
+
   <h2 style="margin-top: 2em;">Related milestones and releases</h2>
 
   <ul>
     <li>
       <a tal:attributes="
-        href view/milestone/product/fmt:url/+milestones">All milestones for the
-        <tal:project replace="view/milestone/product/displayname" /> project</a>
+        href view/target/fmt:url/+milestones">All milestones for the
+        <tal:project replace="view/target/displayname" /> project</a>
     </li>
-    <li>
+    <li tal:condition="view/target_series">
       <a tal:attributes="
-        href view/milestone/productseries/fmt:url">All releases for the
-        <tal:project replace="view/milestone/product/displayname" />
-        <tal:project replace="view/milestone/productseries/displayname" /> series</a>
+        href view/target_series/fmt:url">All releases for the
+        <tal:project replace="view/target/displayname" />
+        <tal:project replace="view/target_series/displayname" /> series</a>
     </li>
   </ul>
 
