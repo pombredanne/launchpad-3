@@ -29,7 +29,7 @@ from lp.code.interfaces.branch import (
     BranchCreatorNotOwner, BranchExists, BranchLifecycleStatus,
     BranchMergeControlStatus, IBranch, NoSuchBranch)
 from lp.code.interfaces.branchnamespace import (
-    IBranchCreationPolicy, IBranchNamespace, InvalidNamespace)
+    IBranchNamespace, IBranchNamespacePolicy, InvalidNamespace)
 from lp.code.interfaces.branchsubscription import (
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
     CodeReviewNotificationLevel)
@@ -83,7 +83,8 @@ class _BaseNamespace:
             distroseries = sourcepackage.distroseries
             sourcepackagename = sourcepackage.sourcepackagename
 
-        private = self.areNewBranchesPrivate()
+        # If branches can be private, make them private initially.
+        private = self.canBranchesBePrivate()
 
         branch = Branch(
             registrant=registrant,
@@ -201,9 +202,13 @@ class _BaseNamespace:
         else:
             return True
 
-    def areNewBranchesPrivate(self):
+    def canBranchesBePrivate(self):
         """See `IBranchNamespace`."""
-        raise NotImplementedError(self.areNewBranchesPrivate)
+        raise NotImplementedError(self.canBranchesBePrivate)
+
+    def canBranchesBePublic(self):
+        """See `IBranchNamespace`."""
+        raise NotImplementedError(self.canBranchesBePublic)
 
     def getPrivacySubscriber(self):
         """See `IBranchNamespace`."""
@@ -223,7 +228,7 @@ class PersonalNamespace(_BaseNamespace):
     Branches in this namespace have names like '~foo/+junk/bar'.
     """
 
-    implements(IBranchNamespace, IBranchCreationPolicy)
+    implements(IBranchNamespace, IBranchNamespacePolicy)
 
     def __init__(self, person):
         self.owner = person
@@ -238,9 +243,13 @@ class PersonalNamespace(_BaseNamespace):
         """See `IBranchNamespace`."""
         return '~%s/+junk' % (self.owner.name,)
 
-    def areNewBranchesPrivate(self):
+    def canBranchesBePrivate(self):
         """See `IBranchNamespace`."""
         return False
+
+    def canBranchesBePublic(self):
+        """See `IBranchNamespace`."""
+        return True
 
     def getPrivacySubscriber(self):
         """See `IBranchNamespace`."""
@@ -263,7 +272,7 @@ class ProductNamespace(_BaseNamespace):
     particular product.
     """
 
-    implements(IBranchNamespace, IBranchCreationPolicy)
+    implements(IBranchNamespace, IBranchNamespacePolicy)
 
     def __init__(self, person, product):
         self.owner = person
@@ -318,7 +327,7 @@ class ProductNamespace(_BaseNamespace):
         base_rule = self.product.getBaseBranchVisibilityRule()
         return base_rule == BranchVisibilityRule.PUBLIC
 
-    def areNewBranchesPrivate(self):
+    def canBranchesBePrivate(self):
         """See `IBranchNamespace`."""
         # If there is a rule for the namespace owner, use that.
         private = (
@@ -331,6 +340,21 @@ class ProductNamespace(_BaseNamespace):
         # PRIVATE_ONLY rule, then the branches are private.
         return len(self._getRelatedPrivatePolicies()) > 0
 
+    def canBranchesBePublic(self):
+        """See `IBranchNamespace`."""
+        # If there is an explicit rule for the namespace owner, use that.
+        rule = self.product.getBranchVisibilityRuleForTeam(self.owner)
+        if rule is not None:
+            return rule != BranchVisibilityRule.PRIVATE_ONLY
+        # If there is another policy that allows public, then branches can be
+        # public.
+        for policy in self._getRelatedPolicies():
+            if policy.rule != BranchVisibilityRule.PRIVATE_ONLY:
+                return True
+        # If the default is public, then we can have public branches.
+        base_rule = self.product.getBaseBranchVisibilityRule()
+        return base_rule == BranchVisibilityRule.PUBLIC
+
 
 class PackageNamespace(_BaseNamespace):
     """A namespace for source package branches.
@@ -339,7 +363,7 @@ class PackageNamespace(_BaseNamespace):
     particular source package in a particular distroseries.
     """
 
-    implements(IBranchNamespace, IBranchCreationPolicy)
+    implements(IBranchNamespace, IBranchNamespacePolicy)
 
     def __init__(self, person, sourcepackage):
         if not config.codehosting.package_branches_enabled:
@@ -363,9 +387,13 @@ class PackageNamespace(_BaseNamespace):
         """See `IBranchNamespace`."""
         return IBranchTarget(self.sourcepackage)
 
-    def areNewBranchesPrivate(self):
+    def canBranchesBePrivate(self):
         """See `IBranchNamespace`."""
         return False
+
+    def canBranchesBePublic(self):
+        """See `IBranchNamespace`."""
+        return True
 
     def getPrivacySubscriber(self):
         """See `IBranchNamespace`."""

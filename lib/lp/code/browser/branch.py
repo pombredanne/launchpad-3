@@ -42,7 +42,7 @@ from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
 
-from lazr.restful.interface import copy_field
+from lazr.restful.interface import copy_field, use_template
 from canonical.launchpad import _
 from canonical.launchpad.browser.feeds import BranchFeedLink, FeedsMixin
 from canonical.launchpad.browser.launchpad import Hierarchy
@@ -69,11 +69,11 @@ from lp.code.interfaces.branchmergeproposal import (
     IBranchMergeProposal, InvalidBranchMergeProposal)
 from lp.code.interfaces.branchsubscription import IBranchSubscription
 from lp.code.interfaces.branchtarget import IBranchTarget
-from lp.code.interfaces.branchvisibilitypolicy import BranchVisibilityRule
 from lp.code.interfaces.codeimportjob import (
     CodeImportJobState, ICodeImportJobWorkflow)
 from lp.code.interfaces.codereviewcomment import ICodeReviewComment
-from lp.code.interfaces.branchnamespace import get_branch_namespace
+from lp.code.interfaces.branchnamespace import (
+    get_branch_namespace, IBranchNamespacePolicy)
 from lp.code.interfaces.branchtarget import IHasBranchTarget
 from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
 from lp.registry.interfaces.person import IPerson, IPersonSet
@@ -499,11 +499,30 @@ class BranchNameValidationMixin:
         self.setFieldError('name', structured(message))
 
 
+class BranchEditSchema(Interface):
+    """Defines the fields for the edit form.
+
+    This is necessary so as to make an editable field for the branch privacy.
+    Normally the field is not editable through the interface in order to stop
+    direct setting of the private attribute, but in this case we actually want
+    the user to be able to edit it.
+    """
+    use_template(IBranch, include=[
+            'owner', 'product', 'name', 'url', 'title', 'summary',
+            'lifecycle_status', 'whiteboard'])
+    private = copy_field(IBranch['private'], readonly=False)
+
+
 class BranchEditFormView(LaunchpadEditFormView):
     """Base class for forms that edit a branch."""
 
-    schema = IBranch
+    schema = BranchEditSchema
     field_names = None
+
+    @property
+    def adapters(self):
+        """See `LaunchpadFormView`"""
+        return {BranchEditSchema: self.context}
 
     @action('Change Branch', name='change')
     def change_action(self, action, data):
@@ -525,6 +544,18 @@ class BranchEditFormView(LaunchpadEditFormView):
                     self.request.response.addNotification(
                         "The project for this branch has been changed to %s "
                         "(%s)" % (new_product.displayname, new_product.name))
+        if 'private' in data:
+            private = data.pop('private')
+            if private != self.context.private:
+                # We only want to show notifications if it actually changed.
+                self.context.setPrivate(private)
+                if private:
+                    self.request.response.addNotification(
+                        "The branch is now private, and only visible to the "
+                        "owner and to subscribers.")
+                else:
+                    self.request.response.addNotification(
+                        "The branch is now publicly accessible.")
         if self.updateContextFromData(data):
             # Only specify that the context was modified if there
             # was in fact a change.
@@ -723,30 +754,16 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
         if branch.branch_type in (BranchType.HOSTED, BranchType.IMPORTED):
             self.form_fields = self.form_fields.omit('url')
 
-        # Disable privacy if the owner of the branch is not allowed to change
-        # the branch from private to public, or is not allowed to have private
-        # branches for the project.
-        product = branch.product
-        # No privacy set for junk branches
-        if product is None:
-            hide_private_field = True
+        policy = IBranchNamespacePolicy(branch.namespace)
+        if branch.private:
+            # If the branch is private, and can be public, show the field.
+            show_private_field = policy.canBranchesBePublic()
         else:
-            # If there is an explicit rule for the team, then that overrides
-            # any rule specified for other teams that the owner is a member
-            # of.
-            rule = product.getBranchVisibilityRuleForBranch(branch)
-            if rule == BranchVisibilityRule.PRIVATE_ONLY:
-                # If the branch is already private, then the user cannot
-                # make the branch public.  However if the branch is for
-                # some reason public, then the user is allowed to make
-                # it private.
-                hide_private_field = branch.private
-            elif rule == BranchVisibilityRule.PRIVATE:
-                hide_private_field = False
-            else:
-                hide_private_field = True
+            # If the branch is public, and can be made private, show the
+            # field.
+            show_private_field = policy.canBranchesBePrivate()
 
-        if hide_private_field:
+        if not show_private_field:
             self.form_fields = self.form_fields.omit('private')
 
         # If the user can administer branches, then they should be able to

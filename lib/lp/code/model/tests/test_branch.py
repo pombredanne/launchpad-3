@@ -37,7 +37,9 @@ from canonical.launchpad.ftests import (
 from canonical.launchpad.interfaces.bug import CreateBugParams, IBugSet
 from canonical.launchpad.interfaces.specification import (
     ISpecificationSet, SpecificationDefinitionStatus)
-from lp.code.interfaces.branch import BranchType, CannotDeleteBranch
+from lp.code.interfaces.branch import (
+    BranchCannotBePrivate, BranchCannotBePublic, BranchType,
+    CannotDeleteBranch)
 from lp.code.interfaces.branchmergeproposal import InvalidBranchMergeProposal
 from lp.code.interfaces.branchsubscription import (
     BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel)
@@ -56,6 +58,7 @@ from canonical.launchpad.testing import (
 from canonical.launchpad.webapp.interfaces import IOpenLaunchBag
 
 from canonical.testing import DatabaseFunctionalLayer, LaunchpadZopelessLayer
+from lp.code.interfaces.branchvisibilitypolicy import BranchVisibilityRule
 
 
 class TestCodeImport(TestCase):
@@ -1328,6 +1331,68 @@ class TestPendingWrites(TestCaseWithFactory):
         transaction.commit()
         branch.startMirroring()
         self.assertEqual(True, branch.pending_writes)
+
+
+class TestBranchSetPrivate(TestCaseWithFactory):
+    """Test IBranch.setPrivate."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        # Use an admin user as we aren't checking edit permissions here.
+        TestCaseWithFactory.setUp(self, 'admin@canonical.com')
+
+    def test_public_to_public(self):
+        # Setting a public branch to be public is a no-op.
+        branch = self.factory.makeProductBranch()
+        self.assertFalse(branch.private)
+        branch.setPrivate(False)
+        self.assertFalse(branch.private)
+
+    def test_public_to_private_allowed(self):
+        # If there is a privacy policy allowing the branch owner to have
+        # private branches, then setting the branch private is allowed.
+        branch = self.factory.makeProductBranch()
+        branch.product.setBranchVisibilityTeamPolicy(
+            branch.owner, BranchVisibilityRule.PRIVATE)
+        branch.setPrivate(True)
+        self.assertTrue(branch.private)
+
+    def test_public_to_private_not_allowed(self):
+        # If there are no privacy policies allowing private branches, then
+        # BranchCannotBePrivate is rasied.
+        branch = self.factory.makeProductBranch()
+        self.assertRaises(
+            BranchCannotBePrivate,
+            branch.setPrivate,
+            True)
+
+    def test_private_to_private(self):
+        # Setting a private branch to be private is a no-op.
+        branch = self.factory.makeProductBranch(private=True)
+        self.assertTrue(branch.private)
+        branch.setPrivate(True)
+        self.assertTrue(branch.private)
+
+    def test_private_to_public_allowed(self):
+        # If the namespace policy allows public branches, then changing from
+        # private to public is allowed.
+        branch = self.factory.makeProductBranch(private=True)
+        branch.setPrivate(False)
+        self.assertFalse(branch.private)
+
+    def test_private_to_public_not_allowed(self):
+        # If the namespace policy does not allow public branches, attempting
+        # to change the branch to be public raises BranchCannotBePublic.
+        branch = self.factory.makeProductBranch(private=True)
+        branch.product.setBranchVisibilityTeamPolicy(
+            None, BranchVisibilityRule.FORBIDDEN)
+        branch.product.setBranchVisibilityTeamPolicy(
+            branch.owner, BranchVisibilityRule.PRIVATE_ONLY)
+        self.assertRaises(
+            BranchCannotBePublic,
+            branch.setPrivate,
+            False)
 
 
 def test_suite():
