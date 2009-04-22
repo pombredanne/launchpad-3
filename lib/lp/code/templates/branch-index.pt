@@ -285,7 +285,8 @@
     </div>
   </tal:imported-branch>
 
-  <div tal:condition="context/product" id="merge-summary">
+  <div id="merge-links" tal:condition="view/show_merge_links">
+    <div tal:condition="context/product" id="merge-summary">
     <div id="landing-candidates">
       &laquo;
       <a href="+merges" tal:content="structure view/landing_candidate_count_text">
@@ -316,12 +317,13 @@
     </div>
 
 
+    </div>
+    <div
+      tal:define="link context_menu/register_merge"
+      tal:condition="link/enabled"
+      tal:replace="structure link/render"
+      />
   </div>
-  <div
-    tal:define="link context_menu/register_merge"
-    tal:condition="link/enabled"
-    tal:replace="structure link/render"
-  />
 
   <div id="whiteboard">
     <h2>Whiteboard</h2>
