@@ -463,7 +463,7 @@ uploads i.e. in conjunction with `ArchivePermission` data.
     ...     ArchivePermissionType, IArchivePermissionSet)
     >>> ap_set = getUtility(IArchivePermissionSet)
 
-So, let's assign upload permissios for the 'mozilla' package set to our
+So, let's assign upload permissions for the 'mozilla' package set to our
 happy hacker.
 
     >>> def print_permission(result_set):
@@ -589,3 +589,11 @@ Removing package set based permissions is straight-forward.
 
     >>> ap_set.deletePackagesetUploader(sabdfl, thunderbird_ps)
     >>> print_permission(ap_set.packagesetsForUploader(sabdfl))
+
+An attempt to look up package set based permission by something else than
+by a package set (name) results in a failure.
+
+    >>> print_permission(ap_set.uploadersForPackageset(12345))
+    Traceback (most recent call last):
+    ...
+    ValueError: Not a package set: int

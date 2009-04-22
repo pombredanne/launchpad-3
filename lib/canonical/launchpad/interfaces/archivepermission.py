@@ -114,11 +114,8 @@ class IArchivePermission(Interface):
             title=_("Explicit"),
             description=_(
                 "Set this flag for package sets with high-profile packages "
-                "requiring specialist skills for proper handling")))
+                "requiring specialist skills for proper handling.")))
 
-    # This is the *text* package set name, as opposed to `packageset`
-    # which is the `IPackageset` and we don't want to export
-    # that.
     package_set_name = exported(
         TextLine(
             title=_("Package set name"),
@@ -222,10 +219,10 @@ class IArchivePermissionSet(Interface):
         :param no_inclusions: If True only consider permissions granted
             directly for the package set at hand. Otherwise, include any
             uploaders for package sets that include this one.
-        :raises NotFoundError: if the string package set name does not exist.
+        :raises NotFoundError: if no package set exists with the given name.
 
         :return: `ArchivePermission` records for all the uploaders who are
-            authorised to upload to the named source package set.
+            authorized to upload to the named source package set.
         """
 
     def queueAdminsForComponent(archive, component):

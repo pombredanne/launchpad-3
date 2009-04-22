@@ -29,6 +29,7 @@ from canonical.launchpad.interfaces.archivepermission import (
     IArchiveUploader, IArchiveQueueAdmin)
 from canonical.launchpad.interfaces.component import IComponent, IComponentSet
 from canonical.launchpad.interfaces.lpstorm import IMasterStore, IStore
+from canonical.launchpad.interfaces.packageset import IPackageset
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageName, ISourcePackageNameSet)
@@ -36,6 +37,11 @@ from canonical.launchpad.webapp.interfaces import NotFoundError
 
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
+
+
+def _extract_type_name(value):
+    """Extract the type name of the given value."""
+    return str(type(value)).split("'")[-2]
 
 
 class ArchivePermission(SQLBase):
@@ -313,8 +319,11 @@ class ArchivePermissionSet:
                 return packageset
             else:
                 raise NotFoundError("No such package set '%s'" % name)
-        else:
+        elif IPackageset.providedBy(packageset):
             return packageset
+        else:
+            raise ValueError(
+                'Not a package set: %s' % _extract_type_name(packageset))
 
     def packagesetsForUploader(self, person):
         """See `IArchivePermissionSet`."""
