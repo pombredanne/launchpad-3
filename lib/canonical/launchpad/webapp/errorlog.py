@@ -216,7 +216,8 @@ class ErrorReportingUtility:
     implements(IErrorReportingUtility)
 
     _ignored_exceptions = set([
-        'TranslationUnavailable', 'ReadOnlyModeDisallowedStore'])
+        'ReadOnlyModeDisallowedStore', 'ReadOnlyModeViolation',
+        'TranslationUnavailable'])
     _ignored_exceptions_for_unauthenticated_users = set(['Unauthorized'])
     _default_config_section = 'error_reports'
 
