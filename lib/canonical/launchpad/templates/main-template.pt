@@ -34,7 +34,7 @@
     <title tal:content="CONTEXTS/fmt:pagetitle" i18n:translate="">Launchpad</title>
     <tal:atomfeeds condition="view/feed_links | nothing">
       <tal:loop repeat="link view/feed_links">
-        <link rel="alternate" type="application/atom+xml"
+        <link rel="alternate" type="application/atom+xml" href="" title=""
               tal:attributes="title link/title;
                               href link/href"/>
       </tal:loop>
