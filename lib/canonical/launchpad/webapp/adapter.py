@@ -12,12 +12,14 @@ import traceback
 from time import time
 import warnings
 
+import psycopg2
 from psycopg2.extensions import (
     ISOLATION_LEVEL_AUTOCOMMIT, ISOLATION_LEVEL_READ_COMMITTED,
     ISOLATION_LEVEL_SERIALIZABLE, QueryCanceledError)
 
 from storm.database import register_scheme
-from storm.databases.postgres import Postgres, PostgresTimeoutTracer
+from storm.databases.postgres import (
+    Postgres, PostgresConnection, PostgresTimeoutTracer)
 from storm.exceptions import TimeoutError
 from storm.store import Store
 from storm.tracer import install_tracer
@@ -36,7 +38,7 @@ from canonical.launchpad.interfaces import IMasterObject, IMasterStore
 from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
 from canonical.launchpad.webapp.interfaces import (
     AUTH_STORE, DEFAULT_FLAVOR, IStoreSelector,
-    MAIN_STORE, MASTER_FLAVOR, SLAVE_FLAVOR)
+    MAIN_STORE, MASTER_FLAVOR, ReadOnlyModeViolation, SLAVE_FLAVOR)
 from canonical.launchpad.webapp.opstats import OpStats
 from canonical.lazr.utils import safe_hasattr
 
@@ -238,6 +240,22 @@ isolation_level_map = {
     }
 
 
+class ReadOnlyModeConnection(PostgresConnection):
+    """storm.database.Connection for Launchpad when running in
+       read-only mode.
+    """
+    def execute(self, statement, params=None, noresult=False):
+        """See storm.database.Connection."""
+        try:
+            return super(ReadOnlyModeConnection, self).execute(
+                statement, params, noresult)
+        except psycopg2.InternalError, exception:
+            if exception.pgcode == '25006':
+                # ERROR:  transaction is read-only
+                raise ReadOnlyModeViolation, None, sys.exc_info()[2]
+            raise
+
+
 class LaunchpadDatabase(Postgres):
 
     def __init__(self, uri):
@@ -306,6 +324,15 @@ class LaunchpadDatabase(Postgres):
 
         _reset_dirty_commit_flags(*flags)
         return raw_connection
+
+    @property
+    def connection_factory(self):
+        """Return a ReadOnlyModeConnection if we are running in
+           read-only mode. Otherwise, return the default.
+        """
+        if config.launchpad.read_only:
+            return ReadOnlyModeConnection
+        return super(LaunchpadDatabase, self).connection_factory
 
 
 class LaunchpadSessionDatabase(Postgres):

@@ -116,9 +116,9 @@
       class="canonical.launchpad.webapp.error.SystemErrorView"
       />
 
-  <!-- ReadOnlyModeDisallowedStore -->
+  <!-- ReadOnlyModeViolation -->
   <browser:page
-      for="canonical.launchpad.webapp.interfaces.ReadOnlyModeDisallowedStore"
+      for="canonical.launchpad.webapp.interfaces.ReadOnlyModeViolation"
       name="index.html"
       permission="zope.Public"
       template="../templates/launchpad-readonlyfailure.pt"
