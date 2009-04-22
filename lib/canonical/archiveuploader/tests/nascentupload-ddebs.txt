@@ -1,0 +1,81 @@
+== Uploading DDEBs ==
+
+DDEBs ('.ddeb' extension) are essentially a Debian binary packages,
+they only use a different extension as a convenience to identify their
+contents easily. They contain debug symbols stripped from one or more
+packages during their build process.
+
+On a client system, DDEB installation is optional, it's only necessary
+for obtaining extra information about crashes in the corresponding
+feature.
+
+We will simulate a life-cycle of a ddeb by uploading a new source,
+'debug - 1.0'.
+
+    >>> src = getUploadForSource(
+    ...     'suite/debug_1.0/debug_1.0_source.changes')
+    >>> src.process()
+    >>> result = src.do_accept()
+    >>> print src.queue_root.status.name
+    NEW
+
+    >>> src.queue_root.setAccepted()
+    >>> [src_pub] = src.queue_root.realiseUpload()
+
+    >>> print src_pub.displayname, src_pub.status.name
+    debug 1.0 in hoary PENDING
+
+Source is pending publication, at this point a deb and a ddeb,
+produced during a normal build process, are uploaded. This is exactly
+the same procedure used for binary uploads with only ordinary debs.
+
+    >>> bin = getUploadForBinary(
+    ...     'suite/debug_1.0/debug_1.0_i386.changes')
+
+DDEBs are submitted to exactly the same checks we submit ordinary DEBs.
+
+    >>> bin.process()
+    >>> result = bin.do_accept()
+    >>> print bin.queue_root.status.name
+    NEW
+
+The binary upload is accepted with the appropriate database setup.
+
+    >>> from canonical.config import config
+    >>> from canonical.testing import LaunchpadZopelessLayer
+
+    >>> LaunchpadZopelessLayer.txn.commit()
+    >>> LaunchpadZopelessLayer.switchDbUser(config.uploadqueue.dbuser)
+
+    >>> bin.queue_root.setAccepted()
+    >>> bin_pubs = bin.queue_root.realiseUpload()
+
+    >>> LaunchpadZopelessLayer.txn.commit()
+    >>> LaunchpadZopelessLayer.switchDbUser('uploader')
+
+Now, both, binary and debug-symbol packages are pending publication.
+
+    >>> for bin_pub in bin_pubs:
+    ...     print bin_pub.displayname, bin_pub.status.name
+    debug-bin 1.0 in hoary i386 PENDING
+    debug-dbg 1.0 in hoary i386 PENDING
+
+The ddeb is stored appropriately.
+
+    >>> [deb_pub, ddeb_pub] = bin_pubs
+    >>> ddeb = ddeb_pub.binarypackagerelease
+
+    >>> print ddeb.title
+    debug-dbg-1.0
+
+The corresponding `BinaryPackageRelease` is recorded with DDEB format.
+
+    >>> print ddeb.binpackageformat.name
+    DDEB
+
+And its corresponding file is also stored as DDEB filetype.
+
+    >>> for bin_file in ddeb.files:
+    ...     print bin_file.libraryfile.filename, bin_file.filetype.name
+    debug-dbg_1.0_i386.ddeb DDEB
+

@@ -17,9 +17,10 @@ from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.account import AccountStatus
 from canonical.launchpad.interfaces.authtoken import LoginTokenType
+from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
 from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
 from lp.registry.interfaces.person import (
-    IPersonSet, PersonCreationRationale)
+    IPerson, IPersonSet, PersonCreationRationale)
 from canonical.launchpad.interfaces.shipit import ShipItConstants
 from canonical.launchpad.interfaces.validation import valid_password
 from canonical.launchpad.validators.email import valid_email
@@ -307,20 +308,34 @@ class LoginOrRegister:
                 "Please verify it and try again.")
             return
 
-        person = getUtility(IPersonSet).getByEmail(self.email)
-        if person is not None:
-            if person.is_valid_person:
+        registered_email = getUtility(IEmailAddressSet).getByEmail(self.email)
+        if registered_email is not None:
+            person = registered_email.person
+            if person is not None:
+                if person.is_valid_person:
+                    self.registration_error = (
+                        "Sorry, someone with the address %s already has a "
+                        "Launchpad account. If this is you and you've "
+                        "forgotten your password, Launchpad can "
+                        '<a href="/+forgottenpassword">reset it for you.</a>'
+                        % cgi.escape(self.email))
+                    return
+                else:
+                    # This is an unvalidated profile; let's move on with the
+                    # registration process as if we had never seen it.
+                    pass
+            else:
+                account = registered_email.account
+                assert IPerson(account, None) is None, (
+                    "This email address should be linked to the person who "
+                    "owns it.")
                 self.registration_error = (
-                    "Sorry, someone with the address %s already has a "
-                    "Launchpad account. If this is you and you've "
-                    "forgotten your password, Launchpad can "
-                    '<a href="/+forgottenpassword">reset it for you.</a>'
+                    'The email address %s is already registered in the '
+                    'Launchpad Login Service (used by the Ubuntu shop and '
+                    'other OpenID sites). Please use the same email and '
+                    'password to log into Launchpad.'
                     % cgi.escape(self.email))
                 return
-            else:
-                # This is an unvalidated profile; let's move on with the
-                # registration process as if we had never seen it.
-                pass
 
         logintokenset = getUtility(ILoginTokenSet)
         token = logintokenset.new(

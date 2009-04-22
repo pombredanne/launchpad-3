@@ -15,19 +15,8 @@ from sqlobject import SQLObjectNotFound
 import transaction
 from zope.component import getUtility
 
-from lp.code.model.branchjob import (
-    BranchDiffJob, BranchJob, BranchJobType, RevisionsAddedJob,
-    RevisionMailJob, RosettaUploadJob)
-from lp.code.model.branchrevision import BranchRevision
-from canonical.launchpad.database.revision import RevisionSet
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.testing import verifyObject
-from lp.code.interfaces.branchsubscription import (
-    BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel)
-from lp.code.interfaces.branchjob import (
-    IBranchDiffJob, IBranchJob, IRevisionMailJob, IRosettaUploadJob)
-from lp.code.interfaces.branchsubscription import (
-    BranchSubscriptionDiffSize,)
 from canonical.launchpad.interfaces.translations import (
     TranslationsBranchImportMode)
 from canonical.launchpad.interfaces.translationimportqueue import (
@@ -36,6 +25,18 @@ from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.launchpad.testing.librarianhelpers import (
     get_newest_librarian_file)
 from canonical.launchpad.tests.mail_helpers import pop_notifications
+
+from lp.code.interfaces.branchsubscription import (
+    BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel)
+from lp.code.interfaces.branchjob import (
+    IBranchDiffJob, IBranchJob, IRevisionMailJob, IRosettaUploadJob)
+from lp.code.interfaces.branchsubscription import (
+    BranchSubscriptionDiffSize,)
+from lp.code.model.branchjob import (
+    BranchDiffJob, BranchJob, BranchJobType, RevisionsAddedJob,
+    RevisionMailJob, RosettaUploadJob)
+from lp.code.model.branchrevision import BranchRevision
+from lp.code.model.revision import RevisionSet
 
 
 class TestBranchJob(TestCaseWithFactory):
