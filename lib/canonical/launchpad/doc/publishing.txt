@@ -113,8 +113,11 @@ Create a helper for printing the build status summary:
 
 If one of the builds becomes published, it will not appear in the summary:
 
+    >>> from canonical.launchpad.interfaces.publishing import (
+    ...     PackagePublishingStatus)
     >>> bpr = stp.uploadBinaryForBuild(builds[0], 'foo-bin')
-    >>> bpph = stp.publishBinaryInArchive(bpr, spph.archive)
+    >>> bpph = stp.publishBinaryInArchive(bpr, spph.archive,
+    ...     status=PackagePublishingStatus.PUBLISHED)
     >>> print_build_status_summary(spph.getStatusSummaryForBuilds())
     FULLYBUILT_PENDING
     i386 build of foo 666 in ubuntutest breezy-autotest RELEASE
@@ -123,7 +126,8 @@ After publishing the second binary, the status changes to FULLYBUILT as
 per normal:
 
     >>> bpr = stp.uploadBinaryForBuild(builds[1], 'foo-bin')
-    >>> bpph = stp.publishBinaryInArchive(bpr, spph.archive)
+    >>> bpph = stp.publishBinaryInArchive(bpr, spph.archive,
+    ...     status=PackagePublishingStatus.PUBLISHED)
     >>> print_build_status_summary(spph.getStatusSummaryForBuilds())
     FULLYBUILT
     hppa build of foo 666 in ubuntutest breezy-autotest RELEASE
@@ -1395,9 +1399,11 @@ First we'll create two source publishing history records:
     >>> stp = SoyuzTestPublisher()
     >>> stp.prepareBreezyAutotest()
     >>> firefox_source_pub = stp.getPubSource(sourcename='firefox-test')
-    >>> binaries = stp.getPubBinaries(pub_source=firefox_source_pub)
+    >>> binaries = stp.getPubBinaries(pub_source=firefox_source_pub,
+    ...     status=PackagePublishingStatus.PUBLISHED)
     >>> foo_pub = stp.getPubSource(sourcename='foobar-test')
-    >>> binaries = stp.getPubBinaries(pub_source=foo_pub)
+    >>> binaries = stp.getPubBinaries(pub_source=foo_pub,
+    ...     status=PackagePublishingStatus.PUBLISHED)
 
     >>> from lp.registry.interfaces.distribution import (
     ...     IDistributionSet)

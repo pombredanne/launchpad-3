@@ -190,10 +190,10 @@ The view also helps templates to decide on the icon that should be used
 to summarize the current state of the context's associated builds:
 
     >>> print src_pub_record_view.build_status_img_src
-    /@@/yes
+    /@@/build-success-pending
 
 As well as a helper to determine if the build status summary is
 successful:
 
-    >>> src_pub_record_view.builds_successful
-    True
+    >>> src_pub_record_view.builds_successful_and_published
+    False

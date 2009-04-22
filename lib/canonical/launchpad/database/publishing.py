@@ -766,8 +766,10 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         augmented_summary = summary
         if summary['status'] == BuildSetStatus.FULLYBUILT:
             published_bins = self.getPublishedBinaries()
-            published_builds = [bin.binarypackagerelease.build
-                                    for bin in published_bins]
+            published_builds = [
+                bin.binarypackagerelease.build
+                    for bin in published_bins
+                        if bin.status == PackagePublishingStatus.PUBLISHED]
             unpublished_builds = list(
                 set(builds).difference(published_builds))
 

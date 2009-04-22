@@ -201,11 +201,10 @@ class SourcePublishingRecordView(BasePublishingRecordView):
         return self.context.getStatusSummaryForBuilds()
 
     @property
-    def builds_successful(self):
-        """Return whether all builds were successful."""
+    def builds_successful_and_published(self):
+        """Return whether all builds were successful and published."""
         status = self.build_status_summary['status']
-        return (status == BuildSetStatus.FULLYBUILT or
-                    status == BuildSetStatus.FULLYBUILT_PENDING)
+        return status == BuildSetStatus.FULLYBUILT
 
     @property
     def build_status_img_src(self):
@@ -214,6 +213,7 @@ class SourcePublishingRecordView(BasePublishingRecordView):
             BuildSetStatus.BUILDING: '/@@/build-building',
             BuildSetStatus.NEEDSBUILD: '/@@/build-needed',
             BuildSetStatus.FAILEDTOBUILD: '/@@/no',
+            BuildSetStatus.FULLYBUILT_PENDING: '/@@/build-success-pending'
             }
 
         return image_map.get(self.build_status_summary['status'], '/@@/yes')
