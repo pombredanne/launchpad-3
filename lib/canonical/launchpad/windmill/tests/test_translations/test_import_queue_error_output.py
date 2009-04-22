@@ -16,7 +16,7 @@ class ImportQueueErrorOutputTest:
     def __init__(self, name=None,
                  url='http://translations.launchpad.net:8085/+imports',
                  suite='translations', user=lpuser.TRANSLATIONS_ADMIN):
-        """Create a new DocumentationLinksTest.
+        """Create a new ImportQueueErrorOutputTest.
 
         :param name: Name of the test.
         :param url: Start at, default
@@ -34,7 +34,8 @@ class ImportQueueErrorOutputTest:
 
     def _checkOutputPanel(self, client, panel_xpath):
         client.waits.forElement(xpath=panel_xpath, timeout=u'5000')
-        # XXX Jeroen Vermeulen 2009-04-21: Check panel contents here!
+        # XXX JeroenVermeulen 2009-04-21 bug=365176: Check panel
+        # contents here!
 
     def __call__(self):
         """Run test.
@@ -62,9 +63,10 @@ class ImportQueueErrorOutputTest:
             u"//div[@id='1']//tr[@class='discreet secondary output-panel]'")
         self._checkOutputPanel(client, output_panel)
 
-
         # Hide output panel.
         client.click(xpath=show_button)
+        # XXX JeroenVermeulen 2009-04-21 bug=365176: waits.forElement() to
+        # wait for the output panel to disappear.
         client.asserts.assertNotElement(xpath=output_panel)
 
         # Reveal output panel again.  This brings us back to the same
