@@ -107,7 +107,8 @@ the membership list, either as an enabled or disabled address.
     >>> from canonical.launchpad.interfaces import IEmailAddressSet
     >>> login('foo.bar@canonical.com')
     >>> email_set = getUtility(IEmailAddressSet)
-    >>> email = email_set.new('anne.x.person@example.net', anne)
+    >>> email = email_set.new(
+    ...     'anne.x.person@example.net', anne, account=anne.account)
     >>> transaction.commit()
     >>> helpers.ensure_membership('itest-one', anne)
 

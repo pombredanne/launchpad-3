@@ -9,6 +9,8 @@ __all__ = [
     'bazaar_identity',
     'BRANCH_NAME_VALIDATION_ERROR_MESSAGE',
     'branch_name_validator',
+    'BranchCannotBePrivate',
+    'BranchCannotBePublic',
     'BranchCreationException',
     'BranchCreationForbidden',
     'BranchCreationNoTeamOwnedJunkBranches',
@@ -378,7 +380,6 @@ DEFAULT_BRANCH_STATUS_IN_LISTING = (
 class BranchCreationException(Exception):
     """Base class for branch creation exceptions."""
 
-
 class BranchExists(BranchCreationException):
     """Raised when creating a branch that already exists."""
 
@@ -455,6 +456,14 @@ class BranchTypeError(Exception):
     BranchTypeError exception is raised if one of these operations is called
     with a branch of the wrong type.
     """
+
+
+class BranchCannotBePublic(Exception):
+    """The branch cannot be made public."""
+
+
+class BranchCannotBePrivate(Exception):
+    """The branch cannot be made private."""
 
 
 class NoSuchBranch(NameLookupFailed):
@@ -674,10 +683,18 @@ class IBranch(IHasOwner, IHasBranchTarget):
             title=_('The last message we got when mirroring this branch.'),
             required=False, readonly=True))
 
-    private = Bool(
-        title=_("Keep branch confidential"), required=False,
-        description=_("Make this branch visible only to its subscribers."),
-        default=False)
+    private = exported(
+        Bool(
+            title=_("Keep branch confidential"), required=False,
+            readonly=True, default=False,
+            description=_(
+                "Make this branch visible only to its subscribers.")))
+
+    @operation_parameters(
+        private=Bool(title=_("Keep branch confidential")))
+    @export_write_operation()
+    def setPrivate(private):
+        """Set the branch privacy for this branch."""
 
     # People attributes
     registrant = exported(

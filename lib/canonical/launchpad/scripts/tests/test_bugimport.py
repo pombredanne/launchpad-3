@@ -257,7 +257,6 @@ class GetPersonTestCase(unittest.TestCase):
         self.failIf(person.account is None, 'Person must have an account.')
         email = getUtility(IEmailAddressSet).new(
             'foo@preferred.com', person, account=person.account)
-        transaction.commit()
         person.setPreferredEmail(email)
         transaction.commit()
         self.assertEqual(person.preferredemail.email, 'foo@preferred.com')
