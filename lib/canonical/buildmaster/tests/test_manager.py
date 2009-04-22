@@ -431,8 +431,13 @@ class TestBuilddManagerScan(TrialTestCase):
         TrialTestCase.setUp(self)
         BuilddSlaveTestSetup().setUp()
 
+        # Creating the required chroots needed for dispatching.
         login('foo.bar@canonical.com')
-        self._setupBuilder()
+        test_publisher = SoyuzTestPublisher()
+        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+        hoary = ubuntu.getSeries('hoary')
+        unused = test_publisher.setUpDefaultDistroSeries(hoary)
+        test_publisher.addFakeChroots()
         login(ANONYMOUS)
 
     def tearDown(self):
@@ -440,12 +445,10 @@ class TestBuilddManagerScan(TrialTestCase):
         TrialTestCase.tearDown(self)
         TwistedLayer.testTearDown()
 
-    def _setupBuilder(self):
-        """Reset sampledata build and setup chroots for Ubuntu/Hoary."""
-        builder = getUtility(IBuilderSet)['bob']
-
+    def _resetBuilder(self, builder):
+        """Reset the given builder and it's job."""
+        login('foo.bar@canonical.com')
         builder.builderok = True
-
         job = builder.currentjob
         if job is not None:
             job.build.buildstate = BuildStatus.NEEDSBUILD
@@ -453,58 +456,109 @@ class TestBuilddManagerScan(TrialTestCase):
             job.buildstart = None
             job.logtail = None
 
-        test_publisher = SoyuzTestPublisher()
-        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-        hoary = ubuntu.getSeries('hoary')
-        unused = test_publisher.setUpDefaultDistroSeries(hoary)
-        test_publisher.addFakeChroots()
-
         transaction.commit()
+        login(ANONYMOUS)
 
-    def testScan(self):
-        """`BuilddManager.scan` return a list of `RecordingSlaves`.
+    def _getManager(self):
+        """Instantiate a BuilddManager object.
 
-        The returned slaves contain interactions that should be performed
-        asynchronously.
+        Replace its default logging handler by a testing version.
         """
-        LaunchpadZopelessLayer.switchDbUser(config.builddmaster.dbuser)
-
-        # Instantiate a BuilddManager object and replace its default
-        # logging handler by a testing version.
         manager = BuilddManager()
+
         for handler in manager.logger.handlers:
             manager.logger.removeHandler(handler)
         manager.logger = BufferLogger()
         manager.logger.name = 'slave-scanner'
 
-        d = defer.maybeDeferred(manager.scan)
-        def check_scan(recording_slaves):
-            [slave] = recording_slaves
-            self.assertEqual('<bob:http://localhost:8221/>', repr(slave))
-            self.assertEqual(
-                [('ensurepresent',
-                  ('0feca720e2c29dafb2c900713ba560e03b758711',
-                   'http://localhost:58000/93/fake_chroot.tar.gz',
-                   '', '')),
-                 ('ensurepresent',
-                  ('4e3961baf4f56fdbc95d0dd47f3c5bc275da8a33',
-                   'http://localhost:58000/43/alsa-utils_1.0.9a-4ubuntu1.dsc',
-                   '', '')),
-                 ('build',
-                  ('11-2',
-                   'debian', '0feca720e2c29dafb2c900713ba560e03b758711',
-                   {'alsa-utils_1.0.9a-4ubuntu1.dsc':
-                    '4e3961baf4f56fdbc95d0dd47f3c5bc275da8a33'},
-                   {'arch_indep': True,
-                    'archive_private': False,
-                    'archive_purpose': 'PRIMARY',
-                    'archives':
-                    ['deb http://ftpmaster.internal/ubuntu hoary main'],
-                    'ogrecomponent': 'main',
-                    'suite': u'hoary'}))],
-                slave.calls)
+        return manager
 
-        d.addCallback(check_scan)
+    def _checkDispatch(self, recording_slaves, builder):
+        """`BuilddManager.scan` return a list of `RecordingSlaves`.
+
+        The single slave returned should match the given builder and
+        contain interactions that should be performed asynchronously for
+        properly dispatching the sampledata job.
+        """
+        self.assertEqual(
+            len(recording_slaves), 1, "Unexpected recording_slaves.")
+        [slave] = recording_slaves
+
+        self.assertEqual(slave.name, builder.name)
+        self.assertEqual(slave.url, builder.url)
+        self.assertEqual(slave.vm_host, builder.vm_host)
+
+        self.assertEqual(
+            [('ensurepresent',
+              ('0feca720e2c29dafb2c900713ba560e03b758711',
+               'http://localhost:58000/93/fake_chroot.tar.gz',
+               '', '')),
+             ('ensurepresent',
+              ('4e3961baf4f56fdbc95d0dd47f3c5bc275da8a33',
+               'http://localhost:58000/43/alsa-utils_1.0.9a-4ubuntu1.dsc',
+               '', '')),
+             ('build',
+              ('11-2',
+               'debian', '0feca720e2c29dafb2c900713ba560e03b758711',
+               {'alsa-utils_1.0.9a-4ubuntu1.dsc':
+                '4e3961baf4f56fdbc95d0dd47f3c5bc275da8a33'},
+               {'arch_indep': True,
+                'archive_private': False,
+                'archive_purpose': 'PRIMARY',
+                'archives':
+                ['deb http://ftpmaster.internal/ubuntu hoary main'],
+                'ogrecomponent': 'main',
+                'suite': u'hoary'}))],
+            slave.calls, "Job was not properly dispatched.")
+
+    def testScanDispatchForResetBuilder(self):
+        # A job gets dispatched to the sampledata builder after it's reset.
+
+        # Reset sampledata builder.
+        builder = getUtility(IBuilderSet)['bob']
+        self._resetBuilder(builder)
+
+        # Run 'scan' and check its result.
+        LaunchpadZopelessLayer.switchDbUser(config.builddmaster.dbuser)
+        manager = self._getManager()
+        d = defer.maybeDeferred(manager.scan)
+        d.addCallback(self._checkDispatch, builder)
+        return d
+
+    def _checkJobRescued(self, recording_slaves, builder, job):
+        """`BuilddManager.scan` rescued the job.
+
+        Nothing gets dispatched,  the 'broken' builder remained disabled
+        and the 'rescued' job is ready to be dispatched.
+        """
+        self.assertEqual(
+            len(recording_slaves), 0, "Unexpected recording_slaves.")
+
+        builder = getUtility(IBuilderSet).get(builder.id)
+        self.assertFalse(builder.builderok)
+
+        job = getUtility(IBuildQueueSet).get(job.id)
+        self.assertTrue(job.builder is None)
+        self.assertTrue(job.buildstart is None)
+        self.assertEqual(job.build.buildstate, BuildStatus.NEEDSBUILD)
+
+    def testScanRescuesJobFromBrokenBuilder(self):
+        # The job assigned to a broken builder is rescued.
+
+        # Sampledata builder is broken and is holding a active job.
+        broken_builder = getUtility(IBuilderSet)['bob']
+        self.assertFalse(broken_builder.builderok)
+        lost_job = broken_builder.currentjob
+        self.assertTrue(lost_job is not None)
+        self.assertEqual(lost_job.builder, broken_builder)
+        self.assertTrue(lost_job.buildstart is not None)
+        self.assertEqual(lost_job.build.buildstate, BuildStatus.BUILDING)
+
+        # Run 'scan' and check its result.
+        LaunchpadZopelessLayer.switchDbUser(config.builddmaster.dbuser)
+        manager = self._getManager()
+        d = defer.maybeDeferred(manager.scan)
+        d.addCallback(self._checkJobRescued, broken_builder, lost_job)
         return d
 
 
