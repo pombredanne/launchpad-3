@@ -133,6 +133,8 @@ builder.
     bob
     >>> job.buildstart is not None
     True
+    >>> print job.logtail
+    Dummy sampledata entry, not processing
     >>> print job.build.buildstate.name
     BUILDING
     >>> print job.lastscore
@@ -149,6 +151,8 @@ to another build. The score value of the job is preserved.
     >>> print job.builder
     None
     >>> print job.buildstart
+    None
+    >>> print job.logtail
     None
     >>> print job.build.buildstate.name
     NEEDSBUILD

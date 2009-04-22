@@ -238,6 +238,7 @@ class BuildQueue(SQLBase):
         """See `IBuildQueue`."""
         self.builder = None
         self.buildstart = None
+        self.logtail = None
         self.build.buildstate = BuildStatus.NEEDSBUILD
 
     def updateBuild_IDLE(self, build_id, build_status, logtail,
