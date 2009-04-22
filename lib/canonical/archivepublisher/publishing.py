@@ -16,7 +16,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.archivepublisher import HARDCODED_COMPONENT_ORDER
 from canonical.archivepublisher.diskpool import DiskPool
-from canonical.archivepublisher.config import LucilleConfigError
+from canonical.archivepublisher.config import getPubConfig, LucilleConfigError
 from canonical.archivepublisher.domination import Dominator
 from canonical.archivepublisher.ftparchive import FTPArchiveHandler
 from canonical.archivepublisher.utils import RepositoryIndexFile
@@ -118,7 +118,7 @@ def getPublisher(archive, allowed_suites, log, distsroot=None):
         log.debug("Finding configuration for '%s' PPA."
                   % archive.owner.name)
     try:
-        pubconf = archive.getPubConfig()
+        pubconf = getPubConfig(archive)
     except LucilleConfigError, info:
         log.error(info)
         raise
@@ -319,7 +319,7 @@ class Publisher(object):
                         continue
                     self.checkDirtySuiteBeforePublishing(distroseries, pocket)
                 # Retrieve components from the publisher config because
-                # it gets overridden in IArchive.getPubConfig to set the
+                # it gets overridden in getPubConfig to set the
                 # correct components for the archive being used.
                 for component_name in self._config.componentsForSeries(
                         distroseries.name):

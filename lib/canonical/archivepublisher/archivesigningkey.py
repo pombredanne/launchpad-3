@@ -16,6 +16,7 @@ import gpgme
 from zope.component import getUtility
 from zope.interface import implements
 
+from canonical.archivepublisher.config import getPubConfig
 from canonical.config import config
 from canonical.launchpad.interfaces.archivesigningkey import (
     IArchiveSigningKey)
@@ -37,7 +38,7 @@ class ArchiveSigningKey:
         # XXX cprov 20081104: IArchive pub configuration doesn't implement
         # any interface.
         from zope.security.proxy import removeSecurityProxy
-        naked_pub_config = removeSecurityProxy(self.archive.getPubConfig())
+        naked_pub_config = removeSecurityProxy(getPubConfig(self.archive))
         return naked_pub_config.archiveroot
 
     def getPathForSecretKey(self, key):

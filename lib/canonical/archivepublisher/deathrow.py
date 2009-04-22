@@ -12,7 +12,7 @@ import os
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.archivepublisher import ELIGIBLE_DOMINATION_STATES
-from canonical.archivepublisher.config import LucilleConfigError
+from canonical.archivepublisher.config import getPubConfig, LucilleConfigError
 from canonical.archivepublisher.diskpool import DiskPool
 from canonical.archivepublisher.utils import process_in_batches
 
@@ -41,7 +41,7 @@ def getDeathRow(archive, log, pool_root_override):
     """
     log.debug("Grab Lucille config.")
     try:
-        pubconf = archive.getPubConfig()
+        pubconf = getPubConfig(archive)
     except LucilleConfigError, info:
         log.error(info)
         raise

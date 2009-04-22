@@ -5,8 +5,15 @@
   i18n_domain="launchpad">
 
   <!-- ArchiveSigningKey -->
-  <class class="canonical.launchpad.components.archivesigningkey.ArchiveSigningKey">
+  <class class="canonical.archivepublisher.archivesigningkey.ArchiveSigningKey">
     <allow interface="canonical.launchpad.interfaces.archivesigningkey.IArchiveSigningKey"/>
   </class>
+
+  <adapter
+      for="canonical.launchpad.interfaces.archive.IArchive"
+      provides="canonical.launchpad.interfaces.archivesigningkey.IArchiveSigningKey"
+      factory="canonical.archivepublisher.archivesigningkey.ArchiveSigningKey"
+
+      />
 
 </configure>
