@@ -72,6 +72,7 @@ from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.codeimportjob import (
     CodeImportJobState, ICodeImportJobWorkflow)
 from lp.code.interfaces.codereviewcomment import ICodeReviewComment
+from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.interfaces.branchnamespace import (
     get_branch_namespace, IBranchNamespacePolicy)
 from lp.code.interfaces.branchtarget import IHasBranchTarget
@@ -462,6 +463,19 @@ class BranchView(LaunchpadView, FeedsMixin):
                 return '<private server>'
 
         return branch.url
+
+    @property
+    def show_merge_links(self):
+        """Return whether or not merge proposal links should be shown.
+
+        Merge proposal links should not be shown if there is only one branch in
+        a non-final state.
+        """
+        if not self.context.product:
+            return False
+        all_branches = getUtility(IAllBranches)
+        return len(list(
+            all_branches.inProduct(self.context.product).getBranches())) > 1
 
 
 class DecoratedMergeProposal:

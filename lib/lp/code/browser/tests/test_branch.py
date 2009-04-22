@@ -108,11 +108,12 @@ class TestBranchMirrorHidden(TestCaseWithFactory):
             "<private server>", view.mirror_location)
 
 
-class TestBranchView(unittest.TestCase):
+class TestBranchView(TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
 
     def setUp(self):
+        TestCaseWithFactory.setUp(self)
         login(ANONYMOUS)
         self.request = LaunchpadTestRequest()
 
@@ -176,6 +177,25 @@ class TestBranchView(unittest.TestCase):
                 % (add_view.branch.next_mirror_time, now))
         finally:
             logout()
+
+    def testShowMergeLinks(self):
+        """Test BranchView.show_merge_links."""
+        branch = getUtility(IBranchLookup).get(1)
+        view = BranchView(branch, self.request)
+        view.initialize()
+        self.assertTrue(view.show_merge_links)
+
+        # branch is a junk branch
+        branch = getUtility(IBranchLookup).get(28)
+        view = BranchView(branch, self.request)
+        view.initialize()
+        self.assertFalse(view.show_merge_links)
+
+        # branch is the only one in the product
+        branch = self.factory.makeAnyBranch()
+        view = BranchView(branch, self.request)
+        view.initialize()
+        self.assertFalse(view.show_merge_links)
 
 
 class TestBranchReviewerEditView(TestCaseWithFactory):
