@@ -234,6 +234,18 @@ class CodeImportEventDataType(DBEnumeratedType):
         Previous Subversion URL, when recording an import source change.
         """)
 
+    GIT_REPO_URL = DBItem(240, """
+        Git URL
+
+        Location of the Git branch to import.
+        """)
+
+    OLD_GIT_REPO_URL = DBItem(241, """
+        Previous Git URL
+
+        Previous Git URL, when recording an import source change.
+        """)
+
     # Data related to machine events
 
     OFFLINE_REASON = DBItem(410, """Offline Reason

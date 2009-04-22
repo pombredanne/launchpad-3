@@ -23,6 +23,7 @@ from twisted.trial.unittest import TestCase
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.codehosting import load_optional_plugin
 from canonical.codehosting.codeimport.worker import (
     CodeImportSourceDetails, get_default_bazaar_branch_store)
 from canonical.codehosting.codeimport.workermonitor import (
@@ -438,6 +439,28 @@ class TestWorkerMonitorIntegration(TestCase, TestCaseWithMemoryTransport):
         return self.factory.makeCodeImport(
             svn_branch_url=svn_branch_url)
 
+    def makeGitCodeImport(self):
+        """Make a `CodeImport` that points to a real Git repository."""
+        load_optional_plugin('git')
+        from bzrlib.plugins.git.tests import GitBranchBuilder, run_git
+        files = [('README', 'contents')]
+        wd = os.getcwd()
+        try:
+            os.chdir(self.repo_path)
+            run_git('init')
+            builder = GitBranchBuilder()
+            for filename, contents in files:
+                builder.set_file(filename, contents, False)
+            # We have to commit twice to satisfy the obscure needs of the
+            # other tests.
+            builder.commit('Joe Foo <joe@foo.com>', u'<The commit message>')
+            builder.commit('Joe Foo <joe@foo.com>', u'<The commit message>')
+            builder.finish()
+        finally:
+            os.chdir(wd)
+
+        return self.factory.makeCodeImport(git_repo_url=self.repo_path)
+
     def getStartedJobForImport(self, code_import):
         """Get a started `CodeImportJob` for `code_import`.
 
@@ -500,6 +523,15 @@ class TestWorkerMonitorIntegration(TestCase, TestCaseWithMemoryTransport):
     def disabled_test_import_subversion(self):
         # Create a Subversion CodeImport and import it.
         job = self.getStartedJobForImport(self.makeSVNCodeImport())
+        code_import_id = job.code_import.id
+        job_id = job.id
+        self.layer.txn.commit()
+        result = self.performImport(job_id)
+        return result.addCallback(self.assertImported, code_import_id)
+
+    def test_import_git(self):
+        # Create a Git CodeImport and import it.
+        job = self.getStartedJobForImport(self.makeGitCodeImport())
         code_import_id = job.code_import.id
         job_id = job.id
         self.layer.txn.commit()

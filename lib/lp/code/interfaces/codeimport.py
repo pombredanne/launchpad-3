@@ -252,7 +252,8 @@ class ICodeImportSet(Interface):
     """Interface representing the set of code imports."""
 
     def new(registrant, product, branch_name, rcs_type, svn_branch_url=None,
-            cvs_root=None, cvs_module=None, review_status=None):
+            cvs_root=None, cvs_module=None, git_repo_url=None,
+            review_status=None):
         """Create a new CodeImport."""
 
     def getAll():

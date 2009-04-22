@@ -99,7 +99,10 @@ class CodeImport(SQLBase):
             RevisionControlSystems.CVS:
                 config.codeimport.default_interval_cvs,
             RevisionControlSystems.SVN:
-                config.codeimport.default_interval_subversion}
+                config.codeimport.default_interval_subversion,
+            RevisionControlSystems.GIT:
+                config.codeimport.default_interval_git,
+            }
         seconds = default_interval_dict[self.rcs_type]
         return timedelta(seconds=seconds)
 
@@ -185,14 +188,17 @@ class CodeImportSet:
 
     def new(self, registrant, product, branch_name, rcs_type,
             svn_branch_url=None, cvs_root=None, cvs_module=None,
-            review_status=None):
+            git_repo_url=None, review_status=None):
         """See `ICodeImportSet`."""
         if rcs_type == RevisionControlSystems.CVS:
             assert cvs_root is not None and cvs_module is not None
-            assert svn_branch_url is None
+            assert svn_branch_url is git_repo_url is None
         elif rcs_type == RevisionControlSystems.SVN:
-            assert cvs_root is None and cvs_module is None
+            assert cvs_root is cvs_module is git_repo_url is None
             assert svn_branch_url is not None
+        elif rcs_type == RevisionControlSystems.GIT:
+            assert cvs_root is cvs_module is svn_branch_url is None
+            assert git_repo_url is not None
         else:
             raise AssertionError(
                 "Don't know how to sanity check source details for unknown "
@@ -210,7 +216,7 @@ class CodeImportSet:
             registrant=registrant, owner=registrant, branch=import_branch,
             rcs_type=rcs_type, svn_branch_url=svn_branch_url,
             cvs_root=cvs_root, cvs_module=cvs_module,
-            review_status=review_status)
+            git_repo_url=git_repo_url, review_status=review_status)
 
         getUtility(ICodeImportEventSet).newCreate(code_import, registrant)
         notify(ObjectCreatedEvent(code_import))

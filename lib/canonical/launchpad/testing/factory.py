@@ -1037,20 +1037,21 @@ class LaunchpadObjectFactory(ObjectFactory):
             product=product)
 
     def makeCodeImport(self, svn_branch_url=None, cvs_root=None,
-                       cvs_module=None, product=None, branch_name=None):
+                       cvs_module=None, product=None, branch_name=None,
+                       git_repo_url=None):
         """Create and return a new, arbitrary code import.
 
-        The code import will be an import from a Subversion repository located
-        at `url`, or an arbitrary unique url if the parameter is not supplied.
+        The type of code import will be inferred from the source details
+        passed in, but defaults to a Subversion import from an arbitrary
+        unique URL.
         """
-        if svn_branch_url is cvs_root is cvs_module is None:
+        if svn_branch_url is cvs_root is cvs_module is git_repo_url is None:
             svn_branch_url = self.getUniqueURL()
 
         if product is None:
             product = self.makeProduct()
         if branch_name is None:
             branch_name = self.getUniqueString('name')
-        # The registrant gets emailed, so needs a preferred email.
         registrant = self.makePerson()
 
         code_import_set = getUtility(ICodeImportSet)
@@ -1059,6 +1060,11 @@ class LaunchpadObjectFactory(ObjectFactory):
                 registrant, product, branch_name,
                 rcs_type=RevisionControlSystems.SVN,
                 svn_branch_url=svn_branch_url)
+        elif git_repo_url is not None:
+            return code_import_set.new(
+                registrant, product, branch_name,
+                rcs_type=RevisionControlSystems.GIT,
+                git_repo_url=git_repo_url)
         else:
             return code_import_set.new(
                 registrant, product, branch_name,
