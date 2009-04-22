@@ -370,7 +370,7 @@ source package name.
     >>> from canonical.launchpad.interfaces.packageset import (
     ...     IPackagesetSet)
     >>> from lp.registry.interfaces.sourcepackagename import (
-    ...     ISourcePackageName, ISourcePackageNameSet)
+    ...     ISourcePackageNameSet)
 
 Which package sets include 'mozilla-firefox' either directly or indirectly?
 

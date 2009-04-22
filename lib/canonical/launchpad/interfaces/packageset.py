@@ -8,7 +8,6 @@ __metaclass__ = type
 __all__ = [
     'IPackageset',
     'IPackagesetSet',
-    'PackagesetError',
     ]
 
 from zope.interface import Interface
@@ -19,14 +18,6 @@ from canonical.launchpad.interfaces.launchpad import IHasOwner
 from lp.registry.interfaces.person import IPerson
 from canonical.launchpad.validators.name import name_validator
 from lazr.restful.fields import Reference
-
-
-class PackagesetError(Exception):
-    '''Raised upon the attempt to add invalid data to a package set.
-
-    Only source package names or other package sets can be added at
-    present.
-    '''
 
 
 class IPackagesetViewOnly(IHasOwner):

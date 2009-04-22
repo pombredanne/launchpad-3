@@ -7,11 +7,9 @@ import pytz
 
 from storm.expr import In, SQL
 from storm.locals import DateTime, Int, Reference, Storm, Unicode
-from storm.store import Store
 
 from zope.component import getUtility
 from zope.interface import implements
-from zope.security.proxy import isinstance as zope_isinstance
 
 from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageName, ISourcePackageNameSet)
@@ -19,7 +17,7 @@ from lp.registry.model.sourcepackagename import SourcePackageName
 
 from canonical.launchpad.interfaces import IMasterStore, IStore
 from canonical.launchpad.interfaces.packageset import (
-    IPackageset, IPackagesetSet, PackagesetError)
+    IPackageset, IPackagesetSet)
 
 
 def _extract_type_name(value):
