@@ -1,4 +1,5 @@
-= Form Layout =
+Form layout
+===========
 
 LaunchpadFormView based forms use a tabular layout for the widgets.
 In most cases, the label is shown to the left of the actual widget,
@@ -10,102 +11,104 @@ but there are some exceptions:
  * checkbox widgets have the label shown to the right.
 
 
-== Normal Widgets ==
+Normal widgets
+--------------
 
-The new product form contains an example of a normal text widget:
+The new team form contains an example of a normal text widget.
 
-  >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
-  >>> browser.open('http://launchpad.dev/products/+new')
-  >>> content = find_main_content(browser.contents)
+    >>> user_browser.open('http://launchpad.dev/people/+newteam')
+    >>> content = find_main_content(user_browser.contents)
+    >>> print content
+    <...
+    <tr>
+    <th>
+    <label for="field.name">Name:</label><br />
+    </th>
+    <td>
+    <div>
+    <input ... name="field.name" ... />
+    </div>
+    <p class="formHelp">....</p>
+    </td>
+    </tr>
+    ...
 
-  >>> print content
-  <...
-  <tr>
-  <th>
-  <label for="field.displayname">Display Name:</label><br />
-  </th>
-  <td>
-  <div>
-  <input ... name="field.displayname" ... />
-  </div>
-  <p class="formHelp">....</p>
-  </td>
-  </tr>
-  ...
+If the text field is optional, then that is noted after the widget.
 
-
-If the text field is optional, then that is noted after the widget:
-
-  >>> print content
-  <...
-  <tr>
-  <th>
-  <label for="field.homepageurl">Homepage URL:</label><br />
-  <span class="fieldRequired">(Optional)</span>
-  </th>
-  <td>
-  <div>
-  <input ... name="field.homepageurl" ... />
-  </div>
-  <p class="formHelp">...</p>
-  </td>
-  </tr>
-  ...
+    >>> print content
+    <...
+    <tr>
+    <th>
+    <label for="field.contactemail">Contact Email Address:</label><br />
+    <span class="fieldRequired">(Optional)</span>
+    </th>
+    <td>
+    <div>
+    <input ... id="field.contactemail" ... />
+    </div>
+    <p class="formHelp">...</p>
+    </td>
+    </tr>
+    ...
 
 
-== Multi-line Text Widgets ==
+Multi-line text widgets
+-----------------------
 
 A multi-line text widget is displayed with the label above it:
 
-  >>> print content
-  <...
-  <tr>
-    <td colspan="2" style="text-align: left">
-      <label for="field.summary">Summary:</label>
-      <div><textarea ... name="field.summary" ...></textarea></div>
-      <p class="formHelp">...</p>
-    </td>
-  </tr>
-  ...
+    >>> print content
+    <...
+    <tr>
+      <td colspan="2" style="text-align: left">
+        <label for="field.teamdescription">Team Description:</label>
+        <span ...
+        <div><textarea ... name="field.teamdescription" ...></textarea></div>
+        <p class="formHelp">Use plain text; URLs will be linkified</p>
+      </td>
+    </tr>
+    ...
 
 If the multi-line text widget is optional, this is mentioned to the
 right of the label:
 
-  >>> print content
-  <...
-  <tr>
-    <td colspan="2" style="text-align: left">
-      <label for="field.description">Description:</label>
-      <span class="fieldRequired">(Optional)</span>
-      <div><textarea ... name="field.description" ...></textarea></div>
-      <p class="formHelp">...</p>
-    </td>
-  </tr>
-  ...
+    >>> print content
+    <...
+    <tr>
+      <td colspan="2" style="text-align: left">
+        <label for="field.teamdescription">Team Description:</label>
+        <span class="fieldRequired">(Optional)</span>
+        <div><textarea ... name="field.teamdescription" ...></textarea></div>
+        <p class="formHelp">Use plain text; URLs will be linkified</p>
+      </td>
+    </tr>
+    ...
 
 
-== Checkbox Widgets ==
+Checkbox widgets
+----------------
 
 Checkboxes have their label to the right. One example is the checkbox for
 specifying whether your project uses Launchpad Translations.
 
-  >>> browser.open('http://launchpad.dev/evolution/+edit')
-  >>> content = find_main_content(browser.contents)
+    >>> admin_browser.open('http://launchpad.dev/evolution/+edit')
+    >>> content = find_main_content(admin_browser.contents)
 
-  >>> print content
-  <...
-  <tr>
-    <th></th>
-    <td width="100%">
-      ...
-      <input ... name="field.official_rosetta" type="checkbox" ... />
-      <label for="field.official_rosetta">Translations...</label>
-    </td>
-  </tr>
-  ...
+    >>> print content
+    <...
+    <tr>
+      <th></th>
+      <td width="100%">
+        ...
+        <input ... name="field.official_rosetta" type="checkbox" ... />
+        <label for="field.official_rosetta">Translations...</label>
+      </td>
+    </tr>
+    ...
 
 
-== Rendering just the form content ==
+Rendering just the form content
+-------------------------------
 
 It may be useful in some situations to simply render the form content for a
 LaunchpadFormView. For example, when displaying the form in a popup overlay
@@ -113,38 +116,39 @@ on the page. This is enabled by a special ++form++ namespace that causes
 just the form content to be rendered for any URL corresponding to an
 LPFormView:
 
-  >>> browser.open('http://launchpad.dev/evolution/+edit/++form++')
-  >>> print browser.contents # Note: not the main content, but whole page
-  <div...
-  <table class="form">
-  ...
-  </div>
+    >>> admin_browser.open('http://launchpad.dev/evolution/+edit/++form++')
+    >>> # Note: not the main content, but the whole page.
+    >>> print admin_browser.contents
+    <div...
+    <table class="form">
+    ...
+    </div>
 
-Or for another example:
+Or for another example.
 
-  >>> cprov_browser = setupBrowser(
-  ...     auth='Basic celso.providelo@canonical.com:cprov')
-  >>> cprov_browser.open(
-  ...   'http://launchpad.dev/~cprov/+archive/ppa/+edit/++form++')
-  >>> print browser.contents
-  <div...
-  <table class="form">
-  ...
-  </div>
+    >>> cprov_browser = setupBrowser(
+    ...     auth='Basic celso.providelo@canonical.com:cprov')
+    >>> cprov_browser.open(
+    ...   'http://launchpad.dev/~cprov/+archive/ppa/+edit/++form++')
+    >>> print cprov_browser.contents
+    <div...
+    <table class="form">
+    ...
+    </div>
 
 But it will not work for views that are not LPFormViews - even if they
-display forms:
+display forms.
 
-  >>> cprov_browser.open('http://launchpad.dev/~cprov/+editsshkeys/++form++')
-  Traceback (most recent call last):
-  ...
-  NotFound...
+    >>> cprov_browser.open(
+    ...     'http://launchpad.dev/~cprov/+editsshkeys/++form++')
+    Traceback (most recent call last):
+    ...
+    NotFound...
 
-Nor will it allow unautherized access to data that it should not present:
+Nor will it allow unauthorized access to data that it should not present.
 
-  >>> browser.open('http://launchpad.dev/~cprov/+archive/ppa/+edit/++form++')
-  Traceback (most recent call last):
-  ...
-  Unauthorized...
-
-
+    >>> browser.open(
+    ...     'http://launchpad.dev/~cprov/+archive/ppa/+edit/++form++')
+    Traceback (most recent call last):
+    ...
+    Unauthorized...

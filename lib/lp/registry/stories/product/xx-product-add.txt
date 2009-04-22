@@ -1,4 +1,5 @@
-== Adding products ==
+Adding products
+===============
 
 First step in adding a project is hitting the registration link on the
 project homepage. Sample Person decides to register his project, and
@@ -46,7 +47,8 @@ form:
     'Register a project in Launchpad'
 
 
-== The product registration form ==
+The product registration form
+-----------------------------
 
 Sample Person sees the new project form. It encourages him
 to fill out as much as he can, and tells him he can manage
@@ -132,7 +134,8 @@ But at this point he gets it right!
     'http://launchpad.dev/testing'
 
 
-== A brand new project ==
+A brand new project
+-------------------
 
 XXX: This narrative still needs fixing.
 
@@ -152,7 +155,6 @@ We should have an automatic trunk series for this new product too.
     >>> anon_browser.open("http://launchpad.dev/testing/trunk")
     >>> 'Release series overview' in anon_browser.contents
     True
-
 
 Now we test if we leave the Home-page field empty. This should work,
 since the field is not required.
@@ -266,7 +268,6 @@ Now let's try to insert a product with the same name (testing).
     There is 1 error.
     testing is already used by another project
 
-
 Normal users don't get to see the owner and reviewed fields
 
     >>> user_browser.open('http://launchpad.dev/projects/+new')
@@ -278,7 +279,6 @@ Normal users don't get to see the owner and reviewed fields
     Traceback (most recent call last):
     ...
     LookupError:...
-
 
 And now, test with the David Allouche user, who is a member of the
 vcs-imports team. This should fail suggesting an invalid owner, and
@@ -303,7 +303,6 @@ the reviewed value should be on.
     True
     >>> browser.getControl('License reviewed').selected
     True
-
 
 And finally, submit a successful creation by an admin.
 
@@ -341,7 +340,8 @@ It's also possible to set the product's icon/emblem at creation time.
     'http://launchpad.dev/testing3'
 
 
-== Staging dependent messages ==
+Staging dependent messages
+--------------------------
 
 The guide and new project pages explain the purpose of staging and
 provide links to them. Sample Person can see the message when he
