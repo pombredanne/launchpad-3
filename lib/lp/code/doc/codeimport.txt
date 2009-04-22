@@ -146,7 +146,7 @@ Code imports from Git specify the URL used with "git clone" to
 retrieve the branch to import.
 
     >>> git = RevisionControlSystems.GIT
-    >>> git_url = 'git://git.example.com/master'
+    >>> git_url = 'git://git.example.com/hello.git'
     >>> git_import = code_import_set.new(
     ...     registrant=nopriv, product=product, branch_name='trunk-git',
     ...     rcs_type=git, git_repo_url=git_url)
@@ -401,6 +401,17 @@ CVS details are displayed in a similar way.
         hello from :pserver:anoncvs@cvs.example.com:/var/cvsroot
     instead of:
         hello from :pserver:anonymous@cvs.example.com:/cvsroot
+
+And for Git.
+
+    >>> data = {'git_repo_url': 'git://git.example.com/goodbye.git'}
+    >>> modify_event = git_import.updateFromData(data, nopriv)
+    >>> print make_email_body_for_code_import_update(
+    ...     git_import, modify_event, None)
+    ~vcs-imports/firefox/trunk-git is now being imported from:
+        git://git.example.com/goodbye.git
+    instead of:
+        git://git.example.com/hello.git
 
 In addition, updateFromData can be used to set the branch whiteboard,
 which is also described in the email that is sent.
