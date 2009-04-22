@@ -531,8 +531,8 @@ is still listed as an uploader. Please note the different package sets
     >>> print_permission(
     ...     ap_set.uploadersForPackageset(
     ...         firefox_ps, direct_permissions=False))
-         juergen:         firefox ->               UPLOAD (False)
           hacker:         mozilla ->               UPLOAD (False)
+         juergen:         firefox ->               UPLOAD (False)
 
 Once 'mozilla' stops including 'firefox', user 'hacker' is not listed as
 an uploader for 'firefox'.
@@ -553,8 +553,8 @@ uploaders.
     >>> sabdfl = getUtility(IPersonSet).getByName("sabdfl")
     >>> ignore_this = ap_set.newPackagesetUploader(sabdfl, firefox_ps, True)
     >>> print_permission(ap_set.uploadersForPackageset(firefox_ps))
-         juergen:         firefox ->               UPLOAD (False)
           sabdfl:         firefox ->               UPLOAD (True)
+         juergen:         firefox ->               UPLOAD (False)
 
 Persons can have both explicit or non-explicit permissions for package sets.
 

@@ -216,7 +216,7 @@ class IArchivePermissionSet(Interface):
         """The `ArchivePermission` records for uploaders to the package set.
 
         :param packageset: An `IPackageset` or a string package set name.
-        :param no_inclusions: If True only consider permissions granted
+        :param direct_permissions: If True only consider permissions granted
             directly for the package set at hand. Otherwise, include any
             uploaders for package sets that include this one.
         :raises NotFoundError: if no package set exists with the given name.
