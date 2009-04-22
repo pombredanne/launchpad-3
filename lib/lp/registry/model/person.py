@@ -1120,7 +1120,7 @@ class Person(
             return False
 
         # Translate the team name to an ITeam if we were passed a team.
-        if isinstance(team, str):
+        if isinstance(team, (str, unicode)):
             team = PersonSet().getByName(team)
 
         if self._inTeam_cache is None: # Initialize cache
