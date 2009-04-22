@@ -182,12 +182,15 @@ class LaunchpadBrowserPublication(
         self.maybeBlockOffsiteFormPost(request)
 
         # If we are running in read-only mode, notify the user.
-        try:
-            INotificationResponse(request).addNoticeNotification(structured(
-                "Launchpad is undergoing maintenance and is in "
-                "read-only mode. <i>You cannot make any changes.</i>"))
-        except ComponentLookupError:
-            pass
+        if config.launchpad.read_only:
+            try:
+                INotificationResponse(request).addNoticeNotification(
+                    structured(
+                        "Launchpad is undergoing maintenance and is in "
+                        "read-only mode. "
+                        "<i>You cannot make any changes.</i>"))
+            except ComponentLookupError:
+                pass
 
 
     def getPrincipal(self, request):

@@ -1,0 +1,72 @@
+= Read-Only Mode =
+
+During upgrades, Launchpad can be put into read-only mode using a config
+file switch. When in read-only mode, queries can be made to the slave
+database but attempts to access the master database or make database
+changes fail, returning an error page to the user.
+
+    >>> def set_read_only_mode(flag):
+    ...     from canonical.config import config
+    ...     config.launchpad.update([('read_only', str(flag))])
+
+
+== Notification of read-only mode. ==
+
+Users are warned when Launchpad is running in read-only mode.
+
+    >>> set_read_only_mode(True)
+    >>> user_browser.open('http://launchpad.dev')
+    >>> print extract_text(first_tag_by_class(
+    ...     user_browser.contents, 'informational message'))
+    Launchpad is undergoing maintenance
+    ...
+
+Anonymous users are also warned, or they might try to signup.
+
+    >>> anon_browser.open("http://launchpad.dev/~name16")
+    >>> print extract_text(first_tag_by_class(
+    ...     anon_browser.contents, 'informational message'))
+    Launchpad is undergoing maintenance
+    ...
+
+There is no warning on the SSO server, as it is not affected by this mode.
+
+    >>> user_browser.open('http://openid.launchpad.dev')
+    >>> print first_tag_by_class(
+    ...     user_browser.contents, 'informational message')
+    None
+
+There is no warning when Launchpad is running normally.
+
+    >>> set_read_only_mode(False)
+    >>> user_browser.open('http://launchpad.dev')
+    >>> print first_tag_by_class(
+    ...     user_browser.contents, 'informational message')
+    None
+
+
+== Changes fail ==
+
+Attempts to make changes raises an exception, which is rendered as a
+nice 503 page for the user.
+
+    >>> set_read_only_mode(True)
+    >>> user_browser.handleErrors = True
+    >>> user_browser.open('http://launchpad.dev/people/+me')
+    >>> user_browser.getLink('Change details').click()
+    >>> user_browser.getControl(name='field.displayname').value = 'Different'
+    >>> try:
+    ...     user_browser.getControl('Save Changes').click()
+    ... except Exception:
+    ...     pass
+    >>> print user_browser.headers.get('Status')
+    503 Service Unavailable
+    >>> print extract_text(first_tag_by_class(
+    ...     user_browser.contents, 'exception'))
+    Sorry, you can't do this right now
+
+
+== Cleanup ==
+
+    >>> set_read_only_mode(False)
+
