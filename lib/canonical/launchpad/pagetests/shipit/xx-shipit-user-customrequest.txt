@@ -94,7 +94,7 @@ be approved before they can be shipped.
 
 
 If later the user asks for standard quantities of CDs of a different flavour,
-the request will still be pending approval, becuase it contains more than
+the request will still be pending approval, because it contains more than
 $max_size_for_auto_approval CDs in total.
 
   >>> browser.open('http://shipit.kubuntu.dev/myrequest')
