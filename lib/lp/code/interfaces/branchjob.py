@@ -138,8 +138,8 @@ class IRosettaUploadJobSource(Interface):
 
         :param branch: The database branch to exract files from.
         :param from_revision_id: The revision id to compare against.
-        :param do_translations_upload: Flag to indicate that an extra upload
-            of translation files should be performed.
+        :param do_translations_upload: Flag to override the settings in the
+            product series and upload all translation files.
         """
 
     def iterReady():

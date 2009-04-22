@@ -755,7 +755,6 @@ class ProductSeriesTranslationsSettingsView(LaunchpadEditFormView,
         super(ProductSeriesTranslationsSettingsView, self).__init__(
             context, request)
         self.cancel_url = canonical_url(self.context)
-        self.settings_widget.hint = None
 
     @action(u"Save settings", name="save_settings")
     def change_settings_action(self, action, data):

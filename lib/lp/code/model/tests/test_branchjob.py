@@ -679,7 +679,15 @@ class TestRosettaUploadJob(TestCaseWithFactory):
             (('foo.pot',), ('eo.po',), ('fr.po',), ('README',)))
         self.assertEqual(3, len(entries))
 
-    def test_upload_extra_translations(self):
+    def test_upload_extra_translations_no_import(self):
+        # Even if the series is configured not to upload any files, the
+        # job can be told to upload template and translation files.
+        entries = self._runJobWithFiles(
+            TranslationsBranchImportMode.NO_IMPORT,
+            (('foo.pot',), ('eo.po',), ('fr.po',), ('README',)), True)
+        self.assertEqual(3, len(entries))
+
+    def test_upload_extra_translations_import_templates(self):
         # Even if the series is configured to only upload template files, the
         # job can be told to upload translation files, too.
         entries = self._runJobWithFiles(
