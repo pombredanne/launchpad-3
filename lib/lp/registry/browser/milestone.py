@@ -99,6 +99,25 @@ class MilestoneOverviewNavigationMenu(NavigationMenu):
 
 class MilestoneView(LaunchpadView):
 
+    def __init__(self, context, request):
+        """See `LaunchpadView`.
+
+        This view may be used with a milestone or a release. The milestone
+        and release (if it exists) are accessible are attributes. The context
+        attribute will always be the milestone.
+
+        :param context: `IMilestone` or `IProductRelease`
+        :param request: `ILaunchpadRequest`
+        """
+        super(LaunchpadView, self).__init__(context, request)
+        if IMilestone.providedBy(context):
+            self.milestone = context
+            self.release = context.product_release
+        else:
+            self.milestone = context.milestone
+            self.release = context
+        self.context = self.milestone
+
     # Listify and cache the specifications and bugtasks to avoid making
     # the same query over and over again when evaluating in the template.
     @cachedproperty

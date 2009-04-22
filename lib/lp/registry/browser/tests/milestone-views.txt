@@ -3,6 +3,37 @@
 Users can directly see and edit milestones through the milestone views.
 
 
+    >>> milestone = factory.makeMilestone(name="kakapo")
+    >>> person = milestone.product.owner
+    >>> login_person(person)
+    >>> view = create_view(milestone, '+index')
+    >>> print view.context.name
+    kakapo
+
+The MilestoneView provides access to the milestone and to its release if
+it has one.
+
+    >>> print view.milestone.name
+    kakapo
+    >>> print view.release
+    None
+
+    >>> release = factory.makeProductRelease(milestone)
+    >>> view = create_view(milestone, '+index')
+    >>> print view.release.version
+    kakapo
+
+Bugs and specifications are accessible.
+
+    >>> bug = factory.makeBug(title="kiwi")
+    >>> bugtask = factory.makeBugTask(bug=bug, target=milestone.product)
+    >>> bugtask.milestone = milestone
+    >>> spec = factory.makeSpecification(
+    ...     product=milestone.product, title='dodo')
+    >>> spec.milestone = milestone
+    >>> view = create_view(milestone, '+index')
+
+
 == Editing milestones ==
 
 Persons with launchpad.Edit permissions for milestones may edit them.
