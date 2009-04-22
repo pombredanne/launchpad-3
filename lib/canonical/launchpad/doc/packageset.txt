@@ -195,6 +195,10 @@ When 'mozilla' stops including 'languagepack' it is still included by
 'umbrella' (via the 'gnome' package set).
 
     >>> mozilla_ps.remove((languagepack_ps,))
+    >>> print_data(mozilla_ps.setsIncluded())
+      5 -> firefox
+      6 -> thunderbird
+
     >>> print_data(languagepack_ps.setsIncludedBy(direct_inclusion=True))
      3 -> gnome
     >>> print_data(languagepack_ps.setsIncludedBy())
@@ -360,6 +364,8 @@ What sources are *directly* included by 'mozilla' but not by 'firefox'?
     ...     mozilla_ps.sourcesNotSharedBy(firefox_ps, direct_inclusion=True))
      16 -> mozilla
 
+    >>> store.commit()
+
 
 == Various errors ==
 
@@ -446,3 +452,148 @@ Create a new package set.
 
     >>> kde_ps = ps_factory.new(
     ...     u'kde', u'Contains all KDE packages', person2)
+
+
+== Package sets and permissions ==
+
+As it stands package sets will first be used for governing source package
+uploads i.e. in conjunction with `ArchivePermission` data.
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     ArchivePermissionType, IArchivePermissionSet)
+    >>> ap_set = getUtility(IArchivePermissionSet)
+
+So, let's assign upload permissions for the 'mozilla' package set to our
+happy hacker.
+
+    >>> def print_permission(result_set):
+    ...     for perm in sorted(result_set):
+    ...         person = perm.person.name
+    ...         pset = perm.packageset.name
+    ...         if perm.permission == ArchivePermissionType.UPLOAD:
+    ...             permission = 'UPLOAD'
+    ...         elif perm.permission == ArchivePermissionType.QUEUE_ADMIN:
+    ...             permission = 'QUEUE_ADMIN'
+    ...         print(
+    ...             '%12s: %15s -> %20s (%s)'
+    ...             % (person, pset, permission, perm.explicit))
+
+    >>> ignore_this = ap_set.newPackagesetUploader(person1, mozilla_ps)
+
+Now we see that person 'hacker' has upload permissions to the 'mozilla'
+package set.
+
+    >>> permissions = ap_set.packagesetsForUploader(person1)
+    >>> print_permission(permissions)
+          hacker:         mozilla ->               UPLOAD (False)
+
+The 'package_set_name' property allows easy access to the package set
+name.
+
+    >>> [archp] = permissions
+    >>> archp.package_set_name
+    u'mozilla'
+
+'hacker' is also listed as one of the 'mozilla' uploaders.
+
+    >>> print_permission(ap_set.uploadersForPackageset(mozilla_ps))
+          hacker:         mozilla ->               UPLOAD (False)
+
+Furthermore, 'hacker' will be listed as an uploader for any included
+package set as long as the latter does not have its own permission with
+the 'explicit' flag set.
+
+    >>> print_data(mozilla_ps.setsIncluded())
+      5 -> firefox
+      6 -> thunderbird
+      7 -> languagepack
+
+When we ask for the 'firefox' uploaders, 'hacker' will not be listed although
+'mozilla' includes 'firefox'.
+
+    >>> print_permission(ap_set.uploadersForPackageset(firefox_ps))
+
+If we ask for uploaders while considering the inclusions between package
+sets, 'hacker' will be listed as an uploader for 'firefox' by virtue of
+the fact that the latter is included by 'mozilla' and 'hacker' is an
+uploader for mozilla.
+
+    >>> print_permission(
+    ...     ap_set.uploadersForPackageset(
+    ...         firefox_ps, direct_permissions=False))
+          hacker:         mozilla ->               UPLOAD (False)
+
+If we add a permission for 'firefox' things will stay the same i.e. 'hacker'
+is still listed as an uploader. Please note the different package sets
+('mozilla' and 'firefox') although we are looking for 'firefox' uploaders.
+
+    >>> ignore_this = ap_set.newPackagesetUploader(person2, firefox_ps)
+    >>> print_permission(
+    ...     ap_set.uploadersForPackageset(
+    ...         firefox_ps, direct_permissions=False))
+          hacker:         mozilla ->               UPLOAD (False)
+         juergen:         firefox ->               UPLOAD (False)
+
+Once 'mozilla' stops including 'firefox', user 'hacker' is not listed as
+an uploader for 'firefox'.
+
+    >>> mozilla_ps.remove((firefox_ps,))
+    >>> print_data(mozilla_ps.setsIncluded())
+      6 -> thunderbird
+      7 -> languagepack
+
+    >>> print_permission(
+    ...     ap_set.uploadersForPackageset(
+    ...         firefox_ps, direct_permissions=False))
+         juergen:         firefox ->               UPLOAD (False)
+
+Ulploaders with explicit permissions will be listed along with the other
+uploaders.
+
+    >>> sabdfl = getUtility(IPersonSet).getByName("sabdfl")
+    >>> ignore_this = ap_set.newPackagesetUploader(sabdfl, firefox_ps, True)
+    >>> print_permission(ap_set.uploadersForPackageset(firefox_ps))
+          sabdfl:         firefox ->               UPLOAD (True)
+         juergen:         firefox ->               UPLOAD (False)
+
+Persons can have both explicit or non-explicit permissions for package sets.
+
+    >>> ignore_this = ap_set.newPackagesetUploader(sabdfl, thunderbird_ps)
+    >>> print_permission(ap_set.packagesetsForUploader(sabdfl))
+          sabdfl:         firefox ->               UPLOAD (True)
+          sabdfl:     thunderbird ->               UPLOAD (False)
+
+Attempting to create an explicit permission when a non-explicit one exists
+already will fail.
+
+    >>> ignore_this = ap_set.newPackagesetUploader(
+    ...     sabdfl, thunderbird_ps, True)
+    Traceback (most recent call last):
+    ...
+    ValueError: Permission for package set 'thunderbird' already exists but
+    with a different 'explicit' flag value (False)
+
+And the other way around:
+
+    >>> ignore_this = ap_set.newPackagesetUploader(sabdfl, firefox_ps)
+    Traceback (most recent call last):
+    ...
+    ValueError: Permission for package set 'firefox' already exists but
+    with a different 'explicit' flag value (True)
+
+Removing package set based permissions is straight-forward.
+
+    >>> ap_set.deletePackagesetUploader(sabdfl, firefox_ps, True)
+    >>> print_permission(ap_set.packagesetsForUploader(sabdfl))
+          sabdfl:     thunderbird ->               UPLOAD (False)
+
+    >>> ap_set.deletePackagesetUploader(sabdfl, thunderbird_ps)
+    >>> print_permission(ap_set.packagesetsForUploader(sabdfl))
+
+An attempt to look up package set based permission by something else than
+by a package set (name) results in a failure.
+
+    >>> print_permission(ap_set.uploadersForPackageset(12345))
+    Traceback (most recent call last):
+    ...
+    ValueError: Not a package set: int
