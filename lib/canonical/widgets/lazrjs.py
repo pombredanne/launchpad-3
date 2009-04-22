@@ -4,10 +4,12 @@
 
 __metaclass__ = type
 __all__ = [
+    'vocabulary_to_choice_edit_items',
     'TextLineEditorWidget',
     ]
 
 import cgi
+from simplejson import dumps
 from textwrap import dedent
 
 from zope.security.checker import canWrite
@@ -109,3 +111,14 @@ class TextLineEditorWidget:
             params['trigger'] = self.TRIGGER_TEMPLATE % params
             params['activation_script'] = self.ACTIVATION_TEMPLATE % params
         return self.WIDGET_TEMPLATE % params 
+
+
+def vocabulary_to_choice_edit_items(vocab):
+    """ TODO """ # TODO
+    items = [
+        {'name': item.value.title,
+         'value': item.value.title,
+         'style': '', 'help': '', 'disabled': False}
+        for item in vocab]
+    return dumps(items)
+

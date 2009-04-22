@@ -139,7 +139,8 @@ from canonical.widgets.bugtask import (
     BugTaskSourcePackageNameWidget, DBItemDisplayWidget,
     NewLineToSpacesWidget, NominationReviewActionWidget)
 from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
-from canonical.widgets.lazrjs import TextLineEditorWidget
+from canonical.widgets.lazrjs import (
+    vocabulary_to_choice_edit_items, TextLineEditorWidget)
 from canonical.widgets.project import ProjectScopeWidget
 
 
@@ -2975,6 +2976,24 @@ class BugTaskTableRowView(LaunchpadView):
         """Return true if the BugTask edit form should be shown."""
         # Hide the edit form when the bug is viewed in a CVE context
         return self.request.getNearest(ICveSet) == (None, None)
+
+    @property
+    def status_widget_items(self):
+        """ """ # TODO
+        status_noshow = [BugTaskStatus.UNKNOWN]
+        status_noshow.extend(
+            status for status in BugTaskStatus.items
+            if not self.context.canTransitionToStatus(status, self.user))
+
+        if self.context.status in status_noshow:
+            # The user has to be able to see the current value.
+            status_noshow.remove(self.context.status)
+
+        status_vocab_factory = vocab_factory(
+            BugTaskStatus, noshow=status_noshow)
+
+        return vocabulary_to_choice_edit_items(
+            status_vocab_factory(self.context))
 
 
 class BugsBugTaskSearchListingView(BugTaskSearchListingView):
