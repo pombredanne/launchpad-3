@@ -49,12 +49,12 @@
         <td tal:content="bugtask/bugtargetdisplayname"
             tal:condition="context/show_column/bugtargetdisplayname|nothing"
         >mozilla-firefox (Ubuntu)</td>
-        <td tal:content="structure bugtask/sourcepackagename/name|string:&mdash;"
+        <td tal:content="structure bugtask/sourcepackagename/name|default"
             tal:condition="context/show_column/packagename|nothing"
-        >mozilla-firefox (Ubuntu)</td>
-        <td tal:content="structure bugtask/product/name|string:&mdash;"
+        >&mdash;</td>
+        <td tal:content="structure bugtask/product/name|default"
             tal:condition="context/show_column/productname|nothing"
-        >firefox</td>
+        >&mdash;</td>
         <td tal:content="bugtask/importance/title"
             tal:attributes="class string:importance${bugtask/importance/name}"
             tal:condition="context/show_column/importance|nothing">Critical</td>

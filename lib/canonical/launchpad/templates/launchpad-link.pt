@@ -8,7 +8,6 @@
 </strong><tal:link-enabled
     xmlns:tal="http://xml.zope.org/namespaces/tal"
     condition="context/enabled"><a
-    style=""
     href=""
     class=""
     title=""
