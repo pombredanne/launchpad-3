@@ -665,7 +665,7 @@ class ValidPersonOrTeamVocabulary(
                 Person.visibility == PersonVisibility.PRIVATE
                 )
         else:
-            private_query = True
+            private_query = False
         return private_query
 
     def _doSearch(self, text=""):
@@ -1307,14 +1307,15 @@ class MilestoneVocabulary(SQLObjectVocabularyBase):
                      for milestone in product.milestones),
                     longest_expected=40)
             elif IProductSeries.providedBy(target):
-                series_milestones = shortlist(target.milestones,
-                                              longest_expected=40)
-                product_milestones = shortlist(target.product.milestones,
-                                               longest_expected=40)
-                # Some milestones are associtaed with a product
-                # and a product series; these should appear only
-                # once.
-                milestones = set(series_milestones + product_milestones)
+                # While some milestones may be associated with a
+                # productseries, we want to show all milestones for
+                # the product. Since the database constraint
+                # "valid_target" ensures that a milestone associated
+                # with a series is also associated with the product
+                # itself, we don't need to look up series-related
+                # milestones.
+                milestones = shortlist(target.product.milestones,
+                                       longest_expected=40)
             else:
                 milestones = shortlist(
                     target.milestones, longest_expected=40)

@@ -28,7 +28,7 @@ from canonical.encoding import guess as guess_encoding, ascii_smash
 
 re_taint_free = re.compile(r"^[-+~/\.\w]+$")
 
-re_isadeb = re.compile(r"(.+?)_(.+?)_(.+)\.(u?deb)$")
+re_isadeb = re.compile(r"(.+?)_(.+?)_(.+)\.(u?d?deb)$")
 re_issource = re.compile(r"(.+)_(.+?)\.(orig\.tar\.gz|diff\.gz|tar\.gz|dsc)$")
 
 re_no_epoch = re.compile(r"^\d+\:")
@@ -39,7 +39,7 @@ re_valid_pkg_name = re.compile(r"^[\dA-Za-z][\dA-Za-z\+\-\.]+$")
 re_changes_file_name = re.compile(r"([^_]+)_([^_]+)_([^\.]+).changes")
 re_extract_src_version = re.compile(r"(\S+)\s*\((.*)\)")
 
-re_parse_maintainer = re.compile(r"^\s*(\S.*\S)\s*\<([^\>]+)\>");
+re_parse_maintainer = re.compile(r"^\s*(\S.*\S)\s*\<([^\>]+)\>")
 
 
 def prefix_multi_line_string(str, prefix, include_blank_lines=0):
@@ -58,17 +58,17 @@ def prefix_multi_line_string(str, prefix, include_blank_lines=0):
     return out
 
 
-def extract_component_from_section(section, default_component = "main"):
+def extract_component_from_section(section, default_component="main"):
     component = ""
     if section.find("/") != -1:
         component, section = section.split("/")
     else:
         component = default_component
 
-    return (section,component)
+    return (section, component)
 
 
-def build_file_list(tagfile, is_dsc = False, default_component = "main" ):
+def build_file_list(tagfile, is_dsc = False, default_component="main" ):
     files = {}
 
     if "files" not in tagfile:
@@ -161,11 +161,11 @@ class ParseMaintError(Exception):
 
     def __init__(self, message):
         Exception.__init__(self)
-        self.args = message,;
-        self.message = message;
+        self.args = (message,)
+        self.message = message
 
 
-def fix_maintainer (maintainer, field_name = "Maintainer" ):
+def fix_maintainer (maintainer, field_name="Maintainer"):
     """Parses a Maintainer or Changed-By field and returns:
 
     (1) an RFC822 compatible version,

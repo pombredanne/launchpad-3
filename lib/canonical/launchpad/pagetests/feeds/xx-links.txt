@@ -315,4 +315,4 @@ atom feed for that branch's revisions.
     >>> soup.head.findAll('link', type='application/atom+xml')
     [<link rel="alternate" type="application/atom+xml"
         href="http://feeds.launchpad.dev/~sabdfl/firefox/release--0.9.1/branch.atom"
-	title="Latest Revisions for Branch Mozilla Firefox 0.9.1" />]
+	title="Latest Revisions for Branch ~sabdfl/firefox/release--0.9.1" />]

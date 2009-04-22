@@ -15,19 +15,8 @@ from sqlobject import SQLObjectNotFound
 import transaction
 from zope.component import getUtility
 
-from lp.code.model.branchjob import (
-    BranchDiffJob, BranchJob, BranchJobType, RevisionsAddedJob,
-    RevisionMailJob, RosettaUploadJob)
-from lp.code.model.branchrevision import BranchRevision
-from canonical.launchpad.database.revision import RevisionSet
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.testing import verifyObject
-from lp.code.interfaces.branchsubscription import (
-    BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel)
-from lp.code.interfaces.branchjob import (
-    IBranchDiffJob, IBranchJob, IRevisionMailJob, IRosettaUploadJob)
-from lp.code.interfaces.branchsubscription import (
-    BranchSubscriptionDiffSize,)
 from canonical.launchpad.interfaces.translations import (
     TranslationsBranchImportMode)
 from canonical.launchpad.interfaces.translationimportqueue import (
@@ -36,6 +25,18 @@ from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.launchpad.testing.librarianhelpers import (
     get_newest_librarian_file)
 from canonical.launchpad.tests.mail_helpers import pop_notifications
+
+from lp.code.interfaces.branchsubscription import (
+    BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel)
+from lp.code.interfaces.branchjob import (
+    IBranchDiffJob, IBranchJob, IRevisionMailJob, IRosettaUploadJob)
+from lp.code.interfaces.branchsubscription import (
+    BranchSubscriptionDiffSize,)
+from lp.code.model.branchjob import (
+    BranchDiffJob, BranchJob, BranchJobType, RevisionsAddedJob,
+    RevisionMailJob, RosettaUploadJob)
+from lp.code.model.branchrevision import BranchRevision
+from lp.code.model.revision import RevisionSet
 
 
 class TestBranchJob(TestCaseWithFactory):
@@ -556,13 +557,17 @@ class TestRosettaUploadJob(TestCaseWithFactory):
         return self._runJobWithFiles(
             import_mode, ((file_name, file_content),))
 
-    def _runJobWithFiles(self, import_mode, files):
+    def _runJobWithFiles(self, import_mode, files,
+                         do_upload_translations=False):
         self._makeBranchWithTreeAndFiles(files)
-        return self._runJob(import_mode, NULL_REVISION)
+        return self._runJob(import_mode, NULL_REVISION,
+                            do_upload_translations)
 
-    def _runJob(self, import_mode, revision_id):
+    def _runJob(self, import_mode, revision_id,
+                do_upload_translations=False):
         self._makeProductSeries(import_mode)
-        job = RosettaUploadJob.create(self.branch, revision_id)
+        job = RosettaUploadJob.create(self.branch, revision_id,
+                                      do_upload_translations)
         if job is not None:
             job.run()
         queue = getUtility(ITranslationImportQueue)
@@ -656,6 +661,31 @@ class TestRosettaUploadJob(TestCaseWithFactory):
             (('foo.pot',), ('eo.po',), ('README',))
             )
         self.assertEqual([], entries)
+
+    def test_upload_translations(self):
+        # A PO file can be uploaded if the series is configured for it.
+        po_path = "eo.po"
+        entries = self._runJobWithFile(
+            TranslationsBranchImportMode.IMPORT_TRANSLATIONS, po_path)
+        self.assertEqual(1, len(entries))
+        entry = entries[0]
+        self.assertEqual(po_path, entry.path)
+
+    def test_upload_template_and_translations(self):
+        # The same configuration will upload template and translation files
+        # in one go. Other files are still ignored.
+        entries = self._runJobWithFiles(
+            TranslationsBranchImportMode.IMPORT_TRANSLATIONS,
+            (('foo.pot',), ('eo.po',), ('fr.po',), ('README',)))
+        self.assertEqual(3, len(entries))
+
+    def test_upload_extra_translations(self):
+        # Even if the series is configured to only upload template files, the
+        # job can be told to upload translation files, too.
+        entries = self._runJobWithFiles(
+            TranslationsBranchImportMode.IMPORT_TEMPLATES,
+            (('foo.pot',), ('eo.po',), ('fr.po',), ('README',)), True)
+        self.assertEqual(3, len(entries))
 
     def test_upload_approved(self):
         # A single new entry should be created approved.

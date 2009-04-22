@@ -75,6 +75,26 @@ to normalise the result:
     >>> print rpconfig.allowed_sreg
     [u'email', u'fullname']
 
+The auto_authorize attribute is currently read only, with its value
+derrived from the trust root:
+
+    >>> rpconfig.auto_authorize
+    False
+    >>> rpconfig.auto_authorize = True
+    Traceback (most recent call last):
+      ...
+    ForbiddenAttribute: ...
+
+At present, it depends on whether the trust root is within a fixed
+list of known values:
+
+    >>> from canonical.launchpad.database.openidserver import (
+    ...     AUTO_AUTHORIZE_TRUST_ROOTS)
+    >>> AUTO_AUTHORIZE_TRUST_ROOTS.add(rpconfig.trust_root)
+    >>> rpconfig.auto_authorize
+    True
+    >>> AUTO_AUTHORIZE_TRUST_ROOTS.remove(rpconfig.trust_root)
+
 
 == Searching for OpenIDRPConfig objects ==
 
