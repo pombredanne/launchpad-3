@@ -16,7 +16,7 @@ like. It includes GPG information, if the user has any.
 
     >>> anon_browser.open("http://launchpad.dev/~name16/+rdf")
     >>> print anon_browser.contents
-    <?xml version="1.0" encoding="utf-8"?>
+    <?xml version="1.0" encoding="utf-8"...?>
     <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
              xmlns:foaf="http://xmlns.com/foaf/0.1/"
              xmlns:lp="https://launchpad.net/rdf/launchpad#"
@@ -40,7 +40,7 @@ It also includes SSH keys:
 
     >>> anon_browser.open("http://launchpad.dev/~name12/+rdf")
     >>> print anon_browser.contents
-    <?xml version="1.0" encoding="utf-8"?>
+    <?xml version="1.0" encoding="utf-8"...?>
     ...
     <foaf:name>Sample Person</foaf:name>
     ...
@@ -71,7 +71,7 @@ Now, generate the RDF itself:
     >>> from canonical.launchpad.helpers import backslashreplace
     >>> anon_browser.open("http://launchpad.dev/~testing-spanish-team/+rdf")
     >>> print backslashreplace(anon_browser.contents)
-    <?xml version="1.0" encoding="utf-8"?>
+    <?xml version="1.0" encoding="utf-8"...?>
     <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
              xmlns:foaf="http://xmlns.com/foaf/0.1/"
              xmlns:lp="https://launchpad.net/rdf/launchpad#"
@@ -140,7 +140,7 @@ present:
 And nothing about them is rendered at all:
 
     >>> print anon_browser.contents
-    <?xml version="1.0" encoding="utf-8"?>
+    <?xml version="1.0" encoding="utf-8"...?>
     <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
              xmlns:foaf="http://xmlns.com/foaf/0.1/"
              xmlns:lp="https://launchpad.net/rdf/launchpad#"
