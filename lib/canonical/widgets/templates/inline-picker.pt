@@ -20,6 +20,8 @@ YUI().use('lp.picker', function(Y) {
         '${view/json_attribute_uri_base}',
         '${view/json_attribute}',
         '${view/id}',
+        ${view/show_remove_button},
+        ${view/show_assign_me_button},
         ${view/config});
 });
 "/>

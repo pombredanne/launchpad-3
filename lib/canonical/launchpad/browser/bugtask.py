@@ -59,6 +59,7 @@ from zope import formlib
 from zope.interface import implementer, implements, providedBy
 from zope.schema import Choice
 from zope.schema.interfaces import IContextSourceBinder, IList
+from zope.schema.vocabulary import getVocabularyRegistry
 
 from zope.schema.vocabulary import (
     getVocabularyRegistry, SimpleVocabulary, SimpleTerm)
@@ -133,7 +134,8 @@ from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import TableBatchNavigator
 from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp.tales import PersonFormatterAPI
-from canonical.launchpad.webapp.vocabulary import vocab_factory
+from canonical.launchpad.webapp.vocabulary import (
+    IHugeVocabulary, vocab_factory)
 
 from canonical.lazr.interfaces import IObjectPrivacy
 from lazr.restful.interfaces import IJSONRequestCache
@@ -3002,6 +3004,10 @@ class BugTaskTableRowView(LaunchpadView):
         else:
             assignee_html = PersonFormatterAPI(self.context.assignee).link(
                 '+assignedbugs')
+        registry = getVocabularyRegistry()
+        vocabulary = registry.get(
+            IHugeVocabulary, IBugTask['assignee'].vocabularyName)
+        is_user_in_vocabulary = self.user in vocabulary
         return InlineEditPickerWidget(
             context=self.context,
             request=self.request,
@@ -3012,7 +3018,10 @@ class BugTaskTableRowView(LaunchpadView):
             default_html=assignee_html,
             id=assignee_content_id,
             header='Change assignee',
-            step_title='Search for people or teams');
+            step_title='Search for people or teams',
+            show_remove_button=True,
+            show_assign_me_button=is_user_in_vocabulary,
+            remove_button_text='Remove Assignee');
 
 
 class BugsBugTaskSearchListingView(BugTaskSearchListingView):

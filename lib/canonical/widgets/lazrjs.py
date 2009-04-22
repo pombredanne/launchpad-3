@@ -127,7 +127,9 @@ class InlineEditPickerWidget:
     def __init__(self, context, request, py_attribute, json_attribute,
                  json_attribute_uri_base,
                  vocabulary, default_html, id=None,
-                 header='Select an item', step_title='Search'):
+                 header='Select an item', step_title='Search',
+                 show_remove_button=False, show_assign_me_button=False,
+                 remove_button_text=None):
         """Create a widget wrapper.
 
         :param context: The object that is being edited.
@@ -142,7 +144,11 @@ class InlineEditPickerWidget:
         :param default_html: Default display of attribute.
         :param id: The HTML id to use for this widget. Automatically
             generated if this is not provided.
-        :param title: The string to use as the link title. Defaults to 'Edit'.
+        :param header: The large text at the top of the picker.
+        :param step_title: Smaller line of text below the header.
+        :param show_remove_button: Show remove button below search box.
+        :param show_assign_me_button: Show assign-me button below search box.
+        :param remove_button_text: Override default button text: "Remove"
         """
         self.context = context
         self.request = request
@@ -153,6 +159,10 @@ class InlineEditPickerWidget:
         self.default_html = default_html
         self.header = header
         self.step_title = step_title
+        self.show_remove_button = simplejson.dumps(show_remove_button)
+        self.show_assign_me_button = simplejson.dumps(show_assign_me_button)
+        self.remove_button_text = remove_button_text
+
         if id is None:
             self.id = self._generate_id()
         else:
@@ -171,7 +181,8 @@ class InlineEditPickerWidget:
     @property
     def config(self):
         return simplejson.dumps(
-            dict(header=self.header, step_title=self.step_title))
+            dict(header=self.header, step_title=self.step_title,
+                 remove_button_text=self.remove_button_text))
 
     @property
     def resource_uri(self):
