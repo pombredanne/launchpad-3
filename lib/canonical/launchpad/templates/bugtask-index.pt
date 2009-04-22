@@ -197,6 +197,9 @@ function update_bug_duplicate(data) {
     </metal:block>
 
     <div metal:fill-slot="main" tal:define="context_menu context/menu:context">
+      <div id="tags-autocomplete">
+       <div id="tags-autocomplete-content"></div>
+      </div>
       <p class="object timestamp">
 
           Bug #<tal:block content="context/bug/id"/> reported
