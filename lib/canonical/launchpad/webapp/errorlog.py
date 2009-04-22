@@ -215,7 +215,8 @@ class ErrorReport:
 class ErrorReportingUtility:
     implements(IErrorReportingUtility)
 
-    _ignored_exceptions = set(['TranslationUnavailable'])
+    _ignored_exceptions = set([
+        'TranslationUnavailable', 'ReadOnlyModeDisallowedStore'])
     _ignored_exceptions_for_unauthenticated_users = set(['Unauthorized'])
     _default_config_section = 'error_reports'
 

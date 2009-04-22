@@ -25,7 +25,7 @@ from canonical.launchpad.webapp import LaunchpadView
 from canonical.launchpad.webapp.interfaces import (
     AUTH_STORE, DEFAULT_FLAVOR, DisallowedStore,
     IDatabasePolicy, IStoreSelector,
-    MAIN_STORE, MASTER_FLAVOR, SLAVE_FLAVOR)
+    MAIN_STORE, MASTER_FLAVOR, ReadOnlyModeDisallowedStore, SLAVE_FLAVOR)
 
 
 def _now():
