@@ -13,12 +13,11 @@ __all__ = [
 
 from operator import attrgetter
 
-from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.browser.librarian import ProxiedLibraryFileAlias
-from canonical.launchpad.interfaces.build import IBuildSet, BuildSetStatus
+from canonical.launchpad.interfaces.build import BuildSetStatus
 from canonical.launchpad.interfaces.packagediff import IPackageDiff
 from canonical.launchpad.interfaces.publishing import (
     PackagePublishingStatus, IBinaryPackagePublishingHistory,
@@ -199,14 +198,14 @@ class SourcePublishingRecordView(BasePublishingRecordView):
     @cachedproperty
     def build_status_summary(self):
         """Returns a dict with a summary of the build status."""
-        build_set = getUtility(IBuildSet)
-        return build_set.getStatusSummaryForBuilds(self.builds)
+        return self.context.getStatusSummaryForBuilds()
 
     @property
     def builds_successful(self):
         """Return whether all builds were successful."""
-        success = BuildSetStatus.FULLYBUILT
-        return self.build_status_summary['status'] == success
+        status = self.build_status_summary['status']
+        return (status == BuildSetStatus.FULLYBUILT or
+                    status == PackagePublishingStatus.PENDING)
 
     @property
     def build_status_img_src(self):
