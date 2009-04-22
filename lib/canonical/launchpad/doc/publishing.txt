@@ -107,7 +107,7 @@ Create a helper for printing the build status summary:
     ...         print build.title
     >>> build_status_summary = spph.getStatusSummaryForBuilds()
     >>> print_build_status_summary(build_status_summary)
-    Pending
+    FULLYBUILT_PENDING
     hppa build of foo 666 in ubuntutest breezy-autotest RELEASE
     i386 build of foo 666 in ubuntutest breezy-autotest RELEASE
 
@@ -116,7 +116,7 @@ If one of the builds becomes published, it will not appear in the summary:
     >>> bpr = stp.uploadBinaryForBuild(builds[0], 'foo-bin')
     >>> bpph = stp.publishBinaryInArchive(bpr, spph.archive)
     >>> print_build_status_summary(spph.getStatusSummaryForBuilds())
-    Pending
+    FULLYBUILT_PENDING
     i386 build of foo 666 in ubuntutest breezy-autotest RELEASE
 
 After publishing the second binary, the status changes to FULLYBUILT as

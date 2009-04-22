@@ -205,7 +205,7 @@ class SourcePublishingRecordView(BasePublishingRecordView):
         """Return whether all builds were successful."""
         status = self.build_status_summary['status']
         return (status == BuildSetStatus.FULLYBUILT or
-                    status == PackagePublishingStatus.PENDING)
+                    status == BuildSetStatus.FULLYBUILT_PENDING)
 
     @property
     def build_status_img_src(self):

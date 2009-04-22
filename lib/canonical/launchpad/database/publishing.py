@@ -754,7 +754,9 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
 
     def getStatusSummaryForBuilds(self):
         """See `ISourcePackagePublishingHistory`."""
+        # Import here to avoid circular import.
         from canonical.launchpad.interfaces.build import BuildSetStatus
+
         builds = self.getBuilds()
         summary = getUtility(IBuildSet).getStatusSummaryForBuilds(
             builds)
@@ -771,7 +773,7 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
 
             if unpublished_builds:
                 augmented_summary = {
-                    'status': PackagePublishingStatus.PENDING,
+                    'status': BuildSetStatus.FULLYBUILT_PENDING,
                     'builds': unpublished_builds
                 }
         return augmented_summary

@@ -181,10 +181,8 @@ Create a small function for displaying the results:
     ...     )
 
     >>> print_build_summary(src_pub_record_view.build_status_summary)
-    Pending
-    This [source] package has been accepted into the DistroSeries and
-    is now pending the addition of the files to the published disk area.
-    In due course, this source package will be published.
+    FULLYBUILT_PENDING
+    All builds were built successfully but have not yet been published.
     Relevant builds:
      - i386 build of iceweasel 1.0 in ubuntu warty RELEASE
 
