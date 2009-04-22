@@ -36,9 +36,9 @@
             <a tal:content="log/person/displayname"
                tal:attributes="href log/person/fmt:url">person</a></td>
             <td tal:content="log/whatchanged">description</td>
-            <td tal:content="log/oldvalue">this</td>
-            <td tal:content="log/newvalue">that</td>
-            <td tal:content="log/message">message</td>
+            <td><tal:oldvalue tal:replace="log/oldvalue">this</tal:oldvalue></td>
+            <td><tal:newvalue tal:replace="log/newvalue">that</tal:newvalue></td>
+            <td><tal:message  tal:replace="log/message">message</tal:message></td>
         </tr>
       </tbody>
     </table>
