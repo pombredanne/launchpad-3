@@ -42,6 +42,10 @@ var lp_bug_entry;
  * for the form.
  */
 Y.on('domready', function() {
+    if (Y.UA.ie) {
+       return;
+    }
+
     // If the user is not logged in, then we need to defer to the
     // default behaviour.
     if (LP.client.links['me'] === undefined){

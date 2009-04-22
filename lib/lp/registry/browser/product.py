@@ -1545,8 +1545,10 @@ class ProductEditPeopleView(LaunchpadEditFormView):
         'driver',
         ]
 
-    custom_widget('owner', PersonPickerWidget, header="Select the maintainer")
-    custom_widget('driver', PersonPickerWidget, header="Select the driver")
+    custom_widget('owner', PersonPickerWidget, header="Select the maintainer",
+                  include_create_team_link=True)
+    custom_widget('driver', PersonPickerWidget, header="Select the driver",
+                  include_create_team_link=True)
 
     @action(_('Save changes'), name='save')
     def save_action(self, action, data):
