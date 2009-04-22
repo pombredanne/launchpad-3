@@ -364,6 +364,48 @@ What sources are *directly* included by 'mozilla' but not by 'firefox'?
     ...     mozilla_ps.sourcesNotSharedBy(firefox_ps, direct_inclusion=True))
      16 -> mozilla
 
+Sometimes it's interesting to see what package sets include a certain
+source package name.
+
+    >>> from canonical.launchpad.interfaces.packageset import (
+    ...     IPackagesetSet)
+    >>> from lp.registry.interfaces.sourcepackagename import (
+    ...     ISourcePackageName, ISourcePackageNameSet)
+
+Which package sets include 'mozilla-firefox' either directly or indirectly?
+
+    >>> firefox_spn = getUtility(ISourcePackageNameSet)['mozilla-firefox']
+    >>> ps_set = getUtility(IPackagesetSet)
+    >>> print_data(ps_set.setsIncludingSource(firefox_spn))
+      1 -> umbrella
+      4 -> mozilla
+      5 -> firefox
+
+Which package sets include 'mozilla-firefox' directly? Remember that
+'umbrella' includes *all* source package names directly.
+
+    >>> print_data(
+    ...     ps_set.setsIncludingSource(firefox_spn, direct_inclusion=True))
+      1 -> umbrella
+      5 -> firefox
+
+It is also possible to ask the same question by providing the mere name of
+the source package.
+
+    >>> print_data(
+    ...     ps_set.setsIncludingSource('mozilla-firefox',
+    ...     direct_inclusion=True))
+      1 -> umbrella
+      5 -> firefox
+
+If the source package for a given name cannot be found an exception is
+raised.
+
+    >>> print_data(ps_set.setsIncludingSource('this-will-fail'))
+    Traceback (most recent call last):
+    ...
+    NoSuchSourcePackageName: No such source package: 'this-will-fail'.
+
     >>> store.commit()
 
 
@@ -467,7 +509,8 @@ So, let's assign upload permissions for the 'mozilla' package set to our
 happy hacker.
 
     >>> def print_permission(result_set):
-    ...     for perm in sorted(result_set):
+    ...     for perm in result_set.order_by(
+    ...         'person, permission, packageset, explicit'):
     ...         person = perm.person.name
     ...         pset = perm.packageset.name
     ...         if perm.permission == ArchivePermissionType.UPLOAD:

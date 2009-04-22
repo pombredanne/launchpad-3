@@ -19,7 +19,7 @@
   <securedutility
     class="canonical.launchpad.database.packageset.PackagesetSet"
     provides="canonical.launchpad.interfaces.packageset.IPackagesetSet">
-    <allow attributes="getByName getByOwner" />
+    <allow attributes="getByName getByOwner setsIncludingSource" />
     <require permission="launchpad.Edit" attributes="new" />
   </securedutility>
 </configure>
