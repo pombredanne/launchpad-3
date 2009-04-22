@@ -586,6 +586,7 @@ class ValidateGPGKeyView(BaseLoginTokenView, LaunchpadFormView):
 class ValidateEmailView(BaseLoginTokenView, LaunchpadFormView):
 
     schema = Interface
+    label = 'Validate your email'
     field_names = []
     expected_token_types = (LoginTokenType.VALIDATEEMAIL,
                             LoginTokenType.VALIDATETEAMEMAIL)
