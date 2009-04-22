@@ -790,7 +790,7 @@ class Branch(SQLBase):
         """See `IBranch`."""
         from storm.expr import NamedFunc
         class DateTrunc(NamedFunc):
-            name="date_trunc"
+            name = "date_trunc"
         results = Store.of(self).find(
             (DateTrunc('day', Revision.revision_date), Count(Revision.id)),
             Revision.id == BranchRevision.revisionID,
