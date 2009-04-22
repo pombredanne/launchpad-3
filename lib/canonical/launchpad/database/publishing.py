@@ -1238,20 +1238,12 @@ class PublishingSet:
         if not source_ids:
             return {}
 
-        # Get the builds for all the requested sources.
-        result_set = self.getBuildsForSourceIds(source_ids, archive=archive)
-
-        # Populate the list of builds for each id in a dict.
-        source_builds = {}
-        for src_pub, build, distroarchseries in result_set:
-            source_builds.setdefault(src_pub.id, []).append(build)
-
-        # Gset the overall build status for each source's builds.
-        build_set = getUtility(IBuildSet)
         source_build_statuses = {}
-        for source_id, builds in source_builds.items():
-            status_summary = build_set.getStatusSummaryForBuilds(builds)
-            source_build_statuses[source_id] = status_summary
+        for source_id in source_ids:
+            source_pub = SourcePackagePublishingHistory.get(source_id)
+            if source_pub.archive == archive:
+                status_summary = source_pub.getStatusSummaryForBuilds()
+                source_build_statuses[source_id] = status_summary
 
         return source_build_statuses
 
