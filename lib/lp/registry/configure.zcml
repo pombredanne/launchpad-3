@@ -1052,44 +1052,21 @@
             interface="lp.registry.interfaces.product.IProductEditRestricted"/>
         <require
             permission="launchpad.Edit"
-            set_attributes="
-                            bug_reporting_guidelines
-                            bugtracker
-                            commercial_subscription
-                            description
-                            development_focus
-                            displayname
-                            downloadurl
-                            driver
-                            enable_bug_expiration
-                            freshmeatproject
-                            homepage_content
-                            homepageurl
-                            icon
-                            license_info
-                            licenses
-                            logo
-                            mugshot
-                            official_answers
-                            official_blueprints
-                            official_bug_tags
-                            official_codehosting
-                            official_malone
-                            owner
-                            programminglang
-                            project
-                            redeemSubscriptionVoucher
-                            releaseroot
-                            remote_product
-                            screenshotsurl
-                            security_contact
-                            sourceforgeproject
-                            summary
-                            title
-                            translationgroup
-                            translationpermission
-                            wikiurl
-                            "/>
+            set_attributes="bug_reporting_guidelines bugtracker
+                            commercial_subscription description
+                            development_focus displayname downloadurl
+                            driver enable_bug_expiration
+                            freshmeatproject homepage_content
+                            homepageurl icon license_info licenses
+                            logo mugshot official_answers
+                            official_blueprints official_bug_tags
+                            official_codehosting official_malone owner
+                            programminglang project
+                            redeemSubscriptionVoucher releaseroot
+                            remote_product screenshotsurl
+                            security_contact sourceforgeproject
+                            summary title translationgroup
+                            translationpermission wikiurl"/>
 
         <!-- sabdfl 2006-04-10 I put "name" in the admin group because
                         with Bazaar now in place, lots of people can have personal

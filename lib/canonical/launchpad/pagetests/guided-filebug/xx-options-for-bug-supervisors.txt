@@ -8,6 +8,7 @@ Users who are not bug supervisors do not see any of these options:
 
     >>> user_browser.open(
     ...     'http://bugs.launchpad.dev/firefox/+filebug-advanced')
+
     >>> user_browser.getControl('Status')
     Traceback (most recent call last):
     ...
@@ -28,7 +29,7 @@ Users who are not bug supervisors do not see any of these options:
     ...
     LookupError: label 'Assign to'
 
-Users who are, can:
+Users who are bug supervisors can see these options:
 
     >>> admin_browser.open(
     ...     'http://bugs.launchpad.dev/firefox/+bugsupervisor')

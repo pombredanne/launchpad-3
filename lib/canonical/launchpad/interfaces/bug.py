@@ -67,7 +67,6 @@ class CreateBugParams:
         self.security_related = security_related
         self.private = private
         self.subscribers = subscribers
-
         self.product = None
         self.distribution = None
         self.sourcepackagename = None
