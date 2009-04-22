@@ -480,7 +480,9 @@ class TestWorkerMonitorIntegration(TestCase, TestCaseWithMemoryTransport):
 
     def assertCodeImportResultCreated(self, code_import):
         """Assert that a `CodeImportResult` was created for `code_import`."""
-        self.failUnlessEqual(len(list(code_import.results)), 1)
+        self.assertEqual(len(list(code_import.results)), 1)
+        result = list(code_import.results)[0]
+        self.assertEqual(result.status, CodeImportResultStatus.SUCCESS)
 
     def assertBranchImportedOKForCodeImport(self, code_import):
         """Assert that a branch was pushed into the default branch store."""
