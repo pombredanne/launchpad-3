@@ -247,12 +247,6 @@ class POTemplateView(LaunchpadView, TranslationsMixin):
             self.context.languages()).union(self.translatable_languages)
         return len(languages) > 0
 
-    @property
-    def product_or_distro(self):
-        if self.context.productseries is not None:
-            return self.context.productseries.product
-        return self.context.distroseries.distribution
-
     def _sortLanguages(self, languages):
         return sorted(languages, key=operator.attrgetter('englishname'))
 

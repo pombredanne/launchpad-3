@@ -45,7 +45,6 @@ that there are alternates that may be translated.
 
     >>> anon_browser.open("http://translations.launchpad.dev/"
     ...     "evolution/trunk/+pots/evolution-2.2-test")
-    >>> main_content = find_main_content(anon_browser.contents)
     >>> alternate_notice = find_tag_by_id(anon_browser.contents,
     ...                                   'potemplate-relatives')
     >>> print extract_text(alternate_notice)
