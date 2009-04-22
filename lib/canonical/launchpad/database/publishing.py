@@ -768,7 +768,7 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
                                     for bin in published_bins]
             unpublished_builds = list(
                 set(builds).difference(published_builds))
-            import pdb;pdb.set_trace()
+
             if unpublished_builds:
                 augmented_summary = {
                     'status': PackagePublishingStatus.PENDING,
