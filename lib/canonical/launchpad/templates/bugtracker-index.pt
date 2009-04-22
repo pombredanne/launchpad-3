@@ -63,7 +63,7 @@
                   1234
                 </a>
               </td>
-              <td tal:content="watch/remotestatus" />
+              <td><tal:status tal:replace="watch/remotestatus"/></td>
             </tal:show-watch-details>
           </tr>
         </tal:watches>
