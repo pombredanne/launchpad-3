@@ -69,7 +69,7 @@ The official Bazaar branch gets removed from the product series.
     >>> browser.getControl('Update').click()
 
 Since the product series does not have a branch set now, requesting an
-import is pointless. The page points the use to the fact and where to
+import is pointless. The page points the user to the fact and where to
 set the branch.
 
     >>> browser.open(

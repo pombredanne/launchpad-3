@@ -2,7 +2,7 @@
 Product maintainers can request a one-time import of translation files
 from the Bazaar branch that is officially linked to the release series
 of a product. This function complements the general import settings
-found on the "Settings" pave.
+found on the "Settings" page.
 
 == Getting there ==
 The maintainer of a product sees a menu option called "Settings" that

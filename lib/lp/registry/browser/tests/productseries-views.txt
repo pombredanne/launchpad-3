@@ -8,17 +8,17 @@ let's put this check in a convenient function.
     ...     IRosettaUploadJobSource)
     >>> job_counter = 0
     >>> def isUploadJobCreatedForBranch(productseries, 
-    ...                                 do_translations_upload=None):
+    ...                                 force_translatoins_upload=None):
     ...     global job_counter
     ...     ready_jobs = list(getUtility(IRosettaUploadJobSource).iterReady())
     ...     if len(ready_jobs) <= job_counter:
     ...         return False
     ...     job = ready_jobs[job_counter]
     ...     job_counter += 1
-    ...     if do_translations_upload is None:
+    ...     if force_translatoins_upload is None:
     ...         return productseries.branch == job.branch
     ...     return (productseries.branch == job.branch and
-    ...            do_translations_upload == job.do_translations_upload)
+    ...            force_translatoins_upload == job.force_translatoins_upload)
 
 Also, we need to set-up a branch for the product of this productseries. The
 last_mirrored_id and the last_scanned_id is set to the same value to pretend
@@ -132,7 +132,7 @@ created to create the initial database entries from the files in the branch.
 
 = ProductSeriesTranslationsBzrImportView =
 When requesting a one-time import of translation files, an Upload job
-is created that has do_translations_upload set to true.
+is created that has force_translatoins_upload set to true.
 
     >>> productseries = factory.makeProductSeries()
     >>> productseries.branch = makeScannedProductBranch(productseries)
