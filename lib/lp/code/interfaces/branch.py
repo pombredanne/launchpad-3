@@ -1138,6 +1138,15 @@ class IBranch(IHasOwner, IHasBranchTarget):
             detail page.
         """
 
+    def commitsForDays(since):
+        """Get a list of commit counts for days since `since`.
+
+        This method returns all commits for the branch, so this includes
+        revisions brought in through merges.
+
+        :return: A list of tuples like (date, count).
+        """
+
 
 class IBranchSet(Interface):
     """Interface representing the set of branches."""

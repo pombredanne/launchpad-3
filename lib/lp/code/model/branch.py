@@ -786,6 +786,20 @@ class Branch(SQLBase):
         # Now destroy the branch.
         SQLBase.destroySelf(self)
 
+    def commitsForDays(self, since):
+        """See `IBranch`."""
+        from storm.expr import NamedFunc
+        class DateTrunc(NamedFunc):
+            name="date_trunc"
+        results = Store.of(self).find(
+            (DateTrunc('day', Revision.revision_date), Count(Revision.id)),
+            Revision.id == BranchRevision.revisionID,
+            Revision.revision_date > since,
+            BranchRevision.branch == self)
+        results = results.group_by(
+            DateTrunc('day', Revision.revision_date))
+        return sorted(results)
+
 
 class DeletionOperation:
     """Represent an operation to perform as part of branch deletion."""
