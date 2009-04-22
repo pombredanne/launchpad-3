@@ -43,8 +43,6 @@ Launchpad administrators or members of the Bazaar Experts team.
 
 The form should have been filled with sample data values.
 
-    >>> print browser.getControl('Title').value
-    Klingon support in GNOME Terminal
     >>> print browser.getControl('Branch URL').value
     http://trekkies.example.com/gnome-terminal/klingon
     >>> print browser.getControl('Summary').value

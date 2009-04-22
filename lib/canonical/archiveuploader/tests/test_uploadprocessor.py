@@ -849,24 +849,29 @@ class TestUploadProcessor(TestUploadProcessorBase):
         self.layer.txn.commit()
         self._uploadPartnerToNonReleasePocketAndCheckFail()
 
-    def testUploadWithBadSectionIsOverriddenToMisc(self):
-        """Uploads with a bad section are overridden to the 'misc' section."""
+    def testUploadWithUnknownSectionIsRejected(self):
         uploadprocessor = self.setupBreezyAndGetUploadProcessor()
-
         upload_dir = self.queueUpload("bar_1.0-1_bad_section")
         self.processUpload(uploadprocessor, upload_dir)
+        self.assertEqual(
+            uploadprocessor.last_processed_upload.rejection_message,
+            "bar_1.0-1.dsc: Unknown section 'badsection'\n"
+            "bar_1.0.orig.tar.gz: Unknown section 'badsection'\n"
+            "bar_1.0-1.diff.gz: Unknown section 'badsection'\n"
+            "Further error processing not possible because of a "
+            "critical previous error.")
 
-        # Check it is accepted and the section is converted to misc.
-        contents = [
-            "Subject: [ubuntu/breezy] bar 1.0-1 (New)"
-            ]
-        self.assertEmail(contents=contents, recipients=[])
-
-        queue_items = self.breezy.getQueueItems(
-            status=PackageUploadStatus.NEW, name="bar",
-            version="1.0-1", exact_match=True)
-        [queue_item] = queue_items
-        self.assertEqual(queue_item.sourcepackagerelease.section.name, "misc")
+    def testUploadWithUnknownComponentIsRejected(self):
+        uploadprocessor = self.setupBreezyAndGetUploadProcessor()
+        upload_dir = self.queueUpload("bar_1.0-1_contrib_component")
+        self.processUpload(uploadprocessor, upload_dir)
+        self.assertEqual(
+            uploadprocessor.last_processed_upload.rejection_message,
+            "bar_1.0-1.dsc: Unknown component 'contrib'\n"
+            "bar_1.0.orig.tar.gz: Unknown component 'contrib'\n"
+            "bar_1.0-1.diff.gz: Unknown component 'contrib'\n"
+            "Further error processing not possible because of a "
+            "critical previous error.")
 
     def testSourceUploadToBuilddPath(self):
         """Source uploads to buildd upload paths are not permitted."""
@@ -898,7 +903,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
                                expected_component_name):
         """Helper function to check overridden component names.
 
-        Upload a 'bar" package from upload_dir_name, then
+        Upload a 'bar' package from upload_dir_name, then
         inspect the package 'bar' in the NEW queue and ensure its
         overridden component matches expected_component_name.
 

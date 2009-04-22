@@ -41,7 +41,7 @@
                         message_count getQuestionCreatedFromBug
                         canBeAQuestion getBugTasksByPackageName
                         users_affected_count users_unaffected_count
-                        readonly_duplicateof users_affected"
+                        readonly_duplicateof users_affected bug_messages"
             />
         <require
             permission="launchpad.Edit"
