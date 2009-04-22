@@ -1388,15 +1388,21 @@ required parameter that ensures that this method only
 returns information about builds from the specified archive (as this method
 is used via the API via IArchive.getBuildSummariesForSourceIds).
 
-First we'll grab two source publishing history records:
+First we'll create two source publishing history records:
+
+    >>> from canonical.launchpad.tests.test_publishing import (
+    ...     SoyuzTestPublisher)
+    >>> stp = SoyuzTestPublisher()
+    >>> stp.prepareBreezyAutotest()
+    >>> firefox_source_pub = stp.getPubSource(sourcename='firefox-test')
+    >>> binaries = stp.getPubBinaries(pub_source=firefox_source_pub)
+    >>> foo_pub = stp.getPubSource(sourcename='foobar-test')
+    >>> binaries = stp.getPubBinaries(pub_source=foo_pub)
 
     >>> from lp.registry.interfaces.distribution import (
     ...     IDistributionSet)
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
-    >>> firefox_source = ubuntu.getSourcePackage('mozilla-firefox')
-    >>> firefox_source_pub = firefox_source.publishing_history[0]
-    >>> foobar = ubuntu.getSourcePackage('foobar')
-    >>> foo_pub = foobar.publishing_history[0]
+    >>> ubuntu_test = getUtility(IDistributionSet)['ubuntutest']
 
 Create a small function for displaying the results:
 
@@ -1409,8 +1415,10 @@ Create a small function for displaying the results:
     ...     )
 
     >>> def print_build_summaries(summaries):
+    ...     count = 0
     ...     for source_id, summary in sorted(summaries.items()):
-    ...         print "Source ID: %s" % source_id
+    ...         count += 1
+    ...         print "Source number: %s" % count
     ...         print_build_summary(summary)
 
 And then grab the build summaries for firefox and foo:
@@ -1418,32 +1426,27 @@ And then grab the build summaries for firefox and foo:
     >>> build_summaries = \
     ...     publishing_set.getBuildStatusSummariesForSourceIdsAndArchive(
     ...         [firefox_source_pub.id, foo_pub.id],
-    ...         ubuntu.main_archive)
+    ...         ubuntu_test.main_archive)
     >>> print_build_summaries(build_summaries)
-    Source ID: 18
+    Source number: 1
     FULLYBUILT
     All builds were built successfully.
     Relevant builds:
-     - hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
-     - i386 build of mozilla-firefox 0.9 in ubuntu warty RELEASE
-    Source ID: 22
-    FAILEDTOBUILD
-    There were build failures.
+     - i386 build of firefox-test 666 in ubuntutest breezy-autotest RELEASE
+    Source number: 2
+    FULLYBUILT
+    All builds were built successfully.
     Relevant builds:
-     - i386 build of foobar 1.0 in ubuntu warty RELEASE
+     - i386 build of foobar-test 666 in ubuntutest breezy-autotest RELEASE
 
 Any of the source ids passed into 
 getBuildStatusSummariesForSourceIdsAndArchive that do not belong to the
 required archive parameter will be ignored:
 
-    >>> from canonical.launchpad.interfaces.archive import IArchiveSet
-    >>> ubuntu_partner = getUtility(IArchiveSet).getArchivesForDistribution(
-    ...     ubuntu,
-    ...     name="partner")[0]
     >>> build_summaries = \
     ...     publishing_set.getBuildStatusSummariesForSourceIdsAndArchive(
     ...         [firefox_source_pub.id, foo_pub.id],
-    ...         archive=ubuntu_partner)
+    ...         archive=ubuntu.main_archive)
     >>> print_build_summaries(build_summaries)
 
 
