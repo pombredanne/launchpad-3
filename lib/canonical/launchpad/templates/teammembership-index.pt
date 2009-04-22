@@ -38,12 +38,13 @@
   <metal:macro define-macro="comment">
     <tr>
       <th>Comment:</th>
-      <td><textarea cols="40" name="comment"
-                    tal:content="request/comment|context/last_change_comment|nothing">
-                </textarea>
-          <div class="formHelp">This comment will be sent together with the
-            notification of this change to all team administrators and this
-            member.</div>
+      <td>
+	<textarea cols="40" name="comment">
+	  <tal:comment tal:replace="request/comment|context/last_change_comment|default" />
+	</textarea>
+	<div class="formHelp">This comment will be sent together with the
+	notification of this change to all team administrators and this
+	member.</div>
       </td>
     </tr>
   </metal:macro>
