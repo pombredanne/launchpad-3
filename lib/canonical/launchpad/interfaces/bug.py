@@ -279,6 +279,10 @@ class IBug(ICanBeMentored):
             value_type=Reference(schema=IPerson),
             readonly=True))
 
+    # Adding related BugMessages provides a hook for getting at
+    # BugMessage.visible when building bug comments.
+    bug_messages = Attribute('The bug messages related to this object.')
+
     messages = CollectionField(
             title=_("The messages related to this object, in reverse "
                     "order of creation (so newest first)."),
