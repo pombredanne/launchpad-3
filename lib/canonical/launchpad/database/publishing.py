@@ -769,7 +769,7 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
             published_builds = [
                 bin.binarypackagerelease.build
                     for bin in published_bins
-                        if bin.status == PackagePublishingStatus.PUBLISHED]
+                        if bin.datepublished is not None]
             unpublished_builds = list(
                 set(builds).difference(published_builds))
 
