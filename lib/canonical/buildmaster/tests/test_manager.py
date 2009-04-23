@@ -448,13 +448,11 @@ class TestBuilddManagerScan(TrialTestCase):
     def _resetBuilder(self, builder):
         """Reset the given builder and it's job."""
         login('foo.bar@canonical.com')
+
         builder.builderok = True
         job = builder.currentjob
         if job is not None:
-            job.build.buildstate = BuildStatus.NEEDSBUILD
-            job.builder = None
-            job.buildstart = None
-            job.logtail = None
+            job.reset()
 
         transaction.commit()
         login(ANONYMOUS)
