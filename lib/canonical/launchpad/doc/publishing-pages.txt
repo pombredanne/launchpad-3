@@ -27,6 +27,9 @@ alsa-utils and foobar in ubuntu to test with:
 The base class BasePublishingRecordView provides a few helper methods
 and properties for querying the publishing history record:
 
+If the publishing record does not include a removal comment, then
+the view property returns 'None provided.'
+
     >>> view = getMultiAdapter(
     ...    (foo_pub, LaunchpadTestRequest()), name="+listing-compact")
     >>> view.wasDeleted()
@@ -36,20 +39,19 @@ and properties for querying the publishing history record:
     >>> view.removal_comment
     u'None provided.'
 
-If the publishing record does not include a removal comment, then
-the view property returns 'None provided.' (Note, setting the removal
+Otherwise the removal comment will be returned (Note, setting the removal
 comment requires going through the secure record and flushing before
 it will be reflected in the normal record)
 
     >>> login('foo.bar@canonical.com')
-    >>> foo_pub.secure_record.removal_comment = None
+    >>> foo_pub.secure_record.removal_comment = "It had to go."
     >>> from canonical.database.sqlbase import flush_database_caches
     >>> flush_database_caches()
 
     >>> print view.context.removal_comment
-    None
-    >>> view.removal_comment
-    u'None provided.'
+    It had to go.
+    >>> print view.removal_comment
+    It had to go.
 
 
 The SourcePackagePublishingView implements the
