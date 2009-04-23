@@ -33,7 +33,8 @@
                href="+subscribe"
                tal:attributes="title string:Unsubscribe ${subscription/person/fmt:displayname};
                                id string:unsubscribe-${subscription/person/name}">
-              <img src="/@@/remove" />
+              <img src="/@@/remove"
+                tal:attributes="id string:unsubscribe-icon-${subscription/person/name}" />
             </a>
 
         </metal:subscriber>

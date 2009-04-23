@@ -201,6 +201,7 @@ function update_bug_duplicate(data) {
 YUI({base: yui_base + '/'}).use(
     'io-base', 'node', 'lazr.anim', function(Y) {
 
+var subscription_link;
 var lp_client;
 var bug;
 var me;
@@ -252,9 +253,9 @@ Y.on('load', function() {
         }
     }
 
-    var subscription_links = Y.all('.menu-link-subscription');
+    subscription_link = Y.get('.menu-link-subscription');
 
-    subscription_links.on('click', function(e) {
+    subscription_link.on('click', function(e) {
         e.halt();
         if (e.target.get('innerHTML') == 'Subscribe') {
             subscribe_current_user(e.target);
@@ -265,9 +266,26 @@ Y.on('load', function() {
     });
 
     // Add a class denoting them as js-action links.
-    subscription_links.addClass('js-action');
+    subscription_link.addClass('js-action');
+
+    handle_unsubscribe_icon(subscription_link);
 
 }, window);
+
+
+/*
+ * Hook up the unsubscribe icon for the current user,
+ * if available.
+*/
+function handle_unsubscribe_icon(subscription_link) {
+    var unsubscribe_icon = Y.get('#unsubscribe-icon-' + me.substring(2));
+    if (unsubscribe_icon) {
+        unsubscribe_icon.on('click', function(e) {
+            e.halt();
+            unsubscribe_current_user(subscription_link);
+        });
+    }
+}
 
 /*
  * Subscribe the current user via the LP API
@@ -283,12 +301,13 @@ function subscribe_current_user(subscription_link) {
               '&nbsp;Foo Bar&nbsp;' +
             '</a>' +
             '<a href=\'+subscribe\' id=\'unsubscribe-name16\' title=\'Unsubscribe Foo Bar\'>' +
-              '<img src=\'/@@/remove\'>' +
+              '<img src=\'/@@/remove\' id=\'unsubscribe-icon-name16\' />' +
             '</a>' +
         '</div>';
     var link_node = Y.Node.create(html);
     var subscribers = Y.get('#subscribers-links');
     subscribers.insertBefore(link_node, subscribers.get('firstChild'));
+    handle_unsubscribe_icon(subscription_link);
     flash_node = Y.get('#subscriber-' + me.substring(2));
     anim = Y.lazr.anim.green_flash({ node: flash_node });
     anim.on('end', function(e) {
