@@ -216,6 +216,12 @@ def get_feedback_messages(content):
     return [extract_text(tag) for tag in soup]
 
 
+def print_feedback_messages(content):
+    """Print out the feedback messages."""
+    for message in get_feedback_messages(content):
+        print message
+
+
 def print_radio_button_field(content, name):
     """Find the input called field.name, and print a friendly representation.
 
@@ -601,6 +607,7 @@ def setUpGlobs(test):
     test.globs['find_portlet'] = find_portlet
     test.globs['find_main_content'] = find_main_content
     test.globs['get_feedback_messages'] = get_feedback_messages
+    test.globs['print_feedback_messages'] = print_feedback_messages
     test.globs['extract_link_from_tag'] = extract_link_from_tag
     test.globs['extract_text'] = extract_text
     test.globs['login'] = login

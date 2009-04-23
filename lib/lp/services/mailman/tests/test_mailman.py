@@ -33,6 +33,7 @@ def setUp(testobj):
     testobj.globs['transaction'] = transaction
     testobj.globs['factory'] = LaunchpadObjectFactory()
     testobj.globs['smtpd'] = LayerProcessController.smtp_controller
+    testobj.globs['bounce_watcher'] = MailmanLayer.bounce_watcher
     testobj.globs['mhonarc_watcher'] = MailmanLayer.mhonarc_watcher
     testobj.globs['smtpd_watcher'] = MailmanLayer.smtpd_watcher
     testobj.globs['vette_watcher'] = MailmanLayer.vette_watcher

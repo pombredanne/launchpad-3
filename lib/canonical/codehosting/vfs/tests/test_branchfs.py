@@ -791,6 +791,7 @@ class TestRequestMirror(TestCaseWithTransport):
     """Test request mirror behaviour."""
 
     def setUp(self):
+        TestCaseWithTransport.setUp(self)
         self._server = None
         self._request_mirror_log = []
         frontend = InMemoryFrontend()

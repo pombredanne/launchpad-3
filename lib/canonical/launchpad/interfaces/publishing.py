@@ -535,6 +535,9 @@ class ISourcePackagePublishingHistory(ISecureSourcePackagePublishingHistory):
             description=_("A URL for this source publication's changes file "
                           "for the source upload.")))
 
+    # Really IBinaryPackagePublishingHistory, see below.
+    @operation_returns_collection_of(Interface)
+    @export_read_operation()
     def getPublishedBinaries():
         """Return all resulted `IBinaryPackagePublishingHistory`.
 
@@ -1008,4 +1011,7 @@ inactive_publishing_status = (
 from canonical.launchpad.interfaces.build import IBuild
 ISourcePackagePublishingHistory['getBuilds'].queryTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)['return_type'].value_type.schema = IBuild
+ISourcePackagePublishingHistory['getPublishedBinaries'].queryTaggedValue(
+    LAZR_WEBSERVICE_EXPORTED)[
+    'return_type'].value_type.schema = IBinaryPackagePublishingHistory
 

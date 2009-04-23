@@ -102,9 +102,9 @@ class TestBranchRewriterScript(TestCaseWithFactory):
         output = proc.stdout.readline()
         os.kill(proc.pid, signal.SIGINT)
         err = proc.stderr.read()
-        self.assertEqual(expected, output)
         # The script produces logging output, but not to stderr.
         self.assertEqual('', err)
+        self.assertEqual(expected, output)
 
 
 def test_suite():
