@@ -327,7 +327,7 @@ class LaunchpadDatabase(Postgres):
     @property
     def connection_factory(self):
         """Return the correct connection factory for the current mode.
-        
+
         If we are running in read-only mode, returns a
         ReadOnlyModeConnection. Otherwise it returns the Storm default.
         """

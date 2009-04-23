@@ -14,7 +14,8 @@
       <h1 class="exception">Sorry, you can't do this right now</h1>
       <p>
           You cannot make any changes at this time. Launchpad is
-          undergoing maintenance and is running in read only mode.
+          undergoing maintenance and is running in
+          <strong>read-only</strong> mode.
       </p>
       <p>Normal service will resume as soon as possible. Further information
           about scheduled downtime may be available on the

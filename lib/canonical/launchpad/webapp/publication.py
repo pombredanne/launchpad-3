@@ -184,11 +184,13 @@ class LaunchpadBrowserPublication(
         # If we are running in read-only mode, notify the user.
         if config.launchpad.read_only:
             try:
-                INotificationResponse(request).addNoticeNotification(
-                    structured(
-                        "Launchpad is undergoing maintenance and is in "
-                        "read-only mode. "
-                        "<i>You cannot make any changes.</i>"))
+                INotificationResponse(request).addWarningNotification(
+                    structured("""
+                        Launchpad is undergoing maintenance and is in
+                        read-only mode. <i>You cannot make any changes.</i>
+                        Please see the <a href="blog.launchpad.net">Launchpad
+                        Blog</a> for details.
+                        """))
             except ComponentLookupError:
                 pass
 

@@ -21,7 +21,7 @@ Users are warned when Launchpad is running in read-only mode.
 
     >>> user_browser.open('http://launchpad.dev')
     >>> print extract_text(first_tag_by_class(
-    ...     user_browser.contents, 'informational message'))
+    ...     user_browser.contents, 'warning message'))
     Launchpad is undergoing maintenance
     ...
 
@@ -29,7 +29,7 @@ Anonymous users are also warned, or they might try to signup.
 
     >>> anon_browser.open("http://launchpad.dev/~name16")
     >>> print extract_text(first_tag_by_class(
-    ...     anon_browser.contents, 'informational message'))
+    ...     anon_browser.contents, 'warning message'))
     Launchpad is undergoing maintenance
     ...
 
@@ -37,7 +37,7 @@ There is no warning on the SSO server, as it is not affected by this mode.
 
     >>> user_browser.open('http://openid.launchpad.dev')
     >>> print first_tag_by_class(
-    ...     user_browser.contents, 'informational message')
+    ...     user_browser.contents, 'warning message')
     None
 
 There is no warning when Launchpad is running normally.
@@ -45,7 +45,7 @@ There is no warning when Launchpad is running normally.
     >>> push_read_only_mode(False)
     >>> user_browser.open('http://launchpad.dev')
     >>> print first_tag_by_class(
-    ...     user_browser.contents, 'informational message')
+    ...     user_browser.contents, 'warning message')
     None
     >>> pop_read_only_mode()
 
