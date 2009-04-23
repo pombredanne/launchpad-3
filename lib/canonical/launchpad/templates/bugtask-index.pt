@@ -202,6 +202,7 @@ YUI({base: yui_base + '/'}).use(
     'io-base', 'node', 'lazr.anim', function(Y) {
 
 var subscription_link;
+var spinner;
 var lp_client;
 var bug;
 var me;
@@ -253,6 +254,8 @@ Y.on('load', function() {
         }
     }
 
+    spinner = Y.get('#sub-unsub-spinner');
+
     subscription_link = Y.get('.menu-link-subscription');
 
     subscription_link.on('click', function(e) {
@@ -291,10 +294,10 @@ function handle_unsubscribe_icon(subscription_link) {
  * Subscribe the current user via the LP API
  */
 function subscribe_current_user(subscription_link) {
-    subscription_link.setStyle('background',
-        'url(/@@/spinner/) center left no-repeat');
+    subscription_link.setStyle('display', 'none');
+    spinner.set('innerHTML', 'Subscribing...');
+    spinner.setStyle('display', 'block');
     lp_client.named_post(bug.self_link, 'subscribe', sub_config)
-    subscription_link.set('innerHTML', 'Unsubscribe');
     var html = '<div id=\'subscriber-name16\'>' +
             '<a href=\'/%7Ename16\' title=\'Subscribed themselves\'>' +
               '<img alt=\'\' src=\'/@@/person\' width=\'14\' height=\'14\' />' +
@@ -311,8 +314,9 @@ function subscribe_current_user(subscription_link) {
     flash_node = Y.get('#subscriber-' + me.substring(2));
     anim = Y.lazr.anim.green_flash({ node: flash_node });
     anim.on('end', function(e) {
-        subscription_link.setStyle('background',
-            'url(/@@/remove/) center left no-repeat');
+        spinner.setStyle('display', 'none');
+        subscription_link.set('innerHTML', 'Unsubscribe');
+        subscription_link.setStyle('display', 'block');
     });
     anim.run();
 }
@@ -321,18 +325,19 @@ function subscribe_current_user(subscription_link) {
  * Unubscribe the current user via the LP API
  */
 function unsubscribe_current_user(subscription_link) {
-    subscription_link.setStyle('background',
-        'url(/@@/spinner/) center left no-repeat');
+    subscription_link.setStyle('display', 'none');
+    spinner.set('innerHTML', 'Unsubscribing...');
+    spinner.setStyle('display', 'block');
     lp_client.named_post(bug.self_link, 'unsubscribe', unsub_config)
-    subscription_link.set('innerHTML', 'Subscribe');
     var me_node = Y.get('#subscriber-' + me.substring(2));
     var parent = me_node.get('parentNode');
     flash_node = Y.get('#subscriber-' + me.substring(2));
     anim = Y.lazr.anim.green_flash({ node: flash_node });
     anim.on('end', function(e) {
         parent.removeChild(me_node);
-        subscription_link.setStyle('background',
-            'url(/@@/add/) center left no-repeat');
+        spinner.setStyle('display', 'none');
+        subscription_link.set('innerHTML', 'Subscribe');
+        subscription_link.setStyle('display', 'block');
     });
     anim.run();
 }
