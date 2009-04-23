@@ -23,13 +23,13 @@
                        uploadersForPackage queueAdminsForComponent
                        componentsForQueueAdmin permissionsForPerson
                        uploadersForPackageset packagesetsForUploader
-                       packagesetsForSourceUploader"/>
+                       packagesetsForSourceUploader isSourceUploadAllowed"/>
     <require
       permission="launchpad.Edit"
       attributes="newPackageUploader newComponentUploader newQueueAdmin
                   deletePackageUploader deleteComponentUploader
                   deleteQueueAdmin newPackagesetUploader
-                  deletePackagesetUploader isSourceUploadAllowed"
+                  deletePackagesetUploader"
       />
   </securedutility>
 
