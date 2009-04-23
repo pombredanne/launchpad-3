@@ -985,6 +985,7 @@ for the former.
 
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+
     >>> def sort_by_id(iterable):
     ...     return sorted(iterable, key=operator.attrgetter('id'))
     >>> def print_data(iterable):
@@ -993,8 +994,7 @@ for the former.
 
     >>> ps_set = getUtility(IPackagesetSet)
     >>> foo_ps = ps_set.new(
-    ...     u'foo-pkg-set', u'Packages that require special care.',
-    ...     name16)
+    ...     u'foo-pkg-set', u'Packages that require special care.', name16)
     >>> commit()
 
 Add 'bar' to the 'foo' package set.
@@ -1024,7 +1024,7 @@ And now name16 has a package set based upload authorization for 'bar'.
     >>> ap_set.isSourceUploadAllowed('bar', name16)
     True
 
-Let's try it.
+With the authorization above the upload should work again.
 
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser('uploader')
