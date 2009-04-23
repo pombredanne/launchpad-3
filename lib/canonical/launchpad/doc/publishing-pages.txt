@@ -194,8 +194,15 @@ to summarize the current state of the context's associated builds:
     >>> print src_pub_record_view.build_status_img_src
     /@@/build-success-pending
 
-As well as a helper to determine if the build status summary is
-successful:
+As well as some helpers to determine the publishing status from templates:
 
     >>> src_pub_record_view.builds_successful_and_published
     False
+
+    >>> src_pub_record_view.builds_successful_and_pending
+    True
+
+    >>> for build in src_pub_record_view.pending_builds:
+    ...     print build.title
+    i386 build of iceweasel 1.0 in ubuntu warty RELEASE
+

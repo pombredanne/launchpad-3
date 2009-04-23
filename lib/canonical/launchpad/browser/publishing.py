@@ -207,6 +207,20 @@ class SourcePublishingRecordView(BasePublishingRecordView):
         return status == BuildSetStatus.FULLYBUILT
 
     @property
+    def builds_successful_and_pending(self):
+        """Return whether builds were successful but not all published."""
+        status = self.build_status_summary['status']
+        return status == BuildSetStatus.FULLYBUILT_PENDING
+
+    @property
+    def pending_builds(self):
+        """Return a list of successful builds pending publication."""
+        if self.builds_successful_and_pending:
+            return self.build_status_summary['builds']
+        else:
+            return []
+
+    @property
     def build_status_img_src(self):
         """Return the image path for the current build status summary."""
         image_map = {
