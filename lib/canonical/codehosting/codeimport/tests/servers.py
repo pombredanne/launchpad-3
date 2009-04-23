@@ -1,9 +1,10 @@
 # Copyright 2009 Canonical Ltd.  All rights reserved.
 
-""" """
+"""Server classes that know how to create various kinds of foreign archive."""
 
 __all__ = [
     'CVSServer',
+    'GitServer',
     'SubversionServer',
     ]
 
