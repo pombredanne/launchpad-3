@@ -86,29 +86,31 @@ class InlineEditorWidgetTest:
 def _search_picker_widget(client, search_text, result_index):
     """Search in picker widget and select an item."""
     # Search for search_text in picker widget.
-    client.type(
-        text=search_text,
-        xpath=u"//table[contains(@class, 'yui-picker') "
-               "and not(contains(@class, 'yui-picker-hidden'))]"
-               "//input[@class='yui-picker-search']")
+    search_box_xpath = (u"//table[contains(@class, 'yui-picker') "
+                         "and not(contains(@class, 'yui-picker-hidden'))]"
+                         "//input[@class='yui-picker-search']")
+    client.waits.forElement(xpath=search_box_xpath, timeout=u'20000')
+    client.type(text=search_text, xpath=search_box_xpath)
     client.click(
         xpath=u"//table[contains(@class, 'yui-picker') "
                "and not(contains(@class, 'yui-picker-hidden'))]"
                "//div[@class='yui-picker-search-box']/button")
     # Select item at the result_index in the list.
-    client.click(
-        xpath=u"//table[contains(@class, 'yui-picker') "
-               "and not(contains(@class, 'yui-picker-hidden'))]"
-               "//ul[@class='yui-picker-results']/li[%d]/span" % result_index)
+    item_xpath = (u"//table[contains(@class, 'yui-picker') "
+                     "and not(contains(@class, 'yui-picker-hidden'))]"
+                     "//ul[@class='yui-picker-results']/li[%d]/span"
+                     % result_index)
+    client.waits.forElement(xpath=item_xpath, timeout=u'20000')
+    client.click(xpath=item_xpath)
 
 
-class InlinePickerWidgetTest:
+class InlinePickerWidgetSearchTest:
     """Test that the Picker widget edits a value inline."""
 
     def __init__(self, url, activator_id, search_text, result_index,
-                 new_value, name=None, suite='inline_picker',
+                 new_value, name=None, suite='inline_picker_search_test',
                  user=lpuser.FOO_BAR):
-        """Create a new InlinePickerWidgetTest.
+        """Create a new InlinePickerSearchWidgetTest.
 
         :param url: The URL to the page on which the widget lives.
         :param activator_id: The HTML id of the activator widget.
@@ -144,6 +146,7 @@ class InlinePickerWidgetTest:
         client.waits.forElement(
             xpath=u"//span[@id='%s']/button" % self.activator_id,
             timeout=u'20000')
+        client.waits.sleep(milliseconds=u'2000')
         client.click(
             xpath=u"//span[@id='%s']/button" % self.activator_id)
 
@@ -169,31 +172,79 @@ class InlinePickerWidgetTest:
             xpath=u"//span[@id='%s']//a" % self.activator_id,
             validator=self.new_value)
 
-        # Click on assignee delete button.
+
+class InlinePickerWidgetButtonTest:
+    """Test that the Picker deletes a value inline."""
+
+    def __init__(self, url, activator_id, button_class, new_value,
+                 name=None, suite='inline_picker_button_test',
+                 user=lpuser.FOO_BAR):
+        """Create a new InlinePickerWidgetButtonTest.
+
+        :param url: The URL to the page on which the widget lives.
+        :param activator_id: The HTML id of the activator widget.
+        :param button_class: The CSS class identifying the button.
+        :param new_value: The value to change the field to.
+        :param name: Override the test name, if necessary.
+        :param suite: The suite in which this test is part of.
+        :param user: The user who should be logged in.
+        """
+        self.url = url
+        self.activator_id = activator_id
+        self.button_class = button_class
+        self.new_value = new_value
+        self.suite = suite
+        self.user = user
+        if name is None:
+            self.__name__ = 'test_%s_inline_picker' % (
+                activator_id.replace('-', '_'),)
+        else:
+            self.__name__ = name
+
+    def __call__(self):
+        client = WindmillTestClient(self.suite)
+        self.user.ensure_login(client)
+
+        # Load page.
+        client.open(url=self.url)
+        client.waits.forPageLoad(timeout=u'25000')
+
+        # Click on assignee edit button.
+        client.waits.forElement(
+            xpath=u"//span[@id='%s']/button" % self.activator_id,
+            timeout=u'25000')
+        client.waits.sleep(milliseconds=u'2000')
         client.click(
-            xpath=u"//span[@id='%s']/img[@class='delete-button']"
-                  % self.activator_id)
+            xpath=u"//span[@id='%s']/button" % self.activator_id)
+
+        # Click on assignee remove button.
+        remove_button_xpath = (
+            u"//table[contains(@class, 'yui-picker') "
+             "and not(contains(@class, 'yui-picker-hidden'))]"
+             "//button[@class='%s']" % self.button_class)
+        client.waits.forElement(xpath=remove_button_xpath, timeout=u'25000')
+        client.click(xpath=remove_button_xpath)
         client.waits.sleep(milliseconds=u'2000')
 
-        # Verify delete.
+        # Verify removal.
         client.asserts.assertText(
             xpath=u"//span[@id='%s']/span[@class='yui-activator-data-box']"
                   % self.activator_id,
-            validator='deleted')
+            validator=self.new_value)
 
         # Reload the page to verify that the selected value is persisted.
         client.open(url=self.url)
-        client.waits.forPageLoad(timeout=u'20000')
+        client.waits.forPageLoad(timeout=u'25000')
 
-        # Verify delete, again.
+        # Verify removal, again.
         client.waits.forElement(
             xpath=u"//span[@id='%s']/span[@class='yui-activator-data-box']"
                   % self.activator_id,
-            timeout=u'20000')
+            timeout=u'25000')
         client.asserts.assertText(
             xpath=u"//span[@id='%s']/span[@class='yui-activator-data-box']"
                   % self.activator_id,
-            validator='None')
+            validator=self.new_value)
 
 
 class FormPickerWidgetTest:

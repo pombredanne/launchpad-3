@@ -1,19 +1,26 @@
 # Copyright 2009 Canonical Ltd.  All rights reserved.
 
 from canonical.launchpad.windmill.testing.widgets import (
-    InlinePickerWidgetTest)
+    InlinePickerWidgetButtonTest, InlinePickerWidgetSearchTest)
 
-
-test_change_assignee_1 = InlinePickerWidgetTest(
+test_change_assignee = InlinePickerWidgetSearchTest(
     url='http://bugs.launchpad.dev:8085/bugs/1',
-    activator_id='assignee-content-box-2',
+    suite='test_change_assignee_button',
+    activator_id='assignee-content-box-17',
     search_text='admin',
     result_index=1,
     new_value='Commercial Subscription Admins')
 
-test_change_assignee_2 = InlinePickerWidgetTest(
+test_assign_me_button = InlinePickerWidgetButtonTest(
     url='http://bugs.launchpad.dev:8085/bugs/1',
+    suite='test_assign_me_button',
     activator_id='assignee-content-box-17',
-    search_text='admin',
-    result_index=2,
+    button_class='yui-picker-assign-me-button',
     new_value='Foo Bar')
+
+test_remove_assignee_button = InlinePickerWidgetButtonTest(
+    url='http://bugs.launchpad.dev:8085/bugs/1',
+    suite='test_remove_assignee_button',
+    activator_id='assignee-content-box-17',
+    button_class='yui-picker-remove-button',
+    new_value='None')
