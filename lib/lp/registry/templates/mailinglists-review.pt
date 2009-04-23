@@ -33,8 +33,8 @@
           <tr tal:repeat="mailing_list view/registered_lists"
               style="text-align: center">
               <tal:block tal:define=
-               "team mailing_list/team;
-                team_name mailing_list/team/name;
+               "team_link mailing_list/team_link;
+                team_name mailing_list/name;
                 registrant mailing_list/registrant;
                 action_name string:field.${team_name}"
                 >
@@ -51,7 +51,7 @@
                                      id string:hold.${team_name}"/>
                 </td>
                 <td>
-                  <a tal:replace="structure team/fmt:link"/>
+                  <a tal:replace="structure team_link"/>
                 </td>
                 <td>
                   <a tal:replace="structure registrant/fmt:link"/>
@@ -64,8 +64,6 @@
     <p tal:condition="not: view/registered_lists" id="status"
         >There is nothing to do.</p>
   </div>
-
-<metal:help fill-slot="help"/>
 
 </body>
 </html>

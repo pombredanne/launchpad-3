@@ -1883,7 +1883,6 @@ COMMENT ON COLUMN Archive.displayname IS 'User defined displayname for this arch
 COMMENT ON COLUMN Archive.description IS 'Allow users to describe their PPAs content.';
 COMMENT ON COLUMN Archive.enabled IS 'Whether or not the PPA is enabled for accepting uploads.';
 COMMENT ON COLUMN Archive.authorized_size IS 'Size, in MiB, allowed for this PPA.';
-COMMENT ON COLUMN Archive.whiteboard IS 'Administrator comments about interventions made in the PPA configuration.';
 COMMENT ON COLUMN Archive.distribution IS 'The distribution that uses this archive.';
 COMMENT ON COLUMN Archive.purpose IS 'The purpose of this archive, e.g. COMMERCIAL.  See the ArchivePurpose DBSchema item.';
 COMMENT ON COLUMN Archive.private IS 'Whether or not the archive is private. This affects the global visibility of the archive.';
@@ -2051,6 +2050,7 @@ COMMENT ON COLUMN OpenIdRPConfig.logo IS 'A reference to the logo for this RP';
 COMMENT ON COLUMN OpenIdRPConfig.allowed_sreg IS 'A comma separated list of fields that can be sent to the RP via openid.sreg.  The field names should not have the "openid.sreg." prefix';
 COMMENT ON COLUMN OpenIdRPConfig.creation_rationale IS 'A person creation rationale to use for users who create an account while logging in to this RP';
 COMMENT ON COLUMN OpenIdRPConfig.can_query_any_team IS 'This RP can query for membership of any or all teams, including private teams. This setting overrides any other private team query ACLs, and should not be used if more granular options are suitable.';
+COMMENT ON COLUMN OpenIdRPConfig.auto_authorize IS 'True if the user authorisation page is skipped by default for this RP.';
 
 --OpenIDRPSummary
 COMMENT ON TABLE OpenIDRPSummary IS 'The summary of the activity between a person and an RP.';
