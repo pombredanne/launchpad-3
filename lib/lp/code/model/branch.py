@@ -44,14 +44,16 @@ from lp.code.model.branchsubscription import BranchSubscription
 from lp.code.model.revision import Revision
 from lp.code.event.branchmergeproposal import NewBranchMergeProposalEvent
 from lp.code.interfaces.branch import (
-    bazaar_identity, BranchFormat, BranchLifecycleStatus,
-    BranchMergeControlStatus, BranchType, BranchTypeError, CannotDeleteBranch,
+    bazaar_identity, BranchCannotBePrivate, BranchCannotBePublic,
+    BranchFormat, BranchLifecycleStatus, BranchMergeControlStatus,
+    BranchType, BranchTypeError, CannotDeleteBranch,
     ControlFormat, DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch,
     IBranchNavigationMenu, IBranchSet, RepositoryFormat)
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.interfaces.branchmergeproposal import (
      BRANCH_MERGE_PROPOSAL_FINAL_STATES, BranchMergeProposalExists,
      BranchMergeProposalStatus, InvalidBranchMergeProposal)
+from lp.code.interfaces.branchnamespace import IBranchNamespacePolicy
 from lp.code.interfaces.branchpuller import IBranchPuller
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.seriessourcepackagebranch import (
@@ -80,6 +82,18 @@ class Branch(SQLBase):
     mirror_status_message = StringCol(default=None)
 
     private = BoolCol(default=False, notNull=True)
+
+    def setPrivate(self, private):
+        """See `IBranch`."""
+        if private == self.private:
+            return
+        policy = IBranchNamespacePolicy(self.namespace)
+
+        if private and not policy.canBranchesBePrivate():
+            raise BranchCannotBePrivate()
+        if not private and not policy.canBranchesBePublic():
+            raise BranchCannotBePublic()
+        self.private = private
 
     registrant = ForeignKey(
         dbName='registrant', foreignKey='Person',
