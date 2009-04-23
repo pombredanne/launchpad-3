@@ -797,3 +797,10 @@ How about 'juergen'?
 
 Now neither 'hacker' nor 'juergen' are allowed to upload. All non-explicit
 permissions are ignored in the presence of explicit ones.
+
+The 'unprivileged' person who holds an explicit permission for the
+'specialists-only' package set (including the 'mozilla-firefox' source)
+is allowed to upload.
+
+    >>> ap_set.isSourceUploadAllowed('mozilla-firefox', unprivileged)
+    True
