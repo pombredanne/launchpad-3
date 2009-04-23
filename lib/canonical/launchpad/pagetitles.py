@@ -1122,6 +1122,9 @@ productseries_translations_upload = 'Request new translations upload'
 
 productseries_translations_settings = 'Settings for translations'
 
+productseries_translations_bzr_import = (
+    'Request translations import from Bazaar branch')
+
 productseries_ubuntupkg = 'Ubuntu source package'
 
 project_add = 'Register a project group with Launchpad'

@@ -2352,6 +2352,14 @@
         layer="canonical.launchpad.layers.TranslationsLayer"/>
     <browser:page
         for="lp.registry.interfaces.productseries.IProductSeries"
+        name="+request-bzr-import"
+        class="lp.registry.browser.productseries.ProductSeriesTranslationsBzrImportView"
+        facet="translations"
+        permission="launchpad.Edit"
+        template="../templates/productseries-translations-bzr-import.pt"
+        layer="canonical.launchpad.layers.TranslationsLayer"/>
+    <browser:page
+        for="lp.registry.interfaces.productseries.IProductSeries"
         name="+filebug"
         class="lp.registry.browser.productseries.ProductSeriesFileBugRedirect"
         permission="zope.Public"/>
