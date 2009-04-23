@@ -26,7 +26,7 @@ from canonical.codehosting.codeimport.worker import (
     BazaarBranchStore, CSCVSImportWorker, ForeignTreeStore, ImportWorker,
     PullingImportWorker, get_default_bazaar_branch_store,
     get_default_foreign_tree_store)
-from canonical.codehosting.codeimport.tests.test_foreigntree import (
+from canonical.codehosting.codeimport.tests.servers import (
     CVSServer, SubversionServer)
 from canonical.codehosting.tests.helpers import (
     create_branch_with_one_revision)

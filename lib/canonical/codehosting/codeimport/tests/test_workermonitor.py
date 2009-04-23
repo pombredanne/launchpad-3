@@ -29,7 +29,7 @@ from canonical.codehosting.codeimport.worker import (
 from canonical.codehosting.codeimport.workermonitor import (
     CodeImportWorkerMonitor, CodeImportWorkerMonitorProtocol, ExitQuietly,
     read_only_transaction)
-from canonical.codehosting.codeimport.tests.test_foreigntree import (
+from canonical.codehosting.codeimport.tests.servers import (
     CVSServer, SubversionServer, _make_silent_logger)
 from canonical.codehosting.codeimport.tests.test_worker import (
     clean_up_default_stores_for_import)
