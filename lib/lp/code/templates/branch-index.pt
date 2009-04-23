@@ -286,43 +286,43 @@
   </tal:imported-branch>
 
   <div id="merge-links" tal:condition="view/show_merge_links">
-    <div tal:condition="context/product" id="merge-summary">
-    <div id="landing-candidates">
-      &laquo;
-      <a href="+merges" tal:content="structure view/landing_candidate_count_text">
-        1 branch
-      </a>
-      proposed for merging into this one.
+    <div id="merge-summary">
+      <div id="landing-candidates">
+        &laquo;
+        <a href="+merges" tal:content="structure view/landing_candidate_count_text">
+          1 branch
+        </a>
+        proposed for merging into this one.
 
-    </div>
+      </div>
 
-    <div id="dependent-branches" tal:condition="context/dependent_branches">
-      &laquo;
-      <a href="+merges" tal:content="structure view/dependent_branch_count_text">
-        1 branch
-      </a>
-      dependent on this one.
-    </div>
+      <div id="dependent-branches" tal:condition="context/dependent_branches">
+        &laquo;
+        <a href="+merges" tal:content="structure view/dependent_branch_count_text">
+          1 branch
+        </a>
+        dependent on this one.
+      </div>
 
-    <div id="landing-targets" tal:condition="view/landing_targets">
-      <tal:landing-candidates repeat="mergeproposal view/landing_targets">
-        <div>
-          <tal:merge-fragment tal:replace="structure mergeproposal/@@+link-summary" />
-        </div>
-      </tal:landing-candidates>
-    </div>
-    <div tal:condition="not:view/landing_targets">
-      &raquo;
-      This branch is not proposed for merging into any others.
-    </div>
+      <div id="landing-targets" tal:condition="view/landing_targets">
+        <tal:landing-candidates repeat="mergeproposal view/landing_targets">
+          <div>
+            <tal:merge-fragment tal:replace="structure mergeproposal/@@+link-summary" />
+          </div>
+        </tal:landing-candidates>
+      </div>
+      <div tal:condition="not:view/landing_targets">
+        &raquo;
+        This branch is not proposed for merging into any others.
+      </div>
 
 
-    </div>
-    <div
-      tal:define="link context_menu/register_merge"
-      tal:condition="link/enabled"
-      tal:replace="structure link/render"
-      />
+      </div>
+      <div
+        tal:define="link context_menu/register_merge"
+        tal:condition="link/enabled"
+        tal:replace="structure link/render"
+        />
   </div>
 
   <div id="whiteboard">
