@@ -317,12 +317,12 @@
       </div>
 
 
-      </div>
-      <div
-        tal:define="link context_menu/register_merge"
-        tal:condition="link/enabled"
-        tal:replace="structure link/render"
-        />
+    </div>
+    <div
+      tal:define="link context_menu/register_merge"
+      tal:condition="link/enabled"
+      tal:replace="structure link/render"
+      />
   </div>
 
   <div id="whiteboard">
