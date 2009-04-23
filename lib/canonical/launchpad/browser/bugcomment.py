@@ -69,7 +69,14 @@ def build_comments_from_chunks(chunks, bugtask, truncate=False):
             bug_message.remote_comment_id is not None)
 
     for bug_message in bugtask.bug.bug_messages:
-        comments[bug_message.messageID].visible = bug_message.visible
+        comment = comments.get(bug_message.messageID, None)
+        # XXX intellectronica 2009-04-22, bug=365092
+        # Currently, there are some bug messages for which no chunks exist
+        # in the DB, so we need to make sure that we skip them, since the
+        # corresponding message wont have been added to the comments dictionary
+        # in the section above.
+        if comment is not None:
+            comment.visible = bug_message.visible
 
     for comment in comments.values():
         # Once we have all the chunks related to a comment set up,
