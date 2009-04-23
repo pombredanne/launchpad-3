@@ -1028,14 +1028,14 @@ With the authorization above the upload should work again.
 
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser('uploader')
-    >>> bar3 = NascentUpload(
+    >>> bar2 = NascentUpload(
     ...     datadir('suite/bar_1.0-1/bar_1.0-1_source.changes'),
     ...     insecure_policy, mock_logger_quiet)
-    >>> bar3.process()
-    >>> bar3.is_rejected
+    >>> bar2.process()
+    >>> bar2.is_rejected
     False
 
-  >>> print bar3.rejection_message
+  >>> print bar2.rejection_message
 
 
 == Uploads to copy archives ==
