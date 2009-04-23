@@ -195,13 +195,13 @@ class BranchContextMenu(ContextMenu):
 
     usedfor = IBranch
     facet = 'branches'
-    links = ['whiteboard', 'edit', 'delete_branch', 'browse_revisions',
+    links = ['edit_whiteboard', 'edit', 'delete_branch', 'browse_revisions',
              'subscription', 'add_subscriber', 'associations',
              'register_merge', 'landing_candidates',
              'link_bug', 'link_blueprint', 'edit_import', 'reviewer'
              ]
 
-    def whiteboard(self):
+    def edit_whiteboard(self):
         text = 'Edit whiteboard'
         return Link('+whiteboard', text, icon='edit')
 
@@ -319,6 +319,16 @@ class BranchView(LaunchpadView, FeedsMixin):
     def owner_is_registrant(self):
         """Is the branch owner the registrant?"""
         return self.context.owner == self.context.registrant
+
+    def show_whiteboard(self):
+        """Return whether or not the whiteboard should be shown.
+
+        The whiteboard is only shown for import branches.
+        """
+        if self.context.branch_type == BranchType.IMPORTED:
+            return True
+        else:
+            return False
 
     @property
     def codebrowse_url(self):
@@ -741,8 +751,7 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
     """The main branch view for editing the branch attributes."""
 
     field_names = [
-        'owner', 'product', 'name', 'private', 'url', 'summary',
-        'lifecycle_status', 'whiteboard']
+        'owner', 'product', 'name', 'private', 'url', 'lifecycle_status']
 
     custom_widget('lifecycle_status', LaunchpadRadioWidgetWithDescription)
 
@@ -876,8 +885,7 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
 
     schema = IBranch
     for_input = True
-    field_names = ['owner', 'name', 'branch_type', 'url',
-                   'summary', 'lifecycle_status', 'whiteboard']
+    field_names = ['owner', 'name', 'branch_type', 'url', 'lifecycle_status']
 
     branch = None
     custom_widget('branch_type', LaunchpadRadioWidgetWithDescription)
@@ -923,9 +931,7 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
                 name=data['name'],
                 registrant=self.user,
                 url=data.get('url'),
-                summary=data['summary'],
-                lifecycle_status=data['lifecycle_status'],
-                whiteboard=data['whiteboard'])
+                lifecycle_status=data['lifecycle_status'])
             if self.branch.branch_type == BranchType.MIRRORED:
                 self.branch.requestMirror()
         except BranchCreationForbidden:
