@@ -44,7 +44,7 @@
 
   <tal:has_specs condition="specs">
 
-    <h2 id="specification-count" tal:content="view/specification_count_text" />
+    <h2 id="specification-count" tal:content="structure view/specification_count_text" />
 
     <table class="listing sortable" id="milestone_specs">
       <thead>
@@ -100,7 +100,7 @@
 
   <tal:has_bugtasks condition="bugtasks">
 
-    <h2 id="bug-count" tal:content="view/bugtask_count_text" />
+    <h2 id="bug-count" tal:content="structure view/bugtask_count_text" />
 
     <table class="listing sortable" id="milestone_bugtasks">
       <thead>
