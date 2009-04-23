@@ -260,17 +260,23 @@ class SSODatabasePolicy(BaseDatabasePolicy):
 class ReadOnlyLaunchpadDatabasePolicy(BaseDatabasePolicy):
     """Policy for Launchpad web requests when running in read-only mode.
 
-    Access to the lpmain master store is blocked.
+    Access to all master Stores is blocked.
     """
     def getStore(self, name, flavor):
-        if name == AUTH_STORE and flavor == DEFAULT_FLAVOR:
-            flavor = MASTER_FLAVOR
-        elif name == MAIN_STORE:
-            if flavor == MASTER_FLAVOR:
-                raise ReadOnlyModeDisallowedStore(name, flavor)
-            flavor = SLAVE_FLAVOR
+        """See `IDatabasePolicy`.
+
+        Access to all master Stores is blocked. The default Store is
+        the slave.
+
+        Note that we even have to block access to the authdb master
+        Store, as it allows access to tables replicated from the
+        lpmain replication set. These tables will be locked during
+        a lpmain replication set database upgrade.
+        """
+        if flavor == MASTER_FLAVOR:
+            raise ReadOnlyModeDisallowedStore(name, flavor)
         return super(ReadOnlyLaunchpadDatabasePolicy, self).getStore(
-            name, flavor)
+            name, SLAVE_FLAVOR)
 
 
 class WhichDbView(LaunchpadView):

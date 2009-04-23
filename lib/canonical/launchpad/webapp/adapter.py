@@ -33,7 +33,6 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config, dbconfig, DatabaseConfig
 from canonical.database.interfaces import IRequestExpired
-from canonical.lazr.utils import safe_hasattr
 from canonical.launchpad.interfaces import IMasterObject, IMasterStore
 from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
 from canonical.launchpad.webapp.interfaces import (
@@ -250,8 +249,10 @@ class ReadOnlyModeConnection(PostgresConnection):
             return super(ReadOnlyModeConnection, self).execute(
                 statement, params, noresult)
         except psycopg2.InternalError, exception:
+            # Error 25006 is 'ERROR:  transaction is read-only'. This
+            # is raised when an attempt is made to make changes when
+            # the connection has been put in read-only mode.
             if exception.pgcode == '25006':
-                # ERROR:  transaction is read-only
                 raise ReadOnlyModeViolation, None, sys.exc_info()[2]
             raise
 
