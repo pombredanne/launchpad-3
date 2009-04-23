@@ -518,7 +518,7 @@ happy hacker.
     ...         elif perm.permission == ArchivePermissionType.QUEUE_ADMIN:
     ...             permission = 'QUEUE_ADMIN'
     ...         print(
-    ...             '%12s: %15s -> %20s (%s)'
+    ...             '%12s: %18s -> %20s (%s)'
     ...             % (person, pset, permission, perm.explicit))
 
     >>> ignore_this = ap_set.newPackagesetUploader(person1, mozilla_ps)
@@ -679,3 +679,121 @@ the 'techboard' team).
          juergen:             kde ->               UPLOAD (False)
        techboard:             kde ->               UPLOAD (False)
 
+== Checking package set based upload permissions ==
+
+The 'mozilla' package set includes the 'firefox' subset and hence the
+'mozilla-firefox' source package name indirectly.
+
+    >>> mozilla_ps.add((firefox_ps,))
+    >>> print_data(mozilla_ps.sourcesIncluded())
+      1 -> mozilla-firefox
+     16 -> mozilla
+     18 -> thunderbird
+     25 -> language-pack-de
+     26 -> iceweasel
+    >>> print_data(mozilla_ps.sourcesIncluded(direct_inclusion=True))
+     16 -> mozilla
+
+'hacker' is authorized to upload to the 'mozilla' package set..
+
+    >>> print_permission(ap_set.uploadersForPackageset(mozilla_ps))
+          hacker:         mozilla ->               UPLOAD (False)
+
+.. and hence listed as a *potential* uploader of the 'mozilla-firefox'
+source package.
+
+    >>> print_permission(
+    ...     ap_set.packagesetsForSourceUploader('mozilla-firefox', person1))
+          hacker:         mozilla ->               UPLOAD (False)
+
+'juergen' is allowed to upload to the 'firefox' package set that includes
+the 'mozilla-firefox' source package name directly ..
+
+    >>> print_data(firefox_ps.sourcesIncluded(direct_inclusion=True))
+      1 -> mozilla-firefox
+     26 -> iceweasel
+
+    >>> print_permission(ap_set.uploadersForPackageset(firefox_ps))
+         juergen:         firefox ->               UPLOAD (False)
+
+.. and thus also listed as a possible uploader of the 'mozilla-firefox'
+source package.
+
+    >>> print_permission(
+    ...     ap_set.packagesetsForSourceUploader('mozilla-firefox', person2))
+         juergen:         firefox ->               UPLOAD (False)
+
+Fetching the permissions for a non-existent source package name will fail
+as follows:
+
+    >>> print_permission(
+    ...     ap_set.packagesetsForSourceUploader('vapour-ware', person2))
+    Traceback (most recent call last):
+    ...
+    SourceNotFound: No such source package: 'vapour-ware'.
+
+Now for the verdict: is 'hacker' allowed to upload 'mozilla-firefox'?
+
+    >>> ap_set.isSourceUploadAllowed('mozilla-firefox', person1)
+    True
+
+How about 'juergen'?
+
+    >>> ap_set.isSourceUploadAllowed('mozilla-firefox', person2)
+    True
+
+And the unprivileged user?
+
+    >>> unprivileged = getUtility(IPersonSet).getByName("no-priv")
+    >>> ap_set.isSourceUploadAllowed('mozilla-firefox', unprivileged)
+    False
+
+So, what we see is that the package set inclusion hierarchy is honored as
+long as there are no explicit permissions for the package sets involved.
+
+Let's
+
+  * create a super-special package set
+  * populate it with the 'mozilla-firefox' package
+  * grant an explicit permission to the unprivileged person
+
+and see how that changes things.
+
+    >>> login("foo.bar@canonical.com")
+    >>> specialist_ps = ps_factory.new(
+    ...     u'specialists-only', u'Packages that require special care.',
+    ...     person1)
+    >>> store.commit()
+
+    >>> specialist_ps.add((firefox_spn,))
+    >>> print_data(
+    ...     ps_set.setsIncludingSource('mozilla-firefox',
+    ...     direct_inclusion=True))
+      1 -> umbrella
+      5 -> firefox
+      9 -> specialists-only
+
+    >>> ignore_this = ap_set.newPackagesetUploader(
+    ...     unprivileged, specialist_ps, True)
+
+Please note that there's a package set now that includes 'mozilla-firefox'
+and has an explicit permission.
+
+    >>> for ps in sort_by_id(ps_set.setsIncludingSource(
+    ...     'mozilla-firefox', direct_inclusion=True)):
+    ...     print_permission(ap_set.uploadersForPackageset(ps))
+         juergen:          firefox ->               UPLOAD (False)
+         no-priv: specialists-only ->               UPLOAD (True)
+
+Is 'hacker' still allowed to upload 'mozilla-firefox'?
+
+    >>> ap_set.isSourceUploadAllowed('mozilla-firefox', person1)
+    False
+
+How about 'juergen'?
+
+    >>> ap_set.isSourceUploadAllowed('mozilla-firefox', person2)
+    False
+
+Now neither 'hacker' nor 'juergen' are allowed to upload. All non-explicit
+permissions are ignored in the presence of explicit ones.

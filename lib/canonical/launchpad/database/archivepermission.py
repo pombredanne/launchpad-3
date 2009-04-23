@@ -421,3 +421,65 @@ class ArchivePermissionSet:
         if permission is not None:
             # Permission found, remove it!
             store.remove(permission)
+
+    def packagesetsForSourceUploader(self, sourcepackagename, person):
+        """See `IArchivePermissionSet`."""
+        sourcepackagename = self._nameToSourcePackageName(sourcepackagename)
+        store = IStore(ArchivePermission)
+        query = '''
+            SELECT ap.id
+            FROM
+                archivepermission ap, teamparticipation tp,
+                packagesetsources pss, flatpackagesetinclusion fpsi
+            WHERE
+                (ap.person = ? OR (ap.person = tp.team AND tp.person = ?))
+                AND ap.packageset = fpsi.parent
+                AND pss.packageset = fpsi.child
+                AND pss.sourcepackagename = ?
+        '''
+        query = SQL(query, (person.id, person.id, sourcepackagename.id))
+        return store.find(ArchivePermission, In(ArchivePermission.id, query))
+
+    def isSourceUploadAllowed(self, sourcepackagename, person):
+        """See `IArchivePermissionSet`."""
+        sourcepackagename = self._nameToSourcePackageName(sourcepackagename)
+        store = IStore(ArchivePermission)
+
+        # Put together the parameters for the query that follows.
+        permission = ArchivePermissionType.UPLOAD
+        query_params = (
+            (sourcepackagename.id,)*2 + (person.id,)*2 + (permission,) + 
+            (sourcepackagename.id,)   + (person.id,)*2 + (permission,))
+
+        query = '''
+        SELECT CASE
+          WHEN (
+            SELECT COUNT(ap.id)
+            FROM packagesetsources pss, archivepermission ap
+            WHERE
+              pss.sourcepackagename = %s AND pss.packageset = ap.packageset
+              AND ap.explicit = TRUE) > 0
+          THEN (
+            SELECT COUNT(ap.id)
+            FROM
+              packagesetsources pss, archivepermission ap,
+              teamparticipation tp
+            WHERE
+              pss.sourcepackagename = %s
+              AND (ap.person = %s OR (ap.person = tp.team AND tp.person = %s))
+              AND pss.packageset = ap.packageset AND ap.explicit = TRUE
+              AND ap.permission = %s)
+          ELSE (
+            SELECT COUNT(ap.id)
+            FROM
+              packagesetsources pss, archivepermission ap,
+              teamparticipation tp, flatpackagesetinclusion fpsi
+            WHERE
+              pss.sourcepackagename = %s
+              AND (ap.person = %s OR (ap.person = tp.team AND tp.person = %s))
+              AND pss.packageset = fpsi.child AND fpsi.parent = ap.packageset
+              AND ap.permission = %s)
+        END AS number_of_permitted_package_sets;
+
+        ''' % sqlvalues(*query_params)
+        return store.execute(query).get_one()[0] > 0
