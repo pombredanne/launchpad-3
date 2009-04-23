@@ -27,7 +27,7 @@ from canonical.codehosting.codeimport.worker import (
     PullingImportWorker, get_default_bazaar_branch_store,
     get_default_foreign_tree_store)
 from canonical.codehosting.codeimport.tests.servers import (
-    CVSServer, SubversionServer)
+    CVSServer, GitServer, SubversionServer)
 from canonical.codehosting.tests.helpers import (
     create_branch_with_one_revision)
 from canonical.config import config
@@ -668,20 +668,13 @@ class TestGitImport(WorkerTest, TestActualImportMixin):
     def makeSourceDetails(self, branch_name, files):
         """Make a Git `CodeImportSourceDetails` pointing at a real Git repo.
         """
-        from bzrlib.plugins.git.tests import GitBranchBuilder, run_git
         self.repository_path = self.makeTemporaryDirectory()
-        wd = os.getcwd()
-        try:
-            os.chdir(self.repository_path)
-            run_git('init')
-            builder = GitBranchBuilder()
-            for filename, contents in files:
-                builder.set_file(filename, contents, False)
-            builder.commit('Joe Foo <joe@foo.com>', u'<The commit message>')
-            self.foreign_commit_count = 1
-            builder.finish()
-        finally:
-            os.chdir(wd)
+        git_server = GitServer(self.repository_path)
+        git_server.setUp()
+        self.addCleanup(git_server.tearDown)
+
+        git_server.makeRepo(files)
+        self.foreign_commit_count = 1
 
         return self.factory.makeCodeImportSourceDetails(
             rcstype='git', git_repo_url=self.repository_path)

@@ -30,7 +30,7 @@ from canonical.codehosting.codeimport.workermonitor import (
     CodeImportWorkerMonitor, CodeImportWorkerMonitorProtocol, ExitQuietly,
     read_only_transaction)
 from canonical.codehosting.codeimport.tests.servers import (
-    CVSServer, SubversionServer, _make_silent_logger)
+    CVSServer, GitServer, SubversionServer, _make_silent_logger)
 from canonical.codehosting.codeimport.tests.test_worker import (
     clean_up_default_stores_for_import)
 from canonical.config import config
@@ -412,6 +412,7 @@ class TestWorkerMonitorIntegration(TestCase, TestCaseWithMemoryTransport):
         nuke_codeimport_sample_data()
         self.repo_path = tempfile.mkdtemp()
         self.addCleanup(shutil.rmtree, self.repo_path)
+        self.foreign_commit_count = 0
 
     def tearDown(self):
         TestCaseWithMemoryTransport.tearDown(self)
@@ -424,6 +425,7 @@ class TestWorkerMonitorIntegration(TestCase, TestCaseWithMemoryTransport):
         self.addCleanup(cvs_server.tearDown)
 
         cvs_server.makeModule('trunk', [('README', 'original\n')])
+        self.foreign_commit_count = 2
 
         return self.factory.makeCodeImport(
             cvs_root=cvs_server.getRoot(), cvs_module='trunk')
@@ -435,6 +437,7 @@ class TestWorkerMonitorIntegration(TestCase, TestCaseWithMemoryTransport):
         self.addCleanup(self.subversion_server.tearDown)
         svn_branch_url = self.subversion_server.makeBranch(
             'trunk', [('README', 'contents')])
+        self.foreign_commit_count = 2
 
         return self.factory.makeCodeImport(
             svn_branch_url=svn_branch_url)
@@ -442,22 +445,12 @@ class TestWorkerMonitorIntegration(TestCase, TestCaseWithMemoryTransport):
     def makeGitCodeImport(self):
         """Make a `CodeImport` that points to a real Git repository."""
         load_optional_plugin('git')
-        from bzrlib.plugins.git.tests import GitBranchBuilder, run_git
-        files = [('README', 'contents')]
-        wd = os.getcwd()
-        try:
-            os.chdir(self.repo_path)
-            run_git('init')
-            builder = GitBranchBuilder()
-            for filename, contents in files:
-                builder.set_file(filename, contents, False)
-            # We have to commit twice to satisfy the obscure needs of the
-            # other tests.
-            builder.commit('Joe Foo <joe@foo.com>', u'<The commit message>')
-            builder.commit('Joe Foo <joe@foo.com>', u'<The commit message>')
-            builder.finish()
-        finally:
-            os.chdir(wd)
+        self.git_server = GitServer(self.repo_path)
+        self.git_server.setUp()
+        self.addCleanup(self.git_server.tearDown)
+
+        self.git_server.makeRepo([('README', 'contents')])
+        self.foreign_commit_count = 1
 
         return self.factory.makeCodeImport(git_repo_url=self.repo_path)
 
@@ -486,13 +479,11 @@ class TestWorkerMonitorIntegration(TestCase, TestCaseWithMemoryTransport):
 
     def assertBranchImportedOKForCodeImport(self, code_import):
         """Assert that a branch was pushed into the default branch store."""
-
         url = get_default_bazaar_branch_store()._getMirrorURL(
             code_import.branch.id)
         branch = Branch.open(url)
-
-        # The same Mystery Guest as in the test_worker tests.
-        self.assertEqual(2, len(branch.revision_history()))
+        self.assertEqual(
+            self.foreign_commit_count, len(branch.revision_history()))
 
     @read_only_transaction
     def assertImported(self, ignored, code_import_id):
