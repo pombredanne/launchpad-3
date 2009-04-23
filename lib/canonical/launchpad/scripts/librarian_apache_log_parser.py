@@ -7,6 +7,8 @@ import os
 
 from zope.component import getUtility
 
+from lazr.uri import URI
+
 from contrib import apachelog
 
 from canonical.launchpad.database.librarian import ParsedApacheLog
@@ -141,5 +143,8 @@ def get_host_date_status_and_request(line):
 def get_method_and_file_id(request):
     """Extract the method of the request and the ID of the requested file."""
     method, path, protocol = request.split(' ')
+    if path.startswith('http://') or path.startswith('https://'):
+        uri = URI(path)
+        path = uri.path
     file_id = path.split('/')[1]
     return method, file_id

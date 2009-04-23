@@ -49,11 +49,24 @@ class TestLineParsing(TestCase):
 class TestRequestParsing(TestCase):
     """Test parsing the request part of an apache log line."""
 
-    def test_return_value(self):
-        request = 'GET /8196569/mediumubuntulogo.png HTTP/1.1'
+    def assertMethodAndFileIDAreCorrect(self, request):
         method, file_id = get_method_and_file_id(request)
         self.assertEqual(method, 'GET')
         self.assertEqual(file_id, '8196569')
+
+    def test_return_value(self):
+        request = 'GET /8196569/mediumubuntulogo.png HTTP/1.1'
+        self.assertMethodAndFileIDAreCorrect(request)
+
+    def test_return_value_for_http_path(self):
+        request = ('GET http://launchpadlibrarian.net/8196569/'
+                   'mediumubuntulogo.png HTTP/1.1')
+        self.assertMethodAndFileIDAreCorrect(request)
+
+    def test_return_value_for_https_path(self):
+        request = ('GET https://launchpadlibrarian.net/8196569/'
+                   'mediumubuntulogo.png HTTP/1.1')
+        self.assertMethodAndFileIDAreCorrect(request)
 
 
 class TestLogFileParsing(TestCase):
