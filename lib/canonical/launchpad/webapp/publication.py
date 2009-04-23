@@ -187,9 +187,10 @@ class LaunchpadBrowserPublication(
                 INotificationResponse(request).addWarningNotification(
                     structured("""
                         Launchpad is undergoing maintenance and is in
-                        read-only mode. <i>You cannot make any changes.</i>
-                        Please see the <a href="blog.launchpad.net">Launchpad
-                        Blog</a> for details.
+                        read-only mode. <i>You cannot make any
+                        changes.</i> Please see the <a
+                        href="http://blog.launchpad.net">Launchpad Blog</a>
+                        for details.
                         """))
             except ComponentLookupError:
                 pass
