@@ -109,8 +109,8 @@ class TestBazaarBranchStore(WorkerTest):
             tree.branch.last_revision(), new_tree.branch.last_revision())
 
     def test_pullUpgradesFormat(self):
-        # A branch should always be in the most up-to-date format before a pull
-        # is performed.
+        # A branch should always be in the most up-to-date format before a
+        # pull is performed.
         store = self.makeBranchStore()
         target_url = store._getMirrorURL(self.arbitrary_branch_id)
         knit_format = format_registry.get('knit')()
@@ -484,7 +484,8 @@ class TestActualImportMixin:
             "Override this with a VCS-specific implementation.")
 
     def getStoredBazaarBranch(self, worker):
-        """Get the Bazaar branch 'worker' stored into its BazaarBranchStore."""
+        """Get the Bazaar branch 'worker' stored into its BazaarBranchStore.
+        """
         branch_url = worker.bazaar_branch_store._getMirrorURL(
             worker.source_details.branch_id)
         return Branch.open(branch_url)

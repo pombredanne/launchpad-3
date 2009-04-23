@@ -168,6 +168,7 @@ class CVSServer(Server):
 class GitServer(Server):
 
     def __init__(self, repo_url):
+        super(GitServer, self).__init__()
         self.repo_url = repo_url
 
     def makeRepo(self, tree_contents):
