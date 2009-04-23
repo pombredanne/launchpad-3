@@ -15,7 +15,7 @@ from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.scripts.librarian_apache_log_parser import (
     create_or_update_parsedlog_entry, DBUSER,
     get_host_date_status_and_request, get_day, get_files_to_parse,
-    get_method_and_file_id, parse_file)
+    get_method_and_file_id, NotALibraryFileAliasRequest, parse_file)
 from canonical.launchpad.ftests import ANONYMOUS, login
 from canonical.launchpad.testing import TestCase
 from canonical.launchpad.webapp.interfaces import (
@@ -67,6 +67,24 @@ class TestRequestParsing(TestCase):
         request = ('GET https://launchpadlibrarian.net/8196569/'
                    'mediumubuntulogo.png HTTP/1.1')
         self.assertMethodAndFileIDAreCorrect(request)
+
+    def test_requests_for_the_root_are_not_parsed(self):
+        request = 'GET https://launchpadlibrarian.net/ HTTP/1.1'
+        self.assertRaises(
+            NotALibraryFileAliasRequest, get_method_and_file_id, request)
+
+        request = 'GET / HTTP/1.1'
+        self.assertRaises(
+            NotALibraryFileAliasRequest, get_method_and_file_id, request)
+
+    def test_requests_for_robots_dot_txt_are_not_parsed(self):
+        request = 'GET https://launchpadlibrarian.net/robots.txt HTTP/1.1'
+        self.assertRaises(
+            NotALibraryFileAliasRequest, get_method_and_file_id, request)
+
+        request = 'GET /robots.txt HTTP/1.1'
+        self.assertRaises(
+            NotALibraryFileAliasRequest, get_method_and_file_id, request)
 
 
 class TestLogFileParsing(TestCase):
@@ -154,11 +172,21 @@ class TestLogFileParsing(TestCase):
         self.assertEqual(downloads, {})
         self.assertEqual(parsed_bytes, fd.tell())
 
-    def test_HEAD_requests_are_ignored(self):
+    def test_HEAD_request_is_ignored(self):
         self._assertRequestWithGivenMethodIsIgnored('HEAD')
 
-    def test_POST_requests_are_ignored(self):
+    def test_POST_request_is_ignored(self):
         self._assertRequestWithGivenMethodIsIgnored('POST')
+
+    def test_request_to_non_lfa_is_ignored(self):
+        # A request to a path which doesn't map to a LibraryFileAlias (e.g.
+        # '/') is ignored.
+        fd = StringIO(
+            '69.233.136.42 - - [13/Jun/2008:14:55:22 +0100] "GET / HTTP/1.1" '
+            '200 2261 "https://launchpad.net/~ubuntulite/+archive" "Mozilla"')
+        downloads, parsed_bytes = parse_file(fd, start_position=0)
+        self.assertEqual(downloads, {})
+        self.assertEqual(parsed_bytes, fd.tell())
 
 
 class TestParsedFilesDetection(TestCase):

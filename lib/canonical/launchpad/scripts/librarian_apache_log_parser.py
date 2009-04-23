@@ -85,11 +85,15 @@ def parse_file(fd, start_position):
         if status != '200':
             continue
 
-        method, file_id = get_method_and_file_id(request)
+        try:
+            method, file_id = get_method_and_file_id(request)
+        except NotALibraryFileAliasRequest:
+            continue
         if method != 'GET':
             # We're only interested in counting downloads.
             continue
 
+        assert file_id.isdigit(), ('File ID is not a digit: %s' % request)
         # Get the dict containing these file's downloads.
         if file_id not in downloads:
             downloads[file_id] = {}
@@ -140,11 +144,22 @@ def get_host_date_status_and_request(line):
     return data['%h'], data['%t'], data['%>s'], data['%r']
 
 
+class NotALibraryFileAliasRequest(Exception):
+    """The path of the request doesn't map to a LibraryFileAlias."""
+
+
+# Paths for which requests to will be answered with a 200 OK response but
+# which are not the paths to a LibraryFileAlias.
+NO_LFA_PATHS = ['/', '/robots.txt']
+
+
 def get_method_and_file_id(request):
     """Extract the method of the request and the ID of the requested file."""
     method, path, protocol = request.split(' ')
     if path.startswith('http://') or path.startswith('https://'):
         uri = URI(path)
         path = uri.path
+    if path in NO_LFA_PATHS:
+        raise NotALibraryFileAliasRequest(request)
     file_id = path.split('/')[1]
     return method, file_id
