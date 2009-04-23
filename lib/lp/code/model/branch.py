@@ -18,7 +18,7 @@ from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements
 
-from storm.expr import And, Count, Desc, Max, Or, Select
+from storm.expr import And, Count, Desc, Max, NamedFunc, Or, Select
 from storm.store import Store
 from sqlobject import (
     ForeignKey, IntCol, StringCol, BoolCol, SQLMultipleJoin, SQLRelatedJoin)
@@ -788,7 +788,6 @@ class Branch(SQLBase):
 
     def commitsForDays(self, since):
         """See `IBranch`."""
-        from storm.expr import NamedFunc
         class DateTrunc(NamedFunc):
             name = "date_trunc"
         results = Store.of(self).find(
