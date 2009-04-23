@@ -425,10 +425,10 @@ class RosettaUploadJob(BranchJobDerived):
         self.translation_files_changed = []
 
     @staticmethod
-    def getMetadata(from_revision_id, force_translatoins_upload):
+    def getMetadata(from_revision_id, force_translations_upload):
         return {
             'from_revision_id': from_revision_id,
-            'force_translatoins_upload': force_translatoins_upload,
+            'force_translations_upload': force_translations_upload,
         }
 
     @property
@@ -440,31 +440,31 @@ class RosettaUploadJob(BranchJobDerived):
         return self.metadata['force_translations_upload']
 
     @classmethod
-    def _get_any_product_series(cls, branch, force_translatoins_upload):
+    def _get_any_product_series(cls, branch, force_translations_upload):
         """Find an affected product series.
 
         This is used to check if any product series is related to the branch
         in order to decide if a job needs to be created.
 
         :param branch: The IBranch that is being scanned.
-        :param force_translatoins_upload: Flag to override the settings in the
+        :param force_translations_upload: Flag to override the settings in the
             product series and upload all translation files.
         :returns: a list of IProductSeries objects.
         """
         return cls._find_product_series(branch,
-                                        force_translatoins_upload).any()
+                                        force_translations_upload).any()
 
     @staticmethod
-    def _find_product_series(branch, force_translatoins_upload):
+    def _find_product_series(branch, force_translations_upload):
         """Find affected product series.
 
         :param branch: The IBranch that is being scanned.
-        :param force_translatoins_upload: Flag to override the settings in the
+        :param force_translations_upload: Flag to override the settings in the
             product series and upload all translation files.
         :returns: a list of IProductSeries objects.
         """
         store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
-        if force_translatoins_upload:
+        if force_translations_upload:
             productseries = store.find(
                 (ProductSeries),
                 ProductSeries.branch == branch)
@@ -478,17 +478,17 @@ class RosettaUploadJob(BranchJobDerived):
 
     @classmethod
     def create(cls, branch, from_revision_id,
-               force_translatoins_upload=False):
+               force_translations_upload=False):
         """See `IRosettaUploadJobSource`."""
         if branch is None:
             return None
         if from_revision_id is None:
             from_revision_id = NULL_REVISION
         productseries = cls._get_any_product_series(branch,
-                                                    force_translatoins_upload)
+                                                    force_translations_upload)
         if productseries is not None:
             metadata = cls.getMetadata(from_revision_id,
-                                       force_translatoins_upload)
+                                       force_translations_upload)
             branch_job = BranchJob(
                 branch, BranchJobType.ROSETTA_UPLOAD, metadata)
             return cls(branch_job)
@@ -523,7 +523,7 @@ class RosettaUploadJob(BranchJobDerived):
         if (productseries.translations_autoimport_mode in (
             TranslationsBranchImportMode.IMPORT_TEMPLATES,
             TranslationsBranchImportMode.IMPORT_TRANSLATIONS) or
-            self.force_translatoins_upload):
+            self.force_translations_upload):
             #
             yield (self.template_file_names,
                    self.template_files_changed,
@@ -531,7 +531,7 @@ class RosettaUploadJob(BranchJobDerived):
 
         if (productseries.translations_autoimport_mode ==
             TranslationsBranchImportMode.IMPORT_TRANSLATIONS or
-            self.force_translatoins_upload):
+            self.force_translations_upload):
             #
             yield (self.translation_file_names,
                    self.translation_files_changed,
@@ -618,7 +618,7 @@ class RosettaUploadJob(BranchJobDerived):
         # Get the product series that are connected to this branch and
         # that want to upload translations.
         productseries = self._find_product_series(
-            self.branch, self.force_translatoins_upload)
+            self.branch, self.force_translations_upload)
         translation_import_queue = getUtility(ITranslationImportQueue)
         for series in productseries:
             approver = TranslationBranchApprover(self.file_names,

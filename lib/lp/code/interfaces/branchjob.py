@@ -132,12 +132,12 @@ class IRosettaUploadJob(Interface):
 
 class IRosettaUploadJobSource(Interface):
 
-    def create(branch, from_revision_id, force_translatoins_upload):
+    def create(branch, from_revision_id, force_translations_upload):
         """Construct a new object that implements IRosettaUploadJob.
 
         :param branch: The database branch to exract files from.
         :param from_revision_id: The revision id to compare against.
-        :param force_translatoins_upload: Flag to override the settings in the
+        :param force_translations_upload: Flag to override the settings in the
             product series and upload all translation files.
         """
 
