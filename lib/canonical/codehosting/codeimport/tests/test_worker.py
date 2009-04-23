@@ -495,19 +495,16 @@ class TestActualImportMixin:
         worker = self.makeImportWorker()
         worker.run()
         branch = self.getStoredBazaarBranch(worker)
-        # XXX: JonathanLange 2008-02-22: This assumes that the branch that we
-        # are importing has two revisions. Looking at the test, it's not
-        # obvious why we make this assumption, hence the XXX. The two
-        # revisions are from 1) making the repository and 2) adding a file.
-        # The name of this test smell is "Mystery Guest".
-        self.assertEqual(2, len(branch.revision_history()))
+        self.assertEqual(
+            self.foreign_commit_count, len(branch.revision_history()))
 
     def test_sync(self):
         # Do an import.
         worker = self.makeImportWorker()
         worker.run()
         branch = self.getStoredBazaarBranch(worker)
-        self.assertEqual(2, len(branch.revision_history()))
+        self.assertEqual(
+            self.foreign_commit_count, len(branch.revision_history()))
 
         # Change the remote branch.
 
@@ -529,7 +526,8 @@ class TestActualImportMixin:
 
         # Check that the new revisions are in the Bazaar branch.
         branch = self.getStoredBazaarBranch(worker)
-        self.assertEqual(3, len(branch.revision_history()))
+        self.assertEqual(
+            self.foreign_commit_count, len(branch.revision_history()))
 
     def test_import_script(self):
         # Like test_import, but using the code-import-worker.py script
@@ -553,7 +551,8 @@ class TestActualImportMixin:
             self.source_details.branch_id)
         branch = Branch.open(branch_url)
 
-        self.assertEqual(2, len(branch.revision_history()))
+        self.assertEqual(
+            self.foreign_commit_count, len(branch.revision_history()))
 
 
 class CSCVSActualImportMixin(TestActualImportMixin):
@@ -581,6 +580,7 @@ class TestCVSImport(WorkerTest, CSCVSActualImportMixin):
     def setUp(self):
         super(TestCVSImport, self).setUp()
         self.setUpImport()
+        self.foreign_commit_count = 0
 
     def commitInForeignTree(self, foreign_tree):
         # If you write to a file in the same second as the previous commit,
@@ -590,6 +590,7 @@ class TestCVSImport(WorkerTest, CSCVSActualImportMixin):
             [(os.path.join(foreign_tree.local_path, 'README'),
               'New content')])
         foreign_tree.commit()
+        self.foreign_commit_count += 1
 
     def makeSourceDetails(self, module_name, files):
         """Make a CVS `CodeImportSourceDetails` pointing at a real CVS repo.
@@ -599,6 +600,8 @@ class TestCVSImport(WorkerTest, CSCVSActualImportMixin):
         self.addCleanup(cvs_server.tearDown)
 
         cvs_server.makeModule('trunk', [('README', 'original\n')])
+
+        self.foreign_commit_count = 2
 
         return self.factory.makeCodeImportSourceDetails(
             rcstype='cvs', cvs_root=cvs_server.getRoot(), cvs_module='trunk')
@@ -621,6 +624,7 @@ class TestSubversionImport(WorkerTest, CSCVSActualImportMixin):
         file.close()
         client.add('working_tree/newfile')
         client.checkin('working_tree', 'Add a file', recurse=True)
+        self.foreign_commit_count += 1
         shutil.rmtree('working_tree')
 
     def makeSourceDetails(self, branch_name, files):
@@ -631,6 +635,8 @@ class TestSubversionImport(WorkerTest, CSCVSActualImportMixin):
         self.addCleanup(svn_server.tearDown)
 
         svn_branch_url = svn_server.makeBranch(branch_name, files)
+        self.foreign_commit_count = 2
+
         return self.factory.makeCodeImportSourceDetails(
             rcstype='svn', svn_branch_url=svn_branch_url)
 
@@ -655,6 +661,7 @@ class TestGitImport(WorkerTest, TestActualImportMixin):
         try:
             run_git('config', 'user.name', 'Joe Random Hacker')
             run_git('commit', '-m', 'dsadas')
+            self.foreign_commit_count += 1
         finally:
             os.chdir(wd)
 
@@ -670,10 +677,8 @@ class TestGitImport(WorkerTest, TestActualImportMixin):
             builder = GitBranchBuilder()
             for filename, contents in files:
                 builder.set_file(filename, contents, False)
-            # We have to commit twice to satisfy the obscure needs of the
-            # other tests.
             builder.commit('Joe Foo <joe@foo.com>', u'<The commit message>')
-            builder.commit('Joe Foo <joe@foo.com>', u'<The commit message>')
+            self.foreign_commit_count = 1
             builder.finish()
         finally:
             os.chdir(wd)
