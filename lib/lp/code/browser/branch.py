@@ -474,8 +474,8 @@ class BranchView(LaunchpadView, FeedsMixin):
         if not self.context.product:
             return False
         all_branches = getUtility(IAllBranches)
-        return len(list(
-            all_branches.inProduct(self.context.product).getBranches())) > 1
+        return all_branches.inTarget(
+            self.context.target).getBranches().count() > 1
 
 
 class DecoratedMergeProposal:
