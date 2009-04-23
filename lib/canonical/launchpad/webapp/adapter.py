@@ -240,9 +240,7 @@ isolation_level_map = {
 
 
 class ReadOnlyModeConnection(PostgresConnection):
-    """storm.database.Connection for Launchpad when running in
-       read-only mode.
-    """
+    """storm.database.Connection for read-only mode Launchpad."""
     def execute(self, statement, params=None, noresult=False):
         """See storm.database.Connection."""
         try:
@@ -328,8 +326,10 @@ class LaunchpadDatabase(Postgres):
 
     @property
     def connection_factory(self):
-        """Return a ReadOnlyModeConnection if we are running in
-           read-only mode. Otherwise, return the default.
+        """Return the correct connection factory for the current mode.
+        
+        If we are running in read-only mode, returns a
+        ReadOnlyModeConnection. Otherwise it returns the Storm default.
         """
         if config.launchpad.read_only:
             return ReadOnlyModeConnection
