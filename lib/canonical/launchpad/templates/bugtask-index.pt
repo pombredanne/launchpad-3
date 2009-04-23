@@ -266,6 +266,7 @@ Y.on('load', function() {
 
     // Add a class denoting them as js-action links.
     subscription_links.addClass('js-action');
+
 }, window);
 
 /*
@@ -276,10 +277,7 @@ function subscribe_current_user(subscription_link) {
         'url(/@@/spinner/) center left no-repeat');
     lp_client.named_post(bug.self_link, 'subscribe', sub_config)
     subscription_link.set('innerHTML', 'Unsubscribe');
-    subscription_link.setStyle('background',
-        'url(/@@/remove/) center left no-repeat');
-    var subscribers = Y.get('#subscribers-links');
-    var html = '<span id=\'subscriber-name16\'>' +
+    var html = '<div id=\'subscriber-name16\'>' +
             '<a href=\'/%7Ename16\' title=\'Subscribed themselves\'>' +
               '<img alt=\'\' src=\'/@@/person\' width=\'14\' height=\'14\' />' +
               '&nbsp;Foo Bar&nbsp;' +
@@ -287,11 +285,16 @@ function subscribe_current_user(subscription_link) {
             '<a href=\'+subscribe\' id=\'unsubscribe-name16\' title=\'Unsubscribe Foo Bar\'>' +
               '<img src=\'/@@/remove\'>' +
             '</a>' +
-        '</span>';
+        '</div>';
     var link_node = Y.Node.create(html);
-    subscribers.appendChild(link_node);
-    flash_node = Y.get('.menu-link-subscription');
+    var subscribers = Y.get('#subscribers-links');
+    subscribers.insertBefore(link_node, subscribers.get('firstChild'));
+    flash_node = Y.get('#subscriber-' + me.substring(2));
     anim = Y.lazr.anim.green_flash({ node: flash_node });
+    anim.on('end', function(e) {
+        subscription_link.setStyle('background',
+            'url(/@@/remove/) center left no-repeat');
+    });
     anim.run();
 }
 
@@ -303,13 +306,15 @@ function unsubscribe_current_user(subscription_link) {
         'url(/@@/spinner/) center left no-repeat');
     lp_client.named_post(bug.self_link, 'unsubscribe', unsub_config)
     subscription_link.set('innerHTML', 'Subscribe');
-    subscription_link.setStyle('background',
-        'url(/@@/add/) center left no-repeat');
     var me_node = Y.get('#subscriber-' + me.substring(2));
     var parent = me_node.get('parentNode');
-    parent.removeChild(me_node);
-    flash_node = Y.get('.menu-link-subscription');
+    flash_node = Y.get('#subscriber-' + me.substring(2));
     anim = Y.lazr.anim.green_flash({ node: flash_node });
+    anim.on('end', function(e) {
+        parent.removeChild(me_node);
+        subscription_link.setStyle('background',
+            'url(/@@/add/) center left no-repeat');
+    });
     anim.run();
 }
 
