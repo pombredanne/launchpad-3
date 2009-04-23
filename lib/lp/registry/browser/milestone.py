@@ -121,7 +121,7 @@ class MilestoneView(LaunchpadView, ProductDownloadFileMixin):
         self.context = self.milestone
 
     def initialize(self):
-        """See `LaunchpadFormView`."""
+        """See `LaunchpadView`."""
         self.form = self.request.form
         self.processDeleteFiles()
 
@@ -129,36 +129,16 @@ class MilestoneView(LaunchpadView, ProductDownloadFileMixin):
         """See `ProductDownloadFileMixin`."""
         return set([self.release])
 
-    @property
-    def target(self):
-        """The `IProduct`, `IProject`, or `IDistribution`."""
-        if self.milestone.distribution is not None:
-            return self.milestone.distribution
-        elif self.milestone.product is not None:
-            return self.milestone.product
-        else:
-            # This is an `IProjectMilestone`.
-            return self.milestone.target
-
-    @property
-    def target_series(self):
-        """The `IProductSeries` or `IDistroseries`."""
-        if self.milestone.distribution is not None:
-            return self.milestone.distroseries
-        elif self.milestone.product is not None:
-            return self.milestone.productseries
-        else:
-            # This is an `IProjectMilestone`. It does not have a series.
-            return None
-
     # Listify and cache the specifications and bugtasks to avoid making
     # the same query over and over again when evaluating in the template.
     @cachedproperty
     def specifications(self):
+        """The list of specifications targeted to this milestone."""
         return list(self.context.specifications)
 
     @cachedproperty
     def bugtasks(self):
+        """The list of bugtasks targeted to this milestone."""
         user = getUtility(ILaunchBag).user
         params = BugTaskSearchParams(user, milestone=self.context,
                     orderby=['-importance', 'datecreated', 'id'],
@@ -180,14 +160,16 @@ class MilestoneView(LaunchpadView, ProductDownloadFileMixin):
 
     @property
     def bugtask_count_text(self):
+        """The formatted count of bugs for this milestone."""
         count = len(self.bugtasks)
         if count == 1:
-            return '<strong>1 bug </strong>'
+            return '<strong>1 bug</strong>'
         else:
             return '<strong>%d bugs</strong>' % count
 
     @property
     def specification_count_text(self):
+        """The formatted count of specifications for this milestone."""
         count = len(self.specifications)
         if count == 1:
             return '<strong>1 blueprint</strong>'
@@ -204,7 +186,8 @@ class MilestoneView(LaunchpadView, ProductDownloadFileMixin):
 
     @property
     def has_bugs_or_specs(self):
-        return self.bugtasks or self.specifications
+        """Does the milestone have any bugtasks and specifications?"""
+        return len(self.bugtasks) > 0  or len(self.specifications) > 0
 
 
 class MilestoneAddView(LaunchpadFormView):
