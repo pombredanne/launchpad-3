@@ -528,6 +528,8 @@ class NascentUpload:
             archive.canUpload(signer, source_name)):
             return
 
+        rejection_reason = None
+
         # If source_name is None then the package must be new, but we
         # kick it out anyway because it's impossible to look up
         # any permissions for it.
@@ -535,24 +537,34 @@ class NascentUpload:
         if not possible_components:
             # The user doesn't have package-specific rights or
             # component rights, so kick him out entirely.
-            self.reject(
+            rejection_reason = (
                 "Signer has no upload rights at all to this "
                 "distribution.")
-            return
 
         # New packages go straight to the upload queue; we only check upload
         # rights for old packages.
         if self.is_new:
+            if rejection_reason is not None:
+                self.reject(rejection_reason)
             return
 
         component = self.changes.dsc.component
         if component not in possible_components:
             # The uploader has no rights to the component.
-            self.reject(
+            rejection_reason = (
                 "Signer is not permitted to upload to the component "
                 "'%s' of file '%s'." % (component.name,
                                         self.changes.dsc.filename))
 
+        # Let us check whether this upload can be approved due to
+        # package based permissions.
+        packageset_permissions_apply = False
+
+        if not packageset_permissions_apply:
+            if rejection_reason is not None:
+                self.reject(rejection_reason)
+
+        return
 
     #
     # Handling checking of versions and overrides
