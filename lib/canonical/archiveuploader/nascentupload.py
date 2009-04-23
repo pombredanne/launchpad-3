@@ -558,10 +558,9 @@ class NascentUpload:
 
         # Now check whether this upload can be approved due to
         # package set based permissions.
-        packageset_permissions_apply = False
-
         ap_set = getUtility(IArchivePermissionSet)
-        permissions = ap_set.packagesetsForSourceUploader(source_name, signer)
+        packageset_permissions_apply = ap_set.isSourceUploadAllowed(
+            source_name, signer)
 
         if not packageset_permissions_apply:
             if rejection_reason is not None:
