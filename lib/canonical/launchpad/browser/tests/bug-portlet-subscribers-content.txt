@@ -1,0 +1,10 @@
+    >>> from canonical.launchpad.browser.bugsubscription import (
+    ...     BugPortletSubcribersContents)
+    >>> login('no-priv@canonical.com')
+    >>> reporter = factory.makePerson(displayname='Bug Reporter')
+    >>> bug = factory.makeBug(owner=reporter)
+    >>> view = BugPortletSubcribersContents(bug, None)
+    >>> [(subscription.person.displayname,
+    ...   subscription.canBeUnsubscribedByUser(view.user))
+    ...  for subscription in view.getSortedDirectSubscriptions()]
+    [u'Bug Reporter']
