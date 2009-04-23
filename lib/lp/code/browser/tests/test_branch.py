@@ -315,8 +315,7 @@ class TestBranchSparkView(TestCaseWithFactory):
         branch = self.factory.makeAnyBranch()
         # Create a commit 5 days ago.
         revision_date = datetime.now(tz=pytz.UTC) - timedelta(days=5)
-        revision = self.factory.makeRevision(
-            revision_date=revision_date)
+        revision = self.factory.makeRevision(revision_date=revision_date)
         branch.createBranchRevision(1, revision)
         branch.updateScannedDetails(revision, 1)
 
@@ -324,9 +323,24 @@ class TestBranchSparkView(TestCaseWithFactory):
         json = simplejson.loads(view.render())
 
         self.assertEqual(1, json['count'])
-        commits = ([0] * 85) + [1, 0, 0, 0, 0]
+        commits = ([0] * 84) + [1, 0, 0, 0, 0, 0]
         self.assertEqual(commits, json['commits'])
-        self.assertEqual(85, json['max_commits'])
+        self.assertEqual(84, json['max_commits'])
+
+    def test_commit_for_just_now(self):
+        # A commit now should show as a commit on the last day.
+        branch = self.factory.makeAnyBranch()
+        revision_date = datetime.now(tz=pytz.UTC)
+        revision = self.factory.makeRevision(revision_date=revision_date)
+        branch.createBranchRevision(1, revision)
+        branch.updateScannedDetails(revision, 1)
+
+        view = BranchSparkView(branch, LaunchpadTestRequest())
+        json = simplejson.loads(view.render())
+
+        self.assertEqual(1, json['count'])
+        commits = ([0] * 89) + [1]
+        self.assertEqual(commits, json['commits'])
 
 
 def test_suite():

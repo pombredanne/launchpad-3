@@ -1205,7 +1205,8 @@ class BranchSparkView(LaunchpadView):
 
     def _commitCounts(self):
         """Return a dict of commit counts for rendering."""
-        epoch = datetime.now(tz=pytz.UTC) - timedelta(days=self.COMMIT_DAYS)
+        epoch = (
+            datetime.now(tz=pytz.UTC) - timedelta(days=(self.COMMIT_DAYS-1)))
         # Make a datetime for that date, but midnight.
         epoch = epoch.replace(hour=0, minute=0, second=0, microsecond=0)
         commits = dict(self.context.commitsForDays(epoch))
