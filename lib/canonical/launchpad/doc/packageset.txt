@@ -613,16 +613,16 @@ already will fail.
     ...     sabdfl, thunderbird_ps, True)
     Traceback (most recent call last):
     ...
-    ValueError: Permission for package set 'thunderbird' already exists but
-    with a different 'explicit' flag value (False)
+    ValueError: Permission for package set 'thunderbird' already exists for
+    sabdfl but with a different 'explicit' flag value (False).
 
 And the other way around:
 
     >>> ignore_this = ap_set.newPackagesetUploader(sabdfl, firefox_ps)
     Traceback (most recent call last):
     ...
-    ValueError: Permission for package set 'firefox' already exists but
-    with a different 'explicit' flag value (True)
+    ValueError: Permission for package set 'firefox' already exists for
+    sabdfl but with a different 'explicit' flag value (True).
 
 Removing package set based permissions is straight-forward.
 
@@ -640,3 +640,42 @@ by a package set (name) results in a failure.
     Traceback (most recent call last):
     ...
     ValueError: Not a package set: int
+
+Create a package set based permission for a team.
+
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> techboardp = removeSecurityProxy(
+    ...     ap_set.newPackagesetUploader(techboard, kde_ps))
+
+An attempt to create a new permission for a 'techboard' team member
+  * for the same package set
+  * but with a conflicting 'explicit' flag value
+will fail.
+
+    >>> ignore_this = ap_set.newPackagesetUploader(person2, kde_ps, True)
+    Traceback (most recent call last):
+    ...
+    ValueError: Permission for package set 'kde' already exists for
+    techboard but with a different 'explicit' flag value (False).
+
+An attempt to create the same permission repeatedly should just return
+the existing one.
+
+    >>> sameone = removeSecurityProxy(
+    ...     ap_set.newPackagesetUploader(techboard, kde_ps))
+    >>> techboardp.id == sameone.id
+    True
+
+Creating a "compatible" permission for person 'juergen' succeeds although
+there is one in place for 'techboard' already (and 'juergen' belongs to
+the 'techboard' team).
+
+    >>> print_permission(ap_set.uploadersForPackageset(kde_ps))
+       techboard:             kde ->               UPLOAD (False)
+
+    >>> ignore_this = ap_set.newPackagesetUploader(person2, kde_ps)
+
+    >>> print_permission(ap_set.uploadersForPackageset(kde_ps))
+         juergen:             kde ->               UPLOAD (False)
+       techboard:             kde ->               UPLOAD (False)
+

@@ -362,20 +362,41 @@ class ArchivePermissionSet:
 
         # First see whether we have a matching permission in the database
         # already.
-        permission = store.find(
-            ArchivePermission, person=person, packageset=packageset).one()
-        if permission is not None:
-            # Found a permission in the database, does the 'explicit' flag
+        query = '''
+            SELECT ap.id
+            FROM archivepermission ap, teamparticipation tp
+            WHERE
+                (ap.person = ? OR (ap.person = tp.team AND tp.person = ?))
+                AND ap.packageset = ?
+        '''
+        query = SQL(query, (person.id, person.id, packageset.id))
+        permissions = list(
+            store.find(ArchivePermission, In(ArchivePermission.id, query)))
+        if len(permissions) > 0:
+            # Found permissions in the database, does the 'explicit' flag
             # have the requested value?
-            if permission.explicit != explicit:
-                # No.
+            conflicting = [permission for permission in permissions
+                           if permission.explicit != explicit]
+            if len(conflicting) > 0:
+                # At least one permission with conflicting 'explicit' flag
+                # value exists already.
+                cperm = conflicting[0]
                 raise ValueError(
-                    "Permission for package set '%s' already exists but with "
-                    "a different 'explicit' flag value (%s)"
-                    % (packageset.name, permission.explicit))
+                    "Permission for package set '%s' already exists for %s "
+                    "but with a different 'explicit' flag value (%s)." %
+                    (packageset.name, cperm.person.name, cperm.explicit))
             else:
-                # The existing permission matches, just return it.
-                return permission
+                # No conflicts, does the requested permission exist already?
+                existing = [permission for permission in permissions
+                            if (permission.explicit == explicit and
+                                permission.person == person and
+                                permission.packageset == packageset)]
+                assert len(existing) <= 1, (
+                    "Too many permissions for %s and %s" %
+                    (person.name, packageset.name))
+                if len(existing) == 1:
+                    # The existing permission matches, just return it.
+                    return existing[0]
 
         # The requested permission does not exist yet. Insert it into the
         # database.
