@@ -11,7 +11,6 @@ __all__ = [
 import cgi
 import simplejson
 from textwrap import dedent
-from xml.sax.saxutils import escape as xml_escape
 
 from zope.security.checker import canWrite
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile

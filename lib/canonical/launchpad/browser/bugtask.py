@@ -59,7 +59,6 @@ from zope import formlib
 from zope.interface import implementer, implements, providedBy
 from zope.schema import Choice
 from zope.schema.interfaces import IContextSourceBinder, IList
-from zope.schema.vocabulary import getVocabularyRegistry
 
 from zope.schema.vocabulary import (
     getVocabularyRegistry, SimpleVocabulary, SimpleTerm)
@@ -89,7 +88,6 @@ from lazr.uri import URI
 from canonical.launchpad.interfaces.bugattachment import (
     BugAttachmentType, IBugAttachmentSet)
 from canonical.launchpad.interfaces.bugactivity import IBugActivity
-from canonical.launchpad.interfaces.bugmessage import IBugComment
 from canonical.launchpad.interfaces.bugnomination import (
     BugNominationStatus, IBugNominationSet)
 from canonical.launchpad.interfaces.bug import IBug, IBugSet
@@ -3026,7 +3024,7 @@ class BugTaskTableRowView(LaunchpadView):
             step_title='Search for people or teams',
             show_remove_button=True,
             show_assign_me_button=is_user_in_vocabulary,
-            remove_button_text='Remove Assignee');
+            remove_button_text='Remove Assignee')
 
 
 class BugsBugTaskSearchListingView(BugTaskSearchListingView):
