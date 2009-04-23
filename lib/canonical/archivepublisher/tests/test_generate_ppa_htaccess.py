@@ -15,7 +15,7 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.archivepublisher.config import getPubConfig
-from canonical.archivepublisher.generate_ppa_htaccess import (
+from canonical.archivepublisher.scripts.generate_ppa_htaccess import (
     HtaccessTokenGenerator)
 from canonical.config import config
 from canonical.launchpad.interfaces import (
@@ -60,7 +60,7 @@ class TestPPAHtaccessTokenGeneration(unittest.TestCase):
         :return: a tuple of return code, stdout and stderr.
         """
         script = os.path.join(
-            config.root, "lib", "canonical", "archivepublisher",
+            config.root, "lib", "canonical", "archivepublisher", "scripts",
             "generate_ppa_htaccess.py")
         args = [sys.executable, script, "-v"]
         process = subprocess.Popen(

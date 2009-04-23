@@ -19,6 +19,8 @@ from canonical.archivepublisher.diskpool import DiskPool
 from canonical.archivepublisher.config import getPubConfig, LucilleConfigError
 from canonical.archivepublisher.domination import Dominator
 from canonical.archivepublisher.ftparchive import FTPArchiveHandler
+from canonical.archivepublisher.interfaces.archivesigningkey import (
+    IArchiveSigningKey)
 from canonical.archivepublisher.utils import RepositoryIndexFile
 from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.database.publishing import (
@@ -26,8 +28,6 @@ from canonical.launchpad.database.publishing import (
 from canonical.launchpad.interfaces.archive import ArchivePurpose
 from canonical.launchpad.interfaces.binarypackagerelease import (
     BinaryPackageFormat)
-from canonical.launchpad.interfaces.archivesigningkey import (
-    IArchiveSigningKey)
 from canonical.launchpad.interfaces.component import IComponentSet
 from canonical.launchpad.interfaces.publishing import (
     pocketsuffix, PackagePublishingPocket, PackagePublishingStatus)

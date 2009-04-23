@@ -33,7 +33,7 @@ from canonical.launchpad.interfaces.gpghandler import IGPGHandler
 from lp.registry.interfaces.person import IPersonSet
 from canonical.launchpad.interfaces.publishing import (
     PackagePublishingPocket, PackagePublishingStatus)
-from canonical.launchpad.interfaces.archivesigningkey import (
+from canonical.archivepublisher.interfaces.archivesigningkey import (
     IArchiveSigningKey)
 from canonical.launchpad.testing import get_lsb_information
 from canonical.launchpad.tests.test_publishing import TestNativePublishingBase

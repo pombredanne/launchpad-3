@@ -17,9 +17,9 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.archivepublisher.config import getPubConfig
-from canonical.config import config
-from canonical.launchpad.interfaces.archivesigningkey import (
+from canonical.archivepublisher.interfaces.archivesigningkey import (
     IArchiveSigningKey)
+from canonical.config import config
 from canonical.launchpad.interfaces.gpghandler import IGPGHandler
 from lp.registry.interfaces.gpg import IGPGKeySet, GPGKeyAlgorithm
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
