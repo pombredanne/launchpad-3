@@ -517,9 +517,15 @@ happy hacker.
     ...             permission = 'UPLOAD'
     ...         elif perm.permission == ArchivePermissionType.QUEUE_ADMIN:
     ...             permission = 'QUEUE_ADMIN'
+    ...         else:
+    ...             permission = '???'
+    ...         if perm.explicit == True:
+    ...             ptype = 'explicit'
+    ...         else:
+    ...             ptype = 'implicit'
     ...         print(
     ...             '%12s: %18s -> %20s (%s)'
-    ...             % (person, pset, permission, perm.explicit))
+    ...             % (person, pset, permission, ptype))
 
     >>> ignore_this = ap_set.newPackagesetUploader(person1, mozilla_ps)
 
@@ -528,7 +534,7 @@ package set.
 
     >>> permissions = ap_set.packagesetsForUploader(person1)
     >>> print_permission(permissions)
-          hacker:         mozilla ->               UPLOAD (False)
+          hacker:         mozilla ->               UPLOAD (implicit)
 
 The 'package_set_name' property allows easy access to the package set
 name.
@@ -540,7 +546,7 @@ name.
 'hacker' is also listed as one of the 'mozilla' uploaders.
 
     >>> print_permission(ap_set.uploadersForPackageset(mozilla_ps))
-          hacker:         mozilla ->               UPLOAD (False)
+          hacker:         mozilla ->               UPLOAD (implicit)
 
 Furthermore, 'hacker' will be listed as an uploader for any included
 package set as long as the latter does not have its own permission with
@@ -564,7 +570,7 @@ uploader for mozilla.
     >>> print_permission(
     ...     ap_set.uploadersForPackageset(
     ...         firefox_ps, direct_permissions=False))
-          hacker:         mozilla ->               UPLOAD (False)
+          hacker:         mozilla ->               UPLOAD (implicit)
 
 If we add a permission for 'firefox' things will stay the same i.e. 'hacker'
 is still listed as an uploader. Please note the different package sets
@@ -574,8 +580,8 @@ is still listed as an uploader. Please note the different package sets
     >>> print_permission(
     ...     ap_set.uploadersForPackageset(
     ...         firefox_ps, direct_permissions=False))
-          hacker:         mozilla ->               UPLOAD (False)
-         juergen:         firefox ->               UPLOAD (False)
+          hacker:         mozilla ->               UPLOAD (implicit)
+         juergen:         firefox ->               UPLOAD (implicit)
 
 Once 'mozilla' stops including 'firefox', user 'hacker' is not listed as
 an uploader for 'firefox'.
@@ -588,7 +594,7 @@ an uploader for 'firefox'.
     >>> print_permission(
     ...     ap_set.uploadersForPackageset(
     ...         firefox_ps, direct_permissions=False))
-         juergen:         firefox ->               UPLOAD (False)
+         juergen:         firefox ->               UPLOAD (implicit)
 
 Ulploaders with explicit permissions will be listed along with the other
 uploaders.
@@ -596,15 +602,15 @@ uploaders.
     >>> sabdfl = getUtility(IPersonSet).getByName("sabdfl")
     >>> ignore_this = ap_set.newPackagesetUploader(sabdfl, firefox_ps, True)
     >>> print_permission(ap_set.uploadersForPackageset(firefox_ps))
-          sabdfl:         firefox ->               UPLOAD (True)
-         juergen:         firefox ->               UPLOAD (False)
+          sabdfl:         firefox ->               UPLOAD (explicit)
+         juergen:         firefox ->               UPLOAD (implicit)
 
 Persons can have both explicit or non-explicit permissions for package sets.
 
     >>> ignore_this = ap_set.newPackagesetUploader(sabdfl, thunderbird_ps)
     >>> print_permission(ap_set.packagesetsForUploader(sabdfl))
-          sabdfl:         firefox ->               UPLOAD (True)
-          sabdfl:     thunderbird ->               UPLOAD (False)
+          sabdfl:         firefox ->               UPLOAD (explicit)
+          sabdfl:     thunderbird ->               UPLOAD (implicit)
 
 Attempting to create an explicit permission when a non-explicit one exists
 already will fail.
@@ -628,7 +634,7 @@ Removing package set based permissions is straight-forward.
 
     >>> ap_set.deletePackagesetUploader(sabdfl, firefox_ps, True)
     >>> print_permission(ap_set.packagesetsForUploader(sabdfl))
-          sabdfl:     thunderbird ->               UPLOAD (False)
+          sabdfl:     thunderbird ->               UPLOAD (implicit)
 
     >>> ap_set.deletePackagesetUploader(sabdfl, thunderbird_ps)
     >>> print_permission(ap_set.packagesetsForUploader(sabdfl))
@@ -671,13 +677,13 @@ there is one in place for 'techboard' already (and 'juergen' belongs to
 the 'techboard' team).
 
     >>> print_permission(ap_set.uploadersForPackageset(kde_ps))
-       techboard:             kde ->               UPLOAD (False)
+       techboard:             kde ->               UPLOAD (implicit)
 
     >>> ignore_this = ap_set.newPackagesetUploader(person2, kde_ps)
 
     >>> print_permission(ap_set.uploadersForPackageset(kde_ps))
-         juergen:             kde ->               UPLOAD (False)
-       techboard:             kde ->               UPLOAD (False)
+         juergen:             kde ->               UPLOAD (implicit)
+       techboard:             kde ->               UPLOAD (implicit)
 
 == Checking package set based upload permissions ==
 
@@ -697,14 +703,14 @@ The 'mozilla' package set includes the 'firefox' subset and hence the
 'hacker' is authorized to upload to the 'mozilla' package set..
 
     >>> print_permission(ap_set.uploadersForPackageset(mozilla_ps))
-          hacker:         mozilla ->               UPLOAD (False)
+          hacker:         mozilla ->               UPLOAD (implicit)
 
 .. and hence listed as a *potential* uploader of the 'mozilla-firefox'
 source package.
 
     >>> print_permission(
     ...     ap_set.packagesetsForSourceUploader('mozilla-firefox', person1))
-          hacker:         mozilla ->               UPLOAD (False)
+          hacker:         mozilla ->               UPLOAD (implicit)
 
 'juergen' is allowed to upload to the 'firefox' package set that includes
 the 'mozilla-firefox' source package name directly ..
@@ -714,14 +720,14 @@ the 'mozilla-firefox' source package name directly ..
      26 -> iceweasel
 
     >>> print_permission(ap_set.uploadersForPackageset(firefox_ps))
-         juergen:         firefox ->               UPLOAD (False)
+         juergen:         firefox ->               UPLOAD (implicit)
 
 .. and thus also listed as a possible uploader of the 'mozilla-firefox'
 source package.
 
     >>> print_permission(
     ...     ap_set.packagesetsForSourceUploader('mozilla-firefox', person2))
-         juergen:         firefox ->               UPLOAD (False)
+         juergen:         firefox ->               UPLOAD (implicit)
 
 Fetching the permissions for a non-existent source package name will fail
 as follows:
@@ -782,8 +788,8 @@ and has an explicit permission.
     >>> for ps in sort_by_id(ps_set.setsIncludingSource(
     ...     'mozilla-firefox', direct_inclusion=True)):
     ...     print_permission(ap_set.uploadersForPackageset(ps))
-         juergen:          firefox ->               UPLOAD (False)
-         no-priv: specialists-only ->               UPLOAD (True)
+         juergen:          firefox ->               UPLOAD (implicit)
+         no-priv: specialists-only ->               UPLOAD (explicit)
 
 Is 'hacker' still allowed to upload 'mozilla-firefox'?
 
