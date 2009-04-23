@@ -8,7 +8,6 @@ __metaclass__ = type
 __all__ = [
     'IPackageset',
     'IPackagesetSet',
-    'PackagesetError',
     ]
 
 from zope.interface import Interface
@@ -19,14 +18,6 @@ from canonical.launchpad.interfaces.launchpad import IHasOwner
 from lp.registry.interfaces.person import IPerson
 from canonical.launchpad.validators.name import name_validator
 from lazr.restful.fields import Reference
-
-
-class PackagesetError(Exception):
-    '''Raised upon the attempt to add invalid data to a package set.
-
-    Only source package names or other package sets can be added at
-    present.
-    '''
 
 
 class IPackagesetViewOnly(IHasOwner):
@@ -166,5 +157,22 @@ class IPackagesetSet(Interface):
 
         :param owner: the owner of the package sets sought.
 
+        :return: A (potentially empty) sequence of `IPackageset` instances.
+        """
+
+    def setsIncludingSource(sourcepackagename, direct_inclusion=False):
+        """Get the package sets that include this source package.
+
+        Return all package sets that directly or indirectly include the
+        given source package name.
+
+        :param sourcepackagename: the included source package name; can be
+            either a string or a `ISourcePackageName`.
+        :param direct_inclusion: if this flag is set to True, then only
+            package sets that directly include this source package name will
+            be considered.
+
+        :raises NoSuchSourcePackageName: if a source package with the given
+            name cannot be found.
         :return: A (potentially empty) sequence of `IPackageset` instances.
         """
