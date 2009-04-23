@@ -4,6 +4,8 @@
 
 __metaclass__ = type
 
+
+import bz2
 import gzip
 import os
 import shutil
@@ -415,26 +417,37 @@ class TestPublisher(TestPublisherBase):
                              uncompressed_file_path):
         """Assert that a compressed file is equal to its uncompressed version.
 
-        Check that a compressed file, such as Packages.gz and Sources.gz
-        matches its uncompressed partner.  The file paths are relative to
-        breezy-autotest/main under the archive_publisher's configured dist
-        root.  'breezy-autotest' is our test distroseries name.
+        Check that a compressed file, such as Packages.gz and Sources.gz,
+        and bz2 variations, matches its uncompressed partner.  The file
+        paths are relative to breezy-autotest/main under the
+        archive_publisher's configured dist root. 'breezy-autotest' is
+        our test distroseries name.
 
         The contents of the uncompressed file is returned as a list of lines
         in the file.
         """
-        index_gz_path = os.path.join(
+        index_compressed_path = os.path.join(
             archive_publisher._config.distsroot, 'breezy-autotest', 'main',
             compressed_file_path)
         index_path = os.path.join(
             archive_publisher._config.distsroot, 'breezy-autotest', 'main',
             uncompressed_file_path)
-        index_gz_contents = gzip.GzipFile(
-            filename=index_gz_path).read().splitlines()
+
+        if index_compressed_path.endswith('.gz'):
+            index_compressed_contents = gzip.GzipFile(
+                filename=index_compressed_path).read().splitlines()
+        elif index_compressed_path.endswith('.bz2'):
+            index_compressed_contents = bz2.BZ2File(
+                filename=index_compressed_path).read().splitlines()
+        else:
+            raise AssertionError(
+                'Unsupported compression: %s' % compressed_file_path)
+
         index_file = open(index_path,'r')
         index_contents = index_file.read().splitlines()
         index_file.close()
-        self.assertEqual(index_gz_contents, index_contents)
+
+        self.assertEqual(index_compressed_contents, index_contents)
 
         return index_contents
 
@@ -474,6 +487,10 @@ class TestPublisher(TestPublisherBase):
         # A compressed and uncompressed Sources file are written;
         # ensure that they are the same after uncompressing the former.
         index_contents = self._checkCompressedFile(
+            archive_publisher, os.path.join('source', 'Sources.bz2'),
+            os.path.join('source', 'Sources'))
+
+        index_contents = self._checkCompressedFile(
             archive_publisher, os.path.join('source', 'Sources.gz'),
             os.path.join('source', 'Sources'))
 
@@ -494,6 +511,10 @@ class TestPublisher(TestPublisherBase):
 
         # A compressed and an uncompressed Packages file are written;
         # ensure that they are the same after uncompressing the former.
+        index_contents = self._checkCompressedFile(
+            archive_publisher, os.path.join('binary-i386', 'Packages.bz2'),
+            os.path.join('binary-i386', 'Packages'))
+
         index_contents = self._checkCompressedFile(
             archive_publisher, os.path.join('binary-i386', 'Packages.gz'),
             os.path.join('binary-i386', 'Packages'))
@@ -521,6 +542,11 @@ class TestPublisher(TestPublisherBase):
         # A compressed and an uncompressed Packages file are written for
         # 'debian-installer' section for each architecture. It will list
         # the 'udeb' files.
+        index_contents = self._checkCompressedFile(
+            archive_publisher,
+            os.path.join('debian-installer', 'binary-i386', 'Packages.bz2'),
+            os.path.join('debian-installer', 'binary-i386', 'Packages'))
+
         index_contents = self._checkCompressedFile(
             archive_publisher,
             os.path.join('debian-installer', 'binary-i386', 'Packages.gz'),
@@ -880,55 +906,61 @@ class TestPublisher(TestPublisherBase):
         self.assertTrue(md5_header in release_contents)
         md5_header_index = release_contents.index(md5_header)
 
-        plain_sources_md5_line = release_contents[md5_header_index + 11]
+        plain_sources_md5_line = release_contents[md5_header_index + 15]
         self.assertEqual(
             plain_sources_md5_line,
             (' 7d9b0817f5ff4a1d3f53f97bcc9c7658              '
              '229 main/source/Sources'))
-        release_md5_line = release_contents[md5_header_index + 12]
+        release_md5_line = release_contents[md5_header_index + 17]
         self.assertEqual(
             release_md5_line,
             (' f8351af2392a90cb0b62f0feba49fa42              '
              '116 main/source/Release'))
         # We can't probe checksums of compressed files because they contain
         # timestamps, their checksum varies with time.
-        gz_sources_md5_line = release_contents[md5_header_index + 13]
+        bz2_sources_md5_line = release_contents[md5_header_index + 16]
+        self.assertTrue('main/source/Sources.bz2' in bz2_sources_md5_line)
+        gz_sources_md5_line = release_contents[md5_header_index + 18]
         self.assertTrue('main/source/Sources.gz' in gz_sources_md5_line)
 
         sha1_header = 'SHA1:'
         self.assertTrue(sha1_header in release_contents)
         sha1_header_index = release_contents.index(sha1_header)
 
-        plain_sources_sha1_line = release_contents[sha1_header_index + 11]
+        plain_sources_sha1_line = release_contents[sha1_header_index + 15]
         self.assertEqual(
             plain_sources_sha1_line,
             (' a2da1a8407fc4e2373266e56ccc7afadf8e08a3a              '
              '229 main/source/Sources'))
-        release_sha1_line = release_contents[sha1_header_index + 12]
+        release_sha1_line = release_contents[sha1_header_index + 17]
         self.assertEqual(
             release_sha1_line,
             (' b080b75dcfc245825d5872bb644afe00f2661fa3              '
              '116 main/source/Release'))
         # See above.
-        gz_sources_sha1_line = release_contents[sha1_header_index + 13]
+        bz2_sources_sha1_line = release_contents[sha1_header_index + 16]
+        self.assertTrue('main/source/Sources.bz2' in bz2_sources_sha1_line)
+        gz_sources_sha1_line = release_contents[sha1_header_index + 18]
         self.assertTrue('main/source/Sources.gz' in gz_sources_sha1_line)
 
         sha256_header = 'SHA256:'
         self.assertTrue(sha256_header in release_contents)
         sha256_header_index = release_contents.index(sha256_header)
 
-        plain_sources_sha256_line = release_contents[sha256_header_index + 11]
+        plain_sources_sha256_line = release_contents[sha256_header_index + 15]
         self.assertEqual(
             plain_sources_sha256_line,
             (' 979d959ead8ddc29e4347a64058a372d30df58a51a4615b43fb7499'
              '8a9e07c78              229 main/source/Sources'))
-        release_sha256_line = release_contents[sha256_header_index + 12]
+        release_sha256_line = release_contents[sha256_header_index + 17]
         self.assertEqual(
             release_sha256_line,
             (' 8186d7a342c728179da7ce5d045e0a009c4c04cf3f146036d614d29'
              '6fa8c4359              116 main/source/Release'))
         # See above.
-        gz_sources_sha256_line = release_contents[sha256_header_index + 13]
+        bz2_sources_sha256_line = release_contents[sha256_header_index + 16]
+        self.assertTrue('main/source/Sources.bz2' in bz2_sources_sha256_line)
+        gz_sources_sha256_line = release_contents[sha256_header_index + 18]
         self.assertTrue('main/source/Sources.gz' in gz_sources_sha256_line)
 
         # Architecture Release files also have a distinct Origin: for PPAs.

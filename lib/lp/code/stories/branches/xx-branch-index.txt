@@ -441,7 +441,7 @@ as the primary context for the branch and used for the breadcrumbs and tabs.
     * Blueprints - http://blueprints.launchpad.dev/gnome-terminal
     * Translations - http://translations.launchpad.dev/gnome-terminal
     * Answers - http://answers.launchpad.dev/gnome-terminal
-    Main heading: ~name12/gnome-terminal/scanned
+    Main heading: lp://dev/~name12/gnome-terminal/scanned
 
     >>> browser.open('http://code.launchpad.dev/~name12/+junk/junk.dev')
     >>> print_location(browser.contents)
@@ -453,4 +453,4 @@ as the primary context for the branch and used for the breadcrumbs and tabs.
     * Blueprints - http://blueprints.launchpad.dev/~name12
     * Translations - http://translations.launchpad.dev/~name12
     * Answers - http://answers.launchpad.dev/~name12
-    Main heading: Ubuntu Junk Code
+    Main heading: lp://dev/~name12/+junk/junk.dev

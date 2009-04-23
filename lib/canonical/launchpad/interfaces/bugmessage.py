@@ -27,11 +27,14 @@ class IBugMessage(IHasBug):
     """A link between a bug and a message."""
 
     bug = Object(schema=IBug, title=u"The bug.")
+    messageID = Int(title=u"The message id.", readonly=True)
     message = Object(schema=IMessage, title=u"The message.")
     bugwatch = Object(schema=IBugWatch,
         title=u"A bugwatch to which the message pertains.")
     remote_comment_id = TextLine(
         title=u"The id this comment has in the bugwatch's bug tracker.")
+    visible = Bool(title=u"This message is visible or not.", required=False,
+        default=True)
 
 
 class IBugMessageSet(Interface):
@@ -100,6 +103,9 @@ class IBugComment(IMessage):
     bugwatch = Attribute('The bugwatch to which the comment pertains.')
     can_be_shown = Bool(
         title=u'Whether or not the comment can be displayed',
+        readonly=True)
+    show_for_admin = Bool(
+        title=u'A hidden comment still displayed for admins.',
         readonly=True)
     index = Int(title=u'The comment number', required=True, readonly=True)
     was_truncated = Bool(

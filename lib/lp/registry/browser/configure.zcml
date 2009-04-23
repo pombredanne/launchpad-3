@@ -1629,10 +1629,10 @@
         <browser:page
             name="+addbranch"
             for="lp.registry.interfaces.person.IPerson"
-            class="lp.code.browser.branch.PersonBranchAddView"
+            class="lp.code.browser.branch.BranchAddView"
             facet="branches"
             permission="launchpad.AnyPerson"
-            template="../templates/person-branch-add.pt"/>
+            template="../templates/branch-add.pt"/>
         <browser:page
             for="lp.registry.interfaces.person.IPerson"
             class="lp.code.browser.branchlisting.PersonTeamBranchesView"
@@ -2097,10 +2097,10 @@
     <browser:page
         name="+addbranch"
         for="lp.registry.interfaces.product.IProduct"
-        class="lp.code.browser.branch.ProductBranchAddView"
+        class="lp.code.browser.branch.BranchAddView"
         facet="branches"
         permission="launchpad.AnyPerson"
-        template="../templates/product-branch-add.pt"/>
+        template="../templates/branch-add.pt"/>
     <browser:defaultView
         for="lp.registry.interfaces.product.IProductSet"
         name="+index"/>

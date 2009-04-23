@@ -84,6 +84,8 @@ class ShippingRequest(SQLBase):
     recipient = ForeignKey(
         dbName='recipient', foreignKey='Account', notNull=True)
 
+    is_admin_request = BoolCol(notNull=True)
+
     daterequested = UtcDateTimeCol(notNull=True, default=UTC_NOW)
 
     type = EnumCol(enum=ShippingRequestType, default=None)
@@ -480,7 +482,7 @@ class ShippingRequestSet:
             province=province, postcode=postcode, organization=organization,
             phone=phone, is_admin_request=is_admin_request)
 
-        # The normalized_address field is maitained by a trigger, so
+        # The normalized_address field is maintained by a trigger, so
         # the object needed to be refetched after creation.
         Store.of(request).flush()
         Store.of(request).invalidate()

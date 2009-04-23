@@ -1341,6 +1341,7 @@ a.add {
 }
 dl.faq dt {font-weight: bold;}
 dl.faq dd {margin: 1em 0 2em 4em;}
+.adminHiddenComment {background-color:yellow;}
 
 /* --- Overview --- */
 

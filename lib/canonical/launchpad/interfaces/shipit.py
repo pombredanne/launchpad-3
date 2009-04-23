@@ -302,6 +302,9 @@ class IShippingRequest(Interface):
 
     recipient = Int(title=_('Recipient'), required=True, readonly=True)
 
+    is_admin_request = Bool(
+        title=_('Is this an admin request?'), readonly=True)
+
     daterequested = Datetime(
         title=_('Date of Request'), required=True, readonly=True)
 

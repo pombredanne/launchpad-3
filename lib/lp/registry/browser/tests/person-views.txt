@@ -404,8 +404,9 @@ the page does not time out before Zope can render it.
 
 Before continuing, create lots of packages that will appear in each
 section of Foo Bar's +packages page, such that there's more available
-that we're willing to display.
+than we're willing to display.
 
+    >>> login("admin@canonical.com")
     >>> from lp.registry.interfaces.distribution import (
     ...     IDistributionSet)
     >>> from canonical.launchpad.interfaces.publishing import (

@@ -290,10 +290,7 @@ class ProjectMilestone(HasBugsBase):
     @property
     def title(self):
         """See IMilestone."""
-        title = 'Milestone %s for %s' % (self.name, self.target.displayname)
-        if self.dateexpected:
-            title += ' due ' + self.dateexpected.strftime('%Y-%m-%d')
-        return title
+        return self.displayname
 
     def _customizeSearchParams(self, search_params):
         """Customize `search_params` for this milestone."""
