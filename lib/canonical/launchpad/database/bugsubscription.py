@@ -10,7 +10,7 @@ from sqlobject import ForeignKey
 
 from canonical.database.sqlbase import SQLBase
 
-from canonical.launchpad.interfaces import IBugSubscription
+from canonical.launchpad.interfaces.bugsubscription import IBugSubscription
 from lp.registry.interfaces.person import validate_public_person
 
 
@@ -35,3 +35,11 @@ class BugSubscription(SQLBase):
             return u'Subscribed themselves'
         else:
             return u'Subscribed by %s' % self.subscribed_by.displayname
+
+    def canBeUnsubscribedByUser(self, user):
+        """See `IBugSubscription`."""
+        if user is None:
+            return False
+        if self.person.is_team:
+            return user.inTeam(self.person)
+        return user == self.person
