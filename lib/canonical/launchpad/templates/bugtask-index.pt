@@ -249,7 +249,6 @@ Y.on('load', function() {
         },
 
         parameters: {
-            'person': LP.client.get_absolute_uri(me)
         }
     }
 
@@ -302,7 +301,7 @@ function subscribe_current_user(subscription_link) {
 function unsubscribe_current_user(subscription_link) {
     subscription_link.setStyle('background',
         'url(/@@/spinner/) center left no-repeat');
-    lp_client.named_post(bug.self_link, 'subscribe', unsub_config)
+    lp_client.named_post(bug.self_link, 'unsubscribe', unsub_config)
     subscription_link.set('innerHTML', 'Subscribe');
     subscription_link.setStyle('background',
         'url(/@@/add/) center left no-repeat');
