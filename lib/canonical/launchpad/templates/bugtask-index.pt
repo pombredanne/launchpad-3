@@ -78,36 +78,6 @@
           # you have just now converted the report into a question.
         </tal:XXX>
       </p>
-      <form
-          tal:condition="not:view/isReportedInContext"
-          class="error message"
-          name="alsooccursin"
-          method="POST"
-          >
-
-        This bug isn't linked to
-        <strong><a
-           tal:attributes="href string:${context/target/fmt:url}"
-           tal:content="context/bugtargetdisplayname"
-           >Mozilla Firefox</a></strong>.  Would you like to report it here as
-           well?<br/>
-
-        <tal:loggedin condition="request/lp:person">
-
-          <center><input
-              type="submit"
-              name="reportbug"
-              value=""
-              tal:attributes="value string:Yes, report in ${context/bugtargetdisplayname}"
-              /></center>
-        </tal:loggedin>
-        <tal:notloggedin condition="not:request/lp:person">
-          If you want to report it in <tal:block
-          content="context/bugtargetdisplayname" />,
-          you must <a href="+login">log in</a> first.
-        </tal:notloggedin>
-
-      </form>
 
       <table style="width: 100%; margin-bottom: 0.33em;">
         <tr>
