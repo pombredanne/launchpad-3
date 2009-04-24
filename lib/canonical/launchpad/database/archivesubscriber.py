@@ -98,7 +98,10 @@ class ArchiveSubscriber(Storm):
             non_active_subscribers.order_by(Person.name)
             return non_active_subscribers
         else:
-            # Just to ensure consistency of the return value:
+            # The interface we are implementing says that the return
+            # value must be :rtype: `storm.store.ResultSet`, so just
+            # for consistency, create a ResultSet here instead of
+            # simply returning self.subscriber
             return store.find(Person, Person.id == self.subscriber_id)
 
 

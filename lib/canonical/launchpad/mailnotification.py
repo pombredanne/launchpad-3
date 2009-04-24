@@ -1139,7 +1139,7 @@ def notify_new_ppa_subscription(subscription, event):
             # Don't send to people without a preferred email.
             continue
 
-        to_address = [str(person.preferredemail.email)]
+        to_address = [person.preferredemail.email]
         recipient_subscriptions_url = "%s/+archivesubscriptions" % (
             canonical_url(person))
         replacements = {
@@ -1153,6 +1153,7 @@ def notify_new_ppa_subscription(subscription, event):
 
         simple_sendmail_from_person(
             subscription.registrant, to_address, subject, body)
+
 
 def encode(value):
     """Encode string for transport in a mail header.
