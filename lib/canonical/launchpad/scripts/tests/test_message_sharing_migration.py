@@ -330,7 +330,7 @@ class TestPOTMsgSetMerging(TestCaseWithFactory):
         self.assertEqual(trunk_messages, stable_messages)
 
     def test_unmatchedPOTMsgSetsDoNotShare(self):
-        # Only identically-keyed potmsgsets get merged. 
+        # Only identically-keyed potmsgsets get merged.
         trunk_potmsgset = self.factory.makePOTMsgSet(
             self.trunk_template, 'foo', sequence=1)
         stable_potmsgset = self.factory.makePOTMsgSet(
@@ -402,6 +402,7 @@ class TestPOTMsgSetMergingAndTranslations(TestCaseWithFactory):
             'nl', potemplate=self.stable_template)
 
     def _makeTranslationMessage(self, pofile, potmsgset, text, diverged):
+        """Set a translation for given message in given translation."""
         message = self.factory.makeTranslationMessage(
             pofile=pofile, potmsgset=potmsgset, translations=[text])
         if diverged:
@@ -413,7 +414,7 @@ class TestPOTMsgSetMergingAndTranslations(TestCaseWithFactory):
 
     def _makeTranslationMessages(self, trunk_string, stable_string,
                                  trunk_diverged=True, stable_diverged=True):
-        """Translate 
+        """Translate the POTMsgSets in our trunk and stable templates.
 
         :param trunk_string: translation string to use in trunk.
         :param stable_string: translation string to use in stable.
@@ -430,27 +431,32 @@ class TestPOTMsgSetMergingAndTranslations(TestCaseWithFactory):
         return (trunk_message, stable_message)
 
     def _getPOTMsgSets(self):
+        """Get POTMsgSets in our trunk and stable series."""
         return (
             self.trunk_template.getPOTMsgSetByMsgIDText('foo'),
             self.stable_template.getPOTMsgSetByMsgIDText('foo'))
 
     def _getMessage(self, potmsgset, template):
+        """Get TranslationMessage for given POTMsgSet in given template."""
         return potmsgset.getCurrentTranslationMessage(
             potemplate=template, language=self.dutch)
 
     def _getMessages(self):
+        """Get current TranslationMessages in trunk and stable POTMsgSets."""
         trunk_potmsgset, stable_potmsgset = self._getPOTMsgSets()
         return (
             self._getMessage(trunk_potmsgset, self.trunk_template),
             self._getMessage(stable_potmsgset, self.stable_template))
 
     def _getTranslation(self, message):
+        """Get (singular) translation string from TranslationMessage."""
         if message and message.translations:
             return message.translations[0]
         else:
             return None
 
     def _getTranslations(self):
+        """Get translated strings for trunk and stable POTMsgSets."""
         (trunk_message, stable_message) = self._getMessages()
         return (
             self._getTranslation(trunk_message),

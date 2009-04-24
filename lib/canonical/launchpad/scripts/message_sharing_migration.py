@@ -22,11 +22,22 @@ from canonical.launchpad.scripts.base import (
 
 
 def get_key(potmsgset):
+    """Get the tuple of identifying properties of a POTMsgSet.
+
+    A POTMsgSet is identified by its msgid, optional plural msgid, and
+    optional context identifier.
+    """
     return (
         potmsgset.msgid_singular, potmsgset.msgid_plural, potmsgset.context)
 
 
 def template_precedence(left, right):
+    """Sort comparison: order sharing templates by precedence.
+
+    Sort using this function to order sharing templates from most
+    representative to least representative, as per the message-sharing
+    migration spec.
+    """
     if left == right:
         return 0
 
@@ -62,6 +73,14 @@ def template_precedence(left, right):
 
 
 def merge_translationtemplateitems(subordinate, representative):
+    """Merge subordinate POTMsgSet into its representative POTMsgSet.
+
+    This adds all of the subordinate's TranslationTemplateItems to the
+    representative's set of TranslationTemplateItems.
+    
+    Any duplicates are deleted, so after this, the subordinate will no
+    longer have any TranslationTemplateItems.
+    """
     source = subordinate.getAllTranslationTemplateItems()
     targets = representative.getAllTranslationTemplateItems()
     templates = set(item.potemplate for item in targets)
@@ -78,6 +97,8 @@ def merge_translationtemplateitems(subordinate, representative):
 
 
 def merge_potmsgsets(potemplates):
+    """Merge POTMsgSets for given sequence of sharing templates."""
+
     # Map each POTMsgSet key (context, msgid, plural) to its
     # representative POTMsgSet.
     representatives = {}
@@ -96,7 +117,7 @@ def merge_potmsgsets(potemplates):
             if key not in representatives:
                 representatives[key] = potmsgset
             representative = representatives[key]
-            if representative in subordinates: 
+            if representative in subordinates:
                 subordinates[representative].append(potmsgset)
             else:
                 subordinates[representative] = []
@@ -230,7 +251,7 @@ def find_potemplate_equivalence_classes_for(product=None, distribution=None,
         # Sort potemplates from "most representative" to "least
         # representative."
         equivalence_list.sort(cmp=template_precedence)
-        
+
     return equivalents
 
 
