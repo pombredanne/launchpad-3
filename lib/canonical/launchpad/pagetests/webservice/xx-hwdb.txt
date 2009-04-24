@@ -9,7 +9,7 @@ The HWDB application root provides the core methods to access HWDB
 tables. It also provides the set of known package names appearing
 in the table HWDriver.
 
-    >>> from canonical.lazr.testing.webservice import (
+    >>> from lazr.restful.testing.webservice import (
     ...     pprint_collection, pprint_entry)
     >>> hwdb_root = webservice.get('/+hwdb').jsonBody()
     >>> pprint_entry(hwdb_root)

@@ -87,7 +87,8 @@ to create a new account.
     >>> from canonical.launchpad.database import EmailAddressSet, PersonSet
     >>> salgado = PersonSet().getByName('salgado')
     >>> email = EmailAddressSet().new(
-    ...   'foobarino@baz.com.br', salgado, EmailAddressStatus.VALIDATED)
+    ...   'foobarino@baz.com.br', salgado, EmailAddressStatus.VALIDATED,
+    ...   salgado.account)
     >>> import transaction
     >>> transaction.commit()
     >>> [email.email for email in salgado.validatedemails]

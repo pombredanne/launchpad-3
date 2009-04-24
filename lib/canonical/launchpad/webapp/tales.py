@@ -885,6 +885,7 @@ class ArchiveImageDisplayAPI(ObjectImageDisplayAPI):
             ArchivePurpose.PARTNER: '/@@/distribution',
             ArchivePurpose.PPA: '/@@/package-source',
             ArchivePurpose.COPY: '/@@/distribution',
+            ArchivePurpose.DEBUG: '/@@/distribution',
             }
 
         alt = '[%s]' % self._context.purpose.title
@@ -1356,6 +1357,23 @@ class MilestoneFormatterAPI(CustomizableFormatter):
     def _link_summary_values(self):
         """See CustomizableFormatter._link_summary_values."""
         return {'title': self._context.title}
+
+
+class ProductReleaseFormatterAPI(CustomizableFormatter):
+    """Adapter providing fmt support for Milestone objects."""
+
+    _link_summary_template = _('%(displayname)s %(code_name)s')
+    _link_permission = 'zope.Public'
+
+    def _link_summary_values(self):
+        """See CustomizableFormatter._link_summary_values."""
+        code_name = self._context.milestone.code_name
+        if code_name is None or code_name.strip() == '':
+            code_name = ''
+        else:
+            code_name = '(%s)' % code_name.strip()
+        return dict(displayname=self._context.milestone.displayname,
+                    code_name=code_name)
 
 
 class ProductSeriesFormatterAPI(CustomizableFormatter):

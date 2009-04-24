@@ -77,7 +77,7 @@ from lp.registry.interfaces.productrelease import (
     IProductRelease, IProductReleaseFile)
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.code.interfaces.seriessourcepackagebranch import (
-    ISeriesSourcePackageBranch, ISeriesSourcePackageBranchSet)
+    ISeriesSourcePackageBranch, IMakeOfficialBranchLinks)
 from canonical.launchpad.interfaces.shipit import (
     IRequestedCDs, IShippingRequest, IShippingRequestSet, IShippingRun,
     IStandardShipItRequest, IStandardShipItRequestSet)
@@ -2136,12 +2136,8 @@ class ViewEmailAddress(AuthorizationBase):
         if self.obj.account == account:
             return True
 
-        # Email addresses without an associated Person cannot be seen by
-        # others.
-        if self.obj.person is None:
-            return False
-
-        if not self.obj.person.hide_email_addresses:
+        if not (self.obj.person is None or
+                self.obj.person.hide_email_addresses):
             return True
 
         user = IPerson(account, None)
@@ -2149,7 +2145,7 @@ class ViewEmailAddress(AuthorizationBase):
             return False
 
         celebrities = getUtility(ILaunchpadCelebrities)
-        return (user.inTeam(self.obj.person)
+        return (self.obj.person is not None and user.inTeam(self.obj.person)
                 or user.inTeam(celebrities.commercial_admin)
                 or user.inTeam(celebrities.launchpad_developers)
                 or user.inTeam(celebrities.admin))
@@ -2185,7 +2181,7 @@ class LinkOfficialSourcePackageBranches(AuthorizationBase):
     """
 
     permission = 'launchpad.Edit'
-    usedfor = ISeriesSourcePackageBranchSet
+    usedfor = IMakeOfficialBranchLinks
 
     def checkUnauthenticated(self):
         return False

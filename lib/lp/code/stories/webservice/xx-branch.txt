@@ -12,7 +12,7 @@ the things on Launchpad.
     >>> from canonical.launchpad.interfaces import BranchType, IBranch
     >>> from canonical.launchpad.ftests import (
     ...     login, logout, ANONYMOUS)
-    >>> from canonical.lazr.rest.marshallers import DateTimeFieldMarshaller
+    >>> from lazr.restful.marshallers import DateTimeFieldMarshaller
 
 To make this document a little more readable, we'll have to define some
 helpers. This one turns a JSON date/time response into a Python
@@ -89,7 +89,7 @@ time goes on.
     >>> from canonical.launchpad.testing.pages import webservice_for_person
     >>> service = webservice_for_person(eric)
     >>> fooix_trunk = webservice.get(branch_url).jsonBody()
-    >>> from canonical.lazr.testing.webservice import pprint_entry
+    >>> from lazr.restful.testing.webservice import pprint_entry
     >>> pprint_entry(fooix_trunk)
     branch_format: None
     branch_type: u'Hosted'
@@ -98,7 +98,7 @@ time goes on.
     date_created: ...
     date_last_modified: ...
     dependent_branches_collection_link: u'.../~eric/fooix/trunk/dependent_branches'
-    display_name: u'The Fooix Trunk'
+    display_name: u'~eric/fooix/trunk'
     landing_candidates_collection_link: u'.../~eric/fooix/trunk/landing_candidates'
     landing_targets_collection_link: u'.../~eric/fooix/trunk/landing_targets'
     last_scanned: None
@@ -107,6 +107,7 @@ time goes on.
     mirror_status_message: None
     name: u'trunk'
     owner_link: u'.../~eric'
+    private: False
     project_link: u'.../fooix'
     registrant_link: u'.../~eric'
     repository_format: None

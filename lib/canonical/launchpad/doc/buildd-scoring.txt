@@ -142,7 +142,7 @@ If the archive is private, its score is boosted by 10000:
  * 20 points for EMERGENCY priority
  * 15 points for queue_time ( > 1800 seconds)
 
-    >>> time4 = LOCAL_NOW - datetime.timedelta(seconds=3590)
+    >>> time4 = LOCAL_NOW - datetime.timedelta(seconds=1801)
     >>> bq4 = setUpBuildQueueEntry(
     ...      component_name='main', urgency=SourcePackageUrgency.EMERGENCY,
     ...      date_created=time4)

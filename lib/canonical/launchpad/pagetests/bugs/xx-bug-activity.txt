@@ -237,3 +237,28 @@ package, the name of the package and the distro will be displayed.
                                  status: New &#8594; Confirmed
     --------
 
+If a change has a comment associated with it it will be displayed in the
+footer of that comment. All changes made with a given comment are
+bundled with that comment in the UI.
+
+    >>> admin_browser.open(
+    ...     'http://bugs.launchpad.dev/ubuntu/+source/mozilla-firefox/+bug/'
+    ...     '1/+editstatus')
+    >>> admin_browser.getControl('Status').value = ['New']
+    >>> admin_browser.getControl('Importance').value = ['Low']
+    >>> admin_browser.getControl('Comment').value = "Lookit, a change!"
+    >>> admin_browser.getControl("Save Changes").click()
+    >>> print_comments(admin_browser.contents)
+    Sample Person
+    ...
+    --------
+    Foo Bar
+    wrote
+    ...
+    Lookit, a change!
+    Changed in mozilla-firefox (Ubuntu):
+    importance:
+    Medium &#8594; Low
+    status:
+    Confirmed &#8594; New
+    --------

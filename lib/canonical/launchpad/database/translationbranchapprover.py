@@ -162,6 +162,6 @@ class TranslationBranchApprover(object):
 
         # Approve the entry
         entry.potemplate = potemplate
-        entry.status = RosettaImportStatus.APPROVED
+        entry.setStatus(RosettaImportStatus.APPROVED)
         return entry
 

@@ -149,9 +149,9 @@ mapped_participants or unmapped_participants (although its members do).
     ...     if member.teamowner is not None:
     ...         print member.name
     ubuntu-team
-    >>> len(guadamen.mapped_participants)
+    >>> len(guadamen.getMappedParticipants())
     2
-    >>> for mapped in guadamen.mapped_participants:
+    >>> for mapped in guadamen.getMappedParticipants():
     ...     if mapped.teamowner is not None:
     ...         print mapped.name
     >>> guadamen.unmapped_participants.count()
@@ -165,10 +165,17 @@ have been pre-cached so that we don't hit the database everytime we
 access a person's .location property.
 
     >>> from zope.security.proxy import removeSecurityProxy
-    >>> for mapped in guadamen.mapped_participants:
+    >>> for mapped in guadamen.getMappedParticipants():
     ...     mapped = removeSecurityProxy(mapped)
     ...     if not verifyObject(IPersonLocation, mapped._location):
     ...         print 'No cached location on %s' % mapped.name
+
+The mapped_participants methods takes a optional argument to limit the
+number of persons in the returned list.
+
+    >>> mapped = guadamen.getMappedParticipants(limit=1)
+    >>> len(mapped)
+    1
 
 The count of mapped and unmapped members can also be retrieved, which is
 faster than getting the resultset of members.
@@ -243,5 +250,5 @@ their location invisible.
     >>> admins = personset.getByName('admins')
     >>> salgado in admins.activemembers
     True
-    >>> salgado in admins.mapped_participants
+    >>> salgado in admins.getMappedParticipants()
     False

@@ -106,7 +106,13 @@ label, p {max-width: 60em;}
 html {background: #fff; color: #000; font: 83.33% sans-serif;}
 /* Monospace text uses the reciprocal of this percentage, so that it
 exactly obeys your preferred monospace font size: */
-code, pre, samp, tt, #bug-description, .bug-comment {font: 120% monospace;}
+code, pre, samp, tt, #bug-description, .bug-comment, .bug-activity {
+  font: 120% monospace;
+}
+
+.bug-activity {
+  color: #555;
+}
 
 /* Links are blue, brighter when clicked, and greyer once visited: */
 :link, :visited               {color: #03a;    text-decoration: none;}
@@ -1322,16 +1328,20 @@ a.add {
 .boardBugActivityBody {
   padding: 0.5em 12px;
   background-color: #fafafa;
-  color: #555;
 }
 .boardBugActivityBody table {
   margin-bottom: 0.5em;
   margin-top: 0.5em;
 }
 .boardCommentContent { line-height: 1.5em;}
-.boardCommentFooter {background-color: #eee; padding: 0.5em 12px;}
+.boardCommentFooter {
+  background-color: #eee;
+  padding: 0.5em 12px;
+  border-top: 1px solid #ddd;
+}
 dl.faq dt {font-weight: bold;}
 dl.faq dd {margin: 1em 0 2em 4em;}
+.adminHiddenComment {background-color:yellow;}
 
 /* --- Overview --- */
 
@@ -1504,6 +1514,11 @@ div#signing-key p {
     max-width: none;
     background: url(/@@/info) center left no-repeat;
     padding-left: 18px;
+}
+
+/* build status links should always be padded. */
+td.build_status a {
+    margin: 0 0 0 0.4em;
 }
 
 div#signing-key a {

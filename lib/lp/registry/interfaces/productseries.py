@@ -38,8 +38,8 @@ from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.webapp.interfaces import NameLookupFailed
 from canonical.launchpad import _
 
-from canonical.lazr.fields import CollectionField, Reference, ReferenceChoice
-from canonical.lazr.rest.declarations import (
+from lazr.restful.fields import CollectionField, Reference, ReferenceChoice
+from lazr.restful.declarations import (
     export_as_webservice_entry, export_factory_operation, exported,
     rename_parameters_as)
 
@@ -70,9 +70,9 @@ class IProductSeriesEditRestricted(Interface):
     """IProductSeries properties which require launchpad.Edit."""
 
     @rename_parameters_as(dateexpected='date_targeted')
-    @export_factory_operation(IMilestone,
-                              ['name', 'dateexpected', 'summary'])
-    def newMilestone(name, dateexpected=None, summary=None):
+    @export_factory_operation(
+        IMilestone, ['name', 'dateexpected', 'summary', 'code_name'])
+    def newMilestone(name, dateexpected=None, summary=None, code_name=None):
         """Create a new milestone for this ProjectSeries."""
 
 

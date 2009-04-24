@@ -27,6 +27,7 @@ __all__ = [
 from datetime import datetime
 import weakref
 
+import simplejson
 from storm.expr import Asc, Desc
 import pytz
 from zope.component import getUtility
@@ -45,25 +46,10 @@ from canonical.launchpad.browser.feeds import (
     FeedsMixin, PersonBranchesFeedLink, PersonRevisionsFeedLink,
     ProductBranchesFeedLink, ProductRevisionsFeedLink,
     ProjectBranchesFeedLink, ProjectRevisionsFeedLink)
-from lp.registry.browser.product import (
-    ProductDownloadFileMixin, SortSeriesMixin)
-from lp.registry.model.sourcepackage import SourcePackage
 from canonical.launchpad.interfaces.bugbranch import IBugBranchSet
-from canonical.launchpad.interfaces.revision import IRevisionSet
 from canonical.launchpad.interfaces.specificationbranch import ISpecificationBranchSet
-from lp.registry.interfaces.productseries import IProductSeriesSet
-from lp.code.interfaces.branch import (
-    bazaar_identity, BranchLifecycleStatus, BranchLifecycleStatusFilter,
-    BranchType, DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch,
-    IBranchBatchNavigator)
-from lp.code.interfaces.branchcollection import IAllBranches
-from lp.code.interfaces.branchmergeproposal import (
-    BranchMergeProposalStatus, IBranchMergeProposalGetter)
-from lp.registry.interfaces.distroseries import DistroSeriesStatus
-from lp.registry.interfaces.person import IPerson, IPersonSet
 from canonical.launchpad.interfaces.personproduct import (
     IPersonProduct, IPersonProductFactory)
-from lp.registry.interfaces.product import IProduct
 from canonical.launchpad.webapp import (
     ApplicationMenu, canonical_url, custom_widget, enabled_with_permission,
     LaunchpadFormView, Link)
@@ -73,6 +59,23 @@ from canonical.launchpad.webapp.badge import Badge, HasBadgeBase
 from canonical.launchpad.webapp.batching import TableBatchNavigator
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.widgets import LaunchpadDropdownWidget
+
+from lp.code.interfaces.branch import (
+    bazaar_identity, BranchLifecycleStatus, BranchLifecycleStatusFilter,
+    BranchType, DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch,
+    IBranchBatchNavigator)
+from lp.code.interfaces.branchcollection import IAllBranches
+from lp.code.interfaces.branchmergeproposal import (
+    BranchMergeProposalStatus, IBranchMergeProposalGetter)
+from lp.code.interfaces.revision import IRevisionSet
+
+from lp.registry.browser.product import (
+    ProductDownloadFileMixin, SortSeriesMixin)
+from lp.registry.interfaces.distroseries import DistroSeriesStatus
+from lp.registry.interfaces.person import IPerson, IPersonSet
+from lp.registry.interfaces.product import IProduct
+from lp.registry.interfaces.productseries import IProductSeriesSet
+from lp.registry.model.sourcepackage import SourcePackage
 
 
 def get_plural_text(count, singular, plural):
@@ -293,6 +296,15 @@ class BranchListingBatchNavigator(TableBatchNavigator):
         self.column_count = 4 + len(view.extra_columns)
         self._now = datetime.now(pytz.UTC)
         self._dev_series_map = {}
+
+    @cachedproperty
+    def branch_sparks(self):
+        return simplejson.dumps([
+                ('b-%s' % (count+1),
+                 canonical_url(branch, view_name='+spark'))
+                for count, branch
+                in enumerate(self._branches_for_current_batch)
+                ]);
 
     @cachedproperty
     def _branches_for_current_batch(self):

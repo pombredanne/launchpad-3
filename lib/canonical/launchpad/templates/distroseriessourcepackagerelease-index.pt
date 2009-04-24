@@ -11,14 +11,11 @@
 >
   <body>
 
-<metal:leftportlets fill-slot="portlets_one">
-  <div tal:replace="structure context/@@+portlet-details" />
-</metal:leftportlets>
-
-<metal:rightportlets fill-slot="portlets_two">
+<metal:portlets fill-slot="portlets">
   <div tal:replace="structure context/sourcepackagerelease/@@+portlet-distroseries" />
-  <div tal:replace="structure context/sourcepackagerelease/@@+portlet-builds" />
-</metal:rightportlets>
+  <div tal:replace="structure context/@@+portlet-builds" />
+  <div tal:replace="structure context/@@+portlet-details" />
+</metal:portlets>
 
 <div metal:fill-slot="main">
 

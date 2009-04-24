@@ -53,6 +53,12 @@ class IArchiveSigningKey(Interface):
     def generateSigningKey():
         """Generate a new GPG secret/public key pair.
 
+        For named-ppas, the existing signing-key for the default PPA
+        owner by the same user/team is reused. The *trust* belongs to
+        the archive maintainer (owner) not the archive itself.
+
+        Default ppas get brand new keys via the following procedure.
+
          * Export the secret key in the configuration disk location;
          * Upload the public key to the configuration keyserver;
          * Store a reference for the public key in GPGKey table, which

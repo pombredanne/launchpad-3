@@ -9,7 +9,7 @@
         <allow interface="canonical.launchpad.interfaces.IBugMessage" />
         <require
             permission="launchpad.Admin"
-            set_attributes="remote_comment_id bugwatch" />
+            set_attributes="remote_comment_id bugwatch visible" />
     </class>
 
     <!-- BugMessageSet -->

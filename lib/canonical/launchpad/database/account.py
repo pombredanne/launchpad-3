@@ -8,9 +8,10 @@ __all__ = ['Account', 'AccountPassword', 'AccountSet']
 import random
 
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 from zope.interface import implements
 
-from storm.expr import Desc, Join, Lower, Or
+from storm.expr import Desc, Or
 from storm.store import Store
 
 from sqlobject import ForeignKey, StringCol
@@ -19,12 +20,15 @@ from canonical.database.constants import UTC_NOW, DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
+from canonical.launchpad.database.authtoken import AuthToken
+from canonical.launchpad.database.emailaddress import EmailAddress
 from canonical.launchpad.database.openidserver import OpenIDRPSummary
 from canonical.launchpad.interfaces import IMasterObject, IMasterStore, IStore
 from canonical.launchpad.interfaces.account import (
     AccountCreationRationale, AccountStatus, IAccount, IAccountSet)
+from canonical.launchpad.interfaces.authtoken import LoginTokenType
 from canonical.launchpad.interfaces.emailaddress import (
-    EmailAddressStatus, IEmailAddressSet)
+    EmailAddressStatus, IEmailAddress, IEmailAddressSet)
 from canonical.launchpad.interfaces.launchpad import IPasswordEncryptor
 from canonical.launchpad.interfaces.openidserver import IOpenIDRPSummarySet
 from canonical.launchpad.webapp.vhosts import allvhosts
@@ -56,13 +60,106 @@ class Account(SQLBase):
     new_openid_identifier = StringCol(
         dbName='old_openid_identifier', notNull=False, default=DEFAULT)
 
+    def _getEmails(self, status):
+        """Get related `EmailAddress` objects with the given status."""
+        result = IStore(EmailAddress).find(
+            EmailAddress, accountID=self.id, status=status)
+        result.order_by(EmailAddress.email.lower())
+        return result
+
     @property
     def preferredemail(self):
         """See `IAccount`."""
-        from canonical.launchpad.database.emailaddress import EmailAddress
-        return Store.of(self).find(
-            EmailAddress, account=self,
-            status=EmailAddressStatus.PREFERRED).one()
+        return self._getEmails(EmailAddressStatus.PREFERRED).one()
+
+    @property
+    def validated_emails(self):
+        """See `IAccount`."""
+        return self._getEmails(EmailAddressStatus.VALIDATED)
+
+    @property
+    def guessed_emails(self):
+        """See `IAccount`."""
+        return self._getEmails(EmailAddressStatus.NEW)
+
+    def getUnvalidatedEmails(self):
+        """See `IAccount`."""
+        result = IMasterStore(AuthToken).find(
+            AuthToken, requester_account=self,
+            tokentype=LoginTokenType.VALIDATEEMAIL, date_consumed=None)
+        return sorted(set(result.values(AuthToken.email)))
+
+    def setPreferredEmail(self, email):
+        """See `IAccount`."""
+        if email is None:
+            # Mark preferred email address as validated, if it exists.
+            # XXX 2009-03-30 jamesh bug=349482: we should be able to
+            # use ResultSet.set() here :(
+            for address in self._getEmails(EmailAddressStatus.PREFERRED):
+                address.status = EmailAddressStatus.VALIDATED
+            return
+
+        if not IEmailAddress.providedBy(email):
+            raise TypeError("Any person's email address must provide the "
+                            "IEmailAddress Interface. %r doesn't." % email)
+
+        email = IMasterObject(removeSecurityProxy(email))
+        assert email.accountID == self.id
+
+        # If we have the preferred email address here, we're done.
+        if email.status == EmailAddressStatus.PREFERRED:
+            return
+
+        existing_preferred_email = self.preferredemail
+        if existing_preferred_email is not None:
+            assert Store.of(email) is Store.of(existing_preferred_email), (
+                "Store of %r is not the same as store of %r" %
+                (email, existing_preferred_email))
+            existing_preferred_email.status = EmailAddressStatus.VALIDATED
+            # Make sure the old preferred email gets flushed before
+            # setting the new preferred email.
+            Store.of(email).add_flush_order(existing_preferred_email, email)
+
+        email.status = EmailAddressStatus.PREFERRED
+
+        # XXX 2009-03-30 jamesh bug=356092: SSO server can't write to
+        # HWDB tables
+        # getUtility(IHWSubmissionSet).setOwnership(email)
+
+    def validateAndEnsurePreferredEmail(self, email):
+        """See `IAccount`."""
+        if not IEmailAddress.providedBy(email):
+            raise TypeError, (
+                "Any person's email address must provide the IEmailAddress "
+                "interface. %s doesn't." % email)
+
+        assert email.accountID == self.id, 'Wrong account! %r, %r' % (
+            email.accountID, self.id)
+
+        # This email is already validated and is this person's preferred
+        # email, so we have nothing to do.
+        if email.status == EmailAddressStatus.PREFERRED:
+            return
+
+        email = IMasterObject(email)
+
+        if self.preferredemail is None:
+            # This branch will be executed only in the first time a person
+            # uses Launchpad. Either when creating a new account or when
+            # resetting the password of an automatically created one.
+            self.setPreferredEmail(email)
+        else:
+            email.status = EmailAddressStatus.VALIDATED
+
+            # XXX 2009-03-30 jamesh bug=356092: SSO server can't write
+            # to HWDB tables
+            # getUtility(IHWSubmissionSet).setOwnership(email)
+
+        # Now that we have validated the email, see if this can be
+        # matched to an existing RevisionAuthor.
+        # XXX 2009-03-30 jamesh bug=356092: SSO server can't write to
+        # revision tables
+        # getUtility(IRevisionSet).checkNewVerifiedEmail(email)
 
     @property
     def recently_authenticated_rps(self):
@@ -71,42 +168,24 @@ class Account(SQLBase):
         result.order_by(Desc(OpenIDRPSummary.date_last_used))
         return result.config(limit=10)
 
-    def reactivate(self, comment, password, preferred_email):
-        """See `IAccountSpecialRestricted`.
-
-        :raise AssertionError: if the password is not valid.
-        :raise AssertionError: if the preferred email address is None.
-        """
-        from lp.registry.model.person import Person
-        if password in (None, ''):
-            raise AssertionError(
-                "Account %s cannot be reactivated without a "
-                "password." % self.id)
+    def activate(self, comment, password, preferred_email):
+        """See `IAccountSpecialRestricted`."""
         if preferred_email is None:
             raise AssertionError(
-                "Account %s cannot be reactivated without a "
+                "Account %s cannot be activated without a "
                 "preferred email address." % self.id)
         self.status = AccountStatus.ACTIVE
         self.status_comment = comment
         self.password = password
+        self.validateAndEnsurePreferredEmail(preferred_email)
 
-        # XXX: salgado, 2009-02-26: Instead of doing what we do below, we
-        # should just provide a hook for callsites to do other stuff that's
-        # not directly related to the account itself.
-        person = IStore(Person).find(Person, account=self).one()
-        if person is not None:
-            # Since we have a person associated with this account, it may be
-            # used to log into Launchpad, and so it may not have a preferred
-            # email address anymore.  We need to ensure it does have one.
-            person.validateAndEnsurePreferredEmail(preferred_email)
-
-            if '-deactivatedaccount' in person.name:
-                # The name was changed by deactivateAccount(). Restore the
-                # name, but we must ensure it does not conflict with a current
-                # user.
-                name_parts = person.name.split('-deactivatedaccount')
-                base_new_name = name_parts[0]
-                person.name = person._ensureNewName(base_new_name)
+    def reactivate(self, comment, password, preferred_email):
+        """See `IAccountSpecialRestricted`."""
+        if password in (None, ''):
+            raise AssertionError(
+                "Account %s cannot be reactivated without a "
+                "password." % self.id)
+        self.activate(comment, password, preferred_email)
 
     # The password is actually stored in a separate table for security
     # reasons, so use a property to hide this implementation detail.
@@ -158,7 +237,6 @@ class Account(SQLBase):
             generate_nick, Person, PersonSet)
         assert self.preferredemail is not None, (
             "Can't create a Person for an account which has no email.")
-        store = Store.of(self)
         assert IMasterStore(Person).find(
             Person, accountID=self.id).one() is None, (
             "Can't create a Person for an account which already has one.")
@@ -166,7 +244,15 @@ class Account(SQLBase):
         person = PersonSet()._newPerson(
             name, self.displayname, hide_email_addresses=True,
             rationale=rationale, account=self)
-        IMasterObject(self.preferredemail).personID = person.id
+
+        # Update all associated email addresses to point at the new person.
+        result = IMasterStore(EmailAddress).find(
+            EmailAddress, accountID=self.id)
+        # XXX 2009-03-30 jamesh bug=349482: we should be able to
+        # use ResultSet.set() here :(
+        for email in result:
+            email.personID = person.id
+
         return person
 
 
@@ -224,19 +310,16 @@ class AccountSet:
 
     def getByEmail(self, email):
         """See `IAccountSet`."""
-        # Need a local import because of circular dependencies.
-        from canonical.launchpad.database.emailaddress import EmailAddress
-        conditions = (Lower(EmailAddress.email) == email.lower().strip())
-        origin = [
-            Account, Join(EmailAddress, EmailAddress.account == Account.id)]
+        conditions = [EmailAddress.account == Account.id,
+                      EmailAddress.email.lower() == email.lower().strip()]
         store = IStore(Account)
-        account = store.using(*origin).find(Account, conditions).one()
-        if account is None and not IMasterStore.providedBy(IStore(Account)):
+        account = store.find(Account, *conditions).one()
+        if account is None and not IMasterStore.providedBy(store):
             # The account was not found in a slave store but it may exist in
             # the master one if it was just created, so we try to fetch it
             # again, this time from the master.
             store = IMasterStore(Account)
-            account = store.using(*origin).find(Account, conditions).one()
+            account = store.find(Account, *conditions).one()
         return account
 
     def getByOpenIDIdentifier(self, openid_identifier):
@@ -247,7 +330,7 @@ class AccountSet:
         conditions = Or(Account.openid_identifier == openid_identifier,
                         Account.new_openid_identifier == openid_identifier)
         account = store.find(Account, conditions).one()
-        if account is None and not IMasterStore.providedBy(IStore(Account)):
+        if account is None and not IMasterStore.providedBy(store):
             # The account was not found in a slave store but it may exist in
             # the master one if it was just created, so we try to fetch it
             # again, this time from the master.
