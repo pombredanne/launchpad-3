@@ -1365,11 +1365,12 @@ class LaunchpadObjectFactory(ObjectFactory):
                                     requester=potemplate.owner)
 
     def makePOTMsgSet(self, potemplate, singular=None, plural=None,
-                      sequence=None):
+                      context=None, sequence=None):
         """Make a new `POTMsgSet` in the given template."""
         if singular is None and plural is None:
             singular = self.getUniqueString()
-        potmsgset = potemplate.createMessageSetFromText(singular, plural)
+        potmsgset = potemplate.createMessageSetFromText(
+            singular, plural, context=context)
         if sequence is not None:
             potmsgset.setSequence(potemplate, sequence)
         naked_potmsgset = removeSecurityProxy(potmsgset)
