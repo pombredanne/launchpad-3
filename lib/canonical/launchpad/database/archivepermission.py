@@ -144,7 +144,7 @@ class ArchivePermissionSet:
                 "ArchivePermission.packageset = %s" % sqlvalues(item.id))
             prejoins.append("packageset")
         else:
-            raise TypeError(
+            raise AssertionError(
                 "'item' is not an IComponent, IPackageset or an "
                 "ISourcePackageName")
 

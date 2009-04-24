@@ -352,7 +352,7 @@ common:
      25 -> language-pack-de
      26 -> iceweasel
 
-The same shared sources but in string form:
+The same shared sources (but in string form) are obtained as follows:
 
     >>> sorted(umbrella_ps.getSourcesSharedBy(mozilla_ps))
     [u'iceweasel', u'language-pack-de', u'mozilla', u'mozilla-firefox',
@@ -373,7 +373,7 @@ Now we only want to see the directly included sources they have in common.
     ...     umbrella_ps.sourcesSharedBy(mozilla_ps, direct_inclusion=True))
      16 -> mozilla
     
-The same shared sources but in string form:
+The same shared sources (but in string form) are obtained as follows:
 
     >>> sorted(
     ...     umbrella_ps.getSourcesSharedBy(mozilla_ps, direct_inclusion=True))
@@ -387,11 +387,11 @@ Again, asking the question the other way around works as well.
     
 How many sources are in the 'mozilla' package set but not in 'umbrella'?
 
-    >>> mozilla_ps.sourcesNotSharedBy(umbrella_ps).count() == 0
-    True
+    >>> mozilla_ps.sourcesNotSharedBy(umbrella_ps).count()
+    0
 
-    >>> len(list(mozilla_ps.getSourcesNotSharedBy(umbrella_ps))) == 0
-    True
+    >>> len(list(mozilla_ps.getSourcesNotSharedBy(umbrella_ps)))
+    0
 
 What sources are included by the 'mozilla' package set but not by 'firefox'?
 
@@ -590,12 +590,12 @@ The generic checkAuthenticated() method works as well.
     ...     mozilla_ps)
     >>> permission = permissions[0]
 
-    >>> permission.person.name
-    u'hacker'
-    >>> permission.package_set_name
-    u'mozilla'
-    >>> permission.permission.name
-    'UPLOAD'
+    >>> print(permission.person.name)
+    hacker
+    >>> print(permission.package_set_name)
+    mozilla
+    >>> print(permission.permission.name)
+    UPLOAD
     >>> permission.explicit
     False
 
@@ -876,7 +876,7 @@ is allowed to upload.
 
 == Methods for the Launchpad web services API ==
 
-A few methods were added in order to expose the package set functionality
+The following methods are used to expose the package set functionality
 via the Launchpad web services API.
 
 Let's create a few package sets first.

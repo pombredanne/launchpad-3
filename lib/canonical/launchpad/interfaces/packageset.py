@@ -192,9 +192,9 @@ class IPackagesetEdit(Interface):
         that are already directly associated with a package set will be
         ignored.
 
-        Please note: this method was mainly introduced in order to
-        facilitate the addition of source package names to package
-        sets (by passing in string names) on the LP web services API.
+        This method facilitates the addition of source package names to
+        package sets via the LP web services API. It takes string names
+        as opposed to `ISourcePackageName` instances.
 
         :param names: an iterable with string source package names
         """
@@ -205,9 +205,9 @@ class IPackagesetEdit(Interface):
         Only source package names *directly* included by this package
         set can be removed. Any others will be ignored.
 
-        Please note: this method was mainly introduced in order to
-        facilitate the deletion of source package names from package
-        sets (by passing in string names) on the LP web services API.
+        This method facilitates the removal of source package names from
+        package sets via the LP web services API. It takes string names
+        as opposed to `ISourcePackageName` instances.
 
         :param names: an iterable with string source package names
         """
@@ -222,9 +222,9 @@ class IPackagesetEdit(Interface):
         that are already directly associated with a package set will be
         ignored.
 
-        Please note: this method was mainly introduced in order to
-        facilitate the addition of package subset relations (by passing
-        in string names) on the LP web services API.
+        This method facilitates the addition of package subsets via the
+        LP web services API. It takes string names as opposed to
+        `IPackageset` instances.
 
         :param names: an iterable with string package set names
         """
@@ -235,9 +235,9 @@ class IPackagesetEdit(Interface):
         Only package subsets *directly* included by this package
         set can be removed. Any others will be ignored.
 
-        Please note: this method was mainly introduced in order to
-        facilitate the removal of package subset relations (by passing
-        in string names) on the LP web services API.
+        This method facilitates the removal of package subsets via the
+        LP web services API. It takes string names as opposed to
+        `IPackageset` instances.
 
         :param names: an iterable with string package set names
         """

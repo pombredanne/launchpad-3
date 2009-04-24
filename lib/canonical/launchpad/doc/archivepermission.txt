@@ -101,14 +101,14 @@ team are returned.  This allows team-level permissions to be set.
     1
 
 checkAuthenticated() does not know about any other item types, and
-passing a type that it does not know about results in a TypeError:
+passing a type that it does not know about results in an AssertionError:
 
     >>> permission_set.checkAuthenticated(
     ...     ubuntu_team, ubuntu.main_archive, ArchivePermissionType.UPLOAD,
     ...     ubuntu)
     Traceback (most recent call last):
     ...
-    TypeError: 'item' is not an IComponent, IPackageset or an
+    AssertionError: 'item' is not an IComponent, IPackageset or an
     ISourcePackageName
 
 IArchivePermissionSet also has some helpers to make it very easy to
