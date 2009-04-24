@@ -25,8 +25,8 @@ from canonical.launchpad.fields import (
     )
 from canonical.launchpad.validators.name import name_validator
 
-from canonical.lazr.fields import CollectionField, Reference
-from canonical.lazr.rest.declarations import (
+from lazr.restful.fields import CollectionField, Reference
+from lazr.restful.declarations import (
     call_with, export_as_webservice_entry, export_factory_operation, exported,
     export_operation_as, export_write_operation, rename_parameters_as,
     REQUEST_USER)
@@ -77,6 +77,9 @@ class IMilestone(IHasBugs):
             description=_(
                 "Only letters, numbers, and simple punctuation are allowed."),
             constraint=name_validator))
+    code_name = exported(
+        TextLine(title=u'Code name', required=False,
+                 description=_('An alternative name for the milestone.')))
     product = Choice(
         title=_("Project"),
         description=_("The project to which this milestone is associated"),
@@ -128,8 +131,6 @@ class IMilestone(IHasBugs):
                  readonly=True))
     specifications = Attribute("A list of the specifications targeted to "
         "this milestone.")
-
-    code_name = Attribute("An alternative to the name attribute.")
 
     product_release = Reference(
         schema=IProductRelease,
@@ -190,6 +191,9 @@ class IMilestoneSet(Interface):
 
         If no milestone is found, default will be returned.
         """
+
+    def getVisibleMilestones():
+        """Return all visible milestones."""
 
 
 class IProjectMilestone(IMilestone):

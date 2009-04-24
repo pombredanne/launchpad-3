@@ -50,8 +50,8 @@ from lazr.enum import (
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
-    BugField, ProductNameField, PublicPersonChoice, StrippedTextLine, Summary,
-    Tag)
+    BugField, ParticipatingPersonChoice, ProductNameField, StrippedTextLine,
+    Summary, Tag)
 from canonical.launchpad.interfaces.bugwatch import (
     IBugWatch, IBugWatchSet, NoBugTrackerFound, UnrecognizedBugTrackerURL)
 from canonical.launchpad.interfaces.component import IComponent
@@ -62,12 +62,12 @@ from canonical.launchpad.searchbuilder import all, any, NULL
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
-from canonical.lazr.interface import copy_field
-from canonical.lazr.rest.declarations import (
+from lazr.restful.interface import copy_field
+from lazr.restful.declarations import (
     REQUEST_USER, call_with, export_as_webservice_entry,
     export_write_operation, exported, operation_parameters,
     mutator_for, rename_parameters_as, webservice_error)
-from canonical.lazr.fields import CollectionField, Reference, ReferenceChoice
+from lazr.restful.fields import CollectionField, Reference, ReferenceChoice
 
 
 class BugTaskImportance(DBEnumeratedType):
@@ -366,9 +366,10 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
     statusexplanation = Text(
         title=_("Status notes (optional)"), required=False)
     assignee = exported(
-        PublicPersonChoice(title=_('Assigned to'), required=False,
-                           vocabulary='ValidAssignee',
-                           readonly=True))
+        ParticipatingPersonChoice(
+            title=_('Assigned to'), required=False,
+            vocabulary='ValidAssignee',
+            readonly=True))
     bugtargetdisplayname = exported(
         Text(title=_("The short, descriptive name of the target"),
              readonly=True),

@@ -9,6 +9,8 @@ __all__ = [
     'bazaar_identity',
     'BRANCH_NAME_VALIDATION_ERROR_MESSAGE',
     'branch_name_validator',
+    'BranchCannotBePrivate',
+    'BranchCannotBePublic',
     'BranchCreationException',
     'BranchCreationForbidden',
     'BranchCreationNoTeamOwnedJunkBranches',
@@ -68,8 +70,8 @@ from zope.schema import (
 
 from lazr.enum import (
     DBEnumeratedType, DBItem, EnumeratedType, Item, use_template)
-from canonical.lazr.fields import CollectionField, Reference, ReferenceChoice
-from canonical.lazr.rest.declarations import (
+from lazr.restful.fields import CollectionField, Reference, ReferenceChoice
+from lazr.restful.declarations import (
     export_as_webservice_entry, export_write_operation, exported,
     operation_parameters, operation_returns_entry)
 
@@ -338,6 +340,13 @@ class RepositoryFormat(DBEnumeratedType):
         "1.6.1-subtree with B+Tree indices.\n"
         )
 
+    BZR_CHK1 = DBItem(400,
+        "Bazaar development format - group compression and chk inventory"
+        " (needs bzr.dev from 1.14)\n",
+        "Development repository format - rich roots, group compression"
+        " and chk inventories\n",
+        )
+
 
 class ControlFormat(DBEnumeratedType):
     """Control directory (BzrDir) format.
@@ -370,7 +379,6 @@ DEFAULT_BRANCH_STATUS_IN_LISTING = (
 
 class BranchCreationException(Exception):
     """Base class for branch creation exceptions."""
-
 
 class BranchExists(BranchCreationException):
     """Raised when creating a branch that already exists."""
@@ -448,6 +456,14 @@ class BranchTypeError(Exception):
     BranchTypeError exception is raised if one of these operations is called
     with a branch of the wrong type.
     """
+
+
+class BranchCannotBePublic(Exception):
+    """The branch cannot be made public."""
+
+
+class BranchCannotBePrivate(Exception):
+    """The branch cannot be made private."""
 
 
 class NoSuchBranch(NameLookupFailed):
@@ -667,10 +683,18 @@ class IBranch(IHasOwner, IHasBranchTarget):
             title=_('The last message we got when mirroring this branch.'),
             required=False, readonly=True))
 
-    private = Bool(
-        title=_("Keep branch confidential"), required=False,
-        description=_("Make this branch visible only to its subscribers."),
-        default=False)
+    private = exported(
+        Bool(
+            title=_("Keep branch confidential"), required=False,
+            readonly=True, default=False,
+            description=_(
+                "Make this branch visible only to its subscribers.")))
+
+    @operation_parameters(
+        private=Bool(title=_("Keep branch confidential")))
+    @export_write_operation()
+    def setPrivate(private):
+        """Set the branch privacy for this branch."""
 
     # People attributes
     registrant = exported(
@@ -747,7 +771,7 @@ class IBranch(IHasOwner, IHasBranchTarget):
     displayname = exported(
         Text(title=_('Display name'), readonly=True,
              description=_(
-                "The branch title if provided, or the unique_name.")),
+                "The branch unique_name.")),
         exported_as='display_name')
 
     # Stats and status attributes
@@ -1136,6 +1160,15 @@ class IBranch(IHasOwner, IHasBranchTarget):
 
         :param reason: An error message that will be displayed on the branch
             detail page.
+        """
+
+    def commitsForDays(since):
+        """Get a list of commit counts for days since `since`.
+
+        This method returns all commits for the branch, so this includes
+        revisions brought in through merges.
+
+        :return: A list of tuples like (date, count).
         """
 
 

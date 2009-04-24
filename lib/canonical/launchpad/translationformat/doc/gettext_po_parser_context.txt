@@ -206,7 +206,8 @@ If we don't pass context to POFile.getPOMsgSet method, we get the translation
 for the message without a context.
 
     >>> potmsgset = potemplate.getPOTMsgSetByMsgIDText(u'bar')
-    >>> current = potmsgset.getCurrentTranslationMessage(pofile.language)
+    >>> current = potmsgset.getCurrentTranslationMessage(potemplate,
+    ...     pofile.language)
     >>> print current.translations
     [u'bar with no context']
 
@@ -215,7 +216,8 @@ a message with context.
 
     >>> potmsgset = potemplate.getPOTMsgSetByMsgIDText(u'bar',
     ...                                                context=u'context')
-    >>> current = potmsgset.getCurrentTranslationMessage(pofile.language)
+    >>> current = potmsgset.getCurrentTranslationMessage(potemplate,
+    ...     pofile.language)
     >>> print current.translations
     [u'bar with context']
 
@@ -229,7 +231,8 @@ If you specify context, it actually works.
 
     >>> potmsgset = potemplate.getPOTMsgSetByMsgIDText(u'%d file',
     ...                                                context=u'First message')
-    >>> current = potmsgset.getCurrentTranslationMessage(pofile.language)
+    >>> current = potmsgset.getCurrentTranslationMessage(potemplate,
+    ...     pofile.language)
     >>> print current.translations
     [u'Translation %d']
 
@@ -237,7 +240,8 @@ And for messages with plural forms, it gets all the translations.
 
     >>> potmsgset = potemplate.getPOTMsgSetByMsgIDText(
     ...     u'%d file', u'%d files', context=u'Second message')
-    >>> current = potmsgset.getCurrentTranslationMessage(pofile.language)
+    >>> current = potmsgset.getCurrentTranslationMessage(potemplate,
+    ...     pofile.language)
     >>> print current.translations
     [u'%d translation', u'%d translationes', u'%d translations']
 

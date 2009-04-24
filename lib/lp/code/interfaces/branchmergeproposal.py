@@ -35,8 +35,8 @@ from lp.registry.interfaces.person import IPerson
 from canonical.launchpad.interfaces.diff import IPreviewDiff, IStaticDiff
 from canonical.launchpad.interfaces.job import IJob
 from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
-from canonical.lazr.fields import CollectionField, Reference
-from canonical.lazr.rest.declarations import (
+from lazr.restful.fields import CollectionField, Reference
+from lazr.restful.declarations import (
     call_with, export_as_webservice_entry, export_read_operation,
     export_write_operation, exported, operation_parameters,
     operation_returns_entry, REQUEST_USER)

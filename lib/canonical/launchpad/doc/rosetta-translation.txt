@@ -27,7 +27,8 @@ Get a translation for a particular message and check it has a translation.
 
     >>> potmsgset = template.getPOTMsgSetByMsgIDText(u'evolution addressbook')
     >>> spanish = pofile.language
-    >>> translationmessage = potmsgset.getCurrentTranslationMessage(spanish)
+    >>> translationmessage = potmsgset.getCurrentTranslationMessage(
+    ...     template, spanish)
     >>> translationmessage.translations
     [u'libreta de direcciones de Evolution']
     >>> translationmessage.is_imported
@@ -54,7 +55,7 @@ Add a translation.
 
 Check that this submission is now the active one for this msgset/pluralform
 
-    >>> potmsgset.getCurrentTranslationMessage(spanish) == message
+    >>> potmsgset.getCurrentTranslationMessage(template, spanish) == message
     True
     >>> message.is_current
     True
@@ -63,7 +64,7 @@ Check that this submission is now the active one for this msgset/pluralform
 
 Check that this submission is the published one
 
-    >>> potmsgset.getImportedTranslationMessage(spanish) == message
+    >>> potmsgset.getImportedTranslationMessage(template, spanish) == message
     True
     >>> message.is_imported
     True
@@ -108,7 +109,8 @@ Now let's test that this has become both active and published
     >>> imported_message.msgstr0.translation == u'bar'
     True
 
-    >>> potmsgset.getImportedTranslationMessage(spanish) == imported_message
+    >>> potmsgset.getImportedTranslationMessage(
+    ...     template, spanish) == imported_message
     True
 
 Excellent. This shows that the code to make a new published translation
@@ -121,7 +123,8 @@ Now, let's add a translation from Pb, through the web.
     ...     pofile, Pb, translations, is_imported=False,
     ...     lock_timestamp=datetime.datetime.now(UTC))
     >>> flush_database_caches()
-    >>> web_submission = potmsgset.getCurrentTranslationMessage(spanish)
+    >>> web_submission = potmsgset.getCurrentTranslationMessage(
+    ...     template, spanish)
 
 Make sure the new submission is from Pb.
 
@@ -135,12 +138,14 @@ published selection.
     >>> web_submission.msgstr0.translation == u'baz'
     True
 
-    >>> potmsgset.getImportedTranslationMessage(spanish) == web_submission
+    >>> potmsgset.getImportedTranslationMessage(template,
+    ...     spanish) == web_submission
     False
 
 In fact, the published submission should still be the original one, from Pa:
 
-    >>> potmsgset.getImportedTranslationMessage(spanish) == imported_message
+    >>> potmsgset.getImportedTranslationMessage(
+    ...     template, spanish) == imported_message
     True
 
 And the lasttranslator for this pofile should be the one who submitted the
@@ -159,7 +164,8 @@ along and says it's 'baz', we don't record anything new.
     >>> dummy = potmsgset.updateTranslation(
     ...     pofile, Pc, translations, is_imported=False,
     ...     lock_timestamp=datetime.datetime.now(UTC))
-    >>> repeat_submission = potmsgset.getCurrentTranslationMessage(spanish)
+    >>> repeat_submission = potmsgset.getCurrentTranslationMessage(
+    ...     template, spanish)
 
 Since that is exactly what Pb already said, let's see that the submission we
 got back was the one from Pb not a new one for Pc:
@@ -187,7 +193,7 @@ Testing NoneEditorTranslations
 Let's see if there are any suggestions for this potmsgset. We are not
 expecting any.
 
-    >>> list(potmsgset.getLocalTranslationMessages(spanish))
+    >>> list(potmsgset.getLocalTranslationMessages(template, spanish))
     []
 
 Let's make a submission from Pn  without editorial permissions, to the same
@@ -236,23 +242,24 @@ seconds.
 Let's make sure:
 
     >>> (noneditor_submission.date_created >
-    ...  potmsgset.getCurrentTranslationMessage(spanish).date_created)
+    ...  potmsgset.getCurrentTranslationMessage(
+    ...      template, spanish).date_created)
     True
 
 This new submission should not be active:
 
-    >>> (potmsgset.getCurrentTranslationMessage(spanish) ==
+    >>> (potmsgset.getCurrentTranslationMessage(template, spanish) ==
     ...  noneditor_submission)
     False
 
 And it should definitely not be published:
 
-    >>> (potmsgset.getImportedTranslationMessage(spanish) ==
+    >>> (potmsgset.getImportedTranslationMessage(template, spanish) ==
     ...  noneditor_submission)
     False
 
 However, given NonEditorTranslations, this should be available as
 a suggested translation.
 
-    >>> len(potmsgset.getLocalTranslationMessages(spanish))
+    >>> potmsgset.getLocalTranslationMessages(template, spanish).count()
     1

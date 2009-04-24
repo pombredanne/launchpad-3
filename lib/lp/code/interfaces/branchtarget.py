@@ -21,7 +21,7 @@ from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad import _
 from canonical.launchpad.webapp.interfaces import IPrimaryContext
-from canonical.lazr.fields import Reference
+from lazr.restful.fields import Reference
 
 
 def check_default_stacked_on(branch):
@@ -70,6 +70,8 @@ class IBranchTarget(IPrimaryContext):
         "An iterable of the objects that make up this branch target, from "
         "most-general to most-specific. In a URL, these would normally "
         "appear from left to right.")
+
+    displayname = Attribute("The display name of this branch target.")
 
     default_stacked_on_branch = Reference(
         # Should be an IBranch, but circular imports prevent it.

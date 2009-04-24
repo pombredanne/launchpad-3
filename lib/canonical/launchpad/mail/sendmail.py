@@ -25,7 +25,7 @@ __all__ = [
 import sha
 import sets
 from email.Encoders import encode_base64
-from email.Utils import make_msgid, formatdate, formataddr
+from email.Utils import getaddresses, make_msgid, formatdate, formataddr
 from email.Message import Message
 from email.Header import Header
 from email.MIMEText import MIMEText
@@ -229,9 +229,15 @@ def get_addresses_from_header(email_header):
         ['One <one@example.com>']
         >>> get_addresses_from_header('One\r\n <one@example.com>')
         ['One <one@example.com>']
+        >>> get_addresses_from_header(
+        ...     '"One, A" <one.a@example.com>,\n'
+        ...     ' "Two, B" <two.b@example.com>')
+        ['"One, A" <one.a@example.com>', '"Two, B" <two.b@example.com>']
+
     """
-    unfolded_header = ''.join(email_header.splitlines())
-    return [address.strip() for address in unfolded_header.split(',')]
+    return [
+        formataddr((name, address))
+        for name, address in getaddresses([email_header])]
 
 
 def sendmail(message, to_addrs=None, bulk=True):

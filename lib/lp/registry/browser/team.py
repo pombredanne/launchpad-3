@@ -194,26 +194,41 @@ class TeamEditView(TeamFormMixin, HasRenewalPolicyMixin,
             self.updateContextFromData(data)
         except ImmutableVisibilityError, error:
             self.request.response.addErrorNotification(str(error))
-        self.next_url = canonical_url(self.context)
+            # Abort must be called or changes to fields before the one causing
+            # the error will be committed.  If we have a database validation
+            # error we want to abort the transaction.
+            # XXX: BradCrittenden 2009-04-13 bug=360540: Remove the call to
+            # abort if it is moved up to updateContextFromData.
+            self._abort()
+        else:
+            self.next_url = canonical_url(self.context)
 
     def setUpWidgets(self):
         """See `LaunchpadViewForm`.
 
         When a team has a mailing list, renames are prohibited.
+        Also when a team is private renames are prohibited.
         """
         mailing_list = getUtility(IMailingListSet).get(self.context.name)
-        writable = (mailing_list is None or
-                    mailing_list.status == MailingListStatus.PURGED)
+        writable = ((mailing_list is None or
+                     mailing_list.status == MailingListStatus.PURGED) and
+                    self.context.visibility != PersonVisibility.PRIVATE
+                    )
+
         if not writable:
             # This makes the field's widget display (i.e. read) only.
             self.form_fields['name'].for_display = True
         super(TeamEditView, self).setUpWidgets()
         if not writable:
+            if self.context.visibility == PersonVisibility.PRIVATE:
+                message = _('You cannot change the name of a private team.')
+            else:
+                message = _(
+                    'This team has a mailing list and may not be renamed.')
             # We can't change the widget's .hint directly because that's a
             # read-only property.  But that property just delegates to the
             # context's underlying description, so change that instead.
-            self.widgets['name'].context.description = _(
-                'This team has a mailing list and may not be renamed.')
+            self.widgets['name'].context.description = message
 
 
 def generateTokenAndValidationEmail(email, team):
@@ -908,6 +923,14 @@ class TeamMapView(LaunchpadView):
     known locations.
     """
 
+    def __init__(self, context, request):
+        """Accept the 'preview' parameter to limit mapped participants."""
+        super(TeamMapView, self).__init__(context, request)
+        if 'preview' in self.request.form:
+            self.limit = 24
+        else:
+            self.limit = None
+
     def initialize(self):
         # Tell our main-template to include Google's gmap2 javascript so that
         # we can render the map.
@@ -917,7 +940,7 @@ class TeamMapView(LaunchpadView):
     @cachedproperty
     def mapped_participants(self):
         """Participants with locations."""
-        return self.context.mapped_participants
+        return self.context.getMappedParticipants(limit=self.limit)
 
     @cachedproperty
     def mapped_participants_count(self):

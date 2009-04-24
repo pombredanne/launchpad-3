@@ -34,11 +34,13 @@ __all__ = [
     'IURIField',
     'IWhiteboard',
     'IconImageUpload',
-    'is_valid_public_person_link',
+    'is_private_membership',
+    'is_valid_public_person',
     'KEEP_SAME_IMAGE',
     'LogoImageUpload',
     'MugshotImageUpload',
     'LocationField',
+    'ParticipatingPersonChoice',
     'PasswordField',
     'PillarAliases',
     'PillarNameField',
@@ -86,8 +88,8 @@ from lazr.uri import URI, InvalidURIError
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import valid_name, name_validator
 
-from canonical.lazr.fields import Reference
-from canonical.lazr.interfaces.fields import IReferenceChoice
+from lazr.restful.fields import Reference
+from lazr.restful.interfaces import IReferenceChoice
 
 
 # Marker object to tell BaseImageUpload to keep the existing image.
@@ -803,19 +805,50 @@ class ProductNameField(PillarNameField):
         return IProduct
 
 
-def is_valid_public_person_link(person, other):
+def is_valid_public_person(person):
+    """Return True if the person is public."""
     from canonical.launchpad.interfaces import IPerson, PersonVisibility
     if not IPerson.providedBy(person):
         raise ConstraintNotSatisfied("Expected a person.")
     if person.visibility == PersonVisibility.PUBLIC:
         return True
     else:
+        # PRIVATE_MEMBERSHIP or PRIVATE.
+        return False
+
+
+def is_private_membership(person):
+    """True if the person/team has private membership visibility."""
+    from canonical.launchpad.interfaces import IPerson, PersonVisibility
+    if not IPerson.providedBy(person):
+        raise ConstraintNotSatisfied("Expected a person.")
+    if person.visibility == PersonVisibility.PRIVATE_MEMBERSHIP:
+        # PRIVATE_MEMBERSHIP.
+        return True
+    else:
+        # PUBLIC or PRIVATE.
         return False
 
 
 class PublicPersonChoice(Choice):
+    """A person or team who is public."""
     implements(IReferenceChoice)
     schema = IObject    # Will be set to IPerson once IPerson is defined.
 
     def constraint(self, value):
-        return is_valid_public_person_link(value, self.context)
+        return is_valid_public_person(value)
+
+
+class ParticipatingPersonChoice(Choice):
+    """A person or team who is not a private membership team.
+
+    A person can participate in all contexts.  A PRIVATE team can participate
+    in many contexts, depending up on the permissions of the logged in
+    user.  A PRIVATE MEMBERSHIP team is severely limited in the roles in which
+    it can participate.
+    """
+    implements(IReferenceChoice)
+    schema = IObject    # Will be set to IPerson once IPerson is defined.
+
+    def constraint(self, value):
+        return not is_private_membership(value)

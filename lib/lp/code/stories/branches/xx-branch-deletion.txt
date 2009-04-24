@@ -5,9 +5,8 @@ can be deleted.  The main use for this is to allow users to delete
 branches that have been created in error.
 
     >>> browser = setupBrowser(auth="Basic test@canonical.com:test")
-    >>> browser.open('http://code.launchpad.dev/~name12')
+    >>> browser.open('http://code.launchpad.dev/firefox')
     >>> browser.getLink("Register a branch").click()
-    >>> browser.getControl('Project').value = 'firefox'
     >>> browser.getControl('Branch URL').value = 'http://foo.bar.com/oops'
     >>> browser.getControl('Name').value = 'to-delete'
     >>> browser.getControl('Register Branch').click()

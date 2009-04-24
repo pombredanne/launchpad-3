@@ -38,7 +38,7 @@ from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import OAuthPermission
 from canonical.launchpad.webapp.url import urlsplit
 from canonical.testing import PageTestLayer
-from canonical.lazr.testing.webservice import WebServiceCaller
+from lazr.restful.testing.webservice import WebServiceCaller
 
 class UnstickyCookieHTTPCaller(HTTPCaller):
     """HTTPCaller subclass that do not carry cookies across requests.
@@ -214,6 +214,12 @@ def get_feedback_messages(content):
         content,
         parseOnlyThese=SoupStrainer(['div', 'p'], {'class': message_classes}))
     return [extract_text(tag) for tag in soup]
+
+
+def print_feedback_messages(content):
+    """Print out the feedback messages."""
+    for message in get_feedback_messages(content):
+        print message
 
 
 def print_radio_button_field(content, name):
@@ -601,6 +607,7 @@ def setUpGlobs(test):
     test.globs['find_portlet'] = find_portlet
     test.globs['find_main_content'] = find_main_content
     test.globs['get_feedback_messages'] = get_feedback_messages
+    test.globs['print_feedback_messages'] = print_feedback_messages
     test.globs['extract_link_from_tag'] = extract_link_from_tag
     test.globs['extract_text'] = extract_text
     test.globs['login'] = login

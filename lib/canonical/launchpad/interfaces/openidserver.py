@@ -27,7 +27,7 @@ from canonical.launchpad.fields import (
     BaseImageUpload, PasswordField, URIField, UniqueField)
 from canonical.launchpad.interfaces.account import IAccount
 from lp.registry.interfaces.person import PersonCreationRationale
-from canonical.lazr.fields import Reference
+from lazr.restful.fields import Reference
 
 
 class IOpenIDAuthorization(Interface):
@@ -153,13 +153,20 @@ class IOpenIDRPConfig(Interface):
             'Teammembership of any team can be requested, including '
             'private teams.'),
         required=True, readonly=False)
+    auto_authorize = Bool(
+        title=_('Automatically authorize requests'),
+        description=_(
+            'Authentication requests for this RP are responded to '
+            'automatically without explicit user authorization'),
+        required=True, readonly=False)
 
 
 class IOpenIDRPConfigSet(Interface):
     """The set of OpenID Relying Party configurations."""
     def new(trust_root, displayname, description, logo=None,
             allowed_sreg=None, creation_rationale=PersonCreationRationale
-            .OWNER_CREATED_UNKNOWN_TRUSTROOT):
+            .OWNER_CREATED_UNKNOWN_TRUSTROOT, can_query_any_team=False,
+            auto_authorize=False):
         """Create a new IOpenIDRPConfig"""
 
     def get(id):

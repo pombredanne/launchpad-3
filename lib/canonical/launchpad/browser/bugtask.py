@@ -72,7 +72,7 @@ from canonical.config import config
 from canonical.database.sqlbase import cursor
 from canonical.launchpad import _
 from canonical.cachedproperty import cachedproperty
-from canonical.launchpad.fields import PublicPersonChoice
+from canonical.launchpad.fields import ParticipatingPersonChoice
 from canonical.launchpad.mailnotification import get_unified_diff
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.vocabularies.dbobjects import MilestoneVocabulary
@@ -131,7 +131,7 @@ from canonical.launchpad.webapp.tales import PersonFormatterAPI
 from canonical.launchpad.webapp.vocabulary import vocab_factory
 
 from canonical.lazr.interfaces import IObjectPrivacy
-from canonical.lazr.interfaces.rest import IJSONRequestCache
+from lazr.restful.interfaces import IJSONRequestCache
 
 from canonical.widgets.bug import BugTagsWidget
 from canonical.widgets.bugtask import (
@@ -827,18 +827,40 @@ class BugTaskView(LaunchpadView, CanBeMentoredView, FeedsMixin):
 
     @cachedproperty
     def activity_and_comments(self):
-        activity_and_comments = [
-            {'comment': comment, 'date': comment.datecreated}
-            for comment in self.visible_comments_for_display]
-
         # Add the activity to the activity_and_comments list. For each
         # activity dict we use the person responsible for the first
         # activity item as the owner of the list of activities.
-        activity_and_comments.extend(
+        activity_by_date = [
             {'activity': activity_dict, 'date': date,
              'person': activity_dict[0]['activity'][0].person}
-            for date, activity_dict in self.activity_by_date.items())
+            for date, activity_dict in self.activity_by_date.items()]
 
+        activity_and_comments = []
+        for comment in self.visible_comments_for_display:
+            # Check to see if there are any activities for this
+            # comment's datecreated.
+            activity_for_comment = []
+
+            # Loop over a copy of activity_by_date to ensure that we
+            # don't break the looping by removing things from the list
+            # over which we're iterating.
+            for activity_dict in list(activity_by_date):
+                if activity_dict['date'] == comment.datecreated:
+                    activity_for_comment.extend(activity_dict['activity'])
+
+                    # Remove the activity from the list of activity by date;
+                    # we don't need it there any more.
+                    activity_by_date.remove(activity_dict)
+
+            activity_for_comment.sort(key=itemgetter('target'))
+            comment.activity = activity_for_comment
+
+            activity_and_comments.append({
+                'comment': comment,
+                'date': comment.datecreated,
+                })
+
+        activity_and_comments.extend(activity_by_date)
         activity_and_comments.sort(key=itemgetter('date'))
         return activity_and_comments
 
@@ -951,6 +973,11 @@ class BugTaskView(LaunchpadView, CanBeMentoredView, FeedsMixin):
             available_tags.update(task.target.official_bug_tags)
         return 'var available_official_tags = %s;' % dumps(list(sorted(
             available_tags)))
+
+    @property
+    def user_is_admin(self):
+        """Is the user a Launchpad admin?"""
+        return check_permission('launchpad.Admin', self.context)
 
 
 class BugTaskPortletView:
@@ -1184,7 +1211,7 @@ class BugTaskEditView(LaunchpadEditFormView):
             self.form_fields.get('assignee', False)):
             # Make the assignee field editable
             self.form_fields = self.form_fields.omit('assignee')
-            self.form_fields += formlib.form.Fields(PublicPersonChoice(
+            self.form_fields += formlib.form.Fields(ParticipatingPersonChoice(
                 __name__='assignee', title=_('Assigned to'), required=False,
                 vocabulary='ValidAssignee', readonly=False))
             self.form_fields['assignee'].custom_widget = CustomWidgetFactory(

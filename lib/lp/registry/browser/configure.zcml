@@ -1629,10 +1629,10 @@
         <browser:page
             name="+addbranch"
             for="lp.registry.interfaces.person.IPerson"
-            class="lp.code.browser.branch.PersonBranchAddView"
+            class="lp.code.browser.branch.BranchAddView"
             facet="branches"
             permission="launchpad.AnyPerson"
-            template="../templates/person-branch-add.pt"/>
+            template="../templates/branch-add.pt"/>
         <browser:page
             for="lp.registry.interfaces.person.IPerson"
             class="lp.code.browser.branchlisting.PersonTeamBranchesView"
@@ -1763,8 +1763,7 @@
         class="canonical.launchpad.browser.ProductReleaseAddView"
         facet="overview"
         permission="launchpad.Edit"
-        template="../templates/productrelease-add.pt">
-                </browser:page>
+        template="../templates/productrelease-add.pt"/>
     <browser:menus
         classes="
             MilestoneContextMenu
@@ -2098,10 +2097,10 @@
     <browser:page
         name="+addbranch"
         for="lp.registry.interfaces.product.IProduct"
-        class="lp.code.browser.branch.ProductBranchAddView"
+        class="lp.code.browser.branch.BranchAddView"
         facet="branches"
         permission="launchpad.AnyPerson"
-        template="../templates/product-branch-add.pt"/>
+        template="../templates/branch-add.pt"/>
     <browser:defaultView
         for="lp.registry.interfaces.product.IProductSet"
         name="+index"/>
@@ -2285,10 +2284,10 @@
     <browser:page
         name="+addrelease"
         for="lp.registry.interfaces.productseries.IProductSeries"
-        class="canonical.launchpad.browser.ProductReleaseAddView"
+        class="canonical.launchpad.browser.ProductReleaseFromSeriesAddView"
         facet="overview"
         permission="launchpad.Edit"
-        template="../templates/productrelease-add.pt"/>
+        template="../templates/productrelease-add-from-series.pt"/>
     <browser:page
         name="+addmilestone"
         facet="overview"
@@ -2350,6 +2349,14 @@
         facet="translations"
         permission="launchpad.Edit"
         template="../templates/productseries-translations-settings.pt"
+        layer="canonical.launchpad.layers.TranslationsLayer"/>
+    <browser:page
+        for="lp.registry.interfaces.productseries.IProductSeries"
+        name="+request-bzr-import"
+        class="lp.registry.browser.productseries.ProductSeriesTranslationsBzrImportView"
+        facet="translations"
+        permission="launchpad.Edit"
+        template="../templates/productseries-translations-bzr-import.pt"
         layer="canonical.launchpad.layers.TranslationsLayer"/>
     <browser:page
         for="lp.registry.interfaces.productseries.IProductSeries"

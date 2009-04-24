@@ -29,9 +29,9 @@ from canonical.launchpad.fields import ContentNameField
 from lp.registry.interfaces.person import IPerson
 from canonical.launchpad.validators import LaunchpadValidationError
 
-from canonical.lazr.fields import CollectionField, Reference, ReferenceChoice
-from canonical.lazr.interface import copy_field
-from canonical.lazr.rest.declarations import (
+from lazr.restful.fields import CollectionField, Reference, ReferenceChoice
+from lazr.restful.interface import copy_field
+from lazr.restful.declarations import (
     REQUEST_USER, call_with, export_as_webservice_entry,
     export_factory_operation, export_operation_as, export_write_operation,
     exported, operation_parameters)
@@ -330,10 +330,13 @@ class IProductReleasePublic(Interface):
             value_type=Reference(schema=IProductReleaseFile)))
 
     milestone = exported(
-        Reference(
-            title=u"The milestone for this release.",
+        ReferenceChoice(
+            title=u"Milestone for this release",
+            description=_("A release requires a corresponding milestone "
+                          "that is not attached to another release."),
             # Schema is set to IMilestone in interfaces/milestone.py.
             schema=Interface,
+            vocabulary='Milestone',
             required=True))
 
     def getFileAliasByName(name):

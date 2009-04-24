@@ -15,7 +15,7 @@ from zope.schema import TextLine, Int, Choice, Bool, Field, Set
 from zope.interface import Interface, Attribute
 from lazr.enum import DBEnumeratedType, DBItem
 
-from canonical.lazr.rest.declarations import export_as_webservice_entry
+from lazr.restful.declarations import export_as_webservice_entry
 
 
 class TextDirection(DBEnumeratedType):
