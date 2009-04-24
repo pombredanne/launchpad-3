@@ -54,7 +54,8 @@ from lp.code.interfaces.branchnamespace import IBranchNamespaceSet
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.publishing import PackagePublishingPocket
 from canonical.launchpad.testing import (
-    LaunchpadObjectFactory, run_with_login, TestCase, TestCaseWithFactory)
+    LaunchpadObjectFactory, run_with_login, TestCase, TestCaseWithFactory,
+    time_counter)
 from canonical.launchpad.webapp.interfaces import IOpenLaunchBag
 
 from canonical.testing import DatabaseFunctionalLayer, LaunchpadZopelessLayer
@@ -1393,6 +1394,73 @@ class TestBranchSetPrivate(TestCaseWithFactory):
             BranchCannotBePublic,
             branch.setPrivate,
             False)
+
+
+class TestBranchCommitsForDays(TestCaseWithFactory):
+    """Tests for `Branch.commitsForDays`."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self)
+        # Use a 30 day epoch for the tests.
+        self.epoch = datetime.now(tz=UTC) - timedelta(days=30)
+
+    def date_generator(self, epoch_offset, delta=None):
+        if delta is None:
+            delta = timedelta(days=1)
+        return time_counter(self.epoch + timedelta(days=epoch_offset), delta)
+
+    def test_empty_branch(self):
+        # A branch with no commits returns an empty list.
+        branch = self.factory.makeAnyBranch()
+        self.assertEqual([], branch.commitsForDays(self.epoch))
+
+    def test_commits_before_epoch_not_returned(self):
+        # Commits that occur before the epoch are not returned.
+        branch = self.factory.makeAnyBranch()
+        self.factory.makeRevisionsForBranch(
+            branch, date_generator=self.date_generator(-10))
+        self.assertEqual([], branch.commitsForDays(self.epoch))
+
+    def test_commits_after_epoch_are_returned(self):
+        # Commits that occur after the epoch are returned.
+        branch = self.factory.makeAnyBranch()
+        self.factory.makeRevisionsForBranch(
+            branch, count=5, date_generator=self.date_generator(1))
+        # There is one commit for each day starting from epoch + 1.
+        start = self.epoch + timedelta(days=1)
+        # Clear off the fractional parts of the day.
+        start = datetime(start.year, start.month, start.day)
+        commits = []
+        for count in range(5):
+            commits.append((start + timedelta(days=count), 1))
+        self.assertEqual(commits, branch.commitsForDays(self.epoch))
+
+    def test_commits_are_grouped(self):
+        # The commits are grouped to give counts of commits for the days.
+        branch = self.factory.makeAnyBranch()
+        start = self.epoch + timedelta(days=1)
+        # Add 8 commits starting from 5pm (+ whatever minutes).
+        # 5, 7, 9, 11pm, then 1, 3, 5, 7am for the following day.
+        start = start.replace(hour=17)
+        date_generator = time_counter(start, timedelta(hours=2))
+        self.factory.makeRevisionsForBranch(
+            branch, count=8, date_generator=date_generator)
+        # The resulting queries return time zone unaware times.
+        first_day = datetime(start.year, start.month, start.day)
+        commits = [(first_day, 4), (first_day + timedelta(days=1), 4)]
+        self.assertEqual(commits, branch.commitsForDays(self.epoch))
+
+    def test_non_mainline_commits_count(self):
+        # Non-mainline commits are counted too.
+        branch = self.factory.makeAnyBranch()
+        start = self.epoch + timedelta(days=1)
+        revision = self.factory.makeRevision(revision_date=start)
+        branch.createBranchRevision(None, revision)
+        day = datetime(start.year, start.month, start.day)
+        commits = [(day, 1)]
+        self.assertEqual(commits, branch.commitsForDays(self.epoch))
 
 
 def test_suite():
