@@ -2,7 +2,6 @@
 
 from datetime import datetime
 import gzip
-import re
 import pytz
 import os
 
@@ -91,7 +90,10 @@ def parse_file(fd, start_position, logger):
             try:
                 method, file_id = get_method_and_file_id(request)
             except NotALibraryFileAliasRequest:
+                # We only count downloads of LibraryFileAliases, and this is
+                # not one of them.
                 continue
+
             if method != 'GET':
                 # We're only interested in counting downloads.
                 continue
@@ -115,6 +117,8 @@ def parse_file(fd, start_position, logger):
             if country_code not in daily_downloads:
                 daily_downloads[country_code] = 0
             daily_downloads[country_code] += 1
+        except (KeyboardInterrupt, SystemExit):
+            raise
         except Exception, e:
             # Update parsed_bytes to the end of the last line we parsed
             # successfully, log this as an error and break the loop so that
@@ -160,7 +164,6 @@ class NotALibraryFileAliasRequest(Exception):
 # Paths for which requests to will be answered with a 200 OK response but
 # which are not the paths to a LibraryFileAlias.
 NO_LFA_PATHS = ['/', '/robots.txt']
-multiple_slashes_re = re.compile('/+')
 
 
 def get_method_and_file_id(request):
@@ -170,7 +173,7 @@ def get_method_and_file_id(request):
     if path.startswith('http://') or path.startswith('https://'):
         uri = URI(path)
         path = uri.path
-    path = multiple_slashes_re.sub('/', path)
+    path = os.path.normpath(path)
     if path in NO_LFA_PATHS:
         raise NotALibraryFileAliasRequest(request)
     file_id = path.split('/')[1]
