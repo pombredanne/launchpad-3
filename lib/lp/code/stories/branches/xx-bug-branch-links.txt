@@ -209,9 +209,6 @@ The whiteboard contents are available on the (bug|branch) page.
     >>> browser.getLink('~name12/gnome-terminal/scanne').click()
     >>> printBugBranchLinks(browser)
     Bug #11: Make Jokosher use autoaudiosink (Undecided &ndash; New)
-      This is a fix for the problem and involved:
-       * Fixing the doodad
-       * Adjusting the lambda probe
 
 
 == Deleting bug branch links ==
