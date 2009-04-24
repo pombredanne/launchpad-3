@@ -118,11 +118,10 @@ class IRosettaUploadJob(Interface):
     from_revision_id = TextLine(
         title=_('The revision id to compare against.'))
 
-    do_translations_upload = Bool(
-        title=_('Do an extra upload of translation files.'),
-        description=_('Flag to indicate that this job should upload '
-                      'translation files even though the ProductSeries for '
-                      'the branch is not configured to do so.'))
+    force_translations_upload = Bool(
+        title=_('Force an upload of translation files.'),
+        description=_('Flag to override the settings in the product '
+                      'series and upload all translation files.'))
 
     def run():
         """Extract translation files from the branch passed in by the factory
@@ -133,13 +132,13 @@ class IRosettaUploadJob(Interface):
 
 class IRosettaUploadJobSource(Interface):
 
-    def create(branch, from_revision_id, do_translations_upload):
+    def create(branch, from_revision_id, force_translations_upload):
         """Construct a new object that implements IRosettaUploadJob.
 
         :param branch: The database branch to exract files from.
         :param from_revision_id: The revision id to compare against.
-        :param do_translations_upload: Flag to indicate that an extra upload
-            of translation files should be performed.
+        :param force_translations_upload: Flag to override the settings in the
+            product series and upload all translation files.
         """
 
     def iterReady():
