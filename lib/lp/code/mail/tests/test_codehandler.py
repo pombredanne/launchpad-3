@@ -12,7 +12,6 @@ from bzrlib.branch import Branch
 from bzrlib.bzrdir import BzrDir
 from bzrlib import errors as bzr_errors
 from bzrlib.transport import get_transport
-from bzrlib.urlutils import escape
 from bzrlib.urlutils import join as urljoin
 from zope.component import getUtility
 from zope.interface import directlyProvides, directlyProvidedBy
@@ -839,7 +838,7 @@ class TestCodeHandlerProcessMergeDirective(TestCaseWithFactory):
         # The soruce branch is stacked on the target.
         source_bzr_branch = self._openBazaarBranchAsClient(bmp.source_branch)
         self.assertEqual(
-            escape('/' + bmp.target_branch.unique_name),
+            '/' + bmp.target_branch.unique_name,
             source_bzr_branch.get_stacked_on_url())
         # Make sure that the source branch doesn't have all the revisions.
         source_branch_revisions = (
@@ -878,7 +877,7 @@ class TestCodeHandlerProcessMergeDirective(TestCaseWithFactory):
             sender=db_source_branch.owner)
         # Tell the source branch that it is stacked on the target.
         if set_stacked:
-            stacked_url = escape('/' + db_target_branch.unique_name)
+            stacked_url = '/' + db_target_branch.unique_name
             branch = self._openBazaarBranchAsClient(db_source_branch)
             branch.set_stacked_on_url(stacked_url)
         return db_source_branch, message
