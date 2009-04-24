@@ -15,19 +15,8 @@ from sqlobject import SQLObjectNotFound
 import transaction
 from zope.component import getUtility
 
-from lp.code.model.branchjob import (
-    BranchDiffJob, BranchJob, BranchJobType, RevisionsAddedJob,
-    RevisionMailJob, RosettaUploadJob)
-from lp.code.model.branchrevision import BranchRevision
-from canonical.launchpad.database.revision import RevisionSet
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.testing import verifyObject
-from lp.code.interfaces.branchsubscription import (
-    BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel)
-from lp.code.interfaces.branchjob import (
-    IBranchDiffJob, IBranchJob, IRevisionMailJob, IRosettaUploadJob)
-from lp.code.interfaces.branchsubscription import (
-    BranchSubscriptionDiffSize,)
 from canonical.launchpad.interfaces.translations import (
     TranslationsBranchImportMode)
 from canonical.launchpad.interfaces.translationimportqueue import (
@@ -36,6 +25,18 @@ from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.launchpad.testing.librarianhelpers import (
     get_newest_librarian_file)
 from canonical.launchpad.tests.mail_helpers import pop_notifications
+
+from lp.code.interfaces.branchsubscription import (
+    BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel)
+from lp.code.interfaces.branchjob import (
+    IBranchDiffJob, IBranchJob, IRevisionMailJob, IRosettaUploadJob)
+from lp.code.interfaces.branchsubscription import (
+    BranchSubscriptionDiffSize,)
+from lp.code.model.branchjob import (
+    BranchDiffJob, BranchJob, BranchJobType, RevisionsAddedJob,
+    RevisionMailJob, RosettaUploadJob)
+from lp.code.model.branchrevision import BranchRevision
+from lp.code.model.revision import RevisionSet
 
 
 class TestBranchJob(TestCaseWithFactory):
@@ -678,7 +679,15 @@ class TestRosettaUploadJob(TestCaseWithFactory):
             (('foo.pot',), ('eo.po',), ('fr.po',), ('README',)))
         self.assertEqual(3, len(entries))
 
-    def test_upload_extra_translations(self):
+    def test_upload_extra_translations_no_import(self):
+        # Even if the series is configured not to upload any files, the
+        # job can be told to upload template and translation files.
+        entries = self._runJobWithFiles(
+            TranslationsBranchImportMode.NO_IMPORT,
+            (('foo.pot',), ('eo.po',), ('fr.po',), ('README',)), True)
+        self.assertEqual(3, len(entries))
+
+    def test_upload_extra_translations_import_templates(self):
         # Even if the series is configured to only upload template files, the
         # job can be told to upload translation files, too.
         entries = self._runJobWithFiles(

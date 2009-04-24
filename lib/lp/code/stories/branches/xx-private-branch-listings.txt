@@ -30,9 +30,9 @@ Adding a private branch that is only visible by No Privileges Person
     >>> landscape = getUtility(IProductSet).getByName('landscape')
     >>> branch = factory.makePersonalBranch(
     ...     branch_type=BranchType.HOSTED, name='testing-branch',
-    ...     owner=no_priv, title='A Private Branch')
-    >>> branch.private = True
-    >>> branch.product = landscape
+    ...     owner=no_priv, title='A Private Branch', private=True)
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> removeSecurityProxy(branch).product = landscape
     >>> flush_database_updates()
     >>> logout()
 
@@ -55,14 +55,14 @@ When there is no logged in user, only public branches should be visible.
     '...~name12/gnome-terminal/scanned...'
     '...~name12/gnome-terminal/mirrored...'
     '...~name12/gnome-terminal/pushed...'
-    '...Launchpad support for Gnome Terminal...'
+    '...~launchpad/gnome-terminal/launchpad...'
 
 Logged in users should only be able to see public branches, and private
 branches that they are subscribed to or are the owner of.
 
     >>> no_priv_browser = setupBrowser(auth='Basic no-priv@canonical.com:test')
     >>> print_recently_registered_branches(no_priv_browser)
-    '...A Private Branch...<img...src="/@@/private"...'
+    '...~no-priv/landscape/testing-branch...<img...src="/@@/private"...'
     '...~sabdfl/+junk/testdoc...'
     '...~name12/gnome-terminal/scanned...'
     '...~name12/gnome-terminal/mirrored...'
@@ -76,7 +76,7 @@ developer.
     ...     auth='Basic test@canonical.com:test')
     >>> print_recently_registered_branches(landscape_dev_browser)
     '...~name12/landscape/feature-x...<img...src="/@@/private"...'
-    '...Landscape trunk...<img...src="/@@/private"...'
+    '...~landscape-developers/landscape/trunk...<img...src="/@@/private"...'
     '...~sabdfl/+junk/testdoc...'
     '...~name12/gnome-terminal/scanned...'
     '...~name12/gnome-terminal/mirrored...'
@@ -84,9 +84,9 @@ developer.
 Launchpad administrators are able to see all private branches.
 
     >>> print_recently_registered_branches(admin_browser)
-    '...A Private Branch...<img...src="/@@/private"...'
+    '...~no-priv/landscape/testing-branch...<img...src="/@@/private"...'
     '...~name12/landscape/feature-x...<img...src="/@@/private"...'
-    '...Landscape trunk...<img...src="/@@/private"...'
+    '...~landscape-developers/landscape/trunk...<img...src="/@@/private"...'
     '...~sabdfl/+junk/testdoc...'
     '...~name12/gnome-terminal/scanned...'
 

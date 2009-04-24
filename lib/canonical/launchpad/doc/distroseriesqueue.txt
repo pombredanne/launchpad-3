@@ -610,30 +610,32 @@ The protection code should also identify dups with items in DONE queue
   version within the same distribution. You have to modify the source
   version and re-upload.
 
-Check forbidden approval of not selected Section:
+The ubuntu policy allows unofficial sections to live sometime in the
+repository, until someone find time to override them. It's better than
+dropping binary packages that might have consumed a lot of resources
+for such a unimportant issue.
 
-Retrieve pmount:
+Retrieve the 'pmount' NEW queue entry and override it with a
+just-created, thus unofficial, section named 'boing'.
 
   >>> item = breezy_autotest.getQueueItems(
   ...     PackageUploadStatus.NEW, name='pmount')[0]
 
-Override the pmount section to fresh created 'heaven' section.
-
-XXX cprov 20060118: remove proxy magic is required for BPR instances.
-
   >>> pmount_binary = item.builds[0].build.binarypackages[0]
-  >>> naked_bin = removeSecurityProxy(pmount_binary)
-  >>> naked_bin.section = getUtility(ISectionSet).new('heaven')
+  >>> removeSecurityProxy(
+  ...     pmount_binary).section = getUtility(ISectionSet).new('boing')
 
-Try to perform single acceptance of pmount with not allowed section:
+The 'pmount' entry for the unofficial section 'boing', can be
+normally accepted.
 
-  >>> try:
-  ...     item.setAccepted()
-  ... except QueueInconsistentStateError, e:
-  ...     print item.displayname, e
-  ... else:
-  ...     print item.displayname, 'ACCEPTED'
-  pmount Section "heaven" is not allowed in breezy-autotest
+  >>> item.setAccepted()
+  >>> print item.status.name
+  ACCEPTED
+
+We will reject the just-accepted entry so it does not mess with the
+other tests.
+
+  >>> item.setRejected()
 
 Check how the security adapters work for PackageUpload:
 

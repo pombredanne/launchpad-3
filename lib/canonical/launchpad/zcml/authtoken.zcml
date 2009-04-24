@@ -21,6 +21,7 @@
         for="canonical.launchpad.interfaces.IAuthToken"
         path_expression="token"
         parent_utility="canonical.launchpad.interfaces.IAuthTokenSet"
+        rootsite="openid"
         />
 
     <browser:page

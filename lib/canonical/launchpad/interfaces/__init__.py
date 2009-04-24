@@ -133,7 +133,7 @@ from canonical.launchpad.interfaces.projectbounty import *
 from canonical.launchpad.interfaces.publishedpackage import *
 from canonical.launchpad.interfaces.publishing import *
 from canonical.launchpad.interfaces.queue import *
-from canonical.launchpad.interfaces.revision import *
+from lp.code.interfaces.revision import *
 from canonical.launchpad.interfaces.rosettastats import *
 from lp.registry.interfaces.salesforce import *
 from canonical.launchpad.interfaces.schema import *
@@ -176,6 +176,7 @@ from canonical.launchpad.interfaces.vpotexport import *
 from lp.registry.interfaces.wikiname import *
 from canonical.launchpad.interfaces.poexportrequest import *
 from canonical.launchpad.interfaces.packagediff import *
+from canonical.launchpad.interfaces.packageset import *
 
 
 from lp.answers.interfaces.answercontact import *

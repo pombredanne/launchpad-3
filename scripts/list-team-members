@@ -12,13 +12,14 @@ from canonical.config import config
 
 from canonical.launchpad.scripts import execute_zcml_for_scripts
 from canonical.launchpad.scripts.base import LaunchpadScript
-from canonical.launchpad.scripts.listteammembers import process_team, NoSuchTeamError
+from lp.registry.scripts.listteammembers import process_team, NoSuchTeamError
 
 
 class ListTeamMembersScript(LaunchpadScript):
 
     description = "Create a list of members of a team."
-    usage = "usage: %s [-e|--email-only|-f|--full-details] team-name [team-name-2] .. [team-name-n]" % sys.argv[0]
+    usage = "usage: %s [-e|--email-only|-f|--full-details|-s|--ssh-keys] " \
+        "team-name [team-name-2] .. [team-name-n]" % sys.argv[0]
     loglevel = logging.INFO
 
     def add_my_options(self):
@@ -29,6 +30,9 @@ class ListTeamMembersScript(LaunchpadScript):
         self.parser.add_option(
             '-f', '--full-details', action='store_const', const='full',
             help='Print full details', dest='format')
+        self.parser.add_option(
+            '-s', '--ssh-keys', action='store_const', const='sshkeys',
+            help='Print sshkeys', dest='format')
 
     def main(self):
 

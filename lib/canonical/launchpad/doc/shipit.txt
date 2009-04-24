@@ -37,7 +37,15 @@ Let's create a new request for foo.bar@canonical.com.
     ...                          addressline1, phone, reason=reason)
     >>> quantities = {UBUNTU: {X86: 30, AMD64: 5, PPC: 2}}
     >>> request.setQuantities(quantities, distroseries=feisty)
+    >>> verifyObject(IShippingRequest, request)
+    True
 
+    >>> request.getTotalCDs()
+    37
+    >>> from canonical.launchpad.interfaces.shipit import IShipitAccount
+    >>> IShipitAccount(foobar.account).currentShipItRequest() == request
+    True
+  
 Note that we store a normalized version of the request's address, so that we
 can identify people making requests from multiple different accounts.
 
@@ -56,24 +64,6 @@ for that specific flavour.
     >>> request.containsCustomQuantitiesOfFlavour(ShipItFlavour.UBUNTU)
     True
 
-We're not allowed to add a second request for the same recipient, while the
-existing one is not yet exported.
-
-    >>> request = requestset.new(foobar.account, name, country, city,
-    ...                          addressline1, phone, reason=reason)
-    Traceback (most recent call last):
-    ...
-    AssertionError
- 
-    >>> verifyObject(IShippingRequest, request)
-    True
- 
-    >>> request.getTotalCDs()
-    37
-    >>> from canonical.launchpad.interfaces.shipit import IShipitAccount
-    >>> IShipitAccount(foobar.account).currentShipItRequest() == request
-    True
-  
 If a request is not approved yet, it'll have its status == PENDING. If it
 was approved, then status will be APPROVED.
 
@@ -157,17 +147,63 @@ Instead, it'll be part of the past requests of that recipient.
     True
 
 
+Admin requests
+--------------
+
+We have two kinds of requests: regular and admin ones. Requests were the 
+recipient is a member of the shipit-admins team will be considered admin
+requests, while all others will be considered regular ones.
+
+    >>> shipit_admins = getUtility(IPersonSet).getByName('shipit-admins')
+    >>> marilize = getUtility(IPersonSet).getByName('marilize')
+    >>> marilize.inTeam(shipit_admins)
+    True
+    >>> request = requestset.new(marilize.account, name, country, city,
+    ...                          addressline1, phone, reason=reason)
+    >>> request.is_admin_request
+    True
+
+    >>> foobar.inTeam(shipit_admins)
+    False
+    >>> request2 = requestset.new(foobar.account, name, country, city,
+    ...                          addressline1, phone, reason=reason)
+    >>> request2.is_admin_request
+    False
+
+When the recipient is a shipit admin, they can have multiple unshipped
+requests.
+
+    >>> request3 = requestset.new(marilize.account, name, country, city,
+    ...                          addressline1, phone, reason=reason)
+    >>> request.is_admin_request
+    True
+
+Non-shipit-admins can only have one unshipped request, though.
+
+    >>> request4 = requestset.new(foobar.account, name, country, city,
+    ...                          addressline1, phone, reason=reason)
+    Traceback (most recent call last):
+    ...
+    AssertionError...
+
+    # Cancel the requests we created above, to not cause trouble to our
+    # beloved tests below that heavily rely on sampledata.
+    >>> request.cancel(marilize.account)
+    >>> request3.cancel(marilize.account)
+    >>> request2.cancel(foobar.account)
+ 
+
 Searching for requests
 ----------------------
 
-We have 18 requests, and two of them are cancelled
+We have 21 requests, and 5 of them are cancelled
 
     >>> requestset.search().count()
-    18
+    21
 
     >>> cancelled = ShippingRequestStatus.CANCELLED
     >>> requestset.search(status=cancelled).count()
-    2
+    5
 
 Two of them are pending review, because their recipients asked for extra CDs.
 

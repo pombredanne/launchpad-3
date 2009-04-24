@@ -37,9 +37,10 @@ from canonical.launchpad.database.sourcepackagerelease import (
     SourcePackageRelease)
 from canonical.launchpad.ftests import import_public_test_keys
 from canonical.launchpad.interfaces import (
-    ArchivePurpose, DistroSeriesStatus, IArchiveSet, IDistributionSet,
-    ILibraryFileAliasSet, PackagePublishingPocket, PackagePublishingStatus,
-    PackageUploadStatus, QueueInconsistentStateError)
+    ArchivePurpose, DistroSeriesStatus, IArchiveSet, IArchivePermissionSet,
+    IDistributionSet, ILibraryFileAliasSet, IPackagesetSet,
+    PackagePublishingPocket, PackagePublishingStatus, PackageUploadStatus,
+    QueueInconsistentStateError)
 from canonical.launchpad.interfaces.archivepermission import (
     ArchivePermissionType)
 from canonical.launchpad.interfaces.component import IComponentSet
@@ -849,24 +850,29 @@ class TestUploadProcessor(TestUploadProcessorBase):
         self.layer.txn.commit()
         self._uploadPartnerToNonReleasePocketAndCheckFail()
 
-    def testUploadWithBadSectionIsOverriddenToMisc(self):
-        """Uploads with a bad section are overridden to the 'misc' section."""
+    def testUploadWithUnknownSectionIsRejected(self):
         uploadprocessor = self.setupBreezyAndGetUploadProcessor()
-
         upload_dir = self.queueUpload("bar_1.0-1_bad_section")
         self.processUpload(uploadprocessor, upload_dir)
+        self.assertEqual(
+            uploadprocessor.last_processed_upload.rejection_message,
+            "bar_1.0-1.dsc: Unknown section 'badsection'\n"
+            "bar_1.0.orig.tar.gz: Unknown section 'badsection'\n"
+            "bar_1.0-1.diff.gz: Unknown section 'badsection'\n"
+            "Further error processing not possible because of a "
+            "critical previous error.")
 
-        # Check it is accepted and the section is converted to misc.
-        contents = [
-            "Subject: [ubuntu/breezy] bar 1.0-1 (New)"
-            ]
-        self.assertEmail(contents=contents, recipients=[])
-
-        queue_items = self.breezy.getQueueItems(
-            status=PackageUploadStatus.NEW, name="bar",
-            version="1.0-1", exact_match=True)
-        [queue_item] = queue_items
-        self.assertEqual(queue_item.sourcepackagerelease.section.name, "misc")
+    def testUploadWithUnknownComponentIsRejected(self):
+        uploadprocessor = self.setupBreezyAndGetUploadProcessor()
+        upload_dir = self.queueUpload("bar_1.0-1_contrib_component")
+        self.processUpload(uploadprocessor, upload_dir)
+        self.assertEqual(
+            uploadprocessor.last_processed_upload.rejection_message,
+            "bar_1.0-1.dsc: Unknown component 'contrib'\n"
+            "bar_1.0.orig.tar.gz: Unknown component 'contrib'\n"
+            "bar_1.0-1.diff.gz: Unknown component 'contrib'\n"
+            "Further error processing not possible because of a "
+            "critical previous error.")
 
     def testSourceUploadToBuilddPath(self):
         """Source uploads to buildd upload paths are not permitted."""
@@ -898,7 +904,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
                                expected_component_name):
         """Helper function to check overridden component names.
 
-        Upload a 'bar" package from upload_dir_name, then
+        Upload a 'bar' package from upload_dir_name, then
         inspect the package 'bar' in the NEW queue and ensure its
         overridden component matches expected_component_name.
 
@@ -1143,6 +1149,69 @@ class TestUploadProcessor(TestUploadProcessorBase):
         self.assertEqual(
             status, PackageUploadStatus.DONE,
             "Expected NEW status, got %s" % status.value)
+
+    def testPackagesetUploadPermissions(self):
+        """Test package set based upload permissions."""
+        self.setupBreezy()
+        # Remove our favourite uploader from the team that has
+        # permissions to all components at upload time.
+        uploader = getUtility(IPersonSet).getByName('name16')
+        distro_team = getUtility(IPersonSet).getByName('ubuntu-team')
+        uploader.leave(distro_team)
+
+        # Now give name16 specific permissions to "restricted" only.
+        restricted = getUtility(IComponentSet)["restricted"]
+        ArchivePermission(
+            archive=self.ubuntu.main_archive,
+            permission=ArchivePermissionType.UPLOAD, person=uploader,
+            component=restricted)
+
+        uploadprocessor = UploadProcessor(
+            self.options, self.layer.txn, self.log)
+
+        # Upload the first version and accept it to make it known in
+        # Ubuntu.  The uploader has rights to upload NEW packages to
+        # components that he does not have direct rights to.
+        upload_dir = self.queueUpload("bar_1.0-1")
+        self.processUpload(uploadprocessor, upload_dir)
+        bar_source_pub = self._publishPackage('bar', '1.0-1')
+        # Clear out emails generated during upload.
+        ignore = pop_notifications()
+
+        # Now upload the next version.
+        upload_dir = self.queueUpload("bar_1.0-2")
+        self.processUpload(uploadprocessor, upload_dir)
+
+        # Make sure it failed.
+        self.assertEqual(
+            uploadprocessor.last_processed_upload.rejection_message,
+            u"Signer is not permitted to upload to the component 'universe'"
+                " of file 'bar_1.0-2.dsc'.")
+
+        # Now put in place a package set, add 'bar' to it and define a
+        # permission for the former.
+        bar_package = getUtility(ISourcePackageNameSet).queryByName("bar")
+        ap_set = getUtility(IArchivePermissionSet)
+        ps_set = getUtility(IPackagesetSet)
+        foo_ps = ps_set.new(
+            u'foo-pkg-set', u'Packages that require special care.', uploader)
+        self.layer.txn.commit()
+
+        foo_ps.add((bar_package,))
+        ap_set.newPackagesetUploader(uploader, foo_ps)
+
+        # The uploader now does have a package set based upload permissions
+        # to 'bar'.
+        self.assertTrue(ap_set.isSourceUploadAllowed('bar', uploader))
+
+        # Upload the package again.
+        self.processUpload(uploadprocessor, upload_dir)
+
+        # Check that it worked,
+        status = uploadprocessor.last_processed_upload.queue_root.status
+        self.assertEqual(
+            status, PackageUploadStatus.DONE,
+            "Expected DONE status, got %s" % status.value)
 
 
 def test_suite():

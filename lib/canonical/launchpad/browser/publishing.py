@@ -29,8 +29,8 @@ from canonical.launchpad.webapp.publisher import LaunchpadView
 
 from lazr.delegates import delegates
 
-class SourcePublicationURL:
-    """Dynamic URL declaration for `ISourcePackagePublishingHistory`"""
+class PublicationURLBase:
+    """Dynamic URL declaration for `I*PackagePublishingHistory`"""
     implements(ICanonicalUrlData)
     rootsite = None
 
@@ -41,9 +41,19 @@ class SourcePublicationURL:
     def inside(self):
         return self.context.archive
 
+
+class SourcePublicationURL(PublicationURLBase):
+    """Dynamic URL declaration for `ISourcePackagePublishingHistory`"""
     @property
     def path(self):
         return u"+sourcepub/%s" % self.context.id
+
+
+class BinaryPublicationURL(PublicationURLBase):
+    """Dynamic URL declaration for `IBinaryPackagePublishingHistory`"""
+    @property
+    def path(self):
+        return u"+binarypub/%s" % self.context.id
 
 
 class ProxiedPackageDiff:
