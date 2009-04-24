@@ -1,4 +1,4 @@
--- Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+-- Copyright 2004-2009 Canonical Ltd.  All rights reserved.
 
 CREATE OR REPLACE FUNCTION assert_patch_applied(
     major integer, minor integer, patch integer) RETURNS boolean
