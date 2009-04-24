@@ -74,7 +74,7 @@
 
   <subscriber
     for="canonical.launchpad.interfaces.archivesubscriber.IArchiveSubscriber
-      lazr.lifecycle.interfaces.IObjectCreatedEvent"
+         lazr.lifecycle.interfaces.IObjectCreatedEvent"
     handler="canonical.launchpad.mailnotification.notify_new_ppa_subscription" />
 
 </configure>

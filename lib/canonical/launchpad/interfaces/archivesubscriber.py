@@ -98,11 +98,12 @@ class IArchiveSubscriberView(Interface):
         required=False)
 
     def getNonActiveSubscribers():
-        """Return all individuals from this subscription without tokens.
+        """Return the people included in this subscription.
 
-        This method returns all the individuals who are included in this
-        subscription who do not yet have an active token for the
-        corresponding archive.
+        :return: a storm `ResultSet` of all the people who are included in
+            this subscription who do not yet have an active token for the
+            corresponding archive.
+        :rtype: `storm.store.ResultSet`
         """
 
 class IArchiveSubscriberEdit(Interface):

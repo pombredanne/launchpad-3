@@ -10,6 +10,7 @@ __all__ = ['Archive', 'ArchiveSet']
 import os
 import re
 
+from lazr.lifecycle.event import ObjectCreatedEvent
 from sqlobject import  (
     BoolCol, ForeignKey, IntCol, StringCol)
 from sqlobject.sqlbuilder import SQLConstant
@@ -20,8 +21,6 @@ from zope.component import getUtility
 from zope.event import notify
 from zope.interface import alsoProvides, implements
 from zope.security.interfaces import Unauthorized
-
-from lazr.lifecycle.event import ObjectCreatedEvent
 
 from canonical.archivepublisher.config import Config as PubConfig
 from canonical.archiveuploader.utils import re_issource, re_isadeb
@@ -1134,6 +1133,8 @@ class Archive(SQLBase):
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         store.add(subscription)
 
+        # Notify any listeners that a new subscription was created.
+        # This is used currently for sending email notifications.
         notify(ObjectCreatedEvent(subscription))
 
         return subscription

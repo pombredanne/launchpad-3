@@ -11,12 +11,26 @@ See also archiveauthtoken.txt.
 First, create a person 'joesmith' and a team 'team_cprov':
 
     >>> login('foo.bar@canonical.com')
-    >>> joesmith = factory.makePerson(name="joesmith", displayname="Joe Smith",
-    ...     password="test", email="joe@example.com")
+    >>> joesmith = factory.makePerson(name="joesmith",
+    ...                               displayname="Joe Smith",
+    ...                               password="test",
+    ...                               email="joe@example.com")
+    >>> johnsmith = factory.makePerson(name="johnsmith",
+    ...                               displayname="John Smith",
+    ...                               password="test",
+    ...                               email="john@example.com")
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> cprov = getUtility(IPersonSet).getByName("cprov")
     >>> team_cprov = factory.makeTeam(cprov, "Team Cprov")
+    >>> johnsmith.join(team_cprov)
     >>> logout()
+
+Reset the test emails (after John joined team cprov):
+
+    >>> from canonical.launchpad.tests.mail_helpers import print_emails
+    >>> print_emails()
+    From: Team Cprov <noreply@launchpad.net>
+    ...
 
 == Creating new subscriptions ==
 
@@ -73,6 +87,30 @@ Subscriptions also contain some date information:
     >>> print new_sub.date_expires
     None
 
+An email is sent to the subscribed person when the ArchiveSubscriber
+entry is created:
+
+    >>> print_emails()
+    From: Celso Providelo <celso.providelo@canonical.com>
+    To: joe@example.com
+    Subject: New PPA subscription for PPA for Celso Providelo
+    Hello Joe Smith,
+    <BLANKLINE>
+    You are receiving this message because Celso Providelo subscribed you to
+    the private PPA 'PPA for Celso Providelo'. This subscription enables you
+    to download software from this private PPA.
+    <BLANKLINE>
+    To activate your subscription and start downloading the software please
+    visit:
+    <http://launchpad.dev/~joesmith/+archivesubscriptions>
+    <BLANKLINE>
+    If you do not wish to download software from this PPA you can safely
+    ignore this message.
+    <BLANKLINE>
+    Regards,
+    The Launchpad team
+    ----------------------------------------
+
 Add another subscription for the test user, this time to sabdfl's ppa:
 
     >>> login("mark@hbd.com")
@@ -80,10 +118,21 @@ Add another subscription for the test user, this time to sabdfl's ppa:
     >>> new_sub_to_sabdfl_ppa = sabdfl.archive.newSubscription(
     ...     joesmith, sabdfl, description=u"subscription for joesmith")
 
+    >>> print_emails()
+    From: Mark Shuttleworth <mark@hbd.com>
+    To: joe@example.com
+    ...
+
 And also a subscription for a Team:
 
     >>> new_team_sub_to_sabdfl_ppa = sabdfl.archive.newSubscription(
     ...     team_cprov, sabdfl, description=u"Access for cprov team")
+
+    >>> print_emails()
+    From: Mark Shuttleworth <mark@hbd.com>
+    To: celso.providelo@canonical.com
+    ...
+
 
 Explicitly set the date_created for testing purposes:
 
@@ -287,7 +336,7 @@ We can do this as an admin too:
 
 == Finding all non-active subscribers ==
 
-A method getNonActiveSubscribers() to facilitate contacting all the people
+The method getNonActiveSubscribers() facilitates contacting all the people
 included in this subscription who do not yet have an active token for the
 corresponding archive.
 
@@ -308,6 +357,7 @@ currently include Joe:
     ...     print person.displayname
     Celso Providelo
     Joe Smith
+    John Smith
 
 But if we create an auth token for joe to the archive (this could be via
 a separate subscription), then he will no longer be listed as a non-active
@@ -317,5 +367,31 @@ subscriber for this subscription:
     >>> for person in subscription.getNonActiveSubscribers():
     ...     print person.displayname
     Celso Providelo
+    John Smith
 
+If the subscription is just for an individual, getNonActiveSubscribers()
+will return a list with the single subscriber as expected:
 
+    >>> login("mark@hbd.com")
+    >>> harrysmith = factory.makePerson(name="harrysmith",
+    ...                                 displayname="Harry Smith",
+    ...                                 password="test",
+    ...                                 email="harry@example.com")
+    >>> subscription = sabdfl.archive.newSubscription(
+    ...     harrysmith, sabdfl, description=u"subscription for joesmith")
+    >>> for person in subscription.getNonActiveSubscribers():
+    ...     print person.displayname
+    Harry Smith
+
+If the subscription is for a group which itself contains a group, all
+indirect members that are not themselves groups are included:
+
+    >>> launchpad_devs = getUtility(IPersonSet).getByName('launchpad')
+    >>> launchpad_devs.addMember(team_cprov, sabdfl, force_team_add=True)
+    >>> subscription = sabdfl.archive.newSubscription(
+    ...     launchpad_devs, sabdfl, description=u"LP team too")
+    >>> for person in subscription.getNonActiveSubscribers():
+    ...     print person.displayname
+    Celso Providelo
+    John Smith
+    Foo Bar

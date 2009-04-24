@@ -1129,7 +1129,7 @@ def notify_new_ppa_subscription(subscription, event):
 
     registrant_name = subscription.registrant.displayname
     ppa_name = subscription.archive.displayname
-    subject = 'New PPA subscription for %s'% ppa_name
+    subject = 'New PPA subscription for ' + ppa_name
 
     template = get_email_template('ppa-subscription-new.txt')
 
@@ -1146,14 +1146,13 @@ def notify_new_ppa_subscription(subscription, event):
             'recipient_name': person.displayname,
             'registrant_name': registrant_name,
             'ppa_name': ppa_name,
-            'recipient_subscriptions_url': recipient_subscriptions_url
+            'recipient_subscriptions_url': recipient_subscriptions_url,
             }
         body = MailWrapper(72).format(template % replacements,
                                       force_wrap=True)
 
         simple_sendmail_from_person(
             subscription.registrant, to_address, subject, body)
-
 
 def encode(value):
     """Encode string for transport in a mail header.

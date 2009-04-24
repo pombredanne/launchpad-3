@@ -71,22 +71,35 @@ class ArchiveSubscriber(Storm):
 
     def getNonActiveSubscribers(self):
         """See `IArchiveSubscriber`."""
+        # Imported here because of circular imports.
+        from lp.registry.model.person import Person
+
         store = Store.of(self)
-        from lp.registry.model.person import Person # TODO: move
-        all_subscribers = store.find(Person,
-            TeamParticipation.teamID == self.subscriber_id,
-            TeamParticipation.personID == Person.id,
-            TeamParticipation.personID != self.subscriber_id)
+        if self.subscriber.is_team:
 
-        active_subscribers = store.find(Person,
-            Person.id == ArchiveAuthToken.person_id,
-            ArchiveAuthToken.archive_id == self.archive_id,
-            ArchiveAuthToken.date_deactivated == None)
+            # We want to get all participants who are themselves
+            # individuals, not teams:
+            all_subscribers = store.find(Person,
+                TeamParticipation.teamID == self.subscriber_id,
+                TeamParticipation.personID == Person.id,
+                Person.teamowner == None)
 
-        non_active_subscribers = all_subscribers.difference(
-            active_subscribers)
-        non_active_subscribers.order_by(Person.name)
-        return non_active_subscribers
+            # Then we get all the people who already have active
+            # tokens for this archive (for example, through separate
+            # subscriptions).
+            active_subscribers = store.find(Person,
+                Person.id == ArchiveAuthToken.person_id,
+                ArchiveAuthToken.archive_id == self.archive_id,
+                ArchiveAuthToken.date_deactivated == None)
+
+            # And return just the non active subscribers:
+            non_active_subscribers = all_subscribers.difference(
+                active_subscribers)
+            non_active_subscribers.order_by(Person.name)
+            return non_active_subscribers
+        else:
+            # Just to ensure consistency of the return value:
+            return store.find(Person, Person.id == self.subscriber_id)
 
 
 class ArchiveSubscriberSet:
