@@ -511,8 +511,8 @@ distribution_series = ContextTitle("%s version history")
 
 distribution_translations = ContextDisplayName('Translating %s')
 
-distribution_translators = ContextTitle(
-    smartquote("Appoint %s's translation group"))
+distribution_translation_settings = ContextTitle(
+    smartquote("Change %s's translation settings"))
 
 distribution_search = ContextDisplayName(smartquote("Search %s's packages"))
 
