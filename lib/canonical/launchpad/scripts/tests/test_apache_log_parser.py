@@ -16,6 +16,7 @@ from canonical.launchpad.scripts.librarian_apache_log_parser import (
     create_or_update_parsedlog_entry, DBUSER,
     get_host_date_status_and_request, get_day, get_files_to_parse,
     get_method_and_file_id, NotALibraryFileAliasRequest, parse_file)
+from canonical.launchpad.scripts.logger import BufferLogger
 from canonical.launchpad.ftests import ANONYMOUS, login
 from canonical.launchpad.testing import TestCase
 from canonical.launchpad.webapp.interfaces import (
@@ -112,6 +113,10 @@ class TestLogFileParsing(TestCase):
         '"https://launchpad.net/~ubuntulite/+archive" "Mozilla/5.0 (X11; '
         'U; Linux i686; en-US; rv:1.9b5) Gecko/2008041514 Firefox/3.0b5"')
 
+    def setUp(self):
+        TestCase.setUp(self)
+        self.logger = BufferLogger()
+
     def _getLastLineStart(self, fd):
         """Return the position (in bytes) where the last line of the given
         file starts.
@@ -132,7 +137,9 @@ class TestLogFileParsing(TestCase):
         # it doesn't show up in the dict returned.
         fd = open(os.path.join(
             here, 'apache-log-files', 'launchpadlibrarian.net.access-log'))
-        downloads, parsed_bytes = parse_file(fd, start_position=0)
+        downloads, parsed_bytes = parse_file(
+            fd, start_position=0, logger=self.logger)
+        self.assertEqual(self.logger.buffer.getvalue(), '')
         date = datetime(2008, 6, 13)
         self.assertContentEqual(
             downloads.items(),
@@ -152,18 +159,32 @@ class TestLogFileParsing(TestCase):
         fd = open(os.path.join(
             here, 'apache-log-files', 'launchpadlibrarian.net.access-log'))
         downloads, parsed_bytes = parse_file(
-            fd, start_position=self._getLastLineStart(fd))
+            fd, start_position=self._getLastLineStart(fd), logger=self.logger)
+        self.assertEqual(self.logger.buffer.getvalue(), '')
         self.assertEqual(parsed_bytes, fd.tell())
 
         self.assertContentEqual(
             downloads.items(),
             [('15018215', {datetime(2008, 6, 13): {'US': 1}})])
 
+    def test_unexpected_error_while_parsing(self):
+        # When there's an unexpected error, we log it and return as if we had
+        # parsed up to the line before the one where the failure occurred.
+        # Here we force an unexpected error on the first line.
+        fd = StringIO('Not a log')
+        downloads, parsed_bytes = parse_file(
+            fd, start_position=0, logger=self.logger)
+        self.assertIn('Error', self.logger.buffer.getvalue())
+        self.assertEqual(downloads, {})
+        self.assertEqual(parsed_bytes, 0)
+
     def _assertResponseWithGivenStatusIsIgnored(self, status):
         """Assert that responses with the given status are ignored."""
         fd = StringIO(
             self.sample_line % dict(status=status, method='GET'))
-        downloads, parsed_bytes = parse_file(fd, start_position=0)
+        downloads, parsed_bytes = parse_file(
+            fd, start_position=0, logger=self.logger)
+        self.assertEqual(self.logger.buffer.getvalue(), '')
         self.assertEqual(downloads, {})
         self.assertEqual(parsed_bytes, fd.tell())
 
@@ -183,7 +204,9 @@ class TestLogFileParsing(TestCase):
         """Assert that requests with the given method are ignored."""
         fd = StringIO(
             self.sample_line % dict(status='200', method=method))
-        downloads, parsed_bytes = parse_file(fd, start_position=0)
+        downloads, parsed_bytes = parse_file(
+            fd, start_position=0, logger=self.logger)
+        self.assertEqual(self.logger.buffer.getvalue(), '')
         self.assertEqual(downloads, {})
         self.assertEqual(parsed_bytes, fd.tell())
 
@@ -199,7 +222,9 @@ class TestLogFileParsing(TestCase):
         fd = StringIO(
             '69.233.136.42 - - [13/Jun/2008:14:55:22 +0100] "GET / HTTP/1.1" '
             '200 2261 "https://launchpad.net/~ubuntulite/+archive" "Mozilla"')
-        downloads, parsed_bytes = parse_file(fd, start_position=0)
+        downloads, parsed_bytes = parse_file(
+            fd, start_position=0, logger=self.logger)
+        self.assertEqual(self.logger.buffer.getvalue(), '')
         self.assertEqual(downloads, {})
         self.assertEqual(parsed_bytes, fd.tell())
 

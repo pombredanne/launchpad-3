@@ -32,7 +32,7 @@ class ParseLibrarianApacheLogs(LaunchpadCronScript):
         libraryfilealias_set = getUtility(ILibraryFileAliasSet)
         country_set = getUtility(ICountrySet)
         for fd, position in files_to_parse.items():
-            downloads, parsed_bytes = parse_file(fd, position)
+            downloads, parsed_bytes = parse_file(fd, position, self.logger)
             for file_id, daily_downloads in downloads.items():
                 try:
                     lfa = libraryfilealias_set[file_id]
