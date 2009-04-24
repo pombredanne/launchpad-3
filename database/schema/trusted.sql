@@ -1095,22 +1095,29 @@ CREATE OR REPLACE FUNCTION update_branch_name_cache() RETURNS TRIGGER
 LANGUAGE plpgsql AS
 $$
 DECLARE
-    branch_info RECORD;
+    needs_update boolean := FALSE;
 BEGIN
-    IF (TG_OP = 'INSERT'
-        OR NEW.owner_name IS NULL
-        OR NEW.unique_name IS NULL
-        OR OLD.owner_name <> NEW.owner_name
-        OR OLD.unique_name <> NEW.unique_name
-        OR (NEW.target_suffix IS NULL <> OLD.target_suffix IS NULL)
-        OR COALESCE(OLD.target_suffix, '') <> COALESCE(NEW.target_suffix, '')
-        OR OLD.name <> NEW.name
-        OR OLD.owner <> NEW.owner
-        OR COALESCE(OLD.product, -1) <> COALESCE(NEW.product, -1)
-        OR COALESCE(OLD.distroseries, -1) <> COALESCE(NEW.distroseries, -1)
-        OR COALESCE(OLD.sourcepackagename, -1)
-            <> COALESCE(NEW.sourcepackagename, -1)) THEN
-       
+    IF TG_OP = 'INSERT' THEN
+        needs_update := TRUE;
+    ELSE 
+        IF (NEW.owner_name IS NULL
+            OR NEW.unique_name IS NULL
+            OR OLD.owner_name <> NEW.owner_name
+            OR OLD.unique_name <> NEW.unique_name
+            OR (NEW.target_suffix IS NULL <> OLD.target_suffix IS NULL)
+            OR COALESCE(OLD.target_suffix, '')
+                <> COALESCE(NEW.target_suffix, '')
+            OR OLD.name <> NEW.name
+            OR OLD.owner <> NEW.owner
+            OR COALESCE(OLD.product, -1) <> COALESCE(NEW.product, -1)
+            OR COALESCE(OLD.distroseries, -1) <> COALESCE(NEW.distroseries, -1)
+            OR COALESCE(OLD.sourcepackagename, -1)
+                <> COALESCE(NEW.sourcepackagename, -1)) THEN
+            needs_update := TRUE;
+        END IF;
+    END IF;
+
+    IF needs_update THEN   
         SELECT
             Person.name AS owner_name,
             COALESCE(Product.name, SPN.name) AS target_suffix,
@@ -1129,6 +1136,7 @@ BEGIN
             ON SPN.id = NEW.sourcepackagename
         WHERE Person.id = NEW.owner;
     END IF;
+
     RETURN NEW;
 END;
 $$;
