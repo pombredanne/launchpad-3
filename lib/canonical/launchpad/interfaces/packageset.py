@@ -17,33 +17,29 @@ from canonical.launchpad import _
 from canonical.launchpad.interfaces.launchpad import IHasOwner
 from lp.registry.interfaces.person import IPerson
 from canonical.launchpad.validators.name import name_validator
-from lazr.restful.declarations import (
-    export_as_webservice_entry, exported, export_read_operation,
-    export_write_operation, operation_parameters)
 from lazr.restful.fields import Reference
 
 
 class IPackagesetViewOnly(IHasOwner):
     """A read-only interface for package sets."""
-    export_as_webservice_entry()
 
     id = Int(title=_('ID'), required=True, readonly=True)
 
-    date_created = exported(Datetime(
+    date_created = Datetime(
         title=_("Date Created"), required=True, readonly=True,
-        description=_("The creation date/time for the package set at hand.")))
+        description=_("The creation date/time for the package set at hand."))
 
-    owner = exported(Reference(
+    owner = Reference(
         IPerson, title=_("Person"), required=True, readonly=True,
-        description=_("The person who owns the package set at hand.")))
+        description=_("The person who owns the package set at hand."))
 
-    name = exported(TextLine(
+    name = TextLine(
         title=_('Valid package set name'),
-        required=True, constraint=name_validator))
+        required=True, constraint=name_validator)
 
-    description = exported(TextLine(
+    description = TextLine(
         title=_("Description"), required=True, readonly=True,
-        description=_("The description for the package set at hand.")))
+        description=_("The description for the package set at hand."))
 
     def sourcesIncluded(direct_inclusion=False):
         """Get all source names associated with this package set.
@@ -105,8 +101,6 @@ class IPackagesetViewOnly(IHasOwner):
             instances.
         """
 
-    @operation_parameters(direct_inclusion=Bool(required=False))
-    @export_read_operation()
     def getSourcesIncluded(direct_inclusion=False):
         """Get all source names associated with this package set.
 
@@ -125,10 +119,6 @@ class IPackagesetViewOnly(IHasOwner):
             names.
         """
 
-    @operation_parameters(
-        other_package_set=Reference(schema=Interface),
-        direct_inclusion=Bool(required=False))
-    @export_read_operation()
     def getSourcesSharedBy(other_package_set, direct_inclusion=False):
         """Get source package names also included by another package set.
 
@@ -147,10 +137,6 @@ class IPackagesetViewOnly(IHasOwner):
             names.
         """
 
-    @operation_parameters(
-        other_package_set=Reference(schema=Interface),
-        direct_inclusion=Bool(required=False))
-    @export_read_operation()
     def getSourcesNotSharedBy(other_package_set, direct_inclusion=False):
         """Get source package names not included by another package set.
 
@@ -172,7 +158,6 @@ class IPackagesetViewOnly(IHasOwner):
 
 class IPackagesetEdit(Interface):
     """A writeable interface for package sets."""
-    export_as_webservice_entry()
 
     def add(data):
         """Add source package names or other package sets to this one.
@@ -197,10 +182,6 @@ class IPackagesetEdit(Interface):
             instances
         """
 
-    @operation_parameters(
-        names=List(
-        title=_("A list of source package names."), value_type=TextLine()))
-    @export_write_operation()
     def addSources(names):
         """Add the named source packages to this package set.
 
@@ -218,10 +199,6 @@ class IPackagesetEdit(Interface):
         :param names: an iterable with string source package names
         """
 
-    @operation_parameters(
-        names=List(
-        title=_("A list of source package names."), value_type=TextLine()))
-    @export_write_operation()
     def removeSources(names):
         """Remove the named source packages from this package set.
 
@@ -235,10 +212,6 @@ class IPackagesetEdit(Interface):
         :param names: an iterable with string source package names
         """
 
-    @operation_parameters(
-        names=List(
-        title=_("A list of package set names."), value_type=TextLine()))
-    @export_write_operation()
     def addSubsets(names):
         """Add the named package sets as subsets to this package set.
 
@@ -256,10 +229,6 @@ class IPackagesetEdit(Interface):
         :param names: an iterable with string package set names
         """
 
-    @operation_parameters(
-        names=List(
-        title=_("A list of package set names."), value_type=TextLine()))
-    @export_write_operation()
     def removeSubsets(names):
         """Remove the named package subsets from this package set.
 
@@ -323,14 +292,3 @@ class IPackagesetSet(Interface):
             name cannot be found.
         :return: A (potentially empty) sequence of `IPackageset` instances.
         """
-
-# Fix circular dependency issues.
-from canonical.launchpad.components.apihelpers import (
-    patch_plain_parameter_type)
-
-patch_plain_parameter_type(
-    IPackagesetViewOnly, 'getSourcesSharedBy', 'other_package_set',
-    IPackageset)
-patch_plain_parameter_type(
-    IPackagesetViewOnly, 'getSourcesNotSharedBy', 'other_package_set',
-    IPackageset)
