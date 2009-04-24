@@ -17,7 +17,7 @@
 
     <div style="font-size: larger; background: #e0f0d0;
         padding: 0.3em; -moz-border-radius: 5px; -o-border-radius: 5px;
-       -webkit-border-radius: 5px;">
+       -webkit-border-radius: 5px; margin-bottom: 1em;">
       <strong>Requesting Ubuntu CDs</strong> is done at <a
       href="https://shipit.ubuntu.com/">shipit.ubuntu.com</a>
       <form style="display: inline; font-size: smaller"
@@ -35,13 +35,14 @@
 
       <metal:extra metal:fill-slot="extra_top">
         <tal:search tal:condition="view/search_results_count">
-          <div style="font-size: larger"><em>
+          <div style="font-size: larger">
           A search of existing registered projects found these
           possible matches.  Is project
-          <tal:displayname tal:replace="view/request/displayname" />
-          (<tal:name  tal:replace="view/request/name" />)
-          one of these?
-          </em></div>
+          <strong><tal:displayname tal:replace="view/request/displayname" />
+          (<tal:name  tal:replace="view/request/name" />)</strong>
+          one of these?  If so, follow the link to go to the project page and
+          abandon this registration.
+          </div>
 
           <table tal:define="results view/search_results"
                  id="search-results">
@@ -51,15 +52,15 @@
               </tr>
             </tbody>
           </table>
-          <h2>Haven't found your project?</h2>
+          <input id="reveal" type="button"
+                 value="No, I'd like to continue my project registration"/>
         </tal:search>
         <div style="font-size: larger"
              tal:condition="python: view.step_number == 2">
           Select the licenses for project
-          <tal:displayname tal:replace="view/request/displayname" />
-          (<tal:name  tal:replace="view/request/name" />)
-          and complete the registration.  If necessary, you may refine the
-          project's title and summary.
+          <strong><tal:displayname tal:replace="view/request/displayname" />
+          (<tal:name  tal:replace="view/request/name" />)</strong>
+          and complete the registration.
         </div>
       </metal:extra>
     </div>

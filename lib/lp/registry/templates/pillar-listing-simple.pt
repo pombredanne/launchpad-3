@@ -8,7 +8,7 @@
     <div tal:content="structure context/fmt:link" />
     <div>
       <tal:summary replace="context/summary/fmt:shorten/240" />
-    </div>
+    </div><br/>
   </td>
 </tr>
 </tal:root>
