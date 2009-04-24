@@ -5,8 +5,8 @@
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   tal:define="
     bug context/bug|context;
-    direct_subscriptions bug/getDirectSubscriptions;
-    from_dupes_subscriptions bug/getSubscriptionsFromDuplicates;
+    direct_subscriptions view/getSortedDirectSubscriptions;
+    from_dupes_subscriptions view/getSortedSubscriptionsFromDuplicates;
     also_notified_subscribers bug/getAlsoNotifiedSubscribers
   ">
   <div class="section" id="subscribers-direct">
@@ -21,16 +21,18 @@
 
             <a
                tal:condition="subscription/person/name|nothing"
+               style="clear: both; float: left;"
                tal:attributes="
                  href subscription/person/fmt:url;
                  title subscription/display_subscribed_by;
                "
             >
               <tal:block replace="structure subscription/person/image:icon" />
-              <tal:block replace="subscription/person/fmt:displayname" />
+              <tal:block replace="subscription/person/fmt:displayname/fmt:shorten/20" />
             </a>
             <a tal:condition="python: subscription.canBeUnsubscribedByUser(view.user)"
                href="+subscribe"
+               style="float: right"
                tal:attributes="title string:Unsubscribe ${subscription/person/fmt:displayname};
                                id string:unsubscribe-${subscription/person/name}">
               <img src="/@@/remove"

@@ -41,4 +41,4 @@ class IBugSubscription(Interface):
         "`subscribed_by` formatted for display.")
 
     def canBeUnsubscribedByUser(user):
-        """Can the user subscribe the subscriber form the bug?"""
+        """Can the user unsubscribe the subscriber form the bug?"""

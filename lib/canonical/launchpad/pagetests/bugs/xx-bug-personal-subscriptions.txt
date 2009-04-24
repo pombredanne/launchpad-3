@@ -47,8 +47,8 @@ in the context of the bug page.
   >>> browser.open(
   ...     'http://bugs.launchpad.dev/bugs/1/+bug-portlet-subscribers-content')
   >>> link = browser.getLink(id='unsubscribe-name16')
-  >>> link.mech_link.url # Use mech_link to get the relative URL.
-  '+subscribe'
+  >>> print link.mech_link.url
+  +subscribe
 
   >>> browser.open('http://bugs.launchpad.dev/firefox/+bug/1/')
   >>> browser.getLink('Unsubscribe').click()
@@ -157,6 +157,19 @@ Foo Bar wasn't subscribed to the bug.
   Sample Person (Subscribed by Launchpad Janitor)
   Steve Alexander (Subscribed by Launchpad Janitor)
 
+Subscribers which the current user may unsubscribe (the current user and teams
+they are a member of) display first in the list, before all other subscriptions.
+
+  >>> browser.open('http://bugs.launchpad.dev/firefox/+bug/1/+addsubscriber')
+  >>> browser.getControl('Person').value = 'testing-spanish-team'
+  >>> browser.getControl('Add').click()
+  >>> browser.open(
+  ...     'http://bugs.launchpad.dev/bugs/1/+bug-portlet-subscribers-content')
+  >>> print_direct_subscribers(browser.contents)
+  testing Spanish team (Subscribed by Foo Bar)
+                       (Unsubscribe testing Spanish team)
+  Sample Person (Subscribed by Launchpad Janitor)
+  Steve Alexander (Subscribed by Launchpad Janitor)
 
 == Subscriptions and Duplicate Bugs ==
 
@@ -191,8 +204,8 @@ is presented with the Unsubscribe link instead.
 
   >>> print_indirect_subscribers(stevea_browser.contents)
   From duplicates:
-  Steve Alexander (Subscribed by Launchpad Janitor) (Unsubscribe
-                                                     Steve Alexander)
+  Steve Alexander (Subscribed by Launchpad Janitor)
+                  (Unsubscribe Steve Alexander)
   Also notified:
   Mark Shuttleworth
 
@@ -248,6 +261,7 @@ previous example.)
   From duplicates:
   Sample Person (Subscribed ...)
   Steve Alexander (Subscribed ...) (Unsubscribe Steve Alexander)
+  testing Spanish team (Subscribed by Foo Bar)
   Also notified:
   Mark Shuttleworth
 
@@ -319,9 +333,10 @@ up in the indirect subscriptions.
   Mark Shuttleworth
 
 
-== Displaying subscribers (bug #273886) ==
+== Displaying subscribers ==
 
-The display names of subscribers are escaped in the subscribers list.
+The display names of subscribers are escaped in the subscribers list, they are
+also trimmed to 20 characters, so that they fit alongside the unsubscribe icon.
 
   >>> login(ANONYMOUS)
   >>> abuser = factory.makePerson(
@@ -338,4 +353,4 @@ The display names of subscribers are escaped in the subscribers list.
   >>> for subscriber in subscriber_list.findAll('div'):
   ...     if '~abuser' in subscriber.a['href']:
   ...         print subscriber.a.contents[2].strip()
-  &lt;script&gt;javascript:alert("YO")&lt;/script&gt;
+  &lt;script&gt;javascrip...
