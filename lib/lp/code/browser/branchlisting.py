@@ -301,13 +301,14 @@ class BranchListingBatchNavigator(TableBatchNavigator):
         # Until there is an API to do this nicely, shove the launchpad.view
         # permission into the request cache directly.
         request = self.view.request
-        wd = request.annotations.setdefault(
+        permission_cache = request.annotations.setdefault(
             LAUNCHPAD_SECURITY_POLICY_CACHE_KEY,
             weakref.WeakKeyDictionary())
         for branch in branches:
             naked_branch = removeSecurityProxy(branch)
-            cache = wd.setdefault(naked_branch, {})
-            cache['launchpad.View'] = True
+            branch_permission_cache = permission_cache.setdefault(
+                naked_branch, {})
+            branch_permission_cache['launchpad.View'] = True
 
         return branches
 
