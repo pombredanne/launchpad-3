@@ -1090,91 +1090,51 @@ $$;
 COMMENT ON FUNCTION packagesetinclusion_deleted_trig() IS
 'Maintain the transitive closure in the DAG when an edge leading to/from a package set is deleted.';
 
-SET check_function_bodies=false; -- Handle forward references
 
-CREATE OR REPLACE FUNCTION refresh_branchpath(branch_id integer)
-RETURNS VOID LANGUAGE sql STRICT AS
+CREATE OR REPLACE FUNCTION update_branch_name_cache() RETURNS TRIGGER
+LANGUAGE plpgsql AS
 $$
-    UPDATE BranchPath SET
-        owner_name = NewPath.owner_name,
-        target_suffix = NewPath.target_suffix,
-        path = NewPath.path
-    FROM (
+DECLARE
+    branch_info RECORD;
+BEGIN
+    IF (TG_OP = 'INSERT'
+        OR OLD.owner_name <> NEW.owner_name
+        OR OLD.unique_name <> NEW.unique_name
+        OR COALESCE(OLD.target_suffix, '') <> COALESCE(NEW.target_suffix, '')
+        OR OLD.name <> NEW.name
+        OR OLD.owner <> NEW.owner
+        OR COALESCE(OLD.product, -1) <> COALESCE(NEW.product, -1)
+        OR COALESCE(OLD.distroseries, -1) <> COALESCE(NEW.distroseries, -1)
+        OR COALESCE(OLD.sourcepackagename, -1)
+            <> COALESCE(NEW.sourcepackagename, -1)) THEN
+       
         SELECT
-            Branch.id AS branch,
-            Owner.name AS owner_name,
+            Person.name AS owner_name,
             COALESCE(Product.name, SPN.name) AS target_suffix,
             '~' || Owner.name || '/' || COALESCE(
-            Product.name,
-            Distribution.name|| '/' || Distroseries.name || '/' || SPN.name,
-            '+junk') || '/' || branch.name AS path
-        FROM Branch
-        LEFT OUTER JOIN DistroSeries ON Branch.distroseries = DistroSeries.id
-        LEFT OUTER JOIN Product ON Branch.product = Product.id
+                Product.name,
+                Distribution.name || '/' || Distroseries.name
+                    || '/' || SPN.name,
+                '+junk') || '/' || branch.name AS unique_name
+        INTO NEW.owner_name, NEW.target_suffix, NEW.unique_name
+        FROM Person
+        LEFT OUTER JOIN DistroSeries ON NEW.distroseries = DistroSeries.id
+        LEFT OUTER JOIN Product ON NEW.product = Product.id
         LEFT OUTER JOIN Distribution
             ON Distroseries.distribution = Distribution.id
         LEFT OUTER JOIN SourcepackageName AS SPN
-            ON SPN.id = Branch.sourcepackagename
-        JOIN Person AS Owner ON Owner.id = Branch.owner
-        WHERE Branch.id = $1) AS NewPath
-    WHERE BranchPath.branch = NewPath.branch;
-$$;
-
-COMMENT ON FUNCTION refresh_branchpath(integer) IS
-'Update the given Branch''s BranchPath record with current information.';
-
-
-CREATE OR REPLACE FUNCTION mv_branchpath_branch_insert() RETURNS TRIGGER
-LANGUAGE plpgsql AS
-$$
-BEGIN
-    INSERT INTO BranchPath (branch, owner_name, target_suffix, path)
-    SELECT
-        NEW.id,
-        Owner.name,
-        COALESCE(Product.name, SPN.name),
-        '~' || Owner.name || '/' || COALESCE(
-            Product.name,
-            Distribution.name || '/' || Distroseries.name || '/' || SPN.name,
-            '+junk') || '/' || NEW.name
-    FROM Branch
-    LEFT OUTER JOIN DistroSeries
-        ON NEW.distroseries = DistroSeries.id
-    LEFT OUTER JOIN Product
-        ON NEW.product = Product.id
-    LEFT OUTER JOIN Distribution
-        ON Distroseries.distribution = Distribution.id
-    LEFT OUTER JOIN SourcepackageName AS SPN
-        ON SPN.id = NEW.sourcepackagename
-    JOIN Person AS Owner ON Owner.id = NEW.owner;
-    RETURN NULL;
-END;
-$$;
-
-COMMENT ON FUNCTION mv_branchpath_branch_insert() IS
-'Add a BranchPath record after creating a new Branch.';
-
-
-CREATE OR REPLACE FUNCTION mv_branchpath_branch_update() RETURNS TRIGGER
-LANGUAGE plpgsql AS
-$$
-BEGIN
-    IF (OLD.name != NEW.name
-        OR OLD.author != NEW.author
-        OR COALESCE(OLD.product, -1) != COALESCE(NEW.product, -1)
-        OR COALESCE(OLD.distroseries, -1) != COALESCE(NEW.distroseries, -1)
-        OR COALESCE(OLD.sourcepackagename, -1)
-            != COALESCE(NEW.sourcepackagename, -1)) THEN
-        PERFORM refresh_branchpath(NEW.id);
+            ON SPN.id = NEW.sourcepackagename
+        WHERE Person.id = NEW.owner;
     END IF;
-    RETURN NULL;
+    RETURN NEW;
 END;
 $$;
 
-COMMENT ON FUNCTION mv_branchpath_branch_update() IS
-'Maintain BranchPath records when Branch is modified.';
+COMMENT ON FUNCTION update_branch_name_cache() IS
+'Maintain the cached name columns in Branch.';
 
-CREATE OR REPLACE FUNCTION mv_branchpath_person_update() RETURNS TRIGGER
+
+CREATE OR REPLACE FUNCTION mv_branch_person_update() RETURNS TRIGGER
 LANGUAGE plpgsql AS
 $$
 DECLARE
@@ -1184,19 +1144,17 @@ BEGIN
         RAISE EXCEPTION 'Cannot change Person.id';
     END IF;
     IF OLD.name != NEW.name THEN
-        FOR v_branch IN SELECT id FROM Branch WHERE owner=OLD.id LOOP
-            PERFORM refresh_branchpath(v_branch.id);
-        END LOOP;
+        UPDATE Branch SET owner_name = NEW.name WHERE owner = NEW.id;
     END IF;
     RETURN NULL;
 END;
 $$;
 
-COMMENT ON FUNCTION mv_branchpath_person_update() IS
-'Maintain BranchPath records when Person is modified.';
+COMMENT ON FUNCTION mv_branch_person_update() IS
+'Maintain Branch name cache when Person is modified.';
 
 
-CREATE OR REPLACE FUNCTION mv_branchpath_product_update() RETURNS TRIGGER
+CREATE OR REPLACE FUNCTION mv_branch_product_update() RETURNS TRIGGER
 LANGUAGE plpgsql AS
 $$
 DECLARE
@@ -1206,63 +1164,52 @@ BEGIN
         RAISE EXCEPTION 'Cannot change Product.id';
     END IF;
     IF OLD.name != NEW.name THEN
-        FOR v_branch IN SELECT id FROM Branch WHERE product=OLD.id LOOP
-            PERFORM refresh_branchpath(v_branch.id);
-        END LOOP;
+        UPDATE Branch SET target_suffix = NEW.name WHERE product=NEW.id;
     END IF;
     RETURN NULL;
 END;
 $$;
 
-COMMENT ON FUNCTION mv_branchpath_product_update() IS
-'Maintain BranchPath records when Product is modified.';
+COMMENT ON FUNCTION mv_branch_product_update() IS
+'Maintain Branch name cache when Product is modified.';
 
 
-CREATE OR REPLACE FUNCTION mv_branchpath_distroseries_update() RETURNS TRIGGER
+CREATE OR REPLACE FUNCTION mv_branch_distroseries_update() RETURNS TRIGGER
 LANGUAGE plpgsql AS
 $$
-DECLARE
-    v_branch RECORD;
 BEGIN
     IF OLD.id != NEW.id THEN
         RAISE EXCEPTION 'Cannot change Distroseries.id';
     END IF;
     IF OLD.name != NEW.name THEN
-        FOR v_branch IN SELECT id FROM Branch WHERE distroseries=OLD.id LOOP
-            PERFORM refresh_branchpath(v_branch.id);
-        END LOOP;
+        UPDATE Branch SET unique_name = NULL
+        WHERE Branch.distroseries = NEW.id;
     END IF;
     RETURN NULL;
 END;
 $$;
 
-COMMENT ON FUNCTION mv_branchpath_distroseries_update() IS
-'Maintain BranchPath records when Distroseries is modified.';
+COMMENT ON FUNCTION mv_branch_distroseries_update() IS
+'Maintain Branch name cache when Distroseries is modified.';
 
 
-CREATE OR REPLACE FUNCTION mv_branchpath_distribution_update() RETURNS TRIGGER
+CREATE OR REPLACE FUNCTION mv_branch_distribution_update() RETURNS TRIGGER
 LANGUAGE plpgsql AS
 $$
-DECLARE
-    v_branch RECORD;
 BEGIN
     IF OLD.id != NEW.id THEN
         RAISE EXCEPTION 'Cannot change Distribution.id';
     END IF;
     IF OLD.name != NEW.name THEN
-        FOR v_branch IN
-            SELECT * FROM Branch,Distroseries
-                WHERE Branch.distroseries = Distroseries.id
-                AND Distroseries.distribution = OLD.id LOOP
-            PERFORM refresh_branchpath(v_branch.id);
-        END LOOP;
+        UPDATE Branch SET unique_name = NULL
+        FROM DistroSeries
+        WHERE Branch.distroseries = Distroseries.id
+            AND Distroseries.distribution = NEW.id;
     END IF;
     RETURN NULL;
 END;
 $$;
 
-COMMENT ON FUNCTION mv_branchpath_distribution_update() IS
-'Maintain BranchPath records when Distribution is modified.';
-
-SET check_function_bodies=true;
+COMMENT ON FUNCTION mv_branch_distribution_update() IS
+'Maintain Branch name cache when Distribution is modified.';
 
