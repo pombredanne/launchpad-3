@@ -18,6 +18,7 @@ __all__ = [
     'ProductSeriesReviewView',
     'ProductSeriesSourceListView',
     'ProductSeriesSpecificationsMenu',
+    'ProductSeriesTemplatesView',
     'ProductSeriesTranslationsBzrImportView',
     'ProductSeriesTranslationsExportView',
     'ProductSeriesTranslationsMenu',
@@ -242,6 +243,11 @@ class ProductSeriesTranslationsMenuMixIn:
         return Link('', text)
 
     @enabled_with_permission('launchpad.Edit')
+    def templates(self):
+        text = 'Templates'
+        return Link('+templates', text)
+
+    @enabled_with_permission('launchpad.Edit')
     def settings(self):
         text = 'Settings'
         return Link('+translations-settings', text, icon='edit')
@@ -279,9 +285,8 @@ class ProductSeriesTranslationsMenu(NavigationMenu,
     """Translations navigation menus for `IProductSeries` objects."""
     usedfor = IProductSeries
     facet = 'translations'
-    links = ('overview', 'settings', 'requestbzrimport',
-             'translationupload', 'translationdownload',
-             'imports')
+    links = ('overview', 'templates', 'settings', 'requestbzrimport',
+             'translationupload', 'translationdownload', 'imports')
 
 
 class ProductSeriesTranslationsExportView(BaseExportView):
@@ -800,3 +805,15 @@ class ProductSeriesTranslationsBzrImportView(LaunchpadFormView,
             self.request.response.addInfoNotification(
                 _("The import has been requested."))
 
+
+class ProductSeriesTemplatesView(LaunchpadView):
+    """Show a list of all templates for the ProductSeries."""
+
+    is_distroseries = False
+
+    def iter_templates(self):
+        potemplateset = getUtility(IPOTemplateSet)
+        return potemplateset.getSubset(productseries=self.context)
+
+    def can_administer(self, template):
+        return check_permission('launchpad.Admin', template)

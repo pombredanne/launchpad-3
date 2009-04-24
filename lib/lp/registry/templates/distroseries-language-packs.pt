@@ -6,20 +6,14 @@
   xml:lang="en"
   lang="en"
   dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/onecolumn"
   i18n:domain="launchpad" >
   <body>
-    <metal:portlets fill-slot="portlets">
-      <tal:portlet
-        condition="context/distribution/official_rosetta"
-        replace="structure context/distribution/@@+portlet-translation-groups-and-permission"
-      />
-      <tal:portlet replace="structure context/@@+portlet-preflangs" />
-    </metal:portlets>
-
     <div metal:fill-slot="main">
-      <h1 tal:content="view/label">
-        Language packs for Ubuntu 5.04
+     <div id="language_packs">
+      <h1>
+        Language packs for
+        <tal:title replace="view/displayname">Ubuntu 5.04</tal:title>
       </h1>
 
       <p id="description">
@@ -75,7 +69,7 @@
               replace="context/language_pack_proposed/date_exported/fmt:datetime"
               />
           </a>
-          <br />This one is bein tested to become the new
+          <br />This one is being tested to become the new
           <tal:type content="context/language_pack_proposed/type/name" />
           language pack.
         </dt>
@@ -97,6 +91,12 @@
           </dt>
         </dl>
       </tal:has-unused>
+     </div>
+     <div tal:condition="view/is_admin">
+        <h2 tal:content="view/adminlabel">Language pack settings</h2>
+        <div metal:use-macro="context/@@launchpad_form/form"> </div>
+     </div>
+
     </div>
   </body>
 </html>

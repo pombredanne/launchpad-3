@@ -6,18 +6,10 @@
   xml:lang="en"
   lang="en"
   dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/onecolumn"
   i18n:domain="rosetta" >
 
   <body>
-    <metal:portlets fill-slot="portlets">
-      <tal:portlet
-        condition="context/distribution/official_rosetta"
-        replace="structure context/distribution/@@+portlet-translation-groups-and-permission"
-      />
-      <tal:portlet replace="structure context/@@+portlet-preflangs" />
-    </metal:portlets>
-
 <div metal:fill-slot="main">
   <ul class="helplinks">
     <li>

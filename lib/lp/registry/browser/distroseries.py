@@ -10,8 +10,7 @@ __all__ = [
     'DistroSeriesBreadcrumbBuilder',
     'DistroSeriesEditView',
     'DistroSeriesFacets',
-    'DistroSeriesFullLanguagePackRequestView',
-    'DistroSeriesLanguagePackAdminView',
+    'DistroSeriesLanguagePackView',
     'DistroSeriesPackageSearchView',
     'DistroSeriesNavigation',
     'DistroSeriesTranslationsAdminView',
@@ -43,15 +42,16 @@ from canonical.launchpad.interfaces.distroserieslanguage import (
 from canonical.launchpad.interfaces.language import ILanguageSet
 from canonical.launchpad.interfaces.launchpad import (
     ILaunchBag, ILaunchpadCelebrities, NotFoundError)
+from canonical.launchpad.interfaces.potemplate import IPOTemplateSet
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, GetitemNavigation, action, custom_widget)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
 from canonical.launchpad.webapp.launchpadform import LaunchpadEditFormView
 from canonical.launchpad.webapp.menu import (
-    ApplicationMenu, Link, enabled_with_permission)
+    ApplicationMenu, Link, NavigationMenu, enabled_with_permission)
 from canonical.launchpad.webapp.publisher import (
-    canonical_url, stepthrough, stepto)
+    canonical_url, LaunchpadView, stepthrough, stepto)
 from canonical.widgets.itemswidgets import LaunchpadDropdownWidget
 
 
@@ -256,35 +256,31 @@ class DistroSeriesSpecificationsMenu(ApplicationMenu):
         return Link('+addspec', text, summary, icon='add')
 
 
-class DistroSeriesTranslationsMenu(ApplicationMenu):
+class DistroSeriesTranslationsMenu(NavigationMenu):
 
     usedfor = IDistroSeries
     facet = 'translations'
     links = [
-        'admin', 'imports', 'language_packs', 'admin_language_packs',
-        'full_language_pack_request']
+        'translations', 'templates', 'admin', 'language_packs', 'imports']
+
+    def translations(self):
+        text = 'Overview'
+        return Link('', text)
 
     def imports(self):
-        text = 'See import queue'
+        text = 'Import queue'
         return Link('+imports', text)
 
     @enabled_with_permission('launchpad.TranslationsAdmin')
     def admin(self):
-        return Link('+admin', 'Administer translation options', icon='edit')
+        return Link('+admin', 'Settings')
+
+    @enabled_with_permission('launchpad.Edit')
+    def templates(self):
+        return Link('+templates', 'Templates')
 
     def language_packs(self):
-        return Link('+language-packs', 'See language packs')
-
-    @enabled_with_permission('launchpad.TranslationsAdmin')
-    def admin_language_packs(self):
-        return Link(
-            '+admin-language-packs', 'Administer language packs', icon='edit')
-
-    @enabled_with_permission('launchpad.LanguagePacksAdmin')
-    def full_language_pack_request(self):
-        return Link(
-            '+full-language-pack-request',
-            'Request a full language pack export')
+        return Link('+language-packs', 'Language packs')
 
 
 class DistroSeriesPackageSearchView(PackageSearchViewBase):
@@ -302,26 +298,11 @@ class DistroSeriesView(BuildRecordsView, QueueItemsView, TranslationsMixin):
             self.context.distribution.displayname,
             self.context.version)
 
-        self.label = 'Language packs for %s' % self.displayname
-
     @cachedproperty
     def cached_packagings(self):
         # +packaging hits this many times, so avoid redoing the query
         # multiple times, in particular because it's gnarly.
         return list(self.context.packagings)
-
-    @cachedproperty
-    def unused_language_packs(self):
-        unused_language_packs = helpers.shortlist(self.context.language_packs)
-
-        if self.context.language_pack_base is not None:
-            unused_language_packs.remove(self.context.language_pack_base)
-        if self.context.language_pack_delta is not None:
-            unused_language_packs.remove(self.context.language_pack_delta)
-        if self.context.language_pack_proposed is not None:
-            unused_language_packs.remove(self.context.language_pack_proposed)
-
-        return unused_language_packs
 
     def requestDistroLangs(self):
         """Produce a set of DistroSeriesLanguage and
@@ -568,63 +549,106 @@ class DistroSeriesTranslationsAdminView(LaunchpadEditFormView):
         self.next_url = canonical_url(self.context)
 
 
-class DistroSeriesLanguagePackAdminView(LaunchpadEditFormView):
+class DistroSeriesLanguagePackView(LaunchpadEditFormView):
     """Browser view to manage used language packs."""
     schema = IDistroSeries
+    label = ""
+    field_names = []
 
-    field_names = ['language_pack_base', 'language_pack_delta',
-                   'language_pack_proposed']
+    def is_langpack_admin(self, action=None):
+        return (check_permission("launchpad.LanguagePacksAdmin",
+                                 self.context) and not
+                check_permission("launchpad.TranslationsAdmin", self.context))
+
+    def is_translations_admin(self, action=None):
+        return check_permission("launchpad.TranslationsAdmin", self.context)
+
+    @property
+    def is_admin(self):
+        return self.is_langpack_admin() or self.is_translations_admin()
 
     def initialize(self):
-        LaunchpadEditFormView.initialize(self)
-        self.label = 'Change language packs of %s' % self.context.title
-        self.page_title = self.label
+        self.old_request_value = (
+            self.context.language_pack_full_export_requested)
+        if self.is_langpack_admin():
+            self.field_names = ['language_pack_full_export_requested']
+        if self.is_translations_admin():
+            self.field_names = [
+                'language_pack_base',
+                'language_pack_delta',
+                'language_pack_proposed',
+                'language_pack_full_export_requested',
+            ]
+        super(DistroSeriesLanguagePackView, self).initialize()
+        self.displayname = '%s %s' % (
+            self.context.distribution.displayname,
+            self.context.version)
+        self.page_title = "Language packs for %s" % self.displayname
+        if self.is_langpack_admin():
+            self.adminlabel = 'Request a full language pack export of %s' % (
+                self.displayname)
+        else:
+            self.adminlabel = 'Settings for language packs'
 
-    @action("Change")
+
+    @cachedproperty
+    def unused_language_packs(self):
+        unused_language_packs = helpers.shortlist(self.context.language_packs)
+
+        if self.context.language_pack_base is not None:
+            unused_language_packs.remove(self.context.language_pack_base)
+        if self.context.language_pack_delta is not None:
+            unused_language_packs.remove(self.context.language_pack_delta)
+        if self.context.language_pack_proposed is not None:
+            unused_language_packs.remove(self.context.language_pack_proposed)
+
+        return unused_language_packs
+
+    def _request_full_export(self):
+        if (self.old_request_value !=
+            self.context.language_pack_full_export_requested):
+            # There are changes.
+            if self.context.language_pack_full_export_requested:
+                self.request.response.addInfoNotification(
+                    "Your request has been noted. Next language pack export "
+                    "will include all available translations.")
+            else:
+                self.request.response.addInfoNotification(
+                    "Your request has been noted. Next language pack "
+                    "export will be made relative to the current base "
+                    "language pack.")
+        else:
+            self.request.response.addInfoNotification(
+                "You didn't change anything.")
+
+    @action("Change Settings", condition=is_translations_admin)
     def change_action(self, action, data):
         if ('language_pack_base' in data and
             data['language_pack_base'] != self.context.language_pack_base):
             # language_pack_base changed, the delta one must be invalidated.
             data['language_pack_delta'] = None
-
         self.updateContextFromData(data)
+        self._request_full_export()
         self.request.response.addInfoNotification(
             'Your changes have been applied.')
-
         self.next_url = '%s/+language-packs' % canonical_url(self.context)
 
-
-class DistroSeriesFullLanguagePackRequestView(LaunchpadEditFormView):
-    """Browser view to store whether next export should be a full one."""
-    schema = IDistroSeries
-
-    field_names = ['language_pack_full_export_requested']
-
-    def initialize(self):
-        self.old_value = self.context.language_pack_full_export_requested
-        LaunchpadEditFormView.initialize(self)
-        self.label = 'Request a full language pack export of %s' % (
-            self.context.title)
-        self.page_title = self.label
-
-    @action("Request")
+    @action("Request", condition=is_langpack_admin)
     def request_action(self, action, data):
         self.updateContextFromData(data)
-        if self.old_value != self.context.language_pack_full_export_requested:
-            # There are changes.
-            if self.context.language_pack_full_export_requested:
-                self.request.response.addInfoNotification('''
-Your request has been noted. Next language pack export will include all
-available translations.
-''')
-            else:
-                self.request.response.addInfoNotification('''
-Your request has been noted. Next language pack export will be made relative
-to the current base language pack.
-''')
-        else:
-            self.request.response.addInfoNotification(
-                "You didn't change anything.")
-
+        self._request_full_export()
         self.next_url = '/'.join(
             [canonical_url(self.context), '+language-packs'])
+
+
+class DistroSeriesTemplatesView(LaunchpadView):
+    """Show a list of all templates for the DistroSeries."""
+
+    is_distroseries = True
+
+    def iter_templates(self):
+        potemplateset = getUtility(IPOTemplateSet)
+        return potemplateset.getSubset(distroseries=self.context)
+
+    def can_administer(self, template):
+        return check_permission('launchpad.Admin', template)

@@ -1,0 +1,99 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="view/macro:page/onecolumn"
+  i18n:domain="launchpad"
+><!-- context/@@main_template/master
+      view/macro:page/onecolumn
+ -->
+
+  <body>
+    <div metal:fill-slot="head_epilogue">
+      <style type="text/css">
+        .hidden_links a img{
+          visibility: hidden;
+        }
+        .hidden_links a{
+          color: lightgray;
+        }
+        .template_links a{
+          padding-right: 10px;
+        }
+        td.template_name, th.template_name,
+        td.sourcepackage_name, th.sourcepackagename {
+            width: 300px;
+        }
+      </style>
+      <style tal:condition="view/is_distroseries" type="text/css">
+        #templates_table {
+            width: 950px;
+        }
+      </style>
+      <style tal:condition="not:view/is_distroseries" type="text/css">
+        #templates_table {
+            width: 650px;
+        }
+      </style>
+    </div>
+    <div metal:fill-slot="main">
+      <h1>
+        Translation templates for
+        <tal:title replace="context/title">
+          evolution in Ubuntu Feisty
+        </tal:title>
+      </h1>
+
+      <ul class="helplinks">
+        <li>
+          <a href="https://help.launchpad.net/Translations"
+             id="link-to-translations-help"
+             >Help for translations
+          </a>
+        </li>
+      </ul>
+
+      <table class="sortable listing" id="templates_table">
+        <thead>
+          <tr>
+            <th tal:condition="view/is_distroseries"
+                class="sourcepackage_name">Source package</th>
+            <th class="template_name">Template name</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr tal:repeat="template view/iter_templates" class="template_row">
+            <td tal:condition="view/is_distroseries"
+                tal:content="template/sourcepackagename/name"
+                class="sourcepackage_name">Source package
+            </td>
+            <td class="template_name"><a tal:attributes="href template/fmt:url"
+                   tal:content="template/name">Template name</a></td>
+            <td>
+            <div class="template_links">
+                <a tal:attributes="href string:${template/fmt:url}/+edit;
+                                   title string:Edit ${template/name}'s details">
+                   <img src="/@@/edit" />&nbsp;Edit</a>
+                <a tal:attributes="href string:${template/fmt:url}/+upload;
+                      title string:Upload translations to ${template/name}">
+                   <img src="/@@/add" />&nbsp;Upload</a>
+                <a tal:attributes="href string:${template/fmt:url}/+export;
+                      title string:Download translations from ${template/name}">
+                   <img src="/@@/download" />&nbsp;Download</a>
+                <a tal:condition="python:view.can_administer(template)"
+                   tal:attributes="href string:${template/fmt:url}/+admin;
+                                   title string:Administer ${template/name}">
+                   <img src="/@@/edit" />&nbsp;Administer</a>
+            </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </body>
+</html>
