@@ -11,7 +11,7 @@ __all__ = [
     ]
 
 from zope.interface import Interface
-from zope.schema import Bool, Datetime, Int, List, TextLine
+from zope.schema import Datetime, Int, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.launchpad import IHasOwner
