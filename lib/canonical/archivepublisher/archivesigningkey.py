@@ -35,11 +35,7 @@ class ArchiveSigningKey:
 
     @property
     def _archive_root_path(self):
-        # XXX cprov 20081104: IArchive pub configuration doesn't implement
-        # any interface.
-        from zope.security.proxy import removeSecurityProxy
-        naked_pub_config = removeSecurityProxy(getPubConfig(self.archive))
-        return naked_pub_config.archiveroot
+        return getPubConfig(self.archive).archiveroot
 
     def getPathForSecretKey(self, key):
         """See `IArchiveSigningKey`."""

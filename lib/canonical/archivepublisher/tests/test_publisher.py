@@ -17,6 +17,7 @@ import unittest
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.archivepublisher.config import getPubConfig
 from canonical.archivepublisher.diskpool import DiskPool
 from canonical.archivepublisher.publishing import (
     Publisher, getPublisher, sha256)
@@ -96,7 +97,7 @@ class TestPublisher(TestPublisherBase):
     def testPublishPartner(self):
         """Test that a partner package is published to the right place."""
         archive = self.ubuntutest.getArchiveByComponent('partner')
-        pub_config = removeSecurityProxy(archive.getPubConfig())
+        pub_config = getPubConfig(archive)
         pub_config.setupArchiveDirs()
         disk_pool = DiskPool(
             pub_config.poolroot, pub_config.temproot, self.logger)
@@ -136,7 +137,7 @@ class TestPublisher(TestPublisherBase):
         """
         archive = self.ubuntutest.getArchiveByComponent('partner')
         self.ubuntutest['breezy-autotest'].status = DistroSeriesStatus.CURRENT
-        pub_config = removeSecurityProxy(archive.getPubConfig())
+        pub_config = getPubConfig(archive)
         pub_config.setupArchiveDirs()
         disk_pool = DiskPool(
             pub_config.poolroot, pub_config.temproot, self.logger)

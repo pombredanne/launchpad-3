@@ -12,7 +12,6 @@ import os
 from sha import sha
 
 from zope.component import getUtility
-from zope.security.proxy import removeSecurityProxy
 
 from canonical.archivepublisher import HARDCODED_COMPONENT_ORDER
 from canonical.archivepublisher.diskpool import DiskPool
@@ -123,10 +122,6 @@ def getPublisher(archive, allowed_suites, log, distsroot=None):
         log.error(info)
         raise
 
-    # XXX cprov 2007-01-03: remove security proxy of the Config instance
-    # returned by IArchive. This is kinda of a hack because Config doesn't
-    # have any interface yet.
-    pubconf = removeSecurityProxy(pubconf)
     disk_pool = _getDiskPool(pubconf, log)
 
     if distsroot is not None:

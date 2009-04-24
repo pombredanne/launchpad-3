@@ -9,8 +9,6 @@ import logging
 import pytz
 import os
 
-from zope.security.proxy import removeSecurityProxy
-
 from canonical.archivepublisher import ELIGIBLE_DOMINATION_STATES
 from canonical.archivepublisher.config import getPubConfig, LucilleConfigError
 from canonical.archivepublisher.diskpool import DiskPool
@@ -45,8 +43,6 @@ def getDeathRow(archive, log, pool_root_override):
     except LucilleConfigError, info:
         log.error(info)
         raise
-
-    pubconf = removeSecurityProxy(pubconf)
 
     if (pool_root_override is not None and
         archive.purpose == ArchivePurpose.PRIMARY):
