@@ -151,7 +151,7 @@ h2, h3, h4, h5, h6 { margin-top: 1em; }
 ul {margin-left: 0; padding-left: 22px; /* works for 14px icons */}
 
 .exception {color: #cc0000;}
-.discreet, .lesser {font-size: 90%;}
+.discreet, .lesser, .duplicate-bug-details {font-size: 90%;}
 .offline {text-align: center; margin: 2em 0;}
 .unavailable {color: #999; background: none;}
 

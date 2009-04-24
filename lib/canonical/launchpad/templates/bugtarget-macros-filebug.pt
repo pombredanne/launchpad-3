@@ -365,6 +365,49 @@
 </metal:bug_reporting_guidelines>
 
 <metal:similar-bugs define-macro="display-similar-bugs">
+  <script type="text/javascript" condition="view/similar_bugs">
+  YUI().use('node', function(Y) {
+      var bug_already_reported_buttons;
+
+      function get_details_div(radio_button) {
+          table_row = radio_button.get('parentNode').get('parentNode');
+          return table_row.query('div.duplicate-details');
+      }
+
+      function toggle_bug_details() {
+          Y.each(bug_already_reported_buttons, function(radio_button) {
+              bug_details_div = get_details_div(radio_button);
+
+              if (radio_button.get('checked')) {
+                  bug_details_div.setStyle('display', 'block');
+              } else {
+                  bug_details_div.setStyle('display', 'none');
+              }
+          });
+      }
+
+      Y.on('domready', function() {
+          bug_already_reported_buttons = Y.all('input.duplicate-bug-button');
+
+          if (bug_already_reported_buttons) {
+              Y.each(bug_already_reported_buttons, function(radio_button) {
+                  radio_button.on('change', toggle_bug_details);
+              });
+          }
+
+          bug_not_reported_button = Y.get('#bug-not-already-reported');
+          bug_not_reported_button.on('change', function() {
+              if (this.get('checked')) {
+                  Y.each(bug_already_reported_buttons, function(radio_button) {
+                      bug_details_div = get_details_div(radio_button);
+                      bug_details_div.setStyle('display', 'none');
+                  });
+              }
+          });
+      });
+  });
+  </script>
+
   <ul id="similar-bugs" style="list-style: none; margin-left: 0; margin-bottom: 0">
     <li tal:repeat="bug view/similar_bugs"
         tal:attributes="title bug/description/fmt:shorten/500"
@@ -374,11 +417,14 @@
           <tr>
             <td>
               <input type="radio" name="field.bug_already_reported_as"
-                     tal:attributes="id string:bug-already-reported-as-${bug/id};
-                                     value string:${bug/id};
-                                     checked python: path('repeat/bug/start') and not (
-                                         path('view/this_is_my_bug_action/submitted') or
-                                         path('view/submit_bug_action/submitted'))" />
+                     class="duplicate-bug-button"
+                     tal:attributes="
+                         id string:bug-already-reported-as-${bug/id};
+                         value string:${bug/id};
+                         checked python:
+                             path('repeat/bug/start') and not (
+                             path('view/this_is_my_bug_action/submitted') or
+                             path('view/submit_bug_action/submitted'))" />
             </td>
             <td>
               <label tal:attributes="for string:bug-already-reported-as-${bug/id}"
@@ -395,23 +441,52 @@
                      tal:content="bug/title">Bug title here</a>
                 </label>
               </div>
-              <div class="lesser" tal:condition="bugtask">
-                <label tal:attributes="for string:bug-already-reported-as-${bug/id}"
-                       style="font-weight: normal">
-                  <tal:status replace="bugtask/status/title" />,
-                  last updated
-                  <tal:last-updated content="bug/date_last_updated/fmt:approximatedate">
-                    2007-07-03
-                  </tal:last-updated>
-                </label>
-              </div>
-              <div class="lesser" tal:condition="not:bugtask">
-                <label tal:attributes="for string:bug-already-reported-as-${bug/id}"
-                       style="font-weight: normal">
-                  <tal:closed condition="bug/is_complete">Closed,</tal:closed>
-                  <tal:open condition="not:bug/is_complete">Open,</tal:open>
-                  last updated <tal:when replace="bug/date_last_updated/fmt:approximatedate" />
-                </label>
+
+              <div class="duplicate-details" tal:attributes="
+                  id string:details-for-bug-${bug/id};
+                  style python: not path('repeat/bug/start') and not (
+                        path('view/this_is_my_bug_action/submitted') or
+                        path('view/submit_bug_action/submitted'))
+                        and 'display: none'">
+
+                <div class="lesser" style="margin-bottom: 0.5em;"
+                    tal:condition="bugtask">
+                  <label tal:attributes="for string:bug-already-reported-as-${bug/id}"
+                      tal:content="structure bug/description"
+                      style="font-weight: normal" />
+                </div>
+
+                <div class="lesser" tal:condition="bugtask">
+                  <label
+                      tal:attributes="for string:bug-already-reported-as-${bug/id}">
+                    <input type="submit"
+                        id="field.actions.this_is_my_bug"
+                        name="field.actions.this_is_my_bug"
+                        value="This is my bug" />
+
+                    <span tal:attributes="class string:status${bugtask/status/name}"
+                        tal:content="bugtask/status/title" />,
+                    last updated
+                    <tal:last-updated
+                        content="bug/date_last_updated/fmt:approximatedate">
+                      2007-07-03
+                    </tal:last-updated>
+                  </label>
+                </div>
+                <div class="lesser" tal:condition="not:bugtask">
+                  <label
+                      tal:attributes="for string:bug-already-reported-as-${bug/id}">
+                    <input type="submit"
+                        id="field.actions.this_is_my_bug"
+                        name="field.actions.this_is_my_bug"
+                        value="This is my bug" />
+
+                    <tal:closed condition="bug/is_complete">Closed,</tal:closed>
+                    <tal:open condition="not:bug/is_complete">Open,</tal:open>
+                    last updated
+                    <tal:when replace="bug/date_last_updated/fmt:approximatedate" />
+                  </label>
+                </div>
               </div>
             </td>
           </tr>
@@ -433,10 +508,6 @@
     <metal:similar-bugs
         use-macro="context/@@+filebug-macros/display-similar-bugs" />
 
-    <div class="actions" style="margin-top: 0.5em; margin-bottom: 2em; margin-left: 2em">
-      <input tal:replace="structure view/this_is_my_bug_action/render" />
-    </div>
-
     <ul style="list-style: none; margin-left: 0">
       <li style="margin-top: 1em">
         <tal:comment replace="nothing">
@@ -455,7 +526,7 @@
               </td>
               <td>
                 <label for="bug-not-already-reported">
-                  No, I'd like to report a new bug
+                  No, I need to report a new bug
                 </label>
               </td>
             </tr>
