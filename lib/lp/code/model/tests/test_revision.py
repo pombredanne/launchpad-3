@@ -818,18 +818,28 @@ class TestPruneRevisionCache(RevisionCacheTestCase):
     def test_old_revisions_removed(self):
         # Revisions older than 30 days are removed.
         date_generator = time_counter(
-            datetime.now(pytz.UTC) - timedelta(days=32),
+            datetime.now(pytz.UTC) - timedelta(days=33),
             delta=timedelta(days=2))
         for i in range(4):
             revision = self.factory.makeRevision(
                 revision_date=date_generator.next())
-            cache = RevisionCache()
-            cache.revision = revision
-            cache.revision_author = revision.revision_author
-            cache.revision_date = revision.revision_date
+            cache = RevisionCache(revision)
             self.store.add(cache)
-        RevisionSet.pruneRevisionCache()
+        RevisionSet.pruneRevisionCache(5)
         self.assertEqual(2, len(self._getRevisionCache()))
+
+    def test_pruning_limit(self):
+        # The prune will only remove at most the parameter rows.
+        date_generator = time_counter(
+            datetime.now(pytz.UTC) - timedelta(days=33),
+            delta=timedelta(days=2))
+        for i in range(4):
+            revision = self.factory.makeRevision(
+                revision_date=date_generator.next())
+            cache = RevisionCache(revision)
+            self.store.add(cache)
+        RevisionSet.pruneRevisionCache(1)
+        self.assertEqual(3, len(self._getRevisionCache()))
 
 
 def test_suite():

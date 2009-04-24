@@ -29,8 +29,8 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import quote, SQLBase, sqlvalues
 
 from canonical.launchpad.interfaces import (
-    EmailAddressStatus, IEmailAddressSet, IRevision, IRevisionAuthor,
-    IRevisionParent, IRevisionProperty, IRevisionSet)
+    EmailAddressStatus, IEmailAddressSet, IMasterStore, IRevision,
+    IRevisionAuthor, IRevisionParent, IRevisionProperty, IRevisionSet)
 from lp.code.interfaces.branch import (
     DEFAULT_BRANCH_STATUS_IN_LISTING)
 from lp.registry.interfaces.product import IProduct
@@ -499,12 +499,17 @@ class RevisionSet:
         Store.of(branch).execute(insert_statement)
 
     @staticmethod
-    def pruneRevisionCache():
+    def pruneRevisionCache(limit):
         """See `IRevisionSet`."""
-        epoch = datetime.now(pytz.UTC) - timedelta(days=30)
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        store.find(
-            RevisionCache, RevisionCache.revision_date < epoch).remove()
+        # Storm doesn't handle remove a limited result set:
+        #    FeatureError: Can't remove a sliced result set
+        store = IMasterStore(RevisionCache)
+        epoch = datetime.now(tz=pytz.UTC) - timedelta(days=30)
+        subquery = Select(
+            [RevisionCache.id],
+            RevisionCache.revision_date < epoch,
+            limit=limit)
+        store.find(RevisionCache, RevisionCache.id.is_in(subquery)).remove()
 
 
 def revision_time_limit(day_limit):
@@ -527,7 +532,7 @@ class RevisionCache(Storm):
     revision_id = Int(name='revision', allow_none=False)
     revision = Reference(revision_id, 'Revision.id')
 
-    revision_author_id = Int(name='revision_author', allow_none=False)
+    revision_author_id = Int(name='revision_author', allow_none=True)
     revision_author = Reference(revision_author_id, 'RevisionAuthor.id')
 
     revision_date = DateTime(
@@ -544,3 +549,8 @@ class RevisionCache(Storm):
         sourcepackagename_id, 'SourcePackageName.id')
 
     private = Bool(allow_none=False, default=False)
+
+    def __init__(self, revision):
+        self.revision_author = revision.revision_author
+        self.revision = revision
+        self.revision_date = revision.revision_date

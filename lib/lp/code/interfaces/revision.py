@@ -205,9 +205,11 @@ class IRevisionSet(Interface):
         source package for the branch.
         """
 
-    def pruneRevisionCache():
+    def pruneRevisionCache(limit):
         """Remove old rows from the RevisionCache.
 
         All rows where the revision date is older than 30 days from now are
         removed.
+
+        :param limit: Remove at most `limit` rows at once.
         """
