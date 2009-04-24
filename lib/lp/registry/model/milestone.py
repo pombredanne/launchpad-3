@@ -152,7 +152,7 @@ class Milestone(SQLBase, StructuralSubscriptionTargetMixin, HasBugsBase):
     @property
     def displayname(self):
         """See IMilestone."""
-        return "%s %s" % (self.target.displayname, self.name)
+        return "%s: %s" % (self.target.displayname, self.name)
 
     @property
     def title(self):
