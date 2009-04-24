@@ -26,6 +26,7 @@ __all__ = [
 
 from datetime import datetime
 
+import simplejson
 from storm.expr import Asc, Desc
 import pytz
 from zope.component import getUtility
@@ -291,6 +292,15 @@ class BranchListingBatchNavigator(TableBatchNavigator):
         self.column_count = 4 + len(view.extra_columns)
         self._now = datetime.now(pytz.UTC)
         self._dev_series_map = {}
+
+    @cachedproperty
+    def branch_sparks(self):
+        return simplejson.dumps([
+                ('b-%s' % (count+1),
+                 canonical_url(branch, view_name='+spark'))
+                for count, branch
+                in enumerate(self._branches_for_current_batch)
+                ]);
 
     @cachedproperty
     def _branches_for_current_batch(self):

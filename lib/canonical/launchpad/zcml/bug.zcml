@@ -64,6 +64,10 @@
             permission="launchpad.AnyPerson"
             attributes="offerMentoring retractMentoring"
             />
+        <require
+            permission="launchpad.Admin"
+            attributes="setCommentVisibility"
+            />
     </class>
 
     <adapter

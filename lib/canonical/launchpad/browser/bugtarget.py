@@ -42,17 +42,19 @@ from canonical.launchpad.browser.bugtask import BugTaskSearchListingView
 from canonical.launchpad.browser.feeds import (
     BugFeedLink, BugTargetLatestBugsFeedLink, FeedsMixin,
     PersonLatestBugsFeedLink)
+from canonical.launchpad.interfaces.bugsupervisor import IHasBugSupervisor
 from canonical.launchpad.interfaces.bugtarget import (
     IBugTarget, IOfficialBugTagTargetPublic, IOfficialBugTagTargetRestricted)
+from canonical.launchpad.interfaces.bugtask import (
+    BugTaskStatus, IBugTaskSet, UNRESOLVED_BUGTASK_STATUSES)
 from canonical.launchpad.interfaces.launchpad import (
     IHasExternalBugTracker, ILaunchpadUsage)
 from canonical.launchpad.interfaces import (
-    IBug, IBugTaskSet, ILaunchBag, IDistribution, IDistroSeries, IProduct,
-    IProject, IDistributionSourcePackage, NotFoundError,
-    CreateBugParams, IBugAddForm, ILaunchpadCelebrities,
-    IProductSeries, ITemporaryStorageManager, IMaloneApplication,
-    IFrontPageBugAddForm, IProjectBugAddForm, UNRESOLVED_BUGTASK_STATUSES,
-    BugTaskStatus)
+    CreateBugParams, IBug, IBugAddForm, IDistribution,
+    IDistributionSourcePackage, IDistroSeries, IFrontPageBugAddForm,
+    ILaunchBag, ILaunchpadCelebrities, IMaloneApplication, IProduct,
+    IProductSeries, IProject, IProjectBugAddForm, ITemporaryStorageManager,
+    NotFoundError)
 from canonical.launchpad.webapp import (
     LaunchpadEditFormView, LaunchpadFormView, LaunchpadView, action,
     canonical_url, custom_widget, safe_action, urlappend)
@@ -277,6 +279,11 @@ class FileBugViewBase(LaunchpadFormView):
         elif not IProduct.providedBy(context):
             raise AssertionError('Unknown context: %r' % context)
 
+        if IHasBugSupervisor.providedBy(context):
+            if self.user.inTeam(context.bug_supervisor):
+                field_names.extend(
+                    ['assignee', 'importance', 'milestone', 'status'])
+
         return field_names
 
     @property
@@ -488,6 +495,19 @@ class FileBugViewBase(LaunchpadFormView):
             params.private = extra_data.private
 
         self.added_bug = bug = context.createBug(params)
+
+        # Apply any extra options given by a bug supervisor.
+        bugtask = self.added_bug.default_bugtask
+        if 'assignee' in data:
+            bugtask.transitionToAssignee(data['assignee'])
+        if 'status' in data:
+            bugtask.transitionToStatus(data['status'], self.user)
+        if 'importance' in data:
+            bugtask.transitionToImportance(data['importance'], self.user)
+        if 'milestone' in data:
+            bugtask.milestone = data['milestone']
+
+        # Tell everyone.
         notify(ObjectCreatedEvent(bug))
 
         for comment in extra_data.comments:
