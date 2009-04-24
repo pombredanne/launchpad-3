@@ -1,6 +1,7 @@
 # Copyright 2009 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
+__all__ = ['notify_bug_modified']
 
 
 from canonical.database.sqlbase import block_implicit_flushes
