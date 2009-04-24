@@ -456,6 +456,7 @@ class TestActualImportMixin:
         """
         self.bazaar_store = BazaarBranchStore(
             self.get_transport('bazaar_store'))
+        self.foreign_commit_count = 0
         self.source_details = self.makeSourceDetails(
             'trunk', [('README', 'Original contents')])
 
@@ -581,7 +582,6 @@ class TestCVSImport(WorkerTest, CSCVSActualImportMixin):
     def setUp(self):
         super(TestCVSImport, self).setUp()
         self.setUpImport()
-        self.foreign_commit_count = 0
 
     def commitInForeignTree(self, foreign_tree):
         # If you write to a file in the same second as the previous commit,

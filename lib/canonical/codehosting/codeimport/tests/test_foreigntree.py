@@ -15,7 +15,7 @@ from bzrlib.tests import TestCaseWithTransport
 
 from canonical.codehosting.codeimport.foreigntree import (
     CVSWorkingTree, SubversionWorkingTree)
-from canonical.codehosting.codeimport.tests import (
+from canonical.codehosting.codeimport.tests.servers import (
     CVSServer, SubversionServer)
 from canonical.testing import BaseLayer
 
