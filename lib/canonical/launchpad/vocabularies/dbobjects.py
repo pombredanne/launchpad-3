@@ -73,7 +73,6 @@ from operator import attrgetter
 
 from sqlobject import AND, CONTAINSSTRING, OR, SQLObjectNotFound
 from storm.expr import Alias, And, Join, LeftJoin, Lower, Not, Or, SQL
-from storm.sqlobject import SQLObjectResultSet
 from zope.component import getUtility
 from zope.interface import implements
 from zope.schema.interfaces import IVocabulary, IVocabularyTokenized
@@ -91,6 +90,8 @@ from canonical.launchpad.database import (
     Product, ProductRelease, ProductSeries, Project, SourcePackageRelease,
     Specification, Sprint, TeamParticipation, TranslationGroup,
     TranslationMessage)
+from canonical.launchpad.components.decoratedresultset import (
+    DecoratedResultSet)
 from canonical.launchpad.database.stormsugar import StartsWith
 from canonical.database.sqlbase import SQLBase, quote_like, quote, sqlvalues
 from canonical.launchpad.helpers import shortlist
@@ -661,7 +662,6 @@ class ValidPersonOrTeamVocabulary(
         if logged_in_user is not None:
             private_query = AND(
                 TeamParticipation.person == logged_in_user.id,
-                #TeamParticipation.teamID == Person.id,
                 Not(Person.teamowner == None),
                 Person.visibility == PersonVisibility.PRIVATE
                 )
@@ -782,26 +782,14 @@ class ValidPersonOrTeamVocabulary(
 
             combined_result = public_result.union(private_result)
             combined_result.order_by()
-            print '-'*50
-            print combined_result._get_select()
-            print '-'*50
-            # The following is syntactically correct but returns all people
-            # not the ones searched for. I suspect that is due to the 'Person'
-            # in the using.  Without it, though, the SQL is invalid.
-            #result = self.store.using(Person, Alias(combined_result._get_select())).find(Person)
-
-            # This approach does not work as it has a PG ProgrammingError.
-            from canonical.launchpad.components.decoratedresultset import DecoratedResultSet
-            result = DecoratedResultSet(combined_result)
+            subselect = Alias(combined_result._get_select(), 'Person')
+            result = self.store.using(subselect).find(Person)
         result.config(distinct=True)
         result.order_by(Person.displayname, Person.name)
-
-        from storm.tracer import debug
-        debug(True)
-        l = list(result)
-        debug(False)
-
-        return result
+        # XXX: BradCrittenden 2009-04-24 bug=217644: Wrap the results to
+        # ensure the .count() method works until the Storm bug is fixed and
+        # integrated.
+        return DecoratedResultSet(result)
 
     def search(self, text):
         """Return people/teams whose fti or email address match :text:."""
@@ -872,7 +860,10 @@ class ValidTeamVocabulary(ValidPersonOrTeamVocabulary):
 
         result.config(distinct=True)
         result.order_by(Person.displayname, Person.name)
-        return result
+        # XXX: BradCrittenden 2009-04-24 bug=217644: Wrap the results to
+        # ensure the .count() method works until the Storm bug is fixed and
+        # integrated.
+        return DecoratedResultSet(result)
 
 
 class ValidPersonVocabulary(ValidPersonOrTeamVocabulary):
