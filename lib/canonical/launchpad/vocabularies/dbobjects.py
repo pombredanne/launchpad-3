@@ -788,11 +788,8 @@ class ValidPersonOrTeamVocabulary(
             # The following is syntactically correct but returns all people
             # not the ones searched for. I suspect that is due to the 'Person'
             # in the using.  Without it, though, the SQL is invalid.
-            #result = self.store.using(Person, Alias(combined_result._get_select())).find(Person)
-
-            # This approach does not work as it has a PG ProgrammingError.
-            from canonical.launchpad.components.decoratedresultset import DecoratedResultSet
-            result = DecoratedResultSet(combined_result)
+            subselect = Alias(combined_result._get_select(), 'Person')
+            result = self.store.using(subselect).find(Person)
         result.config(distinct=True)
         result.order_by(Person.displayname, Person.name)
 
