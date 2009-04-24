@@ -1099,22 +1099,19 @@ DECLARE
 BEGIN
     IF TG_OP = 'INSERT' THEN
         needs_update := TRUE;
-    ELSE 
-        IF (NEW.owner_name IS NULL
-            OR NEW.unique_name IS NULL
-            OR OLD.owner_name <> NEW.owner_name
-            OR OLD.unique_name <> NEW.unique_name
-            OR (NEW.target_suffix IS NULL <> OLD.target_suffix IS NULL)
-            OR COALESCE(OLD.target_suffix, '')
-                <> COALESCE(NEW.target_suffix, '')
-            OR OLD.name <> NEW.name
-            OR OLD.owner <> NEW.owner
-            OR COALESCE(OLD.product, -1) <> COALESCE(NEW.product, -1)
-            OR COALESCE(OLD.distroseries, -1) <> COALESCE(NEW.distroseries, -1)
-            OR COALESCE(OLD.sourcepackagename, -1)
-                <> COALESCE(NEW.sourcepackagename, -1)) THEN
-            needs_update := TRUE;
-        END IF;
+    ELSIF (NEW.owner_name IS NULL
+        OR NEW.unique_name IS NULL
+        OR OLD.owner_name <> NEW.owner_name
+        OR OLD.unique_name <> NEW.unique_name
+        OR (NEW.target_suffix IS NULL <> OLD.target_suffix IS NULL)
+        OR COALESCE(OLD.target_suffix, '') <> COALESCE(NEW.target_suffix, '')
+        OR OLD.name <> NEW.name
+        OR OLD.owner <> NEW.owner
+        OR COALESCE(OLD.product, -1) <> COALESCE(NEW.product, -1)
+        OR COALESCE(OLD.distroseries, -1) <> COALESCE(NEW.distroseries, -1)
+        OR COALESCE(OLD.sourcepackagename, -1)
+            <> COALESCE(NEW.sourcepackagename, -1)) THEN
+        needs_update := TRUE;
     END IF;
 
     IF needs_update THEN   
