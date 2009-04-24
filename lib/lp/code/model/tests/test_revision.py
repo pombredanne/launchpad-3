@@ -647,8 +647,8 @@ class RevisionCacheTestCase(TestCaseWithFactory):
         TestCaseWithFactory.setUp(self, 'admin@canonical.com')
         self.store = getUtility(IStoreSelector).get(
             MAIN_STORE, DEFAULT_FLAVOR)
-        # Remove any existing revision cache items.
-        self.store.find(RevisionCache).remove()
+        # There should be no RevisionCache entries in the test data.
+        assert self.store.find(RevisionCache).count() == 0
 
     def _getRevisionCache(self):
         return list(self.store.find(RevisionCache)

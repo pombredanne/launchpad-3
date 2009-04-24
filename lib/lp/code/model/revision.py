@@ -475,9 +475,9 @@ class RevisionSet:
 
         insert_columns.append(str(branch.private))
         if branch.private:
-            subselect_clauses.append('private')
+            subselect_clauses.append('private IS TRUE')
         else:
-            subselect_clauses.append('NOT private')
+            subselect_clauses.append('private IS FALSE')
 
         insert_statement = """
             INSERT INTO RevisionCache
@@ -532,7 +532,7 @@ class RevisionCache(Storm):
     revision_id = Int(name='revision', allow_none=False)
     revision = Reference(revision_id, 'Revision.id')
 
-    revision_author_id = Int(name='revision_author', allow_none=True)
+    revision_author_id = Int(name='revision_author', allow_none=False)
     revision_author = Reference(revision_author_id, 'RevisionAuthor.id')
 
     revision_date = DateTime(
@@ -551,6 +551,11 @@ class RevisionCache(Storm):
     private = Bool(allow_none=False, default=False)
 
     def __init__(self, revision):
+        # Make the revision_author assignment first as traversing to the
+        # revision_author of the revision does a query which causes a store
+        # flush.  If an assignment has been done already, the RevisionCache
+        # object would have been implicitly added to the store, and failes
+        # with an integrity check.
         self.revision_author = revision.revision_author
         self.revision = revision
         self.revision_date = revision.revision_date
