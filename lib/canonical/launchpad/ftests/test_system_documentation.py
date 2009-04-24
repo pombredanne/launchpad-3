@@ -105,15 +105,15 @@ def builddmasterSetUp(test):
 
 def branchscannerSetUp(test):
     """Setup the user for the branch scanner tests."""
-    LaunchpadZopelessLayer.switchDbUser('branchscanner')
+    LaunchpadZopelessLayer.switchDbUser(config.branchscanner.dbuser)
     setUp(test)
 
 
 def branchscannerBugsSetUp(test):
     """Setup the user for the branch scanner tests."""
     lobotomize_stevea()
-    LaunchpadZopelessLayer.switchDbUser('branchscanner')
-    setUp(test)
+    branchscannerSetUp(test)
+
 
 def branchscannerTearDown(test):
     """Tear down the branch scanner tests."""
