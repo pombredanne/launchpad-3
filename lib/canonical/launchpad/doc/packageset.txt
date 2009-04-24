@@ -116,31 +116,72 @@ Adding source package names to a package set repeatedly has no effect.
 
     >>> umbrella_ps.add(kernel_spns)
     >>> umbrella_spns2 = umbrella_ps.sourcesIncluded(direct_inclusion=True)
-    >>> resultsets_are_equal(umbrella_spns, umbrella_spns2)
-    True
+    >>> print_data(umbrella_spns2)
+     1 -> mozilla-firefox
+     9 -> evolution
+    10 -> netapplet
+    14 -> pmount
+    15 -> a52dec
+    16 -> mozilla
+    17 -> at
+    18 -> thunderbird
+    19 -> alsa-utils
+    20 -> cnews
+    21 -> libstdc++
+    22 -> linux-source-2.6.15
+    23 -> foobar
+    24 -> cdrkit
+    25 -> language-pack-de
+    26 -> iceweasel
+    27 -> commercialpackage
 
 Removing source package names is easy.
 
     >>> umbrella_ps.remove(kernel_spns)
     >>> remaining_spns = umbrella_ps.sourcesIncluded(direct_inclusion=True)
 
-The union set of source names in 'umbrella' post deletion and of the sources
-in 'kernel' are equal to the sources that were in 'umbrella' prior to the
-deletion.
+The 'umbrella' package set includes all source names. From that set the
+'kernel' package set (that includes merely two source names) is deducted.
+What the following shows is that the package set substraction method works.
 
-    >>> remaining_src_names = [spn.name for spn in remaining_spns]
-    >>> kernel_src_names = [spn.name for spn in kernel_spns]
-    >>> umbrella_src_names == sorted(remaining_src_names + kernel_src_names)
-    True
+    >>> print_data(remaining_spns)
+     1 -> mozilla-firefox
+     9 -> evolution
+    10 -> netapplet
+    14 -> pmount
+    15 -> a52dec
+    16 -> mozilla
+    17 -> at
+    18 -> thunderbird
+    19 -> alsa-utils
+    20 -> cnews
+    23 -> foobar
+    24 -> cdrkit
+    25 -> language-pack-de
+    26 -> iceweasel
+    27 -> commercialpackage
 
 Trying to remove source package names that are *not* associated with a
 package set from the latter has no effect.
 
     >>> umbrella_ps.remove(kernel_spns)
-    >>> resultsets_are_equal(
-    ...     remaining_spns,
-    ...     umbrella_ps.sourcesIncluded(direct_inclusion=True))
-    True
+    >>> remaining_spns = umbrella_ps.sourcesIncluded(direct_inclusion=True)
+    >>> print_data(remaining_spns)
+     1 -> mozilla-firefox
+     9 -> evolution
+    10 -> netapplet
+    14 -> pmount
+    15 -> a52dec
+    16 -> mozilla
+    17 -> at
+    18 -> thunderbird
+    19 -> alsa-utils
+    20 -> cnews
+    23 -> foobar
+    24 -> cdrkit
+    25 -> language-pack-de
+    26 -> iceweasel
+    27 -> commercialpackage
 
 Add the removed source package names back to 'umbrella'.
 
@@ -590,11 +631,11 @@ The generic checkAuthenticated() method works as well.
     ...     mozilla_ps)
     >>> permission = permissions[0]
 
-    >>> print(permission.person.name)
+    >>> print permission.person.name
     hacker
-    >>> print(permission.package_set_name)
+    >>> print permission.package_set_name
     mozilla
-    >>> print(permission.permission.name)
+    >>> print permission.permission.name
     UPLOAD
     >>> permission.explicit
     False
