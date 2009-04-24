@@ -54,7 +54,7 @@ class ParseLibrarianApacheLogs(LaunchpadCronScript):
             fd.close()
             create_or_update_parsedlog_entry(first_line, parsed_bytes)
             self.txn.commit()
-            self.logger.info('Finished parsing %s' % fd.name)
+            self.logger.info('Finished parsing %s' % fd)
 
         self.logger.info('Done parsing apache log files for librarian')
 
