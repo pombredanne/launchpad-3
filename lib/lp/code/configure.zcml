@@ -397,6 +397,7 @@
                     merge_queue
                     namespace
                     pending_writes
+                    commitsForDays
                     "/>
     <require
         permission="launchpad.Edit"
