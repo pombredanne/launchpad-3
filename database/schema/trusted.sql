@@ -1098,8 +1098,11 @@ DECLARE
     branch_info RECORD;
 BEGIN
     IF (TG_OP = 'INSERT'
+        OR NEW.owner_name IS NULL
+        OR NEW.unique_name IS NULL
         OR OLD.owner_name <> NEW.owner_name
         OR OLD.unique_name <> NEW.unique_name
+        OR (NEW.target_suffix IS NULL <> OLD.target_suffix IS NULL)
         OR COALESCE(OLD.target_suffix, '') <> COALESCE(NEW.target_suffix, '')
         OR OLD.name <> NEW.name
         OR OLD.owner <> NEW.owner
@@ -1111,11 +1114,11 @@ BEGIN
         SELECT
             Person.name AS owner_name,
             COALESCE(Product.name, SPN.name) AS target_suffix,
-            '~' || Owner.name || '/' || COALESCE(
+            '~' || Person.name || '/' || COALESCE(
                 Product.name,
                 Distribution.name || '/' || Distroseries.name
                     || '/' || SPN.name,
-                '+junk') || '/' || branch.name AS unique_name
+                '+junk') || '/' || NEW.name AS unique_name
         INTO NEW.owner_name, NEW.target_suffix, NEW.unique_name
         FROM Person
         LEFT OUTER JOIN DistroSeries ON NEW.distroseries = DistroSeries.id
