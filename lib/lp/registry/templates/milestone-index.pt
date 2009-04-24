@@ -177,7 +177,7 @@
           ProductRelease.changelog go here.
         </div>
         <div style="margin-top: -0.5em;">
-          <a 
+          <a
           tal:attributes="href release_menu/edit/url">Edit the changelog</a> &nbsp; <a tal:replace="structure release_menu/edit/fmt:icon" /></div>
       </fieldset>
 
@@ -341,6 +341,6 @@
       <a tal:replace="structure link/render">Download RDF metadata</a>
     </p>
   </tal:has_release>
-</div> 
+</div>
 </body>
 </html>
