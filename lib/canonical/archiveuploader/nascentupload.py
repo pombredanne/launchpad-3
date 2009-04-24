@@ -528,6 +528,13 @@ class NascentUpload:
             archive.canUpload(signer, source_name)):
             return
 
+        # Now check whether this upload can be approved due to
+        # package set based permissions.
+        ap_set = getUtility(IArchivePermissionSet)
+        if source_name is not None and signer is not None:
+            if ap_set.isSourceUploadAllowed(source_name, signer):
+                return
+
         # If source_name is None then the package must be new, but we
         # kick it out anyway because it's impossible to look up
         # any permissions for it.
