@@ -8,12 +8,9 @@ import logging
 import os
 import unittest
 
-from zope.component import getUtility
-
 from canonical.config import config
-from canonical.launchpad.ftests import login, logout
 from canonical.launchpad.testing.systemdocs import (
-    LayeredDocFileSuite, setGlobs, setUp, tearDown)
+    LayeredDocFileSuite, setUp, tearDown)
 from canonical.testing import LaunchpadZopelessLayer
 
 

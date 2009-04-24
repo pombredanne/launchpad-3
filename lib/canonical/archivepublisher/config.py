@@ -134,7 +134,8 @@ class Config(object):
         self.archiveroot = self._distroconfig.get("publishing","archiveroot")
         self.poolroot = self._distroconfig.get("publishing","poolroot")
         self.distsroot = self._distroconfig.get("publishing","distsroot")
-        self.overrideroot = self._distroconfig.get("publishing","overrideroot")
+        self.overrideroot = self._distroconfig.get(
+            "publishing","overrideroot")
         self.cacheroot = self._distroconfig.get("publishing","cacheroot")
         self.miscroot = self._distroconfig.get("publishing","miscroot")
         # XXX cprov 2007-04-26 bug=45270:

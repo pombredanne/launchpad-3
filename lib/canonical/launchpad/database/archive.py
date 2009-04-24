@@ -7,7 +7,6 @@ __metaclass__ = type
 
 __all__ = ['Archive', 'ArchiveSet']
 
-import os
 import re
 
 from sqlobject import  (
