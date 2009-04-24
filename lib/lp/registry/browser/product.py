@@ -1475,13 +1475,11 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin):
     """Step 2 (of 2) in the +new project add wizard."""
 
     _field_names = ['displayname', 'name', 'title', 'summary',
-                    'licenses', 'license_info']
+                    'description', 'licenses', 'license_info']
     main_action_label = u'Complete Registration'
     schema = IProduct
     step_name = 'projectaddstep2'
     template = ViewPageTemplateFile('../templates/product-new.pt')
-
-    step_description = 'Project registration'
 
     product = None
 
@@ -1492,6 +1490,12 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin):
                   header="Select a project group")
     custom_widget('licenses', LicenseWidget, column_count=3,
                   orientation='vertical')
+
+    @property
+    def step_description(self):
+        if self.search_results_count > 0:
+            return "Is the project you're registering one of these?"
+        return 'Project registration'
 
     def isVCSImport(self):
         if self.user is None:

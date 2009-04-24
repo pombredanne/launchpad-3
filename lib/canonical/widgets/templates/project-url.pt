@@ -3,9 +3,9 @@
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   omit-tag="">
-http://launchpad.net/<div
+http://launchpad.net/<strong><div
         tal:condition="view/read_only"
-        tal:replace="view/product_name">foo</div>
+        tal:replace="view/product_name">foo</div></strong>
 <input id="field.name" name="field.name"
        class="textType" type="type" size="30"
        value=""
