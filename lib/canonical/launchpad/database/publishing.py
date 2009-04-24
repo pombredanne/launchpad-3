@@ -761,10 +761,16 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         summary = getUtility(IBuildSet).getStatusSummaryForBuilds(
             builds)
 
-        # If all the builds are fully-built, we check to see if they
-        # are published, if not, we return a PENDING status.
+        # We only augment the result if we (the SPPH) are ourselves in
+        # the pending/published state and all the builds are fully-built.
+        # In this case we check to see if they are all published, and if
+        # not we return FULLYBUILT_PENDING:
         augmented_summary = summary
-        if summary['status'] == BuildSetStatus.FULLYBUILT:
+        if (self.status in [
+                PackagePublishingStatus.PUBLISHED,
+                PackagePublishingStatus.PENDING] and
+            summary['status'] == BuildSetStatus.FULLYBUILT):
+
             published_bins = self.getPublishedBinaries()
             published_builds = [
                 bin.binarypackagerelease.build

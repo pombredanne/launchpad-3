@@ -133,6 +133,19 @@ per normal:
     hppa build of foo 666 in ubuntutest breezy-autotest RELEASE
     i386 build of foo 666 in ubuntutest breezy-autotest RELEASE
 
+If a build is deleted, it does not cause the build status summary to change:
+
+    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from canonical.launchpad.interfaces.publishing import IPublishingSet
+    >>> sabdfl = getUtility(IPersonSet).getByName('sabdfl')
+    >>> ignored = getUtility(IPublishingSet).requestDeletion([spph], sabdfl)
+    >>> import transaction
+    >>> transaction.commit()
+    >>> print_build_status_summary(spph.getStatusSummaryForBuilds())
+    FULLYBUILT
+    hppa build of foo 666 in ubuntutest breezy-autotest RELEASE
+    i386 build of foo 666 in ubuntutest breezy-autotest RELEASE
+
 IBinaryPackagePublishingHistory also contains similar API conveniences.
 
     >>> bpph = stp.getPubBinaries()[0]
@@ -594,7 +607,6 @@ distroseries).
 Another common copy use-case is rebuild the same source in another
 suite. To simulate this we will create a publication in Celso's PPA.
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
 
     >>> ppa_source = test_publisher.getPubSource(
