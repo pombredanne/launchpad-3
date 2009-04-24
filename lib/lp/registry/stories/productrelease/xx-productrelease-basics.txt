@@ -123,7 +123,7 @@ The release owner can edit the release via its +edit form:
     >>> browser.getControl('Changelog').value = 'This is not a joke.'
     >>> browser.getControl('Change').click()
     >>> print browser.title
-    Mozilla Firefox 1.0 in Launchpad
+    Mozilla Firefox: 1.0
 
 
 == Editing permissions extend to product and series owners ==
@@ -160,7 +160,7 @@ Celso is a member of ubuntu-team, so he can edit this release too:
     >>> browser.getControl('Changelog').value = 'Fixes 3 bugs.'
     >>> browser.getControl('Change').click()
     >>> print browser.title
-    Tomcat 0.6.6.6 in Launchpad
+    Tomcat: 0.6.6.6
 
 And if no-priv owns the series...
 
@@ -180,4 +180,4 @@ others:
     >>> browser.getControl('Changelog').value = 'Fixes 4 bugs.'
     >>> browser.getControl('Change').click()
     >>> print browser.title
-    Tomcat 0.6.6.6 in Launchpad
+    Tomcat: 0.6.6.6

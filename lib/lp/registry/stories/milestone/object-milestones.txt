@@ -147,7 +147,7 @@ A project milestone page has the same navigation as the project:
     * Blueprints - http://blueprints.launchpad.dev/firefox
     * Translations - http://translations.launchpad.dev/firefox
     * Answers - http://answers.launchpad.dev/firefox
-    Main heading: Mozilla Firefox: 1.0
+    Main heading: 1.0
 
 Similarly, a distribution milestone page has the same navigation as
 the distribution:
@@ -162,7 +162,7 @@ the distribution:
     * Blueprints - http://blueprints.launchpad.dev/debian
     * Translations - http://translations.launchpad.dev/debian
     * Answers - http://answers.launchpad.dev/debian
-    Main heading: Debian: 3.1
+    Main heading: 3.1
 
 
 === Duplicate bugs ===

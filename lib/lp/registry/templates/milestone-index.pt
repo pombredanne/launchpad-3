@@ -33,13 +33,13 @@
     <table id="Release-details" style="margin-bottom: 1em;">
       <tr>
         <th>Project:</th>
-        <td><tal:link replace="structure view/target/fmt:link" /></td>
+        <td><tal:link replace="structure view/milestone/target/fmt:link" /></td>
       </tr>
       <tr>
         <th>Series:</th>
-        <td><a tal:attributes="href view/target_series/fmt:url"
-          tal:content="view/target_series/displayname"
-          tal:condition="view/target_series" /></td>
+        <td><a tal:attributes="href view/milestone/series_target/fmt:url"
+          tal:content="view/milestone/series_target/displayname"
+          tal:condition="view/milestone/series_target" /></td>
       </tr>
       <tr>
         <th>Release version:</th>
@@ -323,14 +323,14 @@
   <ul>
     <li>
       <a tal:attributes="
-        href view/target/fmt:url/+milestones">All milestones for the
-        <tal:project replace="view/target/displayname" /> project</a>
+        href view/milestone/target/fmt:url/+milestones">All milestones for the
+        <tal:project replace="view/milestone/target/displayname" /> project</a>
     </li>
-    <li tal:condition="view/target_series">
+    <li tal:condition="view/milestone/series_target">
       <a tal:attributes="
-        href view/target_series/fmt:url">All releases for the
-        <tal:project replace="view/target/displayname" />
-        <tal:project replace="view/target_series/displayname" /> series</a>
+        href view/milestone/series_target/fmt:url">All releases for the
+        <tal:project replace="view/milestone/target/displayname" />
+        <tal:project replace="view/milestone/series_target/displayname" /> series</a>
     </li>
   </ul>
 
