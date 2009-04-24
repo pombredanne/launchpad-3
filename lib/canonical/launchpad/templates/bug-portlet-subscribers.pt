@@ -21,6 +21,9 @@
   </div>
   <script type="text/javascript">
     YUI().use('io-base', 'node', function(Y) {
+      Y.get('.menu-link-subscription').on('click', function(e) {
+            e.halt();
+      });
       Y.on('domready', function() {
         Y.get('#subscribers-portlet-spinner').setStyle('display', 'block');
 
