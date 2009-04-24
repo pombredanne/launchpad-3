@@ -61,7 +61,9 @@ class BugPortletSubcribersContents(LaunchpadView):
         can_unsubscribe = []
         cannot_unsubscribe = []
         for subscription in direct_subscriptions:
-            if subscription.canBeUnsubscribedByUser(self.user):
+            if subscription.person == self.user:
+                can_unsubscribe = [subscription] + can_unsubscribe
+            elif subscription.canBeUnsubscribedByUser(self.user):
                 can_unsubscribe.append(subscription)
             else:
                 cannot_unsubscribe.append(subscription)
