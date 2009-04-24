@@ -5,7 +5,7 @@
     <meta content="Canonical Launchpad Tour - Sharing code means sharing bugs: issues found in free software may originate in code upstream or downstream in a distribution&rsquo;s packaging. Launchpad tracks how each bug affects different communities and helps you work across project boundaries to find a fix" name="description"/>
     <meta content="canonical, launchpad, tour" name="keywords"/>
     <meta content="en-US" name="language"/>
-    <title>Launchpad tour</title>
+    <title>Bug tracker for open source projects &mdash; Launchpad</title>
     <style media="all" type="text/css">
         @import "launchpad-tour.css";
     </style>
@@ -33,7 +33,7 @@
         </ul>
         <div id="page-intro-top"></div>
         <div id="page-intro">
-            <h1>Cross-project bug tracking</h1>
+            <h1>One place to track bugs<br />across project boundaries and tools</h1>
             <p>
                 <img src="images/bugs/main-image.jpg" alt="Collaborate with free software communities." /></p>
                 <p class="intro-text">
@@ -55,16 +55,16 @@ You can even share a comment history across project-boundaries and tools, and us
                 <div class="furthur-information-block-mid">
                     <div class="block">
                         <h3>Share bug reports across projects and tools</h3>
-                        <h4>Bug reports used to exist in isolation. With Launchpad they break through project boundaries.</h4>
+                        <h4>Bug reports used to exist in isolation. With Launchpad they break through project and tool boundaries.</h4>
                         <p class="screen-holder">
                             <img src="images/bugs/1.png" alt="Shared bug reports, independent statuses" width="428" height="198" />                        </p>
                         <p>
                         In Launchpad, you can share a bug report and its comment history with other communities interested in finding a fix.
-                        Each project &mdash; or even different releases within a project &mdash; gets its own status, importance and assignee.
+                        Each project &mdash; or even different releases within a project &mdash; can track its own status, importance and assignee for that same bug report.
                         <br /><br />
-There&rsquo;s even a &ldquo;Bugs fixed elsewhere&rdquo; report that shows which of your bugs are marked fixed in other communities, so you know where to look for low-hanging fruit.
-<br /><br />
-If you work with projects that use external bug trackers, Launchpad can pull in the status of those bugs and even share a comment history between Launchpad and Bugzilla or Trac instances.
+                        Even if the bug's tracked elsewhere &mdash; such as in Trac, Sourceforge or Bugzilla &mdash; Launchpad can pull in it status. Using our <a href="<a href="https://help.launchpad.net/Bugs/PluginAPISpec">bug tracker plugins</a> for Bugzilla and Trac you can share a comment history for a common bug tracked in Launchpad and an external tracker.<br /><br />
+And to help find low-hanging fruit, there&rsquo;s a &ldquo;Bugs fixed elsewhere&rdquo; report that shows which of your bugs are marked fixed in other communities.
+
                         </p>
                     </div>
                     <div class="block odd">
@@ -95,18 +95,25 @@ If you work with projects that use external bug trackers, Launchpad can pull in 
 						Report, subscribe, comment on, assign, prioritise and make just about any other update to bugs tracked in Launchpad using email. Launchpad will also mail you with updates on any bug you're interested in, whether an individual bug or all the bugs associated with a particular project or package. And, if you prefer, you can also subscribe to Atom feeds.
                         </p>
                     </div>
-                    <!--<div class="block odd">
+                    <div class="block odd">
                         <h3>Web services API</h3>
-                        <h4>You no longer need to swap dead patches in bug comments. Instead, link bug reports directly to Bazaar branches of code containing the latest version of your fix.</h4>
+                        <h4>Access your bug reports and Launchpad Bugs functionality directly from your own applications, through our web services API and Python library.</h4>
                         <p class="screen-holder">
-                            <img src="images/bugs/5.png" alt="Found a fix? Upload a branch" />
+                            <img src="images/api/3.png" alt="Web services API and Python library" />
                         </p>
                         <p>
-                            Other community members can download your branches and test them without the hassle of applying patches. Thanks to Bazaar, it&rsquo;s easy to merge the branch containing your bug fix into your project&rsquo;s trunk. Bazaar branches are like "living patches" &mdash; a single URL points to the latest version of the fix and a single command merges it into your trunk branch.
+                          Develop your own tools to access and manipulate bug reports in Launchpad, including:<br /><br />
+                          <ul>
+                            <li>reporting new bugs</li>
+                            <li>searching for and retrieving bug reports</li>
+                            <li>commenting on and editing existing bugs.</li>
+                          </ul>
+                          <br />
+                          Read more about <a href="api">Launchpad's API and our Python library &gt;</a>
                         </p>
                     </div>
                     <div class="clear"></div>
-                </div>-->
+                </div>
                 <div class="furthur-information-block-bot"></div>
             </div>
             
