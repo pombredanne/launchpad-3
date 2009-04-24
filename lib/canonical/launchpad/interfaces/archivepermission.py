@@ -213,7 +213,7 @@ class IArchivePermissionSet(Interface):
         """
 
     def packagesetsForSourceUploader(sourcepackagename, person):
-        """The package set based permissions for the given source name.
+        """The package set based permissions for a given source and uploader.
 
         Return the `IArchivePermission` records for all package sets
             * that include the given source package name

@@ -108,7 +108,8 @@ passing a type that it does not know about results in a TypeError:
     ...     ubuntu)
     Traceback (most recent call last):
     ...
-    TypeError: 'item' is not an IComponent or an ISourcePackageName
+    TypeError: 'item' is not an IComponent, IPackageset or an
+    ISourcePackageName
 
 IArchivePermissionSet also has some helpers to make it very easy to
 check permissions.
