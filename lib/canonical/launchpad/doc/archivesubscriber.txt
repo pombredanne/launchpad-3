@@ -283,3 +283,39 @@ We can do this as an admin too:
 
     >>> login("admin@canonical.com")
     >>> new_sub.cancel(cprov)
+
+
+== Finding all non-active subscribers ==
+
+A method getNonActiveSubscribers() to facilitate contacting all the people
+included in this subscription who do not yet have an active token for the
+corresponding archive.
+
+For example, Joe already has an (unactivated) subscription to Mark's PPA
+via the cprov_team:
+
+    >>> for subscription in sub_set.getBySubscriber(joesmith):
+    ...     print subscription.archive.displayname
+    ...     print subscription.description
+    PPA for Mark Shuttleworth      Access for cprov team
+
+    >>> subscription = sub_set.getBySubscriber(joesmith).first()
+
+So the getNonActiveSubscribers() method for this team subscription will
+currently include Joe:
+
+    >>> for person in subscription.getNonActiveSubscribers():
+    ...     print person.displayname
+    Celso Providelo
+    Joe Smith
+
+But if we create an auth token for joe to the archive (this could be via
+a separate subscription), then he will no longer be listed as a non-active
+subscriber for this subscription:
+
+    >>> joesmith_token = sabdfl.archive.newAuthToken(joesmith)
+    >>> for person in subscription.getNonActiveSubscribers():
+    ...     print person.displayname
+    Celso Providelo
+
+

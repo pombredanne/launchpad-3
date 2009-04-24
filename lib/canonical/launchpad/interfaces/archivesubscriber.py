@@ -97,6 +97,13 @@ class IArchiveSubscriberView(Interface):
     displayname = TextLine(title=_("Subscription displayname"),
         required=False)
 
+    def getNonActiveSubscribers():
+        """Return all individuals from this subscription without tokens.
+
+        This method returns all the individuals who are included in this
+        subscription who do not yet have an active token for the
+        corresponding archive.
+        """
 
 class IArchiveSubscriberEdit(Interface):
     """An interface for launchpad.Edit ops on archive subscribers."""

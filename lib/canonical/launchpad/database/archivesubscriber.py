@@ -69,6 +69,25 @@ class ArchiveSubscriber(Storm):
         self.cancelled_by = cancelled_by
         self.status = ArchiveSubscriberStatus.CANCELLED
 
+    def getNonActiveSubscribers(self):
+        """See `IArchiveSubscriber`."""
+        store = Store.of(self)
+        from lp.registry.model.person import Person # TODO: move
+        all_subscribers = store.find(Person,
+            TeamParticipation.teamID == self.subscriber_id,
+            TeamParticipation.personID == Person.id,
+            TeamParticipation.personID != self.subscriber_id)
+
+        active_subscribers = store.find(Person,
+            Person.id == ArchiveAuthToken.person_id,
+            ArchiveAuthToken.archive_id == self.archive_id,
+            ArchiveAuthToken.date_deactivated == None)
+
+        non_active_subscribers = all_subscribers.difference(
+            active_subscribers)
+        non_active_subscribers.order_by(Person.name)
+        return non_active_subscribers
+
 
 class ArchiveSubscriberSet:
     """See `IArchiveSubscriberSet`."""
