@@ -17,8 +17,11 @@ from storm.expr import Or, And, Select
 from storm.locals import Count, Join
 from storm.store import Store
 from zope.component import getUtility
+from zope.event import notify
 from zope.interface import alsoProvides, implements
 from zope.security.interfaces import Unauthorized
+
+from lazr.lifecycle.event import ObjectCreatedEvent
 
 from canonical.archivepublisher.config import Config as PubConfig
 from canonical.archiveuploader.utils import re_issource, re_isadeb
@@ -1120,12 +1123,6 @@ class Archive(SQLBase):
     def newSubscription(self, subscriber, registrant, date_expires=None,
                         description=None):
         """See `IArchive`."""
-        # XXX 2009-01-19 Julian
-        # This method is currently a stub.  It needs a lot more work to
-        # figure out what to do in the case of overlapping
-        # subscriptions, and also to add the ArchiveAuthTokens for the
-        # subscriber (which may also be a team and thus require
-        # expanding to make one token per member).
         subscription = ArchiveSubscriber()
         subscription.archive = self
         subscription.registrant = registrant
@@ -1136,6 +1133,9 @@ class Archive(SQLBase):
         subscription.date_created = UTC_NOW
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         store.add(subscription)
+
+        notify(ObjectCreatedEvent(subscription))
+
         return subscription
 
 

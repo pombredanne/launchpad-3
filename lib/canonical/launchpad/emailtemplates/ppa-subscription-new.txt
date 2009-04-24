@@ -1,0 +1,10 @@
+Hello %(recipient_name)s,
+
+%(registrant_name)s subscribed you to the PPA '%(ppa_name)s'.
+
+To activate your subscription and start downloading the software
+please visit:
+<%(recipient_subscriptions_url)s>
+
+Regards,
+The Launchpad team
