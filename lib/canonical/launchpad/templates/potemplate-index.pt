@@ -48,7 +48,7 @@
       This template has no description. <a href="+edit">Create it now!</a>
     </p>
     <p tal:condition="context/owner" id="potemplate-owner">
-      This template is owned by 
+      This template is owned by
       <a tal:replace="structure context/owner/fmt:link">owner name</a>
     </p>
     <p tal:condition="context/relatives_by_source" id="potemplate-relatives">
