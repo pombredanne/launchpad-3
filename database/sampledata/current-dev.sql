@@ -9279,7 +9279,7 @@ ALTER TABLE translationgroup ENABLE TRIGGER ALL;
 
 ALTER TABLE translationimportqueueentry DISABLE TRIGGER ALL;
 
-INSERT INTO translationimportqueueentry (id, path, content, importer, dateimported, distroseries, sourcepackagename, productseries, is_published, pofile, potemplate, status, date_status_changed, format, error_output) VALUES (1, 'po/evolution-2.2-test.pot', 57, 16, '2006-12-13 21:17:56.241901', NULL, NULL, 3, true, NULL, 6, 2, '2006-12-13 21:18:40.885499', 1, NULL);
+INSERT INTO translationimportqueueentry (id, path, content, importer, dateimported, distroseries, sourcepackagename, productseries, is_published, pofile, potemplate, status, date_status_changed, format, error_output) VALUES (1, 'po/evolution-2.2-test.pot', 57, 16, '2006-12-13 21:17:56.241901', NULL, NULL, 3, true, NULL, 6, 2, '2006-12-13 21:18:40.885499', 1, 'There was a syntax error while importing this file.');
 INSERT INTO translationimportqueueentry (id, path, content, importer, dateimported, distroseries, sourcepackagename, productseries, is_published, pofile, potemplate, status, date_status_changed, format, error_output) VALUES (2, 'po/pt_BR.po', 58, 16, '2006-12-13 21:18:28.796588', NULL, NULL, 3, true, 30, 6, 2, '2006-12-13 21:18:40.898084', 1, NULL);
 
 
