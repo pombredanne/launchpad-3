@@ -3010,7 +3010,7 @@ class BugTaskTableRowView(LaunchpadView):
         registry = getVocabularyRegistry()
         vocabulary = registry.get(
             IHugeVocabulary, IBugTask['assignee'].vocabularyName)
-        is_user_in_vocabulary = self.user in vocabulary
+        is_user_in_vocabulary = self.user and self.user in vocabulary
         return InlineEditPickerWidget(
             context=self.context,
             request=self.request,
