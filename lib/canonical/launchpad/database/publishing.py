@@ -766,10 +766,8 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         # In this case we check to see if they are all published, and if
         # not we return FULLYBUILT_PENDING:
         augmented_summary = summary
-        if (self.status in [
-                PackagePublishingStatus.PUBLISHED,
-                PackagePublishingStatus.PENDING] and
-            summary['status'] == BuildSetStatus.FULLYBUILT):
+        if (self.status in active_publishing_status and
+                summary['status'] == BuildSetStatus.FULLYBUILT):
 
             published_bins = self.getPublishedBinaries()
             published_builds = [

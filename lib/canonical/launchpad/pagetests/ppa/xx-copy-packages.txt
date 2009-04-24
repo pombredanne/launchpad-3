@@ -542,10 +542,9 @@ changes:
 
     >>> from canonical.launchpad.interfaces.publishing import (
     ...     PackagePublishingStatus)
-    >>> from canonical.database.constants import UTC_NOW
     >>> login('foo.bar@canonical.com')
     >>> for binary in pmount_binaries:
-    ...     binary.secure_record.datepublished = UTC_NOW
+    ...     binary.secure_record.setPublished()
     >>> flush_database_updates()
     >>> logout()
     >>> jblack_browser.reload()
