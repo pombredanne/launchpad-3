@@ -447,18 +447,15 @@
                   style python: not path('repeat/bug/start') and not (
                         path('view/this_is_my_bug_action/submitted') or
                         path('view/submit_bug_action/submitted'))
-                        and 'display: none'">
+                        and 'display: none'"
+                >
 
                 <div class="lesser" style="margin-bottom: 0.5em;"
-                    tal:condition="bugtask">
-                  <label tal:attributes="for string:bug-already-reported-as-${bug/id}"
-                      tal:content="structure bug/description"
-                      style="font-weight: normal" />
-                </div>
+                    tal:condition="bugtask"
+                    tal:define="description bug/description/fmt:shorten/255/fmt:obfuscate-email/fmt:text-to-html"
+                    tal:content="structure description" />
 
                 <div class="lesser" tal:condition="bugtask">
-                  <label
-                      tal:attributes="for string:bug-already-reported-as-${bug/id}">
                     <input type="submit"
                         id="field.actions.this_is_my_bug"
                         name="field.actions.this_is_my_bug"
@@ -471,11 +468,8 @@
                         content="bug/date_last_updated/fmt:approximatedate">
                       2007-07-03
                     </tal:last-updated>
-                  </label>
                 </div>
                 <div class="lesser" tal:condition="not:bugtask">
-                  <label
-                      tal:attributes="for string:bug-already-reported-as-${bug/id}">
                     <input type="submit"
                         id="field.actions.this_is_my_bug"
                         name="field.actions.this_is_my_bug"
@@ -485,7 +479,6 @@
                     <tal:open condition="not:bug/is_complete">Open,</tal:open>
                     last updated
                     <tal:when replace="bug/date_last_updated/fmt:approximatedate" />
-                  </label>
                 </div>
               </div>
             </td>
