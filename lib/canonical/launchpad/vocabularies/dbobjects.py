@@ -72,7 +72,7 @@ import cgi
 from operator import attrgetter
 
 from sqlobject import AND, CONTAINSSTRING, OR, SQLObjectNotFound
-from storm.expr import Join, LeftJoin, SQL, And, Or, Lower, Not
+from storm.expr import Alias, And, Join, LeftJoin, Lower, Not, Or, SQL
 from storm.sqlobject import SQLObjectResultSet
 from zope.component import getUtility
 from zope.interface import implements
@@ -754,7 +754,7 @@ class ValidPersonOrTeamVocabulary(
                     self.extra_clause
                     )
                 )
-
+            public_result.order_by()
             # Next search for the private teams.  A lot of this will be
             # repeated from the public query but since we're only looking for
             # teams it can be streamlined.
@@ -778,88 +778,29 @@ class ValidPersonOrTeamVocabulary(
                     self._private_team_query,
                     )
                 )
-            result = public_result.union(private_result)
+            private_result.order_by()
 
+            combined_result = public_result.union(private_result)
+            combined_result.order_by()
+            print '-'*50
+            print combined_result._get_select()
+            print '-'*50
+            # The following is syntactically correct but returns all people
+            # not the ones searched for. I suspect that is due to the 'Person'
+            # in the using.  Without it, though, the SQL is invalid.
+            #result = self.store.using(Person, Alias(combined_result._get_select())).find(Person)
+
+            # This approach does not work as it has a PG ProgrammingError.
+            from canonical.launchpad.components.decoratedresultset import DecoratedResultSet
+            result = DecoratedResultSet(combined_result)
         result.config(distinct=True)
-
-        # XXX: salgado, 2008-07-23: Sorting by Person.sortingColumns would
-        # make this run a lot faster, but I couldn't find how to do that
-        # because this query uses distinct=True.
         result.order_by(Person.displayname, Person.name)
-        #from storm.tracer import debug
-        #debug(True)
-        #l = list(result)
-        #debug(False)
 
+        from storm.tracer import debug
+        debug(True)
+        l = list(result)
+        debug(False)
 
-        combined_sql = """
-            SELECT Person.* FROM Person
-            WHERE id in (
-              (SELECT Person.id
-               FROM Person
-               LEFT JOIN EmailAddress ON EmailAddress.person = Person.id
-               LEFT JOIN Account ON EmailAddress.account = Account.id
-               WHERE Person.id IN (
-                  SELECT Person.id
-                  FROM Person
-                  WHERE Person.fti @@ ftq(%s)
-
-                  UNION
-
-                  SELECT Person.id
-                  FROM Person, IrcId
-                  WHERE IrcId.person = Person.id
-                     AND lower(IrcId.nickname) = %s
-
-                  UNION
-
-                  SELECT Person.id
-                  FROM Person, EmailAddress
-                  WHERE EmailAddress.person = Person.id
-                     AND lower(email) LIKE %s || '%%' )
-                     AND Person.visibility = %s
-                     AND Person.merged IS NULL
-                     AND (NOT (Person.teamowner IS NULL)
-                     OR Account.status = %s
-                     AND EmailAddress.status IN (%s, %s))
-                     AND %s
-               )
-
-               UNION
-
-              (SELECT Person.id
-               FROM Person
-               JOIN TeamParticipation ON TeamParticipation.team = Person.id
-               WHERE Person.fti @@ ftq(%s) )
-                  AND TeamParticipation.person = %s
-                  AND NOT (Person.teamowner IS NULL)
-                  AND Person.visibility = %s
-                  AND %s
-               )
-        """ % sqlvalues(
-            quote(text),
-            quote(text),
-            quote_like(text),
-            PersonVisibility.PUBLIC,
-            AccountStatus.ACTIVE,
-            EmailAddressStatus.VALIDATED,
-            EmailAddressStatus.PREFERRED,
-            self.extra_clause,
-            quote(text),
-            logged_in_user,
-            PersonVisibility.PRIVATE,
-            self.extra_clause,
-            )
-
-        print '-'*50
-        print combined_sql
-        print '-'*50
-        result = Person.select(combined_sql, clauseTables=[
-                'Person',
-                'Account',
-                'EmailAddress',
-                'TeamParticipation'],
-                 orderBy=('displayname', 'name'))
         return result
 
     def search(self, text):
@@ -876,16 +817,7 @@ class ValidPersonOrTeamVocabulary(
     def searchForTerms(self, query=None):
         """See `IHugeVocabulary`."""
         results = self.search(query)
-        # XXX: BradCrittenden 2009-04-13 bug=217644: Storm ResultSet
-        # aggregates (count, sum, avg) do not respect distinct option.  This
-        # work-around forces the call to count to do the right thing.
-        if isinstance(results, SQLObjectResultSet):
-            num = results.count()
-        else:
-            from storm.expr import Column
-            id = Column('id', Person)
-            num = results.count(expr=id, distinct=True)
-        return CountableIterator(num, results, self.toTerm)
+        return CountableIterator(results.count(), results, self.toTerm)
 
 class ValidTeamVocabulary(ValidPersonOrTeamVocabulary):
     """The set of all valid, public teams in Launchpad."""
