@@ -995,14 +995,14 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers, IHasLogo,
     # @operation_parameters(team=copy_field(ITeamMembership['team']))
     # @export_read_operation()
     def inTeam(team):
-        """Return True if this person is a member or the owner of <team>.
+        """Is this person is a member or the owner of `team`?
 
-        This method is meant to be called by objects which implement either
-        IPerson or ITeam, and it will return True when you ask if a Person is
-        a member of himself (i.e. person1.inTeam(person1)).
+        Returns `True` when you ask if an `IPerson` (or an `ITeam`,
+        since it inherits from `IPerson`) is a member of himself
+        (i.e. `person1.inTeam(person1)`).
 
-        <team> can be the id of a team, an SQLObject representing the
-        ITeam, or the name of the team.
+        :param team: An object providing `IPerson`, the name of a
+            team, or `None` (in which case `False` is returned).
         """
 
     def clearInTeamCache():
