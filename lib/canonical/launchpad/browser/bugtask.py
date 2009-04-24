@@ -974,6 +974,11 @@ class BugTaskView(LaunchpadView, CanBeMentoredView, FeedsMixin):
         return 'var available_official_tags = %s;' % dumps(list(sorted(
             available_tags)))
 
+    @property
+    def user_is_admin(self):
+        """Is the user a Launchpad admin?"""
+        return check_permission('launchpad.Admin', self.context)
+
 
 class BugTaskPortletView:
     """A portlet for displaying a bug's bugtasks."""

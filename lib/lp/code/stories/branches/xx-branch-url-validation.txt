@@ -45,7 +45,8 @@ Try to create a branch with a URL that is already registered.
     >>> for message in get_feedback_messages(user_browser.contents):
     ...     print message
     There is 1 error.
-    The bzr branch GNOME Terminal Mainline is already registered with this URL.
+    The bzr branch ~name12/gnome-terminal/main is already registered with this
+    URL.
 
 
 Try to create a branch without URL

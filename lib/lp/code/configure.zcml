@@ -397,12 +397,19 @@
                     merge_queue
                     namespace
                     pending_writes
+                    commitsForDays
                     "/>
     <require
         permission="launchpad.Edit"
-        attributes="
-                    destroySelf"
-        set_attributes="name title summary url mirror_status_message                                                                                                 private owner author product lifecycle_status                                                                                                 last_mirrored last_mirrored_id last_mirror_attempt                                                                                                 mirror_failures pull_disabled next_mirror_time                                                                                                 last_scanned last_scanned_id revision_count branch_type                                                                                                 reviewer branch_format repository_format                                                                                                 control_format stacked_on merge_queue                                                                                                 merge_control_status"/>
+        attributes="destroySelf setPrivate"
+        set_attributes="name title summary url mirror_status_message
+                        owner author product lifecycle_status
+                        last_mirrored last_mirrored_id last_mirror_attempt
+                        mirror_failures pull_disabled next_mirror_time
+                        last_scanned last_scanned_id revision_count branch_type
+                        reviewer branch_format repository_format
+                        control_format stacked_on merge_queue
+                        merge_control_status"/>
     <require
         permission="launchpad.AnyPerson"
         set_attributes="whiteboard"/>
@@ -491,15 +498,15 @@
   </class>
   <class class="lp.code.model.branchnamespace.PackageNamespace">
     <allow interface="lp.code.interfaces.branchnamespace.IBranchNamespace"/>
-    <allow interface="lp.code.interfaces.branchnamespace.IBranchCreationPolicy"/>
+    <allow interface="lp.code.interfaces.branchnamespace.IBranchNamespacePolicy"/>
   </class>
   <class class="lp.code.model.branchnamespace.PersonalNamespace">
     <allow interface="lp.code.interfaces.branchnamespace.IBranchNamespace"/>
-    <allow interface="lp.code.interfaces.branchnamespace.IBranchCreationPolicy"/>
+    <allow interface="lp.code.interfaces.branchnamespace.IBranchNamespacePolicy"/>
   </class>
   <class class="lp.code.model.branchnamespace.ProductNamespace">
     <allow interface="lp.code.interfaces.branchnamespace.IBranchNamespace"/>
-    <allow interface="lp.code.interfaces.branchnamespace.IBranchCreationPolicy"/>
+    <allow interface="lp.code.interfaces.branchnamespace.IBranchNamespacePolicy"/>
   </class>
   <securedutility
       class="lp.code.model.branchnamespace.BranchNamespaceSet"

@@ -34,7 +34,7 @@
     <adapter
         for="zope.publisher.interfaces.http.IHTTPRequest"
         provides="canonical.launchpad.webapp.interfaces.IDatabasePolicy"
-        factory="canonical.launchpad.webapp.dbpolicy.LaunchpadDatabasePolicy"
+        factory="canonical.launchpad.webapp.dbpolicy.LaunchpadDatabasePolicyFactory"
         />
     <adapter
         for="zope.publisher.interfaces.xmlrpc.IXMLRPCRequest"

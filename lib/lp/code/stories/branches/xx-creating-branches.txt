@@ -131,10 +131,7 @@ has been stripped.
     ...     'http://example.com/applets/main/')
 
     >>> user_browser.getControl('Name').value = 'main'
-    >>> user_browser.getControl('Title').value = 'Gnome Panel Applets Mainline'
     >>> user_browser.getControl('Experimental').click()
-    >>> user_browser.getControl('Summary').value = (
-    ...     'Main branch of development for GNOME Panel Applets.')
     >>> user_browser.getControl('Register Branch').click()
 
 Posting the form should succeed and redirect to the page of the newly
@@ -149,7 +146,7 @@ matching for the angle brackets of an enclosing tag.
     ...
     This branch is public
     ...
-    Gnome Panel Applets Mainline
+    lp://dev/~no-priv/applets/main
     ...http://example.com/applets/main...
 
 
