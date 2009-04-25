@@ -17,6 +17,11 @@
               tal:define="lp_js string:${icingroot}/build"
               tal:attributes="src string:${lp_js}/bugs/bugtask-index.js">
       </script>
+      <script type="text/javascript">
+        YUI().use('base', 'node', 'oop', 'event', 'bugs.bugtask_index', function(Y) {
+            Y.bugs.setup_bugtask_index();
+        });
+      </script>
     </metal:block>
 
     <div metal:fill-slot="main" tal:define="context_menu context/menu:context">
