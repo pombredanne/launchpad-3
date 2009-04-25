@@ -771,13 +771,17 @@ class ValidPersonOrTeamVocabulary(
 
     def searchForTerms(self, query=None):
         """See `IHugeVocabulary`."""
+        import pdb; pdb.set_trace(); # DO NOT COMMIT
         results = self.search(query)
-        # XXX: BradCrittenden 2009-04-13 bug=217644: Storm ResultSet
-        # aggregates (count, sum, avg) do not respect distinct option.  This
-        # work-around forces the call to count to do the right thing.
-        from storm.expr import Column
-        id = Column('id', Person)
-        num = results.count(expr=id, distinct=True)
+        try:
+            # XXX: BradCrittenden 2009-04-13 bug=217644: Storm ResultSet
+            # aggregates (count, sum, avg) do not respect distinct option.  This
+            # work-around forces the call to count to do the right thing.
+            from storm.expr import Column
+            id = Column('id', Person)
+            num = results.count(expr=id, distinct=True)
+        except TypeError:
+            num = results.count()
         return CountableIterator(num, results, self.toTerm)
 
 class ValidTeamVocabulary(ValidPersonOrTeamVocabulary):

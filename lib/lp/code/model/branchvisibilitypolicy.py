@@ -25,7 +25,8 @@ from lp.registry.interfaces.project import IProject
 from lp.code.interfaces.branchvisibilitypolicy import (
     BranchVisibilityRule, IBranchVisibilityTeamPolicy,
     InvalidVisibilityPolicy)
-from lp.registry.interfaces.person import validate_public_person
+from lp.registry.interfaces.person import (
+    validate_person_not_private_membership)
 
 
 class BranchVisibilityTeamPolicy(SQLBase):
@@ -38,7 +39,8 @@ class BranchVisibilityTeamPolicy(SQLBase):
     product = ForeignKey(dbName='product', foreignKey='Product')
     team = ForeignKey(
         dbName='team', foreignKey='Person',
-        storm_validator=validate_public_person, default=None)
+        storm_validator=validate_person_not_private_membership,
+        default=None)
     rule = EnumCol(
         dbName="policy", enum=BranchVisibilityRule, notNull=True,
         default=BranchVisibilityRule.PUBLIC)
