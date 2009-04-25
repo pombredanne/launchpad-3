@@ -13,12 +13,11 @@ __all__ = [
 
 from operator import attrgetter
 
-from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.browser.librarian import ProxiedLibraryFileAlias
-from canonical.launchpad.interfaces.build import IBuildSet, BuildSetStatus
+from canonical.launchpad.interfaces.build import BuildSetStatus
 from canonical.launchpad.interfaces.packagediff import IPackageDiff
 from canonical.launchpad.interfaces.publishing import (
     PackagePublishingStatus, IBinaryPackagePublishingHistory,
@@ -199,14 +198,27 @@ class SourcePublishingRecordView(BasePublishingRecordView):
     @cachedproperty
     def build_status_summary(self):
         """Returns a dict with a summary of the build status."""
-        build_set = getUtility(IBuildSet)
-        return build_set.getStatusSummaryForBuilds(self.builds)
+        return self.context.getStatusSummaryForBuilds()
 
     @property
-    def builds_successful(self):
-        """Return whether all builds were successful."""
-        success = BuildSetStatus.FULLYBUILT
-        return self.build_status_summary['status'] == success
+    def builds_successful_and_published(self):
+        """Return whether all builds were successful and published."""
+        status = self.build_status_summary['status']
+        return status == BuildSetStatus.FULLYBUILT
+
+    @property
+    def builds_successful_and_pending(self):
+        """Return whether builds were successful but not all published."""
+        status = self.build_status_summary['status']
+        return status == BuildSetStatus.FULLYBUILT_PENDING
+
+    @property
+    def pending_builds(self):
+        """Return a list of successful builds pending publication."""
+        if self.builds_successful_and_pending:
+            return self.build_status_summary['builds']
+        else:
+            return []
 
     @property
     def build_status_img_src(self):
@@ -215,6 +227,7 @@ class SourcePublishingRecordView(BasePublishingRecordView):
             BuildSetStatus.BUILDING: '/@@/build-building',
             BuildSetStatus.NEEDSBUILD: '/@@/build-needed',
             BuildSetStatus.FAILEDTOBUILD: '/@@/no',
+            BuildSetStatus.FULLYBUILT_PENDING: '/@@/build-success-pending'
             }
 
         return image_map.get(self.build_status_summary['status'], '/@@/yes')

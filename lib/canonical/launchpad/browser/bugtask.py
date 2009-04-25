@@ -470,6 +470,12 @@ class BugTaskView(LaunchpadView, CanBeMentoredView, FeedsMixin):
         # See render() for how this flag is used.
         self._redirecting_to_bug_list = False
 
+        # If the bug is not reported in this context, redirect
+        # to the default bug task.
+        if not self.isReportedInContext():
+            self.request.response.redirect(
+                canonical_url(self.context.bug.default_bugtask))
+
         self.bug_title_edit_widget = TextLineEditorWidget(
             bug, 'title', canonical_url(self.context, view_name='+edit'),
             id="bug-title", title="Edit this summary")

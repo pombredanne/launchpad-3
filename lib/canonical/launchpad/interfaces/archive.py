@@ -721,7 +721,7 @@ class IArchiveView(IHasBuildRecords):
     @operation_parameters(
         source_ids=List(
             title=_("A list of source publishing history record ids."),
-            value_type=TextLine()))
+            value_type=Int()))
     @export_read_operation()
     def getBuildSummariesForSourceIds(source_ids):
         """Return a dictionary containing a summary of the build statuses.
