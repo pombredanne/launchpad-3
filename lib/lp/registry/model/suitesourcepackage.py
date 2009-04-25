@@ -21,10 +21,12 @@ class SuiteSourcePackage:
 
     @property
     def distribution(self):
+        """See `ISuiteSourcePackage`."""
         return self.distroseries.distribution
 
     @property
     def path(self):
+        """See `ISuiteSourcePackage`."""
         return '/'.join([
             self.distribution.name,
             self.suite,
@@ -32,8 +34,10 @@ class SuiteSourcePackage:
 
     @property
     def sourcepackage(self):
+        """See `ISuiteSourcePackage`."""
         return self.distroseries.getSourcePackage(self.sourcepackagename)
 
     @property
     def suite(self):
+        """See `ISuiteSourcePackage`."""
         return self.distroseries.getSuite(self.pocket)
