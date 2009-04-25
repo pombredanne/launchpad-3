@@ -1328,9 +1328,7 @@ class SourcePackageBranchesView(BranchListingView):
         """Links to other series in the same distro as the package."""
         our_series = self.context.distroseries
         our_sourcepackagename = self.context.sourcepackagename
-        # We want oldest on the left, and 'serieses' normally yields the
-        # newest first.
-        for series in reversed(self.context.distribution.serieses):
+        for series in self.context.distribution.serieses:
             if series.active:
                 yield dict(
                     series_name=series.name,
