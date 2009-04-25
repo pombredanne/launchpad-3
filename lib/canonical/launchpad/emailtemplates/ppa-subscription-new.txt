@@ -1,0 +1,11 @@
+Hello %(recipient_name)s,
+
+You are receiving this message because %(registrant_name)s subscribed you to the private PPA '%(ppa_name)s'. This subscription enables you to download software from this private PPA.
+
+To activate your subscription and start downloading the software please visit:
+<%(recipient_subscriptions_url)s>
+
+If you do not wish to download software from this PPA you can safely ignore this message.
+
+Regards,
+The Launchpad team

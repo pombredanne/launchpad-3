@@ -618,6 +618,20 @@ class ISourcePackagePublishingHistory(ISecureSourcePackagePublishingHistory):
             source in the destination location.
         """
 
+    def getStatusSummaryForBuilds():
+        """Return a summary of the build status for the related builds.
+
+        This method augments IBuildSet.getBuildStatusSummaryForBuilds() by
+        additionally checking to see if all the builds have been published
+        before returning the fully-built status.
+
+        :return: A dict consisting of the build status summary for the
+            related builds. For example:
+                {
+                    'status': PackagePublishingStatus.PENDING,
+                    'builds': [build1, build2]
+                }
+        """
 
 #
 # Binary package publishing
