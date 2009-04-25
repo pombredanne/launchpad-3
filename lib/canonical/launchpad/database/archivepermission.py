@@ -139,9 +139,14 @@ class ArchivePermissionSet:
             clauses.append(
                 "ArchivePermission.sourcepackagename = %s" % sqlvalues(item))
             prejoins.append("sourcepackagename")
+        elif IPackageset.providedBy(item):
+            clauses.append(
+                "ArchivePermission.packageset = %s" % sqlvalues(item.id))
+            prejoins.append("packageset")
         else:
-            raise TypeError(
-                "'item' is not an IComponent or an ISourcePackageName")
+            raise AssertionError(
+                "'item' is not an IComponent, IPackageset or an "
+                "ISourcePackageName")
 
         query = " AND ".join(clauses)
         auth = ArchivePermission.select(

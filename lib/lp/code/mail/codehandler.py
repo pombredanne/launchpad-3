@@ -11,7 +11,6 @@ from bzrlib.errors import (
     NotAMergeDirective, NotBranchError, NotStacked)
 from bzrlib.merge_directive import MergeDirective
 from bzrlib.transport import get_transport
-from bzrlib.urlutils import escape
 from bzrlib.urlutils import join as urljoin
 from sqlobject import SQLObjectNotFound
 
@@ -487,7 +486,7 @@ class CodeHandler:
         try:
             source_url = urljoin(lp_server.get_url(), db_source.unique_name)
             target_url = urljoin(lp_server.get_url(), db_target.unique_name)
-            stacked_url = escape('/' + db_target.unique_name)
+            stacked_url = '/' + db_target.unique_name
             bzr_source = self._openSourceBzrBranch(
                 source_url, target_url, stacked_url)
             if is_branch_stackable(bzr_source):

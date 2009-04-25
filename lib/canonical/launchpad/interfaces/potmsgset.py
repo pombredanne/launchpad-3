@@ -1,4 +1,4 @@
-# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0211,E0213
 
 from zope.interface import Interface, Attribute
@@ -256,3 +256,9 @@ class IPOTMsgSet(Interface):
         :param sequence: The sequence number of this `IPOTMsgSet` in the given
             `IPOTemplate`.
         """
+
+    def getAllTranslationMessages():
+        """Retrieve all `TranslationMessage`s for this `POTMsgSet`."""
+
+    def getAllTranslationTemplateItems():
+        """Retrieve all `TranslationTemplateItem`s for this `POTMsgSet`."""

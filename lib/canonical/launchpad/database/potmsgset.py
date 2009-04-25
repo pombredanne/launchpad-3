@@ -981,3 +981,13 @@ class POTMsgSet(SQLBase):
             return translation_template_item.sequence
         else:
             return 0
+
+    def getAllTranslationMessages(self):
+        """See `IPOTMsgSet`."""
+        return TranslationMessage.selectBy(potmsgset=self, orderBy=['id'])
+
+    def getAllTranslationTemplateItems(self):
+        """See `IPOTMsgSet`."""
+        return TranslationTemplateItem.selectBy(
+            potmsgset=self, orderBy=['id'])
+
