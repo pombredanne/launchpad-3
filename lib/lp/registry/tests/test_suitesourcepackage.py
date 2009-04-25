@@ -71,6 +71,12 @@ class TestSuiteSourcePackage(TestCaseWithFactory):
         ssp = self.makeSuiteSourcePackage()
         self.assertEqual('<SuiteSourcePackage %s>' % ssp.path, repr(ssp))
 
+    def test_equality(self):
+        ssp1 = self.makeSuiteSourcePackage()
+        ssp2 = SuiteSourcePackage(
+            ssp1.distroseries, ssp1.pocket, ssp1.sourcepackagename)
+        self.assertEqual(ssp1, ssp2)
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
