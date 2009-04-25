@@ -383,53 +383,8 @@
 </metal:bug_reporting_guidelines>
 
 <metal:similar-bugs define-macro="display-similar-bugs">
-  <script type="text/javascript" condition="view/similar_bugs">
-  YUI().use('node', function(Y) {
-      var bug_already_reported_buttons;
-
-      function get_details_div(radio_button) {
-          table_row = radio_button.get('parentNode').get('parentNode');
-          return table_row.query('div.duplicate-details');
-      }
-
-      function toggle_bug_details() {
-          Y.each(bug_already_reported_buttons, function(radio_button) {
-              bug_details_div = get_details_div(radio_button);
-
-              if (radio_button.get('checked')) {
-                  bug_details_div.setStyle('display', 'block');
-              } else {
-                  bug_details_div.setStyle('display', 'none');
-              }
-          });
-      }
-
-      Y.on('domready', function() {
-          bug_already_reported_buttons = Y.all('input.duplicate-bug-button');
-
-          if (bug_already_reported_buttons) {
-              Y.each(bug_already_reported_buttons, function(radio_button) {
-                  radio_button.on('change', toggle_bug_details);
-              });
-          }
-
-          bug_not_reported_button = Y.get('#bug-not-already-reported');
-          bug_not_reported_button.on('change', function() {
-              if (this.get('checked')) {
-                  Y.each(bug_already_reported_buttons, function(radio_button) {
-                      bug_details_div = get_details_div(radio_button);
-                      bug_details_div.setStyle('display', 'none');
-                  });
-              }
-          });
-      });
-  });
-  </script>
-
   <ul id="similar-bugs" style="list-style: none; margin-left: 0; margin-bottom: 0">
-    <li tal:repeat="bug view/similar_bugs"
-        tal:attributes="title bug/description/fmt:shorten/500"
-        title="bug description goes here" class="similar-bug">
+    <li tal:repeat="bug view/similar_bugs" class="similar-bug">
       <table tal:define="bugtask python:view.getRelevantBugTask(bug)">
         <tbody>
           <tr>
@@ -456,8 +411,36 @@
                        style="font-weight: normal">
                   #<tal:bug-id replace="bug/id">4</tal:bug-id>
                   <a tal:attributes="href bug/fmt:url"
-                     tal:content="bug/title">Bug title here</a>
+                     tal:content="bug/title"
+                     >Bug title here</a>
                 </label>
+              </div>
+
+              <div class="lesser" style="margin-bottom: 0.2em">
+                <span class="lesser">
+                  <tal:bugtask-status tal:condition="bugtask">
+                    <span tal:attributes="class string:status${bugtask/status/name}"
+                      ><tal:status content="bugtask/status/title" /></span>
+                  </tal:bugtask-status>
+
+                  <tal:no-bugtask condition="not: bugtask">
+                    <tal:closed condition="bug/is_complete">Closed</tal:closed>
+                    <tal:open condition="not:bug/is_complete">Open</tal:open>
+                  </tal:no-bugtask>
+
+                  (<tal:comments replace="bug/message_count" />
+                  <tal:one_comment condition="python: bug.message_count == 1"
+                    replace="string: comment"
+                    /><tal:plural_comments
+                      condition="python: bug.message_count != 1"
+                      replace="string: comments" />)
+
+                  last updated
+                  <tal:last-updated
+                      content="bug/date_last_updated/fmt:approximatedate">
+                    2007-07-03
+                  </tal:last-updated>
+                </span>
               </div>
 
               <div class="duplicate-details" tal:attributes="
@@ -469,8 +452,7 @@
                 >
 
                 <div class="lesser" style="margin-bottom: 0.5em;"
-                    tal:condition="bugtask"
-                    tal:define="description bug/description/fmt:shorten/255/fmt:obfuscate-email/fmt:text-to-html"
+                    tal:define="description bug/description/fmt:shorten/500/fmt:obfuscate-email/fmt:text-to-html"
                     tal:content="structure description" />
 
                 <div class="lesser" tal:condition="bugtask">
@@ -478,25 +460,12 @@
                         id="field.actions.this_is_my_bug"
                         name="field.actions.this_is_my_bug"
                         value="This is my bug" />
-
-                    <span tal:attributes="class string:status${bugtask/status/name}"
-                        tal:content="bugtask/status/title" />,
-                    last updated
-                    <tal:last-updated
-                        content="bug/date_last_updated/fmt:approximatedate">
-                      2007-07-03
-                    </tal:last-updated>
                 </div>
                 <div class="lesser" tal:condition="not:bugtask">
                     <input type="submit"
                         id="field.actions.this_is_my_bug"
                         name="field.actions.this_is_my_bug"
                         value="This is my bug" />
-
-                    <tal:closed condition="bug/is_complete">Closed,</tal:closed>
-                    <tal:open condition="not:bug/is_complete">Open,</tal:open>
-                    last updated
-                    <tal:when replace="bug/date_last_updated/fmt:approximatedate" />
                 </div>
               </div>
             </td>

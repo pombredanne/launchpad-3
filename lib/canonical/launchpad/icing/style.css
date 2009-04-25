@@ -155,7 +155,7 @@ ul {margin-left: 0; padding-left: 22px; /* works for 14px icons */}
 .offline {text-align: center; margin: 2em 0;}
 .unavailable {color: #999; background: none;}
 
-.duplicate-details p { padding: 0em; margin: 0em; }
+.duplicate-details p { padding: 0em; margin-top: 0em; margin-bottom: 0.2em; }
 
 /* Blank space at the top of the page makes the location bar more noticable.
 Ideally page margins would scale non-linearly, but absolute is next best: */
