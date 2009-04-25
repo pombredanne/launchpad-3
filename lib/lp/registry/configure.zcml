@@ -1567,4 +1567,11 @@
         <allow
             interface="lp.registry.interfaces.entitlement.IEntitlementSet"/>
     </securedutility>
+
+    <!-- SuiteSourcePackage -->
+    <class
+       class="lp.registry.model.suitesourcepackage.SuiteSourcePackage">
+      <allow
+         interface="lp.registry.interfaces.suitesourcepackage.ISuiteSourcePackage"/>
+    </class>
 </configure>

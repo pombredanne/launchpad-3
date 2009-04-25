@@ -55,6 +55,7 @@ from lp.code.interfaces.seriessourcepackagebranch import (
     IMakeOfficialBranchLinks)
 from lp.registry.interfaces.sourcepackage import (
     ISourcePackage, ISourcePackageFactory)
+from lp.registry.model.suitesourcepackage import SuiteSourcePackage
 
 
 class SourcePackageQuestionTargetMixin(QuestionTargetMixin):
@@ -637,6 +638,11 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
              == self.sourcepackagename.id),
             SeriesSourcePackageBranch.branch == Branch.id).order_by(
                 SeriesSourcePackageBranch.pocket)
+
+    def getSuiteSourcePackage(self, pocket):
+        """See `ISourcePackage`."""
+        return SuiteSourcePackage(
+            self.distroseries, pocket, self.sourcepackagename)
 
     def getPocketPath(self, pocket):
         """See `ISourcePackage`."""
