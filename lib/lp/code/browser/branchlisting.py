@@ -1331,10 +1331,11 @@ class SourcePackageBranchesView(BranchListingView):
         # We want oldest on the left, and 'serieses' normally yields the
         # newest first.
         for series in reversed(self.context.distribution.serieses):
-            yield dict(
-                series_name=series.name,
-                package=SourcePackage(our_sourcepackagename, series),
-                linked=(series != our_series))
+            if series.active:
+                yield dict(
+                    series_name=series.name,
+                    package=SourcePackage(our_sourcepackagename, series),
+                    linked=(series != our_series))
 
 
 class PersonProductOwnedBranchesView(PersonBaseBranchListingView):
