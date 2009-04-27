@@ -73,7 +73,6 @@ from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.codeimportjob import (
     CodeImportJobState, ICodeImportJobWorkflow)
 from lp.code.interfaces.codereviewcomment import ICodeReviewComment
-from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.interfaces.branchnamespace import (
     get_branch_namespace, IBranchNamespacePolicy)
 from lp.code.interfaces.branchtarget import IHasBranchTarget
