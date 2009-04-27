@@ -72,7 +72,7 @@ import cgi
 from operator import attrgetter
 
 from sqlobject import AND, CONTAINSSTRING, OR, SQLObjectNotFound
-from storm.expr import Join, LeftJoin, SQL, And, Or, Lower, Not
+from storm.expr import Alias, And, Join, LeftJoin, Lower, Not, Or, SQL
 from zope.component import getUtility
 from zope.interface import implements
 from zope.schema.interfaces import IVocabulary, IVocabularyTokenized
@@ -90,6 +90,8 @@ from canonical.launchpad.database import (
     Product, ProductRelease, ProductSeries, Project, SourcePackageRelease,
     Specification, Sprint, TeamParticipation, TranslationGroup,
     TranslationMessage)
+from canonical.launchpad.components.decoratedresultset import (
+    DecoratedResultSet)
 from canonical.launchpad.database.stormsugar import StartsWith
 from canonical.database.sqlbase import SQLBase, quote_like, quote, sqlvalues
 from canonical.launchpad.helpers import shortlist
@@ -655,12 +657,11 @@ class ValidPersonOrTeamVocabulary(
 
     @property
     def _private_team_query(self):
-        """Return query for all private teams the logged in user belongs."""
+        """Return query for all private teams the logged in user belongs to."""
         logged_in_user = getUtility(ILaunchBag).user
         if logged_in_user is not None:
             private_query = AND(
                 TeamParticipation.person == logged_in_user.id,
-                TeamParticipation.teamID == Person.id,
                 Not(Person.teamowner == None),
                 Person.visibility == PersonVisibility.PRIVATE
                 )
@@ -693,17 +694,32 @@ class ValidPersonOrTeamVocabulary(
                     )
                 )
         else:
-            tables = [
+            # Do a full search based on the text given.
+
+            # The queries are broken up into several steps for efficiency.
+            # The public person and team searches do not need to join with the
+            # TeamParticipation table, which is very expensive.  The search
+            # for private teams does need that table but the number of private
+            # teams is very small so the cost is not great.
+            valid_email_statuses = (
+                EmailAddressStatus.VALIDATED,
+                EmailAddressStatus.PREFERRED,
+                )
+
+            # First search for public persons and teams that match the text.
+            public_tables = [
                 Person,
-                Join(TeamParticipation,
-                     TeamParticipation.teamID == Person.id),
                 LeftJoin(EmailAddress, EmailAddress.person == Person.id),
                 LeftJoin(Account, EmailAddress.account == Account.id),
                 ]
 
+            # Create an inner query that will match public persons and teams
+            # that have the search text in the fti, at the start of the email
+            # address, or as their full IRC nickname.
+
             # Note we use lower() instead of the non-standard ILIKE because
-            # ILIKE doesn't seem to hit the indexes.
-            inner_select = SQL("""
+            # ILIKE doesn't hit the indexes.
+            public_inner_textual_select = SQL("""
                 SELECT Person.id
                 FROM Person
                 WHERE Person.fti @@ ftq(%s)
@@ -717,46 +733,70 @@ class ValidPersonOrTeamVocabulary(
                 FROM Person, EmailAddress
                 WHERE EmailAddress.person = Person.id
                     AND lower(email) LIKE %s || '%%%%'
-                    AND EmailAddress.status IN %s
                 """ % (
-                    quote(text), quote(text), quote_like(text),
-                    sqlvalues(
-                        EmailAddressStatus.VALIDATED,
-                        EmailAddressStatus.PREFERRED)))
+                    quote(text), quote(text), quote_like(text)))
 
-            result = self.store.using(*tables).find(
+            public_result = self.store.using(*public_tables).find(
                 Person,
                 And(
-                    Person.id.is_in(inner_select),
-                    Or(Person.visibility == PersonVisibility.PUBLIC,
-                       # Private team the logged in user is a member.
-                       self._private_team_query,
-                       ),
+                    Person.id.is_in(public_inner_textual_select),
+                    Person.visibility == PersonVisibility.PUBLIC,
                     Person.merged == None,
                     Or(# A valid person-or-team is either a team...
                        # Note: 'Not' due to Bug 244768.
                        Not(Person.teamowner == None),
 
-                       # Or has an active account and a working email
-                       # address.
-                       And(
-                            Account.status == AccountStatus.ACTIVE,
-                            EmailAddress.status.is_in((
-                                    EmailAddressStatus.VALIDATED,
-                                    EmailAddressStatus.PREFERRED
-                                    ))
-                            )
+                       # Or a person who has an active account and a working
+                       # email address.
+                       And(Account.status == AccountStatus.ACTIVE,
+                           EmailAddress.status.is_in(valid_email_statuses))
                        ),
                     self.extra_clause
                     )
                 )
+            # The public query doesn't need to be ordered as it will be done
+            # at the end.
+            public_result.order_by()
 
+            # Next search for the private teams.
+            private_tables = [
+                Person,
+                Join(TeamParticipation,
+                     TeamParticipation.teamID == Person.id),
+                ]
+            # Searching for private teams that match can be easier since we
+            # are only interested in teams.  Teams can have email addresses
+            # but we're electing to ignore them here.
+            private_inner_select = SQL("""
+                SELECT Person.id
+                FROM Person
+                WHERE Person.fti @@ ftq(%s)
+                """ % quote(text))
+            private_result = self.store.using(*private_tables).find(
+                Person,
+                And(
+                    Person.id.is_in(private_inner_select),
+                    self._private_team_query,
+                    )
+                )
+
+            # The private query doesn't need to be ordered as it will be done
+            # at the end.
+            private_result.order_by()
+
+            combined_result = public_result.union(private_result)
+            combined_result.order_by()
+            # XXX: BradCrittenden 2009-04-26 bug=217644: The use of Alias and
+            # is a work-around for .count() not working with the 'distinct'
+            # option.
+            subselect = Alias(combined_result._get_select(), 'Person')
+            result = self.store.using(subselect).find(Person)
         result.config(distinct=True)
-
-        # XXX: salgado, 2008-07-23: Sorting by Person.sortingColumns would
-        # make this run a lot faster, but I couldn't find how to do that
-        # because this query uses distinct=True.
-        return result.order_by(Person.displayname, Person.name)
+        result.order_by(Person.displayname, Person.name)
+        # XXX: BradCrittenden 2009-04-24 bug=217644: Wrap the results to
+        # ensure the .count() method works until the Storm bug is fixed and
+        # integrated.
+        return DecoratedResultSet(result)
 
     def search(self, text):
         """Return people/teams whose fti or email address match :text:."""
@@ -772,13 +812,7 @@ class ValidPersonOrTeamVocabulary(
     def searchForTerms(self, query=None):
         """See `IHugeVocabulary`."""
         results = self.search(query)
-        # XXX: BradCrittenden 2009-04-13 bug=217644: Storm ResultSet
-        # aggregates (count, sum, avg) do not respect distinct option.  This
-        # work-around forces the call to count to do the right thing.
-        from storm.expr import Column
-        id = Column('id', Person)
-        num = results.count(expr=id, distinct=True)
-        return CountableIterator(num, results, self.toTerm)
+        return CountableIterator(results.count(), results, self.toTerm)
 
 class ValidTeamVocabulary(ValidPersonOrTeamVocabulary):
     """The set of all valid, public teams in Launchpad."""
@@ -797,7 +831,7 @@ class ValidTeamVocabulary(ValidPersonOrTeamVocabulary):
     allow_null_search = True
 
     def _doSearch(self, text=""):
-        """Return the teams whose fti or email address match :text:"""
+        """Return the teams whose fti, IRC, or email address match :text:"""
 
         base_query = Or(
             Person.visibility == PersonVisibility.PUBLIC,
@@ -833,7 +867,10 @@ class ValidTeamVocabulary(ValidPersonOrTeamVocabulary):
 
         result.config(distinct=True)
         result.order_by(Person.displayname, Person.name)
-        return result
+        # XXX: BradCrittenden 2009-04-24 bug=217644: Wrap the results to
+        # ensure the .count() method works until the Storm bug is fixed and
+        # integrated.
+        return DecoratedResultSet(result)
 
 
 class ValidPersonVocabulary(ValidPersonOrTeamVocabulary):
