@@ -173,3 +173,55 @@ Of course, while purged, the mailing list cannot be purged again.
     >>> view = create_view(an_expert)
     >>> view.list_can_be_purged
     False
+
+
+Privacy and mailing lists
+-------------------------
+
+If a non-public team has a mailing list the information cannot be seen
+by non-members.  Access to the team index page is forbidden and the
+stanza for the mailing list is not shown.
+
+    >>> # Create a private membership team.
+    >>> owner = person_set.getByEmail('owner@canonical.com')
+    >>> login('foo.bar@canonical.com')
+    >>> from lp.registry.interfaces.person import PersonVisibility
+    >>> pmt, pmt_list = factory.makeTeamAndMailingList(
+    ...     owner_name='owner',
+    ...     team_name='private-team',
+    ...     visibility=PersonVisibility.PRIVATE_MEMBERSHIP)
+    >>> login(ANONYMOUS)
+    >>> view = create_initialized_view(pmt, '+index')
+    Traceback (most recent call last):
+     ...
+    Unauthorized: (<Person at ...
+
+The owner of a team can see information about the mailing list.
+
+    >>> login('owner@canonical.com')
+    >>> view = create_initialized_view(pmt, '+index')
+    >>> print view.archive_url
+    http://lists.launchpad.dev/private-team
+
+A non-owner member can see information about the mailing list.
+
+    >>> pmt.addMember(sample_person, owner)
+    >>> login('test@canonical.com')
+    >>> view = create_initialized_view(pmt, '+index')
+    >>> print view.archive_url
+    http://lists.launchpad.dev/private-team
+
+An unprivileged non-member cannot see information about the mailing list.
+
+    >>> login('no-priv@canonical.com')
+    >>> view = create_initialized_view(pmt, '+index')
+    Traceback (most recent call last):
+     ...
+    Unauthorized: (<Person at ...
+
+An administrator may see the mailing list information.
+
+    >>> login('foo.bar@canonical.com')
+    >>> view = create_initialized_view(pmt, '+index')
+    >>> print view.archive_url
+    http://lists.launchpad.dev/private-team

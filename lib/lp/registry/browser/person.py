@@ -2817,8 +2817,10 @@ class PersonView(LaunchpadView, FeedsMixin):
 
         If the person is not a team, does not have a mailing list, that
         mailing list has never been activated, or the team is private and the
-        logged in user is not a team member, return None instead.
+        logged in user is not a team member, return None instead.  The url is
+        also returned if the user is a Launchpad admin.
         """
+        celebrities = getUtility(ILaunchpadCelebrities)
         mailing_list = self.context.mailing_list
         if mailing_list is None:
             return None
@@ -2826,7 +2828,8 @@ class PersonView(LaunchpadView, FeedsMixin):
             return mailing_list.archive_url
         elif self.user is None:
             return None
-        elif self.user.inTeam(self.context):
+        elif (self.user.inTeam(self.context) or
+              self.user.inTeam(celebrities.admin)):
             return mailing_list.archive_url
         else:
             return None
