@@ -521,6 +521,32 @@ these URLs in Apache.
   permission="zope.Public"
   />
 
+<!-- Help folders -->
+<browser:page
+  for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+  name="+help"
+  class="canonical.launchpad.browser.launchpad.BugsHelpFolder"
+  layer="canonical.launchpad.layers.BugsLayer"
+  attribute="__call__"
+  permission="zope.Public"
+  />
+<browser:page
+  for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+  name="+help"
+  class="canonical.launchpad.browser.launchpad.BlueprintsHelpFolder"
+  layer="canonical.launchpad.layers.BlueprintsLayer"
+  attribute="__call__"
+  permission="zope.Public"
+  />
+<browser:page
+  for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+  name="+help"
+  class="canonical.launchpad.browser.launchpad.TranslationsHelpFolder"
+  layer="canonical.launchpad.layers.TranslationsLayer"
+  attribute="__call__"
+  permission="zope.Public"
+  />
+
 <browser:page
   for="*"
   name="+applicationbuttons"
