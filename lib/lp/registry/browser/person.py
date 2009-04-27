@@ -137,14 +137,17 @@ from canonical.launchpad.interfaces.authtoken import LoginTokenType
 from canonical.launchpad.interfaces.bugtask import (
     BugTaskSearchParams, BugTaskStatus, UNRESOLVED_BUGTASK_STATUSES)
 from canonical.launchpad.interfaces.country import ICountry
-from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus, IEmailAddressSet
+from canonical.launchpad.interfaces.emailaddress import (
+    EmailAddressStatus, IEmailAddressSet)
 from canonical.launchpad.interfaces.geoip import IRequestPreferredLanguages
-from canonical.launchpad.interfaces.gpghandler import GPGKeyNotFoundError, IGPGHandler
+from canonical.launchpad.interfaces.gpghandler import (
+    GPGKeyNotFoundError, IGPGHandler)
 from canonical.launchpad.interfaces.language import ILanguageSet
 from canonical.launchpad.interfaces.launchpad import IPasswordEncryptor
 from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
 from canonical.launchpad.interfaces.oauth import IOAuthConsumerSet
-from canonical.launchpad.interfaces.pofiletranslator import IPOFileTranslatorSet
+from canonical.launchpad.interfaces.pofiletranslator import (
+    IPOFileTranslatorSet)
 from canonical.launchpad.interfaces.specification import SpecificationFilter
 from canonical.launchpad.webapp.interfaces import (
     ILaunchBag, IOpenLaunchBag, NotFoundError, UnexpectedFormData)
@@ -153,8 +156,10 @@ from lp.registry.interfaces.codeofconduct import ISignedCodeOfConductSet
 from lp.registry.interfaces.gpg import IGPGKeySet
 from lp.registry.interfaces.irc import IIrcIDSet
 from lp.registry.interfaces.jabber import IJabberIDSet
-from lp.registry.interfaces.mailinglist import CannotUnsubscribe, IMailingListSet
-from lp.registry.interfaces.mailinglistsubscription import MailingListAutoSubscribePolicy
+from lp.registry.interfaces.mailinglist import (
+    CannotUnsubscribe, IMailingListSet)
+from lp.registry.interfaces.mailinglistsubscription import (
+    MailingListAutoSubscribePolicy)
 from lp.registry.interfaces.person import (
     IEmailAddress, INewPerson, IPerson, IPersonChangePassword, IPersonClaim,
     IPersonSet, ITeam, ITeamReassignment, PersonCreationRationale,
