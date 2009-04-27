@@ -9,6 +9,14 @@
   metal:use-macro="view/macro:page/onecolumn"
   i18n:domain="launchpad" >
   <body>
+    <div metal:fill-slot="head_epilogue">
+      <style type="text/css">
+        h2.adminlabel {
+          margin: 1.5em 0 0 0;
+        }
+      </style>
+    </div>
+
     <div metal:fill-slot="main">
      <div id="language_packs">
       <h1>
@@ -93,7 +101,8 @@
       </tal:has-unused>
      </div>
      <div tal:condition="view/is_admin">
-        <h2 tal:content="view/adminlabel">Language pack settings</h2>
+        <h2 class="adminlabel"
+            tal:content="view/adminlabel">Language pack settings</h2>
         <div metal:use-macro="context/@@launchpad_form/form"> </div>
      </div>
 

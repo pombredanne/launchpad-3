@@ -239,36 +239,29 @@ class ProductSeriesTranslationsMenuMixIn:
     """Translation menu for ProductSeries.
     """
     def overview(self):
-        text = 'Overview'
-        return Link('', text)
+        return Link('', 'Overview')
 
     @enabled_with_permission('launchpad.Edit')
     def templates(self):
-        text = 'Templates'
-        return Link('+templates', text)
+        return Link('+templates', 'Templates')
 
     @enabled_with_permission('launchpad.Edit')
     def settings(self):
-        text = 'Settings'
-        return Link('+translations-settings', text, icon='edit')
+        return Link('+translations-settings', 'Settings')
 
     @enabled_with_permission('launchpad.Edit')
     def requestbzrimport(self):
-        text = 'Request Bazaar import'
-        return Link('+request-bzr-import', text)
+        return Link('+request-bzr-import', 'Request Bazaar import')
 
     @enabled_with_permission('launchpad.Edit')
     def translationupload(self):
-        text = 'Upload'
-        return Link('+translations-upload', text, icon='add')
+        return Link('+translations-upload', 'Upload')
 
     def translationdownload(self):
-        text = 'Download'
-        return Link('+export', text, icon='download')
+        return Link('+export', 'Download')
 
     def imports(self):
-        text = 'Import queue'
-        return Link('+imports', text)
+        return Link('+imports', 'Import queue')
 
 
 class ProductSeriesOverviewNavigationMenu(NavigationMenu):

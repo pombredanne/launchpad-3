@@ -22,21 +22,24 @@
           color: lightgray;
         }
         .template_links a{
-          padding-right: 10px;
+          padding-right: 1em;
         }
-        td.template_name, th.template_name,
-        td.sourcepackage_name, th.sourcepackagename {
-            width: 300px;
+        td.template_column, th.template_column,
+        td.sourcepackage_column, th.sourcepackage_column {
+            width: 20em;
+        }
+        td.actions_column, th.actions_column {
+            width: 27em;
         }
       </style>
       <style tal:condition="view/is_distroseries" type="text/css">
         #templates_table {
-            width: 950px;
+            width: 72em;
         }
       </style>
       <style tal:condition="not:view/is_distroseries" type="text/css">
         #templates_table {
-            width: 650px;
+            width: 50em;
         }
       </style>
     </div>
@@ -61,20 +64,20 @@
         <thead>
           <tr>
             <th tal:condition="view/is_distroseries"
-                class="sourcepackage_name">Source package</th>
-            <th class="template_name">Template name</th>
-            <th>Actions</th>
+                class="sourcepackage_column">Source package</th>
+            <th class="template_column">Template name</th>
+            <th class="actions_column">Actions</th>
           </tr>
         </thead>
         <tbody>
           <tr tal:repeat="template view/iter_templates" class="template_row">
             <td tal:condition="view/is_distroseries"
                 tal:content="template/sourcepackagename/name"
-                class="sourcepackage_name">Source package
+                class="sourcepackage_column">Source package
             </td>
-            <td class="template_name"><a tal:attributes="href template/fmt:url"
+            <td class="template_column"><a tal:attributes="href template/fmt:url"
                    tal:content="template/name">Template name</a></td>
-            <td>
+            <td class="actions_column">
             <div class="template_links">
                 <a tal:attributes="href string:${template/fmt:url}/+edit;
                                    title string:Edit ${template/name}'s details">

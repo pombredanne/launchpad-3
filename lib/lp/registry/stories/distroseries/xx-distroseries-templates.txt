@@ -1,9 +1,12 @@
 = Templates view for DistroSeries =
+
 The +templates view for DistroSeries gives an overview of the translation
 templates in this series and provides easy access to the various subpages of
 each template.
 
+
 == Getting there ==
+
 The view is only visible to the owner of the DistroSeries and administrators.
 
     >>> user_browser.open(
@@ -19,7 +22,9 @@ The view is only visible to the owner of the DistroSeries and administrators.
     >>> print admin_browser.url
     http://translations.launchpad.dev/ubuntu/hoary/+templates
 
+
 == The templates table ==
+
 The page shows a table of all templates and links to their subpages.
 
     >>> table = find_tag_by_id(admin_browser.contents, 'templates_table')
@@ -32,7 +37,9 @@ The page shows a table of all templates and links to their subpages.
     pmount         man               Edit Upload Download Administer
     evolution      disabled-template Edit Upload Download Administer
 
+
 == Links to the templates ==
+
 Clicking on a template name will take the user to that template's overview
 page.
 

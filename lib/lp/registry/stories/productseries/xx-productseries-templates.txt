@@ -1,9 +1,12 @@
 = Templates view for ProductSeries =
+
 The +templates view for ProductSeries gives an overview of the translation
 templates in this series and provides easy access to the various subpages of
 each template.
 
+
 == Getting there ==
+
 The view is only visible to the owner of the ProductSeries and administrators.
 
     >>> user_browser.open(
@@ -20,7 +23,9 @@ The view is only visible to the owner of the ProductSeries and administrators.
     >>> print browser.url
     http://translations.launchpad.dev/evolution/trunk/+templates
 
+
 == The templates table ==
+
 The page shows a table of all templates and links to their subpages.
 
     >>> table = find_tag_by_id(browser.contents, 'templates_table')
@@ -40,7 +45,9 @@ shown, too.
     evolution-2.2       Edit Upload Download Administer
     evolution-2.2-test  Edit Upload Download Administer
 
+
 == Links to the templates ==
+
 Clicking on a template name will take the user to that template's overview
 page.
 

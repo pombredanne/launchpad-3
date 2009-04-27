@@ -264,12 +264,10 @@ class DistroSeriesTranslationsMenu(NavigationMenu):
         'translations', 'templates', 'admin', 'language_packs', 'imports']
 
     def translations(self):
-        text = 'Overview'
-        return Link('', text)
+        return Link('', 'Overview')
 
     def imports(self):
-        text = 'Import queue'
-        return Link('+imports', text)
+        return Link('+imports', 'Import queue')
 
     @enabled_with_permission('launchpad.TranslationsAdmin')
     def admin(self):
@@ -553,14 +551,24 @@ class DistroSeriesLanguagePackView(LaunchpadEditFormView):
     """Browser view to manage used language packs."""
     schema = IDistroSeries
     label = ""
-    field_names = []
 
     def is_langpack_admin(self, action=None):
+        """Find out if the current user is a Language Packs Admin.
+
+        This group of users have launchpad.LanguagePacksAdmin rights on
+        the DistroSeries but are not general Rosetta admins.
+
+        :returns: True if the user is a Language Pack Admin (but not a 
+            Rosetta admin)."""
         return (check_permission("launchpad.LanguagePacksAdmin",
                                  self.context) and not
                 check_permission("launchpad.TranslationsAdmin", self.context))
 
     def is_translations_admin(self, action=None):
+        """Find out if the current user is a Rosetta Admin.
+
+        :returns: True if the user is a Rosetta Admin.
+        """
         return check_permission("launchpad.TranslationsAdmin", self.context)
 
     @property
@@ -570,8 +578,6 @@ class DistroSeriesLanguagePackView(LaunchpadEditFormView):
     def initialize(self):
         self.old_request_value = (
             self.context.language_pack_full_export_requested)
-        if self.is_langpack_admin():
-            self.field_names = ['language_pack_full_export_requested']
         if self.is_translations_admin():
             self.field_names = [
                 'language_pack_base',
@@ -579,6 +585,10 @@ class DistroSeriesLanguagePackView(LaunchpadEditFormView):
                 'language_pack_proposed',
                 'language_pack_full_export_requested',
             ]
+        elif self.is_langpack_admin():
+            self.field_names = ['language_pack_full_export_requested']
+        else:
+            self.field_names = []
         super(DistroSeriesLanguagePackView, self).initialize()
         self.displayname = '%s %s' % (
             self.context.distribution.displayname,
