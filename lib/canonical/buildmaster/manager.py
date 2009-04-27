@@ -14,6 +14,7 @@ __all__ = [
 
 import logging
 import os
+import transaction
 
 from twisted.application import service
 from twisted.internet import reactor, utils, defer
@@ -26,7 +27,6 @@ from zope.component import getUtility
 
 from canonical.buildd.utils import notes
 from canonical.config import config
-from canonical.launchpad.interfaces.build import BuildStatus
 from canonical.launchpad.interfaces.builder import IBuilderSet
 from canonical.launchpad.webapp import urlappend
 from canonical.librarian.db import write_transaction
@@ -36,14 +36,6 @@ buildd_success_result_map = {
     'ensurepresent': True,
     'build': 'BuilderStatus.BUILDING',
     }
-
-
-class FakeZTM:
-    """Fake transaction manager."""
-    def commit(self):
-        pass
-    def abort(self):
-        pass
 
 
 class QueryWithTimeoutProtocol(xmlrpc.QueryProtocol, TimeoutMixin):
@@ -141,10 +133,7 @@ class BaseDispatchResult:
     def _cleanJob(self, job):
         """Clean up in case of builder reset or dispatch failure."""
         if job is not None:
-            job.build.buildstate = BuildStatus.NEEDSBUILD
-            job.builder = None
-            job.buildstart = None
-            job.logtail = None
+            job.reset()
 
     def ___call__(self):
         raise NotImplementedError(
@@ -298,7 +287,6 @@ class BuilddManager(service.Service):
         dl.addBoth(done)
         return dl
 
-    @write_transaction
     def scan(self):
         """Scan all builders and dispatch build jobs to the idle ones.
 
@@ -314,11 +302,12 @@ class BuilddManager(service.Service):
         handled in an asynchronous and parallel fashion.
         """
         recording_slaves = []
-
         builder_set = getUtility(IBuilderSet)
 
-        # Use FakeZTM to avoid partial commits.
-        builder_set.pollBuilders(self.logger, FakeZTM())
+        # Builddmaster will perform partial commits for avoiding
+        # long-living trasaction with changes that affects other
+        # parts of the system.
+        builder_set.pollBuilders(self.logger, transaction)
 
         for builder in builder_set:
             self.logger.debug("Considering %s" % builder.name)
@@ -329,6 +318,11 @@ class BuilddManager(service.Service):
 
             if not builder.is_available:
                 self.logger.debug('Builder is not available, ignored.')
+                job = builder.currentjob
+                if job is not None:
+                    self.logger.debug('Reseting attached job.')
+                    job.reset()
+                    transaction.commit()
                 continue
 
             candidate = builder.findBuildCandidate()
@@ -342,6 +336,7 @@ class BuilddManager(service.Service):
 
             builder.dispatchBuildCandidate(candidate)
             recording_slaves.append(slave)
+            transaction.commit()
 
         return recording_slaves
 
