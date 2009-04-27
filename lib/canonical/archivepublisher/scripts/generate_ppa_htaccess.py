@@ -188,9 +188,3 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
 
         self.logger.info('Finished PPA .htaccess generation')
 
-
-if __name__ == '__main__':
-    script = HtaccessTokenGenerator(
-        'generate-ppa-htaccess', dbuser=config.generateppahtaccess.dbuser)
-    script.lock_and_run()
-

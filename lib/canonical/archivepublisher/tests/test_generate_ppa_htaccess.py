@@ -59,8 +59,7 @@ class TestPPAHtaccessTokenGeneration(unittest.TestCase):
         :return: a tuple of return code, stdout and stderr.
         """
         script = os.path.join(
-            config.root, "lib", "canonical", "archivepublisher", "scripts",
-            "generate_ppa_htaccess.py")
+            config.root, "cronscripts", "generate-ppa-htaccess.py")
         args = [sys.executable, script, "-v"]
         process = subprocess.Popen(
             args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
