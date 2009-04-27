@@ -217,6 +217,9 @@ An unprivileged non-member cannot see information about the mailing list.
 
     >>> login('no-priv@canonical.com')
     >>> view = create_initialized_view(pmt, '+index')
+    Traceback (most recent call last):
+     ...
+    Unauthorized: (<Person at ...
 
 An administrator may see the mailing list information.
 
