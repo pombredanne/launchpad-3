@@ -79,6 +79,13 @@ class TestRequestParsing(TestCase):
                    'mediumubuntulogo.png HTTP/1.1')
         self.assertMethodAndFileIDAreCorrect(request)
 
+    def test_extra_slashes_are_ignored(self):
+        request = 'GET http://launchpadlibrarian.net//8196569//foo HTTP/1.1'
+        self.assertMethodAndFileIDAreCorrect(request)
+
+        request = 'GET //8196569//foo HTTP/1.1'
+        self.assertMethodAndFileIDAreCorrect(request)
+
     def test_return_value_for_https_path(self):
         request = ('GET https://launchpadlibrarian.net/8196569/'
                    'mediumubuntulogo.png HTTP/1.1')
