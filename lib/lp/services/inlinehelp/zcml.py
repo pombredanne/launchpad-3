@@ -40,7 +40,7 @@ def register_help_folder(context, folder, type=IBrowserRequest):
 
     defineChecker(
         help_folder,
-        NamesChecker(list(IBrowserPublisher.names()) + ['__call__']))
+        NamesChecker(list(IBrowserPublisher.names(True)) + ['__call__']))
 
     context.action(
         discriminator = ('view', (ILaunchpadApplication, type), '+help'),
