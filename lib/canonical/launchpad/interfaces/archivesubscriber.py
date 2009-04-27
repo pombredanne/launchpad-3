@@ -97,6 +97,14 @@ class IArchiveSubscriberView(Interface):
     displayname = TextLine(title=_("Subscription displayname"),
         required=False)
 
+    def getNonActiveSubscribers():
+        """Return the people included in this subscription.
+
+        :return: a storm `ResultSet` of all the people who are included in
+            this subscription who do not yet have an active token for the
+            corresponding archive.
+        :rtype: `storm.store.ResultSet`
+        """
 
 class IArchiveSubscriberEdit(Interface):
     """An interface for launchpad.Edit ops on archive subscribers."""
