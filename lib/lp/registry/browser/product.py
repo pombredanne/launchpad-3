@@ -1494,7 +1494,7 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin):
     @property
     def step_description(self):
         if self.search_results_count > 0:
-            return 'Search results'
+            return 'Check for duplicate projects'
         return 'Registration details'
 
     def isVCSImport(self):

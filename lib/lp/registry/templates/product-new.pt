@@ -104,13 +104,13 @@ YUI().use('node', function(Y) {
       <metal:extra metal:fill-slot="extra_top">
         <div tal:condition="view/search_results_count"
              id="search-results">
-          <div style="font-size: larger; margin-bottom: 1em;">
-          A search of existing registered projects found these
-          possible matches.  Is project
+          <div style="font-size: larger; margin-bottom: 1em; max-width: 60em;">
+          <img src="/@@/info" />
+          There are similar projects already registered in Launchpad.
+          Is project
           <strong><tal:displayname tal:replace="view/request/displayname" />
           (<tal:name  tal:replace="view/request/name" />)</strong>
-          one of these?  If so, follow the link to go to the project page and
-          abandon this registration.
+          one of these?
           </div>
 
           <table tal:define="results view/search_results">
@@ -122,12 +122,13 @@ YUI().use('node', function(Y) {
           </table>
           <div id="registration-details-buttons" style="display: none;">
             <input type="button"
-                   value="No, I'd like to continue my project registration"/>
+                   value="No, this is a new project"/>
             or <a tal:attributes="href view/cancel_url">Cancel</a>
           </div>
         </div>
 
-        <div id="registration-details-title" style="font-size: larger"
+        <div id="registration-details-title"
+             style="font-size: larger; max-width: 60em;"
              tal:condition="python: view.step_number == 2">
           <h3 id="registration-separator"
               tal:condition="view/search_results_count"
