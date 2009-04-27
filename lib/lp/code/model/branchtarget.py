@@ -10,6 +10,7 @@ __all__ = [
     'ProductBranchTarget',
     ]
 
+from zope.component import getUtility
 from zope.interface import implements
 from zope.security.interfaces import Unauthorized
 
@@ -89,6 +90,11 @@ class PackageBranchTarget(_BaseBranchTarget):
             PackageNamespace)
         return PackageNamespace(owner, self.sourcepackage)
 
+    def getCollection(self):
+        """See `IBranchTarget`."""
+        from lp.code.interfaces.branchcollection import IAllBranches
+        return getUtility(IAllBranches).inSourcePackage(self.sourcepackage)
+
     @property
     def default_stacked_on_branch(self):
         """See `IBranchTarget`."""
@@ -132,6 +138,11 @@ class PersonBranchTarget(_BaseBranchTarget):
             PersonalNamespace)
         return PersonalNamespace(owner)
 
+    def getCollection(self):
+        """See `IBranchTarget`."""
+        from lp.code.interfaces.branchcollection import IAllBranches
+        return getUtility(IAllBranches).inPerson(self.person)
+
 
 class ProductBranchTarget(_BaseBranchTarget):
     implements(IBranchTarget)
@@ -169,6 +180,11 @@ class ProductBranchTarget(_BaseBranchTarget):
         from lp.code.model.branchnamespace import (
             ProductNamespace)
         return ProductNamespace(owner, self.product)
+
+    def getCollection(self):
+        """See `IBranchTarget`."""
+        from lp.code.interfaces.branchcollection import IAllBranches
+        return getUtility(IAllBranches).inProduct(self.product)
 
 
 def get_canonical_url_data_for_target(branch_target):
