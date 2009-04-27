@@ -119,7 +119,7 @@ class RevisionCachePruner(TunableLoop):
         store = IMasterStore(RevisionCache)
         results = store.find(
             RevisionCache, RevisionCache.revision_date < epoch)
-        return results.count() > 0
+        return results.count() == 0
 
     def __call__(self, chunk_size):
         """Delegate to the `IRevisionSet` implementation."""
