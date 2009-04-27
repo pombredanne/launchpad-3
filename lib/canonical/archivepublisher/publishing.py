@@ -19,12 +19,12 @@ from canonical.archivepublisher.diskpool import DiskPool
 from canonical.archivepublisher.config import LucilleConfigError
 from canonical.archivepublisher.domination import Dominator
 from canonical.archivepublisher.ftparchive import FTPArchiveHandler
-from canonical.archivepublisher.utils import RepositoryIndexFile
+from canonical.archivepublisher.utils import (
+    RepositoryIndexFile, get_ppa_reference)
 from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.database.publishing import (
     SourcePackagePublishingHistory, BinaryPackagePublishingHistory)
-from canonical.launchpad.interfaces.archive import (
-    ArchivePurpose, default_name_by_purpose)
+from canonical.launchpad.interfaces.archive import ArchivePurpose
 from canonical.launchpad.interfaces.binarypackagerelease import (
     BinaryPackageFormat)
 from canonical.launchpad.interfaces.archivesigningkey import (
@@ -439,10 +439,8 @@ class Publisher(object):
         """Return the contents of the Release file Origin field.
 
         Primary, Partner and Copy archives use the distribution displayname.
-        For PPAs we use a more specific value that follows:
-
-         * 'LP-PPA-<owner_name>' for default PPAs (the ones named 'ppa');
-         * 'LP-PPA-<owner_name>-<ppa_name>' for named-PPAs.
+        For PPAs we use a more specific value that follows
+        `get_ppa_reference`.
 
         :return: a text that should be used as the value of the Release file
             'Origin' field.
@@ -451,14 +449,7 @@ class Publisher(object):
         # from a copy archive then modify the origin to indicate so.
         if not self.archive.is_ppa:
             return self.distro.displayname
-
-        default_ppa_name = default_name_by_purpose.get(self.archive.purpose)
-        if self.archive.name == default_ppa_name:
-            ppa_reference = self.archive.owner.name
-        else:
-            ppa_reference = '%s-%s' % (
-                self.archive.owner.name, self.archive.name)
-        return "LP-PPA-%s" % ppa_reference
+        return "LP-PPA-%s" % get_ppa_reference(self.archive)
 
     def _writeDistroSeries(self, distroseries, pocket):
         """Write out the Release files for the provided distroseries."""
