@@ -15,6 +15,57 @@
 
   <div metal:fill-slot="main">
 
+  <script type="text/javascript" tal:condition="view/search_results_count">
+/*
+ * When step 2 of this wizard has search results, we want to hide the
+ * details widgets until the user states that the project they are
+ * registering is not a duplicate.
+ */
+YUI().use('node', function(Y) {
+    Y.on('domready', function() {
+        var form_widgets = Y.get('#launchpad-form-widgets');
+        var form_actions = Y.get('#launchpad-form-actions');
+        var search_results = Y.get('#search-results');
+        var details_button = Y.get('#registration-details-button');
+        var title = Y.get('#registration-details-title');
+        var step_title = Y.get('#step-title');
+
+        /* This is the magic hidden widget used by the MultiStepView. */
+        var marker = Y.get(Y.DOM.byId('field.__visited_steps__'));
+
+        if (search_results) {
+            form_widgets.setStyle('display', 'none');
+            form_actions.setStyle('display', 'none');
+            title.setStyle('display', 'none');
+        }
+
+        function complete_registration(event) {
+            /* Toggle the visibility of the various widgets. */
+            form_widgets.setStyle('display', 'block');
+            form_actions.setStyle('display', 'block');
+            title.setStyle('display', 'block');
+            search_results.setStyle('display', 'none');
+            details_button.setStyle('display', 'none');
+
+            /* Set the H2 title to something more appropriate for the
+             * selected task.
+             */
+            step_title.set('innerHTML', 'Step 2 (of 2) Registration details');
+
+            /* Append a special marker to the hidden state widget.  See
+             * ProjectAddStepTwo.search_results_count() for details.
+             */
+            var steps = marker.getAttribute('value');
+            if (steps.search(/hidesearch/) < 0) {
+                marker.setAttribute('value', steps + "|hidesearch");
+            }
+        }
+
+        connect(details_button, 'onclick', complete_registration);
+    })
+});
+  </script>
+
     <div style="font-size: larger; background: #e0f0d0;
         padding: 0.3em; -moz-border-radius: 5px; -o-border-radius: 5px;
        -webkit-border-radius: 5px; margin-bottom: 1em;">
@@ -28,13 +79,15 @@
 
     <div metal:use-macro="context/@@launchpad_form/form">
       <metal:step fill-slot="extra_info">
-      <h2 class="legend">Step <tal:step_number tal:replace="view/step_number"/>
+      <h2 class="legend" id="step-title">Step
+          <tal:step_number tal:replace="view/step_number"/>
           (of <tal:total_steps tal:replace="view/total_steps"/>):
           <tal:step_description tal:replace="view/step_description"/></h2>
       </metal:step>
 
       <metal:extra metal:fill-slot="extra_top">
-        <tal:search tal:condition="view/search_results_count">
+        <div tal:condition="view/search_results_count"
+             id="search-results">
           <div style="font-size: larger">
           A search of existing registered projects found these
           possible matches.  Is project
@@ -44,28 +97,28 @@
           abandon this registration.
           </div>
 
-          <table tal:define="results view/search_results"
-                 id="search-results">
+          <table tal:define="results view/search_results">
             <tbody>
               <tr tal:repeat="pillar_name results"
                   tal:replace="structure pillar_name/@@+listing-simple">
               </tr>
             </tbody>
           </table>
-          <input id="reveal" type="button"
+          <input id="registration-details-button" type="button"
                  value="No, I'd like to continue my project registration"/>
-        </tal:search>
-        <div style="font-size: larger"
+          or <a tal:attributes="href view/cancel_url">Cancel</a>
+        </div>
+
+        <div id="registration-details-title" style="font-size: larger"
              tal:condition="python: view.step_number == 2">
           Select the licenses for project
           <strong><tal:displayname tal:replace="view/request/displayname" />
           (<tal:name  tal:replace="view/request/name" />)</strong>
-          and complete the registration.
+          and complete the registration.  You may also update
         </div>
       </metal:extra>
     </div>
 
   </div>
-
 </body>
 </html>
