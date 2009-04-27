@@ -101,9 +101,6 @@ class IBranchCollection(Interface):
     def inSourcePackage(package):
         """Restrict the collection to branches in 'package'."""
 
-    def inTarget(target):
-        """Restrict the collection to branches in 'target'."""
-
     def ownedBy(person):
         """Restrict the collection to branches owned by 'person'."""
 

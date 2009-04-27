@@ -11,7 +11,6 @@ from storm.expr import And, Desc, LeftJoin, Join, Or, Select, Union
 
 from zope.component import getUtility
 from zope.interface import implements
-from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet)
@@ -19,8 +18,6 @@ from lp.code.model.branch import Branch
 from lp.code.model.branchmergeproposal import (
     BranchMergeProposal)
 from lp.code.model.branchsubscription import BranchSubscription
-from lp.code.model.branchtarget import (PackageBranchTarget,
-    PersonBranchTarget, ProductBranchTarget)
 from lp.code.model.codereviewcomment import CodeReviewComment
 from lp.code.model.codereviewvote import (
     CodeReviewVoteReference)
@@ -204,16 +201,6 @@ class GenericBranchCollection:
         return self._filterBy([
             Branch.distroseries == source_package.distroseries,
             Branch.sourcepackagename == source_package.sourcepackagename])
-
-    def inTarget(self, target):
-        """See `IBranchTarget`."""
-        naked_target = removeSecurityProxy(target)
-        if isinstance(naked_target, PackageBranchTarget):
-            return self.inSourcePackage(target.context)
-        elif isinstance(naked_target, ProductBranchTarget):
-            return self.inProduct(target.context)
-        elif isinstance(naked_target, PersonBranchTarget):
-            return self.inPerson(target.context)
 
     def ownedBy(self, person):
         """See `IBranchCollection`."""
