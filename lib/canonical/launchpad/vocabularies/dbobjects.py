@@ -754,8 +754,8 @@ class ValidPersonOrTeamVocabulary(
                     self.extra_clause
                     )
                 )
-	    # The public query doesn't need to be ordered as it will be done
-	    # at the end.
+            # The public query doesn't need to be ordered as it will be done
+            # at the end.
             public_result.order_by()
 
             # Next search for the private teams.
@@ -780,15 +780,15 @@ class ValidPersonOrTeamVocabulary(
                     )
                 )
 
-	    # The private query doesn't need to be ordered as it will be done
-	    # at the end.
+            # The private query doesn't need to be ordered as it will be done
+            # at the end.
             private_result.order_by()
 
             combined_result = public_result.union(private_result)
             combined_result.order_by()
-	    # XXX: BradCrittenden 2009-04-26 bug=217644: The use of Alias and
-	    # is a work-around for .count() not working with the 'distinct'
-	    # option.
+            # XXX: BradCrittenden 2009-04-26 bug=217644: The use of Alias and
+            # is a work-around for .count() not working with the 'distinct'
+            # option.
             subselect = Alias(combined_result._get_select(), 'Person')
             result = self.store.using(subselect).find(Person)
         result.config(distinct=True)
