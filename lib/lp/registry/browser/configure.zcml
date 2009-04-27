@@ -2986,12 +2986,4 @@
         facet="overview"
         permission="launchpad.Edit"
         template="../templates/object-driver.pt"/>
-    <browser:page
-        for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
-        name="+help"
-        class="lp.registry.browser.help.RegistryHelpFolder"
-        layer="canonical.launchpad.layers.LaunchpadLayer"
-        attribute="__call__"
-        permission="zope.Public"
-        />
 </configure>

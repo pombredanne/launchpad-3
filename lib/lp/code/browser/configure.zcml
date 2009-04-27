@@ -554,12 +554,4 @@
         module="lp.code.browser.codeimport"
         classes="
             CodeImportSetNavigation"/>
-    <browser:page
-        for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
-        name="+help"
-        class="lp.code.browser.help.CodeHelpFolder"
-        layer="canonical.launchpad.layers.CodeLayer"
-        attribute="__call__"
-        permission="zope.Public"
-        />
 </configure>

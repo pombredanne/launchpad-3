@@ -447,14 +447,6 @@
     name="+restricted-membership"
     permission="zope.Public"
     />
-  <browser:page
-    for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
-    name="+help"
-    class="lp.answers.browser.help.AnswersHelpFolder"
-    layer="canonical.launchpad.layers.AnswersLayer"
-    attribute="__call__"
-    permission="zope.Public"
-    />
 </facet>
 
 </configure>

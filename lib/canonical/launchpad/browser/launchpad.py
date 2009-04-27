@@ -5,8 +5,6 @@ __metaclass__ = type
 __all__ = [
     'AppFrontPageSearchView',
     'ApplicationButtons',
-    'BlueprintsHelpFolder',
-    'BugsHelpFolder',
     'BrowserWindowDimensions',
     'DoesNotExistView',
     'EdubuntuIcingFolder',
@@ -27,7 +25,6 @@ __all__ = [
     'SoftTimeoutView',
     'StructuralHeaderPresentation',
     'StructuralObjectPresentation',
-    'TranslationsHelpFolder',
     'UbuntuIcingFolder',
     ]
 
@@ -851,27 +848,6 @@ class EdubuntuIcingFolder(ExportedFolder):
 
     folder = os.path.join(
         os.path.dirname(os.path.realpath(__file__)), '../icing-edubuntu/')
-
-
-class BugsHelpFolder(ExportedFolder):
-    """Export the Bugs help folder."""
-
-    folder = os.path.join(
-        os.path.dirname(os.path.realpath(__file__)), '../help/bugs/')
-
-
-class BlueprintsHelpFolder(ExportedFolder):
-    """Export the Blueprints help folder."""
-
-    folder = os.path.join(
-        os.path.dirname(os.path.realpath(__file__)), '../help/blueprints/')
-
-
-class TranslationsHelpFolder(ExportedFolder):
-    """Export the Translations help folder."""
-
-    folder = os.path.join(
-        os.path.dirname(os.path.realpath(__file__)), '../help/translations/')
 
 
 class LaunchpadTourFolder(ExportedFolder):
