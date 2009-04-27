@@ -657,7 +657,7 @@ class ValidPersonOrTeamVocabulary(
 
     @property
     def _private_team_query(self):
-        """Return query for all private teams the logged in user belongs."""
+        """Return query for all private teams the logged in user belongs to."""
         logged_in_user = getUtility(ILaunchBag).user
         if logged_in_user is not None:
             private_query = AND(
@@ -706,7 +706,7 @@ class ValidPersonOrTeamVocabulary(
                 EmailAddressStatus.PREFERRED,
                 )
 
-            # First search for public persons and team that match the text.
+            # First search for public persons and teams that match the text.
             public_tables = [
                 Person,
                 LeftJoin(EmailAddress, EmailAddress.person == Person.id),
@@ -718,8 +718,8 @@ class ValidPersonOrTeamVocabulary(
             # address, or as their full IRC nickname.
 
             # Note we use lower() instead of the non-standard ILIKE because
-            # ILIKE doesn't seem to hit the indexes.
-            public_inner_select = SQL("""
+            # ILIKE doesn't hit the indexes.
+            public_inner_textual_select = SQL("""
                 SELECT Person.id
                 FROM Person
                 WHERE Person.fti @@ ftq(%s)
@@ -739,7 +739,7 @@ class ValidPersonOrTeamVocabulary(
             public_result = self.store.using(*public_tables).find(
                 Person,
                 And(
-                    Person.id.is_in(public_inner_select),
+                    Person.id.is_in(public_inner_textual_select),
                     Person.visibility == PersonVisibility.PUBLIC,
                     Person.merged == None,
                     Or(# A valid person-or-team is either a team...
@@ -754,10 +754,11 @@ class ValidPersonOrTeamVocabulary(
                     self.extra_clause
                     )
                 )
+	    # The public query doesn't need to be ordered as it will be done
+	    # at the end.
             public_result.order_by()
-            # Next search for the private teams.  A lot of this will be
-            # repeated from the public query but since we're only looking for
-            # teams it can be streamlined.
+
+            # Next search for the private teams.
             private_tables = [
                 Person,
                 Join(TeamParticipation,
@@ -778,10 +779,16 @@ class ValidPersonOrTeamVocabulary(
                     self._private_team_query,
                     )
                 )
+
+	    # The private query doesn't need to be ordered as it will be done
+	    # at the end.
             private_result.order_by()
 
             combined_result = public_result.union(private_result)
             combined_result.order_by()
+	    # XXX: BradCrittenden 2009-04-26 bug=217644: The use of Alias and
+	    # is a work-around for .count() not working with the 'distinct'
+	    # option.
             subselect = Alias(combined_result._get_select(), 'Person')
             result = self.store.using(subselect).find(Person)
         result.config(distinct=True)
