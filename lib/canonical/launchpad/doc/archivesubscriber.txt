@@ -98,20 +98,27 @@ entry is created:
     Subject: New PPA subscription for PPA for Celso Providelo
     Hello Joe Smith,
     <BLANKLINE>
-    You are receiving this message because Celso Providelo subscribed you to
-    the private PPA 'PPA for Celso Providelo'. This subscription enables you
-    to download software from this private PPA.
+    Launchpad: activate your archive subscription
+    ---------------------------------------------
     <BLANKLINE>
-    To activate your subscription and start downloading the software please
-    visit:
+    Celso Providelo has invited you to subscribe to a private software
+    archive hosted by Launchpad. 
+    <BLANKLINE>
+    To start downloading and using software from this archive you need to
+    activate your subscription by visiting this link:
+    <BLANKLINE>    
     <http://launchpad.dev/~joesmith/+archivesubscriptions>
     <BLANKLINE>
-    If you do not wish to download software from this PPA you can safely
-    ignore this message.
+    You can find out more about Celso Providelo here:
+    <http://launchpad.dev/~cprov>
+    <BLANKLINE>
+    If you'd prefer not to use software from this archive, you can safely
+    ignore this email. However, if you have any concerns you can contact
+    the Launchpad team by emailing feedback@launchpad.net
+    <BLANKLINE>
     <BLANKLINE>
     Regards,
     The Launchpad team
-    ----------------------------------------
 
 Add another subscription for the test user, this time to sabdfl's ppa:
 
