@@ -113,12 +113,16 @@ class TextLineEditorWidget:
         return self.WIDGET_TEMPLATE % params 
 
 
-def vocabulary_to_choice_edit_items(vocab):
+def vocabulary_to_choice_edit_items(vocab, css_class_prefix=None):
     """ TODO """ # TODO
-    items = [
-        {'name': item.value.title,
-         'value': item.value.title,
-         'style': '', 'help': '', 'disabled': False}
-        for item in vocab]
+    items = []
+    for item in vocab:
+        new_item = {'name': item.value.title,
+            'value': item.value.title,
+            'style': '', 'help': '', 'disabled': False}
+        if css_class_prefix is not None:
+            new_item['css_class'] = css_class_prefix + item.value.name
+        items.append(new_item)
+
     return dumps(items)
 

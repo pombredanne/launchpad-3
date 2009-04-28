@@ -2986,14 +2986,16 @@ class BugTaskTableRowView(LaunchpadView):
             if not self.context.canTransitionToStatus(status, self.user))
 
         if self.context.status in status_noshow:
-            # The user has to be able to see the current value.
             status_noshow.remove(self.context.status)
 
         status_vocab_factory = vocab_factory(
             BugTaskStatus, noshow=status_noshow)
 
-        return vocabulary_to_choice_edit_items(
-            status_vocab_factory(self.context))
+        items = vocabulary_to_choice_edit_items(
+            status_vocab_factory(self.context),
+            css_class_prefix='status')
+
+        return items
 
 
 class BugsBugTaskSearchListingView(BugTaskSearchListingView):
