@@ -6,8 +6,9 @@ __metaclass__ = type
 
 __all__ = [
     'PublishingTunableLoop',
-    'process_in_batches',
     'RepositoryIndexFile',
+    'get_ppa_reference',
+    'process_in_batches',
     ]
 
 
@@ -22,11 +23,28 @@ import tempfile
 from zope.interface import implements
 from zope.component import getUtility
 
+from canonical.launchpad.interfaces.archive import (
+    ArchivePurpose, default_name_by_purpose)
 from canonical.launchpad.interfaces.looptuner import ITunableLoop
 from canonical.launchpad.utilities.looptuner import LoopTuner
 from canonical.launchpad.webapp.interfaces import (
         IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from canonical.mem import resident
+
+
+def get_ppa_reference(ppa):
+    """Return a text reference for the given PPA.
+
+    * '<owner_name>' for default PPAs (the ones named 'ppa');
+    * '<owner_name>-<ppa_name>' for named-PPAs.
+    """
+    assert ppa.purpose == ArchivePurpose.PPA, (
+        'Only PPAs can use reference name.')
+
+    if ppa.name != default_name_by_purpose.get(ArchivePurpose.PPA):
+        return '%s-%s' % (ppa.owner.name, ppa.name)
+
+    return ppa.owner.name
 
 
 def count_alive(store, logger):
