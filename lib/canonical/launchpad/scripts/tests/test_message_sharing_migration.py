@@ -310,6 +310,8 @@ class TestPOTMsgSetMerging(TestCaseWithFactory):
         self.stable_template = self.factory.makePOTemplate(
             productseries=self.trunk, name='stable')
 
+        # Force trunk to be the "most representative" template.
+        self.stable_template.iscurrent = False
         self.templates = [self.trunk_template, self.stable_template]
 
     def test_matchedPOTMsgSetsShare(self):
@@ -386,6 +388,8 @@ class TestPOTMsgSetMergingAndTranslations(TestCaseWithFactory):
         self.stable_template = self.factory.makePOTemplate(
             productseries=self.trunk, name='stable')
 
+        # Force trunk to be the "most representative" template.
+        self.stable_template.iscurrent = False
         self.templates = [self.trunk_template, self.stable_template]
 
         # Tests use a pair of matching POTMsgSets in our two templates.
