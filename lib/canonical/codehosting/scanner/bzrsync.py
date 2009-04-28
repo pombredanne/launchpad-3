@@ -149,7 +149,7 @@ class BzrSync:
         self.trans_manager.commit()
         # Synchronize the RevisionCache for this branch.
         self.trans_manager.begin()
-        getUtility(IRevisionSet).updateRevisionCacheForBranch(bzr_branch)
+        getUtility(IRevisionSet).updateRevisionCacheForBranch(self.db_branch)
         self.trans_manager.commit()
 
         self._branch_mailer.sendRevisionNotificationEmails(bzr_history)
