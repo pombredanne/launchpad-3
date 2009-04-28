@@ -21,35 +21,91 @@
  * details widgets until the user states that the project they are
  * registering is not a duplicate.
  */
-YUI().use('node', function(Y) {
+YUI().use('node', 'lazr.effects', function(Y) {
     Y.on('domready', function() {
-        var form_widgets = Y.get('#launchpad-form-widgets');
-        var form_actions = Y.get('#launchpad-form-actions');
-        var search_results = Y.get('#search-results');
         var details_buttons = Y.get('#registration-details-buttons');
-        var title = Y.get('#registration-details-title');
+        var form_actions = Y.get('#launchpad-form-actions');
+        var form_widgets = Y.get('#launchpad-form-widgets');
+        var search_results = Y.get('#search-results');
         var step_title = Y.get('#step-title');
-        var separator = Y.get('#registration-separator');
+        var title = Y.get('#registration-details-title');
 
         /* This is the magic hidden widget used by the MultiStepView. */
         var marker = Y.get(Y.DOM.byId('field.__visited_steps__'));
+
+        var separator = Y.get('#registration-separator');
+        function show_separator(flag) {
+            if (!separator) {
+                /* The separator is not on the page, because there were no
+                 * search results.
+                 */
+                return;
+            }
+            if (flag) {
+                separator.setStyle('display', 'block');
+            }
+            else {
+                separator.setStyle('display', 'none');
+            }
+        }
 
         /* When the 'No' button is clicked, we swap in the registration
          * details for the search results.  It really doesn't look good
          * to leave the search results there.
          */
         function complete_registration(event) {
-            /* Toggle the visibility of the various widgets. */
-            form_widgets.setStyle('display', 'block');
+            var expander = Y.get('#search-results-expander');
+
+            /* Slide in the search results and hide them under a link. */
+            expander.setStyle('display', 'block');
+
+            connect(expander, 'onclick', function(event) {
+                event.preventDefault();
+
+                var arrow = Y.get('#search-results-arrow');
+                if (arrow.getAttribute('src') == '/@@/treeCollapsed') {
+                    /* The search results are currently hidden.  Slide them
+                     * out and turn the arrow to point downward.
+                     */
+                    arrow.setAttribute('src', '/@@/treeExpanded');
+                    arrow.setAttribute('title', 'Hide search results');
+                    arrow.setAttribute('alt', 'Hide search results');
+                    Y.lazr.effects.slide_out(search_results).run();
+                    show_separator(true);
+                }
+                else {
+                    /* The search results are currently displayed.  Slide them
+                     * in and turn the arrow to point rightward.
+                     */
+                    arrow.setAttribute('src', '/@@/treeCollapsed');
+                    arrow.setAttribute('title', 'Show search results');
+                    arrow.setAttribute('alt', 'Show search results');
+                    Y.lazr.effects.slide_in(search_results).run();
+                    show_separator(false);
+                }
+            });
+
+            /* Hide the 'No' button, but slide out the search results, so the
+             * user has a clue that Something Is Happening.
+             */
+            details_buttons.setStyle('display', 'none');
+
+            /* Slide out the registration details widgets. */
+            Y.lazr.effects.slide_out(form_widgets).run();
+
+            /* Toggle the visibility of the various other widgets. */
+            /* form_widgets.setStyle('display', 'block'); */
             form_actions.setStyle('display', 'block');
             title.setStyle('display', 'block');
-            search_results.setStyle('display', 'none');
-            details_buttons.setStyle('display', 'none');
 
             /* Set the H2 title to something more appropriate for the
              * selected task.
              */
             step_title.set('innerHTML', 'Step 2 (of 2) Registration details');
+
+            var reset_height = search_results.getComputedStyle('height');
+            search_results.setStyle('height', reset_height);
+            Y.lazr.effects.slide_in(search_results).run();
 
             /* Append a special marker to the hidden state widget.  See
              * ProjectAddStepTwo.search_results_count() for details.
@@ -64,9 +120,8 @@ YUI().use('node', function(Y) {
          * the H3 separator is only visible when JavaScript is disabled.
          * Neither is displayed on the step 1 page.
          */
-        if (separator) {
-            separator.setStyle('display', 'none');
-        }
+        show_separator(false);
+
         if (details_buttons) {
             details_buttons.setStyle('display', 'block');
             connect(details_buttons, 'onclick', complete_registration);
@@ -78,6 +133,13 @@ YUI().use('node', function(Y) {
             form_actions.setStyle('display', 'none');
             title.setStyle('display', 'none');
         }
+
+        /* Finally, if we've been here before (e.g. there was an error in
+         * submitting step 2), jump to continuing the registration.
+         */
+         if (marker.getAttribute('value').search(/hidesearch/) >= 0) {
+            complete_registration(null);
+         }
     })
 });
   </script>
@@ -102,6 +164,13 @@ YUI().use('node', function(Y) {
       </metal:step>
 
       <metal:extra metal:fill-slot="extra_top">
+        <a href="" class="expander" id="search-results-expander"
+           style="display: none;">
+          <img id="search-results-arrow" src="/@@/treeCollapsed"
+               title="Show search results" alt="Show search results"/>
+          Possible duplicate projects
+        </a>
+
         <div tal:condition="view/search_results_count"
              id="search-results">
           <div style="font-size: larger; margin-bottom: 1em; max-width: 60em;">

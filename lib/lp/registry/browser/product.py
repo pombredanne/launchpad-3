@@ -1544,15 +1544,6 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin):
 
     @cachedproperty
     def search_results_count(self):
-        # The 'hidesearch' value is inserted into the visited steps widget by
-        # the JavaScript that runs when the 'No' button on this page is
-        # pushed.  If we're revisiting this step, it means there was an error
-        # in the previous submission of the step 2 form.  That means that the
-        # user opted to complete the registration, which means we should not
-        # display the search results again.
-        visited_steps = self.request.form.get('field.__visited_steps__', '')
-        if 'hidesearch' in visited_steps.split('|'):
-            return 0
         pillar_set = getUtility(IPillarNameSet)
         return pillar_set.count_search_matches(self._search_string)
 
