@@ -17,7 +17,7 @@ from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad.interfaces import (
     BinaryPackageFileType, SourcePackageFileType)
-from canonical.launchpad.interfaces.files import (
+from lp.soyuz.interfaces.files import (
     IBinaryPackageFile, IBinaryPackageFileSet, ISourcePackageReleaseFile,
     ISourcePackageReleaseFileSet)
 

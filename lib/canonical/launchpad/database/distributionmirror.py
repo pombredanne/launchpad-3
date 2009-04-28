@@ -30,7 +30,7 @@ from canonical.database.enumcol import EnumCol
 from canonical.launchpad.database.country import Country
 from canonical.launchpad.database.files import (
     BinaryPackageFile, SourcePackageReleaseFile)
-from canonical.launchpad.database.publishing import (
+from lp.soyuz.model.publishing import (
     SecureSourcePackagePublishingHistory,
     SecureBinaryPackagePublishingHistory)
 from canonical.launchpad.helpers import (

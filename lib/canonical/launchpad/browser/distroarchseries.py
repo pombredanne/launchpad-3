@@ -11,7 +11,7 @@ __all__ = [
     ]
 
 from canonical.launchpad import _
-from canonical.launchpad.browser.build import BuildRecordsView
+from lp.soyuz.browser.build import BuildRecordsView
 from canonical.launchpad.browser.packagesearch import PackageSearchViewBase
 from canonical.launchpad.interfaces.distroarchseries import IDistroArchSeries
 from canonical.launchpad.webapp import GetitemNavigation

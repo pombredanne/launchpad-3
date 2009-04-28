@@ -16,9 +16,9 @@ __all__ = []
 
 from lazr.restful.declarations import LAZR_WEBSERVICE_EXPORTED
 
-from canonical.launchpad.interfaces.build import (
+from lp.soyuz.interfaces.build import (
     BuildStatus, IBuild)
-from canonical.launchpad.interfaces.buildrecords import IHasBuildRecords
+from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.code.interfaces.branch import IBranch
 from lp.code.interfaces.branchmergeproposal import (
     BranchMergeProposalStatus, IBranchMergeProposal)
@@ -35,7 +35,7 @@ from lp.registry.interfaces.person import IPerson, IPersonPublic
 from canonical.launchpad.interfaces.hwdb import IHWSubmission
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
-from canonical.launchpad.interfaces.publishing import (
+from lp.soyuz.interfaces.publishing import (
     PackagePublishingPocket)
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 

@@ -10,7 +10,7 @@ from zope.component import getUtility
 
 from canonical.database.sqlbase import cursor
 from canonical.launchpad.ftests import ANONYMOUS, login
-from canonical.launchpad.interfaces.archive import ArchivePurpose, IArchiveSet
+from lp.soyuz.interfaces.archive import ArchivePurpose, IArchiveSet
 from canonical.launchpad.interfaces.bug import CreateBugParams, IBugSet
 from canonical.launchpad.interfaces.emailaddress import (
     EmailAddressAlreadyTaken, IEmailAddressSet, InvalidEmailAddress)

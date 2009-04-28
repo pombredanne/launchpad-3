@@ -6,14 +6,8 @@
 
     <!-- Content class configuration -->
     <include file="account.zcml" />
-    <include file="archivearch.zcml" />
-    <include file="archiveauthtoken.zcml" />
-    <include file="archivesubscriber.zcml" />
     <include file="authtoken.zcml" />
     <include file="batchnavigator.zcml" />
-    <include file="binarypackagepublishinghistory.zcml" />
-    <include file="binarypackagerelease.zcml" />
-    <include file="binarypackagename.zcml" />
     <include file="binaryandsourcepackagename.zcml" />
     <include file="bountysubscription.zcml" />
     <include file="bounty.zcml" />
@@ -34,8 +28,6 @@
     <include file="bugtrackerperson.zcml" />
     <include file="bugwatch.zcml" />
     <include file="bug.zcml" />
-    <include file="build.zcml" />
-    <include file="builder.zcml" />
     <include file="country.zcml" />
     <include file="crowd.zcml" />
     <include file="customlanguagecode.zcml" />
@@ -46,15 +38,8 @@
     <include file="datetime.zcml" />
     <include file="decoratedresultset.zcml" />
     <include file="distributionmirror.zcml" />
-    <include file="distributionsourcepackagecache.zcml" />
-    <include file="distributionsourcepackagerelease.zcml" />
-    <include file="distroseriesbinarypackage.zcml" />
-    <include file="distroseriespackagecache.zcml" />
-    <include file="distroseriessourcepackagerelease.zcml" />
     <include file="distroserieslanguage.zcml" />
     <include file="distroarchseries.zcml" />
-    <include file="distroarchseriesbinarypackage.zcml" />
-    <include file="distroarchseriesbinarypackagerelease.zcml" />
     <include file="emailaddress.zcml" />
     <include file="feeds.zcml" />
     <include file="files.zcml" />
@@ -72,7 +57,6 @@
     <include file="oauth.zcml" />
     <include file="openid.zcml" />
     <include file="packagebugsupervisor.zcml" />
-    <include file="packagecloner.zcml" />
     <include file="packagecopyrequest.zcml" />
     <include file="packagerelationship.zcml" />
     <include file="packaging.zcml" />
@@ -85,13 +69,8 @@
     <include file="potemplate.zcml" />
     <include file="potmsgset.zcml" />
     <include file="potranslation.zcml" />
-    <include file="processor.zcml" />
-    <include file="publishedpackage.zcml" />
-    <include file="queue.zcml" />
     <include file="scriptactivity.zcml" />
     <include file="shipit.zcml" />
-    <include file="sourcepackagepublishinghistory.zcml" />
-    <include file="sourcepackagerelease.zcml" />
     <include file="specification.zcml" />
     <include file="specificationbranch.zcml" />
     <include file="specificationdependency.zcml" />
@@ -116,12 +95,8 @@
     <include file="section.zcml" />
     <include file="vpoexport.zcml" />
     <include file="vpotexport.zcml" />
-    <include file="archive.zcml" />
-    <include file="archivedependency.zcml" />
-    <include file="archivepermission.zcml" />
     <include file="archivesigningkey.zcml" />
     <include file="webservice.zcml" />
-    <include file="packagediff.zcml" />
 
     <include file="fields.zcml" />
     <include file="widgets.zcml" />

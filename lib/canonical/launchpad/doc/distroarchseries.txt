@@ -146,7 +146,7 @@ ubuntu/breezy-autotest/i386, which is empty:
 
     >>> from canonical.launchpad.interfaces import (
     ...    IDistributionSet, IPersonSet, PackagePublishingPocket)
-    >>> from canonical.launchpad.database.publishing import (
+    >>> from lp.soyuz.model.publishing import (
     ...     SecureBinaryPackagePublishingHistory)
 
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
@@ -169,7 +169,7 @@ as possible.
 Create and collect several binary publishing records in a variety of
 states, pockets and archives:
 
-    >>> from canonical.launchpad.ftests.soyuz import SoyuzTestHelper
+    >>> from lp.soyuz.tests.soyuz import SoyuzTestHelper
 
     >>> soyuz_helper = SoyuzTestHelper()
     >>> sample_pub = soyuz_helper.createPublishingForDistroArchSeries(

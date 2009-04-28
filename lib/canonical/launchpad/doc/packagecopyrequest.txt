@@ -7,9 +7,9 @@ fashion.
 
 Let's prepare a few things we'll need for the subsequent tests.
 
-    >>> from canonical.launchpad.components.packagelocation import (
+    >>> from lp.soyuz.adapters.packagelocation import (
     ...     build_package_location)
-    >>> from canonical.launchpad.interfaces.packagecopyrequest import (
+    >>> from lp.soyuz.interfaces.packagecopyrequest import (
     ...     IPackageCopyRequest, IPackageCopyRequestSet, PackageCopyStatus)
     >>> from canonical.launchpad.interfaces import (
     ...     ArchivePurpose, IPersonSet, IArchiveSet, IDistributionSet)

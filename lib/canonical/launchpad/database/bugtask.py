@@ -68,7 +68,7 @@ from lp.registry.interfaces.product import IProduct, IProductSet
 from lp.registry.interfaces.productseries import (
     IProductSeries, IProductSeriesSet)
 from lp.registry.interfaces.project import IProject
-from canonical.launchpad.interfaces.publishing import PackagePublishingStatus
+from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageNameSet)

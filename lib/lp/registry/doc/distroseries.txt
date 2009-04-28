@@ -451,7 +451,7 @@ netapplet are translatable in Hoary.
    >>> ISourcePackage.providedBy(pmount_source)
    True
 
-   >>> from canonical.launchpad.database.binarypackagename import (
+   >>> from lp.soyuz.model.binarypackagename import (
    ...                                       BinaryPackageName)
    >>> pmount_bin_name =  BinaryPackageName.byName('pmount')
    >>> pmount_drbp = hoary.getBinaryPackage(pmount_bin_name)
@@ -460,7 +460,7 @@ netapplet are translatable in Hoary.
    >>> len(pmount_drbp.current_publishings)
    3
 
-   >>> from canonical.launchpad.database.sourcepackagerelease import (
+   >>> from lp.soyuz.model.sourcepackagerelease import (
    ...                                           SourcePackageRelease)
    >>> pmount_rel = SourcePackageRelease.selectOneBy(
    ...     sourcepackagenameID=pmount_src_name.id, version='0.1-1')

@@ -7,7 +7,7 @@ from StringIO import StringIO
 
 from canonical.archivepublisher.utils import process_in_batches
 from canonical.database.sqlbase import sqlvalues
-from canonical.launchpad.database.publishing import (
+from lp.soyuz.model.publishing import (
     SourcePackagePublishingHistory, BinaryPackagePublishingHistory,
     SourcePackageFilePublishing, BinaryPackageFilePublishing)
 from canonical.launchpad.interfaces import (

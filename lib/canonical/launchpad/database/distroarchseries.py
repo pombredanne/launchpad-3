@@ -26,14 +26,14 @@ from canonical.launchpad.interfaces import (
     IBuildSet, ICanPublishPackages, PackagePublishingPocket,
     PackagePublishingStatus)
 
-from canonical.launchpad.database.binarypackagename import BinaryPackageName
-from canonical.launchpad.database.distroarchseriesbinarypackage import (
+from lp.soyuz.model.binarypackagename import BinaryPackageName
+from lp.soyuz.model.distroarchseriesbinarypackage import (
     DistroArchSeriesBinaryPackage)
 from lp.registry.interfaces.person import validate_public_person
-from canonical.launchpad.database.publishing import (
+from lp.soyuz.model.publishing import (
     BinaryPackagePublishingHistory)
-from canonical.launchpad.database.processor import Processor
-from canonical.launchpad.database.binarypackagerelease import (
+from lp.soyuz.model.processor import Processor
+from lp.soyuz.model.binarypackagerelease import (
     BinaryPackageRelease)
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.webapp.interfaces import (
