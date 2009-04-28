@@ -15,11 +15,15 @@ from testtools import MultiTestResult, iterate_tests
 from zope.testing import testrunner
 
 
-class _Anything:
-    """An object where any attribute you can think of is a trivial callable.
+class NullOutputFormatter:
+    """A Zope test result OutputFormatter that prints *nothing*.
 
     This is used to suppress much of the output from the Zope testrunner.
     """
+
+    # Ideally, this would implement the interface of OutputFormatter and
+    # override all of the methods. Sadly, the interface is massive and not
+    # well-defined.
 
     def __getattr__(self, name):
         return lambda *args, **kwargs: None
@@ -85,6 +89,6 @@ def patch_zope_testresult(result):
         if isinstance(zope_result, MultiTestResult):
             return zope_result
         else:
-            zope_result.options.output = _Anything()
+            zope_result.options.output = NullOutputFormatter()
             return MultiTestResult(result, zope_result)
     testrunner.TestResult = zope_result_factory
