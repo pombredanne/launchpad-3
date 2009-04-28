@@ -10,9 +10,6 @@
   i18n:domain="launchpad"
 >
 <body>
-  <metal:portlets fill-slot="portlets">
-  </metal:portlets>
-
   <div metal:fill-slot="main">
 
   <script type="text/javascript">
@@ -43,6 +40,7 @@ YUI().use('node', 'lazr.effects', function(Y) {
             }
             if (flag) {
                 separator.setStyle('display', 'block');
+                separator.setStyle('margin-top', '3em');
             }
             else {
                 separator.setStyle('display', 'none');
@@ -157,6 +155,13 @@ YUI().use('node', 'lazr.effects', function(Y) {
 
     <div metal:use-macro="context/@@launchpad_form/form">
       <metal:step fill-slot="extra_info">
+      <div style="text-align: right;">Not sure what to do?
+        <tal:comment condition="nothing">
+          XXX BarryWarsaw 28-Apr-2009 bug 368910
+          REMOVE THE FOLLOWING BEFORE 2.2.5 PRODUCTION ROLLOUT
+        </tal:comment>
+        <a href="mailto:feedback@launchpad.net">Contact us</a>
+      </div>
       <h2 class="legend" id="step-title">Step
           <tal:step_number tal:replace="view/step_number"/>
           (of <tal:total_steps tal:replace="view/total_steps"/>):
@@ -164,7 +169,7 @@ YUI().use('node', 'lazr.effects', function(Y) {
       </metal:step>
 
       <metal:extra metal:fill-slot="extra_top">
-        <a href="" class="expander" id="search-results-expander"
+        <a href="" class="js-action" id="search-results-expander"
            style="display: none;">
           <img id="search-results-arrow" src="/@@/treeCollapsed"
                title="Show search results" alt="Show search results"/>
@@ -200,6 +205,7 @@ YUI().use('node', 'lazr.effects', function(Y) {
              style="font-size: larger; max-width: 60em;"
              tal:condition="python: view.step_number == 2">
           <h3 id="registration-separator"
+              style="margin-top: 3em;"
               tal:condition="view/search_results_count"
               >Registration details</h3>
           Select the licenses for project
