@@ -287,6 +287,7 @@ class BuilddManager(service.Service):
         dl.addBoth(done)
         return dl
 
+    @write_transaction
     def scan(self):
         """Scan all builders and dispatch build jobs to the idle ones.
 
