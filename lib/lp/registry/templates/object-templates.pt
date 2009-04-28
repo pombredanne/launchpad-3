@@ -15,10 +15,10 @@
   <body>
     <div metal:fill-slot="head_epilogue">
       <style type="text/css">
-        .hidden_links a img{
+        .inactive_links a img{
           visibility: hidden;
         }
-        .hidden_links a{
+        .inactive_links a{
           color: lightgray;
         }
         .template_links a{
@@ -42,6 +42,23 @@
             width: 50em;
         }
       </style>
+      <script language="JavaScript" type="text/javascript">
+      YUI().use('node', function(Y) {
+          Y.on('domready', function(){
+              Y.all('.template_links').addClass('inactive_links');
+              var template_rows = Y.all('.template_row');
+              template_rows.each(function(row){
+                  var template_links = row.query('.template_links');
+                  row.on('mouseover', function(){
+                      template_links.removeClass('inactive_links');
+                  });
+                  row.on('mouseout', function(){
+                      template_links.addClass('inactive_links');
+                  });
+              });
+          });
+      });
+      </script>
     </div>
     <div metal:fill-slot="main">
       <h1>
