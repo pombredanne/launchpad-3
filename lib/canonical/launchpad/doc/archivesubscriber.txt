@@ -102,23 +102,25 @@ entry is created:
     ---------------------------------------------
     <BLANKLINE>
     Celso Providelo has invited you to subscribe to a private software
-    archive hosted by Launchpad. 
+    archive hosted by Launchpad.
     <BLANKLINE>
     To start downloading and using software from this archive you need to
     activate your subscription by visiting this link:
-    <BLANKLINE>    
+    <BLANKLINE>
     <http://launchpad.dev/~joesmith/+archivesubscriptions>
     <BLANKLINE>
     You can find out more about Celso Providelo here:
+    <BLANKLINE>
     <http://launchpad.dev/~cprov>
     <BLANKLINE>
     If you'd prefer not to use software from this archive, you can safely
-    ignore this email. However, if you have any concerns you can contact
-    the Launchpad team by emailing feedback@launchpad.net
+    ignore this email. However, if you have any concerns you can contact the
+    Launchpad team by emailing feedback@launchpad.net
     <BLANKLINE>
     <BLANKLINE>
     Regards,
     The Launchpad team
+    ----------------------------------------
 
 Add another subscription for the test user, this time to sabdfl's ppa:
 
