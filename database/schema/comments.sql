@@ -2085,6 +2085,12 @@ COMMENT ON TABLE HWDriver IS 'Information about a driver for a device';
 COMMENT ON COLUMN HWDriver.package_name IS 'The Debian package name a driver is a part of';
 COMMENT ON COLUMN HWDriver.name IS 'The name of a driver.';
 
+COMMENT ON VIEW HWDriverNames IS 'A view returning the distinct driver names stored in HWDriver.';
+COMMENT ON COLUMN HWDriverNames.name IS 'The name of a driver.';
+
+COMMENT ON VIEW HWDriverPackageNames IS 'A view returning the distinct Debian package names stored in HWDriver.';
+COMMENT ON COLUMN HWDriverPackageNames.package_name IS 'The Debian package name a driver is a part of.';
+
 COMMENT ON TABLE HWVendorName IS 'A list of hardware vendor names.';
 COMMENT ON COLUMN HWVendorName.name IS 'The name of a vendor.';
 
