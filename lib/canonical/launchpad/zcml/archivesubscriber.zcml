@@ -71,4 +71,10 @@
       provides="canonical.launchpad.interfaces.archivesubscriber.IArchiveSubscriberUI"
       factory="canonical.launchpad.browser.archivesubscription.archive_subscription_ui_adapter"
       />
+
+  <subscriber
+    for="canonical.launchpad.interfaces.archivesubscriber.IArchiveSubscriber
+         lazr.lifecycle.interfaces.IObjectCreatedEvent"
+    handler="canonical.launchpad.mailnotification.notify_new_ppa_subscription" />
+
 </configure>
