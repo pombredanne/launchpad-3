@@ -266,7 +266,7 @@ class LaunchpadObjectFactory(ObjectFactory):
 
     def _stuff_preferredemail_cache(self, person):
         """Stuff the preferredemail cache.
-        
+
         cachedproperty does not get reset across transactions,
         so person.preferredemail can contain a bogus value even after
         a commit, despite all changes now being available in the main
@@ -333,7 +333,7 @@ class LaunchpadObjectFactory(ObjectFactory):
             account.status = AccountStatus.ACTIVE
 
         email.status = email_address_status
-        
+
         # Ensure updated ValidPersonCache
         flush_database_updates()
         return person
@@ -476,7 +476,7 @@ class LaunchpadObjectFactory(ObjectFactory):
 
     def makeProduct(self, *args, **kwargs):
         """As makeProductNoCommit with an implicit transaction commit.
-        
+
         This ensures that generated owners and registrants are fully
         flushed and available from all Stores.
         """
@@ -1422,7 +1422,7 @@ class LaunchpadObjectFactory(ObjectFactory):
         translation.is_imported = is_imported
         translation.is_current = True
 
-    def makeTeamAndMailingList(self, team_name, owner_name):
+    def makeTeamAndMailingList(self, team_name, owner_name, visibility=None):
         """Make a new active mailing list for the named team.
 
         :param team_name: The new team's name.
@@ -1438,7 +1438,8 @@ class LaunchpadObjectFactory(ObjectFactory):
         team = getUtility(IPersonSet).getByName(team_name)
         if team is None:
             team = self.makeTeam(
-                owner, displayname=display_name, name=team_name)
+                owner, displayname=display_name, name=team_name,
+                visibility=visibility)
         # Any member of the mailing-list-experts team can review a list
         # registration.  It doesn't matter which one.
         experts = getUtility(ILaunchpadCelebrities).mailing_list_experts
