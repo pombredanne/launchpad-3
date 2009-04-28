@@ -497,7 +497,9 @@ data from the database for a given set of builds:
     ...         return '%d' % item.id
     ...     else:
     ...         return 'n/a'
-    >>> for row in rset:
+    >>> def sort_result_key(row):
+    ...     return row[0].id
+    >>> for row in sorted(rset, key=sort_result_key):
     ...     (sourcepackagerelease, buildlog,
     ...      sourcepackagename, buildlog_content, builder) = row
     ...     print(
@@ -505,9 +507,9 @@ data from the database for a given set of builds:
     ...         (id_or_none(builder),
     ...          sourcepackagerelease.title, filename_or_none(buildlog)))
     builder:   1, spr: mozilla-firefox - 0.9, log: netapplet-1.0.0.tar.gz
-    builder:   1, spr:          foobar - 1.0, log: netapplet-1.0.0.tar.gz
-    builder:   1, spr:        pmount - 0.1-1, log: netapplet-1.0.0.tar.gz
     builder: n/a, spr: mozilla-firefox - 0.9, log: n/a
+    builder:   1, spr:        pmount - 0.1-1, log: netapplet-1.0.0.tar.gz
+    builder:   1, spr:          foobar - 1.0, log: netapplet-1.0.0.tar.gz
 
 
 == IHadBuildRecords.getBuildRecords() Implementations ==
@@ -1323,3 +1325,43 @@ specified builder ID, ordered from most-recently built.
     ubuntu-team: i386 build of earlierbuildsrc 666 in ubuntutest
         breezy-autotest RELEASE
 
+
+== Source publication for builds ==
+
+The current source publication for a given build is available via
+its 'current_source_publication' property.
+
+We will create a new publication and its corresponding build.
+
+    >>> original_pub = test_publisher.getPubSource()
+    >>> [build] = original_pub.createMissingBuilds()
+
+The publication returned by 'current_source_publication' is the one
+that originated the build.
+
+    >>> build.current_source_publication == original_pub
+    True
+
+We will override the source publication, moving it from 'main'
+component (default) to 'universe'.
+
+    >>> universe_component = getUtility(IComponentSet)['universe']
+    >>> secure_overridden_pub = original_pub.changeOverride(
+    ...     new_component=universe_component)
+
+Fetching the corresponding `SourcePackagePublishingHistory` for the
+comparisons.
+
+    >>> from canonical.launchpad.database.publishing import (
+    ...     SourcePackagePublishingHistory)
+    >>> overridden_pub = SourcePackagePublishingHistory.get(
+    ...     secure_overridden_pub.id)
+
+An we can see that the build 'current_source_publication' now points
+to the most recent publication, the overridden one.
+
+    >>> original_pub == build.current_source_publication
+    False
+
+    >>> overridden_pub == build.current_source_publication
+    True

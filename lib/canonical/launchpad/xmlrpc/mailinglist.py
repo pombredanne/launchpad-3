@@ -17,7 +17,7 @@ from canonical.launchpad.interfaces import (
     EmailAddressStatus, IEmailAddressSet, IMailingListAPIView,
     IMailingListSet, IMessageApprovalSet, IMessageSet, IPersonSet,
     MailingListStatus, PersonalStanding, PostedMessageStatus)
-from canonical.launchpad.interfaces.person import PersonVisibility
+from lp.registry.interfaces.person import PersonVisibility
 from canonical.launchpad.webapp import LaunchpadXMLRPCView
 from canonical.launchpad.xmlrpc import faults
 
@@ -50,7 +50,7 @@ class MailingListAPIView(LaunchpadXMLRPCView):
         # Handle unsynchronized lists.
         unsynchronized = []
         for mailing_list in list_set.unsynchronized_lists:
-            name = mailing_list.team.name
+            name = removeSecurityProxy(mailing_list.team).name
             if mailing_list.status == MailingListStatus.CONSTRUCTING:
                 unsynchronized.append((name, 'constructing'))
             elif mailing_list.status == MailingListStatus.UPDATING:
@@ -69,14 +69,15 @@ class MailingListAPIView(LaunchpadXMLRPCView):
             # only value that can be initialized.
             if mailing_list.welcome_message is not None:
                 initializer['welcome_message'] = mailing_list.welcome_message
-            creates.append((mailing_list.team.name, initializer))
+            creates.append(
+                (removeSecurityProxy(mailing_list.team).name, initializer))
             # In addition, all approved mailing lists that are being
             # constructed by Mailman need to have their status changed.
             mailing_list.startConstructing()
         if len(creates) > 0:
             response['create'] = creates
         # Next do mailing lists that are to be deactivated.
-        deactivated = [mailing_list.team.name
+        deactivated = [removeSecurityProxy(mailing_list.team).name
                        for mailing_list in list_set.deactivated_lists]
         if len(deactivated) > 0:
             response['deactivate'] = deactivated
@@ -84,7 +85,7 @@ class MailingListAPIView(LaunchpadXMLRPCView):
         # is the welcome message.
         modified = []
         for mailing_list in list_set.modified_lists:
-            changes = (mailing_list.team.name,
+            changes = (removeSecurityProxy(mailing_list.team).name,
                        dict(welcome_message=mailing_list.welcome_message))
             modified.append(changes)
             mailing_list.startUpdating()
@@ -230,5 +231,6 @@ class MailingListAPIView(LaunchpadXMLRPCView):
             for held_message in message_set.getHeldMessagesWithStatus(status):
                 held_message.acknowledge()
                 response[held_message.message_id] = (
-                    held_message.mailing_list.team.name, disposition)
+                    removeSecurityProxy(held_message.mailing_list.team).name,
+                    disposition)
         return response

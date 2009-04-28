@@ -98,6 +98,23 @@
         attribute="__call__"
         />
 
+  <browser:page
+      for="canonical.launchpad.interfaces.launchpad.IOpenIDApplication"
+      layer="canonical.launchpad.layers.OpenIDLayer"
+      class="canonical.launchpad.browser.launchpad.DoesNotExistView"
+      permission="zope.Public"
+      name="+login"
+      />
+
+  <!-- Unauthorized customization for the SSO -->
+  <browser:page
+      for="zope.exceptions.IUnauthorized"
+      layer="canonical.launchpad.layers.OpenIDLayer"
+      name="index.html"
+      permission="zope.Public"
+      class="canonical.launchpad.browser.openidserver.LoginServiceUnauthorizedView"
+      />
+
     <!-- OpenID persistent identity URLs -->
     <class
         class="canonical.launchpad.components.openidserver.OpenIDPersistentIdentity">
@@ -112,7 +129,7 @@
       />
 
     <adapter
-      for="canonical.launchpad.interfaces.person.IPerson"
+      for="lp.registry.interfaces.person.IPerson"
       provides="canonical.launchpad.interfaces.openidserver.IOpenIDPersistentIdentity"
       factory="canonical.launchpad.components.openidserver.person_to_openidpersistentidentity"
       />
@@ -203,6 +220,11 @@
         component="canonical.launchpad.database.openidserver.LaunchpadOpenIDStore">
     </utility>
 
+    <utility
+        provides="canonical.launchpad.interfaces.IOpenIDConsumerStoreFactory"
+        component="canonical.launchpad.database.openidconsumer.OpenIDConsumerStore">
+    </utility>
+
     <browser:page
         for="openid.server.server.ProtocolError"
         name="index.html"
@@ -252,7 +274,7 @@
     <browser:url
         for="canonical.launchpad.interfaces.IOpenIDRPConfigSet"
         path_expression="string:+rpconfig"
-        parent_utility="canonical.launchpad.interfaces.IOpenIDApplication"
+        parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
         />
 
     <browser:navigation

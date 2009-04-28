@@ -8,9 +8,9 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 from zope.publisher.interfaces import NotFound
 
-from canonical.lazr.testing.webservice import FakeRequest
+from lazr.restful.testing.webservice import FakeRequest
 
-from canonical.launchpad.browser.person import PersonNavigation
+from lp.registry.browser.person import PersonNavigation
 from canonical.launchpad.browser.personproduct import PersonProductNavigation
 from canonical.launchpad.interfaces.personproduct import (
     IPersonProduct, IPersonProductFactory)

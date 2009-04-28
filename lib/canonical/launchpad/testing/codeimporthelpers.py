@@ -13,15 +13,16 @@ __all__ = [
 from datetime import datetime, timedelta
 
 from pytz import UTC
-
+import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.database.codeimportjob import CodeImportJobWorkflow
+from lp.code.model.codeimportjob import CodeImportJobWorkflow
 from canonical.launchpad.ftests import sync
 from canonical.launchpad.interfaces import (
-    CodeImportJobState, CodeImportResultStatus, CodeImportReviewStatus)
-from canonical.launchpad.interfaces.branchlookup import IBranchLookup
+    CodeImportJobState, CodeImportReviewStatus)
+from lp.code.interfaces.branchlookup import IBranchLookup
+from lp.code.interfaces.codeimportresult import CodeImportResultStatus
 from canonical.launchpad.testing import LaunchpadObjectFactory, time_counter
 
 
@@ -54,6 +55,7 @@ def make_running_import(code_import=None, machine=None, date_started=None,
         code_import = factory.makeCodeImport()
     if machine is None:
         machine = factory.makeCodeImportMachine(set_online=True)
+    transaction.commit() # Commit so factory created persons are valid
     # The code import must be in a reviewed state.
     if code_import.review_status != CodeImportReviewStatus.REVIEWED:
         code_import.updateFromData(

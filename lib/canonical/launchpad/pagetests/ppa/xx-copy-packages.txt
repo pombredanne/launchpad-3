@@ -66,9 +66,11 @@ provided link.
     >>> print jblack_browser.title
     Activate Personal Package Archive
 
+    >>> jblack_browser.getControl(
+    ...     name="field.displayname").value = 'PPA for James Blackwell'
     >>> jblack_browser.getControl(name="field.accepted").value = True
-    >>> jblack_browser.getControl(name="field.description").value = (
-    ...    'There we go ...')
+    >>> jblack_browser.getControl(
+    ...     name="field.description").value = 'There we go ...'
     >>> jblack_browser.getControl("Activate").click()
 
     >>> print jblack_browser.title
@@ -84,7 +86,7 @@ copy package interface can see packages to be copied.
     Source            Published   Status     Series           Section  Build
         Status
     cdrkit - 1.0      2007-07-09  Published  Breezy-autotest  Editors  i386
-    iceweasel...(...) 2007-07-09  Published  Warty            Editors
+    iceweasel...(...) 2007-07-09  Published  Warty            Editors  i386
     pmount - 0.1-1    2007-07-09  Published  Warty            Editors
 
 
@@ -199,7 +201,7 @@ default form value for 'Destination PPA'.
 
     >>> print jblack_browser.getControl(
     ...     'Destination PPA').value
-    ['jblack']
+    ['jblack/ppa']
 
 James notice that Celso's 'pmount' was uploaded and built in Warty,
 but he is using Hoary. No problem, because he can select a destination
@@ -524,6 +526,28 @@ package copied in the available sources.
 Note that only the i386 binary got copied to grumpy since it lacks
 hppa support.
 
+XXX: michael.nelson 2009-04-24 bug=365980:
+Copying a package including binaries should not result in a build for the
+new package, as shown here. This is apparently due to relying on the sample
+data, so these copy-tests need to use SoyuzTestPublisher instead.
+
+    >>> print_ppa_packages(jblack_browser.contents)
+    Source          Published   Status     Series           Section  Build
+        Status
+    pmount - 0.1-1              Pending    Grumpy           Editors
+    pmount - 0.1-1              Pending    Hoary            Editors  i386
+
+After the binary package go from PENDING->PUBLISHED, the page reflects the
+changes:
+
+    >>> from canonical.launchpad.interfaces.publishing import (
+    ...     PackagePublishingStatus)
+    >>> login('foo.bar@canonical.com')
+    >>> for binary in pmount_binaries:
+    ...     binary.secure_record.setPublished()
+    >>> flush_database_updates()
+    >>> logout()
+    >>> jblack_browser.reload()
     >>> print_ppa_packages(jblack_browser.contents)
     Source          Published   Status     Series           Section  Build
         Status
@@ -671,9 +695,12 @@ together.
     >>> jblack_browser.getControl("Create").click()
 
     >>> jblack_browser.getLink('Create a new PPA').click()
+    >>> jblack_browser.getControl(
+    ...     name="field.displayname").value = (
+    ...     'PPA for James Blackwell Friends')
     >>> jblack_browser.getControl(name="field.accepted").value = True
-    >>> jblack_browser.getControl(name="field.description").value = (
-    ...    'Come friends ...')
+    >>> jblack_browser.getControl(
+    ...     name="field.description").value = 'Come friends ...'
     >>> jblack_browser.getControl("Activate").click()
 
     >>> print jblack_browser.title
@@ -705,7 +732,7 @@ James wants to populate the PPA for James Blackwell Friends, he
 selects that.
 
     >>> jblack_browser.getControl(
-    ...     'Destination PPA').value = ['jblack-friends']
+    ...     'Destination PPA').value = ['jblack-friends/ppa']
 
 James decides that 'hoary' is where the action will be for his friends.
 
@@ -809,9 +836,12 @@ tests.
     >>> jblack_browser.getControl("Create").click()
 
     >>> jblack_browser.getLink('Create a new PPA').click()
+    >>> jblack_browser.getControl(
+    ...     name="field.displayname").value = (
+    ...     'PPA for James Blackwell Sandbox')
     >>> jblack_browser.getControl(name="field.accepted").value = True
-    >>> jblack_browser.getControl(name="field.description").value = (
-    ...    'Come friends ...')
+    >>> jblack_browser.getControl(
+    ...     name="field.description").value = 'Come friends ...'
     >>> jblack_browser.getControl("Activate").click()
 
     >>> print jblack_browser.title
@@ -839,7 +869,7 @@ insane because PPA-copy-ui is so cool.
     ...     jblack_pub_ids)
 
     >>> jblack_browser.getControl(
-    ...     'Destination PPA').value = ['jblack-sandbox']
+    ...     'Destination PPA').value = ['jblack-sandbox/ppa']
 
     >>> jblack_browser.getControl(
     ...     'Destination series').value = ['']
@@ -878,7 +908,6 @@ interface can be used to resurrect deleted packages.
     >>> jblack_browser.getControl(name='field.status_filter').value = ['any']
     >>> jblack_browser.getControl("Filter").click()
 
-    >>> from canonical.launchpad.interfaces import PackagePublishingStatus
     >>> deleted_pub_id = getPPAPubIDsFor(
     ...     'jblack', status=PackagePublishingStatus.DELETED)[0]
 
@@ -915,7 +944,7 @@ deleted files will be re-published in his archive.
     >>> print_ppa_packages(jblack_browser.contents)
     Source          Published   Status     Series           Section  Build
         Status
-    pmount - 0.1-1              Pending    Hoary            Editors
+    pmount - 0.1-1              Pending    Hoary            Editors  i386
     pmount - 0.1-1              Pending    Warty            Editors
     pmount - 0.1-1              Pending    Grumpy           Editors
     pmount - 0.1-1              Deleted    Hoary            Editors
@@ -977,13 +1006,13 @@ foo_2.0 version to his PPA.
     >>> print_ppa_packages(jblack_browser.contents)
     Source          Published   Status     Series           Section  Build
         Status
-    foo - 2.0                   Published  Hoary            Base
+    foo - 2.0 (changesfile)     Published  Hoary            Base
 
     >>> foo_pub_id = getPPAPubIDsFor('no-priv', 'foo')[0]
     >>> jblack_browser.getControl(
     ...     name='field.selected_sources').value = [foo_pub_id]
     >>> jblack_browser.getControl(
-    ...     'Destination PPA').value = ['jblack']
+    ...     'Destination PPA').value = ['jblack/ppa']
     >>> jblack_browser.getControl(
     ...     name='field.include_binaries').value = ['COPY_BINARIES']
     >>> jblack_browser.getControl("Copy Packages").click()
@@ -1006,15 +1035,15 @@ packages since they would not be published in the destination anyway.
     Source            Published   Status     Series           Section  Build
         Status
     cdrkit - 1.0      2007-07-09  Published  Breezy-autotest  Editors  i386
-    foo - 1.1                     Published  Hoary            Base
-    iceweasel...(...) 2007-07-09  Published  Warty            Editors
+    foo - 1.1   (...)             Published  Hoary            Base
+    iceweasel...(...) 2007-07-09  Published  Warty            Editors  i386
     pmount - 0.1-1    2007-07-09  Published  Warty            Editors
 
     >>> foo_pub_id = getPPAPubIDsFor('cprov', 'foo')[0]
     >>> jblack_browser.getControl(
     ...     name='field.selected_sources').value = [foo_pub_id]
     >>> jblack_browser.getControl(
-    ...     'Destination PPA').value = ['jblack']
+    ...     'Destination PPA').value = ['jblack/ppa']
     >>> jblack_browser.getControl(
     ...     name='field.include_binaries').value = ['COPY_BINARIES']
     >>> jblack_browser.getControl("Copy Packages").click()
@@ -1031,7 +1060,7 @@ do not enforce coherent version ordering across suites.
     >>> jblack_browser.getControl(
     ...     name='field.selected_sources').value = [foo_pub_id]
     >>> jblack_browser.getControl(
-    ...     'Destination PPA').value = ['jblack']
+    ...     'Destination PPA').value = ['jblack/ppa']
     >>> jblack_browser.getControl(
     ...     'Destination series').value = ['warty']
     >>> jblack_browser.getControl(
@@ -1049,9 +1078,9 @@ do not enforce coherent version ordering across suites.
     >>> print_ppa_packages(jblack_browser.contents)
     Source          Published   Status     Series           Section  Build
         Status
-    foo - 2.0                   Pending    Hoary            Base
-    foo - 1.1                   Pending    Warty            Base
-    pmount - 0.1-1              Pending    Hoary            Editors
+    foo - 2.0  (changesfile)    Pending    Hoary            Base
+    foo - 1.1  (changesfile)    Pending    Warty            Base
+    pmount - 0.1-1              Pending    Hoary            Editors  i386
     pmount - 0.1-1              Pending    Warty            Editors
     pmount - 0.1-1              Pending    Grumpy           Editors
 
@@ -1065,14 +1094,14 @@ to copy the *same* version with different contents to grumpy in his PPA.
     >>> print_ppa_packages(jblack_browser.contents)
     Source            Published   Status     Series           Section  Build
         Status
-    foo - 1.1                     Published  Hoary            Base
+    foo - 1.1 (changesfile)       Published  Hoary            Base
     iceweasel...(...) 2007-07-09  Published  Breezy-autotest  Editors
 
     >>> foo_pub_id = getPPAPubIDsFor('sabdfl', 'foo')[0]
     >>> jblack_browser.getControl(
     ...     name='field.selected_sources').value = [foo_pub_id]
     >>> jblack_browser.getControl(
-    ...     'Destination PPA').value = ['jblack']
+    ...     'Destination PPA').value = ['jblack/ppa']
     >>> jblack_browser.getControl(
     ...     'Destination series').value = ['grumpy']
     >>> jblack_browser.getControl(
@@ -1096,8 +1125,8 @@ foo-9.9 source from 'James-Friend's PPA.
     >>> jblack_browser.getControl("Filter").click()
 
     >>> print_ppa_packages(jblack_browser.contents)
-    Source     Uploader  Published   Status     Series   Section  Build Status
-    foo - 9.9  name16                Published  Hoary    Base     i386
+    Source          Uploader  Published  Status     Series  Section Build Status
+    foo - 9.9 (...) name16               Published  Hoary   Base    i386
 
 But James doesn't think straight, he sees that foo-9.9 failed to build
 in i386, but even though, he tries to copy it including binaries. He
@@ -1107,7 +1136,7 @@ is told that the source cannot be copied.
     >>> jblack_browser.getControl(
     ...     name='field.selected_sources').value = [foo_pub_id]
     >>> jblack_browser.getControl(
-    ...     'Destination PPA').value = ['jblack']
+    ...     'Destination PPA').value = ['jblack/ppa']
     >>> jblack_browser.getControl(
     ...     'Destination series').value = ['grumpy']
     >>> jblack_browser.getControl(

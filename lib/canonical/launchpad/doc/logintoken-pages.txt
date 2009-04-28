@@ -14,16 +14,18 @@ displays a form asking the user to confirm his email address and provide
 a new password.
 
     >>> from zope.component import getMultiAdapter, getUtility
-    >>> from zope.security.proxy import removeSecurityProxy
+    >>> from canonical.launchpad.interfaces.authtoken import LoginTokenType
     >>> from canonical.launchpad.interfaces.logintoken import (
-    ...     ILoginTokenSet, LoginTokenType)
-    >>> from canonical.launchpad.interfaces.person import IPersonSet
+    ...     ILoginTokenSet)
+    >>> from lp.registry.model.person import PersonSet
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 
-    >>> person_set = getUtility(IPersonSet)
+    # To simplify our tests we'll use the PersonSet() class directly instead
+    # of gettint it as a zope secured utility. If we don't do that we'd have
+    # to remove the security proxy of the person objects all the time.
+    >>> person_set = PersonSet()
     >>> no_priv = person_set.getByEmail('no-priv@canonical.com')
-    >>> no_priv_account = removeSecurityProxy(no_priv.account)
-    >>> old_password = no_priv_account.password
+    >>> old_password = no_priv.account.password
 
     >>> login_token_set = getUtility(ILoginTokenSet)
     >>> login_token = login_token_set.new(
@@ -43,7 +45,7 @@ a new password.
     >>> resetpassword_view = getMultiAdapter(
     ...     (login_token, request), name="+resetpassword")
     >>> resetpassword_view.initialize()
-    >>> old_password == no_priv_account.password
+    >>> old_password == no_priv.account.password
     False
 
 If the user submits the wrong email address for the token, an error is
@@ -69,7 +71,7 @@ stored. The password is not reset.
     >>> resetpassword_view.errors
     [u"The email address ... didn't match ... the password reset."]
 
-    >>> old_password == no_priv_account.password
+    >>> old_password == no_priv.account.password
     True
 
 
@@ -78,19 +80,21 @@ stored. The password is not reset.
 A user with a DEACTIVATED account does not have a password--he must use
 the +resetpassword view to set his account to ACTIVE and add a password.
 
-    >>> former_user = person_set.getByEmail('former-user@canonical.com')
+    >>> from canonical.launchpad.interfaces import IMasterObject
+    >>> former_user = IMasterObject(
+    ...     person_set.getByEmail('former-user@canonical.com'))
     >>> former_user.name
     u'former-user-deactivatedaccount'
 
-    >>> former_user_account = removeSecurityProxy(former_user.account)
-    >>> former_user_account.status
+    >>> former_user.account.status
     <DBItem AccountStatus.DEACTIVATED, ...>
-    >>> print former_user_account.password
+    >>> print former_user.account.password
     None
 
     >>> login_token = login_token_set.new(
     ...     former_user, 'former-user@canonical.com',
     ...     'former-user@canonical.com', LoginTokenType.PASSWORDRECOVERY)
+    >>> transaction.commit()
 
 If the user provides the correct email address for the token, the
 password is reset, and the account status is set ACTIVE.
@@ -109,10 +113,11 @@ password is reset, and the account status is set ACTIVE.
     >>> resetpassword_view = getMultiAdapter(
     ...     (login_token, request), name="+resetpassword")
     >>> resetpassword_view.initialize()
+    >>> transaction.commit()
 
     >>> former_user.name
     u'former-user'
-    >>> former_user_account.status
+    >>> former_user.account.status
     <DBItem AccountStatus.ACTIVE, ...>
     >>> former_user.is_valid_person
     True
@@ -131,11 +136,13 @@ account to ACTIVE, nor will it reset his password.
     ...     email='suspended-user@canonical.com',
     ...     name='suspended-user',
     ...     password='invalid')
-    >>> suspended_user.account.status = AccountStatus.SUSPENDED
-    >>> original_password = suspended_user.account.password
+    >>> suspended_account = IMasterObject(suspended_user.account)
+    >>> suspended_account.status = AccountStatus.SUSPENDED
+    >>> original_password = suspended_account.password
+    >>> transaction.commit()
     >>> suspended_user.is_valid_person
     False
-    >>> suspended_user.account.status
+    >>> suspended_account.status
     <DBItem AccountStatus.SUSPENDED, ...>
 
     >>> login_token = login_token_set.new(
@@ -179,10 +186,9 @@ The user profile does not have a preferred email address or a password.
     >>> print matsubara.preferredemail
     None
 
-    >>> matsubara_account = removeSecurityProxy(matsubara.account)
-    >>> matsubara_account.status
+    >>> matsubara.account.status
     <DBItem AccountStatus.NOACCOUNT, ...>
-    >>> print matsubara_account.password
+    >>> print matsubara.account.password
     None
     >>> matsubara.is_valid_person
     False
@@ -215,6 +221,7 @@ indicate if his email address can be shown to other Launchpad users.
     >>> claimprofile_view.initialize()
     >>> claimprofile_view.errors
     []
+    >>> transaction.commit()
 
 The user's Person, EmailAddress, and Account objects are updated.
 
@@ -222,12 +229,12 @@ The user's Person, EmailAddress, and Account objects are updated.
     u'D. Matsubara'
     >>> matsubara.hide_email_addresses
     True
-    >>> removeSecurityProxy(matsubara.preferredemail).email
+    >>> matsubara.account.preferredemail.email
     u'matsubara@async.com.br'
 
-    >>> matsubara_account.status
+    >>> matsubara.account.status
     <DBItem AccountStatus.ACTIVE, ...>
-    >>> matsubara_account.status_comment
+    >>> matsubara.account.status_comment
     u'Activated by claim profile.'
     >>> matsubara.is_valid_person
     True
@@ -275,8 +282,7 @@ Andre Lopes (andrelop) has an account created via an automated process.
     >>> print andrelop.preferredemail
     None
 
-    >>> andrelop_account = removeSecurityProxy(andrelop.account)
-    >>> andrelop_account.status
+    >>> andrelop.account.status
     <DBItem AccountStatus.NOACCOUNT, ...>
     >>> andrelop.is_valid_person
     False
@@ -287,6 +293,7 @@ that verifies his access to the email address his provided.
     >>> login_token = login_token_set.new(
     ...     andrelop, 'andrelop@debian.org',
     ...     'andrelop@debian.org', LoginTokenType.NEWACCOUNT)
+    >>> transaction.commit()
 
 The NewAccountView will activate the existing account and update
 the Person object.
@@ -308,6 +315,7 @@ the Person object.
     >>> claimprofile_view.initialize()
     >>> claimprofile_view.errors
     []
+    >>> transaction.commit()
 
 The existing Account, Person and EmailAddress are updated.
 
@@ -315,12 +323,12 @@ The existing Account, Person and EmailAddress are updated.
     u'Andre Lopes'
     >>> andrelop.hide_email_addresses
     False
-    >>> removeSecurityProxy(andrelop.preferredemail).email
+    >>> andrelop.account.preferredemail.email
     u'andrelop@debian.org'
 
-    >>> andrelop_account.status
+    >>> andrelop.account.status
     <DBItem AccountStatus.ACTIVE, ...>
-    >>> andrelop_account.status_comment
+    >>> andrelop.account.status_comment
     u'Activated by new account.'
     >>> andrelop.is_valid_person
     True

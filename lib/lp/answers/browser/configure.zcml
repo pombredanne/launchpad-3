@@ -340,99 +340,99 @@
         permission="zope.Public"
         />
   <browser:page
-    for="canonical.launchpad.interfaces.person.IPerson"
-    class="canonical.launchpad.browser.person.PersonLatestQuestionsView"
+    for="lp.registry.interfaces.person.IPerson"
+    class="lp.registry.browser.person.PersonLatestQuestionsView"
     name="+portlet-latestquestions"
     permission="zope.Public"
     template="../templates/questiontarget-portlet-latestquestions.pt"
     />
   <browser:page
-    for="canonical.launchpad.interfaces.person.IPerson"
-    class="canonical.launchpad.browser.person.PersonSearchQuestionsView"
+    for="lp.registry.interfaces.person.IPerson"
+    class="lp.registry.browser.person.PersonSearchQuestionsView"
     name="+questions"
     permission="zope.Public"
     />
   <browser:renamed-page
-    for="canonical.launchpad.interfaces.person.IPerson"
+    for="lp.registry.interfaces.person.IPerson"
     name="+tickets"
     new_name="+questions"
     rootsite="answers"
     />
   <browser:page
-    for="canonical.launchpad.interfaces.person.IPerson"
-    class="canonical.launchpad.browser.person.SearchAnsweredQuestionsView"
+    for="lp.registry.interfaces.person.IPerson"
+    class="lp.registry.browser.person.SearchAnsweredQuestionsView"
     name="+answeredquestions"
     permission="zope.Public"
     />
   <browser:renamed-page
-    for="canonical.launchpad.interfaces.person.IPerson"
+    for="lp.registry.interfaces.person.IPerson"
     name="+answeredtickets"
     new_name="+answeredquestions"
     rootsite="answers"
     />
   <browser:page
-    for="canonical.launchpad.interfaces.person.IPerson"
-    class="canonical.launchpad.browser.person.SearchAssignedQuestionsView"
+    for="lp.registry.interfaces.person.IPerson"
+    class="lp.registry.browser.person.SearchAssignedQuestionsView"
     name="+assignedquestions"
     permission="zope.Public"
     />
   <browser:renamed-page
-    for="canonical.launchpad.interfaces.person.IPerson"
+    for="lp.registry.interfaces.person.IPerson"
     name="+assignedtickets"
     new_name="+assignedquestions"
     rootsite="answers"
     />
   <browser:page
-    for="canonical.launchpad.interfaces.person.IPerson"
-    class="canonical.launchpad.browser.person.SearchCommentedQuestionsView"
+    for="lp.registry.interfaces.person.IPerson"
+    class="lp.registry.browser.person.SearchCommentedQuestionsView"
     name="+commentedquestions"
     permission="zope.Public"
     />
   <browser:renamed-page
-    for="canonical.launchpad.interfaces.person.IPerson"
+    for="lp.registry.interfaces.person.IPerson"
     name="+commentedtickets"
     new_name="+commentedquestions"
     rootsite="answers"
     />
   <browser:page
-    for="canonical.launchpad.interfaces.person.IPerson"
-    class="canonical.launchpad.browser.person.SearchCreatedQuestionsView"
+    for="lp.registry.interfaces.person.IPerson"
+    class="lp.registry.browser.person.SearchCreatedQuestionsView"
     name="+createdquestions"
     permission="zope.Public"
     />
   <browser:renamed-page
-    for="canonical.launchpad.interfaces.person.IPerson"
+    for="lp.registry.interfaces.person.IPerson"
     name="+createdtickets"
     new_name="+createdquestions"
     rootsite="answers"
     />
   <browser:page
-    for="canonical.launchpad.interfaces.person.IPerson"
-    class="canonical.launchpad.browser.person.SearchNeedAttentionQuestionsView"
+    for="lp.registry.interfaces.person.IPerson"
+    class="lp.registry.browser.person.SearchNeedAttentionQuestionsView"
     name="+needattentionquestions"
     permission="zope.Public"
     />
   <browser:renamed-page
-    for="canonical.launchpad.interfaces.person.IPerson"
+    for="lp.registry.interfaces.person.IPerson"
     name="+needattentiontickets"
     new_name="+needattentionquestions"
     rootsite="answers"
     />
   <browser:page
-    for="canonical.launchpad.interfaces.person.IPerson"
+    for="lp.registry.interfaces.person.IPerson"
     class="canonical.launchpad.browser.SearchSubscribedQuestionsView"
     name="+subscribedquestions"
     permission="zope.Public"
     />
   <browser:renamed-page
-    for="canonical.launchpad.interfaces.person.IPerson"
+    for="lp.registry.interfaces.person.IPerson"
     name="+subscribedtickets"
     new_name="+subscribedquestions"
     rootsite="answers"
     />
   <browser:page
-    for="canonical.launchpad.interfaces.person.IPerson"
-    class="canonical.launchpad.browser.person.PersonAnswerContactForView"
+    for="lp.registry.interfaces.person.IPerson"
+    class="lp.registry.browser.person.PersonAnswerContactForView"
     name="+answer-contact-for"
     permission="zope.Public"
     template="../templates/person-answer-contact-for.pt"
@@ -442,8 +442,8 @@
     classes="PersonAnswersMenu"
     />
   <browser:page
-    for="canonical.launchpad.interfaces.person.IPerson"
-    class="canonical.launchpad.browser.person.RestrictedMembershipsPersonView"
+    for="lp.registry.interfaces.person.IPerson"
+    class="lp.registry.browser.person.RestrictedMembershipsPersonView"
     name="+restricted-membership"
     permission="zope.Public"
     />

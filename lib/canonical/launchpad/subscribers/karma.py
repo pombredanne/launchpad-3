@@ -5,8 +5,8 @@ application."""
 
 from canonical.database.sqlbase import block_implicit_flushes
 from canonical.launchpad.interfaces import BugTaskStatus
-from canonical.launchpad.interfaces.person import IPerson
-from canonical.launchpad.interfaces.branchmergeproposal import (
+from lp.registry.interfaces.person import IPerson
+from lp.code.interfaces.branchmergeproposal import (
     BranchMergeProposalStatus)
 from canonical.launchpad.mailnotification import get_bug_delta
 

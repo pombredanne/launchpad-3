@@ -16,18 +16,18 @@ from zope.component import adapter, getSiteManager
 from zope.interface import implementer
 
 from canonical.database.constants import UTC_NOW
-from canonical.launchpad.database.branchnamespace import BranchNamespaceSet
-from canonical.launchpad.database.branchtarget import (
+from lp.code.model.branchnamespace import BranchNamespaceSet
+from lp.code.model.branchtarget import (
     PackageBranchTarget, ProductBranchTarget)
-from canonical.launchpad.interfaces.branch import BranchType, IBranch
-from canonical.launchpad.interfaces.branchtarget import IBranchTarget
-from canonical.launchpad.interfaces.codehosting import (
+from lp.code.interfaces.branch import BranchType, IBranch
+from lp.code.interfaces.branchtarget import IBranchTarget
+from lp.code.interfaces.codehosting import (
     BRANCH_TRANSPORT, CONTROL_TRANSPORT, LAUNCHPAD_ANONYMOUS,
     LAUNCHPAD_SERVICES)
 from canonical.launchpad.interfaces.publishing import PackagePublishingPocket
 from canonical.launchpad.testing import ObjectFactory
 from canonical.launchpad.validators import LaunchpadValidationError
-from canonical.launchpad.xmlrpc.codehosting import (
+from lp.code.xmlrpc.codehosting import (
     datetime_from_tuple, iter_split)
 from canonical.launchpad.xmlrpc import faults
 
@@ -253,12 +253,7 @@ def fake_product_to_branch_target(fake_product):
 class FakeProductSeries(FakeDatabaseObject):
     """Fake product series."""
 
-    user_branch = None
-
-    @property
-    def series_branch(self):
-        """See `IProductSeries`."""
-        return self.user_branch
+    branch = None
 
 
 class FakeScriptActivity(FakeDatabaseObject):
@@ -408,7 +403,7 @@ class FakeObjectFactory(ObjectFactory):
         """
         if branch is None:
             branch = self.makeBranch(product=product)
-        product.development_focus.user_branch = branch
+        product.development_focus.branch = branch
         branch.last_mirrored = 'rev1'
         return branch
 
@@ -435,7 +430,7 @@ class FakeBranchPuller:
         default_branch = ''
         if branch.product is not None:
             series = branch.product.development_focus
-            user_branch = series.user_branch
+            user_branch = series.branch
             if (user_branch is not None
                 and not (
                     user_branch.private

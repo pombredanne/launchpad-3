@@ -69,7 +69,7 @@ function dispatchUpdate () {
 
     var container = Y.get('#package_counters div');
     container.set('innerHTML', '');
-    container.appendChild(in_progress_message)
+    container.appendChild(in_progress_message);
 
     var uri = '+repository-size';
     var xhr_config = {
@@ -102,12 +102,13 @@ div#package_counters p {
 
       <tal:privacy replace="structure context/@@+portlet-privacy" />
 
-      <h1 id="archive-heading" tal:content="CONTEXTS/fmt:pagetitle"
-        tal:condition="context/enabled">
+      <h1 tal:condition="context/enabled"
+          tal:replace="structure view/displayname_edit_widget">
         PPA for user
       </h1>
-      <h1 id="archive-heading" tal:content="CONTEXTS/fmt:pagetitle"
-        tal:condition="not: context/enabled" class="disabled">
+      <h1 tal:condition="not: context/enabled"
+          tal:content="CONTEXTS/fmt:pagetitle"
+          class="disabled">
         PPA for user
       </h1>
 
@@ -134,15 +135,6 @@ div#package_counters p {
           condition="link/enabled"
           replace="structure link/render" />
       </div>
-
-      <tal:whiteboard condition="context/required:launchpad.Edit">
-         <div id="whiteboard" class="informational"
-              tal:condition="context/whiteboard">
-           <p><tal:archive_label replace="archive_label" /> whiteboard:</p>
-           <tal:archive-whiteboard
-              replace="structure context/whiteboard/fmt:text-to-html" />
-         </div>
-      </tal:whiteboard>
 
       <div tal:define="archive context"
            tal:condition="archive_active"

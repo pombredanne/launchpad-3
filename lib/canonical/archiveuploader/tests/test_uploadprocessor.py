@@ -32,7 +32,7 @@ from canonical.launchpad.database.binarypackagerelease import (
 from canonical.launchpad.database.component import Component
 from canonical.launchpad.database.publishing import (
     SourcePackagePublishingHistory, BinaryPackagePublishingHistory)
-from canonical.launchpad.database.sourcepackagename import SourcePackageName
+from lp.registry.model.sourcepackagename import SourcePackageName
 from canonical.launchpad.database.sourcepackagerelease import (
     SourcePackageRelease)
 from canonical.launchpad.ftests import import_public_test_keys
@@ -43,8 +43,8 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.interfaces.archivepermission import (
     ArchivePermissionType)
 from canonical.launchpad.interfaces.component import IComponentSet
-from canonical.launchpad.interfaces.person import IPersonSet
-from canonical.launchpad.interfaces.sourcepackagename import (
+from lp.registry.interfaces.person import IPersonSet
+from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageNameSet)
 from canonical.launchpad.mail import stub
 from canonical.launchpad.testing.fakepackager import FakePackager
@@ -849,24 +849,44 @@ class TestUploadProcessor(TestUploadProcessorBase):
         self.layer.txn.commit()
         self._uploadPartnerToNonReleasePocketAndCheckFail()
 
-    def testUploadWithBadSectionIsOverriddenToMisc(self):
-        """Uploads with a bad section are overridden to the 'misc' section."""
+    def testUploadWithUnknownSectionIsRejected(self):
         uploadprocessor = self.setupBreezyAndGetUploadProcessor()
-
         upload_dir = self.queueUpload("bar_1.0-1_bad_section")
         self.processUpload(uploadprocessor, upload_dir)
+        self.assertEqual(
+            uploadprocessor.last_processed_upload.rejection_message,
+            "bar_1.0-1.dsc: Unknown section 'badsection'\n"
+            "bar_1.0.orig.tar.gz: Unknown section 'badsection'\n"
+            "bar_1.0-1.diff.gz: Unknown section 'badsection'\n"
+            "Further error processing not possible because of a "
+            "critical previous error.")
 
-        # Check it is accepted and the section is converted to misc.
+    def testUploadWithUnknownComponentIsRejected(self):
+        uploadprocessor = self.setupBreezyAndGetUploadProcessor()
+        upload_dir = self.queueUpload("bar_1.0-1_contrib_component")
+        self.processUpload(uploadprocessor, upload_dir)
+        self.assertEqual(
+            uploadprocessor.last_processed_upload.rejection_message,
+            "bar_1.0-1.dsc: Unknown component 'contrib'\n"
+            "bar_1.0.orig.tar.gz: Unknown component 'contrib'\n"
+            "bar_1.0-1.diff.gz: Unknown component 'contrib'\n"
+            "Further error processing not possible because of a "
+            "critical previous error.")
+
+    def testSourceUploadToBuilddPath(self):
+        """Source uploads to buildd upload paths are not permitted."""
+        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+        primary = ubuntu.main_archive
+
+        uploadprocessor = self.setupBreezyAndGetUploadProcessor()
+        upload_dir = self.queueUpload("bar_1.0-1", "%s/ubuntu" % primary.id)
+        self.processUpload(uploadprocessor, upload_dir)
+
+        # Check that the sourceful upload to the copy archive is rejected.
         contents = [
-            "Subject: [ubuntu/breezy] bar 1.0-1 (New)"
+            "Invalid upload path (1/ubuntu) for this policy (insecure)"
             ]
         self.assertEmail(contents=contents, recipients=[])
-
-        queue_items = self.breezy.getQueueItems(
-            status=PackageUploadStatus.NEW, name="bar",
-            version="1.0-1", exact_match=True)
-        [queue_item] = queue_items
-        self.assertEqual(queue_item.sourcepackagerelease.section.name, "misc")
 
     # Uploads that are new should have the component overridden
     # such that:
@@ -883,7 +903,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
                                expected_component_name):
         """Helper function to check overridden component names.
 
-        Upload a 'bar" package from upload_dir_name, then
+        Upload a 'bar' package from upload_dir_name, then
         inspect the package 'bar' in the NEW queue and ensure its
         overridden component matches expected_component_name.
 

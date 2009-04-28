@@ -13,10 +13,10 @@ from canonical.launchpad.helpers import (
 from canonical.launchpad.interfaces import (
     BranchSubscriptionNotificationLevel, CodeImportReviewStatus,
     ILaunchpadCelebrities)
-from canonical.launchpad.interfaces.codeimport import RevisionControlSystems
-from canonical.launchpad.interfaces.codeimportevent import (
+from lp.code.interfaces.codeimport import RevisionControlSystems
+from lp.code.interfaces.codeimportevent import (
     CodeImportEventDataType, CodeImportEventType)
-from canonical.launchpad.interfaces.person import IPerson
+from lp.registry.interfaces.person import IPerson
 from canonical.launchpad.mail import format_address, simple_sendmail
 from canonical.launchpad.webapp import canonical_url
 
@@ -99,6 +99,12 @@ def make_email_body_for_code_import_update(
             old_url = event_data[CodeImportEventDataType.OLD_SVN_BRANCH_URL]
             body.append(
                 details_change_prefix + '\n    ' +code_import.svn_branch_url +
+                "\ninstead of:\n    " + old_url)
+    elif code_import.rcs_type == RevisionControlSystems.GIT:
+        if CodeImportEventDataType.OLD_GIT_REPO_URL in event_data:
+            old_url = event_data[CodeImportEventDataType.OLD_GIT_REPO_URL]
+            body.append(
+                details_change_prefix + '\n    ' +code_import.git_repo_url +
                 "\ninstead of:\n    " + old_url)
     else:
         raise AssertionError(

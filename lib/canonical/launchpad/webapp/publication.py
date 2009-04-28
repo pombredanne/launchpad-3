@@ -31,6 +31,7 @@ from zope.app import zapi  # used to get at the adapters service
 from zope.app.publication.interfaces import BeforeTraverseEvent
 from zope.app.security.interfaces import IUnauthenticatedPrincipal
 from zope.component import getUtility, queryMultiAdapter
+from zope.component.interfaces import ComponentLookupError
 from zope.error.interfaces import IErrorReportingUtility
 from zope.event import notify
 from zope.interface import implements, providedBy
@@ -48,13 +49,14 @@ from canonical.mem import (
     countsByType, deltaCounts, memory, mostRefs, printCounts, readCounts,
     resident)
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.interfaces.person import (
+from lp.registry.interfaces.person import (
     IPerson, IPersonSet, ITeam)
 from canonical.launchpad.webapp.interfaces import (
     IDatabasePolicy, IPlacelessAuthUtility, IPrimaryContext,
-    ILaunchpadRoot, IOpenLaunchBag, OffsiteFormPostError,
-    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR, MASTER_FLAVOR)
+    ILaunchpadRoot, INotificationResponse, IOpenLaunchBag,
+    OffsiteFormPostError, IStoreSelector, MASTER_FLAVOR)
 from canonical.launchpad.webapp.dbpolicy import LaunchpadDatabasePolicy
+from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp.opstats import OpStats
 from lazr.uri import URI, InvalidURIError
 from canonical.launchpad.webapp.vhosts import allvhosts
@@ -101,7 +103,6 @@ class LaunchpadBrowserPublication(
     def __init__(self, db):
         self.db = db
         self.thread_locals = threading.local()
-        self.thread_locals.db_policy = None
 
     def annotateTransaction(self, txn, request, ob):
         """See `zope.app.publication.zopepublication.ZopePublication`.
@@ -163,8 +164,9 @@ class LaunchpadBrowserPublication(
 
         transaction.begin()
 
-        self.thread_locals.db_policy = IDatabasePolicy(request)
-        self.thread_locals.db_policy.beforeTraversal()
+        # Now we are logged in, install the correct IDatabasePolicy for
+        # this request.
+        getUtility(IStoreSelector).push(IDatabasePolicy(request))
 
         getUtility(IOpenLaunchBag).clear()
 
@@ -178,6 +180,21 @@ class LaunchpadBrowserPublication(
         request.setPrincipal(principal)
         self.maybeRestrictToTeam(request)
         self.maybeBlockOffsiteFormPost(request)
+
+        # If we are running in read-only mode, notify the user.
+        if config.launchpad.read_only:
+            try:
+                INotificationResponse(request).addWarningNotification(
+                    structured("""
+                        Launchpad is undergoing maintenance and is in
+                        read-only mode. <i>You cannot make any
+                        changes.</i> Please see the <a
+                        href="http://blog.launchpad.net">Launchpad Blog</a>
+                        for details.
+                        """))
+            except ComponentLookupError:
+                pass
+
 
     def getPrincipal(self, request):
         """Return the authenticated principal for this request.
@@ -373,10 +390,6 @@ class LaunchpadBrowserPublication(
         txn = transaction.get()
         self.annotateTransaction(txn, request, ob)
 
-        if self.thread_locals.db_policy is not None:
-            self.thread_locals.db_policy.afterCall()
-            self.thread_locals.db_policy = None
-
         # Abort the transaction on a read-only request.
         # NOTHING AFTER THIS SHOULD CAUSE A RETRY.
         if request.method in ['GET', 'HEAD']:
@@ -391,6 +404,15 @@ class LaunchpadBrowserPublication(
         # by zope.app.publication.browser.BrowserPublication
         if request.method == 'HEAD':
             request.response.setResult('')
+
+        try:
+            getUtility(IStoreSelector).pop()
+        except IndexError:
+            # We have to cope with no database policy being installed
+            # to allow doc/webapp-publication.txt tests to pass. These
+            # tests rely on calling the afterCall hook without first
+            # calling beforeTraversal or doing proper cleanup.
+            pass
 
     def finishReadOnlyRequest(self, txn):
         """Hook called at the end of a read-only request.
@@ -422,6 +444,13 @@ class LaunchpadBrowserPublication(
         raise NotImplementedError
 
     def handleException(self, object, request, exc_info, retry_allowed=True):
+        # Uninstall the database policy.
+        store_selector = getUtility(IStoreSelector)
+        if store_selector.get_current() is not None:
+            db_policy = store_selector.pop()
+        else:
+            db_policy = None
+
         orig_env = request._orig_env
         ticks = tickcount.tickcount()
         if (hasattr(request, '_publicationticks_start') and
@@ -443,7 +472,7 @@ class LaunchpadBrowserPublication(
             # The exception wasn't raised in the middle of the traversal nor
             # the publication, so there's nothing we need to do here.
             pass
-    
+
         def should_retry(exc_info):
             if not retry_allowed:
                 return False
@@ -453,12 +482,9 @@ class LaunchpadBrowserPublication(
             # returning the 404 error page. We do this in case the
             # LookupError is caused by replication lag. Our database
             # policy forces the use of the master database for retries.
-            if (isinstance(exc_info[1], LookupError) and isinstance(
-                self.thread_locals.db_policy, LaunchpadDatabasePolicy)):
-                store_selector = getUtility(IStoreSelector)
-                default_store = store_selector.get(MAIN_STORE, DEFAULT_FLAVOR)
-                master_store = store_selector.get(MAIN_STORE, MASTER_FLAVOR)
-                if default_store is master_store:
+            if (isinstance(exc_info[1], LookupError)
+                and isinstance(db_policy, LaunchpadDatabasePolicy)):
+                if db_policy.default_flavor == MASTER_FLAVOR:
                     return False
                 else:
                     return True

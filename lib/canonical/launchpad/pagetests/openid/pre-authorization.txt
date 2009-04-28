@@ -25,11 +25,12 @@ As an example we'll pre-authorize our own OpenID consumer:
     ...     'http://openid.launchpad.dev/+pre-authorize-rp?%s' % args)
 
     # Since the user is not logged in, he'll have to login first.
-    >>> browser.title
-    'Log in or register with Launchpad'
-    >>> browser.getControl('E-mail address:', index=0).value = 'mark@hbd.com'
-    >>> browser.getControl('Password:').value = 'test'
-    >>> browser.getControl('Log In').click()
+    >>> browser.url
+    'http://openid.launchpad.dev/+standalone-login...'
+    >>> browser.getControl(name='field.email', index=0).value = 'mark@hbd.com'
+    >>> browser.getControl(name='field.password').value = 'test'
+    >>> browser.handleErrors = False
+    >>> browser.getControl('Continue').click()
 
     # Now he's redirected to the callback page and the RP has been
     # pre-authorized.

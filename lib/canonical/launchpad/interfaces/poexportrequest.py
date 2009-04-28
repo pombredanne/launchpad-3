@@ -11,7 +11,7 @@ __all__ = [
 from zope.interface import Interface
 from zope.schema import Int, Object
 
-from canonical.launchpad.interfaces.person import IPerson
+from lp.registry.interfaces.person import IPerson
 from canonical.launchpad.interfaces.pofile import IPOFile
 from canonical.launchpad.interfaces.potemplate import IPOTemplate
 from canonical.launchpad.interfaces import TranslationFileFormat

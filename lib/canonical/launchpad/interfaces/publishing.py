@@ -32,13 +32,14 @@ from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.archive import IArchive
-from canonical.launchpad.interfaces.distroseries import IDistroSeries
-from canonical.launchpad.interfaces.person import IPerson
+from canonical.launchpad.interfaces.distroarchseries import IDistroArchSeries
+from lp.registry.interfaces.distroseries import IDistroSeries
+from lp.registry.interfaces.person import IPerson
 
-from canonical.lazr.fields import Reference
-from canonical.lazr.rest.declarations import (
-    export_as_webservice_entry, export_read_operation,
-    exported, operation_returns_collection_of)
+from lazr.restful.fields import Reference
+from lazr.restful.declarations import (
+    LAZR_WEBSERVICE_EXPORTED, export_as_webservice_entry,
+    export_read_operation, exported, operation_returns_collection_of)
 
 
 #
@@ -268,8 +269,18 @@ class IPublishing(Interface):
     displayname = exported(
         TextLine(
             title=_("Display Name"),
-            description=_("Text representation of the current record.")))
+            description=_("Text representation of the current record.")),
+        exported_as="display_name")
     age = Attribute("Age of the publishing record.")
+
+    component_name = exported(
+        TextLine(
+            title=_("Component Name"),
+            required=False, readonly=True))
+    section_name = exported(
+        TextLine(
+            title=_("Section Name"),
+            required=False, readonly=True))
 
     def publish(diskpool, log):
         """Publish or ensure contents of this publish record
@@ -402,9 +413,10 @@ class ISecureSourcePackagePublishingHistory(IPublishing):
     distroseries = exported(
         Reference(
             IDistroSeries,
-            title=_('The distroseries being published into'),
+            title=_('The distro series being published into'),
             required=False, readonly=False,
-            ))
+            ),
+        exported_as="distro_series")
     component = Int(
             title=_('The component being published into'),
             required=False, readonly=False,
@@ -417,13 +429,15 @@ class ISecureSourcePackagePublishingHistory(IPublishing):
         Datetime(
             title=_('The date on which this record was published'),
             required=False, readonly=False,
-            ))
+            ),
+        exported_as="date_published")
     scheduleddeletiondate = exported(
         Datetime(
             title=_('The date on which this record is scheduled for '
                     'deletion'),
             required=False, readonly=False,
-            ))
+            ),
+        exported_as="scheduled_deletion_date")
     pocket = exported(
         Choice(
             title=_('Pocket'),
@@ -444,24 +458,28 @@ class ISecureSourcePackagePublishingHistory(IPublishing):
         Datetime(
             title=_('The date on which this record was marked superseded'),
             required=False, readonly=False,
-            ))
+            ),
+        exported_as="date_superseded")
     datecreated = exported(
         Datetime(
             title=_('The date on which this record was created'),
             required=True, readonly=False,
-            ))
+            ),
+        exported_as="date_created")
     datemadepending = exported(
         Datetime(
             title=_('The date on which this record was set as pending '
                     'removal'),
             required=False, readonly=False,
-            ))
+            ),
+        exported_as="date_made_pending")
     dateremoved = exported(
         Datetime(
             title=_('The date on which this record was removed from the '
                     'published set'),
             required=False, readonly=False,
-            ))
+            ),
+        exported_as="date_removed")
     embargo = Bool(
             title=_('Whether or not this record is under embargo'),
             required=True, readonly=False,
@@ -510,21 +528,16 @@ class ISourcePackagePublishingHistory(ISecureSourcePackagePublishingHistory):
         TextLine(
             title=_("Source Package Version"),
             required=False, readonly=True))
-    component_name = exported(
-        TextLine(
-            title=_("Component Name"),
-            required=False, readonly=True))
-    section_name = exported(
-        TextLine(
-            title=_("Section Name"),
-            required=False, readonly=True))
 
-    changes_file_text = exported(
+    changes_file_url = exported(
         Text(
-            title=_("Changes File Text"),
-            description=_("This source publication's changes file for "
-                          "the source upload.")))
+            title=_("Changes File URL"),
+            description=_("A URL for this source publication's changes file "
+                          "for the source upload.")))
 
+    # Really IBinaryPackagePublishingHistory, see below.
+    @operation_returns_collection_of(Interface)
+    @export_read_operation()
     def getPublishedBinaries():
         """Return all resulted `IBinaryPackagePublishingHistory`.
 
@@ -605,6 +618,20 @@ class ISourcePackagePublishingHistory(ISecureSourcePackagePublishingHistory):
             source in the destination location.
         """
 
+    def getStatusSummaryForBuilds():
+        """Return a summary of the build status for the related builds.
+
+        This method augments IBuildSet.getBuildStatusSummaryForBuilds() by
+        additionally checking to see if all the builds have been published
+        before returning the fully-built status.
+
+        :return: A dict consisting of the build status summary for the
+            related builds. For example:
+                {
+                    'status': PackagePublishingStatus.PENDING,
+                    'builds': [build1, build2]
+                }
+        """
 
 #
 # Binary package publishing
@@ -637,10 +664,14 @@ class ISecureBinaryPackagePublishingHistory(IPublishing):
             title=_('The binary package being published'), required=False,
             readonly=False,
             )
-    distroarchseries = Int(
-            title=_('The distroarchseries being published into'),
+    distroarchseries = exported(
+        Reference(
+            IDistroArchSeries,
+            title=_("Distro Arch Series"),
+            description=_('The distroarchseries being published into'),
             required=False, readonly=False,
-            )
+            ),
+        exported_as="distro_arch_series")
     component = Int(
             title=_('The component being published into'),
             required=False, readonly=False,
@@ -653,48 +684,78 @@ class ISecureBinaryPackagePublishingHistory(IPublishing):
             title=_('The priority being published into'),
             required=False, readonly=False,
             )
-    datepublished = Datetime(
-            title=_('The date on which this record was published'),
+    datepublished = exported(
+        Datetime(
+            title=_("Date Published"),
+            description=_('The date on which this record was published'),
             required=False, readonly=False,
-            )
-    scheduleddeletiondate = Datetime(
-            title=_('The date on which this record is scheduled for '
+            ),
+        exported_as="date_published")
+    scheduleddeletiondate = exported(
+        Datetime(
+            title=_("Scheduled Deletion Date"),
+            description=_('The date on which this record is scheduled for '
                     'deletion'),
             required=False, readonly=False,
-            )
-    status = Int(
-            title=_('The status of this publishing record'),
+            ),
+        exported_as="scheduled_deletion_date")
+    status = exported(
+        Choice(
+            title=_('Status'),
+            description=_('The status of this publishing record'),
+            vocabulary=PackagePublishingStatus,
             required=False, readonly=False,
-            )
-    pocket = Int(
-            title=_('The pocket into which this entry is published'),
-            required=True, readonly=True,
-            )
+            ))
+    pocket = exported(
+        Choice(
+            title=_('Pocket'),
+            description=_('The pocket into which this entry is published'),
+            vocabulary=PackagePublishingPocket,
+            required=True, readonly=True
+            ))
     supersededby = Int(
             title=_('The build which superseded this one'),
             required=False, readonly=False,
             )
-    datecreated = Datetime(
-            title=_('The date on which this record was created'),
+    datecreated = exported(
+        Datetime(
+            title=_('Date Created'),
+            description=_('The date on which this record was created'),
             required=True, readonly=False,
-            )
-    datesuperseded = Datetime(
-            title=_('The date on which this record was marked superseded'),
+            ),
+        exported_as="date_created")
+    datesuperseded = exported(
+        Datetime(
+            title=_("Date Superseded"),
+            description=_(
+                'The date on which this record was marked superseded'),
             required=False, readonly=False,
-            )
-    datemadepending = Datetime(
-            title=_('The date on which this record was set as pending '
-                    'removal'),
+            ),
+        exported_as="date_superseded")
+    datemadepending = exported(
+        Datetime(
+            title=_("Date Made Pending"),
+            description=_(
+                'The date on which this record was set as pending removal'),
             required=False, readonly=False,
-            )
-    dateremoved = Datetime(
-            title=_('The date on which this record was removed from the '
-                    'published set'),
+            ),
+        exported_as="date_made_pending")
+    dateremoved = exported(
+        Datetime(
+            title=_("Date Removed"),
+            description=_(
+                'The date on which this record was removed from the '
+                'published set'),
             required=False, readonly=False,
-            )
-    archive = Int(
-            title=_('Archive ID'), required=True, readonly=True,
-            )
+            ),
+        exported_as="date_removed")
+    archive = exported(
+        Reference(
+            IArchive,
+            title=_('Archive'),
+            description=_("The context archive for this publication."),
+            required=True, readonly=True,
+            ))
     embargo = Bool(
             title=_('Whether or not this record is under embargo'),
             required=True, readonly=False,
@@ -704,21 +765,40 @@ class ISecureBinaryPackagePublishingHistory(IPublishing):
                     'embargo lifted'),
             required=False, readonly=False,
             )
-    removed_by = Int(
-        title=_('The IPerson responsible for the removal'),
-        required=False, readonly=False,
-        )
-    removal_comment = Text(
-        title=_('Reason why this publication is going to be removed.'),
-        required=False, readonly=False,
-        )
+    removed_by = exported(
+        Reference(
+            IPerson,
+            title=_("Removed By"),
+            description=_('The Person responsible for the removal'),
+            required=False, readonly=False,
+        ))
+    removal_comment = exported(
+        Text(
+            title=_("Removal Comment"),
+            description=_(
+                'Reason why this publication is going to be removed.'),
+            required=False, readonly=False))
 
 
 class IBinaryPackagePublishingHistory(ISecureBinaryPackagePublishingHistory):
     """A binary package publishing record."""
+    export_as_webservice_entry()
 
     distroarchseriesbinarypackagerelease = Attribute("The object that "
         "represents this binarypackagerelease in this distroarchseries.")
+
+    binary_package_name = exported(
+        TextLine(
+            title=_("Binary Package Name"),
+            required=False, readonly=True))
+    binary_package_version = exported(
+        TextLine(
+            title=_("Binary Package Version"),
+            required=False, readonly=True))
+    priority_name = exported(
+        TextLine(
+            title=_("Priority Name"),
+            required=False, readonly=True))
 
     def changeOverride(new_component=None, new_section=None,
                        new_priority=None):
@@ -744,8 +824,13 @@ class IBinaryPackagePublishingHistory(ISecureBinaryPackagePublishingHistory):
 class IPublishingSet(Interface):
     """Auxiliary methods for dealing with sets of publications."""
 
-    def getByIdAndArchive(id, archive):
-        """Return the source publication matching id AND archive."""
+    def getByIdAndArchive(id, archive, source=True):
+        """Return the publication matching id AND archive.
+
+        :param archive: The context `IArchive`.
+        :param source: If true look for source publications, otherwise
+            binary publications.
+        """
 
     def getBuildsForSourceIds(source_ids, archive=None):
         """Return all builds related with each given source publication.
@@ -939,6 +1024,8 @@ inactive_publishing_status = (
 
 from canonical.launchpad.interfaces.build import IBuild
 ISourcePackagePublishingHistory['getBuilds'].queryTaggedValue(
-    'lazr.webservice.exported')[
-        'return_type'].value_type.schema = IBuild
+    LAZR_WEBSERVICE_EXPORTED)['return_type'].value_type.schema = IBuild
+ISourcePackagePublishingHistory['getPublishedBinaries'].queryTaggedValue(
+    LAZR_WEBSERVICE_EXPORTED)[
+    'return_type'].value_type.schema = IBinaryPackagePublishingHistory
 

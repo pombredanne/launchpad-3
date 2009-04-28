@@ -18,7 +18,7 @@ from zope.interface import implements
 from canonical.database.constants import UTC_NOW
 from canonical.database.enumcol import DBEnum
 from canonical.launchpad.database.archiveauthtoken import ArchiveAuthToken
-from canonical.launchpad.database.teammembership import TeamParticipation
+from lp.registry.model.teammembership import TeamParticipation
 from canonical.launchpad.interfaces.archivesubscriber import (
     ArchiveSubscriberStatus, IArchiveSubscriber)
 
@@ -68,6 +68,41 @@ class ArchiveSubscriber(Storm):
         self.date_cancelled = UTC_NOW
         self.cancelled_by = cancelled_by
         self.status = ArchiveSubscriberStatus.CANCELLED
+
+    def getNonActiveSubscribers(self):
+        """See `IArchiveSubscriber`."""
+        # Imported here because of circular imports.
+        from lp.registry.model.person import Person
+
+        store = Store.of(self)
+        if self.subscriber.is_team:
+
+            # We want to get all participants who are themselves
+            # individuals, not teams:
+            all_subscribers = store.find(Person,
+                TeamParticipation.teamID == self.subscriber_id,
+                TeamParticipation.personID == Person.id,
+                Person.teamowner == None)
+
+            # Then we get all the people who already have active
+            # tokens for this archive (for example, through separate
+            # subscriptions).
+            active_subscribers = store.find(Person,
+                Person.id == ArchiveAuthToken.person_id,
+                ArchiveAuthToken.archive_id == self.archive_id,
+                ArchiveAuthToken.date_deactivated == None)
+
+            # And return just the non active subscribers:
+            non_active_subscribers = all_subscribers.difference(
+                active_subscribers)
+            non_active_subscribers.order_by(Person.name)
+            return non_active_subscribers
+        else:
+            # The interface we are implementing says that the return
+            # value must be :rtype: `storm.store.ResultSet`, so just
+            # for consistency, create a ResultSet here instead of
+            # simply returning self.subscriber
+            return store.find(Person, Person.id == self.subscriber_id)
 
 
 class ArchiveSubscriberSet:

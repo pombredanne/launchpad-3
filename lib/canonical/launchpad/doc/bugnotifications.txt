@@ -27,8 +27,8 @@ those notifications look like.
     >>> from lazr.lifecycle.event import (
     ...     ObjectModifiedEvent, ObjectCreatedEvent)
     >>> from canonical.launchpad.interfaces import (
-    ...     IProductSet, IPersonSet, IDistributionSet, IDistroSeriesSet,
-    ...     ISourcePackageNameSet, IBugSet, CreateBugParams)
+    ...     CreateBugParams, IDistributionSet, IDistroSeriesSet, IPersonSet,
+    ...     IProductSet, ISourcePackageNameSet)
 
     >>> bug_submitter = getUtility(IPersonSet).get(12)
     >>> firefox = getUtility(IProductSet).get(4)
@@ -55,13 +55,8 @@ those notifications look like.
     >>> from zope.interface import implements
     >>> from canonical.launchpad.interfaces import IBug
 
-    >>> class MockObject(object):
-    ...     implements(IBug)
-
-    >>> bug_before_modification = MockObject()
-    >>> for name in IBug.names(all=True):
-    ...     setattr(bug_before_modification, name,
-    ...             getattr(firefox_crashes, name))
+    >>> from lazr.lifecycle.snapshot import Snapshot
+    >>> bug_before_modification = Snapshot(firefox_crashes, providing=IBug)
     >>> firefox_crashes.description = "a new description"
     >>> firefox_crashes_modified = ObjectModifiedEvent(
     ...     firefox_crashes, bug_before_modification,
@@ -285,107 +280,20 @@ this document:
     ** CVE added: http://www.cve.mitre.org/cgi-bin/cvename.cgi?name=2004-0276
 
 
-=== Marking a bug as a duplicate ===
-
-When a bug is marked as a duplicate, its subscribers are notified.
-
-    >>> from lazr.lifecycle.snapshot import Snapshot
-    >>> bug_one = getUtility(IBugSet).get(1)
-    >>> bug_two = getUtility(IBugSet).get(2)
-    >>> bug_two_unmodified = Snapshot(bug_two, providing=IBug)
-    >>> bug_two.duplicateof = bug_one
-    >>> marked_duplicate = ObjectModifiedEvent(
-    ...     bug_two, bug_two_unmodified, edited_fields=['duplicateof'],
-    ...     user=bug_two.owner)
-    >>> notify(marked_duplicate)
-
-    >>> latest_notification = BugNotification.selectFirst(orderBy='-id')
-    >>> print latest_notification.message.owner.displayname
-    Sample Person
-
-    >>> latest_notification.is_comment
-    False
-    >>> latest_notification.bug.id
-    2
-    >>> print latest_notification.message.text_contents
-    ** This bug has been marked a duplicate of bug 1
-       Firefox does not support SVG
-
-Let's change the target of a bug that's already marked as a dupe to show
-that the correct notification message is sent.
-
-    >>> bug_six = getUtility(IBugSet).get(6)
-    >>> bug_three = getUtility(IBugSet).get(3)
-    >>> bug_six_unmodified = Snapshot(bug_six, providing=IBug)
-    >>> bug_six.duplicateof = bug_three
-    >>> marked_duplicate = ObjectModifiedEvent(
-    ...     bug_six, bug_six_unmodified, edited_fields=['duplicateof'],
-    ...     user=bug_six.owner)
-    >>> notify(marked_duplicate)
-
-    >>> latest_notifications = BugNotification.select(orderBy='id')
-    >>> dupe_notification = latest_notifications[-1]
-    >>> no_dupe_notification = latest_notifications[-2]
-    >>> print no_dupe_notification.message.owner.displayname
-    Sample Person
-    >>> print dupe_notification.message.owner.displayname
-    Sample Person
-
-    >>> no_dupe_notification.is_comment
-    False
-    >>> dupe_notification.is_comment
-    False
-    >>> no_dupe_notification.bug.id
-    6
-    >>> dupe_notification.bug.id
-    6
-    >>> print no_dupe_notification.message.text_contents
-    ** This bug is no longer a duplicate of bug 5
-       Firefox install instructions should be complete
-
-    >>> print dupe_notification.message.text_contents
-    ** This bug has been marked a duplicate of bug 3
-       Bug Title Test
-
-Let's unduplicate the above bug and check if the correct notification
-message is sent.
-
-    >>> bug_six = getUtility(IBugSet).get(6)
-    >>> bug_six_unmodified = Snapshot(bug_six, providing=IBug)
-    >>> bug_six.duplicateof = None
-    >>> marked_duplicate = ObjectModifiedEvent(
-    ...     bug_six, bug_six_unmodified, edited_fields=['duplicateof'],
-    ...     user=bug_six.owner)
-    >>> notify(marked_duplicate)
-
-    >>> latest_notification = BugNotification.selectFirst(orderBy='-id')
-    >>> print latest_notification.message.owner.displayname
-    Sample Person
-
-    >>> latest_notification.is_comment
-    False
-    >>> latest_notification.bug.id
-    6
-    >>> print latest_notification.message.text_contents
-    ** This bug is no longer a duplicate of bug 3
-       Bug Title Test
-
-
 === Expiring notifications ===
 
 During bulk imports or changes of bugs, we often want to suppress
-email notifications.  Due to the previous operation, there are pending
-bug notifications for bug six:
+email notifications.  Due to the previous operation, there is a
+pending bug notification for bug 1:
 
-    >>> notifications = BugNotification.selectBy(bugID=6, date_emailed=None)
+    >>> notifications = BugNotification.selectBy(bugID=1, date_emailed=None)
     >>> notifications.count()
-    3
+    1
 
-These notifications can be expired using the expireNotifications()
+This notification can be expired using the expireNotifications()
 method:
 
-    >>> bug_six.expireNotifications()
-    >>> notifications = BugNotification.selectBy(bugID=6, date_emailed=None)
+    >>> bug.expireNotifications()
+    >>> notifications = BugNotification.selectBy(bugID=1, date_emailed=None)
     >>> notifications.count()
     0
-

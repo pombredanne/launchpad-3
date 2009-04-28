@@ -224,7 +224,7 @@ with a hyphen.
 Since our pillars can have aliases, it's also possible to look up a pillar
 by any of its aliases.
 
-    >>> from canonical.launchpad.interfaces.product import IProductSet
+    >>> from lp.registry.interfaces.product import IProductSet
     >>> firefox = getUtility(IProductSet)['firefox']
     >>> login('foo.bar@canonical.com')
     >>> firefox.setAliases(['iceweasel'])
@@ -285,7 +285,7 @@ Deactivated pillars and non-valid persons and teams cannot be exact
 matches. For example, the python-gnome2-dev product will not match a
 pillar, nor will nsv match Nicolas Velin's unclaimed account.
 
-    >>> from canonical.launchpad.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
 
     >>> python_gnome2 = getUtility(IProductSet).getByName('python-gnome2-dev')
     >>> python_gnome2.active
@@ -604,7 +604,7 @@ For example, the last batch of the 'bug' search contained 5 of the 25
 matching pages. The WindowList claims to be 25 items in length, but
 the first 20 items are None. Only the last 5 items are PageMatches.
 
-    >>> from canonical.launchpad.browser.root import WindowedList
+    >>> from lp.registry.browser.root import WindowedList
     >>> from canonical.launchpad.utilities.searchservice import (
     ...     GoogleSearchService)
 
@@ -626,7 +626,7 @@ parameter that comes from the URL is ignored. For example, setting
 the 'batch' parameter to 100 has no affect upon the Google search
 or on the navigator object.
 
-    >>> from canonical.launchpad.browser.root import GoogleBatchNavigator
+    >>> from lp.registry.browser.root import GoogleBatchNavigator
 
     >>> GoogleBatchNavigator.batch_variable_name
     'batch'

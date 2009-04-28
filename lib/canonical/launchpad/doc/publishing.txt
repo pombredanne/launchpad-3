@@ -18,6 +18,7 @@ Verify if the object follows its interface contracts:
     >>> from canonical.launchpad.interfaces import (
     ...     ISourcePackageRelease, IDistroSeries,
     ...     ISourcePackagePublishingHistory,
+    ...     IBinaryPackagePublishingHistory,
     ...     ISourcePackage,
     ...     IDistributionSourcePackageRelease)
 
@@ -49,7 +50,8 @@ Verify if the object follows its interface contracts:
 
 ISourcePackagePublishingHistory has some handy shortcuts to get textual
 representations of the source package name, version, component and section.
-This is mostly as a convenience to API users.
+This is mostly as a convenience to API users so that we don't need to export
+tiny 2-column content classes and force the users to retrieve those.
 
     >>> print spph.source_package_name
     pmount
@@ -63,7 +65,7 @@ This is mostly as a convenience to API users.
     >>> print spph.section_name
     base
 
-There is also a property that returns the changesfile.  This is proxied
+There is also a property that returns the changesfile URL.  This is proxied
 through the webapp rather than being a librarian URL because the changesfile
 could be private and thus in the restricted librarian.
 
@@ -73,16 +75,94 @@ could be private and thus in the restricted librarian.
 
 The pmount source has no packageupload in the sampledata:
 
-    >>> print spph.changes_file_text
+    >>> print spph.changes_file_url
     None
 
 The iceweasel source has good data:
 
     >>> pub = spph.archive.getPublishedSources(name="iceweasel")[0]
-    >>> print pub.changes_file_text
-    -----BEGIN PGP SIGNED MESSAGE-----
-    Hash: SHA1
-    ...
+    >>> print pub.changes_file_url
+    http://launchpad.dev/ubuntu/+archive/primary/+files/mozilla-firefox_0.9_i386.changes
+
+A helper is also included to create a summary of the build statuses for
+the spph's related builds, getStatusSummaryForBuilds(), which just
+augments the IBuildSet.getStatusSummaryForBuilds() method to include the
+'pending' state when builds are fully built but not yet published.
+
+    >>> from canonical.launchpad.tests.test_publishing import (
+    ...     SoyuzTestPublisher)
+    >>> from canonical.launchpad.interfaces.build import BuildStatus
+    >>> stp = SoyuzTestPublisher()
+    >>> stp.prepareBreezyAutotest()
+    >>> spph = stp.getPubSource(architecturehintlist='any')
+    >>> builds = spph.createMissingBuilds()
+    >>> for build in builds:
+    ...     build.buildstate = BuildStatus.FULLYBUILT
+
+Create a helper for printing the build status summary:
+
+    >>> def print_build_status_summary(summary):
+    ...     print summary['status'].title
+    ...     for build in summary['builds']:
+    ...         print build.title
+    >>> build_status_summary = spph.getStatusSummaryForBuilds()
+    >>> print_build_status_summary(build_status_summary)
+    FULLYBUILT_PENDING
+    hppa build of foo 666 in ubuntutest breezy-autotest RELEASE
+    i386 build of foo 666 in ubuntutest breezy-autotest RELEASE
+
+If one of the builds becomes published, it will not appear in the summary:
+
+    >>> from canonical.launchpad.interfaces.publishing import (
+    ...     PackagePublishingStatus)
+    >>> bpr = stp.uploadBinaryForBuild(builds[0], 'foo-bin')
+    >>> bpph = stp.publishBinaryInArchive(bpr, spph.archive,
+    ...     status=PackagePublishingStatus.PUBLISHED)
+    >>> print_build_status_summary(spph.getStatusSummaryForBuilds())
+    FULLYBUILT_PENDING
+    i386 build of foo 666 in ubuntutest breezy-autotest RELEASE
+
+After publishing the second binary, the status changes to FULLYBUILT as
+per normal:
+
+    >>> bpr = stp.uploadBinaryForBuild(builds[1], 'foo-bin')
+    >>> bpph = stp.publishBinaryInArchive(bpr, spph.archive,
+    ...     status=PackagePublishingStatus.PUBLISHED)
+    >>> print_build_status_summary(spph.getStatusSummaryForBuilds())
+    FULLYBUILT
+    hppa build of foo 666 in ubuntutest breezy-autotest RELEASE
+    i386 build of foo 666 in ubuntutest breezy-autotest RELEASE
+
+If a build is deleted, it does not cause the build status summary to change:
+
+    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from canonical.launchpad.interfaces.publishing import IPublishingSet
+    >>> sabdfl = getUtility(IPersonSet).getByName('sabdfl')
+    >>> ignored = getUtility(IPublishingSet).requestDeletion([spph], sabdfl)
+    >>> import transaction
+    >>> transaction.commit()
+    >>> print_build_status_summary(spph.getStatusSummaryForBuilds())
+    FULLYBUILT
+    hppa build of foo 666 in ubuntutest breezy-autotest RELEASE
+    i386 build of foo 666 in ubuntutest breezy-autotest RELEASE
+
+IBinaryPackagePublishingHistory also contains similar API conveniences.
+
+    >>> bpph = stp.getPubBinaries()[0]
+    >>> verifyObject(IBinaryPackagePublishingHistory, bpph)
+    True
+
+    >>> print bpph.binary_package_name
+    foo-bin
+
+    >>> print bpph.binary_package_version
+    666
+
+    >>> print bpph.component_name
+    main
+
+    >>> print bpph.section_name
+    base
 
 
 == Stanza generation ==
@@ -527,7 +607,6 @@ distroseries).
 Another common copy use-case is rebuild the same source in another
 suite. To simulate this we will create a publication in Celso's PPA.
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
 
     >>> ppa_source = test_publisher.getPubSource(
@@ -745,6 +824,7 @@ Generating respective "Packages" stanzas:
     Filename: pool/universe/m/mozilla-firefox/mozilla-firefox_0.9_i386.deb
     Size: 3
     MD5sum: 01234567890123456789012345678926
+    SHA1: 5a04c7b5ea3f0fdbc95d0dd47f3c5bc275da8a33
     Description: Mozilla Firefox Web Browser
      Mozilla Firefox Web Browser is .....
 
@@ -1012,7 +1092,7 @@ publications.
     ...     cprov_sources)
 
     >>> cprov_changes.count()
-    1
+    6
 
 The returned ResultSet element is tuple containing:
 
@@ -1022,9 +1102,9 @@ The returned ResultSet element is tuple containing:
  * `LibraryFileAlias`;
  * `LibraryFileContent`.
 
-    >>> [the_change] = cprov_changes
+    >>> a_change = cprov_changes[0]
 
-    >>> source_pub, upload, source, file, content = the_change
+    >>> source_pub, upload, source, file, content = a_change
 
     >>> print source_pub.displayname
     iceweasel 1.0 in warty
@@ -1324,15 +1404,23 @@ required parameter that ensures that this method only
 returns information about builds from the specified archive (as this method
 is used via the API via IArchive.getBuildSummariesForSourceIds).
 
-First we'll grab two source publishing history records:
+First we'll create two source publishing history records:
 
-    >>> from canonical.launchpad.interfaces.distribution import (
+    >>> from canonical.launchpad.tests.test_publishing import (
+    ...     SoyuzTestPublisher)
+    >>> stp = SoyuzTestPublisher()
+    >>> stp.prepareBreezyAutotest()
+    >>> firefox_source_pub = stp.getPubSource(sourcename='firefox-test')
+    >>> binaries = stp.getPubBinaries(pub_source=firefox_source_pub,
+    ...     status=PackagePublishingStatus.PUBLISHED)
+    >>> foo_pub = stp.getPubSource(sourcename='foobar-test')
+    >>> binaries = stp.getPubBinaries(pub_source=foo_pub,
+    ...     status=PackagePublishingStatus.PUBLISHED)
+
+    >>> from lp.registry.interfaces.distribution import (
     ...     IDistributionSet)
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
-    >>> firefox_source = ubuntu.getSourcePackage('mozilla-firefox')
-    >>> firefox_source_pub = firefox_source.publishing_history[0]
-    >>> foobar = ubuntu.getSourcePackage('foobar')
-    >>> foo_pub = foobar.publishing_history[0]
+    >>> ubuntu_test = getUtility(IDistributionSet)['ubuntutest']
 
 Create a small function for displaying the results:
 
@@ -1345,8 +1433,10 @@ Create a small function for displaying the results:
     ...     )
 
     >>> def print_build_summaries(summaries):
+    ...     count = 0
     ...     for source_id, summary in sorted(summaries.items()):
-    ...         print "Source ID: %s" % source_id
+    ...         count += 1
+    ...         print "Source number: %s" % count
     ...         print_build_summary(summary)
 
 And then grab the build summaries for firefox and foo:
@@ -1354,32 +1444,27 @@ And then grab the build summaries for firefox and foo:
     >>> build_summaries = \
     ...     publishing_set.getBuildStatusSummariesForSourceIdsAndArchive(
     ...         [firefox_source_pub.id, foo_pub.id],
-    ...         ubuntu.main_archive)
+    ...         ubuntu_test.main_archive)
     >>> print_build_summaries(build_summaries)
-    Source ID: 18
+    Source number: 1
     FULLYBUILT
     All builds were built successfully.
     Relevant builds:
-     - hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
-     - i386 build of mozilla-firefox 0.9 in ubuntu warty RELEASE
-    Source ID: 22
-    FAILEDTOBUILD
-    There were build failures.
+     - i386 build of firefox-test 666 in ubuntutest breezy-autotest RELEASE
+    Source number: 2
+    FULLYBUILT
+    All builds were built successfully.
     Relevant builds:
-     - i386 build of foobar 1.0 in ubuntu warty RELEASE
+     - i386 build of foobar-test 666 in ubuntutest breezy-autotest RELEASE
 
 Any of the source ids passed into 
 getBuildStatusSummariesForSourceIdsAndArchive that do not belong to the
 required archive parameter will be ignored:
 
-    >>> from canonical.launchpad.interfaces.archive import IArchiveSet
-    >>> ubuntu_partner = getUtility(IArchiveSet).getArchivesForDistribution(
-    ...     ubuntu,
-    ...     name="partner")[0]
     >>> build_summaries = \
     ...     publishing_set.getBuildStatusSummariesForSourceIdsAndArchive(
     ...         [firefox_source_pub.id, foo_pub.id],
-    ...         archive=ubuntu_partner)
+    ...         archive=ubuntu.main_archive)
     >>> print_build_summaries(build_summaries)
 
 

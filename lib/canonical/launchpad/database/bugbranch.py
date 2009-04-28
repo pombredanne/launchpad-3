@@ -23,8 +23,8 @@ from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad.interfaces import (
     BugBranchStatus, IBugBranch, IBugBranchSet, ILaunchpadCelebrities)
-from canonical.launchpad.interfaces.branchtarget import IHasBranchTarget
-from canonical.launchpad.validators.person import validate_public_person
+from lp.code.interfaces.branchtarget import IHasBranchTarget
+from lp.registry.interfaces.person import validate_public_person
 
 
 class BugBranch(SQLBase):

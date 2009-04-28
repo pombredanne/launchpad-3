@@ -32,10 +32,10 @@
       <table>
         <tbody>
 
-          <tr tal:define="changesfile context/changesfile">
+          <tr tal:define="changesfile view/changesfile">
             <th>Changes file:</th>
             <td tal:condition="changesfile">
-              <a tal:attributes="href string:+files/${changesfile/filename}"
+              <a tal:attributes="href changesfile/http_url"
                  tal:content="changesfile/filename">CHANGESFILE</a>
             </td>
             <td tal:condition="not:changesfile">
@@ -150,7 +150,7 @@
           <tr tal:define="buildlog context/buildlog">
             <th>Build log:</th>
             <td tal:condition="buildlog">
-              <a tal:attributes="href string:+files/${buildlog/filename}"
+              <a tal:attributes="href context/build_log_url"
                  tal:content="buildlog/filename">BUILDLOG</a>
             </td>
             <td tal:condition="not:buildlog">
@@ -162,7 +162,7 @@
               tal:condition="upload_log">
             <th>Upload log:</th>
             <td>
-              <a tal:attributes="href string:+files/${upload_log/filename}"
+              <a tal:attributes="href context/upload_log_url"
                  tal:content="upload_log/filename">UPLOADLOG</a>
             </td>
           </tr>

@@ -86,17 +86,20 @@ personal package archives (PPAs).
     >>> print test_tales("ppa/image:icon", ppa=sabdfl.archive)
     <img ... src="/@@/package-source" />
 
-Then distribution main archives (primary and partner).
+Then distribution main archives (primary, partner and debug).
 
-    >>> from canonical.launchpad.interfaces.distribution import (
+    >>> from lp.registry.interfaces.distribution import (
     ...      IDistributionSet)
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-    >>> [primary, partner] = ubuntu.all_distro_archives
+    >>> [primary, partner, debug] = ubuntu.all_distro_archives
 
     >>> print test_tales("archive/image:icon", archive=primary)
     <img ... src="/@@/distribution" />
 
     >>> print test_tales("archive/image:icon", archive=partner)
+    <img ... src="/@@/distribution" />
+
+    >>> print test_tales("archive/image:icon", archive=debug)
     <img ... src="/@@/distribution" />
 
 And finally Copy archives.
@@ -283,21 +286,21 @@ For branches, fmt:link links to the branch page.
     ...     owner=eric, product=fooix, name='bar', title='The branch title')
     >>> print test_tales("branch/fmt:link", branch=branch)
     <a href=".../~eric/fooix/bar"
-       title="The branch title"><img src="/@@/branch"
+       title="~eric/fooix/bar"><img src="/@@/branch"
        alt=""/>&nbsp;~eric/fooix/bar</a>
 
 The bzr-link formatter uses the bzr identity.
 
     >>> print test_tales("branch/fmt:bzr-link", branch=branch)
     <a href="http://code.launchpad.dev/~eric/fooix/bar"
-    title="The branch title"><img src="/@@/branch"
+    title="~eric/fooix/bar"><img src="/@@/branch"
     alt=""/>&nbsp;lp://dev/~eric/fooix/bar</a>
 
     >>> login_person(fooix.owner, LaunchpadTestRequest())
-    >>> fooix.development_focus.user_branch = branch
+    >>> fooix.development_focus.branch = branch
     >>> print test_tales("branch/fmt:bzr-link", branch=branch)
     <a href=".../~eric/fooix/bar"
-       title="The branch title"><img src="/@@/branch"
+       title="~eric/fooix/bar"><img src="/@@/branch"
        alt=""/>&nbsp;lp://dev/fooix</a>
 
 
@@ -344,13 +347,14 @@ without adequate permissions, a link is not generated.
     >>> subscription = factory.makeBranchSubscription(
     ...     branch=branch, person=person)
     >>> test_tales("subscription/fmt:link", subscription=subscription)
-    u'Subscription of My Person to My Branch'
+    u'Subscription of My Person to ~person-name17/product-name12/branch19'
 
 But if we log in as the subscriber, a link is presented.
 
-    >>> login(subscription.person.preferredemail.email)
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> login(removeSecurityProxy(subscription.person.preferredemail).email)
     >>> test_tales("subscription/fmt:link", subscription=subscription)
-    u'<a href="...">Subscription of My Person to My Branch</a>'
+    u'<a href="http://code.launchpad.dev/~person-name17/product-name12/branch19/+subscription/person-name21">Subscription of My Person to ~person-name17/product-name12/branch19</a>'
 
 Merge proposals also have a link formatter, which displays branch titles:
 
@@ -361,7 +365,7 @@ Merge proposals also have a link formatter, which displays branch titles:
     >>> source = factory.makeProductBranch(
     ...     product=fooix, owner=eric, name="fix")
     >>> target = factory.makeProductBranch(product=fooix)
-    >>> fooix.development_focus.user_branch = target
+    >>> fooix.development_focus.branch = target
     >>> proposal = source.addLandingTarget(eric, target)
     >>> test_tales("proposal/fmt:link", proposal=proposal)
     u'<a href="...">[Merge] lp://dev/~eric/fooix/fix into lp://dev/fooix</a>'

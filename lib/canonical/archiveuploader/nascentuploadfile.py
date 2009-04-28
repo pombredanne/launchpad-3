@@ -4,16 +4,17 @@
 __metaclass__ = type
 
 __all__ = [
+    'BaseBinaryUploadFile',
+    'CustomUploadFile',
+    'DdebBinaryUploadFile',
+    'DebBinaryUploadFile',
+    'NascentUploadFile',
+    'PackageUploadFile',
+    'SourceUploadFile',
+    'UdebBinaryUploadFile',
     'UploadError',
     'UploadWarning',
     'splitComponentAndSection',
-    'NascentUploadFile',
-    'CustomUploadFile',
-    'PackageUploadFile',
-    'SourceUploadFile',
-    'BaseBinaryUploadFile',
-    'UdebBinaryUploadFile',
-    'DebBinaryUploadFile',
     ]
 
 import apt_inst
@@ -32,10 +33,19 @@ from canonical.archiveuploader.utils import (
     re_no_epoch, re_no_revision, re_valid_version, re_valid_pkg_name,
     re_extract_src_version)
 from canonical.encoding import guess as guess_encoding
-from canonical.launchpad.interfaces import (
-    ArchivePurpose, BinaryPackageFormat, BuildStatus, IComponentSet,
-    ISectionSet, IBuildSet, ILibraryFileAliasSet, IBinaryPackageNameSet,
-    PackagePublishingPriority, PackageUploadCustomFormat, PackageUploadStatus)
+from canonical.launchpad.interfaces.binarypackagename import (
+    IBinaryPackageNameSet)
+from canonical.launchpad.interfaces.binarypackagerelease import (
+    BinaryPackageFormat)
+from canonical.launchpad.interfaces.build import (
+    BuildStatus, IBuildSet)
+from canonical.launchpad.interfaces.component import IComponentSet
+from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+from canonical.launchpad.interfaces.package import (
+    PackageUploadCustomFormat, PackageUploadStatus)
+from canonical.launchpad.interfaces.publishing import (
+    PackagePublishingPriority)
+from canonical.launchpad.interfaces.section import ISectionSet
 from canonical.librarian.utils import filechunks
 
 
@@ -295,26 +305,13 @@ class PackageUploadFile(NascentUploadFile):
         valid_sections = [section.name for section in getUtility(ISectionSet)]
 
         if self.section_name not in valid_sections:
-            # We used to reject invalid sections; when testing stuff we
-            # were forced to accept a package with a broken section
-            # (linux-meta_2.6.12.16_i386). Result: packages with invalid
-            # sections now get put into misc -- cprov 20060119
-            if self.policy.archive.purpose == ArchivePurpose.PPA:
-                # PPA uploads should not override because it will probably
-                # make the section inconsistent with the one in the .dsc.
-                raise UploadError(
-                    "%s: Section %r is not valid" % (
-                    self.filename, self.section_name))
-            else:
-                default_section = 'misc'
-                self.logger.warn("Unable to grok section %r, "
-                                 "overriding it with %s"
-                          % (self.section_name, default_section))
-                self.section_name = default_section
+            raise UploadError(
+                "%s: Unknown section %r" % (
+                self.filename, self.section_name))
 
         if self.component_name not in valid_components:
             raise UploadError(
-                "%s: Component %r is not valid" % (
+                "%s: Unknown component %r" % (
                 self.filename, self.component_name))
 
 
@@ -913,3 +910,25 @@ class DebBinaryUploadFile(BaseBinaryUploadFile):
             self.verifyFormat,
             self.verifyDebTimestamp,
             ]
+
+
+class DdebBinaryUploadFile(DebBinaryUploadFile):
+    """Represents an uploaded binary package file in ddeb format.
+
+    DDEBs are never considered 'NEW', they don't require review since
+    they are automatically generated.
+    """
+    format = BinaryPackageFormat.DDEB
+
+    # Override the 'new' flag in a way any values set are ignored and
+    # it always return False.
+    def _get_new(self):
+        """DDEBs are never considered NEW."""
+        return False
+
+    def _set_new(self, value):
+        """DDEBs cannot be made NEW."""
+        pass
+
+    new = property(
+        _get_new, _set_new, doc="DDEBs are never flagged as NEW.")
