@@ -18,6 +18,12 @@ from canonical.launchpad.interfaces.archivesubscriber import (
 from canonical.launchpad.scripts.base import LaunchpadCronScript
 
 
+# These PPAs should never have their htaccess/pwd files touched.
+BLACKLISTED_PPAS = {
+    'example-team': ['ppaname'],
+    'example-person': ['ppaname'],
+    }
+
 HTACCESS_TEMPLATE = """
 AuthType           Basic
 AuthName           "Token Required"
@@ -30,6 +36,7 @@ BUILDD_USER_NAME = "buildd"
 
 class HtaccessTokenGenerator(LaunchpadCronScript):
     """Helper class for generating .htaccess files for private PPAs."""
+    blacklist = BLACKLISTED_PPAS
 
     def add_my_options(self):
         """Add script command line options."""
@@ -173,6 +180,19 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
         for ppa in ppas:
             self.expireSubscriptions(ppa)
             valid_tokens = self.deactivateTokens(ppa)
+
+            # If this PPA is blacklisted, do not touch it's htaccess/pwd
+            # files.
+            blacklisted_ppa_names_for_owner = self.blacklist.get(
+                ppa.owner.name, [])
+            if ppa.name in blacklisted_ppa_names_for_owner:
+                self.logger.info(
+                    "Skipping htacess updates for blacklisted PPA "
+                    " '%s' owned by %s.",
+                        ppa.name,
+                        ppa.owner.displayname)
+                continue
+
             self.ensureHtaccess(ppa)
             temp_htpasswd = self.generateHtpasswd(ppa, valid_tokens)
             if not self.replaceUpdatedHtpasswd(ppa, temp_htpasswd):
