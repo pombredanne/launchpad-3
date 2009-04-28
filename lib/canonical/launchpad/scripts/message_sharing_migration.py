@@ -21,7 +21,7 @@ from canonical.launchpad.scripts.base import (
     LaunchpadScript, LaunchpadScriptFailure)
 
 
-def get_key(potmsgset):
+def get_potmsgset_key(potmsgset):
     """Get the tuple of identifying properties of a POTMsgSet.
 
     A POTMsgSet is identified by its msgid, optional plural msgid, and
@@ -113,7 +113,7 @@ def merge_potmsgsets(potemplates):
     # key we find, the first POTMsgSet is the representative one.
     for template in potemplates:
         for potmsgset in template.getPOTMsgSets(False):
-            key = get_key(potmsgset)
+            key = get_potmsgset_key(potmsgset)
             if key not in representatives:
                 representatives[key] = potmsgset
             representative = representatives[key]
