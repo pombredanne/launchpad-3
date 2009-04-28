@@ -20,8 +20,7 @@ from canonical.launchpad.scripts.base import LaunchpadCronScript
 
 # These PPAs should never have their htaccess/pwd files touched.
 BLACKLISTED_PPAS = {
-    'example-team': ['ppaname'],
-    'example-person': ['ppaname'],
+    'ubuntuone': ['ppa'],
     }
 
 HTACCESS_TEMPLATE = """
