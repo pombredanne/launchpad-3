@@ -1145,6 +1145,7 @@ def notify_new_ppa_subscription(subscription, event):
         replacements = {
             'recipient_name': person.displayname,
             'registrant_name': registrant_name,
+            'registrant_profile_url': canonical_url(subscription.registrant),
             'ppa_name': ppa_name,
             'recipient_subscriptions_url': recipient_subscriptions_url,
             }
