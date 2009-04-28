@@ -41,7 +41,7 @@ from canonical.launchpad.database.bug import (
 from canonical.launchpad.database.bugtarget import BugTargetBase
 from canonical.launchpad.database.bugtask import BugTask
 from canonical.launchpad.database.component import Component
-from canonical.launchpad.database.distroarchseries import DistroArchSeries
+from lp.soyuz.model.distroarchseries import DistroArchSeries
 from lp.soyuz.model.distroseriesbinarypackage import (
     DistroSeriesBinaryPackage)
 from canonical.launchpad.database.distroserieslanguage import (

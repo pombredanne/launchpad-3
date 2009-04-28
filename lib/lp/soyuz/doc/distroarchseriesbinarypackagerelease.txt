@@ -5,7 +5,7 @@ Distro Arch Release Binary Package Release
   ...   import DistroArchSeriesBinaryPackageRelease as DARBPR
   >>> from lp.soyuz.model.binarypackagerelease import (
   ...     BinaryPackageRelease)
-  >>> from canonical.launchpad.database.distroarchseries import (
+  >>> from lp.soyuz.model.distroarchseries import (
   ...     DistroArchSeries)
 
 Grab the relevant DARs and BPRs:

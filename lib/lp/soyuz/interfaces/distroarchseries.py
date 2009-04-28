@@ -15,7 +15,7 @@ from zope.interface import Interface, Attribute
 from zope.schema import Bool, Choice, Int, TextLine
 
 from lp.soyuz.interfaces.archive import IArchive
-from canonical.launchpad.interfaces import IHasOwner
+from canonical.launchpad.interfaces.launchpad import IHasOwner
 from canonical.launchpad import _
 from lazr.restful.fields import Reference
 from lazr.restful.declarations import (

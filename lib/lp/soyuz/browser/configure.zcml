@@ -609,4 +609,61 @@
         classes="
             DistroSeriesBinaryPackageFacets"
         module="lp.soyuz.browser.distroseriesbinarypackage"/>
+
+    <facet
+        facet="overview">
+        <browser:defaultView
+            for="lp.soyuz.interfaces.distroarchseries.IDistroArchSeries"
+            name="+index"/>
+        <browser:menus
+            module="lp.soyuz.browser.distroarchseries"
+            classes="
+                DistroArchSeriesContextMenu"/>
+        <browser:url
+            for="lp.soyuz.interfaces.distroarchseries.IDistroArchSeries"
+            path_expression="architecturetag"
+            attribute_to_parent="distroseries"/>
+        <browser:navigation
+            module="lp.soyuz.browser.distroarchseries"
+            classes="
+                DistroArchSeriesNavigation"/>
+        <browser:pages
+            for="canonical.launchpad.database.DistroArchSeries"
+            permission="zope.Public"
+            class="lp.soyuz.browser.distroarchseries.DistroArchSeriesView">
+            <browser:page
+                name="+index"
+                template="../templates/distroarchseries-index.pt"/>
+            <browser:page
+                name="+portlet-details"
+                template="../templates/distroarchseries-portlet-details.pt"/>
+            <browser:page
+                name="+builds"
+                facet="overview"
+                template="../templates/distroarchseries-builds.pt"/>
+            <browser:page
+                name="+builds-list"
+                template="../templates/builds-list.pt"/>
+        </browser:pages>
+        <browser:page
+            for="lp.soyuz.interfaces.distroarchseries.IDistroArchSeries"
+            name="+macros"
+            permission="zope.Public"
+            template="../templates/packagesearch-macros.pt"/>
+        <browser:page
+            for="lp.soyuz.interfaces.distroarchseries.IDistroArchSeries"
+            permission="zope.Public"
+            name="+search"
+            class="lp.soyuz.browser.distroarchseries.DistroArchSeriesPackageSearchView"
+            template="../templates/distroarchseries-search.pt"/>
+        <browser:editform
+            for="lp.soyuz.interfaces.distroarchseries.IDistroArchSeries"
+            permission="launchpad.Admin"
+            name="+admin"
+            schema="lp.soyuz.interfaces.distroarchseries.IDistroArchSeries"
+            facet="overview"
+            fields="architecturetag official supports_virtualized"
+            template="../templates/distroarchseries-admin.pt"/>
+    </facet>
+
 </configure>

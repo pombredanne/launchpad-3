@@ -13,7 +13,7 @@ __all__ = [
 from canonical.launchpad import _
 from lp.soyuz.browser.build import BuildRecordsView
 from canonical.launchpad.browser.packagesearch import PackageSearchViewBase
-from canonical.launchpad.interfaces.distroarchseries import IDistroArchSeries
+from lp.soyuz.interfaces.distroarchseries import IDistroArchSeries
 from canonical.launchpad.webapp import GetitemNavigation
 from canonical.launchpad.webapp.launchpadform import (
     action, LaunchpadFormView)

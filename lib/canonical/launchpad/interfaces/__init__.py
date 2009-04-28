@@ -72,7 +72,7 @@ from canonical.launchpad.interfaces.distributionmirror import *
 from lp.registry.interfaces.distributionsourcepackage import *
 from lp.soyuz.interfaces.distributionsourcepackagecache import *
 from lp.soyuz.interfaces.distributionsourcepackagerelease import *
-from canonical.launchpad.interfaces.distroarchseries import *
+from lp.soyuz.interfaces.distroarchseries import *
 from lp.soyuz.interfaces.distroarchseriesbinarypackage import *
 from lp.soyuz.interfaces.distroarchseriesbinarypackagerelease\
     import *

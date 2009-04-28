@@ -1145,7 +1145,7 @@ patch_choice_parameter_type(
 patch_choice_parameter_type(
     IArchive, 'getPublishedSources', 'pocket', PackagePublishingPocket)
 
-from canonical.launchpad.interfaces.distroarchseries import IDistroArchSeries
+from lp.soyuz.interfaces.distroarchseries import IDistroArchSeries
 from lp.soyuz.interfaces.publishing import (
     IBinaryPackagePublishingHistory)
 patch_plain_parameter_type(

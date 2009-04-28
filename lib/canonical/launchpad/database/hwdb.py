@@ -43,7 +43,7 @@ from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.validators.name import valid_name
 from lp.registry.model.distribution import Distribution
-from canonical.launchpad.database.distroarchseries import DistroArchSeries
+from lp.soyuz.model.distroarchseries import DistroArchSeries
 from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.teammembership import TeamParticipation
 from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus

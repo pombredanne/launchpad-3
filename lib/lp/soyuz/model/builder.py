@@ -38,7 +38,7 @@ from lp.soyuz.model.publishing import makePoolPath
 from lp.registry.interfaces.person import validate_public_person
 from canonical.launchpad.helpers import filenameToContentType
 from canonical.launchpad.interfaces._schema_circular_imports import IHasBuildRecords
-from canonical.launchpad.interfaces.distroarchseries import IDistroArchSeriesSet
+from lp.soyuz.interfaces.distroarchseries import IDistroArchSeriesSet
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.soyuz.interfaces.archive import ArchivePurpose
@@ -700,7 +700,7 @@ class BuilderSet(object):
         # Avoiding circular imports.
         from lp.soyuz.model.archive import Archive
         from lp.soyuz.model.build import Build
-        from canonical.launchpad.database.distroarchseries import (
+        from lp.soyuz.model.distroarchseries import (
             DistroArchSeries)
         from lp.soyuz.model.processor import Processor
 

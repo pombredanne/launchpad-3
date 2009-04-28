@@ -50,7 +50,7 @@ from canonical.launchpad.browser.distributionmirror import *
 from lp.registry.browser.distributionsourcepackage import *
 from lp.soyuz.browser.distributionsourcepackagerelease import *
 from canonical.launchpad.browser.distribution_upstream_bug_report import *
-from canonical.launchpad.browser.distroarchseries import *
+from lp.soyuz.browser.distroarchseries import *
 from lp.soyuz.browser.distroarchseriesbinarypackage import *
 from lp.soyuz.browser.distroarchseriesbinarypackagerelease import *
 from lp.registry.browser.distroseries import *

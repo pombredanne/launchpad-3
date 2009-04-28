@@ -20,12 +20,14 @@ from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet)
-from canonical.launchpad.interfaces import (
-    IDistroArchSeries, IBinaryPackageReleaseSet, IPocketChroot,
-    IHasBuildRecords, IBinaryPackageName, IDistroArchSeriesSet,
-    IBuildSet, ICanPublishPackages, PackagePublishingPocket,
-    PackagePublishingStatus)
-
+from canonical.launchpad.interfaces._schema_circular_imports import IHasBuildRecords
+from lp.soyuz.interfaces.binarypackagename import IBinaryPackageName
+from lp.soyuz.interfaces.binarypackagerelease import IBinaryPackageReleaseSet
+from lp.soyuz.interfaces.build import IBuildSet
+from lp.soyuz.interfaces.distroarchseries import (
+    IDistroArchSeries, IDistroArchSeriesSet, IPocketChroot)
+from lp.soyuz.interfaces.publishing import (
+    ICanPublishPackages, PackagePublishingPocket, PackagePublishingStatus)
 from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.distroarchseriesbinarypackage import (
     DistroArchSeriesBinaryPackage)

@@ -3,7 +3,7 @@ Distro Arch Release Binary Package
 
   >>> from lp.soyuz.model.binarypackagename import (
   ...     BinaryPackageName)
-  >>> from canonical.launchpad.database.distroarchseries import (
+  >>> from lp.soyuz.model.distroarchseries import (
   ...     DistroArchSeries)
   >>> from lp.soyuz.model.distroarchseriesbinarypackage import (
   ...     DistroArchSeriesBinaryPackage)

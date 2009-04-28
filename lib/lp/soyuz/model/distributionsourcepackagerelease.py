@@ -88,7 +88,7 @@ class DistributionSourcePackageRelease:
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
 
         # Import DistroArchSeries here to avoid circular imports.
-        from canonical.launchpad.database.distroarchseries import (
+        from lp.soyuz.model.distroarchseries import (
             DistroArchSeries)
         from lp.registry.model.distroseries import DistroSeries
 

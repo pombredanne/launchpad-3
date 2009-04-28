@@ -1023,7 +1023,7 @@ class PublishingSet:
         # imports, since that Build uses SourcePackagePublishingHistory
         # and DistroArchSeries uses BinaryPackagePublishingHistory.
         from lp.soyuz.model.build import Build
-        from canonical.launchpad.database.distroarchseries import (
+        from lp.soyuz.model.distroarchseries import (
             DistroArchSeries)
 
         # If an archive was passed in as a parameter, add an extra expression
@@ -1140,7 +1140,7 @@ class PublishingSet:
         from lp.soyuz.model.binarypackagerelease import (
             BinaryPackageRelease)
         from lp.soyuz.model.build import Build
-        from canonical.launchpad.database.distroarchseries import (
+        from lp.soyuz.model.distroarchseries import (
             DistroArchSeries)
 
         source_publication_ids = self._extractIDs(

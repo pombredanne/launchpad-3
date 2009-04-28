@@ -39,7 +39,6 @@
     <include file="decoratedresultset.zcml" />
     <include file="distributionmirror.zcml" />
     <include file="distroserieslanguage.zcml" />
-    <include file="distroarchseries.zcml" />
     <include file="emailaddress.zcml" />
     <include file="feeds.zcml" />
     <include file="files.zcml" />

@@ -69,7 +69,7 @@ from lp.soyuz.model.distroseriesbinarypackage import *
 from canonical.launchpad.database.distroserieslanguage import *
 from lp.soyuz.model.distroseriespackagecache import *
 from lp.soyuz.model.distroseriessourcepackagerelease import *
-from canonical.launchpad.database.distroarchseries import *
+from lp.soyuz.model.distroarchseries import *
 from lp.soyuz.model.distroarchseriesbinarypackage import *
 from lp.soyuz.model.distroarchseriesbinarypackagerelease\
     import *

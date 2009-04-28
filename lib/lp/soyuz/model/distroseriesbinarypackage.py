@@ -117,7 +117,7 @@ class DistroSeriesBinaryPackage:
     def last_published(self):
         """See `IDistroSeriesBinaryPackage`."""
         # Import here so as to avoid circular import.
-        from canonical.launchpad.database.distroarchseries import (
+        from lp.soyuz.model.distroarchseries import (
             DistroArchSeries)
 
         store = Store.of(self.distroseries)
