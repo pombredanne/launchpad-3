@@ -456,16 +456,12 @@
                     tal:content="structure description" />
 
                 <div class="lesser" tal:condition="bugtask">
+                  <span style="padding-left: 1.5em">
                     <input type="submit"
                         id="field.actions.this_is_my_bug"
                         name="field.actions.this_is_my_bug"
                         value="This is my bug" />
-                </div>
-                <div class="lesser" tal:condition="not:bugtask">
-                    <input type="submit"
-                        id="field.actions.this_is_my_bug"
-                        name="field.actions.this_is_my_bug"
-                        value="This is my bug" />
+                  </span>
                 </div>
               </div>
             </td>
