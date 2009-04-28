@@ -37,8 +37,8 @@ class InlineAddMilestoneForReleaseTest:
     def __call__(self):
         """Tests creating new milestone for a release."""
         # Ensure that the milestone name doesn't conflict with previous
-        # test runs.
-        milestone_name = u'%x' % int(time.time())
+        # test runs, and test that it correctly lowercases the name.
+        milestone_name = u'FOObar%x' % int(time.time())
         code_name = u'code-%s' % milestone_name
 
         self.client = WindmillTestClient(self.suite)
@@ -50,9 +50,8 @@ class InlineAddMilestoneForReleaseTest:
         self.client.waits.forElement(id=u'field.milestone_for_release',
                                      timeout=u'8000')
 
-        # Select "Create milestone..." from the milestone SELECT menu.
-        self.client.select(id='field.milestone_for_release',
-                           option='Create milestone...')
+        # Click the "Create milestone" link.
+        self.client.click(id=u'create-milestone-link')
 
         # Submit milestone form.
         self.client.waits.forElement(id=u'field.name', timeout=u'8000')
@@ -66,39 +65,38 @@ class InlineAddMilestoneForReleaseTest:
         # and that it is now selected.
         self.client.waits.sleep(milliseconds='1000')
         self.client.asserts.assertSelected(id="field.milestone_for_release",
-                                           validator=milestone_name)
+                                           validator=milestone_name.lower())
 
         # Verify error message when trying to create a milestone with a
         # conflicting name.
-        self.client.select(id='field.milestone_for_release',
-                           option='Create milestone...')
+        self.client.click(id=u'create-milestone-link')
         self.client.waits.forElement(id=u'field.name', timeout=u'8000')
         self.client.type(id='field.name', text=milestone_name)
         self.client.click(id=u'formoverlay-add-milestone')
         self.client.asserts.assertText(
             id='milestone-error',
-            validator='The name %s is already used' % milestone_name)
+            validator='The name %s is already used' % milestone_name.lower())
         self.client.click(classname='close-button')
 
         # Submit product release form.
-        self.client.select(id='field.milestone_for_release', val=milestone_name)
+        self.client.select(id='field.milestone_for_release',
+                           val=milestone_name.lower())
         self.client.type(id='field.datereleased', text=u"2004-02-22")
         self.client.click(id=u'field.actions.create')
         self.client.waits.forPageLoad(timeout=u'20000')
 
         # Verify that the release was created.
-        self.client.waits.forElement(
-            xpath="//table[@id='series_trunk']"
-                  "//a[@href='/bzr/trunk/%s']" % milestone_name,
-            timeout=u'8000')
+        milestone_xpath= (
+            "//table[@id='series_trunk']//a[@href='/bzr/trunk/%s']"
+            % milestone_name.lower())
+        self.client.waits.forElement(xpath=milestone_xpath, timeout=u'8000')
         self.client.asserts.assertText(
-            xpath="//table[@id='series_trunk']"
-                  "//a[@href='/bzr/trunk/%s']" % milestone_name,
-            validator=milestone_name)
+            xpath=milestone_xpath, validator=milestone_name.lower())
         self.client.asserts.assertText(
             xpath="//table[@id='series_trunk']"
                   "//a[@href='/bzr/trunk/%s']"
-                  "/ancestor::td/following-sibling::td" % milestone_name,
+                  "/ancestor::td/following-sibling::td"
+                  % milestone_name.lower(),
             validator=code_name)
 
 
