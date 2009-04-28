@@ -180,8 +180,9 @@ FROM
           potemplate.id = pofile.potemplate
      LEFT JOIN translationmessage ON
           (potmsgset.id = translationmessage.potmsgset AND
-           translationmessage.pofile = pofile.id AND
-           translationmessage.is_current IS TRUE)
+           translationmessage.is_current IS TRUE AND
+           translationmessage.language = pofile.language AND
+           translationmessage.variant IS NOT DISTINCT FROM pofile.variant)
      LEFT JOIN pomsgid msgid_singular ON
           msgid_singular.id = potmsgset.msgid_singular
      LEFT JOIN pomsgid msgid_plural ON
