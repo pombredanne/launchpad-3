@@ -1,0 +1,73 @@
+= OrderingCheck =
+
+Often when you iterate over a sequence of items, you assume that they're
+in some particular order.  If you're worried that they might not be in
+that order sometimes, you may add an assertion to that affect.  But it
+adds some ugliness: "if this is not the first item, assert..."  Doesn't
+seem worth the trouble.
+
+    >>> from canonical.launchpad.utilities.orderingcheck import OrderingCheck
+
+    >>> def sort_key(item):
+    ...     """Simple sorting key for integers: the integer itself."""
+    ...     return item
+
+The OrderingCheck makes it clean and easy.  You create an OrderingCheck
+with the same arguments that go into Python's standard sorting
+functions.
+
+    >>> checker = OrderingCheck(key=sort_key)
+
+    >>> for number in xrange(3):
+    ...     checker.check(number)
+
+If any item is out of sequence, the OrderingCheck raises an assertion
+error.
+
+    >>> checker = OrderingCheck(key=sort_key)
+    >>> checker.check(1)
+    >>> checker.check(0)
+    Traceback (most recent call last):
+    ...
+    AssertionError: Unexpected ordering at item 1: 0 should come before 1.
+
+It is safe to use the None value.  Python places it below any other
+integer.
+
+    >>> checker = OrderingCheck(key=sort_key)
+    >>> checker.check(None)
+    >>> checker.check(-10000)
+    >>> checker.check(0)
+
+Values may also repeat, as long as the ordering is deterministic.
+
+    >>> checker = OrderingCheck(key=sort_key)
+    >>> checker.check(1)
+    >>> checker.check(1)
+    >>> checker.check(2)
+
+If raising an assertion error is not the right thing to do when an
+incorrect ordering is seen, override the "fail" method.
+
+    >>> def alternative_fail(item):
+    ...     """Don't raise an error, just print a message."""
+    ...     print "Item %s was out of sequence." % item
+
+    >>> checker = OrderingCheck(key=sort_key)
+    >>> checker.fail = alternative_fail
+
+    >>> checker.check(10)
+    >>> checker.check(9)
+    Item 9 was out of sequence.
+    >>> checker.check(8)
+    Item 8 was out of sequence.
+
+Since no error is raised, the last value is accepted as the new
+"correct" one for this place in the sequence.  So the next value is
+accepted as long as it's greater than the last one; it doesn't matter if
+it's smaller than the greatest value we've checked.
+
+    >>> checker.check(9)
+
+In general though, you'll want the checker to raise an error when things
+aren't ordered the way you expect.
