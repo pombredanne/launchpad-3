@@ -39,13 +39,16 @@ All of the similar bugs have relevant bugtasks:
     >>> print_similar_bugs(user_browser.contents)
     (icon low src=/@@/bug-low)
       #1 Firefox does not support SVG
-      New, last updated 2006-05-19
+      New (2 comments) last updated 2006-05-19
+      Firefox needs to support embedded SVG...
     (icon medium src=/@@/bug-medium)
       #4 Reflow problems with complex page layouts
-      New, last updated 2006-07-14
+      New (1 comment) last updated 2006-07-14
+      Malone pages that use more complex layouts...
     (icon critical src=/@@/bug-critical)
       #5 Firefox install instructions should be complete
-      New, last updated 2006-07-14
+      New (1 comment) last updated 2006-07-14
+      All ways of downloading firefox should provide complete...
 
 However, what if a relevant bugtask can't be found? This is unlikely,
 but possible, because a similar bug might actually be a duplicate of a
@@ -77,7 +80,8 @@ Then, if we match bug 1, only basic details of bug 8 are displayed:
     >>> print_similar_bugs(user_browser.contents)
     (icon - src=/@@/bug)
       #8 Printing doesn't work
-      Closed, last updated 2006-05-19
+      Closed (1 comment) last updated 2006-05-19
+      When I press print in Firefox...
 
 
 == Projects ==
@@ -93,90 +97,96 @@ filing a bug against a project:
     >>> print_similar_bugs(user_browser.contents)
     (icon medium src=/@@/bug-medium)
       #7 A test bug
-      New, last updated 2006-05-19
+          New (1 comment) last updated 2006-05-19
+          A test description
 
-As with products above, when no relevant bugtask can be found, only
-basic bug information is displayed:
+    As with products above, when no relevant bugtask can be found, only
+    basic bug information is displayed:
 
-    >>> user_browser.open(
-    ...     "http://bugs.launchpad.dev/evolution/+bug/7/+duplicate")
-    >>> user_browser.getControl('Duplicate Of').value = '8'
-    >>> user_browser.getControl('Change').click()
+        >>> user_browser.open(
+        ...     "http://bugs.launchpad.dev/evolution/+bug/7/+duplicate")
+        >>> user_browser.getControl('Duplicate Of').value = '8'
+        >>> user_browser.getControl('Change').click()
 
-    >>> user_browser.open("http://bugs.launchpad.dev/gnome/+filebug")
-    >>> user_browser.getControl("Project").value = ['evolution']
-    >>> user_browser.getControl("Summary").value = 'a'
-    >>> user_browser.getControl("Continue").click()
+        >>> user_browser.open("http://bugs.launchpad.dev/gnome/+filebug")
+        >>> user_browser.getControl("Project").value = ['evolution']
+        >>> user_browser.getControl("Summary").value = 'a'
+        >>> user_browser.getControl("Continue").click()
 
-    >>> print_similar_bugs(user_browser.contents)
-    (icon - src=/@@/bug)
-      #8 Printing doesn't work
-      Closed, last updated 2006-05-19
-
-
-== Distributions ==
-
-If similar bugs are found they're displayed so that the user might
-find that their bug has already been reported.
-
-    >>> user_browser.open("http://launchpad.dev/ubuntu/+filebug")
-    >>> user_browser.getControl("Summary").value = 'crashes'
-    >>> user_browser.getControl("Continue").click()
-
-    >>> print_similar_bugs(user_browser.contents)
-    (icon medium src=/@@/bug-medium)
-      #9 Thunderbird crashes
-      Confirmed, last updated 2006-07-14
-
-Only basic details are shown when no relevant bugtask exists:
-
-    >>> user_browser.open(
-    ...     "http://bugs.launchpad.dev/ubuntu/+source/"
-    ...     "thunderbird/+bug/9/+duplicate")
-    >>> user_browser.getControl('Duplicate Of').value = '8'
-    >>> user_browser.getControl('Change').click()
-
-    >>> user_browser.open("http://launchpad.dev/ubuntu/+filebug")
-    >>> user_browser.getControl("Summary").value = 'crashes'
-    >>> user_browser.getControl("Continue").click()
-
-    >>> print_similar_bugs(user_browser.contents)
-    (icon - src=/@@/bug)
-      #8 Printing doesn't work
-      Closed, last updated 2006-05-19
+        >>> print_similar_bugs(user_browser.contents)
+        (icon - src=/@@/bug)
+          #8 Printing doesn't work
+          Closed (1 comment) last updated 2006-05-19
+          When I press print in Firefox...
 
 
-== Distribution Source Packages ==
+    == Distributions ==
 
-In common with all the other guided bug filing processes, we display a
-list of similar bugs when a user tries to file a bug against a source
-package.
+    If similar bugs are found they're displayed so that the user might
+    find that their bug has already been reported.
 
-    >>> user_browser.open(
-    ...     "http://launchpad.dev/ubuntu/+source/"
-    ...     "mozilla-firefox/+filebug")
-    >>> user_browser.getControl("Summary").value = 'a'
-    >>> user_browser.getControl("Continue").click()
+        >>> user_browser.open("http://launchpad.dev/ubuntu/+filebug")
+        >>> user_browser.getControl("Summary").value = 'crashes'
+        >>> user_browser.getControl("Continue").click()
 
-    >>> print_similar_bugs(user_browser.contents)
-    (icon medium src=/@@/bug-medium)
-      #1 Firefox does not support SVG
-      New, last updated 2006-05-19
+        >>> print_similar_bugs(user_browser.contents)
+        (icon medium src=/@@/bug-medium)
+          #9 Thunderbird crashes
+          Confirmed (1 comment) last updated 2006-07-14
+          Every time I start Thunderbird...
 
-Only basic details are shown when no relevant bugtask exists:
+    Only basic details are shown when no relevant bugtask exists:
 
-    >>> user_browser.open(
-    ...     "http://bugs.launchpad.dev/firefox/+bug/1/+duplicate")
-    >>> user_browser.getControl('Duplicate Of').value = '8'
-    >>> user_browser.getControl('Change').click()
+        >>> user_browser.open(
+        ...     "http://bugs.launchpad.dev/ubuntu/+source/"
+        ...     "thunderbird/+bug/9/+duplicate")
+        >>> user_browser.getControl('Duplicate Of').value = '8'
+        >>> user_browser.getControl('Change').click()
 
-    >>> user_browser.open(
-    ...     "http://launchpad.dev/ubuntu/+source/"
-    ...     "mozilla-firefox/+filebug")
-    >>> user_browser.getControl("Summary").value = 'a'
-    >>> user_browser.getControl("Continue").click()
+        >>> user_browser.open("http://launchpad.dev/ubuntu/+filebug")
+        >>> user_browser.getControl("Summary").value = 'crashes'
+        >>> user_browser.getControl("Continue").click()
 
-    >>> print_similar_bugs(user_browser.contents)
-    (icon - src=/@@/bug)
-      #8 Printing doesn't work
-      Closed, last updated 2006-05-19
+        >>> print_similar_bugs(user_browser.contents)
+        (icon - src=/@@/bug)
+          #8 Printing doesn't work
+          Closed (1 comment) last updated 2006-05-19
+          When I press print in Firefox...
+
+
+    == Distribution Source Packages ==
+
+    In common with all the other guided bug filing processes, we display a
+    list of similar bugs when a user tries to file a bug against a source
+    package.
+
+        >>> user_browser.open(
+        ...     "http://launchpad.dev/ubuntu/+source/"
+        ...     "mozilla-firefox/+filebug")
+        >>> user_browser.getControl("Summary").value = 'a'
+        >>> user_browser.getControl("Continue").click()
+
+        >>> print_similar_bugs(user_browser.contents)
+        (icon medium src=/@@/bug-medium)
+          #1 Firefox does not support SVG
+          New (2 comments) last updated 2006-05-19
+          Firefox needs to support embedded SVG...
+
+    Only basic details are shown when no relevant bugtask exists:
+
+        >>> user_browser.open(
+        ...     "http://bugs.launchpad.dev/firefox/+bug/1/+duplicate")
+        >>> user_browser.getControl('Duplicate Of').value = '8'
+        >>> user_browser.getControl('Change').click()
+
+        >>> user_browser.open(
+        ...     "http://launchpad.dev/ubuntu/+source/"
+        ...     "mozilla-firefox/+filebug")
+        >>> user_browser.getControl("Summary").value = 'a'
+        >>> user_browser.getControl("Continue").click()
+
+        >>> print_similar_bugs(user_browser.contents)
+        (icon - src=/@@/bug)
+          #8 Printing doesn't work
+          Closed (1 comment) last updated 2006-05-19
+          When I press print in Firefox...
