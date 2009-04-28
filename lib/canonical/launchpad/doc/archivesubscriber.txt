@@ -91,9 +91,10 @@ Subscriptions also contain some date information:
 An email is sent to the subscribed person when the ArchiveSubscriber
 entry is created:
 
-    >>> print_emails()
-    From: Celso Providelo <celso.providelo@canonical.com>
+    >>> print_emails(include_reply_to=True)
+    From: Celso Providelo <noreply@launchpad.net>
     To: joe@example.com
+    Reply-To: Celso Providelo <celso.providelo@canonical.com>
     Subject: New PPA subscription for PPA for Celso Providelo
     Hello Joe Smith,
     <BLANKLINE>
@@ -120,7 +121,7 @@ Add another subscription for the test user, this time to sabdfl's ppa:
     ...     joesmith, sabdfl, description=u"subscription for joesmith")
 
     >>> print_emails()
-    From: Mark Shuttleworth <mark@hbd.com>
+    From: Mark Shuttleworth <noreply@launchpad.net>
     To: joe@example.com
     ...
 
@@ -130,7 +131,7 @@ And also a subscription for a Team:
     ...     team_cprov, sabdfl, description=u"Access for cprov team")
 
     >>> print_emails()
-    From: Mark Shuttleworth <mark@hbd.com>
+    From: Mark Shuttleworth <noreply@launchpad.net>
     To: celso.providelo@canonical.com
     ...
 
