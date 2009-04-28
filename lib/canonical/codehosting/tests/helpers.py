@@ -1,4 +1,4 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2007-2009 Canonical Ltd.  All rights reserved.
 
 """Common helpers for codehosting tests."""
 
@@ -186,10 +186,13 @@ class TestResultWrapper:
         self.result = result
 
     def addError(self, test_case, exc_info):
-        if not isinstance(exc_info[1], (TestSkipped, TestNotApplicable)):
-            self.result.addError(test_case, exc_info)
-        else:
+        if isinstance(exc_info[1], (TestSkipped, TestNotApplicable)):
+            # If Bazaar says the test was skipped, or that it wasn't
+            # applicable to this environment, then treat that like a success.
+            # After all, it's not exactly an error, is it?
             self.result.addSuccess(test_case)
+        else:
+            self.result.addError(test_case, exc_info)
 
     def addFailure(self, test_case, exc_info):
         self.result.addFailure(test_case, exc_info)
