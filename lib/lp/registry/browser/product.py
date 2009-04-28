@@ -40,7 +40,6 @@ __all__ = [
 from operator import attrgetter
 import urllib
 
-import zope.security.interfaces
 from zope.component import getUtility
 from zope.event import notify
 from zope.app.form.browser import TextAreaWidget, TextWidget
