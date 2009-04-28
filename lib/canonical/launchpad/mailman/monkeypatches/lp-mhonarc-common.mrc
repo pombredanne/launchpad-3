@@ -23,25 +23,13 @@
 </IDXSIZE>
 
 <!-- Define a custom resource variable to represent this mailing list.
-     This depends on $MLNAME$ having been set already, presumably on
+     This depends on $ML-NAME$ having been set already, presumably on
      the command line via '-definevar'.  See 
      http://www.mhonarc.org/MHonArc/doc/resources/definevar.html. -->
 <DefineVar>
 ML-FULL-TITLE
 <a href="http://launchpad.net/~$ML-NAME$">$ML-NAME$</a> mailing list archive
 </DefineVar>
-
-<!-- Title for the main page. -->
-<TITLE>
-<p><a href="http://launchpad.net/"><img border="0" src="http://launchpad.net/@@/launchpad-logo-and-name.png" alt="Launchpad logo and name."/></a></p>
-<center>$ML-FULL-TITLE$ (by date)</center>
-</TITLE>
-
-<!-- Title for the thread page. -->
-<TTITLE>
-<p><a href="http://launchpad.net/"><img border="0" src="http://launchpad.net/@@/launchpad-logo-and-name.png" alt="Launchpad logo and name."/></a></p>
-<center>$ML-FULL-TITLE$ (by thread)</center>
-</TTITLE>
 
 <IDXLABEL>
 Date Index
@@ -140,11 +128,13 @@ Thread Index
         "http://www.w3.org/TR/html4/loose.dtd">
 <html>
 <head>
-<title>$IDXTITLE$</title>
+<title>$ML-NAME$ mailing list (by date)</title>
 </head>
 <body text="#000000" bgcolor="#FFFFFF">
-<h1>$IDXTITLE$</h1>
+<p><a href="http://launchpad.net/"><img border="0" src="http://launchpad.net/@@/launchpad-logo-and-name.png" alt="Launchpad logo and name."/></a></p>
+<h1><center>$ML-FULL-TITLE$ (by date)</center></h1>
 </IDXPGBEGIN>
+
 <IDXPGEND>
 <hr/>
 (<em>$ML-FULL-TITLE$, formatted by <a href="$DOCURL$">MHonArc</a>)
@@ -158,11 +148,13 @@ Thread Index
         "http://www.w3.org/TR/html4/loose.dtd">
 <html>
 <head>
-<title>$TIDXTITLE$</title>
+<title>$ML-NAME$ mailing list (by thread)</title>
 </head>
 <body text="#000000" bgcolor="#FFFFFF">
-<h1>$TIDXTITLE$</h1>
+<p><a href="http://launchpad.net/"><img border="0" src="http://launchpad.net/@@/launchpad-logo-and-name.png" alt="Launchpad logo and name."/></a></p>
+<h1><center>$ML-FULL-TITLE$ (by thread)</center></h1>
 </TIDXPGBEGIN>
+
 <TIDXPGEND>
 <hr/>
 (<em>$ML-FULL-TITLE$, formatted by <a href="$DOCURL$">MHonArc</a>)
