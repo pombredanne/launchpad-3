@@ -15,6 +15,7 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.interfaces.potemplate import IPOTemplateSet
+from canonical.launchpad.utilities.orderingcheck import OrderingCheck
 from lp.registry.interfaces.product import IProductSet
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from canonical.launchpad.scripts.base import (
@@ -111,7 +112,9 @@ def merge_potmsgsets(potemplates):
     # through the templates, starting at the most representative and
     # moving towards the least representative.  For any unique potmsgset
     # key we find, the first POTMsgSet is the representative one.
+    order_check = OrderingCheck(cmp=template_precedence)
     for template in potemplates:
+        order_check.check(template)
         for potmsgset in template.getPOTMsgSets(False):
             key = get_potmsgset_key(potmsgset)
             if key not in representatives:
@@ -169,6 +172,16 @@ def merge_potmsgsets(potemplates):
 
             merge_translationtemplateitems(subordinate, representative)
             removeSecurityProxy(subordinate).destroySelf()
+
+
+def merge_translationmessages(potemplates):
+    """Share `TranslationMessage`s between `potemplates` where possible."""
+    order_check = OrderingCheck(cmp=template_precedence)
+    for template in potemplates:
+        order_check.check(template)
+        for potmsgset in template.getPOTMsgSets(False):
+            for message in potmsgset.getAllTranslationMessages():
+                removeSecurityProxy(message).converge()
 
 
 def get_equivalence_class(template):

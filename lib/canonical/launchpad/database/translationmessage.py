@@ -1,4 +1,4 @@
-# Copyright 2007-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2007-2009 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 __all__ = [
@@ -364,6 +364,58 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
             return pofile[0]
         else:
             return None
+
+    def converge(self):
+        """Make this message shared.
+
+        If there is already a similar message that is shared, this
+        message's information is merged into that of the existing one,
+        and self is deleted.
+        """
+        if self.potemplate is None:
+            # Already converged.
+            return
+
+        # XXX: XXX: I don't think there's a "proper" way to get this at
+        # the moment.
+        shared = TranslationMessage.get(potemplate=None, potmsgset=self.potmsgset, language=self.language, variant=self.variant, self.translations)
+
+        current = self.potmsgset.getCurrentTranslationMessage(
+            potemplate=None, language=self.language, variant=self.variant)
+        imported = self.potmsgset.getImportedTranslationMessage(
+            potemplate=None, language=self.language, variant=self.variant)
+
+        if shared is None:
+            clash_with_shared_current = current and self.is_current
+            clash_with_shared_imported = imported and self.is_imported
+            if clash_with_shared_current or clash_with_shared_imported:
+                # Keep this message diverged, so it won't usurp the
+                # current or imported message that the templates share.
+                pass
+            else:
+                # No clashes; simply mark this message as shared.
+                self.potemplate = None
+        elif self.is_current or self.is_imported:
+            # Bequeathe current/imported flags to shared equivalent.
+            if self.is_current and current is None:
+                shared.is_current = True
+            if self.is_imported and imported is None:
+                shared.is_imported = True
+
+            # XXX: Actually, we can also drop this message when it is
+            # not current/imported but the shared one is.  In other
+            # words, we only need to keep this message if it is
+            # current but shared is not, or if it is imported but shared
+            # is not.
+            same_current = (self.is_current == shared.is_current)
+            same_imported = (self.is_imported == shared.is_imported)
+            if same_current and same_imported:
+                # This message is now totally redundant.
+                self.destroySelf()
+        else:
+            # This is a suggestion duplicating an existing shared
+            # message.
+            self.destroySelf()
 
 
 class TranslationMessageSet:
