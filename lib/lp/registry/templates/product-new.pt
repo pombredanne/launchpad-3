@@ -40,7 +40,6 @@ YUI().use('node', 'lazr.effects', function(Y) {
             }
             if (flag) {
                 separator.setStyle('display', 'block');
-                separator.setStyle('margin-top', '3em');
             }
             else {
                 separator.setStyle('display', 'none');
