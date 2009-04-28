@@ -86,7 +86,7 @@ class InlineAddMilestoneForReleaseTest:
         self.client.waits.forPageLoad(timeout=u'20000')
 
         # Verify that the release was created.
-        milestone_xpath= (
+        milestone_xpath = (
             "//table[@id='series_trunk']//a[@href='/bzr/trunk/%s']"
             % milestone_name.lower())
         self.client.waits.forElement(xpath=milestone_xpath, timeout=u'8000')
