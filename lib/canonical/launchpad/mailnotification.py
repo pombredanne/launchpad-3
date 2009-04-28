@@ -1154,9 +1154,12 @@ def notify_new_ppa_subscription(subscription, event):
         from_address = format_address(
             registrant_name, config.canonical.noreply_from_address)
 
+        headers = {
+            'Sender': config.canonical.bounce_address,
+            }
+
         # If the registrant has a preferred email, then use it for the
         # Reply-To.
-        headers = {}
         if subscription.registrant.preferredemail:
             headers['Reply-To'] = format_address(
                 registrant_name,
