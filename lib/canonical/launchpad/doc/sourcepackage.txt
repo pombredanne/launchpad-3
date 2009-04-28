@@ -437,12 +437,91 @@ returns the last packaging added:
 
 == Release History ==
 
-    >>> len(list(hoary_firefox_one.distinctreleases))
-    1
+The distinct release history for a SourcePackage is obtained via
+'distinctreleases' property.
+
+We will use `SoyuzTestPublisher` for creating source releases in
+Ubuntu warty and hoary series.
+
+    >>> from canonical.launchpad.tests.test_publishing import (
+    ...     SoyuzTestPublisher)
+    >>> test_publisher = SoyuzTestPublisher()
+
+    >>> login('foo.bar@canonical.com')
+
+    >>> ignore = test_publisher.setUpDefaultDistroSeries(ubuntu_warty)
+    >>> warty_source = test_publisher.getPubSource(
+    ...     sourcename="test-source", version='1.0')
+
+    >>> ubuntu_hoary = ubuntu.getSeries('hoary')
+    >>> hoary_source = test_publisher.getPubSource(
+    ...     sourcename="test-source", version='1.1',
+    ...     distroseries=ubuntu_hoary)
+
+    >>> login(ANONYMOUS)
+
+Warty, hoary and grumpy SourcePackages only consider their
+corresponding versions, their history is isolated by series.
+
+    >>> def print_releases(sourcepackage):
+    ...     releases = sourcepackage.distinctreleases
+    ...     if releases.count() == 0:
+    ...         print 'No releases available'
+    ...         return
+    ...     for release in releases:
+    ...         print release.title
+
+    >>> warty_sp = ubuntu_warty.getSourcePackage('test-source')
+    >>> print_releases(warty_sp)
+    test-source - 1.0
+
+    >>> hoary_sp = ubuntu_hoary.getSourcePackage('test-source')
+    >>> print_releases(hoary_sp)
+    test-source - 1.1
+
+    >>> ubuntu_grumpy = ubuntu.getSeries('grumpy')
+    >>> grumpy_sp = ubuntu_grumpy.getSourcePackage('test-source')
+    >>> print_releases(grumpy_sp)
+    No releases available
+
+The SourcePackage history can overlap if releases are copied across
+distroseries. The 'test-source - 1.0' is copied from warty to hoary
+and is present in the history for both.
+
+    >>> login('foo.bar@canonical.com')
+    >>> copied_source = warty_source.copyTo(
+    ...     ubuntu_hoary, warty_source.pocket, warty_source.archive)
+    >>> login(ANONYMOUS)
+
+    >>> print_releases(warty_sp)
+    test-source - 1.0
+
+    >>> print_releases(hoary_sp)
+    test-source - 1.1
+    test-source - 1.0
+
+We will create new source releases in warty and verify the ResultSet
+returned from 'distinctreleases' is ordered by ascending source version.
+
+    >>> login('foo.bar@canonical.com')
+
+    >>> lower_source = test_publisher.getPubSource(
+    ...     sourcename="test-source", version='0.9')
+
+    >>> higher_source = test_publisher.getPubSource(
+    ...     sourcename="test-source", version='1.2')
+
+    >>> login(ANONYMOUS)
+
+    >>> print_releases(warty_sp)
+    test-source - 1.2
+    test-source - 1.0
+    test-source - 0.9
+
 
 == Interface implementation ==
 
-SourcePackageName implements IHasTranslationImports interface:
+SourcePackage implements IHasTranslationImports interface:
 
     >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.launchpad.interfaces import (
