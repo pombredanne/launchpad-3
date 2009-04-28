@@ -16,6 +16,7 @@ __all__ = [
 
 
 import os
+from bzrlib import hooks
 from bzrlib.plugin import load_plugins
 
 from canonical.config import config
@@ -54,3 +55,16 @@ def load_optional_plugin(plugin_name):
     if optional_plugin_dir not in plugins.__path__:
         plugins.__path__.append(optional_plugin_dir)
     __import__("bzrlib.plugins.%s" % plugin_name)
+
+
+def remove_hook(self, hook):
+    """Remove the hook from the HookPoint"""
+    self._callbacks.remove(hook)
+    for name, value in self._callback_names.iteritems():
+        if value is hook:
+            del self._callback_names[name]
+
+
+# Monkeypatch: Branch.hooks is a list in bzr 1.13, so it supports remove.
+# It is a HookPoint in bzr 1.14, so add HookPoint.remove.
+hooks.HookPoint.remove = remove_hook

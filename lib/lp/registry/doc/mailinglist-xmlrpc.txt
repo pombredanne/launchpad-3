@@ -1,4 +1,5 @@
-= XML-RPC integration for mailing lists =
+XML-RPC integration for mailing lists
+=====================================
 
 Team mailing lists are requested in Launchpad, but the lists actually live in
 an external system running GNU Mailman.  The communication pattern is
@@ -9,7 +10,8 @@ see if there is any work for Mailman to do.
     >>> # providing `mailinglist_api` and `commit` for impedance matching.
 
 
-== Registered lists ==
+Registered lists
+----------------
 
 When there's nothing for Mailman to do, we'll just get an empty dictionary
 back from the XMLRPC call.
@@ -90,12 +92,13 @@ Launchpad.
     team-two --> unsynchronized constructing
 
 
-== Creating the mailing lists ==
+Creating the mailing lists
+--------------------------
 
 Mailman will attempt to satisfy the requested creation.  This will either
 succeed or fail, and this status is communicated back to Launchpad.  Let's say
-that team-one was created succesfully, but the creation of team-two failed for
-some reason.
+that team-one was created successfully, but the creation of team-two failed
+for some reason.
 
     >>> mailinglist_api.reportStatus({
     ...     'team-one': 'success',
@@ -120,14 +123,48 @@ Mailman.
     >>> mailinglist_api.getPendingActions()
     {}
 
+Launchpad supports private membership teams, which are also allowed to have
+mailing lists.
 
-== Deactivating mailing lists ==
+    >>> from lp.registry.interfaces.person import (
+    ...     PersonVisibility, TeamSubscriptionPolicy)
+    >>> team_private = factory.makeTeam(
+    ...     no_priv, name='team-private',
+    ...     subscription_policy=TeamSubscriptionPolicy.RESTRICTED,
+    ...     visibility=PersonVisibility.PRIVATE_MEMBERSHIP)
+    >>> list_private = list_set.new(team_private)
+    >>> commit()
+
+The private membership team is in the REGISTERED state, and since it is
+unreviewed, there is nothing to do.
+
+    >>> mailinglist_api.getPendingActions()
+    {}
+
+Once the list is approved, there will be another mailing list for Mailman to
+create.
+
+    >>> list_private.review(carlos, MailingListStatus.APPROVED)
+    >>> commit()
+    >>> pending_actions = mailinglist_api.getPendingActions()
+    >>> print_actions(pending_actions)
+    team-private --> create {}
+
+    >>> mailinglist_api.reportStatus({
+    ...     'team-private': 'success',
+    ...     })
+    True
+    >>> commit()
+
+
+Deactivating mailing lists
+--------------------------
 
 The other action that Mailman needs to take is to deactivate a list when the
 team owner requests it.  These also show up as pending actions when Mailman
 polls Launchpad.
 
-Now, say team one's owner wants to deactive their list.
+Now, say team one's owner wants to deactivate their list.
 
     >>> list_one.deactivate()
     >>> commit()
@@ -182,7 +219,8 @@ deactivation failed for some reason.
     'MOD_FAILED'
 
 
-== Modifying mailing lists ==
+Modifying mailing lists
+-----------------------
 
 Activate mailing lists can also be modified.  Currently the only modification
 supported is changing the list's welcome message.  Because deactivated and
@@ -250,7 +288,8 @@ the other...
     'MOD_FAILED'
 
 
-== Error conditions ==
+Error conditions
+----------------
 
 Although we control both ends of this XMLRPC interface, it might still be
 possible to pass bad input, due to bugs and such.  The XMLRPC interface is
@@ -351,7 +390,8 @@ And of course, entirely bogus status strings aren't accepted either.
             for team: team-four'>
 
 
-== Public teams ==
+Public teams
+------------
 
 We provide a method to query whether or not a given team is public.  That's
 useful when deciding whether or not anonymous access to the team's mailing

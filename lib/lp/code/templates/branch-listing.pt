@@ -139,10 +139,12 @@ registerLaunchpadFunction(hookUpFilterSubmission);
                 tal:content="branch/date_last_modified/fmt:datetime">
             2005-02-12 13:45 EST
           </span>
+          <div tal:attributes="id string:b-${repeat/branch/number}">
           <span tal:attributes="title branch/date_last_modified/fmt:datetime"
                 tal:content="branch/since_updated/fmt:approximateduration/use-digits">
             sometime
             </span> ago
+          </div>
         </td>
 
         <tal:no_commit condition="not: branch/last_commit">
@@ -210,3 +212,8 @@ registerLaunchpadFunction(hookUpFilterSubmission);
   <tal:navigation replace="structure context/@@+navigation-links-lower" />
 
 </div>
+
+<tal:script
+    replace="structure string:&lt;script type='text/javascript'&gt;" />
+var branch_sparks = <tal:array replace="context/branch_sparks"/>;
+<tal:script replace="structure string:&lt;/script&gt;" />
