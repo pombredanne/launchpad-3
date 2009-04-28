@@ -740,39 +740,39 @@ class LaunchpadRootNavigation(Navigation):
 
         beta_host = config.launchpad.beta_testers_redirection_host
         user = getUtility(ILaunchBag).user
-	beta_testers = getUtility(ILaunchpadCelebrities).launchpad_beta_testers
-	if user is not None and user.inTeam(beta_testers):
-	    user_is_beta_tester = True
-	else:
-	    user_is_beta_tester = False
+        beta_testers = getUtility(ILaunchpadCelebrities).launchpad_beta_testers
+        if user is not None and user.inTeam(beta_testers):
+            user_is_beta_tester = True
+        else:
+            user_is_beta_tester = False
 
-	# If the request is for a bug then redirect straight to that bug.
-	bug_match = re.match("/bugs/(\d+)$", self.request['PATH_INFO'])
-	if bug_match:
-	    bug_number = bug_match.group(1)
-	    bug_set = getUtility(IBugSet)
-	    try:
-		bug = bug_set.get(bug_number)
-	    except NotFoundError, e:
+        # If the request is for a bug then redirect straight to that bug.
+        bug_match = re.match("/bugs/(\d+)$", self.request['PATH_INFO'])
+        if bug_match:
+            bug_number = bug_match.group(1)
+            bug_set = getUtility(IBugSet)
+            try:
+                bug = bug_set.get(bug_number)
+            except NotFoundError, e:
                 raise NotFound(self.context, bug_number)
-	    uri = URI(canonical_url(bug.default_bugtask))
-	    if beta_host is not None and user_is_beta_tester:
-		# Alter the host name to point at the beta target.
-		new_host = uri.host[:-len(mainsite_host)] + beta_host
-		uri = uri.replace(host=new_host)
-	else:
-	    # If no redirection host is set or the user is not a beta tester,
-	    # don't redirect.
-	    if beta_host is None or not user_is_beta_tester:
-		return None
-	    # Alter the host name to point at the beta target.
-	    new_host = uri.host[:-len(mainsite_host)] + beta_host
-	    uri = uri.replace(host=new_host)
-	    # Complete the URL from the environment.
-	    uri = uri.replace(path=self.request['PATH_INFO'])
-	    query_string = self.request.get('QUERY_STRING')
-	    if query_string:
-		uri = uri.replace(query=query_string)
+            uri = URI(canonical_url(bug.default_bugtask))
+            if beta_host is not None and user_is_beta_tester:
+                # Alter the host name to point at the beta target.
+                new_host = uri.host[:-len(mainsite_host)] + beta_host
+                uri = uri.replace(host=new_host)
+        else:
+            # If no redirection host is set or the user is not a beta tester,
+            # don't redirect.
+            if beta_host is None or not user_is_beta_tester:
+                return None
+            # Alter the host name to point at the beta target.
+            new_host = uri.host[:-len(mainsite_host)] + beta_host
+            uri = uri.replace(host=new_host)
+            # Complete the URL from the environment.
+            uri = uri.replace(path=self.request['PATH_INFO'])
+            query_string = self.request.get('QUERY_STRING')
+            if query_string:
+                uri = uri.replace(query=query_string)
 
         # Empty the traversal stack, since we're redirecting.
         self.request.setTraversalStack([])
