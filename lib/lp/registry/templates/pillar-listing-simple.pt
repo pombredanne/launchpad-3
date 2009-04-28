@@ -6,7 +6,7 @@
 <tr>
   <td>
     <div tal:content="structure context/fmt:link" />
-    <div>
+    <div style="max-width: 60em;" >
       <tal:summary replace="context/summary/fmt:shorten/240" />
     </div><br/>
   </td>
