@@ -319,7 +319,7 @@ class BuilddManager(service.Service):
             if not builder.is_available:
                 self.logger.debug('Builder is not available, ignored.')
                 job = builder.currentjob
-                if job is not None:
+                if job is not None and not builder.builderok:
                     self.logger.debug('Reseting attached job.')
                     job.reset()
                     transaction.commit()
