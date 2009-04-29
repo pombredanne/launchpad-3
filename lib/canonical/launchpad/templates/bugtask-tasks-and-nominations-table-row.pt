@@ -60,7 +60,8 @@
 
     <tal:not-conjoined-task condition="not:is_conjoined_slave">
     <td tal:attributes="class string:status${context/status/name};
-                        current_value context/status/title">
+                        current_value context/status/title"
+        style="width: 15em;">
       <div class="status-content" style="width: 100%; float: left">
         <div class="value" style="float: left"
              tal:content="context/status/title" />
