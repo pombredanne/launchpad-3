@@ -27,9 +27,11 @@ from canonical.archiveuploader.nascentuploadfile import (
     UploadError, UploadWarning, CustomUploadFile, SourceUploadFile,
     BaseBinaryUploadFile)
 from canonical.launchpad.interfaces import (
-    ArchivePurpose, IArchivePermissionSet, IBinaryPackageNameSet,
+    IArchivePermissionSet, IBinaryPackageNameSet,
     IDistributionSet, ILibraryFileAliasSet, ISourcePackageNameSet,
     NotFoundError, PackagePublishingPocket, QueueInconsistentStateError)
+from canonical.launchpad.interfaces.archive import (
+    ArchivePurpose, MAIN_ARCHIVE_PURPOSES)
 
 
 PARTNER_COMPONENT_NAME = 'partner'
@@ -647,7 +649,7 @@ class NascentUpload:
         # See the comment below, in getSourceAncestry
         lookup_pockets = [self.policy.pocket, PackagePublishingPocket.RELEASE]
 
-        if self.is_ppa:
+        if self.policy.archive.purpose not in MAIN_ARCHIVE_PURPOSES:
             archive = self.policy.archive
         else:
             archive = None
