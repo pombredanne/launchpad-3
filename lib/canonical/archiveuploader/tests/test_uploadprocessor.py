@@ -612,16 +612,10 @@ class TestUploadProcessor(TestUploadProcessorBase):
             status=PackageUploadStatus.NEW, name='bar',
             version='1.0-1', exact_match=True, archive=copy_archive)
 
-        # The just uploaded binary cannot be accepted because its
-        # filename 'bar_1.0-1_i386.deb' is already published in the
-        # archive.
-        error = self.assertRaisesAndReturnError(
-            QueueInconsistentStateError,
-            duplicated_binary_upload.setAccepted)
-        self.assertEqual(
-            str(error),
-            "The following files are already published in Primary "
-            "Archive for Ubuntu Linux:\nbar_1.0-1_i386.deb")
+        # The just uploaded binary is accepted because it was copied
+        # to a copy archive and its version is not checked against
+        # the primary archive.
+        duplicated_binary_upload.setAccepted()
 
     def testPartnerArchiveMissingForPartnerUploadFails(self):
         """A missing partner archive should produce a rejection email.
