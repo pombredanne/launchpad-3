@@ -555,6 +555,74 @@ class TestUploadProcessor(TestUploadProcessorBase):
             "The following files are already published in Primary "
             "Archive for Ubuntu Linux:\nbar_1.0-1_i386.deb")
 
+    def testBinaryUploadToCopyArchive(self):
+        """The upload processor rejects duplicated binary uploads.
+
+        Duplicated binary uploads should be rejected, because they can't
+        be published on disk, since it will be introducing different contents
+        to the same filename in the archive.
+
+        Such situation happens when a source gets copied to another suite in
+        the same archive. The binary rebuild will have the same (name, version)
+        of the original binary and will certainly have a different content
+        (at least, the ar-compressed timestamps) making it impossible to be
+        published in the archive.
+        """
+        uploadprocessor = self.setupBreezyAndGetUploadProcessor()
+
+        # Upload 'bar-1.0-1' source and binary to ubuntu/breezy.
+        upload_dir = self.queueUpload("bar_1.0-1")
+        self.processUpload(uploadprocessor, upload_dir)
+        bar_source_pub = self._publishPackage('bar', '1.0-1')
+        [bar_original_build] = bar_source_pub.createMissingBuilds()
+
+        self.options.context = 'buildd'
+        self.options.buildid = bar_original_build.id
+        upload_dir = self.queueUpload("bar_1.0-1_binary")
+        self.processUpload(uploadprocessor, upload_dir)
+        [bar_binary_pub] = self._publishPackage("bar", "1.0-1", source=False)
+
+        uploader = getUtility(IPersonSet).getByName('name16')
+        copy_archive = getUtility(IArchiveSet).new(
+            owner=uploader, purpose=ArchivePurpose.COPY,
+            distribution=self.ubuntu, name='no-source-uploads')
+        # Prepare ubuntu/breezy-autotest to build sources in i386.
+        breezy_autotest = self.ubuntu['breezy-autotest']
+        breezy_autotest_i386 = breezy_autotest['i386']
+        breezy_autotest.nominatedarchindep = breezy_autotest_i386
+        fake_chroot = self.addMockFile('fake_chroot.tar.gz')
+        breezy_autotest_i386.addOrUpdateChroot(fake_chroot)
+        self.layer.txn.commit()
+
+        # Copy 'bar-1.0-1' source from breezy to breezy-autotest.
+        bar_copied_source = bar_source_pub.copyTo(
+            breezy_autotest, PackagePublishingPocket.RELEASE,
+            copy_archive)
+        [bar_copied_build] = bar_copied_source.createMissingBuilds()
+
+        # Re-upload the same 'bar-1.0-1' binary as if it was rebuilt
+        # in breezy-autotest context.
+        shutil.rmtree(upload_dir)
+        self.options.buildid = bar_copied_build.id
+        self.options.distroseries = breezy_autotest.name
+        upload_dir = self.queueUpload(
+            "bar_1.0-1_binary", "%s/ubuntu" % copy_archive.id)
+        self.processUpload(uploadprocessor, upload_dir)
+        [duplicated_binary_upload] = breezy_autotest.getQueueItems(
+            status=PackageUploadStatus.NEW, name='bar',
+            version='1.0-1', exact_match=True, archive=copy_archive)
+
+        # The just uploaded binary cannot be accepted because its
+        # filename 'bar_1.0-1_i386.deb' is already published in the
+        # archive.
+        error = self.assertRaisesAndReturnError(
+            QueueInconsistentStateError,
+            duplicated_binary_upload.setAccepted)
+        self.assertEqual(
+            str(error),
+            "The following files are already published in Primary "
+            "Archive for Ubuntu Linux:\nbar_1.0-1_i386.deb")
+
     def testPartnerArchiveMissingForPartnerUploadFails(self):
         """A missing partner archive should produce a rejection email.
 
