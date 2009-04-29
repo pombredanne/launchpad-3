@@ -71,7 +71,7 @@ Not everything about a branch is exposed.  Hopefully most of what users
 really care about is exposed, and we will undoubtedly expand this as
 time goes on.
 
-    >>> login(ANONYMOUS)
+    >>> login('foo.bar@canonical.com')
     >>> eric = factory.makePerson(name='eric')
     >>> marley = factory.makePerson(name='marley')
     >>> fooix = factory.makeProduct(name='fooix')
@@ -80,6 +80,10 @@ time goes on.
     ...     name='trunk', title='The Fooix Trunk')
     >>> feature_branch = factory.makeAnyBranch(
     ...     owner=eric, product=fooix, name='feature-branch')
+    >>> feature_branch_bug = factory.makeBug(product=fooix,
+    ...     title='Stuff needs features')
+    >>> bug_branch = feature_branch_bug.addBranch(branch=feature_branch,
+    ...     registrant=eric, whiteboard='')
     >>> merge_proposal = factory.makeBranchMergeProposal(
     ...     target_branch=branch, source_branch=feature_branch,
     ...     registrant=eric)
@@ -124,6 +128,15 @@ time goes on.
     unique_name: u'~eric/fooix/trunk'
     url: None
     whiteboard: None
+
+
+If the branch is linked to a bug, it's possible to get that bug through the
+branch.
+
+    >>> bug_branches = webservice.get(
+    ...     fooix_trunk['bug_branches_collection_link']).jsonBody()
+    >>> for bug_branch in bug_branches['entries']:
+    ...     pprint_entry(bug_branch)
 
 
 There is a branch merge proposal with Fooix trunk as the target branch, so it
