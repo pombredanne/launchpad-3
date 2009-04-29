@@ -10,6 +10,7 @@ __all__ = [
 
 from zope.component import getUtility
 from zope.interface import implements
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.launchpad.interfaces import (
