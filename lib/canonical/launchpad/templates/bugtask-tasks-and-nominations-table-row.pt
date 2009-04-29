@@ -65,7 +65,7 @@
         <div class="value" style="float: left"
              tal:content="context/status/title" />
         <div style="float: right; margin-right: 0.5em">
-          <img class="editicon" src="/@@/edit" />
+          <img class="editicon" src="/@@/edit-grey" />
         </div>
       </div>
     </td>
