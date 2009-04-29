@@ -70,7 +70,7 @@ class GenericBranchCollection:
 
     def count(self):
         """See `IBranchCollection`."""
-        return self.getBranches(False, False).count()
+        return self.getBranches().count()
 
     @property
     def store(self):
@@ -110,7 +110,7 @@ class GenericBranchCollection:
         # XXX: JonathanLange 2009-03-04 bug=337494: getBranches() returns a
         # decorated set, so we get at the underlying set so we can get at the
         # private and juicy _get_select.
-        select = self.getBranches(False, False).result_set._get_select()
+        select = self.getBranches().result_set._get_select()
         select.columns = (Branch.id,)
         return select
 
@@ -231,7 +231,7 @@ class GenericBranchCollection:
         # unique name and sort based on relevance.
         branch = self._getExactMatch(search_term)
         if branch is not None:
-            if branch in self.getBranches(False, False):
+            if branch in self.getBranches():
                 return CountableIterator(1, [branch])
             else:
                 return CountableIterator(0, [])
