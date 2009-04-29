@@ -127,9 +127,6 @@ class GenericBranchCollection:
             tables.append(LeftJoin(Product, Branch.product == Product.id))
         expressions = self._getBranchExpressions()
         results = self.store.using(*tables).find(Branch, *expressions)
-        # XXX TimPenhey 2008-03-16 bug 343313
-        # Remove the default ordering on the Branch table.
-        results = results.order_by()
         def identity(x):
             return x
         # Decorate the result set to work around bug 217644.
