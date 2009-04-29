@@ -234,15 +234,20 @@ class BuildQueue(SQLBase):
         if self.build.date_first_dispatched is None:
             self.build.date_first_dispatched = UTC_NOW
 
+    def reset(self):
+        """See `IBuildQueue`."""
+        self.builder = None
+        self.buildstart = None
+        self.logtail = None
+        self.build.buildstate = BuildStatus.NEEDSBUILD
+
     def updateBuild_IDLE(self, build_id, build_status, logtail,
                          filemap, dependencies, logger):
         """See `IBuildQueue`."""
         logger.warn(
             "Builder %s forgot about build %s -- resetting buildqueue record"
             % (self.builder.url, self.build.title))
-        self.builder = None
-        self.buildstart = None
-        self.build.buildstate = BuildStatus.NEEDSBUILD
+        self.reset()
 
     def updateBuild_BUILDING(self, build_id, build_status,
                              logtail, filemap, dependencies, logger):

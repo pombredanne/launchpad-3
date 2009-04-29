@@ -373,6 +373,11 @@ class BuildSetStatus(EnumeratedType):
         title='NEEDSBUILD',# "Need building",
         description='There are some builds waiting to be built.')
 
+    FULLYBUILT_PENDING = Item(
+        title='FULLYBUILT_PENDING',
+        description="All builds were built successfully but have not yet "
+                    "been published.")
+
     FULLYBUILT = Item(title='FULLYBUILT', # "Successfully built",
                       description="All builds were built successfully.")
 

@@ -29,6 +29,7 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import cursor, quote_like, SQLBase, sqlvalues
 
+from canonical.archivepublisher.utils import get_ppa_reference
 from canonical.launchpad.components.archivedependencies import (
     get_components_for_building)
 from canonical.launchpad.components.decoratedresultset import (
@@ -628,11 +629,11 @@ class Build(SQLBase):
             # not enabled it.
             if len(recipients) == 0:
                 return
-            archive_tag = '%s PPA' % self.archive.owner.name
+            archive_tag = '%s PPA' % get_ppa_reference(self.archive)
             subject = "[Build #%d] %s (%s)" % (
                 self.id, self.title, archive_tag)
             source_url = 'not available'
-            extra_headers['X-Launchpad-PPA'] = self.archive.owner.name
+            extra_headers['X-Launchpad-PPA'] = get_ppa_reference(self.archive)
 
         # XXX cprov 2006-08-02: pending security recipients for SECURITY
         # pocket build. We don't build SECURITY yet :(
