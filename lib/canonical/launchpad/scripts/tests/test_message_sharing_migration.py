@@ -5,13 +5,14 @@ __metaclass__ = type
 from unittest import TestLoader
 
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from lp.registry.interfaces.distribution import IDistributionSet
 from canonical.launchpad.interfaces.language import ILanguageSet
 from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.launchpad.scripts.message_sharing_migration import (
     find_potemplate_equivalence_classes_for, merge_potmsgsets,
-    template_precedence)
+    merge_translationmessages, template_precedence)
 from canonical.testing import DatabaseFunctionalLayer, LaunchpadZopelessLayer
 
 
@@ -374,16 +375,20 @@ class TestPOTMsgSetMerging(TestCaseWithFactory, TranslatableProductMixin):
 class TranslatedProductMixin(TranslatableProductMixin):
     """Like TranslatableProductMixin, but adds actual POTMsgSets.
 
-    Also makes it easy to set translations for the POTMsgSets.
+    Also provides handy methods to set and verify translations for the
+    POTMsgSets.
+
+    Creates one POTMsgSet for trunk and one for stable, i.e. a
+    pre-sharing situation.
     """
     def setUp(self):
         TranslatableProductMixin.setUp(self)
 
-        # Tests use a pair of matching POTMsgSets in our two templates.
         self.trunk_potmsgset = self.factory.makePOTMsgSet(
             self.trunk_template, 'foo', sequence=1)
-        self.stable_potmsgset = self.factory.makePOTMsgSet(
-            self.stable_template, 'foo', sequence=1)
+        self.stable_potmsgset = self.trunk_potmsgset
+
+        self.msgid = self.trunk_potmsgset.msgid_singular
 
         self.dutch = getUtility(ILanguageSet).getLanguageByCode('nl')
 
@@ -391,6 +396,9 @@ class TranslatedProductMixin(TranslatableProductMixin):
             'nl', potemplate=self.trunk_template)
         self.stable_pofile = self.factory.makePOFile(
             'nl', potemplate=self.stable_template)
+
+        self.stable_potmsgset = self.factory.makePOTMsgSet(
+            self.stable_template, 'foo', sequence=1)
 
     def _makeTranslationMessage(self, pofile, potmsgset, text, diverged):
         """Set a translation for given message in given translation."""
@@ -421,11 +429,16 @@ class TranslatedProductMixin(TranslatableProductMixin):
 
         return (trunk_message, stable_message)
 
+    def _getPOTMsgSet(self, template):
+        """Get POTMsgSet for given template."""
+        return removeSecurityProxy(template)._getPOTMsgSetBy(
+            msgid_singular=self.msgid, sharing_templates=True)
+
     def _getPOTMsgSets(self):
         """Get POTMsgSets in our trunk and stable series."""
         return (
-            self.trunk_template.getPOTMsgSetByMsgIDText('foo'),
-            self.stable_template.getPOTMsgSetByMsgIDText('foo'))
+            self._getPOTMsgSet(self.trunk_template),
+            self._getPOTMsgSet(self.stable_template))
 
     def _getMessage(self, potmsgset, template):
         """Get TranslationMessage for given POTMsgSet in given template."""
@@ -532,6 +545,59 @@ class TestPOTMsgSetMergingAndTranslations(TestCaseWithFactory,
         # Having these suggestions does not mean that there are current
         # translations.
         self.assertEqual(self._getTranslations(), (None, None))
+
+
+class TestTranslationMessageNonMerging(TestCaseWithFactory,
+                                       TranslatedProductMixin):
+    """Test TranslationMessages that don't share."""
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        self.layer.switchDbUser('postgres')
+        TestCaseWithFactory.setUp(self, user='mark@hbd.com')
+        TranslatedProductMixin.setUp(self)
+
+    def test_MessagesAreNotSharedAcrossPOTMsgSets(self):
+        # Merging TranslationMessages does not merge messages that
+        # belong to different POTMsgSets, no matter how similar they may
+        # be.
+        self._makeTranslationMessages('x', 'x')
+
+        merge_translationmessages(self.templates)
+
+        trunk_message, stable_message = self._getMessages()
+        self.assertNotEqual(trunk_message, stable_message)
+
+        # Each message may of course still become shared within the
+        # context of its respective POTMsgSet.
+        self.assertEqual(trunk_message.potemplate, None)
+        self.assertEqual(stable_message.potemplate, None)
+
+
+class TestTranslationMessageMerging(TestCaseWithFactory,
+                                    TranslatedProductMixin):
+    """Test merging of TranslationMessages."""
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        self.layer.switchDbUser('postgres')
+        TestCaseWithFactory.setUp(self, user='mark@hbd.com')
+        TranslatedProductMixin.setUp(self)
+        merge_potmsgsets(self.templates)
+
+    def test_sharingIdenticalMessages(self):
+        # Identical translation messages are merged into one.
+        self._makeTranslationMessages('x', 'x')
+
+        trunk_message, stable_message = self._getMessages()
+        self.assertNotEqual(trunk_message, stable_message)
+        self.assertNotEqual(trunk_message.potemplate, None)
+
+        merge_translationmessages(self.templates)
+
+        trunk_message, stable_message = self._getMessages()
+        self.assertEqual(trunk_message, stable_message)
+        self.assertEqual(trunk_message.potemplate, None)
 
 
 def test_suite():
