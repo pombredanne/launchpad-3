@@ -5,6 +5,7 @@ __all__ = [
     'find_potemplate_equivalence_classes_for',
     'MessageSharingMerge',
     'merge_potmsgsets',
+    'merge_translationmessages',
     'template_precedence',
     ]
 
@@ -181,7 +182,7 @@ def merge_translationmessages(potemplates):
         order_check.check(template)
         for potmsgset in template.getPOTMsgSets(False):
             for message in potmsgset.getAllTranslationMessages():
-                removeSecurityProxy(message).converge()
+                removeSecurityProxy(message).shareIfPossible()
 
 
 def get_equivalence_class(template):

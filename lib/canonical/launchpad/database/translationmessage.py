@@ -391,8 +391,8 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
 
         return TranslationMessage.selectOne(' AND '.join(clauses))
 
-    def converge(self):
-        """Make this message shared.
+    def shareIfPossible(self):
+        """Make this message shared, if possible.
 
         If there is already a similar message that is shared, this
         message's information is merged into that of the existing one,
@@ -439,7 +439,8 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
                 self.destroySelf()
         else:
             # This is a suggestion duplicating an existing shared
-            # message.
+            # message.  This should not occur after migration, since
+            # suggestions will always be shared.
             self.destroySelf()
 
 
