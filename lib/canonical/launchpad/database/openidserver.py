@@ -37,7 +37,7 @@ from canonical.launchpad.interfaces.openidserver import (
     ILaunchpadOpenIDStoreFactory, IOpenIDAuthorization,
     IOpenIDAuthorizationSet, IOpenIDPersistentIdentity, IOpenIDRPConfig,
     IOpenIDRPConfigSet, IOpenIDRPSummary, IOpenIDRPSummarySet)
-from canonical.launchpad.interfaces.person import PersonCreationRationale
+from lp.registry.interfaces.person import PersonCreationRationale
 from canonical.launchpad.webapp.interfaces import (
     AUTH_STORE, IStoreSelector, MASTER_FLAVOR)
 from canonical.launchpad.webapp.url import urlparse
@@ -130,6 +130,7 @@ class OpenIDRPConfig(SQLBase):
         default=PersonCreationRationale.OWNER_CREATED_UNKNOWN_TRUSTROOT)
     can_query_any_team = BoolCol(
         dbName='can_query_any_team', notNull=True, default=False)
+    auto_authorize = BoolCol()
 
     def allowed_sreg(self):
         value = self._allowed_sreg
@@ -161,7 +162,7 @@ class OpenIDRPConfigSet:
             allowed_sreg=None,
             creation_rationale=
                 PersonCreationRationale.OWNER_CREATED_UNKNOWN_TRUSTROOT,
-            can_query_any_team=False):
+            can_query_any_team=False, auto_authorize=False):
         """See `IOpenIDRPConfigSet`"""
         if allowed_sreg:
             allowed_sreg = ','.join(sorted(allowed_sreg))
@@ -172,7 +173,8 @@ class OpenIDRPConfigSet:
             trust_root=trust_root, displayname=displayname,
             description=description, logo=logo,
             _allowed_sreg=allowed_sreg, creation_rationale=creation_rationale,
-            can_query_any_team=can_query_any_team)
+            can_query_any_team=can_query_any_team,
+            auto_authorize=auto_authorize)
 
     def get(self, id):
         """See `IOpenIDRPConfigSet`"""
@@ -201,6 +203,8 @@ class LaunchpadOpenIDStore(PostgreSQLStore):
     """The standard OpenID Library PostgreSQL store with overrides to
     ensure it plays nicely with Zope3 and Launchpad.
 
+    This class is used by the SSO Server (OpenID Provider)
+
     It is registered as a factory to provide a way for instances to be
     created from browser code without warnings, as getUtility is not
     suitable as this class is not thread safe.
@@ -209,7 +213,7 @@ class LaunchpadOpenIDStore(PostgreSQLStore):
 
     exceptions = psycopg2
     settings_table = None
-    associations_table = 'OpenIDAssociations'
+    associations_table = 'OpenIDAssociation'
     nonces_table = 'OpenIDNonce'
 
     def __init__(self):
@@ -223,12 +227,11 @@ class LaunchpadOpenIDStore(PostgreSQLStore):
         No transactional semantics in Launchpad because Z3 is already
         fully transactional so there is no need to reinvent the wheel.
         """
-        self.cur = IMasterStore(
-            OpenIDAuthorization)._connection._raw_connection.cursor()
+        store = getUtility(IStoreSelector).get(AUTH_STORE, MASTER_FLAVOR)
+        self.cur = store._connection._raw_connection.cursor()
         try:
             return func(*args, **kwargs)
         finally:
-            self.cur.close()
             self.cur = None
 
     def createTables(self):

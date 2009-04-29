@@ -36,7 +36,7 @@ from canonical.launchpad.interfaces import (
     IBugWatchSet, ILaunchpadCelebrities, NoBugTrackerFound,
     NotFoundError, UnrecognizedBugTrackerURL)
 from canonical.launchpad.validators.email import valid_email
-from canonical.launchpad.validators.person import validate_public_person
+from lp.registry.interfaces.person import validate_public_person
 from canonical.launchpad.webapp import urlappend, urlsplit
 
 BUG_TRACKER_URL_FORMATS = {
@@ -327,9 +327,8 @@ class BugWatchSet(BugSetBase):
             if bug.getBugWatch(bugtracker, remotebug) is None:
                 # This bug doesn't have such a bug watch, let's create
                 # one.
-                bugwatch = BugWatch(
-                    bugtracker=bugtracker, bug=bug, remotebug=remotebug,
-                    owner=owner)
+                bugwatch = bug.addWatch(
+                    bugtracker=bugtracker, remotebug=remotebug, owner=owner)
                 newwatches.append(bugwatch)
 
         return newwatches

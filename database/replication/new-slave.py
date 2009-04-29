@@ -125,6 +125,15 @@ def main():
     target_con.commit()
     del target_con
 
+    # Get a list of existing set ids.
+    source_connection.rollback()
+    master_node = replication.helpers.get_master_node(source_connection)
+    cur = source_connection.cursor()
+    cur.execute(
+        "SELECT set_id FROM _sl.sl_set WHERE set_origin=%d"
+        % master_node.node_id)
+    set_ids = [set_id for set_id, in cur.fetchall()]
+
     # Generate and run a slonik(1) script to initialize the new node
     # and subscribe it to our replication sets.
     comment = 'New node created %s' % time.ctime()
@@ -158,17 +167,21 @@ def main():
         wait for event (
             origin = ALL, confirmed = ALL,
             wait on = @master_node, timeout = 0);
+        """)
 
-        echo 'Subscribing new node to main replication set.';
+    for set_id in set_ids:
+
+        script += dedent("""\
+        echo 'Subscribing new node to set %d.';
         subscribe set (
-            id=@lpmain_set, provider=@master_node, receiver=@new_node);
+            id=%d, provider=@master_node, receiver=@new_node, forward=yes);
 
         echo 'Waiting for sync... this might take a while...';
         sync (id = @master_node);
         wait for event (
             origin = ALL, confirmed = ALL,
             wait on = @master_node, timeout = 0);
-        """)
+        """ % (set_id, set_id))
 
     replication.helpers.execute_slonik(script)
 

@@ -72,11 +72,12 @@ import cgi
 from operator import attrgetter
 
 from sqlobject import AND, CONTAINSSTRING, OR, SQLObjectNotFound
-from storm.expr import LeftJoin, SQL, And, Or, Not
+from storm.expr import Alias, And, Join, LeftJoin, Lower, Not, Or, SQL
 from zope.component import getUtility
 from zope.interface import implements
 from zope.schema.interfaces import IVocabulary, IVocabularyTokenized
 from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
+from zope.security.interfaces import Unauthorized
 from zope.security.proxy import isinstance as zisinstance
 from zope.security.proxy import removeSecurityProxy
 
@@ -85,39 +86,43 @@ from canonical.launchpad.database import (
     Account, Archive, Bounty, Branch, Bug, BugTracker, BugWatch, Component,
     Country, Distribution, DistroArchSeries, DistroSeries, EmailAddress,
     FeaturedProject, KarmaCategory, Language, LanguagePack, MailingList,
-    Milestone, Person, PillarName, POTemplate, Processor, ProcessorFamily,
+    Milestone, POTemplate, Person, PillarName, Processor, ProcessorFamily,
     Product, ProductRelease, ProductSeries, Project, SourcePackageRelease,
-    Specification, Sprint, TranslationGroup, TranslationMessage)
+    Specification, Sprint, TeamParticipation, TranslationGroup,
+    TranslationMessage)
+from canonical.launchpad.components.decoratedresultset import (
+    DecoratedResultSet)
+from canonical.launchpad.database.stormsugar import StartsWith
 from canonical.database.sqlbase import SQLBase, quote_like, quote, sqlvalues
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces import IStore
 from canonical.launchpad.interfaces.archive import ArchivePurpose
-from canonical.launchpad.interfaces.branch import IBranch
-from canonical.launchpad.interfaces.branchcollection import IAllBranches
+from lp.code.interfaces.branch import IBranch
+from lp.code.interfaces.branchcollection import IAllBranches
 from canonical.launchpad.interfaces.bugtask import (
     IBugTask, IDistroBugTask, IDistroSeriesBugTask, IProductSeriesBugTask,
     IUpstreamBugTask)
 from canonical.launchpad.interfaces.bugtracker import BugTrackerType
-from canonical.launchpad.interfaces.distribution import IDistribution
-from canonical.launchpad.interfaces.distributionsourcepackage import (
+from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage)
-from canonical.launchpad.interfaces.distroseries import (
+from lp.registry.interfaces.distroseries import (
     DistroSeriesStatus, IDistroSeries)
 from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
 from canonical.launchpad.interfaces.language import ILanguage
 from canonical.launchpad.interfaces.languagepack import LanguagePackType
-from canonical.launchpad.interfaces.mailinglist import (
+from lp.registry.interfaces.mailinglist import (
     IMailingListSet, MailingListStatus)
-from canonical.launchpad.interfaces.milestone import (
+from lp.registry.interfaces.milestone import (
     IMilestoneSet, IProjectMilestone)
-from canonical.launchpad.interfaces.person import (
+from lp.registry.interfaces.person import (
     IPerson, IPersonSet, ITeam, PersonVisibility)
-from canonical.launchpad.interfaces.pillar import IPillarName
-from canonical.launchpad.interfaces.product import (
+from lp.registry.interfaces.pillar import IPillarName
+from lp.registry.interfaces.product import (
     IProduct, IProductSet, License)
-from canonical.launchpad.interfaces.productseries import IProductSeries
-from canonical.launchpad.interfaces.project import IProject
-from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
+from lp.registry.interfaces.productseries import IProductSeries
+from lp.registry.interfaces.project import IProject
+from lp.registry.interfaces.sourcepackage import ISourcePackage
 from canonical.launchpad.interfaces.specification import (
     ISpecification, SpecificationFilter)
 from canonical.launchpad.interfaces.account import AccountStatus
@@ -138,7 +143,10 @@ class BasePersonVocabulary:
 
     def toTerm(self, obj):
         """Return the term for this object."""
-        return SimpleTerm(obj, obj.name, obj.browsername)
+        try:
+            return SimpleTerm(obj, obj.name, obj.displayname)
+        except Unauthorized:
+            return None
 
     def getTermByToken(self, token):
         """Return the term for the given token.
@@ -149,7 +157,7 @@ class BasePersonVocabulary:
         if "@" in token:
             # This looks like an email token, so let's do an object
             # lookup based on that.
-            # We retrieve the email address via the main store, so 
+            # We retrieve the email address via the main store, so
             # we can easily traverse to email.person to retrieve the
             # result from the main Store as expected by our call sites.
             email = IStore(Person).find(
@@ -164,7 +172,10 @@ class BasePersonVocabulary:
             person = getUtility(IPersonSet).getByName(token)
             if person is None:
                 raise LookupError(token)
-            return self.toTerm(person)
+            term = self.toTerm(person)
+            if term is None:
+                raise LookupError(token)
+            return term
 
 
 class ComponentVocabulary(SQLObjectVocabularyBase):
@@ -611,11 +622,12 @@ class PersonAccountToMergeVocabulary(
 
 class ValidPersonOrTeamVocabulary(
         BasePersonVocabulary, SQLObjectVocabularyBase):
-    """The set of valid, public Persons/Teams in Launchpad.
+    """The set of valid, viewable Persons/Teams in Launchpad.
 
-    A Person is considered valid if he has a preferred email address,
-    and Person.merged is None. Teams have no restrictions
-    at all, which means that all teams are considered valid.
+    A Person is considered valid if she has a preferred email address, and
+    Person.merged is None. Teams have no restrictions at all, which means that
+    all teams the user has the permission to view are considered valid.  A
+    user can view private teams in which she is a member and any public team.
 
     This vocabulary is registered as ValidPersonOrTeam, ValidAssignee,
     ValidMaintainer and ValidOwner, because they have exactly the same
@@ -627,7 +639,7 @@ class ValidPersonOrTeamVocabulary(
 
     # This is what subclasses must change if they want any extra filtering of
     # results.
-    extra_clause = ""
+    extra_clause = True
 
     # Subclasses should override this property to allow null searches to
     # return all results.  If false, an empty result set is returned.
@@ -639,84 +651,152 @@ class ValidPersonOrTeamVocabulary(
     def __contains__(self, obj):
         return obj in self._doSearch()
 
+    @cachedproperty
+    def store(self):
+        return getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+
+    @property
+    def _private_team_query(self):
+        """Return query for all private teams the logged in user belongs to."""
+        logged_in_user = getUtility(ILaunchBag).user
+        if logged_in_user is not None:
+            private_query = AND(
+                TeamParticipation.person == logged_in_user.id,
+                Not(Person.teamowner == None),
+                Person.visibility == PersonVisibility.PRIVATE
+                )
+        else:
+            private_query = False
+        return private_query
+
     def _doSearch(self, text=""):
         """Return the people/teams whose fti or email address match :text:"""
+
+        logged_in_user = getUtility(ILaunchBag).user
 
         # Short circuit if there is no search text - all valid people and
         # teams have been requested.
         if not text:
-            query = """
-                Person.id = %s.id
-                AND Person.visibility = %s
-                """ % (self.cache_table_name,
-                       quote(PersonVisibility.PUBLIC))
-            if self.extra_clause:
-                query += " AND %s" % self.extra_clause
-            return Person.select(
-                query, clauseTables=[self.cache_table_name])
-
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-
-        tables = [
-            Person,
-            LeftJoin(EmailAddress, EmailAddress.person == Person.id),
-            LeftJoin(Account, EmailAddress.account == Account.id),
-            ]
-
-        # Note we use lower() instead of the non-standard ILIKE because
-        # ILIKE doesn't seem to hit the indexes.
-        inner_select = SQL("""
-            SELECT Person.id
-            FROM Person
-            WHERE Person.fti @@ ftq(%s)
-            UNION ALL
-            SELECT Person.id
-            FROM Person, IrcId
-            WHERE IrcId.person = Person.id
-                AND lower(IrcId.nickname) = %s
-            UNION ALL
-            SELECT Person.id
-            FROM Person, EmailAddress
-            WHERE EmailAddress.person = Person.id
-                AND lower(email) LIKE %s || '%%%%'
-                AND EmailAddress.status IN %s
-            """ % (
-                quote(text), quote(text), quote_like(text),
-                sqlvalues(
-                    EmailAddressStatus.VALIDATED,
-                    EmailAddressStatus.PREFERRED)))
-
-        if self.extra_clause:
-            extra_clause = SQL(self.extra_clause)
-        else:
-            extra_clause = True
-        result = store.using(*tables).find(
-            Person,
-            And(
-                Person.id.is_in(inner_select),
-                Person.visibility == PersonVisibility.PUBLIC,
-                Person.merged == None,
-                Or(
-                    # A valid person-or-team is either a team...
-                    Not(Person.teamowner == None), # 'Not' due to Bug 244768
-
-                    # or has an active account and a working email address.
-                    And(
-                        Account.status == AccountStatus.ACTIVE,
-                        EmailAddress.status.is_in((
-                            EmailAddressStatus.VALIDATED,
-                            EmailAddressStatus.PREFERRED
-                            ))
-                        )
-                    ),
-                extra_clause
+            tables = [
+                Person,
+                Join(self.cache_table_name,
+                     SQL("%s.id = Person.id" % self.cache_table_name)),
+                Join(TeamParticipation,
+                     TeamParticipation.teamID == Person.id),
+                ]
+            result = self.store.using(*tables).find(
+                Person,
+                And(
+                    Or(Person.visibility == PersonVisibility.PUBLIC,
+                       self._private_team_query,
+                       ),
+                    self.extra_clause
+                    )
                 )
-            )
+        else:
+            # Do a full search based on the text given.
+
+            # The queries are broken up into several steps for efficiency.
+            # The public person and team searches do not need to join with the
+            # TeamParticipation table, which is very expensive.  The search
+            # for private teams does need that table but the number of private
+            # teams is very small so the cost is not great.
+            valid_email_statuses = (
+                EmailAddressStatus.VALIDATED,
+                EmailAddressStatus.PREFERRED,
+                )
+
+            # First search for public persons and teams that match the text.
+            public_tables = [
+                Person,
+                LeftJoin(EmailAddress, EmailAddress.person == Person.id),
+                LeftJoin(Account, EmailAddress.account == Account.id),
+                ]
+
+            # Create an inner query that will match public persons and teams
+            # that have the search text in the fti, at the start of the email
+            # address, or as their full IRC nickname.
+
+            # Note we use lower() instead of the non-standard ILIKE because
+            # ILIKE doesn't hit the indexes.
+            public_inner_textual_select = SQL("""
+                SELECT Person.id
+                FROM Person
+                WHERE Person.fti @@ ftq(%s)
+                UNION ALL
+                SELECT Person.id
+                FROM Person, IrcId
+                WHERE IrcId.person = Person.id
+                    AND lower(IrcId.nickname) = %s
+                UNION ALL
+                SELECT Person.id
+                FROM Person, EmailAddress
+                WHERE EmailAddress.person = Person.id
+                    AND lower(email) LIKE %s || '%%%%'
+                """ % (
+                    quote(text), quote(text), quote_like(text)))
+
+            public_result = self.store.using(*public_tables).find(
+                Person,
+                And(
+                    Person.id.is_in(public_inner_textual_select),
+                    Person.visibility == PersonVisibility.PUBLIC,
+                    Person.merged == None,
+                    Or(# A valid person-or-team is either a team...
+                       # Note: 'Not' due to Bug 244768.
+                       Not(Person.teamowner == None),
+
+                       # Or a person who has an active account and a working
+                       # email address.
+                       And(Account.status == AccountStatus.ACTIVE,
+                           EmailAddress.status.is_in(valid_email_statuses))
+                       ),
+                    self.extra_clause
+                    )
+                )
+            # The public query doesn't need to be ordered as it will be done
+            # at the end.
+            public_result.order_by()
+
+            # Next search for the private teams.
+            private_tables = [
+                Person,
+                Join(TeamParticipation,
+                     TeamParticipation.teamID == Person.id),
+                ]
+            # Searching for private teams that match can be easier since we
+            # are only interested in teams.  Teams can have email addresses
+            # but we're electing to ignore them here.
+            private_inner_select = SQL("""
+                SELECT Person.id
+                FROM Person
+                WHERE Person.fti @@ ftq(%s)
+                """ % quote(text))
+            private_result = self.store.using(*private_tables).find(
+                Person,
+                And(
+                    Person.id.is_in(private_inner_select),
+                    self._private_team_query,
+                    )
+                )
+
+            # The private query doesn't need to be ordered as it will be done
+            # at the end.
+            private_result.order_by()
+
+            combined_result = public_result.union(private_result)
+            combined_result.order_by()
+            # XXX: BradCrittenden 2009-04-26 bug=217644: The use of Alias and
+            # is a work-around for .count() not working with the 'distinct'
+            # option.
+            subselect = Alias(combined_result._get_select(), 'Person')
+            result = self.store.using(subselect).find(Person)
         result.config(distinct=True)
-        # XXX: salgado, 2008-07-23: Sorting by Person.sortingColumns would
-        # make this run a lot faster, but I couldn't find how to do that
-        # because this query uses distinct=True.
-        return result.order_by(Person.displayname, Person.name)
+        result.order_by(Person.displayname, Person.name)
+        # XXX: BradCrittenden 2009-04-24 bug=217644: Wrap the results to
+        # ensure the .count() method works until the Storm bug is fixed and
+        # integrated.
+        return DecoratedResultSet(result)
 
     def search(self, text):
         """Return people/teams whose fti or email address match :text:."""
@@ -728,6 +808,11 @@ class ValidPersonOrTeamVocabulary(
 
         text = text.lower()
         return self._doSearch(text=text)
+
+    def searchForTerms(self, query=None):
+        """See `IHugeVocabulary`."""
+        results = self.search(query)
+        return CountableIterator(results.count(), results, self.toTerm)
 
 class ValidTeamVocabulary(ValidPersonOrTeamVocabulary):
     """The set of all valid, public teams in Launchpad."""
@@ -741,53 +826,55 @@ class ValidTeamVocabulary(ValidPersonOrTeamVocabulary):
     # Because the base class does almost everything we need, we just need to
     # restrict the search results to those Persons who have a non-NULL
     # teamowner, i.e. a valid team.
-    extra_clause = 'Person.teamowner IS NOT NULL'
+    extra_clause = Not(Person.teamowner == None)
     # Search with empty string returns all teams.
     allow_null_search = True
 
     def _doSearch(self, text=""):
-        """Return the teams whose fti or email address match :text:"""
-        base_query = """
-                Person.visibility = %s
-                """ % quote(PersonVisibility.PUBLIC)
+        """Return the teams whose fti, IRC, or email address match :text:"""
 
-        if self.extra_clause:
-            extra_clause = " AND %s" % self.extra_clause
-        else:
-            extra_clause = ""
+        base_query = Or(
+            Person.visibility == PersonVisibility.PUBLIC,
+            self._private_team_query,
+            )
+
+        tables = [
+            Person,
+            LeftJoin(TeamParticipation,
+                     TeamParticipation.teamID == Person.id),
+            ]
 
         if not text:
-            query = base_query + extra_clause
-            return Person.select(query)
+            query = And(base_query,
+                        self.extra_clause)
+            result = self.store.using(*tables).find(Person, query)
+        else:
+            name_match_query = SQL("Person.fti @@ ftq(%s)" % quote(text))
 
-        name_match_query = """
-            Person.fti @@ ftq(%s)
-            AND %s
-            """ % (quote(text), base_query)
-        name_match_query += extra_clause
-        name_matches = Person.select(name_match_query)
+            email_match_query = And(
+                EmailAddress.person == Person.id,
+                StartsWith(Lower(EmailAddress.email), text),
+                )
 
-        # Note that we must use lower(email) LIKE rather than ILIKE
-        # as ILIKE no longer appears to be hitting the index under PG8.0
+            tables.append(EmailAddress)
 
-        email_match_query = """
-            EmailAddress.person = Person.id
-            AND lower(email) LIKE %s || '%%'
-            AND %s
-            """ % (quote_like(text), base_query)
+            query = And(base_query,
+                        self.extra_clause,
+                        Or(name_match_query, email_match_query),
+                        )
+            result = self.store.using(*tables).find(
+                Person, query)
 
-        email_match_query += extra_clause
-        email_matches = Person.select(
-            email_match_query, clauseTables=['EmailAddress'])
-
-        # XXX Guilherme Salgado 2006-01-30 bug=30053:
-        # We have to explicitly provide an orderBy here as a workaround
-        return name_matches.union(
-            email_matches, orderBy=['displayname', 'name'])
+        result.config(distinct=True)
+        result.order_by(Person.displayname, Person.name)
+        # XXX: BradCrittenden 2009-04-24 bug=217644: Wrap the results to
+        # ensure the .count() method works until the Storm bug is fixed and
+        # integrated.
+        return DecoratedResultSet(result)
 
 
 class ValidPersonVocabulary(ValidPersonOrTeamVocabulary):
-    """The set of all valid, public persons who are not teams in Launchpad."""
+    """The set of all valid persons who are not teams in Launchpad."""
     displayname = 'Select a Person'
     # The extra_clause for a valid person is that it not be a team, so
     # teamowner IS NULL.
@@ -1227,6 +1314,7 @@ class MilestoneVocabulary(SQLObjectVocabularyBase):
             target = milestone_context.target
         elif (IProject.providedBy(milestone_context) or
               IProduct.providedBy(milestone_context) or
+              IProductSeries.providedBy(milestone_context) or
               IDistribution.providedBy(milestone_context) or
               IDistroSeries.providedBy(milestone_context)):
             target = milestone_context
@@ -1253,50 +1341,66 @@ class MilestoneVocabulary(SQLObjectVocabularyBase):
             if IProject.providedBy(target):
                 milestones = shortlist(
                     (milestone for product in target.products
-                     for milestone in product.all_milestones),
+                     for milestone in product.milestones),
                     longest_expected=40)
             elif IProductSeries.providedBy(target):
-                series_milestones = shortlist(target.all_milestones,
-                                              longest_expected=40)
-                product_milestones = shortlist(target.product.all_milestones,
-                                               longest_expected=40)
-                # Some milestones are associtaed with a product
-                # and a product series; these should appear only
-                # once.
-                milestones = set(series_milestones + product_milestones)
+                # While some milestones may be associated with a
+                # productseries, we want to show all milestones for
+                # the product. Since the database constraint
+                # "valid_target" ensures that a milestone associated
+                # with a series is also associated with the product
+                # itself, we don't need to look up series-related
+                # milestones.
+                milestones = shortlist(target.product.milestones,
+                                       longest_expected=40)
             else:
                 milestones = shortlist(
-                    target.all_milestones, longest_expected=40)
+                    target.milestones, longest_expected=40)
         else:
             # We can't use context to reasonably filter the
-            # milestones, so let's just grab all of them.
-            milestones = shortlist(
-                getUtility(IMilestoneSet), longest_expected=40)
+            # milestones, so let's either just grab all of them,
+            # or let's return an empty vocabulary.
+            # Generally, returning all milestones is a bad idea: We
+            # have at present (2009-04-08) nearly 2000 active milestones,
+            # and nobody really wants to search through such a huge list
+            # on a web page. This problem is fixed for an IPerson
+            # context by browser.person.RelevantMilestonesMixin.
+            # getMilestoneWidgetValues() which creates a "sane" milestone
+            # set. We need to create the big vocabulary of all visible
+            # milestones nevertheless, in order to allow the validation
+            # of submitted milestone values.
+            #
+            # For other targets, like MaloneApplication, we return an empty
+            # vocabulary.
+            if IPerson.providedBy(self.context):
+                milestones = shortlist(
+                    getUtility(IMilestoneSet).getVisibleMilestones(),
+                    longest_expected=40)
+            else:
+                milestones = []
 
-        visible_milestones = [
-            milestone for milestone in milestones if milestone.active]
         if (IBugTask.providedBy(milestone_context) and
             milestone_context.milestone is not None and
-            milestone_context.milestone not in visible_milestones):
+            milestone_context.milestone not in milestones):
             # Even if we inactivate a milestone, a bugtask might still be
             # linked to it. Include such milestones in the vocabulary to
             # ensure that the +editstatus page doesn't break.
-            visible_milestones.append(milestone_context.milestone)
+            milestones.append(milestone_context.milestone)
 
         # Prefetch products and distributions for rendering
         # milestones: optimization to reduce the number of queries.
         product_ids = set(
             removeSecurityProxy(milestone).productID
-            for milestone in visible_milestones)
+            for milestone in milestones)
         distro_ids = set(
             removeSecurityProxy(milestone).distributionID
-            for milestone in visible_milestones)
+            for milestone in milestones)
         if len(product_ids) > 0:
             list(Product.select("id IN %s" % sqlvalues(product_ids)))
         if len(distro_ids) > 0:
             list(Distribution.select("id IN %s" % sqlvalues(distro_ids)))
 
-        return sorted(visible_milestones, key=attrgetter('displayname'))
+        return sorted(milestones, key=attrgetter('displayname'))
 
     def __iter__(self):
         for milestone in self.visible_milestones:
@@ -1423,7 +1527,7 @@ class CommercialProjectsVocabulary(NamedSQLObjectVocabulary):
         return CountableIterator(num, results, self.toTerm)
 
     def _commercial_projects(self):
-        """Return the list of commercial project owned by this user."""
+        """Return the list of commercial projects owned by this user."""
         return self._filter_projs(self._doSearch())
 
     def __iter__(self):
@@ -1588,7 +1692,7 @@ class PPAVocabulary(SQLObjectVocabularyBase):
     implements(IHugeVocabulary)
 
     _table = Archive
-    _orderBy = ['Person.name']
+    _orderBy = ['Person.name, Archive.name']
     _clauseTables = ['Person']
     _filter = AND(
         Person.q.id == Archive.q.ownerID,
@@ -1602,11 +1706,22 @@ class PPAVocabulary(SQLObjectVocabularyBase):
             summary = description.splitlines()[0]
         else:
             summary = "No description available"
-        return SimpleTerm(archive, archive.owner.name, summary)
+
+        token = '%s/%s' % (archive.owner.name, archive.name)
+
+        return SimpleTerm(archive, token, summary)
 
     def getTermByToken(self, token):
         """See `IVocabularyTokenized`."""
-        clause = AND(self._filter, Person.name == token)
+        try:
+            owner_name, archive_name = token.split('/')
+        except ValueError:
+            raise LookupError(token)
+
+        clause = AND(
+            self._filter,
+            Person.name == owner_name,
+            Archive.name == archive_name)
 
         obj = self._table.selectOne(
             clause, clauseTables=self._clauseTables)
@@ -1625,9 +1740,19 @@ class PPAVocabulary(SQLObjectVocabularyBase):
             return self.emptySelectResults()
 
         query = query.lower()
-        clause = AND(self._filter,
-                     SQL("(Archive.fti @@ ftq(%s) OR Person.fti @@ ftq(%s))"
-                         % (quote(query), quote(query))))
+
+        try:
+            owner_name, archive_name = query.split('/')
+        except ValueError:
+            clause = AND(
+                self._filter,
+                SQL("(Archive.fti @@ ftq(%s) OR Person.fti @@ ftq(%s))"
+                    % (quote(query), quote(query))))
+        else:
+            clause = AND(
+                self._filter,
+                Person.name == owner_name,
+                Archive.name == archive_name)
 
         return self._table.select(
             clause, orderBy=self._orderBy, clauseTables=self._clauseTables)
@@ -1877,7 +2002,7 @@ class DistributionOrProductVocabulary(PillarVocabularyBase):
     displayname = 'Select a project'
     _filter = """
         -- An active product/distro.
-        (active IS TRUE
+        ((active IS TRUE
          AND (product IS NOT NULL OR distribution IS NOT NULL)
         )
         OR
@@ -1886,7 +2011,7 @@ class DistributionOrProductVocabulary(PillarVocabularyBase):
             SELECT id FROM PillarName
             WHERE active IS TRUE AND
                 (product IS NOT NULL OR distribution IS NOT NULL))
-        )
+        ))
         """
 
     def __contains__(self, obj):

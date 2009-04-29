@@ -16,6 +16,7 @@ __all__ = [
 
 from zope.component import getUtility
 
+from canonical.launchpad.browser.librarian import ProxiedLibraryFileAlias
 from canonical.launchpad.interfaces.publishing import (
     IPublishingSet, ISourcePackagePublishingHistory)
 from canonical.launchpad.interfaces.sourcepackagerelease import (
@@ -57,8 +58,13 @@ class ArchiveSourcePublication:
 
     @property
     def sourcepackagerelease(self):
+        if self._changesfile is not None:
+            changesfile = ProxiedLibraryFileAlias(
+                self._changesfile, self.context.archive)
+        else:
+            changesfile = None
         return ArchiveSourcePackageRelease(
-            self.context.sourcepackagerelease, self._changesfile)
+            self.context.sourcepackagerelease, changesfile)
 
     def getPublishedBinaries(self):
         """See `ISourcePackagePublishingHistory`."""

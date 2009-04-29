@@ -6,24 +6,26 @@ __metaclass__ = type
 __all__ = [
     'LaunchpadDatabasePolicy',
     'SlaveDatabasePolicy',
+    'SSODatabasePolicy',
     'MasterDatabasePolicy',
     ]
 
 from datetime import datetime, timedelta
 from textwrap import dedent
 
+from storm.zope.interfaces import IZStorm
 from zope.session.interfaces import ISession, IClientIdManager
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implements, alsoProvides
 from zope.app.security.interfaces import IUnauthenticatedPrincipal
 
-from canonical.config import config
+from canonical.config import config, dbconfig
+from canonical.launchpad.interfaces import IMasterStore, ISlaveStore
 from canonical.launchpad.webapp import LaunchpadView
-import canonical.launchpad.webapp.adapter as da
 from canonical.launchpad.webapp.interfaces import (
-    ALL_STORES, AUTH_STORE, DEFAULT_FLAVOR,
+    AUTH_STORE, DEFAULT_FLAVOR, DisallowedStore,
     IDatabasePolicy, IStoreSelector,
-    MAIN_STORE, MASTER_FLAVOR, SLAVE_FLAVOR)
+    MAIN_STORE, MASTER_FLAVOR, ReadOnlyModeDisallowedStore, SLAVE_FLAVOR)
 
 
 def _now():
@@ -42,61 +44,105 @@ class BaseDatabasePolicy:
     """Base class for database policies."""
     implements(IDatabasePolicy)
 
-    def __init__(self, request):
-        self.request = request
+    # The section name to retrieve database connection details from.
+    # None means the default.
+    config_section = None
 
-    def afterCall(self):
-        """See `IDatabasePolicy`.
+    # The default flavor to use.
+    default_flavor = MASTER_FLAVOR
 
-        Resets the default flavor and config section. In the app server,
-        it isn't necessary to reset the default store as it will just be
-        selected the next request. However, changing the default store in
-        the middle of a pagetest can break things.
-        """
-        da.StoreSelector.setGlobalDefaultFlavor(DEFAULT_FLAVOR)
-        da.StoreSelector.setConfigSectionName(None)
-        da.StoreSelector.setAllowedStores(None)
+    def __init__(self, request=None):
+        pass
+
+    def getStore(self, name, flavor):
+        """See `IDatabasePolicy`."""
+        if flavor == DEFAULT_FLAVOR:
+            flavor = self.default_flavor
+
+        config_section = self.config_section or dbconfig.getSectionName()
+
+        store = getUtility(IZStorm).get(
+            '%s-%s-%s' % (config_section, name, flavor),
+            'launchpad:%s-%s-%s' % (config_section, name, flavor))
+
+        # Attach our marker interfaces so our adapters don't lie.
+        if flavor == MASTER_FLAVOR:
+            alsoProvides(store, IMasterStore)
+        else:
+            alsoProvides(store, ISlaveStore)
+
+        return store
+
+    def install(self, request=None):
+        """See `IDatabasePolicy`."""
+        pass
+
+    def uninstall(self):
+        """See `IDatabasePolicy`."""
+        pass
 
 
 class MasterDatabasePolicy(BaseDatabasePolicy):
-    """`IDatabasePolicy` that always select the MASTER_FLAVOR.
+    """`IDatabasePolicy` that selects the MASTER_FLAVOR by default.
+
+    Slave databases can still be accessed if requested explicitly.
 
     This policy is used for XMLRPC and WebService requests which don't
-    support session cookies.
+    support session cookies. It is also used when no policy has been
+    installed.
     """
-    def beforeTraversal(self):
-        """See `IDatabasePolicy`."""
-        da.StoreSelector.setGlobalDefaultFlavor(MASTER_FLAVOR)
+    default_flavor = MASTER_FLAVOR
 
 
 class SlaveDatabasePolicy(BaseDatabasePolicy):
-    """`IDatabasePolicy` that always selects the SLAVE_FLAVOR.
+    """`IDatabasePolicy` that selects the SLAVE_FLAVOR by default.
+
+    Access to a master can still be made if requested explicitly.
+    """
+    default_flavor = SLAVE_FLAVOR
+
+
+class SlaveOnlyDatabasePolicy(BaseDatabasePolicy):
+    """`IDatabasePolicy` that only allows access to SLAVE_FLAVOR stores.
 
     This policy is used for Feeds requests and other always-read only request.
     """
-    def beforeTraversal(self):
+    default_flavor = SLAVE_FLAVOR
+    def getStore(self, name, flavor):
         """See `IDatabasePolicy`."""
-        da.StoreSelector.setGlobalDefaultFlavor(SLAVE_FLAVOR)
+        if flavor == MASTER_FLAVOR:
+            raise DisallowedStore(flavor)
+        return super(SlaveOnlyDatabasePolicy, self).getStore(
+            name, SLAVE_FLAVOR)
+
+
+def LaunchpadDatabasePolicyFactory(request):
+    """Return the Launchpad IDatabasePolicy for the current appserver state.
+    """
+    if config.launchpad.read_only:
+        return ReadOnlyLaunchpadDatabasePolicy(request)
+    else:
+        return LaunchpadDatabasePolicy(request)
 
 
 class LaunchpadDatabasePolicy(BaseDatabasePolicy):
-    """Default database policy for web requests."""
+    """Default database policy for web requests.
 
-    def beforeTraversal(self):
-        """Install the database policy.
+    Selects the DEFAULT_FLAVOR based on the request.
+    """
+    def __init__(self, request):
+        self.request = request
 
-        This method is invoked by
-        LaunchpadBrowserPublication.beforeTraversal()
-
-        The policy connects our Storm stores to either master or
-        replica databases.
-        """
+    def install(self):
+        """See `IDatabasePolicy`."""
         # Detect if this is a read only request or not.
         self.read_only = self.request.method in ['GET', 'HEAD']
 
+        default_flavor = None
+
         # If this is a Retry attempt, force use of the master database.
         if getattr(self.request, '_retry_count', 0) > 0:
-            da.StoreSelector.setGlobalDefaultFlavor(MASTER_FLAVOR)
+            default_flavor = MASTER_FLAVOR
 
         # Select if the DEFAULT_FLAVOR Store will be the master or a
         # slave. We select slave if this is a readonly request, and
@@ -105,14 +151,14 @@ class LaunchpadDatabasePolicy(BaseDatabasePolicy):
         # on the master, despite the fact it might take a while for
         # those changes to propagate to the slave databases.
         elif self.read_only:
-            lag = self.getReplicationLag(MAIN_STORE)
+            lag = self.getReplicationLag()
             if (lag is not None
                 and lag > timedelta(seconds=config.database.max_usable_lag)):
                 # Don't use the slave at all if lag is greater than the
                 # configured threshold. This reduces replication oddities
                 # noticed by users, as well as reducing load on the
                 # slave allowing it to catch up quicker.
-                da.StoreSelector.setGlobalDefaultFlavor(MASTER_FLAVOR)
+                default_flavor = MASTER_FLAVOR
             else:
                 session_data = ISession(self.request)['lp.dbpolicy']
                 last_write = session_data.get('last_write', None)
@@ -124,16 +170,23 @@ class LaunchpadDatabasePolicy(BaseDatabasePolicy):
                 else:
                     recently = timedelta(minutes=2) + lag
                 if last_write is None or last_write < now - recently:
-                    da.StoreSelector.setGlobalDefaultFlavor(SLAVE_FLAVOR)
+                    default_flavor = SLAVE_FLAVOR
                 else:
-                    da.StoreSelector.setGlobalDefaultFlavor(MASTER_FLAVOR)
+                    default_flavor = MASTER_FLAVOR
         else:
-            da.StoreSelector.setGlobalDefaultFlavor(MASTER_FLAVOR)
+            default_flavor = MASTER_FLAVOR
 
-    def afterCall(self):
-        """Cleanup.
+        assert default_flavor is not None, 'default_flavor not set!'
 
-        This method is invoked by LaunchpadBrowserPublication.endRequest.
+        self.default_flavor = default_flavor
+
+    def uninstall(self):
+        """See `IDatabasePolicy`.
+
+        If the request just handled was not read_only, we need to store
+        this fact and the timestamp in the session. Subsequent requests
+        can then keep using the master until they are sure any changes
+        made have been propagated.
         """
         if not self.read_only:
             # We need to further distinguish whether it's safe to write to
@@ -165,20 +218,18 @@ class LaunchpadDatabasePolicy(BaseDatabasePolicy):
                     last_write < now - timedelta(minutes=1)):
                     # set value
                     session_data['last_write'] = now
-        super(LaunchpadDatabasePolicy, self).afterCall()
 
-    def getReplicationLag(self, name):
-        """Return the replication delay for the named replication set.
+    def getReplicationLag(self):
+        """Return the replication lag.
 
         :returns: timedelta, or None if this isn't a replicated environment,
         """
         # Support the test suite hook.
-        global _test_lag
         if _test_lag is not None:
             return _test_lag
 
-        # sl_status only gives meaningful results on the origin node.
-        store = da.StoreSelector.get(name, MASTER_FLAVOR)
+        # sl_status gives the best results on the origin node.
+        store = self.getStore(MAIN_STORE, MASTER_FLAVOR)
         return store.execute("SELECT replication_lag()").get_one()[0]
 
 
@@ -186,15 +237,46 @@ class SSODatabasePolicy(BaseDatabasePolicy):
     """`IDatabasePolicy` for the single signon servie.
 
     Only the auth Master and the main Slave are allowed. Requests for
-    other Stores raise exceptions.
+    other Stores raise DisallowedStore exceptions.
     """
-    def beforeTraversal(self):
+    config_section = 'sso'
+
+    def getStore(self, name, flavor):
         """See `IDatabasePolicy`."""
-        da.StoreSelector.setConfigSectionName('sso')
-        da.StoreSelector.setDefaultFlavor(AUTH_STORE, MASTER_FLAVOR)
-        da.StoreSelector.setDefaultFlavor(MAIN_STORE, SLAVE_FLAVOR)
-        da.StoreSelector.setAllowedStores([
-            (AUTH_STORE, MASTER_FLAVOR), (MAIN_STORE, SLAVE_FLAVOR)])
+        if name == AUTH_STORE:
+            if flavor == SLAVE_FLAVOR:
+                raise DisallowedStore(name, flavor)
+            flavor = MASTER_FLAVOR
+        elif name == MAIN_STORE:
+            if flavor == MASTER_FLAVOR:
+                raise DisallowedStore(name, flavor)
+            flavor = SLAVE_FLAVOR
+        else:
+            raise DisallowedStore(name, flavor)
+
+        return super(SSODatabasePolicy, self).getStore(name, flavor)
+
+
+class ReadOnlyLaunchpadDatabasePolicy(BaseDatabasePolicy):
+    """Policy for Launchpad web requests when running in read-only mode.
+
+    Access to all master Stores is blocked.
+    """
+    def getStore(self, name, flavor):
+        """See `IDatabasePolicy`.
+
+        Access to all master Stores is blocked. The default Store is
+        the slave.
+
+        Note that we even have to block access to the authdb master
+        Store, as it allows access to tables replicated from the
+        lpmain replication set. These tables will be locked during
+        a lpmain replication set database upgrade.
+        """
+        if flavor == MASTER_FLAVOR:
+            raise ReadOnlyModeDisallowedStore(name, flavor)
+        return super(ReadOnlyLaunchpadDatabasePolicy, self).getStore(
+            name, SLAVE_FLAVOR)
 
 
 class WhichDbView(LaunchpadView):

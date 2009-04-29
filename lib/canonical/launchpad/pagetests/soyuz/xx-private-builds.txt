@@ -20,12 +20,11 @@ We'll make a private archive and add a new build to it to demonstrate this.
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces import (
-    ...     BuildStatus, IBuilderSet, IPersonSet)
+    ...     IBuilderSet, IPersonSet)
     >>> from canonical.launchpad.tests.test_publishing import (
     ...      SoyuzTestPublisher)
     >>> from canonical.launchpad.interfaces.publishing import (
-    ...     PackagePublishingPocket, PackagePublishingStatus)
-    >>> from canonical.launchpad.database.buildqueue import BuildQueue
+    ...     PackagePublishingStatus)
     >>> from canonical.launchpad.ftests import login, logout
     >>> from canonical.database.sqlbase import flush_database_updates
 
@@ -51,7 +50,7 @@ can use him to see builds from a buildd-admin perspective.
     >>> name12 = getUtility(IPersonSet).getByName("name12")
     >>> buildd_admins = getUtility(
     ...     IPersonSet).getByName("launchpad-buildd-admins")
-    >>> from canonical.launchpad.interfaces.person import (
+    >>> from lp.registry.interfaces.person import (
     ...     TeamMembershipStatus)
     >>> buildd_admins.addMember(
     ...     name12, reviewer=name12, status=TeamMembershipStatus.APPROVED)
@@ -352,20 +351,25 @@ users:
     ...     print "Did not get expected exception"
     Got expected exception
 
-Let's make the iceweasel package available in Warty.  First log in as
-an admin to be able to manipulate the source publishing.
+Let's make the iceweasel package available in breezy-autotest. 
+First log in as an admin to be able to manipulate the source publishing.
 
     >>> login("foo.bar@canonical.com")
-    >>> from canonical.launchpad.webapp.adapter import (
-    ...     StoreSelector, MASTER_FLAVOR)
-    >>> StoreSelector.setGlobalDefaultFlavor(MASTER_FLAVOR)
-    >>> from canonical.launchpad.interfaces.distribution import (
+    >>> from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
+    >>> from canonical.launchpad.webapp.interfaces import IStoreSelector
+    >>> getUtility(IStoreSelector).push(MasterDatabasePolicy())
+    >>> from lp.registry.interfaces.distribution import (
     ...     IDistributionSet)
-    >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
-    >>> warty = ubuntu['warty']
+    >>> ubuntutest = getUtility(IDistributionSet)['ubuntutest']
+    >>> breezy_autotest = ubuntutest['breezy-autotest']
     >>> new_pub = private_source_pub.copyTo(
-    ...     warty, private_source_pub.pocket, ubuntu.main_archive)
+    ...     breezy_autotest, private_source_pub.pocket, ubuntutest.main_archive)
+    >>> binary_pkg_release = test_publisher.uploadBinaryForBuild(
+    ...     private_build, 'privacy-test-bin')
+    >>> binary_pkg_pub_history = test_publisher.publishBinaryInArchive(
+    ...     binary_pkg_release, ubuntutest.main_archive)
     >>> flush_database_updates()
+    >>> policy = getUtility(IStoreSelector).pop()
     >>> logout()
 
 Now the anonymous user can see the build:
@@ -404,3 +408,29 @@ Accessing the build page will now also work:
     ...     private_build.id)
     >>> print browser.title
     i386 build of privacy-test ...
+
+When accessing the distroseries source package release page, the builds
+portlet will display a link to the newly unembargoed build:
+
+    >>> browser.open(
+    ...     "http://launchpad.dev/ubuntutest/breezy-autotest/"
+    ...     "+source/privacy-test/666")
+    >>> portlet = find_portlet(browser.contents, 'Builds')
+    >>> link = portlet.find('a', href="/~cprov/+archive/ppa/+build/%s" % (
+    ...     private_build.id))
+    >>> print extract_text(link)
+    breezy-autotest
+    i386
+
+Similarly, when accessing the distribution source package release page,
+the main content will display a link to the newly unembargoed build:
+
+    >>> browser.open(
+    ...     "http://launchpad.dev/ubuntutest/+source/privacy-test/666")
+    >>> main_content = find_main_content(browser.contents)
+    >>> link = main_content.find(
+    ...     'a', href="/~cprov/+archive/ppa/+build/%s" % (private_build.id))
+    >>> print extract_text(link)
+    breezy-autotest
+    i386
+

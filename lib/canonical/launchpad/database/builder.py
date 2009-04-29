@@ -24,16 +24,18 @@ from zope.component import getUtility
 from sqlobject import (
     StringCol, ForeignKey, BoolCol, IntCol, SQLObjectNotFound)
 
+from storm.store import Store
+
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.buildd.slave import BuilderStatus
 from canonical.buildmaster.master import BuilddMaster
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.launchpad.components.archivedependencies import (
-    get_sources_list_for_building)
+    get_primary_current_component, get_sources_list_for_building)
 from canonical.launchpad.database.buildqueue import BuildQueue
 from canonical.launchpad.database.publishing import makePoolPath
-from canonical.launchpad.validators.person import validate_public_person
+from lp.registry.interfaces.person import validate_public_person
 from canonical.launchpad.helpers import filenameToContentType
 from canonical.launchpad.interfaces import (
     ArchivePurpose, BuildDaemonError, BuildSlaveFailure, BuildStatus,
@@ -347,32 +349,33 @@ class Builder(SQLBase):
 
         # Build extra arguments.
         args = {}
-        args["ogrecomponent"] = build_queue_item.build.current_component.name
         # turn 'arch_indep' ON only if build is archindep or if
         # the specific architecture is the nominatedarchindep for
         # this distroseries (in case it requires any archindep source)
-        # XXX kiko 2006-08-31:
-        # There is no point in checking if archhintlist ==
-        # 'all' here, because it's redundant with the check for
-        # isNominatedArchIndep.
-        args['arch_indep'] = (
-            build_queue_item.archhintlist == 'all' or
-            build_queue_item.archseries.isNominatedArchIndep)
-        args['archives'] = get_sources_list_for_building(
-            build_queue_item.build)
+        args['arch_indep'] = build_queue_item.archseries.isNominatedArchIndep
+
         suite = build_queue_item.build.distroarchseries.distroseries.name
         if build_queue_item.build.pocket != PackagePublishingPocket.RELEASE:
             suite += "-%s" % (build_queue_item.build.pocket.name.lower())
         args['suite'] = suite
+
         archive_purpose = build_queue_item.build.archive.purpose
         if (archive_purpose == ArchivePurpose.PPA and
             not build_queue_item.build.archive.require_virtualized):
             # If we're building a non-virtual PPA, override the purpose
-            # to PRIMARY.  This ensures that the package mangling tools
-            # will run over the built packages.
+            # to PRIMARY and use the primary component override.
+            # This ensures that the package mangling tools will run over
+            # the built packages.
             args['archive_purpose'] = ArchivePurpose.PRIMARY.name
+            args["ogrecomponent"] = (
+                get_primary_current_component(build_queue_item.build))
         else:
             args['archive_purpose'] = archive_purpose.name
+            args["ogrecomponent"] = (
+                build_queue_item.build.current_component.name)
+
+        args['archives'] = get_sources_list_for_building(
+            build_queue_item.build)
 
         # Let the build slave know whether this is a build in a private
         # archive.
@@ -589,7 +592,7 @@ class Builder(SQLBase):
                 candidate = self._findBuildCandidate()
                 continue
 
-            publication = candidate.build.getCurrentPublication()
+            publication = candidate.build.current_source_publication
 
             if publication is None:
                 # The build should be superseded if it no longer has a
@@ -688,19 +691,33 @@ class BuilderSet(object):
 
     def getBuildQueueSizeForProcessor(self, processor, virtualized=False):
         """See `IBuilderSet`."""
-        query = """
-           BuildQueue.build = Build.id AND
-           Build.archive = Archive.id AND
-           Build.distroarchseries = DistroArchSeries.id AND
-           DistroArchSeries.processorfamily = Processor.family AND
-           Processor.id = %s AND
-           Build.buildstate = %s AND
-           Archive.require_virtualized = %s
-        """ % sqlvalues(processor, BuildStatus.NEEDSBUILD, virtualized)
+        # Avoiding circular imports.
+        from canonical.launchpad.database.archive import Archive
+        from canonical.launchpad.database.build import Build
+        from canonical.launchpad.database.distroarchseries import (
+            DistroArchSeries)
+        from canonical.launchpad.database.processor import Processor
 
-        clauseTables = [
-            'Build', 'DistroArchSeries', 'Processor', 'Archive']
-        queue = BuildQueue.select(query, clauseTables=clauseTables)
+        store = Store.of(processor)
+        origin = (
+            Archive,
+            Build,
+            BuildQueue,
+            DistroArchSeries,
+            Processor,
+            )
+        queue = store.using(*origin).find(
+            BuildQueue,
+            BuildQueue.build == Build.id,
+            Build.distroarchseries == DistroArchSeries.id,
+            Build.archive == Archive.id,
+            DistroArchSeries.processorfamilyID == Processor.familyID,
+            Build.buildstate == BuildStatus.NEEDSBUILD,
+            Archive.enabled == True,
+            Processor.id == processor.id,
+            Archive.require_virtualized == virtualized,
+            )
+
         return queue.count()
 
     def pollBuilders(self, logger, txn):

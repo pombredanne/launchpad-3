@@ -10,7 +10,8 @@ __all__ = [
     'ArchiveSubscriptionError',
     'IArchiveSubscriber',
     'IArchiveSubscriberUI',
-    'IArchiveSubscriberSet'
+    'IArchiveSubscriberSet',
+    'IPersonalArchiveSubscription'
     ]
 
 from zope.interface import Interface
@@ -20,8 +21,8 @@ from lazr.enum import DBEnumeratedType, DBItem
 from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice
 from canonical.launchpad.interfaces.archive import IArchive
-from canonical.launchpad.interfaces.person import IPerson
-from canonical.lazr.fields import Reference
+from lp.registry.interfaces.person import IPerson
+from lazr.restful.fields import Reference
 
 
 class ArchiveSubscriberStatus(DBEnumeratedType):
@@ -93,7 +94,17 @@ class IArchiveSubscriberView(Interface):
         IPerson, title=_("Cancelled By"), required=False,
         description=_("The person who cancelled the subscription."))
 
-    title = TextLine(title=_("Subscription title"), required=False)
+    displayname = TextLine(title=_("Subscription displayname"),
+        required=False)
+
+    def getNonActiveSubscribers():
+        """Return the people included in this subscription.
+
+        :return: a storm `ResultSet` of all the people who are included in
+            this subscription who do not yet have an active token for the
+            corresponding archive.
+        :rtype: `storm.store.ResultSet`
+        """
 
 class IArchiveSubscriberEdit(Interface):
     """An interface for launchpad.Edit ops on archive subscribers."""
@@ -168,5 +179,26 @@ class IArchiveSubscriberUI(Interface):
 
     description = Text(
         title=_("Description"), required=False,
-        description=_("Free text describing this subscription."))
+        description=_("Optional notes about this subscription."))
+
+
+class IPersonalArchiveSubscription(Interface):
+    """An abstract interface representing a subscription for an individual.
+
+    An individual may be subscribed via a team, but should only ever be
+    able to navigate and activate one token for their individual person.
+    This non-db class allows a traversal for an individual's subscription
+    to a p3a, irrespective of whether the ArchiveSubscriber records linking
+    this individual to the archive are for teams or individuals.
+    """
+    subscriber = Reference(
+        IPerson, title=_("Person"), required=True, readonly=True,
+        description=_("The person for this individual subscription."))
+
+    archive = Reference(
+        IArchive, title=_("Archive"), required=True,
+        description=_("The archive for this subscription."))
+
+    displayname = TextLine(title=_("Subscription displayname"),
+        required=False)
 

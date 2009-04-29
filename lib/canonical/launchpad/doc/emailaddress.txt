@@ -5,7 +5,7 @@ email addresses must be unique.
 
     >>> from canonical.launchpad.interfaces.emailaddress import (
     ...     IEmailAddress, IEmailAddressSet)
-    >>> from canonical.launchpad.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> emailset = getUtility(IEmailAddressSet)
     >>> person = factory.makePerson()
 
@@ -33,21 +33,22 @@ exception.
 
     >>> personset = getUtility(IPersonSet)
     >>> foobar = personset.getByName('name16')
-    >>> emailset.new(email.email, foobar)
+    >>> emailset.new(email.email, foobar, account=foobar.account)
     Traceback (most recent call last):
     ...
     EmailAddressAlreadyTaken: The email address '...' is already registered.
 
 The email address verification is case insensitive as well:
 
-    >>> emailset.new(email.email.upper(), foobar)
+    >>> emailset.new(email.email.upper(), foobar, account=foobar.account)
     Traceback (most recent call last):
     ...
     EmailAddressAlreadyTaken: The email address '...' is already registered.
 
 Registering a new email address works -- and preserves case -- though:
 
-    >>> emailaddress = emailset.new('oink@Canonical.com', foobar)
+    >>> emailaddress = emailset.new(
+    ...     'oink@Canonical.com', foobar, account=foobar.account)
     >>> emailaddress.email
     u'oink@Canonical.com'
 
@@ -87,7 +88,7 @@ Otherwise, UndeletableEmailAddress is raised.
     ...
     UndeletableEmailAddress: This is a person's preferred email...
 
-    >>> from canonical.launchpad.ftests.mailinglists_helper import (
+    >>> from lp.registry.tests.mailinglists_helper import (
     ...     new_list_for_team)
     >>> mailing_list = new_list_for_team(guadamen)
     >>> email = emailset.getByEmail(guadamen.mailing_list.address)

@@ -44,7 +44,7 @@ epoch = datetime.datetime(2006, 01, 01, 00, 00, 00, tzinfo=UTC)
 _rate_restrict_pool = {}
 
 # The number of seconds that must elapse on average between sending two
-# exceptions of the same name into the the Event Log. one per minute.
+# exceptions of the same name into the Event Log. one per minute.
 _rate_restrict_period = datetime.timedelta(seconds=60)
 
 # The number of exceptions to allow in a burst before the above limit
@@ -215,7 +215,9 @@ class ErrorReport:
 class ErrorReportingUtility:
     implements(IErrorReportingUtility)
 
-    _ignored_exceptions = set(['TranslationUnavailable'])
+    _ignored_exceptions = set([
+        'ReadOnlyModeDisallowedStore', 'ReadOnlyModeViolation',
+        'TranslationUnavailable'])
     _ignored_exceptions_for_unauthenticated_users = set(['Unauthorized'])
     _default_config_section = 'error_reports'
 

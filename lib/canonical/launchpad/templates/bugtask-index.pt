@@ -13,191 +13,15 @@
       <script type='text/javascript' tal:content="string:var yui_base='${yui}';" />
       <script type='text/javascript' id='available-official-tags-js'
               tal:content="view/available_official_tags_js" />
-      <js tal:replace="structure string:<script type='text/javascript'>
-YUI({base: yui_base + '/'}).use(
-    'io-base', 'node', 'lazr.formoverlay', 'lazr.anim', function(Y) {
-
-/*
- * The lazr.FormOverlay object.
- */
-var duplicate_form_overlay;
-
-/*
- * The url of the page used to update bug duplicates.
- */
-var update_dupe_url;
-
-/*
- * The launchpad js client that will be used to update the duplicate.
- */
-var lp_client;
-
-/*
- * The launchpad client entry for the current bug.
- */
-var lp_bug_entry;
-
-/*
- * Check the page for 'Mark as duplicate' links and request the HTML
- * for the form.
- */
-Y.on('domready', function() {
-    // If the user is not logged in, then we need to defer to the
-    // default behaviour.
-    if (LP.client.links['me'] === undefined){
-        return;
-    }
-    // First look for 'Mark as duplicate' links.
-    var update_dupe_links = Y.all('.menu-link-mark-dupe');
-
-    // If there are none, check for any 'change duplicate bug' links.
-    if (!update_dupe_links){
-        update_dupe_links = Y.all('#change_duplicate_bug');
-    }
-
-    if (update_dupe_links) {
-        // First things first, pre-load the mark-dupe form.
-        update_dupe_url = update_dupe_links.item(0).getAttribute('href');
-        var mark_dupe_form_url = update_dupe_url + '/++form++';
-        Y.on('io:complete', function(id, response_object) {
-            createBugDuplicateFormOverlay(response_object.responseText);
-            }, this);
-        Y.io(mark_dupe_form_url);
-
-        // Add an on-click handler to any links found that displays
-        // the form overlay.
-        update_dupe_links.on('click', function(e){
-            // Only go ahead if we have received the form content by the
-            // time the user clicks:
-            if (duplicate_form_overlay){
-                e.preventDefault();
-                duplicate_form_overlay.show();
-            }
+      <script type="text/javascript"
+              tal:define="lp_js string:${icingroot}/build"
+              tal:attributes="src string:${lp_js}/bugs/bugtask-index.js">
+      </script>
+      <script type="text/javascript">
+        YUI().use('base', 'node', 'oop', 'event', 'bugs.bugtask_index', function(Y) {
+            Y.bugs.setup_bugtask_index();
         });
-    }
-});
-
-/*
- * Creates the duplicate form overlay using the passed form content.
- */
-function createBugDuplicateFormOverlay(form_content) {
-    duplicate_form_overlay = new Y.lazr.FormOverlay({
-        headerContent: '<h2>Mark bug report as duplicate</h2>',
-        form_content: 'Marking the bug as a duplicate will, by default, ' +
-                      'hide it from search results listings.' + form_content,
-        form_submit_button: Y.Node.create(
-            '<button type=\'submit\' name=\'field.actions.change\' ' +
-            'value=\'Change\' class=\'lazr-pos lazr-btn\' >OK</button>'),
-        align: {
-            points: 
-                [Y.WidgetPositionExt.CC, Y.WidgetPositionExt.CC]
-        },
-        form_submit_callback: update_bug_duplicate,
-        visible: false
-    });
-    duplicate_form_overlay.render();
-}
-
-/*
- * Update the bug duplicate via the LP API
- */
-function update_bug_duplicate(data) {
-    // Hide the formoverlay:
-    duplicate_form_overlay.hide();
-
-    // Add the spinner...
-    var dupe_span = Y.get('#mark-duplicate-text');
-    dupe_span.addClass('update-in-progress-message');
-
-    // Create the lp client and bug entry if we haven't done so already.
-    if (lp_client === undefined) {
-        lp_client = new LP.client.Launchpad();
-    }
-
-    if (lp_bug_entry === undefined) {
-        var bug_repr = LP.client.cache['bug'];
-        lp_bug_entry = new LP.client.Entry(
-            lp_client, bug_repr, bug_repr.self_link);
-    }
-
-    // Set the new duplicate link on the bug entry.
-    var new_dup_url = null;
-    var new_dup_id = data['field.duplicateof'];
-    if (new_dup_id != '') {
-        var self_link = lp_bug_entry.get('self_link')
-        var last_slash_index = self_link.lastIndexOf('/');
-        new_dup_url = self_link.slice(0, last_slash_index+1) + new_dup_id;
-    }
-    lp_bug_entry.set('duplicate_of_link', new_dup_url);
-
-    // Create a config for the lp_save method
-    config = {
-        on: {
-            success: function(updated_entry) {
-                dupe_span.removeClass('update-in-progress-message');
-                lp_bug_entry = updated_entry;
-
-                // XXX noodles 2009-03-17 bug=336866 It seems the etag
-                // returned by lp_save() is incorrect. Remove it for now
-                // so that the second save does not result in a '412
-                // precondition failed' error.
-                lp_bug_entry.removeAtt('http_etag');
-
-                if (new_dup_url !== null) {
-                    dupe_span.set('innerHTML', [
-                        'Duplicate of <a href=\'/bugs/' + new_dup_id + '\'>',
-                        'bug #' + new_dup_id +'</a> ',
-                        '<a class=\'menu-link-mark-dupe\' ',
-                        'href=\'' + update_dupe_url + '\'>',
-                        '<img src=\'/@@/edit\' /></a>'
-                        ].join(''));
-                } else {
-                    dupe_span.set('innerHTML',
-                        '<a class=\'menu-link-mark-dupe\' href=\'' +
-                        update_dupe_url + '\'>' +
-                        '<img src=\'/@@/bug-dupe-icon\' /> ' +
-                        'Mark as duplicate</a>');
-                }
-                Y.lazr.anim.green_flash({node: dupe_span}).run();
-                // ensure the new link is hooked up correctly:
-                dupe_span.query('a.menu-link-mark-dupe').on(
-                    'click', function(e){
-                        e.preventDefault();
-                        duplicate_form_overlay.show();
-                    });
-            },
-            failure: function(id, request) {
-                dupe_span.removeClass('update-in-progress-message');
-                if (request.status == 400) {
-                    duplicate_form_overlay.showError(
-                        new_dup_id + ' is not a valid bug number or' +
-                        ' nickname.');
-                } else {
-                    duplicate_form_overlay.showError(request.responseText);
-                }
-                duplicate_form_overlay.show();
-            }
-        }
-    };
-
-    // And save the updated entry.
-    lp_bug_entry.lp_save(config);
-}
-
-});
-      </script>" />
-      <link rel="stylesheet" type="text/css"
-        tal:attributes="href
-        string:${icingroot}/lazr/build/overlay/assets/pretty-overlay-core.css"
-        />
-      <link rel="stylesheet" type="text/css"
-        tal:attributes="href
-        string:${icingroot}/lazr/build/overlay/assets/skins/sam/pretty-overlay-skin.css"
-        />
-      <link rel="stylesheet" type="text/css"
-        tal:attributes="href
-        string:${icingroot}/lazr/build/formoverlay/assets/formoverlay.css"
-        />
+      </script>
     </metal:block>
 
     <div metal:fill-slot="main" tal:define="context_menu context/menu:context">
@@ -259,36 +83,6 @@ function update_bug_duplicate(data) {
           # you have just now converted the report into a question.
         </tal:XXX>
       </p>
-      <form
-          tal:condition="not:view/isReportedInContext"
-          class="error message"
-          name="alsooccursin"
-          method="POST"
-          >
-
-        This bug isn't linked to
-        <strong><a
-           tal:attributes="href string:${context/target/fmt:url}"
-           tal:content="context/bugtargetdisplayname"
-           >Mozilla Firefox</a></strong>.  Would you like to report it here as
-           well?<br/>
-
-        <tal:loggedin condition="request/lp:person">
-
-          <center><input
-              type="submit"
-              name="reportbug"
-              value=""
-              tal:attributes="value string:Yes, report in ${context/bugtargetdisplayname}"
-              /></center>
-        </tal:loggedin>
-        <tal:notloggedin condition="not:request/lp:person">
-          If you want to report it in <tal:block
-          content="context/bugtargetdisplayname" />,
-          you must <a href="+login">log in</a> first.
-        </tal:notloggedin>
-
-      </form>
 
       <table style="width: 100%; margin-bottom: 0.33em;">
         <tr>
@@ -461,12 +255,28 @@ function update_bug_duplicate(data) {
       </div>
 
       <tal:comments>
-        <tal:comment repeat="comment view/visible_comments_for_display">
-          <tal:comment-box condition="comment/can_be_shown">
-            <metal:comment-box
-                metal:use-macro="context/@@bugcomment-macros/comment-box" />
-          </tal:comment-box>
+        <tal:comment repeat="comment_or_activity view/activity_and_comments">
+          <tal:is-comment
+              define="comment comment_or_activity/comment|nothing"
+              condition="comment">
+            <tal:comment-box condition="python: comment.can_be_shown and
+                                       (view.user_is_admin or
+                                       comment.visible)">
+              <metal:comment-box
+                  metal:use-macro="context/@@bugcomment-macros/comment-box" />
+            </tal:comment-box>
+          </tal:is-comment>
+
+          <tal:is-activity
+              define="activity_list comment_or_activity/activity|nothing;
+                      activity_date comment_or_activity/date|nothing;
+                      activity_person comment_or_activity/person|nothing"
+              condition="activity_list">
+              <metal:comment-box
+                  metal:use-macro="context/@@bugcomment-macros/activity-box" />
+          </tal:is-activity>
         </tal:comment>
+
         <tal:comment-list-complete
             tal:condition="not:view/visible_comments_truncated_for_display">
           <tal:logged-in condition="view/user">
@@ -475,6 +285,7 @@ function update_bug_duplicate(data) {
               <div tal:content="structure context/@@+addcomment-form" />
             </fieldset>
           </tal:logged-in>
+
           <tal:not-logged-in condition="not: view/user">
             <div align="center" id="add-comment-login-first">
               To post a comment you must <a
@@ -549,6 +360,10 @@ function update_bug_duplicate(data) {
         <div tal:replace="structure context/bug/@@+portlet-attachments" />
         <div tal:replace="structure context/bug/@@+portlet-watch" />
         <div tal:replace="structure context/@@+portlet-search" />
+      </div>
+      <div>
+        <div id="duplicate-form-container"></div>
+        <div id="privacy-form-container"></div>
       </div>
     </div>
   </body>

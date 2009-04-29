@@ -88,23 +88,16 @@
         <div class="three column middle">
           <h2>What&#8217;s new?</h2>
           <ul style="padding: 0; margin: auto;">
-
             <li class="news">
-              <a href="http://blog.launchpad.net/?p=534">
-                <strong>Improved upstream bug links</strong><br />
-                New quick-links to find and report bugs in external trackers.
+              <a href="http://blog.launchpad.net/?p=733">
+                <strong>Continuous translation and template imports from Bazaar</strong><br />
+                Import your project's translations and translation templates directly into Launchpad from your project's official Bazaar branches.
               </a>
            </li>
             <li class="news">
-              <a href="http://blog.launchpad.net/coming-features/ajax-in-launchpad">
-                <strong>AJAX in Launchpad</strong><br />
-                Read more about how we're making Launchpad's interface more responsive using AJAX.
-              </a>
-           </li>
-           <li class="news">
-              <a href="http://blog.launchpad.net/?p=556">
-                <strong>Tuning Launchpad in Performance Week</strong><br />
-                Faster PPA overviews, snappier translations pages, speedier project cloud. Read all about it!
+              <a href="http://blog.launchpad.net/?p=658">
+                <strong>Multiple PPAs</strong><br />
+                Need more than one Personal Package Archive? No problem: additional archives are now available to teams and individuals.
               </a>
            </li>
            <li class="news">
@@ -115,7 +108,7 @@
            </li>
           </ul>
           <div class="discreet" style="text-align: right">
-            Updated 2009-02-26.
+            Updated 2009-04-29.
             <a href="http://blog.launchpad.net">Read our blog!</a>
           </div>
         </div>

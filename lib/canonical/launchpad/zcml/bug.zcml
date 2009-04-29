@@ -40,7 +40,8 @@
                         date_last_message number_of_duplicates
                         message_count getQuestionCreatedFromBug
                         canBeAQuestion getBugTasksByPackageName
-                        users_affected_count users_unaffected_count"
+                        users_affected_count users_unaffected_count
+                        readonly_duplicateof users_affected bug_messages"
             />
         <require
             permission="launchpad.Edit"
@@ -52,7 +53,7 @@
                         unsubscribeFromDupes subscribe unsubscribe addNomination
                         expireNotifications setStatus setPrivate
                         convertToQuestion isUserAffected
-                        markUserAffected addTask addChange"
+                        markUserAffected addTask addChange markAsDuplicate"
             set_attributes="datecreated date_last_updated name title description
                             ownerID owner duplicateof communityscore
                             communitytimestamp hits hitstimestamp activityscore
@@ -62,6 +63,10 @@
         <require
             permission="launchpad.AnyPerson"
             attributes="offerMentoring retractMentoring"
+            />
+        <require
+            permission="launchpad.Admin"
+            attributes="setCommentVisibility"
             />
     </class>
 

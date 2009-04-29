@@ -20,11 +20,11 @@ from canonical.cachedproperty import cachedproperty
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import SQLBase
+from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.launchpad.interfaces import (
     ITranslationMessage, ITranslationMessageSet, RosettaTranslationOrigin,
     TranslationConstants, TranslationValidationStatus)
-from canonical.launchpad.validators.person import validate_public_person
+from lp.registry.interfaces.person import validate_public_person
 
 
 def make_plurals_fragment(fragment, separator):
@@ -66,14 +66,24 @@ class TranslationMessageMixIn:
             # This message is a singular message.
             return 1
         else:
-            return self.pofile.plural_forms
+            if self.language.pluralforms is not None:
+                forms = self.language.pluralforms
+            else:
+                # Don't know anything about plural forms for this
+                # language, fallback to the most common case, 2.
+                forms = 2
+            return forms
 
     def makeHTMLID(self, suffix=None):
         """See `ITranslationMessage`."""
-        elements = [self.pofile.language.code]
+        elements = [self.language.code]
         if suffix is not None:
             elements.append(suffix)
         return self.potmsgset.makeHTMLID('_'.join(elements))
+
+    def setPOFile(self, pofile):
+        """See `ITransationMessage`."""
+        self.browser_pofile = pofile
 
 
 class DummyTranslationMessage(TranslationMessageMixIn):
@@ -89,11 +99,13 @@ class DummyTranslationMessage(TranslationMessageMixIn):
         # Check whether we already have a suitable TranslationMessage, in
         # which case, the dummy one must not be used.
         assert potmsgset.getCurrentTranslationMessage(
+            pofile.potemplate,
             pofile.language) is None, (
                 'This translation message already exists in the database.')
 
         self.id = None
         self.pofile = pofile
+        self.browser_pofile = pofile
         self.potemplate = pofile.potemplate
         self.language = pofile.language
         self.variant = pofile.variant
@@ -114,13 +126,20 @@ class DummyTranslationMessage(TranslationMessageMixIn):
         self.is_complete = False
         self.is_imported = False
         self.is_empty = True
-        self.is_hidden = True
         self.was_obsolete_in_last_import = False
         self.was_complete_in_last_import = False
         if self.potmsgset.msgid_plural is None:
             self.translations = [None]
         else:
             self.translations = [None] * self.plural_forms
+
+    def isHidden(self, pofile):
+        """See `ITranslationMessage`."""
+        return True
+
+    def getOnePOFile(self):
+        """See `ITranslationMessage`."""
+        return None
 
     @property
     def all_msgstrs(self):
@@ -148,8 +167,10 @@ def validate_is_current(self, attr, value):
         # change current one to non current before.
         current_translation_message = (
             self.potmsgset.getCurrentTranslationMessage(
-                self.pofile.language, self.pofile.variant))
-        if current_translation_message is not None:
+                self.potemplate,
+                self.language, self.variant))
+        if (current_translation_message is not None and
+            current_translation_message.potemplate == self.potemplate):
             current_translation_message.is_current = False
             # We need to flush the old current message before the
             # new one because the database constraints prevent two
@@ -174,8 +195,10 @@ def validate_is_imported(self, attr, value):
         # change current one to non current before.
         imported_translation_message = (
             self.potmsgset.getImportedTranslationMessage(
-                self.pofile.language, self.pofile.variant))
-        if imported_translation_message is not None:
+                self.potemplate,
+                self.language, self.variant))
+        if (imported_translation_message is not None and
+            imported_translation_message.potemplate == self.potemplate):
             imported_translation_message.is_imported = False
             # We need to flush the old imported message before the
             # new one because the database constraints prevent two
@@ -191,7 +214,8 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
 
     _table = 'TranslationMessage'
 
-    pofile = ForeignKey(foreignKey='POFile', dbName='pofile', notNull=True)
+    pofile = ForeignKey(foreignKey='POFile', dbName='pofile', notNull=False)
+    browser_pofile = None
     potemplate = ForeignKey(
         foreignKey='POTemplate', dbName='potemplate', notNull=False,
         default=None)
@@ -294,8 +318,7 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
         # We found no translations in this translation_message
         return True
 
-    @property
-    def is_hidden(self):
+    def isHidden(self, pofile):
         """See `ITranslationMessage`."""
         # If this message is currently used or has been imported,
         # it's not hidden.
@@ -308,7 +331,8 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
         # it is hidden.
         # If it has not been reviewed yet, it's not hidden.
         current = self.potmsgset.getCurrentTranslationMessage(
-            self.pofile.language, self.pofile.variant)
+            pofile.potemplate,
+            self.language, self.variant)
         # If there is no current translation, none of the
         # suggestions have been reviewed, so they are all shown.
         if current is None:
@@ -318,6 +342,28 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
         if date_reviewed is None:
             date_reviewed = current.date_created
         return date_reviewed > self.date_created
+
+    def getOnePOFile(self):
+        """See `ITranslationMessage`."""
+        from canonical.launchpad.database import POFile
+        clauses = [
+            "POFile.potemplate = TranslationTemplateItem.potemplate",
+            "TranslationTemplateItem.potmsgset = %s" % (
+                sqlvalues(self.potmsgset)),
+            "POFile.language = %s" % sqlvalues(self.language),
+            ]
+        if self.variant is None:
+            clauses.append("POFile.variant IS NULL")
+        else:
+            clauses.append("POFile.variant = %s" % sqlvalues(self.variant))
+
+        pofiles = POFile.select(' AND '.join(clauses),
+                                clauseTables=['TranslationTemplateItem'])
+        pofile = list(pofiles[:1])
+        if len(pofile) > 0:
+            return pofile[0]
+        else:
+            return None
 
 
 class TranslationMessageSet:

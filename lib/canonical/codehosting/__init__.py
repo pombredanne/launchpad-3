@@ -11,10 +11,12 @@ __all__ = [
     'get_bzr_path',
     'get_bzr_plugins_path',
     'iter_list_chunks',
+    'load_optional_plugin',
     ]
 
 
 import os
+from bzrlib import hooks
 from bzrlib.plugin import load_plugins
 
 from canonical.config import config
@@ -44,3 +46,25 @@ os.environ['BZR_PLUGIN_PATH'] = get_bzr_plugins_path()
 # We want to have full access to Launchpad's Bazaar plugins throughout the
 # codehosting package.
 load_plugins([get_bzr_plugins_path()])
+
+
+def load_optional_plugin(plugin_name):
+    """Load the plugin named `plugin_name` from optionalbzrplugins/."""
+    from bzrlib import plugins
+    optional_plugin_dir = os.path.join(config.root, 'optionalbzrplugins')
+    if optional_plugin_dir not in plugins.__path__:
+        plugins.__path__.append(optional_plugin_dir)
+    __import__("bzrlib.plugins.%s" % plugin_name)
+
+
+def remove_hook(self, hook):
+    """Remove the hook from the HookPoint"""
+    self._callbacks.remove(hook)
+    for name, value in self._callback_names.iteritems():
+        if value is hook:
+            del self._callback_names[name]
+
+
+# Monkeypatch: Branch.hooks is a list in bzr 1.13, so it supports remove.
+# It is a HookPoint in bzr 1.14, so add HookPoint.remove.
+hooks.HookPoint.remove = remove_hook

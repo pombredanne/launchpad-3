@@ -50,7 +50,7 @@ the project groups.
 
 Project groups are available at their canonical URL on the API virtual host.
 
-    >>> from canonical.lazr.testing.webservice import pprint_entry
+    >>> from lazr.restful.testing.webservice import pprint_entry
 
     >>> mozilla = webservice.get('/mozilla').jsonBody()
     >>> pprint_entry(mozilla)
@@ -654,7 +654,7 @@ webservice.named_post() method simplifies this for us.
     >>> firefox_1_0 = webservice.get('/firefox/1.0').jsonBody()
     >>> response = webservice.named_post(
     ...     firefox_1_0['self_link'], 'newMilestone', {},
-    ...     name='alpha1', date_targeted=u'2005-06-06',
+    ...     name='alpha1', code_name='Elmer', date_targeted=u'2005-06-06',
     ...     summary='Feature complete but buggy.')
     >>> print response
     HTTP/1.1 201 Created
@@ -664,6 +664,8 @@ webservice.named_post() method simplifies this for us.
     >>> milestone = webservice.get(response.getHeader('Location')).jsonBody()
     >>> print milestone['name']
     alpha1
+    >>> print milestone['code_name']
+    Elmer
     >>> print milestone['date_targeted']
     2005-06-06T00:00:00
     >>> print milestone['summary']
@@ -780,6 +782,7 @@ host.
     >>> firefox_milestone_1_0 = webservice.get(
     ...     '/firefox/+milestone/1.0').jsonBody()
     >>> pprint_entry(firefox_milestone_1_0)
+    code_name: None
     date_targeted: u'2056-10-16T18:31:44.293448'
     is_active: True
     name: u'1.0'

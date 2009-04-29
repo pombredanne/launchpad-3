@@ -8,7 +8,10 @@
 
   <!-- BinaryPackagePublishingHistory -->
   <class class="canonical.launchpad.database.BinaryPackagePublishingHistory">
-    <allow interface="canonical.launchpad.interfaces.IBinaryPackagePublishingHistory" />
+    <require
+      permission="launchpad.View"
+      interface="canonical.launchpad.interfaces.publishing.IBinaryPackagePublishingHistory"
+      />
   </class>
 
   <browser:pages
@@ -32,6 +35,13 @@
       template="../templates/packagepublishing-details.pt"
       />
   </browser:pages>
+
+  <browser:url
+    for="canonical.launchpad.interfaces.IBinaryPackagePublishingHistory"
+    path_expression="string:+binarypub"
+    attribute_to_parent="archive"
+    urldata="canonical.launchpad.browser.publishing.BinaryPublicationURL"
+  />
 
   <!-- BinaryPackageFilePublishing -->
   <class class="canonical.launchpad.database.BinaryPackageFilePublishing">

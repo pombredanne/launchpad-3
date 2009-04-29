@@ -1869,10 +1869,10 @@ COMMENT ON COLUMN TranslationImportQueueEntry.error_output IS 'Error output from
 -- Archive
 COMMENT ON TABLE Archive IS 'A package archive. Commonly either a distribution''s main_archive or a ppa''s archive.';
 COMMENT ON COLUMN Archive.owner IS 'Identifies the PPA owner when it has one.';
+COMMENT ON COLUMN Archive.displayname IS 'User defined displayname for this archive.';
 COMMENT ON COLUMN Archive.description IS 'Allow users to describe their PPAs content.';
 COMMENT ON COLUMN Archive.enabled IS 'Whether or not the PPA is enabled for accepting uploads.';
 COMMENT ON COLUMN Archive.authorized_size IS 'Size, in MiB, allowed for this PPA.';
-COMMENT ON COLUMN Archive.whiteboard IS 'Administrator comments about interventions made in the PPA configuration.';
 COMMENT ON COLUMN Archive.distribution IS 'The distribution that uses this archive.';
 COMMENT ON COLUMN Archive.purpose IS 'The purpose of this archive, e.g. COMMERCIAL.  See the ArchivePurpose DBSchema item.';
 COMMENT ON COLUMN Archive.private IS 'Whether or not the archive is private. This affects the global visibility of the archive.';
@@ -1881,7 +1881,7 @@ COMMENT ON COLUMN Archive.sources_cached IS 'Number of sources already cached fo
 COMMENT ON COLUMN Archive.binaries_cached IS 'Number of binaries already cached for this archive.';
 COMMENT ON COLUMN Archive.require_virtualized IS 'Whether this archive has binaries that should be built on a virtual machine, e.g. PPAs';
 COMMENT ON COLUMN Archive.name IS 'The name of the archive.';
-COMMENT ON COLUMN Archive.name IS 'Whether this archive should be published.';
+COMMENT ON COLUMN Archive.publish IS 'Whether this archive should be published.';
 COMMENT ON COLUMN Archive.date_updated IS 'When were the rebuild statistics last updated?';
 COMMENT ON COLUMN Archive.total_count IS 'How many source packages are in the rebuild archive altogether?';
 COMMENT ON COLUMN Archive.pending_count IS 'How many packages still need building?';
@@ -1916,6 +1916,8 @@ COMMENT ON COLUMN ArchivePermission.permission IS 'The permission type being gra
 COMMENT ON COLUMN ArchivePermission.person IS 'The person or team to whom the permission is being granted.';
 COMMENT ON COLUMN ArchivePermission.component IS 'The component to which this upload permission applies.';
 COMMENT ON COLUMN ArchivePermission.sourcepackagename IS 'The source package name to which this permission applies.  This can be used to provide package-level permissions to single users.';
+COMMENT ON COLUMN ArchivePermission.packageset IS 'The package set to which this permission applies.';
+COMMENT ON COLUMN ArchivePermission.explicit IS 'This flag is set for package sets containing high-profile packages that must not break and/or require specialist skills for proper handling e.g. the kernel.';
 
 -- ArchiveSubscriber
 
@@ -2038,6 +2040,7 @@ COMMENT ON COLUMN OpenIdRPConfig.logo IS 'A reference to the logo for this RP';
 COMMENT ON COLUMN OpenIdRPConfig.allowed_sreg IS 'A comma separated list of fields that can be sent to the RP via openid.sreg.  The field names should not have the "openid.sreg." prefix';
 COMMENT ON COLUMN OpenIdRPConfig.creation_rationale IS 'A person creation rationale to use for users who create an account while logging in to this RP';
 COMMENT ON COLUMN OpenIdRPConfig.can_query_any_team IS 'This RP can query for membership of any or all teams, including private teams. This setting overrides any other private team query ACLs, and should not be used if more granular options are suitable.';
+COMMENT ON COLUMN OpenIdRPConfig.auto_authorize IS 'True if the user authorisation page is skipped by default for this RP.';
 
 --OpenIDRPSummary
 COMMENT ON TABLE OpenIDRPSummary IS 'The summary of the activity between a person and an RP.';
@@ -2152,6 +2155,16 @@ COMMENT ON COLUMN HWTestAnswerCountDevice.answer IS 'The test answer.';
 COMMENT ON COLUMN HWTestAnswerCountDevice.device_driver IS 'The device/driver combination.';
 
 
+COMMENT ON TABLE HWDMIHandle IS 'A DMI Handle appearing in the DMI data of a submission.';
+COMMENT ON COLUMN HWDMIHandle.handle IS 'The ID of the handle.';
+COMMENT ON COLUMN HWDMIHandle.type IS 'The type of the handle.';
+
+
+COMMENT ON TABLE HWDMIValue IS 'Key/value pairs of DMI data of a handle.';
+COMMENT ON COLUMN HWDMIValue.key IS 'The key.';
+COMMENT ON COLUMN HWDMIValue.value IS 'The value';
+COMMENT ON COLUMN HWDMIValue.handle IS 'The handle to which this key/value pair belongs.';
+
 -- Job
 
 COMMENT ON TABLE Job IS 'Common info about a job.';
@@ -2242,3 +2255,27 @@ COMMENT ON COLUMN UserToUserEmail.recipient IS 'The person receiving this email.
 COMMENT ON COLUMN UserToUserEmail.date_sent IS 'The date the email was sent.';
 COMMENT ON COLUMN UserToUserEmail.subject IS 'The Subject: header.';
 COMMENT ON COLUMN UserToUserEmail.message_id IS 'The Message-ID: header.';
+
+-- Packageset
+
+COMMENT ON TABLE Packageset IS 'Package sets facilitate the grouping of packages for purposes like the control of upload permissions, et.';
+COMMENT ON COLUMN Packageset.date_created IS 'Date and time of creation.';
+COMMENT ON COLUMN Packageset.owner IS 'The Person or team who owns the package set';
+COMMENT ON COLUMN Packageset.name IS 'The name for the package set on hand.';
+COMMENT ON COLUMN Packageset.description IS 'The description for the package set on hand.';
+
+-- PackagesetSources
+
+COMMENT ON TABLE PackagesetSources IS 'This table associates package sets and source package names.';
+COMMENT ON COLUMN PackagesetSources.packageset IS 'The associated package set.';
+COMMENT ON COLUMN PackagesetSources.sourcepackagename IS 'The associated source package name.';
+
+-- PackagesetInclusion
+COMMENT ON TABLE PackagesetInclusion IS 'sets may form a set-subset hierarchy; this table facilitates the definition of these set-subset relationships.';
+COMMENT ON COLUMN PackagesetInclusion.parent IS 'The package set that is including a subset.';
+COMMENT ON COLUMN PackagesetInclusion.child IS 'The package set that is being included as a subset.';
+
+-- FlatPackagesetInclusion
+COMMENT ON TABLE FlatPackagesetInclusion IS 'In order to facilitate the querying of set-subset relationships an expanded or flattened representation of the set-subset hierarchy is provided by this table.';
+COMMENT ON COLUMN FlatPackagesetInclusion.parent IS 'The package set that is (directly or indirectly) including a subset.';
+COMMENT ON COLUMN FlatPackagesetInclusion.child IS 'The package set that is being included as a subset.';

@@ -16,14 +16,16 @@ from zope.component import getUtility
 from canonical.config import config
 from canonical.codehosting.vfs.branchfs import get_scanner_server
 from canonical.codehosting.jobs import JobRunner
-from canonical.launchpad.interfaces.branchjob import IRosettaUploadJobSource
+from lp.code.interfaces.branchjob import IRosettaUploadJobSource
 from canonical.launchpad.scripts.base import LaunchpadCronScript
+from canonical.launchpad.webapp.errorlog import globalErrorUtility
 
 
 class RunRosettaBranchJobs(LaunchpadCronScript):
     """Run pending branch translations jobs."""
 
     def main(self):
+        globalErrorUtility.configure('rosettabranches')
         runner = JobRunner.fromReady(getUtility(IRosettaUploadJobSource))
         server = get_scanner_server()
         server.setUp()
@@ -31,10 +33,11 @@ class RunRosettaBranchJobs(LaunchpadCronScript):
             runner.runAll()
         finally:
             server.tearDown()
-        print 'Ran %d RosettaBranchJobs.' % len(runner.completed_jobs)
+        self.logger.info('Ran %d RosettaBranchJobs.',
+                         len(runner.completed_jobs))
 
 
 if __name__ == '__main__':
-    script = RunRosettaBranchJobs('rosettabranch',
-                                  config.branchscanner.dbuser)
+    script = RunRosettaBranchJobs('rosettabranches',
+                                  config.rosettabranches.dbuser)
     script.lock_and_run()

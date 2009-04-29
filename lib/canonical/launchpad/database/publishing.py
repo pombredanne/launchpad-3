@@ -55,7 +55,7 @@ from canonical.launchpad.interfaces.publishing import (
 from canonical.launchpad.scripts.changeoverride import ArchiveOverriderError
 from canonical.launchpad.webapp.interfaces import (
         IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
-from canonical.launchpad.validators.person import validate_public_person
+from lp.registry.interfaces.person import validate_public_person
 from canonical.launchpad.webapp.interfaces import NotFoundError
 
 
@@ -391,6 +391,16 @@ class ArchivePublisherBase:
         """See `IArchivePublisher`."""
         return datetime.now(pytz.timezone('UTC')) - self.datecreated
 
+    @property
+    def component_name(self):
+        """See `ISourcePackagePublishingHistory`"""
+        return self.component.name
+
+    @property
+    def section_name(self):
+        """See `ISourcePackagePublishingHistory`"""
+        return self.section.name
+
 
 class IndexStanzaFields:
     """Store and format ordered Index Stanza fields."""
@@ -507,6 +517,30 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         result_set = publishing_set.getBuildsForSources(self)
 
         return [build for source, build, arch in result_set]
+
+    @property
+    def changes_file_url(self):
+        """See `ISourcePackagePublishingHistory`."""
+        results = getUtility(IPublishingSet).getChangesFilesForSources(
+            self)
+
+        result = results.one()
+        if result is None:
+            # This should not happen in practice, but the code should
+            # not blow up because of bad data.
+            return None
+        source, packageupload, spr, changesfile, lfc = result
+        
+        # Return a webapp-proxied LibraryFileAlias so that restricted
+        # librarian files are accessible.  Non-restricted files will get
+        # a 302 so that webapp threads are not tied up.
+
+        # Avoid circular imports.
+        from canonical.launchpad.browser.librarian import (
+            ProxiedLibraryFileAlias)
+
+        proxied_file = ProxiedLibraryFileAlias(changesfile, self.archive)
+        return proxied_file.http_url
 
     def createMissingBuilds(self, architectures_available=None,
                             pas_verify=None, logger=None):
@@ -625,16 +659,6 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         return self.sourcepackagerelease.version
 
     @property
-    def component_name(self):
-        """See `ISourcePackagePublishingHistory`"""
-        return self.component.name
-
-    @property
-    def section_name(self):
-        """See `ISourcePackagePublishingHistory`"""
-        return self.section.name
-
-    @property
     def displayname(self):
         """See `IPublishing`."""
         release = self.sourcepackagerelease
@@ -728,6 +752,38 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
             embargo=False)
         return SourcePackagePublishingHistory.get(secure_copy.id)
 
+    def getStatusSummaryForBuilds(self):
+        """See `ISourcePackagePublishingHistory`."""
+        # Import here to avoid circular import.
+        from canonical.launchpad.interfaces.build import BuildSetStatus
+
+        builds = self.getBuilds()
+        summary = getUtility(IBuildSet).getStatusSummaryForBuilds(
+            builds)
+
+        # We only augment the result if we (the SPPH) are ourselves in
+        # the pending/published state and all the builds are fully-built.
+        # In this case we check to see if they are all published, and if
+        # not we return FULLYBUILT_PENDING:
+        augmented_summary = summary
+        if (self.status in active_publishing_status and
+                summary['status'] == BuildSetStatus.FULLYBUILT):
+
+            published_bins = self.getPublishedBinaries()
+            published_builds = [
+                bin.binarypackagerelease.build
+                    for bin in published_bins
+                        if bin.datepublished is not None]
+            unpublished_builds = list(
+                set(builds).difference(published_builds))
+
+            if unpublished_builds:
+                augmented_summary = {
+                    'status': BuildSetStatus.FULLYBUILT_PENDING,
+                    'builds': unpublished_builds
+                }
+        return augmented_summary
+
 
 class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
     """A binary package publishing record. (excluding embargoed packages)"""
@@ -784,6 +840,21 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
             binarypackagepublishing=self).prejoin(preJoins)
 
     @property
+    def binary_package_name(self):
+        """See `ISourcePackagePublishingHistory`"""
+        return self.binarypackagerelease.name
+
+    @property
+    def binary_package_version(self):
+        """See `ISourcePackagePublishingHistory`"""
+        return self.binarypackagerelease.version
+
+    @property
+    def priority_name(self):
+        """See `ISourcePackagePublishingHistory`"""
+        return self.priority.name
+
+    @property
     def displayname(self):
         """See `IPublishing`."""
         release = self.binarypackagerelease
@@ -803,6 +874,7 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
         bin_filename = bin_file.libraryfile.filename
         bin_size = bin_file.libraryfile.content.filesize
         bin_md5 = bin_file.libraryfile.content.md5
+        bin_sha1 = bin_file.libraryfile.content.sha1
         bin_filepath = os.path.join(
             makePoolPath(spr.name, self.component.name), bin_filename)
         # description field in index is an association of summary and
@@ -850,6 +922,7 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
         fields.append('Filename', bin_filepath)
         fields.append('Size', bin_size)
         fields.append('MD5sum', bin_md5)
+        fields.append('SHA1', bin_sha1)
         fields.append('Description', bin_description)
 
         # XXX cprov 2006-11-03: the extra override fields (Bugs, Origin and
@@ -978,12 +1051,16 @@ class PublishingSet:
 
         return result_set
 
-    def getByIdAndArchive(self, id, archive):
+    def getByIdAndArchive(self, id, archive, source=True):
         """See `IPublishingSet`."""
+        if source:
+            baseclass = SourcePackagePublishingHistory
+        else:
+            baseclass = BinaryPackagePublishingHistory
         return Store.of(archive).find(
-            SourcePackagePublishingHistory,
-            SourcePackagePublishingHistory.id == id,
-            SourcePackagePublishingHistory.archive == archive.id)
+            baseclass,
+            baseclass.id == id,
+            baseclass.archive == archive.id)
 
     def _extractIDs(self, one_or_more_source_publications):
         """Return a list of database IDs for the given list or single object.
@@ -1167,20 +1244,16 @@ class PublishingSet:
         if not source_ids:
             return {}
 
-        # Get the builds for all the requested sources.
-        result_set = self.getBuildsForSourceIds(source_ids, archive=archive)
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        source_pubs = store.find(
+            SourcePackagePublishingHistory,
+            SourcePackagePublishingHistory.id.is_in(source_ids),
+            SourcePackagePublishingHistory.archive == archive)
 
-        # Populate the list of builds for each id in a dict.
-        source_builds = {}
-        for src_pub, build, distroarchseries in result_set:
-            source_builds.setdefault(src_pub.id, []).append(build)
-
-        # Gset the overall build status for each source's builds.
-        build_set = getUtility(IBuildSet)
         source_build_statuses = {}
-        for source_id, builds in source_builds.items():
-            status_summary = build_set.getStatusSummaryForBuilds(builds)
-            source_build_statuses[source_id] = status_summary
+        for source_pub in source_pubs:
+            status_summary = source_pub.getStatusSummaryForBuilds()
+            source_build_statuses[source_pub.id] = status_summary
 
         return source_build_statuses
 

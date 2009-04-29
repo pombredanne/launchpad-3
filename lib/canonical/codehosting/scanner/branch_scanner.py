@@ -13,7 +13,7 @@ import sys
 from bzrlib.errors import NotBranchError, ConnectionError
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces import IBranchSet
+from lp.code.interfaces.branchscanner import IBranchScanner
 from canonical.codehosting.vfs import get_scanner_server
 from canonical.codehosting.scanner.bzrsync import BzrSync
 from canonical.launchpad.webapp import canonical_url, errorlog
@@ -35,7 +35,7 @@ class BranchScanner:
         server = get_scanner_server()
         server.setUp()
         try:
-            for branch in getUtility(IBranchSet).getBranchesToScan():
+            for branch in getUtility(IBranchScanner).getBranchesToScan():
                 try:
                     self.scanOneBranch(branch)
                 except (KeyboardInterrupt, SystemExit):

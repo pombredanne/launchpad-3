@@ -20,7 +20,7 @@ from canonical.config import config
 from canonical.launchpad.interfaces.archivesigningkey import (
     IArchiveSigningKey)
 from canonical.launchpad.interfaces.gpghandler import IGPGHandler
-from canonical.launchpad.interfaces.gpg import IGPGKeySet, GPGKeyAlgorithm
+from lp.registry.interfaces.gpg import IGPGKeySet, GPGKeyAlgorithm
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 
 
@@ -62,6 +62,14 @@ class ArchiveSigningKey:
         """See `IArchiveSigningKey`."""
         assert self.archive.signing_key is None, (
             "Cannot override signing_keys.")
+
+        # Default PPAs are always created first, their signing-key will
+        # be always available when a named-ppa gets processed. In this case,
+        # instead of generating a new key we reuse the existing one.
+        default_ppa = self.archive.owner.archive
+        if self.archive is not default_ppa:
+            self.archive.signing_key = default_ppa.signing_key
+            return
 
         key_displayname = "Launchpad %s" % self.archive.displayname
         secret_key = getUtility(IGPGHandler).generateKey(key_displayname)

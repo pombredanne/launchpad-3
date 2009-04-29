@@ -61,15 +61,21 @@ class MockBuilder:
     def checkCanBuildForDistroArchSeries(self, distro_arch_series):
         pass
 
+
 class SaneBuildingSlave:
     """A mock slave that is currently building build 8 and buildqueue 1."""
 
     def status(self):
-        return ('BuilderStatus.BUILDING', '8-1')
+        return ('BuilderStatus.BUILDING', '8-1', 'Doing something ...')
 
     def clean(self):
         print 'Rescuing SaneSlave'
 
+    def echo(self, *args):
+        return args
+
+    def info(self):
+        return ['1.0', 'i386', ['debian']]
 
 class SaneWaitingSlave:
     """A mock slave that is currently waiting.
@@ -156,6 +162,7 @@ class OkSlave:
         else:
             print "No archives set."
         print "Suite: %s" % args['suite']
+        print "Ogre-component: %s" % args['ogrecomponent']
         print "Archive Purpose: %s" % args['archive_purpose']
         print "Archive Private: %s" % args['archive_private']
         return ('BuildStatus.Building', info)

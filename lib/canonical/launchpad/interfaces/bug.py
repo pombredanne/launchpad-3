@@ -16,6 +16,7 @@ __all__ = [
     'IFrontPageBugAddForm',
     'IProjectBugAddForm',
     'InvalidBugTargetType',
+    'InvalidDuplicateValue',
     ]
 
 from zope.component import getUtility
@@ -28,45 +29,44 @@ from canonical.launchpad.fields import (
     BugField, ContentNameField, DuplicateBug, PublicPersonChoice, Tag, Title)
 from canonical.launchpad.interfaces.bugattachment import IBugAttachment
 from canonical.launchpad.interfaces.bugtarget import IBugTarget
-from canonical.launchpad.interfaces.bugtask import IBugTask
+from canonical.launchpad.interfaces.bugtask import (
+    BugTaskImportance, BugTaskStatus, IBugTask)
 from canonical.launchpad.interfaces.bugwatch import IBugWatch
 from canonical.launchpad.interfaces.cve import ICve
 from canonical.launchpad.interfaces.launchpad import NotFoundError
 from canonical.launchpad.interfaces.message import IMessage
-from canonical.launchpad.interfaces.mentoringoffer import ICanBeMentored
-from canonical.launchpad.interfaces.person import IPerson
+from lp.registry.interfaces.mentoringoffer import ICanBeMentored
+from lp.registry.interfaces.person import IPerson
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.validators.bugattachment import (
     bug_attachment_size_constraint)
 
-from canonical.lazr.rest.declarations import (
+from lazr.restful.declarations import (
     REQUEST_USER, call_with, export_as_webservice_entry,
     export_factory_operation, export_operation_as, export_write_operation,
     exported, mutator_for, operation_parameters, rename_parameters_as,
     webservice_error)
-from canonical.lazr.fields import CollectionField, Reference
-from canonical.lazr.interface import copy_field
+from lazr.restful.fields import CollectionField, Reference
+from lazr.restful.interface import copy_field
 
 
 class CreateBugParams:
     """The parameters used to create a bug."""
 
     def __init__(self, owner, title, comment=None, description=None, msg=None,
-                 status=None, assignee=None, datecreated=None,
-                 security_related=False, private=False, subscribers=(),
-                 binarypackagename=None, tags=None, subscribe_reporter=True):
+                 status=None, datecreated=None, security_related=False,
+                 private=False, subscribers=(), binarypackagename=None,
+                 tags=None, subscribe_reporter=True):
         self.owner = owner
         self.title = title
         self.comment = comment
         self.description = description
         self.msg = msg
         self.status = status
-        self.assignee = assignee
         self.datecreated = datecreated
         self.security_related = security_related
         self.private = private
         self.subscribers = subscribers
-
         self.product = None
         self.distribution = None
         self.sourcepackagename = None
@@ -168,8 +168,9 @@ class IBug(ICanBeMentored):
     ownerID = Int(title=_('Owner'), required=True, readonly=True)
     owner = exported(
         Reference(IPerson, title=_("The owner's IPerson"), readonly=True))
-    duplicateof = exported(
-        DuplicateBug(title=_('Duplicate Of'), required=False),
+    duplicateof = DuplicateBug(title=_('Duplicate Of'), required=False)
+    readonly_duplicateof = exported(
+        DuplicateBug(title=_('Duplicate Of'), required=False, readonly=True),
         exported_as='duplicate_of')
     private = exported(
         Bool(title=_("This bug report should be private"), required=False,
@@ -273,6 +274,14 @@ class IBug(ICanBeMentored):
     users_unaffected_count = exported(
         Int(title=_('The number of users unaffected by this bug'),
             required=True, readonly=True))
+    users_affected = exported(CollectionField(
+            title=_('Users affected'),
+            value_type=Reference(schema=IPerson),
+            readonly=True))
+
+    # Adding related BugMessages provides a hook for getting at
+    # BugMessage.visible when building bug comments.
+    bug_messages = Attribute('The bug messages related to this object.')
 
     messages = CollectionField(
             title=_("The messages related to this object, in reverse "
@@ -383,11 +392,14 @@ class IBug(ICanBeMentored):
     def addCommentNotification(message, recipients=None):
         """Add a bug comment notification."""
 
-    def addChange(change):
+    def addChange(change, recipients=None):
         """Record a change to the bug.
 
         :param change: An `IBugChange` instance from which to take the
             change data.
+        :param recipients: A set of `IBugNotificationRecipient`s to whom
+            to send notifications about this change. If None is passed
+            the default list of recipients for the bug will be used.
         """
 
     def expireNotifications():
@@ -645,6 +657,27 @@ class IBug(ICanBeMentored):
     def markUserAffected(user, affected=True):
         """Mark :user: as affected by this bug."""
 
+    @mutator_for(readonly_duplicateof)
+    @operation_parameters(duplicate_of=copy_field(readonly_duplicateof))
+    @export_write_operation()
+    def markAsDuplicate(duplicate_of):
+        """Mark this bug as a duplicate of another."""
+
+    @operation_parameters(
+        comment_number=Int(
+            title=_('The number of the comment in the list of messages.'),
+            required=True),
+        visible=Bool(title=_('Show this comment?'), required=True))
+    @call_with(user=REQUEST_USER)
+    @export_write_operation()
+    def setCommentVisibility(user, comment_number, visible):
+        """Set the visible attribute on a bug comment."""
+
+
+class InvalidDuplicateValue(Exception):
+    """A bug cannot be set as the duplicate of another."""
+    webservice_error(417)
+
 
 # We are forced to define these now to avoid circular import problems.
 IBugAttachment['bug'].schema = IBug
@@ -728,6 +761,24 @@ class IBugAddForm(IBug):
     patch = Bool(title=u"This attachment is a patch", required=False,
         default=False)
     attachment_description = Title(title=u'Description', required=False)
+    status = Choice(
+        title=_('Status'),
+        values=list(
+            item for item in BugTaskStatus.items.items
+            if item != BugTaskStatus.UNKNOWN),
+        default=IBugTask['status'].default)
+    importance = Choice(
+        title=_('Importance'),
+        values=list(
+            item for item in BugTaskImportance.items.items
+            if item != BugTaskImportance.UNKNOWN),
+        default=IBugTask['importance'].default)
+    milestone = Choice(
+        title=_('Milestone'), required=False,
+        vocabulary='Milestone')
+    assignee = PublicPersonChoice(
+        title=_('Assign to'), required=False,
+        vocabulary='ValidAssignee')
 
 
 class IProjectBugAddForm(IBugAddForm):

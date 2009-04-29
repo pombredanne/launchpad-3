@@ -34,7 +34,7 @@
     <adapter
         for="zope.publisher.interfaces.http.IHTTPRequest"
         provides="canonical.launchpad.webapp.interfaces.IDatabasePolicy"
-        factory="canonical.launchpad.webapp.dbpolicy.LaunchpadDatabasePolicy"
+        factory="canonical.launchpad.webapp.dbpolicy.LaunchpadDatabasePolicyFactory"
         />
     <adapter
         for="zope.publisher.interfaces.xmlrpc.IXMLRPCRequest"
@@ -49,7 +49,24 @@
     <adapter
         for="canonical.launchpad.layers.FeedsLayer"
         provides="canonical.launchpad.webapp.interfaces.IDatabasePolicy"
-        factory="canonical.launchpad.webapp.dbpolicy.SlaveDatabasePolicy"
+        factory="canonical.launchpad.webapp.dbpolicy.SlaveOnlyDatabasePolicy"
+        />
+    <!-- XXX StuartBishop 2009-03-04 bug=264783 Weee! Two OpenID Layers. -->
+    <adapter
+        for="canonical.launchpad.layers.IdLayer"
+        provides="canonical.launchpad.webapp.interfaces.IDatabasePolicy"
+        factory="canonical.launchpad.webapp.dbpolicy.SSODatabasePolicy"
+        />
+    <adapter
+        for="canonical.launchpad.layers.OpenIDLayer"
+        provides="canonical.launchpad.webapp.interfaces.IDatabasePolicy"
+        factory="canonical.launchpad.webapp.dbpolicy.SSODatabasePolicy"
+        />
+
+    <adapter
+        for="canonical.launchpad.layers.WebServiceLayer"
+        provides="canonical.launchpad.webapp.interfaces.IWebBrowserOriginatingRequest"
+        factory="canonical.launchpad.webapp.servers.web_service_request_to_browser_request"
         />
 
     <!-- lazr.batchnavigator hook -->
@@ -415,6 +432,12 @@
         for="canonical.launchpad.interfaces.IMilestone"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.MilestoneFormatterAPI"
+        name="fmt"
+        />
+    <adapter
+        for="canonical.launchpad.interfaces.IProductRelease"
+        provides="zope.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.ProductReleaseFormatterAPI"
         name="fmt"
         />
     <adapter

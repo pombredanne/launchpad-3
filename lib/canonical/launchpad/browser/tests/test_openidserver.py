@@ -17,26 +17,51 @@ from zope.component import getUtility
 from zope.session.interfaces import ISession
 from zope.testing import doctest
 
+import transaction
+
 from canonical.launchpad.browser.openidserver import OpenIDMixin
-from canonical.launchpad.ftests import ANONYMOUS, login, logout
+from canonical.launchpad.ftests import ANONYMOUS, login, login_person, logout
 from canonical.launchpad.database.openidserver import OpenIDAuthorization
-from canonical.launchpad.interfaces.person import IPersonSet
+from lp.registry.interfaces.person import IPersonSet
+from canonical.launchpad.interfaces.authtoken import (
+    IAuthTokenSet, LoginTokenType)
 from canonical.launchpad.interfaces.openidserver import IOpenIDRPConfigSet
 from canonical.launchpad.interfaces.shipit import IShipitAccount
-from canonical.launchpad.testing import TestCaseWithFactory
+from canonical.launchpad.testing import TestCase, TestCaseWithFactory
 from canonical.launchpad.testing.systemdocs import (
     LayeredDocFileSuite, setUp, tearDown)
 from canonical.launchpad.testing.pages import setupBrowser
+from canonical.launchpad.webapp.dbpolicy import SSODatabasePolicy
+from canonical.launchpad.webapp.interfaces import IStoreSelector
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing import DatabaseFunctionalLayer
 
 
-class SimpleRegistrationTestCase(unittest.TestCase):
+class SSODatabasePolicyTestCase(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(SSODatabasePolicyTestCase, self).setUp()
+        getUtility(IStoreSelector).push(SSODatabasePolicy())
+
+    def tearDown(self):
+        getUtility(IStoreSelector).pop()
+        super(SSODatabasePolicyTestCase, self).tearDown()
+
+
+class SimpleRegistrationTestCase(TestCase):
     """Tests for Simple Registration helpers in OpenIDMixin"""
+
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
         login(ANONYMOUS)
+        super(SimpleRegistrationTestCase, self).setUp()
+
+    def tearDown(self):
+        super(SimpleRegistrationTestCase, self).tearDown()
+        logout()
 
     def test_sreg_field_names(self):
         # Test that sreg_field_names returns an appropriate value
@@ -102,8 +127,9 @@ class SimpleRegistrationTestCase(unittest.TestCase):
             ('timezone', u'Europe/Paris')])
 
 
-class PreAuthorizeRPViewTestCase(unittest.TestCase):
+class PreAuthorizeRPViewTestCase(TestCase):
     """Test for the PreAuthorizeRPView."""
+
     layer = DatabaseFunctionalLayer
 
     def test_pre_authorize_works_with_slave_store(self):
@@ -125,9 +151,14 @@ class PreAuthorizeRPViewTestCase(unittest.TestCase):
 
         # We do not use the isAuthorized API because we don't know the client
         # id used by browser, since no cookie were used.
-        self.failUnless(OpenIDAuthorization.selectOneBy(
-            accountID=no_priv.accountID, trust_root='http://launchpad.dev/'),
-            "Pre-authorization record wasn't created.")
+        getUtility(IStoreSelector).push(SSODatabasePolicy())
+        try:
+            self.failUnless(OpenIDAuthorization.selectOneBy(
+                accountID=no_priv.accountID,
+                trust_root='http://launchpad.dev/'),
+                "Pre-authorization record wasn't created.")
+        finally:
+            getUtility(IStoreSelector).pop()
 
 
 class FakeOpenIdRequest:
@@ -150,10 +181,8 @@ class FakeOpenIdRequest:
         return self.args
 
 
-class OpenIDMixin_shouldReauthenticate_TestCase(unittest.TestCase):
+class OpenIDMixin_shouldReauthenticate_TestCase(SSODatabasePolicyTestCase):
     """Test cases for the shouldReauthenticate() period."""
-
-    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         """Sets up a very simple openid_mixin with a FakeOpenIdRequest.
@@ -265,6 +294,47 @@ class OpenIDMixin_checkTeamMembership_TestCase(TestCaseWithFactory):
                 'admins'})
 
 
+class TestPasswordResetViewForLaunchpadPerson(TestCaseWithFactory):
+    """Test the reset password view for accounts which have an associated
+    Person."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self)
+        self.person = self.factory.makePerson()
+        login_person(self.person)
+        self.person_email = self.person.preferredemail.email
+        self.person.deactivateAccount('For testing')
+        # Need to commit here so that the deactivated person is seen on other
+        # stores.
+        transaction.commit()
+
+    def _finishPasswordReset(self, token):
+        """Create a Browser and drive it through resetting the password.
+
+        Return the Browser object after the password is reset.
+        """
+        logout()
+        browser = setupBrowser()
+        browser.open('http://openid.launchpad.dev/token/' + token.token)
+        browser.getControl(name='field.email').value = token.email
+        browser.getControl(name='field.password').value = 'test'
+        browser.getControl(name='field.password_dupe').value = 'test'
+        browser.getControl('Continue').click()
+        return browser
+
+    def test_reactivate_when_password_is_reset(self):
+        """Deactivated LP people are reactivated when password is reset."""
+        getUtility(IStoreSelector).push(SSODatabasePolicy())
+        token = getUtility(IAuthTokenSet).new(
+            self.person.account, self.person_email, self.person_email,
+            LoginTokenType.PASSWORDRECOVERY, redirection_url=None)
+        getUtility(IStoreSelector).pop()
+        browser = self._finishPasswordReset(token)
+        self.assertEqual(browser.url, 'http://openid.launchpad.dev')
+
+
 def test_suite():
     suite = unittest.TestSuite()
     suite.addTest(unittest.TestLoader().loadTestsFromName(__name__))
@@ -273,6 +343,7 @@ def test_suite():
     suite.addTest(LayeredDocFileSuite(
         'loginservice.txt',
         'loginservice-dissect-radio-button.txt',
+        'loginservice-unauthorized-view.txt',
         setUp=setUp, tearDown=tearDown,
         layer=DatabaseFunctionalLayer))
     return suite

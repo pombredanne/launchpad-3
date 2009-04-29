@@ -17,7 +17,7 @@
       />
     <require
       permission="launchpad.Edit"
-      set_attributes="description whiteboard"
+      set_attributes="description displayname"
       />
     <require
       permission="launchpad.Admin"
@@ -185,7 +185,7 @@
 
   <browser:pages
     for="canonical.launchpad.interfaces.IArchive"
-    permission="launchpad.Admin"
+    permission="launchpad.Append"
     class="canonical.launchpad.browser.archivesubscription.ArchiveSubscribersView">
     <browser:page
       name="+subscriptions"

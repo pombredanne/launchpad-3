@@ -12,7 +12,9 @@ import unittest
 from storm.store import Store
 
 import transaction
+from zope.component import getUtility
 import zope.event
+from zope.interface.verify import verifyClass, verifyObject
 from zope.security.proxy import (
     isinstance as zope_isinstance, removeSecurityProxy)
 
@@ -21,6 +23,7 @@ from canonical.config import config
 # Import the login and logout functions here as it is a much better
 # place to import them from in tests.
 from canonical.launchpad.ftests import ANONYMOUS, login, login_person, logout
+from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.testing.factory import *
 
 from twisted.python.util import mergeFunctionMetadata
@@ -97,10 +100,29 @@ class TestCase(unittest.TestCase):
         self._cleanups.append((function, arguments, keywordArguments))
 
     def assertProvides(self, obj, interface):
-        """Assert 'obj' provides 'interface'."""
+        """Assert 'obj' provides 'interface'.
+        
+        You should probably be using `assertCorrectlyProvides`.
+        """
         self.assertTrue(
             interface.providedBy(obj),
             "%r does not provide %r" % (obj, interface))
+
+    def assertCorrectlyProvides(self, obj, interface):
+        """Assert 'obj' may correctly provides 'interface'."""
+        self.assertTrue(
+            interface.providedBy(obj),
+            "%r does not provide %r." % (obj, interface))
+        self.assertTrue(
+            verifyObject(interface, obj),
+            "%r claims to provide %r but does not do so correctly."
+            % (obj, interface))
+
+    def assertClassImplements(self, cls, interface):
+        """Assert 'cls' may correctly implement 'interface'."""
+        self.assertTrue(
+            verifyClass(interface, cls),
+            "%r does not correctly implement %r." % (cls, interface))
 
     def assertNotifies(self, event_type, callable_obj, *args, **kwargs):
         """Assert that a callable performs a given notification.
@@ -248,6 +270,12 @@ class TestCase(unittest.TestCase):
             raise AssertionError(
                 "'%s' was not raised" % exception_name)
 
+    def assertBetween(self, lower_bound, variable, upper_bound):
+        """Assert that 'variable' is strictly between two boundaries."""
+        self.assertTrue(
+            lower_bound < variable < upper_bound,
+            "%r < %r < %r" % (lower_bound, variable, upper_bound))
+
     def pushConfig(self, section, **kwargs):
         """Push some key-value pairs into a section of the config.
 
@@ -336,7 +364,7 @@ class TestCaseWithFactory(TestCase):
         return browser
 
     def create_branch_and_tree(self, tree_location='.', product=None,
-                               hosted=False, db_branch=None):
+                               hosted=False, db_branch=None, format=None):
         """Create a database branch, bzr branch and bzr checkout.
 
         :param tree_location: The path on disk to create the tree at.
@@ -344,10 +372,13 @@ class TestCaseWithFactory(TestCase):
         :param hosted: If True, create in the hosted area.  Otherwise, create
             in the mirrored area.
         :param db_branch: If supplied, the database branch to use.
+        :param format: Override the default bzrdir format to create.
         :return: a `Branch` and a workingtree.
         """
-        from bzrlib.bzrdir import BzrDir
+        from bzrlib.bzrdir import BzrDir, format_registry
         from bzrlib.transport import get_transport
+        if format is not None and isinstance(format, basestring):
+            format = format_registry.get(format)()
         if db_branch is None:
             if product is None:
                 db_branch = self.factory.makeAnyBranch()
@@ -364,7 +395,8 @@ class TestCaseWithFactory(TestCase):
             transport.clone('../..').ensure_base()
             transport.clone('..').ensure_base()
         self.addCleanup(transport.delete_tree, '.')
-        bzr_branch = BzrDir.create_branch_convenience(branch_url)
+        bzr_branch = BzrDir.create_branch_convenience(
+            branch_url, format=format)
         return db_branch, bzr_branch.create_checkout(
             tree_location, lightweight=True)
 
@@ -502,3 +534,15 @@ def with_anonymous_login(function):
         finally:
             logout()
     return mergeFunctionMetadata(function, wrapped)
+
+
+def run_with_login(person, function, *args, **kwargs):
+    """Run 'function' with 'person' logged in."""
+    current_person = getUtility(ILaunchBag).user
+    logout()
+    login_person(person)
+    try:
+        return function(*args, **kwargs)
+    finally:
+        logout()
+        login_person(current_person)

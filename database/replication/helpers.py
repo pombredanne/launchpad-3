@@ -27,21 +27,22 @@ CLUSTER_NAMESPACE = '_%s' % CLUSTERNAME
 
 # Seed tables for the authdb replication set to be passed to
 # calculate_replication_set().
-AUTHDB_SEED = set([
+AUTHDB_SEED = frozenset([
+    ('public', 'account'),
+    ('public', 'openidassociation'),
+    ('public', 'openidnonce'),
     ])
 
 # Seed tables for the lpmain replication set to be passed to
 # calculate_replication_set().
-LPMAIN_SEED = set([
-    # These tables are scheduled to move to the authdb seed.
-    ('public', 'account'),
-    ('public', 'openidassociations'),
-    ('public', 'oauthnonce'),
-
+LPMAIN_SEED = frozenset([
     ('public', 'person'),
     ('public', 'launchpaddatabaserevision'),
     ('public', 'fticache'),
     ('public', 'nameblacklist'),
+    ('public', 'openidconsumerassociation'),
+    ('public', 'openidconsumernonce'),
+    ('public', 'oauthnonce'),
     ('public', 'codeimportmachine'),
     ('public', 'scriptactivity'),
     ('public', 'standardshipitrequest'),
@@ -49,6 +50,7 @@ LPMAIN_SEED = set([
     ('public', 'launchpadstatistic'),
     ('public', 'parsedapachelog'),
     ('public', 'shipitsurvey'),
+    ('public', 'openidassociations'), # Remove this in April 2009 or later.
     ])
 
 # Explicitly list tables that should not be replicated. This includes the
@@ -132,12 +134,12 @@ def execute_slonik(script, sync=None, exit_on_fail=True, auto_preamble=True):
         script = preamble() + script
 
     if sync is not None:
-        script = script + """
+        script = script + dedent("""\
             sync (id = @master_node);
             wait for event (
                 origin = ALL, confirmed = ALL,
                 wait on = @master_node, timeout = %d);
-            """ % sync
+            """ % sync)
 
     # Copy the script to a NamedTemporaryFile rather than just pumping it
     # to slonik via stdin. This way it can be examined if slonik appears
@@ -184,12 +186,12 @@ def get_master_node(con, set_id=1):
     """Return the master Node, or None if the cluster is still being setup."""
     nodes = _get_nodes(con, """
         SELECT DISTINCT
-            pa_server AS node_id,
+            set_origin AS node_id,
             'master',
             pa_conninfo AS connection_string,
             True
         FROM _sl.sl_set
-        JOIN _sl.sl_path ON set_origin = pa_server
+        LEFT OUTER JOIN _sl.sl_path ON set_origin = pa_server
         WHERE set_id = %d
         """ % set_id)
     if not nodes:
@@ -201,7 +203,7 @@ def get_master_node(con, set_id=1):
 def get_slave_nodes(con, set_id=1):
     """Return the list of slave Nodes."""
     return _get_nodes(con, """
-        SELECT
+        SELECT DISTINCT
             pa_server AS node_id,
             'slave' || pa_server,
             pa_conninfo AS connection_string,
@@ -411,7 +413,7 @@ def calculate_replication_set(cur, seeds):
 def discover_unreplicated(cur):
     """Inspect the database for tables and sequences in the public schema
     that are not in a replication set.
-    
+
     :returns: (unreplicated_tables_set, unreplicated_sequences_set)
     """
     all_tables = all_tables_in_schema(cur, 'public')

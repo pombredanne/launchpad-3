@@ -30,6 +30,8 @@ from canonical.launchpad.browser.potemplate import POTemplateFacets
 from canonical.launchpad.interfaces import (
     IPersonSet, IPOFile, ITranslationImporter, ITranslationImportQueue,
     UnexpectedFormData, NotFoundError)
+from canonical.launchpad.interfaces.translationsperson import (
+    ITranslationsPerson)
 from canonical.launchpad.webapp import (
     canonical_url, enabled_with_permission, LaunchpadView,
     Link, Navigation, NavigationMenu)
@@ -73,16 +75,17 @@ class POFileNavigation(Navigation):
         # Need to check in our database whether we have already the requested
         # TranslationMessage.
         translationmessage = potmsgset.getCurrentTranslationMessage(
-            self.context.language)
+            self.context.potemplate, self.context.language)
 
         if translationmessage is not None:
             # Already have a valid POMsgSet entry, just return it.
+            translationmessage.setPOFile(self.context)
             return translationmessage
         else:
             # Get a fake one so we don't create new TranslationMessage just
             # because someone is browsing the web.
             return potmsgset.getCurrentDummyTranslationMessage(
-                self.context.language)
+                self.context.potemplate, self.context.language)
 
 
 class POFileFacets(POTemplateFacets):
@@ -186,7 +189,7 @@ class POFileView(LaunchpadView):
 
 
 class TranslationMessageContainer:
-    def __init__(self, translation):
+    def __init__(self, translation, pofile):
         self.data = translation
 
         # Assign a CSS class to the translation
@@ -195,14 +198,14 @@ class TranslationMessageContainer:
         if translation.is_current:
             self.usage_class = 'usedtranslation'
         else:
-            if translation.is_hidden:
+            if translation.isHidden(pofile):
                 self.usage_class = 'hiddentranslation'
             else:
                 self.usage_class = 'suggestedtranslation'
 
 
 class FilteredPOTMsgSets:
-    def __init__(self, translations):
+    def __init__(self, translations, pofile):
         potmsgsets = []
         current_potmsgset = None
         if translations is None:
@@ -212,14 +215,15 @@ class FilteredPOTMsgSets:
                 if (current_potmsgset is not None and
                     current_potmsgset['potmsgset'] == translation.potmsgset):
                     current_potmsgset['translations'].append(
-                        TranslationMessageContainer(translation))
+                        TranslationMessageContainer(translation, pofile))
                 else:
                     if current_potmsgset is not None:
                         potmsgsets.append(current_potmsgset)
+                    translation.setPOFile(pofile)
                     current_potmsgset = {
                         'potmsgset' : translation.potmsgset,
                         'translations' : [TranslationMessageContainer(
-                            translation)],
+                            translation, pofile)],
                         'context' : translation
                         }
             if current_potmsgset is not None:
@@ -250,7 +254,6 @@ class POFileFilteredView(LaunchpadView):
             else:
                 translations = self.context.getTranslationsFilteredBy(
                     person=self.person)
-
         self.batchnav = BatchNavigator(translations, self.request,
                                        size=self.DEFAULT_BATCH_SIZE)
 
@@ -262,7 +265,8 @@ class POFileFilteredView(LaunchpadView):
         display them grouped by English string, we transform the
         current batch.
         """
-        return FilteredPOTMsgSets(self.batchnav.currentBatch()).potmsgsets
+        return FilteredPOTMsgSets(self.batchnav.currentBatch(),
+                                  self.context).potmsgsets
 
 
 class POFileUploadView(POFileView):
@@ -366,8 +370,9 @@ class POFileTranslateView(BaseTranslationView):
 
     def initialize(self):
         self.pofile = self.context
+        translations_person = ITranslationsPerson(self.user, None)
         if (self.user is not None and
-            self.user.translations_relicensing_agreement is None):
+            translations_person.translations_relicensing_agreement is None):
             url = str(self.request.URL).decode('US-ASCII', 'replace')
             if self.request.get('QUERY_STRING', None):
                 url = url + '?' + self.request['QUERY_STRING']
@@ -401,9 +406,6 @@ class POFileTranslateView(BaseTranslationView):
 
         :return: TranslationGroup or None if not found.
         """
-        # XXX 2009-02-20 Danilo (bug #332044): potemplate.translationgroups
-        # provides a list of translation groups even if it can have at
-        # most one.
         translation_groups = self.context.potemplate.translationgroups
         if translation_groups is not None and len(translation_groups) > 0:
             group = translation_groups[0]
@@ -464,11 +466,13 @@ class POFileTranslateView(BaseTranslationView):
             last = potmsgset
 
             translationmessage = potmsgset.getCurrentTranslationMessage(
-                self.context.language)
+                self.context.potemplate, self.context.language)
             if translationmessage is None:
                 translationmessage = (
                     potmsgset.getCurrentDummyTranslationMessage(
-                        self.context.language))
+                        self.context.potemplate, self.context.language))
+            else:
+                translationmessage.setPOFile(self.context)
             view = self._prepareView(
                 CurrentTranslationMessageView, translationmessage,
                 self.errors.get(potmsgset))
@@ -533,12 +537,12 @@ class POFileTranslateView(BaseTranslationView):
         """
         if self.show == 'untranslated':
             translationmessage = potmsgset.getCurrentTranslationMessage(
-                self.pofile.language)
+                self.pofile.potemplate, self.pofile.language)
             if translationmessage is not None:
                 self.start_offset += 1
         elif self.show == 'new_suggestions':
             new_suggestions = potmsgset.getLocalTranslationMessages(
-                self.pofile.language)
+                self.pofile.potemplate, self.pofile.language)
             if len(new_suggestions) == 0:
                 self.start_offset += 1
         else:

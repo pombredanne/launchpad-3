@@ -125,3 +125,14 @@ comment/attachment" page, for use when JavaScript isn't available.
 
     >>> print user_browser.getLink('Add a comment/attachment').url
     http://launchpad.dev/ubuntu/+source/.../+bug/1/+addcomment
+
+
+== Navigatig to a bug in the wrong context ==
+
+If we navigate to a bug in a context in which it doesn't exist, we are
+redirected to the default context.
+
+    >>> browser.open('http://bugs.launchpad.dev/jokosher/+bug/10')
+    >>> print browser.url
+    http://bugs.launchpad.dev/ubuntu/+source/linux-source-2.6.15/+bug/10
+
