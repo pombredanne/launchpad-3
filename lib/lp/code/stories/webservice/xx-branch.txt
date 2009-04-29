@@ -107,6 +107,7 @@ time goes on.
     mirror_status_message: None
     name: u'trunk'
     owner_link: u'.../~eric'
+    private: False
     project_link: u'.../fooix'
     registrant_link: u'.../~eric'
     repository_format: None

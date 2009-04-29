@@ -23,7 +23,8 @@ from canonical.database.sqlbase import SQLBase
 from lp.code.interfaces.codeimportevent import (
     CodeImportEventDataType, CodeImportEventType, ICodeImportEvent,
     ICodeImportEventSet, ICodeImportEventToken)
-from lp.code.interfaces.codeimportmachine import CodeImportMachineOfflineReason
+from lp.code.interfaces.codeimportmachine import (
+    CodeImportMachineOfflineReason)
 from lp.code.interfaces.codeimport import RevisionControlSystems
 from lp.registry.interfaces.person import validate_public_person
 
@@ -260,6 +261,8 @@ class CodeImportEventSet:
         elif code_import.rcs_type == RevisionControlSystems.CVS:
             yield 'CVS_ROOT', code_import.cvs_root
             yield 'CVS_MODULE', code_import.cvs_module
+        elif code_import.rcs_type == RevisionControlSystems.GIT:
+            yield 'GIT_REPO_URL', code_import.git_repo_url
         else:
             raise AssertionError(
                 "Unknown RCS type: %s" % (code_import.rcs_type,))

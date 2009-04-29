@@ -12,6 +12,8 @@ from bzrlib.repository import format_registry as repo_format_registry
 
 from lp.code.interfaces.branch import (
     BranchFormat, ControlFormat, RepositoryFormat)
+
+
 class TestFormatSupport(TestCase):
     """Ensure the launchpad format list is up-to-date.
 

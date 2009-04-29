@@ -721,7 +721,7 @@ class IArchiveView(IHasBuildRecords):
     @operation_parameters(
         source_ids=List(
             title=_("A list of source publishing history record ids."),
-            value_type=TextLine()))
+            value_type=Int()))
     @export_read_operation()
     def getBuildSummariesForSourceIds(source_ids):
         """Return a dictionary containing a summary of the build statuses.
@@ -1076,17 +1076,26 @@ class ArchivePurpose(DBEnumeratedType):
         This kind of archive will be used for rebuilds, snapshots etc.
         """)
 
+    DEBUG = DBItem(7, """
+        Debug Archive
+
+        This kind of archive will be user for publishing package with
+        debug-symbols.
+        """)
+
 
 default_name_by_purpose = {
     ArchivePurpose.PRIMARY: 'primary',
     ArchivePurpose.PPA: 'ppa',
     ArchivePurpose.PARTNER: 'partner',
+    ArchivePurpose.DEBUG: 'debug',
     }
 
 
 MAIN_ARCHIVE_PURPOSES = (
     ArchivePurpose.PRIMARY,
     ArchivePurpose.PARTNER,
+    ArchivePurpose.DEBUG,
     )
 
 ALLOW_RELEASE_BUILDS = (
