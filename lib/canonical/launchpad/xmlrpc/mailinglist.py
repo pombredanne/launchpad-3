@@ -145,8 +145,10 @@ class MailingListAPIView(LaunchpadXMLRPCView):
             team_posters = poster_addresses.get(team_name, [])
             team_subscribers = subscriber_addresses.get(team_name, [])
             if not team_posters and not team_subscribers:
-                # Mailman requested a bogus team.
-                return faults.NoSuchTeamMailingList(team_name)
+                # Mailman requested a bogus team.  Ignore it.
+                response[team_name] = None
+                continue
+                #return faults.NoSuchTeamMailingList(team_name)
             # Map {address -> (full_name, flags, status)}
             members = {}
             # Hard code flags to 0 currently, meaning the member will get
