@@ -601,9 +601,9 @@ class TestUploadProcessor(TestUploadProcessorBase):
             "bar_1.0-1_binary", "%s/ubuntu" % copy_archive.id)
         self.processUpload(uploadprocessor, upload_dir)
 
-        # The binary just uploaded is accepted (although its filename
-        # 'bar_1.0-1_i386.deb' is already published in the primary
-        # archive) because it's destined for a copy archive.
+        # The binary just uploaded is accepted because it's destined for a
+        # copy archive and the PRIMARY and the COPY archives are isolated
+        # from each other.
         self.assertEqual(
             uploadprocessor.last_processed_upload.is_rejected, False)
 
