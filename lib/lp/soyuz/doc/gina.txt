@@ -118,8 +118,7 @@ Let's set up the filesystem:
     ...     os.remove('/tmp/gina_test_archive')
     ... except OSError:
     ...     pass
-    >>> relative_path = ('lib/canonical/launchpad/scripts/'
-    ...                  'tests/gina_test_archive')
+    >>> relative_path = ('lib/lp/soyuz/scripts/tests/gina_test_archive')
     >>> path = os.path.join(os.getcwd(), relative_path)
     >>> os.symlink(path, '/tmp/gina_test_archive')
 
@@ -485,7 +484,7 @@ overrides):
 Link to the "later" archive:
 
     >>> os.remove('/tmp/gina_test_archive')
-    >>> relative_path = ('lib/canonical/launchpad/scripts/'
+    >>> relative_path = ('lib/lp/soyuz/scripts/'
     ...                  'tests/gina_test_archive_2nd_run')
     >>> path = os.path.join(os.getcwd(), relative_path)
     >>> os.symlink(path, '/tmp/gina_test_archive')
@@ -667,8 +666,7 @@ entry for a suite called 'testing' which contains only the source
 indexes from the 'hoary' suite.
 
     >>> os.remove('/tmp/gina_test_archive')
-    >>> relative_path = ('lib/canonical/launchpad/scripts/'
-    ...                  'tests/gina_test_archive')
+    >>> relative_path = ('lib/lp/soyuz/scripts/tests/gina_test_archive')
     >>> path = os.path.join(os.getcwd(), relative_path)
     >>> os.symlink(path, '/tmp/gina_test_archive')
 

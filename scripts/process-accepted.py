@@ -15,11 +15,11 @@ from zope.component import getUtility
 
 from canonical.config import config
 from canonical.database.sqlbase import ISOLATION_LEVEL_READ_COMMITTED
-from canonical.launchpad.interfaces import (
-    IDistributionSet, PackageUploadStatus)
+from lp.registry.interfaces.distribution import IDistributionSet
+from lp.soyuz.interfaces.package import PackageUploadStatus
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger, logger_options)
-from canonical.launchpad.scripts.processaccepted import close_bugs
+from lp.soyuz.scripts.processaccepted import close_bugs
 from canonical.lp import initZopeless
 
 from contrib.glock import GlobalLock

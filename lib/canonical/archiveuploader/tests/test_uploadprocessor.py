@@ -36,10 +36,14 @@ from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.soyuz.model.sourcepackagerelease import (
     SourcePackageRelease)
 from canonical.launchpad.ftests import import_public_test_keys
-from canonical.launchpad.interfaces import (
-    ArchivePurpose, DistroSeriesStatus, IArchiveSet, IDistributionSet,
-    ILibraryFileAliasSet, PackagePublishingPocket, PackagePublishingStatus,
-    PackageUploadStatus, QueueInconsistentStateError)
+from lp.registry.interfaces.distribution import IDistributionSet
+from lp.registry.interfaces.distroseries import DistroSeriesStatus
+from lp.soyuz.interfaces.archive import ArchivePurpose, IArchiveSet
+from lp.soyuz.interfaces.package import PackageUploadStatus
+from lp.soyuz.interfaces.publishing import (
+    PackagePublishingPocket, PackagePublishingStatus)
+from lp.soyuz.interfaces.queue import QueueInconsistentStateError
+from canonical.launchpad.interfaces import ILibraryFileAliasSet
 from lp.soyuz.interfaces.archivepermission import (
     ArchivePermissionType)
 from canonical.launchpad.interfaces.component import IComponentSet

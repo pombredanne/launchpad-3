@@ -16,9 +16,6 @@ from lp.registry.interfaces.person import *
 from lp.registry.interfaces.pillar import *
 
 from canonical.launchpad.interfaces.account import *
-from lp.soyuz.interfaces.archive import *
-from lp.soyuz.interfaces.archivedependency import *
-from lp.soyuz.interfaces.archivepermission import *
 from lp.registry.interfaces.announcement import *
 from canonical.launchpad.interfaces.authserver import *
 from canonical.launchpad.interfaces.authtoken import *
@@ -48,7 +45,6 @@ from canonical.launchpad.interfaces.bugtask import *
 from canonical.launchpad.interfaces.bugtarget import *
 from canonical.launchpad.interfaces.bugtracker import *
 from canonical.launchpad.interfaces.bugwatch import *
-from lp.soyuz.interfaces.build import *
 from lp.soyuz.interfaces.builder import *
 from lp.soyuz.interfaces.buildrecords import *
 from lp.soyuz.interfaces.buildqueue import *

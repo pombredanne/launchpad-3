@@ -32,8 +32,9 @@ import pytz
 from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
-    ArchivePurpose, BuildStatus, IBug, IBugSet, IDistribution, IFAQSet,
+    BuildStatus, IBug, IBugSet, IDistribution, IFAQSet,
     IProduct, IProject, ISprint, LicenseStatus, NotFoundError)
+from lp.soyuz.interfaces.archive import ArchivePurpose
 from canonical.launchpad.interfaces.launchpad import (
     IHasIcon, IHasLogo, IHasMugshot)
 from lp.registry.interfaces.person import IPerson, IPersonSet
