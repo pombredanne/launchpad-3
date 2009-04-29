@@ -19,6 +19,7 @@ from canonical.buildmaster.manager import (
     BaseDispatchResult, BuilddManager, FailDispatchResult, RecordingSlave,
     ResetDispatchResult, buildd_success_result_map)
 from canonical.launchpad.ftests import ANONYMOUS, login
+from canonical.launchpad.ftests.soyuzbuilddhelpers import SaneBuildingSlave
 from canonical.launchpad.interfaces.build import BuildStatus
 from canonical.launchpad.interfaces.builder import IBuilderSet
 from canonical.launchpad.interfaces.buildqueue import IBuildQueueSet
@@ -457,6 +458,17 @@ class TestBuilddManagerScan(TrialTestCase):
         transaction.commit()
         login(ANONYMOUS)
 
+    def assertBuildingJob(self, job, builder, logtail=None):
+        """Assert the given job is building on the given builder."""
+        if logtail is None:
+            logtail = 'Dummy sampledata entry, not processing'
+
+        self.assertTrue(job is not None)
+        self.assertEqual(job.builder, builder)
+        self.assertTrue(job.buildstart is not None)
+        self.assertEqual(job.build.buildstate, BuildStatus.BUILDING)
+        self.assertEqual(job.logtail, logtail)
+
     def _getManager(self):
         """Instantiate a BuilddManager object.
 
@@ -548,15 +560,51 @@ class TestBuilddManagerScan(TrialTestCase):
         self.assertFalse(broken_builder.builderok)
         lost_job = broken_builder.currentjob
         self.assertTrue(lost_job is not None)
-        self.assertEqual(lost_job.builder, broken_builder)
-        self.assertTrue(lost_job.buildstart is not None)
-        self.assertEqual(lost_job.build.buildstate, BuildStatus.BUILDING)
+        self.assertBuildingJob(lost_job, broken_builder)
 
         # Run 'scan' and check its result.
         LaunchpadZopelessLayer.switchDbUser(config.builddmaster.dbuser)
         manager = self._getManager()
         d = defer.maybeDeferred(manager.scan)
         d.addCallback(self._checkJobRescued, broken_builder, lost_job)
+        return d
+
+    def _checkJobUpdated(self, recording_slaves, builder, job):
+        """`BuilddManager.scan` updates legitimate jobs.
+
+        Job is kept assigned to the active builder and its 'logtail' is
+        updated.
+        """
+        self.assertEqual(
+            len(recording_slaves), 0, "Unexpected recording_slaves.")
+
+        builder = getUtility(IBuilderSet).get(builder.id)
+        self.assertTrue(builder.builderok)
+
+        job = getUtility(IBuildQueueSet).get(job.id)
+        self.assertBuildingJob(job, builder, logtail='Doing something ...')
+
+    def testScanUpdatesBuildingJobs(self):
+        # The job assigned to a broken builder is rescued.
+
+        # Enable sampledata builder attached to an appropriate testing
+        # slave. It will respond as if it was building the sampledata job.
+        builder = getUtility(IBuilderSet)['bob']
+
+        login('foo.bar@canonical.com')
+        builder.builderok = True
+        builder.setSlaveForTesting(SaneBuildingSlave())
+        transaction.commit()
+        login(ANONYMOUS)
+
+        job = builder.currentjob
+        self.assertBuildingJob(job, builder)
+
+        # Run 'scan' and check its result.
+        LaunchpadZopelessLayer.switchDbUser(config.builddmaster.dbuser)
+        manager = self._getManager()
+        d = defer.maybeDeferred(manager.scan)
+        d.addCallback(self._checkJobUpdated, builder, job)
         return d
 
 
