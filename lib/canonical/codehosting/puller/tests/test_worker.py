@@ -256,7 +256,7 @@ class TestPullerWorker(TestCaseWithTransport, PullerWorkerMixin):
         # Mirroring a non-stacked branch sends '' as the stacked-on location
         # to the master.
         source_branch = self.make_branch(
-            'source-branch', format='development')
+            'source-branch', format='1.9')
         protocol_output = StringIO()
         to_mirror = self.makePullerWorker(
             source_branch.base, self.get_url('destdir'),
@@ -269,9 +269,9 @@ class TestPullerWorker(TestCaseWithTransport, PullerWorkerMixin):
     def testSendsStackedInfo(self):
         # Mirroring a stacked branch sends the stacked-on location to the
         # master.
-        base_branch = self.make_branch('base_branch', format='development')
+        base_branch = self.make_branch('base_branch', format='1.9')
         stacked_branch = self.make_branch(
-            'stacked-branch', format='development')
+            'stacked-branch', format='1.9')
         stacked_branch.set_stacked_on_url(base_branch.base)
         protocol_output = StringIO()
         to_mirror = self.makePullerWorker(
@@ -287,9 +287,9 @@ class TestPullerWorker(TestCaseWithTransport, PullerWorkerMixin):
         # The stacked-on location sent to the master is the stacked-on
         # location of the _destination_ branch not the source branch in the
         # case that they are different.
-        base_branch = self.make_branch('base_branch', format='development')
+        base_branch = self.make_branch('base_branch', format='1.9')
         stacked_branch = self.make_branch(
-            'stacked-branch', format='development')
+            'stacked-branch', format='1.9')
         protocol_output = StringIO()
         to_mirror = self.makePullerWorker(
             stacked_branch.base, self.get_url('destdir'),

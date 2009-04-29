@@ -515,5 +515,69 @@ people involved with the source are notified.
   foo.bar@canonical.com
   mark@hbd.com
 
+Named PPA build notifications contain a specific reference to the PPA
+in context. We will override the testing build to be in the context of
+a just created named-ppa for Celso.
 
+  >>> commit()
+  >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
 
+  >>> from canonical.launchpad.interfaces.archive import (
+  ...     ArchivePurpose, IArchiveSet)
+  >>> named_ppa = getUtility(IArchiveSet).new(
+  ...     owner=cprov, name='testing', purpose=ArchivePurpose.PPA)
+
+  >>> naked_candidate = removeSecurityProxy(failed_candidate)
+  >>> naked_candidate.archive = named_ppa
+
+  >>> commit()
+  >>> LaunchpadZopelessLayer.switchDbUser(test_dbuser)
+
+As described before, copied sources result in one build notification
+only, for the archive owner.
+
+  >>> failed_candidate.notify()
+
+  >>> notifications = pop_notifications()
+  >>> for notification in notifications:
+  ...     print notification['To']
+  celso.providelo@canonical.com
+
+The build-notification subject and headers correctly point
+to the named-ppa, 'cprov-testing'.
+
+  >>> build_notification = notifications.pop(0)
+  >>> dump_build_notification(build_notification)
+  Subject: [Build #26] i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE (cprov-testing PPA)
+  X-Creator-Recipient: mark@hbd.com
+  X-Launchpad-Build-State: FAILEDTOBUILD
+  X-Launchpad-Build-Component: main
+  X-Launchpad-Build-Arch: i386
+  X-Launchpad-PPA: cprov-testing
+
+The build notification body contains a reference to the named PPA, and
+the correct links to it the build in files in its context.
+
+  >>> notification_body = build_notification.get_payload(decode=True)
+  >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
+  <BLANKLINE>
+   * Source Package: cdrkit
+   * Version: 1.0
+   * Architecture: i386
+   * Archive: cprov-testing PPA
+   * Component: main
+   * State: Failed to build
+   * Duration: a minute
+   * Build Log: http://launchpad.dev/~cprov/+archive/testing/+build/26/+files/netapplet-1.0.0.tar.gz
+   * Builder: http://launchpad.dev/builders/bob
+   * Source: not available
+  <BLANKLINE>
+  <BLANKLINE>
+  <BLANKLINE>
+  If you want further information about this situation, feel free to
+  contact a member of the Launchpad Buildd Administrators team.
+  <BLANKLINE>
+  --
+  i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE
+  http://launchpad.dev/~cprov/+archive/testing/+build/26
+  <BLANKLINE>

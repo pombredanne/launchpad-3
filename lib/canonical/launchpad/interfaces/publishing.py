@@ -535,6 +535,9 @@ class ISourcePackagePublishingHistory(ISecureSourcePackagePublishingHistory):
             description=_("A URL for this source publication's changes file "
                           "for the source upload.")))
 
+    # Really IBinaryPackagePublishingHistory, see below.
+    @operation_returns_collection_of(Interface)
+    @export_read_operation()
     def getPublishedBinaries():
         """Return all resulted `IBinaryPackagePublishingHistory`.
 
@@ -615,6 +618,20 @@ class ISourcePackagePublishingHistory(ISecureSourcePackagePublishingHistory):
             source in the destination location.
         """
 
+    def getStatusSummaryForBuilds():
+        """Return a summary of the build status for the related builds.
+
+        This method augments IBuildSet.getBuildStatusSummaryForBuilds() by
+        additionally checking to see if all the builds have been published
+        before returning the fully-built status.
+
+        :return: A dict consisting of the build status summary for the
+            related builds. For example:
+                {
+                    'status': PackagePublishingStatus.PENDING,
+                    'builds': [build1, build2]
+                }
+        """
 
 #
 # Binary package publishing
@@ -1008,4 +1025,7 @@ inactive_publishing_status = (
 from canonical.launchpad.interfaces.build import IBuild
 ISourcePackagePublishingHistory['getBuilds'].queryTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)['return_type'].value_type.schema = IBuild
+ISourcePackagePublishingHistory['getPublishedBinaries'].queryTaggedValue(
+    LAZR_WEBSERVICE_EXPORTED)[
+    'return_type'].value_type.schema = IBinaryPackagePublishingHistory
 
