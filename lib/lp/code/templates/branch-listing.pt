@@ -51,10 +51,18 @@ addEvent( window, "load", function() {
 });
 */
 
-YUI().use('io-base', 'lazr.anim', 'node', function(Y) {
+YUI().use('io-base', 'lazr.anim', 'node', 'json-parse', function(Y) {
 
   function doUpdate(transaction_id, response, args) {
-    args.container.set('innerHTML', response.responseText);
+    json_values = Y.JSON.parse(response.responseText);
+    if(json_values.commits && json_values.count > 0) {
+      document.getElementById(args.container).innerHTML = '';
+      sparkline(args.container, json_values);
+    }
+    else
+    {
+      //alert(json_values);
+    }
   }
 
 
@@ -62,7 +70,7 @@ YUI().use('io-base', 'lazr.anim', 'node', function(Y) {
     for(i in branch_sparks) {
       branch_id = branch_sparks[i][0];
       json_url = branch_sparks[i][1];
-      var container = Y.get('#' + branch_id);
+      var container = branch_id;
       var uri = json_url;
       var xhr_config = {
           on: {
@@ -74,8 +82,87 @@ YUI().use('io-base', 'lazr.anim', 'node', function(Y) {
       };
 
       Y.io(uri, xhr_config);
+    }
+  }
 
-      document.getElementById(branch_id).innerHTML = json_url;
+
+  function sparkline(branch_id, o) {
+    var nw = "auto";
+    var nh = "auto";
+    var spark_div = document.getElementById(branch_id);
+    var number_commits = parseInt(o.commits.length);
+    if (window.getComputedStyle) {
+      nw = window.getComputedStyle(spark_div, null).width;
+      nh = window.getComputedStyle(spark_div, null).height;
+    }
+
+    if ( nw != "auto" ) nw = nw.substr( 0, nw.length - 2 );
+    if ( nh != "auto" ) nh = nh.substr( 0, nh.length - 2 );
+
+    var f = 4;
+    var w = ( nw == "auto" || nw == 0 ? o.commits.length * f : nw - 0 );
+    var h = ( nh == "auto" || nh == 0 ? "1em" : nh );
+
+    var co = document.createElement("canvas");
+
+    if ( co.getContext ) spark_div.style.display = 'inline';
+    else return false;
+
+    co.style.height = h;
+    co.style.width = w;
+    co.width = w;
+    spark_div.appendChild(co);
+
+    var h = co.offsetHeight;
+    co.height = h;
+
+    var min = 9999;
+    var max = -1;
+
+    for (var i = 0; i < number_commits; i++) {
+      o.commits[i] = o.commits[i] - 0;
+      if ( o.commits[i] < min ) min = o.commits[i];
+      if ( o.commits[i] > max ) max = o.commits[i];
+    }
+
+    if (co.getContext) {
+      var c = co.getContext("2d");
+      c.strokeStyle = "black";
+      c.lineWidth = 1.0;
+      c.beginPath();
+
+      Y.log(number_commits);
+      for (var i = 0; i < number_commits; i++) {
+        if (i == 0) {
+          Y.log('Result: ' + (w / number_commits) * i)
+          Y.log('Result2: ' + (h - (((parseInt(o.commits[i]) - min)) * h)));
+          Y.log('commits[1] = ' + o.commits[i]);
+          Y.log('h = ' + h);
+          Y.log('min = ' + min);
+          Y.log('min = ' + max);
+          c.moveTo( (w / number_commits) * i, h - (((o.commits[i] - min) / (max - min)) * h) );
+
+        }
+        c.lineTo( (w / number_commits) * i, h - (((o.commits[i] - min) / (max - min)) * h) );
+      }
+
+      c.stroke();
+
+  /*
+      // vertical line
+      c.strokeStyle = "blue";
+      c.beginPath();
+      c.moveTo(w, h);
+      c.lineTo(w, 0)
+      c.stroke();
+
+      // horizontal line
+      c.beginPath();
+      c.moveTo(0, h);
+      c.lineTo(w, h)
+      c.stroke();
+  */
+      spark_div.style.display = 'inline';
     }
   }
 
@@ -83,78 +170,7 @@ YUI().use('io-base', 'lazr.anim', 'node', function(Y) {
 });
 
 
-function sparkline(o) {
-  var p = o.innerHTML.split(',');
-  while ( o.childNodes.length > 0 )
-    o.removeChild( o.firstChild );
 
-  var nw = "auto";
-  var nh = "auto";
-  if ( window.getComputedStyle ) {
-    nw = window.getComputedStyle( o, null ).width;
-    nh = window.getComputedStyle( o, null ).height;
-  }
-
-  if ( nw != "auto" ) nw = nw.substr( 0, nw.length - 2 );
-  if ( nh != "auto" ) nh = nh.substr( 0, nh.length - 2 );
-
-  var f = 4;
-  var w = ( nw == "auto" || nw == 0 ? p.length * f : nw - 0 );
-  var h = ( nh == "auto" || nh == 0 ? "1em" : nh );
-
-  var co = document.createElement("canvas");
-
-  if ( co.getContext ) o.style.display = 'inline';
-  else return false;
-
-  co.style.height = h;
-  co.style.width = w;
-  co.width = w;
-  o.appendChild( co );
-
-  var h = co.offsetHeight;
-  co.height = h;
-
-  var min = 9999;
-  var max = -1;
-
-  for ( var i = 0; i < p.length; i++ ) {
-    p[i] = p[i] - 0;
-    if ( p[i] < min ) min = p[i];
-    if ( p[i] > max ) max = p[i];
-  }
-
-  if ( co.getContext ) {
-    var c = co.getContext("2d");
-    c.strokeStyle = "black";
-    c.lineWidth = 1.0;
-    c.beginPath();
-
-    for ( var i = 0; i < p.length; i++ ) {
-      if ( i == 0 )
-        c.moveTo( (w / p.length) * i, h - (((p[i] - min) / (max - min)) * h) );
-      c.lineTo( (w / p.length) * i, h - (((p[i] - min) / (max - min)) * h) );
-    }
-
-    c.stroke();
-
-/*
-    // vertical line
-    c.strokeStyle = "blue";
-    c.beginPath();
-    c.moveTo(w, h);
-    c.lineTo(w, 0)
-    c.stroke();
-
-    // horizontal line
-    c.beginPath();
-    c.moveTo(0, h);
-    c.lineTo(w, h)
-    c.stroke();
-*/
-    o.style.display = 'inline';
-  }
-}
 </script>
 
   <tal:needs-batch condition="context/multiple_pages">
