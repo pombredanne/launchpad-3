@@ -740,11 +740,18 @@ class LaunchpadRootNavigation(Navigation):
 
         beta_host = config.launchpad.beta_testers_redirection_host
         user = getUtility(ILaunchBag).user
-        beta_testers = getUtility(ILaunchpadCelebrities).launchpad_beta_testers
-        if user is not None and user.inTeam(beta_testers):
-            user_is_beta_tester = True
-        else:
+        # Test to see if the user is None before attempting to get the
+        # launchpad_beta_testers celebrity.  In the odd test where the
+        # database is empty the series of tests will work.
+        if user is None:
             user_is_beta_tester = False
+        else:
+            beta_testers = (
+                getUtility(ILaunchpadCelebrities).launchpad_beta_testers)
+            if user.inTeam(beta_testers):
+                user_is_beta_tester = True
+            else:
+                user_is_beta_tester = False
 
         # If the request is for a bug then redirect straight to that bug.
         bug_match = re.match("/bugs/(\d+)$", self.request['PATH_INFO'])
@@ -755,6 +762,8 @@ class LaunchpadRootNavigation(Navigation):
                 bug = bug_set.get(bug_number)
             except NotFoundError, e:
                 raise NotFound(self.context, bug_number)
+            if not check_permission("launchpad.View", bug):
+                raise Unauthorized("Bug %s is private" % bug_number)
             uri = URI(canonical_url(bug.default_bugtask))
             if beta_host is not None and user_is_beta_tester:
                 # Alter the host name to point at the beta target.
