@@ -290,17 +290,13 @@ class TestTemplatePrecedence(TestCaseWithFactory):
         self.test_ageBreaksTie()
 
 
-class TestPOTMsgSetMerging(TestCaseWithFactory):
-    """Test merging of POTMsgSets."""
-    layer = LaunchpadZopelessLayer
+class TranslatableProductMixin:
+    """Mixin: set up product with two series & templates for testing.
 
+    Sets up a product with series "trunk" and "stable," each with a
+    template.
+    """
     def setUp(self):
-        # This test needs the privileges of rosettaadmin (to delete
-        # POTMsgSets) but it also needs to set up test conditions which
-        # requires other privileges.
-        self.layer.switchDbUser('postgres')
-
-        TestCaseWithFactory.setUp(self, user='mark@hbd.com')
         self.product = self.factory.makeProduct()
         self.trunk = self.product.getSeries('trunk')
         self.stable = self.factory.makeProductSeries(
@@ -313,6 +309,19 @@ class TestPOTMsgSetMerging(TestCaseWithFactory):
         # Force trunk to be the "most representative" template.
         self.stable_template.iscurrent = False
         self.templates = [self.trunk_template, self.stable_template]
+
+
+class TestPOTMsgSetMerging(TestCaseWithFactory, TranslatableProductMixin):
+    """Test merging of POTMsgSets."""
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        # This test needs the privileges of rosettaadmin (to delete
+        # POTMsgSets) but it also needs to set up test conditions which
+        # requires other privileges.
+        self.layer.switchDbUser('postgres')
+        TestCaseWithFactory.setUp(self, user='mark@hbd.com')
+        TranslatableProductMixin.setUp(self)
 
     def test_matchedPOTMsgSetsShare(self):
         # Two identically-keyed POTMsgSets will share.  Where two
@@ -362,35 +371,13 @@ class TestPOTMsgSetMerging(TestCaseWithFactory):
             stable_potmsgset.getSequence(self.stable_template), 9)
 
 
-class TestPOTMsgSetMergingAndTranslations(TestCaseWithFactory):
-    """Test how merging of POTMsgSets affects translations."""
-    layer = LaunchpadZopelessLayer
+class TranslatedProductMixin(TranslatableProductMixin):
+    """Like TranslatableProductMixin, but adds actual POTMsgSets.
 
+    Also makes it easy to set translations for the POTMsgSets.
+    """
     def setUp(self):
-        """Set up test environment with.
-
-        The test setup includes:
-         * Two templates for the "trunk" and "stable" release series.
-         * Matching POTMsgSets for the string "foo" in each.
-
-        The matching POTMsgSets will be merged by the merge_potmsgsets
-        call.
-        """
-        self.layer.switchDbUser('postgres')
-
-        TestCaseWithFactory.setUp(self, user='mark@hbd.com')
-        self.product = self.factory.makeProduct()
-        self.trunk = self.product.getSeries('trunk')
-        self.stable = self.factory.makeProductSeries(
-            product=self.product, owner=self.product.owner, name='stable')
-        self.trunk_template = self.factory.makePOTemplate(
-            productseries=self.trunk, name='trunk')
-        self.stable_template = self.factory.makePOTemplate(
-            productseries=self.trunk, name='stable')
-
-        # Force trunk to be the "most representative" template.
-        self.stable_template.iscurrent = False
-        self.templates = [self.trunk_template, self.stable_template]
+        TranslatableProductMixin.setUp(self)
 
         # Tests use a pair of matching POTMsgSets in our two templates.
         self.trunk_potmsgset = self.factory.makePOTMsgSet(
@@ -465,6 +452,26 @@ class TestPOTMsgSetMergingAndTranslations(TestCaseWithFactory):
         return (
             self._getTranslation(trunk_message),
             self._getTranslation(stable_message))
+
+
+class TestPOTMsgSetMergingAndTranslations(TestCaseWithFactory,
+                                          TranslatedProductMixin):
+    """Test how merging of POTMsgSets affects translations."""
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        """Set up test environment with.
+
+        The test setup includes:
+         * Two templates for the "trunk" and "stable" release series.
+         * Matching POTMsgSets for the string "foo" in each.
+
+        The matching POTMsgSets will be merged by the merge_potmsgsets
+        call.
+        """
+        self.layer.switchDbUser('postgres')
+        TestCaseWithFactory.setUp(self, user='mark@hbd.com')
+        TranslatedProductMixin.setUp(self)
 
     def test_sharingDivergedMessages(self):
         # Diverged TranslationMessages stay with their respective
