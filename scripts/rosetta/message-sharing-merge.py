@@ -15,10 +15,11 @@ import _pythonpath
 # GRANT DELETE ON  TranslationTemplateItem TO rosettaadmin; 
 
 from canonical.launchpad.scripts.message_sharing_migration import (
-    MergePOTMsgSets)
+    MessageSharingMerge)
 
 
 if __name__ == '__main__':
-    script = MergePOTMsgSets(
-        'canonical.launchpad.scripts.merge-potmsgsets', dbuser='rosettaadmin')
+    script = MessageSharingMerge(
+        'canonical.launchpad.scripts.message-sharing-merge',
+        dbuser='rosettaadmin')
     script.run()

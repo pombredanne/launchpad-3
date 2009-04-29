@@ -20,7 +20,7 @@ from canonical.cachedproperty import cachedproperty
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import SQLBase, sqlvalues
+from canonical.database.sqlbase import quote, SQLBase, sqlvalues
 from canonical.launchpad.interfaces import (
     ITranslationMessage, ITranslationMessageSet, RosettaTranslationOrigin,
     TranslationConstants, TranslationValidationStatus)
@@ -365,6 +365,32 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
         else:
             return None
 
+    def _getSharedEquivalent(self):
+        """Get shared message that otherwise exactly matches this one.
+        """
+        clauses = [
+            'potemplate IS NULL',
+            'potmsgset = %s' % sqlvalues(self.potmsgset),
+            'language = %s' % sqlvalues(self.language),
+            ]
+
+        if self.variant:
+            variant_clause = 'variant = %s' % sqlvalues(self.variant)
+        else:
+            variant_clause = 'variant IS NULL'
+        clauses.append(variant_clause)
+
+        for form in range(TranslationConstants.MAX_PLURAL_FORMS):
+            msgstr_name = 'msgstr%d' % form
+            msgstr = getattr(self, msgstr_name)
+            if msgstr is None:
+                form_clause = "%s IS NULL" % msgstr_name
+            else:
+                form_clause = "%s = %s" % (msgstr_name, quote(msgstr))
+            clauses.append(form_clause)
+
+        return TranslationMessage.selectOne(' AND '.join(clauses))
+
     def converge(self):
         """Make this message shared.
 
@@ -376,12 +402,16 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
             # Already converged.
             return
 
-        # XXX: XXX: I don't think there's a "proper" way to get this at
-        # the moment.
-        shared = TranslationMessage.get(potemplate=None, potmsgset=self.potmsgset, language=self.language, variant=self.variant, self.translations)
+        # Existing shared direct equivalent to this message, if any.
+        shared = self._getSharedEquivalent()
 
+        # Existing shared current translation for this POTMsgSet, if
+        # any.
         current = self.potmsgset.getCurrentTranslationMessage(
             potemplate=None, language=self.language, variant=self.variant)
+
+        # Existing shared imported translation for this POTMsgSet, if
+        # any.
         imported = self.potmsgset.getImportedTranslationMessage(
             potemplate=None, language=self.language, variant=self.variant)
 
