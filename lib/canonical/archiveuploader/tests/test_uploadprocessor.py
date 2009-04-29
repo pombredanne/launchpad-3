@@ -556,17 +556,11 @@ class TestUploadProcessor(TestUploadProcessorBase):
             "Archive for Ubuntu Linux:\nbar_1.0-1_i386.deb")
 
     def testBinaryUploadToCopyArchive(self):
-        """The upload processor rejects duplicated binary uploads.
+        """Copy archive binaries are not checked against the primary archive.
 
-        Duplicated binary uploads should be rejected, because they can't
-        be published on disk, since it will be introducing different contents
-        to the same filename in the archive.
-
-        Such situation happens when a source gets copied to another suite in
-        the same archive. The binary rebuild will have the same (name, version)
-        of the original binary and will certainly have a different content
-        (at least, the ar-compressed timestamps) making it impossible to be
-        published in the archive.
+        When a buildd binary upload to a copy archive is performed the
+        version should not be checked against the primary archive but
+        against the copy archive in question.
         """
         uploadprocessor = self.setupBreezyAndGetUploadProcessor()
 
