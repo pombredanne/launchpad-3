@@ -394,4 +394,4 @@ class VisibleBranchCollection(GenericBranchCollection):
         """
         return [
             BranchMergeProposal.target_branchID.is_in(
-                self._getVisibilityExpression())]
+                self._user_visibility_expression)]
