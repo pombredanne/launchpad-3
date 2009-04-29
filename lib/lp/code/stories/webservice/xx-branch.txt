@@ -116,6 +116,7 @@ time goes on.
     reviewer_link: None
     revision_count: 0
     self_link: u'.../~eric/fooix/trunk'
+    spec_links_collection_link: u'.../~eric/fooix/trunk/spec_links'
     subscribers_collection_link: u'http://.../~eric/fooix/trunk/subscribers'
     subscriptions_collection_link: u'http://.../~eric/fooix/trunk/subscriptions'
     summary: None

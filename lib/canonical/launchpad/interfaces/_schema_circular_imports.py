@@ -20,6 +20,8 @@ from canonical.launchpad.interfaces.bugbranch import IBugBranch
 from canonical.launchpad.interfaces.build import (
     BuildStatus, IBuild)
 from canonical.launchpad.interfaces.buildrecords import IHasBuildRecords
+from canonical.launchpad.interfaces.specificationbranch import (
+    ISpecificationBranch)
 from lp.code.interfaces.branch import IBranch
 from lp.code.interfaces.branchmergeproposal import (
     BranchMergeProposalStatus, IBranchMergeProposal)
@@ -55,6 +57,7 @@ IBranch['subscribe'].queryTaggedValue(LAZR_WEBSERVICE_EXPORTED)['params'][
 IBranch['subscribe'].queryTaggedValue(LAZR_WEBSERVICE_EXPORTED)['params'][
     'code_review_level'].vocabulary = CodeReviewNotificationLevel
 IBranch['bug_branches'].value_type.schema = IBugBranch
+IBranch['spec_links'].value_type.schema = ISpecificationBranch
 
 IBranchMergeProposal['getComment'].queryTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)['return_type'].schema = ICodeReviewComment

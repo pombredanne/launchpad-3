@@ -838,7 +838,11 @@ class IBranch(IHasOwner, IHasBranchTarget):
         "some work has been done to fix this bug.")
 
     # Specification attributes
-    spec_links = Attribute("Specifications linked to this branch")
+    spec_links = exported(
+        CollectionField(
+            title=_("Specification linked to this branch."),
+            readonly=True,
+            value_type=Reference(Interface))) # Really ISpecificationBranch
 
     pending_writes = Attribute(
         "Whether there is new Bazaar data for this branch.")
