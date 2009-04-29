@@ -197,6 +197,41 @@ class TestBranch(TestCaseWithFactory):
         branch = self.factory.makeAnyBranch(branch_type=BranchType.REMOTE)
         self.assertRaises(AssertionError, branch.getPullURL)
 
+    def test_owner_name(self):
+        # The owner_name attribute is set to be the name of the branch owner
+        # through a db trigger.
+        branch = self.factory.makeAnyBranch()
+        self.assertEqual(
+            branch.owner.name, removeSecurityProxy(branch).owner_name)
+
+    def test_owner_name_updated(self):
+        # When the owner of a branch is changed, the denormalised owner_name
+        # attribute is updated too.
+        branch = self.factory.makeAnyBranch()
+        new_owner = self.factory.makePerson()
+        branch.owner = new_owner
+        self.assertEqual(
+            new_owner.name, removeSecurityProxy(branch).owner_name)
+
+    def test_target_suffix_product(self):
+        # The target_suffix for a product branch is the name of the product.
+        branch = self.factory.makeProductBranch()
+        self.assertEqual(
+            branch.product.name, removeSecurityProxy(branch).target_suffix)
+
+    def test_target_suffix_junk(self):
+        # The target_suffix for a junk branch is None.
+        branch = self.factory.makePersonalBranch()
+        self.assertIs(None, removeSecurityProxy(branch).target_suffix)
+
+    def test_target_suffix_package(self):
+        # A package branch has the target_suffix set to the name of the source
+        # package.
+        branch = self.factory.makePackageBranch()
+        self.assertEqual(
+            branch.sourcepackagename.name,
+            removeSecurityProxy(branch).target_suffix)
+
     def test_unique_name_product(self):
         branch = self.factory.makeProductBranch()
         self.assertEqual(

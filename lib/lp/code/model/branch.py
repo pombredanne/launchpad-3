@@ -129,6 +129,12 @@ class Branch(SQLBase):
     stacked_on = ForeignKey(
         dbName='stacked_on', foreignKey='Branch', default=None)
 
+    # The unique_name is maintined by a SQL trigger.
+    unique_name = StringCol()
+    # Denormalised colums used primarily for sorting.
+    owner_name = StringCol()
+    target_suffix = StringCol()
+
     def __repr__(self):
         return '<Branch %r (%d)>' % (self.unique_name, self.id)
 
@@ -369,12 +375,6 @@ class Branch(SQLBase):
         This provides the mirrored copy of the branch.
         """
         return BzrBranch.open(self.warehouse_url)
-
-    @property
-    def unique_name(self):
-        """See `IBranch`."""
-        return u'~%s/%s/%s' % (
-            self.owner.name, self.target.name, self.name)
 
     @property
     def displayname(self):
