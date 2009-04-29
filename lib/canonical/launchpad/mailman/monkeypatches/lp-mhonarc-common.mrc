@@ -107,15 +107,15 @@ Thread Index
 <!-- Per-message formatting on the thread page. -->
 <TTOPBEGIN>
 <li><strong>$SUBJECT$</strong>,
-<em>$FROMNAME$, $YYYYMMDD$</em>
+<em><b>$FROMNAME$</b>, $YYYYMMDD$</em>
 </TTOPBEGIN>
 <TLITXT>
 <li><strong>$SUBJECT$</strong>,
-<em>$FROMNAME$, $YYYYMMDD$</em>
+<em><b>$FROMNAME$</b>, $YYYYMMDD$</em>
 </TLITXT>
 <TSINGLETXT>
 <li><strong>$SUBJECT$</strong>,
-<em>$FROMNAME$, $YYYYMMDD$</em>
+<em><b>$FROMNAME$</b>, $YYYYMMDD$</em>
 </TSINGLETXT>
 
 <!-- Modify appropriate resources to print our link at the bottom
