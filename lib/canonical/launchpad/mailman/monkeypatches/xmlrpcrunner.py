@@ -306,9 +306,9 @@ class XMLRPCRunner(Runner):
                 log_exception('Launchpad exception: %s', error)
                 return
             for list_name in info:
-                subscription_info = info['list_name']
+                subscription_info = info[list_name]
                 if subscription_info is None:
-                    log_exception('No Launchpad team: %s', team_name)
+                    log_exception('No Launchpad team: %s', list_name)
                 else:
                     self._update_list_subscriptions(
                         list_name, subscription_info)
