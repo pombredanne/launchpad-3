@@ -67,6 +67,8 @@ from lp.code.interfaces.branch import (
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.interfaces.branchmergeproposal import (
     BranchMergeProposalStatus, IBranchMergeProposalGetter)
+from lp.code.interfaces.branchnamespace import (
+    get_branch_namespace, IBranchNamespacePolicy)
 from lp.code.interfaces.revision import IRevisionSet
 
 from lp.registry.browser.product import (
@@ -1111,6 +1113,16 @@ class ProductBranchListingView(BranchListingView):
                 'revision control system to improve community participation '
                 'in this project.')
         return message % self.context.displayname
+
+    @property
+    def new_branches_are_private(self):
+        """Are new branches by the user private."""
+        if self.user is None:
+            return False
+        namespace = get_branch_namespace(
+            person=self.user, product=self.context)
+        policy = IBranchNamespacePolicy(namespace)
+        return policy.canBranchesBePrivate()
 
 
 class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
