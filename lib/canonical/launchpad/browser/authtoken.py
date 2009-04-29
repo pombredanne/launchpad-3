@@ -325,7 +325,10 @@ class ValidateEmailView(BaseAuthTokenView, LaunchpadFormView):
         emailset = getUtility(IEmailAddressSet)
         email = emailset.getByEmail(self.context.email)
         if email is None:
-            email = emailset.new(self.context.email, self.context.requester)
+            email = emailset.new(
+                email=self.context.email,
+                person=self.context.requester,
+                account=self.context.requester_account)
         return email
 
     def markEmailAsValid(self, email):

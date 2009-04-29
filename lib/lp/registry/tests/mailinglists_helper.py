@@ -11,6 +11,7 @@ __all__ = [
     'new_list_for_team',
     'new_team',
     'print_actions',
+    'print_dispositions',
     'print_info',
     'print_review_table',
     'review_list',
@@ -29,6 +30,7 @@ from lp.registry.interfaces.mailinglist import (
     IMailingListSet, IMessageApprovalSet, MailingListStatus,
     PostedMessageStatus)
 from lp.registry.interfaces.person import IPersonSet, TeamSubscriptionPolicy
+
 
 COMMASPACE = ', '
 
@@ -152,6 +154,13 @@ def print_review_table(content):
                     else:
                         print '( )',
         print
+
+
+def print_dispositions(dispositions):
+    """Pretty print `IMailingListAPIView.getMessageDispositions()`."""
+    for message_id in sorted(dispositions):
+        list_name, action = dispositions[message_id]
+        print message_id, list_name, action
 
 
 def print_addresses(data):

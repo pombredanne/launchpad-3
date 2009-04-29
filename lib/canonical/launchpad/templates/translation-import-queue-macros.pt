@@ -10,6 +10,19 @@
 >
 <body>
   <metal:translation-import-queue define-macro="translation-import-queue-content">
+    <script
+      type="text/javascript"
+      tal:condition="devmode"
+      tal:attributes="src string:${icingroot}/build/translations/translations.js">
+    </script>
+
+      <script type="text/javascript">
+          YUI().use( 'translations', 'event', function(Y) {
+              Y.on('domready', function(e) {
+                  Y.translations.initialize_import_queue_page(Y);
+              });
+          });
+      </script>
 
       <!-- Filtering options. -->
       <div>
@@ -59,7 +72,7 @@
 
             <table id="import-entries-list" class="listing" width="100%">
               <tal:loop repeat="entry view/batchnav/currentBatch">
-                <tr>
+                <tr tal:attributes="id entry/id">
                   <tal:XXX replace="nothing">
                     # XXX: CarlosPerelloMarin 2006-03-09 bug=34213
                     # We are using here
@@ -97,6 +110,18 @@
                       <a tal:attributes="href entry/fmt:url">
                         <img src="/@@/edit" title="Change this entry" />
                       </a>
+                    </tal:block>
+                  </td>
+                  <td>
+                    <tal:block condition="view/user">
+                      <tal:comment replace="nothing">
+                        Placeholder for "show output" button, if this entry
+                        has error output.
+                      </tal:comment>
+                      <div
+                        tal:condition="entry/error_output"
+                        class="original show-output">
+                      </div>
                     </tal:block>
                   </td>
                 </tr>

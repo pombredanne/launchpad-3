@@ -752,6 +752,38 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
             embargo=False)
         return SourcePackagePublishingHistory.get(secure_copy.id)
 
+    def getStatusSummaryForBuilds(self):
+        """See `ISourcePackagePublishingHistory`."""
+        # Import here to avoid circular import.
+        from canonical.launchpad.interfaces.build import BuildSetStatus
+
+        builds = self.getBuilds()
+        summary = getUtility(IBuildSet).getStatusSummaryForBuilds(
+            builds)
+
+        # We only augment the result if we (the SPPH) are ourselves in
+        # the pending/published state and all the builds are fully-built.
+        # In this case we check to see if they are all published, and if
+        # not we return FULLYBUILT_PENDING:
+        augmented_summary = summary
+        if (self.status in active_publishing_status and
+                summary['status'] == BuildSetStatus.FULLYBUILT):
+
+            published_bins = self.getPublishedBinaries()
+            published_builds = [
+                bin.binarypackagerelease.build
+                    for bin in published_bins
+                        if bin.datepublished is not None]
+            unpublished_builds = list(
+                set(builds).difference(published_builds))
+
+            if unpublished_builds:
+                augmented_summary = {
+                    'status': BuildSetStatus.FULLYBUILT_PENDING,
+                    'builds': unpublished_builds
+                }
+        return augmented_summary
+
 
 class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
     """A binary package publishing record. (excluding embargoed packages)"""
@@ -1212,20 +1244,16 @@ class PublishingSet:
         if not source_ids:
             return {}
 
-        # Get the builds for all the requested sources.
-        result_set = self.getBuildsForSourceIds(source_ids, archive=archive)
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        source_pubs = store.find(
+            SourcePackagePublishingHistory,
+            SourcePackagePublishingHistory.id.is_in(source_ids),
+            SourcePackagePublishingHistory.archive == archive)
 
-        # Populate the list of builds for each id in a dict.
-        source_builds = {}
-        for src_pub, build, distroarchseries in result_set:
-            source_builds.setdefault(src_pub.id, []).append(build)
-
-        # Gset the overall build status for each source's builds.
-        build_set = getUtility(IBuildSet)
         source_build_statuses = {}
-        for source_id, builds in source_builds.items():
-            status_summary = build_set.getStatusSummaryForBuilds(builds)
-            source_build_statuses[source_id] = status_summary
+        for source_pub in source_pubs:
+            status_summary = source_pub.getStatusSummaryForBuilds()
+            source_build_statuses[source_pub.id] = status_summary
 
         return source_build_statuses
 

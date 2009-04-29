@@ -140,7 +140,8 @@ registered either.
 
     >>> from canonical.launchpad.interfaces import IEmailAddressSet
     >>> emailset = getUtility(IEmailAddressSet)
-    >>> new_address = emailset.new('frederick@example.com', fred)
+    >>> new_address = emailset.new(
+    ...     'frederick@example.com', fred, account=fred.account)
     >>> new_address.email, new_address.status.title
     (u'frederick@example.com', 'New Email Address')
     >>> sorted((email_address.email, email_address.status.title)
@@ -272,7 +273,7 @@ Launchpad.
     >>> from canonical.launchpad.interfaces import EmailAddressStatus
     >>> new_address = emailset.new(
     ...     config.mailman.archive_address, fred,
-    ...     EmailAddressStatus.VALIDATED)
+    ...     EmailAddressStatus.VALIDATED, account=fred.account)
     >>> transaction.commit()
 
     >>> mailinglist_api.isRegisteredInLaunchpad(config.mailman.archive_address)

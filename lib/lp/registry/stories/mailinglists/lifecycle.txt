@@ -340,19 +340,27 @@ The same is true for normal users who are not team members.
 
 Members who are not owners can see the link.
 
-    >>> salgado_browser = setupBrowser(
-    ...     auth='Basic guilherme.salgado@canonical.com:zeca')
-    >>> salgado_browser.open('http://launchpad.dev/~bassists')
-    >>> print find_tag_by_id(salgado_browser.contents, 'mailing-list-archive')
-    None
+    >>> cprov_browser = setupBrowser(
+    ...     auth='Basic celso.providelo@canonical.com:cprov')
+    >>> cprov_browser.open('http://launchpad.dev/~bassists')
+    Traceback (most recent call last):
+    ...
+    NotFound: Object: <...>, name: u'~bassists'
 
     >>> admin_browser.open('http://launchpad.dev/~bassists/+addmember')
-    >>> admin_browser.getControl('New member').value = 'salgado'
+    >>> admin_browser.getControl('New member').value = 'cprov'
     >>> admin_browser.getControl('Add Member').click()
 
-    >>> salgado_browser.open('http://launchpad.dev/~bassists')
+    >>> cprov_browser.open('http://launchpad.dev/~bassists')
     >>> print extract_link_from_tag(
-    ...     find_tag_by_id(salgado_browser.contents, 'mailing-list-archive'))
+    ...     find_tag_by_id(cprov_browser.contents, 'mailing-list-archive'))
+    http://lists.launchpad.dev/bassists
+
+Admins who are not members of the team can see the link too.
+
+    >>> admin_browser.open('http://launchpad.dev/~bassists')
+    >>> print extract_link_from_tag(
+    ...     find_tag_by_id(admin_browser.contents, 'mailing-list-archive'))
     http://lists.launchpad.dev/bassists
 
 

@@ -1,4 +1,5 @@
-= XMLRPC interface for holding messages =
+XMLRPC interface for holding messages
+=====================================
 
 Messages posted to Launchpad mailing lists can be held for team owner
 approval, for any of several reasons.  See `message-hold.txt` for details.
@@ -6,9 +7,9 @@ approval, for any of several reasons.  See `message-hold.txt` for details.
 When a message is held for approval, Mailman will send the message text to
 Launchpad to be eventually displayed in Launchpad's u/i.
 
-    >>> from lp.registry.tests.mailinglists_helper import new_team
     >>> login('foo.bar@canonical.com')
-    >>> team_one, list_one = new_team('team-one', True)
+    >>> team_one, list_one = factory.makeTeamAndMailingList(
+    ...     'team-one', 'no-priv')
     >>> anne = factory.makePersonByName('Anne')
 
     # We don't care about the email notifications sent when the mailing
@@ -34,9 +35,7 @@ approve or reject.
 
     >>> mailinglist_api.holdMessage('team-one', message_anne.as_string())
     True
-
-    >>> import transaction
-    >>> transaction.commit()
+    >>> commit()
 
 This message is now in Launchpad's librarian and accessible through the
 IMessageApprovalSet interface.
@@ -48,6 +47,7 @@ IMessageApprovalSet interface.
     <first-post>
     >>> print held_message_anne.posted_by.displayname
     Anne Person
+
     >>> held_message_anne.posted_message.open()
     >>> try:
     ...     print held_message_anne.posted_message.read()
@@ -103,8 +103,7 @@ There are no messages waiting to be handled by Mailman yet.
 Anne's message is on-topic so the list administrator approves it.
 
     >>> held_message_anne.approve(team_one.teamowner)
-    >>> from canonical.launchpad.ftests import syncUpdate
-    >>> syncUpdate(held_message_anne)
+    >>> commit()
     >>> held_message_anne.status
     <DBItem PostedMessageStatus.APPROVAL_PENDING, (20) Approval pending>
 
@@ -126,7 +125,8 @@ the list administrator rejects it.
     True
     >>> held_message_bart = message_set.getMessageByMessageID('<second-post>')
     >>> held_message_bart.reject(team_one.teamowner)
-    >>> syncUpdate(held_message_bart)
+    >>> commit()
+
     >>> held_message_bart.status
     <DBItem PostedMessageStatus.REJECTION_PENDING, (30) Decline pending>
 
@@ -147,16 +147,16 @@ Cris sends spam to the mailing list, which is simply discarded.
     True
     >>> held_message_cris = message_set.getMessageByMessageID('<third-post>')
     >>> held_message_cris.discard(team_one.teamowner)
-    >>> syncUpdate(held_message_cris)
+    >>> commit()
+
     >>> held_message_cris.status
     <DBItem PostedMessageStatus.DISCARD_PENDING, (60) Discard pending>
 
 Now there are three messages waiting for Mailman to handle.
 
-    >>> waiting = mailinglist_api.getMessageDispositions()
-    >>> for message_id in sorted(waiting):
-    ...     list_name, action = waiting[message_id]
-    ...     print message_id, list_name, action
+    >>> from lp.registry.tests.mailinglists_helper import print_dispositions
+    >>> dispositions = mailinglist_api.getMessageDispositions()
+    >>> print_dispositions(dispositions)
     <first-post> team-one accept
     <second-post> team-one decline
     <third-post> team-one discard
@@ -173,3 +173,50 @@ transitioned to their permanent states.
     >>> held_message_cris = message_set.getMessageByMessageID('<third-post>')
     >>> held_message_cris.status
     <DBItem PostedMessageStatus.DISCARDED, (70) Discarded>
+
+
+Private membership teams
+------------------------
+
+When a private membership team has a mailing list, its messages can also be
+held for moderator approval.
+
+    >>> from lp.registry.interfaces.person import (
+    ...     IPersonSet, PersonVisibility, TeamSubscriptionPolicy)
+    >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
+    >>> team_private = factory.makeTeam(
+    ...     no_priv, name='team-private',
+    ...     subscription_policy=TeamSubscriptionPolicy.RESTRICTED,
+    ...     visibility=PersonVisibility.PRIVATE_MEMBERSHIP)
+
+    >>> from lp.registry.interfaces.mailinglist import IMailingListSet
+    >>> list_private = getUtility(IMailingListSet).new(team_private)
+    >>> commit()
+
+    >>> ignore = mail_helpers.pop_notifications()
+    >>> private_message = message_from_string("""\
+    ... From: cris.person@example.com
+    ... To: team-private@lists.launchpad.dev
+    ... Subject: Counterparts
+    ... Message-ID: <fourth-post>
+    ... Date: Fri, 01 Aug 2009 01:08:59 -0000
+    ...
+    ... Would you like to buy some counter parts?
+    ... """)
+
+    >>> mailinglist_api.holdMessage(
+    ...     'team-private', private_message.as_string())
+    True
+    >>> commit()
+
+Once the message is approved in Launchpad, Mailman will allow it to be posted
+to the mailing list.
+
+    >>> held_message_private = message_set.getMessageByMessageID(
+    ...     '<fourth-post>')
+    >>> held_message_private.approve(team_private.teamowner)
+    >>> commit()
+
+    >>> dispositions = mailinglist_api.getMessageDispositions()
+    >>> print_dispositions(dispositions)
+    <fourth-post> team-private accept
