@@ -14,7 +14,6 @@ __all__ = [
 from zope.interface import Interface, Attribute
 from zope.schema import Bool, Choice, Int, TextLine
 
-from lp.soyuz.interfaces.archive import IArchive
 from canonical.launchpad.interfaces.launchpad import IHasOwner
 from canonical.launchpad import _
 from lazr.restful.fields import Reference
@@ -104,7 +103,7 @@ class IDistroArchSeries(IHasOwner):
         )
     main_archive = exported(
         Reference(
-            IArchive,
+            Interface, # Really IArchive, circular import fixed below.
             title=_('Main Archive'),
             description=_("The main archive of the distroarchseries.")))
 
@@ -184,3 +183,7 @@ class IPocketChroot(Interface):
 
     def syncUpdate():
         """Commit changes to DB."""
+
+
+# Monkey patching circular import fixes is done in
+# _schema_circular_imports.py

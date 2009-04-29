@@ -15,7 +15,6 @@ from zope.component import getUtility
 
 from canonical.config import config
 from canonical.database.sqlbase import ISOLATION_LEVEL_READ_COMMITTED
-from lp.registry.interfaces.distribution import IDistributionSet
 from lp.soyuz.interfaces.package import PackageUploadStatus
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger, logger_options)
@@ -25,6 +24,9 @@ from canonical.lp import initZopeless
 from contrib.glock import GlobalLock
 
 def main():
+    # Prevent circular imports.
+    from lp.registry.interfaces.distribution import IDistributionSet
+
     # Parse command-line arguments
     parser = OptionParser()
     logger_options(parser)

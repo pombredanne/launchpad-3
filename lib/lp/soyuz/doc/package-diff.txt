@@ -228,8 +228,8 @@ against the last version in the RELEASE pocket.
 For testing diffs in the PPA context we need to activate the PPA for
 Foo Bar.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     ArchivePurpose, IArchiveSet, IPersonSet)
+    >>> from lp.soyuz.interfaces.archive import (
+    ...     ArchivePurpose, IArchiveSet)
     >>> foobar = getUtility(IPersonSet).getByName('name16')
     >>> ppa = getUtility(IArchiveSet).new(
     ...     owner=foobar, distribution=ubuntu, purpose=ArchivePurpose.PPA)

@@ -4,12 +4,18 @@ This test covers the use case when a package includes translations and is
 uploaded into the system.
 
   >>> from canonical.launchpad.database import (
-  ...     ProcessorFamily, Component, GPGKey, Section,
+  ...     ProcessorFamily, GPGKey)
+  >>> from canonical.launchpad.database.component import Component
+  >>> from lp.soyuz.model.section import Section
+  >>> from lp.soyuz.model.publishing import (
   ...     SecureSourcePackagePublishingHistory)
-  >>> from canonical.launchpad.interfaces import (
-  ...     IComponentSet, IDistributionSet, IDistroSeriesSet,
-  ...     ISourcePackageNameSet, PackagePublishingPocket,
-  ...     PackagePublishingStatus)
+  >>> from lp.registry.interfaces.distribution import IDistributionSet
+  >>> from lp.registry.interfaces.distroseries import IDistroSeriesSet
+  >>> from canonical.launchpad.interfaces.component import IComponentSet
+  >>> from lp.soyuz.interfaces.publishing import (
+  ...     PackagePublishingPocket, PackagePublishingStatus)
+  >>> from lp.registry.interfaces.sourcepackagename import (
+  ...     ISourcePackageNameSet)
 
   >>> from canonical.archiveuploader.nascentupload import NascentUpload
   >>> from canonical.archiveuploader.tests import (
@@ -18,7 +24,7 @@ uploaded into the system.
   >>> from canonical.launchpad.ftests import import_public_test_keys
   >>> import_public_test_keys()
 
-  >>> from canonical.launchpad.interfaces import SourcePackageUrgency
+  >>> from lp.registry.interfaces.sourcepackage import SourcePackageUrgency
   >>> from canonical.database.constants import UTC_NOW
 
   # Login as an admin.
@@ -122,7 +128,7 @@ queue:
 
 An upload to the RELEASE pocket will add items to the import queue:
 
-  >>> from canonical.launchpad.interfaces import PackageUploadStatus
+  >>> from lp.soyuz.interfaces.package import PackageUploadStatus
   >>> queue_item = dapper.getQueueItems(
   ...     status=PackageUploadStatus.NEW)[0]
   >>> queue_item.customfiles[0].publish()
@@ -257,8 +263,8 @@ This time, we don't get any entry in the import queue.
 For now we simply ignore translations for archives other than the
 Distribution archives (i.e. PPAs).
 
-  >>> from canonical.launchpad.interfaces import (
-  ...    ArchivePurpose, IPersonSet, IArchiveSet)
+  >>> from lp.registry.interfaces.person import IPersonSet
+  >>> from lp.soyuz.interfaces.archive import ArchivePurpose, IArchiveSet
 
   >>> foobar_archive = getUtility(IArchiveSet).new(
   ...     purpose=ArchivePurpose.PPA,
@@ -285,17 +291,17 @@ PackageUploadCustom: these will emulate everything we need to document
 different interpretations of "importer" in attachTranslationFiles.
 
   >>> from zope.interface import implements
-  >>> from canonical.launchpad.database import PackageUploadCustom
-  >>> from canonical.launchpad.interfaces import (
-  ...     IComponentSet,
-  ...     ILaunchpadCelebrities,
-  ...     IPackageUpload,
-  ...     IPackageUploadCustom,
-  ...     IPerson,
-  ...     ISourcePackageRelease,
-  ...     PackagePublishingPocket,
-  ...     PackageUploadCustomFormat,
-  ... )
+  >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
+  >>> from lp.soyuz.model.queue import PackageUploadCustom
+  >>> from lp.soyuz.interfaces.queue import (
+  ...     IPackageUpload, IPackageUploadCustom)
+  >>> from lp.soyuz.interfaces.package import PackageUploadCustomFormat
+  >>> from canonical.launchpad.interfaces.component import IComponentSet
+  >>> from lp.registry.interfaces.person import IPerson
+  >>> from lp.soyuz.interfaces.sourcepackagerelease import (
+  ...     ISourcePackageRelease)
+  >>> from lp.soyuz.interfaces.publishing import PackagePublishingPocket
+
   >>> class MockSourcePackageRelease:
   ...       implements(ISourcePackageRelease)
   ...       def __init__(self, component, creator):

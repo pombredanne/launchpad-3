@@ -16,7 +16,7 @@ Once a build result is recognised as FAILEDTOUPLOAD by the
 buildmaster/slave-scanner code, an build notification will be issued.
 See more information in build-notification.txt file.
 
-  >>> from canonical.launchpad.interfaces import IBuildSet
+  >>> from lp.soyuz.interfaces.build import IBuildSet
   >>> from canonical.launchpad.tests.mail_helpers import pop_notifications
   >>> buildset = getUtility(IBuildSet)
 

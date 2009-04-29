@@ -57,7 +57,7 @@ Create a series of 'biscuit' sources in ubuntu primary archive.
 
 Activate Foo Bar's PPA and upload another 'biscuit' source version.
 
-    >>> from canonical.launchpad.interfaces import (
+    >>> from lp.soyuz.interfaces.archive import (
     ...     ArchivePurpose, IArchiveSet)
     >>> foobar = getUtility(IPersonSet).getByName('name16')
     >>> ppa = getUtility(IArchiveSet).new(

@@ -36,6 +36,8 @@ from lp.code.interfaces.codereviewvote import (
     ICodeReviewVoteReference)
 from canonical.launchpad.interfaces.diff import IPreviewDiff
 from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.distributionsourcepackage import (
+    IDistributionSourcePackage)
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import IPerson, IPersonPublic
 from canonical.launchpad.interfaces.hwdb import IHWSubmission
@@ -47,8 +49,8 @@ from lp.soyuz.interfaces.archivepermission import (
 from lp.soyuz.interfaces.distroarchseries import IDistroArchSeries
 from lp.soyuz.interfaces.publishing import (
     IBinaryPackagePublishingHistory, ISecureBinaryPackagePublishingHistory,
-    ISourcePackagePublishingHistory, PackagePublishingPocket,
-    PackagePublishingStatus)
+    ISecureSourcePackagePublishingHistory, ISourcePackagePublishingHistory,
+    PackagePublishingPocket, PackagePublishingStatus)
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 
 
@@ -121,6 +123,10 @@ ISourcePackagePublishingHistory['getPublishedBinaries'].queryTaggedValue(
 patch_reference_property(
     ISecureBinaryPackagePublishingHistory, 'distroarchseries',
     IDistroArchSeries)
+patch_reference_property(
+    ISecureBinaryPackagePublishingHistory, 'archive', IArchive)
+patch_reference_property(
+    ISecureSourcePackagePublishingHistory, 'archive', IArchive)
 
 # IArchive apocalypse.
 patch_reference_property(IArchive, 'distribution', IDistribution)
@@ -157,3 +163,30 @@ patch_choice_parameter_type(
 patch_choice_parameter_type(
     IArchive, 'getAllPublishedBinaries', 'pocket', PackagePublishingPocket)
 
+# IDistribution
+IDistribution['serieses'].value_type.schema = IDistroSeries
+patch_reference_property(
+    IDistribution, 'currentseries', IDistroSeries)
+patch_entry_return_type(
+    IDistribution, 'getSeries', IDistroSeries)
+patch_collection_return_type(
+    IDistribution, 'getDevelopmentSerieses', IDistroSeries)
+patch_entry_return_type(
+    IDistribution, 'getSourcePackage', IDistributionSourcePackage)
+patch_collection_return_type(
+    IDistribution, 'searchSourcePackages', IDistributionSourcePackage)
+patch_reference_property(
+    IDistribution, 'main_archive', IArchive)
+IDistribution['all_distro_archives'].value_type.schema = IArchive
+
+
+# IDistroSeries
+patch_entry_return_type(
+    IDistroSeries, 'getDistroArchSeries', IDistroArchSeries)
+patch_reference_property(
+    IDistroSeries, 'main_archive', IArchive)
+patch_reference_property(
+    IDistroSeries, 'distribution', IDistribution)
+
+# IDistroArchSeries
+patch_reference_property(IDistroArchSeries, 'main_archive', IArchive)

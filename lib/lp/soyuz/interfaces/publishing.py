@@ -31,7 +31,6 @@ from zope.interface import Interface, Attribute
 from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
-from lp.soyuz.interfaces.archive import IArchive
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import IPerson
 
@@ -446,7 +445,7 @@ class ISecureSourcePackagePublishingHistory(IPublishing):
             ))
     archive = exported(
         Reference(
-            IArchive,
+            Interface, # Really IArchive, see below.
             title=_('Archive ID'), required=True, readonly=True,
             ))
     supersededby = Int(
@@ -750,7 +749,7 @@ class ISecureBinaryPackagePublishingHistory(IPublishing):
         exported_as="date_removed")
     archive = exported(
         Reference(
-            IArchive,
+            Interface, # Really IArchive, see below.
             title=_('Archive'),
             description=_("The context archive for this publication."),
             required=True, readonly=True,

@@ -763,15 +763,5 @@ class NoSuchDistroSeries(NameLookupFailed):
     _message_prefix = "No such distribution series"
 
 
-# Monkey patch for circular import avoidance.
-from canonical.launchpad.components.apihelpers import (
-    patch_entry_return_type, patch_reference_property)
-from lp.soyuz.interfaces.distroarchseries import IDistroArchSeries
-from lp.soyuz.interfaces.archive import IArchive
-from lp.registry.interfaces.distribution import IDistribution
-patch_entry_return_type(
-    IDistroSeries, 'getDistroArchSeries', IDistroArchSeries)
-patch_reference_property(
-    IDistroSeries, 'main_archive', IArchive)
-patch_reference_property(
-    IDistroSeries, 'distribution', IDistribution)
+# Monkey patch for circular import avoidance done in
+# _schema_circular_imports.py

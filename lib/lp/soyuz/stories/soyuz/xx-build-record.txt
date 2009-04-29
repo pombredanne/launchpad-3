@@ -208,9 +208,11 @@ source package, however, the build retry link becomes avaialable.
 
 Let's grant the package specific upload permissions first.
 
+    >>> from lp.soyuz.interfaces.archivepermission import (
+    ...     ArchivePermissionType)
     >>> from canonical.launchpad.interfaces import (
-    ...     ArchivePermissionType, IPersonSet, ISourcePackageNameSet)
-    >>> from canonical.launchpad.database import ArchivePermission
+    ...     IPersonSet, ISourcePackageNameSet)
+    >>> from lp.soyuz.model.archivepermission import ArchivePermission
     >>> login('foo.bar@canonical.com')
     >>> noteam_person = getUtility(IPersonSet).getByEmail(
     ...     'no-team-memberships@test.com')

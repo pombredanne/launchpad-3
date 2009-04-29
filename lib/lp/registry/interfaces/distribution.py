@@ -555,28 +555,5 @@ class NoSuchDistribution(NameLookupFailed):
     _message_prefix = "No such distribution"
 
 
-# Monkey patching to fix circular imports.
-from canonical.launchpad.components.apihelpers import (
-    patch_entry_return_type, patch_collection_return_type,
-    patch_reference_property)
-
-from lp.registry.interfaces.distroseries import IDistroSeries
-IDistribution['serieses'].value_type.schema = IDistroSeries
-patch_reference_property(
-    IDistribution, 'currentseries', IDistroSeries)
-patch_entry_return_type(
-    IDistribution, 'getSeries', IDistroSeries)
-patch_collection_return_type(
-    IDistribution, 'getDevelopmentSerieses', IDistroSeries)
-
-from lp.registry.interfaces.distributionsourcepackage import (
-    IDistributionSourcePackage)
-patch_entry_return_type(
-    IDistribution, 'getSourcePackage', IDistributionSourcePackage)
-patch_collection_return_type(
-    IDistribution, 'searchSourcePackages', IDistributionSourcePackage)
-
-from lp.soyuz.interfaces.archive import IArchive
-patch_reference_property(
-    IDistribution, 'main_archive', IArchive)
-IDistribution['all_distro_archives'].value_type.schema = IArchive
+# Monkey patching to fix circular imports done in
+# _schema_circular_imports.py

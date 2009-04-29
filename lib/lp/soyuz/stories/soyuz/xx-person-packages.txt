@@ -287,8 +287,9 @@ public archives.
 Now we'll publish it in the primary archive.
 
     >>> login("foo.bar@canonical.com")
-    >>> from canonical.launchpad.interfaces import (
-    ...     ArchivePurpose, IArchiveSet, IDistributionSet)
+    >>> from lp.soyuz.interfaces.archive import (
+    ...     ArchivePurpose, IArchiveSet)
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
     >>> primary = getUtility(IArchiveSet).getByDistroPurpose(ubuntu,
     ...     ArchivePurpose.PRIMARY)

@@ -19,8 +19,11 @@ publications for a given distroseries:
     >>> from canonical.database.constants import UTC_NOW
     >>> from lp.soyuz.model.publishing import (
     ...     SecureSourcePackagePublishingHistory)
-    >>> from canonical.launchpad.interfaces import (
-    ...     ArchivePurpose, IArchiveSet, IPersonSet, IDistributionSet,
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.soyuz.interfaces.archive import (
+    ...     ArchivePurpose, IArchiveSet)
+    >>> from lp.soyuz.interfaces.publishing import (
     ...     PackagePublishingPocket, PackagePublishingStatus)
 
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']

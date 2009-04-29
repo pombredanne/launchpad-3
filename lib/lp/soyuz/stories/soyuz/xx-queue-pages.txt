@@ -16,8 +16,9 @@ a Zope interaction to show it:
 
   >>> from canonical.launchpad.ftests import login, logout
   >>> login('foo.bar@canonical.com')
-  >>> from canonical.launchpad.interfaces import (
-  ...     IArchivePermissionSet, IDistributionSet, IPersonSet)
+  >>> from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
+  >>> from lp.registry.interfaces.distribution import IDistributionSet
+  >>> from lp.registry.interfaces.person import IPersonSet
   >>> from zope.component import getUtility
   >>> permission_set = getUtility(IArchivePermissionSet)
   >>> main_archive = getUtility(IDistributionSet)['ubuntu'].main_archive

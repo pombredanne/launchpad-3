@@ -11,8 +11,8 @@ launchpad build daemon.
     >>> import pytz
     >>> UTC = pytz.timezone('UTC')
     >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> from canonical.launchpad.interfaces import (
-    ...    BuildStatus, IDistributionSet, IBuildSet)
+    >>> from lp.soyuz.interfaces.build import BuildStatus, IBuildSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
 
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
     >>> warty = ubuntu['warty']

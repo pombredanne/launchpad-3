@@ -11,8 +11,8 @@ Need auxiliar methods from zope toolchain:
 
 Importing Builder content class and its interface:
 
-    >>> from canonical.launchpad.database import Builder
-    >>> from canonical.launchpad.interfaces import IBuilder
+    >>> from lp.soyuz.model.builder import Builder
+    >>> from lp.soyuz.interfaces.builder import IBuilder
 
 Get an instance of Builder from the current sampledata:
 
@@ -40,7 +40,7 @@ Test 'status' property:
 In case of copy archives the status string will show both the copy
 archive owner as well as the copy archive name.
 
-    >>> from canonical.launchpad.interfaces import ArchivePurpose
+    >>> from lp.soyuz.interfaces.archive import ArchivePurpose
     >>> from zope.security.proxy import removeSecurityProxy
     >>> builder_archive = removeSecurityProxy(
     ...     builder.currentjob.build.archive)
@@ -78,7 +78,7 @@ Now perform the tests for the Builder ContentSet class, BuilderSet.
 
 Check if it can be imported:
 
-    >>> from canonical.launchpad.interfaces import IBuilderSet
+    >>> from lp.soyuz.interfaces.builder import IBuilderSet
 
 Check we can use the set as a utility:
 

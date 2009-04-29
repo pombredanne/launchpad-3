@@ -234,8 +234,9 @@ enable uploads for it.
 
     >>> from canonical.launchpad.database.component import (
     ...     ComponentSelection)
-    >>> from canonical.launchpad.interfaces import (
-    ...     IComponentSet, IDistributionSet, ILibraryFileAliasSet)
+    >>> from canonical.launchpad.interfaces.component import IComponentSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from canonical.launchpad.interfaces import ILibraryFileAliasSet
 
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> hoary = ubuntu.getSeries('hoary')
@@ -305,7 +306,7 @@ PPA uploads we will create a PPA for it.
     >>> print foobar.archive
     None
 
-    >>> from canonical.launchpad.interfaces import (
+    >>> from lp.soyuz.interfaces.archive import (
     ...     ArchivePurpose, IArchiveSet)
     >>> ppa = getUtility(IArchiveSet).new(
     ...     owner=foobar, distribution=ubuntu, purpose=ArchivePurpose.PPA)

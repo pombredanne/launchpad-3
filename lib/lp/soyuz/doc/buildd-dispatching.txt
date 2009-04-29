@@ -30,9 +30,9 @@ Setup a suitable chroot for Hoary i386:
     >>> alias_id = librarian_client.addFile(
     ...    'foo.tar.gz', len(content), StringIO(content), 'text/plain')
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     IDistributionSet, ILibraryFileAliasSet)
-    >>> from canonical.launchpad.interfaces import PackagePublishingPocket
+    >>> from canonical.launchpad.interfaces import ILibraryFileAliasSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.soyuz.interfaces.publishing import PackagePublishingPocket
 
     >>> hoary = getUtility(IDistributionSet)['ubuntu']['hoary']
     >>> hoary_i386 = hoary['i386']
@@ -48,7 +48,7 @@ member of launchpad-buildd-admin:
 
 Set IBuilder.builderok of all present builders:
 
-    >>> from canonical.launchpad.interfaces import IBuilderSet
+    >>> from lp.soyuz.interfaces.builder import IBuilderSet
     >>> builder_set = getUtility(IBuilderSet)
 
     >>> builder_set.count()
@@ -61,7 +61,7 @@ Set IBuilder.builderok of all present builders:
 
 Clean up previous BuildQueue results from sampledata:
 
-    >>> from canonical.launchpad.interfaces import IBuildQueueSet
+    >>> from lp.soyuz.interfaces.buildqueue import IBuildQueueSet
     >>> lost_job = getUtility(IBuildQueueSet).get(1)
     >>> lost_job.builder.name
     u'bob'
@@ -194,7 +194,7 @@ buildqueue record, so the build was eliminated:
 
     >>> BuilddSlaveTestSetup().tearDown()
 
-    >>> from canonical.launchpad.interfaces import BuildStatus
+    >>> from lp.soyuz.interfaces.build import BuildStatus
     >>> job.build.buildstate = BuildStatus.FAILEDTOBUILD
     >>> job.destroySelf()
     >>> flush_database_updates()
@@ -204,7 +204,7 @@ buildqueue record, so the build was eliminated:
 
 Create new Build record of the same source targeted for a PPA archive:
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
 
     >>> ppa_build = sprf.sourcepackagerelease.createBuild(

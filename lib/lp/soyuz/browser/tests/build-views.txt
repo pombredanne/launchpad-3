@@ -4,8 +4,8 @@ For the subsequent tests we will use a specific 'pmount' build record
 from the sampledata which happens to be in FAILEDTOBUILD status.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import (
-    ...     BuildStatus, IDistributionSet)
+    >>> from lp.soyuz.interfaces.build import BuildStatus
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
 
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> hoary = ubuntu.getSeries('hoary')
