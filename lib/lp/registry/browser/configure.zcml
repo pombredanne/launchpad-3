@@ -92,7 +92,7 @@
         for="lp.registry.interfaces.distroseries.IDistroSeries"
         name="+macros"
         permission="zope.Public"
-        template="../../../canonical/launchpad/templates/packagesearch-macros.pt"/>
+        template="../templates/packagesearch-macros.pt"/>
     <browser:page
         for="lp.registry.interfaces.distroseries.IDistroSeries"
         permission="zope.Public"
