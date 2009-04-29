@@ -118,13 +118,9 @@ class GenericBranchCollection:
         """Return the where expressions for this collection."""
         return self._branch_filter_expressions
 
-    def getBranches(self, join_owner=True, join_product=True):
+    def getBranches(self):
         """See `IBranchCollection`."""
         tables = [Branch] + self._tables.values()
-        if join_owner and Owner not in self._tables:
-            tables.append(Join(Owner, Branch.owner == Owner.id))
-        if join_product and Product not in self._tables:
-            tables.append(LeftJoin(Product, Branch.product == Product.id))
         expressions = self._getBranchExpressions()
         results = self.store.using(*tables).find(Branch, *expressions)
         def identity(x):
