@@ -291,6 +291,10 @@ class GenericBranchCollection:
         if (person == LAUNCHPAD_SERVICES or
             user_has_special_branch_access(person)):
             return self
+        if person is None:
+            return AnonymousBranchCollection(
+                self._store, self._branch_filter_expressions,
+                self._tables, self._exclude_from_search)
         return VisibleBranchCollection(
             person, self._store, self._branch_filter_expressions,
             self._tables, self._exclude_from_search)
@@ -309,6 +313,27 @@ class GenericBranchCollection:
     def scannedSince(self, epoch):
         """See `IBranchCollection`."""
         return self._filterBy([Branch.last_scanned > epoch])
+
+
+class AnonymousBranchCollection(GenericBranchCollection):
+    """Branch collection that only shows public branches."""
+
+    def __init__(self, store=None, branch_filter_expressions=None,
+                 tables=None, exclude_from_search=None):
+        super(AnonymousBranchCollection, self).__init__(
+            store=store,
+            branch_filter_expressions=list(branch_filter_expressions),
+            tables=tables, exclude_from_search=exclude_from_search)
+        self._branch_filter_expressions.append(Branch.private == False)
+
+    def _getExtraMergeProposalExpressions(self):
+        """Extra storm expressions needed for merge proposal queries.
+
+        Used primarily by the visibility check for target branches.
+        """
+        return [
+            BranchMergeProposal.target_branchID.is_in(
+                Select(Branch.id, Branch.private == False))]
 
 
 class VisibleBranchCollection(GenericBranchCollection):
