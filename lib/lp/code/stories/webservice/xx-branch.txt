@@ -93,6 +93,7 @@ time goes on.
     >>> pprint_entry(fooix_trunk)
     branch_format: None
     branch_type: u'Hosted'
+    bug_branches_collection_link: u'.../~eric/fooix/trunk/bug_branches'
     bzr_identity: u'lp://dev/~eric/fooix/trunk'
     control_format: None
     date_created: ...

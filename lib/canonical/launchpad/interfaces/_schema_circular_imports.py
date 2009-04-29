@@ -16,6 +16,7 @@ __all__ = []
 
 from lazr.restful.declarations import LAZR_WEBSERVICE_EXPORTED
 
+from canonical.launchpad.interfaces.bugbranch import IBugBranch
 from canonical.launchpad.interfaces.build import (
     BuildStatus, IBuild)
 from canonical.launchpad.interfaces.buildrecords import IHasBuildRecords
@@ -53,6 +54,7 @@ IBranch['subscribe'].queryTaggedValue(LAZR_WEBSERVICE_EXPORTED)['params'][
     'max_diff_lines'].vocabulary = BranchSubscriptionDiffSize
 IBranch['subscribe'].queryTaggedValue(LAZR_WEBSERVICE_EXPORTED)['params'][
     'code_review_level'].vocabulary = CodeReviewNotificationLevel
+IBranch['bug_branches'].value_type.schema = IBugBranch
 
 IBranchMergeProposal['getComment'].queryTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)['return_type'].schema = ICodeReviewComment

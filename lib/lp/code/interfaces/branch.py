@@ -826,8 +826,12 @@ class IBranch(IHasOwner, IHasBranchTarget):
         "See doc/bazaar for more information about the branch warehouse.")
 
     # Bug attributes
-    bug_branches = Attribute(
-        "The bug-branch link objects that link this branch to bugs. ")
+    bug_branches = exported(
+        CollectionField(
+            title=_("The bug-branch link objects that link this branch "
+                    "to bugs."),
+            readonly=True,
+            value_type=Reference(Interface))) # Really IBugBranch
 
     related_bugs = Attribute(
         "The bugs related to this branch, likely branches on which "
