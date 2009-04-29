@@ -556,60 +556,50 @@ class TestUploadProcessor(TestUploadProcessorBase):
             "Archive for Ubuntu Linux:\nbar_1.0-1_i386.deb")
 
     def testBinaryUploadToCopyArchive(self):
-        """Copy archive binaries are not checked against the primary archive.
-
-        When a buildd binary upload to a copy archive is performed the
-        version should not be checked against the primary archive but
-        against the copy archive in question.
-        """
+        """ """
         uploadprocessor = self.setupBreezyAndGetUploadProcessor()
 
         # Upload 'bar-1.0-1' source and binary to ubuntu/breezy.
         upload_dir = self.queueUpload("bar_1.0-1")
         self.processUpload(uploadprocessor, upload_dir)
-        bar_source_pub = self._publishPackage('bar', '1.0-1')
-        [bar_original_build] = bar_source_pub.createMissingBuilds()
+        bar_source_old = self._publishPackage('bar', '1.0-1')
+
+        # Upload 'bar-1.0-1' source and binary to ubuntu/breezy.
+        upload_dir = self.queueUpload("bar_1.0-2")
+        self.processUpload(uploadprocessor, upload_dir)
+        [bar_source_pub] = self.ubuntu.main_archive.getPublishedSources(
+            name='bar', version='1.0-2', exact_match=True)
+        [bar_original_build] = bar_source_pub.getBuilds()
 
         self.options.context = 'buildd'
         self.options.buildid = bar_original_build.id
-        upload_dir = self.queueUpload("bar_1.0-1_binary")
+        upload_dir = self.queueUpload("bar_1.0-2_binary")
         self.processUpload(uploadprocessor, upload_dir)
-        [bar_binary_pub] = self._publishPackage("bar", "1.0-1", source=False)
+        [bar_binary_pub] = self._publishPackage("bar", "1.0-2", source=False)
 
+        # Create a COPY archive for building in non-virtual builds.
         uploader = getUtility(IPersonSet).getByName('name16')
         copy_archive = getUtility(IArchiveSet).new(
             owner=uploader, purpose=ArchivePurpose.COPY,
             distribution=self.ubuntu, name='no-source-uploads')
-        # Prepare ubuntu/breezy-autotest to build sources in i386.
-        breezy_autotest = self.ubuntu['breezy-autotest']
-        breezy_autotest_i386 = breezy_autotest['i386']
-        breezy_autotest.nominatedarchindep = breezy_autotest_i386
-        fake_chroot = self.addMockFile('fake_chroot.tar.gz')
-        breezy_autotest_i386.addOrUpdateChroot(fake_chroot)
-        self.layer.txn.commit()
+        copy_archive.require_virtualized = False
 
-        # Copy 'bar-1.0-1' source from breezy to breezy-autotest.
-        bar_copied_source = bar_source_pub.copyTo(
-            breezy_autotest, PackagePublishingPocket.RELEASE,
+        # Copy 'bar-1.0-1' source to the COPY archive.
+        bar_copied_source = bar_source_old.copyTo(
+            bar_source_pub.distroseries, bar_source_pub.pocket,
             copy_archive)
         [bar_copied_build] = bar_copied_source.createMissingBuilds()
 
-        # Re-upload the same 'bar-1.0-1' binary as if it was rebuilt
-        # in breezy-autotest context.
+        # BOOOOOOOM!
         shutil.rmtree(upload_dir)
         self.options.buildid = bar_copied_build.id
-        self.options.distroseries = breezy_autotest.name
         upload_dir = self.queueUpload(
             "bar_1.0-1_binary", "%s/ubuntu" % copy_archive.id)
         self.processUpload(uploadprocessor, upload_dir)
-        [duplicated_binary_upload] = breezy_autotest.getQueueItems(
-            status=PackageUploadStatus.NEW, name='bar',
-            version='1.0-1', exact_match=True, archive=copy_archive)
-
-        # The just uploaded binary is accepted because it was copied
-        # to a copy archive and its version is not checked against
-        # the primary archive.
-        duplicated_binary_upload.setAccepted()
+        self.assertEqual(
+            uploadprocessor.last_processed_upload.rejection_message,
+            'bar_1.0-1_i386.deb: Version older than that in the archive. '
+            '1.0-1 <= 1.0-2')
 
     def testPartnerArchiveMissingForPartnerUploadFails(self):
         """A missing partner archive should produce a rejection email.
