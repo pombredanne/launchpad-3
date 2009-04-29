@@ -63,13 +63,6 @@ class BugBranchSet:
 
     implements(IBugBranchSet)
 
-    def new(self, bug, branch, status, registrant):
-        "See `IBugBranchSet`."
-        bug_branch = BugBranch(
-            bug=bug, branch=branch, status=status, registrant=registrant)
-        notify(ObjectCreatedEvent(bug_branch))
-        return bug_branch
-
     def getBugBranch(self, bug, branch):
         "See `IBugBranchSet`."
         return BugBranch.selectOneBy(bugID=bug.id, branchID=branch.id)

@@ -106,6 +106,3 @@ class IBugBranchSet(Interface):
     def getBugBranchesForBugTasks(tasks):
         """Return a sequence of IBugBranch instances associated with
         the bugs for the given tasks."""
-
-    def new(bug, branch, status, registrant):
-        """Create and return a new BugBranch."""
