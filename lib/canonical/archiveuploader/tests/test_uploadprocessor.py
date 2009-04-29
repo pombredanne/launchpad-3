@@ -556,7 +556,12 @@ class TestUploadProcessor(TestUploadProcessorBase):
             "Archive for Ubuntu Linux:\nbar_1.0-1_i386.deb")
 
     def testBinaryUploadToCopyArchive(self):
-        """ """
+        """Copy archive binaries are not checked against the primary archive.
+
+        When a buildd binary upload to a copy archive is performed the
+        version should not be checked against the primary archive but
+        against the copy archive in question.
+        """
         uploadprocessor = self.setupBreezyAndGetUploadProcessor()
 
         # Upload 'bar-1.0-1' source and binary to ubuntu/breezy.
@@ -590,16 +595,17 @@ class TestUploadProcessor(TestUploadProcessorBase):
             copy_archive)
         [bar_copied_build] = bar_copied_source.createMissingBuilds()
 
-        # BOOOOOOOM!
         shutil.rmtree(upload_dir)
         self.options.buildid = bar_copied_build.id
         upload_dir = self.queueUpload(
             "bar_1.0-1_binary", "%s/ubuntu" % copy_archive.id)
         self.processUpload(uploadprocessor, upload_dir)
+
+        # The binary just uploaded is accepted (although its filename
+        # 'bar_1.0-1_i386.deb' is already published in the primary
+        # archive) because it's destined for a copy archive.
         self.assertEqual(
-            uploadprocessor.last_processed_upload.rejection_message,
-            'bar_1.0-1_i386.deb: Version older than that in the archive. '
-            '1.0-1 <= 1.0-2')
+            uploadprocessor.last_processed_upload.is_rejected, False)
 
     def testPartnerArchiveMissingForPartnerUploadFails(self):
         """A missing partner archive should produce a rejection email.
