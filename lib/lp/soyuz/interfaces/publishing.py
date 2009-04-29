@@ -32,7 +32,6 @@ from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
 from lp.soyuz.interfaces.archive import IArchive
-from lp.soyuz.interfaces.distroarchseries import IDistroArchSeries
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import IPerson
 
@@ -666,7 +665,7 @@ class ISecureBinaryPackagePublishingHistory(IPublishing):
             )
     distroarchseries = exported(
         Reference(
-            IDistroArchSeries,
+            Interface, #Really IDistroArchSeries, circular import fixed below.
             title=_("Distro Arch Series"),
             description=_('The distroarchseries being published into'),
             required=False, readonly=False,
@@ -1020,12 +1019,5 @@ inactive_publishing_status = (
     )
 
 
-# Fix circular import problems.
-
-from lp.soyuz.interfaces.build import IBuild
-ISourcePackagePublishingHistory['getBuilds'].queryTaggedValue(
-    LAZR_WEBSERVICE_EXPORTED)['return_type'].value_type.schema = IBuild
-ISourcePackagePublishingHistory['getPublishedBinaries'].queryTaggedValue(
-    LAZR_WEBSERVICE_EXPORTED)[
-    'return_type'].value_type.schema = IBinaryPackagePublishingHistory
+# Circular import problems fixed in _schema_circular_imports.py
 

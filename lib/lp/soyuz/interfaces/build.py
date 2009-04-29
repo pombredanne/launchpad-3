@@ -23,7 +23,6 @@ from canonical.launchpad import _
 from lp.soyuz.interfaces.archive import IArchive
 from lp.soyuz.interfaces.builder import IBuilder
 from lp.registry.interfaces.distribution import IDistribution
-from lp.soyuz.interfaces.distroarchseries import IDistroArchSeries
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 from lp.soyuz.interfaces.processor import IProcessor
 from lp.soyuz.interfaces.publishing import (
@@ -143,7 +142,9 @@ class IBuild(Interface):
         description=_("The SourcePackageRelease requested to build."))
 
     distroarchseries = Object(
-        title=_("Architecture"), schema=IDistroArchSeries,
+        title=_("Architecture"),
+        # Really IDistroArchSeries
+        schema=Interface,
         required=True, readonly=True,
         description=_("The DistroArchSeries context for this build."))
 

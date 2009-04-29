@@ -30,7 +30,6 @@ from canonical.launchpad import _
 from canonical.launchpad.fields import (
     Description, PublicPersonChoice, Summary, Title)
 from lp.registry.interfaces.announcement import IMakesAnnouncements
-from lp.soyuz.interfaces.archive import IArchive
 from canonical.launchpad.interfaces.bugtarget import (
     IBugTarget, IOfficialBugTagTargetPublic, IOfficialBugTagTargetRestricted)
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
@@ -239,13 +238,14 @@ class IDistributionPublic(
     main_archive = exported(
         Reference(
             title=_('Distribution Main Archive.'), readonly=True,
-            schema=IArchive))
+            schema=Interface)) # Really IArchive, circular import fix below.
 
     all_distro_archives = exported(
         CollectionField(
             title=_("A sequence of the distribution's non-PPA Archives."),
             readonly=True, required=False,
-            value_type=Reference(schema=IArchive)),
+            value_type=Reference(schema=Interface)),
+                # Really Iarchive, circular import fix below.
         exported_as='archives')
 
     all_distro_archive_ids = Attribute(
@@ -575,3 +575,8 @@ patch_entry_return_type(
     IDistribution, 'getSourcePackage', IDistributionSourcePackage)
 patch_collection_return_type(
     IDistribution, 'searchSourcePackages', IDistributionSourcePackage)
+
+from lp.soyuz.interfaces.archive import IArchive
+patch_reference_property(
+    IDistribution, 'main_archive', IArchive)
+IDistribution['all_distro_archives'].value_type.schema = IArchive

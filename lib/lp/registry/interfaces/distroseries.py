@@ -20,8 +20,6 @@ from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad.fields import (
     Description, PublicPersonChoice, Summary, Title)
-from lp.soyuz.interfaces.archive import IArchive
-from lp.registry.interfaces.distribution import IDistribution
 from canonical.launchpad.interfaces.bugtarget import IBugTarget, IHasBugs
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from canonical.launchpad.interfaces.languagepack import ILanguagePack
@@ -159,7 +157,7 @@ class IDistroSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
             description=_("The version string for this series.")))
     distribution = exported(
         Reference(
-            IDistribution,
+            Interface, # Really IDistribution, see circular import fix below.
             title=_("Distribution"), required=True,
             description=_("The distribution for which this is a series.")))
     parent = Attribute('The structural parent of this series - the distro')
@@ -294,7 +292,7 @@ class IDistroSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
 
     main_archive = exported(
         Reference(
-            IArchive,
+            Interface, # Really IArchive, see below for circular import fix.
             title=_('Distribution Main Archive')))
 
     supported = exported(
@@ -766,7 +764,14 @@ class NoSuchDistroSeries(NameLookupFailed):
 
 
 # Monkey patch for circular import avoidance.
-from canonical.launchpad.components.apihelpers import patch_entry_return_type
+from canonical.launchpad.components.apihelpers import (
+    patch_entry_return_type, patch_reference_property)
 from lp.soyuz.interfaces.distroarchseries import IDistroArchSeries
+from lp.soyuz.interfaces.archive import IArchive
+from lp.registry.interfaces.distribution import IDistribution
 patch_entry_return_type(
     IDistroSeries, 'getDistroArchSeries', IDistroArchSeries)
+patch_reference_property(
+    IDistroSeries, 'main_archive', IArchive)
+patch_reference_property(
+    IDistroSeries, 'distribution', IDistribution)
