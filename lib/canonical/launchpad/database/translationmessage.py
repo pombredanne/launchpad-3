@@ -432,14 +432,9 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
             if self.is_imported and imported is None:
                 shared.is_imported = True
 
-            # XXX: Actually, we can also drop this message when it is
-            # not current/imported but the shared one is.  In other
-            # words, we only need to keep this message if it is
-            # current but shared is not, or if it is imported but shared
-            # is not.
-            same_current = (self.is_current == shared.is_current)
-            same_imported = (self.is_imported == shared.is_imported)
-            if same_current and same_imported:
+            current_diverged = (self.is_current and not shared.is_current)
+            imported_diverged = (self.is_imported and not shared.is_imported)
+            if not (current_diverged or imported_diverged):
                 # This message is now totally redundant.
                 self.destroySelf()
         else:
