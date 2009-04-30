@@ -17,8 +17,10 @@ import pytz
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements
+from zope.security.proxy import removeSecurityProxy
 
 from storm.expr import And, Count, Desc, Max, NamedFunc, Or, Select
+from storm.locals import AutoReload
 from storm.store import Store
 from sqlobject import (
     ForeignKey, IntCol, StringCol, BoolCol, SQLMultipleJoin, SQLRelatedJoin)
@@ -1000,3 +1002,16 @@ class BranchCloud:
         # isn't timezone-aware. Not sure why this is. Doesn't matter too much
         # for the purposes of cloud calculation though.
         return result
+
+
+def update_trigger_modified_fields(branch, event):
+    """Event handler for when a branch has been modified.
+
+    Make the trigger updated fields reload when next accessed.
+    """
+    # Not all the fields are exposed through the interface, and some are read
+    # only, so remove the security proxy.
+    naked_branch = removeSecurityProxy(branch)
+    naked_branch.unique_name = AutoReload
+    naked_branch.owner_name = AutoReload
+    naked_branch.target_suffix = AutoReload
