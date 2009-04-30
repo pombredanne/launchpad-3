@@ -44,9 +44,9 @@ from zope.security.interfaces import Unauthorized
 
 from canonical.cachedproperty import cachedproperty
 from lp.registry.browser.announcement import HasAnnouncementsView
-from canonical.launchpad.browser.archive import traverse_distro_archive
+from lp.soyuz.browser.archive import traverse_distro_archive
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
-from canonical.launchpad.browser.build import BuildRecordsView
+from lp.soyuz.browser.build import BuildRecordsView
 from lp.answers.browser.faqtarget import FAQTargetNavigationMixin
 from canonical.launchpad.browser.feeds import FeedsMixin
 from canonical.launchpad.browser.packagesearch import PackageSearchViewBase
@@ -54,7 +54,7 @@ from canonical.launchpad.components.request_country import (
     ipaddress_from_request, request_country)
 from lp.answers.browser.questiontarget import (
     QuestionTargetFacetMixin, QuestionTargetTraversalMixin)
-from canonical.launchpad.interfaces.archive import (
+from lp.soyuz.interfaces.archive import (
     IArchiveSet, ArchivePurpose)
 from lp.registry.interfaces.distribution import (
     IDistribution, IDistributionMirrorMenuMarker, IDistributionSet)
@@ -62,7 +62,7 @@ from canonical.launchpad.interfaces.distributionmirror import (
     IDistributionMirrorSet, MirrorContent, MirrorSpeed)
 from lp.registry.interfaces.distroseries import DistroSeriesStatus
 from lp.registry.interfaces.product import IProduct
-from canonical.launchpad.interfaces.publishedpackage import (
+from lp.soyuz.interfaces.publishedpackage import (
     IPublishedPackageSet)
 from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, ContextMenu, custom_widget,

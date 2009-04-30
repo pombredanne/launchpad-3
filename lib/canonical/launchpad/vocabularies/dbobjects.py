@@ -91,7 +91,7 @@ from canonical.launchpad.database import (
 from canonical.database.sqlbase import SQLBase, quote_like, quote, sqlvalues
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces import IStore
-from canonical.launchpad.interfaces.archive import ArchivePurpose
+from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.code.interfaces.branch import IBranch
 from lp.code.interfaces.branchcollection import IAllBranches
 from canonical.launchpad.interfaces.bugtask import (

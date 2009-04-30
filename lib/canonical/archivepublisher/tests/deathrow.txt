@@ -33,9 +33,9 @@ The no-operation use case, reflects the sampledata status.
 
 Setup `SoyuzTestPublisher` for creating publications for Ubuntu/hoary.
 
-    >>> from canonical.launchpad.tests.test_publishing import (
+    >>> from lp.soyuz.tests.test_publishing import (
     ...     SoyuzTestPublisher)
-    >>> from canonical.launchpad.interfaces.publishing import (
+    >>> from lp.soyuz.interfaces.publishing import (
     ...     PackagePublishingPocket, PackagePublishingStatus)
 
     >>> hoary = ubuntu.getSeries('hoary')

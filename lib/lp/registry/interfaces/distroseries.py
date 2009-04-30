@@ -20,10 +20,8 @@ from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad.fields import (
     Description, PublicPersonChoice, Summary, Title)
-from canonical.launchpad.interfaces.archive import IArchive
-from lp.registry.interfaces.distribution import IDistribution
 from canonical.launchpad.interfaces.bugtarget import IBugTarget, IHasBugs
-from canonical.launchpad.interfaces.buildrecords import IHasBuildRecords
+from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from canonical.launchpad.interfaces.languagepack import ILanguagePack
 from canonical.launchpad.interfaces.launchpad import (
     IHasAppointedDriver, IHasOwner, IHasDrivers)
@@ -159,7 +157,7 @@ class IDistroSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
             description=_("The version string for this series.")))
     distribution = exported(
         Reference(
-            IDistribution,
+            Interface, # Really IDistribution, see circular import fix below.
             title=_("Distribution"), required=True,
             description=_("The distribution for which this is a series.")))
     parent = Attribute('The structural parent of this series - the distro')
@@ -294,7 +292,7 @@ class IDistroSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
 
     main_archive = exported(
         Reference(
-            IArchive,
+            Interface, # Really IArchive, see below for circular import fix.
             title=_('Distribution Main Archive')))
 
     supported = exported(
@@ -765,8 +763,5 @@ class NoSuchDistroSeries(NameLookupFailed):
     _message_prefix = "No such distribution series"
 
 
-# Monkey patch for circular import avoidance.
-from canonical.launchpad.components.apihelpers import patch_entry_return_type
-from canonical.launchpad.interfaces.distroarchseries import IDistroArchSeries
-patch_entry_return_type(
-    IDistroSeries, 'getDistroArchSeries', IDistroArchSeries)
+# Monkey patch for circular import avoidance done in
+# _schema_circular_imports.py

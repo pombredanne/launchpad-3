@@ -10,10 +10,10 @@ from operator import attrgetter
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.interfaces.archive import IArchiveSet
-from canonical.launchpad.interfaces.archiveauthtoken import (
+from lp.soyuz.interfaces.archive import IArchiveSet
+from lp.soyuz.interfaces.archiveauthtoken import (
     IArchiveAuthTokenSet)
-from canonical.launchpad.interfaces.archivesubscriber import (
+from lp.soyuz.interfaces.archivesubscriber import (
     ArchiveSubscriberStatus, IArchiveSubscriberSet)
 from canonical.launchpad.scripts.base import LaunchpadCronScript
 

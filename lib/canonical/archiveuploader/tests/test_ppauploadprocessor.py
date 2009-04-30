@@ -18,15 +18,19 @@ from canonical.archiveuploader.tests.test_uploadprocessor import (
     TestUploadProcessorBase)
 from canonical.config import config
 from canonical.launchpad.database import Component
-from canonical.launchpad.database.publishing import (
+from lp.soyuz.model.publishing import (
     BinaryPackagePublishingHistory)
+from lp.registry.interfaces.distribution import IDistributionSet
+from lp.registry.interfaces.person import IPersonSet
+from lp.soyuz.interfaces.archive import ArchivePurpose, IArchiveSet
+from lp.soyuz.interfaces.package import PackageUploadStatus
+from lp.soyuz.interfaces.publishing import (
+    PackagePublishingStatus, PackagePublishingPocket)
+from lp.soyuz.interfaces.queue import NonBuildableSourceUploadError
 from canonical.launchpad.interfaces import (
-    ArchivePurpose, IArchiveSet, IDistributionSet, ILaunchpadCelebrities,
-    ILibraryFileAliasSet, IPersonSet, NotFoundError, PackageUploadStatus,
-    PackagePublishingStatus, PackagePublishingPocket,
-    NonBuildableSourceUploadError)
+    ILaunchpadCelebrities, ILibraryFileAliasSet, NotFoundError)
 from canonical.launchpad.testing.fakepackager import FakePackager
-from canonical.launchpad.tests.test_publishing import SoyuzTestPublisher
+from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from canonical.launchpad.mail import stub
 
 

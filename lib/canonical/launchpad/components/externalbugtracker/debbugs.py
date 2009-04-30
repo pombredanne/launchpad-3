@@ -29,7 +29,7 @@ from canonical.launchpad.interfaces import (
     ISupportsCommentImport, ISupportsCommentPushing,
     UNKNOWN_REMOTE_IMPORTANCE)
 from canonical.launchpad.mail import simple_sendmail
-from canonical.launchpad.scripts import debbugs
+from lp.soyuz.scripts import debbugs
 from canonical.launchpad.webapp import urlsplit
 
 

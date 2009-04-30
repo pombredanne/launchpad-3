@@ -629,7 +629,7 @@ If a Debian bug already exists in Launchpad (i.e it has a bug watch), it
 won't be imported again. A warning is logged so that the person runnning
 the script gets notified about it.
 
-    >>> from canonical.launchpad.scripts.importdebianbugs import (
+    >>> from lp.soyuz.scripts.importdebianbugs import (
     ...     import_debian_bugs)
     >>> [bug.id for bug in debbugs.getBugsWatching('304014')]
     [1]

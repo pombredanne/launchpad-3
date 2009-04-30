@@ -18,7 +18,7 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.database.enumcol import DBEnum
-from canonical.launchpad.interfaces.publishing import PackagePublishingPocket
+from lp.soyuz.interfaces.publishing import PackagePublishingPocket
 from lp.code.interfaces.seriessourcepackagebranch import (
     IFindOfficialBranchLinks, IMakeOfficialBranchLinks,
     ISeriesSourcePackageBranch)

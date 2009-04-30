@@ -16,9 +16,14 @@ __all__ = []
 
 from lazr.restful.declarations import LAZR_WEBSERVICE_EXPORTED
 
-from canonical.launchpad.interfaces.build import (
+from canonical.launchpad.components.apihelpers import (
+    patch_entry_return_type, patch_collection_return_type,
+    patch_plain_parameter_type, patch_choice_parameter_type,
+    patch_reference_property)
+
+from lp.soyuz.interfaces.build import (
     BuildStatus, IBuild)
-from canonical.launchpad.interfaces.buildrecords import IHasBuildRecords
+from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.code.interfaces.branch import IBranch
 from lp.code.interfaces.branchmergeproposal import (
     BranchMergeProposalStatus, IBranchMergeProposal)
@@ -30,13 +35,22 @@ from lp.code.interfaces.codereviewcomment import (
 from lp.code.interfaces.codereviewvote import (
     ICodeReviewVoteReference)
 from canonical.launchpad.interfaces.diff import IPreviewDiff
+from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.distributionsourcepackage import (
+    IDistributionSourcePackage)
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import IPerson, IPersonPublic
 from canonical.launchpad.interfaces.hwdb import IHWSubmission
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
-from canonical.launchpad.interfaces.publishing import (
-    PackagePublishingPocket)
+from lp.soyuz.interfaces.archive import IArchive
+from lp.soyuz.interfaces.archivepermission import (
+    IArchivePermission)
+from lp.soyuz.interfaces.distroarchseries import IDistroArchSeries
+from lp.soyuz.interfaces.publishing import (
+    IBinaryPackagePublishingHistory, ISecureBinaryPackagePublishingHistory,
+    ISecureSourcePackagePublishingHistory, ISourcePackagePublishingHistory,
+    PackagePublishingPocket, PackagePublishingStatus)
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 
 
@@ -72,6 +86,7 @@ IPersonPublic['getMergeProposals'].queryTaggedValue(
 IPersonPublic['getMergeProposals'].queryTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)['params']['status'].value_type.vocabulary = \
         BranchMergeProposalStatus
+patch_reference_property(IPersonPublic, 'archive', IArchive)
 
 IHasBuildRecords['getBuildRecords'].queryTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)[
@@ -95,5 +110,83 @@ ISourcePackage['setBranch'].queryTaggedValue(
         'params']['pocket'].vocabulary = PackagePublishingPocket
 ISourcePackage['setBranch'].queryTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)['params']['branch'].schema = IBranch
+patch_reference_property(ISourcePackage, 'distribution', IDistribution)
 
 IPerson['hardware_submissions'].value_type.schema = IHWSubmission
+
+# publishing.py
+ISourcePackagePublishingHistory['getBuilds'].queryTaggedValue(
+    LAZR_WEBSERVICE_EXPORTED)['return_type'].value_type.schema = IBuild
+ISourcePackagePublishingHistory['getPublishedBinaries'].queryTaggedValue(
+    LAZR_WEBSERVICE_EXPORTED)[
+    'return_type'].value_type.schema = IBinaryPackagePublishingHistory
+patch_reference_property(
+    ISecureBinaryPackagePublishingHistory, 'distroarchseries',
+    IDistroArchSeries)
+patch_reference_property(
+    ISecureBinaryPackagePublishingHistory, 'archive', IArchive)
+patch_reference_property(
+    ISecureSourcePackagePublishingHistory, 'archive', IArchive)
+
+# IArchive apocalypse.
+patch_reference_property(IArchive, 'distribution', IDistribution)
+patch_collection_return_type(
+    IArchive, 'getPermissionsForPerson', IArchivePermission)
+patch_collection_return_type(
+    IArchive, 'getUploadersForPackage', IArchivePermission)
+patch_collection_return_type(
+    IArchive, 'getUploadersForComponent', IArchivePermission)
+patch_collection_return_type(
+    IArchive, 'getQueueAdminsForComponent', IArchivePermission)
+patch_collection_return_type(
+    IArchive, 'getComponentsForQueueAdmin', IArchivePermission)
+patch_entry_return_type(IArchive, 'newPackageUploader', IArchivePermission)
+patch_entry_return_type(IArchive, 'newComponentUploader', IArchivePermission)
+patch_entry_return_type(IArchive, 'newQueueAdmin', IArchivePermission)
+patch_plain_parameter_type(IArchive, 'syncSources', 'from_archive', IArchive)
+patch_plain_parameter_type(IArchive, 'syncSource', 'from_archive', IArchive)
+patch_plain_parameter_type(
+    IArchive, 'getPublishedSources', 'distroseries', IDistroSeries)
+patch_collection_return_type(
+    IArchive, 'getPublishedSources', ISourcePackagePublishingHistory)
+patch_choice_parameter_type(
+    IArchive, 'getPublishedSources', 'status', PackagePublishingStatus)
+patch_choice_parameter_type(
+    IArchive, 'getPublishedSources', 'pocket', PackagePublishingPocket)
+patch_plain_parameter_type(
+    IArchive, 'getAllPublishedBinaries', 'distroarchseries',
+    IDistroArchSeries)
+patch_collection_return_type(
+    IArchive, 'getAllPublishedBinaries', IBinaryPackagePublishingHistory)
+patch_choice_parameter_type(
+    IArchive, 'getAllPublishedBinaries', 'status', PackagePublishingStatus)
+patch_choice_parameter_type(
+    IArchive, 'getAllPublishedBinaries', 'pocket', PackagePublishingPocket)
+
+# IDistribution
+IDistribution['serieses'].value_type.schema = IDistroSeries
+patch_reference_property(
+    IDistribution, 'currentseries', IDistroSeries)
+patch_entry_return_type(
+    IDistribution, 'getSeries', IDistroSeries)
+patch_collection_return_type(
+    IDistribution, 'getDevelopmentSerieses', IDistroSeries)
+patch_entry_return_type(
+    IDistribution, 'getSourcePackage', IDistributionSourcePackage)
+patch_collection_return_type(
+    IDistribution, 'searchSourcePackages', IDistributionSourcePackage)
+patch_reference_property(
+    IDistribution, 'main_archive', IArchive)
+IDistribution['all_distro_archives'].value_type.schema = IArchive
+
+
+# IDistroSeries
+patch_entry_return_type(
+    IDistroSeries, 'getDistroArchSeries', IDistroArchSeries)
+patch_reference_property(
+    IDistroSeries, 'main_archive', IArchive)
+patch_reference_property(
+    IDistroSeries, 'distribution', IDistribution)
+
+# IDistroArchSeries
+patch_reference_property(IDistroArchSeries, 'main_archive', IArchive)

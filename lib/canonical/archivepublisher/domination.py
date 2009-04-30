@@ -63,7 +63,7 @@ from canonical.database.sqlbase import (
 
 # Importing from canonical.launchpad.database will cause a circular import
 # because we import from this file into database/distributionmirror.py
-from canonical.launchpad.database.publishing import (
+from lp.soyuz.model.publishing import (
      BinaryPackagePublishingHistory, SecureSourcePackagePublishingHistory,
      SecureBinaryPackagePublishingHistory)
 from canonical.launchpad.interfaces import PackagePublishingStatus

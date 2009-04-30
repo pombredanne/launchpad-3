@@ -129,7 +129,7 @@ exact circumstances we want to test below.
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
 
     >>> from canonical.database.sqlbase import commit
-    >>> from canonical.launchpad.tests.test_publishing import (
+    >>> from lp.soyuz.tests.test_publishing import (
     ...     SoyuzTestPublisher)
     >>> from canonical.testing.layers import LaunchpadZopelessLayer
 

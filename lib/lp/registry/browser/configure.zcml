@@ -92,7 +92,7 @@
         for="lp.registry.interfaces.distroseries.IDistroSeries"
         name="+macros"
         permission="zope.Public"
-        template="../../../canonical/launchpad/templates/packagesearch-macros.pt"/>
+        template="../templates/packagesearch-macros.pt"/>
     <browser:page
         for="lp.registry.interfaces.distroseries.IDistroSeries"
         permission="zope.Public"
@@ -122,7 +122,7 @@
             template="../templates/distroseries-builds.pt"/>
         <browser:page
             name="+builds-list"
-            template="../../../canonical/launchpad/templates/builds-list.pt"/>
+            template="../../soyuz/templates/builds-list.pt"/>
         <browser:page
             name="+portlet-aboutcve"
             template="../templates/portlet-aboutcve.pt"/>
@@ -1642,7 +1642,7 @@
         <browser:page
             name="+archivesubscriptions"
             for="lp.registry.interfaces.person.IPerson"
-            class="canonical.launchpad.browser.archivesubscription.PersonArchiveSubscriptionsView"
+            class="lp.soyuz.browser.archivesubscription.PersonArchiveSubscriptionsView"
             permission="launchpad.Edit"
             template="../templates/person-archive-subscriptions.pt"/>
         <browser:defaultView
@@ -2528,7 +2528,7 @@
             template="../templates/distribution-builds.pt"/>
         <browser:page
             name="+builds-list"
-            template="../../../canonical/launchpad/templates/builds-list.pt"/>
+            template="../../soyuz/templates/builds-list.pt"/>
     </browser:pages>
     <browser:page
         for="lp.registry.interfaces.distribution.IDistribution"
@@ -2863,7 +2863,7 @@
         facet="overview"
         template="../templates/sourcepackage-builds.pt"/><browser:page
         name="+builds-list"
-        template="../../../canonical/launchpad/templates/builds-list.pt"/>
+        template="../../soyuz/templates/builds-list.pt"/>
     <!-- SourcePackage Portlets -->
     <browser:page
         name="+portlet-details"

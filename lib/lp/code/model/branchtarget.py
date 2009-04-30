@@ -15,7 +15,7 @@ from zope.security.interfaces import Unauthorized
 
 from lp.code.interfaces.branch import BranchType
 from lp.code.interfaces.branchtarget import IBranchTarget
-from canonical.launchpad.interfaces.publishing import PackagePublishingPocket
+from lp.soyuz.interfaces.publishing import PackagePublishingPocket
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 
 

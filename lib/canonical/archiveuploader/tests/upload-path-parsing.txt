@@ -165,7 +165,7 @@ Uploading to named PPA that does not exist fails.
 
 We will create a 'beta' PPA for Celso.
 
-    >>> from canonical.launchpad.interfaces.archive import (
+    >>> from lp.soyuz.interfaces.archive import (
     ...     ArchivePurpose, IArchiveSet)
     >>> beta_ppa = getUtility(IArchiveSet).new(
     ...     ArchivePurpose.PPA, cprov, 'beta')

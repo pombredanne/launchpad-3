@@ -25,24 +25,28 @@ from canonical.archiveuploader.uploadpolicy import AbstractUploadPolicy
 from canonical.archiveuploader.uploadprocessor import UploadProcessor
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
-from canonical.launchpad.database.archivepermission import ArchivePermission
-from canonical.launchpad.database.binarypackagename import BinaryPackageName
-from canonical.launchpad.database.binarypackagerelease import (
+from lp.soyuz.model.archivepermission import ArchivePermission
+from lp.soyuz.model.binarypackagename import BinaryPackageName
+from lp.soyuz.model.binarypackagerelease import (
     BinaryPackageRelease)
-from canonical.launchpad.database.component import Component
-from canonical.launchpad.database.publishing import (
+from lp.soyuz.model.component import Component
+from lp.soyuz.model.publishing import (
     SourcePackagePublishingHistory, BinaryPackagePublishingHistory)
 from lp.registry.model.sourcepackagename import SourcePackageName
-from canonical.launchpad.database.sourcepackagerelease import (
+from lp.soyuz.model.sourcepackagerelease import (
     SourcePackageRelease)
 from canonical.launchpad.ftests import import_public_test_keys
-from canonical.launchpad.interfaces import (
-    ArchivePurpose, DistroSeriesStatus, IArchiveSet, IDistributionSet,
-    ILibraryFileAliasSet, PackagePublishingPocket, PackagePublishingStatus,
-    PackageUploadStatus, QueueInconsistentStateError)
-from canonical.launchpad.interfaces.archivepermission import (
+from lp.registry.interfaces.distribution import IDistributionSet
+from lp.registry.interfaces.distroseries import DistroSeriesStatus
+from lp.soyuz.interfaces.archive import ArchivePurpose, IArchiveSet
+from lp.soyuz.interfaces.package import PackageUploadStatus
+from lp.soyuz.interfaces.publishing import (
+    PackagePublishingPocket, PackagePublishingStatus)
+from lp.soyuz.interfaces.queue import QueueInconsistentStateError
+from canonical.launchpad.interfaces import ILibraryFileAliasSet
+from lp.soyuz.interfaces.archivepermission import (
     ArchivePermissionType)
-from canonical.launchpad.interfaces.component import IComponentSet
+from lp.soyuz.interfaces.component import IComponentSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageNameSet)

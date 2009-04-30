@@ -60,7 +60,7 @@ from canonical.archiveuploader.nascentupload import (
     NascentUpload, FatalUploadError, EarlyReturnUploadError)
 from canonical.archiveuploader.uploadpolicy import (
     findPolicyByOptions, UploadPolicyError)
-from canonical.launchpad.interfaces.archive import IArchiveSet
+from lp.soyuz.interfaces.archive import IArchiveSet
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from canonical.launchpad.webapp.errorlog import (
