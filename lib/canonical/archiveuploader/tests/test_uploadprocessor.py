@@ -492,8 +492,8 @@ class TestUploadProcessor(TestUploadProcessorBase):
             queue_item.status, PackageUploadStatus.UNAPPROVED,
             "Expected queue item to be in UNAPPROVED status.")
 
-    def _checkCopyArchiveUploadToDistro(
-        self, pocket_to_check, status_to_check):
+    def _checkCopyArchiveUploadToDistro(self, pocket_to_check,
+                                        status_to_check):
         """Check binary copy archive uploads for given pocket and status.
 
         This helper method tests that buildd binary uploads to copy
