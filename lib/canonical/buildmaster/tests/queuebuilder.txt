@@ -229,7 +229,7 @@ distroseries (see bug 181328).
     >>> copied_pub = pub_failed.copyTo(
     ...     hoary, PackagePublishingPocket.RELEASE, warty.main_archive)
 
-    >>> from canonical.launchpad.interfaces import BuildStatus
+    >>> from lp.soyuz.interfaces.build import BuildStatus
     >>> failed_build = pub_failed.sourcepackagerelease.createBuild(
     ...     warty['i386'], PackagePublishingPocket.RELEASE,
     ...     warty.main_archive, status=BuildStatus.FAILEDTOBUILD)

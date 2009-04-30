@@ -20,7 +20,7 @@ from canonical.launchpad.interfaces import (
 from lp.soyuz.interfaces.archivesubscriber import (
     ArchiveSubscriberStatus)
 from canonical.launchpad.scripts import QuietFakeLogger
-from canonical.launchpad.scripts.generate_ppa_htaccess import (
+from lp.soyuz.scripts.generate_ppa_htaccess import (
     HtaccessTokenGenerator)
 from canonical.launchpad.testing import LaunchpadObjectFactory
 from canonical.testing.layers import LaunchpadZopelessLayer

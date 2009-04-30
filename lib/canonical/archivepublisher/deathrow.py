@@ -24,9 +24,11 @@ from lp.soyuz.model.publishing import (
     SecureBinaryPackagePublishingHistory,
     SecureSourcePackagePublishingHistory)
 
-from canonical.launchpad.interfaces import (
-    ArchivePurpose, ISecureSourcePackagePublishingHistory,
-    ISecureBinaryPackagePublishingHistory, NotInPool)
+from lp.soyuz.interfaces.archive import ArchivePurpose
+from lp.soyuz.interfaces.publishing import (
+    ISecureBinaryPackagePublishingHistory,
+    ISecureSourcePackagePublishingHistory)
+from canonical.launchpad.interfaces import NotInPool
 
 
 def getDeathRow(archive, log, pool_root_override):
