@@ -19,7 +19,8 @@ from canonical.archivepublisher.diskpool import DiskPool
 from canonical.archivepublisher.config import LucilleConfigError
 from canonical.archivepublisher.domination import Dominator
 from canonical.archivepublisher.ftparchive import FTPArchiveHandler
-from canonical.archivepublisher.utils import RepositoryIndexFile
+from canonical.archivepublisher.utils import (
+    RepositoryIndexFile, get_ppa_reference)
 from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.database.publishing import (
     SourcePackagePublishingHistory, BinaryPackagePublishingHistory)
@@ -434,6 +435,22 @@ class Publisher(object):
             raise AssertionError(
                 "Oops, tainting RELEASE pocket of %s." % distroseries)
 
+    def _getOrigin(self):
+        """Return the contents of the Release file Origin field.
+
+        Primary, Partner and Copy archives use the distribution displayname.
+        For PPAs we use a more specific value that follows
+        `get_ppa_reference`.
+
+        :return: a text that should be used as the value of the Release file
+            'Origin' field.
+        """
+        # XXX al-maisan, 2008-11-19, bug=299981. If this file is released
+        # from a copy archive then modify the origin to indicate so.
+        if not self.archive.is_ppa:
+            return self.distro.displayname
+        return "LP-PPA-%s" % get_ppa_reference(self.archive)
+
     def _writeDistroSeries(self, distroseries, pocket):
         """Write out the Release files for the provided distroseries."""
         # XXX: kiko 2006-08-24: Untested method.
@@ -473,15 +490,8 @@ class Publisher(object):
         f = open(os.path.join(
             self._config.distsroot, full_name, "Release"), "w")
 
-        # XXX al-maisan, 2008-11-19, bug=299981. If this file is released
-        # from a copy archive then modify the origin to indicate so.
-        if self.archive.is_ppa:
-            origin = "LP-PPA-%s" % self.archive.owner.name
-        else:
-            origin = self.distro.displayname
-
         stanza = DISTRORELEASE_STANZA % (
-                    origin,
+                    self._getOrigin(),
                     self.distro.displayname,
                     full_name,
                     distroseries.version,
@@ -554,18 +564,11 @@ class Publisher(object):
         f = open(os.path.join(self._config.distsroot, full_name,
                               component, architecture, "Release"), "w")
 
-        # XXX cprov, 2009-01-06, bug=299981. If this file is released
-        # from a copy archive then modify the origin to indicate so.
-        if self.archive.is_ppa:
-            origin = "LP-PPA-%s" % self.archive.owner.name
-        else:
-            origin = self.distro.displayname
-
         stanza = DISTROARCHRELEASE_STANZA % (
                 full_name,
                 distroseries.version,
                 component,
-                origin,
+                self._getOrigin(),
                 self.distro.displayname,
                 clean_architecture)
         f.write(stanza)

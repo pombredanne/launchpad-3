@@ -76,7 +76,7 @@ from canonical.config import config
 from canonical.database.sqlbase import cursor
 from canonical.launchpad import _
 from canonical.cachedproperty import cachedproperty
-from canonical.launchpad.fields import PublicPersonChoice
+from canonical.launchpad.fields import ParticipatingPersonChoice
 from canonical.launchpad.mailnotification import get_unified_diff
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.vocabularies.dbobjects import MilestoneVocabulary
@@ -482,6 +482,12 @@ class BugTaskView(LaunchpadView, CanBeMentoredView, FeedsMixin):
 
         # See render() for how this flag is used.
         self._redirecting_to_bug_list = False
+
+        # If the bug is not reported in this context, redirect
+        # to the default bug task.
+        if not self.isReportedInContext():
+            self.request.response.redirect(
+                canonical_url(self.context.bug.default_bugtask))
 
         self.bug_title_edit_widget = TextLineEditorWidget(
             bug, 'title', canonical_url(self.context, view_name='+edit'),
@@ -1224,7 +1230,7 @@ class BugTaskEditView(LaunchpadEditFormView):
             self.form_fields.get('assignee', False)):
             # Make the assignee field editable
             self.form_fields = self.form_fields.omit('assignee')
-            self.form_fields += formlib.form.Fields(PublicPersonChoice(
+            self.form_fields += formlib.form.Fields(ParticipatingPersonChoice(
                 __name__='assignee', title=_('Assigned to'), required=False,
                 vocabulary='ValidAssignee', readonly=False))
             self.form_fields['assignee'].custom_widget = CustomWidgetFactory(

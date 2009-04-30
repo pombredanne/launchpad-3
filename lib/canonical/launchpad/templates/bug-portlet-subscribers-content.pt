@@ -15,8 +15,7 @@
         tal:condition="direct_subscriptions"
         tal:repeat="subscription direct_subscriptions"
       >
-        <a tal:condition="subscription/person/name|nothing"
-           tal:attributes="
+        <a tal:attributes="
              href subscription/person/fmt:url;
              title subscription/display_subscribed_by;
            "
