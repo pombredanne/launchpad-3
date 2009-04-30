@@ -480,7 +480,7 @@ something like this:
     ...  'with a really long line that should invoke the splitting ' \
     ...  'algorithm in the mail wrapper to make sure that the line ' \
     ...  'is not too long'
-    >>> from canonical.launchpad.interfaces import BranchLifecycleStatus
+    >>> from lp.code.interfaces.branch import BranchLifecycleStatus
     >>> branch.lifecycle_status = BranchLifecycleStatus.EXPERIMENTAL
     >>> updated_fields = ['name','title','summary','url','whiteboard','lifecycle_status']
     >>> notify(ObjectModifiedEvent(
