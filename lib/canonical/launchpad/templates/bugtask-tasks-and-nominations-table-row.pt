@@ -59,8 +59,7 @@
     </tal:conjoined-task>
 
     <tal:not-conjoined-task condition="not:is_conjoined_slave">
-    <td tal:attributes="class string:status${context/status/name};
-                        current_value context/status/title"
+    <td tal:attributes="class string:status${context/status/name}"
         style="width: 15em;">
       <div class="status-content"
            style="width: 100%; float: left">
@@ -131,7 +130,8 @@
              function(e) {
                  Y.bugs.setup_bugtask_row('${row_id}',
                                           '${context/fmt:url}',
-                                          ${view/status_widget_items});
+                                          ${view/status_widget_items},
+                                          '${context/status/title}');
              },
              '#${row_id}');
     });
