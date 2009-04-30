@@ -91,7 +91,6 @@
     <include file="translator.zcml" />
     <include file="vpoexport.zcml" />
     <include file="vpotexport.zcml" />
-    <include file="archivesigningkey.zcml" />
     <include file="webservice.zcml" />
 
     <include file="fields.zcml" />

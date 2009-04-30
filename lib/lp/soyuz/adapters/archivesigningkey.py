@@ -17,7 +17,7 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.config import config
-from canonical.launchpad.interfaces.archivesigningkey import (
+from lp.soyuz.interfaces.archivesigningkey import (
     IArchiveSigningKey)
 from canonical.launchpad.interfaces.gpghandler import IGPGHandler
 from lp.registry.interfaces.gpg import IGPGKeySet, GPGKeyAlgorithm

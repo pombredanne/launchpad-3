@@ -6,7 +6,7 @@ __all__ = [
 
 from zope.component import getUtility
 from lp.soyuz.interfaces.archive import IArchiveSet
-from canonical.launchpad.interfaces.archivesigningkey import (
+from lp.soyuz.interfaces.archivesigningkey import (
     IArchiveSigningKey)
 from lp.registry.interfaces.person import IPersonSet
 from canonical.launchpad.scripts.base import (

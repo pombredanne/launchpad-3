@@ -26,7 +26,7 @@ from lp.soyuz.model.publishing import (
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.interfaces.binarypackagerelease import (
     BinaryPackageFormat)
-from canonical.launchpad.interfaces.archivesigningkey import (
+from lp.soyuz.interfaces.archivesigningkey import (
     IArchiveSigningKey)
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.publishing import (

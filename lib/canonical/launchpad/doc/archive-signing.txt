@@ -124,7 +124,7 @@ location defined by the system configuration.
 In order to manipulate 'signing_keys' securily the target archive
 object has to be adapted to `IArchiveSigningKey`.
 
-    >>> from canonical.launchpad.interfaces.archivesigningkey import (
+    >>> from lp.soyuz.interfaces.archivesigningkey import (
     ...     IArchiveSigningKey)
 
 We will adapt Celso's PPA after modifing its distribution to allow

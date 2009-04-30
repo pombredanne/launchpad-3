@@ -396,8 +396,8 @@
         permission="zope.Public"/>
     <adapter
         for="lp.soyuz.interfaces.archive.IArchive"
-        provides="canonical.launchpad.interfaces.archivesigningkey.IArchiveSigningKey"
-        factory="canonical.launchpad.components.archivesigningkey.ArchiveSigningKey"/>
+        provides="lp.soyuz.interfaces.archivesigningkey.IArchiveSigningKey"
+        factory="lp.soyuz.adapters.archivesigningkey.ArchiveSigningKey"/>
     <adapter
         provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
         for="lp.soyuz.interfaces.archive.IArchive"
@@ -779,5 +779,13 @@
         <allow
             interface="lp.soyuz.interfaces.files.ISourcePackageReleaseFileSet"/>
     </securedutility>
+
+    <!-- ArchiveSigningKey -->
+
+    <class
+        class="lp.soyuz.adapters.archivesigningkey.ArchiveSigningKey">
+        <allow
+            interface="lp.soyuz.interfaces.archivesigningkey.IArchiveSigningKey"/>
+    </class>
 
 </configure>
