@@ -35,6 +35,8 @@ from canonical.database.enumcol import EnumCol
 from canonical.launchpad import _
 from canonical.launchpad.database.job import Job
 from canonical.launchpad.mailnotification import NotificationRecipientSet
+from canonical.launchpad.mailout.branch import (
+    send_branch_modified_notifications)
 from canonical.launchpad.webapp import urlappend
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, SLAVE_FLAVOR)
@@ -1004,14 +1006,21 @@ class BranchCloud:
         return result
 
 
-def update_trigger_modified_fields(branch, event):
-    """Event handler for when a branch has been modified.
-
-    Make the trigger updated fields reload when next accessed.
-    """
+def update_trigger_modified_fields(branch):
+    """Make the trigger updated fields reload when next accessed."""
     # Not all the fields are exposed through the interface, and some are read
     # only, so remove the security proxy.
     naked_branch = removeSecurityProxy(branch)
     naked_branch.unique_name = AutoReload
     naked_branch.owner_name = AutoReload
     naked_branch.target_suffix = AutoReload
+
+
+def branch_modified_subscriber(branch, event):
+    """This method is subscribed to IObjectModifiedEvents for branches.
+
+    We have a single subscriber registered and dispatch from here to ensure
+    that the database fields are updated first before other subscribers.
+    """
+    update_trigger_modified_fields(branch)
+    send_branch_modified_notifications(branch, event)

@@ -487,11 +487,7 @@
   <subscriber
       for="lp.code.interfaces.branch.IBranch
            lazr.lifecycle.interfaces.IObjectModifiedEvent"
-      handler="canonical.launchpad.mailout.branch.send_branch_modified_notifications"/>
-  <subscriber
-      for="lp.code.interfaces.branch.IBranch
-           lazr.lifecycle.interfaces.IObjectModifiedEvent"
-      handler="lp.code.model.branch.update_trigger_modified_fields"/>
+      handler="lp.code.model.branch.branch_modified_subscriber"/>
   <class class="canonical.launchpad.mailout.branch.RecipientReason">
     <allow attributes="
                     getReason
