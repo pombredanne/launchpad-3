@@ -42,7 +42,8 @@
         </metal:subscriber>
       </div>
       </div>
-      <div tal:condition="not:direct_subscriptions">None</div>
+      <div id="none-subscribers"
+        tal:condition="not:direct_subscriptions">None</div>
   </div>
   <div
     tal:condition="from_dupes_subscriptions"
