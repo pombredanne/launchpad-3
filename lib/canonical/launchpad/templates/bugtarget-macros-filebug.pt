@@ -428,11 +428,11 @@
                     <tal:open condition="not:bug/is_complete">Open</tal:open>
                   </tal:no-bugtask>
 
-                  (<tal:comments replace="bug/message_count" />
-                  <tal:one_comment condition="python: bug.message_count == 1"
+                  (<tal:comments replace="bug/comment_count" />
+                  <tal:one_comment condition="python: bug.comment_count == 1"
                     replace="string: comment"
                     /><tal:plural_comments
-                      condition="python: bug.message_count != 1"
+                      condition="python: bug.comment_count != 1"
                       replace="string: comments" />)
 
                   last updated

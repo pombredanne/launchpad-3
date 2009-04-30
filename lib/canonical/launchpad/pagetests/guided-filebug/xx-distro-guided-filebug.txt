@@ -24,7 +24,7 @@ Submitting a bug title...
     >>> from canonical.launchpad.ftests.bug import print_bugs_list
     >>> print_bugs_list(user_browser.contents, "similar-bugs")
     #9 Thunderbird crashes
-    Confirmed (1 comment) last updated 2006-07-14
+    Confirmed (0 comments) last updated 2006-07-14
     Every time I start Thunderbird...
 
 Subscribing to one of the similar bugs takes us to the bug page.
