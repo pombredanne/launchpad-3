@@ -214,7 +214,7 @@ class TestBranch(TestCaseWithFactory):
         branch.owner = new_owner
         # Call the function that is normally called through the event system
         # to auto reload the fields updated by the db triggers.
-        update_trigger_modified_fields(branch, None)
+        update_trigger_modified_fields(branch)
         self.assertEqual(
             new_owner.name, removeSecurityProxy(branch).owner_name)
 
