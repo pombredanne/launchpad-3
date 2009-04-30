@@ -443,13 +443,9 @@
                 </span>
               </div>
 
-              <div class="duplicate-details" tal:attributes="
-                  id string:details-for-bug-${bug/id};
-                  style python: not path('repeat/bug/start') and not (
-                        path('view/this_is_my_bug_action/submitted') or
-                        path('view/submit_bug_action/submitted'))
-                        and 'display: none'"
-                >
+              <div class="duplicate-details"
+                  tal:attributes="id string:details-for-bug-${bug/id}"
+                  style="display: block;">
 
                 <div class="lesser" style="margin-bottom: 0.5em;"
                     tal:define="description bug/description/fmt:shorten/500/fmt:obfuscate-email/fmt:text-to-html"
