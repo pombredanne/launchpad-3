@@ -537,8 +537,6 @@ class TestUploadProcessor(TestUploadProcessorBase):
 
         # Make sure the upload succeeded.
         self.assertEqual(
-            uploadprocessor.last_processed_upload.rejection_message, '')
-        self.assertEqual(
             uploadprocessor.last_processed_upload.is_rejected, False)
 
     def testCopyArchiveUploadToCurrentDistro(self):
