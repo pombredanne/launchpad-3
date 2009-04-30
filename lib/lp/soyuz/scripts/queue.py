@@ -12,7 +12,6 @@ __all__ = [
     'CommandRunner',
     'CommandRunnerError',
     'QueueActionError',
-    'name_priority_map',
     'name_queue_map'
     ]
 
@@ -24,13 +23,10 @@ from sha import sha
 
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces.component import IComponentSet
-from canonical.launchpad.interfaces.section import ISectionSet
+from lp.soyuz.interfaces.component import IComponentSet
+from lp.soyuz.interfaces.section import ISectionSet
 from canonical.launchpad.webapp.interfaces import NotFoundError
-from lp.registry.interfaces.distribution import IDistributionSet
 from lp.soyuz.interfaces.package import PackageUploadStatus
-from lp.soyuz.interfaces.publishing import (
-    PackagePublishingPocket, PackagePublishingPriority)
 from lp.soyuz.interfaces.queue import (
     IPackageUploadSet, QueueInconsistentStateError)
 from canonical.cachedproperty import cachedproperty
@@ -45,15 +41,6 @@ name_queue_map = {
     "accepted": PackageUploadStatus.ACCEPTED,
     "done": PackageUploadStatus.DONE,
     "rejected": PackageUploadStatus.REJECTED
-    }
-
-name_priority_map = {
-    'required': PackagePublishingPriority.REQUIRED,
-    'important': PackagePublishingPriority.IMPORTANT,
-    'standard': PackagePublishingPriority.STANDARD,
-    'optional': PackagePublishingPriority.OPTIONAL,
-    'extra': PackagePublishingPriority.EXTRA,
-    '': None
     }
 
 #XXX cprov 2006-09-19: We need to use template engine instead of harcoded
@@ -125,6 +112,11 @@ class QueueAction:
     def setDefaultContext(self):
         """Set default distribuiton, distroseries, announcelist."""
         # if not found defaults to 'ubuntu'
+
+        # Avoid circular imports.
+        from lp.registry.interfaces.distribution import IDistributionSet
+        from lp.soyuz.interfaces.publishing import PackagePublishingPocket
+
         distroset = getUtility(IDistributionSet)
         try:
             self.distribution = distroset[self.distribution_name]
@@ -582,6 +574,7 @@ class QueueActionOverride(QueueAction):
 
     def _override_binary(self):
         """Overrides binarypackagereleases selected"""
+        from lp.soyuz.interfaces.publishing import name_priority_map
         if self.explicit_ids_specified:
             self.displayUsage('Cannot Override BinaryPackage retrieved by ID')
 

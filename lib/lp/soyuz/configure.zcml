@@ -686,4 +686,64 @@
             set_schema="lp.soyuz.interfaces.distroarchseries.IPocketChroot"/>
     </class>
 
+    <!-- Component -->
+    
+    <class
+        class="canonical.launchpad.database.Component">
+        <allow
+            interface="lp.soyuz.interfaces.component.IComponent"/>
+    </class>
+    
+    <!-- ComponentSelection -->
+    
+    <class
+        class="canonical.launchpad.database.ComponentSelection">
+        <allow
+            interface="lp.soyuz.interfaces.component.IComponentSelection"/>
+    </class>
+    
+    <!-- ComponentSet -->
+    
+    <class
+        class="canonical.launchpad.database.ComponentSet">
+        <allow
+            interface="lp.soyuz.interfaces.component.IComponentSet"/>
+    </class>
+    <securedutility
+        class="canonical.launchpad.database.ComponentSet"
+        provides="lp.soyuz.interfaces.component.IComponentSet">
+        <allow
+            interface="lp.soyuz.interfaces.component.IComponentSet"/>
+    </securedutility>
+    
+    <!-- Section -->
+    
+    <class
+        class="canonical.launchpad.database.Section">
+        <allow
+            interface="lp.soyuz.interfaces.section.ISection"/>
+    </class>
+    
+    <!-- Section -->
+    
+    <class
+        class="canonical.launchpad.database.SectionSelection">
+        <allow
+            interface="lp.soyuz.interfaces.section.ISectionSelection"/>
+    </class>
+    
+    <!-- SectionSet -->
+    
+    <class
+        class="canonical.launchpad.database.SectionSet">
+        <allow
+            interface="lp.soyuz.interfaces.section.ISectionSet"/>
+    </class>
+    <securedutility
+        class="canonical.launchpad.database.SectionSet"
+        provides="lp.soyuz.interfaces.section.ISectionSet">
+        <allow
+            interface="lp.soyuz.interfaces.section.ISectionSet"/>
+    </securedutility>
+
 </configure>

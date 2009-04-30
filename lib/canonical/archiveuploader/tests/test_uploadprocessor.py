@@ -29,7 +29,7 @@ from lp.soyuz.model.archivepermission import ArchivePermission
 from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.binarypackagerelease import (
     BinaryPackageRelease)
-from canonical.launchpad.database.component import Component
+from lp.soyuz.model.component import Component
 from lp.soyuz.model.publishing import (
     SourcePackagePublishingHistory, BinaryPackagePublishingHistory)
 from lp.registry.model.sourcepackagename import SourcePackageName
@@ -46,7 +46,7 @@ from lp.soyuz.interfaces.queue import QueueInconsistentStateError
 from canonical.launchpad.interfaces import ILibraryFileAliasSet
 from lp.soyuz.interfaces.archivepermission import (
     ArchivePermissionType)
-from canonical.launchpad.interfaces.component import IComponentSet
+from lp.soyuz.interfaces.component import IComponentSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageNameSet)

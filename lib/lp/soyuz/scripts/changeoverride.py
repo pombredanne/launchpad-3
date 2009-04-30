@@ -10,8 +10,8 @@ __all__ = [
 
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces.component import IComponentSet
-from canonical.launchpad.interfaces.section import ISectionSet
+from lp.soyuz.interfaces.component import IComponentSet
+from lp.soyuz.interfaces.section import ISectionSet
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.soyuz.interfaces.publishing import PackagePublishingPriority
 from lp.soyuz.scripts.ftpmasterbase import (

@@ -18,7 +18,7 @@ from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.interfaces.archive import (
     ArchivePurpose, IArchiveSet)
 from lp.soyuz.interfaces.archivearch import IArchiveArchSet
-from canonical.launchpad.interfaces.component import IComponentSet
+from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.packagecloner import IPackageCloner
 from lp.soyuz.interfaces.packagecopyrequest import (
     IPackageCopyRequestSet)

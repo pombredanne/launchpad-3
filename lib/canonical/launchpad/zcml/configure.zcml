@@ -90,8 +90,6 @@
     <include file="translationimportqueue.zcml" />
     <include file="translationtemplateitem.zcml" />
     <include file="translator.zcml" />
-    <include file="component.zcml" />
-    <include file="section.zcml" />
     <include file="vpoexport.zcml" />
     <include file="vpotexport.zcml" />
     <include file="archivesigningkey.zcml" />

@@ -17,7 +17,7 @@ from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
 from lp.soyuz.interfaces.archive import IArchive
-from canonical.launchpad.interfaces.component import IComponent
+from lp.soyuz.interfaces.component import IComponent
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import IPerson
 from lp.soyuz.interfaces.publishing import PackagePublishingPocket

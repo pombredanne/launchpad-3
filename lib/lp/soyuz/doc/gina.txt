@@ -2,7 +2,7 @@ Gina Test
 ---------
 
 This file is a simple test for gina. It uses a test archive (kept in
-canonical.launchpad.scripts.tests.archive_for_gina) and runs gina in
+lp.soyuz.scripts.tests.archive_for_gina) and runs gina in
 quiet mode over it.
 
 Get the current counts of stuff in the database:

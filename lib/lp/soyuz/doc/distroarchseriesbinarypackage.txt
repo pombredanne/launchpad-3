@@ -23,7 +23,7 @@ existing builds that are in sampledata!
   >>> from lp.soyuz.model.publishing import (
   ...     SecureBinaryPackagePublishingHistory)
   >>> from lp.soyuz.model.build import Build
-  >>> from canonical.launchpad.database.component import Component
+  >>> from lp.soyuz.model.component import Component
   >>> from lp.soyuz.model.section import Section
   >>> from canonical.database.constants import UTC_NOW
 

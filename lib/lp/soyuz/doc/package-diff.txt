@@ -114,7 +114,7 @@ already requests a package diff against the immediate ancestry.
 Before starting let's enable the universe component and add the i386
 chroot in hoary in order to be able to accept the NEW packages.
 
-    >>> from canonical.launchpad.database.component import (
+    >>> from lp.soyuz.model.component import (
     ...     ComponentSelection)
     >>> from canonical.launchpad.interfaces import IComponentSet
     >>> from canonical.launchpad.database import LibraryFileAlias

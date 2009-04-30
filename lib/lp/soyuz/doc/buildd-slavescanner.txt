@@ -1058,7 +1058,7 @@ Let's try it again.
 
 But this time We will create a valid publication on partner hoary/i386.
 
-    >>> from canonical.launchpad.interfaces.component import IComponentSet
+    >>> from lp.soyuz.interfaces.component import IComponentSet
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
     >>> login('foo.bar@canonical.com')

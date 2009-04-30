@@ -28,7 +28,7 @@ from lp.soyuz.interfaces.binarypackagerelease import (
     BinaryPackageFormat)
 from canonical.launchpad.interfaces.archivesigningkey import (
     IArchiveSigningKey)
-from canonical.launchpad.interfaces.component import IComponentSet
+from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.publishing import (
     pocketsuffix, PackagePublishingPocket, PackagePublishingStatus)
 

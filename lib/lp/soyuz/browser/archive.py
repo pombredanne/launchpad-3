@@ -54,7 +54,7 @@ from lp.soyuz.interfaces.archivesubscriber import (
 from lp.soyuz.interfaces.build import (
     BuildStatus, IBuildSet)
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
-from canonical.launchpad.interfaces.component import IComponentSet
+from lp.soyuz.interfaces.component import IComponentSet
 from lp.registry.interfaces.distroseries import DistroSeriesStatus
 from canonical.launchpad.interfaces.launchpad import (
     ILaunchpadCelebrities, NotFoundError)

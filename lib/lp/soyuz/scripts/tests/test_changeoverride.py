@@ -7,13 +7,13 @@ import unittest
 
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces.component import IComponentSet
+from lp.soyuz.interfaces.component import IComponentSet
 from lp.registry.interfaces.distribution import IDistributionSet
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.soyuz.interfaces.publishing import (
     PackagePublishingPocket, PackagePublishingPriority)
-from canonical.launchpad.interfaces.section import ISectionSet
+from lp.soyuz.interfaces.section import ISectionSet
 from canonical.launchpad.scripts import FakeLogger
 from lp.soyuz.scripts.changeoverride import (
     ChangeOverride, ArchiveOverriderError)

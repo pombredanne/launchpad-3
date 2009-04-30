@@ -10,7 +10,7 @@ DATE=`date "+%Y%m%d%H%M%S"`
 
 LPL=$SRV/branches/gina/launchpad/lib
 
-GINA=$LPL/canonical/launchpad/scripts/gina
+GINA=$LPL/lp/soyuz/scripts/gina
 
 export LP_DBNAME=launchpad_dev
 export LP_DBHOST=localhost

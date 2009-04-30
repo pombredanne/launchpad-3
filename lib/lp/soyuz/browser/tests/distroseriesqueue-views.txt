@@ -249,7 +249,7 @@ Now that "foo" is published in Hoary, we can upload a new build.
 
     >>> from canonical.launchpad.ftests import import_public_test_keys
     >>> from canonical.launchpad.interfaces import IComponentSet
-    >>> from canonical.launchpad.database.component import ComponentSelection
+    >>> from lp.soyuz.model.component import ComponentSelection
     >>> from canonical.archiveuploader.tests import (
     ...     datadir, getPolicy, mock_logger_quiet)
     >>> from canonical.archiveuploader.nascentupload import NascentUpload

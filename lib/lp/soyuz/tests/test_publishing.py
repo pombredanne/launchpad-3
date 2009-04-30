@@ -20,9 +20,9 @@ from lp.soyuz.model.publishing import (
     SourcePackagePublishingHistory, SecureSourcePackagePublishingHistory,
     BinaryPackagePublishingHistory, SecureBinaryPackagePublishingHistory)
 from lp.soyuz.model.processor import ProcessorFamily
-from canonical.launchpad.interfaces.component import IComponentSet
+from lp.soyuz.interfaces.component import IComponentSet
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.launchpad.interfaces.section import ISectionSet
+from lp.soyuz.interfaces.section import ISectionSet
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet

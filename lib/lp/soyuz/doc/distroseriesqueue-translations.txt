@@ -5,13 +5,13 @@ uploaded into the system.
 
   >>> from canonical.launchpad.database import (
   ...     ProcessorFamily, GPGKey)
-  >>> from canonical.launchpad.database.component import Component
+  >>> from lp.soyuz.model.component import Component
   >>> from lp.soyuz.model.section import Section
   >>> from lp.soyuz.model.publishing import (
   ...     SecureSourcePackagePublishingHistory)
   >>> from lp.registry.interfaces.distribution import IDistributionSet
   >>> from lp.registry.interfaces.distroseries import IDistroSeriesSet
-  >>> from canonical.launchpad.interfaces.component import IComponentSet
+  >>> from lp.soyuz.interfaces.component import IComponentSet
   >>> from lp.soyuz.interfaces.publishing import (
   ...     PackagePublishingPocket, PackagePublishingStatus)
   >>> from lp.registry.interfaces.sourcepackagename import (
@@ -296,7 +296,7 @@ different interpretations of "importer" in attachTranslationFiles.
   >>> from lp.soyuz.interfaces.queue import (
   ...     IPackageUpload, IPackageUploadCustom)
   >>> from lp.soyuz.interfaces.package import PackageUploadCustomFormat
-  >>> from canonical.launchpad.interfaces.component import IComponentSet
+  >>> from lp.soyuz.interfaces.component import IComponentSet
   >>> from lp.registry.interfaces.person import IPerson
   >>> from lp.soyuz.interfaces.sourcepackagerelease import (
   ...     ISourcePackageRelease)

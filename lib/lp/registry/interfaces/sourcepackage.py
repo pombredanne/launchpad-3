@@ -20,7 +20,7 @@ from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.bugtarget import IBugTarget
-from canonical.launchpad.interfaces.component import IComponent
+from lp.soyuz.interfaces.component import IComponent
 from lazr.restful.fields import Reference
 from lazr.restful.declarations import (
     call_with, export_as_webservice_entry, export_read_operation,

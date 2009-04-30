@@ -22,7 +22,7 @@ from canonical.launchpad.interfaces.bug import (
     CreateBugParams, IBugSet)
 from canonical.launchpad.interfaces.bugtask import BugTaskStatus
 from lp.soyuz.interfaces.build import BuildStatus
-from canonical.launchpad.interfaces.component import IComponentSet
+from lp.soyuz.interfaces.component import IComponentSet
 from lp.registry.interfaces.distribution import IDistributionSet
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from lp.registry.interfaces.person import IPersonSet

@@ -42,7 +42,7 @@ from lp.soyuz.interfaces.archive import (
     ArchivePurpose, IArchiveSet)
 from lp.soyuz.interfaces.binarypackagerelease import (
     BinaryPackageFormat)
-from canonical.launchpad.interfaces.component import IComponentSet
+from lp.soyuz.interfaces.component import IComponentSet
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from lp.soyuz.interfaces.package import (
     PackageUploadStatus, PackageUploadCustomFormat)

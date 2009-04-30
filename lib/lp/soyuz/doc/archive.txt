@@ -1089,7 +1089,7 @@ RELEASE pocket and 'main' component.
 
     >>> sabdfl = getUtility(IPersonSet).getByName('sabdfl')
 
-    >>> from canonical.launchpad.interfaces.component import IComponentSet
+    >>> from lp.soyuz.interfaces.component import IComponentSet
     >>> main_component = getUtility(IComponentSet)['main']
 
     >>> release_pocket = PackagePublishingPocket.RELEASE

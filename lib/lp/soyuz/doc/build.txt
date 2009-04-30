@@ -950,7 +950,7 @@ component, we can see that it will be excluded from the dependencies
 list.
 
     >>> login('foo.bar@canonical.com')
-    >>> from canonical.launchpad.interfaces.component import IComponentSet
+    >>> from lp.soyuz.interfaces.component import IComponentSet
     >>> main_component = getUtility(IComponentSet)['main']
     >>> pmount_pub.secure_record.component = main_component
     >>> from canonical.database.sqlbase import flush_database_caches

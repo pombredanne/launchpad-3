@@ -232,9 +232,9 @@ The default upload target is ubuntu/hoary and since we will deal with
 NEW packages, which defaults to 'universe' component, we have to
 enable uploads for it.
 
-    >>> from canonical.launchpad.database.component import (
+    >>> from lp.soyuz.model.component import (
     ...     ComponentSelection)
-    >>> from canonical.launchpad.interfaces.component import IComponentSet
+    >>> from lp.soyuz.interfaces.component import IComponentSet
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from canonical.launchpad.interfaces import ILibraryFileAliasSet
 

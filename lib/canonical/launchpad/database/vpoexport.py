@@ -13,7 +13,7 @@ __all__ = [
 from zope.interface import implements
 
 from canonical.database.sqlbase import quote, sqlvalues, cursor
-from canonical.launchpad.database.component import Component
+from lp.soyuz.model.component import Component
 from lp.registry.model.distroseries import DistroSeries
 from canonical.launchpad.database.language import Language
 from lp.soyuz.model.publishing import (

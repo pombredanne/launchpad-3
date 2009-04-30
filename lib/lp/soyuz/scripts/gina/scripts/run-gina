@@ -11,7 +11,7 @@ DATE=`date "+%Y%m%d%H%M%S"`
 LPL=$SRV/launchpad-dogfood/lib
 #LPL=/home/dsilvers/newpad/lib
 
-GINA=$LPL/canonical/launchpad/scripts/gina
+GINA=$LPL/lp/soyuz/scripts/gina
 
 ($GINA/scripts/reload-katie 2>&1) > $LOG/katie-reload.$DATE
 

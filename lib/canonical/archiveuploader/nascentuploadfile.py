@@ -39,13 +39,13 @@ from lp.soyuz.interfaces.binarypackagerelease import (
     BinaryPackageFormat)
 from lp.soyuz.interfaces.build import (
     BuildStatus, IBuildSet)
-from canonical.launchpad.interfaces.component import IComponentSet
+from lp.soyuz.interfaces.component import IComponentSet
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from lp.soyuz.interfaces.package import (
     PackageUploadCustomFormat, PackageUploadStatus)
 from lp.soyuz.interfaces.publishing import (
     PackagePublishingPriority)
-from canonical.launchpad.interfaces.section import ISectionSet
+from lp.soyuz.interfaces.section import ISectionSet
 from canonical.librarian.utils import filechunks
 
 

@@ -14,10 +14,9 @@ from sqlobject import StringCol, ForeignKey
 
 from canonical.database.sqlbase import SQLBase
 
-from canonical.launchpad.interfaces import (
-    IComponent, IComponentSelection, IComponentSet, NotFoundError)
-
-
+from canonical.launchpad.webapp.interfaces import NotFoundError
+from lp.soyuz.interfaces.component import (
+    IComponent, IComponentSelection, IComponentSet)
 class Component(SQLBase):
     """See IComponent."""
 

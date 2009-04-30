@@ -57,7 +57,7 @@ from lp.registry.interfaces.codeofconduct import *
 from lp.code.interfaces.codereviewcomment import *
 from lp.code.interfaces.codereviewvote import *
 from lp.registry.interfaces.commercialsubscription import *
-from canonical.launchpad.interfaces.component import *
+from lp.soyuz.interfaces.component import *
 from canonical.launchpad.interfaces.country import *
 from canonical.launchpad.interfaces.customlanguagecode import *
 from canonical.launchpad.interfaces.cve import *
@@ -134,7 +134,7 @@ from canonical.launchpad.interfaces.rosettastats import *
 from lp.registry.interfaces.salesforce import *
 from canonical.launchpad.interfaces.schema import *
 from canonical.launchpad.interfaces.scriptactivity import *
-from canonical.launchpad.interfaces.section import *
+from lp.soyuz.interfaces.section import *
 from canonical.launchpad.interfaces.searchservice import *
 from canonical.launchpad.interfaces.shipit import *
 from lp.registry.interfaces.sourcepackage import *

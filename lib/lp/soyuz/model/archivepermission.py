@@ -23,7 +23,7 @@ from lp.soyuz.interfaces.archive import ComponentNotFound, SourceNotFound
 from lp.soyuz.interfaces.archivepermission import (
     ArchivePermissionType, IArchivePermission, IArchivePermissionSet,
     IArchiveUploader, IArchiveQueueAdmin)
-from canonical.launchpad.interfaces.component import IComponent, IComponentSet
+from lp.soyuz.interfaces.component import IComponent, IComponentSet
 from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageName, ISourcePackageNameSet)
 from canonical.launchpad.webapp.interfaces import NotFoundError

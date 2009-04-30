@@ -91,7 +91,7 @@ A proper name for this "model" would be 'cross-component-dependency'.
 
     >>> from canonical.database.sqlbase import flush_database_caches
     >>> from canonical.launchpad.ftests import syncUpdate
-    >>> from canonical.launchpad.interfaces.component import IComponentSet
+    >>> from lp.soyuz.interfaces.component import IComponentSet
 
     >>> ubuntu_components = [
     ...     'main', 'restricted', 'universe', 'multiverse', 'partner']

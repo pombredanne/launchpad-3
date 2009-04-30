@@ -16,7 +16,7 @@ from lp.soyuz.model.build import Build
 from lp.soyuz.model.publishing import (
     SecureSourcePackagePublishingHistory)
 from lp.soyuz.interfaces.build import BuildStatus
-from canonical.launchpad.interfaces.component import IComponentSet
+from lp.soyuz.interfaces.component import IComponentSet
 from canonical.launchpad.scripts.logger import QuietFakeLogger
 from lp.soyuz.scripts.buildd import (
     QueueBuilder, RetryDepwait)

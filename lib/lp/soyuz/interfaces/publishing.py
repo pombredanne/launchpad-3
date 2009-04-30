@@ -23,6 +23,7 @@ __all__ = [
     'PoolFileOverwriteError',
     'active_publishing_status',
     'inactive_publishing_status',
+    'name_priority_map',
     'pocketsuffix'
     ]
 
@@ -210,6 +211,16 @@ class PackagePublishingPriority(DBEnumeratedType):
         other priority levels; or packages which are only useful to people
         who have very specialised needs.
         """)
+
+
+name_priority_map = {
+    'required': PackagePublishingPriority.REQUIRED,
+    'important': PackagePublishingPriority.IMPORTANT,
+    'standard': PackagePublishingPriority.STANDARD,
+    'optional': PackagePublishingPriority.OPTIONAL,
+    'extra': PackagePublishingPriority.EXTRA,
+    '': None
+    }
 
 
 #

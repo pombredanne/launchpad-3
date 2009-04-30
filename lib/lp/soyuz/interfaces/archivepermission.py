@@ -20,7 +20,7 @@ from lazr.enum import DBEnumeratedType, DBItem
 from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice
 from lp.soyuz.interfaces.archive import IArchive
-from canonical.launchpad.interfaces.component import IComponent
+from lp.soyuz.interfaces.component import IComponent
 from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageName)
 from lazr.restful.fields import Reference

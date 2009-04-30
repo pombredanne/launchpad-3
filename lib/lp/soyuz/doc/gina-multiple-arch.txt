@@ -82,8 +82,7 @@ Let's set up the filesystem:
     ...     os.remove('/tmp/gina_test_archive')
     ... except OSError:
     ...     pass
-    >>> relative_path = ('lib/canonical/launchpad/scripts/'
-    ...                  'tests/gina_test_archive')
+    >>> relative_path = ('lib/lp/soyuz/scripts/tests/gina_test_archive')
     >>> path = os.path.join(os.getcwd(), relative_path)
     >>> os.symlink(path, '/tmp/gina_test_archive')
 

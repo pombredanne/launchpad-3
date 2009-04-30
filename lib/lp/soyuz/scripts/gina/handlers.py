@@ -36,12 +36,12 @@ from lp.soyuz.scripts.gina.library import getLibraryAlias
 from lp.soyuz.scripts.gina.packages import (SourcePackageData,
     urgencymap, prioritymap, get_dsc_path, PoolFileNotFound)
 
-from canonical.launchpad.database import (Distribution, DistroSeries,
-    DistroArchSeries,Processor, SourcePackageName, SourcePackageRelease,
-    Build, BinaryPackageRelease, BinaryPackageName,
-    SecureBinaryPackagePublishingHistory,
-    Component, Section, SourcePackageReleaseFile,
-    SecureSourcePackagePublishingHistory, BinaryPackageFile)
+from lp.registry.model.sourcepackagename import SourcePackageName
+from lp.soyuz.model.component import Component
+from lp.soyuz.model.processor import Processor
+from lp.soyuz.model.section import Section
+from canonical.launchpad.database.files import (
+    BinaryPackageFile, SourcePackageReleaseFile)
 
 from lp.registry.interfaces.person import IPersonSet, PersonCreationRationale
 from lp.registry.interfaces.sourcepackage import SourcePackageFormat
@@ -144,6 +144,9 @@ class ImporterHandler:
 
     def ensure_archinfo(self, archtag):
         """Append retrived distroarchseries info to a dict."""
+        # Avoid circular imports.
+        from lp.soyuz.model.distroarchseries import DistroArchSeries
+
         if archtag in self.archinfo.keys():
             return
 
@@ -177,6 +180,9 @@ class ImporterHandler:
 
     def _get_distro(self, name):
         """Return the distro database object by name."""
+        # Avoid circular imports.
+        from lp.registry.model.distribution import Distribution
+
         distro = Distribution.selectOneBy(name=name)
         if not distro:
             raise DataSetupError("Error finding distribution %r" % name)
@@ -184,6 +190,9 @@ class ImporterHandler:
 
     def _get_distroseries(self, name):
         """Return the distroseries database object by name."""
+        # Avoid circular imports.
+        from lp.registry.model.distroseries import DistroSeries
+
         dr = DistroSeries.selectOneBy(name=name,
                                        distributionID=self.distro.id)
         if not dr:
@@ -513,6 +522,10 @@ class SourcePackageHandler:
 
         # Check here to see if this release has ever been published in
         # the distribution, no matter what status.
+
+        # Avoid circular imports.
+        from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
+
         query = """
                 SourcePackageRelease.sourcepackagename = %s AND
                 SourcePackageRelease.version = %s AND
@@ -537,6 +550,9 @@ class SourcePackageHandler:
 
         Returns the created SourcePackageRelease, or None if it failed.
         """
+        # Avoid circular imports.
+        from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
+
         displayname, emailaddress = src.maintainer
         maintainer = ensure_person(
             displayname, emailaddress, src.package, distroseries.displayname)
@@ -612,6 +628,10 @@ class SourcePackagePublisher:
 
     def publish(self, sourcepackagerelease, spdata):
         """Create the publishing entry on db if does not exist."""
+        # Avoid circular import.
+        from lp.soyuz.model.publishing import (
+            SecureSourcePackagePublishingHistory)
+
         # Check if the sprelease is already published and if so, just
         # report it.
 
@@ -658,6 +678,10 @@ class SourcePackagePublisher:
 
     def _checkPublishing(self, sourcepackagerelease):
         """Query for the publishing entry"""
+        # Avoid circular import.
+        from lp.soyuz.model.publishing import (
+            SecureSourcePackagePublishingHistory)
+
         ret = SecureSourcePackagePublishingHistory.select(
                 """sourcepackagerelease = %s
                    AND distroseries = %s
@@ -685,6 +709,10 @@ class BinaryPackageHandler:
 
     def checkBin(self, binarypackagedata, distroarchinfo):
         """Returns a binarypackage -- if it exists."""
+        # Avoid circular imports.
+        from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
+        from lp.soyuz.model.binarypackagename import BinaryPackageName
+
         try:
             binaryname = BinaryPackageName.byName(binarypackagedata.package)
         except SQLObjectNotFound:
@@ -729,6 +757,9 @@ class BinaryPackageHandler:
 
     def createBinaryPackage(self, bin, srcpkg, distroarchinfo, archtag):
         """Create a new binarypackage."""
+        # Avoid circular imports.
+        from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
+
         fdir, fname = os.path.split(bin.filename)
         to_upload = check_not_in_librarian(fname, bin.archive_root, fdir)
         fname, path = to_upload[0]
@@ -779,6 +810,9 @@ class BinaryPackageHandler:
 
     def ensureBuild(self, binary, srcpkg, distroarchinfo, archtag):
         """Ensure a build record."""
+        # Avoid circular imports.
+        from lp.soyuz.model.build import Build
+
         distroarchseries = distroarchinfo['distroarchseries']
         distribution = distroarchseries.distroseries.distribution
         clauseTables = ["Build", "DistroArchSeries", "DistroSeries"]
@@ -848,6 +882,10 @@ class BinaryPackagePublisher:
 
     def publish(self, binarypackage, bpdata):
         """Create the publishing entry on db if does not exist."""
+        # Avoid circular imports.
+        from lp.soyuz.model.publishing import (
+            SecureBinaryPackagePublishingHistory)
+
         # These need to be pulled from the binary package data, not the
         # binary package release: the data represents data from /this
         # specific distroseries/, whereas the package represents data
@@ -905,6 +943,10 @@ class BinaryPackagePublisher:
 
     def _checkPublishing(self, binarypackage):
         """Query for the publishing entry"""
+        # Avoid circular imports.
+        from lp.soyuz.model.publishing import (
+            SecureBinaryPackagePublishingHistory)
+
         ret = SecureBinaryPackagePublishingHistory.select(
                 """binarypackagerelease = %s
                    AND distroarchseries = %s

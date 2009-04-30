@@ -117,7 +117,7 @@ from canonical.launchpad.database.sprintspecification import *
 from canonical.launchpad.database.structuralsubscription import *
 from canonical.launchpad.database.logintoken import *
 from lp.registry.model.codeofconduct import *
-from canonical.launchpad.database.component import *
+from lp.soyuz.model.component import *
 from lp.soyuz.model.section import *
 from canonical.launchpad.database.shipit import *
 from canonical.launchpad.database.vpoexport import *

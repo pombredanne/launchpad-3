@@ -13,8 +13,8 @@ import operator
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.interfaces.component import IComponentSet
-from canonical.launchpad.interfaces.section import ISectionSet
+from lp.soyuz.interfaces.component import IComponentSet
+from lp.soyuz.interfaces.section import ISectionSet
 from canonical.launchpad.webapp.interfaces import NotFoundError, UnexpectedFormData
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.soyuz.interfaces.package import PackageUploadStatus
@@ -26,7 +26,7 @@ from lp.soyuz.interfaces.binarypackagename import (
     IBinaryPackageNameSet)
 from lp.soyuz.interfaces.files import (
     IBinaryPackageFileSet, ISourcePackageReleaseFileSet)
-from lp.soyuz.scripts.queue import name_priority_map
+from lp.soyuz.interfaces.publishing import name_priority_map
 from canonical.launchpad.webapp import LaunchpadView
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.authorization import check_permission
