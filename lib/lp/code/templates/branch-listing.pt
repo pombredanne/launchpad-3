@@ -87,38 +87,28 @@ YUI().use('io-base', 'lazr.anim', 'node', 'json-parse', function(Y) {
 
 
   function sparkline(branch_id, o) {
-    var nw = "auto";
-    var nh = "auto";
     var spark_div = document.getElementById(branch_id);
     var number_commits = parseInt(o.commits.length);
-    if (window.getComputedStyle) {
-      nw = window.getComputedStyle(spark_div, null).width;
-      nh = window.getComputedStyle(spark_div, null).height;
-    }
-
-    if ( nw != "auto" ) nw = nw.substr( 0, nw.length - 2 );
-    if ( nh != "auto" ) nh = nh.substr( 0, nh.length - 2 );
-
-    var f = 4;
-    var w = ( nw == "auto" || nw == 0 ? o.commits.length * f : nw - 0 );
-    var h = ( nh == "auto" || nh == 0 ? "1em" : nh );
-
+    var w = 160;
+    var min = 9999;
+    var max = -1;
+    var h = 14;
     var co = document.createElement("canvas");
 
-    if ( co.getContext ) spark_div.style.display = 'inline';
-    else return false;
+    if (co.getContext) {
+      spark_div.style.display = 'inline';
+    } else {
+      return false;
+    }
 
     co.style.height = h;
     co.style.width = w;
     co.width = w;
-    spark_div.appendChild(co);
-
-    var h = co.offsetHeight;
     co.height = h;
 
-    var min = 9999;
-    var max = -1;
+    spark_div.appendChild(co);
 
+    // Figure out the max and min number of commits
     for (var i = 0; i < number_commits; i++) {
       o.commits[i] = o.commits[i] - 0;
       if ( o.commits[i] < min ) min = o.commits[i];
@@ -131,37 +121,50 @@ YUI().use('io-base', 'lazr.anim', 'node', 'json-parse', function(Y) {
       c.lineWidth = 1.0;
       c.beginPath();
 
-      Y.log(number_commits);
       for (var i = 0; i < number_commits; i++) {
+        x_pos = (w / number_commits) * i;
+        y_pos = h - (((o.commits[i] - min) / (max - min)) * h);
+
         if (i == 0) {
-          Y.log('Result: ' + (w / number_commits) * i)
-          Y.log('Result2: ' + (h - (((parseInt(o.commits[i]) - min)) * h)));
-          Y.log('commits[1] = ' + o.commits[i]);
-          Y.log('h = ' + h);
-          Y.log('min = ' + min);
-          Y.log('min = ' + max);
-          c.moveTo( (w / number_commits) * i, h - (((o.commits[i] - min) / (max - min)) * h) );
-
+          c.moveTo(x_pos, y_pos);
         }
-        c.lineTo( (w / number_commits) * i, h - (((o.commits[i] - min) / (max - min)) * h) );
+        c.lineTo(x_pos, y_pos);
+
+        // When was the last commit?
+        if(o.commits[i] > 0) {
+          last_commit = i+1;
+        }
+
       }
-
       c.stroke();
 
-  /*
-      // vertical line
-      c.strokeStyle = "blue";
+      // Marks the point with the most commits
+      c.fillStyle = 'red';
       c.beginPath();
-      c.moveTo(w, h);
-      c.lineTo(w, 0)
-      c.stroke();
+      c.arc((w / number_commits) * o.max_commits,
+            h+2 - (((o.commits[o.max_commits] - min) / (max - min)) * h),
+            2, 0, (Math.PI*2), true);
+      c.fill();
 
-      // horizontal line
+
+      c.fillStyle = 'blue';
       c.beginPath();
-      c.moveTo(0, h);
-      c.lineTo(w, h)
-      c.stroke();
-  */
+      c.arc((w / number_commits) * last_commit, h-2,
+            2, 0, (Math.PI*2), true);
+      c.fill();
+
+      new_text = document.createTextNode(o.last_commit);
+      new_div = document.createElement('div');
+      new_div.setAttribute('id', 'txt_' + branch_id);
+
+      new_div.appendChild(new_text);
+      document.getElementById(branch_id).appendChild(new_div);
+
+      new_div.style.fontSize = '8px';
+      new_div.style.color = 'blue';
+      new_div.style.position = 'relative';
+      new_div.style.left = (((w / number_commits) * last_commit)-24) + 'px';
+
       spark_div.style.display = 'inline';
     }
   }
