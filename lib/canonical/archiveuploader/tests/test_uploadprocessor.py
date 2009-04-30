@@ -492,6 +492,79 @@ class TestUploadProcessor(TestUploadProcessorBase):
             queue_item.status, PackageUploadStatus.UNAPPROVED,
             "Expected queue item to be in UNAPPROVED status.")
 
+    def _checkCopyArchiveUploadToDistro(
+        self, pocket_to_check, status_to_check):
+        """Check binary copy archive uploads for given pocket and status.
+
+        This helper method tests that buildd binary uploads to copy
+        archives work when the
+            * destination pocket is `pocket_to_check`
+            * associated distroseries is in state `status_to_check`.
+
+        See bug 369512.
+        """
+        # Set up the uploadprocessor with appropriate options and logger
+        uploadprocessor = self.setupBreezyAndGetUploadProcessor()
+
+        # Upload 'bar-1.0-1' source and binary to ubuntu/breezy.
+        upload_dir = self.queueUpload("bar_1.0-1")
+        self.processUpload(uploadprocessor, upload_dir)
+        bar_source_pub = self._publishPackage('bar', '1.0-1')
+        [bar_original_build] = bar_source_pub.createMissingBuilds()
+
+        # Create a COPY archive for building in non-virtual builds.
+        uploader = getUtility(IPersonSet).getByName('name16')
+        copy_archive = getUtility(IArchiveSet).new(
+            owner=uploader, purpose=ArchivePurpose.COPY,
+            distribution=self.ubuntu, name='the-copy-archive')
+        copy_archive.require_virtualized = False
+
+        # Copy 'bar-1.0-1' source to the COPY archive.
+        bar_copied_source = bar_source_pub.copyTo(
+            bar_source_pub.distroseries, pocket_to_check, copy_archive)
+        [bar_copied_build] = bar_copied_source.createMissingBuilds()
+
+        # Make ubuntu/breezy the current distro.
+        self.breezy.status = status_to_check
+        self.layer.txn.commit()
+
+        shutil.rmtree(upload_dir)
+        self.options.context = 'buildd'
+        self.options.buildid = bar_copied_build.id
+        upload_dir = self.queueUpload(
+            "bar_1.0-1_binary", "%s/ubuntu" % copy_archive.id)
+        self.processUpload(uploadprocessor, upload_dir)
+
+        # Make sure the upload succeeded.
+        self.assertEqual(
+            uploadprocessor.last_processed_upload.rejection_message, '')
+        self.assertEqual(
+            uploadprocessor.last_processed_upload.is_rejected, False)
+
+    def testCopyArchiveUploadToCurrentDistro(self):
+        """Check binary copy archive uploads to RELEASE pockets.
+
+        Buildd binary uploads to COPY archives (resulting from successful
+        builds) should be allowed to go to the RELEASE pocket even though
+        the distro series has a CURRENT status.
+
+        See bug 369512.
+        """
+        self._checkCopyArchiveUploadToDistro(
+            PackagePublishingPocket.RELEASE, DistroSeriesStatus.CURRENT)
+
+    def testCopyArchiveUploadToSupportedDistro(self):
+        """Check binary copy archive uploads to RELEASE pockets.
+
+        Buildd binary uploads to COPY archives (resulting from successful
+        builds) should be allowed to go to the RELEASE pocket even though
+        the distro series has a SUPPORTED status.
+
+        See bug 369512.
+        """
+        self._checkCopyArchiveUploadToDistro(
+            PackagePublishingPocket.RELEASE, DistroSeriesStatus.SUPPORTED)
+
     def testDuplicatedBinaryUploadGetsRejected(self):
         """The upload processor rejects duplicated binary uploads.
 
