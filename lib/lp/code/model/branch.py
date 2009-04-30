@@ -70,15 +70,12 @@ class Branch(SQLBase):
     branch_type = EnumCol(enum=BranchType, notNull=True)
 
     name = StringCol(notNull=False)
-    title = StringCol(notNull=False)
-    summary = StringCol(notNull=False)
     url = StringCol(dbName='url')
     branch_format = EnumCol(enum=BranchFormat)
     repository_format = EnumCol(enum=RepositoryFormat)
     # XXX: Aaron Bentley 2008-06-13
     # Rename the metadir_format in the database, see bug 239746
     control_format = EnumCol(enum=ControlFormat, dbName='metadir_format')
-    whiteboard = StringCol(default=None)
     mirror_status_message = StringCol(default=None)
 
     private = BoolCol(default=False, notNull=True)
