@@ -43,7 +43,7 @@ from lp.registry.model.distributionsourcepackagecache import (
     DistributionSourcePackageCache)
 from lp.soyuz.model.distroseriespackagecache import (
     DistroSeriesPackageCache)
-from canonical.launchpad.database.files import (
+from lp.soyuz.model.files import (
     BinaryPackageFile, SourcePackageReleaseFile)
 from canonical.launchpad.database.librarian import (
     LibraryFileAlias, LibraryFileContent)

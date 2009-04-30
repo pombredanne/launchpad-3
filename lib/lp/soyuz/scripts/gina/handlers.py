@@ -40,7 +40,7 @@ from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.soyuz.model.component import Component
 from lp.soyuz.model.processor import Processor
 from lp.soyuz.model.section import Section
-from canonical.launchpad.database.files import (
+from lp.soyuz.model.files import (
     BinaryPackageFile, SourcePackageReleaseFile)
 
 from lp.registry.interfaces.person import IPersonSet, PersonCreationRationale

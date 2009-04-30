@@ -45,7 +45,7 @@ from canonical.launchpad.interfaces.translationimportqueue import (
     ITranslationImportQueue)
 
 from lp.soyuz.model.build import Build
-from canonical.launchpad.database.files import SourcePackageReleaseFile
+from lp.soyuz.model.files import SourcePackageReleaseFile
 from lp.soyuz.model.packagediff import PackageDiff
 from lp.registry.interfaces.person import validate_public_person
 from lp.soyuz.model.publishing import (

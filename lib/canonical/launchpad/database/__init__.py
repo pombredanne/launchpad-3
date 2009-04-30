@@ -95,7 +95,7 @@ from lp.soyuz.model.buildqueue import *
 from lp.soyuz.model.publishing import *
 from lp.answers.model.faq import *
 from lp.registry.model.featuredproject import *
-from canonical.launchpad.database.files import *
+from lp.soyuz.model.files import *
 from canonical.launchpad.database.bounty import *
 from canonical.launchpad.database.bountymessage import *
 from canonical.launchpad.database.bountysubscription import *
