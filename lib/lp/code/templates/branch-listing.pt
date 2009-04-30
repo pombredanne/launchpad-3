@@ -92,7 +92,7 @@ YUI().use('io-base', 'lazr.anim', 'node', 'json-parse', function(Y) {
     var w = 160;
     var min = 9999;
     var max = -1;
-    var h = 14;
+    var h = 12;
     var co = document.createElement("canvas");
 
     if (co.getContext) {
@@ -146,6 +146,17 @@ YUI().use('io-base', 'lazr.anim', 'node', 'json-parse', function(Y) {
             2, 0, (Math.PI*2), true);
       c.fill();
 
+      new_text = document.createTextNode(o.commits[o.max_commits] + ' commits');
+      new_div = document.createElement('div');
+      new_div.setAttribute('id', 'txt_max_' + branch_id);
+      new_div.appendChild(new_text);
+      document.getElementById(branch_id).appendChild(new_div);
+      new_div.style.fontSize = '8px';
+      new_div.style.color = 'red';
+      new_div.style.position = 'relative';
+      new_div.style.top = '-22px';
+      new_div.style.left = (((w / number_commits) * o.max_commits)-14) + 'px';
+
 
       c.fillStyle = 'blue';
       c.beginPath();
@@ -156,14 +167,13 @@ YUI().use('io-base', 'lazr.anim', 'node', 'json-parse', function(Y) {
       new_text = document.createTextNode(o.last_commit);
       new_div = document.createElement('div');
       new_div.setAttribute('id', 'txt_' + branch_id);
-
       new_div.appendChild(new_text);
       document.getElementById(branch_id).appendChild(new_div);
-
       new_div.style.fontSize = '8px';
       new_div.style.color = 'blue';
       new_div.style.position = 'relative';
       new_div.style.left = (((w / number_commits) * last_commit)-24) + 'px';
+      new_div.style.top = '-10px';
 
       spark_div.style.display = 'inline';
     }
