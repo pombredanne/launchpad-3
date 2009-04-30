@@ -122,7 +122,7 @@ class RevisionPropertyParsing(TestCase):
         self.assertEquals(bugs, {})
 
 
-class TestMakeBugBranch(unittest.TestCase):
+class TestMakeBugBranch(TestCase):
     """Tests for making a BugBranch link.
 
     set_bug_branch_status(bug, branch, status) ensures that a link is created
@@ -139,6 +139,7 @@ class TestMakeBugBranch(unittest.TestCase):
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
+        TestCase.setUp(self)
         factory = LaunchpadObjectFactory()
         self.branch = factory.makeAnyBranch()
         self.bug = factory.makeBug()
