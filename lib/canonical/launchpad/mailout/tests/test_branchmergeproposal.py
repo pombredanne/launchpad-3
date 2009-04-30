@@ -65,8 +65,8 @@ class TestMergeProposalMailing(TestCase):
         bmp.target_branch.name = 'bar'
         # Call the function that is normally called through the event system
         # to auto reload the fields updated by the db triggers.
-        update_trigger_modified_fields(bmp.source_branch, None)
-        update_trigger_modified_fields(bmp.target_branch, None)
+        update_trigger_modified_fields(bmp.source_branch)
+        update_trigger_modified_fields(bmp.target_branch)
         return bmp, subscriber
 
     def test_generateCreationEmail(self):
