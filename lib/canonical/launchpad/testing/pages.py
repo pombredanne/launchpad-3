@@ -1,5 +1,7 @@
 # Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+
 """Testing infrastructure for page tests."""
+
 # Stop lint warning about not initializing TestCase parent on
 # PageStoryTestCase, see the comment bellow.
 # pylint: disable-msg=W0231
