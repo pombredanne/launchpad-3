@@ -198,7 +198,8 @@ class TestGarbo(TestCaseWithFactory):
         person2 = self.factory.makePerson(
             email='Author-2@example.org',
             email_address_status=EmailAddressStatus.NEW)
-        account3 = self.factory.makeAccount('Author 3', 'Author-3@example.org')
+        account3 = self.factory.makeAccount(
+            'Author 3', 'Author-3@example.org')
 
         self.assertEqual(rev1.revision_author.person, None)
         self.assertEqual(rev2.revision_author.person, None)
@@ -244,7 +245,8 @@ class TestGarbo(TestCaseWithFactory):
         person2 = self.factory.makePerson(
             email='Author-2@example.org',
             email_address_status=EmailAddressStatus.NEW)
-        account3 = self.factory.makeAccount('Author 3', 'Author-3@example.org')
+        account3 = self.factory.makeAccount(
+            'Author 3', 'Author-3@example.org')
 
         self.assertEqual(sub1.owner, None)
         self.assertEqual(sub2.owner, None)
