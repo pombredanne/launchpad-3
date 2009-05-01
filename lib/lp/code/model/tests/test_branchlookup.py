@@ -191,6 +191,13 @@ class TestGetByUrl(TestCaseWithFactory):
         return self.factory.makeProductBranch(
             owner=owner, product=product, name='c')
 
+    def test_getByUrl_with_trailing_slash(self):
+        # Trailing slashes are stripped from the url prior to searching.
+        branch = self.makeProductBranch()
+        lookup = getUtility(IBranchLookup)
+        branch2 = lookup.getByUrl('http://bazaar.launchpad.dev/~aa/b/c/')
+        self.assertEqual(branch, branch2)
+
     def test_getByUrl_with_http(self):
         """getByUrl recognizes LP branches for http URLs."""
         branch = self.makeProductBranch()
