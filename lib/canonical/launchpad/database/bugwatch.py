@@ -42,6 +42,7 @@ from canonical.launchpad.webapp import urlappend, urlsplit
 BUG_TRACKER_URL_FORMATS = {
     BugTrackerType.BUGZILLA:    'show_bug.cgi?id=%s',
     BugTrackerType.DEBBUGS:     'cgi-bin/bugreport.cgi?bug=%s',
+    BugTrackerType.GOOGLE_CODE: 'detail?id=%s',
     BugTrackerType.MANTIS:      'view.php?id=%s',
     BugTrackerType.ROUNDUP:     'issue%s',
     BugTrackerType.RT:          'Ticket/Display.html?id=%s',
