@@ -521,8 +521,8 @@ class BranchEditSchema(Interface):
     the user to be able to edit it.
     """
     use_template(IBranch, include=[
-            'owner', 'product', 'name', 'url', 'title', 'summary',
-            'lifecycle_status', 'whiteboard'])
+            'owner', 'product', 'name', 'url', 'lifecycle_status',
+            'whiteboard'])
     private = copy_field(IBranch['private'], readonly=False)
 
 
