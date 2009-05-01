@@ -9,8 +9,8 @@ import transaction
 
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces.revision import IRevisionSet
 from canonical.launchpad.scripts.base import LaunchpadCronScript
+from lp.code.interfaces.revision import IRevisionSet
 
 
 class RevisionKarmaAllocator(LaunchpadCronScript):

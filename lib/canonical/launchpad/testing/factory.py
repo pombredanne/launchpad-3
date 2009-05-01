@@ -38,28 +38,43 @@ from canonical.launchpad.components.packagelocation import PackageLocation
 from canonical.launchpad.database.account import Account
 from canonical.launchpad.database.emailaddress import EmailAddress
 from canonical.launchpad.database.message import Message, MessageChunk
-from lp.registry.model.milestone import Milestone
 from canonical.launchpad.database.processor import ProcessorFamilySet
 from canonical.launchpad.interfaces import IMasterStore
 from canonical.launchpad.interfaces.account import (
     AccountCreationRationale, AccountStatus, IAccountSet)
-from canonical.launchpad.interfaces.archive import (
-    IArchiveSet, ArchivePurpose)
-from lp.code.interfaces.branch import (
-    BranchType, UnknownBranchTypeError)
-from lp.code.interfaces.branchmergeproposal import (
-    BranchMergeProposalStatus)
-from lp.code.interfaces.branchmergequeue import (
-    IBranchMergeQueueSet)
-from lp.code.interfaces.branchnamespace import (
-    get_branch_namespace)
-from lp.code.interfaces.branchsubscription import (
-    BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel)
+from canonical.launchpad.interfaces.archive import IArchiveSet, ArchivePurpose
 from canonical.launchpad.interfaces.bug import CreateBugParams, IBugSet
 from canonical.launchpad.interfaces.bugtask import BugTaskStatus
 from canonical.launchpad.interfaces.bugtracker import (
     BugTrackerType, IBugTrackerSet)
 from canonical.launchpad.interfaces.bugwatch import IBugWatchSet
+from canonical.launchpad.interfaces.country import ICountrySet
+from canonical.launchpad.interfaces.emailaddress import (
+    EmailAddressStatus, IEmailAddressSet)
+from canonical.launchpad.interfaces.gpghandler import IGPGHandler
+from canonical.launchpad.interfaces.hwdb import (
+    HWSubmissionFormat, IHWSubmissionSet)
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+from canonical.launchpad.interfaces.potemplate import IPOTemplateSet
+from canonical.launchpad.interfaces.publishing import PackagePublishingPocket
+from canonical.launchpad.interfaces.shipit import (
+    IShippingRequestSet, IStandardShipItRequestSet, ShipItFlavour,
+    ShippingRequestStatus)
+from canonical.launchpad.interfaces.specification import (
+    ISpecificationSet, SpecificationDefinitionStatus)
+from canonical.launchpad.interfaces.translationgroup import (
+    ITranslationGroupSet)
+from canonical.launchpad.ftests import syncUpdate
+from canonical.launchpad.mail.signedmessage import SignedMessage
+from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
+from canonical.launchpad.webapp.interfaces import IStoreSelector
+from lp.code.interfaces.branch import BranchType, UnknownBranchTypeError
+from lp.code.interfaces.branchmergeproposal import BranchMergeProposalStatus
+from lp.code.interfaces.branchmergequeue import IBranchMergeQueueSet
+from lp.code.interfaces.branchnamespace import get_branch_namespace
+from lp.code.interfaces.branchsubscription import (
+    BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel)
 from lp.code.interfaces.codeimport import ICodeImportSet
 from lp.code.interfaces.codeimportevent import ICodeImportEventSet
 from lp.code.interfaces.codeimportmachine import (
@@ -68,49 +83,27 @@ from lp.code.interfaces.codeimportresult import (
     CodeImportResultStatus, ICodeImportResultSet)
 from lp.code.interfaces.codeimport import (
     CodeImportReviewStatus, RevisionControlSystems)
-from canonical.launchpad.interfaces.country import ICountrySet
+from lp.code.interfaces.revision import IRevisionSet
+from lp.registry.model.distributionsourcepackage import (
+    DistributionSourcePackage)
+from lp.registry.model.milestone import Milestone
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.distroseries import (
     DistroSeriesStatus, IDistroSeries)
-from canonical.launchpad.interfaces.emailaddress import (
-    EmailAddressStatus, IEmailAddressSet)
-from canonical.launchpad.interfaces.gpghandler import IGPGHandler
-from canonical.launchpad.interfaces.hwdb import (
-    HWSubmissionFormat, IHWSubmissionSet)
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from lp.registry.interfaces.mailinglist import (
     IMailingListSet, MailingListStatus)
 from lp.registry.interfaces.mailinglistsubscription import (
     MailingListAutoSubscribePolicy)
-from lp.registry.interfaces.poll import (
-    IPollSet, PollAlgorithm, PollSecrecy)
-from canonical.launchpad.interfaces.potemplate import IPOTemplateSet
 from lp.registry.interfaces.person import (
     IPersonSet, PersonCreationRationale, TeamSubscriptionPolicy)
-from lp.registry.interfaces.product import (
-    IProductSet, License)
+from lp.registry.interfaces.poll import IPollSet, PollAlgorithm, PollSecrecy
+from lp.registry.interfaces.product import IProductSet, License
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.project import IProjectSet
-from canonical.launchpad.interfaces.publishing import PackagePublishingPocket
-from canonical.launchpad.interfaces.revision import IRevisionSet
-from canonical.launchpad.interfaces.shipit import (
-    IShippingRequestSet, IStandardShipItRequestSet, ShipItFlavour,
-    ShippingRequestStatus)
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageNameSet)
 from lp.registry.interfaces.ssh import ISSHKeySet, SSHKeyType
-from canonical.launchpad.interfaces.specification import (
-    ISpecificationSet, SpecificationDefinitionStatus)
-from canonical.launchpad.interfaces.translationgroup import (
-    ITranslationGroupSet)
-from lp.registry.model.distributionsourcepackage import (
-    DistributionSourcePackage)
-from canonical.launchpad.ftests import syncUpdate
-from canonical.launchpad.mail.signedmessage import SignedMessage
-from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
-from canonical.launchpad.webapp.interfaces import IStoreSelector
 
 SPACE = ' '
 
@@ -273,7 +266,7 @@ class LaunchpadObjectFactory(ObjectFactory):
 
     def _stuff_preferredemail_cache(self, person):
         """Stuff the preferredemail cache.
-        
+
         cachedproperty does not get reset across transactions,
         so person.preferredemail can contain a bogus value even after
         a commit, despite all changes now being available in the main
@@ -340,7 +333,7 @@ class LaunchpadObjectFactory(ObjectFactory):
             account.status = AccountStatus.ACTIVE
 
         email.status = email_address_status
-        
+
         # Ensure updated ValidPersonCache
         flush_database_updates()
         return person
@@ -483,7 +476,7 @@ class LaunchpadObjectFactory(ObjectFactory):
 
     def makeProduct(self, *args, **kwargs):
         """As makeProductNoCommit with an implicit transaction commit.
-        
+
         This ensures that generated owners and registrants are fully
         flushed and available from all Stores.
         """
@@ -646,6 +639,13 @@ class LaunchpadObjectFactory(ObjectFactory):
         if product is None:
             product = self.makeProduct()
         return self.makeBranch(product=product, **kwargs)
+
+    def makeImportBranch(self, **kwargs):
+        """Make a in import branch on an arbitrary product.
+
+        See `makeBranch` for more information on arguments.
+        """
+        return self.makeBranch(branch_type=BranchType.IMPORTED, **kwargs)
 
     def makeAnyBranch(self, **kwargs):
         """Make a branch without caring about its container.
@@ -1044,20 +1044,21 @@ class LaunchpadObjectFactory(ObjectFactory):
             product=product)
 
     def makeCodeImport(self, svn_branch_url=None, cvs_root=None,
-                       cvs_module=None, product=None, branch_name=None):
+                       cvs_module=None, product=None, branch_name=None,
+                       git_repo_url=None):
         """Create and return a new, arbitrary code import.
 
-        The code import will be an import from a Subversion repository located
-        at `url`, or an arbitrary unique url if the parameter is not supplied.
+        The type of code import will be inferred from the source details
+        passed in, but defaults to a Subversion import from an arbitrary
+        unique URL.
         """
-        if svn_branch_url is cvs_root is cvs_module is None:
+        if svn_branch_url is cvs_root is cvs_module is git_repo_url is None:
             svn_branch_url = self.getUniqueURL()
 
         if product is None:
             product = self.makeProduct()
         if branch_name is None:
             branch_name = self.getUniqueString('name')
-        # The registrant gets emailed, so needs a preferred email.
         registrant = self.makePerson()
 
         code_import_set = getUtility(ICodeImportSet)
@@ -1066,6 +1067,11 @@ class LaunchpadObjectFactory(ObjectFactory):
                 registrant, product, branch_name,
                 rcs_type=RevisionControlSystems.SVN,
                 svn_branch_url=svn_branch_url)
+        elif git_repo_url is not None:
+            return code_import_set.new(
+                registrant, product, branch_name,
+                rcs_type=RevisionControlSystems.GIT,
+                git_repo_url=git_repo_url)
         else:
             return code_import_set.new(
                 registrant, product, branch_name,
@@ -1416,7 +1422,7 @@ class LaunchpadObjectFactory(ObjectFactory):
         translation.is_imported = is_imported
         translation.is_current = True
 
-    def makeTeamAndMailingList(self, team_name, owner_name):
+    def makeTeamAndMailingList(self, team_name, owner_name, visibility=None):
         """Make a new active mailing list for the named team.
 
         :param team_name: The new team's name.
@@ -1432,7 +1438,8 @@ class LaunchpadObjectFactory(ObjectFactory):
         team = getUtility(IPersonSet).getByName(team_name)
         if team is None:
             team = self.makeTeam(
-                owner, displayname=display_name, name=team_name)
+                owner, displayname=display_name, name=team_name,
+                visibility=visibility)
         # Any member of the mailing-list-experts team can review a list
         # registration.  It doesn't matter which one.
         experts = getUtility(ILaunchpadCelebrities).mailing_list_experts

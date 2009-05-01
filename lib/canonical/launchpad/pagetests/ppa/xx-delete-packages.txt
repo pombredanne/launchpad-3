@@ -57,7 +57,7 @@ sources is presented,
     Source            Published   Status     Series          Section  Build
         Status
     cdrkit - 1.0      2007-07-09  Published  Breezy-autotest Editors  i386
-    iceweasel...(...) 2007-07-09  Published  Warty           Editors
+    iceweasel...(...) 2007-07-09  Published  Warty           Editors  i386
     pmount - 0.1-1    2007-07-09  Published  Warty           Editors
 
 An informational message also directs the user to the PPA help page
@@ -155,7 +155,7 @@ entirely readable content.
 
     >>> print_ppa_packages(admin_browser.contents)
     Source             Published   Status     Series   Section  Build Status
-    iceweasel...(...)  2007-07-09  Published  Warty    Editors
+    iceweasel...(...)  2007-07-09  Published  Warty    Editors  i386
     pmount - 0.1-1     2007-07-09  Published  Warty    Editors
 
 Here we can check for maliciously submitted forms containing
@@ -192,7 +192,7 @@ will use another browser to inspect the results of our deletions.
     >>> print_ppa_packages(cprov_browser.contents)
     Source            Published   Status     Series          Section  Build
         Status
-    iceweasel...(...) 2007-07-09  Published  Warty           Editors
+    iceweasel...(...) 2007-07-09  Published  Warty           Editors  i386
     pmount - 0.1-1    2007-07-09  Published  Warty           Editors
 
     >>> cprov_browser.getControl(
@@ -210,7 +210,7 @@ will use another browser to inspect the results of our deletions.
     Source            Published   Status     Series          Section  Build
         Status
     cdrkit - 1.0      2007-07-09  Deleted    Breezy-autotest Editors  i386
-    iceweasel...(...) 2007-07-09  Published  Warty           Editors
+    iceweasel...(...) 2007-07-09  Published  Warty           Editors  i386
     pmount - 0.1-1    2007-07-09  Published  Warty           Editors
 
 Before deleting the remaining sources we will save a in this state for
@@ -362,7 +362,7 @@ overview page.
     >>> print_ppa_packages(user_browser.contents)
     Source           Published   Status     Series          Section  Build
         Status
-    foo - 1.0                    Superseded Hoary           Base
+    foo - 1.0  (changesfile)     Superseded Hoary           Base
 
 We don't show the publishing details for binary packages, but the
 presence of 'Built packages' and the binary filename in the 'Files'
@@ -392,7 +392,7 @@ available for deletion because it contains a PUBLISHED binary.
     >>> print_ppa_packages(user_browser.contents)
     Source           Published   Status     Series          Section  Build
         Status
-    foo - 1.0                    Superseded Hoary           Base
+    foo - 1.0  (changesfile)     Superseded Hoary           Base
 
     >>> expander_url = user_browser.getLink(
     ...     id='pub%s-expander' % foo_pub_src.id).url
@@ -431,7 +431,7 @@ When he selects 'Superseded' the SUPERSEDED source shows up again.
     >>> print_ppa_packages(user_browser.contents)
     Source           Published   Status     Series          Section  Build
         Status
-    foo - 1.0                    Superseded Hoary           Base
+    foo - 1.0  (changesfile)     Superseded Hoary           Base
 
 The deletion works exactly as it does for PUBLISHED sources, both,
 source and binaries are marked as DELETED and the corresponding
@@ -469,7 +469,7 @@ opposed to being truncated after the fisrt 20 characters.
     >>> print_ppa_packages(user_browser.contents)
     Source           Published   Status     Series          Section  Build
         Status
-    foo - 1.0                    Deleted    Hoary           Base
+    foo - 1.0 (changesfile)      Deleted    Hoary           Base
 
     >>> expander_url = user_browser.getLink(
     ...     id='pub%s-expander' % foo_pub_src.id).url

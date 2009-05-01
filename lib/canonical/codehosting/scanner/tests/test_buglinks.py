@@ -13,7 +13,8 @@ from canonical.codehosting.scanner.buglinks import (
 from canonical.codehosting.scanner.tests.test_bzrsync import BzrSyncTestCase
 from canonical.config import config
 from canonical.launchpad.interfaces import (
-    BugBranchStatus, IBugBranchSet, IBugSet, NotFoundError)
+    BugBranchStatus, IBugBranchSet, IBugSet, ILaunchpadCelebrities,
+    NotFoundError)
 from canonical.launchpad.testing import LaunchpadObjectFactory, TestCase
 from canonical.testing import LaunchpadZopelessLayer
 
@@ -168,15 +169,19 @@ class TestMakeBugBranch(TestCase):
     def test_registrantIsBranchOwnerOnNewLink(self):
         """When we make a new link, the registrant is the branch owner.
 
-        All BugBranch links have a registrant. When we are creating a link
-        based on data in a Bazaar branch, the most obvious registrant is the
-        person who asked Launchpad to scan that branch, i.e. the Branch owner.
+        All BugBranch links have a registrant. When we are creating a
+        link based on data in a Bazaar branch, we don't know exactly who
+        created the link. The committer is a good option, but we don't
+        always have a Person record for that person. We use the Janitor,
+        since he represents Launchpad (i.e. the branch scanner) making
+        the link.
         """
         set_bug_branch_status(
             self.bug, self.branch, BugBranchStatus.FIXAVAILABLE)
         bug_branch = getUtility(IBugBranchSet).getBugBranch(
             self.bug, self.branch)
-        self.assertEqual(self.branch.owner, bug_branch.registrant)
+        self.assertEqual(
+            bug_branch.registrant, getUtility(ILaunchpadCelebrities).janitor)
 
     def test_updateLinkStatus(self):
         """If a link already exists, it updates the status."""
@@ -204,6 +209,23 @@ class TestMakeBugBranch(TestCase):
             self.bug, self.branch, BugBranchStatus.FIXAVAILABLE)
         self.assertStatusEqual(
             self.bug, self.branch, BugBranchStatus.BESTFIX)
+
+    def test_addToActivityLog(self):
+        """Linking a branch to a bug gets recorded in the activity log."""
+        set_bug_branch_status(
+            self.bug, self.branch, BugBranchStatus.INPROGRESS)
+        added_activity = list(self.bug.activity)[-1]
+        # It's questionable whether we should use the committer as the
+        # person who linked the branch to a bug, since using --fixes
+        # could be seen as using an API to link the branch, but we say
+        # it's linked by the Janitor for now, since that's simplest. We
+        # don't always have a Person record for the committer.
+        self.assertEqual(
+            added_activity.person, getUtility(ILaunchpadCelebrities).janitor)
+        # Only do a basic check that the activity was added, the format
+        # of the activity text is tested elsewhere.
+        self.assertEqual(added_activity.whatchanged, 'branch linked')
+
 
 
 class TestBugLinking(BzrSyncTestCase):

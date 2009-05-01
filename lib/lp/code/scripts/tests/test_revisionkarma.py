@@ -9,12 +9,13 @@ import transaction
 from unittest import TestLoader
 
 from canonical.config import config
-from lp.registry.model.karma import Karma
-from canonical.launchpad.database.revision import RevisionSet
 from canonical.launchpad.database.emailaddress import EmailAddressSet
-from lp.code.scripts.revisionkarma import RevisionKarmaAllocator
 from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.testing import LaunchpadZopelessLayer
+
+from lp.code.model.revision import RevisionSet
+from lp.code.scripts.revisionkarma import RevisionKarmaAllocator
+from lp.registry.model.karma import Karma
 
 
 class TestRevisionKarma(TestCaseWithFactory):
@@ -99,7 +100,7 @@ class TestRevisionKarma(TestCaseWithFactory):
 
         # Now link the revision author to the author.
         author.validateAndEnsurePreferredEmail(
-            EmailAddressSet().new(email, author))
+            EmailAddressSet().new(email, author, account=author.account))
         transaction.commit()
         # Now that the revision author is linked to the person, the revision
         # needs karma allocated.

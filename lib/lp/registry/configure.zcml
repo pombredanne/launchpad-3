@@ -5,8 +5,6 @@
     xmlns:xmlrpc="http://namespaces.zope.org/xmlrpc"
     i18n_domain="launchpad">
     <include
-        file="vocabularies.zcml"/>
-    <include
         package=".browser"/>
     <class
         class="lp.registry.model.teammembership.TeamMembershipSet">
@@ -1054,7 +1052,21 @@
             interface="lp.registry.interfaces.product.IProductEditRestricted"/>
         <require
             permission="launchpad.Edit"
-            set_attributes="displayname title summary description driver                                                                                         owner project security_contact                                                                                         homepageurl wikiurl screenshotsurl                                                                                         downloadurl programminglang                                                                                         sourceforgeproject freshmeatproject                                                                                         translationgroup translationpermission                                                                                         official_blueprints official_malone official_answers                                                                                         official_codehosting                                                                                         enable_bug_expiration                                                                                         releaseroot development_focus bugtracker                                                                                         homepage_content icon logo mugshot                                                                                         license_info licenses                                                                                         bug_reporting_guidelines                                                                                         commercial_subscription redeemSubscriptionVoucher                                                                                         remote_product official_bug_tags"/>
+            set_attributes="bug_reporting_guidelines bugtracker
+                            commercial_subscription description
+                            development_focus displayname downloadurl
+                            driver enable_bug_expiration
+                            freshmeatproject homepage_content
+                            homepageurl icon license_info licenses
+                            logo mugshot official_answers
+                            official_blueprints official_bug_tags
+                            official_codehosting official_malone owner
+                            programminglang project
+                            redeemSubscriptionVoucher releaseroot
+                            remote_product screenshotsurl
+                            security_contact sourceforgeproject
+                            summary title translationgroup
+                            translationpermission wikiurl"/>
 
         <!-- sabdfl 2006-04-10 I put "name" in the admin group because
                         with Bazaar now in place, lots of people can have personal

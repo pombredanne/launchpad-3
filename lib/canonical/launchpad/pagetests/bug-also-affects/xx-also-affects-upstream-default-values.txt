@@ -2,7 +2,9 @@ When indicating that a bug affects upstream, the product field is
 automatically chosen if a packaging link is found.
 
     >>> user_browser.open(
-    ...  'http://launchpad.dev/ubuntu/+source/mozilla-firefox/+bug/8')
+    ...  'http://launchpad.dev/debian/+source/mozilla-firefox/+bug/8')
+    >>> user_browser.getLink('Also affects distribution').click()
+    >>> user_browser.getControl('Continue').click()
     >>> user_browser.getLink('Also affects project').click()
     >>> user_browser.url
     'http://.../ubuntu/+source/mozilla-firefox/+bug/8/+choose-affected-product'

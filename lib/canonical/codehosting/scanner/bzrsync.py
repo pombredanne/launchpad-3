@@ -33,16 +33,15 @@ from canonical.codehosting.scanner.email import BranchMailer
 from canonical.codehosting.scanner.mergedetection import (
     BranchMergeDetectionHandler)
 from canonical.config import config
-from canonical.launchpad.interfaces import (
-    IBranchRevisionSet, IRevisionSet, RepositoryFormat)
 from lp.code.interfaces.branch import (
-    BranchFormat, BranchLifecycleStatus, ControlFormat)
+    BranchFormat, BranchLifecycleStatus, ControlFormat, RepositoryFormat)
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.interfaces.branchjob import (
     IRevisionsAddedJobSource, IRosettaUploadJobSource)
 from lp.code.interfaces.branchmergeproposal import (
     BRANCH_MERGE_PROPOSAL_FINAL_STATES)
-
+from lp.code.interfaces.branchrevision import IBranchRevisionSet
+from lp.code.interfaces.revision import IRevisionSet
 
 UTC = pytz.timezone('UTC')
 

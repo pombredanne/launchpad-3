@@ -33,21 +33,22 @@ exception.
 
     >>> personset = getUtility(IPersonSet)
     >>> foobar = personset.getByName('name16')
-    >>> emailset.new(email.email, foobar)
+    >>> emailset.new(email.email, foobar, account=foobar.account)
     Traceback (most recent call last):
     ...
     EmailAddressAlreadyTaken: The email address '...' is already registered.
 
 The email address verification is case insensitive as well:
 
-    >>> emailset.new(email.email.upper(), foobar)
+    >>> emailset.new(email.email.upper(), foobar, account=foobar.account)
     Traceback (most recent call last):
     ...
     EmailAddressAlreadyTaken: The email address '...' is already registered.
 
 Registering a new email address works -- and preserves case -- though:
 
-    >>> emailaddress = emailset.new('oink@Canonical.com', foobar)
+    >>> emailaddress = emailset.new(
+    ...     'oink@Canonical.com', foobar, account=foobar.account)
     >>> emailaddress.email
     u'oink@Canonical.com'
 

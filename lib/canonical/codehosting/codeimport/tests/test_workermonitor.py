@@ -23,13 +23,14 @@ from twisted.trial.unittest import TestCase
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.codehosting import load_optional_plugin
 from canonical.codehosting.codeimport.worker import (
     CodeImportSourceDetails, get_default_bazaar_branch_store)
 from canonical.codehosting.codeimport.workermonitor import (
     CodeImportWorkerMonitor, CodeImportWorkerMonitorProtocol, ExitQuietly,
     read_only_transaction)
-from canonical.codehosting.codeimport.tests.test_foreigntree import (
-    CVSServer, SubversionServer, _make_silent_logger)
+from canonical.codehosting.codeimport.tests.servers import (
+    CVSServer, GitServer, SubversionServer, _make_silent_logger)
 from canonical.codehosting.codeimport.tests.test_worker import (
     clean_up_default_stores_for_import)
 from canonical.config import config
@@ -411,6 +412,7 @@ class TestWorkerMonitorIntegration(TestCase, TestCaseWithMemoryTransport):
         nuke_codeimport_sample_data()
         self.repo_path = tempfile.mkdtemp()
         self.addCleanup(shutil.rmtree, self.repo_path)
+        self.foreign_commit_count = 0
 
     def tearDown(self):
         TestCaseWithMemoryTransport.tearDown(self)
@@ -423,6 +425,7 @@ class TestWorkerMonitorIntegration(TestCase, TestCaseWithMemoryTransport):
         self.addCleanup(cvs_server.tearDown)
 
         cvs_server.makeModule('trunk', [('README', 'original\n')])
+        self.foreign_commit_count = 2
 
         return self.factory.makeCodeImport(
             cvs_root=cvs_server.getRoot(), cvs_module='trunk')
@@ -434,9 +437,22 @@ class TestWorkerMonitorIntegration(TestCase, TestCaseWithMemoryTransport):
         self.addCleanup(self.subversion_server.tearDown)
         svn_branch_url = self.subversion_server.makeBranch(
             'trunk', [('README', 'contents')])
+        self.foreign_commit_count = 2
 
         return self.factory.makeCodeImport(
             svn_branch_url=svn_branch_url)
+
+    def makeGitCodeImport(self):
+        """Make a `CodeImport` that points to a real Git repository."""
+        load_optional_plugin('git')
+        self.git_server = GitServer(self.repo_path)
+        self.git_server.setUp()
+        self.addCleanup(self.git_server.tearDown)
+
+        self.git_server.makeRepo([('README', 'contents')])
+        self.foreign_commit_count = 1
+
+        return self.factory.makeCodeImport(git_repo_url=self.repo_path)
 
     def getStartedJobForImport(self, code_import):
         """Get a started `CodeImportJob` for `code_import`.
@@ -457,17 +473,17 @@ class TestWorkerMonitorIntegration(TestCase, TestCaseWithMemoryTransport):
 
     def assertCodeImportResultCreated(self, code_import):
         """Assert that a `CodeImportResult` was created for `code_import`."""
-        self.failUnlessEqual(len(list(code_import.results)), 1)
+        self.assertEqual(len(list(code_import.results)), 1)
+        result = list(code_import.results)[0]
+        self.assertEqual(result.status, CodeImportResultStatus.SUCCESS)
 
     def assertBranchImportedOKForCodeImport(self, code_import):
         """Assert that a branch was pushed into the default branch store."""
-
         url = get_default_bazaar_branch_store()._getMirrorURL(
             code_import.branch.id)
         branch = Branch.open(url)
-
-        # The same Mystery Guest as in the test_worker tests.
-        self.assertEqual(2, len(branch.revision_history()))
+        self.assertEqual(
+            self.foreign_commit_count, len(branch.revision_history()))
 
     @read_only_transaction
     def assertImported(self, ignored, code_import_id):
@@ -500,6 +516,15 @@ class TestWorkerMonitorIntegration(TestCase, TestCaseWithMemoryTransport):
     def disabled_test_import_subversion(self):
         # Create a Subversion CodeImport and import it.
         job = self.getStartedJobForImport(self.makeSVNCodeImport())
+        code_import_id = job.code_import.id
+        job_id = job.id
+        self.layer.txn.commit()
+        result = self.performImport(job_id)
+        return result.addCallback(self.assertImported, code_import_id)
+
+    def test_import_git(self):
+        # Create a Git CodeImport and import it.
+        job = self.getStartedJobForImport(self.makeGitCodeImport())
         code_import_id = job.code_import.id
         job_id = job.id
         self.layer.txn.commit()

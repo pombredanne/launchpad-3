@@ -162,6 +162,19 @@ Subversion URL.
     CVS_ROOT u':pserver:anonymous@cvs.example.com:/cvsroot'
     CVS_MODULE u'hello'
 
+And for a Git import, the git details are recorded.
+
+    >>> git_import = new_code_import('git-main',
+    ...     rcs_type=RevisionControlSystems.GIT,
+    ...     git_repo_url='git://git.example.org/main.git')
+    >>> git_create_event = event_set.newCreate(git_import, nopriv)
+    >>> print_items(git_create_event)
+    CODE_IMPORT <muted>
+    OWNER u'52'
+    REVIEW_STATUS u'NEW'
+    ASSIGNEE None
+    UPDATE_INTERVAL None
+    GIT_REPO_URL u'git://git.example.org/main.git'
 
 == MODIFY ==
 
