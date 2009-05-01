@@ -80,12 +80,11 @@ check_sourcecode_merge: build check
 	$(MAKE) -C sourcecode check PYTHON=${PYTHON} \
 		PYTHON_VERSION=${PYTHON_VERSION} PYTHONPATH=$(PYTHONPATH)
 
-# XXX ${PY} -t
 check: build
 	# Run all tests. test_on_merge.py takes care of setting up the
 	# database..
 	env PYTHONPATH=$(PYTHONPATH) \
-	${PY} ./test_on_merge.py $(VERBOSITY)
+	${PY} -t ./test_on_merge.py $(VERBOSITY)
 
 lint:
 	@bash ./utilities/lint.sh
@@ -93,15 +92,14 @@ lint:
 lint-verbose:
 	@bash ./utilities/lint.sh -v
 
-# XXX ${PY} -t
 xxxreport:
-	${PY} ./utilities/xxxreport.py -f csv -o xxx-report.csv ./
+	${PY} -t ./utilities/xxxreport.py -f csv -o xxx-report.csv ./
 
 check-configs:
 	${PY} utilities/check-configs.py
 
 pagetests: build
-	env PYTHONPATH=$(PYTHONPATH) ${PY} test.py test_pages
+	env PYTHONPATH=$(PYTHONPATH) bin/test test_pages
 
 inplace: build
 
@@ -117,43 +115,28 @@ compile:
 		-n launchpad -s lib/canonical/launchpad/javascript \
 		-b lib/canonical/launchpad/icing/build $(EXTRA_JS_FILES)
 
-runners:
-	echo "#!/bin/sh" > bin/runzope;
-	echo "exec $(PY) $(STARTSCRIPT) -C $(CONFFILE)" >> bin/runzope;
-	chmod +x bin/runzope
-	echo "#!/bin/sh" > bin/zopectl;
-	echo "$(PY) $(PWD)/src/zdaemon/zdctl.py \
-	      -S schema.xml \
-	      -C zdaemon.conf -d \$$*" >> bin/zopectl
-	chmod +x bin/zopectl
-
 test_build: build
-	$(PY) test.py $(TESTFLAGS) $(TESTOPTS)
+	bin/test $(TESTFLAGS) $(TESTOPTS)
 
 test_inplace: inplace
-	$(PY) test.py $(TESTFLAGS) $(TESTOPTS)
+	bin/test $(TESTFLAGS) $(TESTOPTS)
 
 ftest_build: build
-	env PYTHONPATH=$(PYTHONPATH) \
-	    $(PY) test.py -f $(TESTFLAGS) $(TESTOPTS)
+	bin/test -f $(TESTFLAGS) $(TESTOPTS)
 
 ftest_inplace: inplace
-	env PYTHONPATH=$(PYTHONPATH) \
-	    $(PY) test.py -f $(TESTFLAGS) $(TESTOPTS)
+	bin/test -f $(TESTFLAGS) $(TESTOPTS)
 
-# XXX $(PY) -t
 run: inplace stop
 	$(RM) thread*.request
 	bin/run -r librarian,google-webservice -C $(CONFFILE)
 
-# XXX $(PY) -t
 start-gdb: inplace stop support_files
 	$(RM) thread*.request
 	nohup gdb -x run.gdb --args bin/run \
 		-r librarian,google-webservice -C $(CONFFILE) \
 		> ${LPCONFIG}-nohup.out 2>&1 &
 
-# XXX $(PY) -t
 run_all: inplace stop hosted_branches
 	$(RM) thread*.request
 	bin/run -r librarian,buildsequencer,sftp,mailman,codebrowse,google-webservice \
@@ -226,11 +209,6 @@ rebuildfti:
 	@echo Rebuilding FTI indexes on launchpad_dev database
 	$(PY) database/schema/fti.py -d launchpad_dev --force
 
-debug:
-	$(APPSERVER_ENV) \
-		 $(PY) -i -c \ "from zope.app import Application;\
-		    app = Application('Data.fs', 'site.zcml')()"
-
 clean:
 	$(MAKE) -C sourcecode/pygettextpo clean
 	find . -type f \( \
@@ -255,22 +233,17 @@ clean_codehosting:
 	mkdir -p $(CODEHOSTING_ROOT)/config
 	touch $(CODEHOSTING_ROOT)/config/launchpad-lookup.txt
 
-# XXX buildout script
 zcmldocs:
 	mkdir -p doc/zcml/namespaces.zope.org
-	PYTHONPATH=$(shell pwd)/src:$(PYTHONPATH) $(PY) \
-	    ./sourcecode/zope/src/zope/configuration/stxdocs.py \
+	bin/stxdocs \
 	    -f sourcecode/zope/src/zope/app/zcmlfiles/meta.zcml \
 	    -o doc/zcml/namespaces.zope.org
 
 potemplates: launchpad.pot
 
-# XXX buildout script
 # Generate launchpad.pot by extracting message ids from the source
 launchpad.pot:
-	$(PY) sourcecode/zope/utilities/i18nextract.py \
-	    -d launchpad -p lib/canonical/launchpad \
-	    -o locales
+	bin/i18nextract.py
 
 install: reload-apache
 

@@ -14,7 +14,7 @@ from canonical.launchpad.scripts import logger_options, logger
 from canonical.launchpad.mailman.runmailman import stop_mailman
 
 
-def script():
+def main():
     parser = OptionParser('Usage: %prog [options] [SERVICE ...]')
     logger_options(parser, logging.INFO)
     (options, args) = parser.parse_args()

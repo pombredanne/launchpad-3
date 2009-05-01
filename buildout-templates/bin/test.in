@@ -1,4 +1,4 @@
-#!/usr/bin/python2.4
+#!${buildout:executable}
 ##############################################################################
 #
 # Copyright (c) 2004 Zope Corporation and Contributors.
@@ -13,11 +13,10 @@
 #
 ##############################################################################
 """Test script
-
-$Id: test.py 25177 2004-06-02 13:17:31Z jim $
 """
 import sys, os, time, logging, warnings, re
 
+BUILD_DIR = '${buildout:directory}'
 
 if os.getsid(0) == os.getsid(os.getppid()):
     # We need to become the process group leader so test_on_merge.py
@@ -38,13 +37,7 @@ time.tzset()
 # Enable Storm's C extensions
 os.environ['STORM_CEXTENSIONS'] = '1'
 
-here = os.path.dirname(os.path.realpath(__file__))
-sys.path.insert(0, os.path.join(here, 'lib'))
-
-# Mailman lives in a subdirectory.
-mailman_dir = os.path.join(here, 'lib', 'mailman')
-if os.path.isdir(mailman_dir):
-    sys.path.insert(0, mailman_dir)
+sys.path[0:0] = [${string-paths}]
 
 # Set PYTHONPATH environment variable for spawned processes
 os.environ['PYTHONPATH'] = ':'.join(sys.path)
@@ -56,11 +49,11 @@ else:
     main_process = True
 
 # Install the import fascist import hook and atexit handler.
-import importfascist
+from lp.scripts.utilities import importfascist
 importfascist.install_import_fascist()
 
 # Install the warning handler hook and atexit handler.
-import warninghandler
+from lp.scripts.utilities import warninghandler
 warninghandler.install_warning_handler()
 
 # Ensure that atexit handlers are executed on TERM.
@@ -70,8 +63,10 @@ def exit_with_atexit_handlers(*ignored):
 signal.signal(signal.SIGTERM, exit_with_atexit_handlers)
 
 # Ensure overrides are generated
+sys.path.insert(0, BUILD_DIR)
 from configs import generate_overrides
 generate_overrides()
+del sys.path[0]
 
 # Tell canonical.config to use the testrunner config instance.
 from canonical.config import config
@@ -79,8 +74,8 @@ config.setInstance('testrunner')
 
 # Remove this module's directory from path, so that zope.testbrowser
 # can import pystone from test:
-sys.path[:] = [p for p in sys.path if os.path.abspath(p) != here]
-
+# TODO: is this still necessary?
+sys.path[:] = [p for p in sys.path if os.path.abspath(p) != BUILD_DIR]
 
 # Turn on psycopg debugging wrapper
 #import canonical.database.debug
@@ -131,7 +126,7 @@ from zope.testing import testrunner
 defaults = [
     # Find tests in the tests and ftests directories
     '--tests-pattern=^f?tests$',
-    '--test-path=%s' % os.path.join(here, 'lib'),
+    '--test-path=${buildout:directory}/lib',
     '--package=canonical',
     '--package=lp',
     ]
@@ -183,7 +178,7 @@ if __name__ == '__main__':
     # e.g. run the test that you are currently editing.
     try:
         there = os.getcwd()
-        os.chdir(here)
+        os.chdir('${buildout:directory}')
         result = testrunner.run(defaults)
     finally:
         os.chdir(there)

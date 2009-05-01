@@ -36,7 +36,7 @@ setup(
     ),
     entry_points=dict(
         console_scripts=[ # `console_scripts` is a magic name to zc.buildout
-            'killservice = lp.scripts.utilities.killservice:script',
+            'killservice = lp.scripts.utilities.killservice:main',
             'run = canonical.launchpad.scripts.runlaunchpad:start_launchpad',
             'harness = canonical.database.harness:python',
         ]
