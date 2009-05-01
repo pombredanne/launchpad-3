@@ -263,7 +263,7 @@ class RevisionSet:
             revision_id=revision_id,
             log_body=bzr_revision.message,
             revision_date=revision_date,
-            revision_author=bzr_revision.get_apparent_author(),
+            revision_author=bzr_revision.get_apparent_authors()[0],
             parent_ids=bzr_revision.parent_ids,
             properties=bzr_revision.properties)
 
