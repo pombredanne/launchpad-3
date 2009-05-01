@@ -128,7 +128,7 @@ class InlineEditPickerWidget:
                  vocabulary, default_html, id=None,
                  header='Select an item', step_title='Search',
                  show_remove_button=False, show_assign_me_button=False,
-                 remove_button_text=None):
+                 remove_button_text=None, null_display_value='None'):
         """Create a widget wrapper.
 
         :param context: The object that is being edited.
@@ -152,24 +152,24 @@ class InlineEditPickerWidget:
         self.context = context
         self.request = request
         self.py_attribute = py_attribute
-        self.json_attribute = json_attribute
-        self.json_attribute_uri_base = json_attribute_uri_base
-        self.vocabulary = vocabulary
+        self.json_attribute = simplejson.dumps(json_attribute)
+        self.json_attribute_uri_base = simplejson.dumps(json_attribute_uri_base)
+        self.vocabulary = simplejson.dumps(vocabulary)
         self.default_html = default_html
-        self.header = header
-        self.step_title = step_title
         self.show_remove_button = simplejson.dumps(show_remove_button)
         self.show_assign_me_button = simplejson.dumps(show_assign_me_button)
-        self.remove_button_text = remove_button_text
+
+        self.config = simplejson.dumps(
+            dict(header=header, step_title=step_title,
+                 remove_button_text=remove_button_text,
+                 null_display_value=null_display_value))
 
         if id is None:
             self.id = self._generate_id()
         else:
             self.id = id
 
-    @classmethod
-    def delete_button_id(self):
-        return 'delete-button-%s' % self.id
+        self.json_id = simplejson.dumps(self.id)
 
     @classmethod
     def _generate_id(cls):
@@ -178,11 +178,6 @@ class InlineEditPickerWidget:
         return 'inline-picker-activator-id-%d' % cls.last_id
 
     @property
-    def config(self):
-        return simplejson.dumps(
-            dict(header=self.header, step_title=self.step_title,
-                 remove_button_text=self.remove_button_text))
-
-    @property
     def resource_uri(self):
-        return canonical_url(self.context, path_only_if_possible=True)
+        return simplejson.dumps(
+            canonical_url(self.context, path_only_if_possible=True))

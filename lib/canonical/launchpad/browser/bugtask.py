@@ -3008,8 +3008,9 @@ class BugTaskTableRowView(LaunchpadView):
     @property
     def assignee_picker_widget(self):
         assignee_content_id = 'assignee-content-box-%s' % self.context.id
+        null_display_value = 'Nobody'
         if self.context.assignee is None:
-            assignee_html = 'None'
+            assignee_html = null_display_value
         else:
             assignee_html = PersonFormatterAPI(self.context.assignee).link(
                 '+assignedbugs')
@@ -3030,7 +3031,8 @@ class BugTaskTableRowView(LaunchpadView):
             step_title='Search for people or teams',
             show_remove_button=True,
             show_assign_me_button=is_user_in_vocabulary,
-            remove_button_text='Remove Assignee')
+            remove_button_text='Remove Assignee',
+            null_display_value=null_display_value)
 
 
 class BugsBugTaskSearchListingView(BugTaskSearchListingView):

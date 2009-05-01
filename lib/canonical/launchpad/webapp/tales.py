@@ -958,9 +958,8 @@ class PersonFormatterAPI(ObjectFormatterAPI):
         person = self._context
         url = canonical_url(person, rootsite=rootsite, view_name=view_name)
         image_url = ObjectImageDisplayAPI(person).icon_url(rootsite=rootsite)
-        return (u'<a href="%s" style="padding-left: 18px; '
-                'background: url(%s) '
-                'center left no-repeat;">%s</a>') % (
+        return (u'<a href="%s" class="bg-image" '
+                 'style="background-image: url(%s)">%s</a>') % (
             url, image_url, cgi.escape(person.browsername))
 
     def displayname(self, view_name, rootsite=None):

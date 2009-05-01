@@ -1303,17 +1303,29 @@ ul.iconed {
 }
 
 /* Various custom link icons */
+
+a.bg-image {
+    /* A background-image should be specified on the element. */
+    background-repeat: no-repeat;
+    background-position: center left;
+    background-attachment: scroll;
+    line-height: 130%;
+    padding-top: 0.5em;
+    padding-bottom: 0.5em;
+    padding-left: 18px;
+}
+
 a.info {
     background: url('/@@/info') no-repeat scroll left center;
-    padding-left:18px;
+    padding-left: 18px;
 }
 a.edit {
     background: url('/@@/edit') no-repeat scroll left center;
-    padding-left:18px;
+    padding-left: 18px;
 }
 a.add {
     background: url('/@@/add') no-repeat scroll left center;
-    padding-left:18px;
+    padding-left: 18px;
 }
 
 /* == Application-specific styles == */
