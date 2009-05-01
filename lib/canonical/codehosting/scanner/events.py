@@ -21,12 +21,6 @@ class ScannerEvent:
         self.bzr_branch = bzr_branch
 
 
-class BazaarBranchLoaded(ScannerEvent):
-
-    bzr_ancestry = None
-    bzr_revision = None
-
-
 class DatabaseBranchLoaded(ScannerEvent):
     """The old branch ancestry has been loaded from the database."""
 
@@ -70,19 +64,16 @@ class NewRevision(ScannerEvent):
         return self.revno is not None
 
 
-class RevisionsRemoved(ScannerEvent):
-
-    removed_history = None
-
-
-class TipChanged(ScannerEvent):
-
-    last_revision = None
-    last_revno = None
-
-
-class MergeDetected:
-
-    source_db_branch = None
-    target_db_branch = None
-    proposal = None
+# XXX: Other possible events:
+# class BazaarBranchLoaded(ScannerEvent):
+#     bzr_ancestry = None
+#     bzr_revision = None
+# class RevisionsRemoved(ScannerEvent):
+#     removed_history = None
+# class TipChanged(ScannerEvent):
+#     last_revision = None
+#     last_revno = None
+# class MergeDetected:
+#     source_db_branch = None
+#     target_db_branch = None
+#     proposal = None
