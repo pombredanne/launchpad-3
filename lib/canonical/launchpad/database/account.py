@@ -122,10 +122,6 @@ class Account(SQLBase):
 
         email.status = EmailAddressStatus.PREFERRED
 
-        # XXX 2009-03-30 jamesh bug=356092: SSO server can't write to
-        # HWDB tables
-        # getUtility(IHWSubmissionSet).setOwnership(email)
-
     def validateAndEnsurePreferredEmail(self, email):
         """See `IAccount`."""
         if not IEmailAddress.providedBy(email):
@@ -150,16 +146,6 @@ class Account(SQLBase):
             self.setPreferredEmail(email)
         else:
             email.status = EmailAddressStatus.VALIDATED
-
-            # XXX 2009-03-30 jamesh bug=356092: SSO server can't write
-            # to HWDB tables
-            # getUtility(IHWSubmissionSet).setOwnership(email)
-
-        # Now that we have validated the email, see if this can be
-        # matched to an existing RevisionAuthor.
-        # XXX 2009-03-30 jamesh bug=356092: SSO server can't write to
-        # revision tables
-        # getUtility(IRevisionSet).checkNewVerifiedEmail(email)
 
     @property
     def recently_authenticated_rps(self):
