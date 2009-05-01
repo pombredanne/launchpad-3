@@ -23,7 +23,6 @@ setup(
     license='LGPL v3',
     install_requires=[
         'setuptools',
-        'zope.interface',
         ],
     url='https://launchpad.net/',
     classifiers=[

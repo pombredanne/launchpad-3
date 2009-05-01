@@ -90,26 +90,26 @@ except KeyError:
 
 # Silence spurious warnings. Note that this does not propagate to subprocesses
 # so this is not always as easy as it seems. Warnings caused by our code that
-# need to be silenced should have an accomponied Bug reference.
+# need to be silenced should have an accompanied Bug reference.
 #
 warnings.filterwarnings(
-        'ignore', 'PyCrypto', RuntimeWarning, 'twisted[.]conch[.]ssh'
-        )
+    'ignore', 'PyCrypto', RuntimeWarning, 'twisted[.]conch[.]ssh'
+    )
 warnings.filterwarnings(
-        'ignore', 'twisted.python.plugin', DeprecationWarning,
-        )
+    'ignore', 'twisted.python.plugin', DeprecationWarning,
+    )
 warnings.filterwarnings(
-        'ignore', 'bzrlib.*was deprecated', DeprecationWarning
+    'ignore', 'bzrlib.*was deprecated', DeprecationWarning
 )
 
 # This warning will be triggered if the beforeTraversal hook fails. We
 # want to ensure it is not raised as an error, as this will mask the real
 # problem.
 warnings.filterwarnings(
-        'always',
-        re.escape('clear_request_started() called outside of a request'),
-        UserWarning
-        )
+    'always',
+    re.escape('clear_request_started() called outside of a request'),
+    UserWarning
+    )
 
 # Any warnings not explicitly silenced are errors
 warnings.filterwarnings('error', append=True)

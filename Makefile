@@ -266,13 +266,17 @@ reload-apache: enable-apache-launchpad
 static:
 	$(PY) scripts/make-static.py
 
-TAGS:
-	ctags -e -R --exclude='*yui/2.6.0*' --exclude='*-min.js' lib/canonical && \
-		ctags -e --exclude=lib/canonical -a -R lib/
+TAGS: bin/py
+	# emacs tags
+	bin/tags -e
 
-tags:
-	ctags -R --exclude='*yui/2.6.0*' --exclude='*-min.js' lib/canonical && \
-		ctags --exclude=lib/canonical -a -R lib/
+tags: bin/py
+	# vi tags
+	bin/tags -v
+
+ID: bin/py
+	# idutils ID file
+	bin/tags -i
 
 .PHONY: apidoc check tags TAGS zcmldocs realclean clean debug stop\
 	start run ftest_build ftest_inplace test_build test_inplace pagetests\
