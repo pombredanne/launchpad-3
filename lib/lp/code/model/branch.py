@@ -76,6 +76,7 @@ class Branch(SQLBase):
     # XXX: Aaron Bentley 2008-06-13
     # Rename the metadir_format in the database, see bug 239746
     control_format = EnumCol(enum=ControlFormat, dbName='metadir_format')
+    whiteboard = StringCol(default=None)
     mirror_status_message = StringCol(default=None)
 
     private = BoolCol(default=False, notNull=True)

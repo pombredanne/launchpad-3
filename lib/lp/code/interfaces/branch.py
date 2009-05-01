@@ -658,6 +658,11 @@ class IBranch(IHasOwner, IHasBranchTarget):
             required=False, readonly=True,
             vocabulary=ControlFormat))
 
+    whiteboard = exported(
+        Whiteboard(
+            title=_('Whiteboard'), required=False,
+            description=_('Notes on the current status of the branch.')))
+
     mirror_status_message = exported(
         Text(
             title=_('The last message we got when mirroring this branch.'),
