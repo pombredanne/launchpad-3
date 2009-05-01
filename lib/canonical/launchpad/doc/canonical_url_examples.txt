@@ -401,7 +401,8 @@ Also, we can get the url to a translation message.
 
     >>> potmsgset = potemplate.getPOTMsgSetBySequence(1)
     >>> translationmessage = potmsgset.getCurrentTranslationMessage(
-    ...     pofile.language)
+    ...     pofile.potemplate, pofile.language)
+    >>> translationmessage.setPOFile(pofile)
     >>> print canonical_url(translationmessage)
     http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/1
 
@@ -409,7 +410,7 @@ Even for a dummy one.
 
     >>> potmsgset = potemplate.getPOTMsgSetBySequence(20)
     >>> translationmessage = potmsgset.getCurrentDummyTranslationMessage(
-    ...     pofile.language)
+    ...     pofile.potemplate, pofile.language)
     >>> print canonical_url(translationmessage)
     http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/20
 
@@ -433,7 +434,8 @@ Also, we can get the url to a dummy one
 
     >>> potmsgset = potemplate.getPOTMsgSetBySequence(1)
     >>> translationmessage = potmsgset.getCurrentTranslationMessage(
-    ...     pofile.language)
+    ...     pofile.potemplate, pofile.language)
+    >>> translationmessage.setPOFile(pofile)
     >>> print canonical_url(translationmessage)
     http://launchpad.dev/evolution/trunk/+pots/evolution-2.2/es/1
 
@@ -441,7 +443,7 @@ Even for a dummy PO msgset
 
     >>> potmsgset = potemplate.getPOTMsgSetBySequence(20)
     >>> translationmessage = potmsgset.getCurrentDummyTranslationMessage(
-    ...     pofile.language)
+    ...     pofile.potemplate, pofile.language)
     >>> print canonical_url(translationmessage)
     http://launchpad.dev/evolution/trunk/+pots/evolution-2.2/es/20
 
