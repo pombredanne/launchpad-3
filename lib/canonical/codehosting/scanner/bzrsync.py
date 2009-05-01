@@ -161,7 +161,8 @@ class BzrSync:
         # Generate emails for the revisions in the revision_history
         # for the branch.
         if self.db_branch.last_scanned_id is not None:
-            # XXX: Event
+            # XXX: Move this so that there's an event generated here, and the
+            # code below is a handler of that event.
             job = getUtility(IRevisionsAddedJobSource).create(
                 self.db_branch, self.db_branch.last_scanned_id,
                 bzr_branch.last_revision(),
@@ -169,7 +170,8 @@ class BzrSync:
 
         self.trans_manager.commit()
 
-        # XXX: Event
+        # XXX: Move this so that there's an event generated here, and the
+        # code below is a handler of that event.
         self._branch_mailer.sendRevisionNotificationEmails(bzr_history)
         # The Branch table is modified by other systems, including the web UI,
         # so we need to update it in a short transaction to avoid causing
@@ -180,7 +182,8 @@ class BzrSync:
         # updated although it has), the race is acceptable.
         self.trans_manager.begin()
         self.updateBranchStatus(bzr_history)
-        # XXX: Event
+        # XXX: Move this so that there's an event generated here, and the
+        # code below is a handler of that event.
         self.autoMergeProposals(bzr_ancestry)
         self.autoMergeBranches(bzr_ancestry)
         self.trans_manager.commit()
@@ -219,7 +222,8 @@ class BzrSync:
                 # branch, not one merged into the other.
                 pass
             elif last_scanned in bzr_ancestry:
-                # XXX: EVENT
+                # XXX: Move this so that there's an event generated here, and
+                # the code below is a handler of that event.
                 self._merge_handler.mergeOfTwoBranches(
                     branch, self.db_branch)
 
@@ -246,7 +250,8 @@ class BzrSync:
                 branch_revision = proposal.target_branch.getBranchRevision(
                     revision_id=tip_rev_id)
                 if branch_revision is not None:
-                    # XXX: EVENT
+                    # XXX: Move this so that there's an event generated here,
+                    # and the code below is a handler of that event.
                     self._merge_handler.mergeProposalMerge(proposal)
 
     def retrieveDatabaseAncestry(self):
@@ -339,7 +344,8 @@ class BzrSync:
         removed_history = db_history[common_len:]
         added_history = bzr_history[common_len:]
 
-        # XXX: Event
+        # XXX: Move this so that there's an event generated here, and the
+        # code below is a handler of that event.
         self._branch_mailer.generateEmailForRemovedRevisions(removed_history)
 
         # Merged (non-history) revisions in the database and the bzr branch.
