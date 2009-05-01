@@ -86,6 +86,8 @@ class BzrSync:
         self.logger = logger
 
         self.db_branch = branch
+        # XXX: Move this up a level to the actual script runner. The scanner
+        # itself shouldn't know at all what listeners it has.
         provideHandler(buglinks.got_new_revision)
         self._branch_mailer = BranchMailer(self.trans_manager, self.db_branch)
         self._merge_handler = BranchMergeDetectionHandler(self.logger)
