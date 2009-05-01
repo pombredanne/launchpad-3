@@ -24,6 +24,7 @@ from canonical.config import config
 from canonical.launchpad.interfaces.launchpad import IHasIcon
 from lp.registry.interfaces.person import IPerson
 from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.launchpad.webapp.tales import ObjectImageDisplayAPI
 from canonical.launchpad.webapp.vocabulary import IHugeVocabulary
 
@@ -99,7 +100,11 @@ class HugeVocabularyJSONView:
 
         result = []
         for term in batch_navigator.currentBatch():
-            entry = dict(value=term.token, title=term.title)
+            entry = dict(title=term.title)
+            # The canonical_url without just the path (no hostname) can
+            # be passed directly into the REST PATCH call.
+            entry['value'] = canonical_url(
+                term.value, path_only_if_possible=True)
             picker_entry = IPickerEntry(term.value)
             if picker_entry.description is not None:
                 if len(picker_entry.description) > MAX_DESCRIPTION_LENGTH:

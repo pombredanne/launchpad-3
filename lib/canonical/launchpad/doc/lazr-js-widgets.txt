@@ -55,3 +55,37 @@ constructor:
     <h1 id="bug-title">...
         ><img src="/@@/edit" alt="[edit]" title="Edit this summary" />...
 
+
+InlineEditPickerWidget
+----------------------
+
+The InlineEditPickerWidget can be used for any interface attribute that
+has a vocabulary defined for it.
+
+    >>> from canonical.widgets.lazrjs import InlineEditPickerWidget
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces import IBugTask, IBugTaskSet
+    >>> bugtask = getUtility(IBugTaskSet).get(2)
+    >>> view = create_initialized_view(bugtask, '+index')
+    >>> widget = InlineEditPickerWidget(
+    ...     context=view.context,
+    ...     request=view.request,
+    ...     interface_attribute=IBugTask['assignee'],
+    ...     default_html='default-html',
+    ...     header='Change assignee',
+    ...     step_title='Search for people or teams',
+    ...     remove_button_text='Remove Assignee',
+    ...     null_display_value='Nobody')
+
+
+The resource_uri is encoded as json.
+
+    >>> print widget.resource_uri
+    "http:\/\/bugs.launchpad.dev\/firefox\/+bug\/1"
+
+The zope widget creates a lazr-js activator widget which shows the
+picker widget and the spinner icon.
+
+    >>> print widget()
+    <span id="inline-picker-activator-id-1">
+    ...Y.lp.picker.addPickerPatcher(...

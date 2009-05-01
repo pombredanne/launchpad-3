@@ -52,7 +52,7 @@ A successful search.
             {
                 "image": "\/@@\/team",
                 "title": "GuadaMen",
-                "value": "guadamen"
+                "value": "\/~guadamen"
             }
         ],
         "total_size": 1
@@ -79,7 +79,7 @@ Size and offset parameters can be passed in to switch between batches.
             {
                 "image": "\/@@\/team",
                 "title": "Commercial Subscription Admins",
-                "value": "commercial-admins"
+                "value": "\/~commercial-admins"
             }
         ],
         "total_size": 7
@@ -95,7 +95,7 @@ Size and offset parameters can be passed in to switch between batches.
                 "description": "foo.bar@canonical.com",
                 "image": "\/@@\/person",
                 "title": "Foo Bar",
-                "value": "name16"
+                "value": "\/~name16"
             }
         ],
         "total_size": 7
@@ -113,7 +113,7 @@ Long descriptions will be truncated.
                                 collaborative, consensus based dev...",
                 "image": "\/@@\/project",
                 "title": "Apache",
-                "value": "apache"
+                "value": "\/apache"
             }
         ],
         "total_size": 1

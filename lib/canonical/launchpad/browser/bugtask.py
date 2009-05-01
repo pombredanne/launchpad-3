@@ -132,8 +132,7 @@ from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import TableBatchNavigator
 from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp.tales import PersonFormatterAPI
-from canonical.launchpad.webapp.vocabulary import (
-    IHugeVocabulary, vocab_factory)
+from canonical.launchpad.webapp.vocabulary import vocab_factory
 
 from canonical.lazr.interfaces import IObjectPrivacy
 from lazr.restful.interfaces import IJSONRequestCache
@@ -3007,30 +3006,20 @@ class BugTaskTableRowView(LaunchpadView):
 
     @property
     def assignee_picker_widget(self):
-        assignee_content_id = 'assignee-content-box-%s' % self.context.id
         null_display_value = 'Nobody'
         if self.context.assignee is None:
             assignee_html = null_display_value
         else:
             assignee_html = PersonFormatterAPI(self.context.assignee).link(
                 '+assignedbugs')
-        registry = getVocabularyRegistry()
-        vocabulary = registry.get(
-            IHugeVocabulary, IBugTask['assignee'].vocabularyName)
-        is_user_in_vocabulary = self.user and self.user in vocabulary
+
         return InlineEditPickerWidget(
             context=self.context,
             request=self.request,
-            py_attribute='assignee',
-            json_attribute='assignee_link',
-            json_attribute_uri_base='/~',
-            vocabulary=IBugTask['assignee'].vocabularyName,
+            interface_attribute=IBugTask['assignee'],
             default_html=assignee_html,
-            id=assignee_content_id,
             header='Change assignee',
             step_title='Search for people or teams',
-            show_remove_button=True,
-            show_assign_me_button=is_user_in_vocabulary,
             remove_button_text='Remove Assignee',
             null_display_value=null_display_value)
 

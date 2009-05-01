@@ -12,10 +12,14 @@ import cgi
 import simplejson
 from textwrap import dedent
 
-from zope.security.checker import canWrite
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
+from zope.component import getUtility
+from zope.security.checker import canWrite
+from zope.schema.vocabulary import getVocabularyRegistry
 
+from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.publisher import canonical_url
+from canonical.launchpad.webapp.vocabulary import IHugeVocabulary
 
 
 class TextLineEditorWidget:
@@ -121,25 +125,17 @@ class InlineEditPickerWidget:
     VocabularyPickerWidget.
     """
 
+    last_id = 0
     __call__ = ViewPageTemplateFile('templates/inline-picker.pt')
 
-    def __init__(self, context, request, py_attribute, json_attribute,
-                 json_attribute_uri_base,
-                 vocabulary, default_html, id=None,
-                 header='Select an item', step_title='Search',
-                 show_remove_button=False, show_assign_me_button=False,
-                 remove_button_text=None, null_display_value='None'):
+    def __init__(self, context, request, interface_attribute, default_html,
+                 id=None, header='Select an item', step_title='Search',
+                 remove_button_text='Remove', null_display_value='None'):
         """Create a widget wrapper.
 
         :param context: The object that is being edited.
-        :param request: Request object.
-        :param py_attribute: The name of the attribute being edited in python.
-        :param json_attribute: The name of the attribute in json. Sometimes
-                               "_link" is added to the attribute name. For
-                               example, "assignee" becomes "assignee_link".
-        :param json_attribute_uri_base: For example, 'person' needs to be
-                                        '/~person', so the base is '/~'.
-        :param vocabulary: The vocabulary that the picker will search.
+        :param request: The request object.
+        :param interface_attribute: The attribute being edited.
         :param default_html: Default display of attribute.
         :param id: The HTML id to use for this widget. Automatically
             generated if this is not provided.
@@ -148,16 +144,27 @@ class InlineEditPickerWidget:
         :param show_remove_button: Show remove button below search box.
         :param show_assign_me_button: Show assign-me button below search box.
         :param remove_button_text: Override default button text: "Remove"
+
+
         """
         self.context = context
         self.request = request
-        self.py_attribute = py_attribute
-        self.json_attribute = simplejson.dumps(json_attribute)
-        self.json_attribute_uri_base = simplejson.dumps(json_attribute_uri_base)
-        self.vocabulary = simplejson.dumps(vocabulary)
         self.default_html = default_html
-        self.show_remove_button = simplejson.dumps(show_remove_button)
-        self.show_assign_me_button = simplejson.dumps(show_assign_me_button)
+
+        self.json_attribute = simplejson.dumps(
+            interface_attribute.__name__ + '_link')
+        self.vocabulary_name = simplejson.dumps(
+            interface_attribute.vocabularyName)
+        self.show_remove_button = simplejson.dumps(
+            not interface_attribute.required)
+
+        # show_assign_me_button is true if user is in the vocabulary.
+        registry = getVocabularyRegistry()
+        vocabulary = registry.get(
+            IHugeVocabulary, interface_attribute.vocabularyName)
+        user = getUtility(ILaunchBag).user
+        self.show_assign_me_button = simplejson.dumps(
+            user and user in vocabulary)
 
         self.config = simplejson.dumps(
             dict(header=header, step_title=step_title,
