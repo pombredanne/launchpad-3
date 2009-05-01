@@ -47,10 +47,6 @@ newsampledata:
 hosted_branches:
 	$(PY) ./utilities/make-dummy-hosted-branches
 
-bin/py:
-	$(PYTHON) bootstrap.py
-	./bin/buildout
-
 $(WADL_FILE): $(BZR_VERSION_INFO)
 	LPCONFIG=$(LPCONFIG) $(PY) ./utilities/create-lp-wadl.py > $@
 
@@ -82,8 +78,7 @@ check_sourcecode_merge: build check
 
 check: build
 	# Run all tests. test_on_merge.py takes care of setting up the
-	# database..
-	env PYTHONPATH=$(PYTHONPATH) \
+	# database.
 	${PY} -t ./test_on_merge.py $(VERBOSITY)
 
 lint:
@@ -103,14 +98,14 @@ pagetests: build
 
 inplace: build
 
-build: $(BZR_VERSION_INFO) bin/py compile apidoc
+build: $(BZR_VERSION_INFO) compile apidoc
 
-# XXX $(PY) -t
 compile:
+	$(PYTHON) bootstrap.py
+	./bin/buildout
 	${SHHH} $(MAKE) -C sourcecode build PYTHON=${PYTHON} \
 	    PYTHON_VERSION=${PYTHON_VERSION} LPCONFIG=${LPCONFIG}
-	${SHHH} LPCONFIG=${LPCONFIG} PYTHONPATH=$(PYTHONPATH) \
-		 $(PY) buildmailman.py
+	${SHHH} LPCONFIG=${LPCONFIG} $(PY) -t buildmailman.py
 	${SHHH} sourcecode/lazr-js/tools/build.py \
 		-n launchpad -s lib/canonical/launchpad/javascript \
 		-b lib/canonical/launchpad/icing/build $(EXTRA_JS_FILES)
@@ -215,6 +210,9 @@ clean:
 	    -name '*.o' -o -name '*.so' -o -name '*.la' -o \
 	    -name '*.lo' -o -name '*.py[co]' -o -name '*.dll' \) \
 	    -print0 | xargs -r0 $(RM)
+	$(RM) -r bin
+	$(RM) -r parts
+	$(RM) .installed.cfg
 	$(RM) -r build
 	$(RM) thread*.request
 	$(RM) -r lib/mailman /var/tmp/mailman/* /var/tmp/fatsam.appserver
@@ -266,15 +264,15 @@ reload-apache: enable-apache-launchpad
 static:
 	$(PY) scripts/make-static.py
 
-TAGS: bin/py
+TAGS: compile
 	# emacs tags
 	bin/tags -e
 
-tags: bin/py
+tags: compile
 	# vi tags
 	bin/tags -v
 
-ID: bin/py
+ID: compile
 	# idutils ID file
 	bin/tags -i
 
