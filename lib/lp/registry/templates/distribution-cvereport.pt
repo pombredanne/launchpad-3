@@ -23,37 +23,40 @@
     CVE reports in releases of <span tal:replace="context/displayname" />
   </h1>
 
-  <tal:open_issues condition="not: serieses"
-                   define="bugtaskcves view/open_cve_bugtasks">
+  <tal:no_series tal:condition="not: serieses">
 
-    <h2>Open bugs</h2>
+    <tal:open_issues define="bugtaskcves view/open_cve_bugtasks">
 
-    <tal:listing condition="bugtaskcves">
-       <metal:table use-macro="context/@@bugtask-macros-cve/table-listing" />
-    </tal:listing>
+      <h2>Open bugs</h2>
 
-    <p tal:condition="not: bugtaskcves">
-      There are no CVEs related to bugs open in <span
-        tal:replace="context/displayname">Ubuntu</span>.
-    </p>
+      <tal:listing condition="bugtaskcves">
+         <metal:table use-macro="context/@@bugtask-macros-cve/table-listing" />
+      </tal:listing>
 
-  </tal:open_issues>
+      <p tal:condition="not: bugtaskcves">
+        There are no CVEs related to bugs open in <span
+          tal:replace="context/displayname">Ubuntu</span>.
+      </p>
 
-  <tal:resolved_issues condition="not: serieses"
-                       define="bugtaskcves view/resolved_cve_bugtasks">
+    </tal:open_issues>
 
-    <h2>Resolved bugs</h2>
+    <tal:resolved_issues define="bugtaskcves view/resolved_cve_bugtasks">
 
-    <tal:listing condition="bugtaskcves">
-       <metal:table use-macro="context/@@bugtask-macros-cve/table-listing" />
-    </tal:listing>
+      <h2>Resolved bugs</h2>
 
-    <p tal:condition="not: bugtaskcves">
-      There are no CVEs related to bugs resolved in <span
-        tal:replace="context/displayname">Ubuntu</span>.
-    </p>
+      <tal:listing condition="bugtaskcves">
+         <metal:table use-macro="context/@@bugtask-macros-cve/table-listing" />
+      </tal:listing>
 
-  </tal:resolved_issues>
+      <p tal:condition="not: bugtaskcves">
+        There are no CVEs related to bugs resolved in <span
+          tal:replace="context/displayname">Ubuntu</span>.
+      </p>
+
+    </tal:resolved_issues>
+
+  </tal:no_series>
+
 
   <tal:series condition="serieses">
       <ul>
