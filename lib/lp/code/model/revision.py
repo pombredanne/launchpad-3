@@ -263,6 +263,9 @@ class RevisionSet:
             revision_id=revision_id,
             log_body=bzr_revision.message,
             revision_date=revision_date,
+            # XXX: JonathanLange 2009-05-01 bug=362686: We can only have one
+            # author per revision, so we use the first on the assumption that
+            # this is the primary author.
             revision_author=bzr_revision.get_apparent_authors()[0],
             parent_ids=bzr_revision.parent_ids,
             properties=bzr_revision.properties)
