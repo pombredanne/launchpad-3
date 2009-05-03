@@ -124,3 +124,159 @@ created to create the initial database entries from the files in the branch.
 
     >>> print isUploadJobCreatedForBranch(productseries)
     True
+
+
+== Delete ProductSeries ==
+
+User's with edit permission may delete a project's series. This person is
+often the project's owner or series driver who has setup the series by
+mistake.
+
+    >>> from datetime import datetime
+    >>> from pytz import UTC
+
+    >>> product = factory.makeProduct(name="field", displayname='Field')
+    >>> productseries = factory.makeProductSeries(
+    ...     product=product, name='rabbit')
+
+    # Hack the creation date for testing purposes.
+    >>> test_date = datetime(2009, 05, 01, 19, 34, 24, tzinfo=UTC)
+    >>> productseries.datecreated = test_date
+
+Users without edit permission cannot access the view.
+
+    >>> from canonical.launchpad.webapp.authorization import check_permission
+
+    >>> login('no-priv@canonical.com')
+    >>> view = create_view(productseries, name='+delete')
+    >>> check_permission('launchpad.Edit', view)
+    False
+
+The project owner can access the view.
+
+    >>> login_person(product.owner)
+    >>> view = create_view(productseries, name='+delete')
+    >>> check_permission('launchpad.Edit', view)
+    True
+
+The delete view has a label to explain what it does.
+
+    >>> print view.label
+    Delete Field series rabbit
+
+The view has a a next_url to the product used when the delete is successful,
+though it is None by default. There is a cancel_url that links to the series.
+
+    >>> print view.next_url
+    None
+
+    >>> print view.cancel_url
+    http://launchpad.dev/field/rabbit
+
+There are helper properties that list the associates objects with the
+series, the most important of which are milestones. Bugtasks and
+specifications that will be unassigned, and release files that will be
+deleted are available.
+
+    >>> view.milestones
+    []
+    >>> view.bugtasks
+    []
+    >>> view.specifications
+    []
+    >>> view.product_release_files
+    []
+
+Most series that are deleted do not have any related objects, but a small
+portion do.
+
+    >>> milestone_one = productseries.newMilestone('0.1', code_name='one')
+    >>> release_one = milestone_one.createProductRelease(
+    ...     product.owner, test_date)
+    >>> milestone_one.active = False
+    >>> milestone_two = productseries.newMilestone('0.2', code_name='two')
+    >>> specification = factory.makeSpecification(product=product)
+    >>> specification.milestone = milestone_one
+    >>> bug = factory.makeBug(product=product)
+    >>> bugtask = bug.bugtasks[0]
+    >>> bugtask.milestone = milestone_two
+
+    >>> view = create_view(productseries, name='+delete')
+    >>> [milestone.name for milestone in view.milestones]
+    [u'0.2', u'0.1']
+    >>> view.has_bugtasks_and_specifications
+    True
+    >>> [bugtask.milestone.name for bugtask in view.bugtasks]
+    [u'0.2']
+    >>> [spec.milestone.name for spec in view.specifications]
+    [u'0.1']
+
+    # Listing and deleting product release files is done in the story
+    # because they require the Librarian to be running.
+
+Series that are the active focus of development cannot be deleted. The
+view's can_delete property checks this rule.
+
+    >>> productseries.is_development_focus
+    False
+    >>> view.can_delete
+    True
+
+    >>> active_series = product.getSeries('trunk')
+    >>> active_series.is_development_focus
+    True
+    >>> active_view = create_view(active_series, '+delete')
+    >>> active_view.can_delete
+    False
+
+The delete action will not delete a series that is the active focus of
+development.
+
+    >>> transaction.commit()
+    >>> form = {
+    ...     'field.actions.delete': 'Delete this Series',
+    ...     }
+    >>> active_view = create_initialized_view(
+    ...     active_series, '+delete', form=form)
+    >>> for error in active_view.errors:
+    ...     print error
+    You cannot delete a series that is the focus of development. Make another
+    series the focus of development before deleting this one.
+    >>> print active_series.product.name
+    field
+
+Calling the view's delete action on a series that can be deleted will
+untarget the bugtasks and specifications that are targeted to the
+series' milestones. The milestones, releases, and release files are
+deleted.
+
+    >>> view = create_initialized_view(productseries, '+delete', form=form)
+    >>> for notification in view.request.response.notifications:
+    ...     print notification.message
+    Series rabbit deleted.
+
+    >>> print view.next_url
+    http://launchpad.dev/field
+    >>> [milestone for milestone in product.all_milestones]
+    []
+    >>> [release for release in  product.releases]
+    []
+    >>> print specification.milestone
+    None
+    >>> print bugtask.milestone
+    None
+
+The series was not actually deleted because there are problematic objects
+like translations. The series are assigned to the Obsolete Junk project.
+The series name is changed to 'product_name-series_name-date_created' to
+avoid conflicts.
+
+    >>> from canonical.launchpad.interfaces.launchpad import (
+    ...     ILaunchpadCelebrities)
+
+    >>> obsolete_junk = getUtility(ILaunchpadCelebrities).obsolete_junk
+    >>> productseries.product == obsolete_junk
+    True
+    >>> print productseries.name
+    field-rabbit-20090501-193424
+

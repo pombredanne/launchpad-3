@@ -1113,6 +1113,8 @@ productseries_linkbranch = ContextTitle('Link an existing branch to %s')
 
 productseries_index = ContextTitle('Overview of %s')
 
+productseries_delete = ContextTitle('Delete %s')
+
 productseries_packaging = ContextDisplayName(
     'Packaging of %s in distributions')
 

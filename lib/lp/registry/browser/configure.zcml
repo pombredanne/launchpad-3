@@ -2282,6 +2282,13 @@
         permission="launchpad.Edit"
         template="../templates/productseries-edit.pt"/>
     <browser:page
+        name="+delete"
+        for="lp.registry.interfaces.productseries.IProductSeries"
+        class="lp.registry.browser.productseries.ProductSeriesDeleteView"
+        facet="overview"
+        permission="launchpad.Edit"
+        template="../templates/productseries-delete.pt"/>
+    <browser:page
         name="+addrelease"
         for="lp.registry.interfaces.productseries.IProductSeries"
         class="canonical.launchpad.browser.ProductReleaseFromSeriesAddView"

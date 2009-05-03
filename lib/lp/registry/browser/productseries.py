@@ -6,6 +6,7 @@ __all__ = [
     'get_series_branch_error',
     'ProductSeriesBreadcrumbBuilder',
     'ProductSeriesBugsMenu',
+    'ProductSeriesDeleteView',
     'ProductSeriesEditView',
     'ProductSeriesFacets',
     'ProductSeriesFileBugRedirect',
@@ -33,6 +34,7 @@ from zope.app.form.browser import TextAreaWidget, TextWidget
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.publisher.browser import FileUpload
 
+from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from lp.code.browser.branchref import BranchRef
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
@@ -64,6 +66,8 @@ from canonical.launchpad.webapp.menu import structured
 from canonical.widgets.itemswidgets import (
     LaunchpadRadioWidgetWithDescription)
 from canonical.widgets.textwidgets import StrippedTextWidget
+
+from lp.registry.browser.milestone import RegistryDeleteViewMixin
 
 
 def quote(text):
@@ -116,7 +120,7 @@ class ProductSeriesOverviewMenu(ApplicationMenu):
     usedfor = IProductSeries
     facet = 'overview'
     links = [
-        'edit', 'driver', 'link_branch', 'ubuntupkg',
+        'edit', 'delete', 'driver', 'link_branch', 'ubuntupkg',
         'add_package', 'create_milestone', 'create_release',
         'rdf', 'subscribe'
         ]
@@ -125,6 +129,12 @@ class ProductSeriesOverviewMenu(ApplicationMenu):
     def edit(self):
         text = 'Change details'
         return Link('+edit', text, icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
+    def delete(self):
+        text = 'Delete series'
+        summary = "Delete this series and all it's dependent items."
+        return Link('+delete', text, summary, icon='trash-icon')
 
     @enabled_with_permission('launchpad.Edit')
     def driver(self):
@@ -590,6 +600,85 @@ class ProductSeriesEditView(LaunchpadEditFormView):
     @property
     def next_url(self):
         return canonical_url(self.context)
+
+
+class ProductSeriesDeleteView(RegistryDeleteViewMixin, LaunchpadEditFormView):
+    """A view to remove a productseries from a product."""
+    schema = IProductSeries
+    field_names = []
+
+    @property
+    def label(self):
+        """The form label."""
+        return 'Delete %s series %s' % (
+            self.context.product.displayname, self.context.name)
+
+    @cachedproperty
+    def milestones(self):
+        """A list of all the series `IMilestone`s."""
+        return self.context.all_milestones
+
+    @cachedproperty
+    def bugtasks(self):
+        """A list of all `IBugTask`s targeted to this series."""
+        all_bugtasks = []
+        for milestone in self.milestones:
+            all_bugtasks.extend(self._getBugtasks(milestone))
+        return all_bugtasks
+
+    @cachedproperty
+    def specifications(self):
+        """A list of all `ISpecification`s targeted to this series."""
+        all_specifications = []
+        for milestone in self.milestones:
+            all_specifications.extend(self._getSpecifications(milestone))
+        return all_specifications
+
+    @cachedproperty
+    def has_bugtasks_and_specifications(self):
+        """Does the series have any targeted bugtasks or specifications."""
+        return len(self.bugtasks) > 0 or len(self.specifications) > 0
+
+    @cachedproperty
+    def product_release_files(self):
+        """A list of all `IProductReleaseFile`s that belong to this series."""
+        all_files = []
+        for milestone in self.milestones:
+            all_files.extend(self._getProductReleaseFiles(milestone))
+        return all_files
+
+    @cachedproperty
+    def can_delete(self):
+        """Can this series be delete."""
+        return not self.context.is_development_focus
+
+    def canDeleteAction(self, action):
+        """Is the delete action available."""
+        if not self.can_delete:
+            self.addError(
+                "You cannot delete a series that is the focus of "
+                "development. Make another series the focus of development "
+                "before deleting this one.")
+        return self.can_delete
+
+    @action('Delete this Series', name='delete', condition=canDeleteAction)
+    def delete_action(self, action, data):
+        """Detach and delete associated objects and remove the series."""
+        product = self.context.product
+        name = self.context.name
+        # Delete all milestones, releases, and files.
+        # Any associated bugtasks and specifications are untargeted.
+        for milestone in self.milestones:
+            self._deleteMilestone(milestone)
+        # Series are not deleted because some objects like translations are
+        # problematic. The series is assigned to obsolete-junk. They must be
+        # renamed to avoid name collision.
+        date_time = self.context.datecreated.strftime('%Y%m%d-%H%M%S')
+        self.context.name = '%s-%s-%s' % (product.name, name, date_time)
+        self.context.product = getUtility(ILaunchpadCelebrities).obsolete_junk
+        self.request.response.addInfoNotification(
+            "Series %s deleted." % name)
+        self.next_url = canonical_url(product)
 
 
 class ProductSeriesLinkBranchView(LaunchpadEditFormView):

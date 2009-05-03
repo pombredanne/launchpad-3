@@ -241,12 +241,8 @@ class RegistryDeleteViewMixin:
     """A mixin class that provides common behaviour for registry deletions."""
 
     @property
-    def label(self):
-        """The form label."""
-        return 'Delete %s' % self.context.title
-
-    @property
     def cancel_url(self):
+        """The context's URL."""
         return canonical_url(self.context)
 
     def _getBugtasks(self, milestone):
@@ -259,24 +255,44 @@ class RegistryDeleteViewMixin:
         """Return the list `ISpecification`s targeted to the milestone."""
         return list(milestone.specifications)
 
+    def _getProductRelease(self, milestone):
+        """The `IProductRelease` associated with the milestone."""
+        return milestone.product_release
+
+    def _getProductReleaseFiles(self, milestone):
+        """The list of `IProductReleaseFile`s related to the milestone."""
+        product_release = self._getProductRelease(milestone)
+        if product_release is not None:
+            return list(product_release.files)
+        else:
+            return []
+
     def _deleteMilestone(self, milestone):
         """Delete a milestone and unlink releated objects."""
         for bugtask in self._getBugtasks(milestone):
             bugtask.milestone = None
         for spec in self._getSpecifications(milestone):
             spec.milestone = None
-        # Any associated product release and its files are deleted.
-        product_release = milestone.product_release
-        if product_release is not None:
-            for release_file in product_release.files:
+        self._deleteRelease(milestone.product_release)
+        milestone.destroySelf()
+
+    def _deleteRelease(self, release):
+        """Delete a release and it's files."""
+        if release is not None:
+            for release_file in release.files:
                 release_file.destroySelf()
-            milestone.product_release.destroySelf()
+            release.destroySelf()
 
 
 class MilestoneDeleteView(LaunchpadFormView, RegistryDeleteViewMixin):
     """A view for deleting an `IMilestone`."""
     schema = IMilestone
     field_names = []
+
+    @property
+    def label(self):
+        """The form label."""
+        return 'Delete %s' % self.context.title
 
     @cachedproperty
     def bugtasks(self):
@@ -291,23 +307,26 @@ class MilestoneDeleteView(LaunchpadFormView, RegistryDeleteViewMixin):
     @cachedproperty
     def product_release(self):
         """The `IProductRelease` associated with the milestone."""
-        return self.context.product_release
+        return self._getProductRelease(self.context)
 
     @cachedproperty
     def product_release_files(self):
         """The list of `IProductReleaseFile`s related to the milestone."""
-        if self.product_release:
-            return list(self.product_release.files)
-        else:
-            return []
+        return self._getProductReleaseFiles(self.context)
+
+    @property
+    def label(self):
+        """The form label."""
+        return 'Delete %s' % self.context.title
 
     @action('Delete this Milestone', name='delete')
     def delete_action(self, action, data):
         # Any associated bugtasks and specifications are untargeted.
+        series = self.context.productseries
+        name = self.context.name
         self._deleteMilestone(self.context)
         self.request.response.addInfoNotification(
-            "Milestone %s deleted." % self.context.name)
-        self.next_url = canonical_url(self.context.productseries)
-        self.context.destroySelf()
+            "Milestone %s deleted." % name)
+        self.next_url = canonical_url(series)
 
 
