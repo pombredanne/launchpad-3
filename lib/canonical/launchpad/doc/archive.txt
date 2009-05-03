@@ -2197,6 +2197,22 @@ Copy package3 1.0 explicitly:
     >>> print sabdfl_three.sourcepackagerelease.version
     1.0
 
+It's also possible to copy the source and its binaries at the same time,
+by specifying the "include_binaries" boolean.
+
+'built-source' is a source package with binaries already built:
+
+    >>> built_source = test_publisher.getPubSource(
+    ...     sourcename="built-source", version="1.0", archive=cprov.archive)
+    >>> ignore = test_publisher.getPubBinaries(
+    ...     pub_source=built_source, binaryname='from-built-source')
+
+Copy it and the binaries like this:
+
+    >>> sabdfl.archive.syncSource(
+    ...     "built-source", "1.0", cprov.archive, "release",
+    ...     include_binaries=True)
+
 
 == Publish flag ==
 
