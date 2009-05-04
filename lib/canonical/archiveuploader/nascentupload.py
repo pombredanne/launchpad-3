@@ -27,9 +27,11 @@ from canonical.archiveuploader.nascentuploadfile import (
     UploadError, UploadWarning, CustomUploadFile, SourceUploadFile,
     BaseBinaryUploadFile)
 from canonical.launchpad.interfaces import (
-    ArchivePurpose, IArchivePermissionSet, IBinaryPackageNameSet,
+    IArchivePermissionSet, IBinaryPackageNameSet,
     IDistributionSet, ILibraryFileAliasSet, ISourcePackageNameSet,
     NotFoundError, PackagePublishingPocket, QueueInconsistentStateError)
+from canonical.launchpad.interfaces.archive import (
+    ArchivePurpose, MAIN_ARCHIVE_PURPOSES)
 
 
 PARTNER_COMPONENT_NAME = 'partner'
@@ -528,6 +530,13 @@ class NascentUpload:
             archive.canUpload(signer, source_name)):
             return
 
+        # Now check whether this upload can be approved due to
+        # package set based permissions.
+        ap_set = getUtility(IArchivePermissionSet)
+        if source_name is not None and signer is not None:
+            if ap_set.isSourceUploadAllowed(source_name, signer):
+                return
+
         # If source_name is None then the package must be new, but we
         # kick it out anyway because it's impossible to look up
         # any permissions for it.
@@ -640,7 +649,7 @@ class NascentUpload:
         # See the comment below, in getSourceAncestry
         lookup_pockets = [self.policy.pocket, PackagePublishingPocket.RELEASE]
 
-        if self.is_ppa:
+        if self.policy.archive.purpose not in MAIN_ARCHIVE_PURPOSES:
             archive = self.policy.archive
         else:
             archive = None

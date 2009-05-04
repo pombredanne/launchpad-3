@@ -41,7 +41,8 @@ class OpenIDRPConfigAddView(LaunchpadFormView):
 
     schema = IOpenIDRPConfig
     field_names = ['trust_root', 'displayname', 'description', 'logo',
-                   'allowed_sreg', 'creation_rationale', 'can_query_any_team']
+                   'allowed_sreg', 'creation_rationale', 'can_query_any_team',
+                   'auto_authorize']
     custom_widget('logo', ImageChangeWidget, ImageChangeWidget.ADD_STYLE)
     custom_widget('allowed_sreg', LabeledMultiCheckBoxWidget)
 
@@ -60,7 +61,8 @@ class OpenIDRPConfigAddView(LaunchpadFormView):
             logo=data['logo'],
             allowed_sreg=data['allowed_sreg'],
             creation_rationale=data['creation_rationale'],
-            can_query_any_team=data['can_query_any_team'])
+            can_query_any_team=data['can_query_any_team'],
+            auto_authorize=data['auto_authorize'])
         self.request.response.addInfoNotification(
             _('Created RP configuration for ${trust_root}.',
             mapping=dict(trust_root=data['trust_root'])))
@@ -75,7 +77,8 @@ class OpenIDRPConfigEditView(LaunchpadEditFormView):
 
     schema = IOpenIDRPConfig
     field_names = ['trust_root', 'displayname', 'description', 'logo',
-                   'allowed_sreg', 'creation_rationale', 'can_query_any_team']
+                   'allowed_sreg', 'creation_rationale', 'can_query_any_team',
+                   'auto_authorize']
     custom_widget('logo', ImageChangeWidget, ImageChangeWidget.EDIT_STYLE)
     custom_widget('allowed_sreg', LabeledMultiCheckBoxWidget)
 

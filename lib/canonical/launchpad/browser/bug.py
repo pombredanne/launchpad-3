@@ -446,6 +446,8 @@ class BugWithoutContextView:
     The user is redirected, to the oldest IBugTask ('oldest' being
     defined as the IBugTask with the smallest ID.)
     """
+    # XXX: BradCrittenden 2009-04-28 This class can go away since the publisher
+    # now takes care of the redirection to a bug task.
     def redirectToNewBugPage(self):
         """Redirect the user to the 'first' report of this bug."""
         # An example of practicality beating purity.
