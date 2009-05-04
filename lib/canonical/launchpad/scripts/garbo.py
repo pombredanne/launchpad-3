@@ -68,7 +68,8 @@ class OAuthNoncePruner(TunableLoop):
         return self.oldest_age <= ONE_DAY_IN_SECONDS
 
     def __call__(self, chunk_size):
-        self.oldest_age = max(ONE_DAY_IN_SECONDS, self.oldest_age - chunk_size)
+        self.oldest_age = max(
+            ONE_DAY_IN_SECONDS, self.oldest_age - chunk_size)
 
         self.store.find(
             OAuthNonce,

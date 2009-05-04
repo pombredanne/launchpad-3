@@ -46,7 +46,6 @@ from lp.registry.model.distribution import Distribution
 from canonical.launchpad.database.distroarchseries import DistroArchSeries
 from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.teammembership import TeamParticipation
-from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
 from canonical.launchpad.interfaces.hwdb import (
     HWBus, HWMainClass, HWSubClass, HWSubmissionFormat,
     HWSubmissionKeyNotUnique, HWSubmissionProcessingStatus, IHWDevice,
