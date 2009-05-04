@@ -217,10 +217,10 @@ displayed:
     Ubuntu version                  Upstream version
 
 
-== Recent activity ==
+== Version history ==
 
-The sourcepackage activity in a distribution is presented as all
-distinct sourcepackage releases and their corresponding changelogs
+The sourcepackage version history in a distribution is presented as
+all distinct sourcepackage releases and their corresponding changelogs
 as mentioned above.
 
     >>> def print_displayed_versions(contents):
