@@ -59,7 +59,7 @@ cannot be edited.
 
     >>> print extract_text(content(['table'], {'class' : 'listing'})[0])
     Affects                       Status   Importance  Assigned to  Milestone
-    linux-source-2.6.15 (Ubuntu)  Invalid  Medium
+    linux-source-2.6.15 (Ubuntu)  Invalid  Medium      Nobody Edit
 
 Nor can the bugtask be edited if No Privileges Person accesses the
 bugtask directly.
@@ -250,7 +250,7 @@ again. The bug status is sill Invalid for Jokosher, but he can edit it.
     >>> content = find_main_content(user_browser.contents)
     >>> print extract_text(content(['table'], {'class' : 'listing'})[0])
     Affects                       Status   Importance  Assigned to  Milestone
-    Jokosher                      Invalid  Critical
+    Jokosher                      Invalid  Critical    Nobody Edit
     Affecting: Jokosher
     Filed here by: Foo Bar...
 
