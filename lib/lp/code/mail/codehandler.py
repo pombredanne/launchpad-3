@@ -109,6 +109,10 @@ class VoteEmailCommand(CodeReviewEmailCommand):
         '-1': CodeReviewVote.DISAPPROVE,
         'needsfixing': CodeReviewVote.NEEDS_FIXING,
         'needs-fixing': CodeReviewVote.NEEDS_FIXING,
+        'needsinfo': CodeReviewVote.NEEDS_INFO,
+        'needs-info': CodeReviewVote.NEEDS_INFO,
+        'needsinformation': CodeReviewVote.NEEDS_INFO,
+        'needs-information': CodeReviewVote.NEEDS_INFO,
         }
 
     def execute(self, context):
