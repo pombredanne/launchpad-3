@@ -70,6 +70,11 @@ class IVPOExport(Interface):
         title=u"Translation file",
         required=True, readonly=True, schema=IPOFile)
 
+    diverged = Text(
+        title=u"Message divergence.",
+        description=u"A POTemplate this is a divergence for, or None.",
+        required=False, readonly=True)
+
     language = Object(
         title=u"Translation language",
         required=True, readonly=True, schema=ILanguage)
