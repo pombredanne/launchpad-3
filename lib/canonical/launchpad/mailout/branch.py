@@ -109,6 +109,35 @@ class RecipientReason:
                      branch_identity_cache=branch_identity_cache)
 
     @classmethod
+    def forRegistrant(klass, merge_proposal, branch_identity_cache=None):
+        """Construct RecipientReason for a proposal registrant.
+
+        The registrant will be the sole recipient.
+        """
+        branch = merge_proposal.source_branch
+        reason_template = 'You proposed %(branch_name)s for merging.'
+        return klass(merge_proposal.registrant, merge_proposal.registrant,
+                     merge_proposal.source_branch,
+                     'Registrant', reason_template, merge_proposal,
+                     branch_identity_cache=branch_identity_cache)
+
+    @classmethod
+    def forSourceOwner(klass, merge_proposal, branch_identity_cache=None):
+        """Construct RecipientReason for the source branch owner.
+
+        The owner of the source branch will be the sole recipient.  If the
+        source branch owner is a team, None is returned.
+        """
+        branch = merge_proposal.source_branch
+        owner = branch.owner
+        if owner.is_team:
+            return None
+        reason_template = 'You are the owner of %(branch_name)s.'
+        return klass(owner, owner, branch, 'Owner', reason_template,
+                     merge_proposal,
+                     branch_identity_cache=branch_identity_cache)
+
+    @classmethod
     def forBranchOwner(klass, branch, recipient,
                        branch_identity_cache=None):
         """Construct RecipientReason for a branch owner.
