@@ -249,9 +249,9 @@ class BranchFormat(DBEnumeratedType):
 BRANCH_FORMAT_UPGRADE_PATH = {
     BranchFormat.UNRECOGNIZED: None,
     BranchFormat.BRANCH_REFERENCE: None,
-    BranchFormat.BZR_BRANCH_4: BzrBranchFormat6,
-    BranchFormat.BZR_BRANCH_5: BzrBranchFormat6,
-    BranchFormat.BZR_BRANCH_6: None,
+    BranchFormat.BZR_BRANCH_4: BzrBranchFormat7,
+    BranchFormat.BZR_BRANCH_5: BzrBranchFormat7,
+    BranchFormat.BZR_BRANCH_6: BzrBranchFormat7,
     BranchFormat.BZR_BRANCH_7: None,
     BranchFormat.BZR_LOOM_1: None,
     BranchFormat.BZR_LOOM_2: None,

@@ -312,14 +312,14 @@ class TestBranch(TestCaseWithFactory):
         # A branch has a needs_upgrading method that returns whether or not a
         # branch needs to be upgraded or not.
         branch = self.factory.makePersonalBranch(
-            branch_format=BranchFormat.BZR_BRANCH_6)
+            branch_format=BranchFormat.BZR_BRANCH_7)
         self.assertFalse(branch.needsUpgrading)
 
     def test_needsUpgrading_branch_format_upgrade_needed(self):
         # A branch has a needs_upgrading method that returns whether or not a
         # branch needs to be upgraded or not.
         branch = self.factory.makePersonalBranch(
-            branch_format=BranchFormat.BZR_BRANCH_4)
+            branch_format=BranchFormat.BZR_BRANCH_6)
         self.assertTrue(branch.needsUpgrading)
 
     def test_needsUpgrading_repository_format_unrecognized(self):
