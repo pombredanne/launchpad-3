@@ -18,6 +18,7 @@ __all__ = [
     'BranchCreatorNotOwner',
     'BranchExists',
     'BranchFormat',
+    'BRANCH_FORMAT_UPGRADE_PATH',
     'BranchLifecycleStatus',
     'BranchLifecycleStatusFilter',
     'BranchMergeControlStatus',
@@ -36,6 +37,7 @@ __all__ = [
     'IBranchSet',
     'NoSuchBranch',
     'RepositoryFormat',
+    'REPOSITORY_FORMAT_UPGRADE_PATH',
     'UICreatableBranchType',
     'UnknownBranchTypeError',
     'user_has_special_branch_access',
@@ -244,6 +246,18 @@ class BranchFormat(DBEnumeratedType):
         107, "Bazaar-NG Loom branch format 7\n", "Loom branch format 7")
 
 
+BRANCH_FORMAT_UPGRADE_PATH = {
+    BranchFormat.UNRECOGNIZED: None,
+    BranchFormat.BRANCH_REFERENCE: None,
+    BranchFormat.BZR_BRANCH_4: BzrBranchFormat6,
+    BranchFormat.BZR_BRANCH_5: BzrBranchFormat6,
+    BranchFormat.BZR_BRANCH_6: None,
+    BranchFormat.BZR_BRANCH_7: None,
+    BranchFormat.BZR_LOOM_1: None,
+    BranchFormat.BZR_LOOM_2: None,
+    BranchFormat.BZR_LOOM_3: None}
+
+
 class RepositoryFormat(DBEnumeratedType):
     """Repository on-disk format.
 
@@ -346,6 +360,32 @@ class RepositoryFormat(DBEnumeratedType):
         "Development repository format - rich roots, group compression"
         " and chk inventories\n",
         )
+
+
+REPOSITORY_FORMAT_UPGRADE_PATH = {
+    RepositoryFormat.UNRECOGNIZED: None,
+    RepositoryFormat.BZR_REPOSITORY_4: RepositoryFormat7,
+    RepositoryFormat.BZR_REPOSITORY_5: RepositoryFormat7,
+    RepositoryFormat.BZR_REPOSITORY_6: RepositoryFormat7,
+    RepositoryFormat.BZR_REPOSITORY_7: None,
+    RepositoryFormat.BZR_KNIT_1: RepositoryFormatKnit4,
+    RepositoryFormat.BZR_KNIT_3: RepositoryFormatKnit4,
+    RepositoryFormat.BZR_KNIT_4: None,
+    RepositoryFormat.BZR_KNITPACK_1: RepositoryFormatKnitPack4,
+    RepositoryFormat.BZR_KNITPACK_3: RepositoryFormatKnitPack4,
+    RepositoryFormat.BZR_KNITPACK_4: None,
+    RepositoryFormat.BZR_KNITPACK_5: None,
+    RepositoryFormat.BZR_KNITPACK_5_RRB: None,
+    RepositoryFormat.BZR_KNITPACK_5_RR: None,
+    RepositoryFormat.BZR_KNITPACK_6: None,
+    RepositoryFormat.BZR_KNITPACK_6_RR: None,
+    RepositoryFormat.BZR_PACK_DEV_0: None,
+    RepositoryFormat.BZR_PACK_DEV_0_SUBTREE: None,
+    RepositoryFormat.BZR_DEV_1: None,
+    RepositoryFormat.BZR_DEV_1_SUBTREE: None,
+    RepositoryFormat.BZR_DEV_2: None,
+    RepositoryFormat.BZR_DEV_2_SUBTREE: None,
+    RepositoryFormat.BZR_CHK1: None}
 
 
 class ControlFormat(DBEnumeratedType):
@@ -1170,6 +1210,8 @@ class IBranch(IHasOwner, IHasBranchTarget):
 
         :return: A list of tuples like (date, count).
         """
+
+    needsUpgrading = Attribute("Whether the branch needs to be upgraded.")
 
 
 class IBranchSet(Interface):

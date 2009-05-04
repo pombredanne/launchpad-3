@@ -40,6 +40,8 @@ from canonical.launchpad.interfaces.specification import (
 from lp.code.interfaces.branch import (
     BranchCannotBePrivate, BranchCannotBePublic, BranchType,
     CannotDeleteBranch)
+from lp.code.interfaces.branch import (BranchFormat, RepositoryFormat,
+    BRANCH_FORMAT_UPGRADE_PATH, REPOSITORY_FORMAT_UPGRADE_PATH)
 from lp.code.interfaces.branchmergeproposal import InvalidBranchMergeProposal
 from lp.code.interfaces.branchsubscription import (
     BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel)
@@ -298,6 +300,48 @@ class TestBranch(TestCaseWithFactory):
         self.assertEqual(
             SourcePackage(branch.sourcepackagename, branch.distroseries),
             branch.sourcepackage)
+
+    def test_needsUpgrading_branch_format_unrecognized(self):
+        # A branch has a needs_upgrading method that returns whether or not a
+        # branch needs to be upgraded or not.
+        branch = self.factory.makePersonalBranch(
+            branch_format=BranchFormat.UNRECOGNIZED)
+        self.assertFalse(branch.needsUpgrading)
+
+    def test_needsUpgrading_branch_format_upgrade_not_needed(self):
+        # A branch has a needs_upgrading method that returns whether or not a
+        # branch needs to be upgraded or not.
+        branch = self.factory.makePersonalBranch(
+            branch_format=BranchFormat.BZR_BRANCH_6)
+        self.assertFalse(branch.needsUpgrading)
+
+    def test_needsUpgrading_branch_format_upgrade_needed(self):
+        # A branch has a needs_upgrading method that returns whether or not a
+        # branch needs to be upgraded or not.
+        branch = self.factory.makePersonalBranch(
+            branch_format=BranchFormat.BZR_BRANCH_4)
+        self.assertTrue(branch.needsUpgrading)
+
+    def test_needsUpgrading_repository_format_unrecognized(self):
+        # A branch has a needs_upgrading method that returns whether or not a
+        # branch needs to be upgraded or not.
+        branch = self.factory.makePersonalBranch(
+            repository_format=RepositoryFormat.UNRECOGNIZED)
+        self.assertFalse(branch.needsUpgrading)
+
+    def test_needsUpgrading_repository_format_upgrade_not_needed(self):
+        # A branch has a needs_upgrading method that returns whether or not a
+        # branch needs to be upgraded or not.
+        branch = self.factory.makePersonalBranch(
+            repository_format=RepositoryFormat.BZR_REPOSITORY_7)
+        self.assertFalse(branch.needsUpgrading)
+
+    def test_needsUpgrading_repository_format_upgrade_needed(self):
+        # A branch has a needs_upgrading method that returns whether or not a
+        # branch needs to be upgraded or not.
+        branch = self.factory.makePersonalBranch(
+            repository_format=RepositoryFormat.BZR_REPOSITORY_4)
+        self.assertTrue(branch.needsUpgrading)
 
 
 class TestBzrIdentity(TestCaseWithFactory):

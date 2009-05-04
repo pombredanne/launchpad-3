@@ -398,6 +398,7 @@
                     namespace
                     pending_writes
                     commitsForDays
+                    needsUpgrading
                     "/>
     <require
         permission="launchpad.Edit"
