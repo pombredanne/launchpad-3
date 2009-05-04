@@ -116,6 +116,7 @@ class BranchMailer:
         self.trans_manager.commit()
 
 
+# XXX: rename. this name sucks. send_tip_changed_email, perhaps.
 @adapter(events.TipChanged)
 def create_revision_added_job(tip_changed):
     if not tip_changed.initial_scan:

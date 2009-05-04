@@ -17,7 +17,7 @@ from zope.component import getGlobalSiteManager, getUtility, provideHandler
 
 from lp.code.interfaces.branchscanner import IBranchScanner
 from canonical.codehosting.vfs import get_scanner_server
-from canonical.codehosting.scanner import buglinks
+from canonical.codehosting.scanner import buglinks, email
 from canonical.codehosting.scanner.bzrsync import BzrSync
 from canonical.launchpad.webapp import canonical_url, errorlog
 
@@ -38,6 +38,9 @@ class BranchScanner:
         server = get_scanner_server()
         server.setUp()
         try:
+            # XXX: Should actually nest another try / finally, since either of
+            # these calls could fail.
+            provideHandler(email.create_revision_added_job)
             provideHandler(buglinks.got_new_revision)
             try:
                 for branch in getUtility(IBranchScanner).getBranchesToScan():
@@ -54,8 +57,9 @@ class BranchScanner:
                         # the other branches.
                         self.logScanFailure(branch, str(e))
             finally:
-                getGlobalSiteManager().unregisterHandler(
-                    buglinks.got_new_revision)
+                gsm = getGlobalSiteManager()
+                gsm.unregisterHandler(buglinks.got_new_revision)
+                gsm.unregisterHandler(email.create_revision_added_job)
         finally:
             server.tearDown()
         self.log.info('Finished branch scanning')
