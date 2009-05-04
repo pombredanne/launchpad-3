@@ -37,8 +37,10 @@ __all__ = [
     'SortSeriesMixin',
     ]
 
-from operator import attrgetter
+
+import re
 import urllib
+from operator import attrgetter
 
 from zope.component import getUtility
 from zope.event import notify
@@ -108,6 +110,7 @@ from canonical.widgets.textwidgets import StrippedTextWidget
 
 
 OR = '|'
+SPACE = ' '
 
 
 class ProductNavigation(
@@ -1470,6 +1473,28 @@ class ProductAddViewBase(ProductLicenseMixin, LaunchpadFormView):
         return canonical_url(self.product)
 
 
+class ProjectAddStepOne(StepView):
+    """product/+new view class for creating a new project."""
+
+    _field_names = ['displayname', 'name', 'title', 'summary']
+    label = "Register a project in Launchpad"
+    schema = IProduct
+    step_name = 'projectaddstep1'
+    template = ViewPageTemplateFile('../templates/product-new.pt')
+
+    custom_widget('displayname', TextWidget, displayWidth=50, label='Name')
+    custom_widget('name', ProductNameWidget, label='URL')
+
+    step_description = 'Project basics'
+    search_results_count = 0
+
+    def main_action(self, data):
+        self.next_step = ProjectAddStepTwo
+        self.request.form['displayname'] = data['displayname']
+        self.request.form['name'] = data['name']
+        self.request.form['summary'] = data['summary']
+
+
 class ProjectAddStepTwo(StepView, ProductLicenseMixin):
     """Step 2 (of 2) in the +new project add wizard."""
 
@@ -1523,9 +1548,11 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin):
 
     @cachedproperty
     def _search_string(self):
-        search_text = (self.request.form['name'] + ' ' +
-                       self.request.form['displayname'] + ' ' +
-                       self.request.form['summary'])
+        search_text = SPACE.join((self.request.form['name'],
+                                  self.request.form['displayname'],
+                                  self.request.form['summary']))
+        # Remove the tsearch2 special characters.
+        search_text = re.sub('[&!|()]', '', search_text)
         # OR all the terms together.
         return OR.join(search_text.split())
 
@@ -1584,35 +1611,13 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin):
         self.next_url = canonical_url(self.product)
 
 
-class ProjectAddStepOne(StepView):
-    """product/+new view class for creating a new project."""
-
-    _field_names = ['displayname', 'name', 'title', 'summary']
-    label = "Register a project in Launchpad"
-    schema = IProduct
-    step_name = 'projectaddstep1'
-    template = ViewPageTemplateFile('../templates/product-new.pt')
-
-    custom_widget('displayname', TextWidget, displayWidth=50, label='Name')
-    custom_widget('name', ProductNameWidget, label='URL')
-
-    step_description = 'Project basics'
-    search_results_count = 0
-
-    def main_action(self, data):
-        self.request.form['displayname'] = data['displayname']
-        self.request.form['name'] = data['name']
-        self.request.form['summary'] = data['summary']
-        self.next_step = ProjectAddStepTwo
-
-
 class ProductAddView(MultiStepView):
     """The controlling view for product/+new."""
 
     total_steps = 2
 
     @property
-    def step_one(self):
+    def first_step(self):
         return ProjectAddStepOne
 
 
