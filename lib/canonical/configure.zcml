@@ -160,7 +160,7 @@
          thing on ILaunchpadApplication. -->
     <browser:page
         name=""
-        for="canonical.launchpad.interfaces.IShipItApplication"
+        for="canonical.shipit.interfaces.shipit.IShipItApplication"
         class="canonical.launchpad.browser.launchpad.LaunchpadImageFolder"
         permission="zope.Public"
         />

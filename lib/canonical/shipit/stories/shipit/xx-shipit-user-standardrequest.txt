@@ -55,7 +55,7 @@ only choose the number of CDs from a list of predefined options.
   Request accepted. Please note that requests usually take from 4 to 6 weeks
   to deliver, depending on the country of shipping...
 
-  >>> from canonical.launchpad.interfaces.shipit import IShipitAccount
+  >>> from canonical.shipit.interfaces.shipit import IShipitAccount
   >>> from canonical.launchpad.database import Person
   >>> from canonical.launchpad.ftests import login, logout, ANONYMOUS
   >>> login(ANONYMOUS)
@@ -207,8 +207,8 @@ address.
 
     # First we make sure there's only one standard option for Kubuntu
     # requests.
-    >>> from canonical.launchpad.interfaces.shipit import ShipItFlavour
-    >>> from canonical.launchpad.database.shipit import StandardShipItRequest
+    >>> from canonical.shipit.interfaces.shipit import ShipItFlavour
+    >>> from canonical.shipit.model.shipit import StandardShipItRequest
     >>> for option in StandardShipItRequest.select():
     ...     option.destroySelf()
     >>> sole_option = StandardShipItRequest(

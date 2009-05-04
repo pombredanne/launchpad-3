@@ -12,6 +12,8 @@
   <authorizations module="canonical.launchpad.security" />
   <include package="canonical.launchpad.xmlrpc" />
 
+  <include package="canonical.shipit" />
+
   <include package="lp.registry" />
 
   <include package="lp.answers" />

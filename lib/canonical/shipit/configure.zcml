@@ -1,0 +1,159 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    xmlns:i18n="http://namespaces.zope.org/i18n"
+    xmlns:xmlrpc="http://namespaces.zope.org/xmlrpc"
+    i18n_domain="launchpad">
+    <include
+        package=".browser"/>
+    
+    <!-- This is only used on shipit. That's why it's here. -->
+    
+    <view
+        type="zope.publisher.interfaces.browser.IBrowserRequest"
+        for="canonical.shipit.interfaces.shipit.IEmptyDefaultChoice                                                        zope.schema.interfaces.IIterableVocabulary"
+        provides="zope.app.form.interfaces.IInputWidget"
+        factory="canonical.shipit.interfaces.shipit.EmptyDefaultDropdownWidget"
+        permission="zope.Public"/>
+    
+    <!-- ShipItApplication -->
+    
+    <class
+        class="canonical.launchpad.systemhomes.ShipItApplication">
+        <allow
+            interface="canonical.shipit.interfaces.shipit.IShipItApplication"/>
+    </class>
+    <securedutility
+        class="canonical.launchpad.systemhomes.ShipItApplication"
+        provides="canonical.shipit.interfaces.shipit.IShipItApplication">
+        <allow
+            interface="canonical.shipit.interfaces.shipit.IShipItApplication"/>
+    </securedutility>
+    
+    <!-- ShippingRequest -->
+    
+    <class
+        class="canonical.launchpad.database.ShippingRequest">
+        <allow
+            interface="canonical.shipit.interfaces.shipit.IShippingRequest"/>
+        <require
+            permission="launchpad.Edit"
+            set_schema="canonical.shipit.interfaces.shipit.IShippingRequest"/>
+    </class>
+    
+    <!-- ShippingRequestSet -->
+    
+    <class
+        class="canonical.launchpad.database.ShippingRequestSet">
+        <allow
+            interface="canonical.shipit.interfaces.shipit.IShippingRequestSet"/>
+    </class>
+    <securedutility
+        class="canonical.launchpad.database.ShippingRequestSet"
+        provides="canonical.shipit.interfaces.shipit.IShippingRequestSet">
+        <allow
+            interface="canonical.shipit.interfaces.shipit.IShippingRequestSet"/>
+    </securedutility>
+    
+    <!-- StandardShipItRequest -->
+    
+    <class
+        class="canonical.launchpad.database.StandardShipItRequest">
+        <allow
+            interface="canonical.shipit.interfaces.shipit.IStandardShipItRequest"/>
+        <require
+            permission="launchpad.Admin"
+            set_schema="canonical.shipit.interfaces.shipit.IStandardShipItRequest"/>
+    </class>
+    
+    <!-- StandardShipItRequestSet -->
+    
+    <class
+        class="canonical.launchpad.database.StandardShipItRequestSet">
+        <allow
+            interface="canonical.shipit.interfaces.shipit.IStandardShipItRequestSet"/>
+    </class>
+    <securedutility
+        class="canonical.launchpad.database.StandardShipItRequestSet"
+        provides="canonical.shipit.interfaces.shipit.IStandardShipItRequestSet">
+        <allow
+            interface="canonical.shipit.interfaces.shipit.IStandardShipItRequestSet"/>
+    </securedutility>
+    
+    <!-- RequestedCDs -->
+    
+    <class
+        class="canonical.launchpad.database.RequestedCDs">
+        <allow
+            interface="canonical.shipit.interfaces.shipit.IRequestedCDs"/>
+        <require
+            permission="launchpad.Edit"
+            set_schema="canonical.shipit.interfaces.shipit.IRequestedCDs"/>
+    </class>
+    
+    <!-- Shipment -->
+    
+    <class
+        class="canonical.launchpad.database.Shipment">
+        <allow
+            interface="canonical.shipit.interfaces.shipit.IShipment"/>
+    </class>
+    <securedutility
+        class="canonical.launchpad.database.ShipmentSet"
+        provides="canonical.shipit.interfaces.shipit.IShipmentSet">
+        <allow
+            interface="canonical.shipit.interfaces.shipit.IShipmentSet"/>
+    </securedutility>
+    
+    <!-- ShippingRun -->
+    
+    <class
+        class="canonical.launchpad.database.ShippingRun">
+        <allow
+            interface="canonical.shipit.interfaces.shipit.IShippingRun"/>
+        <require
+            permission="launchpad.Admin"
+            set_schema="canonical.shipit.interfaces.shipit.IShippingRun"/>
+    </class>
+    <securedutility
+        class="canonical.launchpad.database.ShippingRunSet"
+        provides="canonical.shipit.interfaces.shipit.IShippingRunSet">
+        <allow
+            interface="canonical.shipit.interfaces.shipit.IShippingRunSet"/>
+    </securedutility>
+    
+    <!-- ShipItReport -->
+    
+    <class
+        class="canonical.launchpad.database.ShipItReport">
+        <allow
+            interface="canonical.shipit.interfaces.shipit.IShipItReport"/>
+        <require
+            permission="launchpad.Admin"
+            set_schema="canonical.shipit.interfaces.shipit.IShipItReport"/>
+    </class>
+    <securedutility
+        class="canonical.launchpad.database.ShipItReportSet"
+        provides="canonical.shipit.interfaces.shipit.IShipItReportSet">
+        <allow
+            interface="canonical.shipit.interfaces.shipit.IShipItReportSet"/>
+    </securedutility>
+    <securedutility
+        class="canonical.launchpad.database.ShipItSurveySet"
+        provides="canonical.shipit.interfaces.shipit.IShipItSurveySet">
+        <allow
+            interface="canonical.shipit.interfaces.shipit.IShipItSurveySet"/>
+    </securedutility>
+    
+    <!-- ShipitAccount -->
+    
+    <class
+        class="canonical.launchpad.database.ShipitAccount">
+        <allow
+            interface="canonical.shipit.interfaces.shipit.IShipitAccount"/>
+    </class>
+    <adapter
+        for="canonical.launchpad.interfaces.account.IAccount"
+        provides="canonical.shipit.interfaces.shipit.IShipitAccount"
+        factory="canonical.shipit.model.shipit.ShipitAccount"/>
+</configure>

@@ -36,8 +36,8 @@ from canonical.launchpad.interfaces import (
     IHWDBApplication, ILanguageSet, ILaunchBag, ILaunchpadStatisticSet,
     IMailingListApplication, IMaloneApplication, IOpenIDApplication,
     IPrivateMaloneApplication, IProductSet, IRosettaApplication,
-    IShipItApplication, ITranslationGroupSet, ITranslationsOverview,
-    IWebServiceApplication)
+    ITranslationGroupSet, ITranslationsOverview, IWebServiceApplication)
+from canonical.shipit.interfaces.shipit import IShipItApplication
 from lp.code.interfaces.codehosting import (
     IBranchFileSystemApplication, IBranchPullerApplication)
 from canonical.launchpad.interfaces.hwdb import (

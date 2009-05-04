@@ -12,13 +12,14 @@ from canonical.launchpad.ftests import ANONYMOUS, login, login_person, logout
 from canonical.launchpad.systemhomes import ShipItApplication
 from canonical.launchpad.database import (
     ShippingRequest, ShippingRequestSet, StandardShipItRequest)
-from canonical.launchpad.layers import (
-    setFirstLayer, ShipItKUbuntuLayer, ShipItUbuntuLayer)
+from canonical.launchpad.layers import setFirstLayer
+from canonical.shipit.layers import ShipItKUbuntuLayer, ShipItUbuntuLayer
 from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
-from canonical.launchpad.interfaces import (
-    ICountrySet, IPersonSet, IShipitAccount, ShipItArchitecture,
-    ShipItDistroSeries, ShipItFlavour, ShippingRequestPriority,
-    ShippingRequestStatus, ShippingRequestType)
+from canonical.launchpad.interfaces.country import ICountrySet
+from canonical.shipit.interfaces.shipit import (
+    IShipitAccount, ShipItArchitecture, ShipItDistroSeries, ShipItFlavour,
+    ShippingRequestPriority, ShippingRequestStatus, ShippingRequestType)
+from lp.registry.interfaces.person import IPersonSet
 from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing import LaunchpadFunctionalLayer

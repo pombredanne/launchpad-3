@@ -2,7 +2,7 @@
 
     >>> from canonical.launchpad.database import (
     ...     ShippingRequest, StandardShipItRequestSet)
-    >>> from canonical.launchpad.layers import ShipItUbuntuLayer
+    >>> from canonical.shipit.layers import ShipItUbuntuLayer
     >>> jordis_request = ShippingRequest.get(16)
 
 

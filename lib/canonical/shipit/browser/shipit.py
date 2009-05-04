@@ -29,6 +29,7 @@ __all__ = [
     'StandardShipItRequestsView']
 
 from operator import attrgetter
+import os
 
 from zope.event import notify
 from zope.component import getUtility
@@ -38,6 +39,8 @@ from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.session.interfaces import ISession
 
 from openid.consumer.consumer import CANCEL, Consumer, FAILURE, SUCCESS
+
+from canonical.lazr import ExportedFolder
 
 from canonical.config import config
 from canonical.cachedproperty import cachedproperty
@@ -58,17 +61,18 @@ from canonical.launchpad.webapp import (
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.interfaces.account import IAccountSet
 from canonical.launchpad.interfaces.validation import shipit_postcode_required
-from canonical.launchpad.interfaces import (
-    ILaunchBag, IShipItApplication, UnexpectedFormData)
+from canonical.shipit.interfaces.shipit import IShipItApplication
+from canonical.launchpad.webapp.interfaces import (
+    ILaunchBag, UnexpectedFormData)
 from canonical.launchpad.interfaces.openidconsumer import (
     IOpenIDConsumerStoreFactory)
-from canonical.launchpad.interfaces.shipit import (
+from canonical.shipit.interfaces.shipit import (
     IShipitAccount, IShipItReportSet, IShipItSurveySet, IShippingRequestAdmin,
     IShippingRequestEdit, IShippingRequestSet, IShippingRequestUser,
     IShippingRunSet, IStandardShipItRequest, IStandardShipItRequestSet,
     ShipItArchitecture, ShipItConstants, ShipItDistroSeries, ShipItFlavour,
     ShipItSurveySchema, ShippingRequestStatus)
-from canonical.launchpad.layers import (
+from canonical.shipit.layers import (
     ShipItUbuntuLayer, ShipItKUbuntuLayer, ShipItEdUbuntuLayer)
 from canonical.launchpad import _
 
@@ -1329,3 +1333,24 @@ class ShipItSurveyView(LaunchpadFormView):
             self.next_url = '/specialrequest-server'
         else:
             self.next_url = '/myrequest-server'
+
+
+class UbuntuIcingFolder(ExportedFolder):
+    """Export the Ubuntu icing."""
+
+    folder = os.path.join(
+        os.path.dirname(os.path.realpath(__file__)), '../icing-ubuntu/')
+
+
+class KubuntuIcingFolder(ExportedFolder):
+    """Export the Kubuntu icing."""
+
+    folder = os.path.join(
+        os.path.dirname(os.path.realpath(__file__)), '../icing-kubuntu/')
+
+
+class EdubuntuIcingFolder(ExportedFolder):
+    """Export the Edubuntu icing."""
+
+    folder = os.path.join(
+        os.path.dirname(os.path.realpath(__file__)), '../icing-edubuntu/')

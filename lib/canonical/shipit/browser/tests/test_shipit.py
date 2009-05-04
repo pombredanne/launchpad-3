@@ -6,11 +6,12 @@ __metaclass__ = type
 
 import unittest
 
-from canonical.launchpad.browser.shipit import (
+from canonical.shipit.browser.shipit import (
     ShipitOpenIDCallbackForServerCDsView, ShipitOpenIDCallbackView,
     ShipitOpenIDLoginForServerCDsView, ShipitOpenIDLoginView)
-from canonical.launchpad.database.shipit import ShipItSurvey
-from canonical.launchpad.layers import setFirstLayer, ShipItUbuntuLayer
+from canonical.shipit.model.shipit import ShipItSurvey
+from canonical.launchpad.layers import setFirstLayer
+from canonical.shipit.layers import ShipItUbuntuLayer
 from canonical.launchpad.systemhomes import ShipItApplication
 from canonical.launchpad.testing import login_person, TestCaseWithFactory
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
