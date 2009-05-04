@@ -161,10 +161,6 @@ class BzrSync:
         # for the branch.
         notify(events.TipChanged(self.db_branch, bzr_branch, initial_scan))
 
-        # XXX: Move this so that there's an event generated here, and the
-        # code below is a handler of that event.
-        self._branch_mailer.sendRevisionNotificationEmails(bzr_history)
-
         # The Branch table is modified by other systems, including the web UI,
         # so we need to update it in a short transaction to avoid causing
         # timeouts in the webapp. This opens a small race window where the

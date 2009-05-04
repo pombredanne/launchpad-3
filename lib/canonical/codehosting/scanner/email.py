@@ -118,9 +118,20 @@ class BranchMailer:
 
 @adapter(events.TipChanged)
 def create_revision_added_job(tip_changed):
-    if tip_changed.initial_scan:
-        return
-    getUtility(IRevisionsAddedJobSource).create(
-        tip_changed.db_branch, tip_changed.db_branch.last_scanned_id,
-        tip_changed.bzr_branch.last_revision(),
-        config.canonical.noreply_from_address)
+    if not tip_changed.initial_scan:
+        getUtility(IRevisionsAddedJobSource).create(
+            tip_changed.db_branch, tip_changed.db_branch.last_scanned_id,
+            tip_changed.bzr_branch.last_revision(),
+            config.canonical.noreply_from_address)
+    elif subscribers_want_notification(tip_changed.db_branch):
+        revision_count = tip_changed.bzr_branch.revno()
+        if revision_count == 1:
+            revisions = '1 revision'
+        else:
+            revisions = '%d revisions' % revision_count
+        message = ('First scan of the branch detected %s'
+                   ' in the revision history of the branch.' %
+                   revisions)
+        job = getUtility(IRevisionMailJobSource).create(
+            tip_changed.db_branch, 'initial',
+            config.canonical.noreply_from_address, message, False, None)
