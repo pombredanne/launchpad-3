@@ -7,7 +7,7 @@
     </button>
     <div class="yui-activator-message-box yui-activator-hidden"/>
 </span>
-<script tal:condition="context/required:launchpad.Edit"
+<script tal:condition="view/can_write"
         tal:content="structure string:
 YUI().use('lp.picker', function(Y) {
     if (Y.UA.ie) {

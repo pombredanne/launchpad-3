@@ -20,9 +20,12 @@ from zope.schema.interfaces import IVocabulary
 from zope.schema.vocabulary import getVocabularyRegistry
 from zope.app.form.interfaces import MissingInputError
 
+from lazr.restful.interfaces import IWebServiceClientRequest
+
+from lp.registry.interfaces.person import IPerson
+
 from canonical.config import config
 from canonical.launchpad.interfaces.launchpad import IHasIcon
-from lp.registry.interfaces.person import IPerson
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.launchpad.webapp.tales import ObjectImageDisplayAPI
@@ -44,7 +47,7 @@ class PickerEntry:
     """See `IPickerEntry`."""
     implements(IPickerEntry)
 
-    def __init__(self, description=None, image=None, css=None):
+    def __init__(self, description=None, image=None, css=None, api_uri=None):
         self.description = description
         self.image = image
         self.css = css
@@ -100,11 +103,12 @@ class HugeVocabularyJSONView:
 
         result = []
         for term in batch_navigator.currentBatch():
-            entry = dict(title=term.title)
+            entry = dict(value=term.token, title=term.title)
             # The canonical_url without just the path (no hostname) can
             # be passed directly into the REST PATCH call.
-            entry['value'] = canonical_url(
-                term.value, path_only_if_possible=True)
+            api_request = IWebServiceClientRequest(self.request)
+            entry['api_uri'] = canonical_url(
+                term.value, request=api_request, path_only_if_possible=True)
             picker_entry = IPickerEntry(term.value)
             if picker_entry.description is not None:
                 if len(picker_entry.description) > MAX_DESCRIPTION_LENGTH:
