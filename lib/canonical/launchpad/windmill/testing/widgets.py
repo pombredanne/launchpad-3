@@ -142,7 +142,7 @@ class InlinePickerWidgetSearchTest:
         client.open(url=self.url)
         client.waits.forPageLoad(timeout=u'20000')
 
-        # Click on assignee edit button.
+        # Click on edit button.
         client.waits.forElement(
             xpath=u"//span[@id='%s']/button" % self.activator_id,
             timeout=u'20000')
@@ -174,7 +174,7 @@ class InlinePickerWidgetSearchTest:
 
 
 class InlinePickerWidgetButtonTest:
-    """Test that the Picker deletes a value inline."""
+    """Test custom buttons/links added to the Picker."""
 
     def __init__(self, url, activator_id, button_class, new_value,
                  name=None, suite='inline_picker_button_test',
@@ -209,7 +209,7 @@ class InlinePickerWidgetButtonTest:
         client.open(url=self.url)
         client.waits.forPageLoad(timeout=u'25000')
 
-        # Click on assignee edit button.
+        # Click on edit button.
         client.waits.forElement(
             xpath=u"//span[@id='%s']/button" % self.activator_id,
             timeout=u'25000')
@@ -217,7 +217,7 @@ class InlinePickerWidgetButtonTest:
         client.click(
             xpath=u"//span[@id='%s']/button" % self.activator_id)
 
-        # Click on assignee remove button.
+        # Click on remove button.
         remove_button_xpath = (
             u"//table[contains(@class, 'yui-picker') "
              "and not(contains(@class, 'yui-picker-hidden'))]"
