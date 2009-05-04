@@ -329,9 +329,9 @@ class TestPOTMsgSetMerging(TestCaseWithFactory, TranslatableProductMixin):
         # sharing templates had matching POTMsgSets, they will share
         # one.
         trunk_potmsgset = self.factory.makePOTMsgSet(
-            self.trunk_template, 'foo', sequence=1)
+            self.trunk_template, singular='foo', sequence=1)
         stable_potmsgset = self.factory.makePOTMsgSet(
-            self.stable_template, 'foo', sequence=1)
+            self.stable_template, singular='foo', sequence=1)
 
         merge_potmsgsets(self.templates)
 
@@ -344,9 +344,9 @@ class TestPOTMsgSetMerging(TestCaseWithFactory, TranslatableProductMixin):
     def test_unmatchedPOTMsgSetsDoNotShare(self):
         # Only identically-keyed potmsgsets get merged.
         trunk_potmsgset = self.factory.makePOTMsgSet(
-            self.trunk_template, 'foo', sequence=1)
+            self.trunk_template, singular='foo', sequence=1)
         stable_potmsgset = self.factory.makePOTMsgSet(
-            self.stable_template, 'foo', context='bar', sequence=1)
+            self.stable_template, singular='foo', context='bar', sequence=1)
 
         merge_potmsgsets(self.templates)
 
@@ -360,8 +360,10 @@ class TestPOTMsgSetMerging(TestCaseWithFactory, TranslatableProductMixin):
 
     def test_sharingPreservesSequenceNumbers(self):
         # Sequence numbers are preserved when sharing.
-        self.factory.makePOTMsgSet(self.trunk_template, 'foo', sequence=3)
-        self.factory.makePOTMsgSet(self.stable_template, 'foo', sequence=9)
+        self.factory.makePOTMsgSet(
+            self.trunk_template, singular='foo', sequence=3)
+        self.factory.makePOTMsgSet(
+            self.stable_template, singular='foo', sequence=9)
 
         merge_potmsgsets(self.templates)
 
@@ -385,8 +387,10 @@ class TranslatedProductMixin(TranslatableProductMixin):
         TranslatableProductMixin.setUp(self)
 
         self.trunk_potmsgset = self.factory.makePOTMsgSet(
-            self.trunk_template, 'foo', sequence=1)
-        self.stable_potmsgset = self.trunk_potmsgset
+            self.trunk_template, singular='foo', sequence=1)
+
+        self.stable_potmsgset = self.factory.makePOTMsgSet(
+            self.stable_template, singular='foo', sequence=1)
 
         self.msgid = self.trunk_potmsgset.msgid_singular
 
@@ -396,9 +400,6 @@ class TranslatedProductMixin(TranslatableProductMixin):
             'nl', potemplate=self.trunk_template)
         self.stable_pofile = self.factory.makePOFile(
             'nl', potemplate=self.stable_template)
-
-        self.stable_potmsgset = self.factory.makePOTMsgSet(
-            self.stable_template, 'foo', sequence=1)
 
     def _makeTranslationMessage(self, pofile, potmsgset, text, diverged):
         """Set a translation for given message in given translation."""
@@ -420,11 +421,12 @@ class TranslatedProductMixin(TranslatableProductMixin):
         :return: a pair of new TranslationMessages for trunk and
             stable, respectively.
         """
+        trunk_potmsgset, stable_potmsgset = self._getPOTMsgSets()
         trunk_message = self._makeTranslationMessage(
-            pofile=self.trunk_pofile, potmsgset=self.trunk_potmsgset,
+            pofile=self.trunk_pofile, potmsgset=trunk_potmsgset,
             text=trunk_string, diverged=trunk_diverged)
         stable_message = self._makeTranslationMessage(
-            pofile=self.stable_pofile, potmsgset=self.stable_potmsgset,
+            pofile=self.stable_pofile, potmsgset=stable_potmsgset,
             text=stable_string, diverged=stable_diverged)
 
         return (trunk_message, stable_message)
@@ -442,8 +444,13 @@ class TranslatedProductMixin(TranslatableProductMixin):
 
     def _getMessage(self, potmsgset, template):
         """Get TranslationMessage for given POTMsgSet in given template."""
-        return potmsgset.getCurrentTranslationMessage(
+        message = potmsgset.getCurrentTranslationMessage(
             potemplate=template, language=self.dutch)
+        if not message:
+            # No diverged message here, so check for a shared one.
+            message = potmsgset.getSharedTranslationMessage(
+                language=self.dutch)
+        return message
 
     def _getMessages(self):
         """Get current TranslationMessages in trunk and stable POTMsgSets."""
@@ -546,6 +553,24 @@ class TestPOTMsgSetMergingAndTranslations(TestCaseWithFactory,
         # translations.
         self.assertEqual(self._getTranslations(), (None, None))
 
+    def test_clashingSharedTranslations(self):
+        # When merging POTMsgSets that both have shared translations,
+        # the most representative shared translation wins.
+        trunk_message, stable_message = self._makeTranslationMessages(
+            'foe', 'barr', trunk_diverged=False, stable_diverged=False)
+        trunk_message.is_current = True
+        stable_message.is_current = True
+
+        merge_potmsgsets(self.templates)
+
+        trunk_message, stable_message = self._getMessages()
+        self.assertEqual(trunk_message.potemplate, None)
+
+        # There are still two separate messages; the second (least
+        # representative) one is diverged.
+        self.assertNotEqual(trunk_message, stable_message)
+        self.assertEqual(stable_message.potemplate, self.stable_template)
+
 
 class TestTranslationMessageNonMerging(TestCaseWithFactory,
                                        TranslatedProductMixin):
@@ -583,16 +608,13 @@ class TestTranslationMessageMerging(TestCaseWithFactory,
         self.layer.switchDbUser('postgres')
         TestCaseWithFactory.setUp(self, user='mark@hbd.com')
         TranslatedProductMixin.setUp(self)
-        merge_potmsgsets(self.templates)
 
     def test_sharingIdenticalMessages(self):
         # Identical translation messages are merged into one.
-        self._makeTranslationMessages('x', 'x')
+        self._makeTranslationMessages(
+            'x', 'x', trunk_diverged=True, stable_diverged=True)
 
-        trunk_message, stable_message = self._getMessages()
-        self.assertNotEqual(trunk_message, stable_message)
-        self.assertNotEqual(trunk_message.potemplate, None)
-
+        merge_potmsgsets(self.templates)
         merge_translationmessages(self.templates)
 
         trunk_message, stable_message = self._getMessages()
