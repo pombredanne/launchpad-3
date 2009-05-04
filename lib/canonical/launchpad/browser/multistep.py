@@ -48,7 +48,7 @@ class MultiStepView(LaunchpadView):
     step_number = 1
 
     @property
-    def step_one(self):
+    def first_step(self):
         """Return the view class for the first step in the wizard.
 
         :return: A subclass of `StepView`
@@ -58,7 +58,7 @@ class MultiStepView(LaunchpadView):
 
     def initialize(self):
         """Initialize the view and handle stepping through sub-views."""
-        view = self.step_one(self.context, self.request)
+        view = self.first_step(self.context, self.request)
         assert isinstance(view, StepView), 'Not a StepView: %s' % view
         # We should be calling injectStepNameInRequest() after initialize() in
         # both this case and inside the loop below, otherwise the form will be
