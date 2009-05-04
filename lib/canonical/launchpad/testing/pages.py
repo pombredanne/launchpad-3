@@ -284,13 +284,15 @@ def extract_link_from_tag(tag, base=None):
         return urljoin(base, href)
 
 
-def extract_text(content, extract_image_text=False, skip_tags=['script']):
+def extract_text(content, extract_image_text=False, skip_tags=None):
     """Return the text stripped of all tags.
 
     All runs of tabs and spaces are replaced by a single space and runs of
     newlines are replaced by a single newline. Leading and trailing white
     spaces are stripped.
     """
+    if skip_tags is None:
+        skip_tags = ['script']
     if not isinstance(content, PageElement):
         soup = BeautifulSoup(content)
     else:
