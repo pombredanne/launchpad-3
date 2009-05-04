@@ -105,12 +105,13 @@ on other members' overview or +assignedbugs pages.
     My Team
     Other Team
 
+
 === Indirect Membership ===
 
 If a person is a member of a public team that is a member of a private
-membership team then he is indirectly a member of the private team.
-The rules for disclosing that information are the same as for direct
-membership.
+membership team then he is indirectly a member of the private
+membership team.  The rules for disclosing that information are the
+same as for direct membership.
 
 My Team invites the Launchpad Admins team to join them.
 

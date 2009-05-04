@@ -284,6 +284,8 @@ class BranchLookup:
 
     def getByUrl(self, url):
         """See `IBranchLookup`."""
+        if url is None:
+            return None
         url = url.rstrip('/')
         try:
             uri = URI(url)

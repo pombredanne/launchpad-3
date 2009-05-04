@@ -28,13 +28,8 @@ automatically authorized:
     >>> login('admin@canonical.com')
     >>> rpconfig = getUtility(IOpenIDRPConfigSet).new(
     ...     trust_root='http://launchpad.dev/',
-    ...     displayname='Test RP', description='A test RP')
-
-    # XXX 2009-04-16 jamesh bug=362149: a related merge to
-    # db-devel is needed to switch this to a database column.
-    >>> from canonical.launchpad.database.openidserver import (
-    ...     AUTO_AUTHORIZE_TRUST_ROOTS)
-    >>> AUTO_AUTHORIZE_TRUST_ROOTS.add('http://launchpad.dev/')
+    ...     displayname='Test RP', description='A test RP',
+    ...     auto_authorize=True)
     >>> logout()
 
 If we are not logged in, automatically authorized sites act the same
@@ -74,5 +69,4 @@ relying party immediately.
 
 == Cleanup ==
 
-    >>> AUTO_AUTHORIZE_TRUST_ROOTS.remove('http://launchpad.dev/')
     >>> setDefaultFetcher(None)

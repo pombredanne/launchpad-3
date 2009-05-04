@@ -346,7 +346,7 @@ class IAccountSet(Interface):
     def get(id):
         """Return the `IAccount` with the given id.
 
-        Return None if it doesn't exist.
+        :raises LookupError: If the account is not found.
         """
 
     def createAccountAndEmail(email, rationale, displayname, password,
@@ -362,8 +362,9 @@ class IAccountSet(Interface):
 
         :param email: A string, not an `IEmailAddress` provider.
 
-        :return: An `IAccount`, or None if the given email address
-        does not exist in the database or is not linked to an `IAccount`.
+        :return: An `IAccount`.
+
+        :raises LookupError: If the account is not found.
         """
 
     def getByOpenIDIdentifier(openid_identity):
@@ -371,8 +372,8 @@ class IAccountSet(Interface):
 
          :param open_identifier: An ascii compatible string that is either
              the old or new openid_identifier that belongs to an account.
-         :return: An `IAccount`, or None if the openid_identifier does
-             not belong to an account.
+         :return: An `IAccount`
+         :raises LookupError: If the account is not found.
          """
 
     def createOpenIDIdentifier(mnemonic):

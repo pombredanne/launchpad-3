@@ -32,7 +32,7 @@
     <browser:url
         for="canonical.launchpad.interfaces.ITranslationMessage"
         path_expression="string:${potmsgset/sequence}"
-        attribute_to_parent="pofile"
+        attribute_to_parent="browser_pofile"
         />
 
     <browser:menus
