@@ -7908,6 +7908,7 @@ INSERT INTO productseries (id, product, name, summary, importstatus, datelastsyn
 INSERT INTO productseries (id, product, name, summary, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, releasefileglob, releaseverstyle, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated, driver, owner, date_published_sync, status, translations_autoimport_mode, branch) VALUES (27, 25, 'trunk', 'The "trunk" series represents the primary line of development rather than a stable release branch. This is sometimes also called MAIN or HEAD.', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2008-10-02 10:12:40.909504', NULL, 16, NULL, 2, 1, NULL);
 INSERT INTO productseries (id, product, name, summary, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, releasefileglob, releaseverstyle, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated, driver, owner, date_published_sync, status, translations_autoimport_mode, branch) VALUES (28, 26, 'trunk', 'The "trunk" series represents the primary line of development rather than a stable release branch. This is sometimes also called MAIN or HEAD.', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2009-05-02 21:33:15.310312', NULL, 16, NULL, 2, 1, NULL);
 
+
 ALTER TABLE productseries ENABLE TRIGGER ALL;
 
 
