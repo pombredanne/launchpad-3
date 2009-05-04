@@ -157,7 +157,7 @@ class BzrSync:
 
         # Generate emails for the revisions in the revision_history
         # for the branch.
-        if self.db_branch.last_scanned_id is not None:
+        if not initial_scan:
             # XXX: Move this so that there's an event generated here, and the
             # code below is a handler of that event.
             job = getUtility(IRevisionsAddedJobSource).create(
