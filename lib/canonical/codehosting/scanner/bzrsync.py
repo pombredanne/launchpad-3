@@ -153,17 +153,19 @@ class BzrSync:
                 self.syncOneRevision(revision, branchrevisions_to_insert)
         self.deleteBranchRevisions(branchrevisions_to_delete)
         self.insertBranchRevisions(bzr_branch, branchrevisions_to_insert)
+        # Commit here largely because sendRevisionNotificationEmails calls
+        # begin.
+        self.trans_manager.commit()
 
         # Generate emails for the revisions in the revision_history
         # for the branch.
         if not initial_scan:
             notify(events.TipChanged(self.db_branch, bzr_branch))
 
-        self.trans_manager.commit()
-
         # XXX: Move this so that there's an event generated here, and the
         # code below is a handler of that event.
         self._branch_mailer.sendRevisionNotificationEmails(bzr_history)
+
         # The Branch table is modified by other systems, including the web UI,
         # so we need to update it in a short transaction to avoid causing
         # timeouts in the webapp. This opens a small race window where the
