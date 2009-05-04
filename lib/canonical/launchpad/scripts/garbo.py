@@ -156,7 +156,7 @@ class CodeImportResultPruner(TunableLoop):
         transaction.commit()
 
 
-class RevisionAuthorLinker(TunableLoop):
+class RevisionAuthorEmailLinker(TunableLoop):
     """A TunableLoop that links `RevisionAuthor` objects to `Person` objects.
 
     `EmailAddress` objects are looked up for `RevisionAuthor` objects
@@ -215,7 +215,7 @@ class RevisionAuthorLinker(TunableLoop):
         transaction.commit()
 
 
-class HWSubmissionLinker(TunableLoop):
+class HWSubmissionEmailLinker(TunableLoop):
     """A TunableLoop that links `HWSubmission` objects to `Person` objects.
 
     `EmailAddress` objects are looked up for `HWSubmission` objects
@@ -301,7 +301,7 @@ class DailyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
     script_name = 'garbo-daily'
     tunable_loops = [
         CodeImportResultPruner,
-        RevisionAuthorLinker,
-        HWSubmissionLinker,
+        RevisionAuthorEmailLinker,
+        HWSubmissionEmailLinker,
         ]
 

@@ -188,7 +188,7 @@ class TestGarbo(TestCaseWithFactory):
                 Min(CodeImportResult.date_created)).one().replace(tzinfo=UTC)
             >= now - timedelta(days=30))
 
-    def test_RevisionAuthorLinker(self):
+    def test_RevisionAuthorEmailLinker(self):
         LaunchpadZopelessLayer.switchDbUser('testadmin')
         rev1 = self.factory.makeRevision('Author 1 <author-1@Example.Org>')
         rev2 = self.factory.makeRevision('Author 2 <author-2@Example.Org>')
@@ -232,7 +232,7 @@ class TestGarbo(TestCaseWithFactory):
         LaunchpadZopelessLayer.switchDbUser('testadmin')
         self.assertEqual(rev3.revision_author.person, person3)
 
-    def test_HWSubmissionLinker(self):
+    def test_HWSubmissionEmailLinker(self):
         LaunchpadZopelessLayer.switchDbUser('testadmin')
         sub1 = self.factory.makeHWSubmission(
             emailaddress='author-1@Example.Org')
