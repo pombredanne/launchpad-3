@@ -157,8 +157,6 @@ class BzrSync:
         # Generate emails for the revisions in the revision_history
         # for the branch.
         if not initial_scan:
-            # XXX: Move this so that there's an event generated here, and the
-            # code below is a handler of that event.
             notify(events.TipChanged(self.db_branch, bzr_branch))
 
         self.trans_manager.commit()
