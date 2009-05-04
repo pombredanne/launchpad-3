@@ -12,34 +12,12 @@ import urlparse
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces import (
-    BugBranchStatus, IBugBranchSet, IBugSet, ILaunchpadCelebrities,
+    IBugBranchSet, IBugSet, ILaunchpadCelebrities,
     NotFoundError)
 
 
 class BadLineInBugsProperty(Exception):
     """Raised when the scanner encounters a bad line in a bug property."""
-
-
-def set_bug_branch_status(bug, branch, status):
-    """Ensure there's a BugBranch for 'bug' and 'branch' set to 'status'.
-
-    This creates a BugBranch if one doesn't exist, and changes the status if
-    it does. If a BugBranch is created, the registrant is the branch owner.
-
-    If the BugBranch status is set to BESTFIX, we don't change it. That way,
-    we avoid overwriting data set in the web UI.
-
-    :return: The updated BugBranch.
-    """
-    bug_branch_set = getUtility(IBugBranchSet)
-    bug_branch = bug_branch_set.getBugBranch(bug, branch)
-    if bug_branch is None:
-        return bug.addBranch(
-            branch=branch, status=status,
-            registrant=getUtility(ILaunchpadCelebrities).janitor)
-    if bug_branch.status != BugBranchStatus.BESTFIX:
-        bug_branch.status = status
-    return bug_branch
 
 
 class BugBranchLinker:
@@ -57,7 +35,6 @@ class BugBranchLinker:
         :return: (bug_url, bug_id) if the line is good; None if the line
             is technically valid but should be skipped.
         """
-        valid_statuses = {'fixed': BugBranchStatus.FIXAVAILABLE}
         line = line.strip()
 
         # Skip blank lines.
@@ -86,7 +63,9 @@ class BugBranchLinker:
         except ValueError:
             raise BadLineInBugsProperty('Invalid bug reference: %s' % url)
 
-        # Make sure the status is acceptable.
+        # We may want to check the status of the link when we modify the
+        # status of the bug task.
+        valid_statuses = {'fixed': 'fixed'}
         try:
             status = valid_statuses[status.lower()]
         except KeyError:
@@ -128,4 +107,6 @@ class BugBranchLinker:
             except NotFoundError:
                 pass
             else:
-                set_bug_branch_status(bug, self.db_branch, status)
+                bug.addBranch(
+                    branch=self.db_branch,
+                    registrant=getUtility(ILaunchpadCelebrities).janitor)

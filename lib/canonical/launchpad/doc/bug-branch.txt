@@ -17,7 +17,7 @@ and when fixes are committed.
 BugBranch links a bug and a branch.
 
     >>> from canonical.launchpad.interfaces import (
-    ...     BugBranchStatus, IBugSet, IPersonSet)
+    ...     IBugSet, IPersonSet)
     >>> from lp.code.interfaces.branchlookup import IBranchLookup
     >>> from canonical.database.sqlbase import flush_database_updates
 
@@ -47,11 +47,6 @@ sample data.
     >>> [bug_branch.branch.name for bug_branch in
     ...  bug.bug_branches]
     [u'release-0.9.2']
-
-By default, a bug branch is in the state BugBranchStatus.INPROGRESS.
-
-    >>> bug_branch.status == BugBranchStatus.INPROGRESS
-    True
 
 Trying to add a branch that is already linked to a bug will simply
 return the existing BugBranch.
