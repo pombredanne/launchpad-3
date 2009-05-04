@@ -441,6 +441,17 @@ class IPOTemplate(IRosettaStats):
         Returns the newly created message set.
         """
 
+    def getOrCreateSharedPOTMsgSet(singular_text, plural_text, context=None):
+        """Finds an existing shared POTMsgSet to use or creates a new one.
+
+        :param singular_text: string containing singular form.
+        :param plural_text: string containing plural form.
+        :param context: context to differentiate between two messages with
+        same singular_text and plural_text.
+        :return: existing or new shared POTMsgSet with a sequence of 0
+        in this POTemplate.
+        """
+
     def importFromQueue(entry_to_import, logger=None, txn=None):
         """Import given queue entry.
 

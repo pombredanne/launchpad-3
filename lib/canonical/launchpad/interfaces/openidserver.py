@@ -158,14 +158,15 @@ class IOpenIDRPConfig(Interface):
         description=_(
             'Authentication requests for this RP are responded to '
             'automatically without explicit user authorization'),
-        required=True, readonly=True)
+        required=True, readonly=False)
 
 
 class IOpenIDRPConfigSet(Interface):
     """The set of OpenID Relying Party configurations."""
     def new(trust_root, displayname, description, logo=None,
             allowed_sreg=None, creation_rationale=PersonCreationRationale
-            .OWNER_CREATED_UNKNOWN_TRUSTROOT, can_query_any_team=False):
+            .OWNER_CREATED_UNKNOWN_TRUSTROOT, can_query_any_team=False,
+            auto_authorize=False):
         """Create a new IOpenIDRPConfig"""
 
     def get(id):

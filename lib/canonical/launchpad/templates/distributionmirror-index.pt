@@ -86,7 +86,8 @@
         </p>
 
         <p tal:condition="not: context/isOfficial">
-          This mirror is an unofficial 
+          This mirror is an
+          <tal:status replace="context/status/title">Official</tal:status>
           <span tal:replace="context/distribution/title">Ubuntu</span> mirror,
           and will not be verified.
         </p>

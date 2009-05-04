@@ -1,0 +1,38 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    xmlns:i18n="http://namespaces.zope.org/i18n"
+    i18n_domain="launchpad">
+
+  <class class="canonical.launchpad.database.packageset.Packageset">
+    <allow
+       interface="canonical.launchpad.interfaces.packageset.IPackagesetViewOnly" />
+    <require
+       permission="launchpad.Edit"
+       interface="canonical.launchpad.interfaces.packageset.IPackagesetEdit" />
+  </class>
+ 
+  <class class="canonical.launchpad.database.packageset.PackagesetSet">
+    <implements interface="canonical.launchpad.interfaces.packageset.IPackagesetSet" />
+  </class>
+
+  <securedutility
+    class="canonical.launchpad.database.packageset.PackagesetSet"
+    provides="canonical.launchpad.interfaces.packageset.IPackagesetSet">
+    <allow attributes="getByName getByOwner setsIncludingSource" />
+    <require permission="launchpad.Edit" attributes="new" />
+  </securedutility>
+
+  <browser:url
+      for="canonical.launchpad.interfaces.IPackagesetSet"
+      path_expression="string:package-sets"
+      parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
+      />
+
+  <browser:url
+      for="canonical.launchpad.interfaces.IPackageset"
+      path_expression="name"
+      parent_utility="canonical.launchpad.interfaces.IPackagesetSet"
+      />
+</configure>
+
