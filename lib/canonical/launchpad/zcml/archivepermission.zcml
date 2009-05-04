@@ -21,12 +21,15 @@
     <allow attributes="checkAuthenticated componentsForUploader
                        uploadersForComponent packagesForUploader
                        uploadersForPackage queueAdminsForComponent
-                       componentsForQueueAdmin permissionsForPerson"/>
+                       componentsForQueueAdmin permissionsForPerson
+                       uploadersForPackageset packagesetsForUploader
+                       packagesetsForSourceUploader isSourceUploadAllowed"/>
     <require
       permission="launchpad.Edit"
       attributes="newPackageUploader newComponentUploader newQueueAdmin
                   deletePackageUploader deleteComponentUploader
-                  deleteQueueAdmin"
+                  deleteQueueAdmin newPackagesetUploader
+                  deletePackagesetUploader"
       />
   </securedutility>
 
