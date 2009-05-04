@@ -198,15 +198,8 @@ class BugContextMenu(ContextMenu):
             text = 'Unsubscribe'
             icon = 'remove'
         else:
-            for team in user.teams_participated_in:
-                if (self.context.bug.isSubscribed(team) or
-                    self.context.bug.isSubscribedToDupes(team)):
-                    text = 'Subscribe/Unsubscribe'
-                    icon = 'edit'
-                    break
-            else:
-                text = 'Subscribe'
-                icon = 'add'
+            text = 'Subscribe'
+            icon = 'add'
         return Link('+subscribe', text, icon=icon)
 
     def addsubscriber(self):
@@ -407,6 +400,14 @@ class BugView(LaunchpadView):
             return False
         return self.context.isSubscribed(user)
 
+    @property
+    def subscription_class(self):
+        """Returns a CSS class name based on subscription status."""
+        if self.context.isSubscribed(self.user):
+            return 'subscribed-true'
+        else:
+            return 'subscribed-false'
+
     def duplicates(self):
         """Return a list of dicts of duplicates.
 
@@ -445,6 +446,8 @@ class BugWithoutContextView:
     The user is redirected, to the oldest IBugTask ('oldest' being
     defined as the IBugTask with the smallest ID.)
     """
+    # XXX: BradCrittenden 2009-04-28 This class can go away since the publisher
+    # now takes care of the redirection to a bug task.
     def redirectToNewBugPage(self):
         """Redirect the user to the 'first' report of this bug."""
         # An example of practicality beating purity.
