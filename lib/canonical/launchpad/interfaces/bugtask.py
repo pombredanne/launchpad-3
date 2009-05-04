@@ -50,8 +50,8 @@ from lazr.enum import (
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
-    BugField, ProductNameField, PublicPersonChoice, StrippedTextLine, Summary,
-    Tag)
+    BugField, ParticipatingPersonChoice, ProductNameField, StrippedTextLine,
+    Summary, Tag)
 from canonical.launchpad.interfaces.bugwatch import (
     IBugWatch, IBugWatchSet, NoBugTrackerFound, UnrecognizedBugTrackerURL)
 from canonical.launchpad.interfaces.component import IComponent
@@ -366,9 +366,10 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
     statusexplanation = Text(
         title=_("Status notes (optional)"), required=False)
     assignee = exported(
-        PublicPersonChoice(title=_('Assigned to'), required=False,
-                           vocabulary='ValidAssignee',
-                           readonly=True))
+        ParticipatingPersonChoice(
+            title=_('Assigned to'), required=False,
+            vocabulary='ValidAssignee',
+            readonly=True))
     bugtargetdisplayname = exported(
         Text(title=_("The short, descriptive name of the target"),
              readonly=True),
