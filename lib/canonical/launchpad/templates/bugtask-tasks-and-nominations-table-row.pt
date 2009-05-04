@@ -96,7 +96,7 @@
         <tal:has_assignee condition="context/assignee">
           <a
             style="display: block; padding: 0.25em; text-decoration: none;"
-            tal:attributes="href string:${context/assignee/fmt:url}/+assignedbugs"
+            tal:attributes="href context/assignee/fmt:url/+assignedbugs"
           >
             <img tal:attributes="src context/assignee/fmt:icon_url" />
             <tal:name replace="context/assignee/fmt:displayname">
