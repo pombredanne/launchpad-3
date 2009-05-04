@@ -78,6 +78,13 @@ class TestGetCodeEmailCommands(TestCase):
         self.assertEqual('status', command.name)
         self.assertEqual(['approved'], command.string_args)
 
+    def test_merge_command(self):
+        # Merge is an alias for the status command.
+        [command] = CodeEmailCommands.getCommands(" merge approved")
+        self.assertIsInstance(command, UpdateStatusEmailCommand)
+        self.assertEqual('merge', command.name)
+        self.assertEqual(['approved'], command.string_args)
+
     def test_reviewer_command(self):
         # Check that the add review command is correctly created.
         [command] = CodeEmailCommands.getCommands(
