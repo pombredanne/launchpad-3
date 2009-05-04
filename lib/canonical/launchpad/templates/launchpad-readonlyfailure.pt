@@ -19,7 +19,7 @@
       </p>
       <p>Normal service will resume as soon as possible. Further information
           about scheduled downtime may be available on the
-          <a href="http://blog.launchpad.net">Launchpad Blog</a>.
+          <a href="http://blog.launchpad.net/maintenance">Launchpad Blog</a>.
       </p>
       <tal:replace tal:replace="structure view/maybeShowTraceback" />
     </div>

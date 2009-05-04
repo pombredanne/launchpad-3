@@ -43,3 +43,6 @@ class BugSubscriptionAddView(LaunchpadFormView):
         return canonical_url(self.context)
 
     cancel_url = next_url
+
+    def validate_widgets(self, data, names=None):
+        super(BugSubscriptionAddView, self).validate_widgets(data, names)
