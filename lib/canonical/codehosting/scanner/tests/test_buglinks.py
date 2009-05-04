@@ -6,10 +6,12 @@ __metaclass__ = type
 
 import unittest
 
-from zope.component import getUtility
+# This non-standard import is necessary to hook up the event system.
+import zope.component.event
+from zope.component import getGlobalSiteManager, getUtility, provideHandler
 
 from canonical.codehosting.scanner.buglinks import (
-    BugBranchLinker, set_bug_branch_status)
+    got_new_revision, BugBranchLinker, set_bug_branch_status)
 from canonical.codehosting.scanner.tests.test_bzrsync import BzrSyncTestCase
 from canonical.config import config
 from canonical.launchpad.interfaces import (
@@ -234,6 +236,12 @@ class TestBugLinking(BzrSyncTestCase):
     We create a BugBranch item if we find a good 'bugs' property in a new
     mainline revision of a branch.
     """
+
+    def setUp(self):
+        BzrSyncTestCase.setUp(self)
+        provideHandler(got_new_revision)
+        self.addCleanup(getGlobalSiteManager().unregisterHandler,
+            got_new_revision)
 
     def makeFixtures(self):
         super(TestBugLinking, self).makeFixtures()

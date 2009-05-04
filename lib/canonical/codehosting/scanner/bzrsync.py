@@ -13,9 +13,7 @@ import logging
 
 import pytz
 
-# This non-standard import is necessary to hook up the event system.
-import zope.component.event
-from zope.component import getUtility, provideHandler
+from zope.component import getUtility
 from zope.event import notify
 
 from bzrlib.branch import BzrBranchFormat4
@@ -28,7 +26,7 @@ from lazr.uri import URI
 
 from canonical.codehosting import iter_list_chunks
 from canonical.codehosting.puller.worker import BranchMirrorer, BranchPolicy
-from canonical.codehosting.scanner import buglinks, events
+from canonical.codehosting.scanner import events
 from canonical.codehosting.scanner.email import BranchMailer
 from canonical.codehosting.scanner.mergedetection import (
     BranchMergeDetectionHandler)
@@ -86,9 +84,6 @@ class BzrSync:
         self.logger = logger
 
         self.db_branch = branch
-        # XXX: Move this up a level to the actual script runner. The scanner
-        # itself shouldn't know at all what listeners it has.
-        provideHandler(buglinks.got_new_revision)
         self._branch_mailer = BranchMailer(self.trans_manager, self.db_branch)
         self._merge_handler = BranchMergeDetectionHandler(self.logger)
 
