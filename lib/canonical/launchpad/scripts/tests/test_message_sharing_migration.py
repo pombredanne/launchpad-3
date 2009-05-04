@@ -609,6 +609,24 @@ class TestTranslationMessageMerging(TestCaseWithFactory,
         TestCaseWithFactory.setUp(self, user='mark@hbd.com')
         TranslatedProductMixin.setUp(self)
 
+    def test_messagesCanStayDiverged(self):
+        # When POTMsgSets with diverged translations are merged, the
+        # most-representative translation becomes shared but the rest
+        # stays diverged.
+        self._makeTranslationMessages(
+            'a', 'b', trunk_diverged=True, stable_diverged=True)
+
+        merge_potmsgsets(self.templates)
+        merge_translationmessages(self.templates)
+
+        # Translations for the existing templates stay as they are.
+        self.assertEqual(self._getTranslations(), ('a', 'b'))
+
+        trunk_message, stable_message = self._getMessages()
+        self.assertNotEqual(trunk_message, stable_message)
+        self.assertEqual(trunk_message.potemplate, None)
+        self.assertEqual(stable_message.potemplate, self.stable_template)
+
     def test_sharingIdenticalMessages(self):
         # Identical translation messages are merged into one.
         self._makeTranslationMessages(
@@ -620,6 +638,76 @@ class TestTranslationMessageMerging(TestCaseWithFactory,
         trunk_message, stable_message = self._getMessages()
         self.assertEqual(trunk_message, stable_message)
         self.assertEqual(trunk_message.potemplate, None)
+
+        # Translations for the existing templates stay as they are.
+        self.assertEqual(self._getTranslations(), ('x', 'x'))
+
+        # Redundant messages are deleted.
+        tms = trunk_message.potmsgset.getAllTranslationMessages()
+        self.assertEqual(list(tms), [trunk_message])
+
+    def test_sharingSuggestions(self):
+        # POTMsgSet merging may leave suggestions diverged.
+        # TranslationMessage merging makes sure those are shared.
+        trunk_message, stable_message = self._makeTranslationMessages(
+            'gah', 'ulp', trunk_diverged=False, stable_diverged=True)
+
+        trunk_message.is_current = False
+        stable_message.is_current = False
+
+        merge_potmsgsets(self.templates)
+        merge_translationmessages(self.templates)
+
+        # Translations for the existing templates stay as they are.
+        self.assertEqual(self._getTranslations(), (None, None))
+
+        # Suggestions all become shared.
+        self.assertEqual(trunk_message.potemplate, None)
+        self.assertEqual(stable_message.potemplate, None)
+
+    def test_mergingLessRepresentativeShared(self):
+        # If a less-representative shared message is merged with a
+        # more-representative diverged message, the previously shared
+        # message stays the shared one.
+        self._makeTranslationMessages(
+            'ips', 'unq', trunk_diverged=True, stable_diverged=False)
+
+        merge_potmsgsets(self.templates)
+        merge_translationmessages(self.templates)
+
+        # Translations for the existing templates stay as they are.
+        self.assertEqual(self._getTranslations(), ('ips', 'unq'))
+
+        trunk_message, stable_message = self._getMessages()
+        self.assertEqual(trunk_message.potemplate, self.trunk_template)
+        self.assertEqual(stable_message.potemplate, None)
+
+    def test_suggestionMergedIntoCurrentMessage(self):
+        # A less-representative suggestion can be merged into an
+        # existing, more-representative current message.  (If the
+        # suggestion's POTMsgSet did not have a current translation,
+        # this implies that it gains one).
+        trunk_message, stable_message = self._makeTranslationMessages(
+            'n', 'n', trunk_diverged=False, stable_diverged=True)
+        stable_message.is_current = False
+
+        self.assertEqual(self._getTranslations(), ('n', None))
+
+        merge_potmsgsets(self.templates)
+        merge_translationmessages(self.templates)
+
+        # The less-representative POTMsgSet gains a translation, because
+        # it now uses the shared translation.
+        self.assertEqual(self._getTranslations(), ('n', 'n'))
+
+        trunk_message, stable_message = self._getMessages()
+        self.assertEqual(trunk_message, stable_message)
+        self.assertEqual(trunk_message.potemplate, None)
+        self.assertTrue(trunk_message.is_current)
+
+        # Redundant messages are deleted.
+        tms = trunk_message.potmsgset.getAllTranslationMessages()
+        self.assertEqual(list(tms), [trunk_message])
 
 
 def test_suite():
