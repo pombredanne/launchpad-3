@@ -13,6 +13,7 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.launchpad.interfaces import TranslationValidationStatus
 from canonical.launchpad.interfaces.translationcommonformat import (
     ITranslationFileData)
+from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.launchpad.testing.factory import LaunchpadObjectFactory
 from canonical.testing import LaunchpadZopelessLayer
 
@@ -795,7 +796,7 @@ class TestTranslationSharedPOFile(unittest.TestCase):
                             "Diverged translation")])
 
 
-class TestTranslationPOFilePOTMsgSetOrdering(unittest.TestCase):
+class TestTranslationPOFilePOTMsgSetOrdering(TestCaseWithFactory):
     """Test ordering of POTMsgSets as returned by PO file methods."""
 
     layer = LaunchpadZopelessLayer
@@ -804,25 +805,24 @@ class TestTranslationPOFilePOTMsgSetOrdering(unittest.TestCase):
         """Set up context to test in."""
         # Create a product with two series and a shared POTemplate
         # in different series ('devel' and 'stable').
-        factory = LaunchpadObjectFactory()
-        self.factory = factory
-        self.foo = factory.makeProduct()
-        self.foo_devel = factory.makeProductSeries(
+        TestCaseWithFactory.setUp(self)
+        self.foo = self.factory.makeProduct()
+        self.foo_devel = self.factory.makeProductSeries(
             name='devel', product=self.foo)
-        self.foo_stable = factory.makeProductSeries(
+        self.foo_stable = self.factory.makeProductSeries(
             name='stable', product=self.foo)
         self.foo.official_rosetta = True
 
         # POTemplate is 'shared' if it has the same name ('messages').
-        self.devel_potemplate = factory.makePOTemplate(
+        self.devel_potemplate = self.factory.makePOTemplate(
             productseries=self.foo_devel, name="messages")
-        self.stable_potemplate = factory.makePOTemplate(self.foo_stable,
-                                                        name="messages")
+        self.stable_potemplate = self.factory.makePOTemplate(self.foo_stable,
+                                                             name="messages")
 
         # We'll use two PO files, one for each series.
-        self.devel_sr_pofile = factory.makePOFile(
+        self.devel_sr_pofile = self.factory.makePOFile(
             'sr', self.devel_potemplate)
-        self.stable_sr_pofile = factory.makePOFile(
+        self.stable_sr_pofile = self.factory.makePOFile(
             'sr', self.stable_potemplate)
 
         # Create two POTMsgSets that can be used to test in what order

@@ -641,17 +641,25 @@ class POFile(SQLBase, POFileMixIn):
         clauses.append(translated_query)
         return (clauses, clause_tables)
 
+    def _getOrderedPOTMsgSets(self, origin_tables, query):
+        """Find all POTMsgSets matching `query` from `origin_tables`.
+
+        Orders the result by TranslationTemplateItem.sequence which must
+        be among `origin_tables`.
+        """
+        store = Store.of(self)
+        results = store.using(origin_tables).find(
+            POTMsgSet, SQL(query))
+        return results.order_by(TranslationTemplateItem.sequence)
+
     def getPOTMsgSetTranslated(self):
         """See `IPOFile`."""
         clauses, clause_tables = self._getTranslatedMessagesQuery()
         clauses.append('TranslationTemplateItem.potmsgset = POTMsgSet.id')
 
-        store = Store.of(self)
         query = ' AND '.join(clauses)
         clause_tables.insert(0, POTMsgSet)
-        results = store.using(clause_tables).find(
-            POTMsgSet, SQL(query))
-        return results.order_by(TranslationTemplateItem.sequence)
+        return self._getOrderedPOTMsgSets(clause_tables, query)
 
 
     def getPOTMsgSetUntranslated(self):
@@ -682,11 +690,9 @@ class POFile(SQLBase, POFileMixIn):
             'TranslationTemplateItem.potmsgset NOT IN (%s)' % (
                 translated_query))
 
-        store = Store.of(self)
         query = ' AND '.join(clauses)
-        results = store.using([POTMsgSet, TranslationTemplateItem]).find(
-            POTMsgSet, SQL(query))
-        return results.order_by(TranslationTemplateItem.sequence)
+        return self._getOrderedPOTMsgSets(
+            [POTMsgSet, TranslationTemplateItem], query)
 
     def getPOTMsgSetWithNewSuggestions(self):
         """See `IPOFile`."""
@@ -733,10 +739,8 @@ class POFile(SQLBase, POFileMixIn):
             """POTMsgSet.id IN (SELECT DISTINCT TranslationMessage.potmsgset
                  FROM TranslationMessage WHERE (%s))
             """ % ' AND '.join(clauses))
-        results = store.using(
-            [POTMsgSet, TranslationTemplateItem]).find(
-            POTMsgSet, SQL(query))
-        return results.order_by(TranslationTemplateItem.sequence)
+        return self._getOrderedPOTMsgSets(
+            [POTMsgSet, TranslationTemplateItem], query)
 
     def getPOTMsgSetChangedInLaunchpad(self):
         """See `IPOFile`."""
@@ -788,12 +792,9 @@ class POFile(SQLBase, POFileMixIn):
             '      WHERE ' + ' AND '.join(imported_clauses) + ')')
         clauses.append(exists_imported_query)
 
-        store = Store.of(self)
         clause_tables.insert(0, POTMsgSet)
         query = ' AND '.join(clauses)
-        results = store.using(clause_tables).find(
-            POTMsgSet, SQL(query))
-        return results.order_by(TranslationTemplateItem.sequence)
+        return self._getOrderedPOTMsgSets(clause_tables, query)
 
     def getPOTMsgSetWithErrors(self):
         """See `IPOFile`."""
@@ -805,12 +806,9 @@ class POFile(SQLBase, POFileMixIn):
                 TranslationValidationStatus.OK),
             ])
 
-        store = Store.of(self)
         query = ' AND '.join(clauses)
         origin=[POTMsgSet, TranslationMessage, TranslationTemplateItem]
-        results = store.using(origin).find(
-            POTMsgSet, SQL(query))
-        return results.order_by(TranslationTemplateItem.sequence)
+        return self._getOrderedPOTMsgSets(origin, query)
 
     def messageCount(self):
         """See `IRosettaStats`."""
