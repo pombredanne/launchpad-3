@@ -317,6 +317,7 @@
                     branch_type
                     name
                     url
+                    whiteboard
                     target
                     mirror_status_message
                     private

@@ -348,11 +348,12 @@ details of the branch.
     ...
     To: Sample Person <test@canonical.com>
     From: No Privileges Person <no-priv@canonical.com>
-    Subject: [Branch ~name12/foogoo/foogoo-svn]
+    Subject: [Branch ~name12/foogoo/foogoo-svn] 
     ...
     New whiteboard value
     <BLANKLINE>
     --
+    lp://dev/~name12/foogoo/foogoo-svn
     http://code.launchpad.dev/~name12/foogoo/foogoo-svn
     <BLANKLINE>
     You are subscribed to branch lp://dev/~name12/foogoo/foogoo-svn.
