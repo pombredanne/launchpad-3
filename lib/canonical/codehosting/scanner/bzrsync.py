@@ -160,6 +160,7 @@ class BzrSync:
         if not initial_scan:
             # XXX: Move this so that there's an event generated here, and the
             # code below is a handler of that event.
+            notify(events.TipChanged(self.db_branch, bzr_branch))
             job = getUtility(IRevisionsAddedJobSource).create(
                 self.db_branch, self.db_branch.last_scanned_id,
                 bzr_branch.last_revision(),

@@ -64,6 +64,10 @@ class NewRevision(ScannerEvent):
         return self.revno is not None
 
 
+class TipChanged(ScannerEvent):
+    """The tip of the branch has changed."""
+
+
 # XXX: Other possible events:
 # class BazaarBranchLoaded(ScannerEvent):
 #     bzr_ancestry = None
