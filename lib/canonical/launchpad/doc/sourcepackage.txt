@@ -501,7 +501,7 @@ and is present in the history for both.
     test-source - 1.0
 
 We will create new source releases in warty and verify the ResultSet
-returned from 'distinctreleases' is ordered by ascending source version.
+returned from 'distinctreleases' is ordered by descending source version.
 
     >>> login('foo.bar@canonical.com')
 
