@@ -49,7 +49,7 @@ class NewRevision(ScannerEvent):
 
         :param db_branch: The database branch.
         :param bzr_branch: The Bazaar branch.
-        :param db_branch: An `IRevision` for the new revision.
+        :param db_revision: An `IRevision` for the new revision.
         :param bzr_revision: The new Bazaar revision.
         :param revno: The revision number of the new revision, None if not
             mainline.
@@ -66,6 +66,16 @@ class NewRevision(ScannerEvent):
 
 class TipChanged(ScannerEvent):
     """The tip of the branch has changed."""
+
+    def __init__(self, db_branch, bzr_branch, initial_scan):
+        """Construct a `TipChanged` event.
+
+        :param db_branch: The database branch.
+        :param bzr_branch: The Bazaar branch.
+        :param initial_scan: Is this the first scan of the branch?
+        """
+        super(TipChanged, self).__init__(db_branch, bzr_branch)
+        self.initial_scan = initial_scan
 
 
 # XXX: Other possible events:

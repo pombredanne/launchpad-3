@@ -115,6 +115,8 @@ class BranchMailer:
 
 @adapter(events.TipChanged)
 def create_revision_added_job(tip_changed):
+    if tip_changed.initial_scan:
+        return
     getUtility(IRevisionsAddedJobSource).create(
         tip_changed.db_branch, tip_changed.db_branch.last_scanned_id,
         tip_changed.bzr_branch.last_revision(),
