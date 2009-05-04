@@ -13,8 +13,6 @@ from zope.interface import implements
 from storm.locals import SQL, Max, Min
 
 from canonical.database.sqlbase import sqlvalues
-from lp.code.model.codeimportresult import CodeImportResult
-from lp.code.model.revision import RevisionAuthor
 from canonical.launchpad.database.emailaddress import EmailAddress
 from canonical.launchpad.database.hwdb import HWSubmission
 from canonical.launchpad.database.oauth import OAuthNonce
@@ -26,6 +24,9 @@ from canonical.launchpad.scripts.base import LaunchpadCronScript
 from canonical.launchpad.utilities.looptuner import LoopTuner
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
+from lp.code.model.codeimportresult import CodeImportResult
+from lp.code.model.revision import RevisionAuthor
+from lp.registry.model.mailinglist import MailingListSubscription
 
 
 ONE_DAY_IN_SECONDS = 24*60*60
@@ -276,6 +277,54 @@ class HWSubmissionEmailLinker(TunableLoop):
         transaction.commit()
 
 
+class MailingListSubscriptionPruner(TunableLoop):
+    """Prune `MailingListSubscription`s pointing at deleted email addresses.
+
+    Users subscribe to mailing lists with one of their verified email
+    addresses.  When they remove an address, the mailing list
+    subscription should go away too.
+    """
+
+    maximum_chunk_size = 100
+
+    def __init__(self):
+        self.subscription_store = IMasterStore(MailingListSubscription)
+        self.email_store = IMasterStore(EmailAddress)
+
+        (self.min_subscription_id,
+         self.max_subscription_id) = self.subscription_store.find(
+            (Min(MailingListSubscription.id),
+             Max(MailingListSubscription.id))).one()
+
+        self.next_subscription_id = self.min_subscription_id
+
+    def isDone(self):
+        return (self.min_subscription_id is None or
+                self.next_subscription_id > self.max_subscription_id)
+
+    def __call__(self, chunk_size):
+        result = self.subscription_store.find(
+            MailingListSubscription,
+            MailingListSubscription.id >= self.next_subscription_id,
+            MailingListSubscription.id < (self.next_subscription_id +
+                                          chunk_size))
+        used_ids = set(result.values(MailingListSubscription.email_addressID))
+        existing_ids = set(self.email_store.find(
+                EmailAddress.id, EmailAddress.id.is_in(used_ids)))
+        deleted_ids = used_ids - existing_ids
+
+        self.subscription_store.find(
+            MailingListSubscription,
+            MailingListSubscription.id >= self.next_subscription_id,
+            MailingListSubscription.id < (self.next_subscription_id +
+                                          chunk_size),
+            MailingListSubscription.email_addressID.is_in(deleted_ids)
+            ).remove()
+
+        self.next_subscription_id += chunk_size
+        transaction.commit()
+
+
 class BaseDatabaseGarbageCollector(LaunchpadCronScript):
     """Abstract base class to run a collection of TunableLoops."""
     script_name = None # Script name for locking and database user. Override.
@@ -304,5 +353,6 @@ class DailyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         CodeImportResultPruner,
         RevisionAuthorEmailLinker,
         HWSubmissionEmailLinker,
+        MailingListSubscriptionPruner,
         ]
 
