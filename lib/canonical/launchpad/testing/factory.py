@@ -474,6 +474,12 @@ class LaunchpadObjectFactory(ObjectFactory):
         return Milestone(product=product, distribution=distribution,
                          name=name)
 
+    def makeProductRelease(self, milestone=None):
+        if milestone is None:
+            milestone = self.makeMilestone()
+        return milestone.createProductRelease(
+            milestone.product.owner, datetime.now(pytz.UTC))
+
     def makeProduct(self, *args, **kwargs):
         """As makeProductNoCommit with an implicit transaction commit.
 
