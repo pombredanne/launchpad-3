@@ -1,0 +1,53 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+  <head>
+  <title>Launchpad DynamicDomUpdater</title>
+
+  <!-- YUI 3.0 Setup -->
+  <script type="text/javascript" src="../../icing/yui/3.0.0pr2/build/yui/yui.js"></script>
+  <link rel="stylesheet" href="../../icing/yui/3.0.0pr2/build/cssreset/reset.css"/>
+  <link rel="stylesheet" href="../../icing/yui/3.0.0pr2/build/cssfonts/fonts.css"/>
+  <link rel="stylesheet" href="../../icing/yui/3.0.0pr2/build/cssbase/base.css"/>
+
+  <script type="text/javascript"
+              src="../../icing/yui/3.0.0pr2/build/oop/oop.js"></script>
+
+  <!-- The module under test -->
+  <script type="text/javascript" src="../../javascript/soyuz/lp_dynamic_dom_updater.js"></script>
+
+  <!-- The test suite -->
+  <script type="text/javascript" src="test_lp_dynamic_dom_updater.js"></script>
+  <style>
+  /* Taken and customized from testlogger.css */
+  #log .yui-console-content { width:44em }
+  #log .yui-console .yui-console-bd { height:30em }
+  #log .yui-console .yui-console-controls { display:none; }
+  #log .yui-console .yui-console-hd { display:none; }
+  #log .yui-console .yui-console-ft { position:absolute;top:0em; }
+
+  #log .yui-console-entry-src { display:none; }
+
+  #log .yui-console-entry-pass .yui-console-entry-cat {
+      background-color: green;
+      font-weight: bold;
+      color: white;
+  }
+  #log .yui-console-entry-fail .yui-console-entry-cat {
+      background-color: red;
+      font-weight: bold;
+      color: white;
+  }
+  #log .yui-console-entry-ignore .yui-console-entry-cat {
+      background-color: #666;
+      font-weight: bold;
+      color: white;
+  }
+  </style>
+</head>
+<body class="yui-skin-sam">
+  <div id="lp_dynamic_dom_updater_example">
+  </div>
+  <div id="log"></div>
+  <div id="updatable_example">Default text to start with.</div>
+</body>
+</html>
