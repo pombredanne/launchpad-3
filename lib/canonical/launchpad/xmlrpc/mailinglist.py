@@ -149,7 +149,6 @@ class MailingListAPIView(LaunchpadXMLRPCView):
                 # Mailman requested a bogus team.  Ignore it.
                 response[team_name] = None
                 continue
-                #return faults.NoSuchTeamMailingList(team_name)
             # Map {address -> (full_name, flags, status)}
             members = {}
             # Hard code flags to 0 currently, meaning the member will get
