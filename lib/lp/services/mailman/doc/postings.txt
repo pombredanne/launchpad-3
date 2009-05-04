@@ -1,18 +1,20 @@
-= Posting =
+Posting
+=======
 
 Only Launchpad members are allowed to post to team mailing lists.  A message
 by a sender who is not a Launchpad member will be summarily discarded.
 
 A team mailing list is created.
 
-    >>> from canonical.launchpad.mailman.testing import helpers
+    >>> from lp.services.mailman.testing import helpers
     >>> list_one = helpers.create_list('itest-one')
 
     # Ignore the list creation notification message.
     >>> smtpd.reset()
 
 
-== Non-member postings ==
+Non-member postings
+-------------------
 
 Postings from addresses that are not registered and verified with Launchpad
 are summarily discarded.
@@ -34,13 +36,14 @@ discarded immediately.
     0
 
 
-== Non-validated member postings ==
+Non-validated member postings
+-----------------------------
 
 Similarly, an address that has been registered with Launchpad but not verified
 will also be summarily discarded.  Anne registers with Launchpad but does not
 validate her alternative address.
 
-    >>> from canonical.launchpad.ftests.mailinglists_helper import (
+    >>> from lp.registry.tests.mailinglists_helper import (
     ...     get_alternative_email)
     >>> from canonical.launchpad.ftests import login, logout
     >>> from canonical.launchpad.interfaces import EmailAddressStatus
@@ -71,7 +74,8 @@ gets discarded.
     0
 
 
-== Unsubscribed Launchpad members ==
+Unsubscribed Launchpad members
+------------------------------
 
 Anne's preferred email address is still validated, and she posts a message
 from that address.  However, because she has not yet joined the team or
@@ -331,14 +335,15 @@ This message is delivered to the archive.
     <BLANKLINE>
 
 
-== Unsubscribed team member ==
+Unsubscribed team member
+------------------------
 
 Once Anne joins the team, she may post to it, though until she subscribes to
 the mailing list, she will not get a copy of the message.
 
     # Reset Anne's MessageApproval so that she'll no longer be pre-approved to
     # post to this mailing list.
-    >>> from canonical.launchpad.database.mailinglist import MessageApproval
+    >>> from lp.registry.model.mailinglist import MessageApproval
     >>> from canonical.database.sqlbase import sqlvalues
     >>> approvals = MessageApproval.select("""
     ...     MessageApproval.posted_by = %s
@@ -401,7 +406,8 @@ In addition, the in-house MHonArc archiver has archived this message.
     ['elephant', 'emu']
 
 
-== Verified and registered member postings ==
+Verified and registered member postings
+---------------------------------------
 
 Anne now subscribes to the team's mailing list.  She gets a copy of each
 message posted to the mailing list.
@@ -563,7 +569,8 @@ There should also be no held requests pending.
     0
 
 
-== Leaving and re-joining the team ==
+Leaving and re-joining the team
+-------------------------------
 
 Anne now leaves the team, but she does not unsubscribe from the mailing list.
 
@@ -646,7 +653,8 @@ not need to re-subscribe to the mailing list.
     <iguana>
 
 
-== First post moderation ==
+First post moderation
+---------------------
 
 Normally, Launchpad members who are not subscribed to the mailing list will
 have their posts held for moderation.
@@ -800,7 +808,8 @@ post to just that mailing list without further approval required.
     <otter>
 
 
-== Preventing archiver forgeries ==
+Preventing archiver forgeries
+-----------------------------
 
 We archive messages by sending them to a special address owned by the Mail
 Archive <http://www.mail-archive.com>.  This address becomes a recipient of
@@ -824,7 +833,8 @@ messages to the list.
     0
 
 
-== Large messages ==
+Large messages
+--------------
 
 Only messages which are less than about 40k in size are allowed straight
 through on the mailing list.  A message bigger than that will be held for

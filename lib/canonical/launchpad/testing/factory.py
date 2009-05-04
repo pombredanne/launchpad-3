@@ -419,16 +419,28 @@ class LaunchpadObjectFactory(ObjectFactory):
                  visibility=None):
         """Create and return a new, arbitrary Team.
 
-        :param owner: The IPerson to use as the team's owner.
+        :param owner: The person or person name to use as the team's owner.
+            If not given, a person will be auto-generated.
+        :type owner: `IPerson` or string
         :param displayname: The team's display name.  If not given we'll use
             the auto-generated name.
+        :type string:
         :param email: The email address to use as the team's contact address.
+        :type email: string
         :param subscription_policy: The subscription policy of the team.
+        :type subscription_policy: `TeamSubscriptionPolicy`
         :param visibility: The team's visibility. If it's None, the default
             (public) will be used.
+        :type visibility: `PersonVisibility`
+        :return: The new team
+        :rtype: `ITeam`
         """
         if owner is None:
             owner = self.makePerson()
+        elif isinstance(owner, basestring):
+            owner = getUtility(IPersonSet).getByName(owner)
+        else:
+            pass
         if name is None:
             name = self.getUniqueString('team-name')
         if displayname is None:
