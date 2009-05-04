@@ -214,7 +214,7 @@ class IProductSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
                           "if this series is not maintained in Bazaar.")))
 
     translations_autoimport_mode = Choice(
-        title=_('Import mode'),
+        title=_('Import settings'),
         vocabulary=TranslationsBranchImportMode,
         required=True,
         description=_("Specify which files will be imported from the "

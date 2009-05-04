@@ -1,4 +1,5 @@
-= XMLRPC access to mailing list memberships =
+XMLRPC access to mailing list memberships
+=========================================
 
 Just like the creation and deactivation of mailing lists, membership changes
 to mailing lists must be communicated to Mailman over XMLRPC.  Because the
@@ -12,7 +13,8 @@ words, Mailman polls Launchpad to see if there is any work for Mailman to do.
     >>> # providing `mailinglist_api` and `commit` for impedance matching.
 
 
-== Requesting membership information ==
+Requesting membership information
+---------------------------------
 
 Mailman requests membership information for specific list of teams.  Let's
 create and populate some teams to demonstrate.
@@ -37,7 +39,9 @@ create and populate some teams to demonstrate.
     >>> for person in people:
     ...     person.join(team_one)
     ...     list_one.subscribe(person)
-    >>> import transaction
+
+    # The IMailingListSet APIs use the SLAVE_FLAVOR since they are read-only.
+    # Commit the transaction so that the changes are visible there.
     >>> transaction.commit()
 
 Asking for the membership information for team-one's list returns all the
@@ -82,6 +86,8 @@ at a time.  Mix things up for the fun of it.
     ...         continue
     ...     person.join(team_two)
     ...     list_two.subscribe(person)
+    >>> transaction.commit()
+
     >>> info = mailinglist_api.getMembershipInformation(
     ...     ('team-one', 'team-two'))
     >>> print_info(info)
@@ -117,7 +123,8 @@ at a time.  Mix things up for the fun of it.
         no-priv@canonical.com   No Privileges Person    0 X
 
 
-== Membership tests ==
+Membership tests
+----------------
 
 Mailman may also occasionally ask whether a specific email address is
 registered with Launchpad.  It does this as a simple line-of-defense against
@@ -149,7 +156,8 @@ registered either.
     False
 
 
-== Standing tests ==
+Standing tests
+--------------
 
 Mailman may also occasionally ask whether a specific email address is a
 Launchpad member in good (or better) standing.  It does this when a non-member
@@ -179,14 +187,16 @@ standing.
 
     >>> from canonical.launchpad.interfaces import PersonalStanding
     >>> anne.personal_standing = PersonalStanding.POOR
-    >>> flush_database_updates()
+    >>> transaction.commit()
+
     >>> mailinglist_api.inGoodStanding('anne.person@example.com')
     False
 
 Anne makes amends and the Launchpad administrator improves her standing.
 
     >>> anne.personal_standing = PersonalStanding.GOOD
-    >>> flush_database_updates()
+    >>> transaction.commit()
+
     >>> mailinglist_api.inGoodStanding('anne.person@example.com')
     True
 
@@ -194,12 +204,14 @@ It turns out that Anne is a wonderful person!  Her standing is really
 excellent.
 
     >>> anne.personal_standing = PersonalStanding.EXCELLENT
-    >>> flush_database_updates()
+    >>> transaction.commit()
+
     >>> mailinglist_api.inGoodStanding('anne.person@example.com')
     True
 
 
-== The archive address ==
+The archive address
+-------------------
 
 We archive messages by sending them to The Mail Archive
 <http://www.mail-archive.com>.  They automatically determine which list a
@@ -267,7 +279,8 @@ Launchpad.
     >>> new_address = emailset.new(
     ...     config.mailman.archive_address, fred,
     ...     EmailAddressStatus.VALIDATED, account=fred.account)
-    >>> flush_database_updates()
+    >>> transaction.commit()
+
     >>> mailinglist_api.isRegisteredInLaunchpad(config.mailman.archive_address)
     False
 
@@ -303,7 +316,8 @@ included.
     False
     >>> anne.join(team_three)
     >>> list_three.subscribe(anne)
-    >>> flush_database_updates()
+    >>> transaction.commit()
+
     >>> info = mailinglist_api.getMembershipInformation(
     ...     ('team-one', 'team-two', 'team-three'))
     >>> print_info(info, full=True)
@@ -345,12 +359,11 @@ included.
         no-priv@canonical.com     No Privileges Person  0 X
 
 
-== Error cases ==
+Error cases
+-----------
 
 If Mailman requests the membership information for a team that doesn't exist,
-the method will raise a fault.
+the team name will have a value of None in the resulting dictionary.
 
     >>> mailinglist_api.getMembershipInformation(('no-such-team',))
-    Traceback (most recent call last):
-    ...
-    Fault: <Fault 140: 'No such team mailing list: no-such-team'>
+    {'no-such-team': None}
