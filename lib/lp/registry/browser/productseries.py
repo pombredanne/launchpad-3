@@ -675,16 +675,7 @@ class ProductSeriesDeleteView(RegistryDeleteViewMixin, LaunchpadEditFormView):
         """Detach and delete associated objects and remove the series."""
         product = self.context.product
         name = self.context.name
-        # Delete all milestones, releases, and files.
-        # Any associated bugtasks and specifications are untargeted.
-        for milestone in self.milestones:
-            self._deleteMilestone(milestone)
-        # Series are not deleted because some objects like translations are
-        # problematic. The series is assigned to obsolete-junk. They must be
-        # renamed to avoid name collision.
-        date_time = self.context.datecreated.strftime('%Y%m%d-%H%M%S')
-        self.context.name = '%s-%s-%s' % (product.name, name, date_time)
-        self.context.product = getUtility(ILaunchpadCelebrities).obsolete_junk
+        self._deleteProductSeries(self.context)
         self.request.response.addInfoNotification(
             "Series %s deleted." % name)
         self.next_url = canonical_url(product)

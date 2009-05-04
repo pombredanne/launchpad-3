@@ -95,7 +95,7 @@ This routine will return the tag with the given id:
 
   >>> find_tag_by_id = test.globs['find_tag_by_id']
   >>> content = '''
-  ... <html>
+  ... <html id="root">
   ...   <head><title>Foo</title></head>
   ...   <body>
   ...     <p id="para-1">Paragraph 1</p>
@@ -128,6 +128,15 @@ exception.
   Traceback (most recent call last):
   ...
   DuplicateIdError: Found 2 elements with id 'duplicate'
+
+A BeautifulSoup PageElement can be passed instead of a string so that
+content can be retrieved without reparsing the entire page.
+
+  >>> parsed_content = find_tag_by_id(content, 'root')
+  >>> print parsed_content.name
+  html
+  >>> print find_tag_by_id(parsed_content, 'para-1')
+  <p id="para-1">Paragraph 1</p>
 
 
 == find_tags_by_class() ==

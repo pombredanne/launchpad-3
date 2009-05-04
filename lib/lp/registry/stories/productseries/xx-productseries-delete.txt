@@ -51,11 +51,11 @@ milestones and releases are linked.
     Delete Mozilla Firefox Series: trunk
 
     >>> contents = find_main_content(owner_browser.contents)
-    >>> print extract_text(contents.find('p', {'id': 'milestones-and-files'}))
+    >>> print extract_text(find_tag_by_id(contents, 'milestones-and-files'))
     The associated milestones and releases
     and their files will be also be deleted:
 
-    >>> print extract_text(contents.find('ul', {'id': 'milestones'}))
+    >>> print extract_text(find_tag_by_id(contents, 'milestones'))
     0.9.2 "One (secure) Tree Hill"
     0.9.1 "One Tree Hill (v2)"
     0.9 "One Tree Hill"
@@ -64,11 +64,11 @@ milestones and releases are linked.
     >>> print owner_browser.getLink('0.9.2 "One (secure) Tree Hill"')
     <Link text='0.9.2 "One (secure) Tree Hill"' ...>
 
-    >>> print extract_text(contents.find('ul', {'id': 'files'}))
+    >>> print extract_text(find_tag_by_id(contents, 'files'))
     firefox-0.9.2.orig.tar.gz
 
     >>> print extract_text(
-    ...     contents.find('ul', {'id': 'bugtasks-and-blueprints'}))
+    ... find_tag_by_id(contents, 'bugtasks-and-blueprints'))
     Support E4X in EcmaScript
 
 The owner deletes the series and the project page is displayed. He reads

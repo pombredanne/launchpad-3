@@ -75,13 +75,6 @@
         </p>
       </tal:can-delete>
     </div>
-    <div class="actions" metal:fill-slot="buttons">
-      <input tal:repeat="action view/actions"
-             tal:replace="structure action/render"
-        />
-      <tal:can-delete condition="view/can_delete">or</tal:can-delete>
-      <a tal:attributes="href view/cancel_url">Cancel</a>
-    </div>
   </div>
 </div>
 
