@@ -79,7 +79,7 @@
       // setting.  User can choose to edit it back out, if they wish.
       function visibility_on_change(e) {
         var visibility = e.target;
-        var prefix = (visibility.get('value') == 'PRIVATE_MEMBERSHIP')
+        var prefix = (visibility.get('value') == 'PRIVATE')
           ? '$private_prefix' : '';
         // XXX: Brad Crittenden 2009-01-30
         // bug=http://yuilibrary.com/projects/yui3/ticket/2423101
