@@ -7,14 +7,18 @@ let's put this check in a convenient function.
     >>> from lp.code.interfaces.branchjob import (
     ...     IRosettaUploadJobSource)
     >>> job_counter = 0
-    >>> def isUploadJobCreatedForBranch(productseries):
+    >>> def isUploadJobCreatedForBranch(productseries, 
+    ...                                 force_translations_upload=None):
     ...     global job_counter
     ...     ready_jobs = list(getUtility(IRosettaUploadJobSource).iterReady())
     ...     if len(ready_jobs) <= job_counter:
     ...         return False
     ...     job = ready_jobs[job_counter]
     ...     job_counter += 1
-    ...     return productseries.branch == job.branch
+    ...     if force_translations_upload is None:
+    ...         return productseries.branch == job.branch
+    ...     return (productseries.branch == job.branch and
+    ...            force_translations_upload == job.force_translations_upload)
 
 Also, we need to set-up a branch for the product of this productseries. The
 last_mirrored_id and the last_scanned_id is set to the same value to pretend
@@ -98,11 +102,12 @@ templates from bazaar branches hosted on Launchpad.
     >>> [field.__name__ for field in view.form_fields]
     ['translations_autoimport_mode']
 
-This setting is represented by a LaunchpadRadioWidgetWithDescription.
+This setting is represented by a SettingsRadioWidget which is derived
+from LaunchpadRadioWidgetWithDescription.
 
     >>> view.setUpWidgets()
     >>> view.widgets['translations_autoimport_mode']
-    <...LaunchpadRadioWidgetWithDescription object at...>
+    <...SettingsRadioWidget object at...>
 
 Submitting the form via "Change settings" will update the corresponding
 attribute of the ProductSeries.
@@ -114,13 +119,32 @@ attribute of the ProductSeries.
     >>> view = ProductSeriesTranslationsSettingsView(
     ...     productseries, request)
     >>> print productseries.translations_autoimport_mode.title
-    No import.
+    None
     >>> view.initialize()
     >>> print productseries.translations_autoimport_mode.title
-    Import template files.
+    Import template files
 
 Also, a branch job to upload the full set of translation files has been
 created to create the initial database entries from the files in the branch.
 
     >>> print isUploadJobCreatedForBranch(productseries)
     True
+
+= ProductSeriesTranslationsBzrImportView =
+When requesting a one-time import of translation files, an Upload job
+is created that has force_translations_upload set to true.
+
+    >>> productseries = factory.makeProductSeries()
+    >>> productseries.branch = makeScannedProductBranch(productseries)
+    >>> from lp.registry.browser.productseries import (
+    ...     ProductSeriesTranslationsBzrImportView)
+    >>> request = LaunchpadTestRequest(
+    ...     method='POST',
+    ...     form={'field.actions.request_import':
+    ...               'Request one-time import'})
+    >>> view = ProductSeriesTranslationsBzrImportView(
+    ...     productseries, request)
+    >>> view.initialize()
+    >>> print isUploadJobCreatedForBranch(productseries, True)
+    True
+

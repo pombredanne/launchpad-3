@@ -72,7 +72,7 @@ from canonical.config import config
 from canonical.database.sqlbase import cursor
 from canonical.launchpad import _
 from canonical.cachedproperty import cachedproperty
-from canonical.launchpad.fields import PublicPersonChoice
+from canonical.launchpad.fields import ParticipatingPersonChoice
 from canonical.launchpad.mailnotification import get_unified_diff
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.vocabularies.dbobjects import MilestoneVocabulary
@@ -1217,7 +1217,7 @@ class BugTaskEditView(LaunchpadEditFormView):
             self.form_fields.get('assignee', False)):
             # Make the assignee field editable
             self.form_fields = self.form_fields.omit('assignee')
-            self.form_fields += formlib.form.Fields(PublicPersonChoice(
+            self.form_fields += formlib.form.Fields(ParticipatingPersonChoice(
                 __name__='assignee', title=_('Assigned to'), required=False,
                 vocabulary='ValidAssignee', readonly=False))
             self.form_fields['assignee'].custom_widget = CustomWidgetFactory(
