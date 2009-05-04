@@ -38,7 +38,7 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.menu import structured
 from canonical.widgets import DateTimeWidget
 
-from lp.registry.browser.milestone import RegistryDeleteViewMixin
+from lp.registry.browser import RegistryDeleteViewMixin
 
 
 class ProductReleaseNavigation(Navigation):

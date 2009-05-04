@@ -705,6 +705,8 @@ launchpad_unexpectedformdata = 'Error: Unexpected form data'
 
 launchpad_librarianfailure = "Sorry, you can't do this right now"
 
+launchpad_readonlyfailure = "Sorry, you can't do this right now"
+
 # launchpad_widget_macros doesn't need a title.
 
 launchpadstatisticset_index = 'Launchpad statistics'
@@ -1123,6 +1125,9 @@ productseries_review = ContextTitle('Review %s')
 productseries_translations_upload = 'Request new translations upload'
 
 productseries_translations_settings = 'Settings for translations'
+
+productseries_translations_bzr_import = (
+    'Request translations import from Bazaar branch')
 
 productseries_ubuntupkg = 'Ubuntu source package'
 

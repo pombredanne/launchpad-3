@@ -12,7 +12,6 @@ __all__ = [
     'MilestoneNavigation',
     'MilestoneOverviewNavigationMenu',
     'MilestoneSetNavigation',
-    'RegistryDeleteViewMixin',
     ]
 
 from zope.component import getUtility
@@ -22,7 +21,8 @@ from zope.schema import Choice
 from canonical.launchpad import _
 from canonical.cachedproperty import cachedproperty
 
-from canonical.launchpad.interfaces.bugtask import BugTaskSearchParams, IBugTaskSet
+from canonical.launchpad.interfaces.bugtask import (
+    BugTaskSearchParams, IBugTaskSet)
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lp.registry.interfaces.milestone import (
     IMilestone, IMilestoneSet, IProjectMilestone)
@@ -32,6 +32,9 @@ from canonical.launchpad.webapp import (
     enabled_with_permission, GetitemNavigation, Navigation, NavigationMenu)
 
 from canonical.widgets import DateWidget
+
+from lp.registry.browser import RegistryDeleteViewMixin
+from lp.registry.browser.product import ProductDownloadFileMixin
 
 
 class MilestoneSetNavigation(GetitemNavigation):
@@ -98,16 +101,46 @@ class MilestoneOverviewNavigationMenu(NavigationMenu):
     links = ()
 
 
-class MilestoneView(LaunchpadView):
+class MilestoneView(LaunchpadView, ProductDownloadFileMixin):
+
+    def __init__(self, context, request):
+        """See `LaunchpadView`.
+
+        This view may be used with a milestone or a release. The milestone
+        and release (if it exists) are accessible are attributes. The context
+        attribute will always be the milestone.
+
+        :param context: `IMilestone` or `IProductRelease`.
+        :param request: `ILaunchpadRequest`.
+        """
+        super(LaunchpadView, self).__init__(context, request)
+        if IMilestone.providedBy(context):
+            self.milestone = context
+            self.release = context.product_release
+        else:
+            self.milestone = context.milestone
+            self.release = context
+        self.context = self.milestone
+
+    def initialize(self):
+        """See `LaunchpadView`."""
+        self.form = self.request.form
+        self.processDeleteFiles()
+
+    def getReleases(self):
+        """See `ProductDownloadFileMixin`."""
+        return set([self.release])
 
     # Listify and cache the specifications and bugtasks to avoid making
     # the same query over and over again when evaluating in the template.
     @cachedproperty
     def specifications(self):
+        """The list of specifications targeted to this milestone."""
         return list(self.context.specifications)
 
     @cachedproperty
     def bugtasks(self):
+        """The list of bugtasks targeted to this milestone."""
         user = getUtility(ILaunchBag).user
         params = BugTaskSearchParams(user, milestone=self.context,
                     orderby=['-importance', 'datecreated', 'id'],
@@ -129,19 +162,21 @@ class MilestoneView(LaunchpadView):
 
     @property
     def bugtask_count_text(self):
+        """The formatted count of bugs for this milestone."""
         count = len(self.bugtasks)
         if count == 1:
-            return "1 bug targeted"
+            return '<strong>1 bug</strong>'
         else:
-            return "%d bugs targeted" % count
+            return '<strong>%d bugs</strong>' % count
 
     @property
     def specification_count_text(self):
+        """The formatted count of specifications for this milestone."""
         count = len(self.specifications)
         if count == 1:
-            return "1 blueprint targeted"
+            return '<strong>1 blueprint</strong>'
         else:
-            return "%d blueprints targeted" % count
+            return '<strong>%d blueprints</strong>' % count
 
     @property
     def is_project_milestone(self):
@@ -153,7 +188,8 @@ class MilestoneView(LaunchpadView):
 
     @property
     def has_bugs_or_specs(self):
-        return self.bugtasks or self.specifications
+        """Does the milestone have any bugtasks and specifications?"""
+        return len(self.bugtasks) > 0  or len(self.specifications) > 0
 
 
 class MilestoneAddView(LaunchpadFormView):
@@ -178,6 +214,10 @@ class MilestoneAddView(LaunchpadFormView):
     @property
     def action_url(self):
         return "%s/+addmilestone" % canonical_url(self.context)
+
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
 
 
 class MilestoneEditView(LaunchpadEditFormView):
@@ -237,53 +277,6 @@ class MilestoneEditView(LaunchpadEditFormView):
         self.next_url = canonical_url(self.context)
 
 
-class RegistryDeleteViewMixin:
-    """A mixin class that provides common behaviour for registry deletions."""
-
-    @property
-    def cancel_url(self):
-        """The context's URL."""
-        return canonical_url(self.context)
-
-    def _getBugtasks(self, milestone):
-        """Return the list `IBugTask`s targeted to the milestone."""
-        params = BugTaskSearchParams(milestone=milestone, user=None)
-        bugtasks = getUtility(IBugTaskSet).search(params)
-        return list(bugtasks)
-
-    def _getSpecifications(self, milestone):
-        """Return the list `ISpecification`s targeted to the milestone."""
-        return list(milestone.specifications)
-
-    def _getProductRelease(self, milestone):
-        """The `IProductRelease` associated with the milestone."""
-        return milestone.product_release
-
-    def _getProductReleaseFiles(self, milestone):
-        """The list of `IProductReleaseFile`s related to the milestone."""
-        product_release = self._getProductRelease(milestone)
-        if product_release is not None:
-            return list(product_release.files)
-        else:
-            return []
-
-    def _deleteMilestone(self, milestone):
-        """Delete a milestone and unlink releated objects."""
-        for bugtask in self._getBugtasks(milestone):
-            bugtask.milestone = None
-        for spec in self._getSpecifications(milestone):
-            spec.milestone = None
-        self._deleteRelease(milestone.product_release)
-        milestone.destroySelf()
-
-    def _deleteRelease(self, release):
-        """Delete a release and it's files."""
-        if release is not None:
-            for release_file in release.files:
-                release_file.destroySelf()
-            release.destroySelf()
-
-
 class MilestoneDeleteView(LaunchpadFormView, RegistryDeleteViewMixin):
     """A view for deleting an `IMilestone`."""
     schema = IMilestone
@@ -313,11 +306,6 @@ class MilestoneDeleteView(LaunchpadFormView, RegistryDeleteViewMixin):
     def product_release_files(self):
         """The list of `IProductReleaseFile`s related to the milestone."""
         return self._getProductReleaseFiles(self.context)
-
-    @property
-    def label(self):
-        """The form label."""
-        return 'Delete %s' % self.context.title
 
     @action('Delete this Milestone', name='delete')
     def delete_action(self, action, data):

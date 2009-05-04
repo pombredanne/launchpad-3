@@ -176,6 +176,7 @@ from canonical.launchpad.interfaces.vpotexport import *
 from lp.registry.interfaces.wikiname import *
 from canonical.launchpad.interfaces.poexportrequest import *
 from canonical.launchpad.interfaces.packagediff import *
+from canonical.launchpad.interfaces.packageset import *
 
 
 from lp.answers.interfaces.answercontact import *

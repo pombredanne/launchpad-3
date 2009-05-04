@@ -51,7 +51,8 @@ from lp.answers.model.faq import FAQ, FAQSearch
 from lp.registry.model.mentoringoffer import MentoringOffer
 from lp.registry.model.milestone import (
     HasMilestonesMixin, Milestone)
-from lp.registry.interfaces.person import validate_public_person
+from lp.registry.interfaces.person import (
+    validate_person_not_private_membership, validate_public_person)
 from lp.registry.model.announcement import MakesAnnouncements
 from canonical.launchpad.database.packaging import Packaging
 from lp.registry.model.pillar import HasAliasMixin
@@ -185,7 +186,9 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         notNull=True)
     bug_supervisor = ForeignKey(
         dbName='bug_supervisor', foreignKey='Person',
-        storm_validator=validate_public_person, notNull=False, default=None)
+        storm_validator=validate_person_not_private_membership,
+        notNull=False,
+        default=None)
     security_contact = ForeignKey(
         dbName='security_contact', foreignKey='Person',
         storm_validator=validate_public_person, notNull=False,
@@ -279,16 +282,12 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
     def _validate_license_approved(self, attr, value):
         """Ensure license approved is only applied to the correct licenses."""
-        # XXX: BradCrittenden 2008-07-16 Is the check for _SO_creating still
-        # needed for storm?
         if not self._SO_creating:
             licenses = self.licenses
             if value:
-                assert (
-                    License.OTHER_OPEN_SOURCE in licenses and
-                    License.OTHER_PROPRIETARY not in licenses), (
-                    "Only licenses of 'Other/Open Source' and not "
-                    "'Other/Proprietary' may be marked as license_approved.")
+                assert License.OTHER_PROPRIETARY not in licenses, (
+                    "Projects with 'Other/Proprietary' licenses may not be "
+                    "marked as license_approved.")
                 # Approving a license implies it has been reviewed.  Force
                 # `license_reviewed` to be True.
                 self.license_reviewed = True
@@ -1287,4 +1286,3 @@ class ProductSet:
             Product.sourceforgeproject != None)
 
         return store.find(Product, conditions)
-

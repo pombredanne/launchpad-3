@@ -18,7 +18,7 @@ from twisted.trial.unittest import TestCase
 
 from canonical.config import config
 from canonical.codehosting.codeimport.dispatcher import CodeImportDispatcher
-from canonical.codehosting.codeimport.tests.test_foreigntree import (
+from canonical.codehosting.codeimport.tests.servers import (
     _make_silent_logger)
 from canonical.launchpad import scripts
 from canonical.testing.layers import TwistedLaunchpadZopelessLayer

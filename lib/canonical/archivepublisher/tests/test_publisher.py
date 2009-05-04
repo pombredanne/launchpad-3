@@ -807,6 +807,14 @@ class TestPublisher(TestPublisherBase):
         self.assertNotEqual(
             text, file, "Python-apt no longer creates bad SHA256 sums.")
 
+    def _getReleaseFileOrigin(self, contents):
+        origin_header = 'Origin: '
+        [origin_line] = [
+            line for line in contents.splitlines()
+            if line.startswith(origin_header)]
+        origin = origin_line.replace(origin_header, '')
+        return origin
+
     def testReleaseFile(self):
         """Test release file writing.
 
@@ -829,8 +837,16 @@ class TestPublisher(TestPublisherBase):
 
         release_file = os.path.join(
             self.config.distsroot, 'breezy-autotest', 'Release')
-        release_contents = open(release_file).read().splitlines()
+        release_contents = open(release_file).read()
 
+        # Primary archive distroseries Release 'Origin' contains
+        # the distribution displayname.
+        self.assertEqual(
+            self._getReleaseFileOrigin(release_contents), 'ubuntutest')
+
+        # XXX cprov 20090427: we should write a Release file parsing for
+        # making tests less cryptic.
+        release_contents = release_contents.splitlines()
         md5_header = 'MD5Sum:'
         self.assertTrue(md5_header in release_contents)
         md5_header_index = release_contents.index(md5_header)
@@ -857,6 +873,15 @@ class TestPublisher(TestPublisherBase):
             first_sha256_line,
             (' 297125e9b0f5da85552691597c9c4920aafd187e18a4e01d2ba70d'
              '8d106a6338              114 main/source/Release'))
+
+        # Primary archive architecture Release files 'Origin' contain
+        # the distribution displayname.
+        arch_release_file = os.path.join(
+            publisher._config.distsroot, 'breezy-autotest',
+            'main/source/Release')
+        arch_release_contents = open(arch_release_file).read()
+        self.assertEqual(
+            self._getReleaseFileOrigin(arch_release_contents), 'ubuntutest')
 
     def testReleaseFileForPPA(self):
         """Test release file writing for PPA
@@ -891,17 +916,13 @@ class TestPublisher(TestPublisherBase):
 
         release_file = os.path.join(
             archive_publisher._config.distsroot, 'breezy-autotest', 'Release')
-        release_contents = open(release_file).read().splitlines()
+        release_contents = open(release_file).read()
+        self.assertEqual(
+            self._getReleaseFileOrigin(release_contents), 'LP-PPA-cprov')
 
-        origin_header = 'Origin: '
-        origin_lines = [line for line in release_contents if
-                        line.startswith(origin_header)]
-        [origin] = origin_lines
-        # Throw away 'Origin: ' prefix.
-        origin = origin.replace(origin_header, '')
-        self.assertEqual(origin,
-            'LP-PPA-%s' % archive_publisher.archive.owner.name)
-
+        # XXX cprov 20090427: we should write a Release file parsing for
+        # making tests less cryptic.
+        release_contents = release_contents.splitlines()
         md5_header = 'MD5Sum:'
         self.assertTrue(md5_header in release_contents)
         md5_header_index = release_contents.index(md5_header)
@@ -967,15 +988,48 @@ class TestPublisher(TestPublisherBase):
         arch_release_file = os.path.join(
             archive_publisher._config.distsroot, 'breezy-autotest',
             'main/source/Release')
-        arch_release_contents = open(arch_release_file).read().splitlines()
-        origin_lines = [
-            line for line in arch_release_contents
-            if line.startswith(origin_header)
-            ]
-        [origin] = origin_lines
+        arch_release_contents = open(arch_release_file).read()
         self.assertEqual(
-            origin,
-            'Origin: LP-PPA-%s' % archive_publisher.archive.owner.name)
+            self._getReleaseFileOrigin(arch_release_contents), 'LP-PPA-cprov')
+
+    def testReleaseFileForNamedPPA(self):
+        # Named PPA have a distint Origin: field, so packages from it can
+        # be pinned if necessary.
+
+        # Create a named-ppa for Celso.
+        cprov = getUtility(IPersonSet).getByName('cprov')
+        named_ppa = getUtility(IArchiveSet).new(
+            owner=cprov, name='testing', distribution=self.ubuntutest,
+            purpose=ArchivePurpose.PPA)
+
+        # Setup the publisher for it and publish its repository.
+        allowed_suites = []
+        archive_publisher = getPublisher(
+            named_ppa, allowed_suites, self.logger)
+        pub_source = self.getPubSource(
+            filecontent='Hello world', archive=named_ppa)
+
+        archive_publisher.A_publish(False)
+        self.layer.txn.commit()
+        archive_publisher.C_writeIndexes(False)
+        archive_publisher.D_writeReleaseFiles(False)
+
+        # Check the distinct Origin: field content in the main Release file
+        # and the architecture specific one.
+        release_file = os.path.join(
+            archive_publisher._config.distsroot, 'breezy-autotest', 'Release')
+        release_contents = open(release_file).read()
+        self.assertEqual(
+            self._getReleaseFileOrigin(release_contents),
+            'LP-PPA-cprov-testing')
+
+        arch_release_file = os.path.join(
+            archive_publisher._config.distsroot, 'breezy-autotest',
+            'main/source/Release')
+        arch_release_contents = open(arch_release_file).read()
+        self.assertEqual(
+            self._getReleaseFileOrigin(arch_release_contents),
+            'LP-PPA-cprov-testing')
 
     def testReleaseFileForPartner(self):
         """Test Release file writing for Partner archives.
