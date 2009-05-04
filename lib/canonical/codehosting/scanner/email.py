@@ -11,9 +11,18 @@ from zope.component import adapter, getUtility
 
 from canonical.codehosting.scanner import events
 from canonical.config import config
-from canonical.launchpad.interfaces import BranchSubscriptionNotificationLevel
 from lp.code.interfaces.branchjob import (
     IRevisionsAddedJobSource, IRevisionMailJobSource)
+from lp.code.interfaces.branchsubscription import (
+    BranchSubscriptionNotificationLevel)
+
+
+def subscribers_want_notification(db_branch):
+    diff_levels = (
+        BranchSubscriptionNotificationLevel.DIFFSONLY,
+        BranchSubscriptionNotificationLevel.FULL)
+    subscriptions = db_branch.getSubscriptionsByLevel(diff_levels)
+    return subscriptions.count() > 0
 
 
 class BranchMailer:
@@ -39,14 +48,8 @@ class BranchMailer:
         behind the queue itself.
         """
         self.pending_emails = []
-        self.subscribers_want_notification = False
-
-        diff_levels = (BranchSubscriptionNotificationLevel.DIFFSONLY,
-                       BranchSubscriptionNotificationLevel.FULL)
-
-        subscriptions = self.db_branch.getSubscriptionsByLevel(diff_levels)
-        for subscription in subscriptions:
-            self.subscribers_want_notification = True
+        self.subscribers_want_notification = subscribers_want_notification(
+            self.db_branch)
 
         # If db_history is empty, then this is the initial scan of the
         # branch.  We only want to send one email for the initial scan
