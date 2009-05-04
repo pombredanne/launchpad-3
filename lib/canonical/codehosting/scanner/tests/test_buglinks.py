@@ -240,8 +240,8 @@ class TestBugLinking(BzrSyncTestCase):
     def setUp(self):
         BzrSyncTestCase.setUp(self)
         provideHandler(got_new_revision)
-        self.addCleanup(getGlobalSiteManager().unregisterHandler,
-            got_new_revision)
+        self.addCleanup(
+            getGlobalSiteManager().unregisterHandler, got_new_revision)
 
     def makeFixtures(self):
         super(TestBugLinking, self).makeFixtures()

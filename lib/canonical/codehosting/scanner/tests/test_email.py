@@ -7,9 +7,12 @@ __metaclass__ = type
 import email
 import unittest
 
-from zope.component import getUtility
+# This non-standard import is necessary to hook up the event system.
+import zope.component.event
+from zope.component import getGlobalSiteManager, getUtility, provideHandler
 
 from canonical.codehosting.jobs import JobRunner
+from canonical.codehosting.scanner.email import create_revision_added_job
 from canonical.codehosting.scanner.tests.test_bzrsync import BzrSyncTestCase
 from canonical.launchpad.interfaces import (
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
@@ -25,6 +28,10 @@ class TestBzrSyncEmail(BzrSyncTestCase):
 
     def setUp(self):
         BzrSyncTestCase.setUp(self)
+        provideHandler(create_revision_added_job)
+        self.addCleanup(
+            getGlobalSiteManager().unregisterHandler,
+            create_revision_added_job)
         stub.test_emails = []
 
     def makeDatabaseBranch(self):
@@ -82,9 +89,8 @@ class TestBzrSyncEmail(BzrSyncTestCase):
         self.assertTextIn(expected, email_body)
 
     def test_import_recommit(self):
-        # When scanning the uncommit and new commit
-        # there should be an email generated saying that
-        # 1 (in this case) revision has been removed,
+        # When scanning the uncommit and new commit there should be an email
+        # generated saying that 1 (in this case) revision has been removed,
         # and another email with the diff and log message.
         self.commitRevision('first')
         self.makeBzrSync(self.db_branch).syncBranchAndClose()

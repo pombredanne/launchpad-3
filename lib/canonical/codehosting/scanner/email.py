@@ -7,11 +7,13 @@ __all__ = [
     'BranchMailer',
     ]
 
-from zope.component import getUtility
+from zope.component import adapter, getUtility
 
+from canonical.codehosting.scanner import events
 from canonical.config import config
 from canonical.launchpad.interfaces import BranchSubscriptionNotificationLevel
-from lp.code.interfaces.branchjob import IRevisionMailJobSource
+from lp.code.interfaces.branchjob import (
+    IRevisionsAddedJobSource, IRevisionMailJobSource)
 
 
 class BranchMailer:
@@ -109,3 +111,11 @@ class BranchMailer:
                 self.db_branch, 'initial', self.email_from, message, False,
                 None)
         self.trans_manager.commit()
+
+
+@adapter(events.TipChanged)
+def create_revision_added_job(tip_changed):
+    getUtility(IRevisionsAddedJobSource).create(
+        tip_changed.db_branch, tip_changed.db_branch.last_scanned_id,
+        tip_changed.bzr_branch.last_revision(),
+        config.canonical.noreply_from_address)

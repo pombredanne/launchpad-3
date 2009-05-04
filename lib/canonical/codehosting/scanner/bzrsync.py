@@ -34,8 +34,7 @@ from canonical.config import config
 from lp.code.interfaces.branch import (
     BranchFormat, BranchLifecycleStatus, ControlFormat, RepositoryFormat)
 from lp.code.interfaces.branchcollection import IAllBranches
-from lp.code.interfaces.branchjob import (
-    IRevisionsAddedJobSource, IRosettaUploadJobSource)
+from lp.code.interfaces.branchjob import IRosettaUploadJobSource
 from lp.code.interfaces.branchmergeproposal import (
     BRANCH_MERGE_PROPOSAL_FINAL_STATES)
 from lp.code.interfaces.branchrevision import IBranchRevisionSet
@@ -161,10 +160,6 @@ class BzrSync:
             # XXX: Move this so that there's an event generated here, and the
             # code below is a handler of that event.
             notify(events.TipChanged(self.db_branch, bzr_branch))
-            job = getUtility(IRevisionsAddedJobSource).create(
-                self.db_branch, self.db_branch.last_scanned_id,
-                bzr_branch.last_revision(),
-                config.canonical.noreply_from_address)
 
         self.trans_manager.commit()
 
@@ -433,6 +428,7 @@ class BzrSync:
             last_revision = bzr_history[-1]
             revision = getUtility(IRevisionSet).getByRevisionId(last_revision)
             if last_revision != self.db_branch.last_scanned_id:
+                # XXX: make this an event handler -- maybe TipChanged?
                 getUtility(IRosettaUploadJobSource).create(
                     self.db_branch, self.db_branch.last_scanned_id)
         else:
