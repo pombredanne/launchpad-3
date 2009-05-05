@@ -73,12 +73,21 @@ class IBranchPuller(Interface):
     def acquireBranchToPull():
         """Return and mark as started a Branch to pull.
 
-        :return: A 4-tuple (branch_id, pull_url, unique_name, default_branch)
-            where branch_id is the database id of the branch, pull_url is
-            where to pull from, unique_name is the unique_name of the branch
-            and default_branch is the default stacked on branch for the
-            branch's target, or (), the empty tuple, if there is no branch to
-            pull.
+        :return: A 5-tuple::
+
+              (branch_id, pull_url, unique_name, default_branch, branch_type)
+
+            where:
+
+              * branch_id is the database id of the branch,
+              * pull_url is where to pull from,
+              * unique_name is the unique_name of the branch,
+              * default_branch is the unique name of the default stacked on
+                branch for the branch's target (or '' if there is no such
+                branch), and
+              * branch_type is one of 'hosted', 'mirrored', or 'imported'.
+
+            or (), the empty tuple, if there is no branch to pull.
         """
 
     def startMirroring(branchID):

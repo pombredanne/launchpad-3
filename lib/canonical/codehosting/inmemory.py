@@ -199,7 +199,18 @@ class FakeBranch(FakeDatabaseObject):
         return '~%s/%s/%s' % (self.owner.name, product, self.name)
 
     def getPullURL(self):
-        pass
+        return 'lp-fake:///' + self.unique_name
+
+    @property
+    def target(self):
+        if self.product is None:
+            if self.distroseries is None:
+                target = self.owner
+            else:
+                target = self.sourcepackage
+        else:
+            target = self.product
+        return IBranchTarget(target)
 
     def requestMirror(self):
         self.next_mirror_time = UTC_NOW
@@ -307,6 +318,8 @@ class FakeObjectFactory(ObjectFactory):
     def makeBranch(self, branch_type=None, stacked_on=None, private=False,
                    product=DEFAULT_PRODUCT, owner=None, name=None,
                    registrant=None, sourcepackage=None):
+        if branch_type is None:
+            branch_type = BranchType.HOSTED
         if branch_type == BranchType.MIRRORED:
             url = self.getUniqueURL()
         else:
@@ -458,7 +471,13 @@ class FakeBranchPuller:
         if branches:
             branch = branches[-1]
             self.startMirroring(branch.id)
-            return self._getBranchPullInfo(branch)
+            default_branch = branch.target.default_stacked_on_branch
+            if default_branch:
+                default_branch_name = default_branch
+            else:
+                default_branch_name = ''
+            return (branch.id, branch.getPullURL(), branch.unique_name,
+                    default_branch_name, branch.branch_type.name)
         else:
             return ()
 

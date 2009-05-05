@@ -96,7 +96,13 @@ class BranchPuller(LaunchpadXMLRPCView):
     def acquireBranchToPull(self):
         branch = getUtility(branchpuller.IBranchPuller).acquireBranchToPull()
         if branch is not None:
-            return self._getBranchPullInfo(branch)
+            default_branch = branch.target.default_stacked_on_branch
+            if default_branch:
+                default_branch_name = default_branch
+            else:
+                default_branch_name = ''
+            return (branch.id, branch.getPullURL(), branch.unique_name,
+                    default_branch_name, branch.branch_type.name)
         else:
             return ()
 

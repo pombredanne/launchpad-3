@@ -515,8 +515,15 @@ class AcquireBranchToPullTestsViaEndpoint(TestCaseWithFactory,
     def assertBranchIsAquired(self, branch):
         """See `AcquireBranchToPullTests`."""
         pull_info = self.storage.acquireBranchToPull()
+        default_branch= branch.target.default_stacked_on_branch
+        if default_branch:
+            default_branch_name = default_branch
+        else:
+            default_branch_name = ''
         self.assertEqual(
-            pull_info, self.storage._getBranchPullInfo(branch))
+            pull_info,
+            (branch.id, branch.getPullURL(), branch.unique_name,
+             default_branch_name, branch.branch_type.name))
         self.assertIsNot(None, branch.last_mirror_attempt)
         self.assertIs(None, branch.next_mirror_time)
 
