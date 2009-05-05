@@ -38,7 +38,7 @@ We can see that this is actually the case:
 
   >>> from canonical.launchpad.database.language import LanguageSet
   >>> spanish = LanguageSet().getLanguageByCode('es')
-  >>> message = potmsgset.getCurrentTranslationMessage(spanish)
+  >>> message = potmsgset.getCurrentTranslationMessage(upstream_evo, spanish)
   >>> message.msgstr0.translation
   u'Contrase\xf1a de EncFS: '
   >>> message.is_complete
@@ -91,7 +91,7 @@ unaffected.
   ...     pofile_es, carlos, {0: 'boing '}, is_imported=False,
   ...     lock_timestamp=datetime.datetime.now(UTC))
   >>> flush_database_updates()
-  >>> message = potmsgset.getCurrentTranslationMessage(spanish)
+  >>> message = potmsgset.getCurrentTranslationMessage(upstream_evo, spanish)
   >>> message == dummy
   True
   >>> message.msgstr0.translation
@@ -108,14 +108,14 @@ upstream translation, the one in Launchpad will be kept untouched.
   ...     pofile_es, carlos, {0: u'bars '}, is_imported=True,
   ...     lock_timestamp=datetime.datetime.now(UTC))
   >>> flush_database_updates()
-  >>> message = potmsgset.getCurrentTranslationMessage(spanish)
+  >>> message = potmsgset.getCurrentTranslationMessage(upstream_evo, spanish)
   >>> message != dummy
   True
   >>> message.translations
   [u'boing ']
   >>> message.is_complete
   True
-  >>> message = potmsgset.getImportedTranslationMessage(spanish)
+  >>> message = potmsgset.getImportedTranslationMessage(upstream_evo, spanish)
   >>> message.translations
   [u'bars ']
   >>> message.is_complete
@@ -129,7 +129,7 @@ parameter.
   ...     pofile_es, carlos, {0: u'suggestion! '}, is_imported=False,
   ...     lock_timestamp=datetime.datetime.now(UTC), force_suggestion=True)
   >>> flush_database_updates()
-  >>> message = potmsgset.getCurrentTranslationMessage(spanish)
+  >>> message = potmsgset.getCurrentTranslationMessage(upstream_evo, spanish)
   >>> message != dummy
   True
   >>> message.translations
