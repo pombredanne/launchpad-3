@@ -17,10 +17,6 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.codehosting.inmemory import InMemoryFrontend
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.ftests import ANONYMOUS, login, logout
-from lp.code.interfaces.branch import (
-    BranchType, BRANCH_NAME_VALIDATION_ERROR_MESSAGE)
-from lp.code.interfaces.branchlookup import IBranchLookup
-from lp.code.interfaces.branchtarget import IBranchTarget
 from canonical.launchpad.interfaces.scriptactivity import (
     IScriptActivitySet)
 from lp.code.interfaces.codehosting import (
@@ -29,11 +25,17 @@ from canonical.launchpad.interfaces.launchpad import ILaunchBag
 from canonical.launchpad.testing import (
     LaunchpadObjectFactory, TestCase, TestCaseWithFactory)
 from canonical.launchpad.webapp.interfaces import NotFoundError
+from canonical.launchpad.xmlrpc import faults
+from canonical.testing import DatabaseFunctionalLayer, FunctionalLayer
+
+from lp.code.interfaces.branch import (
+    BranchType, BRANCH_NAME_VALIDATION_ERROR_MESSAGE)
+from lp.code.interfaces.branchlookup import IBranchLookup
+from lp.code.interfaces.branchtarget import IBranchTarget
+from lp.code.model.tests.test_branchpuller import AcquireBranchToPullTests
 from lp.code.xmlrpc.codehosting import (
     BranchFileSystem, BranchPuller, LAUNCHPAD_ANONYMOUS, LAUNCHPAD_SERVICES,
     iter_split, run_with_login)
-from canonical.launchpad.xmlrpc import faults
-from canonical.testing import DatabaseFunctionalLayer, FunctionalLayer
 
 
 UTC = pytz.timezone('UTC')
@@ -495,11 +497,12 @@ class BranchPullQueueTest(TestCaseWithFactory):
         self.assertBranchQueues([], [], [branch])
 
 
-class AcquireBranchToPullTest(TestCaseWithFactory):
+class AcquireBranchToPullTestsViaEndpoint(TestCaseWithFactory,
+                                          AcquireBranchToPullTests):
     """Tests for `acquireBranchToPull` method of `IBranchPuller`."""
 
     def setUp(self):
-        super(AcquireBranchToPullTest, self).setUp()
+        super(AcquireBranchToPullTestsViaEndpoint, self).setUp()
         frontend = self.frontend()
         self.storage = frontend.getPullerEndpoint()
         self.factory = frontend.getLaunchpadObjectFactory()
@@ -517,40 +520,8 @@ class AcquireBranchToPullTest(TestCaseWithFactory):
         self.assertIsNot(None, branch.last_mirror_attempt)
         self.assertIs(None, branch.next_mirror_time)
 
-
-    def test_empty(self):
-        # If there is no branch that needs pulling, acquireBranchToPull
-        # returns None.
-        self.assertNoBranchIsAquired()
-
-    def test_simple(self):
-        # If there is one branch that needs mirroring, acquireBranchToPull
-        # returns that.
-        branch = self.factory.makeAnyBranch()
-        branch.requestMirror()
-        self.assertBranchIsAquired(branch)
-
-    def test_no_inprogress(self):
-        # If a branch is being mirrored, it is not returned.
-        branch = self.factory.makeAnyBranch()
-        branch.requestMirror()
+    def startMirroring(self, branch):
         self.storage.startMirroring(branch.id)
-        self.assertNoBranchIsAquired()
-
-    def test_first_requested_returned(self):
-        # If two branches are to be mirrored, the one that was requested first
-        # is returned.
-        first_branch = self.factory.makeAnyBranch()
-        # You can only request a mirror now, so to pretend that we requested
-        # it some time ago, we cheat with removeSecurityProxy().
-        first_branch.requestMirror()
-        naked_first_branch = removeSecurityProxy(first_branch)
-        naked_first_branch.next_mirror_time -= datetime.timedelta(seconds=100)
-        second_branch = self.factory.makeAnyBranch()
-        second_branch.requestMirror()
-        naked_second_branch = removeSecurityProxy(second_branch)
-        naked_second_branch.next_mirror_time -= datetime.timedelta(seconds=50)
-        self.assertBranchIsAquired(naked_first_branch)
 
 
 class BranchFileSystemTest(TestCaseWithFactory):
@@ -1145,7 +1116,7 @@ def test_suite():
     puller_tests = unittest.TestSuite(
         [loader.loadTestsFromTestCase(BranchPullerTest),
          loader.loadTestsFromTestCase(BranchPullQueueTest),
-         loader.loadTestsFromTestCase(AcquireBranchToPullTest),
+         loader.loadTestsFromTestCase(AcquireBranchToPullTestsViaEndpoint),
          loader.loadTestsFromTestCase(BranchFileSystemTest),
          ])
     scenarios = [

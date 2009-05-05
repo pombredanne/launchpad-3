@@ -222,22 +222,20 @@ class TestRemoteBranches(TestCaseWithFactory):
             BranchTypeError, puller.getPullQueue, BranchType.REMOTE)
 
 
-class TestAcquireBranchToPull(TestCaseWithFactory):
-    """Tests for `IBranchPuller.acquireBranchToPull`."""
-
-    layer = DatabaseFunctionalLayer
+class AcquireBranchToPullTests:
+    """XXX write me."""
 
     def assertNoBranchIsAquired(self):
         """XXX write me."""
-        acquired_branch = getUtility(IBranchPuller).acquireBranchToPull()
-        self.assertEqual(None, acquired_branch)
+        raise NotImplementedError(self.assertNoBranchIsAquired)
 
     def assertBranchIsAquired(self, branch):
         """XXX write me."""
-        acquired_branch = getUtility(IBranchPuller).acquireBranchToPull()
-        self.assertEqual(branch, acquired_branch)
-        self.assertIsNot(None, acquired_branch.last_mirror_attempt)
-        self.assertIs(None, acquired_branch.next_mirror_time)
+        raise NotImplementedError(self.assertBranchIsAquired)
+
+    def startMirroring(self, branch):
+        """XXX write me."""
+        raise NotImplementedError(self.startMirroring)
 
     def test_empty(self):
         # If there is no branch that needs pulling, acquireBranchToPull
@@ -255,7 +253,7 @@ class TestAcquireBranchToPull(TestCaseWithFactory):
         # If a branch is being mirrored, it is not returned.
         branch = self.factory.makeAnyBranch()
         branch.requestMirror()
-        branch.startMirroring()
+        self.startMirroring(branch)
         self.assertNoBranchIsAquired()
 
     def test_first_requested_returned(self):
@@ -272,6 +270,28 @@ class TestAcquireBranchToPull(TestCaseWithFactory):
         naked_second_branch = removeSecurityProxy(second_branch)
         naked_second_branch.next_mirror_time -= timedelta(seconds=50)
         self.assertBranchIsAquired(naked_first_branch)
+
+
+class TestAcquireBranchToPullDirectly(TestCaseWithFactory,
+                                      AcquireBranchToPullTests):
+    """Tests for `IBranchPuller.acquireBranchToPull`."""
+
+    layer = DatabaseFunctionalLayer
+
+    def assertNoBranchIsAquired(self):
+        """XXX write me."""
+        acquired_branch = getUtility(IBranchPuller).acquireBranchToPull()
+        self.assertEqual(None, acquired_branch)
+
+    def assertBranchIsAquired(self, branch):
+        """XXX write me."""
+        acquired_branch = getUtility(IBranchPuller).acquireBranchToPull()
+        self.assertEqual(branch, acquired_branch)
+        self.assertIsNot(None, acquired_branch.last_mirror_attempt)
+        self.assertIs(None, acquired_branch.next_mirror_time)
+
+    def startMirroring(self, branch):
+        branch.startMirroring()
 
 
 
