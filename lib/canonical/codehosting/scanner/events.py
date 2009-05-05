@@ -82,13 +82,9 @@ class RevisionsRemoved(ScannerEvent):
 class ScanCompleted(ScannerEvent):
     """The scan has been completed and the database is up-to-date."""
 
-    def __init__(self, db_branch, bzr_branch, bzr_ancestry):
+    def __init__(self, db_branch, bzr_branch, bzr_ancestry, logger):
         super(ScanCompleted, self).__init__(db_branch, bzr_branch)
         self.bzr_ancestry = bzr_ancestry
-
-
-# XXX: Other possible events:
-# class MergeDetected:
-#     source_db_branch = None
-#     target_db_branch = None
-#     proposal = None
+        # This is kind of ick. In a strict Zope sense, the logger should
+        # probably be a registered utility.
+        self.logger = logger

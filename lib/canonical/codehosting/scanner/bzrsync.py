@@ -152,14 +152,9 @@ class BzrSync:
         # updated although it has), the race is acceptable.
         self.trans_manager.begin()
         self.updateBranchStatus(bzr_history)
-        # XXX: Move this so that there's an event generated here, and the code
-        # below is a handler of that event, probably a BranchScanningFinished
-        # event or similar.
         notify(
             events.ScanCompleted(
-                self.db_branch, bzr_branch, bzr_ancestry))
-        auto_merge_proposals(self.db_branch, self.logger, bzr_ancestry)
-        auto_merge_branches(self.db_branch, self.logger, bzr_ancestry)
+                self.db_branch, bzr_branch, bzr_ancestry, self.logger))
         self.trans_manager.commit()
 
     def retrieveDatabaseAncestry(self):

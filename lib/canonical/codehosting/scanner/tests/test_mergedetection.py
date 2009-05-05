@@ -9,9 +9,12 @@ import unittest
 
 from bzrlib.revision import NULL_REVISION
 import transaction
+
 from zope.component import getUtility
 
 from canonical.codehosting.scanner.bzrsync import BzrSync
+from canonical.codehosting.scanner import events
+from canonical.codehosting.scanner.fixture import make_zope_event_fixture
 from canonical.codehosting.scanner import mergedetection
 from canonical.codehosting.scanner.tests.test_bzrsync import (
     BzrSyncTestCase, run_as_db_user)
@@ -26,6 +29,14 @@ from canonical.testing import LaunchpadZopelessLayer
 
 class TestAutoMergeDetectionForMergeProposals(BzrSyncTestCase):
     """Test the scanner's ability to mark merge proposals as merged."""
+
+    def setUp(self):
+        BzrSyncTestCase.setUp(self)
+        fixture = make_zope_event_fixture(
+            mergedetection.auto_merge_branches,
+            mergedetection.auto_merge_proposals)
+        fixture.setUp()
+        self.addCleanup(fixture.tearDown)
 
     @run_as_db_user(config.launchpad.dbuser)
     def createProposal(self, source, target):
@@ -168,6 +179,12 @@ class TestMergeDetection(TestCaseWithFactory):
         mergedetection.merge_detected = self._original_merge_detected
         TestCaseWithFactory.tearDown(self)
 
+    def autoMergeBranches(self, db_branch, bzr_ancestry):
+        mergedetection.auto_merge_branches(
+            events.ScanCompleted(
+                db_branch=db_branch, bzr_branch=None, bzr_ancestry=['revid'],
+                logger=None))
+
     def mergeDetected(self, logger, source, target):
         # Record the merged branches
         self.merges.append((source, target))
@@ -176,7 +193,7 @@ class TestMergeDetection(TestCaseWithFactory):
         # A merge is never emitted with the source branch being the same as
         # the target branch.
         self.db_branch.last_scanned_id = 'revid'
-        mergedetection.auto_merge_branches(self.db_branch, None, ['revid'])
+        self.autoMergeBranches(self.db_branch, ['revid'])
         self.assertEqual([], self.merges)
 
     def test_branch_tip_in_ancestry(self):
@@ -184,7 +201,7 @@ class TestMergeDetection(TestCaseWithFactory):
         # ancestry passed in, the merge detection is emitted.
         source = self.factory.makeProductBranch(product=self.product)
         source.last_scanned_id = 'revid'
-        mergedetection.auto_merge_branches(self.db_branch, None, ['revid'])
+        self.autoMergeBranches(self.db_branch, ['revid'])
         self.assertEqual([(source, self.db_branch)], self.merges)
 
     def test_branch_tip_in_ancestry_status_merged(self):
@@ -193,7 +210,7 @@ class TestMergeDetection(TestCaseWithFactory):
             product=self.product,
             lifecycle_status=BranchLifecycleStatus.MERGED)
         source.last_scanned_id = 'revid'
-        mergedetection.auto_merge_branches(self.db_branch, None, ['revid'])
+        self.autoMergeBranches(self.db_branch, ['revid'])
         self.assertEqual([], self.merges)
 
     def test_other_branch_with_no_last_scanned_id(self):
@@ -201,7 +218,7 @@ class TestMergeDetection(TestCaseWithFactory):
         # of the branch is not yet been set no merge event is emitted for that
         # branch.
         source = self.factory.makeProductBranch(product=self.product)
-        mergedetection.auto_merge_branches(self.db_branch, None, ['revid'])
+        self.autoMergeBranches(self.db_branch, ['revid'])
         self.assertEqual([], self.merges)
 
     def test_other_branch_with_NULL_REVISION_last_scanned_id(self):
@@ -210,7 +227,7 @@ class TestMergeDetection(TestCaseWithFactory):
         # that branch.
         source = self.factory.makeProductBranch(product=self.product)
         source.last_scanned_id = NULL_REVISION
-        mergedetection.auto_merge_branches(self.db_branch, None, ['revid'])
+        self.autoMergeBranches(self.db_branch, ['revid'])
         self.assertEqual([], self.merges)
 
     def test_other_branch_same_tip_revision_not_emitted(self):
@@ -219,7 +236,7 @@ class TestMergeDetection(TestCaseWithFactory):
         source = self.factory.makeProductBranch(product=self.product)
         source.last_scanned_id = 'revid'
         self.db_branch.last_scanned_id = 'revid'
-        mergedetection.auto_merge_branches(self.db_branch, None, ['revid'])
+        self.autoMergeBranches(self.db_branch, ['revid'])
         self.assertEqual([], self.merges)
 
 

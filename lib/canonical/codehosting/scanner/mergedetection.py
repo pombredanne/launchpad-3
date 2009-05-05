@@ -10,7 +10,9 @@ __all__ = [
 
 from bzrlib.revision import NULL_REVISION
 
-from zope.component import getUtility
+from zope.component import adapter, getUtility
+
+from canonical.codehosting.scanner import events
 
 from lp.code.interfaces.branch import BranchLifecycleStatus
 from lp.code.interfaces.branchcollection import IAllBranches
@@ -62,14 +64,21 @@ def merge_detected(logger, source, target, proposal=None):
             mark_branch_merged(logger, proposal.source_branch)
 
 
-def auto_merge_branches(db_branch, logger, bzr_ancestry):
-    """Detect branches that have been merged."""
-    # We only check branches that have been merged into the branch that is
-    # being scanned as we already have the ancestry handy.  It is much
-    # more work to determine which other branches this branch has been
-    # merged into.  At this stage the merge detection only checks other
-    # branches merged into the scanned one.
+@adapter(events.ScanCompleted)
+def auto_merge_branches(scan_completed):
+    """Detect branches that have been merged.
 
+    We only check branches that have been merged into the branch that is being
+    scanned as we already have the ancestry handy. It is much more work to
+    determine which other branches this branch has been merged into.
+    """
+    db_branch = scan_completed.db_branch
+    bzr_ancestry = scan_completed.bzr_ancestry
+    logger = scan_completed.logger
+
+    # XXX: JonathanLange 2009-05-05 spec=package-branches: Yet another thing
+    # that assumes that product is None implies junk.
+    #
     # Only do this for non-junk branches.
     if db_branch.product is None:
         return
@@ -99,8 +108,12 @@ def auto_merge_branches(db_branch, logger, bzr_ancestry):
             merge_detected(logger, branch, db_branch)
 
 
-def auto_merge_proposals(db_branch, logger, bzr_ancestry):
+@adapter(events.ScanCompleted)
+def auto_merge_proposals(scan_completed):
     """Detect merged proposals."""
+    db_branch = scan_completed.db_branch
+    bzr_ancestry = scan_completed.bzr_ancestry
+    logger = scan_completed.logger
 
     # Check landing candidates in non-terminal states to see if their tip
     # is in our ancestry. If it is, set the state of the proposal to
