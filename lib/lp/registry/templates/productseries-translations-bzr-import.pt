@@ -1,0 +1,77 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="view/macro:page/onecolumn"
+  i18n:domain="launchpad"
+>
+<body>
+<div metal:fill-slot="head_epilogue">
+  <style type="text/css">
+  .inline-icon {
+    position: relative;
+    bottom: -3px;
+  }
+  </style>
+</div>
+
+<div metal:fill-slot="main">
+
+  <h1>Request one-time import of translations</h1>
+
+  <p
+    class="not-translated-in-launchpad"
+    tal:condition="not: context/product/official_rosetta">
+    <strong>
+      This project is not configured to use Launchpad for translations.
+    </strong>
+    <tal:admin_or_owner condition="context/product/required:launchpad.Edit">
+      You can change this in the
+      <a tal:attributes="href view/product_edit_url">
+        project settings</a>.
+    </tal:admin_or_owner>
+  </p>
+
+  <tal:rosetta condition="context/product/official_rosetta">
+  <p>
+    You can ask Launchpad for a one-time import of all the translation files
+    (templates and translations) that it finds in 
+    <strong><tal:series replace="structure view/series_title">
+      Evolution Series:trunk</tal:series>'s</strong> official Bazaar branch.
+      
+  </p>
+  <p tal:condition="not:view/has_imports_enabled" id="settings-display">
+  <img src="/@@/info" class="inline-icon" />
+    To enable continuous imports please change the settings
+    <a tal:attributes="href view/translations_settings_url">here</a>.
+  </p>
+  <p tal:condition="view/context/branch"
+     tal:define="branch view/context/branch"
+     id="branch-display">
+    The official Bazaar branch is:
+    <img src="/@@/branch" class="inline-icon" />
+    <a tal:attributes="href branch/fmt:url; title branch/bzr_identity"
+       tal:content="branch/displayname">
+          branchname
+    </a>
+    <a tal:attributes="href view/link_branch_url;
+                       title string:Change official branch"
+                       ><img src="/@@/edit" class="inline-icon" /></a>
+  </p>
+  <p tal:condition="not:view/context/branch"
+     id="no-branch-display">
+    This series does not have an official Bazaar branch.
+     <a tal:attributes="href view/link_branch_url">
+       Please set it first.</a></p>
+  <tal:form tal:condition="view/context/branch">
+    <div metal:use-macro="context/@@launchpad_form/form"></div>
+  </tal:form>
+  </tal:rosetta>
+</div>
+
+</body>
+</html>

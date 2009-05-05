@@ -14,7 +14,7 @@ details of that team.
     >>> browser.url
     'http://launchpad.dev/~ubuntu-team/+edit'
     >>> browser.getControl('Name', index=0).value
-    'ubuntu-team' 
+    'ubuntu-team'
     >>> browser.getControl('Display Name').value
     'Ubuntu Team'
     >>> browser.getControl('Team Description').value
@@ -122,3 +122,23 @@ Of course, teams without mailing lists still have an editable name field.
     >>> browser.getLink('Change details').click()
     >>> browser.getControl(name='field.name').value
     'guadamen'
+
+
+== Private teams may not be renamed ==
+
+    >>> # Create the necessary teams.
+    >>> login('foo.bar@canonical.com')
+    >>> from lp.registry.interfaces.person import (
+    ...     IPersonSet, PersonVisibility)
+    >>> owner = factory.makePerson(name='team-owner')
+    >>> priv_team = factory.makeTeam(name='private-team',
+    ...     owner=owner,
+    ...     visibility=PersonVisibility.PRIVATE)
+    >>> logout()
+
+    >>> browser.open('http://launchpad.dev/~private-team')
+    >>> browser.getLink('Change details').click()
+    >>> browser.getControl(name='field.name').value
+    Traceback (most recent call last):
+    ...
+    LookupError: name 'field.name'
