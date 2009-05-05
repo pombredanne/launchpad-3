@@ -244,5 +244,5 @@ and a list of all the relevant builds for the summary:
 
     >>> print_build_summaries(build_summaries)
     Source ID 27: FAILEDTOBUILD ([u'i386'])
-    Source ID 28: FULLYBUILT ([u'i386'])
+    Source ID 28: FULLYBUILT_PENDING ([u'i386'])
 

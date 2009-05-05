@@ -25,6 +25,7 @@ from zope.interface import implements
 from sqlobject import ForeignKey, SQLMultipleJoin, SQLObjectNotFound
 
 from canonical.archivepublisher.customupload import CustomUploadError
+from canonical.archivepublisher.utils import get_ppa_reference
 from canonical.archiveuploader.tagfiles import parse_tagfile_lines
 from canonical.archiveuploader.utils import safe_fix_maintainer
 from canonical.buildmaster.pas import BuildDaemonPackagesArchSpecific
@@ -724,7 +725,8 @@ class PackageUpload(SQLBase):
                 self.displayversion, message.STATUS)
 
             if self.isPPA():
-                subject = "[PPA %s] %s" % (self.archive.owner.name, subject)
+                subject = "[PPA %s] %s" % (
+                    get_ppa_reference(self.archive), subject)
                 attach_changes = False
             else:
                 attach_changes = True
@@ -1031,7 +1033,7 @@ class PackageUpload(SQLBase):
         # Include the 'X-Launchpad-PPA' header for PPA upload notfications
         # containing the PPA owner name.
         if (self.archive.is_ppa and self.archive.owner is not None):
-            extra_headers['X-Launchpad-PPA'] = self.archive.owner.name
+            extra_headers['X-Launchpad-PPA'] = get_ppa_reference(self.archive)
 
         # Include a 'X-Launchpad-Component' header with the component and
         # the section of the source package uploaded in order to facilitate

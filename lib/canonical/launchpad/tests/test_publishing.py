@@ -342,6 +342,8 @@ class SoyuzTestPublisher:
                 pocket=pocket,
                 embargo=False,
                 archive=archive)
+            if status == PackagePublishingStatus.PUBLISHED:
+                pub.datepublished = UTC_NOW
             secure_pub_binaries.append(pub)
 
         return [BinaryPackagePublishingHistory.get(pub.id)

@@ -201,6 +201,15 @@ table.form .error {background: none;}
     color: red;
     font-weight: bold;
 }
+.sml-informational {
+  background: #d4e8ff url('/+icing/blue-fade-to-grey');
+  border: solid #666;
+  border-width: 1px 2px 2px 1px;
+  color: black;
+  padding: 5px 5px 5px 5px;
+  width:44em;
+}
+.sml-informational::before {content: url('/@@/info');}
 
 .helpwanted {background-color: #fafca9; color: black; border: 1px solid black;
     padding: 0.5em; font-size: smaller; padding-left: 3em
@@ -1377,7 +1386,14 @@ body.tab-overview #actions h2, body.tab-overview #actions h2:hover {
   background: none;
   color: #83ad23;
 }
-
+body.tab-overview #description {
+    width: 50em;
+}
+body.tab-overview #description fieldset {
+    border: 1px solid gray;
+    padding: 0 1em;
+    margin:0 1em 1em 0;
+}
 /* The top-most Person portlet, Contact Details, is allowed to float up and
 beside the mugshot. */
 #contact-details {clear: none;}
