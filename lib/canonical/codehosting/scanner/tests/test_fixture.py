@@ -59,7 +59,7 @@ class TestFixture(TestCase):
             return 'oi'
         result = function(foo='bar')
         self.assertEqual('oi', result)
-        self.assertEqual(['setUp', fixture, {'foo': 'bar'}, 'tearDown'],log)
+        self.assertEqual(['setUp', fixture, {'foo': 'bar'}, 'tearDown'], log)
 
 
 def test_suite():
