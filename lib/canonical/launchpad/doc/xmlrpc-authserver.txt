@@ -31,6 +31,6 @@ about users.
     ...     'http://xmlrpc-private.launchpad.dev:8087/authserver',
     ...     transport=XMLRPCTestTransport())
 
-    >>> user_dict = authserver.getUser('foo.bar@canonical.com')
-    >>> user_dict['name']
-    'name16'
+    >>> user_dict = authserver.getUserAndSSHKeys('name16')
+    >>> user_dict['id']
+    16

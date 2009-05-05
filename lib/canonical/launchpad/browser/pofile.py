@@ -460,8 +460,8 @@ class POFileTranslateView(BaseTranslationView):
         for potmsgset in for_potmsgsets:
             assert (last is None or
                     potmsgset.getSequence(
-                        potmsgset.potemplate) >= last.getSequence(
-                            last.potemplate)), (
+                        self.context.potemplate) >= last.getSequence(
+                            self.context.potemplate)), (
                 "POTMsgSets on page not in ascending sequence order")
             last = potmsgset
 

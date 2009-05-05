@@ -218,9 +218,9 @@ class BranchListingSort(EnumeratedType):
         """)
 
     LIFECYCLE = Item("""
-        by lifecycle status
+        by status
 
-        Sort branches by the lifecycle status.
+        Sort branches by their status.
         """)
 
     NAME = Item("""
