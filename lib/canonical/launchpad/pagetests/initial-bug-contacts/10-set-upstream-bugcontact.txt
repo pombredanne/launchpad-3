@@ -42,7 +42,7 @@ separate browser instance to avoid breaking the other page tests.
     >>> sample_browser.url
     'http://launchpad.dev/testy'
 
-Sample Person is a member of "Warty Security Team". He however should not be
+Sample Person is a member of "Warty Security Team".  However, he should not be
 able to set Warty Security Team as a bug supervisor for Test Project as he's
 not an admin of that team.
 
