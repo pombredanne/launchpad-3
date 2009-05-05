@@ -9,7 +9,7 @@ import unittest
 from zope.interface import implements
 
 from canonical.codehosting.scanner.fixture import (
-    IFixture, run_with_fixture, with_fixture)
+    FixtureWithCleanup, IFixture, run_with_fixture, with_fixture)
 from canonical.launchpad.testing import TestCase
 
 
@@ -60,6 +60,28 @@ class TestFixture(TestCase):
         result = function(foo='bar')
         self.assertEqual('oi', result)
         self.assertEqual(['setUp', fixture, {'foo': 'bar'}, 'tearDown'], log)
+
+
+class TestFixtureWithCleanup(TestCase):
+    """Tests for `FixtureWithCleanup`."""
+
+    def test_cleanup_called_during_teardown(self):
+        log = []
+        fixture = FixtureWithCleanup()
+        fixture.setUp()
+        fixture.addCleanup(log.append, 'foo')
+        self.assertEqual([], log)
+        fixture.tearDown()
+        self.assertEqual(['foo'], log)
+
+    def test_cleanup_called_in_reverse_order(self):
+        log = []
+        fixture = FixtureWithCleanup()
+        fixture.setUp()
+        fixture.addCleanup(log.append, 'foo')
+        fixture.addCleanup(log.append, 'bar')
+        fixture.tearDown()
+        self.assertEqual(['bar', 'foo'], log)
 
 
 def test_suite():
