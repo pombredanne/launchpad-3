@@ -72,10 +72,9 @@ from canonical.config import config
 from canonical.database.sqlbase import cursor
 from canonical.launchpad import _
 from canonical.cachedproperty import cachedproperty
-from canonical.launchpad.fields import PublicPersonChoice
+from canonical.launchpad.fields import ParticipatingPersonChoice
 from canonical.launchpad.mailnotification import get_unified_diff
 from canonical.launchpad.validators import LaunchpadValidationError
-from canonical.launchpad.vocabularies.dbobjects import MilestoneVocabulary
 from canonical.launchpad.webapp import (
     action, custom_widget, canonical_url, GetitemNavigation,
     LaunchpadEditFormView, LaunchpadFormView, LaunchpadView, Navigation,
@@ -141,6 +140,8 @@ from canonical.widgets.bugtask import (
 from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 from canonical.widgets.lazrjs import TextLineEditorWidget
 from canonical.widgets.project import ProjectScopeWidget
+
+from lp.registry.vocabularies import MilestoneVocabulary
 
 
 def unique_title(title):
@@ -469,6 +470,12 @@ class BugTaskView(LaunchpadView, CanBeMentoredView, FeedsMixin):
 
         # See render() for how this flag is used.
         self._redirecting_to_bug_list = False
+
+        # If the bug is not reported in this context, redirect
+        # to the default bug task.
+        if not self.isReportedInContext():
+            self.request.response.redirect(
+                canonical_url(self.context.bug.default_bugtask))
 
         self.bug_title_edit_widget = TextLineEditorWidget(
             bug, 'title', canonical_url(self.context, view_name='+edit'),
@@ -974,6 +981,11 @@ class BugTaskView(LaunchpadView, CanBeMentoredView, FeedsMixin):
         return 'var available_official_tags = %s;' % dumps(list(sorted(
             available_tags)))
 
+    @property
+    def user_is_admin(self):
+        """Is the user a Launchpad admin?"""
+        return check_permission('launchpad.Admin', self.context)
+
 
 class BugTaskPortletView:
     """A portlet for displaying a bug's bugtasks."""
@@ -1206,7 +1218,7 @@ class BugTaskEditView(LaunchpadEditFormView):
             self.form_fields.get('assignee', False)):
             # Make the assignee field editable
             self.form_fields = self.form_fields.omit('assignee')
-            self.form_fields += formlib.form.Fields(PublicPersonChoice(
+            self.form_fields += formlib.form.Fields(ParticipatingPersonChoice(
                 __name__='assignee', title=_('Assigned to'), required=False,
                 vocabulary='ValidAssignee', readonly=False))
             self.form_fields['assignee'].custom_widget = CustomWidgetFactory(

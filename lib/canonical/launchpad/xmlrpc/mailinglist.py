@@ -50,7 +50,7 @@ class MailingListAPIView(LaunchpadXMLRPCView):
         # Handle unsynchronized lists.
         unsynchronized = []
         for mailing_list in list_set.unsynchronized_lists:
-            name = mailing_list.team.name
+            name = removeSecurityProxy(mailing_list.team).name
             if mailing_list.status == MailingListStatus.CONSTRUCTING:
                 unsynchronized.append((name, 'constructing'))
             elif mailing_list.status == MailingListStatus.UPDATING:
@@ -69,14 +69,15 @@ class MailingListAPIView(LaunchpadXMLRPCView):
             # only value that can be initialized.
             if mailing_list.welcome_message is not None:
                 initializer['welcome_message'] = mailing_list.welcome_message
-            creates.append((mailing_list.team.name, initializer))
+            creates.append(
+                (removeSecurityProxy(mailing_list.team).name, initializer))
             # In addition, all approved mailing lists that are being
             # constructed by Mailman need to have their status changed.
             mailing_list.startConstructing()
         if len(creates) > 0:
             response['create'] = creates
         # Next do mailing lists that are to be deactivated.
-        deactivated = [mailing_list.team.name
+        deactivated = [removeSecurityProxy(mailing_list.team).name
                        for mailing_list in list_set.deactivated_lists]
         if len(deactivated) > 0:
             response['deactivate'] = deactivated
@@ -84,7 +85,7 @@ class MailingListAPIView(LaunchpadXMLRPCView):
         # is the welcome message.
         modified = []
         for mailing_list in list_set.modified_lists:
-            changes = (mailing_list.team.name,
+            changes = (removeSecurityProxy(mailing_list.team).name,
                        dict(welcome_message=mailing_list.welcome_message))
             modified.append(changes)
             mailing_list.startUpdating()
@@ -126,14 +127,29 @@ class MailingListAPIView(LaunchpadXMLRPCView):
 
     def getMembershipInformation(self, teams):
         """See `IMailingListAPIView`."""
-        listset = getUtility(IMailingListSet)
-        emailset = getUtility(IEmailAddressSet)
+        mailing_list_set = getUtility(IMailingListSet)
         response = {}
+        # There are two sets of email addresses we need.  The first is the set
+        # of all email addresses which can post to specific mailing lists.
+        poster_addresses = mailing_list_set.getSenderAddresses(teams)
+        # The second is the set of all email addresses which will receive
+        # messages posted to the mailing lists.
+        subscriber_addresses = mailing_list_set.getSubscribedAddresses(teams)
+        # The above two results are dictionaries mapping team names to lists
+        # of string addresses.  The expected response is a dictionary mapping
+        # team names to lists of membership-tuples.  Each membership-tuple
+        # contains the email address, fullname, flags (currently hardcoded to
+        # 0 to mean regular delivery, no self-post acknowledgements, receive
+        # own posts, and no moderation), and status (either ENABLED meaning
+        # they can post to the mailing list or BYUSER meaning they can't).
         for team_name in teams:
-            mailing_list = listset.get(team_name)
-            if mailing_list is None:
-                return faults.NoSuchTeamMailingList(team_name)
-            # Map {address -> (real_name, flags, status)}
+            team_posters = poster_addresses.get(team_name, [])
+            team_subscribers = subscriber_addresses.get(team_name, [])
+            if not team_posters and not team_subscribers:
+                # Mailman requested a bogus team.  Ignore it.
+                response[team_name] = None
+                continue
+            # Map {address -> (full_name, flags, status)}
             members = {}
             # Hard code flags to 0 currently, meaning the member will get
             # regular (not digest) delivery, will not get post
@@ -141,36 +157,36 @@ class MailingListAPIView(LaunchpadXMLRPCView):
             # be moderated.  A future phase may change some of these
             # values.
             flags = 0
-            # Start by getting all addresses for all users who are subscribed.
-            # These are the addresses that are allowed to post to the mailing
-            # list, but may not get deliveries of posted messages.
-            for email_address in mailing_list.getSenderAddresses():
-                real_name = email_address.person.displayname
-                # Hidden email addresses are usually only visible to the user.
-                email = removeSecurityProxy(email_address).email
-                # We'll mark the status of these addresses as disabled BYUSER,
-                # which seems like the closest mapping to the semantics we
-                # intend.  It doesn't /really/ matter as long as it's disabled
-                # because the reason is only evident in the Mailman web u/i,
-                # which we're not using.
-                members[email] = (real_name, flags, BYUSER)
-            # Now go through just the subscribed addresses, the main
-            # difference now being that these addresses are enabled for
-            # delivery.  If there are overlaps, the enabled flag wins.
-            for email_address in mailing_list.getSubscribedAddresses():
-                real_name = email_address.person.displayname
-                # Hidden email addresses are usually only visible to the user.
-                email = removeSecurityProxy(email_address).email
-                members[email] = (real_name, flags, ENABLED)
-            # Finally, add the archive recipient if there is one, and if the
-            # team is public.  This address should never be registered in
-            # Launchpad, meaning specifically that the
-            # isRegisteredInLaunchpad() test below should always fail for it.
-            # That way, the address can never be used to forge spam onto a
-            # list.
+            # Turn the lists of 2-tuples into two sets and a dictionary.  The
+            # dictionary maps email addresses to full names.
+            posters = set()
+            subscribers = set()
+            full_names = dict()
+            for full_name, address in team_posters:
+                posters.add(address)
+                full_names[address] = full_name
+            for full_name, address in team_subscribers:
+                subscribers.add(address)
+                full_names[address] = full_name
+            # The team members is the union of all posters and subscribers.
+            # Iterate through these addresses, creating the 3-tuple entry
+            # required for the members map for this team.
+            for address in (posters | subscribers):
+                if address in subscribers:
+                    status = ENABLED
+                else:
+                    status = BYUSER
+                members[address] = (full_names[address], flags, status)
+            # Add the archive recipient if there is one, and if the team is
+            # public.  This address should never be registered in Launchpad,
+            # meaning specifically that the isRegisteredInLaunchpad() test
+            # below should always fail for it.  That way, the address can
+            # never be used to forge spam onto a list.
+            mailing_list = mailing_list_set.get(team_name)
             if config.mailman.archive_address and mailing_list.is_public:
                 members[config.mailman.archive_address] = ('', flags, ENABLED)
-            # The response must be a list of tuples.
+            # The response must be a dictionary mapping team names to lists of
+            # 4-tuples: (address, full_name, flags, status)
             response[team_name] = [
                 (address, members[address][0],
                  members[address][1], members[address][2])
@@ -230,5 +246,6 @@ class MailingListAPIView(LaunchpadXMLRPCView):
             for held_message in message_set.getHeldMessagesWithStatus(status):
                 held_message.acknowledge()
                 response[held_message.message_id] = (
-                    held_message.mailing_list.team.name, disposition)
+                    removeSecurityProxy(held_message.mailing_list.team).name,
+                    disposition)
         return response

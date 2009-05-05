@@ -792,7 +792,7 @@ host.
     series_target_link: u'http://.../firefox/trunk'
     summary: None
     target_link: u'http://.../firefox'
-    title: u'Milestone 1.0 for Mozilla Firefox'
+    title: u'Mozilla Firefox: 1.0'
 
 
 == Project release entries ==

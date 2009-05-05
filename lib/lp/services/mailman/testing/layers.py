@@ -20,12 +20,15 @@ class MailmanLayer(AppServerLayer):
     """A layer for the Mailman integration tests."""
 
     # Log watchers, shared among all layer tests.
+    bounce_watcher = None
+    error_watcher = None
     mhonarc_watcher = None
+    qrunner_watcher = None
     smtpd_watcher = None
     vette_watcher = None
     xmlrpc_watcher = None
-    qrunner_watcher = None
-    error_watcher = None
+
+    mm_cfg_path = None
 
     @classmethod
     def setUp(cls):
@@ -47,22 +50,25 @@ class MailmanLayer(AppServerLayer):
     @classmethod
     def testSetUp(cls):
         # Create the common log watchers.
+        cls.bounce_watcher = logwatcher.BounceWatcher()
+        cls.error_watcher = logwatcher.ErrorWatcher()
         cls.mhonarc_watcher = logwatcher.MHonArcWatcher()
+        cls.qrunner_watcher = logwatcher.QrunnerWatcher()
         cls.smtpd_watcher = logwatcher.SMTPDWatcher()
         cls.vette_watcher = logwatcher.VetteWatcher()
         cls.xmlrpc_watcher = logwatcher.XMLRPCWatcher()
-        cls.qrunner_watcher = logwatcher.QrunnerWatcher()
-        cls.error_watcher = logwatcher.ErrorWatcher()
 
     @classmethod
     def testTearDown(cls):
         # Finished with the common log watchers.
+        cls.bounce_watcher.close()
         cls.mhonarc_watcher.close()
         cls.smtpd_watcher.close()
         cls.vette_watcher.close()
         cls.xmlrpc_watcher.close()
         cls.qrunner_watcher.close()
         cls.error_watcher.close()
+        cls.bounce_watcher = None
         cls.mhonarc_watcher = None
         cls.smtpd_watcher = None
         cls.vette_watcher = None

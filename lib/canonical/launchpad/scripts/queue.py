@@ -211,7 +211,7 @@ class QueueAction:
 
     def run(self):
         """Place holder for command action."""
-        raise NotImplemented('No action implemented.')
+        raise NotImplementedError('No action implemented.')
 
     def displayTitle(self, action):
         """Common title/summary presentation method."""
