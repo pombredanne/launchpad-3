@@ -74,7 +74,6 @@ class BzrSync:
         if logger is None:
             logger = logging.getLogger(self.__class__.__name__)
         self.logger = logger
-        self._merge_handler = BranchMergeDetectionHandler(self.logger)
 
     def syncBranchAndClose(self, bzr_branch=None):
         """Synchronize the database with a Bazaar branch, handling locking.
@@ -159,10 +158,11 @@ class BzrSync:
         notify(
             events.ScanCompleted(
                 self.db_branch, bzr_branch, bzr_ancestry))
+        merge_handler = BranchMergeDetectionHandler(self.logger)
         auto_merge_proposals(
-            self.db_branch, self._merge_handler, bzr_ancestry)
+            self.db_branch, merge_handler, bzr_ancestry)
         auto_merge_branches(
-            self.db_branch, self._merge_handler, bzr_ancestry)
+            self.db_branch, merge_handler, bzr_ancestry)
         self.trans_manager.commit()
 
     def retrieveDatabaseAncestry(self):
