@@ -1492,14 +1492,14 @@ distribution, person name and the PPA name. This method is used in
     True
 
 Iteration over the own utility is performed against all archives,
-including PPA, PRIMARY, PARTNER and COPY:
+including PPA, DEBUG, PRIMARY, PARTNER and COPY:
 
     >>> archive_purposes = [archive.purpose.name for archive in archive_set]
     >>> len(archive_purposes)
-    16
+    17
 
     >>> print sorted(set(archive_purposes))
-    ['COPY', 'PARTNER', 'PPA', 'PRIMARY']
+    ['COPY', 'DEBUG', 'PARTNER', 'PPA', 'PRIMARY']
 
 ArchiveSet utility also offers counters in the distribution context for:
 

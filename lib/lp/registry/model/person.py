@@ -182,8 +182,16 @@ def validate_person_visibility(person, attr, value):
     """Validate changes in visibility.
 
     * Prevent teams with inconsistent connections from being made private
-    * Prevent private teams with mailing lists from going public
+    * Prevent private membership teams with mailing lists from going public.
+    * Prevent private teams from any transition.
     """
+
+    # Prohibit any visibility changes for private teams.  This rule is
+    # recognized to be Draconian and may be relaxed in the future.
+    if person.visibility == PersonVisibility.PRIVATE:
+        raise ImmutableVisibilityError(
+            'A private team cannot change visibility.')
+
     mailing_list = getUtility(IMailingListSet).get(person.name)
 
     if (value == PersonVisibility.PUBLIC and
@@ -193,6 +201,8 @@ def validate_person_visibility(person, attr, value):
         raise ImmutableVisibilityError(
             'This team cannot be made public since it has a mailing list')
 
+    # If transitioning to a non-public visibility, check for existing
+    # relationships that could leak data.
     if value != PersonVisibility.PUBLIC:
         warning = person.visibility_consistency_warning
         if warning is not None:
@@ -1123,7 +1133,7 @@ class Person(
             return False
 
         # Translate the team name to an ITeam if we were passed a team.
-        if isinstance(team, str):
+        if isinstance(team, (str, unicode)):
             team = PersonSet().getByName(team)
 
         if self._inTeam_cache is None: # Initialize cache
@@ -1727,6 +1737,16 @@ class Person(
         return new_name
 
     @property
+    def private(self):
+        """See `IPerson`."""
+        if not self.is_team:
+            return False
+        elif self.visibility == PersonVisibility.PUBLIC:
+            return False
+        else:
+            return True
+
+    @property
     def visibility_consistency_warning(self):
         """Warning used when changing the team's visibility.
 
@@ -1987,7 +2007,6 @@ class Person(
         else:
             email.status = EmailAddressStatus.VALIDATED
             # Automated processes need access to set the account().
-            removeSecurityProxy(email).accountID = self.accountID
             getUtility(IHWSubmissionSet).setOwnership(email)
         # Now that we have validated the email, see if this can be
         # matched to an existing RevisionAuthor.
@@ -2029,9 +2048,6 @@ class Person(
                 "Activated when the preferred email was set.",
                 password=self.password,
                 preferred_email=email)
-        # Anonymous users may claim their profile; remove the proxy
-        # to set the account.
-        removeSecurityProxy(email).accountID = self.accountID
         self._setPreferredEmail(email)
 
     def _setPreferredEmail(self, email):
@@ -2489,7 +2505,6 @@ class PersonSet:
         if logged_in_user is not None:
             private_query = """
                 TeamParticipation.person = %s
-                AND TeamParticipation.team = Person.id
                 AND Person.teamowner IS NOT NULL
                 AND Person.visibility != %s
                 """ % (sqlvalues(logged_in_user, PersonVisibility.PUBLIC))
@@ -2497,13 +2512,14 @@ class PersonSet:
             private_query = "1 = 0"
         base_query = """
             (Person.visibility = %s OR
-            %s)""" % (quote(PersonVisibility.PUBLIC), private_query)
+            (%s))""" % (quote(PersonVisibility.PUBLIC), private_query)
         return base_query
 
     def _teamEmailQuery(self, text, privacy_query):
         """Product the query for team email addresses."""
         team_email_query = """
             %s
+            AND TeamParticipation.team = Person.id
             AND Person.teamowner IS NOT NULL
             AND Person.merged IS NULL
             AND EmailAddress.person = Person.id
@@ -2515,6 +2531,7 @@ class PersonSet:
         """Produce the query for team names."""
         team_name_query = """
             %s
+            AND TeamParticipation.team = Person.id
             AND Person.teamowner IS NOT NULL
             AND Person.merged IS NULL
             AND Person.fti @@ ftq(%s)
@@ -2553,6 +2570,7 @@ class PersonSet:
             AND Person.account = Account.id
             AND Account.status NOT IN %s
             """ % sqlvalues(text, INACTIVE_ACCOUNT_STATUSES)
+
         results = results.union(Person.select(
             person_name_query, clauseTables=['Account']))
 

@@ -105,8 +105,15 @@ def builddmasterSetUp(test):
 
 def branchscannerSetUp(test):
     """Setup the user for the branch scanner tests."""
-    LaunchpadZopelessLayer.switchDbUser('branchscanner')
+    LaunchpadZopelessLayer.switchDbUser(config.branchscanner.dbuser)
     setUp(test)
+
+
+def branchscannerBugsSetUp(test):
+    """Setup the user for the branch scanner tests."""
+    lobotomize_stevea()
+    branchscannerSetUp(test)
+
 
 def branchscannerTearDown(test):
     """Tear down the branch scanner tests."""
@@ -373,6 +380,12 @@ special = {
             '../doc/bugnotification-comment-syncing-team.txt',
             layer=LaunchpadZopelessLayer, setUp=bugNotificationSendingSetUp,
             tearDown=bugNotificationSendingTearDown
+            ),
+    'bugnotificationrecipients.txt-branchscanner': LayeredDocFileSuite(
+            '../doc/bugnotificationrecipients.txt',
+            setUp=branchscannerBugsSetUp,
+            tearDown=tearDown,
+            layer=LaunchpadZopelessLayer
             ),
     'bugnotificationrecipients.txt': LayeredDocFileSuite(
             '../doc/bugnotificationrecipients.txt',
