@@ -107,8 +107,6 @@ def auto_merge_branches(db_branch, merge_handler, bzr_ancestry):
             # branch, not one merged into the other.
             pass
         elif last_scanned in bzr_ancestry:
-            # XXX: Move this so that there's an event generated here, and
-            # the code below is a handler of that event.
             merge_handler.mergeOfTwoBranches(branch, db_branch)
 
 
