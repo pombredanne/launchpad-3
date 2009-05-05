@@ -79,6 +79,14 @@ class RevisionsRemoved(ScannerEvent):
         self.removed_history = removed_history
 
 
+class ScanCompleted(ScannerEvent):
+    """The scan has been completed and the database is up-to-date."""
+
+    def __init__(self, db_branch, bzr_branch, bzr_ancestry):
+        super(ScanCompleted, self).__init__(db_branch, bzr_branch)
+        self.bzr_ancestry = bzr_ancestry
+
+
 # XXX: Other possible events:
 # class MergeDetected:
 #     source_db_branch = None
