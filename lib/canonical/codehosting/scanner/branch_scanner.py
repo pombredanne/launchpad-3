@@ -18,7 +18,8 @@ from zope.component import getUtility
 from lp.code.interfaces.branchscanner import IBranchScanner
 from canonical.codehosting.vfs import get_scanner_server
 from canonical.codehosting.scanner import buglinks, email
-from canonical.codehosting.scanner.bzrsync import BzrSync
+from canonical.codehosting.scanner.bzrsync import (
+    BzrSync, schedule_translation_upload)
 from canonical.codehosting.scanner.fixture import (
     Fixtures, make_zope_event_fixture, run_with_fixture)
 from canonical.launchpad.webapp import canonical_url, errorlog
@@ -55,7 +56,9 @@ class BranchScanner:
         server = get_scanner_server()
         fixture = Fixtures(
             [server, make_zope_event_fixture(
-                email.send_tip_changed_emails, buglinks.got_new_revision)])
+                email.send_tip_changed_emails,
+                buglinks.got_new_revision,
+                schedule_translation_upload)])
         branches = getUtility(IBranchScanner).getBranchesToScan()
         run_with_fixture(fixture, self.scanBranches, branches)
         self.log.info('Finished branch scanning')

@@ -13,7 +13,7 @@ import logging
 
 import pytz
 
-from zope.component import getUtility
+from zope.component import adapter, getUtility
 from zope.event import notify
 
 from bzrlib.branch import BzrBranchFormat4
@@ -406,17 +406,18 @@ class BzrSync:
     def updateBranchStatus(self, bzr_history):
         """Update the branch-scanner status in the database Branch table."""
         # Record that the branch has been updated.
-        if len(bzr_history) > 0:
+        revision_count = len(bzr_history)
+        if revision_count > 0:
             last_revision = bzr_history[-1]
             revision = getUtility(IRevisionSet).getByRevisionId(last_revision)
-            if last_revision != self.db_branch.last_scanned_id:
-                # XXX: make this an event handler -- maybe TipChanged?
-                getUtility(IRosettaUploadJobSource).create(
-                    self.db_branch, self.db_branch.last_scanned_id)
         else:
             revision = None
-
-        revision_count = len(bzr_history)
         self.logger.info(
             "Updating branch scanner status: %s revs", revision_count)
         self.db_branch.updateScannedDetails(revision, revision_count)
+
+
+@adapter(events.TipChanged)
+def schedule_translation_upload(tip_changed):
+    getUtility(IRosettaUploadJobSource).create(
+        tip_changed.db_branch, tip_changed.old_tip_revision_id)

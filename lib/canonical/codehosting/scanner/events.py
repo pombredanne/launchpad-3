@@ -60,6 +60,16 @@ class TipChanged(ScannerEvent):
         super(TipChanged, self).__init__(db_branch, bzr_branch)
         self.initial_scan = initial_scan
 
+    @property
+    def old_tip_revision_id(self):
+        """The tip revision id from the last scan."""
+        return self.db_branch.last_scanned_id
+
+    @property
+    def new_tip_revision_id(self):
+        """The new tip revision id from this scan."""
+        return self.bzr_branch.last_revision()
+
 
 class RevisionsRemoved(ScannerEvent):
     """Revisions have been removed from the branch."""

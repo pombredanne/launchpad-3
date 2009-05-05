@@ -19,6 +19,10 @@ import pytz
 from twisted.python.util import mergeFunctionMetadata
 from zope.component import getUtility
 
+from canonical.codehosting.bzrutils import ensure_base
+from canonical.codehosting.scanner.bzrsync import (
+    BzrSync, InvalidStackedBranchURL, schedule_translation_upload)
+from canonical.codehosting.scanner.fixture import make_zope_event_fixture
 from canonical.config import config
 from canonical.launchpad.database import (
     BranchRevision, Revision, RevisionAuthor, RevisionParent)
@@ -28,9 +32,6 @@ from lp.code.interfaces.branchlookup import IBranchLookup
 from canonical.launchpad.interfaces.translations import (
     TranslationsBranchImportMode)
 from canonical.launchpad.testing import LaunchpadObjectFactory
-from canonical.codehosting.scanner.bzrsync import (
-    BzrSync, InvalidStackedBranchURL)
-from canonical.codehosting.bzrutils import ensure_base
 from canonical.testing import LaunchpadZopelessLayer
 
 
@@ -593,6 +594,9 @@ class TestBzrTranslationsUploadJob(BzrSyncTestCase):
 
     def setUp(self):
         BzrSyncTestCase.setUp(self)
+        fixture = make_zope_event_fixture(schedule_translation_upload)
+        fixture.setUp()
+        self.addCleanup(fixture.tearDown)
 
     def _makeProductSeries(self, mode = None):
         """Switch to the Launchpad db user to create and configure a
