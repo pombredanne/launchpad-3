@@ -223,7 +223,12 @@ class TestRemoteBranches(TestCaseWithFactory):
 
 
 class AcquireBranchToPullTests:
-    """XXX write me."""
+    """Tests for acquiring branches to pull.
+
+    The tests apply to branches accessed directly or through an XML-RPC style
+    endpoint -- implement `assertNoBranchIsAquired`, `assertBranchIsAquired`
+    and `startMirroring` as appropriate.
+    """
 
     def assertNoBranchIsAquired(self):
         """XXX write me."""
@@ -274,23 +279,24 @@ class AcquireBranchToPullTests:
 
 class TestAcquireBranchToPullDirectly(TestCaseWithFactory,
                                       AcquireBranchToPullTests):
-    """Tests for `IBranchPuller.acquireBranchToPull`."""
+    """Direct tests for `IBranchPuller.acquireBranchToPull`."""
 
     layer = DatabaseFunctionalLayer
 
     def assertNoBranchIsAquired(self):
-        """XXX write me."""
+        """See `AcquireBranchToPullTests`."""
         acquired_branch = getUtility(IBranchPuller).acquireBranchToPull()
         self.assertEqual(None, acquired_branch)
 
     def assertBranchIsAquired(self, branch):
-        """XXX write me."""
+        """See `AcquireBranchToPullTests`."""
         acquired_branch = getUtility(IBranchPuller).acquireBranchToPull()
         self.assertEqual(branch, acquired_branch)
         self.assertIsNot(None, acquired_branch.last_mirror_attempt)
         self.assertIs(None, acquired_branch.next_mirror_time)
 
     def startMirroring(self, branch):
+        """See `AcquireBranchToPullTests`."""
         branch.startMirroring()
 
 

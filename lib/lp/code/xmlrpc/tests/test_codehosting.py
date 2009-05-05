@@ -1,4 +1,4 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2008, 2009 Canonical Ltd.  All rights reserved.
 
 """Tests for the internal codehosting API."""
 
@@ -508,12 +508,12 @@ class AcquireBranchToPullTestsViaEndpoint(TestCaseWithFactory,
         self.factory = frontend.getLaunchpadObjectFactory()
 
     def assertNoBranchIsAquired(self):
-        """XXX write me."""
+        """See `AcquireBranchToPullTests`."""
         pull_info = self.storage.acquireBranchToPull()
         self.assertEqual((), pull_info)
 
     def assertBranchIsAquired(self, branch):
-        """XXX write me."""
+        """See `AcquireBranchToPullTests`."""
         pull_info = self.storage.acquireBranchToPull()
         self.assertEqual(
             pull_info, self.storage._getBranchPullInfo(branch))
@@ -521,6 +521,7 @@ class AcquireBranchToPullTestsViaEndpoint(TestCaseWithFactory,
         self.assertIs(None, branch.next_mirror_time)
 
     def startMirroring(self, branch):
+        """See `AcquireBranchToPullTests`."""
         self.storage.startMirroring(branch.id)
 
 
