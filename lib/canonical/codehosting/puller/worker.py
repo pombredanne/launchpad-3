@@ -838,6 +838,9 @@ class PullerWorker:
                 (self.source, self.dest, id(self)))
 
 
+WORKER_ACTIVITY_PROGRESS_BAR = 'progress bar'
+WORKER_ACTIVITY_NETWORK = 'network'
+
 class PullerWorkerUIFactory(SilentUIFactory):
     """An UIFactory that always says yes to breaking locks."""
 
@@ -857,7 +860,7 @@ class PullerWorkerUIFactory(SilentUIFactory):
             return False
 
     def _progress_updated(self, task):
-        self.puller_worker_protocol.progressMade('progress bar')
+        self.puller_worker_protocol.progressMade(WORKER_ACTIVITY_PROGRESS_BAR)
 
     def report_transport_activity(self, transport, byte_count, direction):
         # <poolie> mwhudson: if you're feeling paranoid i suggest you check
@@ -865,7 +868,7 @@ class PullerWorkerUIFactory(SilentUIFactory):
         # <poolie> if we add a soft timeout like 'no io for two seconds' then
         #          we'd make a new action
         if direction in ['read', 'write']:
-            self.puller_worker_protocol.progressMade('activity')
+            self.puller_worker_protocol.progressMade(WORKER_ACTIVITY_NETWORK)
 
 
 def install_worker_ui_factory(puller_worker_protocol):

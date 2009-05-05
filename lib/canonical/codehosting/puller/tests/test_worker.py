@@ -27,7 +27,7 @@ from canonical.codehosting.puller.worker import (
     BranchMirrorer, BranchPolicy, BranchReferenceForbidden,
     HostedBranchPolicy, ImportedBranchPolicy, MirroredBranchPolicy,
     PullerWorkerProtocol, StackedOnBranchNotFound, get_vfs_format_classes,
-    install_worker_ui_factory)
+    install_worker_ui_factory, WORKER_ACTIVITY_NETWORK)
 from canonical.codehosting.puller.tests import (
     AcceptAnythingPolicy, BlacklistPolicy, PullerWorkerMixin, WhitelistPolicy)
 from lp.code.interfaces.branch import BranchType
@@ -757,7 +757,7 @@ class TestWorkerProgressReporting(TestCaseWithTransport):
         b2_http = bzrlib.branch.Branch.open(
             http_server.get_url() + 'some-other-branch')
         b1.pull(b2_http)
-        self.assertTrue('activity' in p.calls)
+        self.assertTrue(WORKER_ACTIVITY_NETWORK in p.calls)
 
 
 def test_suite():
