@@ -19,7 +19,25 @@ from lp.code.interfaces.branchscanner import IBranchScanner
 from canonical.codehosting.vfs import get_scanner_server
 from canonical.codehosting.scanner import buglinks, email
 from canonical.codehosting.scanner.bzrsync import BzrSync
+from canonical.codehosting.scanner.fixture import (
+    Fixtures, FixtureWithCleanup)
 from canonical.launchpad.webapp import canonical_url, errorlog
+
+
+class ZopeEventFixture(FixtureWithCleanup):
+
+    def __init__(self, handler):
+        self._handler = handler
+
+    def setUp(self):
+        super(ZopeEventFixture, self).setUp()
+        gsm = getGlobalSiteManager()
+        provideHandler(self._handler)
+        self.addCleanup(gsm.unregisterHandler, self._handler)
+
+
+def make_zope_event_fixture(*handlers):
+    return Fixtures(map(ZopeEventFixture, handlers))
 
 
 class BranchScanner:
@@ -36,33 +54,26 @@ class BranchScanner:
         """Run Bzrsync on all branches, and intercept most exceptions."""
         self.log.info('Starting branch scanning')
         server = get_scanner_server()
-        server.setUp()
-        gsm = getGlobalSiteManager()
-        # XXX: All these nested try / finally's are terrible!
+        fixture = Fixtures(
+            [server, make_zope_event_fixture(
+                email.create_revision_added_job, buglinks.got_new_revision)])
+        fixture.setUp()
         try:
-            provideHandler(email.create_revision_added_job)
-            try:
-                provideHandler(buglinks.got_new_revision)
+            for branch in getUtility(IBranchScanner).getBranchesToScan():
                 try:
-                    for branch in getUtility(IBranchScanner).getBranchesToScan():
-                        try:
-                            self.scanOneBranch(branch)
-                        except (KeyboardInterrupt, SystemExit):
-                            # If either was raised, something really wants us
-                            # to finish. Any other Exception is an error
-                            # condition and must not terminate the script.
-                            raise
-                        except Exception, e:
-                            # Yes, bare except. Bugs or error conditions when
-                            # scanning any given branch must not prevent
-                            # scanning the other branches.
-                            self.logScanFailure(branch, str(e))
-                finally:
-                    gsm.unregisterHandler(buglinks.got_new_revision)
-            finally:
-                gsm.unregisterHandler(email.create_revision_added_job)
+                    self.scanOneBranch(branch)
+                except (KeyboardInterrupt, SystemExit):
+                    # If either was raised, something really wants us
+                    # to finish. Any other Exception is an error
+                    # condition and must not terminate the script.
+                    raise
+                except Exception, e:
+                    # Yes, bare except. Bugs or error conditions when
+                    # scanning any given branch must not prevent
+                    # scanning the other branches.
+                    self.logScanFailure(branch, str(e))
         finally:
-            server.tearDown()
+            fixture.tearDown()
         self.log.info('Finished branch scanning')
 
     def scanOneBranch(self, branch):
