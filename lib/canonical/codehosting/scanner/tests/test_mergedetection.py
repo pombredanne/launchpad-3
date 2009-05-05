@@ -236,7 +236,8 @@ class TestBranchMergeDetectionHandler(TestCaseWithFactory):
         self.assertNotEqual(
             BranchLifecycleStatus.MERGED,
             proposal.source_branch.lifecycle_status)
-        self.handler.mergeProposalMerge(proposal)
+        self.handler.mergeOfTwoBranches(
+            proposal.source_branch, proposal.target_branch, proposal)
         self.assertEqual(
             BranchMergeProposalStatus.MERGED, proposal.queue_status)
         self.assertEqual(
@@ -253,7 +254,8 @@ class TestBranchMergeDetectionHandler(TestCaseWithFactory):
         self.assertNotEqual(
             BranchLifecycleStatus.MERGED,
             proposal.source_branch.lifecycle_status)
-        self.handler.mergeProposalMerge(proposal)
+        self.handler.mergeOfTwoBranches(
+            proposal.source_branch, proposal.target_branch, proposal)
         self.assertEqual(
             BranchMergeProposalStatus.MERGED, proposal.queue_status)
         self.assertNotEqual(

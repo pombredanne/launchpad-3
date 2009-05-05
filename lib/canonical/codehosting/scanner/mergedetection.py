@@ -52,11 +52,6 @@ class BranchMergeDetectionHandler:
             logger = logging.getLogger(self.__class__.__name__)
         self.logger = logger
 
-    def mergeProposalMerge(self, proposal):
-        """Handle a detected merge of a proposal."""
-        self.mergeOfTwoBranches(
-            proposal.source_branch, proposal.target_branch, proposal)
-
     def mergeOfTwoBranches(self, source, target, proposal=None):
         """Handle the merge of source into target."""
         # If the target branch is not the development focus, then don't update
@@ -128,7 +123,8 @@ def auto_merge_proposals(db_branch, merge_handler, bzr_ancestry):
     # ui by a person, of by PQM once it is integrated.
     for proposal in db_branch.landing_candidates:
         if proposal.source_branch.last_scanned_id in bzr_ancestry:
-            merge_handler.mergeProposalMerge(proposal)
+            merge_handler.mergeOfTwoBranches(
+                proposal.source_branch, db_branch, proposal)
 
     # Now check the landing targets.
     final_states = BRANCH_MERGE_PROPOSAL_FINAL_STATES
@@ -140,7 +136,5 @@ def auto_merge_proposals(db_branch, merge_handler, bzr_ancestry):
             branch_revision = proposal.target_branch.getBranchRevision(
                 revision_id=tip_rev_id)
             if branch_revision is not None:
-                # XXX: Move this so that there's an event generated here,
-                # and the code below is a handler of that event.
-                merge_handler.mergeProposalMerge(proposal)
-
+                merge_handler.mergeOfTwoBranches(
+                    db_branch, proposal.target_branch, proposal)
