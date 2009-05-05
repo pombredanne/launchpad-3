@@ -315,17 +315,15 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         The results are ordered by descending version.
         """
         query = """
-            SourcePackagePublishingHistory.distroseries =
-                DistroSeries.id AND
+            SourcePackagePublishingHistory.distroseries = %s AND
             SourcePackagePublishingHistory.sourcepackagerelease =
                 SourcePackageRelease.id AND
             SourcePackageRelease.sourcepackagename = %s AND
-            DistroSeries.distribution = %s AND
             SourcePackagePublishingHistory.archive IN %s
-        """ % sqlvalues(self.sourcepackagename, self.distribution,
-                            self.distribution.all_distro_archive_ids)
+        """ % sqlvalues(self.distroseries, self.sourcepackagename,
+                        self.distribution.all_distro_archive_ids)
 
-        clauseTables = ['DistroSeries', 'SourcePackagePublishingHistory']
+        clauseTables = ['SourcePackagePublishingHistory']
         order_const = "debversion_sort_key(SourcePackageRelease.version)"
 
         # Selecting ordered distinct `SourcePackageReleases` requires us
