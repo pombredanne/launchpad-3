@@ -68,7 +68,7 @@ class CodeReviewVote(DBEnumeratedType):
         Reviewer thinks that some fixing is needed before they can approve it.
         """)
 
-    NEEDS_INFO = DBItem(5, """
+    NEEDS_INFO = DBItem(6, """
         Needs Information
 
         The reviewer needs more information before making a decision.
