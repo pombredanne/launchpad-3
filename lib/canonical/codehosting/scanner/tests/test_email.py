@@ -12,7 +12,7 @@ import zope.component.event
 from zope.component import getGlobalSiteManager, getUtility, provideHandler
 
 from canonical.codehosting.jobs import JobRunner
-from canonical.codehosting.scanner.email import create_revision_added_job
+from canonical.codehosting.scanner.email import send_tip_changed_emails
 from canonical.codehosting.scanner.tests.test_bzrsync import BzrSyncTestCase
 from canonical.launchpad.interfaces import (
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
@@ -28,10 +28,10 @@ class TestBzrSyncEmail(BzrSyncTestCase):
 
     def setUp(self):
         BzrSyncTestCase.setUp(self)
-        provideHandler(create_revision_added_job)
+        provideHandler(send_tip_changed_emails)
         self.addCleanup(
             getGlobalSiteManager().unregisterHandler,
-            create_revision_added_job)
+            send_tip_changed_emails)
         stub.test_emails = []
 
     def makeDatabaseBranch(self):

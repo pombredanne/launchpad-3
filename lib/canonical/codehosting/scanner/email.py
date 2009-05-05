@@ -5,6 +5,7 @@
 __metaclass__ = type
 __all__ = [
     'BranchMailer',
+    'send_tip_changed_emails',
     ]
 
 from zope.component import adapter, getUtility
@@ -116,9 +117,8 @@ class BranchMailer:
         self.trans_manager.commit()
 
 
-# XXX: rename. this name sucks. send_tip_changed_email, perhaps.
 @adapter(events.TipChanged)
-def create_revision_added_job(tip_changed):
+def send_tip_changed_emails(tip_changed):
     if not tip_changed.initial_scan:
         getUtility(IRevisionsAddedJobSource).create(
             tip_changed.db_branch, tip_changed.db_branch.last_scanned_id,

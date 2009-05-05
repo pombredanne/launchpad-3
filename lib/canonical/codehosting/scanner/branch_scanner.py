@@ -71,7 +71,7 @@ class BranchScanner:
         server = get_scanner_server()
         fixture = Fixtures(
             [server, make_zope_event_fixture(
-                email.create_revision_added_job, buglinks.got_new_revision)])
+                email.send_tip_changed_emails, buglinks.got_new_revision)])
         branches = getUtility(IBranchScanner).getBranchesToScan()
         run_with_fixture(fixture, self.scanBranches, branches)
         self.log.info('Finished branch scanning')
