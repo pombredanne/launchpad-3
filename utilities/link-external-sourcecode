@@ -36,14 +36,31 @@ def get_parent(branch_dir):
 def gen_missing_files(source, destination):
     """Generate info on every file in source not in destination.
 
-    Yields `(source, destination, broken)` tuples, where `broken`
-    means that the destination is a broken symbolic link.
+    Yields `(source, destination)` tuples.
     """
     for name in listdir(source):
         destination_file = join(destination, name)
         if not exists(destination_file):
             source_file = join(source, name)
-            yield source_file, destination_file, islink(destination_file)
+            yield source_file, destination_file,
+
+
+def link(source, destination):
+    """Symlink source to destination.
+
+    Assumes destination is mising or broken.
+    """
+    try:
+        if islink(destination):
+            unlink(destination)
+        symlink(source, destination)
+    except OSError, error:
+        stderr.write(
+            '  Error linking %s: %s\n' % (basename(destination), error))
+    else:
+        if options.verbose:
+            stdout.write('%s -> %s\n' % (
+                    sep.join(destination.rsplit(sep, 3)[-3:]), source))
 
 
 if __name__ == '__main__':
@@ -98,18 +115,12 @@ if __name__ == '__main__':
         realpath(join(options.parent, 'sourcecode')),
         abspath(join(options.target, 'sourcecode')))
 
-    for target, link, broken in missing_files:
-        try:
-            if broken:
-                unlink(link)
-            symlink(target, link)
-        except OSError, error:
-            stderr.write(
-                '  Error linking %s: %s\n' % (basename(link), error))
-        else:
-            if options.verbose:
-                stdout.write('%s -> %s\n' % (
-                        sep.join(link.rsplit(sep, 3)[-3:]), target))
+    for source, destination in missing_files:
+        link(source, destination)
 
+    source = join(options.parent, 'buildout')
+    destination = join(options.target, 'buildout')
+    if not exists(destination):
+        link(source, destination)
 
 # End
