@@ -10,8 +10,9 @@ from bzrlib.revision import NULL_REVISION
 import transaction
 from zope.component import getUtility
 
-from canonical.codehosting.scanner.bzrsync import (
-    BranchMergeDetectionHandler, BzrSync)
+from canonical.codehosting.scanner.bzrsync import BzrSync
+from canonical.codehosting.scanner.mergedetection import (
+    auto_merge_branches, BranchMergeDetectionHandler)
 from canonical.codehosting.scanner.tests.test_bzrsync import (
     BzrSyncTestCase, run_as_db_user)
 from canonical.config import config
@@ -52,7 +53,7 @@ class TestAutoMergeDetectionForMergeProposals(BzrSyncTestCase):
             scanner = self.makeBzrSync(branch)
             scanner.syncBranchAndClose()
 
-    def test_autoMergeProposals_real_merge(self):
+    def test_auto_merge_proposals_real_merge(self):
         # If there is a merge proposal where the tip of the source is in the
         # ancestry of the target, mark it as merged.
         proposal, db_trunk, db_branch, branch_tree = (
@@ -64,7 +65,7 @@ class TestAutoMergeDetectionForMergeProposals(BzrSyncTestCase):
             BranchMergeProposalStatus.MERGED,
             proposal.queue_status)
 
-    def test_autoMergeProposals_real_merge_target_scanned_first(self):
+    def test_auto_merge_proposals_real_merge_target_scanned_first(self):
         # If there is a merge proposal where the tip of the source is in the
         # ancestry of the target, mark it as merged.
         proposal, db_trunk, db_branch, branch_tree = (
@@ -76,7 +77,7 @@ class TestAutoMergeDetectionForMergeProposals(BzrSyncTestCase):
             BranchMergeProposalStatus.MERGED,
             proposal.queue_status)
 
-    def test_autoMergeProposals_rejected_proposal(self):
+    def test_auto_merge_proposals_rejected_proposal(self):
         # If there is a merge proposal where the tip of the source is in the
         # ancestry of the target but the proposal is in a final state the
         # proposal is not marked as merged.
@@ -93,7 +94,7 @@ class TestAutoMergeDetectionForMergeProposals(BzrSyncTestCase):
             BranchMergeProposalStatus.REJECTED,
             proposal.queue_status)
 
-    def test_autoMergeProposals_rejected_proposal_target_scanned_first(self):
+    def test_auto_merge_proposals_rejected_proposal_target_scanned_first(self):
         # If there is a merge proposal where the tip of the source is in the
         # ancestry of the target but the proposal is in a final state the
         # proposal is not marked as merged.
@@ -110,7 +111,7 @@ class TestAutoMergeDetectionForMergeProposals(BzrSyncTestCase):
             BranchMergeProposalStatus.REJECTED,
             proposal.queue_status)
 
-    def test_autoMergeProposals_not_merged_proposal(self):
+    def test_auto_merge_proposals_not_merged_proposal(self):
         # If there is a merge proposal where the tip of the source is not in
         # the ancestry of the target it is not marked as merged.
 
@@ -128,7 +129,7 @@ class TestAutoMergeDetectionForMergeProposals(BzrSyncTestCase):
         # The proposal should stay in the same state.
         self.assertEqual(current_proposal_status, proposal.queue_status)
 
-    def test_autoMergeProposals_not_merged_with_updated_source(self):
+    def test_auto_merge_proposals_not_merged_with_updated_source(self):
         # If there is a merge proposal where the tip of the source is not in
         # the ancestry of the target it is not marked as merged.
 
@@ -168,7 +169,7 @@ class TestMergeDetection(TestCaseWithFactory):
         # A merge is never emitted with the source branch being the same as
         # the target branch.
         self.db_branch.last_scanned_id = 'revid'
-        self.bzrsync.autoMergeBranches(self.db_branch, self, ['revid'])
+        auto_merge_branches(self.db_branch, self, ['revid'])
         self.assertEqual([], self.merges)
 
     def test_branch_tip_in_ancestry(self):
@@ -176,7 +177,7 @@ class TestMergeDetection(TestCaseWithFactory):
         # ancestry passed in, the merge detection is emitted.
         source = self.factory.makeProductBranch(product=self.product)
         source.last_scanned_id = 'revid'
-        self.bzrsync.autoMergeBranches(self.db_branch, self, ['revid'])
+        auto_merge_branches(self.db_branch, self, ['revid'])
         self.assertEqual([(source, self.db_branch)], self.merges)
 
     def test_branch_tip_in_ancestry_status_merged(self):
@@ -185,7 +186,7 @@ class TestMergeDetection(TestCaseWithFactory):
             product=self.product,
             lifecycle_status=BranchLifecycleStatus.MERGED)
         source.last_scanned_id = 'revid'
-        self.bzrsync.autoMergeBranches(self.db_branch, self, ['revid'])
+        auto_merge_branches(self.db_branch, self, ['revid'])
         self.assertEqual([], self.merges)
 
     def test_other_branch_with_no_last_scanned_id(self):
@@ -193,7 +194,7 @@ class TestMergeDetection(TestCaseWithFactory):
         # of the branch is not yet been set no merge event is emitted for that
         # branch.
         source = self.factory.makeProductBranch(product=self.product)
-        self.bzrsync.autoMergeBranches(self.db_branch, self, ['revid'])
+        auto_merge_branches(self.db_branch, self, ['revid'])
         self.assertEqual([], self.merges)
 
     def test_other_branch_with_NULL_REVISION_last_scanned_id(self):
@@ -202,7 +203,7 @@ class TestMergeDetection(TestCaseWithFactory):
         # that branch.
         source = self.factory.makeProductBranch(product=self.product)
         source.last_scanned_id = NULL_REVISION
-        self.bzrsync.autoMergeBranches(self.db_branch, self, ['revid'])
+        auto_merge_branches(self.db_branch, self, ['revid'])
         self.assertEqual([], self.merges)
 
     def test_other_branch_same_tip_revision_not_emitted(self):
@@ -211,7 +212,7 @@ class TestMergeDetection(TestCaseWithFactory):
         source = self.factory.makeProductBranch(product=self.product)
         source.last_scanned_id = 'revid'
         self.db_branch.last_scanned_id = 'revid'
-        self.bzrsync.autoMergeBranches(self.db_branch, self, ['revid'])
+        auto_merge_branches(self.db_branch, self, ['revid'])
         self.assertEqual([], self.merges)
 
 
