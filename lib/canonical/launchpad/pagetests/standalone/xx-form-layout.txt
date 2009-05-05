@@ -120,7 +120,7 @@ LPFormView:
     >>> # Note: not the main content, but the whole page.
     >>> print admin_browser.contents
     <div...
-    <table class="form">
+    <table class="form" id="launchpad-form-widgets">
     ...
     </div>
 
@@ -132,7 +132,7 @@ Or for another example.
     ...   'http://launchpad.dev/~cprov/+archive/ppa/+edit/++form++')
     >>> print cprov_browser.contents
     <div...
-    <table class="form">
+    <table class="form" id="launchpad-form-widgets">
     ...
     </div>
 
