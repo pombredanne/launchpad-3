@@ -227,6 +227,12 @@ class TestAcquireBranchToPull(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
+    def assertBranchIsAquired(self, branch):
+        acquired_branch = getUtility(IBranchPuller).acquireBranchToPull()
+        self.assertEqual(acquired_branch, branch)
+        self.assertIsNot(acquired_branch.last_mirror_attempt, None)
+        self.assertIs(acquired_branch.next_mirror_time, None)
+
     def test_empty(self):
         # If there is no branch that needs pulling, acquireBranchToPull
         # returns None.
@@ -238,8 +244,7 @@ class TestAcquireBranchToPull(TestCaseWithFactory):
         # returns that.
         branch = self.factory.makeAnyBranch()
         branch.requestMirror()
-        self.assertEqual(
-            branch, getUtility(IBranchPuller).acquireBranchToPull())
+        self.assertBranchIsAquired(branch)
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

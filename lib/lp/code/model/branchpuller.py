@@ -51,7 +51,10 @@ class BranchPuller:
     def acquireBranchToPull(self):
         """See `IBranchPuller`."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        return store.find(
+        branch = store.find(
             Branch,
             Branch.next_mirror_time <= UTC_NOW).order_by(
                 Branch.next_mirror_time).one()
+        if branch is not None:
+            branch.startMirroring()
+        return branch
