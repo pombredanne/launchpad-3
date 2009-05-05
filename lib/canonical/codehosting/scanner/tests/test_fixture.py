@@ -9,7 +9,7 @@ import unittest
 from zope.interface import implements
 
 from canonical.codehosting.scanner.fixture import (
-    FixtureWithCleanup, IFixture, run_with_fixture, with_fixture)
+    Fixtures, FixtureWithCleanup, IFixture, run_with_fixture, with_fixture)
 from canonical.launchpad.testing import TestCase
 
 
@@ -82,6 +82,40 @@ class TestFixtureWithCleanup(TestCase):
         fixture.addCleanup(log.append, 'bar')
         fixture.tearDown()
         self.assertEqual(['bar', 'foo'], log)
+
+
+class TestFixtures(TestCase):
+    """Tests the `Fixtures` class, which groups multiple `IFixture`s."""
+
+    class LoggingFixture:
+
+        def __init__(self, log):
+            self._log = log
+
+        def setUp(self):
+            self._log.append((self, 'setUp'))
+
+        def tearDown(self):
+            self._log.append((self, 'tearDown'))
+
+    def test_with_single_fixture(self):
+        log = []
+        a = self.LoggingFixture(log)
+        fixtures = Fixtures([a])
+        fixtures.setUp()
+        fixtures.tearDown()
+        self.assertEqual([(a, 'setUp'), (a, 'tearDown')], log)
+
+    def test_with_multiple_fixtures(self):
+        log = []
+        a = self.LoggingFixture(log)
+        b = self.LoggingFixture(log)
+        fixtures = Fixtures([a, b])
+        fixtures.setUp()
+        fixtures.tearDown()
+        self.assertEqual(
+            [(a, 'setUp'), (b, 'setUp'), (b, 'tearDown'), (a, 'tearDown')],
+            log)
 
 
 def test_suite():

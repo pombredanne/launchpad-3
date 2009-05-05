@@ -4,6 +4,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'Fixtures',
     'FixtureWithCleanup',
     'IFixture',
     'run_with_fixture',
@@ -45,6 +46,18 @@ class FixtureWithCleanup:
     def addCleanup(self, function, *args, **kwargs):
         """Run 'function' with arguments during tear down."""
         self._cleanups.append((function, args, kwargs))
+
+
+class Fixtures(FixtureWithCleanup):
+
+    def __init__(self, fixtures):
+        self._fixtures = fixtures
+
+    def setUp(self):
+        super(Fixtures, self).setUp()
+        for fixture in self._fixtures:
+            fixture.setUp()
+            self.addCleanup(fixture.tearDown)
 
 
 def with_fixture(fixture):
