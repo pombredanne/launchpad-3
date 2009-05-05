@@ -27,7 +27,7 @@ from canonical.codehosting import iter_list_chunks
 from canonical.codehosting.puller.worker import BranchMirrorer, BranchPolicy
 from canonical.codehosting.scanner import events
 from canonical.codehosting.scanner.mergedetection import (
-    auto_merge_branches, auto_merge_proposals, BranchMergeDetectionHandler)
+    auto_merge_branches, auto_merge_proposals)
 from lp.code.interfaces.branch import (
     BranchFormat, ControlFormat, RepositoryFormat)
 from lp.code.interfaces.branchjob import IRosettaUploadJobSource
@@ -158,11 +158,8 @@ class BzrSync:
         notify(
             events.ScanCompleted(
                 self.db_branch, bzr_branch, bzr_ancestry))
-        merge_handler = BranchMergeDetectionHandler(self.logger)
-        auto_merge_proposals(
-            self.db_branch, merge_handler, bzr_ancestry)
-        auto_merge_branches(
-            self.db_branch, merge_handler, bzr_ancestry)
+        auto_merge_proposals(self.db_branch, self.logger, bzr_ancestry)
+        auto_merge_branches(self.db_branch, self.logger, bzr_ancestry)
         self.trans_manager.commit()
 
     def retrieveDatabaseAncestry(self):

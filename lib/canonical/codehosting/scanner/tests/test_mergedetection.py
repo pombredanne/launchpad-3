@@ -4,6 +4,7 @@
 
 __metaclass__ = type
 
+import logging
 import unittest
 
 from bzrlib.revision import NULL_REVISION
@@ -11,8 +12,7 @@ import transaction
 from zope.component import getUtility
 
 from canonical.codehosting.scanner.bzrsync import BzrSync
-from canonical.codehosting.scanner.mergedetection import (
-    auto_merge_branches, BranchMergeDetectionHandler)
+from canonical.codehosting.scanner import mergedetection
 from canonical.codehosting.scanner.tests.test_bzrsync import (
     BzrSyncTestCase, run_as_db_user)
 from canonical.config import config
@@ -158,10 +158,17 @@ class TestMergeDetection(TestCaseWithFactory):
         self.product = self.factory.makeProduct()
         self.db_branch = self.factory.makeProductBranch(product=self.product)
         self.bzrsync = BzrSync(transaction, self.db_branch)
+        # Replace the built-in merge_detected with our test stub.
+        self._original_merge_detected = mergedetection.merge_detected
+        mergedetection.merge_detected = self.mergeDetected
         # Reset the recorded branches.
         self.merges = []
 
-    def mergeOfTwoBranches(self, source, target):
+    def tearDown(self):
+        mergedetection.merge_detected = self._original_merge_detected
+        TestCaseWithFactory.tearDown(self)
+
+    def mergeDetected(self, logger, source, target):
         # Record the merged branches
         self.merges.append((source, target))
 
@@ -169,7 +176,7 @@ class TestMergeDetection(TestCaseWithFactory):
         # A merge is never emitted with the source branch being the same as
         # the target branch.
         self.db_branch.last_scanned_id = 'revid'
-        auto_merge_branches(self.db_branch, self, ['revid'])
+        mergedetection.auto_merge_branches(self.db_branch, None, ['revid'])
         self.assertEqual([], self.merges)
 
     def test_branch_tip_in_ancestry(self):
@@ -177,7 +184,7 @@ class TestMergeDetection(TestCaseWithFactory):
         # ancestry passed in, the merge detection is emitted.
         source = self.factory.makeProductBranch(product=self.product)
         source.last_scanned_id = 'revid'
-        auto_merge_branches(self.db_branch, self, ['revid'])
+        mergedetection.auto_merge_branches(self.db_branch, None, ['revid'])
         self.assertEqual([(source, self.db_branch)], self.merges)
 
     def test_branch_tip_in_ancestry_status_merged(self):
@@ -186,7 +193,7 @@ class TestMergeDetection(TestCaseWithFactory):
             product=self.product,
             lifecycle_status=BranchLifecycleStatus.MERGED)
         source.last_scanned_id = 'revid'
-        auto_merge_branches(self.db_branch, self, ['revid'])
+        mergedetection.auto_merge_branches(self.db_branch, None, ['revid'])
         self.assertEqual([], self.merges)
 
     def test_other_branch_with_no_last_scanned_id(self):
@@ -194,7 +201,7 @@ class TestMergeDetection(TestCaseWithFactory):
         # of the branch is not yet been set no merge event is emitted for that
         # branch.
         source = self.factory.makeProductBranch(product=self.product)
-        auto_merge_branches(self.db_branch, self, ['revid'])
+        mergedetection.auto_merge_branches(self.db_branch, None, ['revid'])
         self.assertEqual([], self.merges)
 
     def test_other_branch_with_NULL_REVISION_last_scanned_id(self):
@@ -203,7 +210,7 @@ class TestMergeDetection(TestCaseWithFactory):
         # that branch.
         source = self.factory.makeProductBranch(product=self.product)
         source.last_scanned_id = NULL_REVISION
-        auto_merge_branches(self.db_branch, self, ['revid'])
+        mergedetection.auto_merge_branches(self.db_branch, None, ['revid'])
         self.assertEqual([], self.merges)
 
     def test_other_branch_same_tip_revision_not_emitted(self):
@@ -212,7 +219,7 @@ class TestMergeDetection(TestCaseWithFactory):
         source = self.factory.makeProductBranch(product=self.product)
         source.last_scanned_id = 'revid'
         self.db_branch.last_scanned_id = 'revid'
-        auto_merge_branches(self.db_branch, self, ['revid'])
+        mergedetection.auto_merge_branches(self.db_branch, None, ['revid'])
         self.assertEqual([], self.merges)
 
 
@@ -220,10 +227,6 @@ class TestBranchMergeDetectionHandler(TestCaseWithFactory):
     """Test the merge handing of the merge detection handler."""
 
     layer = LaunchpadZopelessLayer
-
-    def setUp(self):
-        TestCaseWithFactory.setUp(self)
-        self.handler = BranchMergeDetectionHandler()
 
     def test_mergeProposalMergeDetected(self):
         # A merge proposal that is merged has the proposal itself marked as
@@ -236,7 +239,8 @@ class TestBranchMergeDetectionHandler(TestCaseWithFactory):
         self.assertNotEqual(
             BranchLifecycleStatus.MERGED,
             proposal.source_branch.lifecycle_status)
-        self.handler.mergeOfTwoBranches(
+        mergedetection.merge_detected(
+            logging.getLogger(),
             proposal.source_branch, proposal.target_branch, proposal)
         self.assertEqual(
             BranchMergeProposalStatus.MERGED, proposal.queue_status)
@@ -254,7 +258,8 @@ class TestBranchMergeDetectionHandler(TestCaseWithFactory):
         self.assertNotEqual(
             BranchLifecycleStatus.MERGED,
             proposal.source_branch.lifecycle_status)
-        self.handler.mergeOfTwoBranches(
+        mergedetection.merge_detected(
+            logging.getLogger(),
             proposal.source_branch, proposal.target_branch, proposal)
         self.assertEqual(
             BranchMergeProposalStatus.MERGED, proposal.queue_status)
@@ -267,7 +272,7 @@ class TestBranchMergeDetectionHandler(TestCaseWithFactory):
         # lifecycle status of the source branch to be updated to merged.
         source = self.factory.makeProductBranch()
         target = self.factory.makeProductBranch()
-        self.handler.mergeOfTwoBranches(source, target)
+        mergedetection.merge_detected(logging.getLogger(), source, target)
         self.assertNotEqual(
             BranchLifecycleStatus.MERGED, source.lifecycle_status)
 
@@ -278,7 +283,7 @@ class TestBranchMergeDetectionHandler(TestCaseWithFactory):
         source = self.factory.makeProductBranch(product=product)
         target = self.factory.makeProductBranch(product=product)
         product.development_focus.branch = target
-        self.handler.mergeOfTwoBranches(source, target)
+        mergedetection.merge_detected(logging.getLogger(), source, target)
         self.assertEqual(
             BranchLifecycleStatus.MERGED, source.lifecycle_status)
 
@@ -292,7 +297,7 @@ class TestBranchMergeDetectionHandler(TestCaseWithFactory):
         series = product.newSeries(product.owner, 'new', '')
         series.branch = source
 
-        self.handler.mergeOfTwoBranches(source, target)
+        mergedetection.merge_detected(logging.getLogger(), source, target)
         self.assertNotEqual(
             BranchLifecycleStatus.MERGED, source.lifecycle_status)
 

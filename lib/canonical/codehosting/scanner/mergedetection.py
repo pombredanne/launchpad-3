@@ -6,10 +6,7 @@ __metaclass__ = type
 __all__ = [
     'auto_merge_branches',
     'auto_merge_proposals',
-    'BranchMergeDetectionHandler',
     ]
-
-import logging
 
 from bzrlib.revision import NULL_REVISION
 
@@ -44,36 +41,28 @@ def mark_branch_merged(logger, branch):
     branch.lifecycle_status = BranchLifecycleStatus.MERGED
 
 
-class BranchMergeDetectionHandler:
-    """Handle merge detection events."""
-
-    def __init__(self, logger=None):
-        if logger is None:
-            logger = logging.getLogger(self.__class__.__name__)
-        self.logger = logger
-
-    def mergeOfTwoBranches(self, source, target, proposal=None):
-        """Handle the merge of source into target."""
-        # If the target branch is not the development focus, then don't update
-        # the status of the source branch.
-        self.logger.info(
-            'Merge detected: %s => %s',
-            source.bzr_identity, target.bzr_identity)
-        if proposal is None:
-            # If there's no explicit merge proposal, only change the branch's
-            # status when it has been merged into the development focus.
-            if is_development_focus(target):
-                mark_branch_merged(self.logger, source)
-        else:
-            proposal.markAsMerged()
-            # If there is an explicit merge proposal, change the branch's
-            # status when it's been merged into a development focus or any
-            # other series branch.
-            if is_series_branch(proposal.target_branch):
-                mark_branch_merged(self.logger, proposal.source_branch)
+def merge_detected(logger, source, target, proposal=None):
+    """Handle the merge of source into target."""
+    # If the target branch is not the development focus, then don't update
+    # the status of the source branch.
+    logger.info(
+        'Merge detected: %s => %s',
+        source.bzr_identity, target.bzr_identity)
+    if proposal is None:
+        # If there's no explicit merge proposal, only change the branch's
+        # status when it has been merged into the development focus.
+        if is_development_focus(target):
+            mark_branch_merged(logger, source)
+    else:
+        proposal.markAsMerged()
+        # If there is an explicit merge proposal, change the branch's
+        # status when it's been merged into a development focus or any
+        # other series branch.
+        if is_series_branch(proposal.target_branch):
+            mark_branch_merged(logger, proposal.source_branch)
 
 
-def auto_merge_branches(db_branch, merge_handler, bzr_ancestry):
+def auto_merge_branches(db_branch, logger, bzr_ancestry):
     """Detect branches that have been merged."""
     # We only check branches that have been merged into the branch that is
     # being scanned as we already have the ancestry handy.  It is much
@@ -107,22 +96,23 @@ def auto_merge_branches(db_branch, merge_handler, bzr_ancestry):
             # branch, not one merged into the other.
             pass
         elif last_scanned in bzr_ancestry:
-            merge_handler.mergeOfTwoBranches(branch, db_branch)
+            merge_detected(logger, branch, db_branch)
 
 
-def auto_merge_proposals(db_branch, merge_handler, bzr_ancestry):
+def auto_merge_proposals(db_branch, logger, bzr_ancestry):
     """Detect merged proposals."""
+
     # Check landing candidates in non-terminal states to see if their tip
     # is in our ancestry. If it is, set the state of the proposal to
     # 'merged'.
-
+    #
     # At this stage we are not going to worry about the revno
     # which introduced the change, that will either be set through the web
     # ui by a person, of by PQM once it is integrated.
     for proposal in db_branch.landing_candidates:
         if proposal.source_branch.last_scanned_id in bzr_ancestry:
-            merge_handler.mergeOfTwoBranches(
-                proposal.source_branch, db_branch, proposal)
+            merge_detected(
+                logger, proposal.source_branch, db_branch, proposal)
 
     # Now check the landing targets.
     final_states = BRANCH_MERGE_PROPOSAL_FINAL_STATES
@@ -134,5 +124,5 @@ def auto_merge_proposals(db_branch, merge_handler, bzr_ancestry):
             branch_revision = proposal.target_branch.getBranchRevision(
                 revision_id=tip_rev_id)
             if branch_revision is not None:
-                merge_handler.mergeOfTwoBranches(
-                    db_branch, proposal.target_branch, proposal)
+                merge_detected(
+                    logger, db_branch, proposal.target_branch, proposal)
