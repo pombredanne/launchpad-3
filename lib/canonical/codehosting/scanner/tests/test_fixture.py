@@ -83,6 +83,15 @@ class TestFixtureWithCleanup(TestCase):
         fixture.tearDown()
         self.assertEqual(['bar', 'foo'], log)
 
+    def test_cleanup_run_even_in_failure(self):
+        log = []
+        fixture = FixtureWithCleanup()
+        fixture.setUp()
+        fixture.addCleanup(log.append, 'foo')
+        fixture.addCleanup(lambda: 1/0)
+        self.assertRaises(ZeroDivisionError, fixture.tearDown)
+        self.assertEqual(['foo'], log)
+
 
 class TestFixtures(TestCase):
     """Tests the `Fixtures` class, which groups multiple `IFixture`s."""

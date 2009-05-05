@@ -35,9 +35,13 @@ class FixtureWithCleanup:
         self._cleanups = []
 
     def _runCleanups(self):
-        while self._cleanups:
-            f, args, kwargs = self._cleanups.pop()
+        if [] == self._cleanups:
+            return
+        f, args, kwargs = self._cleanups.pop()
+        try:
             f(*args, **kwargs)
+        finally:
+            self._runCleanups()
 
     def tearDown(self):
         """See `IFixture`."""
