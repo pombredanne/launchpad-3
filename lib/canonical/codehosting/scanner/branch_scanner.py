@@ -37,28 +37,29 @@ class BranchScanner:
         self.log.info('Starting branch scanning')
         server = get_scanner_server()
         server.setUp()
+        gsm = getGlobalSiteManager()
+        # XXX: All these nested try / finally's are terrible!
         try:
-            # XXX: Should actually nest another try / finally, since either of
-            # these calls could fail.
             provideHandler(email.create_revision_added_job)
-            provideHandler(buglinks.got_new_revision)
             try:
-                for branch in getUtility(IBranchScanner).getBranchesToScan():
-                    try:
-                        self.scanOneBranch(branch)
-                    except (KeyboardInterrupt, SystemExit):
-                        # If either was raised, something really wants us to
-                        # finish. Any other Exception is an error condition
-                        # and must not terminate the script.
-                        raise
-                    except Exception, e:
-                        # Yes, bare except. Bugs or error conditions when
-                        # scanning any given branch must not prevent scanning
-                        # the other branches.
-                        self.logScanFailure(branch, str(e))
+                provideHandler(buglinks.got_new_revision)
+                try:
+                    for branch in getUtility(IBranchScanner).getBranchesToScan():
+                        try:
+                            self.scanOneBranch(branch)
+                        except (KeyboardInterrupt, SystemExit):
+                            # If either was raised, something really wants us
+                            # to finish. Any other Exception is an error
+                            # condition and must not terminate the script.
+                            raise
+                        except Exception, e:
+                            # Yes, bare except. Bugs or error conditions when
+                            # scanning any given branch must not prevent
+                            # scanning the other branches.
+                            self.logScanFailure(branch, str(e))
+                finally:
+                    gsm.unregisterHandler(buglinks.got_new_revision)
             finally:
-                gsm = getGlobalSiteManager()
-                gsm.unregisterHandler(buglinks.got_new_revision)
                 gsm.unregisterHandler(email.create_revision_added_job)
         finally:
             server.tearDown()
