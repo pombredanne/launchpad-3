@@ -1,6 +1,10 @@
 # Copyright 2009 Canonical Ltd.  All rights reserved.
 
-"""Module docstring goes here."""
+"""Basic support for 'fixtures'.
+
+In this case, 'fixture' means an object that has a setUp and a tearDown
+method.
+"""
 
 __metaclass__ = type
 __all__ = [
@@ -26,7 +30,17 @@ class IFixture(Interface):
 
 
 class FixtureWithCleanup:
-    """Fixture that allows arbitrary cleanup methods to be added."""
+    """Fixture that allows arbitrary cleanup methods to be added.
+
+    Subclass this if you'd like to define a fixture that calls 'addCleanup'.
+    This is most often useful for fixtures that provide a way for users to
+    acquire resources arbitrarily.
+
+    Cleanups are run during 'tearDown' in reverse order to the order they were
+    added. If any of the cleanups raise an error, this error will be bubbled
+    up, causing tearDown to raise an exception, and the rest of the cleanups
+    will be run in a finally block.
+    """
 
     implements(IFixture)
 
@@ -53,8 +67,13 @@ class FixtureWithCleanup:
 
 
 class Fixtures(FixtureWithCleanup):
+    """A collection of `IFixture`s."""
 
     def __init__(self, fixtures):
+        """Construct a fixture that groups many fixtures together.
+
+        :param fixtures: A list of `IFixture` objects.
+        """
         self._fixtures = fixtures
 
     def setUp(self):

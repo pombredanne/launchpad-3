@@ -1,6 +1,6 @@
 # Copyright 2009 Canonical Ltd.  All rights reserved.
 
-"""Module docstring goes here."""
+"""Tests for fixture support."""
 
 __metaclass__ = type
 
