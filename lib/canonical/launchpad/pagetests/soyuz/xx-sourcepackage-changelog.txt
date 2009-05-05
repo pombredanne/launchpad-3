@@ -32,9 +32,6 @@ Browse the changelog of a sourcepackage..
   alsa-utils (1.0.9a-4) warty; urgency=low
   * Placeholder
   -- Sample Person &lt;test@canonical.com&gt; Tue, 7 Feb 2006 12:10:08 +0300
-  alsa-utils (1.0.8-1ubuntu1) warty; urgency=low
-  * Placeholder
-  -- Sample Person &lt;test@canonical.com&gt; Tue, 7 Feb 2006 12:10:08 +0300
 
 The LP: #<number> entries are also linkified:
 
@@ -71,17 +68,14 @@ bots from picking them up):
   alsa-utils (1.0.9a-4) warty; urgency=low
   * Placeholder
   -- Sample Person &lt;email address hidden&gt; Tue, 7 Feb 2006 12:10:08 +0300
-  alsa-utils (1.0.8-1ubuntu1) warty; urgency=low
-  * Placeholder
-  -- Sample Person &lt;email address hidden&gt; Tue, 7 Feb 2006 12:10:08 +0300
 
 If the email address is recognised as one registered in Launchpad, the
 address is linkified to point to the person's profile page.  Here,
 'commercialpackage' has a known email address in its changelog:
 
   >>> user_browser.open(
-  ...     "http://launchpad.dev/ubuntu/hoary/+source/commercialpackage/"
-  ...     "+changelog")
+  ...     "http://launchpad.dev/ubuntu/breezy-autotest/+source/"
+  ...     "commercialpackage/+changelog")
   >>> changelog = find_tag_by_id(
   ...     user_browser.contents, 'commercialpackage_1.0-1')
   >>> changelog.find('a')
