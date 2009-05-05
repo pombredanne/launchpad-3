@@ -79,10 +79,8 @@ class NamespaceMixin:
         self.assertEqual(branch_name, branch.name)
         self.assertEqual(registrant, branch.registrant)
         self.assertIs(None, branch.url)
-        self.assertEqual(title, branch.title)
         self.assertEqual(
             BranchLifecycleStatus.EXPERIMENTAL, branch.lifecycle_status)
-        self.assertEqual(summary, branch.summary)
         self.assertEqual(whiteboard, branch.whiteboard)
 
     def test_getBranches_no_branches(self):
