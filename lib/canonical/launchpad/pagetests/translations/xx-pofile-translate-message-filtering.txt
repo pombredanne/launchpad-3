@@ -212,27 +212,6 @@ accepted.
     <div lang="en-AU" id="msgset_1_en_AU_suggestion_702_0" ...>fnord</div>
 
 
-=== Messages with new suggestions ===
-
-No Privileges Person chooses to view messages with new suggestions
-submitted after they were last reviewed. There is only one message in
-the batch.
-
-    >>> user_browser.open(
-    ...     'http://translations.launchpad.dev/ubuntu/hoary/'
-    ...     '+source/evolution/+pots/evolution-2.2/es/+translate')
-    >>> user_browser.getControl(name='show', index=1).displayValue = [
-    ...     'with new suggestions']
-    >>> user_browser.getControl('Change').click()
-    >>> print extract_url_parameter(user_browser.url, 'batch')
-    batch=10
-    >>> print extract_url_parameter(user_browser.url, 'show')
-    show=new_suggestions
-
-    >>> print_shown_messages(user_browser)
-    134: '<samp> </samp>caratas'
-
-
 === Messages changed in Launchpad ===
 
 No Privileges Person can see entries which have changed in Launchpad.
@@ -268,6 +247,45 @@ the browser is redirected to the first batch.
 
     >>> print_shown_messages(user_browser)
     134: '<samp> </samp>caratas'
+
+
+=== Messages with new suggestions ===
+
+No Privileges Person chooses to view messages with new suggestions
+submitted after they were last reviewed. There is only one message in
+the batch.
+
+    >>> user_browser.open(
+    ...     'http://translations.launchpad.dev/ubuntu/hoary/'
+    ...     '+source/evolution/+pots/evolution-2.2/es/+translate')
+    >>> user_browser.getControl(name='show', index=1).displayValue = [
+    ...     'with new suggestions']
+    >>> user_browser.getControl('Change').click()
+    >>> print extract_url_parameter(user_browser.url, 'batch')
+    batch=10
+    >>> print extract_url_parameter(user_browser.url, 'show')
+    show=new_suggestions
+
+    >>> print_shown_messages(user_browser)
+    134: '<samp> </samp>caratas'
+
+No Privileges Person decides to dismiss the suggestions by providing a
+better translation.
+
+    >>> user_browser.getControl(
+    ...     name='msgset_134_es_translation_0_radiobutton').value = [
+    ...         'msgset_134_es_translation_0_new']
+    >>> user_browser.getControl(
+    ...     name='msgset_134_es_translation_0_new').value = 'tarjetas'
+    >>> user_browser.getControl('Save & Continue').click()
+
+Since this was the only suggestion and No Privileges Person has reviewed it,
+the filter for new suggestions is empty now.
+
+    >>> description = first_tag_by_class(user_browser.contents,
+    ...     'documentDescription')
+    >>> print extract_text(description)
+    There are no messages that match this filtering.
 
 
 == Invalid show option values ==

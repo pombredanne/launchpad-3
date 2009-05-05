@@ -212,6 +212,46 @@ class IArchivePermissionSet(Interface):
             'person' is allowed to upload to.
         """
 
+    def packagesetsForSourceUploader(sourcepackagename, person):
+        """The package set based permissions for a given source and uploader.
+
+        Return the `IArchivePermission` records for all package sets
+            * that include the given source package name
+            * the given person is authorized to upload to
+
+        :param sourcepackagename: the source package name; can be
+            either a string or a `ISourcePackageName`.
+        :param person: An `IPerson` for whom you want to find out which
+            package sets he has access to.
+
+        :raises SourceNotFound: if a source package with the given
+            name could not be found.
+        :return: `ArchivePermission` records for the package sets that
+            include the given source package name and to which the given
+            person may upload.
+        """
+
+    def isSourceUploadAllowed(sourcepackagename, person):
+        """True if the person is allowed to upload the given source package.
+
+        Return True if there exists a permission that combines
+            * a package set that includes the given source package name
+            * the given person or a team he is a member of
+
+        If the source package name is included by *any* package set with
+        an explicit permission then only such explicit permissions will
+        be considered.
+
+        :param sourcepackagename: the source package name; can be
+            either a string or a `ISourcePackageName`.
+        :param person: An `IPerson` for whom you want to find out which
+            package sets he has access to.
+
+        :raises SourceNotFound: if a source package with the given
+            name could not be found.
+        :return: True if the person is allowed to upload the source package.
+        """
+
     def uploadersForPackageset(packageset, direct_permissions=True):
         """The `ArchivePermission` records for uploaders to the package set.
 

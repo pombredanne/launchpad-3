@@ -62,6 +62,7 @@ deletion_query = """
     WHERE id IN (
         SELECT id
         FROM %(temporary_table)s
+        ORDER BY id
         LIMIT %%d OFFSET %%d
         )"""
 

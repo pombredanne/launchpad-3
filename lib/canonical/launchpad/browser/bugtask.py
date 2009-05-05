@@ -75,7 +75,6 @@ from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.fields import ParticipatingPersonChoice
 from canonical.launchpad.mailnotification import get_unified_diff
 from canonical.launchpad.validators import LaunchpadValidationError
-from canonical.launchpad.vocabularies.dbobjects import MilestoneVocabulary
 from canonical.launchpad.webapp import (
     action, custom_widget, canonical_url, GetitemNavigation,
     LaunchpadEditFormView, LaunchpadFormView, LaunchpadView, Navigation,
@@ -141,6 +140,8 @@ from canonical.widgets.bugtask import (
 from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 from canonical.widgets.lazrjs import TextLineEditorWidget
 from canonical.widgets.project import ProjectScopeWidget
+
+from lp.registry.vocabularies import MilestoneVocabulary
 
 
 def unique_title(title):
@@ -469,6 +470,12 @@ class BugTaskView(LaunchpadView, CanBeMentoredView, FeedsMixin):
 
         # See render() for how this flag is used.
         self._redirecting_to_bug_list = False
+
+        # If the bug is not reported in this context, redirect
+        # to the default bug task.
+        if not self.isReportedInContext():
+            self.request.response.redirect(
+                canonical_url(self.context.bug.default_bugtask))
 
         self.bug_title_edit_widget = TextLineEditorWidget(
             bug, 'title', canonical_url(self.context, view_name='+edit'),

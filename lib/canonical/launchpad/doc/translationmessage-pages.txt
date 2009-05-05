@@ -4,7 +4,7 @@ On this section, we are going to test the view class for an
 ITranslationMessage object.
 
     >>> from canonical.database.sqlbase import flush_database_updates
-    >>> from canonical.launchpad.database import TranslationMessage
+    >>> from canonical.launchpad.database import POFile, TranslationMessage
     >>> from canonical.launchpad.layers import TranslationsLayer
     >>> from canonical.launchpad.webapp import canonical_url
 
@@ -20,7 +20,8 @@ We are going to see what happens if we get an entry for a language
 without the plural form information.
 
     >>> translationmessage = TranslationMessage.get(1)
-    >>> pofile_tlh = translationmessage.pofile.potemplate.getDummyPOFile(
+    >>> pofile = POFile.get(1)
+    >>> pofile_tlh = pofile.potemplate.getDummyPOFile(
     ...     'tlh')
     >>> potmsgset = pofile_tlh.potemplate.getPOTMsgSetByMsgIDText(
     ...     u'evolution addressbook')
@@ -49,6 +50,7 @@ dummy ones.
 
     >>> server_url = '/'.join(
     ...     [canonical_url(current_translationmessage), '+translate'])
+    >>> translationmessage.setPOFile(pofile)
     >>> translationmessage_page_view = create_view(
     ...     translationmessage, "+translate", layer=TranslationsLayer,
     ...     server_url=server_url)
@@ -549,3 +551,72 @@ place to get more information and help.
     >>> view = create_view(application, '+about', layer=TranslationsLayer)
     >>> print view.launchpad_users_team
     http://launchpad.dev/~launchpad-users
+
+
+== Sequence number of new shared POTMsgSets ==
+
+Newly added shared POTMsgSets don't have their sequence field set, but
+they do have sequence number when being displayed with translation
+message.
+
+    >>> pofile = factory.makePOFile('sr')
+    >>> potemplate = pofile.potemplate
+    >>> potmsgset = factory.makePOTMsgSet(potemplate, sequence=1)
+    >>> potmsgset.sequence
+    1
+    >>> potmsgset.getSequence(potemplate)
+    1
+    >>> translationmessage = factory.makeTranslationMessage(
+    ...     potmsgset=potmsgset, translations = [u"some translation"])
+    >>> translationmessage.setPOFile(pofile)
+    >>> server_url = '/'.join(
+    ...     [canonical_url(translationmessage), '+translate'])
+    >>> translationmessage_page_view = create_view(
+    ...     translationmessage, "+translate", layer=TranslationsLayer,
+    ...     server_url=server_url)
+    >>> translationmessage_page_view.initialize()
+    >>> subview = translationmessage_page_view.translationmessage_view
+    >>> subview.initialize()
+    >>> subview.sequence
+    1
+
+== Ordering with unset potemplate values ==
+
+Fix for bug #371560: can be removed after message sharing cleanup is done.
+Code still uses potmsgset.potemplate when getting a sequence number, and
+in special case where one POTMsgSet has potemplate set (i.e. it has been
+there before message sharing work landed) and has a lower sequence number,
+and another where potemplate is not set and with a larger sequence number,
+where these appear on the same page we hit an assertion about bad sequence
+number ordering.
+
+    >>> pofile = factory.makePOFile('sr')
+    >>> potemplate = pofile.potemplate
+
+    >>> potmsgset_with_potemplate = (
+    ...     factory.makePOTMsgSet(potemplate, sequence=1))
+    >>> removeSecurityProxy(potmsgset_with_potemplate).potemplate = potemplate
+    >>> potmsgset_with_potemplate.getSequence(potemplate)
+    1
+
+    >>> potmsgset_with_no_potemplate = (
+    ...     factory.makePOTMsgSet(potemplate, sequence=2))
+    >>> print potmsgset_with_no_potemplate.potemplate
+    None
+    >>> potmsgset_with_no_potemplate.getSequence(potemplate)
+    2
+
+    # If the view internally gets a sequence using potmsgset.potemplate,
+    # which is None, we'll get a sequence of zero, which should come before
+    # sequence of 1 for the previous POTMsgSet.
+    >>> potmsgset_with_no_potemplate.getSequence(
+    ...     potmsgset_with_no_potemplate.potemplate)
+    0
+
+    >>> server_url = '/'.join(
+    ...     [canonical_url(pofile), '+translate'])
+    >>> pofile_view = create_view(
+    ...     pofile, "+translate", layer=TranslationsLayer,
+    ...     server_url=server_url)
+    >>> pofile_view.initialize()
+

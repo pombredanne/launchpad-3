@@ -394,7 +394,7 @@ class POFileTranslateView(BaseTranslationView):
         self.start_offset = 0
 
         self._initializeShowOption()
-        BaseTranslationView.initialize(self)
+        super(POFileTranslateView, self).initialize()
 
     #
     # BaseTranslationView API
@@ -460,8 +460,8 @@ class POFileTranslateView(BaseTranslationView):
         for potmsgset in for_potmsgsets:
             assert (last is None or
                     potmsgset.getSequence(
-                        potmsgset.potemplate) >= last.getSequence(
-                            last.potemplate)), (
+                        self.context.potemplate) >= last.getSequence(
+                            self.context.potemplate)), (
                 "POTMsgSets on page not in ascending sequence order")
             last = potmsgset
 
@@ -543,7 +543,7 @@ class POFileTranslateView(BaseTranslationView):
         elif self.show == 'new_suggestions':
             new_suggestions = potmsgset.getLocalTranslationMessages(
                 self.pofile.potemplate, self.pofile.language)
-            if len(new_suggestions) == 0:
+            if new_suggestions.count() == 0:
                 self.start_offset += 1
         else:
             # This change does not mutate the batch.

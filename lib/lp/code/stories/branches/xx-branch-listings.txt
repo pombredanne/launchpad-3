@@ -194,7 +194,7 @@ interesting" and should default to sort by project name.
     >>> filter_control.displayValue
     ['by project name']
     >>> filter_control.displayOptions
-    ['by project name', 'by lifecycle status', 'by branch name',
+    ['by project name', 'by status', 'by branch name',
     'by registrant name', 'most recently changed first',
     'least recently changed first', 'newest first', 'oldest first']
 
@@ -274,7 +274,7 @@ by product name (which is of course called "project name" in the UI).
     >>> for option in sort_by_control.options:
     ...     print option
     by project name
-    by lifecycle status
+    by status
     by branch name
     most recently changed first
     least recently changed first
@@ -288,7 +288,7 @@ options that can be selected.
     >>> browser.open('http://code.launchpad.dev/gnome-terminal/+branches')
     >>> sort_by_control = browser.getControl(name='field.sort_by')
     >>> sort_by_control.value
-    ['by lifecycle status']
+    ['by status']
     >>> sort_by_control.value = ['by project name']
     Traceback (most recent call last):
       ...
@@ -296,7 +296,7 @@ options that can be selected.
     >>> for option in sort_by_control.options:
     ...     print option
     by most interesting
-    by lifecycle status
+    by status
     by branch name
     by registrant name
     most recently changed first
