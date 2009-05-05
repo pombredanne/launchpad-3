@@ -46,7 +46,7 @@ Free software community members and other projects can use Launchpad
 to either directly learn information about your project or use
 Launchpad&rsquo;s extensive search to discover your work.
             </p>
-            <div id="link-holder"><a href="https://launchpad.net/projects/+new-guided">Add your project to Launchpad &gt;</a></div>
+            <div id="link-holder"><a href="https://launchpad.net/projects/+new">Add your project to Launchpad &gt;</a></div>
         </div>
         <div id="page-intro-bottom"></div>
         <ul id="secondary-navigation">
@@ -93,7 +93,7 @@ Launchpad calls these <em>series</em> and helps you to organise your work &mdash
                             <img src="images/rm/lp-diamond.png" alt="Launchpad diamond logo" />
                         </p>
                         <p>
-                        <a href="https://launchpad.net/projects/+new-guided">Registering your project</a> with Launchpad gives you access to a community of thousands, as well as six applications that will help you plan, develop, improve and distribute your software<br />
+                        <a href="https://launchpad.net/projects/+new">Registering your project</a> with Launchpad gives you access to a community of thousands, as well as six applications that will help you plan, develop, improve and distribute your software<br />
                         <br />It's free for open source projects. You can also <a href="mailto:feedback@launchpad.net">talk to us about commercial subscriptions</a>.<br />
                         <br />You can pick and choose which of Launchpad's tools are most appropriate for you. Even if you're not planning to use Launchpad directly, registering can help you find new contributors and users. Launchpad is free of charge for free software projects (<a href="https://help.launchpad.net/Legal/ProjectLicensing">find out more about our licensing policy</a>).<br />
                         <br />If you haven't already, <a href="https://launchpad.net/+login">create a Launchpad user account</a> and take a look around.<br />

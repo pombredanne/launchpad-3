@@ -2010,13 +2010,6 @@
         class="lp.registry.browser.product.ProductAddView"
         permission="launchpad.AnyPerson"
         template="../templates/product-new.pt"/>
-    <browser:page
-        name="+new-guided"
-        for="lp.registry.interfaces.product.IProductSet"
-        facet="overview"
-        class="lp.registry.browser.product.ProductAddView"
-        permission="launchpad.AnyPerson"
-        template="../templates/product-new-guided.pt"/>
     <browser:menus
         classes="
             ProductFacets

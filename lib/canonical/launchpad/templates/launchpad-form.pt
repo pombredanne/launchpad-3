@@ -65,7 +65,8 @@
         </div>
 
       </div>
-      <div class="actions" metal:define-slot="buttons">
+      <div class="actions" id="launchpad-form-actions"
+           metal:define-slot="buttons">
         <input tal:repeat="action view/actions"
                tal:replace="structure action/render"
           />
@@ -83,7 +84,7 @@
   </div>
 
   <metal:macro define-macro="widget_rows">
-    <table class="form">
+    <table class="form" id="launchpad-form-widgets">
       <tal:block define="widgets widgets|view/widgets"
                  repeat="widget widgets">
 
