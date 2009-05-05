@@ -144,3 +144,4 @@ from canonical.launchpad.database.archivedependency import *
 from canonical.launchpad.database.packagediff import *
 from lp.code.model.codereviewcomment import *
 from canonical.launchpad.database.archivepermission import *
+from canonical.launchpad.database.packageset import *

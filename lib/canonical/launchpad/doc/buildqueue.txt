@@ -119,6 +119,64 @@ set 'manual' attribute atomically. For this we use manualScore:
     (True, 1000)
 
 
+== Dispatching and Reseting jobs ==
+
+The sampledata contains an active job, being built by the 'bob'
+builder.
+
+    >>> from canonical.launchpad.interfaces import IBuilderSet
+
+    >>> bob = getUtility(IBuilderSet)['bob']
+    >>> job = bob.currentjob
+
+    >>> print job.builder.name
+    bob
+    >>> job.buildstart is not None
+    True
+    >>> print job.logtail
+    Dummy sampledata entry, not processing
+    >>> print job.build.buildstate.name
+    BUILDING
+    >>> print job.lastscore
+    1
+
+IBuildQueue.reset() will reset the job, enabling it to be dispatched
+to another build. The score value of the job is preserved.
+
+    >>> job.reset()
+
+    >>> print bob.currentjob
+    None
+
+    >>> print job.builder
+    None
+    >>> print job.buildstart
+    None
+    >>> print job.logtail
+    None
+    >>> print job.build.buildstate.name
+    NEEDSBUILD
+    >>> print job.lastscore
+    1
+
+On the flip-side, IBuildQueue.markAsBuilding() will assign the job to
+the specified builder.
+
+    >>> job.markAsBuilding(bob)
+
+    >>> bob.currentjob == job
+    True
+
+    >>> print job.builder.name
+    bob
+    >>> job.buildstart is not None
+    True
+    >>> print job.build.buildstate.name
+    BUILDING
+
+
+== BuildQueueSet utility ==
+
 Now perform the tests for the BuildQueue zope utility, BuildQueueSet.
 Check if the instance returned as utility corresponds to its
 respective interface:
@@ -159,12 +217,9 @@ Another method to fetch the BuildQueue being processed for a builder,
 there should be only one since the builders are sigle-task
 applications:
 
-    >>> from canonical.launchpad.interfaces import IBuilderSet
-    >>> bob = getUtility(IBuilderSet)['bob']
-
     >>> current_job = bqset.getByBuilder(bob)
-    >>> current_job.builder.name
-    u'bob'
+    >>> print current_job.builder.name
+    bob
 
 BuildQueueSet provides a method used in the builddmaster context to
 calculate retrieve every instance for a set of distroarchseriess
@@ -272,4 +327,3 @@ list will result in a AssertionFailure.
     Traceback (most recent call last):
     ...
     AssertionError: Given 'archseries' cannot be None/empty.
-

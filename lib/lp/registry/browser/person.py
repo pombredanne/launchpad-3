@@ -137,14 +137,17 @@ from canonical.launchpad.interfaces.authtoken import LoginTokenType
 from canonical.launchpad.interfaces.bugtask import (
     BugTaskSearchParams, BugTaskStatus, UNRESOLVED_BUGTASK_STATUSES)
 from canonical.launchpad.interfaces.country import ICountry
-from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus, IEmailAddressSet
+from canonical.launchpad.interfaces.emailaddress import (
+    EmailAddressStatus, IEmailAddressSet)
 from canonical.launchpad.interfaces.geoip import IRequestPreferredLanguages
-from canonical.launchpad.interfaces.gpghandler import GPGKeyNotFoundError, IGPGHandler
+from canonical.launchpad.interfaces.gpghandler import (
+    GPGKeyNotFoundError, IGPGHandler)
 from canonical.launchpad.interfaces.language import ILanguageSet
 from canonical.launchpad.interfaces.launchpad import IPasswordEncryptor
 from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
 from canonical.launchpad.interfaces.oauth import IOAuthConsumerSet
-from canonical.launchpad.interfaces.pofiletranslator import IPOFileTranslatorSet
+from canonical.launchpad.interfaces.pofiletranslator import (
+    IPOFileTranslatorSet)
 from canonical.launchpad.interfaces.specification import SpecificationFilter
 from canonical.launchpad.webapp.interfaces import (
     ILaunchBag, IOpenLaunchBag, NotFoundError, UnexpectedFormData)
@@ -153,8 +156,10 @@ from lp.registry.interfaces.codeofconduct import ISignedCodeOfConductSet
 from lp.registry.interfaces.gpg import IGPGKeySet
 from lp.registry.interfaces.irc import IIrcIDSet
 from lp.registry.interfaces.jabber import IJabberIDSet
-from lp.registry.interfaces.mailinglist import CannotUnsubscribe, IMailingListSet
-from lp.registry.interfaces.mailinglistsubscription import MailingListAutoSubscribePolicy
+from lp.registry.interfaces.mailinglist import (
+    CannotUnsubscribe, IMailingListSet)
+from lp.registry.interfaces.mailinglistsubscription import (
+    MailingListAutoSubscribePolicy)
 from lp.registry.interfaces.person import (
     IEmailAddress, INewPerson, IPerson, IPersonChangePassword, IPersonClaim,
     IPersonSet, ITeam, ITeamReassignment, PersonCreationRationale,
@@ -2817,8 +2822,10 @@ class PersonView(LaunchpadView, FeedsMixin):
 
         If the person is not a team, does not have a mailing list, that
         mailing list has never been activated, or the team is private and the
-        logged in user is not a team member, return None instead.
+        logged in user is not a team member, return None instead.  The url is
+        also returned if the user is a Launchpad admin.
         """
+        celebrities = getUtility(ILaunchpadCelebrities)
         mailing_list = self.context.mailing_list
         if mailing_list is None:
             return None
@@ -2826,7 +2833,8 @@ class PersonView(LaunchpadView, FeedsMixin):
             return mailing_list.archive_url
         elif self.user is None:
             return None
-        elif self.user.inTeam(self.context):
+        elif (self.user.inTeam(self.context) or
+              self.user.inTeam(celebrities.admin)):
             return mailing_list.archive_url
         else:
             return None

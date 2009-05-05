@@ -147,7 +147,7 @@ A project milestone page has the same navigation as the project:
     * Blueprints - http://blueprints.launchpad.dev/firefox
     * Translations - http://translations.launchpad.dev/firefox
     * Answers - http://answers.launchpad.dev/firefox
-    Main heading: Milestone 1.0 for Mozilla Firefox
+    Main heading: 1.0
 
 Similarly, a distribution milestone page has the same navigation as
 the distribution:
@@ -162,7 +162,7 @@ the distribution:
     * Blueprints - http://blueprints.launchpad.dev/debian
     * Translations - http://translations.launchpad.dev/debian
     * Answers - http://answers.launchpad.dev/debian
-    Main heading: Milestone 3.1 for Debian
+    Main heading: 3.1
 
 
 === Duplicate bugs ===
@@ -235,7 +235,7 @@ Observe that both bugs are listed in the 1.0 milestone listing:
     >>> browser.getLink('Milestone history').click()
     >>> browser.getLink(milestone_regex).click()
     >>> print browser.title
-    Milestone 1.0 for Mozilla Firefox...
+    Mozilla Firefox: 1.0
     >>> milestone_url = browser.url
 
     >>> browser.getLink('Test Bug 1').click()
@@ -337,7 +337,7 @@ We'll also create a new test milestone within the "trunk" series:
 
     >>> browser.getLink('test-milestone').click()
     >>> print browser.title
-    Milestone test-milestone for Mozilla Firefox...
+    Mozilla Firefox: test-milestone
     >>> milestone_url = browser.url
 
 Let's target an existing bug to both series "1.0" and series "2.0":

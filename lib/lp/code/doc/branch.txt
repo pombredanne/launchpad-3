@@ -255,12 +255,6 @@ Or using the URL of the mirror of the branch on Launchpad:
     >>> branch_lookup.getByUrl(junkcode_mirrored) == new_junk_branch
     True
 
-The provided URL must not have any trailing slash:
-
-    >>> try: branch_lookup.getByUrl(new_url + '/')
-    ... except AssertionError: print 'trailing slash not allowed'
-    trailing slash not allowed
-
 If no branch is found for the specified URL, getByUrl returns None.
 
     >>> not_there_url = factory.getUniqueURL()

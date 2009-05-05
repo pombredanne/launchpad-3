@@ -20,7 +20,8 @@ from zope.schema import Choice
 from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces.distributionsourcepackagerelease import IDistributionSourcePackageRelease
+from canonical.launchpad.interfaces.distributionsourcepackagerelease import (
+    IDistributionSourcePackageRelease)
 from canonical.launchpad.interfaces.packagediff import IPackageDiffSet
 from canonical.launchpad.interfaces.packaging import IPackagingUtil
 from canonical.launchpad.interfaces.publishing import pocketsuffix
@@ -248,11 +249,7 @@ class DistributionSourcePackageView(LaunchpadFormView):
         return result
 
     def releases(self):
-        # XXX cprov 2009-04-02 bug-353568: We are truncating the number
-        # of versions presented in the DSP page because of the extra
-        # load caused the changelog linkification procedure. A better
-        # solution will be investigated during 2.2.4.
-        dspr_pubs = self.context.getReleasesAndPublishingHistory()[:5]
+        dspr_pubs = self.context.getReleasesAndPublishingHistory()
 
         # Return as early as possible to avoid unnecessary processing.
         if len(dspr_pubs) == 0:
