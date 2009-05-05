@@ -33,6 +33,8 @@ def test_bug_tags_entry():
     client.click(id=u'save-button')
     client.waits.forPageLoad(timeout=u'100000')
 
+    # Now let's tag a bug using the auto-complete widget
+
     client.open(url='http://bugs.launchpad.dev:8085/firefox/+bug/5')
     client.waits.forPageLoad(timeout=u'300000')
     client.waits.sleep(milliseconds=u'8000')
@@ -42,5 +44,6 @@ def test_bug_tags_entry():
     client.waits.sleep(milliseconds=u'1000')
     client.asserts.assertNode(classname=u'yui-autocomplete-list')
     client.click(id=u'item0')
-    client.asserts.assertProperty(validator=u'value|eenie ')
+    client.click(id=u'edit-tags-ok')
+    client.asserts.assertText(id=u'tag-list', validator=u'eenie')
 
