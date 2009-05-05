@@ -8,6 +8,7 @@ __all__ = [
     'XMLRPCWrapper'
     ]
 
+import operator
 from xmlrpclib import Fault
 
 from bzrlib.urlutils import escape, unescape
@@ -448,6 +449,18 @@ class FakeBranchPuller:
                 and branch.next_mirror_time < UTC_NOW):
                 queue.append(self._getBranchPullInfo(branch))
         return queue
+
+    def acquireBranchToPull(self):
+        branches = sorted(
+            [branch for branch in self._branch_set
+            if branch.next_mirror_time is not None],
+            key=operator.attrgetter('next_mirror_time'))
+        if branches:
+            branch = branches[-1]
+            self.startMirroring(branch.id)
+            return self._getBranchPullInfo(branch)
+        else:
+            return ()
 
     def startMirroring(self, branch_id):
         branch = self._branch_set.get(branch_id)

@@ -27,4 +27,8 @@ class IBranchPuller(Interface):
         """
 
     def acquireBranchToPull():
-        """Return and mark as started a Branch to pull."""
+        """Return and mark as started a Branch to pull.
+
+        :return: The branch object to pull next, or ``None`` if there is no
+            branch to pull.
+        """

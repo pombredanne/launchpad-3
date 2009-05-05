@@ -8,6 +8,7 @@ import datetime
 import pytz
 import unittest
 
+from bzrlib.tests import multiply_tests
 from bzrlib.urlutils import escape
 
 from zope.component import getUtility
@@ -492,6 +493,64 @@ class BranchPullQueueTest(TestCaseWithFactory):
     def test_requestMirrorPutsBranchInQueue_imported(self):
         branch = self.makeBranchAndRequestMirror(BranchType.IMPORTED)
         self.assertBranchQueues([], [], [branch])
+
+
+class AcquireBranchToPullTest(TestCaseWithFactory):
+    """Tests for `acquireBranchToPull` method of `IBranchPuller`."""
+
+    def setUp(self):
+        super(AcquireBranchToPullTest, self).setUp()
+        frontend = self.frontend()
+        self.storage = frontend.getPullerEndpoint()
+        self.factory = frontend.getLaunchpadObjectFactory()
+
+    def assertNoBranchIsAquired(self):
+        """XXX write me."""
+        pull_info = self.storage.acquireBranchToPull()
+        self.assertEqual((), pull_info)
+
+    def assertBranchIsAquired(self, branch):
+        """XXX write me."""
+        pull_info = self.storage.acquireBranchToPull()
+        self.assertEqual(
+            pull_info, self.storage._getBranchPullInfo(branch))
+        self.assertIsNot(None, branch.last_mirror_attempt)
+        self.assertIs(None, branch.next_mirror_time)
+
+
+    def test_empty(self):
+        # If there is no branch that needs pulling, acquireBranchToPull
+        # returns None.
+        self.assertNoBranchIsAquired()
+
+    def test_simple(self):
+        # If there is one branch that needs mirroring, acquireBranchToPull
+        # returns that.
+        branch = self.factory.makeAnyBranch()
+        branch.requestMirror()
+        self.assertBranchIsAquired(branch)
+
+    def test_no_inprogress(self):
+        # If a branch is being mirrored, it is not returned.
+        branch = self.factory.makeAnyBranch()
+        branch.requestMirror()
+        self.storage.startMirroring(branch.id)
+        self.assertNoBranchIsAquired()
+
+    def test_first_requested_returned(self):
+        # If two branches are to be mirrored, the one that was requested first
+        # is returned.
+        first_branch = self.factory.makeAnyBranch()
+        # You can only request a mirror now, so to pretend that we requested
+        # it some time ago, we cheat with removeSecurityProxy().
+        first_branch.requestMirror()
+        naked_first_branch = removeSecurityProxy(first_branch)
+        naked_first_branch.next_mirror_time -= datetime.timedelta(seconds=100)
+        second_branch = self.factory.makeAnyBranch()
+        second_branch.requestMirror()
+        naked_second_branch = removeSecurityProxy(second_branch)
+        naked_second_branch.next_mirror_time -= datetime.timedelta(seconds=50)
+        self.assertBranchIsAquired(naked_first_branch)
 
 
 class BranchFileSystemTest(TestCaseWithFactory):
@@ -1086,6 +1145,7 @@ def test_suite():
     puller_tests = unittest.TestSuite(
         [loader.loadTestsFromTestCase(BranchPullerTest),
          loader.loadTestsFromTestCase(BranchPullQueueTest),
+         loader.loadTestsFromTestCase(AcquireBranchToPullTest),
          loader.loadTestsFromTestCase(BranchFileSystemTest),
          ])
     scenarios = [
@@ -1094,16 +1154,7 @@ def test_suite():
         ('inmemory', {'frontend': InMemoryFrontend,
                       'layer': FunctionalLayer}),
         ]
-    try:
-        from bzrlib.tests import multiply_tests
-        multiply_tests(puller_tests, scenarios, suite)
-    except ImportError:
-        # XXX: MichaelHudson, 2009-03-11: This except clause can be deleted
-        # once sourcecode/bzr has bzr.dev r4102.
-        from bzrlib.tests import adapt_tests, TestScenarioApplier
-        applier = TestScenarioApplier()
-        applier.scenarios = scenarios
-        adapt_tests(puller_tests, applier, suite)
+    multiply_tests(puller_tests, scenarios, suite)
     suite.addTests(
         map(loader.loadTestsFromTestCase,
             [TestRunWithLogin, TestIterateSplit]))

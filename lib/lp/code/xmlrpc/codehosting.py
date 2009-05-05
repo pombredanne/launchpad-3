@@ -93,6 +93,13 @@ class BranchPuller(LaunchpadXMLRPCView):
             branch_type)
         return [self._getBranchPullInfo(branch) for branch in branches]
 
+    def acquireBranchToPull(self):
+        branch = getUtility(branchpuller.IBranchPuller).acquireBranchToPull()
+        if branch is not None:
+            return self._getBranchPullInfo(branch)
+        else:
+            return ()
+
     def mirrorComplete(self, branch_id, last_revision_id):
         """See `IBranchPuller`."""
         branch = getUtility(IBranchLookup).get(branch_id)

@@ -251,7 +251,7 @@ class TestAcquireBranchToPull(TestCaseWithFactory):
         branch.requestMirror()
         self.assertBranchIsAquired(branch)
 
-    def test_no_remote(self):
+    def test_no_inprogress(self):
         # If a branch is being mirrored, it is not returned.
         branch = self.factory.makeAnyBranch()
         branch.requestMirror()
