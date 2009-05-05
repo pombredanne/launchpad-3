@@ -21,11 +21,22 @@ from lp.code.interfaces.branchmergeproposal import (
     BRANCH_MERGE_PROPOSAL_FINAL_STATES)
 
 
+def is_series_branch(branch):
+    """Is 'branch' associated with a series?"""
+    return branch.associatedProductSeries().count() > 0
+
+
+def is_development_focus(branch):
+    """Is 'branch' the development focus?"""
+    dev_focus = branch.product.development_focus
+    return branch == dev_focus.branch
+
+
 def mark_branch_merged(logger, branch):
     """Mark 'branch' as merged."""
     # If the branch is a series branch, then don't change the
     # lifecycle status of it at all.
-    if branch.associatedProductSeries().count() > 0:
+    if is_series_branch(branch):
         return
     # In other cases, we now want to update the lifecycle status of the
     # source branch to merged.
@@ -43,19 +54,8 @@ class BranchMergeDetectionHandler:
 
     def mergeProposalMerge(self, proposal):
         """Handle a detected merge of a proposal."""
-        # XXX: JonathanLange 2009-03-09: This should be combined with
-        # mergeOfTwoBranches -- the events are the same and should be handled
-        # similarly.
-        self.logger.info(
-            'Merge detected: %s => %s',
-            proposal.source_branch.bzr_identity,
-            proposal.target_branch.bzr_identity)
-        proposal.markAsMerged()
-        # Don't update the source branch unless the target branch is a series
-        # branch.
-        if proposal.target_branch.associatedProductSeries().count() == 0:
-            return
-        mark_branch_merged(self.logger, proposal.source_branch)
+        self.mergeOfTwoBranches(
+            proposal.source_branch, proposal.target_branch, proposal)
 
     def mergeOfTwoBranches(self, source, target, proposal=None):
         """Handle the merge of source into target."""
@@ -64,12 +64,18 @@ class BranchMergeDetectionHandler:
         self.logger.info(
             'Merge detected: %s => %s',
             source.bzr_identity, target.bzr_identity)
-        dev_focus = target.product.development_focus
-        if target != dev_focus.branch:
-            return
-        if proposal is not None:
+        if proposal is None:
+            # If there's no explicit merge proposal, only change the branch's
+            # status when it has been merged into the development focus.
+            if is_development_focus(target):
+                mark_branch_merged(self.logger, source)
+        else:
             proposal.markAsMerged()
-        mark_branch_merged(self.logger, source)
+            # If there is an explicit merge proposal, change the branch's
+            # status when it's been merged into a development focus or any
+            # other series branch.
+            if is_series_branch(proposal.target_branch):
+                mark_branch_merged(self.logger, proposal.source_branch)
 
 
 def auto_merge_branches(db_branch, merge_handler, bzr_ancestry):
