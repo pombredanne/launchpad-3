@@ -11,7 +11,8 @@ from bzrlib.bzrdir import BzrDirFormat
 from bzrlib.repository import format_registry as repo_format_registry
 
 from lp.code.interfaces.branch import (
-    BranchFormat, ControlFormat, RepositoryFormat)
+    BranchFormat, BRANCH_FORMAT_UPGRADE_PATH, ControlFormat, RepositoryFormat,
+    REPOSITORY_FORMAT_UPGRADE_PATH)
 
 
 class TestFormatSupport(TestCase):
@@ -55,6 +56,26 @@ class TestFormatSupport(TestCase):
                 description = description[:-1]
             self.assertTrue(len(description.split('\n')) == 1,
                             item.description)
+
+
+class TestBranchFormatUpgradePath(TestCase):
+    """Tests for BRANCH_FORMAT_UPGRADE_PATH."""
+
+    def test_branch_format_enum_as_keys(self):
+        # Each element of the BranchFormat enum should have a corresponding key
+        # in the BRANCH_FORMAT_UPGRADE_PATH dict.
+        for format in BranchFormat.items:
+            self.assertTrue(BRANCH_FORMAT_UPGRADE_PATH.has_key(format))
+
+
+class TestRepositoryFormatUpgradePath(TestCase):
+    """Tests for BRANCH_FORMAT_UPGRADE_PATH."""
+
+    def test_repository_format_enum_as_keys(self):
+        # Each element of the BranchFormat enum should have a corresponding key
+        # in the BRANCH_FORMAT_UPGRADE_PATH dict.
+        for format in RepositoryFormat.items:
+            self.assertTrue(REPOSITORY_FORMAT_UPGRADE_PATH.has_key(format))
 
 
 def test_suite():
