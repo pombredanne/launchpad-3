@@ -153,8 +153,6 @@ class BzrSync:
                 self.syncOneRevision(revision, branchrevisions_to_insert)
         self.deleteBranchRevisions(branchrevisions_to_delete)
         self.insertBranchRevisions(bzr_branch, branchrevisions_to_insert)
-        # Commit here largely because sendRevisionNotificationEmails calls
-        # begin.
         self.trans_manager.commit()
 
         # Generate emails for the revisions in the revision_history
