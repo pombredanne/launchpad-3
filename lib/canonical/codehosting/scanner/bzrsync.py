@@ -29,7 +29,6 @@ from canonical.codehosting.puller.worker import BranchMirrorer, BranchPolicy
 from canonical.codehosting.scanner import events
 from canonical.codehosting.scanner.mergedetection import (
     BranchMergeDetectionHandler)
-from canonical.config import config
 from lp.code.interfaces.branch import (
     BranchFormat, BranchLifecycleStatus, ControlFormat, RepositoryFormat)
 from lp.code.interfaces.branchcollection import IAllBranches
@@ -75,13 +74,10 @@ class BzrSync:
 
     def __init__(self, trans_manager, branch, logger=None):
         self.trans_manager = trans_manager
-        self.email_from = config.canonical.noreply_from_address
-
+        self.db_branch = branch
         if logger is None:
             logger = logging.getLogger(self.__class__.__name__)
         self.logger = logger
-
-        self.db_branch = branch
         self._merge_handler = BranchMergeDetectionHandler(self.logger)
 
     def syncBranchAndClose(self, bzr_branch=None):
