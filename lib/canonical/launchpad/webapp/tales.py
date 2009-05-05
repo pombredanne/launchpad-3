@@ -464,7 +464,7 @@ class ObjectFormatterAPI:
         :param view_name: If not None, the link will point to the page with
             that name on this object.
         """
-        raise NotImplemented
+        raise NotImplementedError(self.link)
 
 
 class ObjectImageDisplayAPI:
