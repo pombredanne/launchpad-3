@@ -80,9 +80,6 @@ class RevisionsRemoved(ScannerEvent):
 
 
 # XXX: Other possible events:
-# class BazaarBranchLoaded(ScannerEvent):
-#     bzr_ancestry = None
-#     bzr_revision = None
 # class MergeDetected:
 #     source_db_branch = None
 #     target_db_branch = None

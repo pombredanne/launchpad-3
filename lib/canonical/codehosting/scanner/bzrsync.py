@@ -159,11 +159,11 @@ class BzrSync:
         self.updateBranchStatus(bzr_history)
         # XXX: Move this so that there's an event generated here, and the
         # code below is a handler of that event.
-        self.autoMergeProposals(bzr_ancestry)
-        self.autoMergeBranches(bzr_ancestry)
+        self.autoMergeProposals(self.db_branch, bzr_ancestry)
+        self.autoMergeBranches(self.db_branch, bzr_ancestry)
         self.trans_manager.commit()
 
-    def autoMergeBranches(self, bzr_ancestry):
+    def autoMergeBranches(self, db_branch, bzr_ancestry):
         """Detect branches that have been merged."""
         # We only check branches that have been merged into the branch that is
         # being scanned as we already have the ancestry handy.  It is much
@@ -172,11 +172,11 @@ class BzrSync:
         # branches merged into the scanned one.
 
         # Only do this for non-junk branches.
-        if self.db_branch.product is None:
+        if db_branch.product is None:
             return
         # Get all the active branches for the product, and if the
         # last_scanned_revision is in the ancestry, then mark it as merged.
-        branches = getUtility(IAllBranches).inProduct(self.db_branch.product)
+        branches = getUtility(IAllBranches).inProduct(db_branch.product)
         branches = branches.withLifecycleStatus(
             BranchLifecycleStatus.DEVELOPMENT,
             BranchLifecycleStatus.EXPERIMENTAL,
@@ -189,20 +189,19 @@ class BzrSync:
             if last_scanned is None or last_scanned == NULL_REVISION:
                 # Skip this branch.
                 pass
-            elif branch == self.db_branch:
+            elif branch == db_branch:
                 # No point merging into ourselves.
                 pass
-            elif self.db_branch.last_scanned_id == last_scanned:
+            elif db_branch.last_scanned_id == last_scanned:
                 # If the tip revisions are the same, then it is the same
                 # branch, not one merged into the other.
                 pass
             elif last_scanned in bzr_ancestry:
                 # XXX: Move this so that there's an event generated here, and
                 # the code below is a handler of that event.
-                self._merge_handler.mergeOfTwoBranches(
-                    branch, self.db_branch)
+                self._merge_handler.mergeOfTwoBranches(branch, db_branch)
 
-    def autoMergeProposals(self, bzr_ancestry):
+    def autoMergeProposals(self, db_branch, bzr_ancestry):
         """Detect merged proposals."""
         # Check landing candidates in non-terminal states to see if their tip
         # is in our ancestry. If it is, set the state of the proposal to
@@ -211,14 +210,14 @@ class BzrSync:
         # At this stage we are not going to worry about the revno
         # which introduced the change, that will either be set through the web
         # ui by a person, of by PQM once it is integrated.
-        for proposal in self.db_branch.landing_candidates:
+        for proposal in db_branch.landing_candidates:
             if proposal.source_branch.last_scanned_id in bzr_ancestry:
                 self._merge_handler.mergeProposalMerge(proposal)
 
         # Now check the landing targets.
         final_states = BRANCH_MERGE_PROPOSAL_FINAL_STATES
-        tip_rev_id = self.db_branch.last_scanned_id
-        for proposal in self.db_branch.landing_targets:
+        tip_rev_id = db_branch.last_scanned_id
+        for proposal in db_branch.landing_targets:
             if proposal.queue_status not in final_states:
                 # If there is a branch revision record for target branch with
                 # the tip_rev_id of the source branch, then it is merged.
