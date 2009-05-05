@@ -4,7 +4,10 @@
 
 __metaclass__ = type
 __all__ = [
+    'DatabaseBranchLoaded',
     'NewRevision',
+    'RevisionsRemoved',
+    'TipChanged',
     ]
 
 
@@ -78,15 +81,18 @@ class TipChanged(ScannerEvent):
         self.initial_scan = initial_scan
 
 
+class RevisionsRemoved(ScannerEvent):
+    """Revisions have been removed from the branch."""
+
+    def __init__(self, db_branch, bzr_branch, removed_history):
+        super(RevisionsRemoved, self).__init__(db_branch, bzr_branch)
+        self.removed_history = removed_history
+
+
 # XXX: Other possible events:
 # class BazaarBranchLoaded(ScannerEvent):
 #     bzr_ancestry = None
 #     bzr_revision = None
-# class RevisionsRemoved(ScannerEvent):
-#     removed_history = None
-# class TipChanged(ScannerEvent):
-#     last_revision = None
-#     last_revno = None
 # class MergeDetected:
 #     source_db_branch = None
 #     target_db_branch = None
