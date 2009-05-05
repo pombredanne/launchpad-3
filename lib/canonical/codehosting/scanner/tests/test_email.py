@@ -136,10 +136,10 @@ class TestBzrSyncNoEmail(BzrSyncTestCase):
         BzrSyncTestCase.setUp(self)
         stub.test_emails = []
 
-    def assertNoPendingEmails(self, bzrsync):
-        self.assertEqual(
-            len(bzrsync._branch_mailer.pending_emails), 0,
-            "There should be no pending emails.")
+    def assertNoPendingEmails(self):
+        jobs = list(getUtility(IRevisionMailJobSource).iterReady())
+        jobs.extend(getUtility(IRevisionsAddedJobSource).iterReady())
+        self.assertEqual([], jobs, "There should be no pending emails.")
 
     def test_no_subscribers(self):
         self.assertEqual(self.db_branch.subscribers.count(), 0,
@@ -148,13 +148,13 @@ class TestBzrSyncNoEmail(BzrSyncTestCase):
     def test_empty_branch(self):
         bzrsync = self.makeBzrSync(self.db_branch)
         bzrsync.syncBranchAndClose()
-        self.assertNoPendingEmails(bzrsync)
+        self.assertNoPendingEmails()
 
     def test_import_revision(self):
         self.commitRevision()
         bzrsync = self.makeBzrSync(self.db_branch)
         bzrsync.syncBranchAndClose()
-        self.assertNoPendingEmails(bzrsync)
+        self.assertNoPendingEmails()
 
     def test_import_uncommit(self):
         self.commitRevision()
@@ -164,7 +164,7 @@ class TestBzrSyncNoEmail(BzrSyncTestCase):
         self.uncommitRevision()
         bzrsync = self.makeBzrSync(self.db_branch)
         bzrsync.syncBranchAndClose()
-        self.assertNoPendingEmails(bzrsync)
+        self.assertNoPendingEmails()
 
     def test_import_recommit(self):
         # No emails should have been generated.
@@ -178,7 +178,7 @@ class TestBzrSyncNoEmail(BzrSyncTestCase):
         self.commitRevision('second')
         bzrsync = self.makeBzrSync(self.db_branch)
         bzrsync.syncBranchAndClose()
-        self.assertNoPendingEmails(bzrsync)
+        self.assertNoPendingEmails()
 
 
 def test_suite():

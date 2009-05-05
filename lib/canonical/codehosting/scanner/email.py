@@ -32,7 +32,6 @@ class BranchMailer:
     def __init__(self, trans_manager, db_branch):
         self.trans_manager = trans_manager
         self.db_branch = db_branch
-        self.pending_emails = []
         self.subscribers_want_notification = False
         self.email_from = config.canonical.noreply_from_address
 
@@ -44,7 +43,6 @@ class BranchMailer:
         whether or not to generate the revision diffs as the branch is
         scanned.
         """
-        self.pending_emails = []
         self.subscribers_want_notification = subscribers_want_notification(
             self.db_branch)
 
@@ -68,7 +66,6 @@ class BranchMailer:
             job = getUtility(IRevisionMailJobSource).create(
                 self.db_branch, revno='removed', from_address=self.email_from,
                 body=contents, perform_diff=False, subject=None)
-            self.pending_emails.append(job)
 
 
 @adapter(events.TipChanged)
