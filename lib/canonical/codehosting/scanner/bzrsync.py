@@ -153,8 +153,9 @@ class BzrSync:
         # updated although it has), the race is acceptable.
         self.trans_manager.begin()
         self.updateBranchStatus(bzr_history)
-        # XXX: Move this so that there's an event generated here, and the
-        # code below is a handler of that event.
+        # XXX: Move this so that there's an event generated here, and the code
+        # below is a handler of that event, probably a BranchScanningFinished
+        # event or similar.
         auto_merge_proposals(
             self.db_branch, self._merge_handler, bzr_ancestry)
         auto_merge_branches(
