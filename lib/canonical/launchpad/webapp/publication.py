@@ -189,8 +189,8 @@ class LaunchpadBrowserPublication(
                         Launchpad is undergoing maintenance and is in
                         read-only mode. <i>You cannot make any
                         changes.</i> Please see the <a
-                        href="http://blog.launchpad.net">Launchpad Blog</a>
-                        for details.
+                        href="http://blog.launchpad.net/maintenance">Launchpad
+                        Blog</a> for details.
                         """))
             except ComponentLookupError:
                 pass
