@@ -38,7 +38,6 @@ __all__ = [
     ]
 
 
-import re
 import urllib
 from operator import attrgetter
 
