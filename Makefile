@@ -5,7 +5,6 @@ PYTHON_VERSION=2.4
 PYTHON=python${PYTHON_VERSION}
 WD:=$(shell pwd)
 PY=$(WD)/bin/py
-IPYTHON=$(PY) $(shell which ipython)
 PYTHONPATH:=$(WD)/lib:$(WD)/lib/mailman:${PYTHONPATH}
 VERBOSITY=-vv
 
@@ -102,7 +101,7 @@ build: $(BZR_VERSION_INFO) compile apidoc
 
 compile:
 	$(PYTHON) bootstrap.py
-	./bin/buildout
+	./bin/buildout configuration:instance_name=${LPCONFIG}
 	${SHHH} $(MAKE) -C sourcecode build PYTHON=${PYTHON} \
 	    PYTHON_VERSION=${PYTHON_VERSION} LPCONFIG=${LPCONFIG}
 	${SHHH} LPCONFIG=${LPCONFIG} $(PY) -t buildmailman.py
