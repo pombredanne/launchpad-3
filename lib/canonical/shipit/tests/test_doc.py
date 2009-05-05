@@ -10,11 +10,16 @@ import unittest
 from canonical.launchpad.testing.pages import PageTestSuite
 from canonical.launchpad.testing.systemdocs import (
     LayeredDocFileSuite, setUp, tearDown)
-from canonical.testing import LaunchpadFunctionalLayer
+from canonical.testing import (
+    DatabaseFunctionalLayer, LaunchpadFunctionalLayer)
 
 
 here = os.path.dirname(os.path.realpath(__file__))
-special = {}
+special = {
+    'shipit.txt': LayeredDocFileSuite(
+        '../doc/shipit.txt', setUp=setUp, tearDown=tearDown,
+        layer=LaunchpadFunctionalLayer, stdout_logging_level=logging.WARNING),
+    }
 
 
 def test_suite():
@@ -34,6 +39,11 @@ def test_suite():
         os.path.normpath(os.path.join(here, os.path.pardir, 'doc'))
         )
 
+    # Add special needs tests
+    for key in sorted(special):
+        special_suite = special[key]
+        suite.addTest(special_suite)
+
     # Add tests using default setup/teardown
     filenames = [filename
                  for filename in os.listdir(testsdir)
@@ -44,7 +54,7 @@ def test_suite():
         path = os.path.join('../doc/', filename)
         one_test = LayeredDocFileSuite(
             path, setUp=setUp, tearDown=tearDown,
-            layer=LaunchpadFunctionalLayer,
+            layer=DatabaseFunctionalLayer,
             stdout_logging_level=logging.WARNING
             )
         suite.addTest(one_test)

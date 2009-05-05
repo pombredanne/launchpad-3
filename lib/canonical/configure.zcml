@@ -168,5 +168,6 @@
     <include package="canonical.widgets" />
     <include package="canonical.launchpad" />
     <include package="canonical.lazr" />
+    <include package="canonical.shipit" />
 
 </configure>

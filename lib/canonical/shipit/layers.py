@@ -4,12 +4,11 @@
 
 __metaclass__ = type
 
-from zope.publisher.interfaces.browser import IDefaultBrowserLayer
+from zope.publisher.interfaces.browser import (
+    IBrowserRequest, IDefaultBrowserLayer)
 
-from canonical.launchpad.layers import LaunchpadLayer
 
-
-class ShipItLayer(LaunchpadLayer):
+class ShipItLayer(IBrowserRequest, IDefaultBrowserLayer):
     """The `ShipIt` layer."""
 
 

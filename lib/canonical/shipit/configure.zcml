@@ -6,32 +6,32 @@
     i18n_domain="launchpad">
     <include
         package=".browser"/>
-    
+
     <!-- This is only used on shipit. That's why it's here. -->
-    
+
     <view
         type="zope.publisher.interfaces.browser.IBrowserRequest"
         for="canonical.shipit.interfaces.shipit.IEmptyDefaultChoice                                                        zope.schema.interfaces.IIterableVocabulary"
         provides="zope.app.form.interfaces.IInputWidget"
         factory="canonical.shipit.interfaces.shipit.EmptyDefaultDropdownWidget"
         permission="zope.Public"/>
-    
+
     <!-- ShipItApplication -->
-    
+
     <class
-        class="canonical.launchpad.systemhomes.ShipItApplication">
+        class="canonical.shipit.systemhome.ShipItApplication">
         <allow
             interface="canonical.shipit.interfaces.shipit.IShipItApplication"/>
     </class>
     <securedutility
-        class="canonical.launchpad.systemhomes.ShipItApplication"
+        class="canonical.shipit.systemhome.ShipItApplication"
         provides="canonical.shipit.interfaces.shipit.IShipItApplication">
         <allow
             interface="canonical.shipit.interfaces.shipit.IShipItApplication"/>
     </securedutility>
-    
+
     <!-- ShippingRequest -->
-    
+
     <class
         class="canonical.launchpad.database.ShippingRequest">
         <allow
@@ -40,9 +40,9 @@
             permission="launchpad.Edit"
             set_schema="canonical.shipit.interfaces.shipit.IShippingRequest"/>
     </class>
-    
+
     <!-- ShippingRequestSet -->
-    
+
     <class
         class="canonical.launchpad.database.ShippingRequestSet">
         <allow
@@ -54,9 +54,9 @@
         <allow
             interface="canonical.shipit.interfaces.shipit.IShippingRequestSet"/>
     </securedutility>
-    
+
     <!-- StandardShipItRequest -->
-    
+
     <class
         class="canonical.launchpad.database.StandardShipItRequest">
         <allow
@@ -65,9 +65,9 @@
             permission="launchpad.Admin"
             set_schema="canonical.shipit.interfaces.shipit.IStandardShipItRequest"/>
     </class>
-    
+
     <!-- StandardShipItRequestSet -->
-    
+
     <class
         class="canonical.launchpad.database.StandardShipItRequestSet">
         <allow
@@ -79,9 +79,9 @@
         <allow
             interface="canonical.shipit.interfaces.shipit.IStandardShipItRequestSet"/>
     </securedutility>
-    
+
     <!-- RequestedCDs -->
-    
+
     <class
         class="canonical.launchpad.database.RequestedCDs">
         <allow
@@ -90,9 +90,9 @@
             permission="launchpad.Edit"
             set_schema="canonical.shipit.interfaces.shipit.IRequestedCDs"/>
     </class>
-    
+
     <!-- Shipment -->
-    
+
     <class
         class="canonical.launchpad.database.Shipment">
         <allow
@@ -104,9 +104,9 @@
         <allow
             interface="canonical.shipit.interfaces.shipit.IShipmentSet"/>
     </securedutility>
-    
+
     <!-- ShippingRun -->
-    
+
     <class
         class="canonical.launchpad.database.ShippingRun">
         <allow
@@ -121,9 +121,9 @@
         <allow
             interface="canonical.shipit.interfaces.shipit.IShippingRunSet"/>
     </securedutility>
-    
+
     <!-- ShipItReport -->
-    
+
     <class
         class="canonical.launchpad.database.ShipItReport">
         <allow
@@ -144,9 +144,9 @@
         <allow
             interface="canonical.shipit.interfaces.shipit.IShipItSurveySet"/>
     </securedutility>
-    
+
     <!-- ShipitAccount -->
-    
+
     <class
         class="canonical.launchpad.database.ShipitAccount">
         <allow
