@@ -23,6 +23,7 @@ from canonical.launchpad.webapp.interfaces import (
 
 
 class BranchPuller:
+    """See `IBranchPuller`."""
 
     implements(IBranchPuller)
 
@@ -49,4 +50,8 @@ class BranchPuller:
 
     def acquireBranchToPull(self):
         """See `IBranchPuller`."""
-        return None
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        return store.find(
+            Branch,
+            Branch.next_mirror_time <= UTC_NOW).order_by(
+                Branch.next_mirror_time).one()

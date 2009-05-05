@@ -233,6 +233,13 @@ class TestAcquireBranchToPull(TestCaseWithFactory):
         self.assertEqual(
             None, getUtility(IBranchPuller).acquireBranchToPull())
 
+    def test_simple(self):
+        # If there is one branch that needs mirroring, acquireBranchToPull
+        # returns that.
+        branch = self.factory.makeAnyBranch()
+        branch.requestMirror()
+        self.assertEqual(
+            branch, getUtility(IBranchPuller).acquireBranchToPull())
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
