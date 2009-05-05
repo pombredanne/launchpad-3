@@ -55,14 +55,34 @@ class BranchMailer:
                 body=contents, perform_diff=False, subject=None)
 
 
+@adapter(events.RevisionsRemoved)
+def send_removed_revision_emails(revisions_removed):
+    """Notify subscribers of removed revisions.
+
+    When the history is shortened, we send an email that says this.
+    """
+    if not subscribers_want_notification(revisions_removed.db_branch):
+        return
+    number_removed = len(revisions_removed.removed_history)
+    if number_removed == 0:
+        return
+    if number_removed == 1:
+        contents = '1 revision was removed from the branch.'
+    else:
+        contents = ('%d revisions were removed from the branch.'
+                    % number_removed)
+    # No diff is associated with the removed email.
+    getUtility(IRevisionMailJobSource).create(
+        revisions_removed.db_branch, revno='removed',
+        from_address=config.canonical.noreply_from_address,
+        body=contents, perform_diff=False, subject=None)
+
+
 @adapter(events.TipChanged)
 def send_tip_changed_emails(tip_changed):
-    if not tip_changed.initial_scan:
-        getUtility(IRevisionsAddedJobSource).create(
-            tip_changed.db_branch, tip_changed.db_branch.last_scanned_id,
-            tip_changed.bzr_branch.last_revision(),
-            config.canonical.noreply_from_address)
-    elif subscribers_want_notification(tip_changed.db_branch):
+    if not subscribers_want_notification(tip_changed.db_branch):
+        return
+    if tip_changed.initial_scan:
         revision_count = tip_changed.bzr_branch.revno()
         if revision_count == 1:
             revisions = '1 revision'
@@ -71,6 +91,11 @@ def send_tip_changed_emails(tip_changed):
         message = ('First scan of the branch detected %s'
                    ' in the revision history of the branch.' %
                    revisions)
-        job = getUtility(IRevisionMailJobSource).create(
+        getUtility(IRevisionMailJobSource).create(
             tip_changed.db_branch, 'initial',
             config.canonical.noreply_from_address, message, False, None)
+    else:
+        getUtility(IRevisionsAddedJobSource).create(
+            tip_changed.db_branch, tip_changed.db_branch.last_scanned_id,
+            tip_changed.bzr_branch.last_revision(),
+            config.canonical.noreply_from_address)

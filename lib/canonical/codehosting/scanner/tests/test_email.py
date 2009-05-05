@@ -12,7 +12,8 @@ import zope.component.event
 from zope.component import getUtility
 
 from canonical.codehosting.jobs import JobRunner
-from canonical.codehosting.scanner.email import send_tip_changed_emails
+from canonical.codehosting.scanner.email import (
+    send_removed_revision_emails, send_tip_changed_emails)
 from canonical.codehosting.scanner.fixture import make_zope_event_fixture
 from canonical.codehosting.scanner.tests.test_bzrsync import BzrSyncTestCase
 from canonical.launchpad.interfaces import (
@@ -29,7 +30,8 @@ class TestBzrSyncEmail(BzrSyncTestCase):
 
     def setUp(self):
         BzrSyncTestCase.setUp(self)
-        fixture = make_zope_event_fixture(send_tip_changed_emails)
+        fixture = make_zope_event_fixture(
+            send_tip_changed_emails, send_removed_revision_emails)
         fixture.setUp()
         self.addCleanup(fixture.tearDown)
         stub.test_emails = []
@@ -134,6 +136,10 @@ class TestBzrSyncNoEmail(BzrSyncTestCase):
 
     def setUp(self):
         BzrSyncTestCase.setUp(self)
+        fixture = make_zope_event_fixture(
+            send_tip_changed_emails, send_removed_revision_emails)
+        fixture.setUp()
+        self.addCleanup(fixture.tearDown)
         stub.test_emails = []
 
     def assertNoPendingEmails(self):

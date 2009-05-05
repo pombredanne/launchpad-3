@@ -27,7 +27,6 @@ from lazr.uri import URI
 from canonical.codehosting import iter_list_chunks
 from canonical.codehosting.puller.worker import BranchMirrorer, BranchPolicy
 from canonical.codehosting.scanner import events
-from canonical.codehosting.scanner.email import BranchMailer
 from canonical.codehosting.scanner.mergedetection import (
     BranchMergeDetectionHandler)
 from canonical.config import config
@@ -83,7 +82,6 @@ class BzrSync:
         self.logger = logger
 
         self.db_branch = branch
-        self._branch_mailer = BranchMailer(self.db_branch)
         self._merge_handler = BranchMergeDetectionHandler(self.logger)
 
     def syncBranchAndClose(self, bzr_branch=None):
@@ -136,7 +134,7 @@ class BzrSync:
 
         (added_ancestry, branchrevisions_to_delete,
             branchrevisions_to_insert) = self.planDatabaseChanges(
-            bzr_ancestry, bzr_history, db_ancestry, db_history,
+            bzr_branch, bzr_ancestry, bzr_history, db_ancestry, db_history,
             db_branch_revision_map)
         added_ancestry.difference_update(
             getUtility(IRevisionSet).onlyPresent(added_ancestry))
@@ -299,8 +297,8 @@ class BzrSync:
             RepositoryFormat, repository_string,
             RepositoryFormat.UNRECOGNIZED)
 
-    def planDatabaseChanges(self, bzr_ancestry, bzr_history, db_ancestry,
-                            db_history, db_branch_revision_map):
+    def planDatabaseChanges(self, bzr_branch, bzr_ancestry, bzr_history,
+                            db_ancestry, db_history, db_branch_revision_map):
         """Plan database changes to synchronize with bzrlib data.
 
         Use the data retrieved by `retrieveDatabaseAncestry` and
@@ -329,9 +327,9 @@ class BzrSync:
         removed_history = db_history[common_len:]
         added_history = bzr_history[common_len:]
 
-        # XXX: Move this so that there's an event generated here, and the
-        # code below is a handler of that event.
-        self._branch_mailer.generateEmailForRemovedRevisions(removed_history)
+        notify(
+            events.RevisionsRemoved(
+                self.db_branch, bzr_branch, removed_history))
 
         # Merged (non-history) revisions in the database and the bzr branch.
         old_merged = db_ancestry.difference(db_history)
