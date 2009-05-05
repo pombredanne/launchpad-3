@@ -3006,6 +3006,7 @@ class BugTaskTableRowView(LaunchpadView):
 
     @property
     def assignee_picker_widget(self):
+        assignee_content_id = 'assignee-content-box-%s' % self.context.id
         null_display_value = 'Nobody'
         if self.context.assignee is None:
             assignee_html = null_display_value
@@ -3018,6 +3019,7 @@ class BugTaskTableRowView(LaunchpadView):
             request=self.request,
             interface_attribute=IBugTask['assignee'],
             default_html=assignee_html,
+            id=assignee_content_id,
             header='Change assignee',
             step_title='Search for people or teams',
             remove_button_text='Remove Assignee',

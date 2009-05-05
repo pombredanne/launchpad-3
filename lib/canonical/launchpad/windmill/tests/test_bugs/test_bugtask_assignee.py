@@ -5,7 +5,8 @@ from canonical.launchpad.windmill.testing.widgets import (
 
 test_change_assignee = InlinePickerWidgetSearchTest(
     url='http://bugs.launchpad.dev:8085/bugs/1',
-    suite='test_change_assignee_button',
+    suite='bugtask_assignee',
+    name='test_change_assignee_button',
     activator_id='assignee-content-box-17',
     search_text='admin',
     result_index=1,
@@ -13,14 +14,16 @@ test_change_assignee = InlinePickerWidgetSearchTest(
 
 test_assign_me_button = InlinePickerWidgetButtonTest(
     url='http://bugs.launchpad.dev:8085/bugs/1',
-    suite='test_assign_me_button',
+    suite='bugtask_assignee',
+    name='test_assign_me_button',
     activator_id='assignee-content-box-17',
     button_class='yui-picker-assign-me-button',
     new_value='Foo Bar')
 
 test_remove_assignee_button = InlinePickerWidgetButtonTest(
     url='http://bugs.launchpad.dev:8085/bugs/1',
-    suite='test_remove_assignee_button',
+    suite='bugtask_assignee',
+    name='test_remove_assignee_button',
     activator_id='assignee-content-box-17',
     button_class='yui-picker-remove-button',
-    new_value='None')
+    new_value='Nobody')

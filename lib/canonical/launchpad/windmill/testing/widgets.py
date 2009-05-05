@@ -143,12 +143,12 @@ class InlinePickerWidgetSearchTest:
         client.waits.forPageLoad(timeout=u'20000')
 
         # Click on edit button.
-        client.waits.forElement(
-            xpath=u"//span[@id='%s']/button" % self.activator_id,
-            timeout=u'20000')
-        client.waits.sleep(milliseconds=u'2000')
-        client.click(
-            xpath=u"//span[@id='%s']/button" % self.activator_id)
+        button_xpath = (
+            u"//span[@id='%s']"
+             "/button[not(contains(@class, 'yui-activator-hidden'))]"
+             % self.activator_id)
+        client.waits.forElement(xpath=button_xpath, timeout=u'20000')
+        client.click(xpath=button_xpath)
 
         # Search picker.
         _search_picker_widget(client, self.search_text,
@@ -210,18 +210,18 @@ class InlinePickerWidgetButtonTest:
         client.waits.forPageLoad(timeout=u'25000')
 
         # Click on edit button.
-        client.waits.forElement(
-            xpath=u"//span[@id='%s']/button" % self.activator_id,
-            timeout=u'25000')
-        client.waits.sleep(milliseconds=u'2000')
-        client.click(
-            xpath=u"//span[@id='%s']/button" % self.activator_id)
+        button_xpath = (
+            u"//span[@id='%s']"
+             "/button[not(contains(@class, 'yui-activator-hidden'))]"
+             % self.activator_id)
+        client.waits.forElement(xpath=button_xpath, timeout=u'25000')
+        client.click(xpath=button_xpath)
 
         # Click on remove button.
         remove_button_xpath = (
             u"//table[contains(@class, 'yui-picker') "
              "and not(contains(@class, 'yui-picker-hidden'))]"
-             "//button[@class='%s']" % self.button_class)
+             "//*[contains(@class, '%s')]" % self.button_class)
         client.waits.forElement(xpath=remove_button_xpath, timeout=u'25000')
         client.click(xpath=remove_button_xpath)
         client.waits.sleep(milliseconds=u'2000')
