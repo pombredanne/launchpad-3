@@ -34,20 +34,28 @@ def test_inline_subscriber():
         xpath=SUBSCRIPTION_LINK, validator=u'Subscribe')
 
     # Subscribe "Sample Person" and check that the subscription
-    # link now reads "Unsubscribe" and that the person's name
-    # appears in the subscriber's list.
+    # link now reads "Unsubscribe", that the person's name
+    # appears in the subscriber's list, and that the icon
+    # has changed to the remove icon.
     client.click(xpath=SUBSCRIPTION_LINK)
     client.waits.sleep(milliseconds=WAIT_CHECK_CHANGE)
     client.asserts.assertText(
         xpath=SUBSCRIPTION_LINK, validator=u'Unsubscribe')
     client.asserts.assertNode(xpath=SUBSCRIBERS_LIST_PERSON)
+    client.asserts.assertProperty(
+        xpath=SUBSCRIPTION_LINK,
+        validator='style.backgroundImage|url(/@@/remove)')
 
-    # Make sure the unsubscribe link also works and that
-    # the person's named is removed from the subscriber's list.
+    # Make sure the unsubscribe link also works, that
+    # the person's named is removed from the subscriber's list,
+    # and that the icon has changed to the add icon.
     client.click(xpath=SUBSCRIPTION_LINK)
     client.waits.sleep(milliseconds=WAIT_CHECK_CHANGE)
     client.asserts.assertText(
         xpath=SUBSCRIPTION_LINK, validator=u'Subscribe')
+    client.asserts.assertProperty(
+        xpath=SUBSCRIPTION_LINK,
+        validator='style.backgroundImage|url(/@@/add)')
     client.asserts.assertNotNode(xpath=SUBSCRIBERS_LIST_PERSON)
 
     # Subscribe again in order to check that the minus icon
@@ -60,4 +68,7 @@ def test_inline_subscriber():
     client.waits.sleep(milliseconds=WAIT_CHECK_CHANGE)
     client.asserts.assertText(
         xpath=SUBSCRIPTION_LINK, validator=u'Subscribe')
+    client.asserts.assertProperty(
+        xpath=SUBSCRIPTION_LINK,
+        validator='style.backgroundImage|url(/@@/add)')
     client.asserts.assertNotNode(xpath=SUBSCRIBERS_LIST_PERSON)
