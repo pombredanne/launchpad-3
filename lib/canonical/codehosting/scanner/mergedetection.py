@@ -21,6 +21,18 @@ from lp.code.interfaces.branchmergeproposal import (
     BRANCH_MERGE_PROPOSAL_FINAL_STATES)
 
 
+def mark_branch_merged(logger, branch):
+    """Mark 'branch' as merged."""
+    # If the branch is a series branch, then don't change the
+    # lifecycle status of it at all.
+    if branch.associatedProductSeries().count() > 0:
+        return
+    # In other cases, we now want to update the lifecycle status of the
+    # source branch to merged.
+    logger.info("%s now Merged.", branch.bzr_identity)
+    branch.lifecycle_status = BranchLifecycleStatus.MERGED
+
+
 class BranchMergeDetectionHandler:
     """Handle merge detection events."""
 
@@ -28,16 +40,6 @@ class BranchMergeDetectionHandler:
         if logger is None:
             logger = logging.getLogger(self.__class__.__name__)
         self.logger = logger
-
-    def _markSourceBranchMerged(self, source):
-        # If the source branch is a series branch, then don't change the
-        # lifecycle status of it at all.
-        if source.associatedProductSeries().count() > 0:
-            return
-        # In other cases, we now want to update the lifecycle status of the
-        # source branch to merged.
-        self.logger.info("%s now Merged.", source.bzr_identity)
-        source.lifecycle_status = BranchLifecycleStatus.MERGED
 
     def mergeProposalMerge(self, proposal):
         """Handle a detected merge of a proposal."""
@@ -53,7 +55,7 @@ class BranchMergeDetectionHandler:
         # branch.
         if proposal.target_branch.associatedProductSeries().count() == 0:
             return
-        self._markSourceBranchMerged(proposal.source_branch)
+        mark_branch_merged(self.logger, proposal.source_branch)
 
     def mergeOfTwoBranches(self, source, target, proposal=None):
         """Handle the merge of source into target."""
@@ -67,7 +69,7 @@ class BranchMergeDetectionHandler:
             return
         if proposal is not None:
             proposal.markAsMerged()
-        self._markSourceBranchMerged(source)
+        mark_branch_merged(self.logger, source)
 
 
 def auto_merge_branches(db_branch, merge_handler, bzr_ancestry):
