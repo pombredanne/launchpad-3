@@ -98,7 +98,7 @@ class BranchPuller(LaunchpadXMLRPCView):
         if branch is not None:
             default_branch = branch.target.default_stacked_on_branch
             if default_branch:
-                default_branch_name = default_branch
+                default_branch_name = default_branch.unique_name
             else:
                 default_branch_name = ''
             return (branch.id, branch.getPullURL(), branch.unique_name,
