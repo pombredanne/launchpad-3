@@ -20,7 +20,7 @@ from canonical.codehosting.vfs import get_scanner_server
 from canonical.codehosting.scanner import buglinks, email
 from canonical.codehosting.scanner.bzrsync import BzrSync
 from canonical.codehosting.scanner.fixture import (
-    Fixtures, FixtureWithCleanup)
+    Fixtures, FixtureWithCleanup, run_with_fixture)
 from canonical.launchpad.webapp import canonical_url, errorlog
 
 
@@ -50,6 +50,21 @@ class BranchScanner:
         self.ztm = ztm
         self.log = log
 
+    def scanBranches(self, branches):
+        """Scan 'branches'."""
+        for branch in branches:
+            try:
+                self.scanOneBranch(branch)
+            except (KeyboardInterrupt, SystemExit):
+                # If either was raised, something really wants us to finish.
+                # Any other Exception is an error condition and must not
+                # terminate the script.
+                raise
+            except Exception, e:
+                # Yes, bare except. Bugs or error conditions when scanning any
+                # given branch must not prevent scanning the other branches.
+                self.logScanFailure(branch, str(e))
+
     def scanAllBranches(self):
         """Run Bzrsync on all branches, and intercept most exceptions."""
         self.log.info('Starting branch scanning')
@@ -57,23 +72,8 @@ class BranchScanner:
         fixture = Fixtures(
             [server, make_zope_event_fixture(
                 email.create_revision_added_job, buglinks.got_new_revision)])
-        fixture.setUp()
-        try:
-            for branch in getUtility(IBranchScanner).getBranchesToScan():
-                try:
-                    self.scanOneBranch(branch)
-                except (KeyboardInterrupt, SystemExit):
-                    # If either was raised, something really wants us
-                    # to finish. Any other Exception is an error
-                    # condition and must not terminate the script.
-                    raise
-                except Exception, e:
-                    # Yes, bare except. Bugs or error conditions when
-                    # scanning any given branch must not prevent
-                    # scanning the other branches.
-                    self.logScanFailure(branch, str(e))
-        finally:
-            fixture.tearDown()
+        branches = getUtility(IBranchScanner).getBranchesToScan()
+        run_with_fixture(fixture, self.scanBranches, branches)
         self.log.info('Finished branch scanning')
 
     def scanOneBranch(self, branch):
