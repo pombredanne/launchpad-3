@@ -2215,6 +2215,14 @@
         layer="canonical.launchpad.layers.TranslationsLayer"/>
     <browser:page
         for="lp.registry.interfaces.productseries.IProductSeries"
+        name="+request-bzr-import"
+        class="lp.registry.browser.productseries.ProductSeriesTranslationsBzrImportView"
+        facet="translations"
+        permission="launchpad.Edit"
+        template="../templates/productseries-translations-bzr-import.pt"
+        layer="canonical.launchpad.layers.TranslationsLayer"/>
+    <browser:page
+        for="lp.registry.interfaces.productseries.IProductSeries"
         name="+filebug"
         class="lp.registry.browser.productseries.ProductSeriesFileBugRedirect"
         permission="zope.Public"/>
@@ -2797,8 +2805,8 @@
         facet="overview"
         permission="zope.Public"
         name="+index"
-        class="lp.registry.browser.productrelease.ProductReleaseView"
-        template="../templates/productrelease-index.pt"/>
+        class="lp.registry.browser.milestone.MilestoneView"
+        template="../templates/milestone-index.pt"/>
     <browser:page
         for="lp.registry.interfaces.productrelease.IProductRelease"
         class="lp.registry.browser.productrelease.ProductReleaseRdfView"

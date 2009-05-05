@@ -456,6 +456,12 @@
         class="canonical.launchpad.browser.RemoveBranchVisibilityTeamPolicyView"
         permission="launchpad.Admin"
         template="../templates/branch-visibility-edit.pt"/>
+    <browser:page
+        name="+spark"
+        for="lp.code.interfaces.branch.IBranch"
+        class="lp.code.browser.branch.BranchSparkView"
+        facet="branches"
+        permission="zope.Public"/>
     <browser:menus
         classes="
             BranchContextMenu

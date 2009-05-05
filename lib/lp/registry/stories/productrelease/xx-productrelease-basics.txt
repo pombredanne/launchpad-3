@@ -33,9 +33,9 @@ Links to previous releases from the series are listed.
     >>> other_releases = find_tag_by_id(browser.contents, 'other-releases')
     >>> print extract_text(other_releases)
     The following releases have been made for the trunk series:
-    Mozilla Firefox: 0.9.2 (One (secure) Tree Hill) 2004-10-16
-    Mozilla Firefox: 0.9.1 (One Tree Hill (v2)) 2004-10-16
-    Mozilla Firefox: 0.9 (One Tree Hill) 2004-10-16
+    2004-10-16 Mozilla Firefox: 0.9.2 (One (secure) Tree Hill)
+    2004-10-16 Mozilla Firefox: 0.9.1 (One Tree Hill (v2))
+    2004-10-16 Mozilla Firefox: 0.9 (One Tree Hill)
 
     >>> print browser.getLink('0.9.1').url
     http://launchpad.dev/firefox/trunk/0.9.1
@@ -117,13 +117,13 @@ has a productrelease.
 The release owner can edit the release via its +edit form:
 
     >>> browser.open('http://launchpad.dev/firefox/trunk/1.0')
-    >>> browser.getLink('Change details').click()
+    >>> browser.getLink('Change details', index=1).click()
     >>> print browser.title
     Edit details of Mozilla Firefox 1.0 in Launchpad
     >>> browser.getControl('Changelog').value = 'This is not a joke.'
     >>> browser.getControl('Change').click()
     >>> print browser.title
-    Mozilla Firefox 1.0 in Launchpad
+    Mozilla Firefox: 1.0
 
 
 == Editing permissions extend to product and series owners ==
@@ -154,13 +154,13 @@ Celso is a member of ubuntu-team, so he can edit this release too:
 
     >>> browser = setupBrowser(auth='Basic celso.providelo@canonical.com:cprov')
     >>> browser.open('http://launchpad.dev/tomcat/trunk/0.6.6.6')
-    >>> browser.getLink('Change details').click()
+    >>> browser.getLink('Change details', index=1).click()
     >>> print browser.title
     Edit details of Tomcat 0.6.6.6 in Launchpad
     >>> browser.getControl('Changelog').value = 'Fixes 3 bugs.'
     >>> browser.getControl('Change').click()
     >>> print browser.title
-    Tomcat 0.6.6.6 in Launchpad
+    Tomcat: 0.6.6.6
 
 And if no-priv owns the series...
 
@@ -180,4 +180,4 @@ others:
     >>> browser.getControl('Changelog').value = 'Fixes 4 bugs.'
     >>> browser.getControl('Change').click()
     >>> print browser.title
-    Tomcat 0.6.6.6 in Launchpad
+    Tomcat: 0.6.6.6

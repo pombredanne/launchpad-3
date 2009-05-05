@@ -25,13 +25,16 @@ __all__ = [
     ]
 
 from datetime import datetime
+import weakref
 
+import simplejson
 from storm.expr import Asc, Desc
 import pytz
 from zope.component import getUtility
 from zope.interface import implements, Interface
 from zope.formlib import form
 from zope.schema import Choice
+from zope.security.proxy import removeSecurityProxy
 from lazr.delegates import delegates
 from lazr.enum import EnumeratedType, Item
 
@@ -50,7 +53,8 @@ from canonical.launchpad.interfaces.personproduct import (
 from canonical.launchpad.webapp import (
     ApplicationMenu, canonical_url, custom_widget, enabled_with_permission,
     LaunchpadFormView, Link)
-from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.authorization import (
+    check_permission, LAUNCHPAD_SECURITY_POLICY_CACHE_KEY)
 from canonical.launchpad.webapp.badge import Badge, HasBadgeBase
 from canonical.launchpad.webapp.batching import TableBatchNavigator
 from canonical.launchpad.webapp.publisher import LaunchpadView
@@ -72,6 +76,7 @@ from lp.registry.interfaces.person import IPerson, IPersonSet
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeriesSet
 from lp.registry.model.sourcepackage import SourcePackage
+
 
 def get_plural_text(count, singular, plural):
     """Return 'singular' if 'count' is 1, 'plural' otherwise."""
@@ -213,9 +218,9 @@ class BranchListingSort(EnumeratedType):
         """)
 
     LIFECYCLE = Item("""
-        by lifecycle status
+        by status
 
-        Sort branches by the lifecycle status.
+        Sort branches by their status.
         """)
 
     NAME = Item("""
@@ -293,8 +298,31 @@ class BranchListingBatchNavigator(TableBatchNavigator):
         self._dev_series_map = {}
 
     @cachedproperty
+    def branch_sparks(self):
+        return simplejson.dumps([
+                ('b-%s' % (count+1),
+                 canonical_url(branch, view_name='+spark'))
+                for count, branch
+                in enumerate(self._branches_for_current_batch)
+                ]);
+
+    @cachedproperty
     def _branches_for_current_batch(self):
-        return list(self.currentBatch())
+        branches = list(self.currentBatch())
+        # XXX: TimPenhey 2009-04-08 bug=324546
+        # Until there is an API to do this nicely, shove the launchpad.view
+        # permission into the request cache directly.
+        request = self.view.request
+        permission_cache = request.annotations.setdefault(
+            LAUNCHPAD_SECURITY_POLICY_CACHE_KEY,
+            weakref.WeakKeyDictionary())
+        for branch in branches:
+            naked_branch = removeSecurityProxy(branch)
+            branch_permission_cache = permission_cache.setdefault(
+                naked_branch, {})
+            branch_permission_cache['launchpad.View'] = True
+
+        return branches
 
     @cachedproperty
     def branch_ids_with_bug_links(self):

@@ -152,7 +152,7 @@ distribution owners.
     ...     'http://launchpad.dev/ubuntu/+mirror/my.mirror.com-archive/')
     >>> print extract_text(find_tag_by_id(browser.contents, 'last-probe'))
     Last probe
-    This mirror is an unofficial Ubuntu Linux mirror, and will not be
+    This mirror is an Pending review Ubuntu Linux mirror, and will not be
     verified.
 
 To make a mirror official, one has to go to the +review page, which
