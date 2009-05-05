@@ -29,11 +29,9 @@ def subscribers_want_notification(db_branch):
 class BranchMailer:
     """Handles mail notifications for changes to the code in a branch."""
 
-    def __init__(self, trans_manager, db_branch):
-        self.trans_manager = trans_manager
+    def __init__(self, db_branch):
         self.db_branch = db_branch
         self.subscribers_want_notification = False
-        self.email_from = config.canonical.noreply_from_address
 
     def initializeEmailQueue(self):
         """Create an email queue and determine whether to create diffs.
@@ -64,7 +62,8 @@ class BranchMailer:
                             % number_removed)
             # No diff is associated with the removed email.
             job = getUtility(IRevisionMailJobSource).create(
-                self.db_branch, revno='removed', from_address=self.email_from,
+                self.db_branch, revno='removed',
+                from_address=config.canonical.noreply_from_address,
                 body=contents, perform_diff=False, subject=None)
 
 

@@ -83,7 +83,7 @@ class BzrSync:
         self.logger = logger
 
         self.db_branch = branch
-        self._branch_mailer = BranchMailer(self.trans_manager, self.db_branch)
+        self._branch_mailer = BranchMailer(self.db_branch)
         self._merge_handler = BranchMergeDetectionHandler(self.logger)
 
     def syncBranchAndClose(self, bzr_branch=None):
