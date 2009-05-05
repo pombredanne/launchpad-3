@@ -11,10 +11,12 @@ __all__ = [
     'Fixtures',
     'FixtureWithCleanup',
     'IFixture',
+    'make_zope_event_fixture',
     'run_with_fixture',
     'with_fixture',
     ]
 
+from zope.component import getGlobalSiteManager, provideHandler
 from twisted.python.util import mergeFunctionMetadata
 from zope.interface import implements, Interface
 
@@ -99,3 +101,20 @@ def run_with_fixture(fixture, f, *args, **kwargs):
         return f(*args, **kwargs)
     finally:
         fixture.tearDown()
+
+
+class ZopeEventHandlerFixture(FixtureWithCleanup):
+    """A fixture that provides and then unprovides a Zope event handler."""
+
+    def __init__(self, handler):
+        self._handler = handler
+
+    def setUp(self):
+        super(ZopeEventHandlerFixture, self).setUp()
+        gsm = getGlobalSiteManager()
+        provideHandler(self._handler)
+        self.addCleanup(gsm.unregisterHandler, self._handler)
+
+
+def make_zope_event_fixture(*handlers):
+    return Fixtures(map(ZopeEventHandlerFixture, handlers))

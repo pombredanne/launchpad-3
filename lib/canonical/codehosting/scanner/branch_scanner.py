@@ -13,31 +13,15 @@ import sys
 from bzrlib.errors import NotBranchError, ConnectionError
 # This non-standard import is necessary to hook up the event system.
 import zope.component.event
-from zope.component import getGlobalSiteManager, getUtility, provideHandler
+from zope.component import getUtility
 
 from lp.code.interfaces.branchscanner import IBranchScanner
 from canonical.codehosting.vfs import get_scanner_server
 from canonical.codehosting.scanner import buglinks, email
 from canonical.codehosting.scanner.bzrsync import BzrSync
 from canonical.codehosting.scanner.fixture import (
-    Fixtures, FixtureWithCleanup, run_with_fixture)
+    Fixtures, make_zope_event_fixture, run_with_fixture)
 from canonical.launchpad.webapp import canonical_url, errorlog
-
-
-class ZopeEventFixture(FixtureWithCleanup):
-
-    def __init__(self, handler):
-        self._handler = handler
-
-    def setUp(self):
-        super(ZopeEventFixture, self).setUp()
-        gsm = getGlobalSiteManager()
-        provideHandler(self._handler)
-        self.addCleanup(gsm.unregisterHandler, self._handler)
-
-
-def make_zope_event_fixture(*handlers):
-    return Fixtures(map(ZopeEventFixture, handlers))
 
 
 class BranchScanner:
