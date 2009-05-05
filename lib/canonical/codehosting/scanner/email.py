@@ -34,10 +34,9 @@ class BranchMailer:
         self.db_branch = db_branch
         self.pending_emails = []
         self.subscribers_want_notification = False
-        self.initial_scan = None
         self.email_from = config.canonical.noreply_from_address
 
-    def initializeEmailQueue(self, initial_scan):
+    def initializeEmailQueue(self):
         """Create an email queue and determine whether to create diffs.
 
         In order to avoid sending emails when no one is interested in seeing
@@ -48,11 +47,6 @@ class BranchMailer:
         self.pending_emails = []
         self.subscribers_want_notification = subscribers_want_notification(
             self.db_branch)
-
-        # If db_history is empty, then this is the initial scan of the
-        # branch.  We only want to send one email for the initial scan
-        # of a branch, not one for each revision.
-        self.initial_scan = initial_scan
 
     def generateEmailForRemovedRevisions(self, removed_history):
         """Notify subscribers of removed revisions.

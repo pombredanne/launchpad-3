@@ -133,8 +133,7 @@ class BzrSync:
             events.DatabaseBranchLoaded(
                 self.db_branch, bzr_branch, db_ancestry, db_history,
                 db_branch_revision_map))
-        initial_scan = (len(db_history) == 0)
-        self._branch_mailer.initializeEmailQueue(initial_scan)
+        self._branch_mailer.initializeEmailQueue()
 
         (added_ancestry, branchrevisions_to_delete,
             branchrevisions_to_insert) = self.planDatabaseChanges(
@@ -157,6 +156,7 @@ class BzrSync:
 
         # Generate emails for the revisions in the revision_history
         # for the branch.
+        initial_scan = (len(db_history) == 0)
         notify(events.TipChanged(self.db_branch, bzr_branch, initial_scan))
 
         # The Branch table is modified by other systems, including the web UI,
