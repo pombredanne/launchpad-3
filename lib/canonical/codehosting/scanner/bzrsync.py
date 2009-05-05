@@ -159,11 +159,13 @@ class BzrSync:
         self.updateBranchStatus(bzr_history)
         # XXX: Move this so that there's an event generated here, and the
         # code below is a handler of that event.
-        self.autoMergeProposals(self.db_branch, bzr_ancestry)
-        self.autoMergeBranches(self.db_branch, bzr_ancestry)
+        self.autoMergeProposals(
+            self.db_branch, self._merge_handler, bzr_ancestry)
+        self.autoMergeBranches(
+            self.db_branch, self._merge_handler, bzr_ancestry)
         self.trans_manager.commit()
 
-    def autoMergeBranches(self, db_branch, bzr_ancestry):
+    def autoMergeBranches(self, db_branch, merge_handler, bzr_ancestry):
         """Detect branches that have been merged."""
         # We only check branches that have been merged into the branch that is
         # being scanned as we already have the ancestry handy.  It is much
@@ -199,9 +201,9 @@ class BzrSync:
             elif last_scanned in bzr_ancestry:
                 # XXX: Move this so that there's an event generated here, and
                 # the code below is a handler of that event.
-                self._merge_handler.mergeOfTwoBranches(branch, db_branch)
+                merge_handler.mergeOfTwoBranches(branch, db_branch)
 
-    def autoMergeProposals(self, db_branch, bzr_ancestry):
+    def autoMergeProposals(self, db_branch, merge_handler, bzr_ancestry):
         """Detect merged proposals."""
         # Check landing candidates in non-terminal states to see if their tip
         # is in our ancestry. If it is, set the state of the proposal to
@@ -212,7 +214,7 @@ class BzrSync:
         # ui by a person, of by PQM once it is integrated.
         for proposal in db_branch.landing_candidates:
             if proposal.source_branch.last_scanned_id in bzr_ancestry:
-                self._merge_handler.mergeProposalMerge(proposal)
+                merge_handler.mergeProposalMerge(proposal)
 
         # Now check the landing targets.
         final_states = BRANCH_MERGE_PROPOSAL_FINAL_STATES
@@ -226,7 +228,7 @@ class BzrSync:
                 if branch_revision is not None:
                     # XXX: Move this so that there's an event generated here,
                     # and the code below is a handler of that event.
-                    self._merge_handler.mergeProposalMerge(proposal)
+                    merge_handler.mergeProposalMerge(proposal)
 
     def retrieveDatabaseAncestry(self):
         """Efficiently retrieve ancestry from the database."""
