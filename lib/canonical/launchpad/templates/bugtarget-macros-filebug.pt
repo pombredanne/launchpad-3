@@ -54,29 +54,12 @@
     <metal:row use-macro="context/@@launchpad_form/widget_row" />
   </metal:summary>
 
-  <tal:tags tal:condition="view/advanced_form"
-            tal:define="widget nocall:view/widgets/tags">
-    <metal:row use-macro="context/@@launchpad_form/widget_row" />
-  </tal:tags>
-
-  <tal:hidden_tags tal:condition="not: view/advanced_form"
-            tal:replace="structure view/widgets/tags/hidden" />
-
   <metal:description tal:define="widget nocall:view/widgets/comment">
     <metal:row use-macro="context/@@launchpad_form/widget_row" />
   </metal:description>
 
   <metal:bug_reporting_guidelines
       use-macro="context/@@+filebug-macros/bug_reporting_guidelines" />
-
-  <tr>
-    <td colspan="2">
-
-      <metal:attachment-form
-          use-macro="context/@@bug-attachment-macros/attachment-form" />
-
-    </td>
-  </tr>
 
   <tr tal:define="security_context view/getSecurityContext">
     <td colspan="2" width="100%"
@@ -113,6 +96,41 @@
           </tr>
         </tbody>
       </table>
+    </td>
+  </tr>
+
+  <tr>
+    <td colspan="2">
+      <fieldset class="collapsible collapsed">
+        <legend>Extra options</legend>
+        <table>
+          <tal:status
+              define="widget nocall:view/widgets/status|nothing"
+              condition="widget">
+            <metal:row use-macro="context/@@launchpad_form/widget_row" />
+          </tal:status>
+          <tal:importance
+              define="widget nocall:view/widgets/importance|nothing"
+              condition="widget">
+            <metal:row use-macro="context/@@launchpad_form/widget_row" />
+          </tal:importance>
+          <tal:milestone
+              define="widget nocall:view/widgets/milestone|nothing"
+              condition="widget">
+            <metal:row use-macro="context/@@launchpad_form/widget_row" />
+          </tal:milestone>
+          <tal:tags tal:define="widget nocall:view/widgets/tags">
+            <metal:row use-macro="context/@@launchpad_form/widget_row" />
+          </tal:tags>
+          <tal:assignee
+              define="widget nocall:view/widgets/assignee|nothing"
+              condition="widget">
+            <metal:row use-macro="context/@@launchpad_form/widget_row" />
+          </tal:assignee>
+        </table>
+        <metal:attachment-form
+            use-macro="context/@@bug-attachment-macros/attachment-form" />
+      </fieldset>
     </td>
   </tr>
 

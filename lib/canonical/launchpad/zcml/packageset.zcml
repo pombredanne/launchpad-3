@@ -22,5 +22,17 @@
     <allow attributes="getByName getByOwner setsIncludingSource" />
     <require permission="launchpad.Edit" attributes="new" />
   </securedutility>
+
+  <browser:url
+      for="canonical.launchpad.interfaces.IPackagesetSet"
+      path_expression="string:package-sets"
+      parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
+      />
+
+  <browser:url
+      for="canonical.launchpad.interfaces.IPackageset"
+      path_expression="name"
+      parent_utility="canonical.launchpad.interfaces.IPackagesetSet"
+      />
 </configure>
 

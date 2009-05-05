@@ -83,6 +83,9 @@
   <class class="lp.code.model.branchcollection.GenericBranchCollection">
     <allow interface="lp.code.interfaces.branchcollection.IBranchCollection"/>
   </class>
+  <class class="lp.code.model.branchcollection.AnonymousBranchCollection">
+    <allow interface="lp.code.interfaces.branchcollection.IBranchCollection"/>
+  </class>
   <class class="lp.code.model.branchcollection.VisibleBranchCollection">
     <allow interface="lp.code.interfaces.branchcollection.IBranchCollection"/>
   </class>
@@ -397,6 +400,7 @@
                     merge_queue
                     namespace
                     pending_writes
+                    commitsForDays
                     "/>
     <require
         permission="launchpad.Edit"
@@ -631,6 +635,7 @@
                     cvs_root
                     cvs_module
                     svn_branch_url
+                    git_repo_url
                     date_last_successful
                     source_product_series
                     update_interval

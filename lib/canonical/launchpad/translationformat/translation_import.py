@@ -125,29 +125,32 @@ class ExistingPOFileInDatabase:
             date_reviewed,
             is_current,
             is_imported,
-            %s
-          FROM TranslationMessage
-            JOIN POTMsgSet ON
-              POTMsgSet.id=TranslationMessage.potmsgset
+            %(translation_columns)s
+          FROM POTMsgSet
             JOIN TranslationTemplateItem ON
-              TranslationTemplateItem.id=POTMsgSet.id
+              TranslationTemplateItem.potmsgset=POTMsgSet.id
             JOIN POTemplate ON
               POTemplate.id=TranslationTemplateItem.potemplate
             JOIN POFile ON
-              POFile.potemplate=POTemplate.id
-            %s
+              POFile.potemplate=POTemplate.id AND
+              POFile.id=%(pofile)s
+            JOIN TranslationMessage ON
+              POTMsgSet.id=TranslationMessage.potmsgset AND
+              POFile.language=TranslationMessage.language AND
+              POFile.variant IS NOT DISTINCT FROM TranslationMessage.variant
+            %(translation_joins)s
             JOIN POMsgID ON
               POMsgID.id=POTMsgSet.msgid_singular
             LEFT OUTER JOIN POMsgID AS POMsgID_Plural ON
               POMsgID_Plural.id=POTMsgSet.msgid_plural
           WHERE
-                POFile.id=%s AND
-                is_current or is_imported
+              (is_current IS TRUE OR is_imported IS TRUE)
           ORDER BY
             TranslationTemplateItem.sequence,
             TranslationMessage.potemplate NULLS LAST
-          ''' % (','.join(translations), '\n'.join(msgstr_joins),
-                 quote(self.pofile))
+          ''' % { 'translation_columns' : ','.join(translations),
+                  'translation_joins' : '\n'.join(msgstr_joins),
+                  'pofile' : quote(self.pofile) }
         cur = cursor()
         cur.execute(sql)
         rows = cur.fetchall()
