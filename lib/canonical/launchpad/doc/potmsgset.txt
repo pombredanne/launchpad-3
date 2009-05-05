@@ -6,16 +6,16 @@ We need to get a POTMsgSet object to performe this test.
 
     >>> from zope.component import getUtility
     >>> from canonical.database.sqlbase import flush_database_updates
-    >>> from canonical.launchpad.database import POTemplate, TranslationMessage
-    >>> potemplate = POTemplate.get(1)
-    >>> potmsgsets = potemplate.getPOTMsgSets()
-    >>> potmsgset = potmsgsets[0]
+    >>> from canonical.launchpad.database import TranslationMessage
+    >>> from canonical.launchpad.interfaces import (
+    ...     ILanguageSet, IPersonSet, IPOTMsgSet, IProductSet)
+
+    >>> potemplate = factory.makePOTemplate()
+    >>> potmsgset = factory.makePOTMsgSet(potemplate=potemplate, singular="bla")
 
 Verify interface.
 
     >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> from canonical.launchpad.interfaces import (
-    ...     ILanguageSet, IPersonSet, IPOTMsgSet, IProductSet)
     >>> verifyObject(IPOTMsgSet, potmsgset)
     True
 
@@ -34,7 +34,8 @@ POTMsgSet's msgid into the 'text' argument.
 As this test is too specific, we are going to change a msgid as we need for
 every test.
 
-    >>> potmsgset = potemplate.createMessageSetFromText(u'normal string', None)
+    >>> potmsgset = factory.makePOTMsgSet(potemplate,
+    ...                                   singular=u'normal string')
     >>> text = u'another normal string'
 
 In this case, it should not change.
@@ -52,8 +53,8 @@ they will disappear as the msgid does not have them.
 Now, the msgid will have a leading whitespace. That means that 'text'
 should have it too.
 
-    >>> potmsgset = potemplate.createMessageSetFromText(
-    ...     u'\nnormal string with leading newline', None)
+    >>> potmsgset = factory.makePOTMsgSet(
+    ...     potemplate, singular=u'\nnormal string with leading newline')
     >>> potmsgset.normalizeWhitespaces(text)
     u'\na string with \n whitespaces'
 
@@ -77,8 +78,8 @@ This method changes the u'\u2022' char by the normal white space.
 As this test is too specific, we are going to change a msgid as we need for
 every test.
 
-    >>> potmsgset = potemplate.createMessageSetFromText(
-    ...     u'normal string without the point', None)
+    >>> potmsgset = factory.makePOTMsgSet(
+    ...     potemplate, singular=u'normal string without the point')
     >>> text = u'another normal string'
 
 In this case, it should not change.
@@ -94,8 +95,8 @@ Let's try with a 'text' that has the char.
 
 Now, msgid will have also that char, so 'text' should not change.
 
-    >>> potmsgset = potemplate.createMessageSetFromText(
-    ...    u'normal string with the char \u2022', None)
+    >>> potmsgset = factory.makePOTMsgSet(
+    ...     potemplate, singular=u'normal string with the char \u2022')
     >>> potmsgset.convertDotToSpace(text)
     u'a string with the char \u2022'
 
@@ -107,9 +108,9 @@ This method syncs the new line chars to use the same as the associated msgid.
 As this test is too specific, we are going to change a msgid as we need for
 every test.
 
-    >>> potmsgset_windows = potemplate.createMessageSetFromText(u'\r\n', None)
-    >>> potmsgset_unix = potemplate.createMessageSetFromText(u'\n', None)
-    >>> potmsgset_mac = potemplate.createMessageSetFromText(u'\r', None)
+    >>> potmsgset_windows = factory.makePOTMsgSet(potemplate, singular=u'\r\n')
+    >>> potmsgset_unix = factory.makePOTMsgSet(potemplate, singular=u'\n')
+    >>> potmsgset_mac = factory.makePOTMsgSet(potemplate, singular=u'\r')
     >>> text_windows = u'\r\n'
     >>> text_unix = u'\n'
     >>> text_mac = u'\r'
@@ -161,8 +162,9 @@ This function applies all checks we know to fix broken input
 As this test is very, we wil create a msgid just for this test. We are going
 to use a msgid with a leading and a trailing newline.
 
-    >>> potmsgset = potemplate.createMessageSetFromText(
-    ...     u'\nnormal string with\nleading and trailing newline\n', None)
+    >>> potmsgset = factory.makePOTMsgSet(
+    ...     potemplate,
+    ...     singular=u'\nnormal string with\nleading and trailing newline\n')
 
 And the text we are going to check will have them too, but we are going to
 use '\r\n' like when we get a form submission.
@@ -202,11 +204,14 @@ And, any changes we'd do will be in 'evolution addressbook' message.
 
 At this time, there is no current or imported translation and no suggestions.
 
-    >>> print upstream_potmsgset.getCurrentTranslationMessage(catalan)
+    >>> print upstream_potmsgset.getCurrentTranslationMessage(
+    ...     evolution_potemplate, catalan)
     None
-    >>> print upstream_potmsgset.getImportedTranslationMessage(catalan)
+    >>> print upstream_potmsgset.getImportedTranslationMessage(
+    ...     evolution_potemplate, catalan)
     None
-    >>> list(upstream_potmsgset.getLocalTranslationMessages(catalan))
+    >>> list(upstream_potmsgset.getLocalTranslationMessages(
+    ...          evolution_potemplate, catalan))
     []
 
 To add a suggestion, we set the force_suggestion parameter.
@@ -214,26 +219,6 @@ To add a suggestion, we set the force_suggestion parameter.
     >>> new_translation = upstream_potmsgset.updateTranslation(upstream_pofile,
     ...     carlos, {0: u'foo'}, is_imported=False, force_suggestion=True,
     ...     lock_timestamp=datetime.now(UTC))
-
-XXX CarlosPerelloMarin 20080423: Once we finish shared translations DB
-migration, we could remove this part of the test. We don't need to
-migrate it! Please, read
-https://blueprints.launchpad.net/rosetta/+spec/message-sharing for
-more details.
-
-Finally, it should have some fields initialised in the same way its
-pofile attribute has it:
-
-    >>> new_translation.potemplate.id == new_translation.pofile.potemplate.id
-    True
-    >>> new_translation.language.code
-    u'ca'
-    >>> new_translation.pofile.language.code
-    u'ca'
-    >>> new_translation.variant is None
-    True
-    >>> new_translation.pofile.variant is None
-    True
 
 Since this message is just a suggestion, it doesn't have a reviewer, but
 it does note a person which last changed it.
@@ -264,11 +249,14 @@ We are adding a translation from the import.
 
 At this time, there is no current or imported translation and no suggestions.
 
-    >>> print upstream_potmsgset.getCurrentTranslationMessage(catalan)
+    >>> print upstream_potmsgset.getCurrentTranslationMessage(
+    ...     evolution_potemplate, catalan)
     None
-    >>> print upstream_potmsgset.getImportedTranslationMessage(catalan)
+    >>> print upstream_potmsgset.getImportedTranslationMessage(
+    ...     evolution_potemplate, catalan)
     None
-    >>> list(upstream_potmsgset.getLocalTranslationMessages(catalan))
+    >>> list(upstream_potmsgset.getLocalTranslationMessages(
+    ...     evolution_potemplate, catalan))
     []
 
 To add an imported translation, we need to set is_imported parameter.
@@ -285,7 +273,8 @@ The new translation is reflected in the POFile statistics.
 Since this message came from the import, it doesn't have a reviewer, but
 it does note a person which last changed it.
 
-    >>> current = upstream_potmsgset.getCurrentTranslationMessage(catalan)
+    >>> current = upstream_potmsgset.getCurrentTranslationMessage(
+    ...     evolution_potemplate, catalan)
     >>> print current.reviewer
     None
     >>> print current.date_reviewed
@@ -294,7 +283,6 @@ it does note a person which last changed it.
     u'Carlos Perell\xf3 Mar\xedn'
     >>> current.date_created is None
     False
-
 
 === Unsetting a translation from the import ===
 
@@ -308,10 +296,12 @@ A translation can be removed from the import by being set to an empty string.
 
 Current translation is now unset, as is imported.
 
-    >>> current = upstream_potmsgset.getCurrentTranslationMessage(catalan)
+    >>> current = upstream_potmsgset.getCurrentTranslationMessage(
+    ...     evolution_potemplate, catalan)
     >>> print current
     None
-    >>> imported = upstream_potmsgset.getImportedTranslationMessage(catalan)
+    >>> imported = upstream_potmsgset.getImportedTranslationMessage(
+    ...     evolution_potemplate, catalan)
     >>> print imported
     None
 
@@ -352,7 +342,8 @@ We'll be working with Spanish PO file for Evolution, again handling
 
 At the moment, there are no suggestions for this message.
 
-    >>> suggested = potmsgset.getLocalTranslationMessages(spanish)
+    >>> suggested = potmsgset.getLocalTranslationMessages(
+    ...     evolution_potemplate, spanish)
     >>> len(list(suggested))
     0
 
@@ -371,7 +362,8 @@ This message is not made current or marked as imported.
 
 Now, we should have one extra suggestion.
 
-    >>> suggested = potmsgset.getLocalTranslationMessages(spanish)
+    >>> suggested = potmsgset.getLocalTranslationMessages(
+    ...     evolution_potemplate, spanish)
     >>> len(list(suggested))
     1
 
@@ -382,7 +374,8 @@ That is the one that no_priv submitted.
 
 And the active translation is not the one we suggested.
 
-    >>> current = potmsgset.getCurrentTranslationMessage(spanish)
+    >>> current = potmsgset.getCurrentTranslationMessage(
+    ...     potmsgset.potemplate, spanish)
     >>> current.translations
     [u'libreta de direcciones de Evolution']
 
@@ -400,13 +393,15 @@ new suggestion.
 
 We don't have any suggestion newer than the new active translation
 
-    >>> suggested = potmsgset.getLocalTranslationMessages(spanish)
+    >>> suggested = potmsgset.getLocalTranslationMessages(
+    ...     evolution_potemplate, spanish)
     >>> len(list(suggested))
     0
 
 And the active translation is now the one from no-priv user.
 
-    >>> current = potmsgset.getCurrentTranslationMessage(spanish)
+    >>> current = potmsgset.getCurrentTranslationMessage(
+    ...     evolution_potemplate, spanish)
     >>> current.submitter.name
     u'no-priv'
     >>> current.translations
@@ -435,11 +430,11 @@ We get a POTMsgSet and verify it's a singular form:
     True
 
     >>> current = potmsgset.getCurrentTranslationMessage(
-    ...     pt_BR_dummypofile.language)
+    ...     evolution_potemplate, pt_BR_dummypofile.language)
     >>> print current
     None
     >>> pt_BR_dummy_current = potmsgset.getCurrentDummyTranslationMessage(
-    ...     pt_BR_dummypofile.language)
+    ...     evolution_potemplate, pt_BR_dummypofile.language)
     >>> pt_BR_dummy_current.plural_forms
     1
     >>> pt_BR_dummy_current.translations
@@ -468,7 +463,7 @@ back to the most common case:
     None
     >>> apa_dummy_current = (
     ...     plural_potmsgset.getCurrentDummyTranslationMessage(
-    ...         apa_dummypofile.language))
+    ...         evolution_potemplate, apa_dummypofile.language))
     >>> apa_dummy_current.plural_forms
     2
     >>> apa_dummy_current.translations
@@ -478,7 +473,7 @@ We can guess the pluralforms for this language through ILanguage.pluralforms:
 
     >>> ru_dummypofile = evolution_potemplate.getDummyPOFile('ru')
     >>> ru_dummy_current = plural_potmsgset.getCurrentDummyTranslationMessage(
-    ...     ru_dummypofile.language)
+    ...     evolution_potemplate, ru_dummypofile.language)
 
     >>> print ru_dummypofile.language.pluralforms
     3
@@ -683,13 +678,15 @@ translations in Spanish:
     >>> evo_product_message = evo_product_template.getPOTMsgSetByMsgIDText(
     ...     ' cards')
     >>> evo_product_translation = (
-    ...     evo_product_message.getCurrentTranslationMessage(spanish))
+    ...     evo_product_message.getCurrentTranslationMessage(
+    ...         evo_product_template, spanish))
     >>> evo_product_translation.translations
     [u' tarjetas']
     >>> evo_distro_message = evo_distro_template.getPOTMsgSetByMsgIDText(
     ...     ' cards')
     >>> evo_distro_translation = (
-    ...     evo_distro_message.getCurrentTranslationMessage(spanish))
+    ...     evo_distro_message.getCurrentTranslationMessage(
+    ...         evo_distro_template, spanish))
     >>> evo_distro_translation.translations
     [u' caratas']
 
@@ -772,7 +769,7 @@ Let's take a message 'test man page' that is translated into Spanish.
     >>> print pofile.title
     Spanish (es) translation of man in Ubuntu Hoary package "evolution"
     >>> current = potmsgset_translated.getCurrentTranslationMessage(
-    ...     pofile.language)
+    ...     evo_man_template, pofile.language)
     >>> print current.translations
     [u'just a translation']
 
@@ -807,11 +804,11 @@ Given that it doesn't exist in our database, is impossible to have a
 submission already for it.
 
     >>> current = potmsgset_untranslated.getCurrentTranslationMessage(
-    ...     pofile.language)
+    ...     pmount_man_template, pofile.language)
     >>> print current
     None
     >>> imported = potmsgset_untranslated.getImportedTranslationMessage(
-    ...     pofile.language)
+    ...     pmount_man_template, pofile.language)
     >>> print imported
     None
 
@@ -864,13 +861,15 @@ This method give us such dummy objects.
 
     >>> spanish_in_mexico = getUtility(ILanguageSet).getLanguageByCode(
     ...     'es_MX')
-    >>> potmsgset.getCurrentDummyTranslationMessage(spanish_in_mexico) is None
+    >>> potmsgset.getCurrentDummyTranslationMessage(
+    ...     evolution_potemplate, spanish_in_mexico) is None
     False
 
 But, if we already have a TranslationMessage for a POTMsgSet in our database,
 and we request a dummy one, that's broken and we detect it.
 
-    >>> potmsgset.getCurrentDummyTranslationMessage(spanish)
+    >>> potmsgset.getCurrentDummyTranslationMessage(
+    ...     evolution_potemplate, spanish)
     Traceback (most recent call last):
     ...
     AssertionError: There is already a translation message ...
@@ -925,7 +924,7 @@ And get translations for Spanish non-variant PO file when we specify
 no variant in getCurrentTranslationMessage call:
 
     >>> current_es = potmsgset.getCurrentTranslationMessage(
-    ...     pofile_es.language)
+    ...     pmount_template, pofile_es.language)
     >>> print current_es.translations
     [u'Error: etiqueta es demasiado larga\n']
 
@@ -938,7 +937,8 @@ If we specify a variant from the Spanish 'test' PO file, we'll get a
 TranslationMessage corresponding to that translation.
 
     >>> current_es_variant = potmsgset.getCurrentTranslationMessage(
-    ...     pofile_es_variant.language, variant=pofile_es_variant.variant)
+    ...     pmount_template, pofile_es_variant.language,
+    ...     variant=pofile_es_variant.variant)
     >>> print current_es_variant.translations
     [u'Error: etiqueta es demasiado larga\n']
     >>> print current_es_variant.pofile.variant
@@ -961,7 +961,8 @@ A new translation is saved in the PO file.
     >>> new_translation.is_imported
     True
     >>> current_es_variant = potmsgset.getCurrentTranslationMessage(
-    ...     pofile_es_variant.language, variant=pofile_es_variant.variant)
+    ...     pmount_template, pofile_es_variant.language,
+    ...     variant=pofile_es_variant.variant)
     >>> print current_es_variant.translations
     [u'test variant translation\n']
 
@@ -970,7 +971,7 @@ stay the same as it was before the change to translation in
 pofile_es_variant:
 
     >>> current_es = potmsgset.getCurrentTranslationMessage(
-    ...     pofile_es.language)
+    ...     pmount_template, pofile_es.language)
     >>> print current_es.translations
     [u'Error: etiqueta es demasiado larga\n']
 
@@ -978,7 +979,8 @@ Trying to get a translation for non-existing variant returns None
 from getCurrentTranslationMessage().
 
     >>> current_non_existing = potmsgset.getCurrentTranslationMessage(
-    ...     pofile_es.language, variant='not-existing-variant')
+    ...     pmount_template, pofile_es.language,
+    ...     variant='not-existing-variant')
     >>> print current_non_existing
     None
 
@@ -1005,7 +1007,7 @@ To put 'external' suggestions in database, let's translate the
     ...     lock_timestamp=datetime.now(UTC))
 
     >>> current = translator_credits.getCurrentTranslationMessage(
-    ...     spanish)
+    ...     alsa_potemplate, spanish)
     >>> current.translations
     [u'Some Translator']
 
@@ -1037,6 +1039,7 @@ in the table or not.
     ...         item.potmsgset.id
     ...         for item in TranslationTemplateItem.selectBy(
     ...             potemplate=potemplate, potmsgset=potmsgset)
+    ...         if item.sequence > 0
     ...         ]
     ...     return potmsgset.id in items
 
@@ -1049,7 +1052,7 @@ If we assign the sequence == 0, the POTMsgSet object doesn't have an
 entry in the TranslationTemplateItems:
 
     >>> potmsgset.setSequence(potemplate, 0)
-    >>> is_potmsgset_in_potemplate(potmsgset, potmsgset.potemplate)
+    >>> is_potmsgset_in_potemplate(potmsgset, potemplate)
     False
     >>> potmsgset.getSequence(potemplate)
     0
@@ -1057,7 +1060,7 @@ entry in the TranslationTemplateItems:
 The used number doesn't matter as long as it's higher than zero.
 
     >>> potmsgset.setSequence(potemplate, 99)
-    >>> is_potmsgset_in_potemplate(potmsgset, potmsgset.potemplate)
+    >>> is_potmsgset_in_potemplate(potmsgset, potemplate)
     True
     >>> potmsgset.getSequence(potemplate)
     99
@@ -1065,7 +1068,7 @@ The used number doesn't matter as long as it's higher than zero.
 If we change it back to zero, it's removed from the table:
 
     >>> potmsgset.setSequence(potemplate, 0)
-    >>> is_potmsgset_in_potemplate(potmsgset, potmsgset.potemplate)
+    >>> is_potmsgset_in_potemplate(potmsgset, potemplate)
     False
     >>> potmsgset.getSequence(potemplate)
     0

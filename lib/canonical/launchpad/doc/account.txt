@@ -34,8 +34,12 @@ Accounts are generally looked up by email address.
     >>> IAccount.providedBy(account)
     True
 
-    >>> print account_set.getByEmail('invalid@whatever')
-    None
+If the account is not found, a LookupError is raised.
+
+    >>> account_set.getByEmail('invalid@whatever')
+    Traceback (most recent call last):
+    ...
+    LookupError:...
 
 Only admins or the person attached to an account can see or edit Account
 details. This is obviously wrong, as the account should have access
@@ -50,6 +54,21 @@ Fixing this involves more surgery to Launchpad's security systems.
     Unauthorized...
 
     >>> del stub_account
+
+
+== Looking up accounts by their database ID ==
+
+If we know the ID of an account we can use the get() method.
+
+    >>> account_set.get(account.id) == account
+    True
+
+If there's no account with the given ID, a LookupError is raised.
+
+    >>> account_set.get(99999)
+    Traceback (most recent call last):
+    ...
+    LookupError:...
 
 
 == Looking up accounts by OpenID identifier ==
@@ -73,10 +92,12 @@ openid identifiers.
     >>> account_2 == account
     True
 
-None is returned if the identifier is not used by any account.
+A LookupError is raised if the identifier is not used by any account.
 
-    >>> print account_set.getByOpenIDIdentifier('no-such-identifier')
-    None
+    >>> account_set.getByOpenIDIdentifier('no-such-identifier')
+    Traceback (most recent call last):
+    ...
+    LookupError: no-such-identifier
 
 
 = The Account object =
@@ -439,8 +460,10 @@ random token for a mnemonic has been used in the past.
     >>> removeSecurityProxy(
     ...     non_unique_account).new_openid_identifier = '111/non-unique'
     >>> syncUpdate(non_unique_account)
-    >>> print account_set.getByOpenIDIdentifier('000/non-unique')
-    None
+    >>> account_set.getByOpenIDIdentifier('000/non-unique')
+    Traceback (most recent call last):
+    ...
+    LookupError:...
 
     # Add the openid identifier to the history of used openid identifiers.
     # The model object is used because the OpenIDRPSummarySet.record() may

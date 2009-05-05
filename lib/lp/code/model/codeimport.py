@@ -99,7 +99,10 @@ class CodeImport(SQLBase):
             RevisionControlSystems.CVS:
                 config.codeimport.default_interval_cvs,
             RevisionControlSystems.SVN:
-                config.codeimport.default_interval_subversion}
+                config.codeimport.default_interval_subversion,
+            RevisionControlSystems.GIT:
+                config.codeimport.default_interval_git,
+            }
         seconds = default_interval_dict[self.rcs_type]
         return timedelta(seconds=seconds)
 

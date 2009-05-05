@@ -186,7 +186,7 @@ class ISourcePackage(IBugTarget):
         pocket=Choice(
             title=_("Pocket"), required=True,
             vocabulary=DBEnumeratedType),
-        branch=Reference(Interface, title=_("Branch")))
+        branch=Reference(Interface, title=_("Branch"), required=False))
     @call_with(registrant=REQUEST_USER)
     @export_write_operation()
     def setBranch(pocket, branch, registrant):

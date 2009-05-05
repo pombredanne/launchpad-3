@@ -101,7 +101,7 @@ def make_email_body_for_code_import_update(
                 details_change_prefix + '\n    ' +code_import.svn_branch_url +
                 "\ninstead of:\n    " + old_url)
     elif code_import.rcs_type == RevisionControlSystems.GIT:
-        if codeImportEventDataType.OLD_GIT_REPO_URL in event_data:
+        if CodeImportEventDataType.OLD_GIT_REPO_URL in event_data:
             old_url = event_data[CodeImportEventDataType.OLD_GIT_REPO_URL]
             body.append(
                 details_change_prefix + '\n    ' +code_import.git_repo_url +

@@ -43,7 +43,7 @@
   </div>
 
     <h1>
-      <tal:branch replace="context/displayname" />
+      <tal:branch replace="context/bzr_identity" />
       <a tal:define="link context_menu/delete_branch"
          tal:condition="link/enabled"
          tal:attributes="href link/url"
@@ -53,12 +53,6 @@
          tal:attributes="href link/url"
          ><img tal:attributes="alt link/text;title link/text" src="/@@/edit" /></a>
     </h1>
-
-    <div tal:condition="context/summary" id="branch-summary"
-         tal:content="structure context/summary/fmt:text-to-html">
-      $Branch.summary goes here. This should be quite short, just a single
-      paragraph of text really, giving the branch highlights.
-    </div>
 
   <table id="branch-details-table">
     <tbody>
@@ -329,28 +323,29 @@
     tal:replace="structure link/render"
   />
 
-  <div id="whiteboard">
-    <h2>Whiteboard</h2>
-    <div id="branch-whiteboard-value"
-      tal:condition="context/whiteboard"
-      tal:content="structure context/whiteboard/fmt:text-to-html">
-      Whiteboard text goes here.
+  <div tal:condition="view/show_whiteboard">
+    <div id="whiteboard">
+      <h2>Whiteboard</h2>
+      <div id="branch-whiteboard-value"
+        tal:condition="context/whiteboard"
+        tal:content="structure context/whiteboard/fmt:text-to-html">
+        Whiteboard text goes here.
+      </div>
     </div>
-  </div>
 
-  <div
-    tal:define="link context/menu:context/whiteboard"
-    tal:condition="link/enabled"
-    tal:content="structure link/render">
-    Edit whiteboard
+    <div
+      tal:define="link context/menu:context/edit_whiteboard"
+      tal:condition="link/enabled"
+      tal:content="structure link/render">
+      Edit whiteboard
+    </div>
   </div>
 
   <div id="related-bugs-and-blueprints">
     <h2>Linked bug reports and blueprints</h2>
     <div class="actions">
       <tal:bugs tal:define="branch context;
-                            show_edit python:True;
-                            show_whiteboard python:True;">
+                            show_edit python:True;">
         <metal:bug-branch-links use-macro="context/@@+macros/bug-branch-links"/>
       </tal:bugs>
       <div
@@ -362,8 +357,7 @@
     </div>
     <div class="actions">
       <tal:blueprints tal:define="branch context;
-                                  show_edit python:True;
-                                  show_whiteboard python:True;">
+                                  show_edit python:True;">
         <metal:spec-branch-links
             use-macro="context/@@+macros/spec-branch-links"/>
       </tal:blueprints>

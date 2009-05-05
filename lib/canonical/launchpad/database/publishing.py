@@ -519,35 +519,28 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         return [build for source, build, arch in result_set]
 
     @property
-    def changes_file_text(self):
+    def changes_file_url(self):
         """See `ISourcePackagePublishingHistory`."""
-        # Imported locally to avoid circular dependencies.
-        from canonical.launchpad.database.queue import (
-            PackageUpload, PackageUploadSource)
-        from canonical.launchpad.database.sourcepackagerelease import (
-            SourcePackageRelease)
+        results = getUtility(IPublishingSet).getChangesFilesForSources(
+            self)
 
-        store = Store.of(self)
-        results = store.find(
-            LibraryFileAlias,
-            PackageUpload.changesfile == LibraryFileAlias.id,
-            SourcePackageRelease.upload_distroseriesID ==
-                PackageUpload.distroseriesID,
-            PackageUploadSource.packageupload == PackageUpload.id,
-            PackageUploadSource.sourcepackagerelease ==
-                SourcePackageRelease.id,
-            SourcePackagePublishingHistory.sourcepackagerelease ==
-                SourcePackageRelease.id,
-            SourcePackagePublishingHistory.id == self.id)
-
-        changesfile = results.one()
-
-        if changesfile is None:
+        result = results.one()
+        if result is None:
             # This should not happen in practice, but the code should
             # not blow up because of bad data.
             return None
+        source, packageupload, spr, changesfile, lfc = result
         
-        return changesfile.read()
+        # Return a webapp-proxied LibraryFileAlias so that restricted
+        # librarian files are accessible.  Non-restricted files will get
+        # a 302 so that webapp threads are not tied up.
+
+        # Avoid circular imports.
+        from canonical.launchpad.browser.librarian import (
+            ProxiedLibraryFileAlias)
+
+        proxied_file = ProxiedLibraryFileAlias(changesfile, self.archive)
+        return proxied_file.http_url
 
     def createMissingBuilds(self, architectures_available=None,
                             pas_verify=None, logger=None):
@@ -758,6 +751,38 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
             datecreated=UTC_NOW,
             embargo=False)
         return SourcePackagePublishingHistory.get(secure_copy.id)
+
+    def getStatusSummaryForBuilds(self):
+        """See `ISourcePackagePublishingHistory`."""
+        # Import here to avoid circular import.
+        from canonical.launchpad.interfaces.build import BuildSetStatus
+
+        builds = self.getBuilds()
+        summary = getUtility(IBuildSet).getStatusSummaryForBuilds(
+            builds)
+
+        # We only augment the result if we (the SPPH) are ourselves in
+        # the pending/published state and all the builds are fully-built.
+        # In this case we check to see if they are all published, and if
+        # not we return FULLYBUILT_PENDING:
+        augmented_summary = summary
+        if (self.status in active_publishing_status and
+                summary['status'] == BuildSetStatus.FULLYBUILT):
+
+            published_bins = self.getPublishedBinaries()
+            published_builds = [
+                bin.binarypackagerelease.build
+                    for bin in published_bins
+                        if bin.datepublished is not None]
+            unpublished_builds = list(
+                set(builds).difference(published_builds))
+
+            if unpublished_builds:
+                augmented_summary = {
+                    'status': BuildSetStatus.FULLYBUILT_PENDING,
+                    'builds': unpublished_builds
+                }
+        return augmented_summary
 
 
 class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
@@ -1219,20 +1244,16 @@ class PublishingSet:
         if not source_ids:
             return {}
 
-        # Get the builds for all the requested sources.
-        result_set = self.getBuildsForSourceIds(source_ids, archive=archive)
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        source_pubs = store.find(
+            SourcePackagePublishingHistory,
+            SourcePackagePublishingHistory.id.is_in(source_ids),
+            SourcePackagePublishingHistory.archive == archive)
 
-        # Populate the list of builds for each id in a dict.
-        source_builds = {}
-        for src_pub, build, distroarchseries in result_set:
-            source_builds.setdefault(src_pub.id, []).append(build)
-
-        # Gset the overall build status for each source's builds.
-        build_set = getUtility(IBuildSet)
         source_build_statuses = {}
-        for source_id, builds in source_builds.items():
-            status_summary = build_set.getStatusSummaryForBuilds(builds)
-            source_build_statuses[source_id] = status_summary
+        for source_pub in source_pubs:
+            status_summary = source_pub.getStatusSummaryForBuilds()
+            source_build_statuses[source_pub.id] = status_summary
 
         return source_build_statuses
 
