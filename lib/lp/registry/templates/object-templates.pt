@@ -44,15 +44,15 @@
       </style>
       <script language="JavaScript" type="text/javascript">
       YUI().use('node', function(Y) {
-          Y.on('domready', function(){
+          Y.on('domready', function(e) {
               Y.all('.template_links').addClass('inactive_links');
               var template_rows = Y.all('.template_row');
-              template_rows.each(function(row){
+              template_rows.each(function(row) {
                   var template_links = row.query('.template_links');
-                  row.on('mouseover', function(){
+                  row.on('mouseover', function(e) {
                       template_links.removeClass('inactive_links');
                   });
-                  row.on('mouseout', function(){
+                  row.on('mouseout', function(e) {
                       template_links.addClass('inactive_links');
                   });
               });
