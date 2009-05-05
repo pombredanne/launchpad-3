@@ -4,7 +4,6 @@
 
 __metaclass__ = type
 __all__ = [
-    'DatabaseBranchLoaded',
     'NewRevision',
     'RevisionsRemoved',
     'TipChanged',
@@ -22,25 +21,6 @@ class ScannerEvent:
         """
         self.db_branch = db_branch
         self.bzr_branch = bzr_branch
-
-
-class DatabaseBranchLoaded(ScannerEvent):
-    """The old branch ancestry has been loaded from the database."""
-
-    def __init__(self, db_branch, bzr_branch, db_ancestry, db_history,
-                 db_branch_revision_map):
-        """Construct a `DatabaseBranchLoaded` event.
-
-        :param db_branch: The database IBranch.
-        :param bzr_branch: The Bazaar branch being scanned.
-        :param db_ancestry: ???
-        :param db_history: ???
-        :param db_branch_revision_map: None
-        """
-        super(DatabaseBranchLoaded, self).__init__(db_branch, bzr_branch)
-        self.db_ancestry = db_ancestry
-        self.db_history = db_history
-        self.db_branch_revision_map = db_branch_revision_map
 
 
 class NewRevision(ScannerEvent):
