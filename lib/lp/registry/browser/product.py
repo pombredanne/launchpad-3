@@ -1551,8 +1551,6 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin):
         search_text = SPACE.join((self.request.form['name'],
                                   self.request.form['displayname'],
                                   self.request.form['summary']))
-        # Remove the tsearch2 special characters.
-        search_text = re.sub('[&!|()]', '', search_text)
         # OR all the terms together.
         return OR.join(search_text.split())
 
