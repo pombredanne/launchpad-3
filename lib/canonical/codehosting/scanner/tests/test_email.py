@@ -9,10 +9,11 @@ import unittest
 
 # This non-standard import is necessary to hook up the event system.
 import zope.component.event
-from zope.component import getGlobalSiteManager, getUtility, provideHandler
+from zope.component import getUtility
 
 from canonical.codehosting.jobs import JobRunner
 from canonical.codehosting.scanner.email import send_tip_changed_emails
+from canonical.codehosting.scanner.fixture import make_zope_event_fixture
 from canonical.codehosting.scanner.tests.test_bzrsync import BzrSyncTestCase
 from canonical.launchpad.interfaces import (
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
@@ -28,10 +29,9 @@ class TestBzrSyncEmail(BzrSyncTestCase):
 
     def setUp(self):
         BzrSyncTestCase.setUp(self)
-        provideHandler(send_tip_changed_emails)
-        self.addCleanup(
-            getGlobalSiteManager().unregisterHandler,
-            send_tip_changed_emails)
+        fixture = make_zope_event_fixture(send_tip_changed_emails)
+        fixture.setUp()
+        self.addCleanup(fixture.tearDown)
         stub.test_emails = []
 
     def makeDatabaseBranch(self):

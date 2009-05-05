@@ -8,10 +8,11 @@ import unittest
 
 # This non-standard import is necessary to hook up the event system.
 import zope.component.event
-from zope.component import getGlobalSiteManager, getUtility, provideHandler
+from zope.component import getUtility
 
 from canonical.codehosting.scanner.buglinks import (
     got_new_revision, BugBranchLinker, set_bug_branch_status)
+from canonical.codehosting.scanner.fixture import make_zope_event_fixture
 from canonical.codehosting.scanner.tests.test_bzrsync import BzrSyncTestCase
 from canonical.config import config
 from canonical.launchpad.interfaces import (
@@ -239,9 +240,9 @@ class TestBugLinking(BzrSyncTestCase):
 
     def setUp(self):
         BzrSyncTestCase.setUp(self)
-        provideHandler(got_new_revision)
-        self.addCleanup(
-            getGlobalSiteManager().unregisterHandler, got_new_revision)
+        fixture = make_zope_event_fixture(got_new_revision)
+        fixture.setUp()
+        self.addCleanup(fixture.tearDown)
 
     def makeFixtures(self):
         super(TestBugLinking, self).makeFixtures()
