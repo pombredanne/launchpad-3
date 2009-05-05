@@ -30,5 +30,5 @@ def test_projects_plusnew_step_two():
     client.waits.forPageLoad(timeout=u'20000')
 
     client.asserts.assertText(
-        xpath=u'//h2[@id="step-title"]',
+        id=u'step-title',
         text='Step 2 (of 2): Check for duplicate projects')
