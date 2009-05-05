@@ -25,3 +25,6 @@ class IBranchPuller(Interface):
 
         :param branch_type: A value from the `BranchType` enum.
         """
+
+    def acquireBranchToPull():
+        """Return and mark as started a Branch to pull."""

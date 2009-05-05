@@ -222,6 +222,18 @@ class TestRemoteBranches(TestCaseWithFactory):
             BranchTypeError, puller.getPullQueue, BranchType.REMOTE)
 
 
+class TestAcquireBranchToPull(TestCaseWithFactory):
+    """Tests for `IBranchPuller.acquireBranchToPull`."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_empty(self):
+        # If there is no branch that needs pulling, acquireBranchToPull
+        # returns None.
+        self.assertEqual(
+            None, getUtility(IBranchPuller).acquireBranchToPull())
+
+
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
 

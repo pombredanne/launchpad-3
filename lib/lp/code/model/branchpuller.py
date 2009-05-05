@@ -46,3 +46,7 @@ class BranchPuller:
             Branch.branch_type == branch_type,
             Branch.next_mirror_time <= UTC_NOW).order_by(
                 Branch.next_mirror_time)
+
+    def acquireBranchToPull(self):
+        """See `IBranchPuller`."""
+        return None
