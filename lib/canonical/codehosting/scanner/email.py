@@ -4,7 +4,7 @@
 
 __metaclass__ = type
 __all__ = [
-    'BranchMailer',
+    'send_removed_revision_emails',
     'send_tip_changed_emails',
     ]
 
@@ -24,35 +24,6 @@ def subscribers_want_notification(db_branch):
         BranchSubscriptionNotificationLevel.FULL)
     subscriptions = db_branch.getSubscriptionsByLevel(diff_levels)
     return subscriptions.count() > 0
-
-
-class BranchMailer:
-    """Handles mail notifications for changes to the code in a branch."""
-
-    def __init__(self, db_branch):
-        self.db_branch = db_branch
-
-    def generateEmailForRemovedRevisions(self, removed_history):
-        """Notify subscribers of removed revisions.
-
-        When the history is shortened, and email is sent that says this. This
-        will never happen for a newly scanned branch, so not checking that
-        here.
-        """
-        if not subscribers_want_notification(self.db_branch):
-            return
-        number_removed = len(removed_history)
-        if number_removed > 0:
-            if number_removed == 1:
-                contents = '1 revision was removed from the branch.'
-            else:
-                contents = ('%d revisions were removed from the branch.'
-                            % number_removed)
-            # No diff is associated with the removed email.
-            job = getUtility(IRevisionMailJobSource).create(
-                self.db_branch, revno='removed',
-                from_address=config.canonical.noreply_from_address,
-                body=contents, perform_diff=False, subject=None)
 
 
 @adapter(events.RevisionsRemoved)
