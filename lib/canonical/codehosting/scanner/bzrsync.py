@@ -133,7 +133,6 @@ class BzrSync:
             events.DatabaseBranchLoaded(
                 self.db_branch, bzr_branch, db_ancestry, db_history,
                 db_branch_revision_map))
-        self._branch_mailer.initializeEmailQueue()
 
         (added_ancestry, branchrevisions_to_delete,
             branchrevisions_to_insert) = self.planDatabaseChanges(

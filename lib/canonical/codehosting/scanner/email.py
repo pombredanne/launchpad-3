@@ -31,18 +31,6 @@ class BranchMailer:
 
     def __init__(self, db_branch):
         self.db_branch = db_branch
-        self.subscribers_want_notification = False
-
-    def initializeEmailQueue(self):
-        """Create an email queue and determine whether to create diffs.
-
-        In order to avoid sending emails when no one is interested in seeing
-        them, we check all the branch subscriptions first, and decide here
-        whether or not to generate the revision diffs as the branch is
-        scanned.
-        """
-        self.subscribers_want_notification = subscribers_want_notification(
-            self.db_branch)
 
     def generateEmailForRemovedRevisions(self, removed_history):
         """Notify subscribers of removed revisions.
@@ -51,7 +39,7 @@ class BranchMailer:
         will never happen for a newly scanned branch, so not checking that
         here.
         """
-        if not self.subscribers_want_notification:
+        if not subscribers_want_notification(self.db_branch):
             return
         number_removed = len(removed_history)
         if number_removed > 0:
