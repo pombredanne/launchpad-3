@@ -579,3 +579,44 @@ message.
     >>> subview.initialize()
     >>> subview.sequence
     1
+
+== Ordering with unset potemplate values ==
+
+Fix for bug #371560: can be removed after message sharing cleanup is done.
+Code still uses potmsgset.potemplate when getting a sequence number, and
+in special case where one POTMsgSet has potemplate set (i.e. it has been
+there before message sharing work landed) and has a lower sequence number,
+and another where potemplate is not set and with a larger sequence number,
+where these appear on the same page we hit an assertion about bad sequence
+number ordering.
+
+    >>> pofile = factory.makePOFile('sr')
+    >>> potemplate = pofile.potemplate
+
+    >>> potmsgset_with_potemplate = (
+    ...     factory.makePOTMsgSet(potemplate, sequence=1))
+    >>> removeSecurityProxy(potmsgset_with_potemplate).potemplate = potemplate
+    >>> potmsgset_with_potemplate.getSequence(potemplate)
+    1
+
+    >>> potmsgset_with_no_potemplate = (
+    ...     factory.makePOTMsgSet(potemplate, sequence=2))
+    >>> print potmsgset_with_no_potemplate.potemplate
+    None
+    >>> potmsgset_with_no_potemplate.getSequence(potemplate)
+    2
+
+    # If the view internally gets a sequence using potmsgset.potemplate,
+    # which is None, we'll get a sequence of zero, which should come before
+    # sequence of 1 for the previous POTMsgSet.
+    >>> potmsgset_with_no_potemplate.getSequence(
+    ...     potmsgset_with_no_potemplate.potemplate)
+    0
+
+    >>> server_url = '/'.join(
+    ...     [canonical_url(pofile), '+translate'])
+    >>> pofile_view = create_view(
+    ...     pofile, "+translate", layer=TranslationsLayer,
+    ...     server_url=server_url)
+    >>> pofile_view.initialize()
+

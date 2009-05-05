@@ -83,6 +83,9 @@
   <class class="lp.code.model.branchcollection.GenericBranchCollection">
     <allow interface="lp.code.interfaces.branchcollection.IBranchCollection"/>
   </class>
+  <class class="lp.code.model.branchcollection.AnonymousBranchCollection">
+    <allow interface="lp.code.interfaces.branchcollection.IBranchCollection"/>
+  </class>
   <class class="lp.code.model.branchcollection.VisibleBranchCollection">
     <allow interface="lp.code.interfaces.branchcollection.IBranchCollection"/>
   </class>
