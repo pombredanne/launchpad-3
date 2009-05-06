@@ -328,7 +328,7 @@ It is possible to get a batched list of all the projects.
     >>> project_collection['resource_type_link']
     u'http://.../#projects'
     >>> project_collection['total_size']
-    23
+    24
 
     >>> project_entries = sorted(
     ...     project_collection['entries'], key=itemgetter('display_name'))
@@ -377,10 +377,10 @@ The latest projects registered can be retrieved.
     ...    latest['entries'], key=itemgetter('display_name'))
     >>> for project in entries:
     ...     print project['display_name']
-    Bazaar
     Derby
     Launchpad Translations
     Mega Money Maker
+    Obsolete Junk
     Redfish
 
 There is a method for doing a query about attributes related to
@@ -412,6 +412,7 @@ Or those that are reviewed.
     >>> for project in entries:
     ...     print project['display_name']
     Launchpad Translations
+    Obsolete Junk
     alsa-utils
     python gnome2 dev
     unassigned syncs

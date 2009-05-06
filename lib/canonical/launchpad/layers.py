@@ -80,22 +80,6 @@ class PageTestLayer(LaunchpadLayer):
     """
 
 
-class ShipItLayer(LaunchpadLayer):
-    """The `ShipIt` layer."""
-
-
-class ShipItUbuntuLayer(ShipItLayer):
-    """The `ShipIt` for Ubuntu layer."""
-
-
-class ShipItKUbuntuLayer(ShipItLayer):
-    """The `ShipIt` for KUbuntu layer."""
-
-
-class ShipItEdUbuntuLayer(IDefaultBrowserLayer):
-    """The `ShipIt` for EdUbuntu layer."""
-
-
 class FeedsLayer(LaunchpadLayer):
     """The `FeedsLayer` Layer."""
 
