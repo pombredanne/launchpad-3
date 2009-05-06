@@ -5,7 +5,7 @@ Shipit has OOPSes just like the rest of Launchpad.
 Here we'll force an OOPS by overwriting one of our view's properties to make
 it always raise an error.
 
-    >>> from canonical.launchpad.browser.shipit import ShipitFrontPageView
+    >>> from canonical.shipit.browser.shipit import ShipitFrontPageView
     >>> def raise_exception(self):
     ...     raise Exception()
     >>> orig_prerelease_mode = ShipitFrontPageView.prerelease_mode
