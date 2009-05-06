@@ -617,7 +617,7 @@ class IArchiveView(IHasBuildRecords):
             required=False),
         created_since_date=Datetime(
             title=_("Created Since Date"),
-            description=_("Return entries whose 'datecreated' is greater "
+            description=_("Return entries whose `date_created` is greater "
                           "than or equal to this date."),
             required=False))
     # Really returns ISourcePackagePublishingHistory, see below for
@@ -637,7 +637,7 @@ class IArchiveView(IHasBuildRecords):
         :param pocket: `PackagePublishingPocket` filter.
         :param exact_match: either or not filter source names by exact
                              matching.
-        :param created_since_date: Only return results whose 'datecreated'
+        :param created_since_date: Only return results whose `date_created`
             is greater than or equal to this date.
 
         :return: SelectResults containing `ISourcePackagePublishingHistory`.
