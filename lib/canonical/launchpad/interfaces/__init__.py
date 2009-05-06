@@ -19,6 +19,7 @@ from canonical.launchpad.interfaces.account import *
 from canonical.launchpad.interfaces.archive import *
 from canonical.launchpad.interfaces.archivedependency import *
 from canonical.launchpad.interfaces.archivepermission import *
+from canonical.launchpad.interfaces.archivesubscriber import *
 from lp.registry.interfaces.announcement import *
 from canonical.launchpad.interfaces.authserver import *
 from canonical.launchpad.interfaces.authtoken import *
