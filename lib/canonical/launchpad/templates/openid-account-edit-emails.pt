@@ -82,36 +82,5 @@
 
 </div>
 
-<div metal:fill-slot="help">
-  <p>
-    This page displays all the email addresses associated with your
-    Launchpad account. Some of these addresses are verified (known to
-    be associated with you), but some may need confirmation before you
-    can use them in Launchpad.
-  </p>
-
-  <p>
-    When you confirm that an address is yours, Launchpad will send a
-    verification email to that address. To complete the verification
-    process, simply visit the URL contained in the email.
-  </p>
-
-  <p>
-    You may choose one of your verified addresses to be your
-    preferred email address. Email from Launchpad will be sent to
-    this address.
-  </p>
-
-  <p id="mailing-list-help" tal:condition="view/mailing_list_widgets">
-    This page also displays mailing lists for all of your
-    teams that have them. You can subscribe to a list using any of
-    your verified email addresses, or you can choose to have messages
-    delivered to your preferred address. That way, if you change your
-    preferred address, you won't have to change all your subscriptions
-    to use the new address.
-  </p>
-
-</div>
-
 </body>
 </html>
