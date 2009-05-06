@@ -20,7 +20,7 @@ __all__ = [
 
 
 from zope.interface import Attribute, Interface
-from zope.schema import Bytes, Int, Object, Text, TextLine
+from zope.schema import Bytes, Int, Object, Text, TextLine, Bool
 
 from canonical.launchpad import _
 from lp.code.interfaces.branch import IBranch
@@ -118,6 +118,11 @@ class IRosettaUploadJob(Interface):
     from_revision_id = TextLine(
         title=_('The revision id to compare against.'))
 
+    force_translations_upload = Bool(
+        title=_('Force an upload of translation files.'),
+        description=_('Flag to override the settings in the product '
+                      'series and upload all translation files.'))
+
     def run():
         """Extract translation files from the branch passed in by the factory
         (see IRosettaUploadJobSource) and put them into the translations
@@ -127,11 +132,13 @@ class IRosettaUploadJob(Interface):
 
 class IRosettaUploadJobSource(Interface):
 
-    def create(branch, from_revision_id):
+    def create(branch, from_revision_id, force_translations_upload):
         """Construct a new object that implements IRosettaUploadJob.
 
         :param branch: The database branch to exract files from.
         :param from_revision_id: The revision id to compare against.
+        :param force_translations_upload: Flag to override the settings in the
+            product series and upload all translation files.
         """
 
     def iterReady():
