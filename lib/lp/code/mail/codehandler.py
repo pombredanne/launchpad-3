@@ -112,6 +112,7 @@ class VoteEmailCommand(CodeReviewEmailCommand):
         'needsinfo': CodeReviewVote.NEEDS_INFO,
         'needs-info': CodeReviewVote.NEEDS_INFO,
         'needsinformation': CodeReviewVote.NEEDS_INFO,
+        'needs_information': CodeReviewVote.NEEDS_INFO,
         'needs-information': CodeReviewVote.NEEDS_INFO,
         }
 
