@@ -286,7 +286,7 @@ class BranchLookup:
         """See `IBranchLookup`."""
         if url is None:
             return None
-        assert not url.endswith('/')
+        url = url.rstrip('/')
         try:
             uri = URI(url)
         except InvalidURIError:
