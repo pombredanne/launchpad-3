@@ -42,7 +42,6 @@ from canonical.launchpad.webapp import urlappend, urlsplit
 BUG_TRACKER_URL_FORMATS = {
     BugTrackerType.BUGZILLA:    'show_bug.cgi?id=%s',
     BugTrackerType.DEBBUGS:     'cgi-bin/bugreport.cgi?bug=%s',
-    BugTrackerType.GOOGLE_CODE: 'detail?id=%s',
     BugTrackerType.MANTIS:      'view.php?id=%s',
     BugTrackerType.ROUNDUP:     'issue%s',
     BugTrackerType.RT:          'Ticket/Display.html?id=%s',
@@ -276,14 +275,13 @@ class BugWatchSet(BugSetBase):
             BugTrackerType.BUGZILLA: self.parseBugzillaURL,
             BugTrackerType.DEBBUGS:  self.parseDebbugsURL,
             BugTrackerType.EMAILADDRESS: self.parseEmailAddressURL,
-            BugTrackerType.GOOGLE_CODE: self.parseGoogleCodeURL,
             BugTrackerType.MANTIS: self.parseMantisURL,
-            BugTrackerType.PHPPROJECT: self.parsePHPProjectURL,
             BugTrackerType.ROUNDUP: self.parseRoundupURL,
             BugTrackerType.RT: self.parseRTURL,
             BugTrackerType.SAVANE: self.parseSavaneURL,
             BugTrackerType.SOURCEFORGE: self.parseSourceForgeLikeURL,
             BugTrackerType.TRAC: self.parseTracURL,
+            BugTrackerType.PHPPROJECT: self.parsePHPProjectURL,
         }
 
     def get(self, watch_id):
@@ -548,26 +546,6 @@ class BugWatchSet(BugSetBase):
         if remote_bug is None:
             return None
         base_url = urlunsplit((scheme, host, '/', '', ''))
-        return base_url, remote_bug
-
-    def parseGoogleCodeURL(self, scheme, host, path, query):
-        """Extract a Google Code bug tracker base URL and bug ID."""
-        if host != 'code.google.com':
-            return None
-
-        google_code_url_expression = re.compile(
-            "(?P<base_path>\/p\/[a-z][-a-z0-9]+/issues)/detail")
-
-        path_match = google_code_url_expression.match(path)
-        if path_match is None:
-            return None
-
-        remote_bug = query.get('id')
-        if remote_bug is None:
-            return None
-
-        tracker_path = path_match.groupdict()['base_path']
-        base_url = urlunsplit((scheme, host, tracker_path, '', ''))
         return base_url, remote_bug
 
     def extractBugTrackerAndBug(self, url):

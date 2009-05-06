@@ -296,17 +296,6 @@ class PHPProjectBugTrackerExtractBugTrackerAndBugTest(
     bug_id = '12345'
 
 
-class GoogleCodeBugTrackerExtractBugTrackerAndBugTest(
-    ExtractBugTrackerAndBugTestBase):
-    """Ensure BugWatchSet.extractBugTrackerAndBug works for Google Code URLs.
-    """
-
-    bugtracker_type = BugTrackerType.GOOGLE_CODE
-    bug_url = 'http://code.google.com/p/myproject/issues/detail?id=12345'
-    base_url = 'http://code.google.com/p/myproject/issues'
-    bug_id = '12345'
-
-
 def test_suite():
     suite = unittest.TestSuite()
     suite.addTest(unittest.makeSuite(BugzillaExtractBugTrackerAndBugTest))
@@ -327,8 +316,6 @@ def test_suite():
     suite.addTest(unittest.makeSuite(EmailAddressExtractBugTrackerAndBugTest))
     suite.addTest(unittest.makeSuite(
        PHPProjectBugTrackerExtractBugTrackerAndBugTest))
-    suite.addTest(unittest.makeSuite(
-        GoogleCodeBugTrackerExtractBugTrackerAndBugTest))
     return suite
 
 
