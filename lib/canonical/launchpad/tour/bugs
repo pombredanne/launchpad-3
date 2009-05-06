@@ -41,7 +41,7 @@
                 <p class="intro-text">
 <strong>Launchpad brings the discussion to you:</strong> on one page you can see how the bug affects different communities, whether they're tracking the bug in Launchpad, Bugzilla, Trac, Sourceforge, or elsewhere. You can even share a comment history across project-boundaries, bringing everyone together to find a fix.</p>
 
-            <div id="link-holder"><a href="https://bugs.launchpad.net/">Visit Launchpad Bugs &gt;</a><br /><a href="https://launchpad.net/projects/+new-guided">Add your project to Launchpad &gt;</a></div>
+            <div id="link-holder"><a href="https://bugs.launchpad.net/">Visit Launchpad Bugs &gt;</a><br /><a href="https://launchpad.net/projects/+new">Add your project to Launchpad &gt;</a></div>
         </div>
         <div id="page-intro-bottom"></div>
         <ul id="secondary-navigation">
