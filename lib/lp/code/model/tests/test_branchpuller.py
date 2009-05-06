@@ -231,15 +231,15 @@ class AcquireBranchToPullTests:
     """
 
     def assertNoBranchIsAquired(self):
-        """XXX write me."""
+        """Assert that there is no branch to pull."""
         raise NotImplementedError(self.assertNoBranchIsAquired)
 
     def assertBranchIsAquired(self, branch):
-        """XXX write me."""
+        """Assert that ``branch`` is the next branch to be pulled."""
         raise NotImplementedError(self.assertBranchIsAquired)
 
     def startMirroring(self, branch):
-        """XXX write me."""
+        """Mark that ``branch`` has begun mirroring."""
         raise NotImplementedError(self.startMirroring)
 
     def test_empty(self):

@@ -94,6 +94,7 @@ class BranchPuller(LaunchpadXMLRPCView):
         return [self._getBranchPullInfo(branch) for branch in branches]
 
     def acquireBranchToPull(self):
+        """See `IBranchPuller`."""
         branch = getUtility(branchpuller.IBranchPuller).acquireBranchToPull()
         if branch is not None:
             default_branch = branch.target.default_stacked_on_branch
