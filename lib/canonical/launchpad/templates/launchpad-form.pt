@@ -70,7 +70,8 @@
                tal:replace="structure action/render"
           />
         <tal:has-cancel-link condition="view/cancel_url">
-          or <a tal:attributes="href view/cancel_url">Cancel</a>
+          <tal:or condition="view/has_available_actions">or</tal:or>
+          <a tal:attributes="href view/cancel_url">Cancel</a>
         </tal:has-cancel-link>
       </div>
 

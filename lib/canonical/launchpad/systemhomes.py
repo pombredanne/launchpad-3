@@ -11,7 +11,6 @@ __all__ = [
     'MaloneApplication',
     'PrivateMaloneApplication',
     'RosettaApplication',
-    'ShipItApplication',
     ]
 
 __metaclass__ = type
@@ -36,8 +35,7 @@ from canonical.launchpad.interfaces import (
     IHWDBApplication, ILanguageSet, ILaunchBag, ILaunchpadStatisticSet,
     IMailingListApplication, IMaloneApplication, IOpenIDApplication,
     IPrivateMaloneApplication, IProductSet, IRosettaApplication,
-    IShipItApplication, ITranslationGroupSet, ITranslationsOverview,
-    IWebServiceApplication)
+    ITranslationGroupSet, ITranslationsOverview, IWebServiceApplication)
 from lp.code.interfaces.codehosting import (
     IBranchFileSystemApplication, IBranchPullerApplication)
 from canonical.launchpad.interfaces.hwdb import (
@@ -79,10 +77,6 @@ class PrivateMaloneApplication:
     implements(IPrivateMaloneApplication)
 
     title = "Launchpad Bugs."
-
-
-class ShipItApplication:
-    implements(IShipItApplication)
 
 
 class MailingListApplication:

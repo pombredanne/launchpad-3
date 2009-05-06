@@ -1,11 +1,21 @@
 Hello %(recipient_name)s,
 
-You are receiving this message because %(registrant_name)s subscribed you to the private PPA '%(ppa_name)s'. This subscription enables you to download software from this private PPA.
+Launchpad: activate your archive subscription
+---------------------------------------------
 
-To activate your subscription and start downloading the software please visit:
+%(registrant_name)s has invited you to subscribe to a private software archive hosted by Launchpad.
+
+To start downloading and using software from this archive you need to activate your subscription by visiting this link:
+
 <%(recipient_subscriptions_url)s>
 
-If you do not wish to download software from this PPA you can safely ignore this message.
+You can find out more about %(registrant_name)s here:
+
+<%(registrant_profile_url)s>
+
+If you'd prefer not to use software from this archive, you can safely ignore this email. However, if you have any concerns you can contact the Launchpad team by emailing feedback@launchpad.net
+
 
 Regards,
 The Launchpad team
+
