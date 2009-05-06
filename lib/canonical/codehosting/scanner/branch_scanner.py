@@ -54,7 +54,7 @@ class BranchScanner:
     def scanAllBranches(self):
         """Run Bzrsync on all branches, and intercept most exceptions."""
         event_handlers = [
-            email.send_tip_changed_emails,
+            email.queue_tip_changed_email_jobs,
             buglinks.got_new_revision,
             mergedetection.auto_merge_branches,
             mergedetection.auto_merge_proposals,

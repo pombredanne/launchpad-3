@@ -5,7 +5,7 @@
 __metaclass__ = type
 __all__ = [
     'send_removed_revision_emails',
-    'send_tip_changed_emails',
+    'queue_tip_changed_email_jobs',
     ]
 
 from zope.component import adapter, getUtility
@@ -50,7 +50,7 @@ def send_removed_revision_emails(revisions_removed):
 
 
 @adapter(events.TipChanged)
-def send_tip_changed_emails(tip_changed):
+def queue_tip_changed_email_jobs(tip_changed):
     if not subscribers_want_notification(tip_changed.db_branch):
         return
     if tip_changed.initial_scan:
