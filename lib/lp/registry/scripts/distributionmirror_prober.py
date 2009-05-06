@@ -15,11 +15,11 @@ from twisted.web.http import HTTPClient
 from twisted.python.failure import Failure
 
 from canonical.config import config
-from canonical.launchpad.interfaces import (
-    IDistroArchSeries, IDistroSeries, ILaunchpadCelebrities,
-    UnableToFetchCDImageFileList, MirrorFreshness)
-
-
+from canonical.launchpad.interfaces.distroarchseries import IDistroArchSeries
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from lp.registry.interfaces.distributionmirror import (
+    MirrorFreshness, UnableToFetchCDImageFileList)
+from lp.registry.interfaces.distroseries import IDistroSeries
 # The requests/timeouts ratio has to be at least 3 for us to keep issuing
 # requests on a given host. (This ratio is per run, rather than held long
 # term)

@@ -58,7 +58,7 @@ from canonical.launchpad.interfaces.archive import (
     IArchiveSet, ArchivePurpose)
 from lp.registry.interfaces.distribution import (
     IDistribution, IDistributionMirrorMenuMarker, IDistributionSet)
-from canonical.launchpad.interfaces.distributionmirror import (
+from lp.registry.interfaces.distributionmirror import (
     IDistributionMirrorSet, MirrorContent, MirrorSpeed)
 from lp.registry.interfaces.distroseries import DistroSeriesStatus
 from lp.registry.interfaces.product import IProduct

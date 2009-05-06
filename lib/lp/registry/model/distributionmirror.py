@@ -35,14 +35,17 @@ from canonical.launchpad.database.publishing import (
     SecureBinaryPackagePublishingHistory)
 from canonical.launchpad.helpers import (
     get_email_template, get_contact_email_addresses, shortlist)
-from canonical.launchpad.interfaces import (
-    BinaryPackageFileType, IDistributionMirrorSet, IDistributionMirror,
-    IDistroArchSeries, IDistroSeries, ILaunchpadCelebrities,
-    IMirrorCDImageDistroSeries, IMirrorDistroArchSeries,
-    IMirrorDistroSeriesSource, IMirrorProbeRecord, MirrorContent,
-    MirrorFreshness, MirrorSpeed, MirrorStatus, PackagePublishingPocket,
-    PackagePublishingStatus, pocketsuffix, PROBE_INTERVAL,
-    SourcePackageFileType)
+from canonical.launchpad.interfaces.binarypackagerelease import BinaryPackageFileType
+from canonical.launchpad.interfaces.distroarchseries import IDistroArchSeries
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.publishing import (
+    PackagePublishingPocket, PackagePublishingStatus, pocketsuffix)
+from lp.registry.interfaces.distributionmirror import (
+    IDistributionMirror, IDistributionMirrorSet, IMirrorCDImageDistroSeries,
+    IMirrorDistroArchSeries, IMirrorDistroSeriesSource, IMirrorProbeRecord,
+    MirrorContent, MirrorFreshness, MirrorSpeed, MirrorStatus, PROBE_INTERVAL)
+from lp.registry.interfaces.distroseries import IDistroSeries
+from lp.registry.interfaces.sourcepackage import SourcePackageFileType
 from canonical.launchpad.mail import simple_sendmail, format_address
 from lp.registry.interfaces.person import validate_public_person
 from canonical.launchpad.webapp import urlappend, canonical_url

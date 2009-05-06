@@ -10,10 +10,10 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.sqlbase import flush_database_updates
-from canonical.launchpad.database.distributionmirror import DistributionMirror
+from lp.registry.model.distributionmirror import DistributionMirror
 from canonical.launchpad.ftests import login
 from canonical.launchpad.interfaces.country import ICountrySet
-from canonical.launchpad.interfaces.distributionmirror import (
+from lp.registry.interfaces.distributionmirror import (
     IDistributionMirrorSet, MirrorContent, MirrorFreshness)
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet

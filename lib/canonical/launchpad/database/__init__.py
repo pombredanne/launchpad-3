@@ -60,7 +60,7 @@ from canonical.launchpad.database.binaryandsourcepackagename import *
 from canonical.launchpad.database.publishedpackage import *
 from lp.registry.model.distribution import *
 from canonical.launchpad.database.distributionbounty import *
-from canonical.launchpad.database.distributionmirror import *
+from lp.registry.model.distributionmirror import *
 from lp.registry.model.distributionsourcepackage import *
 from lp.registry.model.distributionsourcepackagecache import *
 from canonical.launchpad.database.distributionsourcepackagerelease import *
