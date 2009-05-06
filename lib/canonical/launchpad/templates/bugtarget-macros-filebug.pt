@@ -389,6 +389,10 @@
         <tbody>
           <tr>
             <td>
+              <img width="14" height="14" src="/@@/treeCollapsed"
+                  class="bug-already-reported-expander"
+                  tal:attributes="id string:bug-details-expander-bug-${bug/id};"
+                />
               <input type="radio" name="field.bug_already_reported_as"
                      class="duplicate-bug-button"
                      tal:attributes="
