@@ -79,26 +79,28 @@ class TestRequestParsing(TestCase):
                    'mediumubuntulogo.png HTTP/1.1')
         self.assertMethodAndFileIDAreCorrect(request)
 
+    def test_extra_slashes_are_ignored(self):
+        request = 'GET http://launchpadlibrarian.net//8196569//foo HTTP/1.1'
+        self.assertMethodAndFileIDAreCorrect(request)
+
+        request = 'GET //8196569//foo HTTP/1.1'
+        self.assertMethodAndFileIDAreCorrect(request)
+
     def test_return_value_for_https_path(self):
         request = ('GET https://launchpadlibrarian.net/8196569/'
                    'mediumubuntulogo.png HTTP/1.1')
         self.assertMethodAndFileIDAreCorrect(request)
 
-    def test_requests_for_the_root_are_not_parsed(self):
+    def test_requests_for_paths_that_are_not_of_an_lfa_raise_error(self):
         request = 'GET https://launchpadlibrarian.net/ HTTP/1.1'
         self.assertRaises(
             NotALibraryFileAliasRequest, get_method_and_file_id, request)
 
-        request = 'GET / HTTP/1.1'
-        self.assertRaises(
-            NotALibraryFileAliasRequest, get_method_and_file_id, request)
-
-    def test_requests_for_robots_dot_txt_are_not_parsed(self):
-        request = 'GET https://launchpadlibrarian.net/robots.txt HTTP/1.1'
-        self.assertRaises(
-            NotALibraryFileAliasRequest, get_method_and_file_id, request)
-
         request = 'GET /robots.txt HTTP/1.1'
+        self.assertRaises(
+            NotALibraryFileAliasRequest, get_method_and_file_id, request)
+
+        request = 'GET /@@person HTTP/1.1'
         self.assertRaises(
             NotALibraryFileAliasRequest, get_method_and_file_id, request)
 
