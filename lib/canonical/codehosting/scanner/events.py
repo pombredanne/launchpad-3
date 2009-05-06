@@ -90,6 +90,15 @@ class ScanCompleted(ScannerEvent):
     """The scan has been completed and the database is up-to-date."""
 
     def __init__(self, db_branch, bzr_branch, bzr_ancestry, logger):
+        """Construct a `ScanCompleted` event.
+
+        :param db_branch: The database branch.
+        :param bzr_branch: The Bazaar branch.
+        :param bzr_ancestry: A set of all the revisions -- mainline or
+            otherwise -- in the Bazaar branch.
+        :param logger: A Python logger object that's used to report incidental
+            information, such as merges that we find.
+        """
         super(ScanCompleted, self).__init__(db_branch, bzr_branch)
         self.bzr_ancestry = bzr_ancestry
         # This is kind of ick. In a strict Zope sense, the logger should
