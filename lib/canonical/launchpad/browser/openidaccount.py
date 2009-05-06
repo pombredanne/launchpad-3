@@ -243,6 +243,13 @@ class AccountEditEmailsView(LaunchpadFormView):
                 "You can't remove %s because it's your contact email "
                 "address." % self.context.preferredemail.email)
             return self.errors
+
+        # XXX 2009-06-06 jamesh bug=371576: We don't support deletion
+        # of email addresses yet, as EmailAddress.destroySelf() still
+        # touches tables the SSO server has no access to.
+        self.addError(
+            "Can not remove email addresses here yet.")
+
         return self.errors
 
     @action(_("Remove"), name="remove_validated",

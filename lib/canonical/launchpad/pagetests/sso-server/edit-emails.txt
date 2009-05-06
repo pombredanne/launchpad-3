@@ -108,7 +108,7 @@ The user can also change their contact email address using the edit
 emails form:
 
     >>> browser.open('http://openid.launchpad.dev/+edit-emails')
-    >>> print_radio_button_field(browser.contents, "VALIDATED_SELECTED")
+    >>> print_radio_button_field(browser.contents, 'VALIDATED_SELECTED')
     (*) new-user@example.com
     ( ) second-email@example.com
     >>> browser.getControl('second-email@example.com').selected = True
@@ -117,32 +117,73 @@ emails form:
     >>> for msg in get_feedback_messages(browser.contents):
     ...     print msg
     Your contact address has been changed to: second-email@example.com
-    >>> print_radio_button_field(browser.contents, "VALIDATED_SELECTED")
+    >>> print_radio_button_field(browser.contents, 'VALIDATED_SELECTED')
     (*) second-email@example.com
     ( ) new-user@example.com
 
 
 == Removing an Email Address ==
 
+# XXX 2009-06-06 jamesh bug=371576: We don't support deletion of email
+# addresses yet, as EmailAddress.destroySelf() still touches tables
+# the SSO server has no access to.
+
 The user can also remove email addresses other than their contact address.
 
-    >>> browser.open('http://openid.launchpad.dev/+edit-emails')
-    >>> browser.getControl('second-email@example.com').selected = True
-    >>> browser.getControl('Remove', index=0).click()
-    >>> for msg in get_feedback_messages(browser.contents):
-    ...     print msg
+    #>>> browser.open('http://openid.launchpad.dev/+edit-emails')
+    #>>> browser.getControl('second-email@example.com').selected = True
+    #>>> browser.getControl('Remove', index=0).click()
+    #>>> for msg in get_feedback_messages(browser.contents):
+    #...     print msg
     There is 1 error.
     You can't remove second-email@example.com because it's your
     contact email address.
 
 Removing other addresses works though:
 
+    #>>> browser.open('http://openid.launchpad.dev/+edit-emails')
+    #>>> browser.getControl('new-user@example.com').selected = True
+    #>>> browser.getControl('Remove', index=0).click()
+    #>>> for msg in get_feedback_messages(browser.contents):
+    #...     print msg
+    The email address 'new-user@example.com' has been removed.
+
+
+== Removing an Unvalidated Address ==
+
+It is possible for a user to remove an unvalidated email address from
+their account.  First lets add an address:
+
     >>> browser.open('http://openid.launchpad.dev/+edit-emails')
-    >>> browser.getControl('new-user@example.com').selected = True
-    >>> browser.getControl('Remove', index=0).click()
+    >>> browser.getControl('Add a new address').value = (
+    ...     'unvalidated@example.com')
+    >>> browser.getControl('Add', index=1).click()
+    >>> print browser.url
+    http://openid.launchpad.dev/+edit-emails
     >>> for msg in get_feedback_messages(browser.contents):
     ...     print msg
-    The email address 'new-user@example.com' has been removed.
+    A confirmation message has been sent to...
+
+The address now shows up as an unvalidated address, which we can remove:
+
+    >>> print_radio_button_field(browser.contents, 'UNVALIDATED_SELECTED')
+    (*) unvalidated@example.com
+    >>> browser.getControl('Remove', index=0).click()
+    >>> print browser.url
+    http://openid.launchpad.dev/+edit-emails
+    >>> for msg in get_feedback_messages(browser.contents):
+    ...     print msg
+    The email address 'unvalidated@example.com' has been removed.
+
+If we try to validate the email address using the token from the first
+step, we will now get an error:
+
+    >>> from_addr, to_addr, msg = stub.test_emails.pop()
+    >>> token_url = get_token_url_from_email(msg)
+    >>> browser.open(token_url)
+    Traceback (most recent call last):
+      ...
+    NotFound: ...
 
 
 == Attempting to Add Existing Addresses ==
