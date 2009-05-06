@@ -22,11 +22,16 @@ from lp.code.interfaces.branchmergeproposal import (
 
 def is_series_branch(branch):
     """Is 'branch' associated with a series?"""
+    # XXX: JonathanLange 2009-05-07 spec=package-branches: This assumes that
+    # we only care about whether a branch is a product series. What about poor
+    # old distroseries?
     return branch.associatedProductSeries().count() > 0
 
 
 def is_development_focus(branch):
     """Is 'branch' the development focus?"""
+    # XXX: JonathanLange 2009-05-07 spec=package-branches: What if the branch
+    # is the development focus of a source package?
     dev_focus = branch.product.development_focus
     return branch == dev_focus.branch
 
@@ -84,7 +89,7 @@ def auto_merge_branches(scan_completed):
         return
     # Get all the active branches for the product, and if the
     # last_scanned_revision is in the ancestry, then mark it as merged.
-    branches = getUtility(IAllBranches).inProduct(db_branch.product)
+    branches = getUtility(IAllBranches).inTarget(db_branch.target)
     branches = branches.withLifecycleStatus(
         BranchLifecycleStatus.DEVELOPMENT,
         BranchLifecycleStatus.EXPERIMENTAL,
@@ -121,7 +126,7 @@ def auto_merge_proposals(scan_completed):
     #
     # At this stage we are not going to worry about the revno
     # which introduced the change, that will either be set through the web
-    # ui by a person, of by PQM once it is integrated.
+    # ui by a person, or by PQM once it is integrated.
     for proposal in db_branch.landing_candidates:
         if proposal.source_branch.last_scanned_id in bzr_ancestry:
             merge_detected(
