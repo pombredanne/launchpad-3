@@ -269,8 +269,8 @@ if [ ! -z "$pyflakes_notices" ]; then
     group_lines_by_file "$pyflakes_notices"
 fi
 
-
-export PYTHONPATH="/usr/share/pycentral/pylint/site-packages:lib:$PYTHONPATH"
+extra_path="/usr/share/pyshared:/usr/share/pycentral/pylint/site-packages"
+export PYTHONPATH="$extra_path:lib:$PYTHONPATH"
 pylint="python2.4 -Wi::DeprecationWarning `which pylint`"
 
 # XXX sinzui 2007-10-18 bug=154140:
