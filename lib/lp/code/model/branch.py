@@ -816,7 +816,7 @@ class Branch(SQLBase):
         return sorted(results)
 
     @property
-    def needsUpgrading(self):
+    def needs_upgrading(self):
         """See `IBranch`."""
         if (REPOSITORY_FORMAT_UPGRADE_PATH.get(self.repository_format, None) or
                 BRANCH_FORMAT_UPGRADE_PATH.get(self.branch_format, None)):

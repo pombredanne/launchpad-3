@@ -377,7 +377,7 @@ REPOSITORY_FORMAT_UPGRADE_PATH = {
     RepositoryFormat.BZR_KNITPACK_4: RepositoryFormatKnitPack6RichRoot,
     RepositoryFormat.BZR_KNITPACK_5: None,
     RepositoryFormat.BZR_KNITPACK_5_RRB: RepositoryFormatKnitPack6RichRoot,
-    RepositoryFormat.BZR_KNITPACK_5_RR: RepositoryFormatKnitPack6RichRoot,
+    RepositoryFormat.BZR_KNITPACK_5_RR: None,
     RepositoryFormat.BZR_KNITPACK_6: None,
     RepositoryFormat.BZR_KNITPACK_6_RR: None,
     RepositoryFormat.BZR_PACK_DEV_0: None,
@@ -1212,7 +1212,7 @@ class IBranch(IHasOwner, IHasBranchTarget):
         :return: A list of tuples like (date, count).
         """
 
-    needsUpgrading = Attribute("Whether the branch needs to be upgraded.")
+    needs_upgrading = Attribute("Whether the branch needs to be upgraded.")
 
 
 class IBranchSet(Interface):

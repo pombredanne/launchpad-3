@@ -77,6 +77,26 @@ class TestRepositoryFormatUpgradePath(TestCase):
         for format in RepositoryFormat.items:
             self.assertTrue(REPOSITORY_FORMAT_UPGRADE_PATH.has_key(format))
 
+    def test_repository_format_upgrades_dont_cross_streams(self):
+        # Repository formats should not try to upgrade a format that doesn't
+        # support rich roots or subtrees to a format that does, and vice versa.
+        for format in REPOSITORY_FORMAT_UPGRADE_PATH.keys():
+            upgrade_format = REPOSITORY_FORMAT_UPGRADE_PATH[format]
+            if upgrade_format is None:
+                continue
+            try:
+                format_start = repo_format_registry.get(format.title)
+            except KeyError: # We used a fake format string.
+                continue
+            format_end = repo_format_registry.get(
+                upgrade_format().get_format_string())
+            self.assertEqual(
+                getattr(format_start, 'rich_root_data', False),
+                getattr(format_end, 'rich_root_data', False))
+            self.assertEqual(
+                getattr(format_start, 'supports_tree_reference', False),
+                getattr(format_end, 'supports_tree_reference', False))
+
 
 def test_suite():
     return TestLoader().loadTestsFromName(__name__)
