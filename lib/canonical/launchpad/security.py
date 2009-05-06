@@ -51,7 +51,7 @@ from canonical.launchpad.interfaces.hwdb import IHWSubmission
 from canonical.launchpad.interfaces.language import ILanguage, ILanguageSet
 from canonical.launchpad.interfaces.languagepack import ILanguagePack
 from canonical.launchpad.interfaces.launchpad import (
-    IBazaarApplication, IHasBug, IHasDrivers, IHasOwner, IShipItApplication,
+    IBazaarApplication, IHasBug, IHasDrivers, IHasOwner,
     ILaunchpadCelebrities)
 from lp.registry.interfaces.location import IPersonLocation
 from lp.registry.interfaces.mailinglist import IMailingListSet
@@ -79,9 +79,9 @@ from lp.registry.interfaces.productrelease import (
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.code.interfaces.seriessourcepackagebranch import (
     ISeriesSourcePackageBranch, IMakeOfficialBranchLinks)
-from canonical.launchpad.interfaces.shipit import (
-    IRequestedCDs, IShippingRequest, IShippingRequestSet, IShippingRun,
-    IStandardShipItRequest, IStandardShipItRequestSet)
+from canonical.shipit.interfaces.shipit import (
+    IRequestedCDs, IShipItApplication, IShippingRequest, IShippingRequestSet,
+    IShippingRun, IStandardShipItRequest, IStandardShipItRequestSet)
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from canonical.launchpad.interfaces.sourcepackagerelease import (
     ISourcePackageRelease)
