@@ -90,7 +90,6 @@
     <include file="publishedpackage.zcml" />
     <include file="queue.zcml" />
     <include file="scriptactivity.zcml" />
-    <include file="shipit.zcml" />
     <include file="sourcepackagepublishinghistory.zcml" />
     <include file="sourcepackagerelease.zcml" />
     <include file="specification.zcml" />
