@@ -75,6 +75,13 @@ class RevisionsRemoved(ScannerEvent):
     """Revisions have been removed from the branch."""
 
     def __init__(self, db_branch, bzr_branch, removed_history):
+        """Construct a `RevisionsRemoved` event.
+
+        :param db_branch: The database branch.
+        :param bzr_branch: The Bazaar branch.
+        :param removed_history: The mainline database `IRevision` objects that
+            are no longer present in the mainline of the Bazaar branch.
+        """
         super(RevisionsRemoved, self).__init__(db_branch, bzr_branch)
         self.removed_history = removed_history
 
