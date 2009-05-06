@@ -47,7 +47,7 @@ from canonical.launchpad.interfaces.openidserver import (
     ILaunchpadOpenIDStoreFactory, ILoginServiceAuthorizeForm,
     ILoginServiceLoginForm, IOpenIDAuthorizationSet, IOpenIDRPConfigSet,
     IOpenIDRPSummarySet)
-from canonical.launchpad.interfaces.shipit import IShipitAccount
+from canonical.shipit.interfaces.shipit import IShipitAccount
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.webapp import (
     action, custom_widget, LaunchpadFormView, LaunchpadView)

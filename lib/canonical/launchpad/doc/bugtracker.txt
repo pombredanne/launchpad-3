@@ -428,18 +428,6 @@ static URLs or track only one product.
     bug_filing_url: http://.../report.php?in[sdesc]=Foo&in[ldesc]=Bar
     bug_search_url: http://php.example.com/search.php?search_for=Foo
 
-Google Code hosts many projects but each project's bug tracker has a
-unique URL, so it too ignores the remote_product parameter.
-
-    >>> example_google_code = factory.makeBugTracker(
-    ...     'http://code.google.com/p/myproject/issues',
-    ...     BugTrackerType.GOOGLE_CODE)
-    >>> links = example_google_code.getBugFilingAndSearchLinks(
-    ...     remote_product='testproduct', summary="Foo", description="Bar")
-    >>> print_links(links)
-    bug_filing_url: http://.../issues/entry?summary=Foo&amp;comment=Bar
-    bug_search_url: http://.../issues/list?q=Foo
-
 Trac's bug filing form doesn't accept data in the query string, so we don't
 include it.
 

@@ -2,10 +2,11 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   metal:use-macro="context/@@launchpad_form/form">
-  <div class="form" metal:fill-slot="widgets">
+  <div class="form" id="new-comment" metal:fill-slot="widgets">
     <div
       tal:condition="context/bug/duplicateof"
       class="warning message"
+      id="warning-comment-on-duplicate"
     >
       Remember, this bug report is a duplicate.
       Comment here only if you think the duplicate status is wrong.

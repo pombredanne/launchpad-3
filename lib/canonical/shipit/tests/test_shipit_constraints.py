@@ -7,7 +7,7 @@ import unittest
 import psycopg2
 
 from canonical.database.sqlbase import quote
-from canonical.launchpad.interfaces.shipit import ShippingRequestStatus
+from canonical.shipit.interfaces.shipit import ShippingRequestStatus
 from canonical.testing import LaunchpadLayer
 
 

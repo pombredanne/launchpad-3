@@ -249,9 +249,14 @@ INVALID.
 
 The script process-hwdb-submissions.py takes the optional parameter
 -m or --max-submissions, so let's process just the first of these three
-submissions. This submission is invalid, because it has no Librarian
-file, which leads to an OOPS when it is being processed. The submission
-key is logged.
+submissions. We don't have a Librarian file for this submission, so
+let's add one. Let's add invalid data in order to see how invalid
+submissions are processed.
+
+    >>> from canonical.librarian.ftests.harness import fillLibrarianFile
+    >>> submission = submission_set.getBySubmissionKey('test_submission_id_1')
+    >>> fillLibrarianFile(
+    ...     submission.raw_submission.id, 'nonsense')
 
     # Commit the current transaction so that the script sees the
     # recently added data.
@@ -266,9 +271,10 @@ key is logged.
     0
     >>> print err
     INFO    creating lockfile
-    ERROR   Exception while processing HWDB submission test_submission_id_1
-    (OOPS-...)
+    ERROR   Parsing submission test_submission_id_1: syntax error:
+    line 1, column 0
     INFO    Processed 0 valid and 1 invalid HWDB submissions
+    <BLANKLINE>
     >>> print out
     <BLANKLINE>
 

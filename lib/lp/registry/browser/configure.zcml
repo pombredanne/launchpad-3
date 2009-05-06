@@ -2010,13 +2010,6 @@
         class="lp.registry.browser.product.ProductAddView"
         permission="launchpad.AnyPerson"
         template="../templates/product-new.pt"/>
-    <browser:page
-        name="+new-guided"
-        for="lp.registry.interfaces.product.IProductSet"
-        facet="overview"
-        class="lp.registry.browser.product.ProductAddView"
-        permission="launchpad.AnyPerson"
-        template="../templates/product-new-guided.pt"/>
     <browser:menus
         classes="
             ProductFacets
@@ -2144,6 +2137,13 @@
         facet="overview"
         permission="launchpad.Edit"
         template="../templates/productseries-edit.pt"/>
+    <browser:page
+        name="+delete"
+        for="lp.registry.interfaces.productseries.IProductSeries"
+        class="lp.registry.browser.productseries.ProductSeriesDeleteView"
+        facet="overview"
+        permission="launchpad.Edit"
+        template="../templates/productseries-delete.pt"/>
     <browser:page
         name="+addrelease"
         for="lp.registry.interfaces.productseries.IProductSeries"

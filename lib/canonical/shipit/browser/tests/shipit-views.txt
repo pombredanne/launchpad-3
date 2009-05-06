@@ -2,7 +2,7 @@
 
     >>> from canonical.launchpad.database import (
     ...     ShippingRequest, StandardShipItRequestSet)
-    >>> from canonical.launchpad.layers import ShipItUbuntuLayer
+    >>> from canonical.shipit.layers import ShipItUbuntuLayer
     >>> jordis_request = ShippingRequest.get(16)
 
 
@@ -22,7 +22,7 @@ StandardShipItRequests.
 
     >>> from canonical.launchpad.ftests import login
     >>> login('test@canonical.com')
-    >>> from canonical.launchpad.systemhomes import ShipItApplication
+    >>> from canonical.shipit.systemhome import ShipItApplication
     >>> shipit = ShipItApplication()
     >>> myrequest_view = create_initialized_view(
     ...     shipit, 'myrequest', layer=ShipItUbuntuLayer)

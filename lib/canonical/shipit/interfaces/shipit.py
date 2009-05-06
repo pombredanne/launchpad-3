@@ -4,6 +4,7 @@
 __all__ = [
     'IRequestedCDs',
     'IShipitAccount',
+    'IShipItApplication',
     'IShipItCountry',
     'IShipItReport',
     'IShipItReportSet',
@@ -48,6 +49,7 @@ from canonical.launchpad.fields import (
     ShipItRecipientDisplayname, ShipItOrganization, ShipItCity,
     ShipItProvince, ShipItAddressline1, ShipItAddressline2, ShipItPhone,
     ShipItReason, ShipItQuantity)
+from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
 
 from canonical.launchpad import _
 
@@ -1168,3 +1170,6 @@ class IShipitAccount(Interface):
         Return None otherwise.
         """
 
+
+class IShipItApplication(ILaunchpadApplication):
+    """ShipIt application root."""
