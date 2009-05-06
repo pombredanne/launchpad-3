@@ -10,7 +10,7 @@ import queue.
 The import queue is linked from the translations page for distribution.
 
     >>> user_browser.open('http://translations.launchpad.dev/ubuntu')
-    >>> user_browser.getLink('See import queue').click()
+    >>> user_browser.getLink('Import queue').click()
 
 There is no content for Ubuntu.
 
