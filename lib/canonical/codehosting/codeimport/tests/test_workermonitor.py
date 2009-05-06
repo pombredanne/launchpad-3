@@ -522,7 +522,7 @@ class TestWorkerMonitorIntegration(TestCase, TestCaseWithMemoryTransport):
         result = self.performImport(job_id)
         return result.addCallback(self.assertImported, code_import_id)
 
-    def test_import_git(self):
+    def disabled_test_import_git(self):
         # Create a Git CodeImport and import it.
         job = self.getStartedJobForImport(self.makeGitCodeImport())
         code_import_id = job.code_import.id
