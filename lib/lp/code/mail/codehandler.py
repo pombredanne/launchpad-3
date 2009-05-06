@@ -210,6 +210,7 @@ class CodeEmailCommands(EmailCommandCollection):
         'vote': VoteEmailCommand,
         'review': VoteEmailCommand,
         'status': UpdateStatusEmailCommand,
+        'merge': UpdateStatusEmailCommand,
         'reviewer': AddReviewerEmailCommand,
         }
 
