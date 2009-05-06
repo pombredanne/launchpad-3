@@ -67,7 +67,7 @@
         var save_new_milestone = function(data) {
 
             var parameters = {
-                name: data['field.name'][0],
+                name: data['field.name'][0].toLowerCase(),
                 code_name: data['field.code_name'][0],
                 summary: data['field.summary'][0]
             };
@@ -159,8 +159,8 @@
         Y.on('domready', function () {
             var select_menu = get_by_id('field.milestone_for_release');
             var create_milestone_link = Y.Node.create(
-                '<a href="+addmilestone" class="add">' +
-                'Create milestone</a>')
+                '<a href="+addmilestone" id="create-milestone-link" ' +
+                'class="add">Create milestone</a>');
             select_menu.ancestor().appendChild(create_milestone_link);
             if (!Y.UA.ie) {
               create_milestone_link.on('click', show_milestone_form);

@@ -12,7 +12,6 @@ from bzrlib.branch import Branch
 from bzrlib.bzrdir import BzrDir
 from bzrlib import errors as bzr_errors
 from bzrlib.transport import get_transport
-from bzrlib.urlutils import escape
 from bzrlib.urlutils import join as urljoin
 from zope.component import getUtility
 from zope.interface import directlyProvides, directlyProvidedBy
@@ -332,7 +331,7 @@ class TestCodeHandler(TestCaseWithFactory):
         md = self.factory.makeMergeDirective(
             source_branch, target_branch_url='http://example.com')
         submitter = self.factory.makePerson()
-        self.switchDbUser(config.processmail.dbuser)
+        self.switchDbUser(config.create_merge_proposals.dbuser)
         self.assertRaises(
             NonLaunchpadTarget, self.code_handler._acquireBranchesForProposal,
             md, submitter)
@@ -351,7 +350,7 @@ class TestCodeHandler(TestCaseWithFactory):
         branches = getUtility(IBranchLookup)
         self.assertIs(None, branches.getByUrl(source_branch_url))
         submitter = self.factory.makePerson()
-        self.switchDbUser(config.processmail.dbuser)
+        self.switchDbUser(config.create_merge_proposals.dbuser)
         mp_source, mp_target = self.code_handler._acquireBranchesForProposal(
             md, submitter)
         self.assertEqual(mp_target, target_branch)
@@ -376,7 +375,7 @@ class TestCodeHandler(TestCaseWithFactory):
         submitter = self.factory.makePerson()
         duplicate_branch = self.factory.makeProductBranch(
             product=target_branch.product, name='suffix', owner=submitter)
-        self.switchDbUser(config.processmail.dbuser)
+        self.switchDbUser(config.create_merge_proposals.dbuser)
         mp_source, mp_target = self.code_handler._acquireBranchesForProposal(
             md, submitter)
         self.assertEqual('suffix-1', mp_source.name)
@@ -429,7 +428,7 @@ class TestCodeHandler(TestCaseWithFactory):
             self.factory.makeMergeDirectiveEmail())
         # Add some revisions so the proposal is ready.
         self.factory.makeRevisionsForBranch(source, count=1)
-        self.switchDbUser(config.processmail.dbuser)
+        self.switchDbUser(config.create_merge_proposals.dbuser)
         code_handler = CodeHandler()
         pop_notifications()
         bmp, comment = code_handler.processMergeProposal(message)
@@ -454,7 +453,7 @@ class TestCodeHandler(TestCaseWithFactory):
         """
         message, file_alias, source_branch, target_branch = (
             self.factory.makeMergeDirectiveEmail(body=' '))
-        self.switchDbUser(config.processmail.dbuser)
+        self.switchDbUser(config.create_merge_proposals.dbuser)
         code_handler = CodeHandler()
         bmp, comment = code_handler.processMergeProposal(message)
         self.assertEqual(source_branch, bmp.source_branch)
@@ -470,7 +469,7 @@ class TestCodeHandler(TestCaseWithFactory):
         # Ensure the message is stored in the librarian.
         # mail.incoming.handleMail also explicitly does this.
         transaction.commit()
-        self.switchDbUser(config.processmail.dbuser)
+        self.switchDbUser(config.create_merge_proposals.dbuser)
         code_handler = CodeHandler()
         # In order to fake a non-gpg signed email, we say that the current
         # principal direcly provides IWeaklyAuthenticatePrincipal, which is
@@ -509,11 +508,11 @@ class TestCodeHandler(TestCaseWithFactory):
             self.factory.makeMergeDirectiveEmail())
         # Ensure the message is stored in the librarian.
         # mail.incoming.handleMail also explicitly does this.
-        transaction.commit()
         self.switchDbUser(config.processmail.dbuser)
         code_handler = CodeHandler()
         self.assertEqual(0, source.landing_targets.count())
         code_handler.process(message, 'merge@code.launchpad.net', file_alias)
+        self.switchDbUser(config.create_merge_proposals.dbuser)
         JobRunner.fromReady(CreateMergeProposalJob).runAll()
         self.assertEqual(target, source.landing_targets[0].target_branch)
         # Ensure the DB operations violate no constraints.
@@ -528,7 +527,7 @@ class TestCodeHandler(TestCaseWithFactory):
 
                   reviewer eric
                 """)))
-        self.switchDbUser(config.processmail.dbuser)
+        self.switchDbUser(config.create_merge_proposals.dbuser)
         code_handler = CodeHandler()
         pop_notifications()
         bmp, comment = code_handler.processMergeProposal(message)
@@ -548,7 +547,7 @@ class TestCodeHandler(TestCaseWithFactory):
             self.factory.makeMergeDirectiveEmail(body=dedent("""\
                 This is the comment.
                 """)))
-        self.switchDbUser(config.processmail.dbuser)
+        self.switchDbUser(config.create_merge_proposals.dbuser)
         code_handler = CodeHandler()
         pop_notifications()
         bmp, comment = code_handler.processMergeProposal(message)
@@ -573,7 +572,7 @@ class TestCodeHandler(TestCaseWithFactory):
         """
         message, file_alias, source, target = (
             self.factory.makeMergeDirectiveEmail())
-        self.switchDbUser(config.processmail.dbuser)
+        self.switchDbUser(config.create_merge_proposals.dbuser)
         code_handler = CodeHandler()
         bmp, comment = code_handler.processMergeProposal(message)
         _unused = pop_notifications()
@@ -593,7 +592,7 @@ class TestCodeHandler(TestCaseWithFactory):
         """
         message = self.factory.makeSignedMessage(body='A body',
             subject='A subject', attachment_contents='')
-        self.switchDbUser(config.processmail.dbuser)
+        self.switchDbUser(config.create_merge_proposals.dbuser)
         code_handler = CodeHandler()
         code_handler.processMergeProposal(message)
         transaction.commit()
@@ -657,7 +656,7 @@ class TestCodeHandler(TestCaseWithFactory):
             subject='This is gonna fail', attachment_contents=''.join(
                 directive.to_lines()))
 
-        self.switchDbUser(config.processmail.dbuser)
+        self.switchDbUser(config.create_merge_proposals.dbuser)
         code_handler = CodeHandler()
         code_handler.processMergeProposal(message)
         transaction.commit()
@@ -762,7 +761,7 @@ class TestCodeHandlerProcessMergeDirective(TestCaseWithFactory):
 
     def _processMergeDirective(self, message):
         """Process the merge directive email."""
-        self.switchDbUser(config.processmail.dbuser)
+        self.switchDbUser(config.create_merge_proposals.dbuser)
         code_handler = CodeHandler()
         # Do the authentication dance as we do in the processing script.
         authutil = getUtility(IPlacelessAuthUtility)
@@ -839,7 +838,7 @@ class TestCodeHandlerProcessMergeDirective(TestCaseWithFactory):
         # The soruce branch is stacked on the target.
         source_bzr_branch = self._openBazaarBranchAsClient(bmp.source_branch)
         self.assertEqual(
-            escape('/' + bmp.target_branch.unique_name),
+            '/' + bmp.target_branch.unique_name,
             source_bzr_branch.get_stacked_on_url())
         # Make sure that the source branch doesn't have all the revisions.
         source_branch_revisions = (
@@ -878,7 +877,7 @@ class TestCodeHandlerProcessMergeDirective(TestCaseWithFactory):
             sender=db_source_branch.owner)
         # Tell the source branch that it is stacked on the target.
         if set_stacked:
-            stacked_url = escape('/' + db_target_branch.unique_name)
+            stacked_url = '/' + db_target_branch.unique_name
             branch = self._openBazaarBranchAsClient(db_source_branch)
             branch.set_stacked_on_url(stacked_url)
         return db_source_branch, message

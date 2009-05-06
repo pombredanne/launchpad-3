@@ -181,6 +181,25 @@ it returns the build records in the context of that publication.
     i386 build of iceweasel 1.0 in ubuntu warty RELEASE
 
 
+Finding related Binary publications
+===================================
+
+The source publication object has a custom operation called
+'getPublishedBinaries', it returns the binaries built in the context
+of that publication.
+
+    >>> pubs = webservice.named_get(
+    ...     cprov_archive['self_link'], 'getPublishedSources',
+    ...     source_name="pmount", exact_match=True).jsonBody()
+    >>> source_pub = pubs['entries'][0]
+    >>> builds = webservice.named_get(
+    ...     source_pub['self_link'], 'getPublishedBinaries').jsonBody()
+    >>> for entry in sorted(builds['entries']):
+    ...     print entry['display_name']
+    pmount 0.1-1 in warty hppa
+    pmount 0.1-1 in warty i386
+
+
 Build status summaries
 ======================
 
@@ -225,5 +244,5 @@ and a list of all the relevant builds for the summary:
 
     >>> print_build_summaries(build_summaries)
     Source ID 27: FAILEDTOBUILD ([u'i386'])
-    Source ID 28: FULLYBUILT ([u'i386'])
+    Source ID 28: FULLYBUILT_PENDING ([u'i386'])
 

@@ -266,7 +266,7 @@ class LaunchpadObjectFactory(ObjectFactory):
 
     def _stuff_preferredemail_cache(self, person):
         """Stuff the preferredemail cache.
-        
+
         cachedproperty does not get reset across transactions,
         so person.preferredemail can contain a bogus value even after
         a commit, despite all changes now being available in the main
@@ -476,7 +476,7 @@ class LaunchpadObjectFactory(ObjectFactory):
 
     def makeProduct(self, *args, **kwargs):
         """As makeProductNoCommit with an implicit transaction commit.
-        
+
         This ensures that generated owners and registrants are fully
         flushed and available from all Stores.
         """
@@ -639,6 +639,13 @@ class LaunchpadObjectFactory(ObjectFactory):
         if product is None:
             product = self.makeProduct()
         return self.makeBranch(product=product, **kwargs)
+
+    def makeImportBranch(self, **kwargs):
+        """Make a in import branch on an arbitrary product.
+
+        See `makeBranch` for more information on arguments.
+        """
+        return self.makeBranch(branch_type=BranchType.IMPORTED, **kwargs)
 
     def makeAnyBranch(self, **kwargs):
         """Make a branch without caring about its container.
@@ -1037,20 +1044,21 @@ class LaunchpadObjectFactory(ObjectFactory):
             product=product)
 
     def makeCodeImport(self, svn_branch_url=None, cvs_root=None,
-                       cvs_module=None, product=None, branch_name=None):
+                       cvs_module=None, product=None, branch_name=None,
+                       git_repo_url=None):
         """Create and return a new, arbitrary code import.
 
-        The code import will be an import from a Subversion repository located
-        at `url`, or an arbitrary unique url if the parameter is not supplied.
+        The type of code import will be inferred from the source details
+        passed in, but defaults to a Subversion import from an arbitrary
+        unique URL.
         """
-        if svn_branch_url is cvs_root is cvs_module is None:
+        if svn_branch_url is cvs_root is cvs_module is git_repo_url is None:
             svn_branch_url = self.getUniqueURL()
 
         if product is None:
             product = self.makeProduct()
         if branch_name is None:
             branch_name = self.getUniqueString('name')
-        # The registrant gets emailed, so needs a preferred email.
         registrant = self.makePerson()
 
         code_import_set = getUtility(ICodeImportSet)
@@ -1059,6 +1067,11 @@ class LaunchpadObjectFactory(ObjectFactory):
                 registrant, product, branch_name,
                 rcs_type=RevisionControlSystems.SVN,
                 svn_branch_url=svn_branch_url)
+        elif git_repo_url is not None:
+            return code_import_set.new(
+                registrant, product, branch_name,
+                rcs_type=RevisionControlSystems.GIT,
+                git_repo_url=git_repo_url)
         else:
             return code_import_set.new(
                 registrant, product, branch_name,
@@ -1358,11 +1371,12 @@ class LaunchpadObjectFactory(ObjectFactory):
                                     requester=potemplate.owner)
 
     def makePOTMsgSet(self, potemplate, singular=None, plural=None,
-                      sequence=None):
+                      context=None, sequence=None):
         """Make a new `POTMsgSet` in the given template."""
         if singular is None and plural is None:
             singular = self.getUniqueString()
-        potmsgset = potemplate.createMessageSetFromText(singular, plural)
+        potmsgset = potemplate.createMessageSetFromText(
+            singular, plural, context=context)
         if sequence is not None:
             potmsgset.setSequence(potemplate, sequence)
         naked_potmsgset = removeSecurityProxy(potmsgset)
@@ -1436,7 +1450,7 @@ class LaunchpadObjectFactory(ObjectFactory):
         translation.is_imported = is_imported
         translation.is_current = True
 
-    def makeTeamAndMailingList(self, team_name, owner_name):
+    def makeTeamAndMailingList(self, team_name, owner_name, visibility=None):
         """Make a new active mailing list for the named team.
 
         :param team_name: The new team's name.
@@ -1452,7 +1466,8 @@ class LaunchpadObjectFactory(ObjectFactory):
         team = getUtility(IPersonSet).getByName(team_name)
         if team is None:
             team = self.makeTeam(
-                owner, displayname=display_name, name=team_name)
+                owner, displayname=display_name, name=team_name,
+                visibility=visibility)
         # Any member of the mailing-list-experts team can review a list
         # registration.  It doesn't matter which one.
         experts = getUtility(ILaunchpadCelebrities).mailing_list_experts

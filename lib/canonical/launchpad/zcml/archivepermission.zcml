@@ -22,7 +22,8 @@
                        uploadersForComponent packagesForUploader
                        uploadersForPackage queueAdminsForComponent
                        componentsForQueueAdmin permissionsForPerson
-                       uploadersForPackageset packagesetsForUploader"/>
+                       uploadersForPackageset packagesetsForUploader
+                       packagesetsForSourceUploader isSourceUploadAllowed"/>
     <require
       permission="launchpad.Edit"
       attributes="newPackageUploader newComponentUploader newQueueAdmin

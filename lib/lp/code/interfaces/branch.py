@@ -341,6 +341,13 @@ class RepositoryFormat(DBEnumeratedType):
         "1.6.1-subtree with B+Tree indices.\n"
         )
 
+    BZR_CHK1 = DBItem(400,
+        "Bazaar development format - group compression and chk inventory"
+        " (needs bzr.dev from 1.14)\n",
+        "Development repository format - rich roots, group compression"
+        " and chk inventories\n",
+        )
+
 
 class ControlFormat(DBEnumeratedType):
     """Control directory (BzrDir) format.
@@ -1154,6 +1161,15 @@ class IBranch(IHasOwner, IHasBranchTarget):
 
         :param reason: An error message that will be displayed on the branch
             detail page.
+        """
+
+    def commitsForDays(since):
+        """Get a list of commit counts for days since `since`.
+
+        This method returns all commits for the branch, so this includes
+        revisions brought in through merges.
+
+        :return: A list of tuples like (date, count).
         """
 
 

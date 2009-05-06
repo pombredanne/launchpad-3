@@ -18,7 +18,7 @@ from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements
 
-from storm.expr import And, Count, Desc, Max, Or, Select
+from storm.expr import And, Count, Desc, Max, NamedFunc, Or, Select
 from storm.store import Store
 from sqlobject import (
     ForeignKey, IntCol, StringCol, BoolCol, SQLMultipleJoin, SQLRelatedJoin)
@@ -800,6 +800,19 @@ class Branch(SQLBase):
         jobs.remove()
         # Now destroy the branch.
         SQLBase.destroySelf(self)
+
+    def commitsForDays(self, since):
+        """See `IBranch`."""
+        class DateTrunc(NamedFunc):
+            name = "date_trunc"
+        results = Store.of(self).find(
+            (DateTrunc('day', Revision.revision_date), Count(Revision.id)),
+            Revision.id == BranchRevision.revisionID,
+            Revision.revision_date > since,
+            BranchRevision.branch == self)
+        results = results.group_by(
+            DateTrunc('day', Revision.revision_date))
+        return sorted(results)
 
 
 class DeletionOperation:

@@ -8,7 +8,6 @@ __metaclass__ = type
 __all__ = [
     'IPackageset',
     'IPackagesetSet',
-    'PackagesetError',
     ]
 
 from zope.interface import Interface
@@ -19,14 +18,6 @@ from canonical.launchpad.interfaces.launchpad import IHasOwner
 from lp.registry.interfaces.person import IPerson
 from canonical.launchpad.validators.name import name_validator
 from lazr.restful.fields import Reference
-
-
-class PackagesetError(Exception):
-    '''Raised upon the attempt to add invalid data to a package set.
-
-    Only source package names or other package sets can be added at
-    present.
-    '''
 
 
 class IPackagesetViewOnly(IHasOwner):
@@ -110,9 +101,64 @@ class IPackagesetViewOnly(IHasOwner):
             instances.
         """
 
+    def getSourcesIncluded(direct_inclusion=False):
+        """Get all source names associated with this package set.
+
+        This method returns the source package names that are directly
+        or indirectly associated with the package set at hand. Indirect
+        associations may be defined through package set successors.
+
+        Please note: this method was mainly introduced in order to
+        facilitate the listing of source package names via the LP
+        web services API. It returns string names as opposed to
+        `ISourcePackageName` instances.
+
+        :param direct_inclusion: if this flag is set to True only sources
+            directly included by this package set will be considered.
+        :return: A (potentially empty) sequence of string source package
+            names.
+        """
+
+    def getSourcesSharedBy(other_package_set, direct_inclusion=False):
+        """Get source package names also included by another package set.
+
+        What source package names does this package set have in common with
+        the `other_package_set`?
+
+        Please note: this method was mainly introduced in order to
+        facilitate the listing of source package names via the LP
+        web services API. It returns string names as opposed to
+        `ISourcePackageName` instances.
+
+        :param other_package_set: the other package set
+        :param direct_inclusion: if this flag is set to True only directly
+            included sources will be considered.
+        :return: A (potentially empty) sequence of string source package
+            names.
+        """
+
+    def getSourcesNotSharedBy(other_package_set, direct_inclusion=False):
+        """Get source package names not included by another package set.
+
+        Which source package names included by this package are *not*
+        included by the `other_package_set`?
+
+        Please note: this method was mainly introduced in order to
+        facilitate the listing of source package names via the LP
+        web services API. It returns string names as opposed to
+        `ISourcePackageName` instances.
+
+        :param other_package_set: the other package set
+        :param direct_inclusion: if this flag is set to True only directly
+            included sources will be considered.
+        :return: A (potentially empty) sequence of string source package
+            names.
+        """
+
 
 class IPackagesetEdit(Interface):
     """A writeable interface for package sets."""
+
     def add(data):
         """Add source package names or other package sets to this one.
 
@@ -136,6 +182,66 @@ class IPackagesetEdit(Interface):
             instances
         """
 
+    def addSources(names):
+        """Add the named source packages to this package set.
+
+        Any passed source package names will become *directly* associated
+        with the package set at hand.
+
+        This function is idempotent in the sense that source package names
+        that are already directly associated with a package set will be
+        ignored.
+
+        This method facilitates the addition of source package names to
+        package sets via the LP web services API. It takes string names
+        as opposed to `ISourcePackageName` instances.
+
+        :param names: an iterable with string source package names
+        """
+
+    def removeSources(names):
+        """Remove the named source packages from this package set.
+
+        Only source package names *directly* included by this package
+        set can be removed. Any others will be ignored.
+
+        This method facilitates the removal of source package names from
+        package sets via the LP web services API. It takes string names
+        as opposed to `ISourcePackageName` instances.
+
+        :param names: an iterable with string source package names
+        """
+
+    def addSubsets(names):
+        """Add the named package sets as subsets to this package set.
+
+        Any passed source package names will become *directly* associated
+        with the package set at hand.
+
+        This function is idempotent in the sense that package subsets
+        that are already directly associated with a package set will be
+        ignored.
+
+        This method facilitates the addition of package subsets via the
+        LP web services API. It takes string names as opposed to
+        `IPackageset` instances.
+
+        :param names: an iterable with string package set names
+        """
+
+    def removeSubsets(names):
+        """Remove the named package subsets from this package set.
+
+        Only package subsets *directly* included by this package
+        set can be removed. Any others will be ignored.
+
+        This method facilitates the removal of package subsets via the
+        LP web services API. It takes string names as opposed to
+        `IPackageset` instances.
+
+        :param names: an iterable with string package set names
+        """
+
 
 class IPackageset(IPackagesetViewOnly, IPackagesetEdit):
     """An interface for package sets."""
@@ -143,6 +249,7 @@ class IPackageset(IPackagesetViewOnly, IPackagesetEdit):
 
 class IPackagesetSet(Interface):
     """An interface for multiple package sets."""
+
     def new(name, description, owner):
         """Create a new package set.
 
@@ -166,5 +273,22 @@ class IPackagesetSet(Interface):
 
         :param owner: the owner of the package sets sought.
 
+        :return: A (potentially empty) sequence of `IPackageset` instances.
+        """
+
+    def setsIncludingSource(sourcepackagename, direct_inclusion=False):
+        """Get the package sets that include this source package.
+
+        Return all package sets that directly or indirectly include the
+        given source package name.
+
+        :param sourcepackagename: the included source package name; can be
+            either a string or a `ISourcePackageName`.
+        :param direct_inclusion: if this flag is set to True, then only
+            package sets that directly include this source package name will
+            be considered.
+
+        :raises NoSuchSourcePackageName: if a source package with the given
+            name cannot be found.
         :return: A (potentially empty) sequence of `IPackageset` instances.
         """

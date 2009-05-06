@@ -397,6 +397,7 @@
                     merge_queue
                     namespace
                     pending_writes
+                    commitsForDays
                     "/>
     <require
         permission="launchpad.Edit"
@@ -631,6 +632,7 @@
                     cvs_root
                     cvs_module
                     svn_branch_url
+                    git_repo_url
                     date_last_successful
                     source_product_series
                     update_interval

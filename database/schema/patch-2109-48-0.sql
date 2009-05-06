@@ -1,33 +1,28 @@
 SET client_min_messages=ERROR;
 
+-- This is half of a two part patch. The first half is patch-2109-44-2.sql,
+-- which is the half we will attempt to apply to production before
+-- the next rollout (after changing the CREATE INDEX statements to
+-- CREATE INDEX CONCURRENTLY). This half of the patch cleans up indexes
+-- that should no longer be needed after the rollout.
+
 -- Relax database constraints for message-sharing, and provide indexes
 -- to ensure acceptable performance levels.
 
 -- POTMsgSet table changes.
 
--- Indexes used to match global suggestions, i.e. find related POTMsgSets
--- by context, msgid_singular and msgid_plural.
+-- Replaced by indexes used to match global suggestions in patch-2109-44-2.sql
 DROP INDEX potmsgset__potemplate__context__msgid_singular__msgid_plural__k;
-CREATE INDEX potmsgset__context__msgid_singular__msgid_plural__idx ON potmsgset USING btree (context, msgid_singular, msgid_plural) WHERE ((context IS NOT NULL) AND (msgid_plural IS NOT NULL));
-
 DROP INDEX potmsgset__potemplate__context__msgid_singular__no_msgid_plural;
-CREATE INDEX potmsgset__context__msgid_singular__no_msgid_plural__idx ON potmsgset USING btree (context, msgid_singular) WHERE ((context IS NOT NULL) AND (msgid_plural IS NULL));
-
 DROP INDEX potmsgset__potemplate__no_context__msgid_singular__msgid_plural;
-CREATE INDEX potmsgset__no_context__msgid_singular__msgid_plural__idx ON potmsgset USING btree (msgid_singular, msgid_plural) WHERE ((context IS NULL) AND (msgid_plural IS NOT NULL));
-
 DROP INDEX potmsgset__potemplate__no_context__msgid_singular__no_msgid_plu;
-CREATE INDEX potmsgset__no_context__msgid_singular__no_msgid_plural__idx ON potmsgset USING btree (msgid_singular) WHERE ((context IS NULL) AND (msgid_plural IS NULL));
 
 
 -- TranslationTemplateItem changes.
 
 -- A POTemplate can have only one row with a certain sequence number.
 DROP INDEX potmsgset_potemplate_and_sequence_idx;
-CREATE UNIQUE INDEX translationtemplateitem__potemplate__sequence__key ON translationtemplateitem USING btree (potemplate, sequence) WHERE sequence > 0;
 
--- Help get all TTI rows for potemplate = X ordered by sequence.
-CREATE INDEX translationtemplateitem__potemplate__sequence__idx ON translationtemplateitem USING btree (potemplate, sequence);
 
 -- Replace constraint with one allowing sequence of zero.
 ALTER TABLE TranslationTemplateItem
@@ -37,8 +32,9 @@ ALTER TABLE TranslationTemplateItem
 
 -- No need to set potmsgset.potemplate and sequence columns.
 -- XXX Danilo: message sharing DB clean-up should drop these columns.
-ALTER TABLE potmsgset ALTER COLUMN potemplate DROP NOT NULL;
-ALTER TABLE potmsgset ALTER COLUMN sequence DROP NOT NULL;
+ALTER TABLE potmsgset
+    ALTER COLUMN potemplate DROP NOT NULL,
+    ALTER COLUMN sequence DROP NOT NULL;
 
 -- TranslationMessage table changes.
 -- Removes pointers to PO file and replaces them with (language, variant) pair.
@@ -52,34 +48,53 @@ ALTER TABLE translationmessage ALTER COLUMN pofile DROP NOT NULL;
 -- These are used for doing DISTINCT over all matching global suggestions.
 -- XXX Danilo: they won't be needed as much after migration.
 DROP INDEX translationmessage__pofile__potmsgset__msgstrs__key;
-CREATE UNIQUE INDEX tm__potmsgset__language__variant__shared__msgstrs__key ON translationmessage USING btree (potmsgset, language, variant, potemplate, (COALESCE(msgstr0, -1)), (COALESCE(msgstr1, -1)), (COALESCE(msgstr2, -1)), (COALESCE(msgstr3, -1)), (COALESCE(msgstr4, -1)), (COALESCE(msgstr5, -1))) WHERE (potemplate IS NULL AND variant IS NOT NULL);
-CREATE UNIQUE INDEX tm__potmsgset__language__no_variant__shared__msgstrs__key ON translationmessage USING btree (potmsgset, language, potemplate, (COALESCE(msgstr0, -1)), (COALESCE(msgstr1, -1)), (COALESCE(msgstr2, -1)), (COALESCE(msgstr3, -1)), (COALESCE(msgstr4, -1)), (COALESCE(msgstr5, -1))) WHERE (potemplate IS NULL AND variant IS NULL);
-CREATE UNIQUE INDEX tm__potmsgset__potemplate__language__variant__diverged__msgstrs__key ON translationmessage USING btree (potmsgset, potemplate, language, variant, (COALESCE(msgstr0, -1)), (COALESCE(msgstr1, -1)), (COALESCE(msgstr2, -1)), (COALESCE(msgstr3, -1)), (COALESCE(msgstr4, -1)), (COALESCE(msgstr5, -1))) WHERE (potemplate IS NOT NULL AND variant IS NOT NULL);
-CREATE UNIQUE INDEX tm__potmsgset__potemplate__language__no_variant__diverged__msgstrs__key ON translationmessage USING btree (potmsgset, potemplate, language, (COALESCE(msgstr0, -1)), (COALESCE(msgstr1, -1)), (COALESCE(msgstr2, -1)), (COALESCE(msgstr3, -1)), (COALESCE(msgstr4, -1)), (COALESCE(msgstr5, -1))) WHERE (potemplate IS NOT NULL AND variant IS NULL);
+-- XXX Stub: As per IRC discussions, these are being dropped for now.
+-- we can reenable them post-rollout to ensure migration works as expected.
+-- CREATE UNIQUE INDEX tm__potmsgset__language__variant__shared__msgstrs__key
+-- ON translationmessage (
+--     potmsgset, language, variant, potemplate,
+--     (COALESCE(msgstr0, -1)), (COALESCE(msgstr1, -1)),
+--     (COALESCE(msgstr2, -1)), (COALESCE(msgstr3, -1)),
+--     (COALESCE(msgstr4, -1)), (COALESCE(msgstr5, -1)))
+-- WHERE (potemplate IS NULL AND variant IS NOT NULL);
+-- CREATE UNIQUE INDEX
+--     tm__potmsgset__language__no_variant__shared__msgstrs__key
+-- ON translationmessage (
+--     potmsgset, language, potemplate, (COALESCE(msgstr0, -1)),
+--     (COALESCE(msgstr1, -1)), (COALESCE(msgstr2, -1)),
+--     (COALESCE(msgstr3, -1)), (COALESCE(msgstr4, -1)),
+--     (COALESCE(msgstr5, -1)))
+-- WHERE (potemplate IS NULL AND variant IS NULL);
+-- CREATE UNIQUE INDEX
+--     tm__potmsgset__potemplate__language__variant__diverged__msgstrs__key
+-- ON translationmessage (
+--     potmsgset, potemplate, language, variant, (COALESCE(msgstr0, -1)),
+--     (COALESCE(msgstr1, -1)), (COALESCE(msgstr2, -1)),
+--     (COALESCE(msgstr3, -1)), (COALESCE(msgstr4, -1)),
+--     (COALESCE(msgstr5, -1)))
+-- WHERE (potemplate IS NOT NULL AND variant IS NOT NULL);
+-- CREATE UNIQUE INDEX
+--     tm__potmsgset__potemplate__language__no_variant__diverged__msgstrs__key
+-- ON translationmessage (
+--     potmsgset, potemplate, language, (COALESCE(msgstr0, -1)),
+--     (COALESCE(msgstr1, -1)), (COALESCE(msgstr2, -1)),
+--     (COALESCE(msgstr3, -1)), (COALESCE(msgstr4, -1)),
+--     (COALESCE(msgstr5, -1)))
+-- WHERE (potemplate IS NOT NULL AND variant IS NULL);
 
 -- A POFile link is gone from translationmessage, replaced with
 -- language/variant combination, where variant can be NULL.
 DROP INDEX translationmessage__pofile__submitter__idx;
-CREATE INDEX translationmessage__language__variant__submitter__idx ON translationmessage USING btree (language, variant, submitter) WHERE (variant IS NOT NULL);
-CREATE INDEX translationmessage__language__no_variant__submitter__idx ON translationmessage USING btree (language, variant, submitter) WHERE (variant IS NULL);
 
 -- Indexes to fetch current messages: there can be at most one shared
 -- (potemplate IS NULL) and one diverged (potemplate = X) is_current message.
 -- Split into 4 to cope with NULL handling for potemplate and variant fields.
 DROP INDEX translationmessage__potmsgset__pofile__is_current__key;
-CREATE UNIQUE INDEX tm__potmsgset__language__no_variant__shared__current__key ON translationmessage USING btree (potmsgset, language) WHERE ((is_current IS TRUE) AND (potemplate IS NULL) AND (variant IS NULL));
-CREATE UNIQUE INDEX tm__potmsgset__language__variant__shared__current__key ON translationmessage USING btree (potmsgset, language, variant) WHERE ((is_current IS TRUE) AND (potemplate IS NULL) AND (variant IS NOT NULL));
-CREATE UNIQUE INDEX tm__potmsgset__potemplate__language__no_variant__diverged__current__key ON translationmessage USING btree (potmsgset, potemplate, language, variant) WHERE ((is_current IS TRUE) AND (potemplate IS NOT NULL) AND (variant IS NULL));
-CREATE UNIQUE INDEX tm__potmsgset__potemplate__language__variant__diverged__current__key ON translationmessage USING btree (potmsgset, potemplate, language, variant) WHERE ((is_current IS TRUE) AND (potemplate IS NOT NULL) AND (variant IS NOT NULL));
 
 -- Indexes to fetch imported messages: there can be at most one shared
 -- (potemplate IS NULL) and one diverged (potemplate = X) is_imported message.
 -- Split into 4 to cope with NULL handling for potemplate and variant fields.
 DROP INDEX translationmessage__potmsgset__pofile__is_imported__key;
-CREATE UNIQUE INDEX tm__potmsgset__language__no_variant__shared__imported__key ON translationmessage USING btree (potmsgset, language) WHERE ((is_imported IS TRUE) AND (potemplate IS NULL) AND (variant IS NULL));
-CREATE UNIQUE INDEX tm__potmsgset__language__variant__shared__imported__key ON translationmessage USING btree (potmsgset, language, variant) WHERE ((is_imported IS TRUE) AND (potemplate IS NULL) AND (variant IS NOT NULL));
-CREATE UNIQUE INDEX tm__potmsgset__potemplate__language__no_variant__diverged__imported__key ON translationmessage USING btree (potmsgset, potemplate, language, variant) WHERE ((is_imported IS TRUE) AND (potemplate IS NOT NULL) AND (variant IS NULL));
-CREATE UNIQUE INDEX tm__potmsgset__potemplate__language__variant__diverged__imported__key ON translationmessage USING btree (potmsgset, potemplate, language, variant) WHERE ((is_imported IS TRUE) AND (potemplate IS NOT NULL) AND (variant IS NOT NULL));
 
 -- Speed up local suggestions look-up by setting up a partial index
 -- for messages which are neither is_current nor is_imported.
@@ -87,7 +102,6 @@ CREATE UNIQUE INDEX tm__potmsgset__potemplate__language__variant__diverged__impo
 -- is around 1/10.
 -- XXX Danilo: previous index was not UNIQUE even if __key suggests it was.
 DROP INDEX translationmessage__potmsgset__pofile__not_used__key;
-CREATE INDEX tm__potmsgset__language__variant__not_used__idx ON translationmessage USING btree (potmsgset, language, variant) WHERE (NOT ((is_current IS TRUE) AND (is_imported IS TRUE)));
 
 
 -- Replace POTExport with a view going through TranslationTemplateItem.
@@ -166,8 +180,9 @@ FROM
           potemplate.id = pofile.potemplate
      LEFT JOIN translationmessage ON
           (potmsgset.id = translationmessage.potmsgset AND
-           translationmessage.pofile = pofile.id AND
-           translationmessage.is_current IS TRUE)
+           translationmessage.is_current IS TRUE AND
+           translationmessage.language = pofile.language AND
+           translationmessage.variant IS NOT DISTINCT FROM pofile.variant)
      LEFT JOIN pomsgid msgid_singular ON
           msgid_singular.id = potmsgset.msgid_singular
      LEFT JOIN pomsgid msgid_plural ON
