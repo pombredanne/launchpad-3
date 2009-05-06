@@ -21,7 +21,7 @@ from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
 from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
 from lp.registry.interfaces.person import (
     IPerson, IPersonSet, PersonCreationRationale)
-from canonical.launchpad.interfaces.shipit import ShipItConstants
+from canonical.shipit.interfaces.shipit import ShipItConstants
 from canonical.launchpad.interfaces.validation import valid_password
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.webapp.interfaces import (
