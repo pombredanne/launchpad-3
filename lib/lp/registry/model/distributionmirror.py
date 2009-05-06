@@ -35,7 +35,8 @@ from canonical.launchpad.database.publishing import (
     SecureBinaryPackagePublishingHistory)
 from canonical.launchpad.helpers import (
     get_email_template, get_contact_email_addresses, shortlist)
-from canonical.launchpad.interfaces.binarypackagerelease import BinaryPackageFileType
+from canonical.launchpad.interfaces.binarypackagerelease import (
+    BinaryPackageFileType)
 from canonical.launchpad.interfaces.distroarchseries import IDistroArchSeries
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.publishing import (

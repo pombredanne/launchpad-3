@@ -438,8 +438,8 @@ class ArchiveMirrorProberCallbacks(object):
             return
 
         scheme, host, port, path = _parse(self.url)
-        freshness_url_mapping = arch_or_source_mirror.getURLsToCheckUpdateness()
-        if not freshness_url_mapping or should_skip_host(host):
+        freshness_url_map = arch_or_source_mirror.getURLsToCheckUpdateness()
+        if not freshness_url_map or should_skip_host(host):
             # Either we have no publishing records for self.series,
             # self.pocket and self.component or we got too may timeouts from
             # this host and thus should skip it, so it's better to delete this
@@ -454,7 +454,7 @@ class ArchiveMirrorProberCallbacks(object):
         # trying to find one of the recently published packages mirrored
         # there.
         arch_or_source_mirror.freshness = MirrorFreshness.UNKNOWN
-        for freshness, url in freshness_url_mapping.items():
+        for freshness, url in freshness_url_map.items():
             prober = ProberFactory(url)
             deferred = request_manager.run(prober.request_host, prober.probe)
             deferred.addCallback(

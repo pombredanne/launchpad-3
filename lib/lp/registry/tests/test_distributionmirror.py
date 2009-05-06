@@ -26,7 +26,7 @@ from canonical.testing import LaunchpadFunctionalLayer
 
 class TestDistributionMirror(unittest.TestCase):
     layer = LaunchpadFunctionalLayer
-    
+
     def setUp(self):
         login('test@canonical.com')
         mirrorset = getUtility(IDistributionMirrorSet)
@@ -191,7 +191,7 @@ class TestDistributionMirror(unittest.TestCase):
 
 class TestDistributionMirrorSet(unittest.TestCase):
     layer = LaunchpadFunctionalLayer
-    
+
     def test_getBestMirrorsForCountry_randomizes_results(self):
         """Make sure getBestMirrorsForCountry() randomizes its results."""
         def my_select(class_, query, *args, **kw):
@@ -201,7 +201,7 @@ class TestDistributionMirrorSet(unittest.TestCase):
             the 'random' string in its first item.
             """
             self.failUnlessEqual(kw['orderBy'][0].name, 'random')
-            return [1,2,3]
+            return [1, 2, 3]
 
         orig_select = DistributionMirror.select
         DistributionMirror.select = classmethod(my_select)
