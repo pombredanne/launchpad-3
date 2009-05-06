@@ -45,6 +45,7 @@ class TestTranslationSuggestions(unittest.TestCase):
         # translations for it, there are no suggestions for translating
         # it whatsoever.
         potmsgset = self.factory.makePOTMsgSet(self.foo_template)
+        potmsgset.setSequence(self.foo_template, 1)
         self.assertEquals(
             potmsgset.getExternallyUsedTranslationMessages(self.nl), [])
         self.assertEquals(
@@ -56,7 +57,9 @@ class TestTranslationSuggestions(unittest.TestCase):
         # suggestion.
         text = "error message 936"
         foomsg = self.factory.makePOTMsgSet(self.foo_template, text)
+        foomsg.setSequence(self.foo_template, 1)
         barmsg = self.factory.makePOTMsgSet(self.bar_template, text)
+        barmsg.setSequence(self.bar_template, 1)
         translation = barmsg.updateTranslation(self.bar_nl, self.bar_nl.owner,
             ["foutmelding 936"], is_imported=False,
             lock_timestamp=None)
@@ -76,7 +79,9 @@ class TestTranslationSuggestions(unittest.TestCase):
         # If global suggestions are disabled, empty list is returned.
         text = "error message 936"
         foomsg = self.factory.makePOTMsgSet(self.foo_template, text)
+        foomsg.setSequence(self.foo_template, 1)
         barmsg = self.factory.makePOTMsgSet(self.bar_template, text)
+        barmsg.setSequence(self.bar_template, 1)
         translation = barmsg.updateTranslation(self.bar_nl, self.bar_nl.owner,
             ["foutmelding 936"], is_imported=False,
             lock_timestamp=None)
@@ -102,7 +107,9 @@ class TestTranslationSuggestions(unittest.TestCase):
         # Suggestions made for bar can also be useful suggestions for foo.
         text = "Welcome to our application!  We hope to have code soon."
         foomsg = self.factory.makePOTMsgSet(self.foo_template, text)
+        foomsg.setSequence(self.foo_template, 1)
         barmsg = self.factory.makePOTMsgSet(self.bar_template, text)
+        barmsg.setSequence(self.bar_template, 1)
         suggestion = barmsg.updateTranslation(self.bar_nl,
             self.foo_template.owner, ["Noueh hallo dus."],
             is_imported=False, lock_timestamp=None)
@@ -124,7 +131,9 @@ class TestTranslationSuggestions(unittest.TestCase):
         before = now - timedelta(1, 1, 1)
 
         foomsg = self.factory.makePOTMsgSet(self.foo_template, text)
+        foomsg.setSequence(self.foo_template, 1)
         barmsg = self.factory.makePOTMsgSet(self.bar_template, text)
+        barmsg.setSequence(self.bar_template, 1)
         suggestion1 = barmsg.updateTranslation(self.bar_nl,
             self.foo_template.owner, [suggested_dutch],
             is_imported=False, lock_timestamp=now)
@@ -140,6 +149,7 @@ class TestTranslationSuggestions(unittest.TestCase):
         oof_template = self.factory.makePOTemplate()
         oof_potmsgset = self.factory.makePOTMsgSet(
             oof_template, singular=text)
+        oof_potmsgset.setSequence(oof_template, 1)
         suggestions = oof_potmsgset.getExternallyUsedTranslationMessages(
             self.nl)
         self.assertEquals(len(suggestions), 1)
@@ -159,9 +169,9 @@ class TestTranslationSuggestions(unittest.TestCase):
             self.foo_template.owner, [translated_upstream],
             is_imported=True, lock_timestamp=None)
         current_translation = potmsgset.getCurrentTranslationMessage(
-            self.foo_nl.language)
+            self.foo_template, self.foo_nl.language)
         imported_translation = potmsgset.getImportedTranslationMessage(
-            self.foo_nl.language)
+            self.foo_template, self.foo_nl.language)
 
         self.assertEquals(
             current_translation, imported_translation,

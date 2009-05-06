@@ -179,8 +179,8 @@
       <tal:series replace="context/displayname" /> series:
       <ul>
         <li tal:repeat="release context/releases">
-          <tal:link replace="structure release/fmt:link"/>
           <tal:released replace="release/datereleased/fmt:date" />
+          <tal:link replace="structure release/fmt:link"/>
         </li>
       </ul>
     </div>

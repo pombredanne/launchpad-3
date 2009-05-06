@@ -622,7 +622,10 @@ class LoginServiceMixinLoginView:
             self.addError('Please enter a valid email address.')
             return
 
-        account = getUtility(IAccountSet).getByEmail(email)
+        try:
+            account = getUtility(IAccountSet).getByEmail(email)
+        except LookupError:
+            account = None
         if action == 'login':
             self.validateEmailAndPassword(email, password)
         elif action == 'resetpassword':
