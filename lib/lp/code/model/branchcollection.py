@@ -225,10 +225,10 @@ class GenericBranchCollection:
 
     def search(self, search_term):
         """See `IBranchCollection`."""
-        # XXX: JonathanLange 2009-02-23: This matches the old search algorithm
-        # that used to live in vocabularies/dbojects.py. It's not actually
-        # very good -- really it should match based on substrings of the
-        # unique name and sort based on relevance.
+        # XXX: JonathanLange 2009-02-23 bug 372591: This matches the old
+        # search algorithm that used to live in vocabularies/dbojects.py. It's
+        # not actually very good -- really it should match based on substrings
+        # of the unique name and sort based on relevance.
         branch = self._getExactMatch(search_term)
         if branch is not None:
             if branch in self.getBranches():
