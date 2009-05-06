@@ -1079,7 +1079,9 @@ class Archive(SQLBase):
         if len(copies) == 0:
             raise CannotCopy("Packages already copied.")
 
-        # Return a list of string names of packages that were copied.
+        # Return a list of string names of source packages that were copied.
+        # We only return source package names, even when binaries were copied,
+        # because that's the "Contract".
         return [
             copy.sourcepackagerelease.sourcepackagename.name
             for copy in copies
