@@ -757,7 +757,7 @@ class TestWorkerProgressReporting(TestCaseWithTransport):
         b2_http = bzrlib.branch.Branch.open(
             http_server.get_url() + 'some-other-branch')
         b1.pull(b2_http)
-        self.assertTrue(WORKER_ACTIVITY_NETWORK in p.calls)
+        self.assertSubset([WORKER_ACTIVITY_NETWORK], p.calls)
 
 
 def test_suite():
