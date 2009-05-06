@@ -173,9 +173,6 @@ class BugTracker(SQLBase):
         BugTrackerType.BUGZILLA: (
             "%(base_url)s/enter_bug.cgi?product=%(remote_product)s"
             "&short_desc=%(summary)s&long_desc=%(description)s"),
-        BugTrackerType.GOOGLE_CODE: (
-            "%(base_url)s/entry?summary=%(summary)s&amp;"
-            "comment=%(description)s"),
         BugTrackerType.MANTIS: (
             "%(base_url)s/bug_report_advanced_page.php"
             "?summary=%(summary)s&description=%(description)s"),
@@ -200,7 +197,6 @@ class BugTracker(SQLBase):
         BugTrackerType.BUGZILLA: (
             "%(base_url)s/query.cgi?product=%(remote_product)s"
             "&short_desc=%(summary)s"),
-        BugTrackerType.GOOGLE_CODE: "%(base_url)s/list?q=%(summary)s",
         BugTrackerType.DEBBUGS: (
             "%(base_url)s/cgi-bin/search.cgi?phrase=%(summary)s"
             "&attribute_field=package&attribute_operator=STROREQ"
