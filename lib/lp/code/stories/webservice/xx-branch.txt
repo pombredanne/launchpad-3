@@ -117,8 +117,6 @@ time goes on.
     self_link: u'.../~eric/fooix/trunk'
     subscribers_collection_link: u'http://.../~eric/fooix/trunk/subscribers'
     subscriptions_collection_link: u'http://.../~eric/fooix/trunk/subscriptions'
-    summary: None
-    title: u'The Fooix Trunk'
     unique_name: u'~eric/fooix/trunk'
     url: None
     whiteboard: None

@@ -319,8 +319,6 @@
                     id
                     branch_type
                     name
-                    title
-                    summary
                     url
                     whiteboard
                     target
@@ -405,7 +403,7 @@
     <require
         permission="launchpad.Edit"
         attributes="destroySelf setPrivate"
-        set_attributes="name title summary url mirror_status_message
+        set_attributes="name url mirror_status_message
                         owner author product lifecycle_status
                         last_mirrored last_mirrored_id last_mirror_attempt
                         mirror_failures pull_disabled next_mirror_time
