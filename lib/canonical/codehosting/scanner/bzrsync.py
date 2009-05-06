@@ -147,6 +147,10 @@ class BzrSync:
         self.deleteBranchRevisions(branchrevisions_to_delete)
         self.insertBranchRevisions(bzr_branch, branchrevisions_to_insert)
         self.trans_manager.commit()
+        # Synchronize the RevisionCache for this branch.
+        self.trans_manager.begin()
+        getUtility(IRevisionSet).updateRevisionCacheForBranch(self.db_branch)
+        self.trans_manager.commit()
 
         self._branch_mailer.sendRevisionNotificationEmails(bzr_history)
         # The Branch table is modified by other systems, including the web UI,

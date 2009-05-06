@@ -5,23 +5,27 @@
 __metaclass__ = type
 __all__ = ['DailyDatabaseGarbageCollector', 'HourlyDatabaseGarbageCollector']
 
+from datetime import datetime, timedelta
 import time
 
+import pytz
 import transaction
 from zope.component import getUtility
 from zope.interface import implements
 from storm.locals import SQL, Max, Min
 
 from canonical.database.sqlbase import sqlvalues
-from lp.code.model.codeimportresult import CodeImportResult
 from canonical.launchpad.database.oauth import OAuthNonce
 from canonical.launchpad.database.openidconsumer import OpenIDConsumerNonce
-from canonical.launchpad.interfaces import IMasterStore
+from canonical.launchpad.interfaces import IMasterStore, IRevisionSet
 from canonical.launchpad.interfaces.looptuner import ITunableLoop
 from canonical.launchpad.scripts.base import LaunchpadCronScript
 from canonical.launchpad.utilities.looptuner import LoopTuner
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
+
+from lp.code.model.codeimportresult import CodeImportResult
+from lp.code.model.revision import RevisionCache
 
 
 ONE_DAY_IN_SECONDS = 24*60*60
@@ -104,6 +108,25 @@ class OpenIDConsumerNoncePruner(TunableLoop):
         transaction.commit()
 
 
+class RevisionCachePruner(TunableLoop):
+    """A tunable loop to remove old revisions from the cache."""
+
+    maximum_chunk_size = 100
+
+    def isDone(self):
+        """We are done when there are no old revisions to delete."""
+        epoch = datetime.now(pytz.UTC) - timedelta(days=30)
+        store = IMasterStore(RevisionCache)
+        results = store.find(
+            RevisionCache, RevisionCache.revision_date < epoch)
+        return results.count() == 0
+
+    def __call__(self, chunk_size):
+        """Delegate to the `IRevisionSet` implementation."""
+        getUtility(IRevisionSet).pruneRevisionCache(chunk_size)
+        transaction.commit()
+
+
 class CodeImportResultPruner(TunableLoop):
     """A TunableLoop to prune unwanted CodeImportResult rows.
 
@@ -172,6 +195,7 @@ class HourlyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
     tunable_loops = [
         OAuthNoncePruner,
         OpenIDConsumerNoncePruner,
+        RevisionCachePruner,
         ]
 
 class DailyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
