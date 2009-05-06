@@ -26,7 +26,7 @@
         (<a href="+edit">edit</a>)
       </div>
 
-      <p><b>Emails:</b></p>
+      <p><b>Emails:</b> (<a href="+edit-emails">edit</a>)</p>
       <ul>
         <li tal:content="view/account/preferredemail/email" />
         <li tal:repeat="email view/account/validated_emails"

@@ -33,7 +33,7 @@ email addresses associated with their account:
     http://openid.launchpad.dev
     >>> print extract_text(find_tag_by_id(browser.contents, 'maincontent'))
     Logged in as New User (edit)
-    Emails:
+    Emails: (edit)
     new-user@example.com
 
 
@@ -42,7 +42,9 @@ email addresses associated with their account:
 The user can manage the email addresses associated with their account
 with the edit emails form:
 
-    >>> browser.open('http://openid.launchpad.dev/+edit-emails')
+    >>> browser.getLink('edit', index=1).click()
+    >>> print browser.url
+    http://openid.launchpad.dev/+edit-emails
     >>> print extract_text(find_tag_by_id(browser.contents, 'maincontent'))
     Change your e-mail settings
     Your e-mail addresses
@@ -97,7 +99,7 @@ We can now see that the user owns the new address:
 
     >>> print extract_text(find_tag_by_id(browser.contents, 'maincontent'))
     Logged in as New User (edit)
-    Emails:
+    Emails: (edit)
     new-user@example.com
     second-email@example.com
 
