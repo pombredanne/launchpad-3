@@ -136,7 +136,7 @@ from canonical.launchpad.interfaces.schema import *
 from canonical.launchpad.interfaces.scriptactivity import *
 from lp.soyuz.interfaces.section import *
 from canonical.launchpad.interfaces.searchservice import *
-from canonical.launchpad.interfaces.shipit import *
+from canonical.shipit.interfaces.shipit import *
 from lp.registry.interfaces.sourcepackage import *
 from lp.registry.interfaces.sourcepackagename import *
 from lp.soyuz.interfaces.sourcepackagerelease import *
@@ -172,7 +172,7 @@ from canonical.launchpad.interfaces.vpotexport import *
 from lp.registry.interfaces.wikiname import *
 from canonical.launchpad.interfaces.poexportrequest import *
 from lp.soyuz.interfaces.packagediff import *
-
+from canonical.launchpad.interfaces.packageset import *
 
 from lp.answers.interfaces.answercontact import *
 from lp.answers.interfaces.faq import *

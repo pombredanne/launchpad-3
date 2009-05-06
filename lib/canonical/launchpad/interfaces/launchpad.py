@@ -61,7 +61,6 @@ __all__ = [
     'IPrivateMaloneApplication',
     'IReadZODBAnnotation',
     'IRosettaApplication',
-    'IShipItApplication',
     'IStructuralHeaderPresentation',
     'IStructuralObjectPresentation',
     'IWebServiceApplication',
@@ -114,6 +113,7 @@ class ILaunchpadCelebrities(Interface):
     launchpad_beta_testers = Attribute("The Launchpad Beta Testers team.")
     launchpad_developers = Attribute("The Launchpad development team.")
     mailing_list_experts = Attribute("The Mailing List Experts team.")
+    obsolete_junk = Attribute("The Obsolete Junk project.")
     rosetta_experts = Attribute("The Rosetta Experts team.")
     savannah_tracker = Attribute("The GNU Savannah Bug Tracker.")
     shipit_admin = Attribute("The ShipIt Administrators.")
@@ -184,10 +184,6 @@ class IRosettaApplication(ILaunchpadApplication):
 
     def translator_count():
         """Return the number of people who have given translations."""
-
-
-class IShipItApplication(ILaunchpadApplication):
-    """ShipIt application root."""
 
 
 class IBazaarApplication(ILaunchpadApplication):

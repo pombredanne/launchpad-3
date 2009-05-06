@@ -93,7 +93,7 @@ from lp.answers.browser.question import *
 from lp.answers.browser.questiontarget import *
 from lp.soyuz.browser.queue import *
 from lp.registry.browser.root import *
-from canonical.launchpad.browser.shipit import *
+from canonical.shipit.browser.shipit import *
 from lp.registry.browser.sourcepackage import *
 from lp.soyuz.browser.sourcepackagerelease import *
 from canonical.launchpad.browser.specification import *

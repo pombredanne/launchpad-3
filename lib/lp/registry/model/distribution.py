@@ -102,7 +102,8 @@ from canonical.launchpad.interfaces.translationgroup import (
     TranslationPermission)
 from canonical.launchpad.validators.name import sanitize_name, valid_name
 from canonical.launchpad.webapp.interfaces import NotFoundError
-from lp.registry.interfaces.person import validate_public_person
+from lp.registry.interfaces.person import (
+    validate_person_not_private_membership, validate_public_person)
 from canonical.launchpad.webapp.url import urlparse
 
 from lp.answers.model.question import (
@@ -121,7 +122,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
     """A distribution of an operating system, e.g. Debian GNU/Linux."""
     implements(
         IDistribution, IFAQTarget, IHasBugSupervisor, IHasBuildRecords,
-        IHasIcon, IHasLogo, IHasMugshot, ILaunchpadUsage, IQuestionTarget, 
+        IHasIcon, IHasLogo, IHasMugshot, ILaunchpadUsage, IQuestionTarget,
         IStructuralSubscriptionTarget)
 
     _table = 'Distribution'
@@ -145,7 +146,9 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         storm_validator=validate_public_person, notNull=True)
     bug_supervisor = ForeignKey(
         dbName='bug_supervisor', foreignKey='Person',
-        storm_validator=validate_public_person, notNull=False, default=None)
+        storm_validator=validate_person_not_private_membership,
+        notNull=False,
+        default=None)
     bug_reporting_guidelines = StringCol(default=None)
     security_contact = ForeignKey(
         dbName='security_contact', foreignKey='Person',
@@ -1406,7 +1409,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         if sources_to_products:
             # Cache some more information to avoid us having to hit the
             # database hard for each product rendered.
-            list(Product.select("Product.id IN %s" % 
+            list(Product.select("Product.id IN %s" %
                  sqlvalues(sources_to_products.values()),
                  prejoins=["bug_supervisor", "bugtracker", "project",
                            "development_focus.branch"]))

@@ -6,6 +6,7 @@ __metaclass__ = type
 __all__ = []
 
 
+import transaction
 import unittest
 
 from canonical.launchpad.ftests import login, login_person, ANONYMOUS, logout
@@ -35,6 +36,7 @@ class MailingListAPITestCase(unittest.TestCase):
 
     def _assertMembership(self, expected):
         """Assert that the named team has exactly the expected membership."""
+        transaction.commit()
         all_info = self.api.getMembershipInformation([self.team.name])
         team_info = all_info.get(self.team.name)
         self.failIf(team_info is None)

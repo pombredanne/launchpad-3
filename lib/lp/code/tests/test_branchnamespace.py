@@ -755,7 +755,7 @@ class BaseCanCreateBranchesMixin:
 
     def _getNamespace(self, owner):
         # Return a namespace appropriate for the owner specified.
-        raise NotImplemented
+        raise NotImplementedError(self._getNamespace)
 
     def test_individual(self):
         # For a BranchTarget for an individual, only the individual can own
@@ -1118,7 +1118,7 @@ class BaseValidateNewBranchMixin:
 
     def _getNamespace(self, owner):
         # Return a namespace appropraite for the owner specified.
-        raise NotImplemented
+        raise NotImplementedError(self._getNamespace)
 
     def test_registrant_not_owner(self):
         # If the namespace owner is an individual, and the registrant is not

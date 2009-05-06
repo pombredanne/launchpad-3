@@ -217,10 +217,10 @@ displayed:
     Ubuntu version                  Upstream version
 
 
-== Recent activity ==
+== Version history ==
 
-The sourcepackage activity in a distribution is presented as the last
-5 distinct sourcepackage releases and their corresponding changelogs
+The sourcepackage version history in a distribution is presented as
+all distinct sourcepackage releases and their corresponding changelogs
 as mentioned above.
 
     >>> def print_displayed_versions(contents):
@@ -263,7 +263,7 @@ We will create 4 new versions of 'alsa-utils' sourcepackages.
     >>> flush_database_updates()
     >>> logout()
 
-When the page is reload only the most recent 5 version are presented.
+When the page is reload all versions are presented in descending order.
 
     >>> anon_browser.reload()
 
@@ -273,3 +273,5 @@ When the page is reload only the most recent 5 version are presented.
     2.1
     2.0
     1.0.9a-4ubuntu1
+    1.0.9a-4
+    1.0.8-1ubuntu1

@@ -57,6 +57,7 @@
     <include file="packagebugsupervisor.zcml" />
     <include file="packagecopyrequest.zcml" />
     <include file="packagerelationship.zcml" />
+    <include file="packageset.zcml" />
     <include file="packaging.zcml" />
     <include file="personnotification.zcml" />
     <include file="personproduct.zcml" />
@@ -68,7 +69,6 @@
     <include file="potmsgset.zcml" />
     <include file="potranslation.zcml" />
     <include file="scriptactivity.zcml" />
-    <include file="shipit.zcml" />
     <include file="specification.zcml" />
     <include file="specificationbranch.zcml" />
     <include file="specificationdependency.zcml" />

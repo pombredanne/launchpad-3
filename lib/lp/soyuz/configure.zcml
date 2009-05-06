@@ -449,7 +449,11 @@
                 uploadersForPackage
                 queueAdminsForComponent
                 componentsForQueueAdmin
-                permissionsForPerson"/>
+                permissionsForPerson
+                uploadersForPackageset
+                packagesetsForUploader
+                packagesetsForSourceUploader
+                isSourceUploadAllowed"/>
         <require
             permission="launchpad.Edit"
             attributes="
@@ -458,7 +462,9 @@
                 newQueueAdmin
                 deletePackageUploader
                 deleteComponentUploader
-                deleteQueueAdmin"/>
+                deleteQueueAdmin
+                newPackagesetUploader
+                deletePackagesetUploader"/>
     </securedutility>
     
     <!-- Build -->

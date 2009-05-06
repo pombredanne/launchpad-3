@@ -51,7 +51,8 @@ from lp.answers.model.faq import FAQ, FAQSearch
 from lp.registry.model.mentoringoffer import MentoringOffer
 from lp.registry.model.milestone import (
     HasMilestonesMixin, Milestone)
-from lp.registry.interfaces.person import validate_public_person
+from lp.registry.interfaces.person import (
+    validate_person_not_private_membership, validate_public_person)
 from lp.registry.model.announcement import MakesAnnouncements
 from canonical.launchpad.database.packaging import Packaging
 from lp.registry.model.pillar import HasAliasMixin
@@ -185,7 +186,9 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         notNull=True)
     bug_supervisor = ForeignKey(
         dbName='bug_supervisor', foreignKey='Person',
-        storm_validator=validate_public_person, notNull=False, default=None)
+        storm_validator=validate_person_not_private_membership,
+        notNull=False,
+        default=None)
     security_contact = ForeignKey(
         dbName='security_contact', foreignKey='Person',
         storm_validator=validate_public_person, notNull=False,
@@ -1283,4 +1286,3 @@ class ProductSet:
             Product.sourceforgeproject != None)
 
         return store.find(Product, conditions)
-

@@ -522,12 +522,19 @@
     </browser:pages>
     <browser:url
         for="lp.soyuz.interfaces.archivesubscriber.IArchiveSubscriber"
-        path_expression="string:+subscriptions/${subscriber/name}/+edit"
+        path_expression="string:+subscriptions/${subscriber/name}"
         attribute_to_parent="archive"/>
     <browser:url
         for="lp.soyuz.interfaces.archivesubscriber.IPersonalArchiveSubscription"
         path_expression="string:+archivesubscriptions/${archive/id}"
         attribute_to_parent="subscriber"/>
+   <browser:page
+        name="+index"
+        facet="overview"
+        for="lp.soyuz.interfaces.archivesubscriber.IArchiveSubscriber"
+        class="lp.soyuz.browser.archivesubscription.ArchiveSubscriptionEditView"
+        permission="launchpad.Edit"
+        template="../templates/archive-subscriber-edit.pt" />
     <browser:page
         name="+edit"
         facet="overview"

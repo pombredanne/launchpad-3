@@ -134,6 +134,15 @@ receive the DDEB.
     ...     owner=ubuntu.owner, purpose=ArchivePurpose.COPY,
     ...     name='test-rebuild')
 
+    >>> copied_source = source_ancestry.copyTo(
+    ...     hoary, source_ancestry.pocket, copy)
+
+    >>> LaunchpadZopelessLayer.txn.commit()
+    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+
+    >>> binary_ancestry2 = test_publisher.getPubBinaries(
+    ...     binaryname='debug-bin', pub_source=copied_source, archive=copy)
+
     >>> src_pub = test_publisher.getPubSource(
     ...     sourcename='debug', version='1.0', archive=copy)
 
