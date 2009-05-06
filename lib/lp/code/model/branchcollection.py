@@ -70,7 +70,7 @@ class GenericBranchCollection:
 
     def count(self):
         """See `IBranchCollection`."""
-        return self.getBranches(False, False).count()
+        return self.getBranches().count()
 
     @property
     def store(self):
@@ -110,7 +110,7 @@ class GenericBranchCollection:
         # XXX: JonathanLange 2009-03-04 bug=337494: getBranches() returns a
         # decorated set, so we get at the underlying set so we can get at the
         # private and juicy _get_select.
-        select = self.getBranches(False, False).result_set._get_select()
+        select = self.getBranches().result_set._get_select()
         select.columns = (Branch.id,)
         return select
 
@@ -118,18 +118,11 @@ class GenericBranchCollection:
         """Return the where expressions for this collection."""
         return self._branch_filter_expressions
 
-    def getBranches(self, join_owner=True, join_product=True):
+    def getBranches(self):
         """See `IBranchCollection`."""
         tables = [Branch] + self._tables.values()
-        if join_owner and Owner not in self._tables:
-            tables.append(Join(Owner, Branch.owner == Owner.id))
-        if join_product and Product not in self._tables:
-            tables.append(LeftJoin(Product, Branch.product == Product.id))
         expressions = self._getBranchExpressions()
         results = self.store.using(*tables).find(Branch, *expressions)
-        # XXX TimPenhey 2008-03-16 bug 343313
-        # Remove the default ordering on the Branch table.
-        results = results.order_by()
         def identity(x):
             return x
         # Decorate the result set to work around bug 217644.
@@ -232,13 +225,13 @@ class GenericBranchCollection:
 
     def search(self, search_term):
         """See `IBranchCollection`."""
-        # XXX: JonathanLange 2009-02-23: This matches the old search algorithm
-        # that used to live in vocabularies/dbojects.py. It's not actually
-        # very good -- really it should match based on substrings of the
-        # unique name and sort based on relevance.
+        # XXX: JonathanLange 2009-02-23 bug 372591: This matches the old
+        # search algorithm that used to live in vocabularies/dbojects.py. It's
+        # not actually very good -- really it should match based on substrings
+        # of the unique name and sort based on relevance.
         branch = self._getExactMatch(search_term)
         if branch is not None:
-            if branch in self.getBranches(False, False):
+            if branch in self.getBranches():
                 return CountableIterator(1, [branch])
             else:
                 return CountableIterator(0, [])

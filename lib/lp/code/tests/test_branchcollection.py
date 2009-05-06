@@ -111,7 +111,8 @@ class TestBranchCollectionFilters(TestCaseWithFactory):
         branch_c = self.factory.makePersonalBranch()
         self.assertEqual(
             [branch_a, branch_b, branch_c],
-            list(self.all_branches.getBranches().order_by(Product.name)))
+            list(self.all_branches.getBranches()
+                 .order_by(Branch.target_suffix)))
 
     def test_count_respects_visibleByUser_filter(self):
         # IBranchCollection.count() returns the number of branches that
