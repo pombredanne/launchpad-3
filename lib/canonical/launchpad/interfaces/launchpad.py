@@ -61,7 +61,6 @@ __all__ = [
     'IPrivateMaloneApplication',
     'IReadZODBAnnotation',
     'IRosettaApplication',
-    'IShipItApplication',
     'IStructuralHeaderPresentation',
     'IStructuralObjectPresentation',
     'IWebServiceApplication',
@@ -184,10 +183,6 @@ class IRosettaApplication(ILaunchpadApplication):
 
     def translator_count():
         """Return the number of people who have given translations."""
-
-
-class IShipItApplication(ILaunchpadApplication):
-    """ShipIt application root."""
 
 
 class IBazaarApplication(ILaunchpadApplication):

@@ -21,6 +21,7 @@ from StringIO import StringIO
 import csv
 from datetime import datetime, timedelta
 import itertools
+import os
 import random
 import re
 
@@ -36,6 +37,7 @@ from sqlobject.sqlbuilder import AND, SQLConstant
 from sqlobject import (
     ForeignKey, StringCol, BoolCol, SQLObjectNotFound, IntCol)
 
+import canonical.shipit
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.uuid import generate_uuid
@@ -46,15 +48,14 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 
-from canonical.launchpad.helpers import (
-    intOrZero, get_email_template, shortlist)
+from canonical.launchpad.helpers import intOrZero, shortlist
 from canonical.launchpad.datetimeutils import make_mondays_between
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.mail.sendmail import simple_sendmail
 
 from canonical.launchpad.interfaces.account import IAccount
 from lp.registry.interfaces.person import IPerson
-from canonical.launchpad.interfaces.shipit import (
+from canonical.shipit.interfaces.shipit import (
     IRequestedCDs, IShipitAccount, IShipItReport, IShipItReportSet,
     IShipItSurveySet, IShipment, IShipmentSet, IShippingRequest,
     IShippingRequestSet, IShippingRun, IShippingRunSet,
@@ -63,8 +64,8 @@ from canonical.launchpad.interfaces.shipit import (
     ShipItDistroSeries, ShipItFlavour, ShipItSurveySchema,
     ShippingRequestPriority, ShippingRequestStatus, ShippingRequestType,
     ShippingService, SOFT_MAX_SHIPPINGRUN_SIZE)
-from canonical.launchpad.interfaces import (
-    ILaunchpadCelebrities, ILibraryFileAliasSet)
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.database.account import Account
 from canonical.launchpad.database.country import Country
 from lp.registry.model.karma import Karma
@@ -451,7 +452,11 @@ class ShippingRequestSet:
                        request.getTotalCDs(), canonical_url(request)))
             request_messages.append(info)
             getattr(request, method_name)()
-        template = get_email_template('shipit-mass-process-notification.txt')
+        fullpath = os.path.join(
+            os.path.dirname(canonical.shipit.__file__),
+            'emailtemplates',
+            'shipit-mass-process-notification.txt')
+        template = open(fullpath).read()
         body = template % {
             'requests_info': "\n".join(request_messages),
             'action': action, 'status': status}
