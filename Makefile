@@ -99,9 +99,15 @@ inplace: build
 
 build: $(BZR_VERSION_INFO) compile apidoc
 
-compile:
+bin/buildout:
 	$(PYTHON) bootstrap.py
+
+bin/py: zc.buildout
+
+zc.buildout: bin/buildout
 	./bin/buildout configuration:instance_name=${LPCONFIG}
+
+compile: bin/py
 	${SHHH} $(MAKE) -C sourcecode build PYTHON=${PYTHON} \
 	    PYTHON_VERSION=${PYTHON_VERSION} LPCONFIG=${LPCONFIG}
 	${SHHH} LPCONFIG=${LPCONFIG} $(PY) -t buildmailman.py
