@@ -3,9 +3,10 @@
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   omit-tag="">
-<input size="19" type="text"
+<input size="19" type="text" class="yui2-date-calendar withtime"
    tal:attributes="name view/name; id view/name; value view/formvalue;
                    disabled view/disabled_flag;" />
+<!--
 <a href="javascript:void(0)"
    tal:attributes="
      onclick string:pickDateTime('${view/name}', ${view/daterange});"
@@ -18,5 +19,5 @@
      href="/people/+me/+editlocation">
     <img src="/@@/edit"/>
   </a>
-</tal:display_zone>
+</tal:display_zone>-->
 </tal:root>
