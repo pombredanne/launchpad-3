@@ -1,4 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
 
 """Policy management for the upload handler."""
 
@@ -168,7 +168,7 @@ class AbstractUploadPolicy:
 
     def policySpecificChecks(self, upload):
         """Implement any policy-specific checks in child."""
-        raise NotImplemented(
+        raise NotImplementedError(
             "Policy specific checks must be implemented in child policies.")
 
     def autoApprove(self, upload):
