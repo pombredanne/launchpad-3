@@ -312,7 +312,7 @@ class Archive(SQLBase):
 
     def getPublishedSources(self, name=None, version=None, status=None,
                             distroseries=None, pocket=None,
-                            exact_match=False, published_since_date=None):
+                            exact_match=False, created_since_date=None):
         """See `IArchive`."""
         clauses = ["""
             SourcePackagePublishingHistory.archive = %s AND
@@ -365,10 +365,10 @@ class Archive(SQLBase):
                 SourcePackagePublishingHistory.pocket = %s
             """ % sqlvalues(pocket))
 
-        if published_since_date is not None:
+        if created_since_date is not None:
             clauses.append("""
-                SourcePackagePublishingHistory.datepublished >= %s
-            """ % sqlvalues(published_since_date))
+                SourcePackagePublishingHistory.datecreated >= %s
+            """ % sqlvalues(created_since_date))
 
         preJoins = [
             'sourcepackagerelease.creator',

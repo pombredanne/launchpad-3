@@ -345,11 +345,33 @@ Combining 'name' and 'distroseries' filters:
     ...     name='cd', distroseries=breezy_autotest).count()
     1
 
-Using the 'published_since_date' filter:
+Using the 'created_since_date' filter. This argument accept both,
+iso-timestamp strings and datetime objects.
 
     >>> cprov_archive.getPublishedSources(
-    ...     published_since_date='2007-07-09 14:00:00').count()
+    ...     created_since_date='2007-07-09 14:00:00').count()
+    0
+
+    >>> import datetime
+    >>> instant = datetime.datetime(year=2007, month=7, day=9, hour=14)
+
+    >>> cprov_archive.getPublishedSources(
+    ...     created_since_date=instant).count()
+    0
+
+As we move the given 'create_since_date' instant to the past the
+publications in Celso's PPA start to show up.
+
+    >>> one_hour_step = datetime.timedelta(hours=1)
+    >>> one_hour_earlier = instant - one_hour_step
+    >>> cprov_archive.getPublishedSources(
+    ...     created_since_date=one_hour_earlier).count()
     1
+
+    >>> two_hours_earlier = one_hour_earlier - one_hour_step
+    >>> cprov_archive.getPublishedSources(
+    ...     created_since_date=two_hours_earlier).count()
+    3
 
 
 === Binary publication lookups ===
