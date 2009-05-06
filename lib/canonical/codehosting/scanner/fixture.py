@@ -96,8 +96,8 @@ def with_fixture(fixture):
 
 def run_with_fixture(fixture, f, *args, **kwargs):
     """Run `f` within the given `fixture`."""
-    fixture.setUp()
     try:
+        fixture.setUp()
         return f(*args, **kwargs)
     finally:
         fixture.tearDown()
