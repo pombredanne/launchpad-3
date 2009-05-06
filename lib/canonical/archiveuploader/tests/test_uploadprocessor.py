@@ -333,7 +333,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
     def testLocateChangesFiles(self):
         """locateChangesFiles should return the .changes files in a folder.
 
-        'source' changesfiles come first files that are not named as
+        'source' changesfiles come first. Files that are not named as
         changesfiles are ignored.
         """
         testdir = tempfile.mkdtemp()

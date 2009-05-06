@@ -231,9 +231,12 @@ class UploadProcessor:
             # Skip lockfile deletion, see similar code in poppyinterface.py.
             fsroot_lock.release(skip_delete=True)
 
-        dir_names = [dir_name for dir_name in dir_names if
-                     os.path.isdir(os.path.join(fsroot, dir_name))]
-        return sorted(dir_names)
+        sorted_dir_names =  sorted(
+            dir_name
+            for dir_name in dir_names
+            if os.path.isdir(os.path.join(fsroot, dir_name)))
+
+        return sorted_dir_names
 
     def locateChangesFiles(self, upload_path):
         """Locate .changes files in the given upload directory.
