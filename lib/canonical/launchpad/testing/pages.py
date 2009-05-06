@@ -143,8 +143,11 @@ class DuplicateIdError(Exception):
 
 def find_tag_by_id(content, id):
     """Find and return the tag with the given ID"""
-    elements_with_id = [tag for tag in BeautifulSoup(
-        content, parseOnlyThese=SoupStrainer(id=id))]
+    if isinstance(content, PageElement):
+        elements_with_id = content.findAll(True, {'id': id})
+    else:
+        elements_with_id = [tag for tag in BeautifulSoup(
+                            content, parseOnlyThese=SoupStrainer(id=id))]
     if len(elements_with_id) == 0:
         return None
     elif len(elements_with_id) == 1:

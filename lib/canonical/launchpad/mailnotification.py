@@ -1145,14 +1145,28 @@ def notify_new_ppa_subscription(subscription, event):
         replacements = {
             'recipient_name': person.displayname,
             'registrant_name': registrant_name,
+            'registrant_profile_url': canonical_url(subscription.registrant),
             'ppa_name': ppa_name,
             'recipient_subscriptions_url': recipient_subscriptions_url,
             }
         body = MailWrapper(72).format(template % replacements,
                                       force_wrap=True)
 
-        simple_sendmail_from_person(
-            subscription.registrant, to_address, subject, body)
+        from_address = format_address(
+            registrant_name, config.canonical.noreply_from_address)
+
+        headers = {
+            'Sender': config.canonical.bounce_address,
+            }
+
+        # If the registrant has a preferred email, then use it for the
+        # Reply-To.
+        if subscription.registrant.preferredemail:
+            headers['Reply-To'] = format_address(
+                registrant_name,
+                subscription.registrant.preferredemail.email)
+
+        simple_sendmail(from_address, to_address, subject, body, headers)
 
 
 def encode(value):

@@ -21,7 +21,8 @@ from zope.schema import Choice
 from canonical.launchpad import _
 from canonical.cachedproperty import cachedproperty
 
-from canonical.launchpad.interfaces.bugtask import BugTaskSearchParams, IBugTaskSet
+from canonical.launchpad.interfaces.bugtask import (
+    BugTaskSearchParams, IBugTaskSet)
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lp.registry.interfaces.milestone import (
     IMilestone, IMilestoneSet, IProjectMilestone)
@@ -32,6 +33,7 @@ from canonical.launchpad.webapp import (
 
 from canonical.widgets import DateWidget
 
+from lp.registry.browser import RegistryDeleteViewMixin
 from lp.registry.browser.product import ProductDownloadFileMixin
 
 
@@ -274,12 +276,8 @@ class MilestoneEditView(LaunchpadEditFormView):
         self.updateContextFromData(data)
         self.next_url = canonical_url(self.context)
 
-    @property
-    def cancel_url(self):
-        return canonical_url(self.context)
 
-
-class MilestoneDeleteView(LaunchpadFormView):
+class MilestoneDeleteView(LaunchpadFormView, RegistryDeleteViewMixin):
     """A view for deleting an `IMilestone`."""
     schema = IMilestone
     field_names = []
@@ -292,45 +290,31 @@ class MilestoneDeleteView(LaunchpadFormView):
     @cachedproperty
     def bugtasks(self):
         """The list `IBugTask`s targeted to the milestone."""
-        params = BugTaskSearchParams(milestone=self.context, user=None)
-        bugtasks = getUtility(IBugTaskSet).search(params)
-        return list(bugtasks)
+        return self._getBugtasks(self.context)
 
     @cachedproperty
     def specifications(self):
         """The list `ISpecification`s targeted to the milestone."""
-        return list(self.context.specifications)
+        return self._getSpecifications(self.context)
 
     @cachedproperty
     def product_release(self):
         """The `IProductRelease` associated with the milestone."""
-        return self.context.product_release
+        return self._getProductRelease(self.context)
 
     @cachedproperty
     def product_release_files(self):
         """The list of `IProductReleaseFile`s related to the milestone."""
-        if self.product_release:
-            return list(self.product_release.files)
-        else:
-            return []
+        return self._getProductReleaseFiles(self.context)
 
     @action('Delete this Milestone', name='delete')
     def delete_action(self, action, data):
         # Any associated bugtasks and specifications are untargeted.
-        for bugtask in self.bugtasks:
-            bugtask.milestone = None
-        for spec in self.context.specifications:
-            spec.milestone = None
-        # Any associated product release and its files are deleted.
-        for release_file in self.product_release_files:
-            release_file.destroySelf()
-        if self.product_release is not None:
-            self.product_release.destroySelf()
+        series = self.context.productseries
+        name = self.context.name
+        self._deleteMilestone(self.context)
         self.request.response.addInfoNotification(
-            "Milestone %s deleted." % self.context.name)
-        self.next_url = canonical_url(self.context.productseries)
-        self.context.destroySelf()
+            "Milestone %s deleted." % name)
+        self.next_url = canonical_url(series)
 
-    @property
-    def cancel_url(self):
-        return canonical_url(self.context)
+
