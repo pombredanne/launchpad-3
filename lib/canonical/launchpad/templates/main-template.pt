@@ -30,6 +30,7 @@
   "
 >
   <head tal:define="yui string:${icingroot}/yui/3.0.0pr2/build;
+                yui2 string:${icingroot}/yui_2.7.0b/build;
                 lazr_js string:${icingroot}/lazr/build;
                 lp_js string:${icingroot}/build"
   >
@@ -102,6 +103,10 @@
         tal:attributes="href
         string:${icingroot}/lazr/build/activator/assets/skins/sam/activator.css"
         />
+    <link rel="stylesheet" type="text/css"
+        tal:attributes="href
+        string:${yui2}/calendar/assets/skins/sam/calendar.css"
+        />
 
     <tal:devmode condition="devmode">
       <script type="text/javascript"
@@ -148,6 +153,17 @@
               tal:attributes="src string:${yui}/widget/widget-stdmod.js"></script>
       <script type="text/javascript"
               tal:attributes="src string:${yui}/overlay/overlay.js"></script>
+
+      <script type="text/javascript"
+          tal:attributes="src string:${yui2}/yahoo/yahoo.js"></script>
+      <script type="text/javascript"
+          tal:attributes="src string:${yui2}/event/event.js"></script>
+      <script type="text/javascript"
+          tal:attributes="src string:${yui2}/dom/dom.js"></script>
+      <script type="text/javascript"
+          tal:attributes="src string:${yui2}/calendar/calendar.js"></script>
+      <script type="text/javascript"
+          tal:attributes="src string:${lp_js}/lp/calendar.js"></script>
 
       <script type="text/javascript"
               tal:attributes="src string:${icingroot}/MochiKit.js"></script>
@@ -452,30 +468,6 @@
                  top:-500px; left:-500px;">
       </iframe>
     </tal:datetimepicker>
-    <tal:datepicker condition="request/needs_datepicker_iframe">
-      <script language="Javascript" type="text/javascript">
-          function pickDate(field, range) {
-              e = document.getElementById(field);
-              if (e == null) {
-                  alert(field);
-              }
-              if(self.DatePicker) {
-                  DatePicker.fPopCalendar(e, range);
-                  return false;
-              }
-          }
-      </script>
-      <iframe
-          width="174" height="189"
-          name="gToday:datepicker:agenda.js:DatePicker:plugins.js"
-          id="gToday:datepicker:agenda.js:DatePicker:plugins.js"
-          src="/+popcalxp/ipopeng.htm"
-          scrolling="no"
-          frameborder="0"
-          style="visibility:visible; z-index:9999; position:absolute;
-                 top:-500px; left:-500px;">
-      </iframe>
-    </tal:datepicker>
 
     <tal:cache condition="view/user|nothing"
                define="cache request/webservicerequest:cache;
