@@ -76,4 +76,3 @@ class BugPortletSubcribersContents(LaunchpadView):
         """Get the list of subscriptions to duplicates of this bug."""
         return self.context.getSubscriptionsFromDuplicates()
 
-
