@@ -80,17 +80,17 @@ class RecipientReason:
 
     @classmethod
     def forBranchSubscriber(
-        klass, subscription, recipient, rationale, merge_proposal=None,
+        cls, subscription, recipient, rationale, merge_proposal=None,
         branch_identity_cache=None):
         """Construct RecipientReason for a branch subscriber."""
-        return klass(
+        return cls(
             subscription.person, recipient, subscription.branch, rationale,
             '%(entity_is)s subscribed to branch %(branch_name)s.',
             merge_proposal, subscription.max_diff_lines,
             branch_identity_cache=branch_identity_cache)
 
     @classmethod
-    def forReviewer(klass, vote_reference, recipient,
+    def forReviewer(cls, vote_reference, recipient,
                     branch_identity_cache=None):
         """Construct RecipientReason for a reviewer.
 
@@ -104,25 +104,25 @@ class RecipientReason:
         else:
             reason_template = (
                 '%(entity_is)s reviewing %(merge_proposal)s.')
-        return klass(vote_reference.reviewer, recipient, branch,
+        return cls(vote_reference.reviewer, recipient, branch,
                      'Reviewer', reason_template, merge_proposal,
                      branch_identity_cache=branch_identity_cache)
 
     @classmethod
-    def forRegistrant(klass, merge_proposal, branch_identity_cache=None):
+    def forRegistrant(cls, merge_proposal, branch_identity_cache=None):
         """Construct RecipientReason for a proposal registrant.
 
         The registrant will be the sole recipient.
         """
         branch = merge_proposal.source_branch
         reason_template = 'You proposed %(branch_name)s for merging.'
-        return klass(merge_proposal.registrant, merge_proposal.registrant,
+        return cls(merge_proposal.registrant, merge_proposal.registrant,
                      merge_proposal.source_branch,
                      'Registrant', reason_template, merge_proposal,
                      branch_identity_cache=branch_identity_cache)
 
     @classmethod
-    def forSourceOwner(klass, merge_proposal, branch_identity_cache=None):
+    def forSourceOwner(cls, merge_proposal, branch_identity_cache=None):
         """Construct RecipientReason for the source branch owner.
 
         The owner of the source branch will be the sole recipient.  If the
@@ -133,19 +133,19 @@ class RecipientReason:
         if owner.is_team:
             return None
         reason_template = 'You are the owner of %(branch_name)s.'
-        return klass(owner, owner, branch, 'Owner', reason_template,
+        return cls(owner, owner, branch, 'Owner', reason_template,
                      merge_proposal,
                      branch_identity_cache=branch_identity_cache)
 
     @classmethod
-    def forBranchOwner(klass, branch, recipient,
+    def forBranchOwner(cls, branch, recipient,
                        branch_identity_cache=None):
         """Construct RecipientReason for a branch owner.
 
         The owner will be the sole recipient.
         """
-        return klass(branch.owner, recipient, branch,
-                     klass.makeRationale('Owner', branch.owner, recipient),
+        return cls(branch.owner, recipient, branch,
+                     cls.makeRationale('Owner', branch.owner, recipient),
                      'You are getting this email as %(lc_entity_is)s the'
                      ' owner of the branch and someone has edited the'
                      ' details.',
@@ -197,7 +197,7 @@ class BranchMailer(BaseMailer):
         self.revno = revno
 
     @classmethod
-    def forBranchModified(klass, branch, recipients, from_address, delta):
+    def forBranchModified(cls, branch, recipients, from_address, delta):
         """Construct a BranchMailer for mail about a branch modification.
 
         :param branch: The branch that was modified.
@@ -207,13 +207,13 @@ class BranchMailer(BaseMailer):
         :param delta: an IBranchDelta representing the modification.
         :return: a BranchMailer.
         """
-        subject = klass._branchSubject(branch)
-        return klass(
+        subject = cls._branchSubject(branch)
+        return cls(
             subject, 'branch-modified.txt', recipients, from_address,
             delta=delta)
 
     @classmethod
-    def forRevision(klass, db_branch, revno, from_address, contents, diff,
+    def forRevision(cls, db_branch, revno, from_address, contents, diff,
                     subject):
         """Construct a BranchMailer for mail about branch revisions.
 
@@ -236,8 +236,8 @@ class BranchMailer(BaseMailer):
                 subscriber_reason = RecipientReason.forBranchSubscriber(
                     subscription, recipient, rationale)
                 recipient_dict[recipient] = subscriber_reason
-        subject = klass._branchSubject(db_branch, subject)
-        return klass(subject, 'branch-modified.txt', recipient_dict,
+        subject = cls._branchSubject(db_branch, subject)
+        return cls(subject, 'branch-modified.txt', recipient_dict,
             from_address, contents=contents, diff=diff, revno=revno)
 
     @staticmethod
