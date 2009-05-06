@@ -313,33 +313,39 @@ class TestUploadProcessor(TestUploadProcessorBase):
         up = UploadProcessor(self.options, None, self.log)
 
     def testLocateDirectories(self):
-        """locateDirectories should return a list of subdirs in a directory.
+        """Return a sorted list of subdirs in a directory.
 
         We don't test that we block on the lockfile, as this is trivial
         code but tricky to test.
         """
         testdir = tempfile.mkdtemp()
         try:
+            os.mkdir("%s/dir3" % testdir)
             os.mkdir("%s/dir1" % testdir)
             os.mkdir("%s/dir2" % testdir)
 
             up = UploadProcessor(self.options, None, self.log)
             located_dirs = up.locateDirectories(testdir)
-            self.assertEqual(sorted(located_dirs), ["dir1", "dir2"])
+            self.assertEqual(located_dirs, ['dir1', 'dir2', 'dir3'])
         finally:
             shutil.rmtree(testdir)
 
     def testLocateChangesFiles(self):
-        """locateChangesFiles should return the .changes files in a folder."""
+        """locateChangesFiles should return the .changes files in a folder.
+
+        'source' changesfiles come first files that are not named as
+        changesfiles are ignored.
+        """
         testdir = tempfile.mkdtemp()
         try:
             open("%s/1.changes" % testdir, "w").close()
-            open("%s/2.changes" % testdir, "w").close()
+            open("%s/2_source.changes" % testdir, "w").close()
             open("%s/3.not_changes" % testdir, "w").close()
+
             up = UploadProcessor(self.options, None, self.log)
             located_files = up.locateChangesFiles(testdir)
             self.assertEqual(
-                sorted(located_files), ["1.changes", "2.changes"])
+                located_files, ["2_source.changes", "1.changes"])
         finally:
             shutil.rmtree(testdir)
 
