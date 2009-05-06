@@ -225,9 +225,9 @@ class SSHTestCase(TestCaseWithTransport, LoomTestMixin):
             config.codehosting.authentication_endpoint)
         branchfs = xmlrpclib.ServerProxy(config.codehosting.branchfs_endpoint)
         if creator is None:
-            creator_id = authserver.getUser(user)['id']
+            creator_id = authserver.getUserAndSSHKeys(user)['id']
         else:
-            creator_id = authserver.getUser(creator)['id']
+            creator_id = authserver.getUserAndSSHKeys(creator)['id']
         if branch_root is None:
             branch_root = self.server._mirror_root
         branch_id = branchfs.createBranch(

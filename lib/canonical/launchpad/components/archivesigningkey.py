@@ -63,11 +63,13 @@ class ArchiveSigningKey:
         assert self.archive.signing_key is None, (
             "Cannot override signing_keys.")
 
-        # Default PPAs are always created first, their signing-key will
-        # be always available when a named-ppa gets processed. In this case,
-        # instead of generating a new key we reuse the existing one.
+        # Always generate signing keys for the default PPA, even if it
+        # was not expecifically requested. The default PPA signing key
+        # is then propagated to the context named-ppa.
         default_ppa = self.archive.owner.archive
-        if self.archive is not default_ppa:
+        if self.archive != default_ppa:
+            if default_ppa.signing_key is None:
+                IArchiveSigningKey(default_ppa).generateSigningKey()
             self.archive.signing_key = default_ppa.signing_key
             return
 
