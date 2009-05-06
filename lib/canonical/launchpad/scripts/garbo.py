@@ -163,11 +163,11 @@ class RevisionAuthorEmailLinker(TunableLoop):
 
     `EmailAddress` objects are looked up for `RevisionAuthor` objects
     that have not yet been linked to a `Person`.  If the
-    `EmailAddress` is linked to a person, then the the
-    `RevisionAuthor` is linked to the same.
+    `EmailAddress` is linked to a person, then the `RevisionAuthor` is
+    linked to the same.
     """
 
-    maximum_chunk_size = 100
+    maximum_chunk_size = 1000
 
     def __init__(self):
         self.author_store = IMasterStore(RevisionAuthor)
@@ -222,11 +222,11 @@ class HWSubmissionEmailLinker(TunableLoop):
 
     `EmailAddress` objects are looked up for `HWSubmission` objects
     that have not yet been linked to a `Person`.  If the
-    `EmailAddress` is linked to a person, then the the `HWSubmission`
-    is linked to the same.
+    `EmailAddress` is linked to a person, then the `HWSubmission` is
+    linked to the same.
     """
 
-    maximum_chunk_size = 100
+    maximum_chunk_size = 1000
 
     def __init__(self):
         self.submission_store = IMasterStore(HWSubmission)
@@ -285,7 +285,7 @@ class MailingListSubscriptionPruner(TunableLoop):
     subscription should go away too.
     """
 
-    maximum_chunk_size = 100
+    maximum_chunk_size = 1000
 
     def __init__(self):
         self.subscription_store = IMasterStore(MailingListSubscription)
