@@ -677,7 +677,7 @@ class TestMergeProposalNotification(TestCaseWithFactory):
 
     def test_getNotificationRecipients_Registrant(self):
         # If the registrant of the proposal is being notified of the
-        # proposals, they get their rational set to "Registrant".
+        # proposals, they get their rationale set to "Registrant".
         registrant = self.factory.makePerson()
         bmp = self.factory.makeBranchMergeProposal(registrant=registrant)
         # Make sure that the registrant is subscribed.
