@@ -106,7 +106,13 @@ label, p {max-width: 60em;}
 html {background: #fff; color: #000; font: 83.33% sans-serif;}
 /* Monospace text uses the reciprocal of this percentage, so that it
 exactly obeys your preferred monospace font size: */
-code, pre, samp, tt, #bug-description, .bug-comment {font: 120% monospace;}
+code, pre, samp, tt, #bug-description, .bug-comment, .bug-activity {
+  font: 120% monospace;
+}
+
+.bug-activity {
+  color: #555;
+}
 
 /* Links are blue, brighter when clicked, and greyer once visited: */
 :link, :visited               {color: #03a;    text-decoration: none;}
@@ -195,6 +201,15 @@ table.form .error {background: none;}
     color: red;
     font-weight: bold;
 }
+.sml-informational {
+  background: #d4e8ff url('/+icing/blue-fade-to-grey');
+  border: solid #666;
+  border-width: 1px 2px 2px 1px;
+  color: black;
+  padding: 5px 5px 5px 5px;
+  width:44em;
+}
+.sml-informational::before {content: url('/@@/info');}
 
 .helpwanted {background-color: #fafca9; color: black; border: 1px solid black;
     padding: 0.5em; font-size: smaller; padding-left: 3em
@@ -1322,16 +1337,20 @@ a.add {
 .boardBugActivityBody {
   padding: 0.5em 12px;
   background-color: #fafafa;
-  color: #555;
 }
 .boardBugActivityBody table {
   margin-bottom: 0.5em;
   margin-top: 0.5em;
 }
 .boardCommentContent { line-height: 1.5em;}
-.boardCommentFooter {background-color: #eee; padding: 0.5em 12px;}
+.boardCommentFooter {
+  background-color: #eee;
+  padding: 0.5em 12px;
+  border-top: 1px solid #ddd;
+}
 dl.faq dt {font-weight: bold;}
 dl.faq dd {margin: 1em 0 2em 4em;}
+.adminHiddenComment {background-color:yellow;}
 
 /* --- Overview --- */
 
@@ -1367,7 +1386,14 @@ body.tab-overview #actions h2, body.tab-overview #actions h2:hover {
   background: none;
   color: #83ad23;
 }
-
+body.tab-overview #description {
+    width: 50em;
+}
+body.tab-overview #description fieldset {
+    border: 1px solid gray;
+    padding: 0 1em;
+    margin:0 1em 1em 0;
+}
 /* The top-most Person portlet, Contact Details, is allowed to float up and
 beside the mugshot. */
 #contact-details {clear: none;}

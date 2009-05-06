@@ -1245,11 +1245,6 @@ class ProductReviewLicenseView(ProductEditView):
                     'approved to use Launchpad.  Proprietary projects '
                     'must use the commercial subscription voucher system '
                     'to be allowed to use Launchpad.')
-            elif License.OTHER_OPEN_SOURCE not in licenses:
-                self.setFieldError(
-                    'license_approved',
-                    'Only "Other/Open Source" licenses may be '
-                    'manually approved to use Launchpad.')
             else:
                 # An Other/Open Source license was specified so it may be
                 # approved.
@@ -1580,10 +1575,11 @@ class ProductEditPeopleView(LaunchpadEditFormView):
         by oldOwner of the product.
 
         """
+        from zope.security.proxy import removeSecurityProxy
         import_queue = getUtility(ITranslationImportQueue)
         for entry in import_queue.getAllEntries(target=product):
             if entry.importer == oldOwner:
-                entry.importer = newOwner
+                removeSecurityProxy(entry).importer = newOwner
         for series in product.serieses:
             if series.owner == oldOwner:
                 series.owner = newOwner

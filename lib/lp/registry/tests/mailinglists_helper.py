@@ -11,6 +11,7 @@ __all__ = [
     'new_list_for_team',
     'new_team',
     'print_actions',
+    'print_dispositions',
     'print_info',
     'print_review_table',
     'review_list',
@@ -29,6 +30,11 @@ from lp.registry.interfaces.mailinglist import (
     IMailingListSet, IMessageApprovalSet, MailingListStatus,
     PostedMessageStatus)
 from lp.registry.interfaces.person import IPersonSet, TeamSubscriptionPolicy
+
+
+COMMASPACE = ', '
+
+
 def fault_catcher(func):
     """Decorator for displaying Faults in a cross-compatible way.
 
@@ -150,6 +156,28 @@ def print_review_table(content):
         print
 
 
+def print_dispositions(dispositions):
+    """Pretty print `IMailingListAPIView.getMessageDispositions()`."""
+    for message_id in sorted(dispositions):
+        list_name, action = dispositions[message_id]
+        print message_id, list_name, action
+
+
+def print_addresses(data):
+    """Print the addresses in a dictionary.
+
+    This is used for the results returned by `IMailingListSet` methods
+    `getSenderAddresses()` and `getSubscribedAddresses()`.
+
+    :param data: The data as returned by the above methods.
+    :type data: dictionary of 2-tuples
+    """
+    for team_name in sorted(data):
+        print team_name
+        print COMMASPACE.join(sorted(
+            address for (real_name, address) in data[team_name]))
+
+
 def new_team(team_name, with_list=False):
     """A helper function for the mailinglist doctests.
 
@@ -188,7 +216,8 @@ def new_list_for_team(team):
     return team_list
 
 
-def apply_for_list(browser, team_name, rooturl='http://launchpad.dev/'):
+def apply_for_list(browser, team_name, rooturl='http://launchpad.dev/',
+                   private=False):
     """Create a team and apply for its mailing list.
 
     This should only be used in page tests.
@@ -197,9 +226,13 @@ def apply_for_list(browser, team_name, rooturl='http://launchpad.dev/'):
     browser.open(rooturl + 'people/+newteam')
     browser.getControl(name='field.name').value = team_name
     browser.getControl('Display Name').value = displayname
-    # Use an open team for simplicity.
-    browser.getControl(
-        name='field.subscriptionpolicy').displayValue = ['Open Team']
+    if private:
+        browser.getControl('Visibility').value = ['PRIVATE_MEMBERSHIP']
+        browser.getControl(name='field.subscriptionpolicy').value = [
+            'RESTRICTED']
+    else:
+        browser.getControl(
+            name='field.subscriptionpolicy').displayValue = ['Open Team']
     browser.getControl('Create').click()
     # Apply for the team's mailing list'
     browser.open(rooturl + '~%s' % team_name)

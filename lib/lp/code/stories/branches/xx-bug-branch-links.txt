@@ -45,7 +45,7 @@ if the user is not logged in, they will be asked to log in.
 
     >>> browser.getLink('Link to a bug report').click()
     >>> browser.title
-    'Link branch ...Klingon support in GNOME Terminal... to a bug report'
+    'Link branch \xe2\x80\x9c~name12/gnome-terminal/klingon\xe2\x80\x9d to a bug report'
 
 When linking from a branch to a bug, the bug widget is used.  This
 requires the user to enter a bug number.
@@ -209,9 +209,6 @@ The whiteboard contents are available on the (bug|branch) page.
     >>> browser.getLink('~name12/gnome-terminal/scanne').click()
     >>> printBugBranchLinks(browser)
     Bug #11: Make Jokosher use autoaudiosink (Undecided &ndash; New)
-      This is a fix for the problem and involved:
-       * Fixing the doodad
-       * Adjusting the lambda probe
 
 
 == Deleting bug branch links ==

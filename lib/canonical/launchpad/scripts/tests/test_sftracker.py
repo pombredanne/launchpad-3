@@ -242,6 +242,7 @@ class PersonMappingTestCase(unittest.TestCase):
             'foo@users.sourceforge.net', None,
             PersonCreationRationale.OWNER_CREATED_LAUNCHPAD)
         transaction.commit()
+        self.failIf(person.account is None, 'Person must have an account.')
         email = getUtility(IEmailAddressSet).new(
             'foo@example.com', person, account=person.account)
         person.setPreferredEmail(email)

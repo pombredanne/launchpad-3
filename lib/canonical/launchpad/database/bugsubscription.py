@@ -11,7 +11,8 @@ from sqlobject import ForeignKey
 from canonical.database.sqlbase import SQLBase
 
 from canonical.launchpad.interfaces import IBugSubscription
-from lp.registry.interfaces.person import validate_public_person
+from lp.registry.interfaces.person import (
+    validate_person_not_private_membership)
 
 
 class BugSubscription(SQLBase):
@@ -21,12 +22,17 @@ class BugSubscription(SQLBase):
 
     _table = 'BugSubscription'
 
-    person = ForeignKey(dbName='person', foreignKey='Person',
-                        notNull=True, storm_validator=validate_public_person)
+    person = ForeignKey(
+        dbName='person', foreignKey='Person',
+        storm_validator=validate_person_not_private_membership,
+        notNull=True
+        )
     bug = ForeignKey(dbName='bug', foreignKey='Bug', notNull=True)
     subscribed_by = ForeignKey(
         dbName='subscribed_by', foreignKey='Person',
-        storm_validator=validate_public_person, notNull=True)
+        storm_validator=validate_person_not_private_membership,
+        notNull=True
+        )
 
     @property
     def display_subscribed_by(self):

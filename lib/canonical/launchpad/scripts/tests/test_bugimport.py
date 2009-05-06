@@ -251,8 +251,10 @@ class GetPersonTestCase(unittest.TestCase):
         # Test that getPerson() does not clobber an existing verified
         # email address when verify_users=True.
         person, email = getUtility(IPersonSet).createPersonAndEmail(
-            'foo@example.com', PersonCreationRationale.OWNER_CREATED_LAUNCHPAD)
+            'foo@example.com',
+            PersonCreationRationale.OWNER_CREATED_LAUNCHPAD)
         transaction.commit()
+        self.failIf(person.account is None, 'Person must have an account.')
         email = getUtility(IEmailAddressSet).new(
             'foo@preferred.com', person, account=person.account)
         person.setPreferredEmail(email)
@@ -260,8 +262,8 @@ class GetPersonTestCase(unittest.TestCase):
         self.assertEqual(person.preferredemail.email, 'foo@preferred.com')
 
         product = getUtility(IProductSet).getByName('netapplet')
-        importer = bugimport.BugImporter(product, 'bugs.xml', 'bug-map.pickle',
-                                         verify_users=True)
+        importer = bugimport.BugImporter(
+            product, 'bugs.xml', 'bug-map.pickle', verify_users=True)
         personnode = ET.fromstring('''\
         <person xmlns="https://launchpad.net/xmlns/2006/bugs"
                 name="foo" email="foo@example.com">Foo User</person>''')

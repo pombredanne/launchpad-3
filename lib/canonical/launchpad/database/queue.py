@@ -25,6 +25,7 @@ from zope.interface import implements
 from sqlobject import ForeignKey, SQLMultipleJoin, SQLObjectNotFound
 
 from canonical.archivepublisher.customupload import CustomUploadError
+from canonical.archivepublisher.utils import get_ppa_reference
 from canonical.archiveuploader.tagfiles import parse_tagfile_lines
 from canonical.archiveuploader.utils import safe_fix_maintainer
 from canonical.buildmaster.pas import BuildDaemonPackagesArchSpecific
@@ -38,6 +39,10 @@ from canonical.launchpad.database.publishing import (
     BinaryPackagePublishingHistory, SecureBinaryPackagePublishingHistory,
     SecureSourcePackagePublishingHistory, SourcePackagePublishingHistory)
 from canonical.launchpad.helpers import get_email_template
+from canonical.launchpad.interfaces.archive import (
+    ArchivePurpose, IArchiveSet)
+from canonical.launchpad.interfaces.binarypackagerelease import (
+    BinaryPackageFormat)
 from canonical.launchpad.interfaces.component import IComponentSet
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.package import (
@@ -720,7 +725,8 @@ class PackageUpload(SQLBase):
                 self.displayversion, message.STATUS)
 
             if self.isPPA():
-                subject = "[PPA %s] %s" % (self.archive.owner.name, subject)
+                subject = "[PPA %s] %s" % (
+                    get_ppa_reference(self.archive), subject)
                 attach_changes = False
             else:
                 attach_changes = True
@@ -1027,7 +1033,7 @@ class PackageUpload(SQLBase):
         # Include the 'X-Launchpad-PPA' header for PPA upload notfications
         # containing the PPA owner name.
         if (self.archive.is_ppa and self.archive.owner is not None):
-            extra_headers['X-Launchpad-PPA'] = self.archive.owner.name
+            extra_headers['X-Launchpad-PPA'] = get_ppa_reference(self.archive)
 
         # Include a 'X-Launchpad-Component' header with the component and
         # the section of the source package uploaded in order to facilitate
@@ -1202,11 +1208,9 @@ class PackageUploadBuild(SQLBase):
                 raise QueueBuildAcceptError(
                     'Component "%s" is not allowed in %s'
                     % (binary.component.name, distroseries.name))
-            if binary.section not in distroseries.sections:
-                raise QueueBuildAcceptError(
-                    'Section "%s" is not allowed in %s' %
-                        (binary.section.name,
-                         distroseries.name))
+            # At this point (uploads are already processed) sections are
+            # guaranteed to exist in the DB. We don't care if sections are
+            # not official.
 
     def verifyBeforeAccept(self):
         """See `IPackageUploadBuild`."""
@@ -1261,26 +1265,41 @@ class PackageUploadBuild(SQLBase):
                 debug(logger, "... %s/%s (Arch Specific)" % (
                     binary.binarypackagename.name,
                     binary.version))
+
+
+            archive = self.packageupload.archive
+            # DDEBs targeted to the PRIMARY archive are published in the
+            # corresponding DEBUG archive.
+            if (archive.purpose == ArchivePurpose.PRIMARY and
+                binary.binpackageformat == BinaryPackageFormat.DDEB):
+                distribution = self.packageupload.distroseries.distribution
+                archive = getUtility(IArchiveSet).getByDistroPurpose(
+                    distribution, ArchivePurpose.DEBUG)
+                if archive is None:
+                    raise QueueInconsistentStateError(
+                        "Could not find the corresponding DEBUG archive "
+                        "for %s" % (distribution.title))
+
+            # We override PPA to always publish in the main component.
+            if self.packageupload.archive.is_ppa:
+                component = main_component
+            else:
+                component = binary.component
+
             for each_target_dar in target_dars:
                 # XXX: dsilvers 2005-10-20 bug=3408:
                 # What do we do about embargoed binaries here?
-                if self.packageupload.archive.is_ppa:
-                    # We override PPA to always publish in the main component.
-                    component = main_component
-                else:
-                    component = binary.component
-
                 sbpph = SecureBinaryPackagePublishingHistory(
                     binarypackagerelease=binary,
                     distroarchseries=each_target_dar,
-                    component=component,
                     section=binary.section,
                     priority=binary.priority,
                     status=PackagePublishingStatus.PENDING,
                     datecreated=UTC_NOW,
                     pocket=self.packageupload.pocket,
                     embargo=False,
-                    archive=self.packageupload.archive
+                    component=component,
+                    archive=archive,
                     )
                 bpph = BinaryPackagePublishingHistory.get(sbpph.id)
                 published_binaries.append(bpph)
@@ -1423,10 +1442,9 @@ class PackageUploadSource(SQLBase):
                 'Component "%s" is not allowed in %s' % (component.name,
                                                          distroseries.name))
 
-        if section not in distroseries.sections:
-            raise QueueSourceAcceptError(
-                'Section "%s" is not allowed in %s' % (section.name,
-                                                       distroseries.name))
+        # At this point (uploads are already processed) sections are
+        # guaranteed to exist in the DB. We don't care if sections are
+        # not official.
 
     def publish(self, logger=None):
         """See `IPackageUploadSource`."""

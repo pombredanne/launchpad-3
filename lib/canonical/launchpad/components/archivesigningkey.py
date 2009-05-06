@@ -63,6 +63,16 @@ class ArchiveSigningKey:
         assert self.archive.signing_key is None, (
             "Cannot override signing_keys.")
 
+        # Always generate signing keys for the default PPA, even if it
+        # was not expecifically requested. The default PPA signing key
+        # is then propagated to the context named-ppa.
+        default_ppa = self.archive.owner.archive
+        if self.archive != default_ppa:
+            if default_ppa.signing_key is None:
+                IArchiveSigningKey(default_ppa).generateSigningKey()
+            self.archive.signing_key = default_ppa.signing_key
+            return
+
         key_displayname = "Launchpad %s" % self.archive.displayname
         secret_key = getUtility(IGPGHandler).generateKey(key_displayname)
         self._setupSigningKey(secret_key)

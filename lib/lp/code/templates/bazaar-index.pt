@@ -65,7 +65,7 @@
       <div id="project-cloud-preview">
         <h2>Projects with active branches</h2>
         <a tal:repeat="product view/short_product_tag_cloud"
-           tal:attributes="href product/fmt:url;
+           tal:attributes="href product/url;
                            class product/html_class;
                            title product/html_title"
            tal:content="product/name">project</a>

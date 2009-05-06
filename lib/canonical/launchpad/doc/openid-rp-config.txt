@@ -75,6 +75,16 @@ to normalise the result:
     >>> print rpconfig.allowed_sreg
     [u'email', u'fullname']
 
+The auto_authorize attribute specifies whether this RP is allowed to
+skip the authorization page.  This behaviour is not turned on by
+default:
+
+    >>> rpconfig.auto_authorize
+    False
+    >>> rpconfig.auto_authorize = True
+    >>> rpconfig.auto_authorize
+    True
+
 
 == Searching for OpenIDRPConfig objects ==
 

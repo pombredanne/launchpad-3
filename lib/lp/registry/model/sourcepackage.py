@@ -1,4 +1,4 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0611,W0212
 """Database classes that implement SourcePacakge items."""
 
@@ -48,10 +48,11 @@ from canonical.launchpad.interfaces.packaging import PackagingType
 from canonical.launchpad.interfaces.potemplate import IHasTranslationTemplates
 from canonical.launchpad.interfaces.publishing import (
     PackagePublishingPocket, PackagePublishingStatus)
-from lp.answers.interfaces.questioncollection import QUESTION_STATUS_DEFAULT_SEARCH
+from lp.answers.interfaces.questioncollection import (
+    QUESTION_STATUS_DEFAULT_SEARCH)
 from lp.answers.interfaces.questiontarget import IQuestionTarget
 from lp.code.interfaces.seriessourcepackagebranch import (
-    ISeriesSourcePackageBranchSet)
+    IMakeOfficialBranchLinks)
 from lp.registry.interfaces.sourcepackage import (
     ISourcePackage, ISourcePackageFactory)
 
@@ -314,17 +315,15 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         The results are ordered by descending version.
         """
         query = """
-            SourcePackagePublishingHistory.distroseries =
-                DistroSeries.id AND
+            SourcePackagePublishingHistory.distroseries = %s AND
             SourcePackagePublishingHistory.sourcepackagerelease =
                 SourcePackageRelease.id AND
             SourcePackageRelease.sourcepackagename = %s AND
-            DistroSeries.distribution = %s AND
             SourcePackagePublishingHistory.archive IN %s
-        """ % sqlvalues(self.sourcepackagename, self.distribution,
-                            self.distribution.all_distro_archive_ids)
+        """ % sqlvalues(self.distroseries, self.sourcepackagename,
+                        self.distribution.all_distro_archive_ids)
 
-        clauseTables = ['DistroSeries', 'SourcePackagePublishingHistory']
+        clauseTables = ['SourcePackagePublishingHistory']
         order_const = "debversion_sort_key(SourcePackageRelease.version)"
 
         # Selecting ordered distinct `SourcePackageReleases` requires us
@@ -618,9 +617,12 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
 
     def setBranch(self, pocket, branch, registrant):
         """See `ISourcePackage`."""
-        getUtility(ISeriesSourcePackageBranchSet).new(
-            self.distroseries, pocket, self.sourcepackagename, branch,
-            registrant)
+        series_set = getUtility(IMakeOfficialBranchLinks)
+        series_set.delete(self, pocket)
+        if branch is not None:
+            series_set.new(
+                self.distroseries, pocket, self.sourcepackagename, branch,
+                registrant)
 
     @property
     def linked_branches(self):

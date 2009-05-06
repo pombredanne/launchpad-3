@@ -64,7 +64,7 @@ class Account(SQLBase):
         """Get related `EmailAddress` objects with the given status."""
         result = IStore(EmailAddress).find(
             EmailAddress, accountID=self.id, status=status)
-        result.order_by(EmailAddress.email)
+        result.order_by(EmailAddress.email.lower())
         return result
 
     @property
@@ -168,42 +168,24 @@ class Account(SQLBase):
         result.order_by(Desc(OpenIDRPSummary.date_last_used))
         return result.config(limit=10)
 
-    def reactivate(self, comment, password, preferred_email):
-        """See `IAccountSpecialRestricted`.
-
-        :raise AssertionError: if the password is not valid.
-        :raise AssertionError: if the preferred email address is None.
-        """
-        from lp.registry.model.person import Person
-        if password in (None, ''):
-            raise AssertionError(
-                "Account %s cannot be reactivated without a "
-                "password." % self.id)
+    def activate(self, comment, password, preferred_email):
+        """See `IAccountSpecialRestricted`."""
         if preferred_email is None:
             raise AssertionError(
-                "Account %s cannot be reactivated without a "
+                "Account %s cannot be activated without a "
                 "preferred email address." % self.id)
         self.status = AccountStatus.ACTIVE
         self.status_comment = comment
         self.password = password
+        self.validateAndEnsurePreferredEmail(preferred_email)
 
-        # XXX: salgado, 2009-02-26: Instead of doing what we do below, we
-        # should just provide a hook for callsites to do other stuff that's
-        # not directly related to the account itself.
-        person = IStore(Person).find(Person, account=self).one()
-        if person is not None:
-            # Since we have a person associated with this account, it may be
-            # used to log into Launchpad, and so it may not have a preferred
-            # email address anymore.  We need to ensure it does have one.
-            person.validateAndEnsurePreferredEmail(preferred_email)
-
-            if '-deactivatedaccount' in person.name:
-                # The name was changed by deactivateAccount(). Restore the
-                # name, but we must ensure it does not conflict with a current
-                # user.
-                name_parts = person.name.split('-deactivatedaccount')
-                base_new_name = name_parts[0]
-                person.name = person._ensureNewName(base_new_name)
+    def reactivate(self, comment, password, preferred_email):
+        """See `IAccountSpecialRestricted`."""
+        if password in (None, ''):
+            raise AssertionError(
+                "Account %s cannot be reactivated without a "
+                "password." % self.id)
+        self.activate(comment, password, preferred_email)
 
     # The password is actually stored in a separate table for security
     # reasons, so use a property to hide this implementation detail.
@@ -304,11 +286,8 @@ class AccountSet:
     def get(self, id):
         """See `IAccountSet`."""
         account = IStore(Account).get(Account, id)
-        if account is None and not IMasterStore.providedBy(IStore(Account)):
-            # The account was not found in a slave store but it may exist in
-            # the master one if it was just created, so we try to fetch it
-            # again, this time from the master.
-            account = IMasterStore(Account).get(Account, id)
+        if account is None:
+            raise LookupError(id)
         return account
 
     def createAccountAndEmail(self, email, rationale, displayname, password,
@@ -332,12 +311,8 @@ class AccountSet:
                       EmailAddress.email.lower() == email.lower().strip()]
         store = IStore(Account)
         account = store.find(Account, *conditions).one()
-        if account is None and not IMasterStore.providedBy(store):
-            # The account was not found in a slave store but it may exist in
-            # the master one if it was just created, so we try to fetch it
-            # again, this time from the master.
-            store = IMasterStore(Account)
-            account = store.find(Account, *conditions).one()
+        if account is None:
+            raise LookupError(email)
         return account
 
     def getByOpenIDIdentifier(self, openid_identifier):
@@ -348,11 +323,8 @@ class AccountSet:
         conditions = Or(Account.openid_identifier == openid_identifier,
                         Account.new_openid_identifier == openid_identifier)
         account = store.find(Account, conditions).one()
-        if account is None and not IMasterStore.providedBy(store):
-            # The account was not found in a slave store but it may exist in
-            # the master one if it was just created, so we try to fetch it
-            # again, this time from the master.
-            account = IMasterStore(Account).find(Account, conditions).one()
+        if account is None:
+            raise LookupError(openid_identifier)
         return account
 
     _MAX_RANDOM_TOKEN_RANGE = 1000
@@ -374,8 +346,12 @@ class AccountSet:
         # given that the intended mnemonic is a unique user name.
         for token in tokens:
             openid_identifier = '%03d/%s' % (token, mnemonic)
-            account = self.getByOpenIDIdentifier(openid_identifier)
-            if account is not None:
+            try:
+                account = self.getByOpenIDIdentifier(openid_identifier)
+            except LookupError:
+                # The identifier is free, so we'll just use it.
+                pass
+            else:
                 continue
             summaries = openidrpsummaryset.getByIdentifier(
                 identity_url_root + openid_identifier)

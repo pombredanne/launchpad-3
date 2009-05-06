@@ -1,12 +1,11 @@
-# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
 
 """Branch views."""
 
 __metaclass__ = type
 
 __all__ = [
-    'PersonBranchAddView',
-    'ProductBranchAddView',
+    'BranchAddView',
     'BranchContextMenu',
     'BranchDeletionView',
     'BranchEditView',
@@ -18,6 +17,7 @@ __all__ = [
     'BranchNavigation',
     'BranchNavigationMenu',
     'BranchInProductView',
+    'BranchSparkView',
     'BranchURL',
     'BranchView',
     'BranchSubscriptionsView',
@@ -26,7 +26,9 @@ __all__ = [
 
 import cgi
 from datetime import datetime, timedelta
+
 import pytz
+import simplejson
 
 from zope.app.form.browser import TextAreaWidget
 from zope.traversing.interfaces import IPathAdapter
@@ -37,14 +39,14 @@ from zope.publisher.interfaces import NotFound
 from zope.schema import Choice, Text
 from lazr.delegates import delegates
 from lazr.enum import EnumeratedType, Item
+from lazr.uri import URI
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
 
-from lazr.restful.interface import copy_field
+from lazr.restful.interface import copy_field, use_template
 from canonical.launchpad import _
-from lp.code.browser.branchref import BranchRef
 from canonical.launchpad.browser.feeds import BranchFeedLink, FeedsMixin
 from canonical.launchpad.browser.launchpad import Hierarchy
 from canonical.launchpad.helpers import truncate_text
@@ -52,23 +54,6 @@ from canonical.launchpad.interfaces.bug import IBugSet
 from canonical.launchpad.interfaces.bugbranch import IBugBranch
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.specificationbranch import ISpecificationBranch
-from lp.code.interfaces.branch import (
-    BranchCreationForbidden, BranchExists, BranchType, IBranch,
-    IBranchNavigationMenu, UICreatableBranchType)
-from lp.code.interfaces.branchmergeproposal import (
-    IBranchMergeProposal, InvalidBranchMergeProposal)
-from lp.code.interfaces.branchsubscription import IBranchSubscription
-from lp.code.interfaces.branchvisibilitypolicy import BranchVisibilityRule
-from lp.code.interfaces.codeimportjob import (
-    CodeImportJobState, ICodeImportJobWorkflow)
-from lp.code.interfaces.codereviewcomment import ICodeReviewComment
-from lp.registry.interfaces.person import IPersonSet
-from lp.registry.interfaces.productseries import IProductSeries
-from lp.code.interfaces.branchnamespace import (
-    get_branch_namespace)
-from lp.code.interfaces.branchtarget import IHasBranchTarget
-from lp.code.interfaces.codereviewvote import (
-    ICodeReviewVoteReference)
 from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, enabled_with_permission,
     LaunchpadView, Navigation, NavigationMenu, stepto, stepthrough,
@@ -76,9 +61,26 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from canonical.launchpad.webapp.menu import structured
-from lazr.uri import URI
 from canonical.widgets.branch import TargetBranchWidget
 from canonical.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
+
+from lp.code.browser.branchref import BranchRef
+from lp.code.interfaces.branch import (
+    BranchCreationForbidden, BranchExists, BranchType, IBranch,
+    IBranchNavigationMenu, UICreatableBranchType)
+from lp.code.interfaces.branchmergeproposal import (
+    IBranchMergeProposal, InvalidBranchMergeProposal)
+from lp.code.interfaces.branchsubscription import IBranchSubscription
+from lp.code.interfaces.branchtarget import IBranchTarget
+from lp.code.interfaces.codeimportjob import (
+    CodeImportJobState, ICodeImportJobWorkflow)
+from lp.code.interfaces.codereviewcomment import ICodeReviewComment
+from lp.code.interfaces.branchnamespace import (
+    get_branch_namespace, IBranchNamespacePolicy)
+from lp.code.interfaces.branchtarget import IHasBranchTarget
+from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
+from lp.registry.interfaces.person import IPerson, IPersonSet
+from lp.registry.interfaces.productseries import IProductSeries
 
 
 def quote(text):
@@ -196,13 +198,13 @@ class BranchContextMenu(ContextMenu):
 
     usedfor = IBranch
     facet = 'branches'
-    links = ['whiteboard', 'edit', 'delete_branch', 'browse_revisions',
+    links = ['edit_whiteboard', 'edit', 'delete_branch', 'browse_revisions',
              'subscription', 'add_subscriber', 'associations',
              'register_merge', 'landing_candidates',
              'link_bug', 'link_blueprint', 'edit_import', 'reviewer'
              ]
 
-    def whiteboard(self):
+    def edit_whiteboard(self):
         text = 'Edit whiteboard'
         return Link('+whiteboard', text, icon='edit')
 
@@ -320,6 +322,16 @@ class BranchView(LaunchpadView, FeedsMixin):
     def owner_is_registrant(self):
         """Is the branch owner the registrant?"""
         return self.context.owner == self.context.registrant
+
+    def show_whiteboard(self):
+        """Return whether or not the whiteboard should be shown.
+
+        The whiteboard is only shown for import branches.
+        """
+        if self.context.branch_type == BranchType.IMPORTED:
+            return True
+        else:
+            return False
 
     @property
     def codebrowse_url(self):
@@ -488,42 +500,42 @@ class BranchNameValidationMixin:
     """Provide name validation logic used by several branch view classes."""
 
     def _setBranchExists(self, existing_branch):
-        # XXX: JonathanLange 2008-12-04 spec=package-branches: Assumes that
-        # branches have products, which is now wrong.
         owner = existing_branch.owner
-        product = existing_branch.product
-        branch_name = existing_branch.name
         if owner == self.user:
             prefix = "You already have"
         else:
             prefix = "%s already has" % cgi.escape(owner.displayname)
-
-        if product is None:
-            message = (
-                "%s a junk branch called <em>%s</em>."
-                % (prefix, branch_name))
-        else:
-            message = (
-                "%s a branch for <em>%s</em> called "
-                "<em>%s</em>." % (prefix, product.name, branch_name))
+        message = (
+            "%s a branch for <em>%s</em> called <em>%s</em>."
+            % (prefix, existing_branch.target.displayname,
+               existing_branch.name))
         self.setFieldError('name', structured(message))
 
-    def validate_branch_name(self, owner, product, branch_name):
-        # XXX: JonathanLange 2008-11-27 spec=package-branches: Don't look
-        # before you leap. Instead try to create the branch and then populate
-        # the error field.
-        namespace = get_branch_namespace(owner, product=product)
-        existing_branch = namespace.getByName(branch_name)
-        if existing_branch is not None:
-            # There is a branch that has the branch_name specified already.
-            self._setBranchExists(existing_branch)
+
+class BranchEditSchema(Interface):
+    """Defines the fields for the edit form.
+
+    This is necessary so as to make an editable field for the branch privacy.
+    Normally the field is not editable through the interface in order to stop
+    direct setting of the private attribute, but in this case we actually want
+    the user to be able to edit it.
+    """
+    use_template(IBranch, include=[
+            'owner', 'product', 'name', 'url', 'title', 'summary',
+            'lifecycle_status', 'whiteboard'])
+    private = copy_field(IBranch['private'], readonly=False)
 
 
 class BranchEditFormView(LaunchpadEditFormView):
     """Base class for forms that edit a branch."""
 
-    schema = IBranch
+    schema = BranchEditSchema
     field_names = None
+
+    @property
+    def adapters(self):
+        """See `LaunchpadFormView`"""
+        return {BranchEditSchema: self.context}
 
     @action('Change Branch', name='change')
     def change_action(self, action, data):
@@ -545,6 +557,18 @@ class BranchEditFormView(LaunchpadEditFormView):
                     self.request.response.addNotification(
                         "The project for this branch has been changed to %s "
                         "(%s)" % (new_product.displayname, new_product.name))
+        if 'private' in data:
+            private = data.pop('private')
+            if private != self.context.private:
+                # We only want to show notifications if it actually changed.
+                self.context.setPrivate(private)
+                if private:
+                    self.request.response.addNotification(
+                        "The branch is now private, and only visible to the "
+                        "owner and to subscribers.")
+                else:
+                    self.request.response.addNotification(
+                        "The branch is now publicly accessible.")
         if self.updateContextFromData(data):
             # Only specify that the context was modified if there
             # was in fact a change.
@@ -730,8 +754,7 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
     """The main branch view for editing the branch attributes."""
 
     field_names = [
-        'owner', 'product', 'name', 'private', 'url', 'title', 'summary',
-        'lifecycle_status', 'whiteboard']
+        'owner', 'product', 'name', 'private', 'url', 'lifecycle_status']
 
     custom_widget('lifecycle_status', LaunchpadRadioWidgetWithDescription)
 
@@ -743,30 +766,16 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
         if branch.branch_type in (BranchType.HOSTED, BranchType.IMPORTED):
             self.form_fields = self.form_fields.omit('url')
 
-        # Disable privacy if the owner of the branch is not allowed to change
-        # the branch from private to public, or is not allowed to have private
-        # branches for the project.
-        product = branch.product
-        # No privacy set for junk branches
-        if product is None:
-            hide_private_field = True
+        policy = IBranchNamespacePolicy(branch.namespace)
+        if branch.private:
+            # If the branch is private, and can be public, show the field.
+            show_private_field = policy.canBranchesBePublic()
         else:
-            # If there is an explicit rule for the team, then that overrides
-            # any rule specified for other teams that the owner is a member
-            # of.
-            rule = product.getBranchVisibilityRuleForBranch(branch)
-            if rule == BranchVisibilityRule.PRIVATE_ONLY:
-                # If the branch is already private, then the user cannot
-                # make the branch public.  However if the branch is for
-                # some reason public, then the user is allowed to make
-                # it private.
-                hide_private_field = branch.private
-            elif rule == BranchVisibilityRule.PRIVATE:
-                hide_private_field = False
-            else:
-                hide_private_field = True
+            # If the branch is public, and can be made private, show the
+            # field.
+            show_private_field = policy.canBranchesBePrivate()
 
-        if hide_private_field:
+        if not show_private_field:
             self.form_fields = self.form_fields.omit('private')
 
         # If the user can administer branches, then they should be able to
@@ -783,6 +792,16 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
             # Replace the normal owner field with a more permissive vocab.
             self.form_fields = self.form_fields.omit('owner')
             self.form_fields = any_owner_field + self.form_fields
+
+    def validate_branch_name(self, owner, product, branch_name):
+        # XXX: JonathanLange 2009-03-30 spec=package-branches: Don't look
+        # before you leap. Instead try to move the branch and then populate
+        # the error field.
+        namespace = get_branch_namespace(owner, product=product)
+        existing_branch = namespace.getByName(branch_name)
+        if existing_branch is not None:
+            # There is a branch that has the branch_name specified already.
+            self._setBranchExists(existing_branch)
 
     def validate(self, data):
         # Check that we're not moving a team branch to the +junk
@@ -869,16 +888,33 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
 
     schema = IBranch
     for_input = True
-    field_names = ['owner', 'product', 'name', 'branch_type', 'url', 'title',
-                   'summary', 'lifecycle_status', 'whiteboard']
+    field_names = ['owner', 'name', 'branch_type', 'url', 'lifecycle_status']
 
     branch = None
     custom_widget('branch_type', LaunchpadRadioWidgetWithDescription)
     custom_widget('lifecycle_status', LaunchpadRadioWidgetWithDescription)
 
+    initial_focus_widget = 'name'
+
     @property
     def initial_values(self):
-        return {'branch_type': UICreatableBranchType.MIRRORED}
+        return {
+            'owner': self.default_owner,
+            'branch_type': UICreatableBranchType.MIRRORED}
+
+    @property
+    def target(self):
+        """The branch target for the context."""
+        return IBranchTarget(self.context)
+
+    @property
+    def default_owner(self):
+        """The default owner of branches in this context.
+
+        If the context is a person, then it's the context. If the context is
+        not a person, then the default owner is the currently logged-in user.
+        """
+        return IPerson(self.context, self.user)
 
     def showOptionalMarker(self, field_name):
         """Don't show the optional marker for url."""
@@ -892,35 +928,23 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
         """Handle a request to create a new branch for this product."""
         try:
             ui_branch_type = data['branch_type']
-            namespace = get_branch_namespace(
-                data['owner'], product=data['product'])
+            namespace = self.target.getNamespace(data['owner'])
             self.branch = namespace.createBranch(
                 branch_type=BranchType.items[ui_branch_type.name],
                 name=data['name'],
                 registrant=self.user,
                 url=data.get('url'),
-                title=data['title'],
-                summary=data['summary'],
-                lifecycle_status=data['lifecycle_status'],
-                whiteboard=data['whiteboard'])
+                lifecycle_status=data['lifecycle_status'])
             if self.branch.branch_type == BranchType.MIRRORED:
                 self.branch.requestMirror()
         except BranchCreationForbidden:
-            self.setForbiddenError(data['product'])
+            self.addError(
+                "You are not allowed to create branches in %s." %
+                self.context.displayname)
         except BranchExists, e:
             self._setBranchExists(e.existing_branch)
         else:
             self.next_url = canonical_url(self.branch)
-
-    def setForbiddenError(self, product):
-        """Method provided so the error handling can be overridden."""
-        assert product is not None, (
-            "BranchCreationForbidden should never be raised for "
-            "junk branches.")
-        self.setFieldError(
-            'product',
-            "You are not allowed to create branches in %s." %
-            product.displayname)
 
     def validate(self, data):
         owner = data['owner']
@@ -959,29 +983,6 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
             pass
         else:
             raise AssertionError('Unknown branch type')
-
-
-class PersonBranchAddView(BranchAddView):
-    """See `BranchAddView`."""
-
-    initial_focus_widget = 'product'
-
-    @property
-    def initial_values(self):
-        return {'owner': self.context,
-                'branch_type': UICreatableBranchType.MIRRORED}
-
-
-class ProductBranchAddView(BranchAddView):
-    """See `BranchAddView`."""
-
-    initial_focus_widget = 'name'
-
-    @property
-    def initial_values(self):
-        return {'owner' : self.user,
-                'branch_type': UICreatableBranchType.MIRRORED,
-                'product': self.context}
 
     @property
     def cancel_url(self):
@@ -1215,3 +1216,58 @@ class BranchRequestImportView(LaunchpadFormView):
     @property
     def action_url(self):
         return "%s/@@+request-import" % canonical_url(self.context)
+
+
+class BranchSparkView(LaunchpadView):
+    """This view generates the JSON data for the commit sparklines."""
+
+    __for__ = IBranch
+
+    # How many days to look for commits.
+    COMMIT_DAYS = 90
+
+    def _commitCounts(self):
+        """Return a dict of commit counts for rendering."""
+        epoch = (
+            datetime.now(tz=pytz.UTC) - timedelta(days=(self.COMMIT_DAYS-1)))
+        # Make a datetime for that date, but midnight.
+        epoch = epoch.replace(hour=0, minute=0, second=0, microsecond=0)
+        commits = dict(self.context.commitsForDays(epoch))
+        # However storm returns tz-unaware datetime objects.
+        day = datetime(year=epoch.year, month=epoch.month, day=epoch.day)
+        days = [day + timedelta(days=count)
+                for count in range(self.COMMIT_DAYS)]
+
+        commit_list = []
+        total_commits = 0
+        most_commits = 0
+        for index, day in enumerate(days):
+            count = commits.get(day, 0)
+            commit_list.append(count)
+            total_commits += count
+            if count >= most_commits:
+                most_commits = count
+                max_index = index
+        return {'count': total_commits,
+                'commits': commit_list,
+                'max_commits': max_index}
+
+    def render(self):
+        """Write out the commit data as a JSON string."""
+        # We want:
+        #  count: total commit count
+        #  last_commit: string to say when the last commit was
+        #  commits: an array of COMMIT_DAYS values for commits for that day
+        #  max_commits: an index into the commits array with the most commits,
+        #     most recent wins any ties.
+        values = {'count': 0, 'max_commits': 0}
+        # Check there have been commits.
+        if self.context.revision_count == 0:
+            values['last_commit'] = 'empty branch'
+        else:
+            tip = self.context.getTipRevision()
+            adapter = queryAdapter(tip.revision_date, IPathAdapter, 'fmt')
+            values['last_commit'] = adapter.approximatedate()
+            values.update(self._commitCounts())
+
+        return simplejson.dumps(values)

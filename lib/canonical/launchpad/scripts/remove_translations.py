@@ -131,9 +131,10 @@ def compose_language_match(language_code):
 
     language_conditions = ['Language.code = %s' % sqlvalues(language)]
     if variant is None:
-        language_conditions.append('POFile.variant IS NULL')
+        language_conditions.append('TranslationMessage.variant IS NULL')
     else:
-        language_conditions.append('POFile.variant = %s' % sqlvalues(variant))
+        language_conditions.append(
+            'TranslationMessage.variant = %s' % sqlvalues(variant))
     return ' AND '.join(language_conditions)
 
 
@@ -229,7 +230,7 @@ class RemoveTranslations(LaunchpadScript):
 
     def _check_constraints_safety(self):
         """Are these options to the deletion script sufficiently safe?
-    
+
         :return: Boolean approval and output message.  All disapprovals come
             with an explanation; some approvals come with an informational
             message.
@@ -354,15 +355,16 @@ def remove_translations(logger=None, submitter=None, reviewer=None,
     if ids is not None:
         conditions.add('TranslationMessage.id IN %s' % sqlvalues(ids))
     if potemplate is not None:
-        joins.add('POTMsgSet')
-        conditions.add('POTMsgSet.id = TranslationMessage.potmsgset')
-        conditions.add('POTMsgSet.potemplate = %s' % sqlvalues(potemplate))
+        joins.add('TranslationTemplateItem')
+        conditions.add(
+            'TranslationTemplateItem.potmsgset '
+            ' = TranslationMessage.potmsgset')
+        conditions.add(
+            'TranslationTemplateItem.potemplate = %s' % sqlvalues(potemplate))
 
     if language_code is not None:
-        joins.add('POFile')
-        conditions.add('POFile.id = TranslationMessage.pofile')
         joins.add('Language')
-        conditions.add('Language.id = POFile.language')
+        conditions.add('Language.id = TranslationMessage.language')
         language_match = compose_language_match(language_code)
         if not_language:
             conditions.add('NOT (%s)' % language_match)
@@ -417,7 +419,9 @@ def remove_translations(logger=None, submitter=None, reviewer=None,
             Doomed.id = temp_doomed_message.id AND
             -- Is alternative for the message we're about to delete.
             Imported.potmsgset = Doomed.potmsgset AND
-            Imported.pofile = Doomed.pofile AND
+            Imported.language = Doomed.language AND
+            Imported.variant IS NOT DISTINCT FROM Doomed.variant AND
+            Imported.potemplate IS NOT DISTINCT FROM Doomed.potemplate AND
             -- Came from published source.
             Imported.is_imported IS TRUE AND
             -- Was masked by the message we're about to delete.

@@ -18,8 +18,9 @@ __all__ = [
     'ProductSeriesReviewView',
     'ProductSeriesSourceListView',
     'ProductSeriesSpecificationsMenu',
-    'ProductSeriesTranslationsMenu',
+    'ProductSeriesTranslationsBzrImportView',
     'ProductSeriesTranslationsExportView',
+    'ProductSeriesTranslationsMenu',
     'ProductSeriesTranslationsSettingsView',
     'ProductSeriesView',
     ]
@@ -45,17 +46,17 @@ from lp.code.interfaces.branchjob import IRosettaUploadJobSource
 from canonical.launchpad.interfaces.country import ICountry
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.potemplate import IPOTemplateSet
-from lp.registry.interfaces.productseries import IProductSeries
-from lp.registry.interfaces.sourcepackagename import (
-    ISourcePackageNameSet)
+from canonical.launchpad.interfaces.translations import (
+    TranslationsBranchImportMode)
 from canonical.launchpad.interfaces.translationimporter import (
     ITranslationImporter)
 from canonical.launchpad.interfaces.translationimportqueue import (
     ITranslationImportQueue)
 from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, custom_widget,
-    enabled_with_permission, LaunchpadEditFormView, LaunchpadView,
-    Link, Navigation, NavigationMenu, StandardLaunchpadFacets, stepto)
+    enabled_with_permission, LaunchpadEditFormView, LaunchpadFormView,
+    LaunchpadView, Link, Navigation, NavigationMenu, StandardLaunchpadFacets,
+    stepto)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
@@ -64,6 +65,9 @@ from canonical.launchpad.webapp.menu import structured
 from canonical.widgets.itemswidgets import (
     LaunchpadRadioWidgetWithDescription)
 from canonical.widgets.textwidgets import StrippedTextWidget
+from lp.registry.interfaces.productseries import IProductSeries
+from lp.registry.interfaces.sourcepackagename import (
+    ISourcePackageNameSet)
 
 
 def quote(text):
@@ -117,7 +121,8 @@ class ProductSeriesOverviewMenu(ApplicationMenu):
     facet = 'overview'
     links = [
         'edit', 'driver', 'link_branch', 'ubuntupkg',
-        'add_package', 'add_milestone', 'rdf', 'subscribe'
+        'add_package', 'create_milestone', 'create_release',
+        'rdf', 'subscribe'
         ]
 
     @enabled_with_permission('launchpad.Edit')
@@ -145,10 +150,15 @@ class ProductSeriesOverviewMenu(ApplicationMenu):
         return Link('+addpackage', text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
-    def add_milestone(self):
-        text = 'Add milestone'
+    def create_milestone(self):
+        text = 'Create milestone'
         summary = 'Register a new milestone for this series'
         return Link('+addmilestone', text, summary, icon='add')
+
+    @enabled_with_permission('launchpad.Edit')
+    def create_release(self):
+        text = 'Create release'
+        return Link('+addrelease', text, icon='add')
 
     def rdf(self):
         text = 'Download RDF metadata'
@@ -237,6 +247,11 @@ class ProductSeriesTranslationsMenuMixIn:
         return Link('+translations-settings', text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
+    def requestbzrimport(self):
+        text = 'Request Bazaar import'
+        return Link('+request-bzr-import', text)
+
+    @enabled_with_permission('launchpad.Edit')
     def translationupload(self):
         text = 'Upload'
         return Link('+translations-upload', text, icon='add')
@@ -264,7 +279,7 @@ class ProductSeriesTranslationsMenu(NavigationMenu,
     """Translations navigation menus for `IProductSeries` objects."""
     usedfor = IProductSeries
     facet = 'translations'
-    links = ('overview', 'settings',
+    links = ('overview', 'settings', 'requestbzrimport',
              'translationupload', 'translationdownload',
              'imports')
 
@@ -686,16 +701,59 @@ class ProductSeriesFileBugRedirect(LaunchpadView):
         self.request.response.redirect(filebug_url)
 
 
-class ProductSeriesTranslationsSettingsView(LaunchpadEditFormView):
+class ProductSeriesTranslationsMixin(object):
+    """Common properties for all ProductSeriesTranslations*View classes."""
+
+    @property
+    def series_title(self):
+        return self.context.title.replace(' ', '&nbsp;')
+
+    @property
+    def has_imports_enabled(self):
+        return (self.context.translations_autoimport_mode !=
+                TranslationsBranchImportMode.NO_IMPORT)
+
+    @property
+    def request_bzr_import_url(self):
+        return canonical_url(self.context,
+                             view_name="+request-bzr-import")
+
+    @property
+    def link_branch_url(self):
+        return canonical_url(self.context, rootsite="mainsite",
+                             view_name="+linkbranch")
+
+    @property
+    def translations_settings_url(self):
+        return canonical_url(self.context,
+                             view_name="+translations-settings")
+
+    @property
+    def product_edit_url(self):
+        return canonical_url(self.context.product, rootsite="mainsite",
+                             view_name="+edit")
+
+
+class SettingsRadioWidget(LaunchpadRadioWidgetWithDescription):
+    """Remove the confusing hint under the widget."""
+
+    def __init__(self, field, vocabulary, request):
+        super(SettingsRadioWidget, self).__init__(field, vocabulary, request)
+        self.hint = None
+
+
+class ProductSeriesTranslationsSettingsView(LaunchpadEditFormView,
+                                            ProductSeriesTranslationsMixin):
     """Edit settings for translations import and export."""
 
     schema = IProductSeries
     field_names = ['translations_autoimport_mode']
-    custom_widget('translations_autoimport_mode',
-                  LaunchpadRadioWidgetWithDescription)
+    settings_widget = custom_widget('translations_autoimport_mode',
+                  SettingsRadioWidget)
 
     def __init__(self, context, request):
-        LaunchpadEditFormView.__init__(self, context, request)
+        super(ProductSeriesTranslationsSettingsView, self).__init__(
+            context, request)
         self.cancel_url = canonical_url(self.context)
 
     @action(u"Save settings", name="save_settings")
@@ -711,3 +769,34 @@ class ProductSeriesTranslationsSettingsView(LaunchpadEditFormView):
             self.updateContextFromData(data)
         self.request.response.addInfoNotification(
             _("The settings have been updated."))
+
+
+class ProductSeriesTranslationsBzrImportView(LaunchpadFormView,
+                                             ProductSeriesTranslationsMixin):
+    """Edit settings for translations import and export."""
+
+    schema = IProductSeries
+    field_names = []
+
+    def __init__(self, context, request):
+        super(ProductSeriesTranslationsBzrImportView, self).__init__(
+            context, request)
+        self.cancel_url = canonical_url(self.context)
+
+    def validate(self, action):
+        if self.context.branch is None:
+            self.addError(
+                "Please set the official Bazaar branch first.")
+
+    @action(u"Request one-time import", name="request_import")
+    def request_import_action(self, action, data):
+        """ Request an upload of translation files. """
+        job = getUtility(IRosettaUploadJobSource).create(
+            self.context.branch, NULL_REVISION, True)
+        if job is None:
+            self.addError(
+                _("Your request could not be filed."))
+        else:
+            self.request.response.addInfoNotification(
+                _("The import has been requested."))
+

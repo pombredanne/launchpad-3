@@ -70,9 +70,9 @@ class IProductSeriesEditRestricted(Interface):
     """IProductSeries properties which require launchpad.Edit."""
 
     @rename_parameters_as(dateexpected='date_targeted')
-    @export_factory_operation(IMilestone,
-                              ['name', 'dateexpected', 'summary'])
-    def newMilestone(name, dateexpected=None, summary=None):
+    @export_factory_operation(
+        IMilestone, ['name', 'dateexpected', 'summary', 'code_name'])
+    def newMilestone(name, dateexpected=None, summary=None, code_name=None):
         """Create a new milestone for this ProjectSeries."""
 
 
@@ -214,7 +214,7 @@ class IProductSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
                           "if this series is not maintained in Bazaar.")))
 
     translations_autoimport_mode = Choice(
-        title=_('Import mode'),
+        title=_('Import settings'),
         vocabulary=TranslationsBranchImportMode,
         required=True,
         description=_("Specify which files will be imported from the "

@@ -11,15 +11,44 @@ on. If the branch is a junk branch, then the target is the branch owner.
 
 __metaclass__ = type
 __all__ = [
+    'check_default_stacked_on',
     'IBranchTarget',
     'IHasBranchTarget',
     ]
 
 from zope.interface import Attribute, Interface
+from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad import _
 from canonical.launchpad.webapp.interfaces import IPrimaryContext
 from lazr.restful.fields import Reference
+
+
+def check_default_stacked_on(branch):
+    """Return 'branch' if suitable to be a default stacked-on branch.
+
+    Only certain branches are suitable to be default stacked-on branches.
+    Branches that are *not* suitable include:
+      - remote branches
+      - branches the user cannot see
+      - branches that have not yet been successfully processed by the puller.
+
+    If the given branch is not suitable, return None. For convenience, also
+    returns None if passed None. Otherwise, return the branch.
+    """
+    # Import here to avoid circular imports.
+    from lp.code.interfaces.branch import BranchType
+    if branch is None:
+        return None
+    try:
+        branch_type = branch.branch_type
+    except Unauthorized:
+        return None
+    if branch_type == BranchType.REMOTE:
+        return None
+    if branch.last_mirrored is None:
+        return None
+    return branch
 
 
 class IHasBranchTarget(Interface):
@@ -41,6 +70,8 @@ class IBranchTarget(IPrimaryContext):
         "An iterable of the objects that make up this branch target, from "
         "most-general to most-specific. In a URL, these would normally "
         "appear from left to right.")
+
+    displayname = Attribute("The display name of this branch target.")
 
     default_stacked_on_branch = Reference(
         # Should be an IBranch, but circular imports prevent it.
