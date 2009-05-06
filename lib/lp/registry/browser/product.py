@@ -60,7 +60,8 @@ from canonical.launchpad.interfaces.bugwatch import IBugTracker
 from canonical.launchpad.interfaces.country import ICountry
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.launchpad.interfaces.translationimportqueue import ITranslationImportQueue
+from canonical.launchpad.interfaces.translationimportqueue import (
+    ITranslationImportQueue)
 from canonical.launchpad.webapp.interfaces import (
     ILaunchBag, NotFoundError, UnsafeFormGetSubmissionError)
 from lp.registry.interfaces.pillar import IPillarNameSet
@@ -387,7 +388,7 @@ class ProductOverviewMenu(ApplicationMenu):
         text = 'Show distribution packages'
         return Link('+packages', text, icon='info')
 
-    @enabled_with_permission('launchpad.Edit')
+    @enabled_with_permission('launchpad.Driver')
     def series_add(self):
         text = 'Register a series'
         return Link('+addseries', text, icon='add')
