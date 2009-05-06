@@ -46,21 +46,23 @@ class BranchScanner:
                 # terminate the script.
                 raise
             except Exception, e:
-                # Yes, bare except. Bugs or error conditions when scanning any
-                # given branch must not prevent scanning the other branches.
+                # Bugs or error conditions when scanning any given branch must
+                # not prevent scanning the other branches. Log the error and
+                # keep going.
                 self.logScanFailure(branch, str(e))
 
     def scanAllBranches(self):
         """Run Bzrsync on all branches, and intercept most exceptions."""
-        self.log.info('Starting branch scanning')
+        event_handlers = [
+            email.send_tip_changed_emails,
+            buglinks.got_new_revision,
+            mergedetection.auto_merge_branches,
+            mergedetection.auto_merge_proposals,
+            schedule_translation_upload,
+            ]
         server = get_scanner_server()
-        fixture = Fixtures(
-            [server, make_zope_event_fixture(
-                email.send_tip_changed_emails,
-                buglinks.got_new_revision,
-                mergedetection.auto_merge_branches,
-                mergedetection.auto_merge_proposals,
-                schedule_translation_upload)])
+        fixture = Fixtures([server, make_zope_event_fixture(*event_handlers)])
+        self.log.info('Starting branch scanning')
         branches = getUtility(IBranchScanner).getBranchesToScan()
         run_with_fixture(fixture, self.scanBranches, branches)
         self.log.info('Finished branch scanning')

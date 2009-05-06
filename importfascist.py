@@ -228,8 +228,9 @@ def import_fascist(name, globals={}, locals={}, fromlist=[]):
             for attrname in fromlist:
                 if (attrname in ('adapter', 'provideHandler')
                     and module.__name__ == 'zope.component'):
-                    # 'adapter' is not in zope.component.__all__, but that's
-                    # where it should be imported from.
+                    # 'adapter' and 'provideHandler' are not in
+                    # zope.component.__all__, but that's where they should be
+                    # imported from.
                     continue
                 if attrname != '__doc__' and attrname not in module.__all__:
                     if not isinstance(

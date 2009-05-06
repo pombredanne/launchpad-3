@@ -26,8 +26,6 @@ from lazr.uri import URI
 from canonical.codehosting import iter_list_chunks
 from canonical.codehosting.puller.worker import BranchMirrorer, BranchPolicy
 from canonical.codehosting.scanner import events
-from canonical.codehosting.scanner.mergedetection import (
-    auto_merge_branches, auto_merge_proposals)
 from lp.code.interfaces.branch import (
     BranchFormat, ControlFormat, RepositoryFormat)
 from lp.code.interfaces.branchjob import IRosettaUploadJobSource
@@ -138,8 +136,8 @@ class BzrSync:
         self.insertBranchRevisions(bzr_branch, branchrevisions_to_insert)
         self.trans_manager.commit()
 
-        # Generate emails for the revisions in the revision_history
-        # for the branch.
+        # Notify any listeners that the tip of the branch has changed, but
+        # before we've actually updated the database branch.
         initial_scan = (len(db_history) == 0)
         notify(events.TipChanged(self.db_branch, bzr_branch, initial_scan))
 
