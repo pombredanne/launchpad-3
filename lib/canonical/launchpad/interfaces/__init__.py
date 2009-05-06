@@ -140,7 +140,6 @@ from canonical.launchpad.interfaces.schema import *
 from canonical.launchpad.interfaces.scriptactivity import *
 from canonical.launchpad.interfaces.section import *
 from canonical.launchpad.interfaces.searchservice import *
-from canonical.shipit.interfaces.shipit import *
 from lp.registry.interfaces.sourcepackage import *
 from lp.registry.interfaces.sourcepackagename import *
 from canonical.launchpad.interfaces.sourcepackagerelease import *

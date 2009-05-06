@@ -49,7 +49,7 @@ The quantities specified by the user must be positive integers.
   You can't make a request with 0 CDs
   Quantities must be greater than or equal 0.
 
-  >>> from canonical.launchpad.interfaces import ShipItConstants
+  >>> from canonical.shipit.interfaces.shipit import ShipItConstants
   >>> browser.getControl(name='field.ubuntu_quantityx86').value = str(
   ...     ShipItConstants.max_size_for_auto_approval)
   >>> browser.getControl('Submit Request').click()
@@ -147,7 +147,7 @@ of this same distroseries.
   ...     requestedcds.quantityapproved = requestedcds.quantity
   >>> from canonical.database.sqlbase import flush_database_updates
   >>> flush_database_updates()
-  >>> from canonical.launchpad.database import ShippingRequestSet
+  >>> from canonical.shipit.model.shipit import ShippingRequestSet
   >>> run = ShippingRequestSet()._create_shipping_run([shipit_request.id])
   >>> [request.recipient.displayname for request in run.requests]
   [u'Foo Bar']
