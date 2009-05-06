@@ -42,7 +42,7 @@ Let's create a new request for foo.bar@canonical.com.
 
     >>> request.getTotalCDs()
     37
-    >>> from canonical.launchpad.interfaces.shipit import IShipitAccount
+    >>> from canonical.shipit.interfaces.shipit import IShipitAccount
     >>> IShipitAccount(foobar.account).currentShipItRequest() == request
     True
   
@@ -1227,7 +1227,7 @@ The keys in this dictionary must be attribute names of
 ShipItSurveySchema and the values have to be either None or one or more
 lazr.Item objects.
 
-    >>> from canonical.launchpad.interfaces.shipit import (
+    >>> from canonical.shipit.interfaces.shipit import (
     ...     EnvironmentVocabulary, EvaluatedUsesVocabulary, IShipItSurveySet,
     ...     ShipItSurveySchema)
     >>> schema = ShipItSurveySchema
