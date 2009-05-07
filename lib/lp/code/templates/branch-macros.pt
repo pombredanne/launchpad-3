@@ -23,11 +23,9 @@
       branch - one of the branches of the merge proposal
     The following variables define what is shown and are optional.
       dependent_branch - the dependent branch to link to
-      show_whiteboard - show the whiteboard
       show_status - show the proposal status
       show_commit_message - show the commit message
       show_associations - show the bugs and specs
-      show_lifecycle - show the branch lifecycle status
   </tal:comment>
 
   <dl class="mergeproposal">
@@ -46,11 +44,6 @@
         view proposal details</a>
     </dt>
     <dd>
-      <div class="whiteboard"
-           tal:condition="show_whiteboard|nothing"
-           tal:content="structure mergeproposal/whiteboard/fmt:text-to-html">
-        The whiteboard.
-      </div>
       <div class="commit_message"
            tal:condition="show_commit_message|nothing"
            tal:content="structure mergeproposal/commit_message/fmt:text-to-html">
@@ -108,7 +101,6 @@
     This macro requires the following defined variables:
       branch - the branch that has the bug branch links
     The following variables define what is shown and are optional.
-      show_whiteboard - show the whiteboard for the bug branch
       show_edit - show the edit form
   </tal:comment>
 
@@ -137,16 +129,6 @@
            <img src="/@@/bug-status-expand"/>
          </a>
        </tal:show-edit>
-       <tal:show-whiteboard condition="show_whiteboard|nothing">
-         <dl tal:condition="bug_branch/whiteboard"
-             tal:attributes="id string:bugbranch${bug_branch/id}-wb">
-           <dd>
-             <tal:whiteboard content="structure bug_branch/whiteboard/fmt:text-to-html">
-               The whiteboard.
-             </tal:whiteboard>
-           </dd>
-         </dl>
-       </tal:show-whiteboard>
        </div>
        <div tal:condition="show_edit|nothing"
             tal:attributes="id string:bugbranch${bug_branch/id}"
@@ -167,7 +149,6 @@
     This macro requires the following defined variables:
       branch - the branch that has the spec branch links
     The following variables define what is shown and are optional.
-      show_whiteboard - show the whiteboard for the specification branch
       show_edit - show the edit form
   </tal:comment>
 
@@ -187,16 +168,6 @@
                             onclick string:return switchSpecBranchFormAndSummary('${spec_branch/id}')">
          edit <img src="/@@/bug-status-expand"/></a>
        </tal:show-edit>
-       <tal:show-whiteboard condition="show_whiteboard|nothing">
-         <dl tal:condition="spec_branch/summary"
-             tal:attributes="id string:specbranch${spec_branch/id}-summary">
-           <dd>
-             <tal:summary content="structure spec_branch/summary/fmt:text-to-html">
-               The spec link summary.
-             </tal:summary>
-           </dd>
-         </dl>
-       </tal:show-whiteboard>
        </div>
        <div tal:condition="show_edit|nothing"
             tal:attributes="id string:specbranch${spec_branch/id}"
