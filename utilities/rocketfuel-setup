@@ -471,12 +471,6 @@ if [ ! -e ~/.ssh/launchpad_id_dsa ]; then
   echo "Setup ssh key for local supermirror ssh access."
 fi
 
-# Setup environment variables in a ~ dot file
-cd $HOME
-if [ ! -e $HOME/.rocketfuel-env.sh ]; then
-  ln -s $LP_TRUNK_PATH/utilities/rocketfuel-env.sh .rocketfuel-env.sh
-fi
-
 # Setup scripts in /usr/local/bin
 cd /usr/local/bin
 if [ ! -e rocketfuel-get ]; then
@@ -550,13 +544,14 @@ You should use the following commands to manage your Rocketfuel:
     branches you are working on.
 
  rocketfuel-branch foo
-    Create a new branch of LP called "foo" in $LP_PROJECT_PATH/foo,
+    Create a new branch of LP called \"foo\" in
+    $LP_PROJECT_PATH/foo,
     with all the source dependencies properly linked in.
 
  rocketfuel-status
-    Check each of the branches in $LP_PROJECT_PATH and show which of them have
-    uncommitted changes, also check which ones have revisions that have not
-    yet landed on trunk.
+    Check each of the branches in $LP_PROJECT_PATH
+    and show which of them have uncommitted changes, also check which ones
+    have revisions that have not yet landed on trunk.
 
  rocketfuel-push
     Push all of your branches to Launchpad, so that you have a server-side

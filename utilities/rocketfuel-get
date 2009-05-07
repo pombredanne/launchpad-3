@@ -10,6 +10,11 @@ if [ "$?" != 0 ]; then
     exit 1
 fi
 
+LP_DOWNLOAD_CACHE_PATH=$LP_PROJECT_ROOT/$LP_SOURCEDEPS_DIR/buildout/download-cache
+LP_EGGS_PATH=$LP_PROJECT_ROOT/$LP_SOURCEDEPS_DIR/buildout/eggs
+LP_DOWNLOAD_CACHE_PATH=$(eval echo ${LP_DOWNLOAD_CACHE_PATH})
+LP_EGGS_PATH=$(eval echo ${LP_EGGS_PATH})
+
 DEVPAD="devpad.canonical.com"
 ROCKETFUELDEPS="/code/rocketfuel-built/launchpad/sourcecode/*"
 RSYNCOPTIONS="-avp --partial --progress --delete"
@@ -25,8 +30,13 @@ INITIAL_REV=$(bzr revno)
 bzr pull
 FINAL_REV=$(bzr revno)
 
-# Update the source dependencies
+# Make sure our directories are around
 if [ ! -d $LP_SOURCEDEPS_PATH ]; then mkdir -p $LP_SOURCEDEPS_PATH; fi
+if [ ! -d $LP_EGGS_PATH ]; then mkdir -p $LP_EGGS_PATH; fi
+
+# Get/update the download cache
+if [ ! -d $LP_DOWNLOAD_CACHE_PATH ]; then bzr co lp:lp-source-dependencies $LP_DOWNLOAD_CACHE_PATH; fi
+bzr up $LP_DOWNLOAD_CACHE_PATH
 
 # Several (*) have tried, and failed, to get the --filter to fit neatly
 # into RSYNCOPTIONS, so we put it here. Bash arrays do not count.
