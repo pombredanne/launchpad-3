@@ -1,4 +1,4 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2008, 2009 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0213
 
 """Internal Codehosting API interfaces."""
@@ -63,9 +63,31 @@ class IBranchPuller(Interface):
 
         :raise UnknownBranchTypeError: if the branch type is unrecognized.
 
-        :returns: a list of (branch_id, pull_url, unique_name) triples, where
-        unique_name is ~owner_name/product_name/branch_name, and product_name
-        is '+junk' if there is no product associated with the branch.
+        :returns: a list of (branch_id, pull_url, unique_name, default_branch)
+            4-tuples.  branch_id is the database id of the branch, pull_url is
+            where to pull from, unique_name is the unique_name of the branch
+            and default_branch is the default stacked on branch for the
+            branch's target.
+        """
+
+    def acquireBranchToPull():
+        """Return a Branch to pull and mark it as mirror-started.
+
+        :return: A 5-tuple::
+
+              (branch_id, pull_url, unique_name, default_branch, branch_type)
+
+            where:
+
+              * branch_id is the database id of the branch,
+              * pull_url is where to pull from,
+              * unique_name is the unique_name of the branch,
+              * default_branch is the unique name of the default stacked on
+                branch for the branch's target (or '' if there is no such
+                branch), and
+              * branch_type is one of 'hosted', 'mirrored', or 'imported'.
+
+            or (), the empty tuple, if there is no branch to pull.
         """
 
     def startMirroring(branchID):
