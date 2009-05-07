@@ -69,7 +69,7 @@ from canonical.launchpad.interfaces.cve import *
 from canonical.launchpad.interfaces.cvereference import *
 from lp.registry.interfaces.distribution import *
 from canonical.launchpad.interfaces.distributionbounty import *
-from canonical.launchpad.interfaces.distributionmirror import *
+from lp.registry.interfaces.distributionmirror import *
 from lp.registry.interfaces.distributionsourcepackage import *
 from canonical.launchpad.interfaces.distributionsourcepackagecache import *
 from canonical.launchpad.interfaces.distributionsourcepackagerelease import *
