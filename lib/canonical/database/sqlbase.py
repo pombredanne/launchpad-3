@@ -308,10 +308,12 @@ class ZopelessTransactionManager(object):
             """ % vars())
 
         if dbuser:
+            # XXX 2009-05-07 stub bug=373252: Scripts should not be connecting
+            # as the launchpad_auth database user.
             overlay += dedent("""\
                 [launchpad]
                 dbuser: %(dbuser)s
-                auth_dbuser: %(dbuser)s
+                auth_dbuser: launchpad_auth
                 """ % vars())
 
         if cls._installed is not None:
