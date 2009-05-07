@@ -498,15 +498,12 @@
         <table tal:condition="view/contextUsesMalone">
           <tbody>
             <tr>
-              <td>
-                <input id="bug-not-already-reported" type="radio"
-                       name="field.bug_already_reported_as" value=""
-                       tal:attributes="checked view/submit_bug_action/submitted|nothing" />
-              </td>
-              <td>
-                <label for="bug-not-already-reported">
-                  No, I need to report a new bug
-                </label>
+              <td colspan="2">
+                <input
+                    id="bug-not-already-reported"
+                    type="button"
+                    name="field.bug_already_reported_as"
+                    value="No, I need to report a new bug" />
               </td>
             </tr>
           </tbody>
