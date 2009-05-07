@@ -8,7 +8,7 @@ New projects are registered in Launchpad using a two step multi-view widget.
     >>> product_set = getUtility(IProductSet)
 
     >>> view = create_initialized_view(product_set, name='+new')
-    >>> view.step_one
+    >>> view.first_step
     <class 'lp.registry.browser.product.ProjectAddStepOne'>
 
 The first step requires all of name, summary, displayname to be given.  These

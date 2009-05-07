@@ -40,7 +40,7 @@
             <p class="intro-text">
                 <strong>Build an open community to translate your software into almost any language.</strong> Simple web-based translation and review, GNU GetText support and automatic suggestions from a library of sixteen million translated strings.
             </p>
-            <div id="link-holder"><a href="https://translations.launchpad.net/">Visit Launchpad Translations &gt;</a><br /><a href="https://launchpad.net/projects/+new-guided">Add your project to Launchpad &gt;</a></div>
+            <div id="link-holder"><a href="https://translations.launchpad.net/">Visit Launchpad Translations &gt;</a><br /><a href="https://launchpad.net/projects/+new">Add your project to Launchpad &gt;</a></div>
         </div>
         <div id="page-intro-bottom"></div>
         <ul id="secondary-navigation">
