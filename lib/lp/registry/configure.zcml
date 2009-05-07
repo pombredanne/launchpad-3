@@ -1050,6 +1050,9 @@
         <allow
             interface="canonical.launchpad.interfaces.IHasTranslationImports"/>
         <require
+            permission="launchpad.Driver"
+            interface="lp.registry.interfaces.product.IProductDriverRestricted"/>
+        <require
             permission="launchpad.Edit"
             interface="lp.registry.interfaces.product.IProductEditRestricted"/>
         <require
