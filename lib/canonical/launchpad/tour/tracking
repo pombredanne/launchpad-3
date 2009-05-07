@@ -14,7 +14,7 @@
     <script type="text/javascript" src="selector.js"></script>
 </head>
 <body>
-   	<div id="link-holder"><a href="https://launchpad.net/+login">Create your Launchpad account &gt;</a><br /><a href="https://launchpad.net/projects/+new-guided">Add your project to Launchpad &gt;</a></div>
+   	<div id="link-holder"><a href="https://launchpad.net/+login">Create your Launchpad account &gt;</a><br /><a href="https://launchpad.net/projects/+new">Add your project to Launchpad &gt;</a></div>
     
     <div id="container">
         <p class="page-number">8 of 10</p>
