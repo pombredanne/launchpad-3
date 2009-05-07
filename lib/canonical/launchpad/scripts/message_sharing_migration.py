@@ -3,8 +3,9 @@
 __metaclass__ = type
 __all__ = [
     'find_potemplate_equivalence_classes_for',
-    'MergePOTMsgSets',
+    'MessageSharingMerge',
     'merge_potmsgsets',
+    'merge_translationmessages',
     'template_precedence',
     ]
 
@@ -15,13 +16,14 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.interfaces.potemplate import IPOTemplateSet
+from canonical.launchpad.utilities.orderingcheck import OrderingCheck
 from lp.registry.interfaces.product import IProductSet
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from canonical.launchpad.scripts.base import (
     LaunchpadScript, LaunchpadScriptFailure)
 
 
-def get_key(potmsgset):
+def get_potmsgset_key(potmsgset):
     """Get the tuple of identifying properties of a POTMsgSet.
 
     A POTMsgSet is identified by its msgid, optional plural msgid, and
@@ -111,9 +113,11 @@ def merge_potmsgsets(potemplates):
     # through the templates, starting at the most representative and
     # moving towards the least representative.  For any unique potmsgset
     # key we find, the first POTMsgSet is the representative one.
+    order_check = OrderingCheck(cmp=template_precedence)
     for template in potemplates:
+        order_check.check(template)
         for potmsgset in template.getPOTMsgSets(False):
-            key = get_key(potmsgset)
+            key = get_potmsgset_key(potmsgset)
             if key not in representatives:
                 representatives[key] = potmsgset
             representative = representatives[key]
@@ -169,6 +173,16 @@ def merge_potmsgsets(potemplates):
 
             merge_translationtemplateitems(subordinate, representative)
             removeSecurityProxy(subordinate).destroySelf()
+
+
+def merge_translationmessages(potemplates):
+    """Share `TranslationMessage`s between `potemplates` where possible."""
+    order_check = OrderingCheck(cmp=template_precedence)
+    for template in potemplates:
+        order_check.check(template)
+        for potmsgset in template.getPOTMsgSets(False):
+            for message in potmsgset.getAllTranslationMessages():
+                removeSecurityProxy(message).shareIfPossible()
 
 
 def get_equivalence_class(template):
@@ -255,23 +269,38 @@ def find_potemplate_equivalence_classes_for(product=None, distribution=None,
     return equivalents
 
 
-class MergePOTMsgSets(LaunchpadScript):
+class MessageSharingMerge(LaunchpadScript):
 
     def add_my_options(self):
         self.parser.add_option('-d', '--distribution', dest='distribution',
             help="Distribution to merge messages for.")
         self.parser.add_option('-p', '--product', dest='product',
             help="Product to merge messages for.")
+        self.parser.add_option('-P', '--merge-potmsgsets',
+            action='store_true', dest='merge_potmsgsets',
+            help="Merge POTMsgSets.")
         self.parser.add_option('-s', '--source-package', dest='sourcepackage',
             help="Source package name within a distribution.")
         self.parser.add_option('-t', '--template-names',
             dest='template_names',
             help="Merge for templates with name matching this regex pattern.")
+        self.parser.add_option('-T', '--merge-translationmessages',
+            action='store_true', dest='merge_translationmessages',
+            help="Merge TranslationMessages.")
         self.parser.add_option('-x', '--dry-run', dest='dry_run',
             action='store_true',
             help="Dry run, don't really make any changes.")
 
     def main(self):
+        actions = (
+            self.options.merge_potmsgsets or
+            self.options.merge_translationmessages)
+
+        if not actions:
+            raise LaunchpadScriptFailure(
+                "Select at least one action: merge POTMsgSets, "
+                "TranslationMessages, or both.")
+
         if self.options.product and self.options.distribution:
             raise LaunchpadScriptFailure(
                 "Merge a product or a distribution, but not both.")
@@ -300,12 +329,15 @@ class MergePOTMsgSets(LaunchpadScript):
                 raise LaunchpadScriptFailure(
                     "Unknown distribution: '%s'" % self.options.distribution)
 
-        sourcepackagename = getUtility(ISourcePackageNameSet).queryByName(
-            self.options.sourcepackage)
-        if sourcepackagename is None:
-            raise LaunchpadScriptFailure(
-                "Unknown source package name: '%s'" %
-                    self.options.sourcepackage)
+        if self.options.sourcepackage is None:
+            sourcepackagename = None
+        else:
+            sourcepackagename = getUtility(ISourcePackageNameSet).queryByName(
+                self.options.sourcepackage)
+            if sourcepackagename is None:
+                raise LaunchpadScriptFailure(
+                    "Unknown source package name: '%s'" %
+                        self.options.sourcepackage)
 
         equivalence_classes = find_potemplate_equivalence_classes_for(
             product=product, distribution=distribution,
@@ -322,9 +354,18 @@ class MergePOTMsgSets(LaunchpadScript):
                 "Merging equivalence class '%s': %d template(s) (%d / %d)" % (
                     name, len(templates) + 1, number, class_count))
             self.logger.debug("Templates: %s" % str(templates))
-            merge_potmsgsets(templates)
-            if self.options.dry_run:
-                self.txn.abort()
-            else:
-                self.txn.commit()
-            self.txn.begin()
+
+            if self.options.merge_potmsgsets:
+                merge_potmsgsets(templates)
+
+            if self.options.merge_translationmessages:
+                merge_translationmessages(templates)
+
+            self._endTransaction()
+
+    def _endTransaction(self):
+        if self.options.dry_run:
+            self.txn.abort()
+        else:
+            self.txn.commit()
+        self.txn.begin()
