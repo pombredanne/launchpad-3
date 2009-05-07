@@ -91,7 +91,7 @@ class TestPoppy(unittest.TestCase):
     def testCWD(self):
         """Check automatic creation of directories 'cwd'ed in.
 
-        Also ensure they are created with proper permission (g+rwx)
+        Also ensure they are created with proper permission (g+rwxs)
         """
         conn = self.getFTPConnection()
         self.assertEqual(
@@ -103,12 +103,12 @@ class TestPoppy(unittest.TestCase):
         wanted_path = self._uploadPath('foo/bar')
 
         self.assertTrue(os.path.exists(wanted_path))
-        self.assertEqual(os.stat(wanted_path).st_mode, 040775)
+        self.assertEqual(os.stat(wanted_path).st_mode, 042775)
 
     def testMKD(self):
         """Check recursive MKD (aka mkdir -p).
 
-        Also ensure they are created with proper permission (g+rwx)
+        Also ensure they are created with proper permission (g+rwxs)
         """
         conn = self.getFTPConnection()
         self.assertEqual(
@@ -124,7 +124,7 @@ class TestPoppy(unittest.TestCase):
         wanted_path = self._uploadPath('foo/bar')
 
         self.assertTrue(os.path.exists(wanted_path))
-        self.assertEqual(os.stat(wanted_path).st_mode, 040775)
+        self.assertEqual(os.stat(wanted_path).st_mode, 042775)
 
     def testRMD(self):
         """Check recursive RMD (aka rmdir)"""
@@ -142,7 +142,10 @@ class TestPoppy(unittest.TestCase):
         self.assertFalse(os.path.exists(wanted_path))
 
     def testSTOR(self):
-        """Check if the parent directories are created during file upload."""
+        """Check if the parent directories are created during file upload.
+
+        The uploaded file permissions are also special (g+rwxs).
+        """
         conn = self.getFTPConnection()
         fake_file = StringIO.StringIO("fake contents")
         self.assertEqual(
@@ -153,6 +156,7 @@ class TestPoppy(unittest.TestCase):
         wanted_path = self._uploadPath('foo/bar/baz')
         fs_content = open(os.path.join(wanted_path)).read()
         self.assertEqual(fs_content, "fake contents")
+        self.assertEqual(os.stat(wanted_path).st_mode, 0102674)
 
     def testUploadIsolation(self):
         """Check if poppy isolates the uploads properly.
