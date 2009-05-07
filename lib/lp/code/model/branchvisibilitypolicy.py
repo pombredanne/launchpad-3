@@ -86,11 +86,11 @@ class BranchVisibilityPolicyMixin:
     def _selectOneBranchVisibilityTeamPolicy(self, team):
         """Finds one particular policy item."""
         if self.isUsingInheritedBranchVisibilityPolicy():
-            policy_visibility_context = self.project._policy_visibility_context
+            policy_visibility_ctx = self.project._policy_visibility_context
         else:
-            policy_visibility_context = self._policy_visibility_context
+            policy_visibility_ctx = self._policy_visibility_context
         return BranchVisibilityTeamPolicy.selectOneBy(
-                team=team, **policy_visibility_context)
+                team=team, **policy_visibility_ctx)
 
     def getBaseBranchVisibilityRule(self):
         """See `IHasBranchVisibilityPolicy`."""
