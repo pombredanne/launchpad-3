@@ -196,7 +196,17 @@ class UploadProcessor:
         self.moveUpload(upload_path, destination)
 
     def locateDirectories(self, fsroot):
-        """List directories in given directory, usually 'incoming'."""
+        """Return a list of upload directories in a given queue.
+
+        This method operates on the queue atomically, i.e. it suppresses
+        changes in the queue directory, like new uploads, by acquiring
+        the shared upload_queue lockfile while the directory are listed.
+
+        :param fsroot: path to a 'queue' directory to be inspected.
+
+        :return: a list of upload directories found in the queue
+            alphabetically sorted.
+        """
         # Protecting listdir by a lock ensures that we only get
         # completely finished directories listed. See
         # PoppyInterface for the other locking place.
@@ -221,9 +231,12 @@ class UploadProcessor:
             # Skip lockfile deletion, see similar code in poppyinterface.py.
             fsroot_lock.release(skip_delete=True)
 
-        dir_names = [dir_name for dir_name in dir_names if
-                     os.path.isdir(os.path.join(fsroot, dir_name))]
-        return dir_names
+        sorted_dir_names =  sorted(
+            dir_name
+            for dir_name in dir_names
+            if os.path.isdir(os.path.join(fsroot, dir_name)))
+
+        return sorted_dir_names
 
     def locateChangesFiles(self, upload_path):
         """Locate .changes files in the given upload directory.

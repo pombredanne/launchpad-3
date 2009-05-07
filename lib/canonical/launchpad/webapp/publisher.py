@@ -38,9 +38,9 @@ from zope.security.checker import ProxyFactory, NamesChecker
 from zope.traversing.browser.interfaces import IAbsoluteURL
 
 from canonical.cachedproperty import cachedproperty
-from canonical.launchpad.layers import (
-    setFirstLayer, ShipItUbuntuLayer, ShipItKUbuntuLayer, ShipItEdUbuntuLayer,
-    WebServiceLayer)
+from canonical.launchpad.layers import setFirstLayer, WebServiceLayer
+from canonical.shipit.layers import (
+    ShipItUbuntuLayer, ShipItKUbuntuLayer, ShipItEdUbuntuLayer)
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.launchpad.webapp.interfaces import (
     ICanonicalUrlData, ILaunchBag, ILaunchpadApplication, ILaunchpadContainer,
