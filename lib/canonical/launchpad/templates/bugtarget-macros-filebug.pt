@@ -530,61 +530,6 @@
     </div>
   </tal:submit-new-bug>
 
-  <script type="text/javascript" tal:condition="view/similar_bugs">
-    /*
-     * Arrange the bug form for either the state where the user is selecting
-     * an existing bug report, or for where they're filing a new bug.
-     */
-    function arrangeBugForm(event) {
-      var no_radiobtn = $('bug-not-already-reported');
-      var bugtarget_package_btn = $('field.bugtarget.option.package');
-
-      if (no_radiobtn.checked) {
-        showElement('bug_reporting_form');
-        // Try to get the whole bug form into view.
-        $('field.actions.submit_bug').focus();
-        window.location.href = '#form-start';
-
-        if (bugtarget_package_btn != null) {
-          if (bugtarget_package_btn.checked) {
-            $('field.bugtarget.package').focus();
-          } else {
-            $('field.comment').focus();
-          }
-        } else {
-          var package_name = $('field.packagename')
-          if (package_name != null) {
-            package_name.focus();
-          } else {
-            $('field.comment').focus();
-          }
-        }
-      } else {
-        hideElement('bug_reporting_form');
-      }
-
-      // Disable "Subscribe to This Bug Report" to avoid accidental use.
-      $('field.actions.this_is_my_bug').disabled = no_radiobtn.checked;
-    }
-
-    /*
-     * On-load, make sure that the 'No' stuff is displayed correctly.
-     * We must always work from the data in the form, not just from
-     * events. Some browsers (e.g. Firefox) refill the form when a page
-     * is refreshed and you don't get onchange/onkeypress events.
-     */
-    connect(window, 'onload', arrangeBugForm);
-
-    /*
-     * Arrange the form if any of the radio buttons are clicked.
-     */
-    forEach(
-      getElementsByTagAndClassName('input', null, 'similar-bugs'),
-      function(element) {
-        connect(element, 'onclick', arrangeBugForm);
-      });
-    connect('bug-not-already-reported', 'onclick', arrangeBugForm);
-  </script>
 </metal:similar-bugs-and-filebug-form>
 
 </tal:root>
