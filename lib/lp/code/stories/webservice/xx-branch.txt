@@ -84,6 +84,10 @@ time goes on.
     ...     title='Stuff needs features')
     >>> bug_branch = feature_branch_bug.addBranch(branch=feature_branch,
     ...     registrant=eric, whiteboard='')
+    >>> feature_branch_spec = factory.makeSpecification(product=fooix,
+    ...     title='Super Feature X')
+    >>> spec_branch = feature_branch_spec.linkBranch(branch=feature_branch,
+    ...     registrant=eric)
     >>> merge_proposal = factory.makeBranchMergeProposal(
     ...     target_branch=branch, source_branch=feature_branch,
     ...     registrant=eric)
@@ -135,8 +139,15 @@ branch.
 
     >>> bug_branches = webservice.get(
     ...     fooix_trunk['bug_branches_collection_link']).jsonBody()
-    >>> for bug_branch in bug_branches['entries']:
-    ...     pprint_entry(bug_branch)
+    >>> pprint_entry(bug_branches['entries'][0])
+
+
+If the branch is linked to a spec, it's possible to look up that spec through
+the spec branch link.
+
+    >>> spec_branches = webservice.get(
+    ...     fooix_trunk['spec_links_collection_link']).jsonBody()
+    >>> pprint_entry(spec_branches['entries'][0])
 
 
 There is a branch merge proposal with Fooix trunk as the target branch, so it
