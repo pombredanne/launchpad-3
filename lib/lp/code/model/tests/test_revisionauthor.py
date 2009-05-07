@@ -11,6 +11,7 @@ from zope.component import getUtility
 
 from canonical.config import config
 from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
+from canonical.launchpad.scripts.garbo import RevisionAuthorEmailLinker
 from canonical.launchpad.testing import LaunchpadObjectFactory, TestCase
 from canonical.testing import LaunchpadZopelessLayer
 from lp.code.model.revision import RevisionAuthor, RevisionSet
@@ -149,7 +150,14 @@ class TestNewlyValidatedEmailsLinkRevisionAuthors(MakeHarryTestCase):
         email = harry.guessedemails[0]
         harry.validateAndEnsurePreferredEmail(email)
         transaction.commit() # Sync all changes
-        # The link is now made.
+
+        # The link still hasn't been created at this point.
+        self.assertEqual(None, self.author.person,
+                         'No author should be set yet.')
+
+        # After the garbo RevisionAuthorEmailLinker job runs, the link
+        # is made.
+        RevisionAuthorEmailLinker().run()
         self.assertEqual(harry, self.author.person,
                          'Harry should now be the author.')
 
