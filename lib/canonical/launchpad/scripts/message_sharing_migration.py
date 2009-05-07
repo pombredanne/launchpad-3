@@ -357,11 +357,11 @@ class MessageSharingMerge(LaunchpadScript):
 
             if self.options.merge_potmsgsets:
                 merge_potmsgsets(templates)
-                self._endTransaction()
 
             if self.options.merge_translationmessages:
                 merge_translationmessages(templates)
-                self._endTransaction()
+
+            self._endTransaction()
 
     def _endTransaction(self):
         if self.options.dry_run:

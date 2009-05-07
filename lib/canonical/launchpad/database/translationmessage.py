@@ -13,6 +13,7 @@ from datetime import datetime
 import pytz
 
 from sqlobject import BoolCol, ForeignKey, SQLObjectNotFound, StringCol
+from storm.locals import SQL
 from storm.store import Store
 from zope.interface import implements
 
@@ -389,7 +390,8 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
                 form_clause = "%s = %s" % (msgstr_name, quote(msgstr))
             clauses.append(form_clause)
 
-        return TranslationMessage.selectOne(' AND '.join(clauses))
+        where_clause = SQL(' AND '.join(clauses))
+        return Store.of(self).find(TranslationMessage, where_clause).one()
 
     def shareIfPossible(self):
         """Make this message shared, if possible.
@@ -416,8 +418,10 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
             potemplate=None, language=self.language, variant=self.variant)
 
         if shared is None:
-            clash_with_shared_current = current and self.is_current
-            clash_with_shared_imported = imported and self.is_imported
+            clash_with_shared_current = (
+                current is not None and self.is_current)
+            clash_with_shared_imported = (
+                imported is not None and self.is_imported)
             if clash_with_shared_current or clash_with_shared_imported:
                 # Keep this message diverged, so it won't usurp the
                 # current or imported message that the templates share.

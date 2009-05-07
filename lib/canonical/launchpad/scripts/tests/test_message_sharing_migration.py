@@ -35,7 +35,7 @@ class TestProductTemplateEquivalenceClasses(TestCaseWithFactory,
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
-        TestCaseWithFactory.setUp(self)
+        super(TestProductTemplateEquivalenceClasses, self).setUp()
         self.product = self.factory.makeProduct()
         self.trunk = self.product.getSeries('trunk')
         self.stable = self.factory.makeProductSeries(
@@ -96,7 +96,7 @@ class TestDistroTemplateEquivalenceClasses(TestCaseWithFactory,
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
-        TestCaseWithFactory.setUp(self)
+        super(TestDistroTemplateEquivalenceClasses, self).setUp()
         self.ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
         self.hoary = self.ubuntu['hoary']
         self.warty = self.ubuntu['warty']
@@ -185,7 +185,7 @@ class TestTemplatePrecedence(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
-        TestCaseWithFactory.setUp(self, user='mark@hbd.com')
+        super(TestTemplatePrecedence, self).setUp(user='mark@hbd.com')
         self.product = self.factory.makeProduct()
         self.product.official_rosetta = True
         self.trunk = self.product.getSeries('trunk')
@@ -297,7 +297,7 @@ class TranslatableProductMixin:
     Sets up a product with series "trunk" and "stable," each with a
     template.
     """
-    def setUp(self):
+    def setUpProduct(self):
         self.product = self.factory.makeProduct()
         self.trunk = self.product.getSeries('trunk')
         self.stable = self.factory.makeProductSeries(
@@ -321,8 +321,8 @@ class TestPOTMsgSetMerging(TestCaseWithFactory, TranslatableProductMixin):
         # POTMsgSets) but it also needs to set up test conditions which
         # requires other privileges.
         self.layer.switchDbUser('postgres')
-        TestCaseWithFactory.setUp(self, user='mark@hbd.com')
-        TranslatableProductMixin.setUp(self)
+        super(TestPOTMsgSetMerging, self).setUp(user='mark@hbd.com')
+        super(TestPOTMsgSetMerging, self).setUpProduct()
 
     def test_matchedPOTMsgSetsShare(self):
         # Two identically-keyed POTMsgSets will share.  Where two
@@ -383,8 +383,8 @@ class TranslatedProductMixin(TranslatableProductMixin):
     Creates one POTMsgSet for trunk and one for stable, i.e. a
     pre-sharing situation.
     """
-    def setUp(self):
-        TranslatableProductMixin.setUp(self)
+    def setUpProduct(self):
+        super(TranslatedProductMixin, self).setUpProduct()
 
         self.trunk_potmsgset = self.factory.makePOTMsgSet(
             self.trunk_template, singular='foo', sequence=1)
@@ -490,8 +490,9 @@ class TestPOTMsgSetMergingAndTranslations(TestCaseWithFactory,
         call.
         """
         self.layer.switchDbUser('postgres')
-        TestCaseWithFactory.setUp(self, user='mark@hbd.com')
-        TranslatedProductMixin.setUp(self)
+        super(TestPOTMsgSetMergingAndTranslations, self).setUp(
+            user='mark@hbd.com')
+        super(TestPOTMsgSetMergingAndTranslations, self).setUpProduct()
 
     def test_sharingDivergedMessages(self):
         # Diverged TranslationMessages stay with their respective
@@ -579,8 +580,9 @@ class TestTranslationMessageNonMerging(TestCaseWithFactory,
 
     def setUp(self):
         self.layer.switchDbUser('postgres')
-        TestCaseWithFactory.setUp(self, user='mark@hbd.com')
-        TranslatedProductMixin.setUp(self)
+        super(TestTranslationMessageNonMerging, self).setUp(
+            user='mark@hbd.com')
+        super(TestTranslationMessageNonMerging, self).setUpProduct()
 
     def test_MessagesAreNotSharedAcrossPOTMsgSets(self):
         # Merging TranslationMessages does not merge messages that
@@ -606,8 +608,8 @@ class TestTranslationMessageMerging(TestCaseWithFactory,
 
     def setUp(self):
         self.layer.switchDbUser('postgres')
-        TestCaseWithFactory.setUp(self, user='mark@hbd.com')
-        TranslatedProductMixin.setUp(self)
+        super(TestTranslationMessageMerging, self).setUp(user='mark@hbd.com')
+        super(TestTranslationMessageMerging, self).setUpProduct()
 
     def test_messagesCanStayDiverged(self):
         # When POTMsgSets with diverged translations are merged, the
