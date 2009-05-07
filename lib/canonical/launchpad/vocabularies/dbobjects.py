@@ -333,6 +333,7 @@ class TranslationTemplateVocabulary(SQLObjectVocabularyBase):
         return SimpleTerm(obj, obj.id, obj.name)
 
 
+
 class FilteredDistroArchSeriesVocabulary(SQLObjectVocabularyBase):
     """All arch series of a particular distribution."""
 

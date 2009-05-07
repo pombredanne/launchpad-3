@@ -79,7 +79,8 @@ from canonical.config import config
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
-    PublicPersonChoice, Summary, Title, URIField, Whiteboard)
+    ParticipatingPersonChoice, PublicPersonChoice, Summary, Title, URIField,
+    Whiteboard)
 from canonical.launchpad.validators import LaunchpadValidationError
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.branchtarget import IHasBranchTarget
@@ -703,7 +704,7 @@ class IBranch(IHasOwner, IHasBranchTarget):
             required=True, readonly=True,
             vocabulary='ValidPersonOrTeam'))
     owner = exported(
-        PublicPersonChoice(
+        ParticipatingPersonChoice(
             title=_('Owner'),
             required=True,
             vocabulary='UserTeamsParticipationPlusSelf',
