@@ -14,12 +14,15 @@ __all__ = [
 from zope.interface import Interface
 from zope.schema import Choice, Int, Object, TextLine
 from lazr.enum import DBEnumeratedType, DBItem
+from lazr.restful.declarations import export_as_webservice_entry, exported
+from lazr.restful.fields import Reference
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import BugField, Summary
 from canonical.launchpad.interfaces import (
     IHasBug, IHasDateCreated, non_duplicate_branch)
 from canonical.launchpad.interfaces.bugtask import IBugTask
+from lp.code.interfaces.branch import IBranch
 from lp.registry.interfaces.person import IPerson
 
 
@@ -58,13 +61,16 @@ class BugBranchStatus(DBEnumeratedType):
 class IBugBranch(IHasDateCreated, IHasBug):
     """A branch linked to a bug."""
 
+    export_as_webservice_entry()
+
     id = Int(title=_("Bug Branch #"))
     bug = BugField(
         title=_("The bug that is linked to."),
         required=True, readonly=True)
-    branch = Choice(
-        title=_("Branch"), vocabulary="Branch",
-        constraint=non_duplicate_branch, required=True, readonly=True)
+    branch = exported(
+        Reference(
+            title=_("Branch"), schema=IBranch,
+            required=True, readonly=True))
     revision_hint = TextLine(title=_("Revision Hint"))
     status = Choice(
         title=_("State"), vocabulary=BugBranchStatus,
