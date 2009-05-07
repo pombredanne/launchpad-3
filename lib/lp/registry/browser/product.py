@@ -37,8 +37,9 @@ __all__ = [
     'SortSeriesMixin',
     ]
 
-from operator import attrgetter
+
 import urllib
+from operator import attrgetter
 
 from zope.component import getUtility
 from zope.event import notify
@@ -108,6 +109,7 @@ from canonical.widgets.textwidgets import StrippedTextWidget
 
 
 OR = '|'
+SPACE = ' '
 
 
 class ProductNavigation(
@@ -571,7 +573,7 @@ class ProductSetContextMenu(ContextMenu):
         # We link to the guided form, though people who know the URL can
         # just jump to +new directly. That might be considered a
         # feature!
-        return Link('+new-guided', text, icon='add')
+        return Link('+new', text, icon='add')
 
     def register_team(self):
         text = 'Register a team'
@@ -1470,6 +1472,28 @@ class ProductAddViewBase(ProductLicenseMixin, LaunchpadFormView):
         return canonical_url(self.product)
 
 
+class ProjectAddStepOne(StepView):
+    """product/+new view class for creating a new project."""
+
+    _field_names = ['displayname', 'name', 'title', 'summary']
+    label = "Register a project in Launchpad"
+    schema = IProduct
+    step_name = 'projectaddstep1'
+    template = ViewPageTemplateFile('../templates/product-new.pt')
+
+    custom_widget('displayname', TextWidget, displayWidth=50, label='Name')
+    custom_widget('name', ProductNameWidget, label='URL')
+
+    step_description = 'Project basics'
+    search_results_count = 0
+
+    def main_action(self, data):
+        self.next_step = ProjectAddStepTwo
+        self.request.form['displayname'] = data['displayname']
+        self.request.form['name'] = data['name']
+        self.request.form['summary'] = data['summary']
+
+
 class ProjectAddStepTwo(StepView, ProductLicenseMixin):
     """Step 2 (of 2) in the +new project add wizard."""
 
@@ -1523,9 +1547,9 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin):
 
     @cachedproperty
     def _search_string(self):
-        search_text = (self.request.form['name'] + ' ' +
-                       self.request.form['displayname'] + ' ' +
-                       self.request.form['summary'])
+        search_text = SPACE.join((self.request.form['name'],
+                                  self.request.form['displayname'],
+                                  self.request.form['summary']))
         # OR all the terms together.
         return OR.join(search_text.split())
 
@@ -1576,34 +1600,12 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin):
             title=data['title'],
             summary=data['summary'],
             displayname=data['displayname'],
-            licenses = data['licenses'],
+            licenses=data['licenses'],
             license_info=data['license_info'])
 
         self.notifyFeedbackMailingList()
         notify(ObjectCreatedEvent(self.product))
         self.next_url = canonical_url(self.product)
-
-
-class ProjectAddStepOne(StepView):
-    """product/+new view class for creating a new project."""
-
-    _field_names = ['displayname', 'name', 'title', 'summary']
-    label = "Register a project in Launchpad"
-    schema = IProduct
-    step_name = 'projectaddstep1'
-    template = ViewPageTemplateFile('../templates/product-new.pt')
-
-    custom_widget('displayname', TextWidget, displayWidth=50, label='Name')
-    custom_widget('name', ProductNameWidget, label='URL')
-
-    step_description = 'Project basics'
-    search_results_count = 0
-
-    def main_action(self, data):
-        self.next_step = ProjectAddStepTwo
-        self.request.form['displayname'] = data['displayname']
-        self.request.form['name'] = data['name']
-        self.request.form['summary'] = data['summary']
 
 
 class ProductAddView(MultiStepView):
@@ -1612,7 +1614,7 @@ class ProductAddView(MultiStepView):
     total_steps = 2
 
     @property
-    def step_one(self):
+    def first_step(self):
         return ProjectAddStepOne
 
 
