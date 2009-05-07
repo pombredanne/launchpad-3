@@ -26,8 +26,6 @@ __all__ = [
     'HWVendorIDSet',
     'HWVendorName',
     'HWVendorNameSet',
-    'num_devices_in_submissions',
-    'num_submissions_with_device',
     ]
 
 import re
@@ -328,6 +326,38 @@ class HWSubmissionSet:
         # We don't actually need to transform the results, which is why
         # the second argument is a no-op.
         return DecoratedResultSet(result_set, lambda result: result)
+
+
+    def numSubmissionsWithDevice(
+        self, bus, vendor_id, product_id, driver_name=None, package_name=None,
+        distro_target=None):
+        """See `IHWSubmissionSet`."""
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+
+        tables, clauses = make_distro_target_clause(distro_target)
+        if HWSubmission not in tables:
+            tables.append(HWSubmission)
+        clauses.append(
+            HWSubmission.status == HWSubmissionProcessingStatus.PROCESSED)
+
+        all_submissions = store.execute(
+            Select(
+                columns=[Count()], tables=tables, where=And(*clauses)))
+
+        device_tables, device_clauses = (
+            make_submission_device_statistics_clause(
+                bus, vendor_id, product_id, driver_name, package_name))
+        submission_ids = Select(
+            columns=[HWSubmissionDevice.submissionID],
+            tables=device_tables, where=And(*device_clauses))
+
+        clauses.append(In(HWSubmission.id, submission_ids))
+        submissions_with_device = store.execute(
+            Select(
+                columns=[Count()], tables=tables, where=And(*clauses)))
+
+        return (submissions_with_device.get_one()[0],
+                all_submissions.get_one()[0])
 
 
 class HWSystemFingerprint(SQLBase):
@@ -891,6 +921,28 @@ class HWSubmissionDeviceSet:
         return store.find(
             HWSubmissionDevice, HWSubmissionDevice.id == id).one()
 
+    def numDevicesInSubmissions(
+        self, bus, vendor_id, product_id, driver_name=None, package_name=None,
+        distro_target=None):
+        """See `IHWSubmissionDeviceSet`."""
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+
+        tables, where_clauses = make_submission_device_statistics_clause(
+            bus, vendor_id, product_id, driver_name, package_name)
+
+        distro_tables, distro_clauses = make_distro_target_clause(
+            distro_target)
+        if distro_clauses:
+            tables.extend(distro_tables)
+            where_clauses.extend(distro_clauses)
+            where_clauses.append(
+                HWSubmissionDevice.submission == HWSubmission.id)
+
+        result = store.execute(
+            Select(
+                columns=[Count()], tables=tables, where=And(*where_clauses)))
+        return result.get_one()[0]
+
 
 class HWSubmissionBug(SQLBase):
     """See `IHWSubmissionBug`."""
@@ -970,80 +1022,3 @@ def make_distro_target_clause(distro_target):
                 'Parameter distro_target must be an IDistribution, '
                 'IDistroSeries or IDistroArchSeries')
     return ([], [])
-
-def num_devices_in_submissions(bus, vendor_id, product_id, driver_name=None,
-                               package_name=None, distro_target=None):
-    """Count how often a device appears in HWDB submissions.
-
-    :return: The number how often the given device appears in HWDB
-        submissions.
-    :param bus: The `HWBus` of the device.
-    :param vendor_id: The vendor ID of the device.
-    :param product_id: The product ID of the device.
-    :param driver_name: Limit the count to devices controlled by the given
-        driver (optional).
-    :param package_name: Limit the count to devices controlled by a driver
-        from the given package (optional).
-    :param distro_target: Limit the count to devices appearing in HWDB
-        submissions made for the given distribution, distroseries
-        or distroarchseries.
-    """
-    store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-
-    tables, where_clauses = make_submission_device_statistics_clause(
-        bus, vendor_id, product_id, driver_name, package_name)
-
-    distro_tables, distro_clauses = make_distro_target_clause(distro_target)
-    if distro_clauses:
-        tables.extend(distro_tables)
-        where_clauses.extend(distro_clauses)
-        where_clauses.append(HWSubmissionDevice.submission == HWSubmission.id)
-
-    result = store.execute(
-        Select(
-            columns=[Count()], tables=tables, where=And(*where_clauses)))
-    return result.get_one()[0]
-
-def num_submissions_with_device(bus, vendor_id, product_id, driver_name=None,
-                               package_name=None, distro_target=None):
-    """Count the number of submissions mentioning a device.
-
-    :return: A tuple (submissions_with_device, all_submissions)
-       where submissions_with_device is the number of submissions having
-       the given device and matching the distro_target criterion and where
-       all_submissions is the number of submissions matching the
-       distro_target criterion.
-    :param bus: The `HWBus` of the device.
-    :param vendor_id: The vendor ID of the device.
-    :param product_id: The product ID of the device.
-    :param driver_name: The name of the driver used for the device
-        (optional).
-    :param package_name: The name of the package the driver is a part of.
-    :param distro_target: Limit the count to submissions made for the given
-        distribution, distroseries or distroarchseries.
-    """
-    store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-
-    tables, clauses = make_distro_target_clause(distro_target)
-    if HWSubmission not in tables:
-        tables.append(HWSubmission)
-    clauses.append(
-        HWSubmission.status == HWSubmissionProcessingStatus.PROCESSED)
-
-    all_submissions = store.execute(
-        Select(
-            columns=[Count()], tables=tables, where=And(*clauses)))
-
-    device_tables, device_clauses = (
-        make_submission_device_statistics_clause(
-            bus, vendor_id, product_id, driver_name, package_name))
-    submission_ids = Select(
-        columns=[HWSubmissionDevice.submissionID],
-        tables=device_tables, where=And(*device_clauses))
-
-    clauses.append(In(HWSubmission.id, submission_ids))
-    submissions_with_device = store.execute(
-        Select(
-            columns=[Count()], tables=tables, where=And(*clauses)))
-
-    return submissions_with_device.get_one()[0], all_submissions.get_one()[0]
