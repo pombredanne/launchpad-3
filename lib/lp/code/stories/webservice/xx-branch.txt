@@ -180,12 +180,23 @@ the spec branch link.
 
     >>> spec_branches = webservice.get(
     ...     erics_feature_branch['spec_links_collection_link']).jsonBody()
-    >>> pprint_entry(spec_branches['entries'][0])
+    >>> spec_branch = spec_branches['entries'][0]
+    >>> pprint_entry(spec_branch)
     branch_link: u'http://api.launchpad.dev/beta/~eric/fooix/feature-branch'
     registrant_link: u'http://api.launchpad.dev/beta/~salgado'
     resource_type_link: u'http://api.launchpad.dev/beta/#specification_branch'
     self_link: u'http://api.launchpad.dev/beta/fooix/+spec/name28/+branch/eric/fooix/feature-branch'
     specification_link: u'http://api.launchpad.dev/beta/fooix/+spec/name28'
+
+
+SpecBranch linkages can be deleted through the API as well.
+
+    >>> _unused = webservice.named_post(spec_branch['self_link'],
+    ...     'destroySelf').jsonBody()
+    >>> spec_branches = webservice.get(
+    ...     erics_feature_branch['spec_links_collection_link']).jsonBody()
+    >>> print len(spec_branches['entries'])
+    0
 
 
 There is a branch merge proposal with Fooix trunk as the target branch, so it
