@@ -45,7 +45,6 @@
     <include file="diff.zcml" />
     <include file="datetime.zcml" />
     <include file="decoratedresultset.zcml" />
-    <include file="distributionmirror.zcml" />
     <include file="distributionsourcepackagecache.zcml" />
     <include file="distributionsourcepackagerelease.zcml" />
     <include file="distroseriesbinarypackage.zcml" />
