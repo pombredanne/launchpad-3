@@ -535,9 +535,10 @@ class Branch(SQLBase):
 
     def getSubscriptionsByLevel(self, notification_levels):
         """See `IBranch`."""
-        # XXX: This is only used by real code to determine whether there are
-        # any subscribers at the given notification levels. The only code that
-        # cares about the actual object is in a test:
+        # XXX: JonathanLange 2009-05-07 bug=373026: This is only used by real
+        # code to determine whether there are any subscribers at the given
+        # notification levels. The only code that cares about the actual
+        # object is in a test:
         # test_only_nodiff_subscribers_means_no_diff_generated.
         store = Store.of(self)
         return store.find(
