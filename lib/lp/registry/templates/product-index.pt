@@ -12,6 +12,140 @@
   <body>
     <div metal:fill-slot="main" class="pillar"
       tal:define="overview_menu context/menu:overview">
+<tal:script
+    replace="structure string:&lt;script type='text/javascript'&gt;" />
+YUI().use('io-base', 'node', 'json-parse', function(Y) {
+
+  function doUpdate(transaction_id, response, args) {
+    json_values = Y.JSON.parse(response.responseText);
+    if(json_values.commits && json_values.count > 0) {
+      document.getElementById(args.container).innerHTML = '';
+      sparkline(args.container, json_values);
+    }
+    else
+    {
+      //alert(json_values);
+    }
+  }
+
+  function doFailure(transaction_id, response, args) {
+    Y.log('Fail');
+  }
+
+
+  function updateSparks() {
+      var container = "main_spark";
+      var uri = "<tal:block replace="context/development_focus/branch/fmt:api_url"/>/+spark";
+      var xhr_config = {
+          on: {
+              success: doUpdate,
+              failure: doFailure,
+          },
+          arguments: {
+              'container': container
+          }
+      };
+
+      Y.io(uri, xhr_config);
+  }
+
+
+  function sparkline(branch_id, o) {
+    var spark_div = document.getElementById(branch_id);
+    var number_commits = parseInt(o.commits.length);
+    var w = 160;
+    var min = 9999;
+    var max = -1;
+    var h = 12;
+    var co = document.createElement("canvas");
+
+    if (co.getContext) {
+      spark_div.style.display = 'inline';
+    } else {
+      return false;
+    }
+
+    co.style.height = h;
+    co.style.width = w;
+    co.width = w;
+    co.height = h;
+
+    spark_div.appendChild(co);
+
+    // Figure out the max and min number of commits
+    for (var i = 0; i < number_commits; i++) {
+      o.commits[i] = o.commits[i] - 0;
+      if ( o.commits[i] < min ) min = o.commits[i];
+      if ( o.commits[i] > max ) max = o.commits[i];
+    }
+
+    if (co.getContext) {
+      var c = co.getContext("2d");
+      c.strokeStyle = "black";
+      c.lineWidth = 1.0;
+      c.beginPath();
+
+      for (var i = 0; i < number_commits; i++) {
+        x_pos = (w / number_commits) * i;
+        y_pos = h - (((o.commits[i] - min) / (max - min)) * h);
+
+        if (i == 0) {
+          c.moveTo(x_pos, y_pos);
+        }
+        c.lineTo(x_pos, y_pos);
+
+        // When was the last commit?
+        if(o.commits[i] > 0) {
+          last_commit = i+1;
+        }
+
+      }
+      c.stroke();
+
+      // Marks the point with the most commits
+      c.fillStyle = 'red';
+      c.beginPath();
+      c.arc((w / number_commits) * o.max_commits,
+            h+2 - (((o.commits[o.max_commits] - min) / (max - min)) * h),
+            2, 0, (Math.PI*2), true);
+      c.fill();
+
+      new_text = document.createTextNode(o.commits[o.max_commits] + ' commits');
+      new_div = document.createElement('div');
+      new_div.setAttribute('id', 'txt_max_' + branch_id);
+      new_div.appendChild(new_text);
+      document.getElementById(branch_id).appendChild(new_div);
+      new_div.style.fontSize = '8px';
+      new_div.style.color = 'red';
+      new_div.style.position = 'relative';
+      new_div.style.top = '-22px';
+      new_div.style.left = (((w / number_commits) * o.max_commits)-14) + 'px';
+
+
+      c.fillStyle = 'blue';
+      c.beginPath();
+      c.arc((w / number_commits) * last_commit, h-2,
+            2, 0, (Math.PI*2), true);
+      c.fill();
+
+      new_text = document.createTextNode(o.last_commit);
+      new_div = document.createElement('div');
+      new_div.setAttribute('id', 'txt_' + branch_id);
+      new_div.appendChild(new_text);
+      document.getElementById(branch_id).appendChild(new_div);
+      new_div.style.fontSize = '8px';
+      new_div.style.color = 'blue';
+      new_div.style.position = 'relative';
+      new_div.style.left = (((w / number_commits) * last_commit)-24) + 'px';
+      new_div.style.top = '-10px';
+
+      spark_div.style.display = 'inline';
+    }
+  }
+
+  Y.on("domready", updateSparks);
+});
+<tal:script replace="structure string:&lt;/script&gt;" />
       <div class="section">
         <div style="float:right">
           <tal:review
@@ -231,6 +365,7 @@
         <h2>Series and milestones</h2>
         <p>A "release series" is major release that would typically have a number
       of "point releases" associated with it.</p>
+        <div id="main_spark"/>
         <div class="project series"
              tal:repeat="series view/sorted_active_series_list">
 
