@@ -186,6 +186,9 @@
 
 
             <form name="join" method="POST">
+              <input type="hidden" name="redirection_url"
+                     tal:condition="not: request/form/redirection_url|nothing"
+                     tal:attributes="value view/getRedirectionURL" />
               <table>
                 <tr>
                   <th>

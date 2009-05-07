@@ -178,6 +178,14 @@ class LoginOrRegister:
         elif self.request.form.get(self.submit_registration):
             self.process_registration_form()
 
+    def getRedirectionURL(self):
+        """Return the URL we should redirect the user to, after finishing a
+        registration or password reset process.
+
+        IOW, the current URL without the "/+login" bit.
+        """
+        return self.request.getURL(1)
+
     def process_login_form(self):
         """Process the form data.
 
