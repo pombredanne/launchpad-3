@@ -11,7 +11,7 @@ duplicates.
     ...         content, 'similar-bugs').findAll(
     ...             None, {'class': 'similar-bug'})
     ...     for node in bugs_list:
-    ...         icon = node.img
+    ...         icon = node.findAll('img')[1]
     ...         icon_alt = icon['alt'].lstrip('(').rstrip(')') or '-'
     ...         icon_src = icon['src']
     ...         text_lines = [line.strip() for line in
