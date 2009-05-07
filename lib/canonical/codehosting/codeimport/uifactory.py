@@ -3,7 +3,7 @@
 """XXX."""
 
 __metaclass__ = type
-__all__ = []
+__all__ = ['LoggingUIFactory']
 
 
 import sys
@@ -17,16 +17,16 @@ class LoggingUIFactory(UIFactory):
 
     """
 
-    def __init__(self, time_source=time.time, output=None, interval=60.0):
+    def __init__(self, time_source=time.time, writer=None, interval=60.0):
         UIFactory.__init__(self)
         self.time_source = time_source
         self._last_update = 0
         self._last_updated_task = None
         self._bytes_since_last_update = 0
-        if output is None:
-            self.output = sys.stdout
+        if writer is None:
+            self.write = sys.stdout.write
         else:
-            self.output = output
+            self.write = writer
         self.interval = interval
 
     def _cur_task(self):
@@ -36,7 +36,7 @@ class LoggingUIFactory(UIFactory):
             return None
 
     def show(self, msg):
-        self.output.write(msg + '\n')
+        self.write(msg + '\n')
         self._last_updated_task = self._cur_task()
         self._last_update = self.time_source()
         self._bytes_since_last_update = 0

@@ -10,33 +10,25 @@ from canonical.codehosting.codeimport.uifactory import LoggingUIFactory
 from canonical.launchpad.testing import FakeTime, TestCase
 
 
-class StubFile(object):
-
-    def __init__(self):
-        self.msgs = []
-
-    def write(self, msg):
-        self.msgs.append(msg)
-
-    def messages_without_timestamps(self):
-        cleaned_msgs = []
-        for m in self.msgs:
-            cleaned_msgs.append(m[m.find(']')+1:].strip())
-        return cleaned_msgs
-
-
 class TestLoggingUIFactory(TestCase):
     """Tests for `LoggingUIFactory`."""
 
     def setUp(self):
         TestCase.setUp(self)
         self.fake_time = FakeTime(12345)
-        self.stub_file = StubFile()
+        self.messages = []
+
+    @property
+    def messages_without_timestamps(self):
+        cleaned_msgs = []
+        for m in self.messages:
+            cleaned_msgs.append(m[m.find(']')+1:].strip())
+        return cleaned_msgs
 
     def makeLoggingUIFactory(self):
         """Make a `LoggingUIFactory` with fake time and contained output."""
         return LoggingUIFactory(
-            time_source=self.fake_time.now, output=self.stub_file)
+            time_source=self.fake_time.now, writer=self.messages.append)
 
     def test_first_progress_updates(self):
         # The first call to progress generates some output.
@@ -44,7 +36,7 @@ class TestLoggingUIFactory(TestCase):
         bar = factory.nested_progress_bar()
         bar.update("hi")
         self.assertEqual(
-            ['hi'], self.stub_file.messages_without_timestamps())
+            ['hi'], self.messages_without_timestamps)
 
     def test_second_rapid_progress_doesnt_update(self):
         # The second of two progress calls that are less than the factory's
@@ -55,7 +47,7 @@ class TestLoggingUIFactory(TestCase):
         self.fake_time.advance(factory.interval / 2)
         bar.update("there")
         self.assertEqual(
-            ['hi'], self.stub_file.messages_without_timestamps())
+            ['hi'], self.messages_without_timestamps)
 
     def test_second_slow_progress_updates(self):
         # The second of two progress calls that are more than the factory's
@@ -66,7 +58,7 @@ class TestLoggingUIFactory(TestCase):
         self.fake_time.advance(factory.interval * 2)
         bar.update("there")
         self.assertEqual(
-            ['hi', 'there'], self.stub_file.messages_without_timestamps())
+            ['hi', 'there'], self.messages_without_timestamps)
 
     def test_first_progress_on_new_bar_updates(self):
         # The first progress on a new progress task always generates output.
@@ -77,7 +69,7 @@ class TestLoggingUIFactory(TestCase):
         bar2 = factory.nested_progress_bar()
         bar2.update("there")
         self.assertEqual(
-            ['hi', 'hi:there'], self.stub_file.messages_without_timestamps())
+            ['hi', 'hi:there'], self.messages_without_timestamps)
 
     def test_finish_progress_updates(self):
         # Finishing a bar always updates.
@@ -86,7 +78,7 @@ class TestLoggingUIFactory(TestCase):
         bar.update("hi")
         bar.finished()
         self.assertEqual(
-            ['hi', 'hi'], self.stub_file.messages_without_timestamps())
+            ['hi', 'hi'], self.messages_without_timestamps)
 
     def test_report_transport_activity_reports_bytes_since_last_update(self):
         # If there is no call to _progress_updated for 'interval' seconds, the
@@ -106,7 +98,7 @@ class TestLoggingUIFactory(TestCase):
         factory.report_transport_activity(None, 100, 'read')
         self.assertEqual(
             ['hi', 'hi again', '110 bytes transferred'],
-            self.stub_file.messages_without_timestamps())
+            self.messages_without_timestamps)
 
     def test_update_with_count_formats_nicely(self):
         # When more details are passed to update, they are formatted nicely.
@@ -114,7 +106,7 @@ class TestLoggingUIFactory(TestCase):
         bar = factory.nested_progress_bar()
         bar.update("hi", 1, 8)
         self.assertEqual(
-            ['hi 1/8'], self.stub_file.messages_without_timestamps())
+            ['hi 1/8'], self.messages_without_timestamps)
 
 
 def test_suite():
