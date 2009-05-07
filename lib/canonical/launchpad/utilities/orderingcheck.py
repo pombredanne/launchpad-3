@@ -25,12 +25,14 @@ class OrderingCheck:
         them.  If any of the items is not at its right place in the
         sequence, this will call `fail` with that item.
         """
-        if self.item_count > 0:
-            local_order = [self.last_item, item]
-            if sorted(local_order, **self.ordering) != local_order:
-                self.fail(item)
+        try:
+            if self.item_count > 0:
+                local_order = [self.last_item, item]
+                if sorted(local_order, **self.ordering) != local_order:
+                    self.fail(item)
+        finally:
+            self.item_count += 1
 
-        self.item_count += 1
         self.last_item = item
 
     def fail(self, item):
