@@ -858,6 +858,24 @@ The vocabulary also allows us to search by IRC nickname.
     >>> [ircid.nickname for ircid in cjwatson.ircnicknames]
     [u'cjwatson']
 
+Since there are so many people and teams a vocabulary that includes
+them all is not very useful when displaying in the user interface.  So
+we limit the number of results.  The resuls are ordered by displayname
+and the first set of those are the ones returned
+
+    >>> login(ANONYMOUS)
+    >>> [person.displayname for person in vocab.search('team')]
+    [u'Hoary Gnome Team', u'No Team Memberships', u'Other Team', u'Simple Team',
+     u'Ubuntu Gnome Team', u'Ubuntu Team', u'Warty Gnome Team', u'Warty Security Team',
+     u'testing Spanish team']
+
+    >>> login(ANONYMOUS)
+    >>> vocab.LIMIT
+    500
+    >>> vocab.LIMIT = 4
+    >>> [person.displayname for person in vocab.search('team')]
+    [u'Hoary Gnome Team', u'No Team Memberships', u'Other Team', u'Simple Team']
+
 
 === ValidOwner ===
 
