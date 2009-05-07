@@ -1,4 +1,5 @@
-= Private team participation =
+Private team participation
+==========================
 
 During the transitional period between having only public and private
 membership team visibility until the end goal of having only public
@@ -15,7 +16,8 @@ of truly private teams their utility is increased but with more
 safeguards to prevent potential data leakage.
 
 
-== Bug subscriptions ==
+Bug subscriptions
+-----------------
 
     >>> # Create the necessary teams.
     >>> from lp.registry.interfaces.person import PersonVisibility
@@ -66,7 +68,8 @@ unsubscribe people.
     <BugActivity...
 
 
-== Bug task assignee ==
+Bug task assignee
+-----------------
 
 A private team can be the assignee for a bug task.
 
@@ -85,7 +88,8 @@ However a private membership team is not allowed to be a bugtask assignee.
     <BugTask...
 
 
-== Branch ownership ==
+Branch ownership
+----------------
 
 Private teams can be assigned as the owner of a branch
 
@@ -103,7 +107,8 @@ But private membership teams cannot own a branch.
     <Branch...
 
 
-== Branch subscriptions ==
+Branch subscriptions
+--------------------
 
 Private teams can subscribe to branches.
 
@@ -134,7 +139,8 @@ Private membership teams cannot subscribe to branches.
     (name=private-membership-team, visibility=PRIVATE_MEMBERSHIP) to
     <BranchSubscription at...
 
-== Branch visibility policies ==
+Branch visibility policies
+--------------------------
 
 Private teams can have branch visibility policies.
 

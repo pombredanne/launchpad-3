@@ -782,6 +782,14 @@ A PRIVATE team is displayed when the logged in user is a member of the team.
      u'private-team',
      u'simple-team', u'testing-spanish-team', u'ubuntu-team', u'warty-gnome']
 
+The PRIVATE team is also displayed for Launchpad admins.
+
+    >>> login('foo.bar@canonical.com')
+    >>> sorted(person.name for person in vocab.search('team'))
+    [u'name18', u'name20', u'name21', u'no-team-memberships', u'otherteam',
+     u'private-team',
+     u'simple-team', u'testing-spanish-team', u'ubuntu-team', u'warty-gnome']
+
 The PRIVATE team can be looked up via getTermByToken for a member of the team.
 
     >>> term = vocab.getTermByToken('private-team')
@@ -855,6 +863,7 @@ The vocabulary also allows us to search by IRC nickname.
 
 All valid persons and teams are also valid owners.
 
+    >>> login(ANONYMOUS)
     >>> vocab = vocabulary_registry.get(None, "ValidOwner")
     >>> vocab.displayname
     'Select a Person or Team'
@@ -1318,4 +1327,3 @@ projects are returned.
     ...     print term.value.displayname
     Bazaar
     Mega Money Maker
-
