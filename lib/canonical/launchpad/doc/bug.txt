@@ -713,15 +713,10 @@ Adding a branch.
 
 Editing a branch.
 
-    >>> from canonical.launchpad.interfaces import BugBranchStatus, IBugBranch
+    >>> from canonical.launchpad.interfaces import IBugBranch
 
     >>> branch_before_modification = Snapshot(
     ...     bug_branch, providing=IBugBranch)
-
-    >>> print bug_branch.status.title
-    Fix In Progress
-
-    >>> bug_branch.status = BugBranchStatus.BESTFIX
 
     >>> bug_branch_changed = ObjectModifiedEvent(
     ...     bug_branch, branch_before_modification, ["status"])

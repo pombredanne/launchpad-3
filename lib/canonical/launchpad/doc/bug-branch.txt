@@ -63,22 +63,9 @@ You can check if a branch is linked to a bug:
     >>> bug_two = bugset.get(2)
     >>> bug_two.hasBranch(branch)
     False
-
-A bug branch also has a whiteboard, so the community can specify things
-of interest to others tracking the bugfix on this branch:
-
     >>> branch = getUtility(IBranchLookup).get(1)
-    >>> bug_branch_three = bug.addBranch(
-    ...     branch, user, "I should have this fixed today")
-    >>> bug_branch_three.whiteboard
-    u'I should have this fixed today'
+    >>> bug_branch_three = bug.addBranch(branch, user)
 
-Anyone who can edit the bug the BugBranch object points to may edit the
-BugBranch object itself.
-
-    >>> login('no-priv@canonical.com')
-    >>> bug_branch_three.whiteboard = 'New whiteboard.'
-    >>> bug.description = 'New description.'
 
 If we make the bug private, no-priv won't be allowed to edit neither the
 bug nor the BugBranch.
@@ -88,10 +75,6 @@ bug nor the BugBranch.
     True
 
     >>> login('no-priv@canonical.com')
-    >>> bug_branch_three.whiteboard = 'Yet another whiteboard.'
-    Traceback (most recent call last):
-    ...
-    Unauthorized:...
 
     >>> bug.description = 'Yet another description.'
     Traceback (most recent call last):
