@@ -53,7 +53,8 @@ class TestTranslationEmptyMessages(unittest.TestCase):
         deactivation = potmsgset.updateTranslation(
             self.pofile_sr, self.pofile_sr.owner, [u""],
             is_imported=False, lock_timestamp=self.now)
-        current_message = potmsgset.getCurrentTranslationMessage(self.serbian)
+        current_message = potmsgset.getCurrentTranslationMessage(
+            self.potemplate, self.serbian)
 
         # Storing empty translation should deactivate current
         # translation message.
@@ -71,9 +72,9 @@ class TestTranslationEmptyMessages(unittest.TestCase):
             self.pofile_sr, self.pofile_sr.owner, [""],
             is_imported=True, lock_timestamp=self.now)
         imported_message = potmsgset.getImportedTranslationMessage(
-            self.serbian)
+            self.potemplate, self.serbian)
         current_message = potmsgset.getCurrentTranslationMessage(
-            self.serbian)
+            self.potemplate, self.serbian)
 
         # Empty is_imported message should not be imported.
         self.assertEquals(deactivation, None)
@@ -97,9 +98,9 @@ class TestTranslationEmptyMessages(unittest.TestCase):
             self.pofile_sr, self.pofile_sr.owner, [""],
             is_imported=True, lock_timestamp=self.now)
         new_imported_message = potmsgset.getImportedTranslationMessage(
-            self.serbian)
+            self.potemplate, self.serbian)
         current_message = potmsgset.getCurrentTranslationMessage(
-            self.serbian)
+            self.potemplate, self.serbian)
 
         # Current message should not be changed.
         self.assertEquals(launchpad_message, current_message)

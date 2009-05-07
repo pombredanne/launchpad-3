@@ -31,15 +31,22 @@ class TranslationsBranchImportMode(DBEnumeratedType):
     """How translations from a Bazaar branch should be synchronized."""
 
     NO_IMPORT = DBItem(1, """
-        No import.
+        None
 
         Do not import any templates or translations from the branch.
         """)
 
     IMPORT_TEMPLATES = DBItem(2, """
-        Import template files.
+        Import template files
 
         Import all translation template files found in the branch.
+        """)
+
+    IMPORT_TRANSLATIONS = DBItem(3, """
+        Import template and translation files
+
+        Import all translation files (templates and translations)
+        found in the branch.
         """)
 
 
