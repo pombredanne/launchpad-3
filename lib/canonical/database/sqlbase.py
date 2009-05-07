@@ -325,7 +325,6 @@ class ZopelessTransactionManager(object):
             # installed, so return that one, but also emit a warning.
             warnings.warn(alreadyInstalledMsg, stacklevel=3)
         else:
-            getUtility(IZStorm)._reset()
             config.push(cls._CONFIG_OVERLAY_NAME, overlay)
             cls._config_overlay = overlay
             cls._dbname = dbname
