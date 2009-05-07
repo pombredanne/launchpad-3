@@ -20,7 +20,7 @@ from canonical.launchpad.scripts.base import (
 from canonical.launchpad.interfaces import (
     IDistributionMirrorSet, ILibraryFileAliasSet, MirrorContent)
 from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.scripts.distributionmirror_prober import (
+from lp.registry.scripts.distributionmirror_prober import (
     get_expected_cdimage_paths, probe_archive_mirror, probe_cdimage_mirror)
 
 

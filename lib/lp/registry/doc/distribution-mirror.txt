@@ -428,7 +428,7 @@ flavour name, path) elements.  (For testing we have a sample of that
 file stored in our tree, which is pointed by the
 config.distributionmirrorprober.releases_file_list_url option)
 
-    >>> from canonical.launchpad.scripts.distributionmirror_prober import (
+    >>> from lp.registry.scripts.distributionmirror_prober import (
     ...     get_expected_cdimage_paths)
     >>> for (series, flavour, paths) in get_expected_cdimage_paths():
     ...     for path in paths:
@@ -559,8 +559,8 @@ If the mirror has no HTTP base url, we'll use the FTP one.
 
 First we need to run the http server that's going to answer our requests.
 
-    >>> from canonical.launchpad.scripts.ftests.test_distributionmirror_prober \
-    ...     import HTTPServerTestSetup
+    >>> from lp.registry.tests.test_distributionmirror_prober import (
+    ...     HTTPServerTestSetup)
     >>> http_server = HTTPServerTestSetup()
     >>> http_server.setUp()
 
