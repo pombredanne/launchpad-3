@@ -21,6 +21,7 @@ from canonical.launchpad.interfaces.bugbranch import IBugBranch
 from canonical.launchpad.interfaces.build import (
     BuildStatus, IBuild)
 from canonical.launchpad.interfaces.buildrecords import IHasBuildRecords
+from canonical.launchpad.interfaces.specification import ISpecification
 from canonical.launchpad.interfaces.specificationbranch import (
     ISpecificationBranch)
 from lp.code.interfaces.branch import IBranch
@@ -104,5 +105,8 @@ ISourcePackage['setBranch'].queryTaggedValue(
         'params']['pocket'].vocabulary = PackagePublishingPocket
 ISourcePackage['setBranch'].queryTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)['params']['branch'].schema = IBranch
+
+ISpecification['linkBranch'].queryTaggedValue(
+    LAZR_WEBSERVICE_EXPORTED)['return_type'].schema = ISpecificationBranch
 
 IPerson['hardware_submissions'].value_type.schema = IHWSubmission

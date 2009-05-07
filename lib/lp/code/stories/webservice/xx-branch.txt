@@ -84,14 +84,16 @@ time goes on.
     ...     title='Stuff needs features')
     >>> feature_branch_spec = factory.makeSpecification(product=fooix,
     ...     title='Super Feature X')
-    >>> spec_branch = feature_branch_spec.linkBranch(branch=feature_branch,
-    ...     registrant=eric)
     >>> merge_proposal = factory.makeBranchMergeProposal(
     ...     target_branch=branch, source_branch=feature_branch,
     ...     registrant=eric)
     >>> branch_url = '/' + branch.unique_name
     >>> feature_branch_url = '/' + feature_branch.unique_name
     >>> feature_branch_bug_url = '/bugs/' + str(feature_branch_bug.id)
+    >>> feature_branch_spec_url = '/' + '/'.join([
+    ...     feature_branch_spec.product.name,
+    ...     '+spec',
+    ...     feature_branch_spec.name])
     >>> logout()
 
     >>> from canonical.launchpad.testing.pages import webservice_for_person
@@ -158,17 +160,32 @@ branch.
     self_link: u'http://.../~eric/fooix/feature-branch/+bug/...'
 
 
+A branch can also be linked to a spec through the API.
+
+    >>> erics_feature_branch = webservice.get(feature_branch_url).jsonBody()
+    >>> more_features_spec = webservice.get(feature_branch_spec_url).jsonBody()
+    >>> spec_branch = webservice.named_post(
+    ...     more_features_spec['self_link'], 'linkBranch',
+    ...     branch=erics_feature_branch['self_link']).jsonBody()
+    >>> pprint_entry(spec_branch)
+    branch_link: u'http://api.launchpad.dev/beta/~eric/fooix/feature-branch'
+    registrant_link: u'http://api.launchpad.dev/beta/~salgado'
+    resource_type_link: u'http://api.launchpad.dev/beta/#specification_branch'
+    self_link: u'http://api.launchpad.dev/beta/fooix/+spec/name28/+branch/eric/fooix/feature-branch'
+    specification_link: u'http://api.launchpad.dev/beta/fooix/+spec/name28'
+
+
 If the branch is linked to a spec, it's possible to look up that spec through
 the spec branch link.
 
     >>> spec_branches = webservice.get(
     ...     erics_feature_branch['spec_links_collection_link']).jsonBody()
     >>> pprint_entry(spec_branches['entries'][0])
-    branch_link: u'http://.../~eric/fooix/feature-branch'
-    registrant_link: u'http://.../~eric'
-    resource_type_link: u'http://.../#specification_branch'
-    self_link: u'http://.../fooix/+spec/name28/+branch/eric/fooix/feature-branch'
-    specification_link: u'http://.../fooix/+spec/name28'
+    branch_link: u'http://api.launchpad.dev/beta/~eric/fooix/feature-branch'
+    registrant_link: u'http://api.launchpad.dev/beta/~salgado'
+    resource_type_link: u'http://api.launchpad.dev/beta/#specification_branch'
+    self_link: u'http://api.launchpad.dev/beta/fooix/+spec/name28/+branch/eric/fooix/feature-branch'
+    specification_link: u'http://api.launchpad.dev/beta/fooix/+spec/name28'
 
 
 There is a branch merge proposal with Fooix trunk as the target branch, so it
