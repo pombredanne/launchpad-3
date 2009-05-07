@@ -154,10 +154,22 @@ branch.
 
     >>> bug_branches = webservice.get(
     ...     erics_feature_branch['bug_branches_collection_link']).jsonBody()
-    >>> pprint_entry(bug_branches['entries'][0])
+    >>> bug_branch = bug_branches['entries'][0]
+    >>> pprint_entry(bug_branch)
     branch_link: u'http://.../~eric/fooix/feature-branch'
     resource_type_link: u'http://.../#bug_branch'
     self_link: u'http://.../~eric/fooix/feature-branch/+bug/...'
+
+
+SpecBranch linkages can be deleted through the API as well.
+
+    >>> _unused = webservice.named_post(
+    ...     more_features_bug['self_link'], 'removeBranch',
+    ...     branch=erics_feature_branch['self_link']).jsonBody()
+    >>> bug_branches = webservice.get(
+    ...     erics_feature_branch['bug_branches_collection_link']).jsonBody()
+    >>> print len(bug_branches['entries'])
+    0
 
 
 A branch can also be linked to a spec through the API.
