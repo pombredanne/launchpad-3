@@ -114,7 +114,7 @@ This one matches, so we subscribe.
 
     >>> user_browser.getControl(
     ...     '#1 Firefox does not support SVG').selected = True
-    >>> user_browser.getControl('This is my bug').click()
+    >>> user_browser.getControl('This is the bug I'm trying to report').click()
 
     >>> print user_browser.url
     http://bugs.launchpad.dev/firefox/+bug/1

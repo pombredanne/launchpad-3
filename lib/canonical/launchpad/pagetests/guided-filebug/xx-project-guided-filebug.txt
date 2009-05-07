@@ -83,7 +83,8 @@ This one matches, so we subscribe.
 
     >>> user_browser.getControl(
     ...     label='Evolution crashes lots').selected = True
-    >>> user_browser.getControl('This is my bug', index=1).click()
+    >>> user_browser.getControl(
+        'This is the bug I'm trying to report', index=1).click()
 
     >>> print user_browser.url
     http://bugs.launchpad.dev/evolution/+bug/...
