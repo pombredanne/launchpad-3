@@ -41,6 +41,8 @@ from canonical.launchpad.webapp import urlappend
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, SLAVE_FLAVOR)
 
+from lp.code.interfaces.branch import (BranchFormat, RepositoryFormat,
+    BRANCH_FORMAT_UPGRADE_PATH, REPOSITORY_FORMAT_UPGRADE_PATH)
 from lp.code.model.branchmergeproposal import (
      BranchMergeProposal)
 from lp.code.model.branchrevision import BranchRevision
@@ -814,6 +816,14 @@ class Branch(SQLBase):
         results = results.group_by(
             DateTrunc('day', Revision.revision_date))
         return sorted(results)
+
+    @property
+    def needs_upgrading(self):
+        """See `IBranch`."""
+        if (REPOSITORY_FORMAT_UPGRADE_PATH.get(self.repository_format, None) or
+                BRANCH_FORMAT_UPGRADE_PATH.get(self.branch_format, None)):
+            return True
+        return False
 
 
 class DeletionOperation:
