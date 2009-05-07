@@ -1,6 +1,6 @@
 # Copyright 2009 Canonical Ltd.  All rights reserved.
 
-"""XXX."""
+"""A UIFactory useful for code imports."""
 
 __metaclass__ = type
 __all__ = ['LoggingUIFactory']
@@ -14,18 +14,38 @@ from bzrlib.ui.text import TextUIFactory, TextProgressView
 
 class LoggingUIFactory(TextUIFactory):
     """A UI Factory that produces reasonably sparse logging style output.
+
+    The goal is to produce a line of output no more often than once a minute
+    (by default).
     """
 
     def __init__(self, bar_type=None, stdin=None, stdout=None, stderr=None,
                  time_source=time.time, writer=None, interval=60.0):
+        """
+
+        :param bar_type: See `TextUIFactory.__init__`.
+        :param stdin: See `TextUIFactory.__init__`.
+        :param stdout: See `TextUIFactory.__init__`.
+        :param stderr: See `TextUIFactory.__init__`.
+        :param time_source: A callable that returns time in seconds since the
+            epoch.  Defaults to ``time.time`` and should be replaced with
+            something deterministic in tests.
+        :param writer: A callable that takes a string and displays it.  It is
+            not called with newline terminated strings.
+        :param interval: Don't produce output more often than once every this
+            many seconds.  Defaults to 60 seconds.
+        """
         TextUIFactory.__init__(self, bar_type, stdin, stdout, stderr)
         self.interval = interval
         self._progress_view = LoggingTextProgressView(
             time_source, writer, interval)
 
 class LoggingTextProgressView(TextProgressView):
+    """Support class for `LoggingUIFactory`. """
 
     def __init__(self, time_source, writer, interval):
+        """See `LoggingUIFactory.__init__` for descriptions of the parameters.
+        """
         # If anything refers to _term_file, that's a bug for us.
         TextProgressView.__init__(self, term_file=None)
         self._writer = writer
@@ -34,20 +54,30 @@ class LoggingTextProgressView(TextProgressView):
             self.write = sys.stdout.write
         else:
             self.write = writer
+        # _transport_expire_time is how long to keep the transport activity in
+        # the progress bar for when show_progress is called.  We opt for
+        # always just showing the task info.
         self._transport_expire_time = 0
+        # We repaint only after 'interval' seconds whether we're being told
+        # about task progress or transport activity.
         self._update_repaint_frequency = interval
         self._transport_repaint_frequency = interval
 
     def _show_line(self, s):
-        self._total_byte_count = 0
+        # This is a bit hackish: we reset the _bytes_since_update and
+        # _transport_update_time whenever we write anything out at all, as I
+        # want transport activity to be reported as "since last log message".
+        self._bytes_since_update = 0
         self._transport_update_time = self.time_source()
         self._writer(s)
 
     def _render_bar(self):
+        # There's no point showing a progress bar in a flat log.
         return ''
 
     def _format_transport_msg(self, scheme, dir_char, rate):
-        return '%s bytes transferred' % self._total_byte_count
+        # We just report the amount of data transferred.
+        return '%s bytes transferred' % self._bytes_since_update
 
     # What's below *should* be in bzrlib, and will be soon.
 

@@ -89,10 +89,14 @@ class TestLoggingUIFactory(TestCase):
         self.fake_time.advance(factory.interval)
         factory.report_transport_activity(None, 100, 'read')
         self.fake_time.advance(factory.interval * 2)
+        # This call will cause output that does not include the transport
+        # activity info.
         bar.update("hi", 3, 10)
         self.assertEqual(
-            ['hi 1/10', 'hi 2/10', '110 bytes transferred | hi 2/10', 'hi 3/10'],
+            ['hi 1/10', 'hi 2/10', '110 bytes transferred | hi 2/10',
+             'hi 3/10'],
             self.messages)
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
