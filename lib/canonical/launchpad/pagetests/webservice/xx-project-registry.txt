@@ -788,6 +788,7 @@ host.
     is_active: True
     name: u'1.0'
     official_bug_tags: []
+    product_release_link: None
     resource_type_link: u'...'
     self_link: u'http://.../firefox/+milestone/1.0'
     series_target_link: u'http://.../firefox/trunk'

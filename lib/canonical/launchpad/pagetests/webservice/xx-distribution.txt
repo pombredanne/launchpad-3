@@ -56,6 +56,15 @@ Distribution has some custom operations.
     >>> print series['self_link']
     http://.../ubuntu/hoary
 
+Requesting a series that does not exist is an bad request.
+
+    >>> print webservice.named_get(
+    ...     ubuntu['self_link'], 'getSeries',
+    ...     name_or_version='fnord')
+    HTTP/1.1 400 Bad Request
+    ...
+    NoSuchDistroSeries: No such distribution series: 'fnord'.
+
 "getDevelopmentSeries" returns all the distribution series for the
 distribution that are marked as in development.
 

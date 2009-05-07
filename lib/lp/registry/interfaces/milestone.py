@@ -132,11 +132,12 @@ class IMilestone(IHasBugs):
     specifications = Attribute("A list of the specifications targeted to "
         "this milestone.")
 
-    product_release = Reference(
-        schema=IProductRelease,
-        title=_("The release for this milestone."),
-        required=False,
-        readonly=True)
+    product_release = exported(
+        Reference(
+            schema=IProductRelease,
+            title=_("The release for this milestone."),
+            required=False,
+            readonly=True))
 
     @call_with(owner=REQUEST_USER)
     @rename_parameters_as(datereleased='date_released')
