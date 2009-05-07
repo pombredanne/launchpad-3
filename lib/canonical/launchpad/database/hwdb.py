@@ -986,7 +986,9 @@ def make_submission_device_statistics_clause(
             where_clauses.append(HWDriver.name == driver_name)
         if package_name is not None:
             if package_name == '':
-                # XXX Abel Deuring, 2009-05-07: See bug 306265.
+                # XXX Abel Deuring, 2009-05-07, bug=306265. package_name
+                # should be declared notNull=True. For now, we must query
+                # for the empty string as well as for None.
                 where_clauses.append(
                     Or(HWDriver.package_name == package_name,
                        HWDriver.package_name == None))
