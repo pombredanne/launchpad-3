@@ -24,6 +24,7 @@ __all__ = [
     ]
 
 
+from lazr.restful.declarations import export_as_webservice_entry
 from zope.interface import Interface, Attribute
 from zope.component import getUtility
 
@@ -638,6 +639,8 @@ class INewSpecificationTarget(Interface):
 class ISpecification(INewSpecification, INewSpecificationTarget, IHasOwner,
     ICanBeMentored):
     """A Specification."""
+
+    export_as_webservice_entry()
 
     # TomBerger 2007-06-20: 'id' is required for
     #      SQLObject to be able to assign a security-proxied

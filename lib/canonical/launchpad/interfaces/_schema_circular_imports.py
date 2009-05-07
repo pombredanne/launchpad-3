@@ -56,7 +56,7 @@ IBranch['subscribe'].queryTaggedValue(LAZR_WEBSERVICE_EXPORTED)['params'][
     'max_diff_lines'].vocabulary = BranchSubscriptionDiffSize
 IBranch['subscribe'].queryTaggedValue(LAZR_WEBSERVICE_EXPORTED)['params'][
     'code_review_level'].vocabulary = CodeReviewNotificationLevel
-IBranch['bug_branches'].value_type.schema = IBugBranch
+#IBranch['bug_branches'].value_type.schema = IBugBranch
 IBranch['spec_links'].value_type.schema = ISpecificationBranch
 
 IBranchMergeProposal['getComment'].queryTaggedValue(
