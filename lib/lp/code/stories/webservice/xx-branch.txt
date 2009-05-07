@@ -92,6 +92,7 @@ time goes on.
     ...     target_branch=branch, source_branch=feature_branch,
     ...     registrant=eric)
     >>> branch_url = '/' + branch.unique_name
+    >>> feature_branch_url = '/' + feature_branch.unique_name
     >>> logout()
 
     >>> from canonical.launchpad.testing.pages import webservice_for_person
@@ -137,17 +138,27 @@ time goes on.
 If the branch is linked to a bug, it's possible to get that bug through the
 branch.
 
+
+    >>> erics_feature_branch = webservice.get(feature_branch_url).jsonBody()
     >>> bug_branches = webservice.get(
-    ...     fooix_trunk['bug_branches_collection_link']).jsonBody()
+    ...     erics_feature_branch['bug_branches_collection_link']).jsonBody()
     >>> pprint_entry(bug_branches['entries'][0])
+    branch_link: u'http://.../~eric/fooix/feature-branch'
+    resource_type_link: u'http://.../#bug_branch'
+    self_link: u'http://.../~eric/fooix/feature-branch/+bug/...'
 
 
 If the branch is linked to a spec, it's possible to look up that spec through
 the spec branch link.
 
     >>> spec_branches = webservice.get(
-    ...     fooix_trunk['spec_links_collection_link']).jsonBody()
+    ...     erics_feature_branch['spec_links_collection_link']).jsonBody()
     >>> pprint_entry(spec_branches['entries'][0])
+    branch_link: u'http://.../~eric/fooix/feature-branch'
+    registrant_link: u'http://.../~eric'
+    resource_type_link: u'http://.../#specification_branch'
+    self_link: u'http://.../fooix/+spec/name28/+branch/eric/fooix/feature-branch'
+    specification_link: u'http://.../fooix/+spec/name28'
 
 
 There is a branch merge proposal with Fooix trunk as the target branch, so it
