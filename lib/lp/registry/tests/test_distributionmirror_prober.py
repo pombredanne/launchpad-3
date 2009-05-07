@@ -21,12 +21,12 @@ from sqlobject import SQLObjectNotFound
 
 import canonical
 from canonical.config import config
-from canonical.launchpad.interfaces import PackagePublishingPocket
+from canonical.launchpad.interfaces.publishing import PackagePublishingPocket
 from lazr.uri import URI
 from canonical.launchpad.daemons.tachandler import TacTestSetup
 from canonical.launchpad.database import DistributionMirror, DistroSeries
-from canonical.launchpad.scripts import distributionmirror_prober
-from canonical.launchpad.scripts.distributionmirror_prober import (
+from lp.registry.scripts import distributionmirror_prober
+from lp.registry.scripts.distributionmirror_prober import (
     ProberFactory, ArchiveMirrorProberCallbacks, BadResponseCode,
     MirrorCDImageProberCallbacks, ProberTimeout, RedirectAwareProberFactory,
     InfiniteLoopDetected, UnknownURLScheme, MAX_REDIRECTS, ConnectionSkipped,
@@ -34,7 +34,7 @@ from canonical.launchpad.scripts.distributionmirror_prober import (
     should_skip_host, PER_HOST_REQUESTS, MIN_REQUEST_TIMEOUT_RATIO,
     MIN_REQUESTS_TO_CONSIDER_RATIO, _build_request_for_cdimage_file_list,
     restore_http_proxy, MultiLock, OVERALL_REQUESTS, RequestManager)
-from canonical.launchpad.scripts.ftests.distributionmirror_http_server import (
+from lp.registry.tests.distributionmirror_http_server import (
     DistributionMirrorTestHTTPServer)
 from canonical.testing import LaunchpadZopelessLayer, TwistedLayer
 
