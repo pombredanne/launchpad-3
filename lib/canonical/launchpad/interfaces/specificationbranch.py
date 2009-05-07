@@ -15,7 +15,7 @@ from zope.schema import Int
 
 from lazr.restful.fields import Reference, ReferenceChoice
 from lazr.restful.declarations import (export_as_webservice_entry, exported,
-    export_write_operation)
+    export_operation_as, export_write_operation)
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import Summary
@@ -48,6 +48,7 @@ class ISpecificationBranch(IHasDateCreated):
             schema=IPerson, readonly=True, required=True,
             title=_("The person who linked the bug to the branch")))
 
+    @export_operation_as('delete')
     @export_write_operation()
     def destroySelf():
         """Destroy this specification branch link"""

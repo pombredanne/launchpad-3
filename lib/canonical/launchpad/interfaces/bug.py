@@ -433,12 +433,11 @@ class IBug(ICanBeMentored):
     def hasBranch(branch):
         """Is this branch linked to this bug?"""
 
-    @call_with(registrant=REQUEST_USER)
+    @call_with(registrant=REQUEST_USER, whiteboard=None, status=None)
     @operation_parameters(
-        branch=Reference(schema=IBranch),
-        whiteboard=Text(),
-        status=Text())
+        branch=Reference(schema=IBranch))
     @operation_returns_entry(Interface) # Really IBugBranch
+    @export_operation_as('linkBranch')
     @export_write_operation()
     def addBranch(branch, registrant, whiteboard=None, status=None):
         """Associate a branch with this bug.
@@ -454,6 +453,7 @@ class IBug(ICanBeMentored):
     @call_with(user=REQUEST_USER)
     @operation_parameters(
         branch=Reference(schema=IBranch))
+    @export_operation_as('unlinkBranch')
     @export_write_operation()
     def removeBranch(branch, user):
         """Unlink a branch from this bug.
