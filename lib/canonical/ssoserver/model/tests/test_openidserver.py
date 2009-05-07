@@ -13,16 +13,16 @@ import transaction
 
 from zope.component import getUtility
 
-from canonical.launchpad.database.openidserver import (
-    OpenIDAuthorization, OpenIDAuthorizationSet)
 from canonical.launchpad.database.account import Account
-from canonical.launchpad.interfaces.openidserver import (
-    IOpenIDAuthorizationSet)
 from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.launchpad.webapp.dbpolicy import (
     SlaveDatabasePolicy, SSODatabasePolicy)
 from canonical.launchpad.webapp.interfaces import (
     AUTH_STORE, DEFAULT_FLAVOR, IStoreSelector, MASTER_FLAVOR, SLAVE_FLAVOR)
+from canonical.ssoserver.interfaces.openidserver import (
+    IOpenIDAuthorizationSet)
+from canonical.ssoserver.model.openidserver import (
+    OpenIDAuthorization, OpenIDAuthorizationSet)
 from canonical.testing.layers import DatabaseFunctionalLayer
 
 
@@ -35,6 +35,8 @@ def sso_db_policy(func):
             return func(*args, **kw)
         finally:
             store_selector.pop()
+    with_sso_db_policy.__name__ = func.__name__
+    return with_sso_db_policy
 
 
 def slave_db_policy(func):
@@ -46,6 +48,8 @@ def slave_db_policy(func):
             return func(*args, **kw)
         finally:
             store_selector.pop()
+    with_slave_db_policy.__name__ = func.__name__
+    return with_slave_db_policy
 
 
 class OpenIDAuthorizationTestCase(unittest.TestCase):

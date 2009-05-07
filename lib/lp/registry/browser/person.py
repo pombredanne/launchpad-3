@@ -182,7 +182,7 @@ from canonical.launchpad.interfaces.message import (
 from lp.registry.interfaces.pillar import IPillarNameSet
 from canonical.launchpad.interfaces.personproduct import IPersonProductFactory
 from lp.registry.interfaces.product import IProduct
-from canonical.launchpad.interfaces.openidserver import (
+from canonical.ssoserver.interfaces.openidserver import (
     IOpenIDPersistentIdentity, IOpenIDRPSummarySet)
 from lp.registry.interfaces.salesforce import (
     ISalesforceVoucherProxy, SalesforceVoucherProxyException)

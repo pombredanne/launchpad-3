@@ -20,7 +20,7 @@ from canonical.launchpad.interfaces.account import AccountStatus, IAccountSet
 from canonical.launchpad.interfaces.launchpad import (
     IOpenIDApplication, NotFoundError)
 from canonical.launchpad.interfaces.authtoken import IAuthTokenSet
-from canonical.launchpad.interfaces.openidserver import (
+from canonical.ssoserver.interfaces.openidserver import (
     IOpenIDPersistentIdentity)
 from lp.registry.interfaces.person import IPersonSet
 from canonical.launchpad.webapp import canonical_url, LaunchpadView

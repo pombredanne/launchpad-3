@@ -33,15 +33,15 @@ from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.launchpad.interfaces import IMasterStore, IStore
 from canonical.launchpad.interfaces.account import AccountStatus
-from canonical.launchpad.interfaces.openidserver import (
-    ILaunchpadOpenIDStoreFactory, IOpenIDAuthorization,
-    IOpenIDAuthorizationSet, IOpenIDPersistentIdentity, IOpenIDRPConfig,
-    IOpenIDRPConfigSet, IOpenIDRPSummary, IOpenIDRPSummarySet)
 from lp.registry.interfaces.person import PersonCreationRationale
 from canonical.launchpad.webapp.interfaces import (
     AUTH_STORE, IStoreSelector, MASTER_FLAVOR)
 from canonical.launchpad.webapp.url import urlparse
 from canonical.launchpad.webapp.vhosts import allvhosts
+from canonical.ssoserver.interfaces.openidserver import (
+    ILaunchpadOpenIDStoreFactory, IOpenIDAuthorization,
+    IOpenIDAuthorizationSet, IOpenIDPersistentIdentity, IOpenIDRPConfig,
+    IOpenIDRPConfigSet, IOpenIDRPSummary, IOpenIDRPSummarySet)
 
 
 class OpenIDAuthorization(SQLBase):
@@ -108,8 +108,8 @@ class OpenIDAuthorizationSet:
 
     def getByAccount(self, account):
         """See `IOpenIDAuthorizationSet`."""
-        store = Store.of(account)
-        result = store.find(OpenIDAuthorization, account=account)
+        store = IStore(OpenIDAuthorization)
+        result = store.find(OpenIDAuthorization, accountID=account.id)
         result.order_by(Desc(OpenIDAuthorization.date_created))
         return result
 

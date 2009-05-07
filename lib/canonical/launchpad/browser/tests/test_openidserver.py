@@ -21,11 +21,11 @@ import transaction
 
 from canonical.launchpad.browser.openidserver import OpenIDMixin
 from canonical.launchpad.ftests import ANONYMOUS, login, login_person, logout
-from canonical.launchpad.database.openidserver import OpenIDAuthorization
+from canonical.ssoserver.model.openidserver import OpenIDAuthorization
 from lp.registry.interfaces.person import IPersonSet
 from canonical.launchpad.interfaces.authtoken import (
     IAuthTokenSet, LoginTokenType)
-from canonical.launchpad.interfaces.openidserver import IOpenIDRPConfigSet
+from canonical.ssoserver.interfaces.openidserver import IOpenIDRPConfigSet
 from canonical.shipit.interfaces.shipit import IShipitAccount
 from canonical.launchpad.testing import TestCase, TestCaseWithFactory
 from canonical.launchpad.testing.systemdocs import (

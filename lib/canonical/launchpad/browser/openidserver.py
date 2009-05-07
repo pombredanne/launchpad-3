@@ -43,7 +43,7 @@ from lp.registry.interfaces.person import (
     IPerson, IPersonSet, PersonVisibility)
 from canonical.launchpad.interfaces.authtoken import (
     IAuthTokenSet, LoginTokenType)
-from canonical.launchpad.interfaces.openidserver import (
+from canonical.ssoserver.interfaces.openidserver import (
     ILaunchpadOpenIDStoreFactory, ILoginServiceAuthorizeForm,
     ILoginServiceLoginForm, IOpenIDAuthorizationSet, IOpenIDRPConfigSet,
     IOpenIDRPSummarySet)

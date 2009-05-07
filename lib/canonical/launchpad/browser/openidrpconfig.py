@@ -13,13 +13,14 @@ __all__ = []
 from zope.component import getUtility
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces import (
-    IOpenIDRPConfig, IOpenIDRPConfigSet, PersonCreationRationale)
+from canonical.ssoserver.interfaces.openidserver import (
+    IOpenIDRPConfig, IOpenIDRPConfigSet)
 from canonical.launchpad.webapp import (
     LaunchpadEditFormView, LaunchpadFormView, Navigation, action,
     canonical_url, custom_widget)
 from canonical.widgets import LabeledMultiCheckBoxWidget
 from canonical.widgets.image import ImageChangeWidget
+from lp.registry.interfaces.person import PersonCreationRationale
 
 
 class OpenIDRPConfigSetNavigation(Navigation):

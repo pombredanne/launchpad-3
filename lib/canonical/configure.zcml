@@ -169,5 +169,6 @@
     <include package="canonical.launchpad" />
     <include package="canonical.lazr" />
     <include package="canonical.shipit" />
+    <include package="canonical.ssoserver" />
 
 </configure>
