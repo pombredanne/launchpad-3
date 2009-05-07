@@ -1,4 +1,4 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2008-2009 Canonical Ltd.  All rights reserved.
 
 """Unit tests for translation import queue auto-approval.
 
@@ -366,6 +366,33 @@ class TestTemplateGuess(unittest.TestCase):
         self.assertEqual(potemplate, None)
 
         clashing_template.destroySelf()
+
+    def test_ClashingEntries(self):
+        # Very rarely two entries may have the same uploader, path, and
+        # target package/productseries.  They would be approved for the
+        # same template, except there's a uniqueness condition on that
+        # set of properties.
+        # To tickle this condition, the user first has to upload a file
+        # that's not attached to a template; then upload another one
+        # that is, before the first one goes into auto-approval.
+        queue = TranslationImportQueue()
+        template = self.producttemplate1
+
+        template.path = 'program/program.pot'
+        self.producttemplate2.path = 'errors/errors.pot'
+        entry1 = queue.addOrUpdateEntry(
+            'program/nl.po', 'contents', False, template.owner,
+            productseries=template.productseries)
+
+        # The clashing entry goes through approval unsuccessfully, but
+        # without causing breakage.
+        entry2 = queue.addOrUpdateEntry(
+            'program/nl.po', 'other contents', False, template.owner,
+            productseries=template.productseries, potemplate=template)
+
+        entry1.getGuessedPOFile()
+
+        self.assertEqual(entry1.potemplate, None)
 
 
 class TestKdePOFileGuess(unittest.TestCase):

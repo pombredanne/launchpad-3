@@ -142,7 +142,9 @@ class PullerWorkerProtocol:
     def mirrorFailed(self, message, oops_id):
         self.sendEvent('mirrorFailed', message, oops_id)
 
-    def progressMade(self):
+    def progressMade(self, type):
+        # 'type' is ignored; we only care about the type of progress in the
+        # tests of the progress reporting.
         self.sendEvent('progressMade')
 
     def log(self, fmt, *args):
@@ -836,27 +838,8 @@ class PullerWorker:
                 (self.source, self.dest, id(self)))
 
 
-class WorkerProgressBar(DummyProgress):
-    """A progress bar that informs a PullerWorkerProtocol of progress."""
-
-    def _event(self, *args, **kw):
-        """Inform the PullerWorkerProtocol of progress.
-
-        This method is attached to the class as all of the progress bar
-        methods: tick, update, child_update, clear and note.
-        """
-        self.puller_worker_protocol.progressMade()
-
-    tick = _event
-    update = _event
-    child_update = _event
-    clear = _event
-    note = _event
-
-    def child_progress(self, **kwargs):
-        """As we don't care about nesting progress bars, return self."""
-        return self
-
+WORKER_ACTIVITY_PROGRESS_BAR = 'progress bar'
+WORKER_ACTIVITY_NETWORK = 'network'
 
 class PullerWorkerUIFactory(SilentUIFactory):
     """An UIFactory that always says yes to breaking locks."""
@@ -877,7 +860,15 @@ class PullerWorkerUIFactory(SilentUIFactory):
             return False
 
     def _progress_updated(self, task):
-        self.puller_worker_protocol.progressMade()
+        self.puller_worker_protocol.progressMade(WORKER_ACTIVITY_PROGRESS_BAR)
+
+    def report_transport_activity(self, transport, byte_count, direction):
+        # <poolie> mwhudson: if you're feeling paranoid i suggest you check
+        #          the 'action' or whatever it's called is 'read'/'write'
+        # <poolie> if we add a soft timeout like 'no io for two seconds' then
+        #          we'd make a new action
+        if direction in ['read', 'write']:
+            self.puller_worker_protocol.progressMade(WORKER_ACTIVITY_NETWORK)
 
 
 def install_worker_ui_factory(puller_worker_protocol):
