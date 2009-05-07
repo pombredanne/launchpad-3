@@ -38,7 +38,7 @@ from lp.code.interfaces.codeimportmachine import (
 from lp.code.interfaces.codereviewcomment import (
     ICodeReviewComment, ICodeReviewCommentDeletion)
 from lp.registry.interfaces.distribution import IDistribution
-from canonical.launchpad.interfaces.distributionmirror import (
+from lp.registry.interfaces.distributionmirror import (
     IDistributionMirror)
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage)
