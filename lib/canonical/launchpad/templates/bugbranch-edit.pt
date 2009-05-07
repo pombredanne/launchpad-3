@@ -48,8 +48,6 @@
       fix this bug.</li>
   </ul>
 
-  <p>The whiteboard is a place to write additional comments.</p>
-
 </metal:block><tal:comment condition="nothing"><!-- end help slot --></tal:comment>
 
 </body>

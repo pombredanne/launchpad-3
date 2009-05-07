@@ -47,9 +47,6 @@
     its external URL in the case of a mirror branch. You can also click on
     "Choose..." to search for a branch.</p>
 
-  <p>Each bug-branch association has a whiteboard that can be used to write
-  short comments.</p>
-
 </metal:block>
 
 </body>

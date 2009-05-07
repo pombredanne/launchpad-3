@@ -35,7 +35,6 @@ class BugBranch(SQLBase):
     bug = ForeignKey(dbName="bug", foreignKey="Bug", notNull=True)
     branch = ForeignKey(dbName="branch", foreignKey="Branch", notNull=True)
     revision_hint = StringCol(default=None)
-    whiteboard = StringCol(notNull=False, default=None)
 
     registrant = ForeignKey(
         dbName='registrant', foreignKey='Person',

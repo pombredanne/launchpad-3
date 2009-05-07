@@ -51,6 +51,22 @@
       permission="launchpad.Edit"
       template="../templates/bugbranch-edit.pt" />
 
+  <browser:page
+      name="+branch-edit"
+      for="canonical.launchpad.interfaces.IBugBranch"
+      class="canonical.launchpad.browser.BugBranchBranchInlineEditView"
+      facet="branches"
+      permission="launchpad.Edit"
+      template="../templates/bugbranch-inline-edit.pt" />
+
+  <browser:page
+      name="+bug-edit"
+      for="canonical.launchpad.interfaces.IBugBranch"
+      class="canonical.launchpad.browser.BugBranchBugInlineEditView"
+      facet="branches"
+      permission="launchpad.Edit"
+      template="../templates/bugbranch-inline-edit.pt" />
+
   <!-- BugBranchSet -->
   <class class="canonical.launchpad.database.BugBranchSet">
     <allow interface="canonical.launchpad.interfaces.IBugBranchSet" />

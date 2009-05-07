@@ -6,6 +6,8 @@ __metaclass__ = type
 __all__ = [
     "BranchLinkToBugView",
     "BugBranchAddView",
+    'BugBranchBranchInlineEditView',
+    'BugBranchBugInlineEditView',
     "BugBranchEditView",
     'BugBranchPrimaryContext',
     ]
@@ -84,6 +86,44 @@ class BugBranchEditView(LaunchpadEditFormView):
     @action('Delete', name='delete')
     def delete_action(self, action, data):
         self.context.bug.removeBranch(self.context.branch, self.user)
+
+
+class BugBranchBranchInlineEditView(BugBranchEditView):
+    """Inline edit view for bug branch details."""
+    schema = IBugBranch
+    field_names = []
+    initial_focus_widget = None
+
+    def initialize(self):
+        self.branch = self.context.branch
+        super(BugBranchBranchInlineEditView, self).initialize()
+
+    @property
+    def prefix(self):
+        return "field%s" % self.context.id
+
+    @property
+    def action_url(self):
+        return "%s/+branch-edit" % canonical_url(self.context)
+
+    @property
+    def next_url(self):
+        return canonical_url(self.branch)
+
+
+class BugBranchBugInlineEditView(BugBranchEditView):
+    """Inline edit view for bug branch details."""
+    schema = IBugBranch
+    field_names = []
+    initial_focus_widget = None
+
+    @property
+    def prefix(self):
+        return "field%s" % self.context.id
+
+    @property
+    def action_url(self):
+        return "%s/+bug-edit" % canonical_url(self.context)
 
 
 class BranchLinkToBugView(LaunchpadFormView):
