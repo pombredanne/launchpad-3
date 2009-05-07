@@ -324,8 +324,9 @@ class IProductPublic(
             constraint=name_validator,
             description=_(
                 "At least one lowercase letter or number, followed by "
-                "letters, dots, hyphens or plusses. "
-                "Keep this name short, as it is used in URLs.")))
+                "letters, dots, hyphens or pluses. "
+                "Keep this name short; it is used in URLs as the example "
+                "illustrates.")))
 
     displayname = exported(
         TextLine(
