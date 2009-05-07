@@ -1,19 +1,13 @@
 # Copyright 2009 Canonical Ltd.  All rights reserved.
 
-"""XXX."""
+"""Tests for `LoggingUIFactory`."""
 
 __metaclass__ = type
 
 import unittest
 
-import bzrlib.ui
-
 from canonical.codehosting.codeimport.uifactory import LoggingUIFactory
 from canonical.launchpad.testing import FakeTime, TestCase
-
-
-def _set_ui_factory(factory):
-    bzrlib.ui.ui_factory = factory
 
 
 class StubFile(object):
@@ -32,14 +26,15 @@ class StubFile(object):
 
 
 class TestLoggingUIFactory(TestCase):
+    """Tests for `LoggingUIFactory`."""
 
     def setUp(self):
         TestCase.setUp(self)
-        self.addCleanup(_set_ui_factory, bzrlib.ui.ui_factory)
         self.fake_time = FakeTime(12345)
         self.stub_file = StubFile()
 
     def makeLoggingUIFactory(self):
+        """Make a `LoggingUIFactory` with fake time and contained output."""
         return LoggingUIFactory(
             time_source=self.fake_time.now, output=self.stub_file)
 
@@ -72,6 +67,54 @@ class TestLoggingUIFactory(TestCase):
         bar.update("there")
         self.assertEqual(
             ['hi', 'there'], self.stub_file.messages_without_timestamps())
+
+    def test_first_progress_on_new_bar_updates(self):
+        # The first progress on a new progress task always generates output.
+        factory = self.makeLoggingUIFactory()
+        bar = factory.nested_progress_bar()
+        bar.update("hi")
+        self.fake_time.advance(factory.interval / 2)
+        bar2 = factory.nested_progress_bar()
+        bar2.update("there")
+        self.assertEqual(
+            ['hi', 'hi:there'], self.stub_file.messages_without_timestamps())
+
+    def test_finish_progress_updates(self):
+        # Finishing a bar always updates.
+        factory = self.makeLoggingUIFactory()
+        bar = factory.nested_progress_bar()
+        bar.update("hi")
+        bar.finished()
+        self.assertEqual(
+            ['hi', 'hi'], self.stub_file.messages_without_timestamps())
+
+    def test_report_transport_activity_reports_bytes_since_last_update(self):
+        # If there is no call to _progress_updated for 'interval' seconds, the
+        # next call to report_transport_activity will report however many
+        # bytes have been transferred since the update.
+        factory = self.makeLoggingUIFactory()
+        bar = factory.nested_progress_bar()
+        bar.update("hi")
+        self.fake_time.advance(factory.interval / 2)
+        # The bytes in this call will not be reported:
+        factory.report_transport_activity(None, 1, 'read')
+        self.fake_time.advance(factory.interval)
+        bar.update("hi again")
+        self.fake_time.advance(factory.interval / 2)
+        factory.report_transport_activity(None, 10, 'read')
+        self.fake_time.advance(factory.interval)
+        factory.report_transport_activity(None, 100, 'read')
+        self.assertEqual(
+            ['hi', 'hi again', '110 bytes transferred'],
+            self.stub_file.messages_without_timestamps())
+
+    def test_update_with_count_formats_nicely(self):
+        # When more details are passed to update, they are formatted nicely.
+        factory = self.makeLoggingUIFactory()
+        bar = factory.nested_progress_bar()
+        bar.update("hi", 1, 8)
+        self.assertEqual(
+            ['hi 1/8'], self.stub_file.messages_without_timestamps())
 
 
 def test_suite():
