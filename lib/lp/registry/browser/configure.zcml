@@ -2010,13 +2010,6 @@
         class="lp.registry.browser.product.ProductAddView"
         permission="launchpad.AnyPerson"
         template="../templates/product-new.pt"/>
-    <browser:page
-        name="+new-guided"
-        for="lp.registry.interfaces.product.IProductSet"
-        facet="overview"
-        class="lp.registry.browser.product.ProductAddView"
-        permission="launchpad.AnyPerson"
-        template="../templates/product-new-guided.pt"/>
     <browser:menus
         classes="
             ProductFacets
@@ -2144,6 +2137,13 @@
         facet="overview"
         permission="launchpad.Edit"
         template="../templates/productseries-edit.pt"/>
+    <browser:page
+        name="+delete"
+        for="lp.registry.interfaces.productseries.IProductSeries"
+        class="lp.registry.browser.productseries.ProductSeriesDeleteView"
+        facet="overview"
+        permission="launchpad.Edit"
+        template="../templates/productseries-delete.pt"/>
     <browser:page
         name="+addrelease"
         for="lp.registry.interfaces.productseries.IProductSeries"
@@ -2846,4 +2846,73 @@
         facet="overview"
         permission="launchpad.Edit"
         template="../templates/object-driver.pt"/>
+   <browser:defaultView
+        for="lp.registry.interfaces.distributionmirror.IDistributionMirror"
+        name="+index" />
+    <browser:url
+        for="lp.registry.interfaces.distributionmirror.IDistributionMirror"
+        path_expression="string:+mirror/${name}"
+        attribute_to_parent="distribution" />
+    <browser:page
+        for="*"
+        name="+distributionmirror-macros"
+        permission="zope.Public"
+        template="../templates/distributionmirror-macros.pt" />
+    <browser:page
+        for="lp.registry.interfaces.distributionmirror.IDistributionMirror"
+        permission="zope.Public"
+        name="+portlet-details"
+        template="../templates/distributionmirror-portlet-details.pt">
+    </browser:page>
+    <browser:page
+        name="+index"
+        for="lp.registry.interfaces.distributionmirror.IDistributionMirror"
+        class="lp.registry.browser.distributionmirror.DistributionMirrorView"
+        facet="overview"
+        permission="zope.Public"
+        template="../templates/distributionmirror-index.pt">
+    </browser:page>
+    <browser:page
+        name="+edit"
+        for="lp.registry.interfaces.distributionmirror.IDistributionMirror"
+        permission="launchpad.Edit"
+        class="lp.registry.browser.distributionmirror.DistributionMirrorEditView"
+        facet="overview"
+        template="../templates/distributionmirror-edit.pt">
+    </browser:page>
+    <browser:page
+        name="+review"
+        for="lp.registry.interfaces.distributionmirror.IDistributionMirror"
+        permission="launchpad.Admin"
+        class="lp.registry.browser.distributionmirror.DistributionMirrorReviewView"
+        facet="overview"
+        template="../templates/distributionmirror-review.pt">
+    </browser:page>
+    <browser:page
+        name="+delete"
+        for="lp.registry.interfaces.distributionmirror.IDistributionMirror"
+        permission="launchpad.Admin"
+        class="lp.registry.browser.distributionmirror.DistributionMirrorDeleteView"
+        facet="overview"
+        template="../templates/distributionmirror-delete.pt">
+    </browser:page>
+    <browser:page
+        for="lp.registry.interfaces.distributionmirror.IDistributionMirror"
+        permission="launchpad.Admin"
+        class="lp.registry.browser.distributionmirror.DistributionMirrorReassignmentView"
+        facet="overview"
+        name="+reassign"
+        template="../../../canonical/launchpad/templates/object-reassignment.pt">
+    </browser:page>
+    <browser:page
+        name="+prober-logs"
+        for="lp.registry.interfaces.distributionmirror.IDistributionMirror"
+        class="lp.registry.browser.distributionmirror.DistributionMirrorView"
+        facet="overview"
+        permission="launchpad.Edit"
+        template="../templates/distributionmirror-prober-logs.pt">
+    </browser:page>
+    <browser:menus
+        module="lp.registry.browser.distributionmirror"
+        classes="DistributionMirrorOverviewMenu" />
 </configure>
