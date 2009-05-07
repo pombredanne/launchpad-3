@@ -3,7 +3,7 @@
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   omit-tag="">
-<input size="19" type="text" class="yui2-date-calendar withtime"
+<input size="19" type="text" class="yui2-calendar withtime"
    tal:attributes="name view/name; id view/name; value view/formvalue;
                    disabled view/disabled_flag;" />
 </tal:root>

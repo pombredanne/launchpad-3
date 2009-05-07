@@ -10,6 +10,13 @@
   i18n:domain="launchpad"
   >
 <body>
+  <metal:block fill-slot="head_epilogue">
+    <script type="text/javascript">
+      YUI().use('node', 'lp.calendar', function(Y) {
+          Y.lp.setup_calendar_widgets();
+      });
+    </script>
+  </metal:block>
 
   <div metal:fill-slot="main">
 

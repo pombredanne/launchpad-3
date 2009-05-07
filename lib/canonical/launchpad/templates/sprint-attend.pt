@@ -12,6 +12,14 @@
 
 <body>
 
+<metal:block fill-slot="head_epilogue">
+  <script type="text/javascript">
+    YUI().use('node', 'lp.calendar', function(Y) {
+        Y.lp.setup_calendar_widgets();
+    });
+  </script>
+</metal:block>
+
 <metal:portlets fill-slot="portlets">
   <div tal:replace="structure context/@@+portlet-details" />
   <div tal:replace="structure context/@@+portlet-attendees" />
