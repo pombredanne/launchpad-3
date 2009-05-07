@@ -9,76 +9,93 @@ __all__ = ['LoggingUIFactory']
 import sys
 import time
 
-from bzrlib.ui import UIFactory
+from bzrlib.ui.text import TextUIFactory, TextProgressView
 
 
-class LoggingUIFactory(UIFactory):
+class LoggingUIFactory(TextUIFactory):
     """A UI Factory that produces reasonably sparse logging style output.
-
     """
 
-    def __init__(self, time_source=time.time, writer=None, interval=60.0):
-        UIFactory.__init__(self)
+    def __init__(self, bar_type=None, stdin=None, stdout=None, stderr=None,
+                 time_source=time.time, writer=None, interval=60.0):
+        TextUIFactory.__init__(self, bar_type, stdin, stdout, stderr)
+        self.interval = interval
+        self._progress_view = LoggingTextProgressView(
+            time_source, writer, interval)
+
+class LoggingTextProgressView(TextProgressView):
+
+    def __init__(self, time_source, writer, interval):
+        # If anything refers to _term_file, that's a bug for us.
+        TextProgressView.__init__(self, term_file=None)
+        self._writer = writer
         self.time_source = time_source
-        self._last_update = 0
-        self._last_updated_task = None
-        self._bytes_since_last_update = 0
         if writer is None:
             self.write = sys.stdout.write
         else:
             self.write = writer
-        self.interval = interval
+        self._transport_expire_time = 0
+        self._update_repaint_frequency = interval
+        self._transport_repaint_frequency = interval
 
-    def _cur_task(self):
-        if self._task_stack:
-            return self._task_stack[-1]
-        else:
-            return None
+    def _show_line(self, s):
+        self._total_byte_count = 0
+        self._transport_update_time = self.time_source()
+        self._writer(s)
 
-    def show(self, msg):
-        self.write(msg)
-        self._last_updated_task = self._cur_task()
-        self._last_update = self.time_source()
-        self._bytes_since_last_update = 0
+    def _render_bar(self):
+        return ''
 
-    def _should_update(self):
-        if (self.time_source() - self._last_update > self.interval
-            or self._cur_task() != self._last_updated_task):
-            return True
-        else:
-            return False
+    def _format_transport_msg(self, scheme, dir_char, rate):
+        return '%s bytes transferred' % self._total_byte_count
 
-    def _format_task(self, task):
-        # Stolen from bzrlib.ui.text.TextProgressView
-        if not task.show_count:
-            s = ''
-        elif task.current_cnt is not None and task.total_cnt is not None:
-            s = ' %d/%d' % (task.current_cnt, task.total_cnt)
-        elif task.current_cnt is not None:
-            s = ' %d' % (task.current_cnt)
-        else:
-            s = ''
-        # compose all the parent messages
-        t = task
-        m = task.msg
-        while t._parent_task:
-            t = t._parent_task
-            if t.msg:
-                m = t.msg + ':' + m
-        return m + s
+    # What's below *should* be in bzrlib, and will be soon.
 
-    def _progress_finished(self, task):
-        """See `UIFactory._progress_finished`."""
-        UIFactory._progress_finished(self, task)
-        self.show(self._format_task(task))
+    def show_progress(self, task):
+        """Called by the task object when it has changed.
 
-    def _progress_updated(self, task):
-        """See `UIFactory._progress_updated`."""
-        if self._should_update():
-            self.show(self._format_task(task))
+        :param task: The top task object; its parents are also included
+            by following links.
+        """
+        must_update = task is not self._last_task
+        self._last_task = task
+        now = self.time_source()
+        if (not must_update) and (now < self._last_repaint + self._update_repaint_frequency):
+            return
+        if now > self._transport_update_time + self._transport_expire_time:
+            # no recent activity; expire it
+            self._last_transport_msg = ''
+        self._last_repaint = now
+        self._repaint()
 
-    def report_transport_activity(self, transport, byte_count, direction):
-        """See `UIFactory.report_transport_activitys`."""
-        self._bytes_since_last_update += byte_count
-        if self._should_update():
-            self.show("%s bytes transferred" % self._bytes_since_last_update)
+    def _show_transport_activity(self, transport, direction, byte_count):
+        """Called by transports via the ui_factory, as they do IO.
+
+        This may update a progress bar, spinner, or similar display.
+        By default it does nothing.
+        """
+        # XXX: Probably there should be a transport activity model, and that
+        # too should be seen by the progress view, rather than being poked in
+        # here.
+        self._total_byte_count += byte_count
+        self._bytes_since_update += byte_count
+        now = self.time_source()
+        if self._transport_update_time is None:
+            self._transport_update_time = now
+        elif now >= (self._transport_update_time + self._transport_repaint_frequency):
+            # guard against clock stepping backwards, and don't update too
+            # often
+            rate = self._bytes_since_update / (now - self._transport_update_time)
+            scheme = getattr(transport, '_scheme', None) or repr(transport)
+            if direction == 'read':
+                dir_char = '>'
+            elif direction == 'write':
+                dir_char = '<'
+            else:
+                dir_char = '?'
+            msg = self._format_transport_msg(scheme, dir_char, rate)
+            self._transport_update_time = now
+            self._last_repaint = now
+            self._bytes_since_update = 0
+            self._last_transport_msg = msg
+            self._repaint()
