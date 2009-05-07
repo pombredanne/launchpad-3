@@ -16,6 +16,7 @@ __all__ = []
 
 from lazr.restful.declarations import LAZR_WEBSERVICE_EXPORTED
 
+from canonical.launchpad.interfaces.bug import IBug
 from canonical.launchpad.interfaces.bugbranch import IBugBranch
 from canonical.launchpad.interfaces.build import (
     BuildStatus, IBuild)
@@ -68,6 +69,9 @@ IBranchMergeProposal['createComment'].queryTaggedValue(
         ICodeReviewComment
 IBranchMergeProposal['all_comments'].value_type.schema = ICodeReviewComment
 IBranchMergeProposal['votes'].value_type.schema = ICodeReviewVoteReference
+
+IBug['addBranch'].queryTaggedValue(
+    LAZR_WEBSERVICE_EXPORTED)['return_type'].schema = IBugBranch
 
 IPreviewDiff['branch_merge_proposal'].schema = IBranchMergeProposal
 

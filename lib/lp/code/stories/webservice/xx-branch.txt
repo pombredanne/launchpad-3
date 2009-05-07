@@ -82,8 +82,6 @@ time goes on.
     ...     owner=eric, product=fooix, name='feature-branch')
     >>> feature_branch_bug = factory.makeBug(product=fooix,
     ...     title='Stuff needs features')
-    >>> bug_branch = feature_branch_bug.addBranch(branch=feature_branch,
-    ...     registrant=eric, whiteboard='')
     >>> feature_branch_spec = factory.makeSpecification(product=fooix,
     ...     title='Super Feature X')
     >>> spec_branch = feature_branch_spec.linkBranch(branch=feature_branch,
@@ -93,6 +91,7 @@ time goes on.
     ...     registrant=eric)
     >>> branch_url = '/' + branch.unique_name
     >>> feature_branch_url = '/' + feature_branch.unique_name
+    >>> feature_branch_bug_url = '/bugs/' + str(feature_branch_bug.id)
     >>> logout()
 
     >>> from canonical.launchpad.testing.pages import webservice_for_person
@@ -135,11 +134,22 @@ time goes on.
     whiteboard: None
 
 
-If the branch is linked to a bug, it's possible to get that bug through the
-branch.
-
+A branch can also be linked to a bug through the API.
 
     >>> erics_feature_branch = webservice.get(feature_branch_url).jsonBody()
+    >>> more_features_bug = webservice.get(feature_branch_bug_url).jsonBody()
+    >>> bug_branch = webservice.named_post(
+    ...     more_features_bug['self_link'], 'addBranch',
+    ...     branch=erics_feature_branch['self_link']).jsonBody()
+    >>> pprint_entry(bug_branch)
+    branch_link: u'http://.../~eric/fooix/feature-branch'
+    resource_type_link: u'http://.../#bug_branch'
+    self_link: u'http://.../~eric/fooix/feature-branch/+bug/...'
+
+
+Since the branch is linked to a bug, it's possible to get that bug through the
+branch.
+
     >>> bug_branches = webservice.get(
     ...     erics_feature_branch['bug_branches_collection_link']).jsonBody()
     >>> pprint_entry(bug_branches['entries'][0])
