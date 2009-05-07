@@ -32,11 +32,6 @@ class IBugBranch(IHasDateCreated, IHasBug):
         title=_("Branch"), vocabulary="Branch",
         constraint=non_duplicate_branch, required=True, readonly=True)
     revision_hint = TextLine(title=_("Revision Hint"))
-    whiteboard = Summary(
-        title=_('Status Whiteboard'), required=False,
-        description=_(
-            'Additional information about the status of the bugfix '
-            'in this branch.'))
 
     bug_task = Object(
         schema=IBugTask, title=_("The bug task that the branch fixes"),
