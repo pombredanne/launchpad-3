@@ -118,7 +118,7 @@ class BzrSync:
             self.retrieveDatabaseAncestry())
 
         (added_ancestry, branchrevisions_to_delete,
-            branchrevisions_to_insert) = self.planDatabaseChanges(
+            revids_to_insert) = self.planDatabaseChanges(
             bzr_branch, bzr_ancestry, bzr_history, db_ancestry, db_history,
             db_branch_revision_map)
         added_ancestry.difference_update(
@@ -131,9 +131,10 @@ class BzrSync:
                 # bulk-load multiple revisions at once, but as this is only
                 # executed for revisions new to Launchpad, it doesn't seem
                 # worth it at this stage.
-                self.syncOneRevision(revision, branchrevisions_to_insert)
+                self.syncOneRevision(
+                    bzr_branch, revision, revids_to_insert)
         self.deleteBranchRevisions(branchrevisions_to_delete)
-        self.insertBranchRevisions(bzr_branch, branchrevisions_to_insert)
+        self.insertBranchRevisions(bzr_branch, revids_to_insert)
         self.trans_manager.commit()
 
         # Notify any listeners that the tip of the branch has changed, but
@@ -265,12 +266,12 @@ class BzrSync:
 
         # We must insert BranchRevision rows for all revisions which were
         # added to the ancestry or whose sequence value has changed.
-        branchrevisions_to_insert = dict(
+        revids_to_insert = dict(
             self.getRevisions(
                 bzr_history, added_merged.union(added_history)))
 
         return (added_ancestry, branchrevisions_to_delete,
-                branchrevisions_to_insert)
+                revids_to_insert)
 
     def getBazaarRevisions(self, bzr_branch, revisions):
         """Like ``get_revisions(revisions)`` but filter out ghosts first.
@@ -281,12 +282,13 @@ class BzrSync:
         revisions = bzr_branch.repository.get_parent_map(revisions)
         return bzr_branch.repository.get_revisions(revisions.keys())
 
-    def syncOneRevision(self, bzr_revision, branchrevisions_to_insert):
+    def syncOneRevision(self, bzr_branch, bzr_revision, revids_to_insert):
         """Import the revision with the given revision_id.
 
+        :param bzr_branch: The Bazaar branch that's being scanned.
         :param bzr_revision: the revision to import
         :type bzr_revision: bzrlib.revision.Revision
-        :param branchrevisions_to_insert: a dict of revision ids to integer
+        :param revids_to_insert: a dict of revision ids to integer
             revno.  (Non-mainline revisions will not be present).
         """
         revision_id = bzr_revision.revision_id
@@ -296,11 +298,11 @@ class BzrSync:
         db_revision = revision_set.newFromBazaarRevision(bzr_revision)
         notify(
             events.NewRevision(
-                self.db_branch, None, db_revision, bzr_revision,
-                branchrevisions_to_insert[revision_id]))
+                self.db_branch, bzr_branch, db_revision, bzr_revision,
+                revids_to_insert[revision_id]))
 
     def getRevisions(self, bzr_history, revision_subset):
-        """Generate revision IDs that make up the branch's ancestry.
+        """Iterate over '(revid, revno)' pairs in a branch's ancestry.
 
         Generate a sequence of (revision-id, sequence) pairs to be inserted
         into the branchrevision table.
@@ -320,12 +322,12 @@ class BzrSync:
         for branchrevision in sorted(branchrevisions_to_delete):
             branch_revision_set.delete(branchrevision)
 
-    def insertBranchRevisions(self, bzr_branch, branchrevisions_to_insert):
+    def insertBranchRevisions(self, bzr_branch, revids_to_insert):
         """Insert a batch of BranchRevision rows."""
         self.logger.info("Inserting %d branchrevision records.",
-            len(branchrevisions_to_insert))
+            len(revids_to_insert))
         revision_set = getUtility(IRevisionSet)
-        revid_seq_pairs = branchrevisions_to_insert.items()
+        revid_seq_pairs = revids_to_insert.items()
         for revid_seq_pair_chunk in iter_list_chunks(revid_seq_pairs, 1000):
             self.db_branch.createBranchRevisionFromIDs(revid_seq_pair_chunk)
 
