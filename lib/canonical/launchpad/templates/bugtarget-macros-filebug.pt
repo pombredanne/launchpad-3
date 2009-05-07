@@ -456,11 +456,7 @@
                       <input type="hidden" name="field.bug_already_reported_as"
                            tal:attributes="
                                id string:bug-already-reported-as-${bug/id};
-                               value string:${bug/id};
-                               checked python:
-                                   path('repeat/bug/start') and not (
-                                   path('view/this_is_my_bug_action/submitted') or
-                                   path('view/submit_bug_action/submitted'))" />
+                               value string:${bug/id};" />
 
                       <input type="submit"
                           id="field.actions.this_is_my_bug"
