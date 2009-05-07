@@ -573,7 +573,7 @@ class ProductSetContextMenu(ContextMenu):
         # We link to the guided form, though people who know the URL can
         # just jump to +new directly. That might be considered a
         # feature!
-        return Link('+new-guided', text, icon='add')
+        return Link('+new', text, icon='add')
 
     def register_team(self):
         text = 'Register a team'
@@ -1600,7 +1600,7 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin):
             title=data['title'],
             summary=data['summary'],
             displayname=data['displayname'],
-            licenses = data['licenses'],
+            licenses=data['licenses'],
             license_info=data['license_info'])
 
         self.notifyFeedbackMailingList()
