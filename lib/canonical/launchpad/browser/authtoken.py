@@ -41,7 +41,7 @@ from canonical.launchpad.interfaces.launchpad import UnexpectedFormData
 from canonical.launchpad.interfaces.openidserver import IOpenIDRPConfigSet
 from lp.registry.interfaces.person import (
     INewPersonForm, IPerson, IPersonSet, PersonCreationRationale)
-from canonical.launchpad.interfaces.shipit import ShipItConstants
+from canonical.shipit.interfaces.shipit import ShipItConstants
 
 
 class AuthTokenSetNavigation(GetitemNavigation):
