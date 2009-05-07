@@ -289,7 +289,7 @@ class BzrSync:
         :param bzr_revision: the revision to import
         :type bzr_revision: bzrlib.revision.Revision
         :param revids_to_insert: a dict of revision ids to integer
-            revno.  (Non-mainline revisions will not be present).
+            revno. Non-mainline revisions will be mapped to None.
         """
         revision_id = bzr_revision.revision_id
         revision_set = getUtility(IRevisionSet)
