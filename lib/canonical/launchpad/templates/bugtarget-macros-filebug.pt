@@ -393,15 +393,6 @@
                   class="bug-already-reported-expander"
                   tal:attributes="id string:bug-details-expander-bug-${bug/id};"
                 />
-              <input type="radio" name="field.bug_already_reported_as"
-                     class="duplicate-bug-button"
-                     tal:attributes="
-                         id string:bug-already-reported-as-${bug/id};
-                         value string:${bug/id};
-                         checked python:
-                             path('repeat/bug/start') and not (
-                             path('view/this_is_my_bug_action/submitted') or
-                             path('view/submit_bug_action/submitted'))" />
             </td>
             <td>
               <label tal:attributes="for string:bug-already-reported-as-${bug/id}"
@@ -456,12 +447,28 @@
                     tal:content="structure description" />
 
                 <div class="lesser" tal:condition="bugtask">
-                  <span style="padding-left: 1.5em">
-                    <input type="submit"
-                        id="field.actions.this_is_my_bug"
-                        name="field.actions.this_is_my_bug"
-                        value="This is my bug" />
-                  </span>
+                  <form action="."
+                      tal:attributes="action view/action_url"
+                      method="post"
+                      accept-charset="UTF-8">
+
+                    <span style="padding-left: 1.5em">
+                      <input type="hidden" name="field.bug_already_reported_as"
+                           tal:attributes="
+                               id string:bug-already-reported-as-${bug/id};
+                               value string:${bug/id};
+                               checked python:
+                                   path('repeat/bug/start') and not (
+                                   path('view/this_is_my_bug_action/submitted') or
+                                   path('view/submit_bug_action/submitted'))" />
+
+                      <input type="submit"
+                          id="field.actions.this_is_my_bug"
+                          name="field.actions.this_is_my_bug"
+                          value="This is the bug I'm trying to report" />
+
+                    </span>
+                  </form>
                 </div>
               </div>
             </td>
@@ -515,14 +522,18 @@
 
   <tal:submit-new-bug>
     <div id="bug_reporting_form">
-      <a name="form-start" />
-      <table class="form">
-        <metal:basic_filebug_widgets
-            metal:use-macro="context/@@+filebug-macros/basic_filebug_widgets" />
-      </table>
-      <div class="actions">
-        <input tal:replace="structure view/submit_bug_action/render" />
-      </div>
+      <metal:form use-macro="context/@@launchpad_form/form">
+        <a name="form-start" />
+        <metal:widgets metal:fill-slot="widgets">
+          <table class="form">
+            <metal:basic_filebug_widgets
+                metal:use-macro="context/@@+filebug-macros/basic_filebug_widgets" />
+          </table>
+        </metal:widgets>
+        <div class="actions" metal:fill-slot="buttons">
+          <input tal:replace="structure view/submit_bug_action/render" />
+        </div>
+      </metal:form>
     </div>
   </tal:submit-new-bug>
 
