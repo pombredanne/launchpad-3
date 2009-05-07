@@ -30,7 +30,7 @@ from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, GetitemNavigation,
     LaunchpadFormView, LaunchpadView)
 
-from canonical.launchpad.browser.openidserver import OpenIDMixin
+from canonical.ssoserver.browser.openidserver import OpenIDMixin
 from canonical.launchpad.interfaces import IMasterObject
 from canonical.launchpad.interfaces.account import AccountStatus, IAccountSet
 from canonical.launchpad.interfaces.authtoken import (

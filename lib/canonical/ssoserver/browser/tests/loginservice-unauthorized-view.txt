@@ -1,10 +1,10 @@
 == LoginServer UnauthorizedView ==
 
 The login server has an UnauthorizedView that redirects the user
-to the +standalone-view. 
+to the +standalone-view.
 
     >>> from zope.security.interfaces import Unauthorized
-    >>> from canonical.launchpad.layers import OpenIDLayer
+    >>> from canonical.ssoserver.layers import OpenIDLayer
     >>> from canonical.launchpad.testing.systemdocs import create_view
 
     >>> error = Unauthorized('a_permission')

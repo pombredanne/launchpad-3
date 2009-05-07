@@ -19,14 +19,9 @@ from zope.testing import doctest
 
 import transaction
 
-from canonical.launchpad.browser.openidserver import OpenIDMixin
 from canonical.launchpad.ftests import ANONYMOUS, login, login_person, logout
-from canonical.ssoserver.model.openidserver import OpenIDAuthorization
-from lp.registry.interfaces.person import IPersonSet
 from canonical.launchpad.interfaces.authtoken import (
     IAuthTokenSet, LoginTokenType)
-from canonical.ssoserver.interfaces.openidserver import IOpenIDRPConfigSet
-from canonical.shipit.interfaces.shipit import IShipitAccount
 from canonical.launchpad.testing import TestCase, TestCaseWithFactory
 from canonical.launchpad.testing.systemdocs import (
     LayeredDocFileSuite, setUp, tearDown)
@@ -34,6 +29,11 @@ from canonical.launchpad.testing.pages import setupBrowser
 from canonical.launchpad.webapp.dbpolicy import SSODatabasePolicy
 from canonical.launchpad.webapp.interfaces import IStoreSelector
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+from canonical.shipit.interfaces.shipit import IShipitAccount
+from canonical.ssoserver.browser.openidserver import OpenIDMixin
+from canonical.ssoserver.interfaces.openidserver import IOpenIDRPConfigSet
+from canonical.ssoserver.model.openidserver import OpenIDAuthorization
+from lp.registry.interfaces.person import IPersonSet
 from canonical.testing import DatabaseFunctionalLayer
 
 
@@ -339,7 +339,7 @@ def test_suite():
     suite = unittest.TestSuite()
     suite.addTest(unittest.TestLoader().loadTestsFromName(__name__))
     suite.addTest(doctest.DocTestSuite(
-        'canonical.launchpad.browser.openidserver'))
+        'canonical.ssoserver.browser.openidserver'))
     suite.addTest(LayeredDocFileSuite(
         'loginservice.txt',
         'loginservice-dissect-radio-button.txt',

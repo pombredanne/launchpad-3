@@ -198,7 +198,7 @@ from canonical.launchpad.browser.bugtask import BugTaskSearchListingView
 from canonical.launchpad.browser.feeds import FeedsMixin
 from canonical.launchpad.browser.objectreassignment import (
     ObjectReassignmentView)
-from canonical.launchpad.browser.openiddiscovery import (
+from canonical.ssoserver.browser.openiddiscovery import (
     XRDSContentNegotiationMixin)
 from canonical.launchpad.browser.specificationtarget import (
     HasSpecificationsView)
@@ -2923,7 +2923,7 @@ class PersonIndexView(XRDSContentNegotiationMixin, PersonView):
     """View class for person +index and +xrds pages."""
 
     xrds_template = ViewPageTemplateFile(
-        "../../../canonical/launchpad/templates/person-xrds.pt")
+        "../../../canonical/ssoserver/templates/person-xrds.pt")
 
     def initialize(self):
         super(PersonIndexView, self).initialize()

@@ -25,7 +25,7 @@ As well as these actions, there are a number of error handling code paths:
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.ftests import LaunchpadFormHarness
-    >>> from canonical.launchpad.browser.openidserver import (
+    >>> from canonical.ssoserver.browser.openidserver import (
     ...     LoginServiceLoginView)
     >>> from canonical.launchpad.interfaces import IOpenIDApplication
     >>> from canonical.launchpad.webapp import LaunchpadFormView

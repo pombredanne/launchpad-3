@@ -8,13 +8,13 @@ import unittest
 
 from zope.component import getUtility
 
-from canonical.launchpad.browser.openiddiscovery import (
+from canonical.ssoserver.browser.openiddiscovery import (
     XRDSContentNegotiationMixin)
 from canonical.launchpad.ftests import ANONYMOUS, login, logout
 from canonical.launchpad.interfaces import IPersonSet
 from canonical.launchpad.webapp import LaunchpadView
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing import LaunchpadFunctionalLayer
+from canonical.testing import DatabaseFunctionalLayer
 
 
 class SampleView(XRDSContentNegotiationMixin, LaunchpadView):
@@ -28,7 +28,7 @@ class SampleView(XRDSContentNegotiationMixin, LaunchpadView):
 class ContentNegotiationTests(unittest.TestCase):
     """Tests for XRDS content negotiation."""
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         login(ANONYMOUS)

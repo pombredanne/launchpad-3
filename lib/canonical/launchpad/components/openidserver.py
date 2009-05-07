@@ -14,9 +14,9 @@ import re
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.layers import OpenIDLayer
 from canonical.ssoserver.interfaces.openidserver import (
     IOpenIDPersistentIdentity)
+from canonical.ssoserver.layers import OpenIDLayer
 from canonical.launchpad.webapp.publisher import get_current_browser_request
 from canonical.launchpad.webapp.vhosts import allvhosts
 
