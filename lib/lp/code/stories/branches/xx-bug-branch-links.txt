@@ -184,33 +184,6 @@ No bug-branch link is registered:
     No bug branch links
 
 
-== Editing the bug-branch link ==
-
-Each bug-branch link has a whiteboard to give more details about the link.
-
-    >>> browser.open(
-    ...     'http://launchpad.dev/bugs/11')
-    >>> printBugBranchLinks(browser)
-    ~name12/gnome-terminal/scanned (Development)
-
-The whiteboard contents are available on the (bug|branch) page.
-
-    >>> browser.getControl('Whiteboard').value = (
-    ...     'This is a fix for the problem and involved:\n'
-    ...     ' * Fixing the doodad\n'
-    ...     ' * Adjusting the lambda probe')
-    >>> browser.getControl('Update').click()
-    >>> printBugBranchLinks(browser)
-    ~name12/gnome-terminal/scanned (Development)
-      This is a fix for the problem and involved:
-       * Fixing the doodad
-       * Adjusting the lambda probe
-
-    >>> browser.getLink('~name12/gnome-terminal/scanne').click()
-    >>> printBugBranchLinks(browser)
-    Bug #11: Make Jokosher use autoaudiosink (Undecided &ndash; New)
-
-
 == Deleting bug branch links ==
 
 The edit view for the bug branch also now has a delete button to unlink

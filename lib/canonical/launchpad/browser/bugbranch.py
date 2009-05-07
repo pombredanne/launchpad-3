@@ -7,8 +7,6 @@ __all__ = [
     "BranchLinkToBugView",
     "BugBranchAddView",
     "BugBranchEditView",
-    "BugBranchBranchInlineEditView",
-    "BugBranchBugInlineEditView",
     'BugBranchPrimaryContext',
     ]
 
@@ -44,14 +42,13 @@ class BugBranchAddView(LaunchpadFormView):
     # to get the read only fields rendered as input widgets.
     for_input = True
 
-    field_names = ['branch', 'whiteboard']
+    field_names = ['branch']
 
     @action(_('Continue'), name='continue')
     def continue_action(self, action, data):
         branch = data['branch']
-        whiteboard = data.get('whiteboard')
         self.context.bug.addBranch(
-            branch=branch, registrant=self.user, whiteboard=whiteboard)
+            branch=branch, registrant=self.user)
         self.request.response.addNotification(
             "Successfully registered branch %s for this bug." %
             branch.name)
@@ -67,7 +64,7 @@ class BugBranchEditView(LaunchpadEditFormView):
     """View to update a BugBranch."""
     schema = IBugBranch
 
-    field_names = ['branch', 'bug', 'whiteboard']
+    field_names = ['branch', 'bug',]
 
     custom_widget('branch', LinkWidget)
     custom_widget('bug', LinkWidget)
@@ -89,44 +86,6 @@ class BugBranchEditView(LaunchpadEditFormView):
         self.context.bug.removeBranch(self.context.branch, self.user)
 
 
-class BugBranchBranchInlineEditView(BugBranchEditView):
-    """Inline edit view for bug branch details."""
-    schema = IBugBranch
-    field_names = ['whiteboard']
-    initial_focus_widget = None
-
-    def initialize(self):
-        self.branch = self.context.branch
-        super(BugBranchBranchInlineEditView, self).initialize()
-
-    @property
-    def prefix(self):
-        return "field%s" % self.context.id
-
-    @property
-    def action_url(self):
-        return "%s/+branch-edit" % canonical_url(self.context)
-
-    @property
-    def next_url(self):
-        return canonical_url(self.branch)
-
-
-class BugBranchBugInlineEditView(BugBranchEditView):
-    """Inline edit view for bug branch details."""
-    schema = IBugBranch
-    field_names = ['whiteboard']
-    initial_focus_widget = None
-
-    @property
-    def prefix(self):
-        return "field%s" % self.context.id
-
-    @property
-    def action_url(self):
-        return "%s/+bug-edit" % canonical_url(self.context)
-
-
 class BranchLinkToBugView(LaunchpadFormView):
     """The view to create bug-branch links."""
     schema = IBugBranch
@@ -135,7 +94,7 @@ class BranchLinkToBugView(LaunchpadFormView):
     # to get the read only fields rendered as input widgets.
     for_input = True
 
-    field_names = ['bug', 'whiteboard']
+    field_names = ['bug']
 
     @property
     def next_url(self):
@@ -145,8 +104,7 @@ class BranchLinkToBugView(LaunchpadFormView):
     def continue_action(self, action, data):
         bug = data['bug']
         bug_branch = bug.addBranch(
-            branch=self.context, whiteboard=data['whiteboard'],
-            registrant=self.user)
+            branch=self.context, registrant=self.user)
 
     @action(_('Cancel'), name='cancel', validator='validate_cancel')
     def cancel_action(self, action, data):

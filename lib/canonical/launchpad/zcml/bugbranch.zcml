@@ -10,7 +10,7 @@
     <require
         permission="launchpad.Edit"
         attributes="destroySelf"
-        set_attributes="fixed_in_revision_id whiteboard" />
+        set_attributes="fixed_in_revision_id" />
   </class>
 
   <adapter
@@ -50,22 +50,6 @@
       facet="branches"
       permission="launchpad.Edit"
       template="../templates/bugbranch-edit.pt" />
-
-  <browser:page
-      name="+branch-edit"
-      for="canonical.launchpad.interfaces.IBugBranch"
-      class="canonical.launchpad.browser.BugBranchBranchInlineEditView"
-      facet="branches"
-      permission="launchpad.Edit"
-      template="../templates/bugbranch-inline-edit.pt" />
-
-  <browser:page
-      name="+bug-edit"
-      for="canonical.launchpad.interfaces.IBugBranch"
-      class="canonical.launchpad.browser.BugBranchBugInlineEditView"
-      facet="branches"
-      permission="launchpad.Edit"
-      template="../templates/bugbranch-inline-edit.pt" />
 
   <!-- BugBranchSet -->
   <class class="canonical.launchpad.database.BugBranchSet">

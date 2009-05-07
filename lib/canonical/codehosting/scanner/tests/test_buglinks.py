@@ -8,8 +8,7 @@ import unittest
 
 from zope.component import getUtility
 
-from canonical.codehosting.scanner.buglinks import (
-    BugBranchLinker, set_bug_branch_status)
+from canonical.codehosting.scanner.buglinks import BugBranchLinker
 from canonical.codehosting.scanner.tests.test_bzrsync import BzrSyncTestCase
 from canonical.config import config
 from canonical.launchpad.interfaces import (
