@@ -27,11 +27,14 @@ permitted_database_imports = text_lines_to_set("""
     canonical.archivepublisher.publishing
     canonical.codehosting.inmemory
     canonical.launchpad.browser.branchlisting
+    lp.code.browser.branchlisting
     canonical.launchpad.feed.branch
+    lp.code.feed.branch
+    canonical.launchpad.interfaces.person
     canonical.launchpad.scripts.garbo
     canonical.launchpad.scripts.librarian_apache_log_parser
-    canonical.launchpad.validators.person
     canonical.launchpad.vocabularies.dbobjects
+    lp.registry.vocabularies
     canonical.librarian.client
     canonical.librarian.db
     zope.testing.doctest

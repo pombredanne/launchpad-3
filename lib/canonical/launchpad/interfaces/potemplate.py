@@ -8,12 +8,12 @@ from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad.interfaces.launchpad import NotFoundError
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
-from canonical.launchpad.interfaces.distribution import IDistribution
-from canonical.launchpad.interfaces.distroseries import IDistroSeries
-from canonical.launchpad.interfaces.product import IProduct
-from canonical.launchpad.interfaces.productseries import IProductSeries
+from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.distroseries import IDistroSeries
+from lp.registry.interfaces.product import IProduct
+from lp.registry.interfaces.productseries import IProductSeries
 from canonical.launchpad.interfaces.rosettastats import IRosettaStats
-from canonical.launchpad.interfaces.sourcepackagename import (
+from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageName)
 from canonical.launchpad.interfaces.translationfileformat import (
     TranslationFileFormat)
@@ -439,6 +439,17 @@ class IPOTemplate(IRosettaStats):
         For non-plural messages, plural_text should be None.
 
         Returns the newly created message set.
+        """
+
+    def getOrCreateSharedPOTMsgSet(singular_text, plural_text, context=None):
+        """Finds an existing shared POTMsgSet to use or creates a new one.
+
+        :param singular_text: string containing singular form.
+        :param plural_text: string containing plural form.
+        :param context: context to differentiate between two messages with
+        same singular_text and plural_text.
+        :return: existing or new shared POTMsgSet with a sequence of 0
+        in this POTemplate.
         """
 
     def importFromQueue(entry_to_import, logger=None, txn=None):

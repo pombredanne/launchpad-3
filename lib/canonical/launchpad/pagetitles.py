@@ -164,6 +164,8 @@ bounty_index = ContextTitle(smartquote('Bounty "%s" in Launchpad'))
 
 bounty_subscription = ContextTitle(smartquote('Subscription to bounty "%s"'))
 
+branch_add = 'Register a branch'
+
 branch_associations = ContextDisplayName(smartquote(
     '"%s" branch associations'))
 
@@ -703,6 +705,8 @@ launchpad_unexpectedformdata = 'Error: Unexpected form data'
 
 launchpad_librarianfailure = "Sorry, you can't do this right now"
 
+launchpad_readonlyfailure = "Sorry, you can't do this right now"
+
 # launchpad_widget_macros doesn't need a title.
 
 launchpadstatisticset_index = 'Launchpad statistics'
@@ -899,8 +903,6 @@ def person_branches(context, view):
     """Return the view's heading."""
     return view.heading
 
-person_branch_add = 'Register a branch'
-
 person_changepassword = 'Change your password'
 
 person_claim = 'Claim account'
@@ -989,6 +991,10 @@ person_uploaded_packages = ContextDisplayName('Software uploaded by %s')
 
 person_vouchers = ContextDisplayName(
     'Commercial subscription vouchers for %s')
+
+def personproduct_branches(context, view):
+    """Return the view's heading."""
+    return view.heading
 
 pofile_edit = ContextTitle(smartquote('Edit "%s" details'))
 
@@ -1085,7 +1091,9 @@ product_translations = ContextTitle('Translations of %s in Launchpad')
 
 product_translators = ContextTitle('Set translation group for %s')
 
-productrelease_add = ContextTitle('Register a new %s release in Launchpad')
+productrelease_add = ContextDisplayName('Publish the release of %s')
+
+productrelease_add_from_series = productrelease_add
 
 productrelease_delete = ContextTitle('Delete %s in Launchpad')
 
@@ -1115,6 +1123,9 @@ productseries_review = ContextTitle('Review %s')
 productseries_translations_upload = 'Request new translations upload'
 
 productseries_translations_settings = 'Settings for translations'
+
+productseries_translations_bzr_import = (
+    'Request translations import from Bazaar branch')
 
 productseries_ubuntupkg = 'Ubuntu source package'
 
@@ -1181,8 +1192,6 @@ rosetta_about = 'About Launchpad Translations'
 rosetta_index = 'Launchpad Translations'
 
 rosetta_products = 'Projects with Translations in Launchpad'
-
-product_branch_add = 'Register a branch'
 
 def productseries_edit(context, view):
     """Return the page title for changing a product series details."""

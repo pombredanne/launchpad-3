@@ -23,13 +23,14 @@ from canonical.codehosting.tests.servers import (
 from canonical.codehosting import get_bzr_path, get_bzr_plugins_path
 from canonical.codehosting.vfs import branch_id_to_path
 from canonical.config import config
-from canonical.database.constants import UTC_NOW
 from canonical.launchpad import database
 from canonical.launchpad.ftests import login, logout, ANONYMOUS
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
-from canonical.launchpad.interfaces import BranchLifecycleStatus, BranchType
 from canonical.testing import ZopelessAppServerLayer
 from canonical.testing.profiled import profiled
+
+from lp.code.interfaces.branch import BranchType
+from lp.code.interfaces.branchnamespace import get_branch_namespace
 
 
 class SSHServerLayer(ZopelessAppServerLayer):
@@ -211,8 +212,8 @@ class SSHTestCase(TestCaseWithTransport, LoomTestMixin):
             product = None
         else:
             product = database.Product.selectOneBy(name=productName)
-        return database.Branch.selectOneBy(
-            owner=owner, product=product, name=branchName)
+        namespace = get_branch_namespace(owner, product)
+        return namespace.getByName(branchName)
 
     def createBazaarBranch(self, user, product, branch, creator=None,
                            branch_root=None):
@@ -225,9 +226,9 @@ class SSHTestCase(TestCaseWithTransport, LoomTestMixin):
             config.codehosting.authentication_endpoint)
         branchfs = xmlrpclib.ServerProxy(config.codehosting.branchfs_endpoint)
         if creator is None:
-            creator_id = authserver.getUser(user)['id']
+            creator_id = authserver.getUserAndSSHKeys(user)['id']
         else:
-            creator_id = authserver.getUser(creator)['id']
+            creator_id = authserver.getUserAndSSHKeys(creator)['id']
         if branch_root is None:
             branch_root = self.server._mirror_root
         branch_id = branchfs.createBranch(
@@ -301,7 +302,7 @@ class AcceptanceTests(SSHTestCase):
             'Expected "Not a branch", found %r' % error_line)
 
     def makeDatabaseBranch(self, owner_name, product_name, branch_name,
-                           branch_type=BranchType.HOSTED, private=False):
+                           branch_type=BranchType.HOSTED):
         """Create a new branch in the database."""
         owner = database.Person.selectOneBy(name=owner_name)
         if product_name == '+junk':
@@ -312,13 +313,11 @@ class AcceptanceTests(SSHTestCase):
             url = 'http://example.com'
         else:
             url = None
-        return database.Branch(
-            registrant=owner,
-            name=branch_name, owner=owner, author=owner, product=product,
-            url=url, title=None,
-            lifecycle_status=BranchLifecycleStatus.DEVELOPMENT,
-            summary=None, whiteboard=None, private=private,
-            date_created=UTC_NOW, branch_type=branch_type)
+
+        namespace = get_branch_namespace(owner, product)
+        return namespace.createBranch(
+            branch_type=branch_type, name=branch_name, registrant=owner,
+            url=url)
 
     def test_push_to_new_branch(self):
         """

@@ -36,7 +36,7 @@ from canonical.launchpad.interfaces import (
     IProduct, IProject, ISprint, LicenseStatus, NotFoundError)
 from canonical.launchpad.interfaces.launchpad import (
     IHasIcon, IHasLogo, IHasMugshot)
-from canonical.launchpad.interfaces.person import IPerson, IPersonSet
+from lp.registry.interfaces.person import IPerson, IPersonSet
 from canonical.launchpad.webapp.interfaces import (
     IApplicationMenu, IContextMenu, IFacetMenu, ILaunchBag, INavigationMenu,
     IPrimaryContext, NoCanonicalUrl)
@@ -464,7 +464,7 @@ class ObjectFormatterAPI:
         :param view_name: If not None, the link will point to the page with
             that name on this object.
         """
-        raise NotImplemented
+        raise NotImplementedError(self.link)
 
 
 class ObjectImageDisplayAPI:
@@ -885,6 +885,7 @@ class ArchiveImageDisplayAPI(ObjectImageDisplayAPI):
             ArchivePurpose.PARTNER: '/@@/distribution',
             ArchivePurpose.PPA: '/@@/package-source',
             ArchivePurpose.COPY: '/@@/distribution',
+            ArchivePurpose.DEBUG: '/@@/distribution',
             }
 
         alt = '[%s]' % self._context.purpose.title
@@ -1149,15 +1150,10 @@ class BranchFormatterAPI(ObjectFormatterAPI):
     def _args(self, view_name):
         """Generate a dict of attributes for string template expansion."""
         branch = self._context
-        if branch.title is not None:
-            title = branch.title
-        else:
-            title = "(no title)"
         return {
             'bzr_identity': branch.bzr_identity,
             'display_name': cgi.escape(branch.displayname),
             'name': branch.name,
-            'title': cgi.escape(title),
             'unique_name' : branch.unique_name,
             'url': self.url(view_name),
             }
@@ -1318,11 +1314,8 @@ class CodeImportFormatterAPI(CustomizableFormatter):
 
     def _link_summary_values(self):
         """See CustomizableFormatter._link_summary_values."""
-        branch_title = self._context.branch.title
-        if branch_title is None:
-            branch_title = _('(no title)')
         return {'product': self._context.product.displayname,
-                'branch': branch_title,
+                'branch': self._context.branch.bzr_identity,
                }
 
     def url(self, view_name=None):
@@ -1356,6 +1349,23 @@ class MilestoneFormatterAPI(CustomizableFormatter):
     def _link_summary_values(self):
         """See CustomizableFormatter._link_summary_values."""
         return {'title': self._context.title}
+
+
+class ProductReleaseFormatterAPI(CustomizableFormatter):
+    """Adapter providing fmt support for Milestone objects."""
+
+    _link_summary_template = _('%(displayname)s %(code_name)s')
+    _link_permission = 'zope.Public'
+
+    def _link_summary_values(self):
+        """See CustomizableFormatter._link_summary_values."""
+        code_name = self._context.milestone.code_name
+        if code_name is None or code_name.strip() == '':
+            code_name = ''
+        else:
+            code_name = '(%s)' % code_name.strip()
+        return dict(displayname=self._context.milestone.displayname,
+                    code_name=code_name)
 
 
 class ProductSeriesFormatterAPI(CustomizableFormatter):

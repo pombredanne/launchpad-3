@@ -1,15 +1,15 @@
 = Prelude =
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces.distribution import (
+    >>> from lp.registry.interfaces.distribution import (
     ...     IDistributionSet)
-    >>> from canonical.launchpad.interfaces.distroseries import (
+    >>> from lp.registry.interfaces.distroseries import (
     ...     IDistroSeriesSet)
     >>> from canonical.launchpad.interfaces.launchpad import (
     ...     ILaunchpadCelebrities)
     >>> from canonical.launchpad.testing.pages import webservice_for_person
     >>> from canonical.launchpad.webapp.interfaces import OAuthPermission
-    >>> from canonical.lazr.testing.webservice import pprint_entry
+    >>> from lazr.restful.testing.webservice import pprint_entry
 
 = Source Packages =
 
@@ -88,3 +88,17 @@ we'll get the new branch.
     ...     pocket='Release').jsonBody()
     >>> print branch['unique_name']
     ~devo/ubuntu/hoary/evolution/branch
+
+Of course, we're also allowed to change our minds. If we set the branch for
+the RELEASE pocket to 'null' (i.e. the JSON for Python' None), then there is
+no longer an official branch for that pocket.
+
+    >>> response = webservice.named_post(
+    ...     evolution['self_link'], 'setBranch', pocket='Release',
+    ...     branch='null')
+    >>> print response.jsonBody()
+    None
+    >>> branch = webservice.named_get(evolution['self_link'], 'getBranch',
+    ...     pocket='Release').jsonBody()
+    >>> print branch
+    None

@@ -1,0 +1,39 @@
+= Linking a product series to a branch =
+
+To make it a bit more obvious to the newer Launchpad user,
+there is an action item for product series to link to an existing
+bazaar branch.
+
+    >>> sample_browser = setupBrowser(auth="Basic test@canonical.com:test")
+    >>> sample_browser.open('http://launchpad.dev/firefox/trunk')
+    >>> sample_browser.getLink('Link to branch').click()
+
+This link is only shown to those that have edit permissions on the
+product series.
+
+    >>> browser.open('http://launchpad.dev/firefox/trunk')
+    >>> browser.getLink('Link to branch')
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
+The only field shown is the branch field.
+
+    >>> print sample_browser.title
+    Link an existing branch to Mozilla Firefox Series: trunk
+    >>> sample_browser.getControl('Branch').value = '~name12/firefox/main'
+    >>> sample_browser.getControl('Update').click()
+
+Updating the branch takes the user back to the product series page.
+
+    >>> print sample_browser.title
+    Overview of Mozilla Firefox Series: trunk
+    >>> branch = find_tag_by_id(sample_browser.contents, 'branch-details')
+    >>> print extract_text(branch)
+    lp://dev/firefox - Sample Person
+
+A helpful informational message is also shown to the user.
+
+    >>> for message in get_feedback_messages(sample_browser.contents):
+    ...     print extract_text(message)
+    Series code location updated.

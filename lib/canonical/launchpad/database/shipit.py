@@ -53,7 +53,7 @@ from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.mail.sendmail import simple_sendmail
 
 from canonical.launchpad.interfaces.account import IAccount
-from canonical.launchpad.interfaces.person import IPerson
+from lp.registry.interfaces.person import IPerson
 from canonical.launchpad.interfaces.shipit import (
     IRequestedCDs, IShipitAccount, IShipItReport, IShipItReportSet,
     IShipItSurveySet, IShipment, IShipmentSet, IShippingRequest,
@@ -67,8 +67,8 @@ from canonical.launchpad.interfaces import (
     ILaunchpadCelebrities, ILibraryFileAliasSet)
 from canonical.launchpad.database.account import Account
 from canonical.launchpad.database.country import Country
-from canonical.launchpad.database.karma import Karma
-from canonical.launchpad.database.person import Person
+from lp.registry.model.karma import Karma
+from lp.registry.model.person import Person
 
 
 MIN_KARMA_ENTRIES_TO_BE_TRUSTED_ON_SHIPIT = 10
@@ -83,6 +83,8 @@ class ShippingRequest(SQLBase):
 
     recipient = ForeignKey(
         dbName='recipient', foreignKey='Account', notNull=True)
+
+    is_admin_request = BoolCol(notNull=True)
 
     daterequested = UtcDateTimeCol(notNull=True, default=UTC_NOW)
 
@@ -480,7 +482,7 @@ class ShippingRequestSet:
             province=province, postcode=postcode, organization=organization,
             phone=phone, is_admin_request=is_admin_request)
 
-        # The normalized_address field is maitained by a trigger, so
+        # The normalized_address field is maintained by a trigger, so
         # the object needed to be refetched after creation.
         Store.of(request).flush()
         Store.of(request).invalidate()

@@ -46,26 +46,25 @@ from canonical.launchpad.components.archivesourcepublication import (
 from canonical.launchpad.interfaces.archive import (
     ArchivePurpose, CannotCopy, IArchive, IArchiveEditDependenciesForm,
     IArchivePackageCopyingForm, IArchivePackageDeletionForm,
-    IArchiveSet, IArchiveSourceSelectionForm, IPPAActivateForm,
-    default_name_by_purpose)
+    IArchiveSet, IArchiveSourceSelectionForm, IPPAActivateForm)
 from canonical.launchpad.interfaces.archivepermission import (
     ArchivePermissionType, IArchivePermissionSet)
 from canonical.launchpad.interfaces.archivesubscriber import (
-    IArchiveSubscriberSet, IArchiveSubscriptionForOwner)
+    IArchiveSubscriberSet)
 from canonical.launchpad.interfaces.build import (
     BuildStatus, IBuildSet)
 from canonical.launchpad.interfaces.buildrecords import IHasBuildRecords
 from canonical.launchpad.interfaces.component import IComponentSet
-from canonical.launchpad.interfaces.distroseries import DistroSeriesStatus
+from lp.registry.interfaces.distroseries import DistroSeriesStatus
 from canonical.launchpad.interfaces.launchpad import (
     ILaunchpadCelebrities, NotFoundError)
 from canonical.launchpad.interfaces.packagecopyrequest import (
     IPackageCopyRequestSet)
-from canonical.launchpad.interfaces.person import IPersonSet
+from lp.registry.interfaces.person import IPersonSet
 from canonical.launchpad.interfaces.publishing import (
     PackagePublishingPocket, active_publishing_status,
     inactive_publishing_status, IPublishingSet)
-from canonical.launchpad.interfaces.sourcepackagename import (
+from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageNameSet)
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, enabled_with_permission,
@@ -83,6 +82,7 @@ from canonical.widgets import (
     LabeledMultiCheckBoxWidget, PlainMultiCheckBoxWidget)
 from canonical.widgets.itemswidgets import (
     LaunchpadDropdownWidget, LaunchpadRadioWidget)
+from canonical.widgets.lazrjs import TextLineEditorWidget
 from canonical.widgets.textwidgets import StrippedTextWidget
 
 
@@ -184,6 +184,13 @@ class ArchiveNavigation(Navigation, FileNavigationMixin):
 
     @stepthrough('+sourcepub')
     def traverse_sourcepub(self, name):
+        return self._traverse_publication(name, source=True)
+
+    @stepthrough('+binarypub')
+    def traverse_binarypub(self, name):
+        return self._traverse_publication(name, source=False)
+
+    def _traverse_publication(self, name, source):
         try:
             pub_id = int(name)
         except ValueError:
@@ -192,7 +199,7 @@ class ArchiveNavigation(Navigation, FileNavigationMixin):
         # The ID is not enough on its own to identify the publication,
         # we need to make sure it matches the context archive as well.
         results = getUtility(IPublishingSet).getByIdAndArchive(
-            pub_id, self.context)
+            pub_id, self.context, source)
         if results.count() == 1:
             return results[0]
 
@@ -213,7 +220,7 @@ class ArchiveNavigation(Navigation, FileNavigationMixin):
         # the direct subscription:
         for subscription in subscriptions:
             if subscription.subscriber == person:
-                return IArchiveSubscriptionForOwner(subscription)
+                return subscription
 
         return None
 
@@ -283,10 +290,6 @@ class ArchiveContextMenu(ContextMenu):
         if not self.context.private:
             link.enabled = False
 
-        # XXX: noodles 2009-03-10 bug=340405. This link is disabled until
-        # the cron-job supporting private archive subscriptions is enabled.
-        link.enabled = False
-
         return link
 
     @enabled_with_permission('launchpad.Edit')
@@ -341,17 +344,7 @@ class ArchiveBreadcrumbBuilder(BreadcrumbBuilder):
 
     @property
     def text(self):
-        if self.context.is_ppa:
-            default_ppa_name = default_name_by_purpose.get(
-                self.context.purpose)
-            if self.context.name == default_ppa_name:
-                return 'PPA'
-            return '%s PPA' % self.context.name
-
-        if self.context.is_copy:
-            return '%s Archive Copy' % self.context.name
-
-        return '%s' % self.context.purpose.title
+        return self.context.displayname
 
 
 class ArchiveViewBase(LaunchpadView):
@@ -591,6 +584,12 @@ class ArchiveView(ArchiveSourcePackageListViewBase):
                 canonical_url(self.context.distribution))
             return
         super(ArchiveView, self).initialize()
+
+        self.displayname_edit_widget = TextLineEditorWidget(
+            self.context, 'displayname',
+            canonical_url(self.context, view_name='+edit'),
+            id="displayname", title="Edit this displayname")
+
         self.setupSourcesListEntries()
 
     def setupSourcesListEntries(self):
@@ -1349,10 +1348,10 @@ class ArchiveActivateView(LaunchpadFormView):
 
         if self.context.archive is not None:
             self.form_fields = self.form_fields.select(
-                'name', 'description')
+                'name', 'displayname', 'description')
         else:
             self.form_fields = self.form_fields.select(
-                'accepted', 'description')
+                'displayname', 'accepted', 'description')
 
     def validate(self, data):
         """Ensure user has checked the 'accepted' checkbox."""
@@ -1402,7 +1401,8 @@ class ArchiveActivateView(LaunchpadFormView):
 
         ppa = getUtility(IArchiveSet).new(
             owner=self.context, purpose=ArchivePurpose.PPA,
-            distribution=ubuntu, name=name, description=data['description'])
+            distribution=ubuntu, name=name,
+            displayname=data['displayname'], description=data['description'])
         self.next_url = canonical_url(ppa)
 
 
@@ -1440,7 +1440,7 @@ class BaseArchiveEditView(LaunchpadEditFormView, ArchiveViewBase):
 
 class ArchiveEditView(BaseArchiveEditView):
 
-    field_names = ['description']
+    field_names = ['displayname', 'description']
     custom_widget(
         'description', TextAreaWidget, height=10, width=30)
 

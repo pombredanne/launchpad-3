@@ -1,0 +1,192 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="view/macro:page/onecolumn"
+  i18n:domain="launchpad"
+>
+<body>
+<metal:block fill-slot="head_epilogue">
+  <tal:script
+    replace="structure string:&lt;script type='text/javascript'&gt;" />
+    YUI().use('dom', 'node', 'io-base', 'lazr.anim', 'lazr.formoverlay',
+        function (Y) {
+
+        // This is a value for the SELECT OPTION which is passed with
+        // the SELECT's "change" event. It includes some symbols that are not
+        // allowed for milestone names, so you can never add a milestone
+        // which will confuse the event handler.
+        var CREATE_MILESTONE_TARGET = '-CREATE-MILESTONE-TARGET-!@#$';
+
+        // The milestone_form will be set, if the form overlay is created.
+        var milestone_form;
+        var milestone_form_uri = '<tal:x replace="view/milestone_form_uri"/>';
+        var series_uri = '<tal:x replace="view/series_api_uri"/>';
+    <!--// No tal expressions after this point, but "<" also doesn't need
+        // to be escaped.
+
+        var get_by_id = function(id) {
+            return Y.get(Y.DOM.byId(id));
+        };
+
+        var error_box_html =
+            '<p id="milestone-error" class="error message" ' +
+            'style="width: 80%; display:none;' +
+                   'left: 0; right: 0; ' +
+                   'margin-left: auto; margin-right: auto; ' +
+                   'margin-top: 2em; margin-bottom: 2em;" />';
+
+        var error_box_html =
+            '<div style="margin: 2em">' +
+            '<p id="milestone-error" class="error message" ' +
+            'style="width: 80%; display:none; ' +
+                    'padding-left: 1.5em; padding-right: 1.5em;" />' +
+            '</div>';
+
+        var create_form_overlay = function (id, response, args) {
+            var form_content = error_box_html + response.responseText;
+            var form_submit_button = Y.Node.create(
+                '<input type="submit" name="field.actions.register" ' +
+                'id="formoverlay-add-milestone" value="Create Milestone"/>');
+            milestone_form = new Y.lazr.FormOverlay({
+                headerContent: '<h2>Create Milestone</h2>',
+                form_content: form_content,
+                form_submit_button: form_submit_button,
+                centered: true,
+                form_submit_callback: save_new_milestone,
+                visible: false
+            });
+            milestone_form.render();
+            milestone_form.show();
+        };
+
+        var save_new_milestone = function(data) {
+
+            var parameters = {
+                name: data['field.name'][0].toLowerCase(),
+                code_name: data['field.code_name'][0],
+                summary: data['field.summary'][0]
+            };
+
+            var date_targeted = Y.Lang.trim(data['field.dateexpected'][0]);
+            if (date_targeted != '') {
+                parameters.date_targeted = date_targeted;
+            }
+
+            var add_milestone_to_menu = function(ignore) {
+                var error_box = Y.get('#milestone-error');
+                error_box.set('innerHTML', '');
+                error_box.setStyle('display', 'none');
+                milestone_form.hide();
+                // Reset the HTML form inside the widget.
+                milestone_form.get('contentBox').query('form').reset();
+                var select_menu = get_by_id('field.milestone_for_release');
+                var new_milestone_option = Y.get(
+                    new Option(parameters.name + '*', parameters.name));
+                select_menu.appendChild(new_milestone_option);
+                var children = select_menu.get('children');
+                var last_index = children.size() - 1;
+                children.item(last_index).set('selected', true);
+                var div = select_menu.ancestor();
+                Y.lazr.anim.green_flash({node: div}).run();
+            };
+
+            client = new LP.client.Launchpad();
+            client.named_post(series_uri, 'newMilestone', {
+                parameters: parameters,
+                on: {
+                    success: add_milestone_to_menu,
+                    failure: function (ignore, response, args) {
+                        var error_box = Y.get('#milestone-error');
+                        var error_message = '<strong>' + response.statusText +
+                                            '</strong><p>' +
+                                            response.responseText +
+                                            '</p>';
+                        error_box.set('innerHTML', error_message);
+                        error_box.setStyle('display', 'block');
+                    }
+                }
+            });
+        };
+
+
+        var setup_milestone_form = function () {
+            Y.io(milestone_form_uri, {
+                on: {
+                    success: create_form_overlay,
+                    failure: function (ignore, response, args) {
+                        var error_page = Y.Node.create('<div/>');
+                        error_page.setStyle('position', 'absolute');
+                        error_page.setStyle('top', '0');
+                        error_page.setStyle('bottom', '0');
+                        error_page.setStyle('left', '0');
+                        error_page.setStyle('right', '0');
+                        error_page.setStyle('margin', 'auto');
+                        error_page.setStyle('width', '80%');
+                        error_page.setStyle('height', '80%');
+                        error_page.setStyle('overflow', 'auto');
+                        error_page.setStyle('background', 'white');
+                        error_page.setStyle('padding', '1em');
+                        error_page.setStyle('border', '3px solid black');
+                        var error_message = '<strong>' + response.statusText +
+                                            '</strong><p>' +
+                                            response.responseText +
+                                            '</p>';
+                        error_page.set('innerHTML', error_message);
+                        var body = Y.get('body');
+                        body.appendChild(error_page);
+                    }
+                }
+            });
+        };
+
+        var show_milestone_form = function(e) {
+            if (milestone_form) {
+                milestone_form.show();
+            } else {
+                // This function call is asynchronous, so we can move
+                // milestone_form.show() below it.
+                setup_milestone_form();
+            }
+            var select_menu = get_by_id('field.milestone_for_release');
+            e.preventDefault();
+        };
+
+        Y.on('domready', function () {
+            var select_menu = get_by_id('field.milestone_for_release');
+            var create_milestone_link = Y.Node.create(
+                '<a href="+addmilestone" id="create-milestone-link" ' +
+                'class="add">Create milestone</a>');
+            select_menu.ancestor().appendChild(create_milestone_link);
+            if (!Y.UA.ie) {
+              create_milestone_link.on('click', show_milestone_form);
+            }
+        });
+    });
+  -->
+  <tal:script replace="structure string:&lt;/script&gt;" />
+</metal:block>
+
+<div metal:fill-slot="main">
+  <div metal:use-macro="context/@@launchpad_form/form">
+    <div metal:fill-slot="extra_info" tal:condition="context/releases"
+         style="border-bottom: solid 1px black">
+      The following releases have been made for the
+      <tal:series replace="context/displayname" /> series:
+      <ul>
+        <li tal:repeat="release context/releases">
+          <tal:released replace="release/datereleased/fmt:date" />
+          <tal:link replace="structure release/fmt:link"/>
+        </li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
+

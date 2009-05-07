@@ -307,7 +307,7 @@ available changesfile.
         Status
     cdrkit - 1.0        2007-07-09  Published  Breezy-a... Editors  i386
     com...(changesfile)             Pending    Warty       Devel
-    ice...(changesfile) 2007-07-09  Published  Warty       Editors
+    ice...(changesfile) 2007-07-09  Published  Warty       Editors  i386
     pmount - 0.1-1      2007-07-09  Published  Warty       Editors
 
 Each data row is expandable to contain some sections containing:
@@ -317,15 +317,41 @@ Each data row is expandable to contain some sections containing:
  * Any built packages and their description
  * The list of files for this package
 
+    >>> expander_url = anon_browser.getLink(id='pub29-expander').url
+    >>> anon_browser.open(expander_url)
+    >>> print extract_text(anon_browser.contents)
+    Publishing details
+      Published on 2007-07-09
+      Copied from ubuntu hoary in Primary Archive for Ubuntu Linux
+    Changelog
+      pmount (0.1-1) hoary; urgency=low
+      * Fix description (Malone #1)
+      * Fix debian (Debian #2000)
+      * Fix warty (Warty Ubuntu #1)
+      -- Sample Person...
+    Builds
+      i386
+    Built packages
+      pmount
+      pmount shortdesc
+    Package files
+      No files published for this package.
+
+If a the binaries for a package are fully built, but have not yet been
+published, this will be indicated to the viewer:
+
+    >>> anon_browser.open("http://launchpad.dev/~cprov/+archive/ppa")
     >>> expander_url = anon_browser.getLink(id='pub28-expander').url
     >>> anon_browser.open(expander_url)
     >>> print extract_text(anon_browser.contents)
+    Note: Some binary packages for this source are not yet published in the
+    repository.
     Publishing details
       Published on 2007-07-09
       Copied from ubuntu warty in PPA for Mark Shuttleworth
     Changelog
     Builds
-      i386
+      i386 - Pending publication
     Built packages
       mozilla-firefox ff from iceweasel
     Package files
@@ -394,7 +420,8 @@ Searching for the package iceweasel shows that Celso is providing this.
 
 In order to have a wider coverage in search status filter we will
 modify some publication in Celso's PPA to SUPERSEDED and DELETED
-states.
+states. Note, for consistency we have to create the binary publishing records
+for iceweasel before marking it as superseded.
 
     >>> from canonical.launchpad.interfaces import (
     ...     IPersonSet, PackagePublishingStatus)
@@ -402,6 +429,12 @@ states.
     >>> login('foo.bar@canonical.com')
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
     >>> iceweasel_pub = cprov.archive.getPublishedSources(name='iceweasel')[0]
+    >>> from canonical.launchpad.tests.test_publishing import SoyuzTestPublisher
+    >>> test_publisher = SoyuzTestPublisher()
+    >>> bpr = test_publisher.uploadBinaryForBuild(
+    ...     iceweasel_pub.getBuilds()[0], 'bar-bin')
+    >>> pub_bins = test_publisher.publishBinaryInArchive(
+    ...     bpr, cprov.archive, status=PackagePublishingStatus.PUBLISHED)
     >>> iceweasel_pub.secure_record.status = PackagePublishingStatus.SUPERSEDED
     >>> pmount_pub = cprov.archive.getPublishedSources(name='pmount')[0]
     >>> pmount_pub.secure_record.status = PackagePublishingStatus.DELETED
@@ -670,6 +703,8 @@ the package. First we need to set up a team PPA and publish something to it.
 
     >>> foo_browser = setupBrowser(auth="Basic foo.bar@canonical.com:test")
     >>> foo_browser.open("http://launchpad.dev/~ubuntu-team/+activate-ppa")
+    >>> foo_browser.getControl(name="field.displayname").value = (
+    ...     'PPA for Ubuntu team')
     >>> foo_browser.getControl(name="field.accepted").value = True
     >>> foo_browser.getControl('Activate').click()
     >>> ubuntu_ppa_url = foo_browser.url

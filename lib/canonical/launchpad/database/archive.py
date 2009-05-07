@@ -10,6 +10,7 @@ __all__ = ['Archive', 'ArchiveSet']
 import os
 import re
 
+from lazr.lifecycle.event import ObjectCreatedEvent
 from sqlobject import  (
     BoolCol, ForeignKey, IntCol, StringCol)
 from sqlobject.sqlbuilder import SQLConstant
@@ -17,6 +18,7 @@ from storm.expr import Or, And, Select
 from storm.locals import Count, Join
 from storm.store import Store
 from zope.component import getUtility
+from zope.event import notify
 from zope.interface import alsoProvides, implements
 from zope.security.interfaces import Unauthorized
 
@@ -37,7 +39,7 @@ from canonical.launchpad.database.archiveauthtoken import ArchiveAuthToken
 from canonical.launchpad.database.archivesubscriber import (
     ArchiveSubscriber)
 from canonical.launchpad.database.build import Build
-from canonical.launchpad.database.distributionsourcepackagecache import (
+from lp.registry.model.distributionsourcepackagecache import (
     DistributionSourcePackageCache)
 from canonical.launchpad.database.distroseriespackagecache import (
     DistroSeriesPackageCache)
@@ -51,7 +53,7 @@ from canonical.launchpad.database.publishing import (
     SourcePackagePublishingHistory, BinaryPackagePublishingHistory)
 from canonical.launchpad.database.queue import (
     PackageUpload, PackageUploadSource)
-from canonical.launchpad.database.teammembership import TeamParticipation
+from lp.registry.model.teammembership import TeamParticipation
 from canonical.launchpad.interfaces.archive import (
     ArchiveDependencyError, ArchivePurpose, DistroSeriesNotFound,
     IArchive, IArchiveSet, IDistributionArchive, IPPA, MAIN_ARCHIVE_PURPOSES,
@@ -66,7 +68,7 @@ from canonical.launchpad.interfaces.build import (
     BuildStatus, IBuildSet)
 from canonical.launchpad.interfaces.buildrecords import IHasBuildRecords
 from canonical.launchpad.interfaces.component import IComponentSet
-from canonical.launchpad.interfaces.distroseries import IDistroSeriesSet
+from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from canonical.launchpad.interfaces.launchpad import (
     IHasOwner, ILaunchpadCelebrities, NotFoundError)
 from canonical.launchpad.interfaces.package import PackageUploadStatus
@@ -74,7 +76,7 @@ from canonical.launchpad.interfaces.packagecopyrequest import (
     IPackageCopyRequestSet)
 from canonical.launchpad.interfaces.publishing import (
     PackagePublishingPocket, PackagePublishingStatus, IPublishingSet)
-from canonical.launchpad.interfaces.sourcepackagename import (
+from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageNameSet)
 from canonical.launchpad.scripts.packagecopier import (
     CannotCopy, check_copy, do_copy)
@@ -82,7 +84,7 @@ from canonical.launchpad.webapp.interfaces import (
         IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from canonical.launchpad.webapp.url import urlappend
 from canonical.launchpad.validators.name import valid_name
-from canonical.launchpad.validators.person import validate_public_person
+from lp.registry.interfaces.person import validate_public_person
 
 
 class Archive(SQLBase):
@@ -1120,12 +1122,6 @@ class Archive(SQLBase):
     def newSubscription(self, subscriber, registrant, date_expires=None,
                         description=None):
         """See `IArchive`."""
-        # XXX 2009-01-19 Julian
-        # This method is currently a stub.  It needs a lot more work to
-        # figure out what to do in the case of overlapping
-        # subscriptions, and also to add the ArchiveAuthTokens for the
-        # subscriber (which may also be a team and thus require
-        # expanding to make one token per member).
         subscription = ArchiveSubscriber()
         subscription.archive = self
         subscription.registrant = registrant
@@ -1136,6 +1132,11 @@ class Archive(SQLBase):
         subscription.date_created = UTC_NOW
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         store.add(subscription)
+
+        # Notify any listeners that a new subscription was created.
+        # This is used currently for sending email notifications.
+        notify(ObjectCreatedEvent(subscription))
+
         return subscription
 
 
@@ -1222,8 +1223,9 @@ class ArchiveSet:
 
         return '%s for %s' % (purpose.title, distribution.title)
 
-    def new(self, purpose, owner, name=None, distribution=None,
-            description=None):
+    def new(self, purpose, owner, name=None, displayname=None,
+            distribution=None, description=None, enabled=True,
+            require_virtualized=True):
         """See `IArchiveSet`."""
         if distribution is None:
             distribution = getUtility(ILaunchpadCelebrities).ubuntu
@@ -1236,6 +1238,12 @@ class ArchiveSet:
         if name == distribution.name:
             raise AssertionError(
                 'Archives cannot have the same name as their distribution.')
+
+        # If displayname is not given, create a default one.
+        if displayname is None:
+            displayname = self._getDefaultDisplayname(
+                name=name, owner=owner, distribution=distribution,
+                purpose=purpose)
 
         # Copy archives are to be instantiated with the 'publish' flag turned
         # off.
@@ -1263,16 +1271,16 @@ class ArchiveSet:
                     "Person '%s' already has a PPA named '%s'." %
                     (owner.name, name))
 
-        # XXX cprov bug=340457: Use the default'displayname' until we
-        # allow users to edit it.
-        default_displayname = self._getDefaultDisplayname(
-            name=name, owner=owner, distribution=distribution,
-            purpose=purpose)
+        # Signing-key for the default PPA is reused when it's already present.
+        signing_key = None
+        if purpose == ArchivePurpose.PPA and owner.archive is not None:
+            signing_key = owner.archive.signing_key
 
         new_archive = Archive(
             owner=owner, distribution=distribution, name=name,
-            displayname=default_displayname, description=description,
-            purpose=purpose, publish=publish)
+            displayname=displayname, description=description,
+            purpose=purpose, publish=publish, signing_key=signing_key,
+            enabled=enabled, require_virtualized=require_virtualized)
 
         return new_archive
 

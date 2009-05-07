@@ -9,44 +9,49 @@ filenames and filesizes.
     >>> from zope.component import getMultiAdapter
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 
-We'll retrieve the last SourcePackagePublishingHistory entry for
-alsa-utils and foobar in ubuntu as sample data:
+We'll create SourcePackagePublishingHistory entries for
+alsa-utils and foobar in ubuntu to test with:
 
-    >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import IDistributionSet
-
-    >>> ubuntu = getUtility(IDistributionSet).getByName("ubuntu")
-    >>> alsa_utils = ubuntu.getSourcePackage('alsa-utils')
-    >>> alsa_pub = alsa_utils.publishing_history[0]
-    >>> foobar = ubuntu.getSourcePackage('foobar')
-    >>> foo_pub = foobar.publishing_history[0]
+    >>> from canonical.launchpad.tests.test_publishing import (
+    ...     SoyuzTestPublisher)
+    >>> from canonical.launchpad.interfaces.publishing import (
+    ...     PackagePublishingStatus)
+    >>> login('foo.bar@canonical.com')
+    >>> stp = SoyuzTestPublisher()
+    >>> stp.prepareBreezyAutotest()
+    >>> alsa_pub = stp.getPubSource(sourcename='alsa-utils-test')
+    >>> foo_pub = stp.getPubSource(sourcename='foobar-test',
+    ...     status=PackagePublishingStatus.DELETED)
+    >>> logout()
 
 The base class BasePublishingRecordView provides a few helper methods
 and properties for querying the publishing history record:
+
+If the publishing record does not include a removal comment, then
+the view property returns 'None provided.'
 
     >>> view = getMultiAdapter(
     ...    (foo_pub, LaunchpadTestRequest()), name="+listing-compact")
     >>> view.wasDeleted()
     True
-    >>> view.context.removal_comment
-    u'I do not like it.'
-    >>> view.removal_comment
-    u'I do not like it.'
-
-If the publishing record does not include a removal comment, then
-the view property returns 'None provided.' (Note, setting the removal
-comment requires going through the secure record and flushing before
-it will be reflected in the normal record)
-
-    >>> login('foo.bar@canonical.com')
-    >>> foo_pub.secure_record.removal_comment = None
-    >>> from canonical.database.sqlbase import flush_database_caches
-    >>> flush_database_caches()
-
     >>> print view.context.removal_comment
     None
     >>> view.removal_comment
     u'None provided.'
+
+Otherwise the removal comment will be returned (Note, setting the removal
+comment requires going through the secure record and flushing before
+it will be reflected in the normal record)
+
+    >>> login('foo.bar@canonical.com')
+    >>> foo_pub.secure_record.removal_comment = "It had to go."
+    >>> from canonical.database.sqlbase import flush_database_caches
+    >>> flush_database_caches()
+
+    >>> print view.context.removal_comment
+    It had to go.
+    >>> print view.removal_comment
+    It had to go.
 
 
 The SourcePackagePublishingView implements the
@@ -65,10 +70,10 @@ for each file related with the alsa-utils source publication in ubuntu.
     ...    name="+listing-archive-detailed")
 
     >>> view.published_source_and_binary_files
-    [{'url': 'http://.../alsa-utils_1.0.9a-4ubuntu1.dsc',
+    [{'url': u'http://launchpad.dev/ubuntutest/+archive/primary/+files/alsa-utils-test_666.dsc',
      'class': 'source',
-     'filesize': 3,
-     'filename': u'alsa-utils_1.0.9a-4ubuntu1.dsc'}]
+     'filesize': 28,
+     'filename': u'alsa-utils-test_666.dsc'}]
 
 'iceweasel' source in Celso's PPA contains binary files that can be
 inspected.
@@ -84,15 +89,15 @@ inspected.
     ...     name="+listing-archive-detailed")
 
     >>> ppa_source_view.published_source_and_binary_files
-    [{'url': 'http://localhost:58000/3/firefox-0.9.2.orig.tar.gz',
+    [{'url': u'http://launchpad.dev/~cprov/+archive/ppa/+files/firefox-0.9.2.orig.tar.gz',
       'class': 'source',
       'filesize': 9922560,
       'filename': u'firefox-0.9.2.orig.tar.gz'},
-     {'url': 'http://localhost:58000/62/iceweasel-1.0.dsc',
+     {'url': u'http://launchpad.dev/~cprov/+archive/ppa/+files/iceweasel-1.0.dsc',
       'class': 'source',
       'filesize': 123,
       'filename': u'iceweasel-1.0.dsc'},
-     {'url': 'http://localhost:58000/40/mozilla-firefox_0.9_i386.deb',
+     {'url': u'http://launchpad.dev/~cprov/+archive/ppa/+files/mozilla-firefox_0.9_i386.deb',
       'class': 'binary',
       'filesize': 3,
       'filename': u'mozilla-firefox_0.9_i386.deb'}]
@@ -178,8 +183,8 @@ Create a small function for displaying the results:
     ...     )
 
     >>> print_build_summary(src_pub_record_view.build_status_summary)
-    FULLYBUILT
-    All builds were built successfully.
+    FULLYBUILT_PENDING
+    All builds were built successfully but have not yet been published.
     Relevant builds:
      - i386 build of iceweasel 1.0 in ubuntu warty RELEASE
 
@@ -187,10 +192,17 @@ The view also helps templates to decide on the icon that should be used
 to summarize the current state of the context's associated builds:
 
     >>> print src_pub_record_view.build_status_img_src
-    /@@/yes
+    /@@/build-success-pending
 
-As well as a helper to determine if the build status summary is
-successful:
+As well as some helpers to determine the publishing status from templates:
 
-    >>> src_pub_record_view.builds_successful
+    >>> src_pub_record_view.builds_successful_and_published
+    False
+
+    >>> src_pub_record_view.builds_successful_and_pending
     True
+
+    >>> for build in src_pub_record_view.pending_builds:
+    ...     print build.title
+    i386 build of iceweasel 1.0 in ubuntu warty RELEASE
+

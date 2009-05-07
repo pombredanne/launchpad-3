@@ -12,11 +12,13 @@ __metaclass__ = type
 __all__ = [
     'ForeignKey',
     'ObjectNotFound',
+    'StartsWith',
     'Sugar',
     'UnknownProperty',
     ]
 
 
+from storm.expr import Like, SQLRaw
 from storm.locals import Int, Reference, Store, Storm
 from zope.component import getUtility
 
@@ -45,6 +47,20 @@ class ForeignKey(Reference):
     def __init__(self, remote_key, name=None):
         self.name = name
         Reference.__init__(self, None, remote_key)
+
+
+class StartsWith(Like):
+    """Allow Like matching but only at the beginning of a string.
+
+    The string is properly escaped.
+    """
+    def __init__(self, expr, string):
+        # Escape instances of !, _, and % so they don't interfere with the
+        # underlying LIKE operation.  Use ! as the escape character.
+        string = string.replace("!", "!!") \
+                       .replace("_", "!_") \
+                       .replace("%", "!%")
+        Like.__init__(self, expr, string+"%", escape=SQLRaw("'!'"))
 
 
 # Use Storm.__metaclass__ because storm.properties.PropertyPublisherMeta isn't

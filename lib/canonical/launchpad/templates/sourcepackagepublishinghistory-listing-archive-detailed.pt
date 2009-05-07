@@ -26,7 +26,7 @@
       <tal:view_changesfile
         define="changesfile context/sourcepackagerelease/upload_changesfile">
         <a tal:condition="changesfile"
-           tal:attributes="href string:+files/${changesfile/filename};
+           tal:attributes="href changesfile/http_url;
                            title changesfile/filename"
           >(changesfile)</a>
       </tal:view_changesfile>
@@ -54,7 +54,7 @@
                            alt build_status_summary/description;
                            src view/build_status_img_src" />
       <tal:related_builds repeat="build view/build_status_summary/builds"
-                          condition="not:view/builds_successful">
+                          condition="not:view/builds_successful_and_published">
         <a tal:attributes="href build/fmt:url;
                            title build_status_summary/description">
           <tal:arch content="build/distroarchseries/architecturetag" />

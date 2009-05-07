@@ -5,6 +5,7 @@
 __metaclass__ = type
 __all__ = [
     'LoginServiceStandaloneLoginView',
+    'LoginServiceUnauthorizedView',
     'OpenIDMixin',
     ]
 
@@ -13,6 +14,7 @@ import logging
 import pytz
 from datetime import datetime, timedelta
 from time import time
+from urllib import urlencode
 
 from BeautifulSoup import BeautifulSoup
 
@@ -37,7 +39,7 @@ from canonical.launchpad import _
 from canonical.launchpad.components.openidserver import (
     OpenIDPersistentIdentity, CurrentOpenIDEndPoint)
 from canonical.launchpad.interfaces.account import IAccountSet, AccountStatus
-from canonical.launchpad.interfaces.person import (
+from lp.registry.interfaces.person import (
     IPerson, IPersonSet, PersonVisibility)
 from canonical.launchpad.interfaces.authtoken import (
     IAuthTokenSet, LoginTokenType)
@@ -52,8 +54,10 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.interfaces import (
     IPlacelessLoginSource, UnexpectedFormData)
 from canonical.launchpad.webapp.login import (
-    logInPrincipal, logoutPerson, allowUnauthenticatedSession)
+    allowUnauthenticatedSession, logInPrincipal, logoutPerson,
+    UnauthorizedView)
 from canonical.launchpad.webapp.menu import structured
+from canonical.launchpad.webapp.url import urlappend
 from canonical.uuid import generate_uuid
 from canonical.widgets.itemswidgets import LaunchpadRadioWidget
 
@@ -501,6 +505,10 @@ class OpenIDView(OpenIDMixin, LaunchpadView):
         if self.account is None or not self.isIdentityOwner():
             return False
 
+        # Sites set to auto authorize are always authorized.
+        if self.rpconfig is not None and self.rpconfig.auto_authorize:
+            return True
+
         client_id = getUtility(IClientIdManager).getClientId(self.request)
         auth_set = getUtility(IOpenIDAuthorizationSet)
 
@@ -614,7 +622,10 @@ class LoginServiceMixinLoginView:
             self.addError('Please enter a valid email address.')
             return
 
-        account = getUtility(IAccountSet).getByEmail(email)
+        try:
+            account = getUtility(IAccountSet).getByEmail(email)
+        except LookupError:
+            account = None
         if action == 'login':
             self.validateEmailAndPassword(email, password)
         elif action == 'resetpassword':
@@ -758,7 +769,8 @@ class LoginServiceStandaloneLoginView(LoginServiceMixinLoginView,
 
     def doLogin(self, email):
         super(LoginServiceStandaloneLoginView, self).doLogin(email)
-        self.next_url = '/'
+        redirect_to = self.request.form.get('redirect_url')
+        self.next_url = redirect_to or '/'
 
 
 class ProtocolErrorView(LaunchpadView):
@@ -822,3 +834,17 @@ class PreAuthorizeRPView(OpenIDMixin, LaunchpadView):
                 trust_root, http_referrer)
         self.request.response.redirect(callback)
         return u''
+
+
+class LoginServiceUnauthorizedView(UnauthorizedView):
+    """Login Service UnauthorizedView customization."""
+
+    notification_message = _('To continue, you must log in.')
+
+    def getRedirectURL(self, current_url, query_string):
+        """Return the URL to the +standalone-page and pass the redirection URL
+        as a parameter."""
+        return urlappend(
+            self.request.getApplicationURL(),
+            '+standalone-login?' + urlencode(
+                (('redirect_url', current_url + query_string), )))

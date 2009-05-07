@@ -37,7 +37,7 @@ from canonical.launchpad.interfaces.openidserver import (
     ILaunchpadOpenIDStoreFactory, IOpenIDAuthorization,
     IOpenIDAuthorizationSet, IOpenIDPersistentIdentity, IOpenIDRPConfig,
     IOpenIDRPConfigSet, IOpenIDRPSummary, IOpenIDRPSummarySet)
-from canonical.launchpad.interfaces.person import PersonCreationRationale
+from lp.registry.interfaces.person import PersonCreationRationale
 from canonical.launchpad.webapp.interfaces import (
     AUTH_STORE, IStoreSelector, MASTER_FLAVOR)
 from canonical.launchpad.webapp.url import urlparse
@@ -130,6 +130,7 @@ class OpenIDRPConfig(SQLBase):
         default=PersonCreationRationale.OWNER_CREATED_UNKNOWN_TRUSTROOT)
     can_query_any_team = BoolCol(
         dbName='can_query_any_team', notNull=True, default=False)
+    auto_authorize = BoolCol()
 
     def allowed_sreg(self):
         value = self._allowed_sreg
@@ -161,7 +162,7 @@ class OpenIDRPConfigSet:
             allowed_sreg=None,
             creation_rationale=
                 PersonCreationRationale.OWNER_CREATED_UNKNOWN_TRUSTROOT,
-            can_query_any_team=False):
+            can_query_any_team=False, auto_authorize=False):
         """See `IOpenIDRPConfigSet`"""
         if allowed_sreg:
             allowed_sreg = ','.join(sorted(allowed_sreg))
@@ -172,7 +173,8 @@ class OpenIDRPConfigSet:
             trust_root=trust_root, displayname=displayname,
             description=description, logo=logo,
             _allowed_sreg=allowed_sreg, creation_rationale=creation_rationale,
-            can_query_any_team=can_query_any_team)
+            can_query_any_team=can_query_any_team,
+            auto_authorize=auto_authorize)
 
     def get(self, id):
         """See `IOpenIDRPConfigSet`"""

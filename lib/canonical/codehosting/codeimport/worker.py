@@ -30,7 +30,7 @@ from canonical.codehosting.codeimport.foreigntree import (
 from canonical.codehosting.codeimport.tarball import (
     create_tarball, extract_tarball)
 from canonical.config import config
-from canonical.launchpad.interfaces.codeimport import RevisionControlSystems
+from lp.code.interfaces.codeimport import RevisionControlSystems
 
 from cscvs.cmds import totla
 import cscvs
@@ -148,7 +148,8 @@ class CodeImportSourceDetails:
         else:
             raise AssertionError("Unknown rcstype %r." % rcstype)
         return cls(
-            branch_id, rcstype, svn_branch_url, cvs_root, cvs_module, git_repo_url)
+            branch_id, rcstype, svn_branch_url, cvs_root, cvs_module,
+            git_repo_url)
 
     @classmethod
     def fromCodeImport(cls, code_import):
@@ -165,7 +166,7 @@ class CodeImportSourceDetails:
         elif code_import.rcs_type == RevisionControlSystems.GIT:
             rcstype = 'git'
             svn_branch_url = cvs_root = cvs_module = None
-            git_repo_url = code_import.git_repo_url
+            git_repo_url = str(code_import.git_repo_url)
         else:
             raise AssertionError("Unknown rcstype %r." % rcstype)
         return cls(
@@ -361,7 +362,8 @@ class CSCVSImportWorker(ImportWorker):
             and updated during the import process.
         :param logger: A `Logger` to pass to cscvs.
         """
-        ImportWorker.__init__(self, source_details, bazaar_branch_store, logger)
+        ImportWorker.__init__(
+            self, source_details, bazaar_branch_store, logger)
         self.foreign_tree_store = foreign_tree_store
 
 

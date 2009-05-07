@@ -36,18 +36,20 @@ from zope.schema import (
 from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import PublicPersonChoice
+from canonical.launchpad.fields import (
+    PublicPersonChoice, StrippedTextLine)
 from canonical.launchpad.interfaces import IHasOwner
 from canonical.launchpad.interfaces.buildrecords import IHasBuildRecords
-from canonical.launchpad.interfaces.gpg import IGPGKey
-from canonical.launchpad.interfaces.person import IPerson
+from lp.registry.interfaces.gpg import IGPGKey
+from lp.registry.interfaces.person import IPerson
 from canonical.launchpad.validators.name import name_validator
 
-from canonical.lazr.fields import Reference
-from canonical.lazr.rest.declarations import (
+from lazr.restful.fields import Reference
+from lazr.restful.declarations import (
     export_as_webservice_entry, exported, export_read_operation,
-    export_factory_operation, export_write_operation, operation_parameters,
-    operation_returns_collection_of, rename_parameters_as, webservice_error)
+    export_factory_operation, export_operation_as, export_write_operation,
+    operation_parameters, operation_returns_collection_of,
+    rename_parameters_as, webservice_error)
 
 
 class ArchiveDependencyError(Exception):
@@ -105,7 +107,7 @@ class IArchivePublic(IHasOwner):
             description=_("The name of this archive.")))
 
     displayname = exported(
-        TextLine(
+        StrippedTextLine(
             title=_("Displayname"), required=False,
             description=_("Displayname for this archive.")))
 
@@ -245,24 +247,6 @@ class IArchivePublic(IHasOwner):
         architecture-independent publication for other architetures than the
         nominatedarchindep. In few words it represents the binary files
         published in the archive disk pool.
-
-        :param: name: binary name filter (exact match or SQL LIKE controlled
-                      by 'exact_match' argument).
-        :param: version: binary version filter (always exact match).
-        :param: status: `PackagePublishingStatus` filter, can be a list.
-        :param: distroarchseries: `IDistroArchSeries` filter, can be a list.
-        :param: pocket: `PackagePublishingPocket` filter.
-        :param: exact_match: either or not filter source names by exact
-                             matching.
-
-        :return: SelectResults containing `IBinaryPackagePublishingHistory`.
-        """
-
-    def getAllPublishedBinaries(name=None, version=None, status=None,
-                                distroarchseries=None, exact_match=False):
-        """All `IBinaryPackagePublishingHistory` target to this archive.
-
-        See getUniquePublishedBinaries for further information.
 
         :param: name: binary name filter (exact match or SQL LIKE controlled
                       by 'exact_match' argument).
@@ -659,6 +643,53 @@ class IArchiveView(IHasBuildRecords):
         :return: SelectResults containing `ISourcePackagePublishingHistory`.
         """
 
+    @rename_parameters_as(
+        name="binary_name", distroarchseries="distro_arch_series")
+    @operation_parameters(
+        name=TextLine(title=_("Binary Package Name"), required=False),
+        version=TextLine(title=_("Version"), required=False),
+        status=Choice(
+            title=_("Package Publishing Status"),
+            description=_("The status of this publishing record"),
+            # Really PackagePublishingStatus, circular import fixed below.
+            vocabulary=DBEnumeratedType,
+            required=False),
+        distroarchseries=Reference(
+            # Really IDistroArchSeries, circular import fixed below.
+            Interface,
+            title=_("Distro Arch Series"), required=False),
+        pocket=Choice(
+            title=_("Pocket"),
+            description=_("The pocket into which this entry is published"),
+            # Really PackagePublishingPocket, circular import fixed below.
+            vocabulary=DBEnumeratedType,
+            required=False, readonly=True),
+        exact_match=Bool(
+            description=_("Whether or not to filter binary names by exact "
+                          "matching."),
+            required=False))
+    # Really returns ISourcePackagePublishingHistory, see below for
+    # patch to avoid circular import.
+    @operation_returns_collection_of(Interface)
+    @export_operation_as("getPublishedBinaries")
+    @export_read_operation()
+    def getAllPublishedBinaries(name=None, version=None, status=None,
+                                distroarchseries=None, pocket=None,
+                                exact_match=False):
+        """All `IBinaryPackagePublishingHistory` target to this archive.
+
+        :param: name: binary name filter (exact match or SQL LIKE controlled
+                      by 'exact_match' argument).
+        :param: version: binary version filter (always exact match).
+        :param: status: `PackagePublishingStatus` filter, can be a list.
+        :param: distroarchseries: `IDistroArchSeries` filter, can be a list.
+        :param: pocket: `PackagePublishingPocket` filter.
+        :param: exact_match: either or not filter source names by exact
+                             matching.
+
+        :return: A collection containing `BinaryPackagePublishingHistory`.
+        """
+
     @operation_parameters(
         include_needsbuild=Bool(
             title=_("Include builds with state NEEDSBUILD"), required=False))
@@ -690,7 +721,7 @@ class IArchiveView(IHasBuildRecords):
     @operation_parameters(
         source_ids=List(
             title=_("A list of source publishing history record ids."),
-            value_type=TextLine()))
+            value_type=Int()))
     @export_read_operation()
     def getBuildSummariesForSourceIds(source_ids):
         """Return a dictionary containing a summary of the build statuses.
@@ -826,6 +857,10 @@ class IPPAActivateForm(Interface):
         title=_("PPA name"), required=True, constraint=name_validator,
         description=_("A unique name used to identify this PPA."))
 
+    displayname = StrippedTextLine(
+        title=_("Displayname"), required=True,
+        description=_("Displayname for this PPA."))
+
     description = Text(
         title=_("PPA contents description"), required=False,
         description=_(
@@ -879,18 +914,28 @@ class IArchiveSet(Interface):
         """
 
 
-    def new(purpose, owner, name=None, distribution=None, description=None):
+    def new(purpose, owner, name=None, displayname=None, distribution=None,
+            description=None, enabled=True, require_virtualized=True):
         """Create a new archive.
+
+        On named-ppa creation, the signing key for the default PPA for the
+        given owner will be used if it is present.
 
         :param purpose: `ArchivePurpose`;
         :param owner: `IPerson` owning the Archive;
         :param name: optional text to be used as the archive name, if not
             given it uses the names defined in
             `IArchiveSet._getDefaultArchiveNameForPurpose`;
+        :param displayname: optional text that will be used as a reference
+            to this archive in the UI. If not provided a default text (
+            including the archive name and the owner displayname will be used.)
         :param distribution: optional `IDistribution` to which the archive
             will be attached;
         :param description: optional text to be set as the archive
             description;
+        :param enabled: whether the archive shall be enabled post creation
+        :param require_virtualized: whether builds for the new archive shall
+            be carried out on virtual builders
 
         :return: an `IArchive` object.
         :raises AssertionError if name is already taken within distribution.
@@ -1031,17 +1076,26 @@ class ArchivePurpose(DBEnumeratedType):
         This kind of archive will be used for rebuilds, snapshots etc.
         """)
 
+    DEBUG = DBItem(7, """
+        Debug Archive
+
+        This kind of archive will be user for publishing package with
+        debug-symbols.
+        """)
+
 
 default_name_by_purpose = {
     ArchivePurpose.PRIMARY: 'primary',
     ArchivePurpose.PPA: 'ppa',
     ArchivePurpose.PARTNER: 'partner',
+    ArchivePurpose.DEBUG: 'debug',
     }
 
 
 MAIN_ARCHIVE_PURPOSES = (
     ArchivePurpose.PRIMARY,
     ArchivePurpose.PARTNER,
+    ArchivePurpose.DEBUG,
     )
 
 ALLOW_RELEASE_BUILDS = (
@@ -1057,7 +1111,7 @@ from canonical.launchpad.components.apihelpers import (
     patch_plain_parameter_type, patch_choice_parameter_type,
     patch_reference_property)
 
-from canonical.launchpad.interfaces.distribution import IDistribution
+from lp.registry.interfaces.distribution import IDistribution
 patch_reference_property(IArchive, 'distribution', IDistribution)
 
 from canonical.launchpad.interfaces.archivepermission import (
@@ -1078,7 +1132,7 @@ patch_entry_return_type(IArchive, 'newQueueAdmin', IArchivePermission)
 patch_plain_parameter_type(IArchive, 'syncSources', 'from_archive', IArchive)
 patch_plain_parameter_type(IArchive, 'syncSource', 'from_archive', IArchive)
 
-from canonical.launchpad.interfaces.distroseries import IDistroSeries
+from lp.registry.interfaces.distroseries import IDistroSeries
 from canonical.launchpad.interfaces.publishing import (
     ISourcePackagePublishingHistory, PackagePublishingPocket,
     PackagePublishingStatus)
@@ -1091,8 +1145,21 @@ patch_choice_parameter_type(
 patch_choice_parameter_type(
     IArchive, 'getPublishedSources', 'pocket', PackagePublishingPocket)
 
+from canonical.launchpad.interfaces.distroarchseries import IDistroArchSeries
+from canonical.launchpad.interfaces.publishing import (
+    IBinaryPackagePublishingHistory)
+patch_plain_parameter_type(
+    IArchive, 'getAllPublishedBinaries', 'distroarchseries',
+    IDistroArchSeries)
+patch_collection_return_type(
+    IArchive, 'getAllPublishedBinaries', IBinaryPackagePublishingHistory)
+patch_choice_parameter_type(
+    IArchive, 'getAllPublishedBinaries', 'status', PackagePublishingStatus)
+patch_choice_parameter_type(
+    IArchive, 'getAllPublishedBinaries', 'pocket', PackagePublishingPocket)
+
 # This is patched here to avoid even more circular imports in
 # interfaces/person.py.
-from canonical.launchpad.interfaces.person import IPersonPublic
+from lp.registry.interfaces.person import IPersonPublic
 patch_reference_property(IPersonPublic, 'archive', IArchive)
 

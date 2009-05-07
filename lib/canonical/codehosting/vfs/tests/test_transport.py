@@ -50,18 +50,18 @@ class TestingServer(LaunchpadInternalServer):
         levels, enforcing naming restrictions at others), we test a
         LaunchpadTransport chrooted into the .bzr directory of a branch.
         """
-        if url != self._scheme:
-            raise AssertionError(
-                "Don't know how to create non-root transport. Not needed for "
-                "testing.")
-        root_transport = LaunchpadInternalServer._transportFactory(self, url)
+        if not url.startswith(self._scheme):
+            raise AssertionError("Wrong transport scheme.")
+        root_transport = LaunchpadInternalServer._transportFactory(
+            self, self._scheme)
+        relpath = root_transport.relpath(url)
         bzrdir_transport = root_transport.clone(
             self._branch_path).clone('.bzr')
         bzrdir_transport.ensure_base()
         chroot_server = chroot.ChrootServer(bzrdir_transport)
         chroot_server.setUp()
         self._chroot_servers.append(chroot_server)
-        return get_transport(chroot_server.get_url())
+        return get_transport(chroot_server.get_url()).clone(relpath)
 
     def tearDown(self):
         """See `LaunchpadInternalServer.tearDown`.

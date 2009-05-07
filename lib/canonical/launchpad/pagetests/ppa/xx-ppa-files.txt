@@ -13,7 +13,7 @@ PPA.
 
     >>> from canonical.launchpad.tests.test_publishing import (
     ...      SoyuzTestPublisher)
-    >>> from canonical.launchpad.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> from canonical.launchpad.interfaces.publishing import (
     ...     PackagePublishingPocket)
 
@@ -43,32 +43,14 @@ Include a source tarball.
     ...     'test-pkg_1.0.tar.gz', filecontent='TAR', restricted=True)
     >>> unused = test_source.sourcepackagerelease.addFile(tar_gz)
 
-
-Create a corresponding upload changesfile.
-
-    >>> source_upload = test_source.distroseries.createQueueEntry(
-    ...     pocket=PackagePublishingPocket.RELEASE,
-    ...     changesfilename='test-pkg_1.0_source.changes',
-    ...     changesfilecontent='Bogus source changesfile',
-    ...     archive=no_priv.archive)
-    >>> unused = source_upload.addSource(test_source.sourcepackagerelease)
-    >>> source_upload.setDone()
-
 Create a corresponding binary publication and its changesfile.
 
     >>> binary_pubs = test_publisher.getPubBinaries(
     ...     binaryname='test-bin', pub_source=test_source)
     >>> deb_file = binary_pubs[0].binarypackagerelease.files[0].libraryfile
 
-    >>> binary_upload = test_source.distroseries.createQueueEntry(
-    ...     pocket=PackagePublishingPocket.RELEASE,
-    ...     changesfilename='test-pkg_1.0_all.changes',
-    ...     changesfilecontent='Bogus binary changesfile',
-    ...     archive=no_priv.archive)
-
     >>> [build] = test_source.getBuilds()
     >>> build.datebuilt = build.datecreated
-    >>> unused = binary_upload.addBuild(build)
 
 Create a buildlog and a binary upload_log.
 
@@ -111,7 +93,8 @@ Commit everything.
 Links to files accessible via +files/ proxy in the PPA page.
 
     >>> ppa_links = [
-    ...     ('(changesfile)', source_upload.changesfile),
+    ...     ('(changesfile)',
+    ...         another_test_source.sourcepackagerelease.upload_changesfile),
     ...     ]
 
     >>> ppa_1_0_links = [
@@ -132,7 +115,7 @@ Links to files accessible via +files/ proxy in the Build page.
     ...     ]
 
     >>> build_links = [
-    ...     ('test-pkg_1.0_all.changes', binary_upload.changesfile),
+    ...     ('test-bin_1.0_i386.changes', build.changesfile),
     ...     (buildlog_name, build.buildlog),
     ...     (upload_log_name, build.upload_log),
     ...     ]
@@ -142,74 +125,91 @@ Links to files accessible via +files/ proxy in the Build page.
 Create a function to check the expected links.
 
     >>> from mechanize import LinkNotFoundError
-    >>> def check_urls(browser, links):
+    >>> def check_urls(browser, links, base_url):
     ...     for link, libraryfile in links:
     ...         try:
-    ...             full_url = browser.getLink(link).url
+    ...             found_url = browser.getLink(link).url
     ...         except LinkNotFoundError:
     ...             print '%s: NOT FOUND' % libraryfile.filename
     ...             continue
-    ...         relative_path = '/'.join(full_url.split('/')[-2:])
-    ...         expected_path = '+files/%s' % libraryfile.filename
-    ...         if relative_path == expected_path:
+    ...         found_url = found_url.replace('%7E', '~')
+    ...         expected_url = '/'.join(
+    ...             (base_url, '+files', libraryfile.filename))
+    ...         if found_url == expected_url:
     ...             print '%s: OK' % libraryfile.filename
     ...         else:
-    ...             print '%s: NOT OK (%s)' % (
-    ...                 libraryfile.filename, relative_path)
+    ...             print '%s: NOT OK (%s != %s)' % (
+    ...                 libraryfile.filename, found_url, expected_url)
 
-Checking file links on PPA index page.
+No Privileges user can access the files related with his PPA and its
+builds.
 
     >>> no_priv_browser = setupBrowser(
     ...     auth='Basic no-priv@canonical.com:test')
-    >>> no_priv_browser.open("http://launchpad.dev/~no-priv/+archive")
+    >>> no_priv_browser.open("http://launchpad.dev/~no-priv/+archive/ppa")
 
     >>> print no_priv_browser.title
     PPA for No Privileges Person
 
-    >>> check_urls(no_priv_browser, ppa_links)
-    test-pkg_1.0_source.changes: OK
+Source changesfiles are served on the PPA '+files' traversal.
+
+    >>> check_urls(no_priv_browser, ppa_links,
+    ...            'http://launchpad.dev/~no-priv/+archive/ppa')
+    test-pkg_1.1_source.changes: OK
 
     >>> no_priv_browser.getLink('Copy packages').click()
-    >>> check_urls(no_priv_browser, ppa_links)
-    test-pkg_1.0_source.changes: OK
+    >>> check_urls(no_priv_browser, ppa_links,
+    ...            'http://launchpad.dev/~no-priv/+archive/ppa')
+    test-pkg_1.1_source.changes: OK
 
     >>> no_priv_browser.getLink('PPA').click()
     >>> no_priv_browser.getLink('Delete packages').click()
-    >>> check_urls(no_priv_browser, ppa_links)
-    test-pkg_1.0_source.changes: OK
+    >>> check_urls(no_priv_browser, ppa_links,
+    ...            'http://launchpad.dev/~no-priv/+archive/ppa')
+    test-pkg_1.1_source.changes: OK
+
+Buildlogs are served on the Build '+files' traversal, when the PPA
+builds list is presented.
 
     >>> no_priv_browser.getLink('PPA').click()
     >>> no_priv_browser.getLink('View build records').click()
     >>> no_priv_browser.getControl(name="build_state").value = ['built']
     >>> no_priv_browser.getControl("Update").click()
-    >>> check_urls(no_priv_browser, builds_links)
+
+    >>> check_urls(no_priv_browser, builds_links,
+    ...            'http://launchpad.dev/~no-priv/+archive/ppa/+build/31')
     buildlog_ubuntu-breezy-autotest-i386.test-pkg_1.0_FULLYBUILT.txt.gz: OK
 
     >>> no_priv_browser.getLink('PPA').click()
 
-Checking file links in the expandable-row area.
+Source and binary files, in the expandable-row area, are served via
+the PPA '+files' traversal.
 
     >>> expander_id = find_tags_by_class(
     ...     no_priv_browser.contents, 'expander')[1]['id']
     >>> no_priv_browser.getLink(id=expander_id).click()
 
-    >>> check_urls(no_priv_browser, ppa_1_0_links)
-    test-pkg_1.0.dsc: OK
-    test-pkg_1.0.tar.gz: OK
+    >>> check_urls(no_priv_browser, ppa_1_0_links,
+    ...            'http://launchpad.dev/~no-priv/+archive/ppa')
+    test-pkg_1.0.dsc:     OK
+    test-pkg_1.0.tar.gz:  OK
     test-bin_1.0_all.deb: OK
 
-Checking file links on Build index page.
+Buildlog, upload_log and binary changesfile are served via the Build
+'+files' traversal when the Build page is presented.
 
     >>> no_priv_browser.getLink('i386').click()
     >>> print no_priv_browser.title
     i386 build of test-pkg 1.0 in ubuntutest breezy-autotest RELEASE
 
-    >>> check_urls(no_priv_browser, build_links)
-    test-pkg_1.0_all.changes:    OK
+    >>> check_urls(no_priv_browser, build_links,
+    ...            'http://launchpad.dev/~no-priv/+archive/ppa/+build/31')
+    test-bin_1.0_i386.changes:    OK
     buildlog_...txt.gz:          OK
     upload_..._log.txt:          OK
 
-Checking a package-diff file in the expandable-row area.
+Package-diff files, in the expandable-row area, are served via the PPA
+'+files' traversal.
 
     >>> no_priv_browser.open("http://launchpad.dev/~no-priv/+archive")
 
@@ -217,7 +217,8 @@ Checking a package-diff file in the expandable-row area.
     ...     no_priv_browser.contents, 'expander')[0]['id']
     >>> no_priv_browser.getLink(id=expander_id).click()
 
-    >>> check_urls(no_priv_browser, ppa_1_1_links)
+    >>> check_urls(no_priv_browser, ppa_1_1_links,
+    ...            'http://launchpad.dev/~no-priv/+archive/ppa')
     test-pkg_1.1.dsc:         OK
     test-pkg_1.0_1.1.diff.gz: OK
 
@@ -344,7 +345,7 @@ proxy redirects to the public http url.
     ... """ % file_lp_url.replace('http://launchpad.dev', ''))
     HTTP/1.1 303 See Other
     ...
-    Location: http://localhost:58000/95/test-pkg_1.0.dsc
+    Location: http://localhost:58000/.../test-pkg_1.0.dsc
     ...
 
 == Compatibility URL Redirection ==

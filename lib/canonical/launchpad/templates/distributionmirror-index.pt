@@ -11,15 +11,12 @@
 >
 <body>
 
-<metal:heading fill-slot="pageheading">
-  <h1>
-    <tal:distro replace="context/distribution/displayname">Ubuntu
-    Linux</tal:distro>
-    mirror "<tal:mirror replace="context/title">foobar</tal:mirror>"
-  </h1>
-</metal:heading>
-
 <div metal:fill-slot="main">
+    <h1>
+      <tal:distro replace="context/distribution/displayname">Ubuntu
+      Linux</tal:distro>
+      mirror "<tal:mirror replace="context/title">foobar</tal:mirror>"
+    </h1>
 
     <tal:is-owner-or-admin condition="context/required:launchpad.Edit">
       <div tal:condition="context/whiteboard" class="highlighted"
@@ -45,8 +42,7 @@
 
     <p id="status">
       <strong>
-        <tal:official condition="context/isOfficial">Official</tal:official>
-        <tal:not-official condition="not:context/isOfficial">Unofficial</tal:not-official>
+        <tal:status replace="context/status/title">Official</tal:status>
       </strong>
       <span tal:replace="context/distribution/title" /> Mirror registered by
       <span tal:content="structure context/owner/fmt:link" /> 
@@ -90,7 +86,8 @@
         </p>
 
         <p tal:condition="not: context/isOfficial">
-          This mirror is an unofficial 
+          This mirror is an
+          <tal:status replace="context/status/title">Official</tal:status>
           <span tal:replace="context/distribution/title">Ubuntu</span> mirror,
           and will not be verified.
         </p>
@@ -127,19 +124,6 @@
     </tal:has-last-probe>
 
 </div>
-
-<div metal:fill-slot="help">
-  <p>
-    Archive mirrors are used to get Ubuntu updates; they are the repositories
-    used by the Synaptic Package Manager.
-  </p>
-  <p>
-    Release mirrors include the latest CD images that can be used to install
-    Ubuntu on your computer or to try it without changing your computer
-    at all.
-  </p>
-</div>
-
 </body>
 </html>
 

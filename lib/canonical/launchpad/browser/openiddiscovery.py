@@ -21,8 +21,8 @@ from canonical.launchpad.interfaces.launchpad import (
     IOpenIDApplication, NotFoundError)
 from canonical.launchpad.interfaces.authtoken import IAuthTokenSet
 from canonical.launchpad.interfaces.openidserver import (
-    IOpenIDAuthorizationSet, IOpenIDRPConfigSet, IOpenIDPersistentIdentity)
-from canonical.launchpad.interfaces.person import IPersonSet
+    IOpenIDPersistentIdentity)
+from lp.registry.interfaces.person import IPersonSet
 from canonical.launchpad.webapp import canonical_url, LaunchpadView
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from canonical.launchpad.webapp.publisher import (
@@ -51,8 +51,11 @@ class OpenIDApplicationNavigation(Navigation):
 
     def _get_active_identity(self, openid_identifier):
         """Return the IOpenIDPersistentIdentity if it is active, or None."""
-        account = getUtility(IAccountSet).getByOpenIDIdentifier(
-            openid_identifier)
+        try:
+            account = getUtility(IAccountSet).getByOpenIDIdentifier(
+                openid_identifier)
+        except LookupError:
+            account = None
         if account is None or account.status != AccountStatus.ACTIVE:
             return None
         return IOpenIDPersistentIdentity(account)

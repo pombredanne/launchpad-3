@@ -17,10 +17,14 @@ from zope.component import getUtility
 from zope.session.interfaces import ISession
 from zope.testing import doctest
 
+import transaction
+
 from canonical.launchpad.browser.openidserver import OpenIDMixin
-from canonical.launchpad.ftests import ANONYMOUS, login, logout
+from canonical.launchpad.ftests import ANONYMOUS, login, login_person, logout
 from canonical.launchpad.database.openidserver import OpenIDAuthorization
-from canonical.launchpad.interfaces.person import IPersonSet
+from lp.registry.interfaces.person import IPersonSet
+from canonical.launchpad.interfaces.authtoken import (
+    IAuthTokenSet, LoginTokenType)
 from canonical.launchpad.interfaces.openidserver import IOpenIDRPConfigSet
 from canonical.launchpad.interfaces.shipit import IShipitAccount
 from canonical.launchpad.testing import TestCase, TestCaseWithFactory
@@ -290,6 +294,47 @@ class OpenIDMixin_checkTeamMembership_TestCase(TestCaseWithFactory):
                 'admins'})
 
 
+class TestPasswordResetViewForLaunchpadPerson(TestCaseWithFactory):
+    """Test the reset password view for accounts which have an associated
+    Person."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self)
+        self.person = self.factory.makePerson()
+        login_person(self.person)
+        self.person_email = self.person.preferredemail.email
+        self.person.deactivateAccount('For testing')
+        # Need to commit here so that the deactivated person is seen on other
+        # stores.
+        transaction.commit()
+
+    def _finishPasswordReset(self, token):
+        """Create a Browser and drive it through resetting the password.
+
+        Return the Browser object after the password is reset.
+        """
+        logout()
+        browser = setupBrowser()
+        browser.open('http://openid.launchpad.dev/token/' + token.token)
+        browser.getControl(name='field.email').value = token.email
+        browser.getControl(name='field.password').value = 'test'
+        browser.getControl(name='field.password_dupe').value = 'test'
+        browser.getControl('Continue').click()
+        return browser
+
+    def test_reactivate_when_password_is_reset(self):
+        """Deactivated LP people are reactivated when password is reset."""
+        getUtility(IStoreSelector).push(SSODatabasePolicy())
+        token = getUtility(IAuthTokenSet).new(
+            self.person.account, self.person_email, self.person_email,
+            LoginTokenType.PASSWORDRECOVERY, redirection_url=None)
+        getUtility(IStoreSelector).pop()
+        browser = self._finishPasswordReset(token)
+        self.assertEqual(browser.url, 'http://openid.launchpad.dev')
+
+
 def test_suite():
     suite = unittest.TestSuite()
     suite.addTest(unittest.TestLoader().loadTestsFromName(__name__))
@@ -298,6 +343,7 @@ def test_suite():
     suite.addTest(LayeredDocFileSuite(
         'loginservice.txt',
         'loginservice-dissect-radio-button.txt',
+        'loginservice-unauthorized-view.txt',
         setUp=setUp, tearDown=tearDown,
         layer=DatabaseFunctionalLayer))
     return suite

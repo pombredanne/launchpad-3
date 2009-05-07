@@ -19,20 +19,19 @@ from zope.interface import Attribute, Interface
 from zope.schema import (
     Bool, Choice, Int, List, Object, Text, TextLine)
 from zope.schema.interfaces import IObject
-from zope.schema.vocabulary import SimpleVocabulary
 from zope.component import getUtility
 from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
     ContentNameField, StrippedTextLine, URIField)
-from canonical.launchpad.interfaces.person import IPerson
+from lp.registry.interfaces.person import IPerson
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import name_validator
 
-from canonical.lazr.rest.declarations import (
+from lazr.restful.declarations import (
     export_as_webservice_entry, exported)
-from canonical.lazr.fields import CollectionField, Reference
+from lazr.restful.fields import CollectionField, Reference
 
 
 LOCATION_SCHEMES_ALLOWED = 'http', 'https', 'mailto'

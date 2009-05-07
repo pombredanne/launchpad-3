@@ -676,7 +676,7 @@ We will also create the target distroseries for the imported
 sources. We will import them into Debian/Lenny distroseries as
 specified in the testing configuration.
 
-    >>> from canonical.launchpad.interfaces.distribution import (
+    >>> from lp.registry.interfaces.distribution import (
     ...     IDistributionSet)
     >>> debian = getUtility(IDistributionSet).getByName('debian')
 

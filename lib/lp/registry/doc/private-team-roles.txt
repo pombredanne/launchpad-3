@@ -1,0 +1,85 @@
+= Private team participation =
+
+During the transitional period between having only public and private
+membership team visibility until the end goal of having only public
+and private team visibilty, there will be a time when teams can have a
+visibility set to one of the three: public, private membership, and
+private.
+
+Public teams can perform any role in Launchpad.  Private membership
+teams are very restricted in the roles they may play.  Private teams
+can play more roles.  Private membership teams were originally
+implemented in this manner since it was the most expedient way to
+provide the required functionality and nothing more.  With the advent
+of truly private teams their utility is increased but with more
+safeguards to prevent potential data leakage.
+
+
+== Bug subscriptions ==
+
+    >>> # Create the necessary teams.
+    >>> from lp.registry.interfaces.person import PersonVisibility
+    >>> owner = factory.makePerson(name='team-owner')
+    >>> login('foo.bar@canonical.com')
+    >>> priv_team = factory.makeTeam(name='private-team',
+    ...     owner=owner,
+    ...     visibility=PersonVisibility.PRIVATE)
+    >>> pm_team = factory.makeTeam(name='private-membership-team',
+    ...     owner=owner,
+    ...     visibility=PersonVisibility.PRIVATE_MEMBERSHIP)
+
+A private team can be subscribed to a bug.
+
+    >>> bug = factory.makeBug()
+    >>> priv_subscription = bug.subscribe(priv_team, owner)
+
+But a private membership team cannot.
+
+    >>> pm_subscription = bug.subscribe(pm_team, owner)
+    Traceback (most recent call last):
+    ...
+    PrivatePersonLinkageError: Cannot link person
+    (name=private-membership-team, visibility=PRIVATE_MEMBERSHIP) to
+    <BugSubscription...
+
+A private team can subscribe others to a bug (the `subscribed_by`
+person) and unsubscribe people too.
+
+    >>> priv_subscription = bug.subscribe(owner, priv_team)
+    >>> bug.unsubscribe(owner, priv_team)
+
+A private membership team cannot subscribe others to a bug or
+unsubscribe people.
+
+    >>> pm_subscription = bug.subscribe(owner, pm_team)
+    Traceback (most recent call last):
+    ...
+    PrivatePersonLinkageError: Cannot link person
+    (name=private-membership-team, visibility=PRIVATE_MEMBERSHIP) to
+    <BugSubscription...
+
+    >>> bug.unsubscribe(priv_team, pm_team)
+    Traceback (most recent call last):
+    ...
+    PrivatePersonLinkageError: Cannot link person
+    (name=private-membership-team, visibility=PRIVATE_MEMBERSHIP) to
+    <BugActivity...
+
+
+== Bug task assignee ==
+
+A private team can be the assignee for a bug task.
+
+    >>> bugtask = bug.default_bugtask
+    >>> bugtask.transitionToAssignee(priv_team)
+    >>> print bugtask.assignee.name
+    private-team
+
+However a private membership team is not allowed to be a bugtask assignee.
+
+    >>> bugtask.transitionToAssignee(pm_team)
+    Traceback (most recent call last):
+    ...
+    PrivatePersonLinkageError: Cannot link person
+    (name=private-membership-team, visibility=PRIVATE_MEMBERSHIP) to
+    <BugTask...

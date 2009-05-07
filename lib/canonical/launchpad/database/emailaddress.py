@@ -55,7 +55,7 @@ class EmailAddress(SQLBase, HasOwnerMixin):
     def destroySelf(self):
         """See `IEmailAddress`."""
         # Import this here to avoid circular references.
-        from canonical.launchpad.database.mailinglist import (
+        from lp.registry.model.mailinglist import (
             MailingListSubscription)
 
         if self.status == EmailAddressStatus.PREFERRED:
@@ -111,15 +111,24 @@ class EmailAddressSet:
             raise EmailAddressAlreadyTaken(
                 "The email address '%s' is already registered." % email)
         assert status in EmailAddressStatus.items
+        if person is None:
+            personID = None
+        else:
+            personID = person.id
+            accountID = account and account.id
+            assert person.accountID == accountID, (
+                "Email address '%s' must be linked to same account as "
+                "person '%s'.  Expected %r (%s), got %r (%s)" % (
+                    email, person.name, person.account, person.accountID,
+                    account, accountID))
         # We use personID instead of just person, as in some cases the
         # Person record will not yet be replicated from the main
         # Store to the auth master Store.
-        if person is None:
-            return EmailAddress(email=email, status=status, account=account)
-        else:
-            return EmailAddress(
-                email=email, status=status,
-                account=account, personID=person.id)
+        return EmailAddress(
+            email=email,
+            status=status,
+            personID=personID,
+            account=account)
 
 
 class UndeletableEmailAddress(Exception):

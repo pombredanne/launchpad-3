@@ -369,6 +369,7 @@ When an anonymous submitter later registers a Launchpad account, the field
     >>> email = getUtility(IEmailAddressSet).getByEmail(
     ...     u'beeblebrox@example.com')
     >>> user.validateAndEnsurePreferredEmail(email)
+    >>> transaction.commit()
     >>> submission = hw_submission_set.getBySubmissionKey(u'unique-id-2')
     >>> print submission.owner.displayname
     Beeblebrox
@@ -397,7 +398,7 @@ When he adds this email address to his list of addresses in Launchpad,
 the field `owner` is updated.
 
     >>> email = getUtility(IEmailAddressSet).new(
-    ...     u'beeblebrox@beeblebrox.net', user)
+    ...     u'beeblebrox@beeblebrox.net', user, account=user.account)
     >>> transaction.commit()
     >>> login_person(user)
     >>> user.validateAndEnsurePreferredEmail(email)
@@ -598,7 +599,7 @@ Admins have access to all submissions.
 If a distribution is specified, only those submissions that were made
 for that distribution are returned.
 
-    >>> from canonical.launchpad.interfaces.distribution import (
+    >>> from lp.registry.interfaces.distribution import (
     ...     IDistributionSet)
     >>> distribution_set = getUtility(IDistributionSet)
     >>> ubuntu = distribution_set.getByName('ubuntu')

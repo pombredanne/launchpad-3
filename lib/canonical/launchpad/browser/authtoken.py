@@ -31,6 +31,7 @@ from canonical.launchpad.webapp import (
     LaunchpadFormView, LaunchpadView)
 
 from canonical.launchpad.browser.openidserver import OpenIDMixin
+from canonical.launchpad.interfaces import IMasterObject
 from canonical.launchpad.interfaces.account import AccountStatus, IAccountSet
 from canonical.launchpad.interfaces.authtoken import (
     IAuthToken, IAuthTokenSet, LoginTokenType)
@@ -38,7 +39,7 @@ from canonical.launchpad.interfaces.emailaddress import (
     EmailAddressStatus, IEmailAddressSet)
 from canonical.launchpad.interfaces.launchpad import UnexpectedFormData
 from canonical.launchpad.interfaces.openidserver import IOpenIDRPConfigSet
-from canonical.launchpad.interfaces.person import (
+from lp.registry.interfaces.person import (
     INewPersonForm, IPerson, IPersonSet, PersonCreationRationale)
 from canonical.launchpad.interfaces.shipit import ShipItConstants
 
@@ -190,14 +191,23 @@ class ResetPasswordView(BaseAuthTokenView, LaunchpadFormView):
                 "The email address you provided didn't match the address "
                 "you provided when requesting the password reset."))
 
+    def reactivate(self, data):
+        emailaddress = getUtility(IEmailAddressSet).getByEmail(
+            self.context.email)
+        # Need to remove the security proxy of the account because at this
+        # point the user is not logged in.
+        naked_account = removeSecurityProxy(self.context.requester_account)
+        naked_account.reactivate(
+            comment="User reactivated the account using reset password.",
+            password=data['password'],
+            preferred_email=emailaddress)
+
     @action(_('Continue'), name='continue')
     def continue_action(self, action, data):
         """Reset the user's password. When password is successfully changed,
         the AuthToken (self.context) used is consumed, so nobody can use
         it again.
         """
-        emailaddress = getUtility(IEmailAddressSet).getByEmail(
-            self.context.email)
         account = self.context.requester_account
         # Suspended accounts cannot reset their password.
         reason = ('Your password cannot be reset because your account '
@@ -208,10 +218,7 @@ class ResetPasswordView(BaseAuthTokenView, LaunchpadFormView):
         naked_account = removeSecurityProxy(account)
         # Reset password can be used to reactivate a deactivated account.
         if account.status == AccountStatus.DEACTIVATED:
-            naked_account.reactivate(
-                comment="User reactivated the account using reset password.",
-                password=data['password'],
-                preferred_email=emailaddress)
+            self.reactivate(data)
             self.request.response.addInfoNotification(
                 _('Welcome back to Launchpad.'))
         else:
@@ -221,8 +228,8 @@ class ResetPasswordView(BaseAuthTokenView, LaunchpadFormView):
 
         if self.context.redirection_url is not None:
             self.next_url = self.context.redirection_url
-        elif person is not None:
-            self.next_url = canonical_url(person)
+        elif not self.has_openid_request:
+            self.next_url = self.request.getApplicationURL()
         else:
             assert self.has_openid_request, (
                 'No redirection URL specified and this is not part of an '
@@ -318,7 +325,10 @@ class ValidateEmailView(BaseAuthTokenView, LaunchpadFormView):
         emailset = getUtility(IEmailAddressSet)
         email = emailset.getByEmail(self.context.email)
         if email is None:
-            email = emailset.new(self.context.email, self.context.requester)
+            email = emailset.new(
+                email=self.context.email,
+                person=self.context.requester,
+                account=self.context.requester_account)
         return email
 
     def markEmailAsValid(self, email):
@@ -396,14 +406,20 @@ class NewAccountView(BaseAuthTokenView, LaunchpadFormView):
     def validate(self, form_values):
         """Verify if the email address is not used by an existing account."""
         if self.email is not None:
-            # Better spelt as IMasterObject(self.email.person), but that
-            # issues an unnecessary database call.
-            person = getUtility(IPersonSet).get(
-                removeSecurityProxy(self.email).personID)
-            if person.is_valid_person:
+            if self.email.person is not None:
+                person = IMasterObject(self.email.person)
+                if person.is_valid_person:
+                    self.addError(_(
+                        'The email address ${email} is already registered.',
+                        mapping=dict(email=self.context.email)))
+            else:
                 self.addError(_(
-                    'The email address ${email} is already registered.',
+                    'The email address ${email} is already registered in '
+                    'the Launchpad Login Service (used by the Ubuntu shop '
+                    'and other OpenID sites). Please use the same email and '
+                    'password to log into Launchpad.',
                     mapping=dict(email=self.context.email)))
+
 
     @action(_('Continue'), name='continue')
     def continue_action(self, action, data):
@@ -416,6 +432,10 @@ class NewAccountView(BaseAuthTokenView, LaunchpadFormView):
         nobody can use it again.
         """
         if self.email is not None:
+            assert self.email.person is not None, (
+                "People trying to register using emails associated with "
+                "personless accounts should be told to just use their Login "
+                "Service credentials to log into LP")
             # This is a placeholder profile automatically created by one of
             # our scripts, let's just confirm its email address and set a
             # password.
@@ -440,7 +460,10 @@ class NewAccountView(BaseAuthTokenView, LaunchpadFormView):
                 return
             naked_person.displayname = data['displayname']
             naked_person.hide_email_addresses = data['hide_email_addresses']
-            naked_person.activateAccount(
+            # Need to remove the security proxy of the account because at this
+            # point the user is not logged in.
+            account = removeSecurityProxy(IMasterObject(person.account))
+            account.activate(
                 "Activated by new account.",
                 password=data['password'],
                 preferred_email=self.email)

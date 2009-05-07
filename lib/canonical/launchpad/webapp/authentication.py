@@ -32,7 +32,7 @@ from canonical.config import config
 from canonical.launchpad.interfaces.account import IAccountSet
 from canonical.launchpad.interfaces.launchpad import IPasswordEncryptor
 from canonical.launchpad.interfaces.oauth import OAUTH_CHALLENGE
-from canonical.launchpad.interfaces.person import IPerson, IPersonSet
+from lp.registry.interfaces.person import IPerson, IPersonSet
 from canonical.launchpad.webapp.interfaces import (
     AccessLevel, BasicAuthLoggedInEvent, CookieAuthPrincipalIdentifiedEvent,
     ILaunchpadPrincipal, IPlacelessAuthUtility, IPlacelessLoginSource)
@@ -217,9 +217,9 @@ class LaunchpadLoginSource:
         validate the password against so it may then email a validation
         request to the user and inform them it has done so.
         """
-        account = getUtility(IAccountSet).get(id)
-
-        if account is None:
+        try:
+            account = getUtility(IAccountSet).get(id)
+        except LookupError:
             return None
 
         return self._principalForAccount(account, access_level, scope)
@@ -254,8 +254,9 @@ class LaunchpadLoginSource:
         validate the password against so it may then email a validation
         request to the user and inform them it has done so.
         """
-        account = getUtility(IAccountSet).getByEmail(login)
-        if account is None:
+        try:
+            account = getUtility(IAccountSet).getByEmail(login)
+        except LookupError:
             return None
         else:
             return self._principalForAccount(
