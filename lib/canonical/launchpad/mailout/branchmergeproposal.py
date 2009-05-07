@@ -76,7 +76,7 @@ class BMPMailer(BranchMailer):
             self.merge_proposal.root_message_id = self.message_id
 
     @classmethod
-    def forCreation(klass, merge_proposal, from_user):
+    def forCreation(cls, merge_proposal, from_user):
         """Return a mailer for BranchMergeProposal creation.
 
         :param merge_proposal: The BranchMergeProposal that was created.
@@ -88,9 +88,9 @@ class BMPMailer(BranchMailer):
 
         assert from_user.preferredemail is not None, (
             'The sender must have an email address.')
-        from_address = klass._format_user_address(from_user)
+        from_address = cls._format_user_address(from_user)
 
-        return klass(
+        return cls(
             '%(proposal_title)s',
             'branch-merge-proposal-created.txt', recipients, merge_proposal,
             from_address, message_id=get_msgid(),
@@ -99,7 +99,7 @@ class BMPMailer(BranchMailer):
             review_diff=merge_proposal.review_diff)
 
     @classmethod
-    def forModification(klass, old_merge_proposal, merge_proposal, from_user):
+    def forModification(cls, old_merge_proposal, merge_proposal, from_user):
         """Return a mailer for BranchMergeProposal creation.
 
         :param merge_proposal: The BranchMergeProposal that was created.
@@ -110,27 +110,27 @@ class BMPMailer(BranchMailer):
             CodeReviewNotificationLevel.STATUS)
         assert from_user.preferredemail is not None, (
             'The sender must have an email address.')
-        from_address = klass._format_user_address(from_user)
+        from_address = cls._format_user_address(from_user)
         delta = BranchMergeProposalDelta.construct(
                 old_merge_proposal, merge_proposal)
         if delta is None:
             return None
-        return klass(
+        return cls(
             '%(proposal_title)s updated',
             'branch-merge-proposal-updated.txt', recipients,
             merge_proposal, from_address, delta, get_msgid())
 
     @classmethod
-    def forReviewRequest(klass, reason, merge_proposal, from_user):
+    def forReviewRequest(cls, reason, merge_proposal, from_user):
         """Return a mailer for a request to review a BranchMergeProposal."""
-        from_address = klass._format_user_address(from_user)
+        from_address = cls._format_user_address(from_user)
         recipients = {reason.subscriber: reason}
         comment = None
         if (merge_proposal.root_comment is not None and
             (merge_proposal.root_comment.message.owner ==
              merge_proposal.registrant)):
             comment = merge_proposal.root_comment
-        return klass(
+        return cls(
             'Request to review proposed merge of %(source_branch)s into '
             '%(target_branch)s', 'review-requested.txt', recipients,
             merge_proposal, from_address, message_id=get_msgid(),
