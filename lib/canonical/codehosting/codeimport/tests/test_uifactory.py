@@ -18,13 +18,6 @@ class TestLoggingUIFactory(TestCase):
         self.fake_time = FakeTime(12345)
         self.messages = []
 
-    @property
-    def messages_without_timestamps(self):
-        cleaned_msgs = []
-        for m in self.messages:
-            cleaned_msgs.append(m[m.find(']')+1:].strip())
-        return cleaned_msgs
-
     def makeLoggingUIFactory(self):
         """Make a `LoggingUIFactory` with fake time and contained output."""
         return LoggingUIFactory(
@@ -36,7 +29,7 @@ class TestLoggingUIFactory(TestCase):
         bar = factory.nested_progress_bar()
         bar.update("hi")
         self.assertEqual(
-            ['hi'], self.messages_without_timestamps)
+            ['hi'], self.messages)
 
     def test_second_rapid_progress_doesnt_update(self):
         # The second of two progress calls that are less than the factory's
@@ -47,7 +40,7 @@ class TestLoggingUIFactory(TestCase):
         self.fake_time.advance(factory.interval / 2)
         bar.update("there")
         self.assertEqual(
-            ['hi'], self.messages_without_timestamps)
+            ['hi'], self.messages)
 
     def test_second_slow_progress_updates(self):
         # The second of two progress calls that are more than the factory's
@@ -58,7 +51,7 @@ class TestLoggingUIFactory(TestCase):
         self.fake_time.advance(factory.interval * 2)
         bar.update("there")
         self.assertEqual(
-            ['hi', 'there'], self.messages_without_timestamps)
+            ['hi', 'there'], self.messages)
 
     def test_first_progress_on_new_bar_updates(self):
         # The first progress on a new progress task always generates output.
@@ -69,7 +62,7 @@ class TestLoggingUIFactory(TestCase):
         bar2 = factory.nested_progress_bar()
         bar2.update("there")
         self.assertEqual(
-            ['hi', 'hi:there'], self.messages_without_timestamps)
+            ['hi', 'hi:there'], self.messages)
 
     def test_finish_progress_updates(self):
         # Finishing a bar always updates.
@@ -78,7 +71,7 @@ class TestLoggingUIFactory(TestCase):
         bar.update("hi")
         bar.finished()
         self.assertEqual(
-            ['hi', 'hi'], self.messages_without_timestamps)
+            ['hi', 'hi'], self.messages)
 
     def test_report_transport_activity_reports_bytes_since_last_update(self):
         # If there is no call to _progress_updated for 'interval' seconds, the
@@ -97,8 +90,7 @@ class TestLoggingUIFactory(TestCase):
         self.fake_time.advance(factory.interval)
         factory.report_transport_activity(None, 100, 'read')
         self.assertEqual(
-            ['hi', 'hi again', '110 bytes transferred'],
-            self.messages_without_timestamps)
+            ['hi', 'hi again', '110 bytes transferred'], self.messages)
 
     def test_update_with_count_formats_nicely(self):
         # When more details are passed to update, they are formatted nicely.
@@ -106,7 +98,7 @@ class TestLoggingUIFactory(TestCase):
         bar = factory.nested_progress_bar()
         bar.update("hi", 1, 8)
         self.assertEqual(
-            ['hi 1/8'], self.messages_without_timestamps)
+            ['hi 1/8'], self.messages)
 
 
 def test_suite():

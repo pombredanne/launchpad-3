@@ -36,7 +36,7 @@ class LoggingUIFactory(UIFactory):
             return None
 
     def show(self, msg):
-        self.write(msg + '\n')
+        self.write(msg)
         self._last_updated_task = self._cur_task()
         self._last_update = self.time_source()
         self._bytes_since_last_update = 0
@@ -47,10 +47,6 @@ class LoggingUIFactory(UIFactory):
             return True
         else:
             return False
-
-    def timestamp(self):
-        return time.strftime(
-            '[%Y:%m:%d %H:%M:%S]', time.gmtime(self.time_source()))
 
     def _format_task(self, task):
         # Stolen from bzrlib.ui.text.TextProgressView
@@ -69,7 +65,7 @@ class LoggingUIFactory(UIFactory):
             t = t._parent_task
             if t.msg:
                 m = t.msg + ':' + m
-        return '%s %s'%(self.timestamp(), m + s)
+        return m + s
 
     def _progress_finished(self, task):
         """See `UIFactory._progress_finished`."""
