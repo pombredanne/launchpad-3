@@ -19,7 +19,7 @@ from zope.component import getUtility
 # canonical launchpad modules
 from canonical.launchpad.scripts.debsync import (
     do_import)
-from canonical.launchpad.scripts.base import (
+from lp.services.scripts.base import (
     LaunchpadCronScript, LaunchpadScriptFailure)
 from canonical.launchpad.interfaces import ILaunchpadCelebrities
 

@@ -22,7 +22,7 @@ from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from canonical.launchpad.interfaces.publishing import PackagePublishingStatus
 from canonical.launchpad.scripts import publishdistro
-from canonical.launchpad.scripts.base import LaunchpadScriptFailure
+from lp.services.scripts.base import LaunchpadScriptFailure
 from canonical.launchpad.tests.test_publishing import TestNativePublishingBase
 
 

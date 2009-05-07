@@ -10,7 +10,7 @@ __all__ = [
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces import IPackageDiffSet
-from canonical.launchpad.scripts.base import (
+from lp.services.scripts.base import (
     LaunchpadCronScript, LaunchpadScriptFailure)
 
 

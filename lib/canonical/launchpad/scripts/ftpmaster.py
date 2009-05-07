@@ -36,7 +36,7 @@ from canonical.launchpad.interfaces import (
     IDistributionSet, ILaunchpadCelebrities, ILibraryFileAliasSet, IPersonSet,
     NotFoundError, PackagePublishingPocket, PackagePublishingStatus,
     pocketsuffix)
-from canonical.launchpad.scripts.base import (
+from lp.services.scripts.base import (
     LaunchpadScript, LaunchpadScriptFailure)
 from canonical.launchpad.scripts.ftpmasterbase import (
     SoyuzScript, SoyuzScriptError)

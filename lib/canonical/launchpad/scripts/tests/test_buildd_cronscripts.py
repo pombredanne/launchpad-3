@@ -20,7 +20,7 @@ from canonical.launchpad.interfaces.component import IComponentSet
 from canonical.launchpad.scripts.logger import QuietFakeLogger
 from canonical.launchpad.scripts.buildd import (
     QueueBuilder, RetryDepwait)
-from canonical.launchpad.scripts.base import LaunchpadScriptFailure
+from lp.services.scripts.base import LaunchpadScriptFailure
 from canonical.launchpad.tests.test_publishing import SoyuzTestPublisher
 from canonical.testing import (
     DatabaseLayer, LaunchpadLayer, LaunchpadZopelessLayer)

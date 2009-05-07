@@ -138,7 +138,7 @@ from lp.code.interfaces.revision import *
 from canonical.launchpad.interfaces.rosettastats import *
 from lp.registry.interfaces.salesforce import *
 from canonical.launchpad.interfaces.schema import *
-from canonical.launchpad.interfaces.scriptactivity import *
+from lp.services.scripts.interfaces.scriptactivity import *
 from canonical.launchpad.interfaces.section import *
 from canonical.launchpad.interfaces.searchservice import *
 from canonical.shipit.interfaces.shipit import *

@@ -13,7 +13,7 @@ from canonical.config import config
 from canonical.codehosting.jobs import JobRunner
 from lp.code.interfaces.branchmergeproposal import (
     ICreateMergeProposalJobSource,)
-from canonical.launchpad.scripts.base import LaunchpadCronScript
+from lp.services.scripts.base import LaunchpadCronScript
 from canonical.launchpad.webapp.errorlog import globalErrorUtility
 
 

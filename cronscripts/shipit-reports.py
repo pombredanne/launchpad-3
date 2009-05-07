@@ -14,7 +14,7 @@ import pytz
 
 from canonical.config import config
 from canonical.uuid import generate_uuid
-from canonical.launchpad.scripts.base import LaunchpadCronScript
+from lp.services.scripts.base import LaunchpadCronScript
 from canonical.launchpad.interfaces import (
     ILibraryFileAliasSet, IShippingRequestSet, IShipItReportSet)
 

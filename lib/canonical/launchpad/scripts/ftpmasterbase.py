@@ -17,7 +17,7 @@ from canonical.launchpad.components.packagelocation import (
     build_package_location)
 from canonical.launchpad.interfaces import (
     ArchivePurpose, IComponentSet, NotFoundError, PackagePublishingStatus)
-from canonical.launchpad.scripts.base import (
+from lp.services.scripts.base import (
     LaunchpadScript, LaunchpadScriptFailure)
 
 

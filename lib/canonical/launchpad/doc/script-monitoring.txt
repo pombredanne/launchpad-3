@@ -80,7 +80,7 @@ and others where it is useful to monitor the result.
 
   >>> script_file = tempfile.NamedTemporaryFile()
   >>> script_file.write("""
-  ... from canonical.launchpad.scripts.base import LaunchpadCronScript
+  ... from lp.services.scripts.base import LaunchpadCronScript
   ...
   ... class TestScript(LaunchpadCronScript):
   ...     def main(self):
