@@ -30,7 +30,6 @@
   "
 >
   <head tal:define="yui string:${icingroot}/yui/3.0.0pr2/build;
-                yui2 string:${icingroot}/yui_2.7.0b/build;
                 lazr_js string:${icingroot}/lazr/build;
                 lp_js string:${icingroot}/build"
   >
@@ -103,10 +102,6 @@
         tal:attributes="href
         string:${icingroot}/lazr/build/activator/assets/skins/sam/activator.css"
         />
-    <link rel="stylesheet" type="text/css"
-        tal:attributes="href
-        string:${yui2}/calendar/assets/skins/sam/calendar.css"
-        />
 
     <tal:devmode condition="devmode">
       <script type="text/javascript"
@@ -153,17 +148,6 @@
               tal:attributes="src string:${yui}/widget/widget-stdmod.js"></script>
       <script type="text/javascript"
               tal:attributes="src string:${yui}/overlay/overlay.js"></script>
-
-      <script type="text/javascript"
-              tal:attributes="src string:${yui2}/yahoo/yahoo.js"></script>
-      <script type="text/javascript"
-              tal:attributes="src string:${yui2}/event/event.js"></script>
-      <script type="text/javascript"
-              tal:attributes="src string:${yui2}/dom/dom.js"></script>
-      <script type="text/javascript"
-              tal:attributes="src string:${yui2}/calendar/calendar.js"></script>
-      <script type="text/javascript"
-              tal:attributes="src string:${lp_js}/lp/calendar.js"></script>
 
       <script type="text/javascript"
               tal:attributes="src string:${icingroot}/MochiKit.js"></script>

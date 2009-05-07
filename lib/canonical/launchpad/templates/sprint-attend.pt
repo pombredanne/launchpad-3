@@ -11,14 +11,38 @@
 >
 
 <body>
+  <metal:block fill-slot="head_epilogue">
+    <tal:yui2resources tal:define="yui2 string:${icingroot}/yui_2.7.0b/build;">
+      <tal:devmode condition="devmode">
+        <script type="text/javascript"
+                tal:attributes="src string:${yui2}/yahoo/yahoo.js"></script>
+        <script type="text/javascript"
+                tal:attributes="src string:${yui2}/event/event.js"></script>
+        <script type="text/javascript"
+                tal:attributes="src string:${yui2}/dom/dom.js"></script>
+        <script type="text/javascript"
+                tal:attributes="src string:${yui2}/calendar/calendar.js"></script>
+        <script type="text/javascript"
+                tal:attributes="src string:${lp_js}/lp/calendar.js"></script>
+      </tal:devmode>
+      <tal:nondevmode>
+        <script type="text/javascript"
+                tal:attributes="src string:${yui2}/yahoo-dom-event/yahoo-dom-event.js"></script>
+        <script type="text/javascript"
+                tal:attributes="src string:${yui2}/calendar/calendar-min.js"></script>
+      </tal:nondevmode>
 
-<metal:block fill-slot="head_epilogue">
-  <script type="text/javascript">
-    YUI().use('node', 'lp.calendar', function(Y) {
-        Y.lp.setup_calendar_widgets();
-    });
-  </script>
-</metal:block>
+      <link rel="stylesheet" type="text/css"
+            tal:attributes="href
+            string:${yui2}/calendar/assets/skins/sam/calendar.css" />
+    </tal:yui2resources>
+
+    <script type="text/javascript">
+      YUI().use('node', 'lp.calendar', function(Y) {
+          Y.lp.setup_calendar_widgets();
+      });
+    </script>
+  </metal:block>
 
 <metal:portlets fill-slot="portlets">
   <div tal:replace="structure context/@@+portlet-details" />
