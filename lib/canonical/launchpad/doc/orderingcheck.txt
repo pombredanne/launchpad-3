@@ -21,6 +21,22 @@ functions.
     >>> for number in xrange(3):
     ...     checker.check(number)
 
+
+== Sorting criteria ==
+
+Like the built-in Python ordering functions, you can also use a
+comparison function instead of a key function and/or reverse the order.
+
+    >>> def sort_cmp(left_item, right_item):
+    ...     return left_item - right_item
+
+    >>> checker = OrderingCheck(cmp=sort_cmp, reverse=True)
+    >>> for number in (3, 2, 1):
+    ...     checker.check(number)
+
+
+== Unexpected values ==
+
 If any item is out of sequence, the OrderingCheck raises an assertion
 error.
 
@@ -30,6 +46,9 @@ error.
     Traceback (most recent call last):
     ...
     AssertionError: Unexpected ordering at item 1: 0 should come before 1.
+
+
+== Edge cases ==
 
 It is safe to use the None value.  Python places it below any other
 integer.
@@ -45,6 +64,9 @@ Values may also repeat, as long as the ordering is deterministic.
     >>> checker.check(1)
     >>> checker.check(1)
     >>> checker.check(2)
+
+
+== Customization ==
 
 If raising an assertion error is not the right thing to do when an
 incorrect ordering is seen, override the "fail" method.
@@ -62,10 +84,10 @@ incorrect ordering is seen, override the "fail" method.
     >>> checker.check(8)
     Item 8 was out of sequence.
 
-Since no error is raised, the last value is accepted as the new
-"correct" one for this place in the sequence.  So the next value is
-accepted as long as it's greater than the last one; it doesn't matter if
-it's smaller than the greatest value we've checked.
+The failure handler allowed execution to continue despite the unexpected
+value.  The ordering check continues on the assumption that it was an
+acceptable value after all, and takes it as the comparison base for the
+next value.
 
     >>> checker.check(9)
 
