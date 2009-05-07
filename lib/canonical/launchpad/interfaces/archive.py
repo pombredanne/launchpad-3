@@ -108,7 +108,7 @@ class IArchivePublic(IHasOwner):
 
     displayname = exported(
         StrippedTextLine(
-            title=_("Displayname"), required=False,
+            title=_("Displayname"), required=True,
             description=_("Displayname for this archive.")))
 
     enabled = Bool(
