@@ -10,7 +10,7 @@
     <require
         permission="launchpad.Edit"
         attributes="destroySelf"
-        set_attributes="fixed_in_revision_id status whiteboard" />
+        set_attributes="fixed_in_revision_id whiteboard" />
   </class>
 
   <adapter

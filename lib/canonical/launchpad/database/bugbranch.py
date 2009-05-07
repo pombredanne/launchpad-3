@@ -22,7 +22,7 @@ from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad.interfaces import (
-    BugBranchStatus, IBugBranch, IBugBranchSet, ILaunchpadCelebrities)
+    IBugBranch, IBugBranchSet, ILaunchpadCelebrities)
 from lp.code.interfaces.branchtarget import IHasBranchTarget
 from lp.registry.interfaces.person import validate_public_person
 
@@ -35,9 +35,6 @@ class BugBranch(SQLBase):
     bug = ForeignKey(dbName="bug", foreignKey="Bug", notNull=True)
     branch = ForeignKey(dbName="branch", foreignKey="Branch", notNull=True)
     revision_hint = StringCol(default=None)
-    status = EnumCol(
-        dbName="status", enum=BugBranchStatus, notNull=False,
-        default=BugBranchStatus.INPROGRESS)
     whiteboard = StringCol(notNull=False, default=None)
 
     registrant = ForeignKey(

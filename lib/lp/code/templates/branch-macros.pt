@@ -129,7 +129,7 @@
        <span tal:content="bugtask/status/title"
              tal:attributes="class string:status${bugtask/status/name}">
          Confirmed
-       </span>) <tal:bug_branch_status condition="not: show_edit|nothing" replace="bug_branch/status/title"/>
+       </span>)
        <tal:show-edit condition="show_edit|nothing">
          <a tal:condition="bug_branch/required:launchpad.Edit"
             tal:attributes="href string:+bug/${bug_branch/bug/id}/+edit;
