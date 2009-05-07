@@ -246,17 +246,6 @@ class HWSubmissionSet:
         rows = HWSubmission.selectBy(submission_key=submission_key)
         return rows.count() > 0
 
-    def setOwnership(self, email):
-        """See `IHWSubmissionSet`."""
-        assert email.status in (EmailAddressStatus.VALIDATED,
-                                EmailAddressStatus.PREFERRED), (
-            'Invalid email status for setting ownership of an HWDB '
-            'submission: %s' % email.status.title)
-        submissions =  HWSubmission.selectBy(
-            raw_emailaddress=email.email, owner=None)
-        for submission in submissions:
-            submission.ownerID = email.personID
-
     def getByStatus(self, status, user=None):
         """See `IHWSubmissionSet`."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)

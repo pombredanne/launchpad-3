@@ -59,7 +59,7 @@ from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.interfaces.potemplate import IPOTemplateSet
 from canonical.launchpad.interfaces.publishing import PackagePublishingPocket
-from canonical.launchpad.interfaces.shipit import (
+from canonical.shipit.interfaces.shipit import (
     IShippingRequestSet, IStandardShipItRequestSet, ShipItFlavour,
     ShippingRequestStatus)
 from canonical.launchpad.interfaces.specification import (

@@ -231,15 +231,6 @@ class IHWSubmissionSet(Interface):
     def submissionIdExists(submission_key):
         """Return True, if a record with ths ID exists, else return False."""
 
-    def setOwnership(email):
-        """Set the owner of a submission.
-
-        If the email address given as the "ownership label" of a submission
-        is not known in Launchpad at submission time, the field
-        HWSubmission.owner is None. This method sets HWSubmission.owner
-        to a Person record, when the given email address is verified.
-        """
-
     def getByStatus(status, user=None):
         """Return the submissions with the given status.
 

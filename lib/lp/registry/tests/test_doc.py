@@ -79,6 +79,11 @@ def mailingListXMLRPCExternalSetUp(test):
 
 
 special = {
+    'distribution-mirror.txt': LayeredDocFileSuite(
+        '../doc/distribution-mirror.txt',
+        setUp=setUp, tearDown=tearDown,
+        layer=LaunchpadFunctionalLayer,
+        ),
     'person-karma.txt': LayeredDocFileSuite(
         '../doc/person-karma.txt',
         setUp=setUp, tearDown=peopleKarmaTearDown,

@@ -10,6 +10,7 @@ from unittest import TestLoader
 
 from canonical.config import config
 from canonical.launchpad.database.emailaddress import EmailAddressSet
+from canonical.launchpad.scripts.garbo import RevisionAuthorEmailLinker
 from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.testing import LaunchpadZopelessLayer
 
@@ -72,6 +73,8 @@ class TestRevisionKarma(TestCaseWithFactory):
         # The person registers with Launchpad.
         author = self.factory.makePerson(email=email)
         transaction.commit()
+        # Run the RevisionAuthorEmailLinker garbo job.
+        RevisionAuthorEmailLinker().run()
         LaunchpadZopelessLayer.switchDbUser(config.revisionkarma.dbuser)
         script = RevisionKarmaAllocator(
             'test', config.revisionkarma.dbuser, ['-q'])
@@ -102,6 +105,9 @@ class TestRevisionKarma(TestCaseWithFactory):
         author.validateAndEnsurePreferredEmail(
             EmailAddressSet().new(email, author, account=author.account))
         transaction.commit()
+        # Run the RevisionAuthorEmailLinker garbo job.
+        RevisionAuthorEmailLinker().run()
+
         # Now that the revision author is linked to the person, the revision
         # needs karma allocated.
         self.assertEqual(

@@ -350,6 +350,7 @@ You can search for whether the product is marked reviewed or not.
     >>> for product in product_set.forReview(license_reviewed=True):
     ...     print product.name
     rosetta
+    obsolete-junk
     alsa-utils
     python-gnome2-dev
     unassigned
@@ -412,11 +413,13 @@ This OR the licenses search field must match.
     >>> for product in product_set.forReview(license_info_is_empty=False):
     ...     print product.name
     mega-money-maker
+    obsolete-junk
     >>> for product in product_set.forReview(license_info_is_empty=False,
     ...                                      licenses=[License.GNU_GPL_V2]):
     ...     print product.name
     bzr
     mega-money-maker
+    obsolete-junk
 
 You can search for products based on a date range in which the product
 was created.

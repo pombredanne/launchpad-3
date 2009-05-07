@@ -116,8 +116,8 @@
           <div style="margin:auto; width:230px;">
             <h2>Get started</h2>
               <div class="home-banners">
-                <a href="/projects/+new-guided"><img src="/@@/add"
-                /></a> <a href="/projects/+new-guided">Create a new project</a><br/>
+                <a href="/projects/+new"><img src="/@@/add"
+                /></a> <a href="/projects/+new">Create a new project</a><br/>
                 <a href="/people/+newteam"><img src="/@@/add"
                 /></a> <a href="/people/+newteam">Create a new team</a>
               </div>
