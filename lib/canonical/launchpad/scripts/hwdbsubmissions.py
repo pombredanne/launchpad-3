@@ -56,6 +56,13 @@ _time_regex = re.compile(r"""
 
 ROOT_UDI = '/org/freedesktop/Hal/devices/computer'
 
+# These UDIs appears in some submissions more than once.
+KNOWN_DUPLICATE_UDIS = set((
+    '/org/freedesktop/Hal/devices/ssb__null_',
+    '/org/freedesktop/Hal/devices/uinput',
+    '/org/freedesktop/Hal/devices/ignored-device',
+    ))
+
 # See include/linux/pci_ids.h in the Linux kernel sources for a complete
 # list of PCI class and subclass codes.
 PCI_CLASS_STORAGE = 1
@@ -788,14 +795,36 @@ class SubmissionParser(object):
     def getUDIDeviceMap(self, devices):
         """Return a dictionary which maps UDIs to HAL devices.
 
-        If a UDI is used more than once, a ValueError is raised.
+        Also check, if a UDI is used more than once.
+
+        Generally, a duplicate UDI indicates a bad or bogus submission,
+        but we have some UDIs where the duplicate UDI is caused by a
+        bug in HAL, see
+        http://lists.freedesktop.org/archives/hal/2009-April/013250.html
+        In these cases, we simply remove the duplicates, otherwise, a
+        ValueError is raised.
         """
         udi_device_map = {}
-        for device in devices:
-            if device['udi'] in udi_device_map:
-                raise ValueError('Duplicate UDI: %s' % device['udi'])
+        duplicates = []
+        for index in xrange(len(devices)):
+            device = devices[index]
+            udi = device['udi']
+            if udi in udi_device_map:
+                if 'info.parent' in device['properties']:
+                    parent_udi = device['properties']['info.parent'][0]
+                else:
+                    parent_udi = None
+                if (udi in KNOWN_DUPLICATE_UDIS or
+                    parent_udi in KNOWN_DUPLICATE_UDIS):
+                    duplicates.append(index)
+                    continue
+                else:
+                    raise ValueError('Duplicate UDI: %s' % device['udi'])
             else:
-                udi_device_map[device['udi']] = device
+                udi_device_map[udi] = device
+        duplicates.reverse()
+        for index in duplicates:
+            devices.pop(index)
         return udi_device_map
 
     def _getIDUDIMaps(self, devices):
