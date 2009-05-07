@@ -75,7 +75,8 @@ from canonical.launchpad.interfaces.package import PackageUploadStatus
 from canonical.launchpad.interfaces.packagecopyrequest import (
     IPackageCopyRequestSet)
 from canonical.launchpad.interfaces.publishing import (
-    PackagePublishingPocket, PackagePublishingStatus, IPublishingSet)
+    PackagePublishingPocket, PackagePublishingStatus, IPublishingSet,
+    ISourcePackagePublishingHistory)
 from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageNameSet)
 from canonical.launchpad.scripts.packagecopier import (
@@ -1078,10 +1079,13 @@ class Archive(SQLBase):
         if len(copies) == 0:
             raise CannotCopy("Packages already copied.")
 
-        # Return a list of string names of packages that were copied.
+        # Return a list of string names of source packages that were copied.
+        # We only return source package names, even when binaries were copied,
+        # because that's the "Contract".
         return [
             copy.sourcepackagerelease.sourcepackagename.name
-            for copy in copies]
+            for copy in copies
+            if ISourcePackagePublishingHistory.providedBy(copy)]
 
     def newAuthToken(self, person, token=None, date_created=None):
         """See `IArchive`."""

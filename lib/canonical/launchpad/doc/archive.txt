@@ -2197,6 +2197,36 @@ Copy package3 1.0 explicitly:
     >>> print sabdfl_three.sourcepackagerelease.version
     1.0
 
+It's also possible to copy the source and its binaries at the same time,
+by specifying the "include_binaries" boolean.
+
+'built-source' is a source package with 2 binaries in Celso's PPA:
+
+    >>> built_source = test_publisher.getPubSource(
+    ...     sourcename="built-source", version="1.0", archive=cprov.archive)
+    >>> binaries = test_publisher.getPubBinaries(
+    ...     pub_source=built_source, binaryname='from-built-source')
+    >>> len(binaries)
+    2
+
+It s not present in Mark's PPA.
+
+    >>> sabdfl.archive.getPublishedSources(name="built-source").count()
+    0
+
+'built-source' and its binaries can be copied from Celso's to Mark's
+PPA like this:
+
+    >>> sabdfl.archive.syncSource(
+    ...     "built-source", "1.0", cprov.archive, "release",
+    ...     include_binaries=True)
+
+Now, Mark's PPA has 'built-source' source and it's 2 binaries.
+
+    >>> [copy] = sabdfl.archive.getPublishedSources(name="built-source")
+    >>> len(copy.getPublishedBinaries())
+    2
+
 
 == Publish flag ==
 
