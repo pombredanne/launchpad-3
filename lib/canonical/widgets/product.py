@@ -3,11 +3,16 @@
 """Widgets related to IProduct."""
 
 __metaclass__ = type
-
+__all__ = [
+    'LicenseWidget',
+    'ProductBugTrackerWidget',
+    'ProductNameWidget',
+    ]
 
 import cgi
 
 from zope.app.form import CustomWidgetFactory
+from zope.app.form.browser.textwidgets import TextWidget
 from zope.app.form.browser.widget import renderElement
 from zope.app.form.interfaces import IInputWidget
 from zope.app.form.utility import setUpWidget
@@ -227,3 +232,29 @@ class LicenseWidget(CheckBoxMatrixWidget):
     def __call__(self):
         self.checkbox_matrix = super(LicenseWidget, self).__call__()
         return self.template()
+
+
+class ProductNameWidget(TextWidget):
+    """A text input widget that looks like a url path component entry.
+
+    URL: http://launchpad.net/[____________]
+    """
+    template = ViewPageTemplateFile('templates/project-url.pt')
+
+    def __init__(self, *args):
+        self.read_only = False
+        super(ProductNameWidget, self).__init__(*args)
+
+    def __call__(self):
+        return self.template()
+
+    @property
+    def product_name(self):
+        return self.request.form.get('name', '')
+
+    @property
+    def widget_type(self):
+        if self.read_only:
+            return 'hidden'
+        else:
+            return 'text'

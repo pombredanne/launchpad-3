@@ -300,7 +300,7 @@ class TestCodeHandler(TestCaseWithFactory):
                          ' vote Abstain EBAILIWICK\n'
                          '-- \n'
                          '%s\n'
-                         'You are subscribed to branch %s.' %
+                         'You are the owner of %s.' %
                          (canonical_url(bmp), bmp.source_branch.bzr_identity))
         self.assertEqual(expected_body, notification.get_payload(decode=True))
 
