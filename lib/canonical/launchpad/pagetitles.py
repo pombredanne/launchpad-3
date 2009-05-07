@@ -1115,6 +1115,8 @@ productseries_linkbranch = ContextTitle('Link an existing branch to %s')
 
 productseries_index = ContextTitle('Overview of %s')
 
+productseries_delete = ContextTitle('Delete %s')
+
 productseries_packaging = ContextDisplayName(
     'Packaging of %s in distributions')
 
@@ -1123,6 +1125,9 @@ productseries_review = ContextTitle('Review %s')
 productseries_translations_upload = 'Request new translations upload'
 
 productseries_translations_settings = 'Settings for translations'
+
+productseries_translations_bzr_import = (
+    'Request translations import from Bazaar branch')
 
 productseries_ubuntupkg = 'Ubuntu source package'
 

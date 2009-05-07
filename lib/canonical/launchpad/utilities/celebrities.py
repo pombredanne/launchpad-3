@@ -128,6 +128,7 @@ class LaunchpadCelebrities:
     janitor = CelebrityDescriptor(IPersonSet, 'janitor')
     mailing_list_experts = CelebrityDescriptor(
         IPersonSet, 'mailing-list-experts')
+    obsolete_junk = CelebrityDescriptor(IProductSet, 'obsolete-junk')
     katie = CelebrityDescriptor(IPersonSet, 'katie')
     commercial_admin = CelebrityDescriptor(IPersonSet, 'commercial-admins')
     lp_translations = CelebrityDescriptor(IProductSet, 'rosetta')

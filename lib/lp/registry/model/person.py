@@ -180,8 +180,16 @@ def validate_person_visibility(person, attr, value):
     """Validate changes in visibility.
 
     * Prevent teams with inconsistent connections from being made private
-    * Prevent private teams with mailing lists from going public
+    * Prevent private membership teams with mailing lists from going public.
+    * Prevent private teams from any transition.
     """
+
+    # Prohibit any visibility changes for private teams.  This rule is
+    # recognized to be Draconian and may be relaxed in the future.
+    if person.visibility == PersonVisibility.PRIVATE:
+        raise ImmutableVisibilityError(
+            'A private team cannot change visibility.')
+
     mailing_list = getUtility(IMailingListSet).get(person.name)
 
     if (value == PersonVisibility.PUBLIC and
@@ -191,6 +199,8 @@ def validate_person_visibility(person, attr, value):
         raise ImmutableVisibilityError(
             'This team cannot be made public since it has a mailing list')
 
+    # If transitioning to a non-public visibility, check for existing
+    # relationships that could leak data.
     if value != PersonVisibility.PUBLIC:
         warning = person.visibility_consistency_warning
         if warning is not None:
@@ -1723,6 +1733,16 @@ class Person(
             new_name = base_new_name + str(count)
             count += 1
         return new_name
+
+    @property
+    def private(self):
+        """See `IPerson`."""
+        if not self.is_team:
+            return False
+        elif self.visibility == PersonVisibility.PUBLIC:
+            return False
+        else:
+            return True
 
     @property
     def visibility_consistency_warning(self):
