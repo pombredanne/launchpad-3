@@ -2554,13 +2554,13 @@
         class="canonical.launchpad.browser.HelpTranslateButtonView"
         permission="zope.Public"/>
     <browser:editform
-        name="+changetranslators"
+        name="+settings"
         for="lp.registry.interfaces.distribution.IDistribution"
         schema="lp.registry.interfaces.distribution.IDistribution"
         facet="translations"
         fields="translationgroup translationpermission"
         permission="launchpad.Edit"
-        template="../templates/distribution-translators.pt"
+        template="../templates/distribution-translation-settings.pt"
         layer="canonical.launchpad.layers.TranslationsLayer"/>
     <browser:page
         for="lp.registry.interfaces.distribution.IDistribution"
