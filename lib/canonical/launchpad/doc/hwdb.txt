@@ -370,6 +370,8 @@ When an anonymous submitter later registers a Launchpad account, the field
     ...     u'beeblebrox@example.com')
     >>> user.validateAndEnsurePreferredEmail(email)
     >>> transaction.commit()
+    >>> from canonical.launchpad.scripts.garbo import HWSubmissionEmailLinker
+    >>> HWSubmissionEmailLinker().run()
     >>> submission = hw_submission_set.getBySubmissionKey(u'unique-id-2')
     >>> print submission.owner.displayname
     Beeblebrox
@@ -403,6 +405,7 @@ the field `owner` is updated.
     >>> login_person(user)
     >>> user.validateAndEnsurePreferredEmail(email)
     >>> transaction.commit()
+    >>> HWSubmissionEmailLinker().run()
     >>> submission = hw_submission_set.getBySubmissionKey(u'unique-id-2')
     >>> print submission.owner.displayname
     Beeblebrox
