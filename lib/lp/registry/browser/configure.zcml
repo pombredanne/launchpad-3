@@ -190,12 +190,17 @@
             name="+langchart"
             template="../templates/distroseries-langchart.pt"/>
         <browser:page
-            name="+language-packs"
-            template="../templates/distroseries-language-packs.pt"/>
-        <browser:page
             name="+potlist"
             template="../templates/object-pots.pt"/>
     </browser:pages>
+    <browser:page
+        for="lp.registry.interfaces.distroseries.IDistroSeries"
+        class="lp.registry.browser.distroseries.DistroSeriesTemplatesView"
+        permission="launchpad.Edit"
+        facet="translations"
+        layer="canonical.launchpad.layers.TranslationsLayer"
+        name="+templates"
+        template="../templates/object-templates.pt" />
     <browser:page
         name="+help-translate-button"
         facet="translations"
@@ -259,20 +264,12 @@
         permission="zope.Public"/>
     <browser:page
         for="lp.registry.interfaces.distroseries.IDistroSeries"
-        class="lp.registry.browser.distroseries.DistroSeriesLanguagePackAdminView"
-        permission="launchpad.TranslationsAdmin"
-        template="../templates/distroseries-language-packs-editing.pt"
-        name="+admin-language-packs"
+        class="lp.registry.browser.distroseries.DistroSeriesLanguagePackView"
+        permission="zope.Public"
         facet="translations"
-        layer="canonical.launchpad.layers.TranslationsLayer"/>
-    <browser:page
-        for="lp.registry.interfaces.distroseries.IDistroSeries"
-        class="lp.registry.browser.distroseries.DistroSeriesFullLanguagePackRequestView"
-        permission="launchpad.LanguagePacksAdmin"
-        template="../templates/distroseries-language-packs-editing.pt"
-        name="+full-language-pack-request"
-        facet="translations"
-        layer="canonical.launchpad.layers.TranslationsLayer"/>
+        layer="canonical.launchpad.layers.TranslationsLayer"
+        name="+language-packs"
+        template="../templates/distroseries-language-packs.pt"/>
     <browser:menus
         classes="
             DistroSeriesFacets
@@ -2212,6 +2209,14 @@
         facet="translations"
         permission="launchpad.Edit"
         template="../templates/productseries-translations-settings.pt"
+        layer="canonical.launchpad.layers.TranslationsLayer"/>
+    <browser:page
+        for="lp.registry.interfaces.productseries.IProductSeries"
+        name="+templates"
+        class="lp.registry.browser.productseries.ProductSeriesTemplatesView"
+        facet="translations"
+        permission="launchpad.Edit"
+        template="../templates/object-templates.pt"
         layer="canonical.launchpad.layers.TranslationsLayer"/>
     <browser:page
         for="lp.registry.interfaces.productseries.IProductSeries"
