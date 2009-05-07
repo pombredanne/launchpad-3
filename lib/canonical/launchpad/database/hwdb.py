@@ -327,7 +327,6 @@ class HWSubmissionSet:
         # the second argument is a no-op.
         return DecoratedResultSet(result_set, lambda result: result)
 
-
     def numSubmissionsWithDevice(
         self, bus, vendor_id, product_id, driver_name=None, package_name=None,
         distro_target=None):
@@ -971,7 +970,8 @@ def make_submission_device_statistics_clause(
     tables = [HWSubmissionDevice, HWDeviceDriverLink, HWVendorID, HWDevice]
     where_clauses = [
         HWSubmissionDevice.device_driver_link == HWDeviceDriverLink.id,
-        HWVendorID.bus == bus, HWVendorID.vendor_id_for_bus == vendor_id,
+        HWVendorID.bus == bus,
+        HWVendorID.vendor_id_for_bus == vendor_id,
         HWDevice.bus_vendor == HWVendorID.id,
         HWDeviceDriverLink.device == HWDevice.id,
         HWDevice.bus_product_id == product_id
@@ -985,9 +985,13 @@ def make_submission_device_statistics_clause(
         if driver_name is not None:
             where_clauses.append(HWDriver.name == driver_name)
         if package_name is not None:
-            # xxx deal with ambiguity package_name == None
-            # and package_name == ''
-            where_clauses.append(HWDriver.package_name == package_name)
+            if package_name == '':
+                # XXX Abel Deuring, 2009-05-07: See bug 306265.
+                where_clauses.append(
+                    Or(HWDriver.package_name == package_name,
+                       HWDriver.package_name == None))
+            else:
+                where_clauses.append(HWDriver.package_name == package_name)
 
     return tables, where_clauses
 
@@ -999,9 +1003,7 @@ def make_distro_target_clause(distro_target):
         if IDistroArchSeries.providedBy(distro_target):
             return (
                 [HWSubmission],
-                [
-                    HWSubmission.distroarchseries == distro_target.id,
-                    ])
+                [HWSubmission.distroarchseries == distro_target.id])
         elif IDistroSeries.providedBy(distro_target):
             return (
                 [DistroArchSeries, HWSubmission],

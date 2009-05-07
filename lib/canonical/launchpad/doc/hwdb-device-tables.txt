@@ -1834,8 +1834,8 @@ for the "plain" disk and for the disk driven by the sd driver.
     >>> submission.status = HWSubmissionProcessingStatus.PROCESSED
     >>> LaunchpadZopelessLayer.txn.commit()
 
-The number of all ST3250820NS disks and and of those disks driven by
-the sd driver now increased by 1.
+The number of all ST3250820NS disks and of those disks driven by
+the sd driver has now increased by 1.
 
     >>> print submission_device_set.numDevicesInSubmissions(
     ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ')
