@@ -26,6 +26,8 @@ __all__ = [
     'HWVendorIDSet',
     'HWVendorName',
     'HWVendorNameSet',
+    'num_devices_in_submissions',
+    'num_submissions_with_device',
     ]
 
 import re
@@ -34,7 +36,7 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from sqlobject import BoolCol, ForeignKey, IntCol, StringCol
-from storm.expr import And, Not, Or, Select
+from storm.expr import And, Count, In, Not, Or, Select
 
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -46,6 +48,7 @@ from lp.registry.model.distribution import Distribution
 from canonical.launchpad.database.distroarchseries import DistroArchSeries
 from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.teammembership import TeamParticipation
+from canonical.launchpad.interfaces.distroarchseries import IDistroArchSeries
 from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
 from canonical.launchpad.interfaces.hwdb import (
     HWBus, HWMainClass, HWSubClass, HWSubmissionFormat,
@@ -59,6 +62,8 @@ from canonical.launchpad.interfaces.hwdb import (
     IllegalQuery, ParameterError)
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import License
 from lp.registry.interfaces.person import validate_public_person
@@ -905,3 +910,140 @@ class HWSubmissionBugSet:
     def create(self, submission, bug):
         """See `IHWSubmissionBugSet`."""
         return HWSubmissionBug(submission=submission, bug=bug)
+
+
+def make_submission_device_statistics_clause(
+    bus, vendor_id, product_id, driver_name, package_name):
+    """Create a where expression and a table list for selecting devices.
+    """
+    tables = [HWSubmissionDevice, HWDeviceDriverLink, HWVendorID, HWDevice]
+    where_clauses = [
+        HWSubmissionDevice.device_driver_link == HWDeviceDriverLink.id,
+        HWVendorID.bus == bus, HWVendorID.vendor_id_for_bus == vendor_id,
+        HWDevice.bus_vendor == HWVendorID.id,
+        HWDeviceDriverLink.device == HWDevice.id,
+        HWDevice.bus_product_id == product_id
+        ]
+
+    if driver_name is None and package_name is None:
+        where_clauses.append(HWDeviceDriverLink.driver == None)
+    else:
+        tables.append(HWDriver)
+        where_clauses.append(HWDeviceDriverLink.driver == HWDriver.id)
+        if driver_name is not None:
+            where_clauses.append(HWDriver.name == driver_name)
+        if package_name is not None:
+            # xxx deal with ambiguity package_name == None
+            # and package_name == ''
+            where_clauses.append(HWDriver.package_name == package_name)
+
+    return tables, where_clauses
+
+def make_distro_target_clause(distro_target):
+    """Create a where expression and a table list to limit results to a
+    distro target.
+    """
+    if distro_target is not None:
+        if IDistroArchSeries.providedBy(distro_target):
+            return (
+                [HWSubmission],
+                [
+                    HWSubmission.distroarchseries == distro_target.id,
+                    ])
+        elif IDistroSeries.providedBy(distro_target):
+            return (
+                [DistroArchSeries, HWSubmission],
+                [
+                    HWSubmission.distroarchseries == DistroArchSeries.id,
+                    DistroArchSeries.distroseries == distro_target.id,
+                    ])
+        elif IDistribution.providedBy(distro_target):
+            return (
+                [DistroArchSeries, DistroSeries, HWSubmission],
+                [
+                    HWSubmission.distroarchseries == DistroArchSeries.id,
+                    DistroArchSeries.distroseries == DistroSeries.id,
+                    DistroSeries.distribution == distro_target.id,
+                    ])
+        else:
+            raise ValueError(
+                'Parameter distro_target must be an IDistribution, '
+                'IDistroSeries or IDistroArchSeries')
+    return ([], [])
+
+def num_devices_in_submissions(bus, vendor_id, product_id, driver_name=None,
+                               package_name=None, distro_target=None):
+    """Count how often a device appears in HWDB submissions.
+
+    :return: The number how often the given device appears in HWDB
+        submissions.
+    :param bus: The `HWBus` of the device.
+    :param vendor_id: The vendor ID of the device.
+    :param product_id: The product ID of the device.
+    :param driver_name: Limit the count to devices controlled by the given
+        driver (optional).
+    :param package_name: Limit the count to devices controlled by a driver
+        from the given package (optional).
+    :param distro_target: Limit the count to devices appearing in HWDB
+        submissions made for the given distribution, distroseries
+        or distroarchseries.
+    """
+    store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+
+    tables, where_clauses = make_submission_device_statistics_clause(
+        bus, vendor_id, product_id, driver_name, package_name)
+
+    distro_tables, distro_clauses = make_distro_target_clause(distro_target)
+    if distro_clauses:
+        tables.extend(distro_tables)
+        where_clauses.extend(distro_clauses)
+        where_clauses.append(HWSubmissionDevice.submission == HWSubmission.id)
+
+    result = store.execute(
+        Select(
+            columns=[Count()], tables=tables, where=And(*where_clauses)))
+    return result.get_one()[0]
+
+def num_submissions_with_device(bus, vendor_id, product_id, driver_name=None,
+                               package_name=None, distro_target=None):
+    """Count the number of submissions mentioning a device.
+
+    :return: A tuple (submissions_with_device, all_submissions)
+       where submissions_with_device is the number of submissions having
+       the given device and matching the distro_target criterion and where
+       all_submissions is the number of submissions matching the
+       distro_target criterion.
+    :param bus: The `HWBus` of the device.
+    :param vendor_id: The vendor ID of the device.
+    :param product_id: The product ID of the device.
+    :param driver_name: The name of the driver used for the device
+        (optional).
+    :param package_name: The name of the package the driver is a part of.
+    :param distro_target: Limit the count to submissions made for the given
+        distribution, distroseries or distroarchseries.
+    """
+    store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+
+    tables, clauses = make_distro_target_clause(distro_target)
+    if HWSubmission not in tables:
+        tables.append(HWSubmission)
+    clauses.append(
+        HWSubmission.status == HWSubmissionProcessingStatus.PROCESSED)
+
+    all_submissions = store.execute(
+        Select(
+            columns=[Count()], tables=tables, where=And(*clauses)))
+
+    device_tables, device_clauses = (
+        make_submission_device_statistics_clause(
+            bus, vendor_id, product_id, driver_name, package_name))
+    submission_ids = Select(
+        columns=[HWSubmissionDevice.submissionID],
+        tables=device_tables, where=And(*device_clauses))
+
+    clauses.append(In(HWSubmission.id, submission_ids))
+    submissions_with_device = store.execute(
+        Select(
+            columns=[Count()], tables=tables, where=And(*clauses)))
+
+    return submissions_with_device.get_one()[0], all_submissions.get_one()[0]

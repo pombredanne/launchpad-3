@@ -1765,3 +1765,263 @@ This method returns None if a nonexistent ID is passed.
 
     >>> print submission_device_set.get(1000000)
     None
+
+
+== Statistical functions ==
+
+num_devices_in_submissions() returns how often a device appears in
+HWDB submissions.
+
+    >>> from canonical.launchpad.database import num_devices_in_submissions
+    >>> print num_devices_in_submissions(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ')
+    1
+
+If a device appears more than once in a submission, it is counted as often
+as it appears in the submission. We have currently only unique devices
+in the existing data, so let's add another IDE disk to submission 2.
+
+    >>> ide_disk = device_set.getByDeviceID(
+    ...     HWBus.IDE, 'SEAGATE', 'ST3250820NS     ')
+    >>> # We'll use the same parent as that of the existing IDE disk.
+    >>> parent = getUtility(IHWSubmissionDeviceSet).get(17)
+    >>> submission = getUtility(IHWSubmissionSet).getBySubmissionKey(
+    ...     'sample-submission')
+    >>> # The value of hal_device_id is arbitrary: It is intended for
+    >>> # for consistency checks and debugging.
+    >>> factory.makeHWSubmissionDevice(submission, ide_disk, None, parent, 1)
+    <HWSubmissionDevice at...
+
+The number returned for the query "count the number of Seagate
+ST3250820NS" disks increased.
+
+    >>> print num_devices_in_submissions(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ')
+    2
+
+Note that we did _not_ add a HWSubmissionDevice entry for the device
+driven by the kernel's sd driver. So, when we query the number of
+disks driven by the sd driver, we'll get 1 as without the recently
+added device.
+
+    >>> print num_devices_in_submissions(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     driver_name='sd')
+    1
+
+Let's now create a nother HWDB submission, and let's add
+HWSubmissionDevice entries for the disk and the new submission, both
+for the "plain" disk and for the disk driven by the sd driver.
+
+    >>> LaunchpadZopelessLayer.txn.commit()
+    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+    >>> # Set the emailaddress and hence the owner to a non-default
+    >>> # value so that we have submissions with different owners.
+    >>> submission = factory.makeHWSubmission(
+    ...     emailaddress='foo.bar@canonical.com')
+    >>> LaunchpadZopelessLayer.txn.commit()
+    >>> LaunchpadZopelessLayer.switchDbUser('hwdb-submission-processor')
+    >>> first_device = factory.makeHWSubmissionDevice(
+    ...     submission, ide_disk, None, None, 1)
+    >>> driver = getUtility(IHWDriverSet).getOrCreate(
+    ...     'linux-image-generic', 'sd')
+    >>> factory.makeHWSubmissionDevice(
+    ...     submission, ide_disk, driver, first_device, 2)
+    <HWSubmissionDevice at...
+    >>> from canonical.launchpad.interfaces.hwdb import (
+    ...    HWSubmissionProcessingStatus)
+    >>> # We consider only submissions in the status PROCESSED for
+    >>> # statistics.
+    >>> submission.status = HWSubmissionProcessingStatus.PROCESSED
+    >>> LaunchpadZopelessLayer.txn.commit()
+
+The number of all ST3250820NS disks and and of those disks driven by
+the sd driver now increased by 1.
+
+    >>> print num_devices_in_submissions(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ')
+    3
+    >>> print num_devices_in_submissions(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     driver_name='sd')
+    2
+
+We can optionally specify a driver's package name too.
+
+    >>> print num_devices_in_submissions(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     driver_name='sd', package_name='linux-image-2.6.24-19-generic')
+    1
+    >>> print num_devices_in_submissions(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     driver_name='sd', package_name='nonsense')
+    0
+
+And we can query for devices having any driver from a given package too.
+
+    >>> print num_devices_in_submissions(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     package_name='linux-image-2.6.24-19-generic')
+    1
+    >>> print num_devices_in_submissions(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     package_name='nonsense')
+    0
+
+We can additionally query for devices in submissions made for a given
+distribution. The device from the new submission we just created is
+not counted here, because we created the new submission for a new
+distribution.
+
+    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+    >>> print num_devices_in_submissions(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     distro_target=ubuntu)
+    2
+    >>> print num_devices_in_submissions(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     distro_target=debian)
+    0
+
+Similary, we can limit the count to devices mentioned in submissions
+made for a given distroseries.
+
+    >>> print num_devices_in_submissions(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     distro_target=ubuntu['hoary'])
+    2
+    >>> print num_devices_in_submissions(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     distro_target=ubuntu['warty'])
+    0
+
+And we can also search for devices mentioned in submissions made on a
+given processor architecture.
+
+    >>> print num_devices_in_submissions(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     distro_target=ubuntu['hoary']['i386'])
+    2
+    >>> print num_devices_in_submissions(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     distro_target=ubuntu['hoary']['hppa'])
+    0
+
+We can also query the number of devices controlled by a given driver
+for a distrotarget.
+
+    >>> print num_devices_in_submissions(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     driver_name='sd', distro_target=ubuntu['hoary']['i386'])
+    1
+    >>> print num_devices_in_submissions(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     driver_name='nonsense', distro_target=ubuntu['hoary']['i386'])
+    0
+
+And we can additionally specify a package name.
+
+    >>> print num_devices_in_submissions(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     driver_name='sd', package_name='linux-image-2.6.24-19-generic',
+    ...     distro_target=ubuntu['hoary']['i386'])
+    1
+    >>> print num_devices_in_submissions(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     driver_name='sd', package_name='nonsense',
+    ...     distro_target=ubuntu['hoary']['i386'])
+    0
+
+num_submissions_with_device() returns all submissions mentioning a
+given device and all processed submissions.
+
+We have currently two processed submissions, both containing the
+Seagate ST3250820NS disk. Let's add another submission for hoary/i386
+and mark it as "processed" so that we have one processed submission
+that does not contain this disk.
+
+    >>> submission = factory.makeHWSubmission(
+    ...     distroarchseries=ubuntu['hoary']['i386'])
+    >>> submission.status = HWSubmissionProcessingStatus.PROCESSED
+
+    >>> from canonical.launchpad.database import num_submissions_with_device
+    >>> print num_submissions_with_device(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ')
+    (2L, 3L)
+
+We can limit the results to a given driver...
+
+    >>> print num_submissions_with_device(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     driver_name='sd')
+    (2L, 3L)
+    >>> print num_submissions_with_device(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     driver_name='usb')
+    (0L, 3L)
+
+...to a distibution...
+
+    >>> print num_submissions_with_device(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     distro_target=ubuntu)
+    (1L, 2L)
+    >>> print num_submissions_with_device(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     distro_target=debian)
+    (0L, 0L)
+
+...to a distroseries...
+
+    >>> print num_submissions_with_device(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     distro_target=ubuntu['hoary'])
+    (1L, 2L)
+    >>> print num_submissions_with_device(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     distro_target=ubuntu['warty'])
+    (0L, 0L)
+
+...or to a distroarchseries.
+
+    >>> print num_submissions_with_device(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     distro_target=ubuntu['hoary']['i386'])
+    (1L, 2L)
+    >>> print num_submissions_with_device(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     distro_target=ubuntu['hoary']['hppa'])
+    (0L, 0L)
+
+We can specify a distro target as well as a driver or package name.
+
+    >>> print num_submissions_with_device(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     driver_name='sd', distro_target=ubuntu['hoary']['i386'])
+    (1L, 2L)
+    >>> print num_submissions_with_device(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     driver_name='nosense', distro_target=ubuntu['hoary']['i386'])
+    (0L, 2L)
+
+    >>> print num_submissions_with_device(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     package_name='linux-image-2.6.24-19-generic',
+    ...     distro_target=ubuntu['hoary']['i386'])
+    (1L, 2L)
+    >>> print num_submissions_with_device(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     package_name='nonsense', distro_target=ubuntu['hoary']['i386'])
+    (0L, 2L)
+
+    >>> print num_submissions_with_device(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     driver_name='sd', package_name='linux-image-2.6.24-19-generic',
+    ...     distro_target=ubuntu['hoary']['i386'])
+    (1L, 2L)
+    >>> print num_submissions_with_device(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     driver_name='nonsense',
+    ...     package_name='linux-image-2.6.24-19-generic',
+    ...     distro_target=ubuntu['hoary']['i386'])
+    (0L, 2L)
