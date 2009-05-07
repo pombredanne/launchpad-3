@@ -34,7 +34,7 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from sqlobject import BoolCol, ForeignKey, IntCol, StringCol
-from storm.expr import And, Not, Or, Select
+from storm.expr import And, Count, In, Not, Or, Select
 
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -46,6 +46,8 @@ from lp.registry.model.distribution import Distribution
 from canonical.launchpad.database.distroarchseries import DistroArchSeries
 from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.teammembership import TeamParticipation
+from canonical.launchpad.interfaces.distroarchseries import IDistroArchSeries
+from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
 from canonical.launchpad.interfaces.hwdb import (
     HWBus, HWMainClass, HWSubClass, HWSubmissionFormat,
     HWSubmissionKeyNotUnique, HWSubmissionProcessingStatus, IHWDevice,
@@ -58,6 +60,8 @@ from canonical.launchpad.interfaces.hwdb import (
     IllegalQuery, ParameterError)
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import License
 from lp.registry.interfaces.person import validate_public_person
@@ -311,6 +315,37 @@ class HWSubmissionSet:
         # We don't actually need to transform the results, which is why
         # the second argument is a no-op.
         return DecoratedResultSet(result_set, lambda result: result)
+
+    def numSubmissionsWithDevice(
+        self, bus, vendor_id, product_id, driver_name=None, package_name=None,
+        distro_target=None):
+        """See `IHWSubmissionSet`."""
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+
+        tables, clauses = make_distro_target_clause(distro_target)
+        if HWSubmission not in tables:
+            tables.append(HWSubmission)
+        clauses.append(
+            HWSubmission.status == HWSubmissionProcessingStatus.PROCESSED)
+
+        all_submissions = store.execute(
+            Select(
+                columns=[Count()], tables=tables, where=And(*clauses)))
+
+        device_tables, device_clauses = (
+            make_submission_device_statistics_clause(
+                bus, vendor_id, product_id, driver_name, package_name))
+        submission_ids = Select(
+            columns=[HWSubmissionDevice.submissionID],
+            tables=device_tables, where=And(*device_clauses))
+
+        clauses.append(In(HWSubmission.id, submission_ids))
+        submissions_with_device = store.execute(
+            Select(
+                columns=[Count()], tables=tables, where=And(*clauses)))
+
+        return (submissions_with_device.get_one()[0],
+                all_submissions.get_one()[0])
 
 
 class HWSystemFingerprint(SQLBase):
@@ -874,6 +909,28 @@ class HWSubmissionDeviceSet:
         return store.find(
             HWSubmissionDevice, HWSubmissionDevice.id == id).one()
 
+    def numDevicesInSubmissions(
+        self, bus, vendor_id, product_id, driver_name=None, package_name=None,
+        distro_target=None):
+        """See `IHWSubmissionDeviceSet`."""
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+
+        tables, where_clauses = make_submission_device_statistics_clause(
+            bus, vendor_id, product_id, driver_name, package_name)
+
+        distro_tables, distro_clauses = make_distro_target_clause(
+            distro_target)
+        if distro_clauses:
+            tables.extend(distro_tables)
+            where_clauses.extend(distro_clauses)
+            where_clauses.append(
+                HWSubmissionDevice.submission == HWSubmission.id)
+
+        result = store.execute(
+            Select(
+                columns=[Count()], tables=tables, where=And(*where_clauses)))
+        return result.get_one()[0]
+
 
 class HWSubmissionBug(SQLBase):
     """See `IHWSubmissionBug`."""
@@ -893,3 +950,68 @@ class HWSubmissionBugSet:
     def create(self, submission, bug):
         """See `IHWSubmissionBugSet`."""
         return HWSubmissionBug(submission=submission, bug=bug)
+
+
+def make_submission_device_statistics_clause(
+    bus, vendor_id, product_id, driver_name, package_name):
+    """Create a where expression and a table list for selecting devices.
+    """
+    tables = [HWSubmissionDevice, HWDeviceDriverLink, HWVendorID, HWDevice]
+    where_clauses = [
+        HWSubmissionDevice.device_driver_link == HWDeviceDriverLink.id,
+        HWVendorID.bus == bus,
+        HWVendorID.vendor_id_for_bus == vendor_id,
+        HWDevice.bus_vendor == HWVendorID.id,
+        HWDeviceDriverLink.device == HWDevice.id,
+        HWDevice.bus_product_id == product_id
+        ]
+
+    if driver_name is None and package_name is None:
+        where_clauses.append(HWDeviceDriverLink.driver == None)
+    else:
+        tables.append(HWDriver)
+        where_clauses.append(HWDeviceDriverLink.driver == HWDriver.id)
+        if driver_name is not None:
+            where_clauses.append(HWDriver.name == driver_name)
+        if package_name is not None:
+            if package_name == '':
+                # XXX Abel Deuring, 2009-05-07, bug=306265. package_name
+                # should be declared notNull=True. For now, we must query
+                # for the empty string as well as for None.
+                where_clauses.append(
+                    Or(HWDriver.package_name == package_name,
+                       HWDriver.package_name == None))
+            else:
+                where_clauses.append(HWDriver.package_name == package_name)
+
+    return tables, where_clauses
+
+def make_distro_target_clause(distro_target):
+    """Create a where expression and a table list to limit results to a
+    distro target.
+    """
+    if distro_target is not None:
+        if IDistroArchSeries.providedBy(distro_target):
+            return (
+                [HWSubmission],
+                [HWSubmission.distroarchseries == distro_target.id])
+        elif IDistroSeries.providedBy(distro_target):
+            return (
+                [DistroArchSeries, HWSubmission],
+                [
+                    HWSubmission.distroarchseries == DistroArchSeries.id,
+                    DistroArchSeries.distroseries == distro_target.id,
+                    ])
+        elif IDistribution.providedBy(distro_target):
+            return (
+                [DistroArchSeries, DistroSeries, HWSubmission],
+                [
+                    HWSubmission.distroarchseries == DistroArchSeries.id,
+                    DistroArchSeries.distroseries == DistroSeries.id,
+                    DistroSeries.distribution == distro_target.id,
+                    ])
+        else:
+            raise ValueError(
+                'Parameter distro_target must be an IDistribution, '
+                'IDistroSeries or IDistroArchSeries')
+    return ([], [])
