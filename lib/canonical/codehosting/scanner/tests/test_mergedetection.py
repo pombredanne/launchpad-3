@@ -12,7 +12,6 @@ import transaction
 
 from zope.component import getUtility
 
-from canonical.codehosting.scanner.bzrsync import BzrSync
 from canonical.codehosting.scanner import events
 from canonical.codehosting.scanner.fixture import make_zope_event_fixture
 from canonical.codehosting.scanner import mergedetection
@@ -168,7 +167,6 @@ class TestMergeDetection(TestCaseWithFactory):
         TestCaseWithFactory.setUp(self)
         self.product = self.factory.makeProduct()
         self.db_branch = self.factory.makeProductBranch(product=self.product)
-        self.bzrsync = BzrSync(transaction, self.db_branch)
         # Replace the built-in merge_detected with our test stub.
         self._original_merge_detected = mergedetection.merge_detected
         mergedetection.merge_detected = self.mergeDetected
@@ -182,8 +180,8 @@ class TestMergeDetection(TestCaseWithFactory):
     def autoMergeBranches(self, db_branch, bzr_ancestry):
         mergedetection.auto_merge_branches(
             events.ScanCompleted(
-                db_branch=db_branch, bzr_branch=None, bzr_ancestry=['revid'],
-                logger=None))
+                db_branch=db_branch, bzr_branch=None,
+                bzr_ancestry=bzr_ancestry, logger=None))
 
     def mergeDetected(self, logger, source, target):
         # Record the merged branches
@@ -241,7 +239,7 @@ class TestMergeDetection(TestCaseWithFactory):
 
 
 class TestBranchMergeDetectionHandler(TestCaseWithFactory):
-    """Test the merge handing of the merge detection handler."""
+    """Test the merge_detected handler."""
 
     layer = LaunchpadZopelessLayer
 
