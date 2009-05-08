@@ -67,6 +67,9 @@ class EmailAddress(SQLBase, HasOwnerMixin):
                 "This is the email address of a team's mailing list, so it "
                 "can't be deleted.")
 
+        # XXX 2009-05-04 jamesh bug=371567: This function should not
+        # be responsible for removing subscriptions, since the SSO
+        # server can't write to that table.
         for subscription in MailingListSubscription.selectBy(
             email_address=self):
             subscription.destroySelf()
@@ -111,15 +114,24 @@ class EmailAddressSet:
             raise EmailAddressAlreadyTaken(
                 "The email address '%s' is already registered." % email)
         assert status in EmailAddressStatus.items
+        if person is None:
+            personID = None
+        else:
+            personID = person.id
+            accountID = account and account.id
+            assert person.accountID == accountID, (
+                "Email address '%s' must be linked to same account as "
+                "person '%s'.  Expected %r (%s), got %r (%s)" % (
+                    email, person.name, person.account, person.accountID,
+                    account, accountID))
         # We use personID instead of just person, as in some cases the
         # Person record will not yet be replicated from the main
         # Store to the auth master Store.
-        if person is None:
-            return EmailAddress(email=email, status=status, account=account)
-        else:
-            return EmailAddress(
-                email=email, status=status,
-                account=account, personID=person.id)
+        return EmailAddress(
+            email=email,
+            status=status,
+            personID=personID,
+            account=account)
 
 
 class UndeletableEmailAddress(Exception):

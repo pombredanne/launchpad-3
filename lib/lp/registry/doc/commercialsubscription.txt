@@ -222,38 +222,17 @@ if the product has License.OTHER_PROPRIETARY.
     True
 
 The license_approved attribute is used to manually approve an
-OTHER_OPEN_SOURCE license as being "good enough" to use Launchpad.  In
-other words, the license used is not one of our pre-approved open
-source licenses but an admin has reviewed it and determined it to be
-sufficient.  The license_approved property can only be set on a
-product that has OTHER_OPEN_SOURCE as one of its licenses and does not
-have OTHER_PROPRIETARY included as one of the licenses.  Note that the
-licenses specified are a set.  Including OTHER_PROPRIETARY makes the
-project *proprietary* from our perspective because it is not purely
-open source.
+OTHER_OPEN_SOURCE license or a project with additional license info
+as being "good enough" to use Launchpad. The license_approved property
+can only be set on a product that does not have OTHER_PROPRIETARY
+included as one of the licenses.
 
+    >>> bzr.license_info = 'bar'
     >>> bzr.license_reviewed = True
     >>> bzr.license_approved = True
-    Traceback (most recent call last):
-    ...
-    AssertionError: Only licenses of 'Other/Open Source' and not...
 
-Set the bzr license to Other/Open Source and Other/Proprietary.  It
-still may not be approved.
-
-    >>> bzr.licenses = [License.OTHER_OPEN_SOURCE, License.OTHER_PROPRIETARY]
-    >>> bzr.license_reviewed = True
-    >>> bzr.license_approved = True
-    Traceback (most recent call last):
-    ...
-    AssertionError: Only licenses of 'Other/Open Source' and not...
-
-Setting it to only Other/Open Source allows the product to be marked
-as approved.
-
-    >>> bzr.licenses = [License.OTHER_OPEN_SOURCE]
-    >>> bzr.license_reviewed = True
-    >>> bzr.license_approved = True
+    >>> bzr.license_info
+    u'bar'
     >>> bzr.license_reviewed
     True
     >>> bzr.license_approved
@@ -266,6 +245,25 @@ so license_reviewed is set automatically.
     >>> bzr.license_approved = True
     >>> bzr.license_reviewed
     True
+
+Set the bzr license to Other/Open Source and Other/Proprietary.  It
+may not be approved because Other/Proprietary requires a commercial
+subscription.
+
+    >>> bzr.licenses = [License.OTHER_OPEN_SOURCE, License.OTHER_PROPRIETARY]
+    >>> bzr.license_reviewed = True
+    >>> bzr.license_approved = True
+    Traceback (most recent call last):
+    ...
+    AssertionError: Projects with 'Other/Proprietary' licenses may not be...
+
+A project with an Other/Open Source license or additional license info that
+is reviewed, but not approved requires a commercial subscription.
+
+    >>> bzr.licenses = [License.OTHER_OPEN_SOURCE]
+    >>> bzr.license_reviewed = True
+    >>> bzr.qualifies_for_free_hosting
+    False
 
 If the licenses or license_info attributes are changed, the
 license_reviewed and license_approved attributes are reset to false.
@@ -352,6 +350,7 @@ You can search for whether the product is marked reviewed or not.
     >>> for product in product_set.forReview(license_reviewed=True):
     ...     print product.name
     rosetta
+    obsolete-junk
     alsa-utils
     python-gnome2-dev
     unassigned
@@ -414,11 +413,13 @@ This OR the licenses search field must match.
     >>> for product in product_set.forReview(license_info_is_empty=False):
     ...     print product.name
     mega-money-maker
+    obsolete-junk
     >>> for product in product_set.forReview(license_info_is_empty=False,
     ...                                      licenses=[License.GNU_GPL_V2]):
     ...     print product.name
     bzr
     mega-money-maker
+    obsolete-junk
 
 You can search for products based on a date range in which the product
 was created.

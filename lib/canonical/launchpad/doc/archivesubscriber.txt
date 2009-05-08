@@ -11,12 +11,27 @@ See also archiveauthtoken.txt.
 First, create a person 'joesmith' and a team 'team_cprov':
 
     >>> login('foo.bar@canonical.com')
-    >>> joesmith = factory.makePerson(name="joesmith", displayname="Joe Smith",
-    ...     password="test", email="joe@example.com")
+    >>> joesmith = factory.makePerson(name="joesmith",
+    ...                               displayname="Joe Smith",
+    ...                               password="test",
+    ...                               email="joe@example.com")
+    >>> johnsmith = factory.makePerson(name="johnsmith",
+    ...                               displayname="John Smith",
+    ...                               password="test",
+    ...                               email="john@example.com")
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> cprov = getUtility(IPersonSet).getByName("cprov")
     >>> team_cprov = factory.makeTeam(cprov, "Team Cprov")
+    >>> johnsmith.join(team_cprov)
     >>> logout()
+
+Reset the test emails (after John joined team cprov):
+
+    >>> from canonical.launchpad.tests.mail_helpers import print_emails
+    >>> print_emails()
+    From: Team Cprov <noreply@launchpad.net>
+    ...
+
 
 == Creating new subscriptions ==
 
@@ -73,6 +88,40 @@ Subscriptions also contain some date information:
     >>> print new_sub.date_expires
     None
 
+An email is sent to the subscribed person when the ArchiveSubscriber
+entry is created:
+
+    >>> print_emails(include_reply_to=True)
+    From: Celso Providelo <noreply@launchpad.net>
+    To: joe@example.com
+    Reply-To: Celso Providelo <celso.providelo@canonical.com>
+    Subject: New PPA subscription for PPA for Celso Providelo
+    Hello Joe Smith,
+    <BLANKLINE>
+    Launchpad: activate your archive subscription
+    ---------------------------------------------
+    <BLANKLINE>
+    Celso Providelo has invited you to subscribe to a private software
+    archive hosted by Launchpad.
+    <BLANKLINE>
+    To start downloading and using software from this archive you need to
+    activate your subscription by visiting this link:
+    <BLANKLINE>
+    <http://launchpad.dev/~joesmith/+archivesubscriptions>
+    <BLANKLINE>
+    You can find out more about Celso Providelo here:
+    <BLANKLINE>
+    <http://launchpad.dev/~cprov>
+    <BLANKLINE>
+    If you'd prefer not to use software from this archive, you can safely
+    ignore this email. However, if you have any concerns you can contact the
+    Launchpad team by emailing feedback@launchpad.net
+    <BLANKLINE>
+    <BLANKLINE>
+    Regards,
+    The Launchpad team
+    ----------------------------------------
+
 Add another subscription for the test user, this time to sabdfl's ppa:
 
     >>> login("mark@hbd.com")
@@ -80,20 +129,33 @@ Add another subscription for the test user, this time to sabdfl's ppa:
     >>> new_sub_to_sabdfl_ppa = sabdfl.archive.newSubscription(
     ...     joesmith, sabdfl, description=u"subscription for joesmith")
 
+    >>> print_emails()
+    From: Mark Shuttleworth <noreply@launchpad.net>
+    To: joe@example.com
+    ...
+
 And also a subscription for a Team:
 
     >>> new_team_sub_to_sabdfl_ppa = sabdfl.archive.newSubscription(
     ...     team_cprov, sabdfl, description=u"Access for cprov team")
 
+    >>> print_emails()
+    From: Mark Shuttleworth <noreply@launchpad.net>
+    To: celso.providelo@canonical.com
+    ...
+
+
 Explicitly set the date_created for testing purposes:
 
     >>> from datetime import datetime
     >>> import pytz
-    >>> new_sub.date_created = datetime(2009, 2, 26, tzinfo=pytz.UTC)
-    >>> new_sub_to_sabdfl_ppa.date_created = datetime(
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> removeSecurityProxy(new_sub).date_created = datetime(
+    ...     2009, 2, 26, tzinfo=pytz.UTC)
+    >>> removeSecurityProxy(new_sub_to_sabdfl_ppa).date_created = datetime(
     ...     2009, 2, 22, tzinfo=pytz.UTC)
-    >>> new_team_sub_to_sabdfl_ppa.date_created = datetime(
-    ...     2009, 2, 24, tzinfo=pytz.UTC)
+    >>> removeSecurityProxy(new_team_sub_to_sabdfl_ppa).date_created = (
+    ...     datetime(2009, 2, 24, tzinfo=pytz.UTC))
 
 Commit the new subscriptions to the database.
 
@@ -283,3 +345,66 @@ We can do this as an admin too:
 
     >>> login("admin@canonical.com")
     >>> new_sub.cancel(cprov)
+
+
+== Finding all non-active subscribers ==
+
+The method getNonActiveSubscribers() facilitates contacting all the people
+included in this subscription who do not yet have an active token for the
+corresponding archive.
+
+For example, Joe already has an (unactivated) subscription to Mark's PPA
+via the cprov_team:
+
+    >>> for subscription in sub_set.getBySubscriber(joesmith):
+    ...     print subscription.archive.displayname
+    ...     print subscription.description
+    PPA for Mark Shuttleworth      Access for cprov team
+
+    >>> subscription = sub_set.getBySubscriber(joesmith).first()
+
+So the getNonActiveSubscribers() method for this team subscription will
+currently include Joe:
+
+    >>> for person in subscription.getNonActiveSubscribers():
+    ...     print person.displayname
+    Celso Providelo
+    Joe Smith
+    John Smith
+
+But if we create an auth token for joe to the archive (this could be via
+a separate subscription), then he will no longer be listed as a non-active
+subscriber for this subscription:
+
+    >>> joesmith_token = sabdfl.archive.newAuthToken(joesmith)
+    >>> for person in subscription.getNonActiveSubscribers():
+    ...     print person.displayname
+    Celso Providelo
+    John Smith
+
+If the subscription is just for an individual, getNonActiveSubscribers()
+will return a list with the single subscriber as expected:
+
+    >>> login("mark@hbd.com")
+    >>> harrysmith = factory.makePerson(name="harrysmith",
+    ...                                 displayname="Harry Smith",
+    ...                                 password="test",
+    ...                                 email="harry@example.com")
+    >>> subscription = sabdfl.archive.newSubscription(
+    ...     harrysmith, sabdfl, description=u"subscription for joesmith")
+    >>> for person in subscription.getNonActiveSubscribers():
+    ...     print person.displayname
+    Harry Smith
+
+If the subscription is for a group which itself contains a group, all
+indirect members that are not themselves groups are included:
+
+    >>> launchpad_devs = getUtility(IPersonSet).getByName('launchpad')
+    >>> launchpad_devs.addMember(team_cprov, sabdfl, force_team_add=True)
+    >>> subscription = sabdfl.archive.newSubscription(
+    ...     launchpad_devs, sabdfl, description=u"LP team too")
+    >>> for person in subscription.getNonActiveSubscribers():
+    ...     print person.displayname
+    Celso Providelo
+    John Smith
+    Foo Bar

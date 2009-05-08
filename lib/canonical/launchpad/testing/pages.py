@@ -1,5 +1,7 @@
-# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
+
 """Testing infrastructure for page tests."""
+
 # Stop lint warning about not initializing TestCase parent on
 # PageStoryTestCase, see the comment bellow.
 # pylint: disable-msg=W0231
@@ -143,8 +145,11 @@ class DuplicateIdError(Exception):
 
 def find_tag_by_id(content, id):
     """Find and return the tag with the given ID"""
-    elements_with_id = [tag for tag in BeautifulSoup(
-        content, parseOnlyThese=SoupStrainer(id=id))]
+    if isinstance(content, PageElement):
+        elements_with_id = content.findAll(True, {'id': id})
+    else:
+        elements_with_id = [tag for tag in BeautifulSoup(
+                            content, parseOnlyThese=SoupStrainer(id=id))]
     if len(elements_with_id) == 0:
         return None
     elif len(elements_with_id) == 1:
@@ -216,6 +221,12 @@ def get_feedback_messages(content):
     return [extract_text(tag) for tag in soup]
 
 
+def print_feedback_messages(content):
+    """Print out the feedback messages."""
+    for message in get_feedback_messages(content):
+        print message
+
+
 def print_radio_button_field(content, name):
     """Find the input called field.name, and print a friendly representation.
 
@@ -276,13 +287,15 @@ def extract_link_from_tag(tag, base=None):
         return urljoin(base, href)
 
 
-def extract_text(content, extract_image_text=False, skip_tags=['script']):
+def extract_text(content, extract_image_text=False, skip_tags=None):
     """Return the text stripped of all tags.
 
     All runs of tabs and spaces are replaced by a single space and runs of
     newlines are replaced by a single newline. Leading and trailing white
     spaces are stripped.
     """
+    if skip_tags is None:
+        skip_tags = ['script']
     if not isinstance(content, PageElement):
         soup = BeautifulSoup(content)
     else:
@@ -601,6 +614,7 @@ def setUpGlobs(test):
     test.globs['find_portlet'] = find_portlet
     test.globs['find_main_content'] = find_main_content
     test.globs['get_feedback_messages'] = get_feedback_messages
+    test.globs['print_feedback_messages'] = print_feedback_messages
     test.globs['extract_link_from_tag'] = extract_link_from_tag
     test.globs['extract_text'] = extract_text
     test.globs['login'] = login

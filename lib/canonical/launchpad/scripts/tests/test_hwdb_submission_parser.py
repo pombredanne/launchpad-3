@@ -2,18 +2,12 @@
 """Tests of the HWDB submissions parser."""
 
 from cStringIO import StringIO
+import cElementTree as etree
 from datetime import datetime
 import logging
 import os
 from unittest import TestCase, TestLoader
 
-try:
-    import xml.elementtree.cElementTree as etree
-except ImportError:
-    try:
-        import cElementTree as etree
-    except ImportError:
-        import elementtree.ElementTree as etree
 import pytz
 
 from zope.testing.loghandler import Handler
@@ -1089,10 +1083,34 @@ class TestHWDBSubmissionParser(TestCase):
 
     def testUDIDeviceMap(self):
         """Test the creation of the mapping UDI -> device."""
-        device1 = {'id': 1,
-                   'udi': ROOT_UDI}
-        device2 = {'id': 2,
-                   'udi': self.DEVICE_2_UDI}
+        SSB_UDI = '/org/freedesktop/Hal/devices/ssb__null_'
+        SSB_CHILD_UDI = '/org/freedesktop/Hal/devices/net_00_1a_73_a3_8f_a4_0'
+        device1 = {
+              'id': 1,
+              'udi': ROOT_UDI,
+              }
+        device2 = {
+            'id': 2,
+            'udi': self.DEVICE_2_UDI,
+            'properties': {
+                'info.parent': (ROOT_UDI, 'str'),
+                },
+            }
+        device3 = {
+            'id': 3,
+            'udi': SSB_UDI,
+            'properties': {
+                'info.parent': (ROOT_UDI, 'str'),
+                },
+            }
+        device4 = {
+            'id': 4,
+            'udi': SSB_CHILD_UDI,
+            'properties': {
+                'info.parent': (SSB_UDI, 'str'),
+                },
+            }
+
         devices = [device1, device2]
 
         parser = SubmissionParser()
@@ -1102,9 +1120,27 @@ class TestHWDBSubmissionParser(TestCase):
                           self.DEVICE_2_UDI: device2},
                          'Invalid result of SubmissionParser.getUDIDeviceMap')
 
-        # Duplicate UDIs raise a ValueError.
+        # Generally, duplicate UDIs raise a ValueError.
         devices.append(device2)
         self.assertRaises(ValueError, parser.getUDIDeviceMap, devices)
+
+        # Exceptions are devices with certain UDIs which are known
+        # to appear sometimes more than once in HWDB submissions.
+        devices = [device1, device2, device3, device4, device3, device4]
+        udi_devices = parser.getUDIDeviceMap(devices)
+        self.assertEqual(
+            udi_devices,
+            {
+                ROOT_UDI: device1,
+                self.DEVICE_2_UDI: device2,
+                SSB_UDI: device3,
+                SSB_CHILD_UDI: device4,
+                },
+            'Unexpected result of processing a device list with duplicate '
+            'SSB UDIs')
+        self.assertEqual(
+            devices, [device1, device2, device3, device4],
+            'Unexpected list of devices after removing duplicates.')
 
     def testIDUDIMaps(self):
         """Test of SubmissionParser._getIDUDIMaps."""

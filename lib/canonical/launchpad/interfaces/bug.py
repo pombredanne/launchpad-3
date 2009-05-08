@@ -29,11 +29,13 @@ from canonical.launchpad.fields import (
     BugField, ContentNameField, DuplicateBug, PublicPersonChoice, Tag, Title)
 from canonical.launchpad.interfaces.bugattachment import IBugAttachment
 from canonical.launchpad.interfaces.bugtarget import IBugTarget
-from canonical.launchpad.interfaces.bugtask import IBugTask
+from canonical.launchpad.interfaces.bugtask import (
+    BugTaskImportance, BugTaskStatus, IBugTask)
 from canonical.launchpad.interfaces.bugwatch import IBugWatch
 from canonical.launchpad.interfaces.cve import ICve
 from canonical.launchpad.interfaces.launchpad import NotFoundError
 from canonical.launchpad.interfaces.message import IMessage
+from lp.code.interfaces.branch import IBranch
 from lp.registry.interfaces.mentoringoffer import ICanBeMentored
 from lp.registry.interfaces.person import IPerson
 from canonical.launchpad.validators.name import name_validator
@@ -43,8 +45,8 @@ from canonical.launchpad.validators.bugattachment import (
 from lazr.restful.declarations import (
     REQUEST_USER, call_with, export_as_webservice_entry,
     export_factory_operation, export_operation_as, export_write_operation,
-    exported, mutator_for, operation_parameters, rename_parameters_as,
-    webservice_error)
+    exported, mutator_for, operation_parameters, operation_returns_entry,
+    rename_parameters_as, webservice_error)
 from lazr.restful.fields import CollectionField, Reference
 from lazr.restful.interface import copy_field
 
@@ -53,21 +55,19 @@ class CreateBugParams:
     """The parameters used to create a bug."""
 
     def __init__(self, owner, title, comment=None, description=None, msg=None,
-                 status=None, assignee=None, datecreated=None,
-                 security_related=False, private=False, subscribers=(),
-                 binarypackagename=None, tags=None, subscribe_reporter=True):
+                 status=None, datecreated=None, security_related=False,
+                 private=False, subscribers=(), binarypackagename=None,
+                 tags=None, subscribe_reporter=True):
         self.owner = owner
         self.title = title
         self.comment = comment
         self.description = description
         self.msg = msg
         self.status = status
-        self.assignee = assignee
         self.datecreated = datecreated
         self.security_related = security_related
         self.private = private
         self.subscribers = subscribers
-
         self.product = None
         self.distribution = None
         self.sourcepackagename = None
@@ -280,6 +280,10 @@ class IBug(ICanBeMentored):
             value_type=Reference(schema=IPerson),
             readonly=True))
 
+    # Adding related BugMessages provides a hook for getting at
+    # BugMessage.visible when building bug comments.
+    bug_messages = Attribute('The bug messages related to this object.')
+
     messages = CollectionField(
             title=_("The messages related to this object, in reverse "
                     "order of creation (so newest first)."),
@@ -429,6 +433,12 @@ class IBug(ICanBeMentored):
     def hasBranch(branch):
         """Is this branch linked to this bug?"""
 
+    @call_with(registrant=REQUEST_USER, whiteboard=None, status=None)
+    @operation_parameters(
+        branch=Reference(schema=IBranch))
+    @operation_returns_entry(Interface) # Really IBugBranch
+    @export_operation_as('linkBranch')
+    @export_write_operation()
     def addBranch(branch, registrant, whiteboard=None, status=None):
         """Associate a branch with this bug.
 
@@ -440,11 +450,16 @@ class IBug(ICanBeMentored):
         Returns an IBugBranch.
         """
 
+    @call_with(user=REQUEST_USER)
+    @operation_parameters(
+        branch=Reference(schema=IBranch))
+    @export_operation_as('unlinkBranch')
+    @export_write_operation()
     def removeBranch(branch, user):
         """Unlink a branch from this bug.
 
         :param branch: The branch being unlinked from the bug
-        :param registrant: The user unlinking the branch
+        :param user: The user unlinking the branch
         """
 
     @call_with(owner=REQUEST_USER)
@@ -660,11 +675,20 @@ class IBug(ICanBeMentored):
     def markAsDuplicate(duplicate_of):
         """Mark this bug as a duplicate of another."""
 
+    @operation_parameters(
+        comment_number=Int(
+            title=_('The number of the comment in the list of messages.'),
+            required=True),
+        visible=Bool(title=_('Show this comment?'), required=True))
+    @call_with(user=REQUEST_USER)
+    @export_write_operation()
+    def setCommentVisibility(user, comment_number, visible):
+        """Set the visible attribute on a bug comment."""
+
 
 class InvalidDuplicateValue(Exception):
     """A bug cannot be set as the duplicate of another."""
     webservice_error(417)
-
 
 
 # We are forced to define these now to avoid circular import problems.
@@ -749,6 +773,24 @@ class IBugAddForm(IBug):
     patch = Bool(title=u"This attachment is a patch", required=False,
         default=False)
     attachment_description = Title(title=u'Description', required=False)
+    status = Choice(
+        title=_('Status'),
+        values=list(
+            item for item in BugTaskStatus.items.items
+            if item != BugTaskStatus.UNKNOWN),
+        default=IBugTask['status'].default)
+    importance = Choice(
+        title=_('Importance'),
+        values=list(
+            item for item in BugTaskImportance.items.items
+            if item != BugTaskImportance.UNKNOWN),
+        default=IBugTask['importance'].default)
+    milestone = Choice(
+        title=_('Milestone'), required=False,
+        vocabulary='Milestone')
+    assignee = PublicPersonChoice(
+        title=_('Assign to'), required=False,
+        vocabulary='ValidAssignee')
 
 
 class IProjectBugAddForm(IBugAddForm):

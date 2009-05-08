@@ -158,6 +158,7 @@ grab a new view to actually see them:
      (1, u'name16', u'I can reproduce this bug.'),
      (2, u'name16', u'I can reproduce this bug.')]
 
+
 == Description and Comment Display ==
 
 When a user posts a new bug, the first comment and the description are
@@ -264,21 +265,13 @@ The +subscribe link has different text depending on if the user is
 subscribed to the bug, or if a team the user of a member of is
 subscribed to it.
 
-If the user isn't subscribed to the bug and neither of his teams are
-subscribed to it, 'Subscribe' is shown.
+If the user isn't subscribed to the bug , 'Subscribe' is shown.
 
     >>> login("foo.bar@canonical.com")
     >>> foo_bar = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
     >>> bug_one = getUtility(IBugSet).get(1)
     >>> bug_one.isSubscribed(foo_bar)
     False
-    >>> for team in foo_bar.teams_participated_in:
-    ...     if bug_one.isSubscribed(team):
-    ...         print "%s is subsribed to the bug" % team.displayname
-    ...         break
-    ... else:
-    ...     print "No teams are subscribed to the bug."
-    No teams are subscribed to the bug.
 
     >>> from canonical.launchpad.browser import BugContextMenu
     >>> bug_one_bugtask = bug_one.bugtasks[0]
@@ -317,29 +310,11 @@ still say 'Unsubscribe':
     >>> bug_menu.subscription().icon
     'remove'
 
-However, if we now unsubscribe Foo Bar, it will say
-'Subscribe/Unsubscribe' since he will have the option of either
-subscribing himself or unsubscribing the Launchpad team.
+If we now unsubscribe Foo Bar, it will say 'Subscribe', since team
+unsubsription is handled by the remove icon next the the team in the
+subscribers portlet.
 
     >>> bug_one.unsubscribe(foo_bar, foo_bar)
-
-    >>> bug_menu = BugContextMenu(bug_one_bugtask)
-    >>> bug_menu.subscription().text
-    'Subscribe/Unsubscribe'
-
-    >>> bug_menu.subscription().icon
-    'edit'
-
-He will have the possibility to unsubscribe only the team that he's a
-member of, so if we unsubscribe the Launchpad team and subscribe some
-other team, it will say only 'Subscribe'.
-
-    >>> shipit_team = getUtility(IPersonSet).getByName('shipit-admins')
-    >>> foo_bar.inTeam(shipit_team)
-    False
-    >>> bug_one.unsubscribe(launchpad_team, foo_bar)
-    >>> bug_one.subscribe(shipit_team, shipit_team)
-    <BugSubscription at ...>
 
     >>> bug_menu = BugContextMenu(bug_one_bugtask)
     >>> bug_menu.subscription().text
@@ -348,8 +323,8 @@ other team, it will say only 'Subscribe'.
     >>> bug_menu.subscription().icon
     'add'
 
-If the user is logged out, it also says 'Subscribe/Unsubscribe', since
-we can't know if the user is subscribed or not.
+If the user is logged out, it says 'Subscribe/Unsubscribe', since we
+can't know if the user is subscribed or not.
 
     >>> login(ANONYMOUS)
     >>> bug_menu = BugContextMenu(bug_one_bugtask)
@@ -399,9 +374,7 @@ we can't know if the user is subscribed or not.
         'Subscribe'
 
     Now let's subscribe Ubuntu Team directly to bug #2. When bug #2 is duped
-    against bug #3, the link changes to Subscribe/Unsubscribe, because Foo
-    Bar can subscribe himself, or unsubscribe the Ubuntu Team, which got
-    indirectly subscribed to bug #3 from the dupe, bug #2.
+    against bug #3, the link didn't change to Subscribe/Unsubscribe
 
     >>> ubuntu_team = getUtility(IPersonSet).getByName("ubuntu-team")
     >>> bug_two.subscribe(ubuntu_team, ubuntu_team)
@@ -411,7 +384,7 @@ we can't know if the user is subscribed or not.
     >>> syncUpdate(bug_two)
 
     >>> bug_menu.subscription().text
-        'Subscribe/Unsubscribe'
+    'Subscribe'
 
 
 == BugTasks and Nominations Table ==
@@ -927,3 +900,41 @@ comment.
     Changed in testproduct:
                 importance: Undecided => High
                     status: New => Confirmed
+
+
+== Getting the list of possible duplicates for a new bug ==
+
+It's possible to get a list of the possible duplicates for a new bug by
+using the +filebug-show-similar view of a BugTarget.
+
+The +filebug-show-similar view takes a single parameter, 'title'. It
+uses this to search for similar bugs.
+
+    >>> request = LaunchpadTestRequest(
+    ...     method="GET",
+    ...     form={'title': 'a'})
+    >>> view = getMultiAdapter(
+    ...     (firefox, request), name="+filebug-show-similar")
+    >>> view.initialize()
+
+The view offers a list of bugs similar to the one whose title we just
+searched for.
+
+    >>> for bug in view.similar_bugs:
+    ...     print "Bug %s: %s" % (bug.id, bug.title)
+    Bug 1:  New title
+    Bug 4:  Reflow problems with complex page layouts
+    Bug 5:  Firefox install instructions should be complete
+    Bug 17: a firefox bug
+
+If we refine the search critera, we'll get different results.
+
+    >>> request = LaunchpadTestRequest(
+    ...     method="GET",
+    ...     form={'title': 'problems'})
+    >>> view = getMultiAdapter(
+    ...     (firefox, request), name="+filebug-show-similar")
+    >>> view.initialize()
+    >>> for bug in view.similar_bugs:
+    ...     print "Bug %s: %s" % (bug.id, bug.title)
+    Bug 4:  Reflow problems with complex page layouts

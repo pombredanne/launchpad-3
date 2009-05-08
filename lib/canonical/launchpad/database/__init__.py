@@ -60,7 +60,7 @@ from canonical.launchpad.database.binaryandsourcepackagename import *
 from canonical.launchpad.database.publishedpackage import *
 from lp.registry.model.distribution import *
 from canonical.launchpad.database.distributionbounty import *
-from canonical.launchpad.database.distributionmirror import *
+from lp.registry.model.distributionmirror import *
 from lp.registry.model.distributionsourcepackage import *
 from lp.registry.model.distributionsourcepackagecache import *
 from canonical.launchpad.database.distributionsourcepackagerelease import *
@@ -119,7 +119,6 @@ from canonical.launchpad.database.logintoken import *
 from lp.registry.model.codeofconduct import *
 from canonical.launchpad.database.component import *
 from canonical.launchpad.database.section import *
-from canonical.launchpad.database.shipit import *
 from canonical.launchpad.database.vpoexport import *
 from canonical.launchpad.database.vpotexport import *
 from lp.registry.model.karma import *
@@ -144,3 +143,4 @@ from canonical.launchpad.database.archivedependency import *
 from canonical.launchpad.database.packagediff import *
 from lp.code.model.codereviewcomment import *
 from canonical.launchpad.database.archivepermission import *
+from canonical.launchpad.database.packageset import *

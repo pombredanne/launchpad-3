@@ -41,7 +41,7 @@ from canonical.launchpad.interfaces.launchpad import UnexpectedFormData
 from canonical.launchpad.interfaces.openidserver import IOpenIDRPConfigSet
 from lp.registry.interfaces.person import (
     INewPersonForm, IPerson, IPersonSet, PersonCreationRationale)
-from canonical.launchpad.interfaces.shipit import ShipItConstants
+from canonical.shipit.interfaces.shipit import ShipItConstants
 
 
 class AuthTokenSetNavigation(GetitemNavigation):
@@ -325,7 +325,10 @@ class ValidateEmailView(BaseAuthTokenView, LaunchpadFormView):
         emailset = getUtility(IEmailAddressSet)
         email = emailset.getByEmail(self.context.email)
         if email is None:
-            email = emailset.new(self.context.email, self.context.requester)
+            email = emailset.new(
+                email=self.context.email,
+                person=self.context.requester,
+                account=self.context.requester_account)
         return email
 
     def markEmailAsValid(self, email):
@@ -334,16 +337,7 @@ class ValidateEmailView(BaseAuthTokenView, LaunchpadFormView):
 
 
 class NewAccountView(BaseAuthTokenView, LaunchpadFormView):
-    """Page to create a new Launchpad account.
-
-    # This is just a small test to make sure
-    # LoginOrRegister.registered_origins and
-    # NewAccountView.urls_and_rationales are kept in sync.
-    >>> from canonical.launchpad.webapp.login import LoginOrRegister
-    >>> urls = sorted(LoginOrRegister.registered_origins.values())
-    >>> urls == sorted(NewAccountView.urls_and_rationales.keys())
-    True
-    """
+    """Page to create a new Launchpad account."""
 
     urls_and_rationales = {
         ShipItConstants.ubuntu_url:
@@ -485,9 +479,7 @@ class NewAccountView(BaseAuthTokenView, LaunchpadFormView):
 
         If there's an OpenID request in the session we use the given
         trust_root to find out the creation rationale. If there's no OpenID
-        request but there is a rationale for the logintoken's redirection_url,
-        then use that, otherwise uses
-        PersonCreationRationale.OWNER_CREATED_LAUNCHPAD.
+        request we use PersonCreationRationale.OWNER_CREATED_LAUNCHPAD.
         """
         if self.has_openid_request:
             rpconfig = getUtility(IOpenIDRPConfigSet).getByTrustRoot(
@@ -498,12 +490,9 @@ class NewAccountView(BaseAuthTokenView, LaunchpadFormView):
                 rationale = (
                     PersonCreationRationale.OWNER_CREATED_UNKNOWN_TRUSTROOT)
         else:
-            # There is no OpenIDRequest in the session, so we'll try to infer
-            # the creation rationale from the token's redirection_url.
-            rationale = self.urls_and_rationales.get(
-                self.context.redirection_url)
-            if rationale is None:
-                rationale = PersonCreationRationale.OWNER_CREATED_LAUNCHPAD
+            # There is no OpenIDRequest in the session, so we'll assume the
+            # user is creating the account because he wants to use Launchpad.
+            rationale = PersonCreationRationale.OWNER_CREATED_LAUNCHPAD
         return rationale
 
     def _createAccountPersonAndEmail(

@@ -9,6 +9,7 @@ __all__ = ['Archive', 'ArchiveSet']
 
 import re
 
+from lazr.lifecycle.event import ObjectCreatedEvent
 from sqlobject import  (
     BoolCol, ForeignKey, IntCol, StringCol)
 from sqlobject.sqlbuilder import SQLConstant
@@ -16,6 +17,7 @@ from storm.expr import Or, And, Select
 from storm.locals import Count, Join
 from storm.store import Store
 from zope.component import getUtility
+from zope.event import notify
 from zope.interface import alsoProvides, implements
 from zope.security.interfaces import Unauthorized
 
@@ -71,7 +73,8 @@ from canonical.launchpad.interfaces.package import PackageUploadStatus
 from canonical.launchpad.interfaces.packagecopyrequest import (
     IPackageCopyRequestSet)
 from canonical.launchpad.interfaces.publishing import (
-    PackagePublishingPocket, PackagePublishingStatus, IPublishingSet)
+    PackagePublishingPocket, PackagePublishingStatus, IPublishingSet,
+    ISourcePackagePublishingHistory)
 from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageNameSet)
 from canonical.launchpad.scripts.packagecopier import (
@@ -261,7 +264,7 @@ class Archive(SQLBase):
 
     def getPublishedSources(self, name=None, version=None, status=None,
                             distroseries=None, pocket=None,
-                            exact_match=False, published_since_date=None):
+                            exact_match=False, created_since_date=None):
         """See `IArchive`."""
         clauses = ["""
             SourcePackagePublishingHistory.archive = %s AND
@@ -314,10 +317,10 @@ class Archive(SQLBase):
                 SourcePackagePublishingHistory.pocket = %s
             """ % sqlvalues(pocket))
 
-        if published_since_date is not None:
+        if created_since_date is not None:
             clauses.append("""
-                SourcePackagePublishingHistory.datepublished >= %s
-            """ % sqlvalues(published_since_date))
+                SourcePackagePublishingHistory.datecreated >= %s
+            """ % sqlvalues(created_since_date))
 
         preJoins = [
             'sourcepackagerelease.creator',
@@ -1027,10 +1030,13 @@ class Archive(SQLBase):
         if len(copies) == 0:
             raise CannotCopy("Packages already copied.")
 
-        # Return a list of string names of packages that were copied.
+        # Return a list of string names of source packages that were copied.
+        # We only return source package names, even when binaries were copied,
+        # because that's the "Contract".
         return [
             copy.sourcepackagerelease.sourcepackagename.name
-            for copy in copies]
+            for copy in copies
+            if ISourcePackagePublishingHistory.providedBy(copy)]
 
     def newAuthToken(self, person, token=None, date_created=None):
         """See `IArchive`."""
@@ -1071,12 +1077,6 @@ class Archive(SQLBase):
     def newSubscription(self, subscriber, registrant, date_expires=None,
                         description=None):
         """See `IArchive`."""
-        # XXX 2009-01-19 Julian
-        # This method is currently a stub.  It needs a lot more work to
-        # figure out what to do in the case of overlapping
-        # subscriptions, and also to add the ArchiveAuthTokens for the
-        # subscriber (which may also be a team and thus require
-        # expanding to make one token per member).
         subscription = ArchiveSubscriber()
         subscription.archive = self
         subscription.registrant = registrant
@@ -1087,6 +1087,11 @@ class Archive(SQLBase):
         subscription.date_created = UTC_NOW
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         store.add(subscription)
+
+        # Notify any listeners that a new subscription was created.
+        # This is used currently for sending email notifications.
+        notify(ObjectCreatedEvent(subscription))
+
         return subscription
 
 

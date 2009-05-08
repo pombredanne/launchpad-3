@@ -2,10 +2,13 @@
 
 from datetime import datetime
 import gzip
-import pytz
 import os
+import pytz
+import re
 
 from zope.component import getUtility
+
+from lazr.uri import URI
 
 from contrib import apachelog
 
@@ -56,7 +59,7 @@ def get_files_to_parse(root, file_names):
     return files_to_parse
 
 
-def parse_file(fd, start_position):
+def parse_file(fd, start_position, logger):
     """Parse the given file starting on the given position.
 
     Return a dictionary mapping file_ids (from the librarian) to days to
@@ -68,45 +71,62 @@ def parse_file(fd, start_position):
     # Always skip the last line as it may be truncated since we're rsyncing
     # live logs.
     last_line = lines.pop(-1)
-    parsed_bytes = fd.tell() - len(last_line)
+    parsed_bytes = start_position
     if len(lines) == 0:
         # This probably means we're dealing with a logfile that has been
         # rotated already, so it should be safe to parse its last line.
         lines = [last_line]
-        parsed_bytes = fd.tell()
 
     geoip = getUtility(IGeoIP)
     downloads = {}
     for line in lines:
-        host, date, status, request = get_host_date_status_and_request(line)
+        try:
+            parsed_bytes += len(line)
+            host, date, status, request = get_host_date_status_and_request(
+                line)
 
-        if status != '200':
-            continue
+            if status != '200':
+                continue
 
-        method, file_id = get_method_and_file_id(request)
-        if method != 'GET':
-            # We're only interested in counting downloads.
-            continue
+            try:
+                method, file_id = get_method_and_file_id(request)
+            except NotALibraryFileAliasRequest:
+                # We only count downloads of LibraryFileAliases, and this is
+                # not one of them.
+                continue
 
-        # Get the dict containing these file's downloads.
-        if file_id not in downloads:
-            downloads[file_id] = {}
-        file_downloads = downloads[file_id]
+            if method != 'GET':
+                # We're only interested in counting downloads.
+                continue
 
-        # Get the dict containing these day's downloads for this file.
-        day = get_day(date)
-        if day not in file_downloads:
-            file_downloads[day] = {}
-        daily_downloads = file_downloads[day]
+            assert file_id.isdigit(), ('File ID is not a digit: %s' % request)
+            # Get the dict containing these file's downloads.
+            if file_id not in downloads:
+                downloads[file_id] = {}
+            file_downloads = downloads[file_id]
 
-        country_code = None
-        geoip_record = geoip.getRecordByAddress(host)
-        if geoip_record is not None:
-            country_code = geoip_record['country_code']
-        if country_code not in daily_downloads:
-            daily_downloads[country_code] = 0
-        daily_downloads[country_code] += 1
+            # Get the dict containing these day's downloads for this file.
+            day = get_day(date)
+            if day not in file_downloads:
+                file_downloads[day] = {}
+            daily_downloads = file_downloads[day]
 
+            country_code = None
+            geoip_record = geoip.getRecordByAddress(host)
+            if geoip_record is not None:
+                country_code = geoip_record['country_code']
+            if country_code not in daily_downloads:
+                daily_downloads[country_code] = 0
+            daily_downloads[country_code] += 1
+        except (KeyboardInterrupt, SystemExit):
+            raise
+        except Exception, e:
+            # Update parsed_bytes to the end of the last line we parsed
+            # successfully, log this as an error and break the loop so that
+            # we return.
+            parsed_bytes -= len(line)
+            logger.error('Error (%s) while parsing "%s"' % (e, line))
+            break
     return downloads, parsed_bytes
 
 
@@ -138,8 +158,24 @@ def get_host_date_status_and_request(line):
     return data['%h'], data['%t'], data['%>s'], data['%r']
 
 
+class NotALibraryFileAliasRequest(Exception):
+    """The path of the request doesn't map to a LibraryFileAlias."""
+
+
+# Regexp used to match paths to LibraryFileAliases.
+lfa_path_re = re.compile('^/[0-9]+/')
+multi_slashes_re = re.compile('/+')
+
+
 def get_method_and_file_id(request):
     """Extract the method of the request and the ID of the requested file."""
     method, path, protocol = request.split(' ')
+
+    if path.startswith('http://') or path.startswith('https://'):
+        uri = URI(path)
+        path = uri.path
+    path = multi_slashes_re.sub('/', path)
+    if not lfa_path_re.match(path):
+        raise NotALibraryFileAliasRequest(request)
     file_id = path.split('/')[1]
     return method, file_id

@@ -37,10 +37,10 @@ __all__ = [
     'SortSeriesMixin',
     ]
 
-from operator import attrgetter
-import urllib
 
-import zope.security.interfaces
+import urllib
+from operator import attrgetter
+
 from zope.component import getUtility
 from zope.event import notify
 from zope.app.form.browser import TextAreaWidget, TextWidget
@@ -60,7 +60,8 @@ from canonical.launchpad.interfaces.bugwatch import IBugTracker
 from canonical.launchpad.interfaces.country import ICountry
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.launchpad.interfaces.translationimportqueue import ITranslationImportQueue
+from canonical.launchpad.interfaces.translationimportqueue import (
+    ITranslationImportQueue)
 from canonical.launchpad.webapp.interfaces import (
     ILaunchBag, NotFoundError, UnsafeFormGetSubmissionError)
 from lp.registry.interfaces.pillar import IPillarNameSet
@@ -70,8 +71,7 @@ from lp.registry.interfaces.product import (
     IProduct, IProductSet, LicenseStatus)
 from lp.registry.interfaces.productrelease import (
     IProductRelease, IProductReleaseSet)
-from lp.registry.interfaces.productseries import (
-    IProductSeries)
+from lp.registry.interfaces.productseries import IProductSeries
 from canonical.launchpad import helpers
 from lp.registry.browser.announcement import HasAnnouncementsView
 from canonical.launchpad.browser.branding import BrandingChangeView
@@ -82,6 +82,7 @@ from lp.registry.browser.distribution import UsesLaunchpadMixin
 from lp.answers.browser.faqtarget import FAQTargetNavigationMixin
 from canonical.launchpad.browser.feeds import FeedsMixin
 from lp.registry.browser.productseries import get_series_branch_error
+from canonical.launchpad.browser.multistep import MultiStepView, StepView
 from lp.answers.browser.questiontarget import (
     QuestionTargetFacetMixin, QuestionTargetTraversalMixin)
 from canonical.launchpad.browser.translations import TranslationsMixin
@@ -99,12 +100,16 @@ from canonical.widgets.popup import PersonPickerWidget, VocabularyPickerWidget
 from lazr.uri import URI
 from canonical.widgets.date import DateWidget
 from canonical.widgets.itemswidgets import (
-    CheckBoxMatrixWidget,
-    LaunchpadRadioWidget)
+    CheckBoxMatrixWidget, LaunchpadRadioWidget)
 from canonical.widgets.lazrjs import TextLineEditorWidget
 from canonical.widgets.popup import SinglePopupWidget
-from canonical.widgets.product import LicenseWidget, ProductBugTrackerWidget
+from canonical.widgets.product import (
+    LicenseWidget, ProductBugTrackerWidget, ProductNameWidget)
 from canonical.widgets.textwidgets import StrippedTextWidget
+
+
+OR = '|'
+SPACE = ' '
 
 
 class ProductNavigation(
@@ -387,7 +392,7 @@ class ProductOverviewMenu(ApplicationMenu):
         text = 'Show distribution packages'
         return Link('+packages', text, icon='info')
 
-    @enabled_with_permission('launchpad.Edit')
+    @enabled_with_permission('launchpad.Driver')
     def series_add(self):
         text = 'Register a series'
         return Link('+addseries', text, icon='add')
@@ -568,7 +573,7 @@ class ProductSetContextMenu(ContextMenu):
         # We link to the guided form, though people who know the URL can
         # just jump to +new directly. That might be considered a
         # feature!
-        return Link('+new-guided', text, icon='add')
+        return Link('+new', text, icon='add')
 
     def register_team(self):
         text = 'Register a team'
@@ -1245,11 +1250,6 @@ class ProductReviewLicenseView(ProductEditView):
                     'approved to use Launchpad.  Proprietary projects '
                     'must use the commercial subscription voucher system '
                     'to be allowed to use Launchpad.')
-            elif License.OTHER_OPEN_SOURCE not in licenses:
-                self.setFieldError(
-                    'license_approved',
-                    'Only "Other/Open Source" licenses may be '
-                    'manually approved to use Launchpad.')
             else:
                 # An Other/Open Source license was specified so it may be
                 # approved.
@@ -1472,16 +1472,53 @@ class ProductAddViewBase(ProductLicenseMixin, LaunchpadFormView):
         return canonical_url(self.product)
 
 
-class ProductAddView(ProductAddViewBase):
+class ProjectAddStepOne(StepView):
+    """product/+new view class for creating a new project."""
 
-    field_names = (ProductAddViewBase.field_names
-                   + ['owner', 'project', 'license_reviewed'])
+    _field_names = ['displayname', 'name', 'title', 'summary']
+    label = "Register a project in Launchpad"
+    schema = IProduct
+    step_name = 'projectaddstep1'
+    template = ViewPageTemplateFile('../templates/product-new.pt')
 
-    label = "Register an upstream open source project"
+    custom_widget('displayname', TextWidget, displayWidth=50, label='Name')
+    custom_widget('name', ProductNameWidget, label='URL')
+
+    step_description = 'Project basics'
+    search_results_count = 0
+
+    def main_action(self, data):
+        self.next_step = ProjectAddStepTwo
+        self.request.form['displayname'] = data['displayname']
+        self.request.form['name'] = data['name']
+        self.request.form['summary'] = data['summary']
+
+
+class ProjectAddStepTwo(StepView, ProductLicenseMixin):
+    """Step 2 (of 2) in the +new project add wizard."""
+
+    _field_names = ['displayname', 'name', 'title', 'summary',
+                    'description', 'licenses', 'license_info']
+    main_action_label = u'Complete Registration'
+    schema = IProduct
+    step_name = 'projectaddstep2'
+    template = ViewPageTemplateFile('../templates/product-new.pt')
+
     product = None
+
+    custom_widget('displayname', TextWidget, displayWidth=50, label='Name')
+    custom_widget('name', ProductNameWidget, label='URL')
 
     custom_widget('project', VocabularyPickerWidget,
                   header="Select a project group")
+    custom_widget('licenses', LicenseWidget, column_count=3,
+                  orientation='vertical')
+
+    @property
+    def step_description(self):
+        if self.search_results_count > 0:
+            return 'Check for duplicate projects'
+        return 'Registration details'
 
     def isVCSImport(self):
         if self.user is None:
@@ -1490,48 +1527,95 @@ class ProductAddView(ProductAddViewBase):
         return self.user.inTeam(vcs_imports)
 
     def setUpFields(self):
-        super(ProductAddView, self).setUpFields()
+        super(ProjectAddStepTwo, self).setUpFields()
         if not self.isVCSImport():
             # vcs-imports members get it easy and are able to change
             # the owner and reviewed status during the edit process;
             # this saves time wasted on getting to product/+admin.
             # The fields are not displayed for other people though.
-            self.form_fields = self.form_fields.omit('owner',
-                                                     'license_reviewed')
+            self.form_fields = self.form_fields.omit(
+                'owner', 'license_reviewed')
 
-    @action(_('Publish this Project'), name='add')
-    def add_action(self, action, data):
-        if self.user is None:
-            raise zope.security.interfaces.Unauthorized(
-                "Need an authenticated Launchpad owner")
+    def setUpWidgets(self):
+        super(ProjectAddStepTwo, self).setUpWidgets()
+        self.widgets['name'].read_only = True
+        # The "hint" is really more of an explanation at this point, but the
+        # phrasing is different.
+        self.widgets['name'].hint = ('When published, '
+                                     "this will be the project's URL.")
+        self.widgets['displayname'].visible = False
+
+    @cachedproperty
+    def _search_string(self):
+        search_text = SPACE.join((self.request.form['name'],
+                                  self.request.form['displayname'],
+                                  self.request.form['summary']))
+        # OR all the terms together.
+        return OR.join(search_text.split())
+
+    @cachedproperty
+    def search_results(self):
+        """The full text search results.
+
+        Search the pillars for any match on the name, display name, or
+        summary.
+        """
+        # XXX BarryWarsaw 16-Apr-2009 do we need batching and should we return
+        # more than 7 hits?
+        pillar_set = getUtility(IPillarNameSet)
+        return pillar_set.search(self._search_string, 7)
+
+    @cachedproperty
+    def search_results_count(self):
+        pillar_set = getUtility(IPillarNameSet)
+        return pillar_set.count_search_matches(self._search_string)
+
+    # StepView requires that its validate() method not be overridden, so make
+    # sure this calls the right method.  validateStep() will call the license
+    # validation code.
+
+    def validate(self, data):
+        StepView.validate(self, data)
+
+    def validateStep(self, data):
+        ProductLicenseMixin.validate(self, data)
+
+    @property
+    def label(self):
+        return 'Register %s (%s) in Launchpad' % (
+            self.request.form['displayname'], self.request.form['name'])
+
+    def main_action(self, data):
         if not self.isVCSImport():
             # Zope makes sure these are never set, since they are not in
             # self.form_fields
-            assert "owner" not in data
-            assert "license_reviewed" not in data
+            assert "owner" not in data, 'Unexpected form data'
+            assert "license_reviewed" not in data, 'Unexpected form data'
             data['owner'] = self.user
             data['license_reviewed'] = False
+
         self.product = getUtility(IProductSet).createProduct(
+            owner=self.user,
             name=data['name'],
             title=data['title'],
             summary=data['summary'],
-            description=data['description'],
             displayname=data['displayname'],
-            homepageurl=data['homepageurl'],
-            downloadurl=data['downloadurl'],
-            screenshotsurl=data['screenshotsurl'],
-            wikiurl=data['wikiurl'],
-            freshmeatproject=data['freshmeatproject'],
-            sourceforgeproject=data['sourceforgeproject'],
-            programminglang=data['programminglang'],
-            project=data['project'],
-            owner=data['owner'],
-            registrant=self.user,
-            license_reviewed=data['license_reviewed'],
-            licenses = data['licenses'],
+            licenses=data['licenses'],
             license_info=data['license_info'])
+
         self.notifyFeedbackMailingList()
         notify(ObjectCreatedEvent(self.product))
+        self.next_url = canonical_url(self.product)
+
+
+class ProductAddView(MultiStepView):
+    """The controlling view for product/+new."""
+
+    total_steps = 2
+
+    @property
+    def first_step(self):
+        return ProjectAddStepOne
 
 
 class ProductEditPeopleView(LaunchpadEditFormView):
@@ -1591,4 +1675,3 @@ class ProductEditPeopleView(LaunchpadEditFormView):
         for release in product.releases:
             if release.owner == oldOwner:
                 release.owner = newOwner
-

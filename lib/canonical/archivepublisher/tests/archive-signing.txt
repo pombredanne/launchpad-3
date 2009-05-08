@@ -270,8 +270,11 @@ default PPA. We will create a named-ppa for Celso.
 
 As expected it will use the same key used in Celso's default PPA.
 
-    >>> named_ppa.signing_key == cprov.archive.signing_key
-    True
+    >>> print cprov.archive.signing_key.fingerprint
+    0D57E99656BEFB0897606EE9A022DD1F5001B46D
+
+    >>> print named_ppa.signing_key.fingerprint
+    0D57E99656BEFB0897606EE9A022DD1F5001B46D
 
 We will reset the signing key of the just created named PPA,
 simulating the situation when a the default PPA and a named-ppas get
@@ -294,14 +297,67 @@ the key generation procedure, as it would be normally in production.
 Instead of generating a new key, the signing key from the default ppa
 (Celso's default PPA) gets reused.
 
-    >>> named_ppa.signing_key == cprov.archive.signing_key
-    True
+    >>> print cprov.archive.signing_key.fingerprint
+    0D57E99656BEFB0897606EE9A022DD1F5001B46D
+
+    >>> print named_ppa.signing_key.fingerprint
+    0D57E99656BEFB0897606EE9A022DD1F5001B46D
+
+We will reset the signing-keys for both PPA of Celso.
+
+    >>> login('foo.bar@canonical.com')
+    >>> cprov.archive.signing_key = None
+    >>> named_ppa.signing_key = None
+    >>> login(ANONYMOUS)
+
+    >>> print cprov.archive.signing_key
+    None
+
+    >>> print named_ppa.signing_key
+    None
+
+Then modify the GPGHandler utility to return a sampledata key instead
+of generating a new one, mainly for running the test faster and for
+printing the context the key is generated.
+
+    >>> def mock_key_generator(name):
+    ...     print 'Generating:', name
+    ...     key_path = os.path.join(gpgkeysdir, 'sign.only@canonical.com.sec')
+    ...     return gpghandler.importSecretKey(open(key_path).read())
+
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> naked_gpghandler = removeSecurityProxy(gpghandler)
+    >>> real_key_generator = naked_gpghandler.generateKey
+    >>> naked_gpghandler.generateKey = mock_key_generator
+
+When the signing key for the named-ppa is requested, it is generated
+in the default PPA context then propagated to the named-ppa.
+
+    >>> named_ppa_signing_key = IArchiveSigningKey(named_ppa)
+    >>> named_ppa_signing_key.generateSigningKey()
+    Generating: Launchpad PPA for Celso Providelo
+
+    >>> print cprov.archive.signing_key.fingerprint
+    447DBF38C4F9C4ED752246B77D88913717B05A8F
+
+    >>> print named_ppa.signing_key.fingerprint
+    447DBF38C4F9C4ED752246B77D88913717B05A8F
+
+Restore the original functionality of GPGHandler.
+
+    >>> naked_gpghandler.generateKey = real_key_generator
 
 
 == Signing PPA repository ==
 
 `IArchiveSigningKey.signRepository` can be user to sign repositories
 for archive which already contains a 'signing_key'.
+
+Celso's default PPA will uses the testing signing key.
+
+    >>> login('foo.bar@canonical.com')
+    >>> cprov.archive.signing_key = signing_key
+    >>> login(ANONYMOUS)
 
 When signing repositores we assert they contain the right format and
 the expected file.

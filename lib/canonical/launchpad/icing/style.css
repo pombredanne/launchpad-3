@@ -201,6 +201,15 @@ table.form .error {background: none;}
     color: red;
     font-weight: bold;
 }
+.sml-informational {
+  background: #d4e8ff url('/+icing/blue-fade-to-grey');
+  border: solid #666;
+  border-width: 1px 2px 2px 1px;
+  color: black;
+  padding: 5px 5px 5px 5px;
+  width:44em;
+}
+.sml-informational::before {content: url('/@@/info');}
 
 .helpwanted {background-color: #fafca9; color: black; border: 1px solid black;
     padding: 0.5em; font-size: smaller; padding-left: 3em
@@ -1341,6 +1350,7 @@ a.add {
 }
 dl.faq dt {font-weight: bold;}
 dl.faq dd {margin: 1em 0 2em 4em;}
+.adminHiddenComment {background-color:yellow;}
 
 /* --- Overview --- */
 
@@ -1376,7 +1386,14 @@ body.tab-overview #actions h2, body.tab-overview #actions h2:hover {
   background: none;
   color: #83ad23;
 }
-
+body.tab-overview #description {
+    width: 50em;
+}
+body.tab-overview #description fieldset {
+    border: 1px solid gray;
+    padding: 0 1em;
+    margin:0 1em 1em 0;
+}
 /* The top-most Person portlet, Contact Details, is allowed to float up and
 beside the mugshot. */
 #contact-details {clear: none;}
@@ -1746,6 +1763,14 @@ body.tab-bugs #actions h2, body.tab-bugs #actions h2:hover {
 
 /* In a bug report page, the current context is highlighted in yellow: */
 #affected-software tr.highlight {background-color: #ff9;}
+
+/* Bug report page subscribe/unsubscribe spinner */
+div#sub-unsub-spinner {
+  background: url(/@@/spinner/) center left no-repeat;
+  color:#999;
+  display:none;
+  padding:3px 5px 2px 17px;
+}
 
 
 /* --- Blueprints --- */

@@ -87,7 +87,8 @@ to create a new account.
     >>> from canonical.launchpad.database import EmailAddressSet, PersonSet
     >>> salgado = PersonSet().getByName('salgado')
     >>> email = EmailAddressSet().new(
-    ...   'foobarino@baz.com.br', salgado, EmailAddressStatus.VALIDATED)
+    ...   'foobarino@baz.com.br', salgado, EmailAddressStatus.VALIDATED,
+    ...   salgado.account)
     >>> import transaction
     >>> transaction.commit()
     >>> [email.email for email in salgado.validatedemails]
@@ -344,20 +345,6 @@ option is turned on.
     True
 
 
-If you are comming from shipit to create a new account, you'll get
-redirected back to shipit after you finish the account creation.
-
-    >>> print http(r"""
-    ... GET /+login HTTP/1.1
-    ... Referer: https://shipit.ubuntu.com
-    ... """)
-    HTTP/1.1 200 Ok
-    ...
-    ...Log in or register with Launchpad...
-    ...<input type="hidden" name="redirection_url"...
-    ...value="https://shipit.ubuntu.com"...
-    ...
-
 Sometimes, for reasons as yet unknown, we get an extra blank
 redirection_url in the form.  This doesn't matter.  See OOPS-68D508.
 Note the extra redirection_url in the form post below.
@@ -366,7 +353,7 @@ Note the extra redirection_url in the form post below.
     ... POST /+login HTTP/1.1
     ... Content-Type: application/x-www-form-urlencoded
     ...
-    ... redirection_url=https%3A%2F%2Fshipit.ubuntu.com&redirection_url=&loginpage_email=foo%40baz2.com&loginpage_submit_registration=Register""")
+    ... redirection_url=http%3A%2F%2Flaunchpad.dev%2Fbugs%2F1&redirection_url=&loginpage_email=foo%40baz2.com&loginpage_submit_registration=Register""")
     HTTP/1.1 200 Ok
     ...
     ...<h1>Registration mail sent</h1>...
@@ -415,16 +402,8 @@ Note the extra redirection_url in the form post below.
     ... """ % path)
     HTTP/1.1 303 See Other
     ...
-    Location: https://shipit.ubuntu.com
+    Location: http://launchpad.dev/bugs/1
     ...
-
-We'll also track that this account was initially created because the
-user wanted to request some CDs on shipit, by setting the correct
-creation_rationale.
-
-    >>> foo2 = PersonSet().getByName('foo-baz2')
-    >>> foo2.creation_rationale.name
-    'OWNER_CREATED_SHIPIT'
 
 If we try to go to that token's page again, we'll see a message
 explaining that the confirmation that token was created for is already

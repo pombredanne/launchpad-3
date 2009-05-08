@@ -45,7 +45,6 @@
     <include file="diff.zcml" />
     <include file="datetime.zcml" />
     <include file="decoratedresultset.zcml" />
-    <include file="distributionmirror.zcml" />
     <include file="distributionsourcepackagecache.zcml" />
     <include file="distributionsourcepackagerelease.zcml" />
     <include file="distroseriesbinarypackage.zcml" />
@@ -75,6 +74,7 @@
     <include file="packagecloner.zcml" />
     <include file="packagecopyrequest.zcml" />
     <include file="packagerelationship.zcml" />
+    <include file="packageset.zcml" />
     <include file="packaging.zcml" />
     <include file="personnotification.zcml" />
     <include file="personproduct.zcml" />
@@ -89,7 +89,6 @@
     <include file="publishedpackage.zcml" />
     <include file="queue.zcml" />
     <include file="scriptactivity.zcml" />
-    <include file="shipit.zcml" />
     <include file="sourcepackagepublishinghistory.zcml" />
     <include file="sourcepackagerelease.zcml" />
     <include file="specification.zcml" />

@@ -64,7 +64,7 @@ class Account(SQLBase):
         """Get related `EmailAddress` objects with the given status."""
         result = IStore(EmailAddress).find(
             EmailAddress, accountID=self.id, status=status)
-        result.order_by(EmailAddress.email)
+        result.order_by(EmailAddress.email.lower())
         return result
 
     @property
@@ -122,10 +122,6 @@ class Account(SQLBase):
 
         email.status = EmailAddressStatus.PREFERRED
 
-        # XXX 2009-03-30 jamesh bug=356092: SSO server can't write to
-        # HWDB tables
-        # getUtility(IHWSubmissionSet).setOwnership(email)
-
     def validateAndEnsurePreferredEmail(self, email):
         """See `IAccount`."""
         if not IEmailAddress.providedBy(email):
@@ -150,16 +146,6 @@ class Account(SQLBase):
             self.setPreferredEmail(email)
         else:
             email.status = EmailAddressStatus.VALIDATED
-
-            # XXX 2009-03-30 jamesh bug=356092: SSO server can't write
-            # to HWDB tables
-            # getUtility(IHWSubmissionSet).setOwnership(email)
-
-        # Now that we have validated the email, see if this can be
-        # matched to an existing RevisionAuthor.
-        # XXX 2009-03-30 jamesh bug=356092: SSO server can't write to
-        # revision tables
-        # getUtility(IRevisionSet).checkNewVerifiedEmail(email)
 
     @property
     def recently_authenticated_rps(self):
@@ -286,11 +272,8 @@ class AccountSet:
     def get(self, id):
         """See `IAccountSet`."""
         account = IStore(Account).get(Account, id)
-        if account is None and not IMasterStore.providedBy(IStore(Account)):
-            # The account was not found in a slave store but it may exist in
-            # the master one if it was just created, so we try to fetch it
-            # again, this time from the master.
-            account = IMasterStore(Account).get(Account, id)
+        if account is None:
+            raise LookupError(id)
         return account
 
     def createAccountAndEmail(self, email, rationale, displayname, password,
@@ -314,12 +297,8 @@ class AccountSet:
                       EmailAddress.email.lower() == email.lower().strip()]
         store = IStore(Account)
         account = store.find(Account, *conditions).one()
-        if account is None and not IMasterStore.providedBy(store):
-            # The account was not found in a slave store but it may exist in
-            # the master one if it was just created, so we try to fetch it
-            # again, this time from the master.
-            store = IMasterStore(Account)
-            account = store.find(Account, *conditions).one()
+        if account is None:
+            raise LookupError(email)
         return account
 
     def getByOpenIDIdentifier(self, openid_identifier):
@@ -330,11 +309,8 @@ class AccountSet:
         conditions = Or(Account.openid_identifier == openid_identifier,
                         Account.new_openid_identifier == openid_identifier)
         account = store.find(Account, conditions).one()
-        if account is None and not IMasterStore.providedBy(store):
-            # The account was not found in a slave store but it may exist in
-            # the master one if it was just created, so we try to fetch it
-            # again, this time from the master.
-            account = IMasterStore(Account).find(Account, conditions).one()
+        if account is None:
+            raise LookupError(openid_identifier)
         return account
 
     _MAX_RANDOM_TOKEN_RANGE = 1000
@@ -356,8 +332,12 @@ class AccountSet:
         # given that the intended mnemonic is a unique user name.
         for token in tokens:
             openid_identifier = '%03d/%s' % (token, mnemonic)
-            account = self.getByOpenIDIdentifier(openid_identifier)
-            if account is not None:
+            try:
+                account = self.getByOpenIDIdentifier(openid_identifier)
+            except LookupError:
+                # The identifier is free, so we'll just use it.
+                pass
+            else:
                 continue
             summaries = openidrpsummaryset.getByIdentifier(
                 identity_url_root + openid_identifier)

@@ -54,12 +54,6 @@
          ><img tal:attributes="alt link/text;title link/text" src="/@@/edit" /></a>
     </h1>
 
-    <div tal:condition="context/summary" id="branch-summary"
-         tal:content="structure context/summary/fmt:text-to-html">
-      $Branch.summary goes here. This should be quite short, just a single
-      paragraph of text really, giving the branch highlights.
-    </div>
-
   <table id="branch-details-table">
     <tbody>
       <tal:not-junk-branch tal:condition="context/product">
@@ -285,66 +279,69 @@
     </div>
   </tal:imported-branch>
 
-  <div tal:condition="context/product" id="merge-summary">
-    <div id="landing-candidates">
-      &laquo;
-      <a href="+merges" tal:content="structure view/landing_candidate_count_text">
-        1 branch
-      </a>
-      proposed for merging into this one.
+  <div id="merge-links" tal:condition="view/show_merge_links">
+    <div id="merge-summary">
+      <div id="landing-candidates">
+        &laquo;
+        <a href="+merges" tal:content="structure view/landing_candidate_count_text">
+          1 branch
+        </a>
+        proposed for merging into this one.
+
+      </div>
+
+      <div id="dependent-branches" tal:condition="context/dependent_branches">
+        &laquo;
+        <a href="+merges" tal:content="structure view/dependent_branch_count_text">
+          1 branch
+        </a>
+        dependent on this one.
+      </div>
+
+      <div id="landing-targets" tal:condition="view/landing_targets">
+        <tal:landing-candidates repeat="mergeproposal view/landing_targets">
+          <div>
+            <tal:merge-fragment tal:replace="structure mergeproposal/@@+link-summary" />
+          </div>
+        </tal:landing-candidates>
+      </div>
+      <div tal:condition="not:view/landing_targets">
+        &raquo;
+        This branch is not proposed for merging into any others.
+      </div>
+
 
     </div>
-
-    <div id="dependent-branches" tal:condition="context/dependent_branches">
-      &laquo;
-      <a href="+merges" tal:content="structure view/dependent_branch_count_text">
-        1 branch
-      </a>
-      dependent on this one.
-    </div>
-
-    <div id="landing-targets" tal:condition="view/landing_targets">
-      <tal:landing-candidates repeat="mergeproposal view/landing_targets">
-        <div>
-          <tal:merge-fragment tal:replace="structure mergeproposal/@@+link-summary" />
-        </div>
-      </tal:landing-candidates>
-    </div>
-    <div tal:condition="not:view/landing_targets">
-      &raquo;
-      This branch is not proposed for merging into any others.
-    </div>
-
-
-  </div>
-  <div
-    tal:define="link context_menu/register_merge"
-    tal:condition="link/enabled"
-    tal:replace="structure link/render"
-  />
-
-  <div id="whiteboard">
-    <h2>Whiteboard</h2>
-    <div id="branch-whiteboard-value"
-      tal:condition="context/whiteboard"
-      tal:content="structure context/whiteboard/fmt:text-to-html">
-      Whiteboard text goes here.
-    </div>
+    <div
+      tal:define="link context_menu/register_merge"
+      tal:condition="link/enabled"
+      tal:replace="structure link/render"
+      />
   </div>
 
-  <div
-    tal:define="link context/menu:context/whiteboard"
-    tal:condition="link/enabled"
-    tal:content="structure link/render">
-    Edit whiteboard
+  <div tal:condition="view/show_whiteboard">
+    <div id="whiteboard">
+      <h2>Whiteboard</h2>
+      <div id="branch-whiteboard-value"
+        tal:condition="context/whiteboard"
+        tal:content="structure context/whiteboard/fmt:text-to-html">
+        Whiteboard text goes here.
+      </div>
+    </div>
+
+    <div
+      tal:define="link context/menu:context/edit_whiteboard"
+      tal:condition="link/enabled"
+      tal:content="structure link/render">
+      Edit whiteboard
+    </div>
   </div>
 
   <div id="related-bugs-and-blueprints">
     <h2>Linked bug reports and blueprints</h2>
     <div class="actions">
       <tal:bugs tal:define="branch context;
-                            show_edit python:True;
-                            show_whiteboard python:True;">
+                            show_edit python:True;">
         <metal:bug-branch-links use-macro="context/@@+macros/bug-branch-links"/>
       </tal:bugs>
       <div
@@ -356,8 +353,7 @@
     </div>
     <div class="actions">
       <tal:blueprints tal:define="branch context;
-                                  show_edit python:True;
-                                  show_whiteboard python:True;">
+                                  show_edit python:True;">
         <metal:spec-branch-links
             use-macro="context/@@+macros/spec-branch-links"/>
       </tal:blueprints>

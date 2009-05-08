@@ -497,7 +497,9 @@ data from the database for a given set of builds:
     ...         return '%d' % item.id
     ...     else:
     ...         return 'n/a'
-    >>> for row in rset:
+    >>> def sort_result_key(row):
+    ...     return row[0].id
+    >>> for row in sorted(rset, key=sort_result_key):
     ...     (sourcepackagerelease, buildlog,
     ...      sourcepackagename, buildlog_content, builder) = row
     ...     print(
@@ -505,9 +507,9 @@ data from the database for a given set of builds:
     ...         (id_or_none(builder),
     ...          sourcepackagerelease.title, filename_or_none(buildlog)))
     builder:   1, spr: mozilla-firefox - 0.9, log: netapplet-1.0.0.tar.gz
-    builder:   1, spr:          foobar - 1.0, log: netapplet-1.0.0.tar.gz
-    builder:   1, spr:        pmount - 0.1-1, log: netapplet-1.0.0.tar.gz
     builder: n/a, spr: mozilla-firefox - 0.9, log: n/a
+    builder:   1, spr:        pmount - 0.1-1, log: netapplet-1.0.0.tar.gz
+    builder:   1, spr:          foobar - 1.0, log: netapplet-1.0.0.tar.gz
 
 
 == IHadBuildRecords.getBuildRecords() Implementations ==
@@ -1024,7 +1026,7 @@ expect depwait_build to be 'retried' and scored.
     NEEDSBUILD
 
     >>> depwait_build.buildqueue_record.lastscore
-    4005
+    2505
 
 The 'retryDepWaiting' task is performed periodically via cronjob by
 cronscript/buildd-retry-depwait.py. It can be run in parallel with
