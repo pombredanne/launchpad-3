@@ -128,7 +128,7 @@ from canonical.launchpad.browser.archive import traverse_named_ppa
 from canonical.launchpad.browser.archivesubscription import (
     traverse_archive_subscription_for_subscriber)
 from canonical.launchpad.browser.launchpad import get_launchpad_views
-from canonical.ssoserver.adapters.openidserver import CurrentOpenIDEndPoint
+from canonical.signon.adapters.openidserver import CurrentOpenIDEndPoint
 from canonical.launchpad.interfaces.account import IAccount
 from canonical.launchpad.interfaces.account import AccountStatus
 from canonical.launchpad.interfaces.archivesubscriber import (
@@ -182,7 +182,7 @@ from canonical.launchpad.interfaces.message import (
 from lp.registry.interfaces.pillar import IPillarNameSet
 from canonical.launchpad.interfaces.personproduct import IPersonProductFactory
 from lp.registry.interfaces.product import IProduct
-from canonical.ssoserver.interfaces.openidserver import (
+from canonical.signon.interfaces.openidserver import (
     IOpenIDPersistentIdentity, IOpenIDRPSummarySet)
 from lp.registry.interfaces.salesforce import (
     ISalesforceVoucherProxy, SalesforceVoucherProxyException)
@@ -198,7 +198,7 @@ from canonical.launchpad.browser.bugtask import BugTaskSearchListingView
 from canonical.launchpad.browser.feeds import FeedsMixin
 from canonical.launchpad.browser.objectreassignment import (
     ObjectReassignmentView)
-from canonical.ssoserver.browser.openiddiscovery import (
+from canonical.signon.browser.openiddiscovery import (
     XRDSContentNegotiationMixin)
 from canonical.launchpad.browser.specificationtarget import (
     HasSpecificationsView)
@@ -2923,7 +2923,7 @@ class PersonIndexView(XRDSContentNegotiationMixin, PersonView):
     """View class for person +index and +xrds pages."""
 
     xrds_template = ViewPageTemplateFile(
-        "../../../canonical/ssoserver/templates/person-xrds.pt")
+        "../../../canonical/signon/templates/person-xrds.pt")
 
     def initialize(self):
         super(PersonIndexView, self).initialize()

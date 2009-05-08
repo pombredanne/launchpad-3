@@ -76,7 +76,7 @@ from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
 from lp.registry.interfaces.mailinglist import IMailingListSet
 from canonical.launchpad.interfaces.malone import IMaloneApplication
 from lp.registry.interfaces.mentoringoffer import IMentoringOfferSet
-from canonical.ssoserver.interfaces.openidserver import IOpenIDRPConfigSet
+from canonical.signon.interfaces.openidserver import IOpenIDRPConfigSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.registry.interfaces.product import (

@@ -51,7 +51,7 @@ from canonical.shipit.interfaces.shipit import IShipItApplication
 import canonical.launchpad.layers
 import canonical.launchpad.versioninfo
 import canonical.shipit.layers
-import canonical.ssoserver.layers
+import canonical.signon.layers
 
 from canonical.launchpad.webapp.adapter import (
     get_request_duration, RequestExpired)
@@ -1062,7 +1062,7 @@ class IdPublication(AccountPrincipalMixin, LaunchpadBrowserPublication):
 
 
 class IdBrowserRequest(LaunchpadBrowserRequest):
-    implements(canonical.ssoserver.layers.IdLayer)
+    implements(canonical.signon.layers.IdLayer)
 
 
 # XXX sinzui 2008-09-04 bug=264783:
@@ -1074,7 +1074,7 @@ class OpenIDPublication(IdPublication):
 
 
 class OpenIDBrowserRequest(LaunchpadBrowserRequest):
-    implements(canonical.ssoserver.layers.OpenIDLayer)
+    implements(canonical.signon.layers.OpenIDLayer)
 
 
 # ---- shipit

@@ -53,12 +53,12 @@
         />
     <!-- XXX StuartBishop 2009-03-04 bug=264783 Weee! Two OpenID Layers. -->
     <adapter
-        for="canonical.ssoserver.layers.IdLayer"
+        for="canonical.signon.layers.IdLayer"
         provides="canonical.launchpad.webapp.interfaces.IDatabasePolicy"
         factory="canonical.launchpad.webapp.dbpolicy.SSODatabasePolicy"
         />
     <adapter
-        for="canonical.ssoserver.layers.OpenIDLayer"
+        for="canonical.signon.layers.OpenIDLayer"
         provides="canonical.launchpad.webapp.interfaces.IDatabasePolicy"
         factory="canonical.launchpad.webapp.dbpolicy.SSODatabasePolicy"
         />
