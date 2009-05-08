@@ -1,3 +1,6 @@
+/* TODO: When I try to drop the column altogether, I get an sql error.  This
+   patch should really just drop the column.
+*/
 ALTER TABLE BugBranch
     ALTER COLUMN status DROP NOT NULL;
 
