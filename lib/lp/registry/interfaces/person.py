@@ -1172,6 +1172,10 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers, IHasLogo,
         :return: True if the user was subscribed, false if they weren't.
         """
 
+    @operation_parameters(
+        name=TextLine(required=True, constraint=name_validator))
+    @operation_returns_entry(Interface) # Really IArchive.
+    @export_read_operation()
     def getPPAByName(name):
         """Return a PPA with the given name if it exists or None.
 

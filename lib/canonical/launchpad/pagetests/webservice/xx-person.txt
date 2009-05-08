@@ -472,6 +472,38 @@ The 'ppas' property returns a collection of PPAs owned by person.
     http://.../~sabdfl/+archive/ppa
 
 
+A specific PPA can be looked up by name via 'getPPAByName'
+named-operation on IPerson.
+
+    >>> print webservice.named_get(
+    ...     sabdfl['self_link'], 'getPPAByName',
+    ...     name='ppa').jsonBody()['self_link']
+    http://.../~sabdfl/+archive/ppa
+
+In cases where a PPA with a given name cannot be found, None is
+returned.
+
+    >>> print webservice.named_get(
+    ...     sabdfl['self_link'], 'getPPAByName',
+    ...     name='boing').jsonBody()
+    None
+
+The method doesn't even bother to execute the lookup if the given
+'name' doesn't match the contraints for PPA names. An error message
+indicating what was wrong is returned.
+
+    >>> print webservice.named_get(
+    ...     sabdfl['self_link'], 'getPPAByName',
+    ...     name='XpTo@#$%')
+    HTTP/1.1 400 Bad Request
+    ...
+    name:
+    Invalid name 'XpTo@#$%'. Names must start with a letter or
+    number and be lowercase. The characters <samp>+</samp>,
+    <samp>-</samp> and <samp>.</samp> are also allowed after the
+    first character.
+
+
 == Custom operations ==
 
 IPerson supports a bunch of operations.
