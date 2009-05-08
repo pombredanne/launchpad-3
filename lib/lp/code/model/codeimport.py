@@ -159,6 +159,8 @@ class CodeImport(SQLBase):
     @property
     def consecutive_failure_count(self):
         """See `ICodeImport`."""
+        # This SQL translates as "how many code import results have there been
+        # for this code import since the last successful one".
         last_success = Func(
             "coalesce",
             Select(
