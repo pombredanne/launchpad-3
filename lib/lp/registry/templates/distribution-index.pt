@@ -41,7 +41,7 @@
             />
           </a>
           <a
-            tal:define="link context/menu:translations/help_translate"
+            tal:define="link context/menu:translations/overview"
             tal:condition="context/official_rosetta"
             tal:attributes="href link/url"
           >

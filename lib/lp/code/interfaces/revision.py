@@ -116,13 +116,6 @@ class IRevisionSet(Interface):
     def newFromBazaarRevision(bzr_revision):
         """Create a new Revision from the given Bazaar Revision object."""
 
-    def checkNewVerifiedEmail(email):
-        """See if this email address has been used to commit revisions.
-
-        If it has, then associate the RevisionAuthor with the Launchpad person
-        who owns this email address.
-        """
-
     def getTipRevisionsForBranches(branches):
         """Get the tip branch revisions for the specified branches.
 

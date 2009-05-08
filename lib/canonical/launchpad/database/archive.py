@@ -75,7 +75,8 @@ from canonical.launchpad.interfaces.package import PackageUploadStatus
 from canonical.launchpad.interfaces.packagecopyrequest import (
     IPackageCopyRequestSet)
 from canonical.launchpad.interfaces.publishing import (
-    PackagePublishingPocket, PackagePublishingStatus, IPublishingSet)
+    PackagePublishingPocket, PackagePublishingStatus, IPublishingSet,
+    ISourcePackagePublishingHistory)
 from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageNameSet)
 from canonical.launchpad.scripts.packagecopier import (
@@ -312,7 +313,7 @@ class Archive(SQLBase):
 
     def getPublishedSources(self, name=None, version=None, status=None,
                             distroseries=None, pocket=None,
-                            exact_match=False, published_since_date=None):
+                            exact_match=False, created_since_date=None):
         """See `IArchive`."""
         clauses = ["""
             SourcePackagePublishingHistory.archive = %s AND
@@ -365,10 +366,10 @@ class Archive(SQLBase):
                 SourcePackagePublishingHistory.pocket = %s
             """ % sqlvalues(pocket))
 
-        if published_since_date is not None:
+        if created_since_date is not None:
             clauses.append("""
-                SourcePackagePublishingHistory.datepublished >= %s
-            """ % sqlvalues(published_since_date))
+                SourcePackagePublishingHistory.datecreated >= %s
+            """ % sqlvalues(created_since_date))
 
         preJoins = [
             'sourcepackagerelease.creator',
@@ -1078,10 +1079,13 @@ class Archive(SQLBase):
         if len(copies) == 0:
             raise CannotCopy("Packages already copied.")
 
-        # Return a list of string names of packages that were copied.
+        # Return a list of string names of source packages that were copied.
+        # We only return source package names, even when binaries were copied,
+        # because that's the "Contract".
         return [
             copy.sourcepackagerelease.sourcepackagename.name
-            for copy in copies]
+            for copy in copies
+            if ISourcePackagePublishingHistory.providedBy(copy)]
 
     def newAuthToken(self, person, token=None, date_created=None):
         """See `IArchive`."""
