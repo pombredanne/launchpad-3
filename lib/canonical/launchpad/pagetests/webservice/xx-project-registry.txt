@@ -100,12 +100,17 @@ and the all_milestones_collection_link.
     http://.../mozilla/+milestone/1.0.0
 
 
-"getMilestone" returns a milestone for the given name.
+"getMilestone" returns a milestone for the given name, or None if there
+is no milestone for the given name.
 
     >>> milestone_1_0 = webservice.named_get(
     ...     mozilla['self_link'], "getMilestone", name="1.0").jsonBody()
     >>> print milestone_1_0['self_link']
     http://.../mozilla/+milestone/1.0
+
+    >>> print webservice.named_get(
+    ...     mozilla['self_link'], "getMilestone", name="fnord").jsonBody()
+    None
 
 
 == Project entry ==
@@ -234,12 +239,17 @@ and the all_milestones_collection_link.
     http://.../firefox/+milestone/1.0
     http://.../firefox/+milestone/1.0.0
 
-"getMilestone" returns a milestone for the given name.
+"getMilestone" returns a milestone for the given name, or None if there
+is no milestone for the given name.
 
     >>> milestone_1_0 = webservice.named_get(
     ...     firefox['self_link'], "getMilestone", name="1.0").jsonBody()
     >>> print milestone_1_0['self_link']
     http://.../firefox/+milestone/1.0
+
+    >>> print webservice.named_get(
+    ...     firefox['self_link'], "getMilestone", name="fnord").jsonBody()
+    None
 
 The project group can be accessed through the project_group_link.
 
@@ -824,6 +834,12 @@ host.
     summary: None
     target_link: u'http://.../firefox'
     title: u'Mozilla Firefox: 1.0'
+
+The milestone entry has a link to its release if it has one.
+
+    >>> milestone = webservice.get('/firefox/+milestone/1.0.0').jsonBody()
+    >>> print milestone['release_link']
+    http://.../firefox/1.0/1.0.0
 
 
 == Project release entries ==
