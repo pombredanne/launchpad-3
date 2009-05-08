@@ -21,11 +21,14 @@ from lp.code.interfaces.codeimport import (
     CodeImportReviewStatus, ICodeImportSet)
 from lp.registry.interfaces.person import IPersonSet
 from lp.code.interfaces.codeimport import RevisionControlSystems
-from canonical.launchpad.ftests import login, logout
+from lp.code.interfaces.codeimportjob import ICodeImportJobWorkflow
+from lp.code.interfaces.codeimportresult import CodeImportResultStatus
+from canonical.launchpad.ftests import ANONYMOUS, login, logout
 from canonical.launchpad.testing import (
     LaunchpadObjectFactory, TestCaseWithFactory, time_counter)
 from canonical.testing import (
-    DatabaseFunctionalLayer, LaunchpadFunctionalLayer)
+    DatabaseFunctionalLayer, LaunchpadFunctionalLayer,
+    LaunchpadZopelessLayer)
 
 
 class TestCodeImportCreation(unittest.TestCase):
@@ -348,6 +351,90 @@ class TestCodeImportResultsAttribute(unittest.TestCase):
         self.assertEqual(first, results[0])
         self.assertEqual(second, results[1])
         self.assertEqual(third, results[2])
+
+
+class TestConsecutiveFailureCount(TestCaseWithFactory):
+    """Tests for `ICodeImport.consecutive_failure_count`."""
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self)
+        login('no-priv@canonical.com')
+        self.machine = self.factory.makeCodeImportMachine()
+        self.machine.setOnline()
+
+    def makeRunningJob(self, code_import):
+        """Make and return a CodeImportJob object with state==RUNNING.
+
+        This is suitable for passing into finishJob().
+        """
+        if code_import.import_job is None:
+            job = self.factory.makeCodeImportJob(code_import)
+        else:
+            job = code_import.import_job
+        getUtility(ICodeImportJobWorkflow).startJob(job, self.machine)
+        return job
+
+    def failImport(self, code_import):
+        running_job = self.makeRunningJob(code_import)
+        getUtility(ICodeImportJobWorkflow).finishJob(
+            running_job, CodeImportResultStatus.FAILURE, None)
+
+    def succeedImport(self, code_import):
+        running_job = self.makeRunningJob(code_import)
+        getUtility(ICodeImportJobWorkflow).finishJob(
+            running_job, CodeImportResultStatus.SUCCESS, None)
+
+    def test_consecutive_failure_count_zero_initially(self):
+        code_import = self.factory.makeCodeImport()
+        self.assertEqual(0, code_import.consecutive_failure_count)
+
+    def test_consecutive_failure_count_succeed(self):
+        code_import = self.factory.makeCodeImport()
+        self.succeedImport(code_import)
+        self.assertEqual(0, code_import.consecutive_failure_count)
+
+    def test_consecutive_failure_count_fail(self):
+        code_import = self.factory.makeCodeImport()
+        self.failImport(code_import)
+        self.assertEqual(1, code_import.consecutive_failure_count)
+
+    def test_consecutive_failure_count_fail_fail(self):
+        code_import = self.factory.makeCodeImport()
+        self.failImport(code_import)
+        self.failImport(code_import)
+        self.assertEqual(2, code_import.consecutive_failure_count)
+
+    def test_consecutive_failure_count_fail_fail_succeed(self):
+        code_import = self.factory.makeCodeImport()
+        self.failImport(code_import)
+        self.failImport(code_import)
+        self.succeedImport(code_import)
+        self.assertEqual(0, code_import.consecutive_failure_count)
+
+    def test_consecutive_failure_count_fail_succeed_fail(self):
+        code_import = self.factory.makeCodeImport()
+        self.failImport(code_import)
+        self.succeedImport(code_import)
+        self.failImport(code_import)
+        self.assertEqual(1, code_import.consecutive_failure_count)
+
+    def test_consecutive_failure_count_other_import_non_interference(self):
+        code_import = self.factory.makeCodeImport()
+        other_import = self.factory.makeCodeImport()
+        self.failImport(code_import)
+        self.assertEqual(1, code_import.consecutive_failure_count)
+        self.failImport(other_import)
+        self.assertEqual(1, code_import.consecutive_failure_count)
+        self.succeedImport(code_import)
+        self.assertEqual(0, code_import.consecutive_failure_count)
+        self.succeedImport(other_import)
+        self.assertEqual(0, code_import.consecutive_failure_count)
+        self.failImport(code_import)
+        self.assertEqual(1, code_import.consecutive_failure_count)
+        self.failImport(other_import)
+        self.assertEqual(1, code_import.consecutive_failure_count)
 
 
 def make_active_import(factory, project_name=None, product_name=None,
