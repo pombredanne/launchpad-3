@@ -304,7 +304,7 @@ class ZopelessTransactionManager(object):
             [database]
             main_master: %(connection_string)s
             auth_master: %(connection_string)s
-            isolaton_level: %(isolation_level)s
+            isolation_level: %(isolation_level)s
             """ % vars())
 
         if dbuser:
