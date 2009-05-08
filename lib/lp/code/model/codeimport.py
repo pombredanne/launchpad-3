@@ -12,7 +12,7 @@ __all__ = [
 
 from datetime import timedelta
 
-from storm.expr import Select, And, Func
+from storm.expr import Select, And, Desc, Func
 from storm.locals import Store
 from storm.references import Reference
 from sqlobject import (
@@ -162,7 +162,6 @@ class CodeImport(SQLBase):
         # This SQL translates as "how many code import results have there been
         # for this code import since the last successful one".
         # This is not very efficient for long lists of code imports.
-        from storm.locals import Desc
         last_success = Func(
             "coalesce",
             Select(
