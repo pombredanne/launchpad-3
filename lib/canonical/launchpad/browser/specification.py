@@ -1150,7 +1150,7 @@ class SpecificationLinkBranchView(LaunchpadFormView):
     """A form used to link a branch to this specification."""
 
     schema = ISpecificationBranch
-    field_names = ['branch', 'summary']
+    field_names = ['branch']
     label = _('Link branch to blueprint')
 
     def validate(self, data):
@@ -1164,8 +1164,7 @@ class SpecificationLinkBranchView(LaunchpadFormView):
     @action(_('Continue'), name='continue')
     def continue_action(self, action, data):
         self.context.linkBranch(branch=data['branch'],
-                                registrant=self.user,
-                                summary=data['summary'])
+                                registrant=self.user)
 
     @action(_('Cancel'), name='cancel', validator='validate_cancel')
     def cancel_action(self, action, data):

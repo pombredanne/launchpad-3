@@ -869,7 +869,7 @@ class ISpecification(INewSpecification, INewSpecificationTarget, IHasOwner,
     def getBranchLink(branch):
         """Return the SpecificationBranch link for the branch, or None."""
 
-    def linkBranch(branch, registrant, summary=None):
+    def linkBranch(branch, registrant):
         """Link the given branch to this specification.
 
         :param branch: The branch to link to this specification.

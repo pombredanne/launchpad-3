@@ -27,7 +27,6 @@ class ISpecificationBranch(IHasDateCreated):
         title=_("Blueprint"), vocabulary="Specification")
     branch = Choice(
         title=_("Branch"), vocabulary="Branch")
-    summary = Summary(title=_("Summary"), required=False)
 
     registrant = Object(
         schema=IPerson, readonly=True, required=True,
