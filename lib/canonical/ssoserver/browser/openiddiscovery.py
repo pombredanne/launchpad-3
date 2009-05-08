@@ -15,7 +15,7 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.cachedproperty import cachedproperty
-from canonical.launchpad.components.openidserver import CurrentOpenIDEndPoint
+from canonical.ssoserver.adapters.openidserver import CurrentOpenIDEndPoint
 from canonical.launchpad.interfaces.account import AccountStatus, IAccountSet
 from canonical.launchpad.interfaces.launchpad import (
     IOpenIDApplication, NotFoundError)

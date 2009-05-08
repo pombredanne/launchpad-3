@@ -11,14 +11,17 @@ __all__ = [
 
 import re
 
-from zope.interface import implements
+from zope.component import adapter, adapts
+from zope.interface import implementer, implements
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.launchpad.interfaces.account import IAccount
+from canonical.launchpad.webapp.publisher import get_current_browser_request
+from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.ssoserver.interfaces.openidserver import (
     IOpenIDPersistentIdentity)
 from canonical.ssoserver.layers import OpenIDLayer
-from canonical.launchpad.webapp.publisher import get_current_browser_request
-from canonical.launchpad.webapp.vhosts import allvhosts
+from lp.registry.interfaces.person import IPerson
 
 
 class CurrentOpenIDEndPoint:
@@ -63,6 +66,7 @@ class CurrentOpenIDEndPoint:
 class OpenIDPersistentIdentity:
     """A persistent OpenID identifier for a user."""
 
+    adapts(IAccount)
     implements(IOpenIDPersistentIdentity)
 
     def __init__(self, account):
@@ -120,13 +124,8 @@ class OpenIDPersistentIdentity:
             return self.new_openid_identifier
 
 
-def account_to_openidpersistentidentity(account):
-    """Adapts an `IAccount` into an `IOpenIDPersistentIdentity`."""
-    return OpenIDPersistentIdentity(account)
-
-
+@adapter(IPerson)
+@implementer(IOpenIDPersistentIdentity)
 def person_to_openidpersistentidentity(person):
     """Adapts an `IPerson` into an `IOpenIDPersistentIdentity`."""
-    return OpenIDPersistentIdentity(
-        removeSecurityProxy(person).account)
-
+    return OpenIDPersistentIdentity(person.account)

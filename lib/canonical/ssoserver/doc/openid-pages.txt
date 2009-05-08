@@ -88,7 +88,7 @@ The CurrentOpenIDEndPoint class provides the supportsURL() staticmethod
 to test if the format of the identity URL is supported. This verifies
 that the vhost and path are a valid combination.
 
-    >>> from canonical.launchpad.components.openidserver import (
+    >>> from canonical.ssoserver.adapters.openidserver import (
     ...     CurrentOpenIDEndPoint)
 
     >>> CurrentOpenIDEndPoint.supportsURL(

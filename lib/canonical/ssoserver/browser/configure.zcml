@@ -116,24 +116,6 @@
       />
 
     <!-- OpenID persistent identity URLs -->
-    <class
-        class="canonical.launchpad.components.openidserver.OpenIDPersistentIdentity">
-      <allow
-          interface="..interfaces.openidserver.IOpenIDPersistentIdentity" />
-    </class>
-
-    <adapter
-      for="canonical.launchpad.interfaces.account.IAccount"
-      provides="..interfaces.openidserver.IOpenIDPersistentIdentity"
-      factory="canonical.launchpad.components.openidserver.account_to_openidpersistentidentity"
-      />
-
-    <adapter
-      for="lp.registry.interfaces.person.IPerson"
-      provides="..interfaces.openidserver.IOpenIDPersistentIdentity"
-      factory="canonical.launchpad.components.openidserver.person_to_openidpersistentidentity"
-      />
-
     <browser:url
         for="..interfaces.openidserver.IOpenIDPersistentIdentity"
         path_expression="string:${openid_identifier}"

@@ -128,7 +128,7 @@ from canonical.launchpad.browser.archive import traverse_named_ppa
 from canonical.launchpad.browser.archivesubscription import (
     traverse_archive_subscription_for_subscriber)
 from canonical.launchpad.browser.launchpad import get_launchpad_views
-from canonical.launchpad.components.openidserver import CurrentOpenIDEndPoint
+from canonical.ssoserver.adapters.openidserver import CurrentOpenIDEndPoint
 from canonical.launchpad.interfaces.account import IAccount
 from canonical.launchpad.interfaces.account import AccountStatus
 from canonical.launchpad.interfaces.archivesubscriber import (

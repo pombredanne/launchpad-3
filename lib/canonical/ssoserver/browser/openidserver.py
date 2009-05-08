@@ -36,7 +36,7 @@ from openid import oidutil
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad import _
-from canonical.launchpad.components.openidserver import (
+from canonical.ssoserver.adapters.openidserver import (
     OpenIDPersistentIdentity, CurrentOpenIDEndPoint)
 from canonical.launchpad.interfaces.account import IAccountSet, AccountStatus
 from lp.registry.interfaces.person import (
