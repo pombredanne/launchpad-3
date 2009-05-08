@@ -11,17 +11,56 @@ __metaclass__ = type
 
 __all__ = [
     'ArchiveSourcePublications',
+    'getStatusSummaryForBuilds'
     ]
 
 
 from zope.component import getUtility
 
 from canonical.launchpad.browser.librarian import ProxiedLibraryFileAlias
+from canonical.launchpad.interfaces.build import BuildSetStatus, IBuildSet
 from canonical.launchpad.interfaces.publishing import (
-    IPublishingSet, ISourcePackagePublishingHistory)
+    IPublishingSet, ISourcePackagePublishingHistory,
+    active_publishing_status)
 from canonical.launchpad.interfaces.sourcepackagerelease import (
     ISourcePackageRelease)
 from lazr.delegates import delegates
+
+
+def getStatusSummaryForBuilds(source_package_pub):
+    """See `ISourcePackagePublishingHistory`.
+
+    This is provided here so it can be used by both the SPPH as well
+    as our delegate class ArchiveSourcePublication, which implements
+    the same interface but uses cached results for builds and binaries
+    used in the calculation.
+    """
+    builds = source_package_pub.getBuilds()
+    summary = getUtility(IBuildSet).getStatusSummaryForBuilds(
+        builds)
+
+    # We only augment the result if we (the SPPH) are ourselves in
+    # the pending/published state and all the builds are fully-built.
+    # In this case we check to see if they are all published, and if
+    # not we return FULLYBUILT_PENDING:
+    augmented_summary = summary
+    if (source_package_pub.status in active_publishing_status and
+            summary['status'] == BuildSetStatus.FULLYBUILT):
+
+        published_bins = source_package_pub.getPublishedBinaries()
+        published_builds = [
+            bin.binarypackagerelease.build
+                for bin in published_bins
+                    if bin.datepublished is not None]
+        unpublished_builds = list(
+            set(builds).difference(published_builds))
+
+        if unpublished_builds:
+            augmented_summary = {
+                'status': BuildSetStatus.FULLYBUILT_PENDING,
+                'builds': unpublished_builds
+            }
+    return augmented_summary
 
 
 class ArchiveSourcePackageRelease:
@@ -80,17 +119,10 @@ class ArchiveSourcePublication:
         # as self, rather than the SPPH.
 
         # XXX Michael Nelson 2009-05-08 bug=373715. It would be nice if
-        # lazr.delegates did this for us so we could avoid the hackiness
-        # below without having to copy the complete code in here.
-
-        # Note: we can't import the content class here to do:
-        #  SourcePackagePublishingHistory.__dict__,
-        # neither can we access the class without first removing the
-        # security property.
-        from zope.security.proxy import removeSecurityProxy
-
-        return removeSecurityProxy(self.context).__class__.__dict__[
-            'getStatusSummaryForBuilds'](self)
+        # lazr.delegates did this for us so we could avoid having to move
+        # the implementation out of the content class and into a function
+        # in this module.
+        return getStatusSummaryForBuilds(self)
 
 class ArchiveSourcePublications:
     """`ArchiveSourcePublication` iterator."""

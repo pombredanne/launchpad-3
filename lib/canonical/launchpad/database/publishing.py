@@ -49,7 +49,7 @@ from canonical.launchpad.interfaces import (
     ISourcePackagePublishingHistory, PackagePublishingPriority,
     PackagePublishingStatus, PackagePublishingPocket, PackageUploadStatus,
     PoolFileOverwriteError)
-from canonical.launchpad.interfaces.build import IBuildSet, BuildStatus
+from canonical.launchpad.interfaces.build import BuildStatus
 from canonical.launchpad.interfaces.publishing import (
     IPublishingSet, active_publishing_status)
 from canonical.launchpad.scripts.changeoverride import ArchiveOverriderError
@@ -755,34 +755,9 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
     def getStatusSummaryForBuilds(self):
         """See `ISourcePackagePublishingHistory`."""
         # Import here to avoid circular import.
-        from canonical.launchpad.interfaces.build import BuildSetStatus
-
-        builds = self.getBuilds()
-        summary = getUtility(IBuildSet).getStatusSummaryForBuilds(
-            builds)
-
-        # We only augment the result if we (the SPPH) are ourselves in
-        # the pending/published state and all the builds are fully-built.
-        # In this case we check to see if they are all published, and if
-        # not we return FULLYBUILT_PENDING:
-        augmented_summary = summary
-        if (self.status in active_publishing_status and
-                summary['status'] == BuildSetStatus.FULLYBUILT):
-
-            published_bins = self.getPublishedBinaries()
-            published_builds = [
-                bin.binarypackagerelease.build
-                    for bin in published_bins
-                        if bin.datepublished is not None]
-            unpublished_builds = list(
-                set(builds).difference(published_builds))
-
-            if unpublished_builds:
-                augmented_summary = {
-                    'status': BuildSetStatus.FULLYBUILT_PENDING,
-                    'builds': unpublished_builds
-                }
-        return augmented_summary
+        from canonical.launchpad.components.archivesourcepublication import (
+            getStatusSummaryForBuilds)
+        return getStatusSummaryForBuilds(self)
 
 
 class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
