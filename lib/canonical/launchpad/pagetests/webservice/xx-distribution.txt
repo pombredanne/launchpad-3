@@ -74,6 +74,16 @@ distribution that are marked as in development.
     ...     print entry['self_link']
     http://.../ubuntu/hoary
 
+"getMilestone" returns a milestone for the given name.
+
+    >>> distro = distros['entries'][3]
+    >>> debian = webservice.get(distro['self_link']).jsonBody()
+
+    >>> milestone_3_1 = webservice.named_get(
+    ...     debian['self_link'], "getMilestone", name="3.1").jsonBody()
+    >>> print milestone_3_1['self_link']
+    http://.../debian/+milestone/3.1
+
 "getSourcePackage" returns a distribution source package for the given
 name.
 

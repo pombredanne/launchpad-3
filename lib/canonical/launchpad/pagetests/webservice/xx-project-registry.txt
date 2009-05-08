@@ -100,6 +100,14 @@ and the all_milestones_collection_link.
     http://.../mozilla/+milestone/1.0.0
 
 
+"getMilestone" returns a milestone for the given name.
+
+    >>> milestone_1_0 = webservice.named_get(
+    ...     mozilla['self_link'], "getMilestone", name="1.0").jsonBody()
+    >>> print milestone_1_0['self_link']
+    http://.../mozilla/+milestone/1.0
+
+
 == Project entry ==
 
 Projects are available at their canonical URL on the API virtual host.
@@ -225,6 +233,13 @@ and the all_milestones_collection_link.
     http://.../firefox/+milestone/0.9.2
     http://.../firefox/+milestone/1.0
     http://.../firefox/+milestone/1.0.0
+
+"getMilestone" returns a milestone for the given name.
+
+    >>> milestone_1_0 = webservice.named_get(
+    ...     firefox['self_link'], "getMilestone", name="1.0").jsonBody()
+    >>> print milestone_1_0['self_link']
+    http://.../firefox/+milestone/1.0
 
 The project group can be accessed through the project_group_link.
 
