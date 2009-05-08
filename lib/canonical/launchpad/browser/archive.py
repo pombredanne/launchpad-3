@@ -362,23 +362,34 @@ class ArchiveViewBase(LaunchpadView):
         # in storm.
         return self.context.getPublishedSources().count() > 0
 
-    @property
-    def source_count_text(self):
-        """Return the correct form of the source counter notice."""
-        number_of_sources = self.context.number_of_sources
-        if number_of_sources == 1:
-            return '%s source package' % number_of_sources
-        else:
-            return '%s source packages' % number_of_sources
+    @cachedproperty
+    def repository_size(self):
+        """Return a dictionary with repository size details."""
+        def package_plural(control):
+            if control == 1:
+                return 'package'
+            return 'packages'
 
-    @property
-    def binary_count_text(self):
-        """Return the correct form of the binary counter notice."""
+        number_of_sources = self.context.number_of_sources
+        source_label = '%s source %s' % (
+            number_of_sources, package_plural(number_of_sources))
+
         number_of_binaries = self.context.number_of_binaries
-        if number_of_binaries == 1:
-            return '%s binary package' % number_of_binaries
-        else:
-            return '%s binary packages' % number_of_binaries
+        binary_label = '%s binary %s' % (
+            number_of_binaries, package_plural(number_of_binaries))
+
+        quota = self.context.authorized_size * (2 ** 20)
+        used = self.context.estimated_size
+        used_percentage = "%0.2f" % ((float(used) / quota) * 100)
+
+        return dict(
+            source_label=source_label,
+            sources_size=self.context.sources_size,
+            binary_label=binary_label,
+            binaries_size=self.context.binaries_size,
+            used=used,
+            used_percentage=used_percentage,
+            quota=quota)
 
     @property
     def archive_url(self):

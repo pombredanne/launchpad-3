@@ -249,20 +249,22 @@ div.package-details {
     :archive: targeted IArchive.
   </tal:comment>
 
-  <ul>
+  <ul tal:define="size archive/@@+index/repository_size">
     <li id="source_counter">
-       <tal:source_count_text replace="archive/@@+index/source_count_text" />
+       <tal:source_label replace="size/source_label" />
        (<tal:sources_size
-          replace="archive/sources_size/fmt:bytes" />)</li>
+          replace="size/sources_size/fmt:bytes" />)</li>
     <li id="binary_counter">
-       <tal:binary_count_text replace="archive/@@+index/binary_count_text" />
+       <tal:binary_label replace="size/binary_label" />
        (<tal:binaries_size
-          replace="archive/binaries_size/fmt:bytes" />)</li>
+          replace="size/binaries_size/fmt:bytes" />)</li>
     <li id="total_size">
-       Estimated archive size:
-       <tal:estimated_size
-         replace="archive/estimated_size/fmt:bytes" /></li>
+       Estimated repository size:
+       <tal:used replace="size/used/fmt:bytes" />
+       (<tal:used_percentage replace="string:${size/used_percentage} %" />)
+        of <tal:quota replace="size/quota/fmt:bytes" /></li>
   </ul>
+
 
 </metal:package_counters>
 
