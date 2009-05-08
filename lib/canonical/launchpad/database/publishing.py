@@ -49,8 +49,8 @@ from canonical.launchpad.interfaces import (
     ISourcePackagePublishingHistory, PackagePublishingPriority,
     PackagePublishingStatus, PackagePublishingPocket, PackageUploadStatus,
     PoolFileOverwriteError)
-from canonical.launchpad.interfaces.build import (BuildSetStatus,
-    BuildStatus, IBuildSet)
+from canonical.launchpad.interfaces.build import (
+    BuildSetStatus, BuildStatus, IBuildSet)
 from canonical.launchpad.interfaces.publishing import (
     IPublishingSet, active_publishing_status)
 from canonical.launchpad.scripts.changeoverride import ArchiveOverriderError

@@ -11,7 +11,6 @@ __metaclass__ = type
 
 __all__ = [
     'ArchiveSourcePublications',
-    'getStatusSummaryForBuilds'
     ]
 
 
