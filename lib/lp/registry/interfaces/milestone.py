@@ -137,7 +137,8 @@ class IMilestone(IHasBugs):
             schema=IProductRelease,
             title=_("The release for this milestone."),
             required=False,
-            readonly=True))
+            readonly=True),
+        exported_as='release')
 
     @call_with(owner=REQUEST_USER)
     @rename_parameters_as(datereleased='date_released')

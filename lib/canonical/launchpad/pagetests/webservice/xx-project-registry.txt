@@ -241,6 +241,14 @@ A list of series can be accessed through the series_collection_link.
     http://.../firefox/1.0
     http://.../firefox/trunk
 
+A series can be retrieved using the named_get method 'getSeries' which
+takes the name parameter.
+
+    >>> series_1_0 = webservice.named_get(
+    ...     firefox['self_link'], "getSeries", name="1.0").jsonBody()
+    >>> print series_1_0['self_link']
+    http://.../firefox/1.0
+
 A list of releases can be accessed through the releases_collection_link.
 
     >>> response = webservice.get(firefox['releases_collection_link'])
@@ -252,6 +260,14 @@ A list of releases can be accessed through the releases_collection_link.
     http://.../firefox/trunk/0.9
     http://.../firefox/trunk/0.9.1
     http://.../firefox/trunk/0.9.2
+
+A release can be retrieved using the named_get methods 'getRelease' which
+takes the version parameter.
+
+    >>> release_0_9_1 = webservice.named_get(
+    ...     firefox['self_link'], "getRelease", version="0.9.1").jsonBody()
+    >>> print release_0_9_1['self_link']
+    http://.../firefox/trunk/0.9.1
 
 The development focus series can be accessed through the
 development_focus_link.
@@ -788,7 +804,7 @@ host.
     is_active: True
     name: u'1.0'
     official_bug_tags: []
-    product_release_link: None
+    release_link: None
     resource_type_link: u'...'
     self_link: u'http://.../firefox/+milestone/1.0'
     series_target_link: u'http://.../firefox/trunk'
