@@ -102,7 +102,11 @@ class IBranchCollection(Interface):
         """Restrict the collection to branches in 'package'."""
 
     def isJunk():
-        """Restrict the collection to branches with no product."""
+        """Restrict the collection to junk branches.
+
+        A junk branch is a branch that's not associated with a product nor
+        with a sourcepackage.
+        """
 
     def ownedBy(person):
         """Restrict the collection to branches owned by 'person'."""

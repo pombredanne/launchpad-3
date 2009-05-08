@@ -37,6 +37,14 @@ class BaseBranchTargetTests:
         self.assertEqual(
             canonical_url(self.original), canonical_url(self.target))
 
+    def test_collection(self):
+        # The collection attribute is an IBranchCollection containing all
+        # branches related to the branch target.
+        self.assertEqual(self.target.collection.getBranches().count(), 0)
+        branch = self.makeBranchForTarget()
+        branches = self.target.collection.getBranches()
+        self.assertEqual([branch], list(branches))
+
 
 class TestPackageBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
 
@@ -46,6 +54,9 @@ class TestPackageBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
         TestCaseWithFactory.setUp(self)
         self.original = self.factory.makeSourcePackage()
         self.target = PackageBranchTarget(self.original)
+
+    def makeBranchForTarget(self):
+        return self.factory.makePackageBranch(sourcepackage=self.original)
 
     def test_name(self):
         # The name of a package context is distro/series/sourcepackage
@@ -92,16 +103,6 @@ class TestPackageBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
         target = IBranchTarget(self.original)
         self.assertEqual(self.original.displayname, target.displayname)
 
-    def test_collection(self):
-        # The collection attribute should return an IBranchCollection filtered
-        # by a single package branch.
-        self.assertEqual(self.target.collection.getBranches().count(), 0)
-        package_branch = self.factory.makePackageBranch(
-            sourcepackage=self.original)
-        branches = self.target.collection.getBranches()
-        self.assertEqual(branches.count(), 1)
-        self.assertTrue(package_branch in branches)
-
 
 class TestPersonBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
 
@@ -111,6 +112,9 @@ class TestPersonBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
         TestCaseWithFactory.setUp(self)
         self.original = self.factory.makePerson()
         self.target = PersonBranchTarget(self.original)
+
+    def makeBranchForTarget(self):
+        return self.factory.makeBranch(owner=self.original, product=None)
 
     def test_name(self):
         # The name of a junk context is '+junk'.
@@ -141,21 +145,6 @@ class TestPersonBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
         target = IBranchTarget(self.original)
         self.assertEqual('~%s/+junk' % self.original.name, target.displayname)
 
-    def test_collection(self):
-        # The collection attribute should return an IBranchCollection filtered
-        # by a single package branch.
-        self.assertEqual(self.target.collection.getBranches().count(), 0)
-        person_branch = self.factory.makeBranch(
-            owner=self.original)
-
-        self.assertEqual(self.target.collection.getBranches().count(), 0)
-
-        junk_branch = self.factory.makeBranch(owner=self.original,
-            product=None)
-        branches = self.target.collection.getBranches()
-        self.assertEqual(branches.count(), 1)
-        self.assertTrue(junk_branch in branches)
-
 
 class TestProductBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
 
@@ -165,6 +154,9 @@ class TestProductBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
         TestCaseWithFactory.setUp(self)
         self.original = self.factory.makeProduct()
         self.target = ProductBranchTarget(self.original)
+
+    def makeBranchForTarget(self):
+        return self.factory.makeBranch(product=self.original)
 
     def test_name(self):
         self.assertEqual(self.original.name, self.target.name)
@@ -217,15 +209,6 @@ class TestProductBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
         target = IBranchTarget(self.original)
         self.assertEqual(self.original.displayname, target.displayname)
 
-    def test_collection(self):
-        # The collection attribute should return an IBranchCollection filtered
-        # by a single package branch.
-        self.assertEqual(self.target.collection.getBranches().count(), 0)
-        product_branch = self.factory.makeBranch(
-            product=self.original)
-        branches = self.target.collection.getBranches()
-        self.assertEqual(branches.count(), 1)
-        self.assertTrue(product_branch in branches)
 
 
 class TestCheckDefaultStackedOnBranch(TestCaseWithFactory):

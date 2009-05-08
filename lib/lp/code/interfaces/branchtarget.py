@@ -65,7 +65,7 @@ class IBranchTarget(IPrimaryContext):
         """
 
     def getNamespace(owner):
-        """Return an IBranchNamespace for this target and the specified owner.
+        """Return a `IBranchNamespace` for this target and the specified owner.
         """
 
     collection = Attribute("An IBranchCollection for this target.")
