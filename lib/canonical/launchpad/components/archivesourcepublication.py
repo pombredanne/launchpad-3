@@ -18,49 +18,11 @@ __all__ = [
 from zope.component import getUtility
 
 from canonical.launchpad.browser.librarian import ProxiedLibraryFileAlias
-from canonical.launchpad.interfaces.build import BuildSetStatus, IBuildSet
 from canonical.launchpad.interfaces.publishing import (
-    IPublishingSet, ISourcePackagePublishingHistory,
-    active_publishing_status)
+    IPublishingSet, ISourcePackagePublishingHistory)
 from canonical.launchpad.interfaces.sourcepackagerelease import (
     ISourcePackageRelease)
 from lazr.delegates import delegates
-
-
-def getStatusSummaryForBuilds(source_package_pub):
-    """See `ISourcePackagePublishingHistory`.
-
-    This is provided here so it can be used by both the SPPH as well
-    as our delegate class ArchiveSourcePublication, which implements
-    the same interface but uses cached results for builds and binaries
-    used in the calculation.
-    """
-    builds = source_package_pub.getBuilds()
-    summary = getUtility(IBuildSet).getStatusSummaryForBuilds(
-        builds)
-
-    # We only augment the result if we (the SPPH) are ourselves in
-    # the pending/published state and all the builds are fully-built.
-    # In this case we check to see if they are all published, and if
-    # not we return FULLYBUILT_PENDING:
-    augmented_summary = summary
-    if (source_package_pub.status in active_publishing_status and
-            summary['status'] == BuildSetStatus.FULLYBUILT):
-
-        published_bins = source_package_pub.getPublishedBinaries()
-        published_builds = [
-            bin.binarypackagerelease.build
-                for bin in published_bins
-                    if bin.datepublished is not None]
-        unpublished_builds = list(
-            set(builds).difference(published_builds))
-
-        if unpublished_builds:
-            augmented_summary = {
-                'status': BuildSetStatus.FULLYBUILT_PENDING,
-                'builds': unpublished_builds
-            }
-    return augmented_summary
 
 
 class ArchiveSourcePackageRelease:
@@ -115,14 +77,15 @@ class ArchiveSourcePublication:
 
     def getStatusSummaryForBuilds(self):
         """See `ISourcePackagePublishingHistory`."""
-        # Call the method but with the ArchiveSourcePublication object
-        # as self, rather than the SPPH.
-
         # XXX Michael Nelson 2009-05-08 bug=373715. It would be nice if
-        # lazr.delegates did this for us so we could avoid having to move
-        # the implementation out of the content class and into a function
-        # in this module.
-        return getStatusSummaryForBuilds(self)
+        # lazr.delegates passed the delegates 'self' for pass-through
+        # methods, then we wouldn't need to proxy this method call via the
+        # IPublishingSet - instead the delegate would call
+        # ISourcePackagePublishingHistory.getStatusSummaryForBuilds() but
+        # using the delegate as self - might not be possible without
+        # duck-typing.
+        return getUtility(
+            IPublishingSet).getBuildStatusSummaryForSourcePublication(self)
 
 class ArchiveSourcePublications:
     """`ArchiveSourcePublication` iterator."""
