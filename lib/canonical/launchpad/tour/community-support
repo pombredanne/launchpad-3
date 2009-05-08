@@ -42,7 +42,7 @@
             <p class="intro-text">
                 <strong>Free software thrives on people helping each other when the unexpected happens.</strong> Launchpad Answers helps your project&rsquo;s community track support requests in multiple languages and create a searchable knowledge-base of answers.
             </p>
-            <div id="link-holder"><a href="https://answers.launchpad.net/">Visit Launchpad Answers &gt;</a><br /><a href="https://launchpad.net/projects/+new-guided">Add your project to Launchpad &gt;</a></div>
+            <div id="link-holder"><a href="https://answers.launchpad.net/">Visit Launchpad Answers &gt;</a><br /><a href="https://launchpad.net/projects/+new">Add your project to Launchpad &gt;</a></div>
         </div>
         <div id="page-intro-bottom"></div>
         <ul id="secondary-navigation">

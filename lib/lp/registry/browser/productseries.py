@@ -6,6 +6,7 @@ __all__ = [
     'get_series_branch_error',
     'ProductSeriesBreadcrumbBuilder',
     'ProductSeriesBugsMenu',
+    'ProductSeriesDeleteView',
     'ProductSeriesEditView',
     'ProductSeriesFacets',
     'ProductSeriesFileBugRedirect',
@@ -18,6 +19,7 @@ __all__ = [
     'ProductSeriesReviewView',
     'ProductSeriesSourceListView',
     'ProductSeriesSpecificationsMenu',
+    'ProductSeriesTemplatesView',
     'ProductSeriesTranslationsBzrImportView',
     'ProductSeriesTranslationsExportView',
     'ProductSeriesTranslationsMenu',
@@ -34,6 +36,7 @@ from zope.app.form.browser import TextAreaWidget, TextWidget
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.publisher.browser import FileUpload
 
+from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from lp.code.browser.branchref import BranchRef
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
@@ -65,6 +68,8 @@ from canonical.launchpad.webapp.menu import structured
 from canonical.widgets.itemswidgets import (
     LaunchpadRadioWidgetWithDescription)
 from canonical.widgets.textwidgets import StrippedTextWidget
+
+from lp.registry.browser import RegistryDeleteViewMixin
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageNameSet)
@@ -120,7 +125,7 @@ class ProductSeriesOverviewMenu(ApplicationMenu):
     usedfor = IProductSeries
     facet = 'overview'
     links = [
-        'edit', 'driver', 'link_branch', 'ubuntupkg',
+        'edit', 'delete', 'driver', 'link_branch', 'ubuntupkg',
         'add_package', 'create_milestone', 'create_release',
         'rdf', 'subscribe'
         ]
@@ -129,6 +134,12 @@ class ProductSeriesOverviewMenu(ApplicationMenu):
     def edit(self):
         text = 'Change details'
         return Link('+edit', text, icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
+    def delete(self):
+        text = 'Delete series'
+        summary = "Delete this series and all it's dependent items."
+        return Link('+delete', text, summary, icon='trash-icon')
 
     @enabled_with_permission('launchpad.Edit')
     def driver(self):
@@ -238,31 +249,29 @@ class ProductSeriesTranslationsMenuMixIn:
     """Translation menu for ProductSeries.
     """
     def overview(self):
-        text = 'Overview'
-        return Link('', text)
+        return Link('', 'Overview')
+
+    @enabled_with_permission('launchpad.Edit')
+    def templates(self):
+        return Link('+templates', 'Templates')
 
     @enabled_with_permission('launchpad.Edit')
     def settings(self):
-        text = 'Settings'
-        return Link('+translations-settings', text, icon='edit')
+        return Link('+translations-settings', 'Settings')
 
     @enabled_with_permission('launchpad.Edit')
     def requestbzrimport(self):
-        text = 'Request Bazaar import'
-        return Link('+request-bzr-import', text)
+        return Link('+request-bzr-import', 'Request Bazaar import')
 
     @enabled_with_permission('launchpad.Edit')
     def translationupload(self):
-        text = 'Upload'
-        return Link('+translations-upload', text, icon='add')
+        return Link('+translations-upload', 'Upload')
 
     def translationdownload(self):
-        text = 'Download'
-        return Link('+export', text, icon='download')
+        return Link('+export', 'Download')
 
     def imports(self):
-        text = 'Import queue'
-        return Link('+imports', text)
+        return Link('+imports', 'Import queue')
 
 
 class ProductSeriesOverviewNavigationMenu(NavigationMenu):
@@ -279,9 +288,8 @@ class ProductSeriesTranslationsMenu(NavigationMenu,
     """Translations navigation menus for `IProductSeries` objects."""
     usedfor = IProductSeries
     facet = 'translations'
-    links = ('overview', 'settings', 'requestbzrimport',
-             'translationupload', 'translationdownload',
-             'imports')
+    links = ('overview', 'templates', 'settings', 'requestbzrimport',
+             'translationupload', 'translationdownload', 'imports')
 
 
 class ProductSeriesTranslationsExportView(BaseExportView):
@@ -601,6 +609,76 @@ class ProductSeriesEditView(LaunchpadEditFormView):
         return canonical_url(self.context)
 
 
+class ProductSeriesDeleteView(RegistryDeleteViewMixin, LaunchpadEditFormView):
+    """A view to remove a productseries from a product."""
+    schema = IProductSeries
+    field_names = []
+
+    @property
+    def label(self):
+        """The form label."""
+        return 'Delete %s series %s' % (
+            self.context.product.displayname, self.context.name)
+
+    @cachedproperty
+    def milestones(self):
+        """A list of all the series `IMilestone`s."""
+        return self.context.all_milestones
+
+    @cachedproperty
+    def bugtasks(self):
+        """A list of all `IBugTask`s targeted to this series."""
+        all_bugtasks = []
+        for milestone in self.milestones:
+            all_bugtasks.extend(self._getBugtasks(milestone))
+        return all_bugtasks
+
+    @cachedproperty
+    def specifications(self):
+        """A list of all `ISpecification`s targeted to this series."""
+        all_specifications = []
+        for milestone in self.milestones:
+            all_specifications.extend(self._getSpecifications(milestone))
+        return all_specifications
+
+    @cachedproperty
+    def has_bugtasks_and_specifications(self):
+        """Does the series have any targeted bugtasks or specifications."""
+        return len(self.bugtasks) > 0 or len(self.specifications) > 0
+
+    @cachedproperty
+    def product_release_files(self):
+        """A list of all `IProductReleaseFile`s that belong to this series."""
+        all_files = []
+        for milestone in self.milestones:
+            all_files.extend(self._getProductReleaseFiles(milestone))
+        return all_files
+
+    @cachedproperty
+    def can_delete(self):
+        """Can this series be delete."""
+        return not self.context.is_development_focus
+
+    def canDeleteAction(self, action):
+        """Is the delete action available."""
+        if not self.can_delete:
+            self.addError(
+                "You cannot delete a series that is the focus of "
+                "development. Make another series the focus of development "
+                "before deleting this one.")
+        return self.can_delete
+
+    @action('Delete this Series', name='delete', condition=canDeleteAction)
+    def delete_action(self, action, data):
+        """Detach and delete associated objects and remove the series."""
+        product = self.context.product
+        name = self.context.name
+        self._deleteProductSeries(self.context)
+        self.request.response.addInfoNotification(
+            "Series %s deleted." % name)
+        self.next_url = canonical_url(product)
+
+
 class ProductSeriesLinkBranchView(LaunchpadEditFormView):
     """View to set the bazaar branch for a product series."""
 
@@ -800,3 +878,15 @@ class ProductSeriesTranslationsBzrImportView(LaunchpadFormView,
             self.request.response.addInfoNotification(
                 _("The import has been requested."))
 
+
+class ProductSeriesTemplatesView(LaunchpadView):
+    """Show a list of all templates for the ProductSeries."""
+
+    is_distroseries = False
+
+    def iter_templates(self):
+        potemplateset = getUtility(IPOTemplateSet)
+        return potemplateset.getSubset(productseries=self.context)
+
+    def can_administer(self, template):
+        return check_permission('launchpad.Admin', template)

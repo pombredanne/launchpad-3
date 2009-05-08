@@ -8,8 +8,9 @@ __metaclass__ = type
 __all__ = [
     'InvalidProductName',
     'IProduct',
-    'IProductEditRestricted',
     'IProductCommercialRestricted',
+    'IProductDriverRestricted',
+    'IProductEditRestricted',
     'IProductPublic',
     'IProductReviewSearch',
     'IProductSet',
@@ -202,12 +203,15 @@ class License(DBEnumeratedType):
     OTHER_OPEN_SOURCE = DBItem(1010, "Other/Open Source")
 
 
-class IProductEditRestricted(IOfficialBugTagTargetRestricted):
-    """`IProduct` properties which require launchpad.Edit permission."""
+class IProductDriverRestricted(Interface):
+    """`IProduct` properties which require launchpad.Driver permission."""
 
     def newSeries(owner, name, summary, branch=None):
         """Creates a new ProductSeries for this product."""
 
+
+class IProductEditRestricted(IOfficialBugTagTargetRestricted,):
+    """`IProduct` properties which require launchpad.Edit permission."""
 
 
 class IProductCommercialRestricted(Interface):
@@ -324,8 +328,9 @@ class IProductPublic(
             constraint=name_validator,
             description=_(
                 "At least one lowercase letter or number, followed by "
-                "letters, dots, hyphens or plusses. "
-                "Keep this name short, as it is used in URLs.")))
+                "letters, dots, hyphens or pluses. "
+                "Keep this name short; it is used in URLs as the example "
+                "illustrates.")))
 
     displayname = exported(
         TextLine(
@@ -638,7 +643,7 @@ class IProductPublic(
 
 
 class IProduct(IProductEditRestricted, IProductCommercialRestricted,
-               IProductPublic):
+               IProductDriverRestricted, IProductPublic):
     """A Product.
 
     The Launchpad Registry describes the open source world as Projects and

@@ -7,12 +7,10 @@ __all__ = [
     'ApplicationButtons',
     'BrowserWindowDimensions',
     'DoesNotExistView',
-    'EdubuntuIcingFolder',
     'get_launchpad_views',
     'Hierarchy',
     'IcingContribFolder',
     'IcingFolder',
-    'KubuntuIcingFolder',
     'LaunchpadRootNavigation',
     'LaunchpadImageFolder',
     'LinkView',
@@ -25,7 +23,6 @@ __all__ = [
     'SoftTimeoutView',
     'StructuralHeaderPresentation',
     'StructuralObjectPresentation',
-    'UbuntuIcingFolder',
     ]
 
 
@@ -854,28 +851,6 @@ class IcingContribFolder(ExportedFolder):
 
     folder = os.path.join(
         os.path.dirname(os.path.realpath(__file__)), '../icing-contrib/')
-
-
-class UbuntuIcingFolder(ExportedFolder):
-    """Export the Ubuntu icing."""
-
-    folder = os.path.join(
-        os.path.dirname(os.path.realpath(__file__)), '../icing-ubuntu/')
-
-
-class KubuntuIcingFolder(ExportedFolder):
-    """Export the Kubuntu icing."""
-
-    folder = os.path.join(
-        os.path.dirname(os.path.realpath(__file__)), '../icing-kubuntu/')
-
-
-class EdubuntuIcingFolder(ExportedFolder):
-    """Export the Edubuntu icing."""
-
-    folder = os.path.join(
-        os.path.dirname(os.path.realpath(__file__)), '../icing-edubuntu/')
-
 
 
 class LaunchpadTourFolder(ExportedFolder):
