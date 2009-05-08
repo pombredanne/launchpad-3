@@ -145,11 +145,16 @@ class TestPersonBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
         # The collection attribute should return an IBranchCollection filtered
         # by a single package branch.
         self.assertEqual(self.target.collection.getBranches().count(), 0)
-        package_branch = self.factory.makeBranch(
+        person_branch = self.factory.makeBranch(
             owner=self.original)
+
+        self.assertEqual(self.target.collection.getBranches().count(), 0)
+
+        junk_branch = self.factory.makeBranch(owner=self.original,
+            product=None)
         branches = self.target.collection.getBranches()
         self.assertEqual(branches.count(), 1)
-        self.assertTrue(package_branch in branches)
+        self.assertTrue(junk_branch in branches)
 
 
 class TestProductBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
@@ -216,11 +221,11 @@ class TestProductBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
         # The collection attribute should return an IBranchCollection filtered
         # by a single package branch.
         self.assertEqual(self.target.collection.getBranches().count(), 0)
-        package_branch = self.factory.makeBranch(
+        product_branch = self.factory.makeBranch(
             product=self.original)
         branches = self.target.collection.getBranches()
         self.assertEqual(branches.count(), 1)
-        self.assertTrue(package_branch in branches)
+        self.assertTrue(product_branch in branches)
 
 
 class TestCheckDefaultStackedOnBranch(TestCaseWithFactory):

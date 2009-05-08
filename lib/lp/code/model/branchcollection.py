@@ -202,6 +202,10 @@ class GenericBranchCollection:
             Branch.distroseries == source_package.distroseries,
             Branch.sourcepackagename == source_package.sourcepackagename])
 
+    def isJunk(self):
+        """See `IBranchCollection`."""
+        return self._filterBy([Branch.product == None])
+
     def ownedBy(self, person):
         """See `IBranchCollection`."""
         return self._filterBy([Branch.owner == person])

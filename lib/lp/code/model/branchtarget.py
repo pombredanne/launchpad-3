@@ -142,7 +142,7 @@ class PersonBranchTarget(_BaseBranchTarget):
     @property
     def collection(self):
         """See `IBranchTarget`."""
-        return getUtility(IAllBranches).ownedBy(self.person)
+        return getUtility(IAllBranches).ownedBy(self.person).isJunk()
 
 
 class ProductBranchTarget(_BaseBranchTarget):

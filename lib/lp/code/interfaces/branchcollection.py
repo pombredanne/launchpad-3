@@ -101,6 +101,9 @@ class IBranchCollection(Interface):
     def inSourcePackage(package):
         """Restrict the collection to branches in 'package'."""
 
+    def isJunk():
+        """Restrict the collection to branches with no product."""
+
     def ownedBy(person):
         """Restrict the collection to branches owned by 'person'."""
 
