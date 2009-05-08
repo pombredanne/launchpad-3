@@ -12,6 +12,7 @@ __all__ = [
 
 from datetime import timedelta
 
+from storm.expr import Select, And, Func
 from storm.locals import Store
 from storm.references import Reference
 from sqlobject import (
@@ -158,14 +159,15 @@ class CodeImport(SQLBase):
     @property
     def consecutive_failure_count(self):
         """See `ICodeImport`."""
-        try:
-            last_success = Store.of(self).find(
-                CodeImportResult,
-                CodeImportResult.status == CodeImportResultStatus.SUCCESS,
-                CodeImportResult.code_import == self).order_by(
-                CodeImportResult.id).values(CodeImportResult.id).next()
-        except StopIteration:
-            last_success = 0
+        last_success = Func(
+            "coalesce",
+            Select(
+                (CodeImportResult.id,),
+                And(CodeImportResult.status == CodeImportResultStatus.SUCCESS,
+                    CodeImportResult.code_import == self),
+                order_by=CodeImportResult.id,
+                limit=1),
+            0)
         return Store.of(self).find(
             CodeImportResult,
             CodeImportResult.code_import == self,
