@@ -65,10 +65,7 @@ class BugBranchLinker:
 
         # We may want to check the status of the link when we modify the
         # status of the bug task.
-        valid_statuses = {'fixed': 'fixed'}
-        try:
-            status = valid_statuses[status.lower()]
-        except KeyError:
+        if status.lower() != 'fixed':
             raise BadLineInBugsProperty('Invalid bug status: %r' % status)
         return bug, status
 

@@ -122,8 +122,6 @@ class RevisionPropertyParsing(BzrSyncTestCase):
         self.assertEquals(bugs, {})
 
 
-
-
 class TestBugLinking(BzrSyncTestCase):
     """Tests for creating BugBranch items on scanning branches.
 

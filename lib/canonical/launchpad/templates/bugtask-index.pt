@@ -198,9 +198,8 @@
               tal:attributes="class string:branchstatus${bug_branch/branch/lifecycle_status/name}"
               >Experimental</span>)
               <a tal:condition="show_edit"
-                 tal:attributes="href string:${bug_branch/branch/fmt:url}/+bug/${bug_branch/bug/id}/+edit;
-                                 onclick string:return switchBugBranchFormAndWhiteboard('${bug_branch/id}')">
-                <img src="/@@/bug-status-expand"/>
+                 tal:attributes="href string:${bug_branch/branch/fmt:url}/+bug/${bug_branch/bug/id}/+edit;">
+                <img src="/@@/remove"/>
               </a>
             </div>
             <div tal:condition="show_edit|nothing"

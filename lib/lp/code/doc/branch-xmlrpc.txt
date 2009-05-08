@@ -1,4 +1,5 @@
-= IBranchSetAPI =
+IBranchSetAPI
+=============
 
     >>> from zope.security.proxy import removeSecurityProxy
     >>> from datetime import datetime
@@ -10,7 +11,8 @@
     ...     transport=XMLRPCTestTransport())
 
 
-== register_branch ==
+register_branch
+===============
 
 register_branch(branch_url, branch_name, branch_title,
                 branch_description, author_email, product_name,
@@ -271,7 +273,8 @@ Crazy unicode characters are also invalid:
     Fault: <Fault 260: u"Invalid branch name '\xe9'. Branch names must ...
 
 
-== link_branch_to_bug(branch_url, bug_id) ==
+link_branch_to_bug(branch_url, bug_id)
+======================================
 
 link_branch_to_bug() associates a branch with a bug. Let's associate
 the branch we registered with bug 1. If the link is successful, the bug
@@ -339,7 +342,8 @@ The URLs that are likely to be faster or provide write access appear
 earlier in the list.
 
 
-=== lp:project ===
+lp:project
+==========
 
 If you specify a path with a single segment, then Launchpad treats that
 path as the name of a project, and returns URLs to the branch
@@ -369,7 +373,8 @@ Launchpad also returns a fault if the project doesn't exist.
     Fault: <Fault 10: 'No such project: doesntexist'>
 
 
-=== lp:project/series ===
+lp:project/series
+=================
 
 If you specify a path with two segments, Launchpad treats that as a
 reference to a particular series on a project.
@@ -397,7 +402,8 @@ Similarly if the project doesn't exist:
     Fault: <Fault 10: 'No such project: doesntexist'>
 
 
-=== lp:~owner/product/branch ===
+lp:~owner/product/branch
+========================
 
 Anything longer than two segments is treated as a unique branch name
 followed by an arbitrary path:
@@ -431,7 +437,8 @@ But if the project or the user doesn't exist, Launchpad will return a fault:
     Fault: <Fault 10: 'No such project: doesntexist'>
 
 
-=== Remote branches ===
+Remote branches
+===============
 
 Some branches on Launchpad are 'remote' branches. These branches are
 not hosted on Launchpad and are only available (if at all) on remote

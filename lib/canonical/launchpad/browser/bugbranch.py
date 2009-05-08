@@ -4,11 +4,11 @@
 
 __metaclass__ = type
 __all__ = [
-    "BranchLinkToBugView",
-    "BugBranchAddView",
+    'BranchLinkToBugView',
+    'BugBranchAddView',
     'BugBranchBranchInlineEditView',
     'BugBranchBugInlineEditView',
-    "BugBranchEditView",
+    'BugBranchEditView',
     'BugBranchPrimaryContext',
     ]
 
@@ -78,10 +78,6 @@ class BugBranchEditView(LaunchpadEditFormView):
     @property
     def next_url(self):
         return canonical_url(self.bug)
-
-    @action('Update', name='update')
-    def update_action(self, action, data):
-        self.updateContextFromData(data)
 
     @action('Delete', name='delete')
     def delete_action(self, action, data):
