@@ -589,8 +589,8 @@ class TestPOTMsgSetTranslationMessageConstraints(unittest.TestCase):
 
         self.assertTrue(tm1.is_imported)
         self.assertFalse(tm2.is_imported)
-        self.assertFalse(tm1.potemplate is None)
-        self.assertFalse(tm2.potemplate is None)
+        self.assertTrue(tm1.potemplate is None)
+        self.assertTrue(tm2.potemplate is None)
 
     def test_updateTranslation_DivergedCurrentConstraint(self):
         tm0 = self.potmsgset.updateTranslation(
@@ -611,7 +611,7 @@ class TestPOTMsgSetTranslationMessageConstraints(unittest.TestCase):
         self.assertFalse(tm2.is_current)
         self.assertFalse(tm0.potemplate is None)
         self.assertFalse(tm1.potemplate is None)
-        self.assertFalse(tm2.potemplate is None)
+        self.assertTrue(tm2.potemplate is None)
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
