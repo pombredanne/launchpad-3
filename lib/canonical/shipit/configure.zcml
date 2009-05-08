@@ -33,7 +33,7 @@
     <!-- ShippingRequest -->
 
     <class
-        class="canonical.launchpad.database.ShippingRequest">
+        class="canonical.shipit.model.shipit.ShippingRequest">
         <allow
             interface="canonical.shipit.interfaces.shipit.IShippingRequest"/>
         <require
@@ -44,12 +44,12 @@
     <!-- ShippingRequestSet -->
 
     <class
-        class="canonical.launchpad.database.ShippingRequestSet">
+        class="canonical.shipit.model.shipit.ShippingRequestSet">
         <allow
             interface="canonical.shipit.interfaces.shipit.IShippingRequestSet"/>
     </class>
     <securedutility
-        class="canonical.launchpad.database.ShippingRequestSet"
+        class="canonical.shipit.model.shipit.ShippingRequestSet"
         provides="canonical.shipit.interfaces.shipit.IShippingRequestSet">
         <allow
             interface="canonical.shipit.interfaces.shipit.IShippingRequestSet"/>
@@ -58,7 +58,7 @@
     <!-- StandardShipItRequest -->
 
     <class
-        class="canonical.launchpad.database.StandardShipItRequest">
+        class="canonical.shipit.model.shipit.StandardShipItRequest">
         <allow
             interface="canonical.shipit.interfaces.shipit.IStandardShipItRequest"/>
         <require
@@ -69,12 +69,12 @@
     <!-- StandardShipItRequestSet -->
 
     <class
-        class="canonical.launchpad.database.StandardShipItRequestSet">
+        class="canonical.shipit.model.shipit.StandardShipItRequestSet">
         <allow
             interface="canonical.shipit.interfaces.shipit.IStandardShipItRequestSet"/>
     </class>
     <securedutility
-        class="canonical.launchpad.database.StandardShipItRequestSet"
+        class="canonical.shipit.model.shipit.StandardShipItRequestSet"
         provides="canonical.shipit.interfaces.shipit.IStandardShipItRequestSet">
         <allow
             interface="canonical.shipit.interfaces.shipit.IStandardShipItRequestSet"/>
@@ -83,7 +83,7 @@
     <!-- RequestedCDs -->
 
     <class
-        class="canonical.launchpad.database.RequestedCDs">
+        class="canonical.shipit.model.shipit.RequestedCDs">
         <allow
             interface="canonical.shipit.interfaces.shipit.IRequestedCDs"/>
         <require
@@ -94,12 +94,12 @@
     <!-- Shipment -->
 
     <class
-        class="canonical.launchpad.database.Shipment">
+        class="canonical.shipit.model.shipit.Shipment">
         <allow
             interface="canonical.shipit.interfaces.shipit.IShipment"/>
     </class>
     <securedutility
-        class="canonical.launchpad.database.ShipmentSet"
+        class="canonical.shipit.model.shipit.ShipmentSet"
         provides="canonical.shipit.interfaces.shipit.IShipmentSet">
         <allow
             interface="canonical.shipit.interfaces.shipit.IShipmentSet"/>
@@ -108,7 +108,7 @@
     <!-- ShippingRun -->
 
     <class
-        class="canonical.launchpad.database.ShippingRun">
+        class="canonical.shipit.model.shipit.ShippingRun">
         <allow
             interface="canonical.shipit.interfaces.shipit.IShippingRun"/>
         <require
@@ -116,7 +116,7 @@
             set_schema="canonical.shipit.interfaces.shipit.IShippingRun"/>
     </class>
     <securedutility
-        class="canonical.launchpad.database.ShippingRunSet"
+        class="canonical.shipit.model.shipit.ShippingRunSet"
         provides="canonical.shipit.interfaces.shipit.IShippingRunSet">
         <allow
             interface="canonical.shipit.interfaces.shipit.IShippingRunSet"/>
@@ -125,7 +125,7 @@
     <!-- ShipItReport -->
 
     <class
-        class="canonical.launchpad.database.ShipItReport">
+        class="canonical.shipit.model.shipit.ShipItReport">
         <allow
             interface="canonical.shipit.interfaces.shipit.IShipItReport"/>
         <require
@@ -133,22 +133,21 @@
             set_schema="canonical.shipit.interfaces.shipit.IShipItReport"/>
     </class>
     <securedutility
-        class="canonical.launchpad.database.ShipItReportSet"
+        class="canonical.shipit.model.shipit.ShipItReportSet"
         provides="canonical.shipit.interfaces.shipit.IShipItReportSet">
         <allow
             interface="canonical.shipit.interfaces.shipit.IShipItReportSet"/>
     </securedutility>
     <securedutility
-        class="canonical.launchpad.database.ShipItSurveySet"
+        class="canonical.shipit.model.shipit.ShipItSurveySet"
         provides="canonical.shipit.interfaces.shipit.IShipItSurveySet">
         <allow
             interface="canonical.shipit.interfaces.shipit.IShipItSurveySet"/>
     </securedutility>
 
     <!-- ShipitAccount -->
-
     <class
-        class="canonical.launchpad.database.ShipitAccount">
+        class="canonical.shipit.model.shipit.ShipitAccount">
         <allow
             interface="canonical.shipit.interfaces.shipit.IShipitAccount"/>
     </class>

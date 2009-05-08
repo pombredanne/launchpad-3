@@ -21,7 +21,6 @@ from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
 from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
 from lp.registry.interfaces.person import (
     IPerson, IPersonSet, PersonCreationRationale)
-from canonical.shipit.interfaces.shipit import ShipItConstants
 from canonical.launchpad.interfaces.validation import valid_password
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.webapp.interfaces import (
@@ -154,16 +153,6 @@ class LoginOrRegister:
     submitted = False
     email = None
 
-    # XXX Guilherme Salgado 2006-09-27: If you add a new origin here, you
-    # must also add a new entry on NewAccountView.urls_and_rationales in
-    # browser/logintoken.py. Ideally, we should be storing the rationale in
-    # the logintoken too, but this should do for now.
-    registered_origins = {
-        'shipit-ubuntu': ShipItConstants.ubuntu_url,
-        'shipit-edubuntu': ShipItConstants.edubuntu_url,
-        'shipit-kubuntu': ShipItConstants.kubuntu_url,
-        }
-
     def process_restricted_form(self):
         """Entry-point for the team-restricted login page.
 
@@ -189,33 +178,13 @@ class LoginOrRegister:
         elif self.request.form.get(self.submit_registration):
             self.process_registration_form()
 
-    def getApplicationURL(self):
-        # XXX Guilherme Salgado 2005-12-09: This method is needed because
-        # this view is used on shipit and we have to use an application URL
-        # different than the one we have in the request.
-        return self.request.getApplicationURL()
-
     def getRedirectionURL(self):
         """Return the URL we should redirect the user to, after finishing a
         registration or password reset process.
 
-        If the request has an 'origin' query parameter, that means the user
-        came from shipit, and thus we return the URL for it. When there's no
-        'origin' query parameter, we check the HTTP_REFERER header and if it's
-        under any URL specified in registered_origins we return it, otherwise
-        we return the current URL without the "/+login" bit.
+        IOW, the current URL without the "/+login" bit.
         """
-        request = self.request
-        origin = request.get('origin')
-        try:
-            return self.registered_origins[origin]
-        except KeyError:
-            referrer = request.getHeader('Referer')
-            if referrer:
-                for url in self.registered_origins.values():
-                    if referrer.startswith(url):
-                        return referrer
-        return request.getURL(1)
+        return self.request.getURL(1)
 
     def process_login_form(self):
         """Process the form data.

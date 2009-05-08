@@ -1963,7 +1963,7 @@
         for="lp.registry.interfaces.product.IProduct"
         class="lp.registry.browser.product.ProductAddSeriesView"
         facet="overview"
-        permission="launchpad.Edit"
+        permission="launchpad.Driver"
         template="../templates/productseries-new.pt"/>
     <browser:defaultView
         for="lp.registry.interfaces.product.IProductSet"

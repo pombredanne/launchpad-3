@@ -94,7 +94,7 @@ Now we'll create a ShippingRun to simulate that this request was shipped, so
 that we can see how shipit behaves for people making further requests for a
 given distroseries.
 
-  >>> from canonical.launchpad.database import ShippingRequestSet
+  >>> from canonical.shipit.model.shipit import ShippingRequestSet
   >>> login(ANONYMOUS)
   >>> shippingrun = ShippingRequestSet()._create_shipping_run(
   ...     [shipit_account.currentShipItRequest().id])
