@@ -178,20 +178,27 @@ class TestBranchView(TestCaseWithFactory):
         finally:
             logout()
 
-    def testShowMergeLinks(self):
-        """Test BranchView.show_merge_links."""
-        branch = getUtility(IBranchLookup).get(1)
-        view = BranchView(branch, self.request)
+    def testShowMergeLinksOnManyBranchProject(self):
+        # The merge links are shown on projects that have multiple branches.
+        product = self.factory.makeProduct(name='super-awesome-project')
+        branch1 = self.factory.makeAnyBranch(product=product)
+        branch2 = self.factory.makeAnyBranch(product=product)
+        view = BranchView(branch1, self.request)
         view.initialize()
         self.assertTrue(view.show_merge_links)
 
-        # branch is a junk branch
-        branch = getUtility(IBranchLookup).get(28)
-        view = BranchView(branch, self.request)
+    def testShowMergeLinksOnJunkBranch(self):
+        # The merge links are not shown on junk branches because they do not
+        # support merge proposals.
+        junk_branch = self.factory.makeBranch(product=None)
+        view = BranchView(junk_branch, self.request)
         view.initialize()
         self.assertFalse(view.show_merge_links)
 
-        # branch is the only one in the product
+    def testShowMergeLinksOnSingleBranchProject(self):
+        # The merge links are not shown on branches attached to a project that
+        # only has one branch because it's pointless to propose it for merging
+        # if there's nothing to merge into.
         branch = self.factory.makeAnyBranch()
         view = BranchView(branch, self.request)
         view.initialize()

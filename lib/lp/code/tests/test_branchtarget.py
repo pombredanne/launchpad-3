@@ -37,6 +37,11 @@ class BaseBranchTargetTests:
         self.assertEqual(
             canonical_url(self.original), canonical_url(self.target))
 
+    def test_collection(self):
+        # The collection attribute should return an IBranchCollection filtered
+        # by a single package branch.
+        self.assertEqual(self.target.collection.getBranches().count(), 1)
+
 
 class TestPackageBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
 

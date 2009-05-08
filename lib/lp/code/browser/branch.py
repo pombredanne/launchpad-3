@@ -471,10 +471,13 @@ class BranchView(LaunchpadView, FeedsMixin):
         Merge proposal links should not be shown if there is only one branch in
         a non-final state.
         """
+        # XXX: rockstar - Eventually, this if statement needs to be:
+        # if not self.context.target.supportsMergeProposals() and will when jml
+        # gets to it in his source package branch work.
+        # spec=package-branches
         if not self.context.product:
             return False
-        collection = self.context.target.getCollection()
-        return collection.getBranches().count() > 1
+        return self.context.target.collection.getBranches().count() > 1
 
 
 class DecoratedMergeProposal:

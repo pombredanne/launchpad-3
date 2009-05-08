@@ -15,6 +15,7 @@ from zope.interface import implements
 from zope.security.interfaces import Unauthorized
 
 from lp.code.interfaces.branch import BranchType
+from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.interfaces.branchtarget import IBranchTarget
 from canonical.launchpad.interfaces.publishing import PackagePublishingPocket
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
@@ -90,9 +91,9 @@ class PackageBranchTarget(_BaseBranchTarget):
             PackageNamespace)
         return PackageNamespace(owner, self.sourcepackage)
 
-    def getCollection(self):
+    @property
+    def collection(self):
         """See `IBranchTarget`."""
-        from lp.code.interfaces.branchcollection import IAllBranches
         return getUtility(IAllBranches).inSourcePackage(self.sourcepackage)
 
     @property
@@ -138,10 +139,10 @@ class PersonBranchTarget(_BaseBranchTarget):
             PersonalNamespace)
         return PersonalNamespace(owner)
 
-    def getCollection(self):
+    @property
+    def collection(self):
         """See `IBranchTarget`."""
-        from lp.code.interfaces.branchcollection import IAllBranches
-        return getUtility(IAllBranches).inPerson(self.person)
+        return getUtility(IAllBranches).ownedBy(self.person)
 
 
 class ProductBranchTarget(_BaseBranchTarget):
@@ -181,9 +182,9 @@ class ProductBranchTarget(_BaseBranchTarget):
             ProductNamespace)
         return ProductNamespace(owner, self.product)
 
-    def getCollection(self):
+    @property
+    def collection(self):
         """See `IBranchTarget`."""
-        from lp.code.interfaces.branchcollection import IAllBranches
         return getUtility(IAllBranches).inProduct(self.product)
 
 
