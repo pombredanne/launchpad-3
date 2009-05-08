@@ -256,8 +256,7 @@ A list of series can be accessed through the series_collection_link.
     http://.../firefox/1.0
     http://.../firefox/trunk
 
-A series can be retrieved using the named_get method 'getSeries' which
-takes the name parameter.
+"getSeries" returns the series for the given name.
 
     >>> series_1_0 = webservice.named_get(
     ...     firefox['self_link'], "getSeries", name="1.0").jsonBody()
@@ -276,8 +275,7 @@ A list of releases can be accessed through the releases_collection_link.
     http://.../firefox/trunk/0.9.1
     http://.../firefox/trunk/0.9.2
 
-A release can be retrieved using the named_get methods 'getRelease' which
-takes the version parameter.
+"getRelease" returns the release for the given version.
 
     >>> release_0_9_1 = webservice.named_get(
     ...     firefox['self_link'], "getRelease", version="0.9.1").jsonBody()
