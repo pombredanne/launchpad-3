@@ -11,9 +11,11 @@
   ">
   <div class="section" id="subscribers-direct">
     <h2>Subscribers</h2>
+      <div id="subscribers-links">
       <div
         tal:condition="direct_subscriptions"
         tal:repeat="subscription direct_subscriptions"
+        tal:attributes="id string:subscriber-${subscription/person/name}"
       >
         <metal:subscriber  metal:define-macro="subscriber-row">
 
@@ -33,12 +35,15 @@
                style="float: right"
                tal:attributes="title string:Unsubscribe ${subscription/person/fmt:displayname};
                                id string:unsubscribe-${subscription/person/name}">
-              <img src="/@@/remove" />
+              <img src="/@@/remove"
+                tal:attributes="id string:unsubscribe-icon-${subscription/person/name}" />
             </a>
 
         </metal:subscriber>
       </div>
-      <div tal:condition="not:direct_subscriptions">None</div>
+      </div>
+      <div id="none-subscribers"
+        tal:condition="not:direct_subscriptions">None</div>
   </div>
   <div
     tal:condition="from_dupes_subscriptions"
