@@ -197,8 +197,6 @@
               (<span tal:content="bug_branch/branch/lifecycle_status/title"
               tal:attributes="class string:branchstatus${bug_branch/branch/lifecycle_status/name}"
               >Experimental</span>)
-              <tal:bug_branch_status condition="not: show_edit|nothing"
-                                     replace="bug_branch/status/title"/>
               <a tal:condition="show_edit"
                  tal:attributes="href string:${bug_branch/branch/fmt:url}/+bug/${bug_branch/bug/id}/+edit;
                                  onclick string:return switchBugBranchFormAndWhiteboard('${bug_branch/id}')">
