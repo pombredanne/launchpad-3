@@ -2007,6 +2007,14 @@
         class="lp.registry.browser.product.ProductAddView"
         permission="launchpad.AnyPerson"
         template="../templates/product-new.pt"/>
+    <browser:page
+        name="+new-guided"
+        for="lp.registry.interfaces.product.IProductSet"
+        facet="overview"
+        class="lp.registry.browser.product.ProductAddView"
+        attribute="redirect_to_plusnew"
+        permission="launchpad.AnyPerson"
+        />
     <browser:menus
         classes="
             ProductFacets

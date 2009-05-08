@@ -1617,6 +1617,10 @@ class ProductAddView(MultiStepView):
     def first_step(self):
         return ProjectAddStepOne
 
+    def redirect_to_plusnew(self):
+        """Redirect from the old +new-guided to the current +new page."""
+        self.request.response.redirect(canonical_url(self.context) + '/+new')
+
 
 class ProductEditPeopleView(LaunchpadEditFormView):
     """Enable editing of important people on the project."""
