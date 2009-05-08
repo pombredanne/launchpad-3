@@ -136,7 +136,6 @@ from lp.registry.model.gpgkey import *
 from canonical.launchpad.database.archive import *
 from canonical.launchpad.database.emailaddress import *
 from canonical.launchpad.database.oauth import *
-from canonical.signon.model.openidserver import *
 from lp.registry.model.entitlement import *
 from lp.registry.model.mailinglist import *
 from canonical.launchpad.database.hwdb import *
