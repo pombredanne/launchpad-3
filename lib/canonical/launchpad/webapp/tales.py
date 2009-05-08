@@ -1145,7 +1145,7 @@ class BranchFormatterAPI(ObjectFormatterAPI):
 
     traversable_names = {
         'link': 'link', 'url': 'url', 'project-link': 'projectLink',
-        'title-link': 'titleLink', 'bzr-link': 'bzrLink', 'api_url': 'api_url'}
+        'title-link': 'titleLink', 'bzr-link': 'bzrLink'}
 
     def _args(self, view_name):
         """Generate a dict of attributes for string template expansion."""

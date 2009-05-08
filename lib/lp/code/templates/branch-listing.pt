@@ -41,6 +41,15 @@ function hide_commit(id) {
 }
 registerLaunchpadFunction(hookUpFilterSubmission);
 
+/* Sparklines!
+addEvent( window, "load", function() {
+  for(i in branch_sparks) {
+    branch_id = branch_sparks[i][0];
+    json_url = branch_sparks[i][1];
+    document.getElementById(branch_id).innerHTML = json_url;
+  }
+});
+*/
 
 YUI().use('io-base', 'lazr.anim', 'node', 'json-parse', function(Y) {
 
