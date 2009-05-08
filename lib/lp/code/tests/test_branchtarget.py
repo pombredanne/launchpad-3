@@ -37,11 +37,6 @@ class BaseBranchTargetTests:
         self.assertEqual(
             canonical_url(self.original), canonical_url(self.target))
 
-    def test_collection(self):
-        # The collection attribute should return an IBranchCollection filtered
-        # by a single package branch.
-        self.assertEqual(self.target.collection.getBranches().count(), 1)
-
 
 class TestPackageBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
 
@@ -97,6 +92,16 @@ class TestPackageBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
         target = IBranchTarget(self.original)
         self.assertEqual(self.original.displayname, target.displayname)
 
+    def test_collection(self):
+        # The collection attribute should return an IBranchCollection filtered
+        # by a single package branch.
+        self.assertEqual(self.target.collection.getBranches().count(), 0)
+        package_branch = self.factory.makePackageBranch(
+            sourcepackage=self.original)
+        branches = self.target.collection.getBranches()
+        self.assertEqual(branches.count(), 1)
+        self.assertTrue(package_branch in branches)
+
 
 class TestPersonBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
 
@@ -135,6 +140,16 @@ class TestPersonBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
         # The display name of a person branch target is ~$USER/+junk.
         target = IBranchTarget(self.original)
         self.assertEqual('~%s/+junk' % self.original.name, target.displayname)
+
+    def test_collection(self):
+        # The collection attribute should return an IBranchCollection filtered
+        # by a single package branch.
+        self.assertEqual(self.target.collection.getBranches().count(), 0)
+        package_branch = self.factory.makeBranch(
+            owner=self.original)
+        branches = self.target.collection.getBranches()
+        self.assertEqual(branches.count(), 1)
+        self.assertTrue(package_branch in branches)
 
 
 class TestProductBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
@@ -196,6 +211,16 @@ class TestProductBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
         # the product.
         target = IBranchTarget(self.original)
         self.assertEqual(self.original.displayname, target.displayname)
+
+    def test_collection(self):
+        # The collection attribute should return an IBranchCollection filtered
+        # by a single package branch.
+        self.assertEqual(self.target.collection.getBranches().count(), 0)
+        package_branch = self.factory.makeBranch(
+            product=self.original)
+        branches = self.target.collection.getBranches()
+        self.assertEqual(branches.count(), 1)
+        self.assertTrue(package_branch in branches)
 
 
 class TestCheckDefaultStackedOnBranch(TestCaseWithFactory):
