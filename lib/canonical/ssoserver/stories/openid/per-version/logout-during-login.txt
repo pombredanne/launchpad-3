@@ -21,7 +21,7 @@ provider:
     >>> from openid.consumer.consumer import Consumer
     >>> from openid.fetchers import setDefaultFetcher
     >>> from openid.store.memstore import MemoryStore
-    >>> from canonical.launchpad.testing.openidhelpers import (
+    >>> from canonical.ssoserver.testing.openidhelpers import (
     ...     complete_from_browser, make_endpoint, PublisherFetcher)
     >>> setDefaultFetcher(PublisherFetcher())
 

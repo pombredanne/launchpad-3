@@ -7,7 +7,7 @@ Zope publisher:
 
     >>> from openid.consumer.consumer import Consumer
     >>> from openid.fetchers import setDefaultFetcher
-    >>> from canonical.launchpad.testing.openidhelpers import (
+    >>> from canonical.ssoserver.testing.openidhelpers import (
     ...     complete_from_browser, PublisherFetcher, print_endpoints)
     >>> setDefaultFetcher(PublisherFetcher())
 

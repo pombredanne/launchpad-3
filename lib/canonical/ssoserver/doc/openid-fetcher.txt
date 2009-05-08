@@ -7,7 +7,7 @@ publisher directly.
 It can be installed with the following commands:
 
     >>> from openid.fetchers import setDefaultFetcher
-    >>> from canonical.launchpad.testing.openidhelpers import PublisherFetcher
+    >>> from canonical.ssoserver.testing.openidhelpers import PublisherFetcher
     >>> setDefaultFetcher(PublisherFetcher())
 
 

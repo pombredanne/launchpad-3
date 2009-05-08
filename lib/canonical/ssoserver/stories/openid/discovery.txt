@@ -8,7 +8,7 @@ To test this, we will set up the python-openid to talk directly to the
 Zope publisher:
 
     >>> from openid.fetchers import setDefaultFetcher
-    >>> from canonical.launchpad.testing.openidhelpers import (
+    >>> from canonical.ssoserver.testing.openidhelpers import (
     ...     PublisherFetcher, print_endpoints)
     >>> setDefaultFetcher(PublisherFetcher())
 

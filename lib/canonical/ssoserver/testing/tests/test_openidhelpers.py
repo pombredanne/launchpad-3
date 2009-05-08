@@ -10,12 +10,14 @@ from openid.consumer.consumer import Consumer
 from openid.consumer.discover import (
     OPENID_1_0_TYPE, OPENID_1_1_TYPE, OPENID_2_0_TYPE,
     OPENID_IDP_2_0_TYPE)
+from openid.fetchers import setDefaultFetcher
 from openid.message import IDENTIFIER_SELECT
 from openid.store.memstore import MemoryStore
 
-from canonical.launchpad.testing.openidhelpers import (
+from canonical.ssoserver.testing.openidhelpers import (
     complete_from_browser, make_endpoint, make_identifier_select_endpoint,
-    maybe_fixup_identifier_select_request)
+    maybe_fixup_identifier_select_request, PublisherFetcher)
+from canonical.testing import DatabaseFunctionalLayer
 
 
 class MakeEndpointTests(unittest.TestCase):
@@ -97,7 +99,22 @@ class MakeIdentifierSelectEndpointTests(unittest.TestCase):
         self.assertEqual(endpoint.local_id, None)
 
 
-class MaybeFixupIdentifierSelectRequestTests(unittest.TestCase):
+class PublisherFetcherMixin:
+    """A mixin that configures the publisher backend for openid.fetchers."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(PublisherFetcherMixin, self).setUp()
+        setDefaultFetcher(PublisherFetcher())
+
+    def tearDown(self):
+        setDefaultFetcher(None)
+        super(PublisherFetcherMixin, self).tearDown()
+
+
+class MaybeFixupIdentifierSelectRequestTests(
+    PublisherFetcherMixin, unittest.TestCase):
     """Tests for the maybe_fixup_identifier_select() helper."""
 
     def test_openid1(self):
@@ -143,7 +160,7 @@ class MaybeFixupIdentifierSelectRequestTests(unittest.TestCase):
         self.assertEqual(endpoint.local_id, None)
 
 
-class CompleteFromBrowserTests(unittest.TestCase):
+class CompleteFromBrowserTests(PublisherFetcherMixin, unittest.TestCase):
     """Tests for the complete_from_browser() helper."""
 
     def test_complete_from_browser(self):
