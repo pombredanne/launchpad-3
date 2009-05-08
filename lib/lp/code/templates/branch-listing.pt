@@ -41,16 +41,6 @@ function hide_commit(id) {
 }
 registerLaunchpadFunction(hookUpFilterSubmission);
 
-/* Sparklines!
-addEvent( window, "load", function() {
-  for(i in branch_sparks) {
-    branch_id = branch_sparks[i][0];
-    json_url = branch_sparks[i][1];
-    document.getElementById(branch_id).innerHTML = json_url;
-  }
-});
-*/
-
 YUI().use('io-base', 'lazr.anim', 'node', 'json-parse', function(Y) {
 
   function doUpdate(transaction_id, response, args) {
@@ -67,10 +57,11 @@ YUI().use('io-base', 'lazr.anim', 'node', 'json-parse', function(Y) {
 
 
   function updateSparks() {
-    for(i in branch_sparks) {
-      branch_id = branch_sparks[i][0];
-      json_url = branch_sparks[i][1];
-      var container = branch_id;
+    spark_div = 'dev_focus_spark';
+
+    if(Y.get(spark_div)) {
+      json_url = branch_sparks[0][1];
+      var container = spark_div;
       var uri = json_url;
       var xhr_config = {
           on: {
@@ -283,11 +274,13 @@ YUI().use('io-base', 'lazr.anim', 'node', 'json-parse', function(Y) {
                 tal:content="branch/date_last_modified/fmt:datetime">
             2005-02-12 13:45 EST
           </span>
-          <div tal:attributes="id string:b-${repeat/branch/number}">
-          <span tal:attributes="title branch/date_last_modified/fmt:datetime"
-                tal:content="branch/since_updated/fmt:approximateduration/use-digits">
-            sometime
+          <div tal:condition="branch/is_development_focus" id="dev_focus_spark">
+            <div tal:attributes="id string:b-${repeat/branch/number}">
+            <span tal:attributes="title branch/date_last_modified/fmt:datetime"
+                  tal:content="branch/since_updated/fmt:approximateduration/use-digits">
+                sometime
             </span> ago
+            </div>
           </div>
         </td>
 
