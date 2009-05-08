@@ -28,7 +28,7 @@ IScriptActivitySet.recordSuccess():
   >>> from canonical.testing.layers import LaunchpadZopelessLayer
 
   >>> UTC = pytz.timezone('UTC')
-  >>> LaunchpadZopelessLayer.switchDbUser('garbo-daily') # A script db user
+  >>> LaunchpadZopelessLayer.switchDbUser('garbo_daily') # A script db user
 
   >>> activity = getUtility(IScriptActivitySet).recordSuccess(
   ...     name='script-name',
