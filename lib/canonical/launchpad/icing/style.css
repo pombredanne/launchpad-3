@@ -449,6 +449,9 @@ fieldset .collapsed {display: none;}
 fieldset .expanded {display: block;}
 fieldset.collapsible legend {font-weight: normal;}
 
+.unseen {display: none;}
+.seen {display: block;}
+
 form.primary.search {
   margin-bottom: 2em;
 }

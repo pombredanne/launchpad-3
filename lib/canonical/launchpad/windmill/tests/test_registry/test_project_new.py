@@ -32,14 +32,6 @@ def test_projects_plusnew_step_two():
     client.asserts.assertText(
         id=u'step-title',
         validator=u'Check for duplicate projects')
-    ## # The search results are visible.
-    ## client.asserts.assertProperty(
-    ##     id=u'search-results',
-    ##     validator='style.display|block')
-    ## # The form is hidden.
-    ## client.asserts.assertProperty(
-    ##     id=u'launchpad-form-widgets',
-    ##     validator='style.display|none')
     # Clicking on the "No" button hides the button and search results, reveals
     # the form widgets, and reveals an href link for toggling the search
     # results.  It also changes the h2 title to something more appropriate.
@@ -47,33 +39,23 @@ def test_projects_plusnew_step_two():
     client.asserts.assertText(
         id=u'step-title',
         validator=u'Registration details')
-    # You would think that the following should validate that the
-    # search-results node is currently closed by the lazr-js slide-in effect,
-    # but you would be wrong.  It seems impossible to know why.
-    ## client.asserts.assertProperty(
-    ##     id=u'search-results',
-    ##     validator='class|lazr-closed')
-    # Here's a working alternative.  It finds the search-results <div> but
-    # only if it has a class of 'lazr-closed'.  Scream now.
-    client.asserts.assertNode(
-        xpath="//div[@id='search-results' and @class='lazr-closed']")
+    # The className for hidden elements is lazr-closed  because it's set by
+    # the slide-in effect.  For seen elements, it's lazr-oepned.
+    client.asserts.assertProperty(
+        id='search-results', validator='className|lazr-closed')
     client.asserts.assertProperty(
         id=u'launchpad-form-widgets',
-        validator='style.display|block')
+        validator='className|lazr-opened')
     client.asserts.assertProperty(
         id=u'search-results-expander',
-        validator='style.display|block')
+        validator='className|seen')
     # Clicking on the href expands the search results.
     client.click(id='search-results-expander')
-    ## client.asserts.assertProperty(
-    ##     id=u'search-results',
-    ##     validator='class|lazr-opened')
-    ## # Clicking it again hides the results.
-    client.asserts.assertNode(
-        xpath="//div[@id='search-results' and @class='lazr-opened']")
+    client.asserts.assertProperty(
+        id=u'search-results',
+        validator='className|lazr-opened')
+    # Clicking it again hides the results.
     client.click(id='search-results-expander')
-    ## client.asserts.assertProperty(
-    ##     id=u'search-results',
-    ##     validator='class|lazr-closed')
-    client.asserts.assertNode(
-        xpath="//div[@id='search-results' and @class='lazr-closed']")
+    client.asserts.assertProperty(
+        id=u'search-results',
+        validator='className|lazr-closed')

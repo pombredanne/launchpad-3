@@ -39,10 +39,10 @@ YUI().use('node', 'lazr.effects', function(Y) {
                 return;
             }
             if (flag) {
-                separator.setStyle('display', 'block');
+                separator.setAttribute('class', 'seen');
             }
             else {
-                separator.setStyle('display', 'none');
+                separator.setAttribute('class', 'unseen');
             }
         }
 
@@ -54,7 +54,7 @@ YUI().use('node', 'lazr.effects', function(Y) {
             var expander = Y.get('#search-results-expander');
 
             /* Slide in the search results and hide them under a link. */
-            expander.setStyle('display', 'block');
+            expander.setAttribute('class', 'js-action seen');
 
             connect(expander, 'onclick', function(event) {
                 event.preventDefault();
@@ -85,15 +85,14 @@ YUI().use('node', 'lazr.effects', function(Y) {
             /* Hide the 'No' button, but slide out the search results, so the
              * user has a clue that Something Is Happening.
              */
-            details_buttons.setStyle('display', 'none');
+            details_buttons.setAttribute('class', 'unseen');
 
             /* Slide out the registration details widgets. */
             Y.lazr.effects.slide_out(form_widgets).run();
 
             /* Toggle the visibility of the various other widgets. */
-            /* form_widgets.setStyle('display', 'block'); */
-            form_actions.setStyle('display', 'block');
-            title.setStyle('display', 'block');
+            form_actions.setAttribute('class', 'seen');
+            title.setAttribute('class', 'seen');
 
             /* Set the H2 title to something more appropriate for the
              * selected task.
@@ -120,15 +119,15 @@ YUI().use('node', 'lazr.effects', function(Y) {
         show_separator(false);
 
         if (details_buttons) {
-            details_buttons.setStyle('display', 'block');
+            details_buttons.setAttribute('class', 'seen');
             connect(details_buttons, 'onclick', complete_registration);
         }
 
         /* If there are search results, hide the registration details. */
         if (search_results) {
-            form_widgets.setStyle('display', 'none');
-            form_actions.setStyle('display', 'none');
-            title.setStyle('display', 'none');
+            form_widgets.setAttribute('class', 'unseen');
+            form_actions.setAttribute('class', 'unseen');
+            title.setAttribute('class', 'unseen');
         }
 
         /* Finally, if we've been here before (e.g. there was an error in
@@ -168,8 +167,7 @@ YUI().use('node', 'lazr.effects', function(Y) {
       </metal:step>
 
       <metal:extra metal:fill-slot="extra_top">
-        <a href="" class="js-action" id="search-results-expander"
-           style="display: none;">
+        <a href="" id="search-results-expander" class="js-action unseen">
           <img id="search-results-arrow" src="/@@/treeCollapsed"
                title="Show search results" alt="Show search results"/>
           Possible duplicate projects
@@ -193,7 +191,7 @@ YUI().use('node', 'lazr.effects', function(Y) {
               </tr>
             </tbody>
           </table>
-          <div id="registration-details-buttons" style="display: none;">
+          <div id="registration-details-buttons" class="unseen">
             <input type="button"
                    value="No, this is a new project"/>
             or <a tal:attributes="href view/cancel_url">Cancel</a>
