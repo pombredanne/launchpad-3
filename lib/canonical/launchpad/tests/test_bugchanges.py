@@ -20,6 +20,7 @@ from canonical.launchpad.interfaces.bugtask import (
 from canonical.launchpad.interfaces.structuralsubscription import (
     BugNotificationLevel)
 from canonical.launchpad.testing.factory import LaunchpadObjectFactory
+from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.testing import LaunchpadFunctionalLayer
 
@@ -30,11 +31,13 @@ class TestBugChanges(unittest.TestCase):
 
     def setUp(self):
         login('foo.bar@canonical.com')
+        self.admin_user = getUtility(ILaunchBag).user
         self.factory = LaunchpadObjectFactory()
         self.user = self.factory.makePerson(displayname='Arthur Dent')
         self.product = self.factory.makeProduct(
             owner=self.user, official_malone=True)
-        self.bug = self.factory.makeBug(product=self.product, owner=self.user)
+        self.bug = self.factory.makeBug(
+            product=self.product, owner=self.user, comment="ENOTOWEL")
         self.bug_task = self.bug.bugtasks[0]
 
         # Add some structural subscribers to show that notifications
@@ -1352,6 +1355,29 @@ class TestBugChanges(unittest.TestCase):
             expected_activity=[status_activity, conversion_activity],
             expected_notification=[status_notification,
                                    conversion_notification])
+
+    def test_create_bug(self):
+        # When a bug is created, activity is recorded and a comment
+        # notification is sent.
+        notify(ObjectCreatedEvent(self.bug))
+
+        expected_activity = {
+            'person': self.admin_user,
+            'whatchanged': 'bug',
+            'message': u"added bug",
+            }
+
+        expected_notification = {
+            'person': self.user,
+            'text': u"ENOTOWEL",
+            'is_comment': True,
+            'recipients': self.bug.getBugNotificationRecipients(
+                level=BugNotificationLevel.COMMENTS),
+            }
+
+        self.assertRecordedChange(
+            expected_activity=expected_activity,
+            expected_notification=expected_notification)
 
 
 def test_suite():
