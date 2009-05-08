@@ -261,8 +261,8 @@ div.package-details {
     <li id="total_size">
        Estimated repository size:
        <tal:used replace="usage_summary/used/fmt:bytes" />
-       (<tal:used_percentage
-          replace="string:${usage_summary/used_percentage}%" />)
+       (<span tal:attributes="class usage_summary/used_css_class"
+              tal:content="string:${usage_summary/used_percentage}%"/>)
         of <tal:quota replace="usage_summary/quota/fmt:bytes" /></li>
   </ul>
 

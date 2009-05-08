@@ -370,6 +370,8 @@ class ArchiveViewBase(LaunchpadView):
                 return 'package'
             return 'packages'
 
+        # Calculate the label for the package counters respecting
+        # singular/plural forms.
         number_of_sources = self.context.number_of_sources
         source_label = '%s source %s' % (
             number_of_sources, package_plural(number_of_sources))
@@ -378,9 +380,25 @@ class ArchiveViewBase(LaunchpadView):
         binary_label = '%s binary %s' % (
             number_of_binaries, package_plural(number_of_binaries))
 
+        # Quota is stored in MiB, convert it to bytes.
         quota = self.context.authorized_size * (2 ** 20)
         used = self.context.estimated_size
-        used_percentage = "%0.2f" % ((float(used) / quota) * 100)
+
+        # Calculate the usage factor and limit it to 100%.
+        used_factor = (float(used) / quota)
+        if used_factor > 1:
+            used_factor = 1
+
+        # Calculate the appropriate CSS class to be used with the usage
+        # factor. Highlight it (in red) if usage is over 90% of the quota.
+        if used_factor > 0.90:
+            used_css_class = 'red'
+        else:
+            used_css_class = 'green'
+
+        # Usage percentage with 2 degrees of precision (more than enough
+        # for humans).
+        used_percentage = "%0.2f" % (used_factor * 100)
 
         return dict(
             source_label=source_label,
@@ -389,6 +407,7 @@ class ArchiveViewBase(LaunchpadView):
             binaries_size=self.context.binaries_size,
             used=used,
             used_percentage=used_percentage,
+            used_css_class=used_css_class,
             quota=quota)
 
     @property
