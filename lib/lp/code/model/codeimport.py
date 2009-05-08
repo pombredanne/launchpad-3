@@ -162,7 +162,7 @@ class CodeImport(SQLBase):
         last_success = Func(
             "coalesce",
             Select(
-                (CodeImportResult.id,),
+                CodeImportResult.id,
                 And(CodeImportResult.status == CodeImportResultStatus.SUCCESS,
                     CodeImportResult.code_import == self),
                 order_by=CodeImportResult.id,
