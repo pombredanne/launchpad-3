@@ -245,7 +245,8 @@ class RevisionAuthorEmailLinker(TunableLoop):
 
     maximum_chunk_size = 1000
 
-    def __init__(self):
+    def __init__(self, log):
+        super(RevisionAuthorEmailLinker, self).__init__(log)
         self.author_store = IMasterStore(RevisionAuthor)
         self.email_store = IMasterStore(EmailAddress)
 
@@ -304,7 +305,8 @@ class HWSubmissionEmailLinker(TunableLoop):
 
     maximum_chunk_size = 1000
 
-    def __init__(self):
+    def __init__(self, log):
+        super(HWSubmissionEmailLinker, self).__init__(log)
         self.submission_store = IMasterStore(HWSubmission)
         self.email_store = IMasterStore(EmailAddress)
 
@@ -363,7 +365,8 @@ class MailingListSubscriptionPruner(TunableLoop):
 
     maximum_chunk_size = 1000
 
-    def __init__(self):
+    def __init__(self, log):
+        super(MailingListSubscriptionPruner, self).__init__(log)
         self.subscription_store = IMasterStore(MailingListSubscription)
         self.email_store = IMasterStore(EmailAddress)
 
