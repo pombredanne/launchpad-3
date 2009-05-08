@@ -161,13 +161,15 @@ class CodeImport(SQLBase):
         """See `ICodeImport`."""
         # This SQL translates as "how many code import results have there been
         # for this code import since the last successful one".
+        # This is not very efficient for long lists of code imports.
+        from storm.locals import Desc
         last_success = Func(
             "coalesce",
             Select(
                 CodeImportResult.id,
                 And(CodeImportResult.status == CodeImportResultStatus.SUCCESS,
                     CodeImportResult.code_import == self),
-                order_by=CodeImportResult.id,
+                order_by=Desc(CodeImportResult.id),
                 limit=1),
             0)
         return Store.of(self).find(

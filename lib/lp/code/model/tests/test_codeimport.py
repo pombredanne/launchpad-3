@@ -433,6 +433,15 @@ class TestConsecutiveFailureCount(TestCaseWithFactory):
         self.failImport(code_import)
         self.assertEqual(1, code_import.consecutive_failure_count)
 
+    def test_consecutive_failure_count_succeed_fail_succeed(self):
+        # A code import that has failed then succeeded then failed again has a
+        # consecutive_failure_count of 1.
+        code_import = self.factory.makeCodeImport()
+        self.succeedImport(code_import)
+        self.failImport(code_import)
+        self.succeedImport(code_import)
+        self.assertEqual(0, code_import.consecutive_failure_count)
+
     def test_consecutive_failure_count_other_import_non_interference(self):
         # The failure or success of other code imports does not affect
         # consecutive_failure_count.
