@@ -86,7 +86,8 @@ as being able to query private team membership (the
 IOpenIDRPConfig.can_query_any_team flag), then it is allowed to do so.
 To test this, lets create an RP config:
 
-    >>> from canonical.launchpad.interfaces import IOpenIDRPConfigSet
+    >>> from canonical.signon.interfaces.openidserver import (
+    ...     IOpenIDRPConfigSet)
     >>> login('foo.bar@canonical.com')
     >>> rpconfig = getUtility(IOpenIDRPConfigSet).new(
     ...     trust_root='http://launchpad.dev/',

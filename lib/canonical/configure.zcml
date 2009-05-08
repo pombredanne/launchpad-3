@@ -149,7 +149,7 @@
     <!-- virtual host: openid -->
     <browser:page
         name=""
-        for="canonical.launchpad.interfaces.IOpenIDApplication"
+        for="canonical.signon.interfaces.openidserver.IOpenIDApplication"
         class="canonical.launchpad.browser.launchpad.LaunchpadImageFolder"
         permission="zope.Public"
         layer=".signon.layers.OpenIDLayer"

@@ -72,7 +72,8 @@ play out a bit differently:
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.ftests import login, logout
-    >>> from canonical.launchpad.interfaces import IOpenIDRPConfigSet
+    >>> from canonical.signon.interfaces.openidserver import (
+    ...     IOpenIDRPConfigSet)
 
     >>> login('foo.bar@canonical.com')
     >>> rpconfig = getUtility(IOpenIDRPConfigSet).new(

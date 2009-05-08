@@ -199,7 +199,8 @@ is rendered.
 The OpenIDApplicationIndexView is the default view for the OpenID
 application. It is a used by the OpenID Discovery process.
 
-    >>> from canonical.launchpad.interfaces import IOpenIDApplication
+    >>> from canonical.signon.interfaces.openidserver import (
+    ...     IOpenIDApplication)
 
     >>> openid_app = getUtility(IOpenIDApplication)
     >>> request = LaunchpadTestRequest(

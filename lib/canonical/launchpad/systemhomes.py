@@ -33,7 +33,7 @@ from canonical.launchpad.interfaces import (
     IBugTaskSet, IBugTrackerSet, IBugWatchSet,
     ICodeImportSchedulerApplication, IDistroSeriesSet, IFeedsApplication,
     IHWDBApplication, ILanguageSet, ILaunchBag, ILaunchpadStatisticSet,
-    IMailingListApplication, IMaloneApplication, IOpenIDApplication,
+    IMailingListApplication, IMaloneApplication,
     IPrivateMaloneApplication, IProductSet, IRosettaApplication,
     ITranslationGroupSet, ITranslationsOverview, IWebServiceApplication)
 from lp.code.interfaces.codehosting import (
@@ -162,12 +162,6 @@ class BazaarApplication:
 
     def __init__(self):
         self.title = 'The Open Source Bazaar'
-
-
-class OpenIDApplication:
-    implements(IOpenIDApplication)
-
-    title = 'Launchpad Login Service'
 
 
 class RosettaApplication:

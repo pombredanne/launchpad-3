@@ -21,7 +21,8 @@ This includes:
 Configurations are created using the IOpenIDRPConfigSet utility:
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import IOpenIDRPConfigSet
+    >>> from canonical.signon.interfaces.openidserver import (
+    ...     IOpenIDRPConfigSet)
     >>> login(ANONYMOUS)
     >>> rpconfig = getUtility(IOpenIDRPConfigSet).new(
     ...     trust_root='http://*.example.com/',
@@ -32,7 +33,7 @@ Configurations are created using the IOpenIDRPConfigSet utility:
 The resulting object implements the IOpenIDRPConfig interface:
 
     >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> from canonical.launchpad.interfaces import IOpenIDRPConfig
+    >>> from canonical.signon.interfaces.openidserver import IOpenIDRPConfig
 
     >>> verifyObject(IOpenIDRPConfig, rpconfig)
     True

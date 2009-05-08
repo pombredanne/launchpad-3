@@ -61,7 +61,8 @@ The RP config contains all the information we'd expect:
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.ftests import ANONYMOUS, login, logout
-    >>> from canonical.launchpad.interfaces import IOpenIDRPConfigSet
+    >>> from canonical.signon.interfaces.openidserver import (
+    ...     IOpenIDRPConfigSet)
 
     >>> login(ANONYMOUS)
     >>> rpconfig = getUtility(IOpenIDRPConfigSet).getByTrustRoot(

@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'IOpenIDApplication',
     'IOpenIDAuthorization',
     'IOpenIDAuthorizationSet',
     'IOpenIDPersistentIdentity',
@@ -26,6 +27,7 @@ from canonical.launchpad import _
 from canonical.launchpad.fields import (
     BaseImageUpload, PasswordField, URIField, UniqueField)
 from canonical.launchpad.interfaces.account import IAccount
+from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
 from lp.registry.interfaces.person import PersonCreationRationale
 from lazr.restful.fields import Reference
 
@@ -221,6 +223,9 @@ class IOpenIDRPSummarySet(Interface):
         :param trust_root: A string used as an OpenID trust root.
         :return: An `IOpenIDRPSummary` or None.
         """
+
+class IOpenIDApplication(ILaunchpadApplication):
+    """Launchpad Login Service application root."""
 
 
 class IOpenIDPersistentIdentity(Interface):

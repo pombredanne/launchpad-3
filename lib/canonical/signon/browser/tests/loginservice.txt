@@ -27,7 +27,8 @@ As well as these actions, there are a number of error handling code paths:
     >>> from canonical.launchpad.ftests import LaunchpadFormHarness
     >>> from canonical.signon.browser.openidserver import (
     ...     LoginServiceLoginView)
-    >>> from canonical.launchpad.interfaces import IOpenIDApplication
+    >>> from canonical.signon.interfaces.openidserver import (
+    ...     IOpenIDApplication)
     >>> from canonical.launchpad.webapp import LaunchpadFormView
 
     # Create a fake LoginServiceLoginView which stubs out OpenID-related bits

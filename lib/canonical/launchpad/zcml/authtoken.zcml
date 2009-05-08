@@ -75,7 +75,7 @@
     <browser:url
         for="canonical.launchpad.interfaces.IAuthTokenSet"
         path_expression="string:token"
-        parent_utility="canonical.launchpad.interfaces.IOpenIDApplication"
+        parent_utility="canonical.signon.interfaces.openidserver.IOpenIDApplication"
         />
 
 

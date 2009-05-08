@@ -31,7 +31,9 @@ configuration that uses the UBUNTU_SHOP creation rationale:
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces import (
-    ...     IOpenIDRPConfigSet, IPersonSet, PersonCreationRationale)
+    ...     IPersonSet, PersonCreationRationale)
+    >>> from canonical.signon.interfaces.openidserver import (
+    ...     IOpenIDRPConfigSet)
 
     >>> login('foo.bar@canonical.com')
     >>> rpconfig = getUtility(IOpenIDRPConfigSet).new(

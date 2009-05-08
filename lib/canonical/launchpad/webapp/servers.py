@@ -44,10 +44,11 @@ from lazr.restful.publisher import (
     WebServicePublicationMixin, WebServiceRequestTraversal)
 
 from canonical.launchpad.interfaces import (
-    IFeedsApplication, IPrivateApplication, IOpenIDApplication, IPerson,
-    IPersonSet, IWebServiceApplication, IOAuthConsumerSet, NonceAlreadyUsed,
+    IFeedsApplication, IPrivateApplication, IPerson, IPersonSet,
+    IWebServiceApplication, IOAuthConsumerSet, NonceAlreadyUsed,
     TimestampOrderingError, ClockSkew)
 from canonical.shipit.interfaces.shipit import IShipItApplication
+from canonical.signon.interfaces.openidserver import IOpenIDApplication
 import canonical.launchpad.layers
 import canonical.launchpad.versioninfo
 import canonical.shipit.layers

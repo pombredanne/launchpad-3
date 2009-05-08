@@ -1,5 +1,11 @@
 <configure xmlns="http://namespaces.zope.org/zope">
 
+  <securedutility
+      class=".systemhome.OpenIDApplication"
+      provides=".interfaces.openidserver.IOpenIDApplication">
+    <allow interface=".interfaces.openidserver.IOpenIDApplication" />
+  </securedutility>
+
   <include package=".model" />
   <include package=".adapters" />
   <include package=".browser" />

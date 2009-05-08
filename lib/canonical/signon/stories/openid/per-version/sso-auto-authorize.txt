@@ -23,7 +23,8 @@ automatically authorized:
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.ftests import login, logout
-    >>> from canonical.launchpad.interfaces import IOpenIDRPConfigSet
+    >>> from canonical.signon.interfaces.openidserver import (
+    ...     IOpenIDRPConfigSet)
 
     >>> login('admin@canonical.com')
     >>> rpconfig = getUtility(IOpenIDRPConfigSet).new(
