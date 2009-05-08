@@ -53,7 +53,8 @@ from canonical.launchpad.helpers import truncate_text
 from canonical.launchpad.interfaces.bug import IBugSet
 from canonical.launchpad.interfaces.bugbranch import IBugBranch
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.interfaces.specificationbranch import ISpecificationBranch
+from canonical.launchpad.interfaces.specificationbranch import (
+    ISpecificationBranch)
 from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, enabled_with_permission,
     LaunchpadView, Navigation, NavigationMenu, stepto, stepthrough,
@@ -475,6 +476,21 @@ class BranchView(LaunchpadView, FeedsMixin):
                 return '<private server>'
 
         return branch.url
+
+    @property
+    def show_merge_links(self):
+        """Return whether or not merge proposal links should be shown.
+
+        Merge proposal links should not be shown if there is only one branch in
+        a non-final state.
+        """
+        # XXX: rockstar - Eventually, this if statement needs to be:
+        # if not self.context.target.supportsMergeProposals() and will when jml
+        # gets to it in his source package branch work.
+        # spec=package-branches
+        if not self.context.product:
+            return False
+        return self.context.target.collection.getBranches().count() > 1
 
 
 class DecoratedMergeProposal:
