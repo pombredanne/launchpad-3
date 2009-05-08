@@ -15,6 +15,7 @@ __metaclass__ = type
 __all__ = [
     'patch_entry_return_type',
     'patch_choice_parameter_type',
+    'patch_collection_property',
     'patch_collection_return_type',
     'patch_plain_parameter_type',
     'patch_reference_property',
@@ -72,11 +73,24 @@ def patch_choice_parameter_type(exported_class, method_name, param_name,
     param.vocabulary = choice_type
 
 
-def patch_reference_property(exported_class, property, property_type):
+def patch_reference_property(exported_class, property_name, property_type):
     """Update a `Reference` property type.
 
     :param exported_class: The class containing the property.
-    :param property: The property whose type you want to patch.
+    :param property_name: The name of the property whose type you need
+        to patch.
     :param property_type: The new type for the property.
     """
-    exported_class[property].schema = property_type
+    exported_class[property_name].schema = property_type
+
+
+def patch_collection_property(exported_class, property_name,
+                              collection_type):
+    """Update a `Collection` property type.
+
+    :param exported_class: The class containing the property.
+    :param property_name: The name of the property whose type you need
+        to patch.
+    :param collection_type: The `Collection` type.
+    """
+    exported_class[property_name].value_type.schema = collection_type
