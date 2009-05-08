@@ -1,7 +1,11 @@
 # Copyright 2006 Canonical Ltd.  All rights reserved.
 
-"""These widgets use the proprietary PopCalXP JavaScript widget to allow for
+"""These widgets use the a YUI2 calendar widget to allow for
 date and datetime selection.
+
+To avoid adding the YUI2 page-weight to launchpad.js, the relevant files
+need to be included on the individual pages using the widget. See
+templates/archive-subscribers.pt for an example.
 
 We should investigate zc.datewidget available from the Z3 SVN repository.
 """
@@ -29,13 +33,6 @@ from zope.component import getUtility
 from canonical.launchpad.interfaces import ILaunchBag
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.lazr import ExportedFolder
-
-
-class PopCalXPFolder(ExportedFolder):
-    """Export the PopCalXP Date picker resources."""
-
-    folder = os.path.join(
-        os.path.dirname(os.path.realpath(__file__)), '../../contrib/popcalxp')
 
 
 class DateTimeWidget(TextWidget):
