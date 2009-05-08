@@ -15,7 +15,7 @@ from zope.interface import Interface
 from zope.schema import Choice, Int, Object, TextLine
 from lazr.enum import DBEnumeratedType, DBItem
 from lazr.restful.declarations import export_as_webservice_entry, exported
-from lazr.restful.fields import Reference
+from lazr.restful.fields import ReferenceChoice
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import BugField, Summary
@@ -64,13 +64,14 @@ class IBugBranch(IHasDateCreated, IHasBug):
     export_as_webservice_entry()
 
     id = Int(title=_("Bug Branch #"))
-    bug = BugField(
-        title=_("The bug that is linked to."),
-        required=True, readonly=True)
-    branch = exported(
-        Reference(
-            title=_("Branch"), schema=IBranch,
+    bug = exported(
+        BugField(
+            title=_("The bug that is linked to."),
             required=True, readonly=True))
+    branch = exported(
+        ReferenceChoice(
+            title=_("Branch"), schema=IBranch,
+            vocabulary="Branch", required=True))
     revision_hint = TextLine(title=_("Revision Hint"))
     status = Choice(
         title=_("State"), vocabulary=BugBranchStatus,

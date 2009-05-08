@@ -145,6 +145,7 @@ A branch can also be linked to a bug through the API.
     ...     branch=erics_feature_branch['self_link']).jsonBody()
     >>> pprint_entry(bug_branch)
     branch_link: u'http://.../~eric/fooix/feature-branch'
+    bug_link: u'http://.../bugs/...'
     resource_type_link: u'http://.../#bug_branch'
     self_link: u'http://.../~eric/fooix/feature-branch/+bug/...'
 
@@ -157,6 +158,7 @@ branch.
     >>> bug_branch = bug_branches['entries'][0]
     >>> pprint_entry(bug_branch)
     branch_link: u'http://.../~eric/fooix/feature-branch'
+    bug_link: u'http://.../bugs/...'
     resource_type_link: u'http://.../#bug_branch'
     self_link: u'http://.../~eric/fooix/feature-branch/+bug/...'
 

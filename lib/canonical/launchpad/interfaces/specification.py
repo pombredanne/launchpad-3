@@ -876,10 +876,9 @@ class ISpecification(INewSpecification, INewSpecificationTarget, IHasOwner,
     def getBranchLink(branch):
         """Return the SpecificationBranch link for the branch, or None."""
 
-    @call_with(registrant=REQUEST_USER)
+    @call_with(registrant=REQUEST_USER, summary=None)
     @operation_parameters(
-        branch=Reference(schema=IBranch),
-        summary=Text())
+        branch=Reference(schema=IBranch))
     @operation_returns_entry(Interface) # Really IBugBranch
     @export_write_operation()
     def linkBranch(branch, registrant, summary=None):

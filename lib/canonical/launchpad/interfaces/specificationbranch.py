@@ -11,7 +11,7 @@ __all__ = [
     ]
 
 from zope.interface import Interface
-from zope.schema import Int
+from zope.schema import Choice, Int
 
 from lazr.restful.fields import Reference, ReferenceChoice
 from lazr.restful.declarations import (export_as_webservice_entry, exported,
@@ -35,11 +35,13 @@ class ISpecificationBranch(IHasDateCreated):
     specification = exported(
         ReferenceChoice(
             title=_("Blueprint"), vocabulary="Specification",
+            required=True,
             readonly=True, schema=ISpecification))
     branch = exported(
-        Reference(
+        ReferenceChoice(
             title=_("Branch"),
-            readonly=True,
+            vocabulary="Branch",
+            required=True,
             schema=IBranch))
     summary = Summary(title=_("Summary"), required=False)
 
