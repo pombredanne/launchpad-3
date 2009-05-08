@@ -517,34 +517,39 @@ class POTMsgSet(SQLBase):
         else:
             return None
 
-    def _makeTranslationMessageCurrent(self, pofile, new_message, is_imported,
+    def _makeTranslationMessageCurrent(self, pofile, new_message,
+                                       imported_message, is_imported,
                                        submitter, force_shared=False,
                                        force_diverged=False):
         """Make the given translation message the current one."""
         current_message = self.getCurrentTranslationMessage(
             pofile.potemplate, pofile.language, pofile.variant)
+        #import pdb; pdb.set_trace()
 
         # Converging from a diverged to a shared translation:
         # when the new translation matches a shared one (potemplate==None),
         # and a current translation is diverged (potemplate != None), then
         # we want to remove divergence.
+        converge_shared = force_shared
         if (not force_diverged and
             (current_message is None or
              ((new_message.potemplate is None) and
               (current_message.potemplate is not None)))):
-            force_shared = True
+            converge_shared = True
 
         make_current = False
 
         if is_imported:
             # A new imported message is made current
-            # only if there is no existing current message
+            # if there is no existing current message
+            # or if there was no previous imported message
             # or if the current message came from import
             # or if current message is empty (deactivated translation).
             # Or, if we are forcing a diverged imported translation.
             # Empty imported translations should not replace
             # non-empty imported translations.
             if (current_message is None or
+                imported_message is None or
                 (current_message.is_imported and
                  (current_message.is_empty or not new_message.is_empty)) or
                 current_message.is_empty or
@@ -557,6 +562,12 @@ class POTMsgSet(SQLBase):
                          new_message.is_empty)):
                     pofile.lasttranslator = submitter
                     pofile.date_changed = UTC_NOW
+
+                if (imported_message is not None and
+                    not (force_diverged or force_shared)):
+                    # If there was an imported message, keep the same
+                    # divergence/shared state unless something was forced.
+                    new_message.potemplate = imported_message.potemplate
         else:
             # Non-imported translations.
             make_current = True
@@ -589,7 +600,7 @@ class POTMsgSet(SQLBase):
                 pofile.lasttranslator = submitter
 
         if make_current:
-            if force_shared:
+            if converge_shared:
                 # Converging from a diverged to a shared translation.
                 if current_message is not None:
                     current_message.is_current = False
@@ -613,7 +624,7 @@ class POTMsgSet(SQLBase):
                                          force_edition_rights, is_imported,
                                          lock_timestamp):
         # Whether a message should be saved as a suggestion and
-        # whether a we should display a warning when an older translation is
+        # whether we should display a warning when an older translation is
         # submitted.
         # Returns a pair of (just_a_suggestion, warn_about_lock_timestamp).
 
@@ -693,6 +704,8 @@ class POTMsgSet(SQLBase):
         if is_imported:
             imported_message = self.getImportedTranslationMessage(
                 pofile.potemplate, pofile.language, pofile.variant)
+        else:
+            imported_message = None
 
         if matching_message is None:
             # Creating a new message.
@@ -759,20 +772,11 @@ class POTMsgSet(SQLBase):
                 # Makes the new_message current if needed and also
                 # assignes karma for translation approval
                 self._makeTranslationMessageCurrent(
-                    pofile, matching_message, is_imported, submitter,
+                    pofile, matching_message, imported_message,
+                    is_imported, submitter,
                     force_shared=force_shared, force_diverged=force_diverged)
 
         if is_imported:
-            # If there is no previously existing imported message,
-            # make this one current (revert current to imported).
-            if imported_message is None:
-                matching_message.is_current = True
-            else:
-                # If there was an imported message, keep the same
-                # divergence/shared state unless something was forced.
-                if not (force_diverged or force_shared):
-                    matching_message.potemplate = imported_message.potemplate
-
             # Note that the message is imported.
             matching_message.is_imported = is_imported
 
