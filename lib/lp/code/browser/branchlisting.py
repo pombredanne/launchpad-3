@@ -607,8 +607,6 @@ class BranchListingView(LaunchpadFormView, FeedsMixin):
         :param sort_by: an item from the BranchListingSort enumeration.
         """
         from lp.code.model.branch import Branch
-        from lp.registry.model.person import Owner
-        from lp.registry.model.product import Product
 
         DEFAULT_BRANCH_LISTING_SORT = [
             BranchListingSort.PRODUCT,
@@ -618,10 +616,10 @@ class BranchListingView(LaunchpadFormView, FeedsMixin):
             ]
 
         LISTING_SORT_TO_COLUMN = {
-            BranchListingSort.PRODUCT: (Asc, Product.name),
+            BranchListingSort.PRODUCT: (Asc, Branch.target_suffix),
             BranchListingSort.LIFECYCLE: (Desc, Branch.lifecycle_status),
             BranchListingSort.NAME: (Asc, Branch.name),
-            BranchListingSort.REGISTRANT: (Asc, Owner.name),
+            BranchListingSort.REGISTRANT: (Asc, Branch.owner_name),
             BranchListingSort.MOST_RECENTLY_CHANGED_FIRST: (
                 Desc, Branch.date_last_modified),
             BranchListingSort.LEAST_RECENTLY_CHANGED_FIRST: (
@@ -674,8 +672,7 @@ class NoContextBranchListingView(BranchListingView):
         if lifecycle_status is not None:
             collection = collection.withLifecycleStatus(*lifecycle_status)
         collection = collection.visibleByUser(self.user)
-        return collection.getBranches(
-            join_owner=False, join_product=False).order_by(
+        return collection.getBranches().order_by(
             self._branch_order)
 
 

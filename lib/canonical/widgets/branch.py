@@ -87,7 +87,7 @@ class TargetBranchWidget(LaunchpadRadioWidget):
         terms = []
         for branch in target_branches:
             terms.append(SimpleTerm(
-                    branch, branch.unique_name, branch.title))
+                    branch, branch.unique_name))
 
         return SimpleVocabulary(terms)
 

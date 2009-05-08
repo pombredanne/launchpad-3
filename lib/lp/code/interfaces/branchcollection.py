@@ -48,7 +48,7 @@ class IBranchCollection(Interface):
     def count():
         """The number of branches in this collection."""
 
-    def getBranches(join_owner=True, join_product=True):
+    def getBranches():
         """Return a result set of all branches in this collection.
 
         The returned result set will also join across the specified tables as
@@ -64,9 +64,6 @@ class IBranchCollection(Interface):
         will be joining across the Product table (which will be empty anyway)
         and slowing down the query.  By having these parameters, we can make
         the queries for the counting and branch id queries much faster.
-
-        :param join_owner: Join the Person table with the Branch.owner.
-        :param join_product: Left Join the Product table with Branch.product.
         """
 
     def getMergeProposals(statuses=None, for_branches=None):

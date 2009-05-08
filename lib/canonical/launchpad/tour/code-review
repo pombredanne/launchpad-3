@@ -40,7 +40,7 @@
             <p class="intro-text">
                 <strong>Launchpad encourages high quality contributions to your project by making code review public.</strong> Anyone can propose their code to be merged into any other branch linked to your project. From there, your community can publicly discuss the proposed branch and vote on whether it&rsquo;s right for inclusion.
             </p>
-            <div id="link-holder"><a href="https://code.launchpad.net/">Visit Launchpad Code &gt;</a><br /><a href="https://launchpad.net/projects/+new-guided">Add your project to Launchpad &gt;</a></div>
+            <div id="link-holder"><a href="https://code.launchpad.net/">Visit Launchpad Code &gt;</a><br /><a href="https://launchpad.net/projects/+new">Add your project to Launchpad &gt;</a></div>
         </div>
         <div id="page-intro-bottom"></div>
         <ul id="secondary-navigation">

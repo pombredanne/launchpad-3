@@ -319,8 +319,6 @@
                     id
                     branch_type
                     name
-                    title
-                    summary
                     url
                     whiteboard
                     target
@@ -401,11 +399,12 @@
                     namespace
                     pending_writes
                     commitsForDays
+                    needs_upgrading
                     "/>
     <require
         permission="launchpad.Edit"
         attributes="destroySelf setPrivate"
-        set_attributes="name title summary url mirror_status_message
+        set_attributes="name url mirror_status_message
                         owner author product lifecycle_status
                         last_mirrored last_mirrored_id last_mirror_attempt
                         mirror_failures pull_disabled next_mirror_time
@@ -490,7 +489,7 @@
   <subscriber
       for="lp.code.interfaces.branch.IBranch
            lazr.lifecycle.interfaces.IObjectModifiedEvent"
-      handler="canonical.launchpad.mailout.branch.send_branch_modified_notifications"/>
+      handler="lp.code.model.branch.branch_modified_subscriber"/>
   <class class="canonical.launchpad.mailout.branch.RecipientReason">
     <allow attributes="
                     getReason
