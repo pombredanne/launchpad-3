@@ -44,12 +44,12 @@ from lp.registry.interfaces.gpg import IGPGKey
 from lp.registry.interfaces.person import IPerson
 from canonical.launchpad.validators.name import name_validator
 
-from lazr.restful.fields import Reference
 from lazr.restful.declarations import (
-    export_as_webservice_entry, exported, export_read_operation,
-    export_factory_operation, export_operation_as, export_write_operation,
-    operation_parameters, operation_returns_collection_of,
-    rename_parameters_as, webservice_error)
+    REQUEST_USER, call_with, export_as_webservice_entry, exported,
+    export_read_operation, export_factory_operation, export_operation_as,
+    export_write_operation, operation_parameters,
+    operation_returns_collection_of, rename_parameters_as, webservice_error)
+from lazr.restful.fields import Reference
 
 
 class ArchiveDependencyError(Exception):
@@ -108,7 +108,7 @@ class IArchivePublic(IHasOwner):
 
     displayname = exported(
         StrippedTextLine(
-            title=_("Displayname"), required=False,
+            title=_("Displayname"), required=True,
             description=_("Displayname for this archive.")))
 
     enabled = Bool(
@@ -615,9 +615,9 @@ class IArchiveView(IHasBuildRecords):
             description=_("Whether or not to filter source names by exact"
                           " matching."),
             required=False),
-        published_since_date=Datetime(
-            title=_("Published Since Date"),
-            description=_("Return entries whose 'datepublished' is greater "
+        created_since_date=Datetime(
+            title=_("Created Since Date"),
+            description=_("Return entries whose `date_created` is greater "
                           "than or equal to this date."),
             required=False))
     # Really returns ISourcePackagePublishingHistory, see below for
@@ -626,7 +626,7 @@ class IArchiveView(IHasBuildRecords):
     @export_read_operation()
     def getPublishedSources(name=None, version=None, status=None,
                             distroseries=None, pocket=None,
-                            exact_match=False, published_since_date=None):
+                            exact_match=False, created_since_date=None):
         """All `ISourcePackagePublishingHistory` target to this archive.
 
         :param name: source name filter (exact match or SQL LIKE controlled
@@ -637,7 +637,7 @@ class IArchiveView(IHasBuildRecords):
         :param pocket: `PackagePublishingPocket` filter.
         :param exact_match: either or not filter source names by exact
                              matching.
-        :param published_since_date: Only return results whose 'datepublished'
+        :param created_since_date: Only return results whose `date_created`
             is greater than or equal to this date.
 
         :return: SelectResults containing `ISourcePackagePublishingHistory`.
@@ -818,6 +818,20 @@ class IArchiveAppend(Interface):
         :raises CannotCopy: if there is a problem copying.
         """
 
+    @call_with(registrant=REQUEST_USER)
+    @operation_parameters(
+        subscriber = PublicPersonChoice(
+            title=_("Subscriber"),
+            required=True,
+            vocabulary='ValidPersonOrTeam',
+            description=_("The person who is subscribed.")),
+        date_expires=Datetime(title=_("Date of Expiration"), required=False,
+            description=_("The timestamp when the subscription will "
+                "expire.")),
+        description=Text(title=_("Description"), required=False,
+            description=_("Free text describing this subscription.")))
+    # Really IArchiveSubscriber, set below to avoid circular import.
+    @export_factory_operation(Interface, [])
     def newSubscription(subscriber, registrant, date_expires=None,
                         description=None):
         """Create a new subscribtion to this archive.
@@ -826,7 +840,7 @@ class IArchiveAppend(Interface):
         access a private repository.
 
         :param subscriber: An `IPerson` who is allowed to access the
-        repository for this archive.
+            repository for this archive.
         :param registrant: An `IPerson` who created this subscription.
         :param date_expires: When the subscription should expire; None if
             it should not expire (default).
@@ -1131,6 +1145,10 @@ patch_entry_return_type(IArchive, 'newComponentUploader', IArchivePermission)
 patch_entry_return_type(IArchive, 'newQueueAdmin', IArchivePermission)
 patch_plain_parameter_type(IArchive, 'syncSources', 'from_archive', IArchive)
 patch_plain_parameter_type(IArchive, 'syncSource', 'from_archive', IArchive)
+
+from canonical.launchpad.interfaces.archivesubscriber import (
+    IArchiveSubscriber)
+patch_entry_return_type(IArchive, 'newSubscription', IArchiveSubscriber)
 
 from lp.registry.interfaces.distroseries import IDistroSeries
 from canonical.launchpad.interfaces.publishing import (

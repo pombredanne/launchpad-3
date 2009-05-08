@@ -82,15 +82,7 @@ def authenticate(browser):
     """Go through the OpenID process and authenticate."""
     # First click on the page where it says we have to log in.
     browser.getControl('Continue').click()
-
-    # Now we're at the LP login. since we have sent the auth cookie, we
-    # can sign in without specifying a user and password.
-    try:
-        browser.getControl('Sign In').click()
-    except LookupError:
-        return False
-    else:
-        return True
+    return True
 
 
 def main():

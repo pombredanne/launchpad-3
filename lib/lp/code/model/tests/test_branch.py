@@ -41,6 +41,8 @@ from canonical.launchpad.interfaces.specification import (
 from lp.code.interfaces.branch import (
     BranchCannotBePrivate, BranchCannotBePublic, BranchType,
     CannotDeleteBranch)
+from lp.code.interfaces.branch import (BranchFormat, RepositoryFormat,
+    BRANCH_FORMAT_UPGRADE_PATH, REPOSITORY_FORMAT_UPGRADE_PATH)
 from lp.code.interfaces.branchmergeproposal import InvalidBranchMergeProposal
 from lp.code.interfaces.branchsubscription import (
     BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel)
@@ -338,6 +340,54 @@ class TestBranch(TestCaseWithFactory):
         self.assertEqual(
             SourcePackage(branch.sourcepackagename, branch.distroseries),
             branch.sourcepackage)
+
+    def test_needsUpgrading_branch_format_unrecognized(self):
+        # A branch has a needs_upgrading attribute that returns whether or not
+        # a branch needs to be upgraded or not.  If the format is unrecognized,
+        # we don't try to upgrade it.
+        branch = self.factory.makePersonalBranch(
+            branch_format=BranchFormat.UNRECOGNIZED)
+        self.assertFalse(branch.needs_upgrading)
+
+    def test_needsUpgrading_branch_format_upgrade_not_needed(self):
+        # A branch has a needs_upgrading attribute that returns whether or not
+        # a branch needs to be upgraded or not.  If a branch is up to date, it
+        # doesn't need to be upgraded.
+        branch = self.factory.makePersonalBranch(
+            branch_format=BranchFormat.BZR_BRANCH_7)
+        self.assertFalse(branch.needs_upgrading)
+
+    def test_needsUpgrading_branch_format_upgrade_needed(self):
+        # A branch has a needs_upgrading attribute that returns whether or not
+        # a branch needs to be upgraded or not.  If a branch doesn't support
+        # stacking, it needs to be upgraded.
+        branch = self.factory.makePersonalBranch(
+            branch_format=BranchFormat.BZR_BRANCH_6)
+        self.assertTrue(branch.needs_upgrading)
+
+    def test_needsUpgrading_repository_format_unrecognized(self):
+        # A branch has a needs_upgrading attribute that returns whether or not
+        # a branch needs to be upgraded or not.  In the repo format is
+        # unrecognized, we don't try to upgrade it.
+        branch = self.factory.makePersonalBranch(
+            repository_format=RepositoryFormat.UNRECOGNIZED)
+        self.assertFalse(branch.needs_upgrading)
+
+    def test_needsUpgrading_repository_format_upgrade_not_needed(self):
+        # A branch has a needs_upgrading method that returns whether or not a
+        # branch needs to be upgraded or not.  If the repo format is up to
+        # date, there's no need to upgrade it.
+        branch = self.factory.makePersonalBranch(
+            repository_format=RepositoryFormat.BZR_KNITPACK_6)
+        self.assertFalse(branch.needs_upgrading)
+
+    def test_needsUpgrading_repository_format_upgrade_needed(self):
+        # A branch has a needs_upgrading method that returns whether or not a
+        # branch needs to be upgraded or not.  If the format doesn't support
+        # stacking, it needs to be upgraded.
+        branch = self.factory.makePersonalBranch(
+            repository_format=RepositoryFormat.BZR_REPOSITORY_4)
+        self.assertTrue(branch.needs_upgrading)
 
 
 class TestBzrIdentity(TestCaseWithFactory):

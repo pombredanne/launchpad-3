@@ -10,7 +10,8 @@ import time
 import unittest
 
 from pytz import UTC
-from storm.locals import Min
+from storm.expr import Min
+from storm.store import Store
 import transaction
 from zope.component import getUtility
 
@@ -18,8 +19,9 @@ from lp.code.model.codeimportresult import CodeImportResult
 from canonical.launchpad.database.oauth import OAuthNonce
 from canonical.launchpad.database.openidconsumer import OpenIDConsumerNonce
 from canonical.launchpad.interfaces import IMasterStore
+from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
 from lp.code.interfaces.codeimportresult import CodeImportResultStatus
-from canonical.launchpad.testing import TestCase
+from canonical.launchpad.testing import TestCase, TestCaseWithFactory
 from canonical.launchpad.scripts.garbo import (
     DailyDatabaseGarbageCollector, HourlyDatabaseGarbageCollector,
     OpenIDAssociationPruner, OpenIDConsumerAssociationPruner)
@@ -29,6 +31,7 @@ from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MASTER_FLAVOR)
 from canonical.testing.layers import (
     DatabaseLayer, LaunchpadScriptLayer, LaunchpadZopelessLayer)
+from lp.registry.interfaces.person import PersonCreationRationale
 
 
 class TestGarboScript(TestCase):
@@ -50,7 +53,7 @@ class TestGarboScript(TestCase):
         self.failIf(err.strip(), "Output to stderr: %s" % err)
 
 
-class TestGarbo(TestCase):
+class TestGarbo(TestCaseWithFactory):
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
@@ -245,6 +248,118 @@ class TestGarbo(TestCase):
 
     def test_OpenIDConsumerAssociationPruner(self):
         self.test_OpenIDAssociationPruner(OpenIDConsumerAssociationPruner)
+
+    def test_RevisionAuthorEmailLinker(self):
+        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        rev1 = self.factory.makeRevision('Author 1 <author-1@Example.Org>')
+        rev2 = self.factory.makeRevision('Author 2 <author-2@Example.Org>')
+        rev3 = self.factory.makeRevision('Author 3 <author-3@Example.Org>')
+
+        person1 = self.factory.makePerson(email='Author-1@example.org')
+        person2 = self.factory.makePerson(
+            email='Author-2@example.org',
+            email_address_status=EmailAddressStatus.NEW)
+        account3 = self.factory.makeAccount(
+            'Author 3', 'Author-3@example.org')
+
+        self.assertEqual(rev1.revision_author.person, None)
+        self.assertEqual(rev2.revision_author.person, None)
+        self.assertEqual(rev3.revision_author.person, None)
+
+        self.runDaily()
+
+        # Only the validated email address associated with a Person
+        # causes a linkage.
+        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        self.assertEqual(rev1.revision_author.person, person1)
+        self.assertEqual(rev2.revision_author.person, None)
+        self.assertEqual(rev3.revision_author.person, None)
+
+        # Validating an email address creates a linkage.
+        person2.validateAndEnsurePreferredEmail(person2.guessedemails[0])
+        self.assertEqual(rev2.revision_author.person, None)
+        transaction.commit()
+
+        self.runDaily()
+        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        self.assertEqual(rev2.revision_author.person, person2)
+
+        # Creating a person for an existing account creates a linkage.
+        person3 = account3.createPerson(PersonCreationRationale.UNKNOWN)
+        self.assertEqual(rev3.revision_author.person, None)
+        transaction.commit()
+
+        self.runDaily()
+        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        self.assertEqual(rev3.revision_author.person, person3)
+
+    def test_HWSubmissionEmailLinker(self):
+        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        sub1 = self.factory.makeHWSubmission(
+            emailaddress='author-1@Example.Org')
+        sub2 = self.factory.makeHWSubmission(
+            emailaddress='author-2@Example.Org')
+        sub3 = self.factory.makeHWSubmission(
+            emailaddress='author-3@Example.Org')
+
+        person1 = self.factory.makePerson(email='Author-1@example.org')
+        person2 = self.factory.makePerson(
+            email='Author-2@example.org',
+            email_address_status=EmailAddressStatus.NEW)
+        account3 = self.factory.makeAccount(
+            'Author 3', 'Author-3@example.org')
+
+        self.assertEqual(sub1.owner, None)
+        self.assertEqual(sub2.owner, None)
+        self.assertEqual(sub3.owner, None)
+
+        self.runDaily()
+
+        # Only the validated email address associated with a Person
+        # causes a linkage.
+        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        self.assertEqual(sub1.owner, person1)
+        self.assertEqual(sub2.owner, None)
+        self.assertEqual(sub3.owner, None)
+
+        # Validating an email address creates a linkage.
+        person2.validateAndEnsurePreferredEmail(person2.guessedemails[0])
+        self.assertEqual(sub2.owner, None)
+        transaction.commit()
+
+        self.runDaily()
+        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        self.assertEqual(sub2.owner, person2)
+
+        # Creating a person for an existing account creates a linkage.
+        person3 = account3.createPerson(PersonCreationRationale.UNKNOWN)
+        self.assertEqual(sub3.owner, None)
+        transaction.commit()
+
+        self.runDaily()
+        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        self.assertEqual(sub3.owner, person3)
+
+    def test_MailingListSubscriptionPruner(self):
+        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        team, mailing_list = self.factory.makeTeamAndMailingList(
+            'mlist-team', 'mlist-owner')
+        person = self.factory.makePerson(email='preferred@example.org')
+        email = self.factory.makeEmail('secondary@example.org', person)
+        transaction.commit()
+        mailing_list.subscribe(person, email)
+        transaction.commit()
+
+        # User remains subscribed if we run the garbage collector.
+        self.runDaily()
+        self.assertNotEqual(mailing_list.getSubscription(person), None)
+
+        # If we remove the email address that was subscribed, the
+        # garbage collector removes the subscription.
+        Store.of(email).remove(email)
+        transaction.commit()
+        self.runDaily()
+        self.assertEqual(mailing_list.getSubscription(person), None)
 
 
 def test_suite():
