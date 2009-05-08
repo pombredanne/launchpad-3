@@ -21,7 +21,7 @@ class LoggingUIFactory(TextUIFactory):
 
     def __init__(self, bar_type=None, stdin=None, stdout=None, stderr=None,
                  time_source=time.time, writer=None, interval=60.0):
-        """
+        """Construct a `LoggingUIFactory`.
 
         :param bar_type: See `TextUIFactory.__init__`.
         :param stdin: See `TextUIFactory.__init__`.
@@ -39,6 +39,7 @@ class LoggingUIFactory(TextUIFactory):
         self.interval = interval
         self._progress_view = LoggingTextProgressView(
             time_source, writer, interval)
+
 
 class LoggingTextProgressView(TextProgressView):
     """Support class for `LoggingUIFactory`. """
@@ -64,9 +65,12 @@ class LoggingTextProgressView(TextProgressView):
         self._transport_repaint_frequency = interval
 
     def _show_line(self, s):
-        # This is a bit hackish: we reset the _bytes_since_update and
-        # _transport_update_time whenever we write anything out at all, as I
-        # want transport activity to be reported as "since last log message".
+        # This is a bit hackish: even though this method is just expected to
+        # produce output, we reset the _bytes_since_update so that transport
+        # activity is reported as "since last log message" and
+        # _transport_update_time so that transport activity doesn't cause an
+        # update until it occurs more than _transport_repaint_frequency
+        # seconds after the last update of any kind.
         self._bytes_since_update = 0
         self._transport_update_time = self.time_source()
         self._writer(s)
@@ -79,7 +83,14 @@ class LoggingTextProgressView(TextProgressView):
         # We just report the amount of data transferred.
         return '%s bytes transferred' % self._bytes_since_update
 
-    # What's below *should* be in bzrlib, and will be soon.
+    # What's below is copied and pasted from bzrlib.ui.text.TextProgressView
+    # and changed to (a) get its notion of time from self.time_source (which
+    # can be replaced by a deterministic time source in tests) rather than
+    # time.time and (b) respect the _update_repaint_frequency,
+    # _transport_expire_time and _transport_repaint_frequency instance
+    # variables rather than having these as hard coded constants.  These
+    # changes could and should be ported upstream and then we won't have to
+    # carry our version of this code around any more.
 
     def show_progress(self, task):
         """Called by the task object when it has changed.
@@ -90,7 +101,8 @@ class LoggingTextProgressView(TextProgressView):
         must_update = task is not self._last_task
         self._last_task = task
         now = self.time_source()
-        if (not must_update) and (now < self._last_repaint + self._update_repaint_frequency):
+        if ((not must_update) and
+            (now < self._last_repaint + self._update_repaint_frequency)):
             return
         if now > self._transport_update_time + self._transport_expire_time:
             # no recent activity; expire it
@@ -112,7 +124,8 @@ class LoggingTextProgressView(TextProgressView):
         now = self.time_source()
         if self._transport_update_time is None:
             self._transport_update_time = now
-        elif now >= (self._transport_update_time + self._transport_repaint_frequency):
+        elif now >= (self._transport_update_time
+                     + self._transport_repaint_frequency):
             # guard against clock stepping backwards, and don't update too
             # often
             rate = self._bytes_since_update / (now - self._transport_update_time)

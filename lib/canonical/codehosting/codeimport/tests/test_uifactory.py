@@ -28,8 +28,7 @@ class TestLoggingUIFactory(TestCase):
         factory = self.makeLoggingUIFactory()
         bar = factory.nested_progress_bar()
         bar.update("hi")
-        self.assertEqual(
-            ['hi'], self.messages)
+        self.assertEqual(['hi'], self.messages)
 
     def test_second_rapid_progress_doesnt_update(self):
         # The second of two progress calls that are less than the factory's
@@ -39,8 +38,7 @@ class TestLoggingUIFactory(TestCase):
         bar.update("hi")
         self.fake_time.advance(factory.interval / 2)
         bar.update("there")
-        self.assertEqual(
-            ['hi'], self.messages)
+        self.assertEqual(['hi'], self.messages)
 
     def test_second_slow_progress_updates(self):
         # The second of two progress calls that are more than the factory's
@@ -50,8 +48,7 @@ class TestLoggingUIFactory(TestCase):
         bar.update("hi")
         self.fake_time.advance(factory.interval * 2)
         bar.update("there")
-        self.assertEqual(
-            ['hi', 'there'], self.messages)
+        self.assertEqual(['hi', 'there'], self.messages)
 
     def test_first_progress_on_new_bar_updates(self):
         # The first progress on a new progress task always generates output.
@@ -61,16 +58,14 @@ class TestLoggingUIFactory(TestCase):
         self.fake_time.advance(factory.interval / 2)
         bar2 = factory.nested_progress_bar()
         bar2.update("there")
-        self.assertEqual(
-            ['hi', 'hi:there'], self.messages)
+        self.assertEqual(['hi', 'hi:there'], self.messages)
 
     def test_update_with_count_formats_nicely(self):
         # When more details are passed to update, they are formatted nicely.
         factory = self.makeLoggingUIFactory()
         bar = factory.nested_progress_bar()
         bar.update("hi", 1, 8)
-        self.assertEqual(
-            ['hi 1/8'], self.messages)
+        self.assertEqual(['hi 1/8'], self.messages)
 
     def test_report_transport_activity_reports_bytes_since_last_update(self):
         # If there is no call to _progress_updated for 'interval' seconds, the

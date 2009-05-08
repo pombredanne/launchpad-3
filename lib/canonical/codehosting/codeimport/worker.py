@@ -444,7 +444,7 @@ class PullingImportWorker(ImportWorker):
         bazaar_tree = self.getBazaarWorkingTree()
         saved_factory = bzrlib.ui.ui_factory
         bzrlib.ui.ui_factory = LoggingUIFactory(
-            writer=lambda m:self._logger.info('%s', m))
+            writer=lambda m: self._logger.info('%s', m))
         try:
             bazaar_tree.branch.pull(
                 Branch.open(self.source_details.git_repo_url),
