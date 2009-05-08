@@ -74,6 +74,23 @@ class ArchiveSourcePublication:
         """See `ISourcePackagePublishingHistory`."""
         return self._builds
 
+    def getStatusSummaryForBuilds(self):
+        """See `ISourcePackagePublishingHistory`."""
+        # Call the method but with the ArchiveSourcePublication object
+        # as self, rather than the SPPH.
+
+        # XXX Michael Nelson 2009-05-08 bug=373715. It would be nice if
+        # lazr.delegates did this for us so we could avoid the hackiness
+        # below without having to copy the complete code in here.
+
+        # Note: we can't import the content class here to do:
+        #  SourcePackagePublishingHistory.__dict__,
+        # neither can we access the class without first removing the
+        # security property.
+        from zope.security.proxy import removeSecurityProxy
+
+        return removeSecurityProxy(self.context).__class__.__dict__[
+            'getStatusSummaryForBuilds'](self)
 
 class ArchiveSourcePublications:
     """`ArchiveSourcePublication` iterator."""
