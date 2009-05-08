@@ -12,11 +12,10 @@ __all__ = [
 
 from zope.component import getUtility
 from zope.interface import implements
-from zope.security.interfaces import Unauthorized
 
-from lp.code.interfaces.branch import BranchType
 from lp.code.interfaces.branchcollection import IAllBranches
-from lp.code.interfaces.branchtarget import IBranchTarget
+from lp.code.interfaces.branchtarget import (
+    check_default_stacked_on, IBranchTarget)
 from canonical.launchpad.interfaces.publishing import PackagePublishingPocket
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 
@@ -24,31 +23,6 @@ from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 def branch_to_target(branch):
     """Adapt an IBranch to an IBranchTarget."""
     return branch.target
-
-
-def check_default_stacked_on(branch):
-    """Return 'branch' if suitable to be a default stacked-on branch.
-
-    Only certain branches are suitable to be default stacked-on branches.
-    Branches that are *not* suitable include:
-      - remote branches
-      - branches the user cannot see
-      - branches that have not yet been successfully processed by the puller.
-
-    If the given branch is not suitable, return None. For convenience, also
-    returns None if passed None. Otherwise, return the branch.
-    """
-    if branch is None:
-        return None
-    try:
-        branch_type = branch.branch_type
-    except Unauthorized:
-        return None
-    if branch_type == BranchType.REMOTE:
-        return None
-    if branch.last_mirrored is None:
-        return None
-    return branch
 
 
 class _BaseBranchTarget:

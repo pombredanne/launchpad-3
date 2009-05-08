@@ -526,7 +526,7 @@ class TeamParticipation(SQLBase):
 
     _table = 'TeamParticipation'
 
-    team = ForeignKey(foreignKey='Person', dbName='team', notNull=True)
+    team = ForeignKey(dbName='team', foreignKey='Person', notNull=True)
     person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
 
 

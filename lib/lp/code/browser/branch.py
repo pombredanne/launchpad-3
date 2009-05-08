@@ -17,6 +17,7 @@ __all__ = [
     'BranchNavigation',
     'BranchNavigationMenu',
     'BranchInProductView',
+    'BranchSparkView',
     'BranchURL',
     'BranchView',
     'BranchSubscriptionsView',
@@ -25,7 +26,9 @@ __all__ = [
 
 import cgi
 from datetime import datetime, timedelta
+
 import pytz
+import simplejson
 
 from zope.app.form.browser import TextAreaWidget
 from zope.traversing.interfaces import IPathAdapter
@@ -196,13 +199,13 @@ class BranchContextMenu(ContextMenu):
 
     usedfor = IBranch
     facet = 'branches'
-    links = ['whiteboard', 'edit', 'delete_branch', 'browse_revisions',
+    links = ['edit_whiteboard', 'edit', 'delete_branch', 'browse_revisions',
              'subscription', 'add_subscriber', 'associations',
              'register_merge', 'landing_candidates',
              'link_bug', 'link_blueprint', 'edit_import', 'reviewer'
              ]
 
-    def whiteboard(self):
+    def edit_whiteboard(self):
         text = 'Edit whiteboard'
         return Link('+whiteboard', text, icon='edit')
 
@@ -320,6 +323,16 @@ class BranchView(LaunchpadView, FeedsMixin):
     def owner_is_registrant(self):
         """Is the branch owner the registrant?"""
         return self.context.owner == self.context.registrant
+
+    def show_whiteboard(self):
+        """Return whether or not the whiteboard should be shown.
+
+        The whiteboard is only shown for import branches.
+        """
+        if self.context.branch_type == BranchType.IMPORTED:
+            return True
+        else:
+            return False
 
     @property
     def codebrowse_url(self):
@@ -757,8 +770,7 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
     """The main branch view for editing the branch attributes."""
 
     field_names = [
-        'owner', 'product', 'name', 'private', 'url', 'summary',
-        'lifecycle_status', 'whiteboard']
+        'owner', 'product', 'name', 'private', 'url', 'lifecycle_status']
 
     custom_widget('lifecycle_status', LaunchpadRadioWidgetWithDescription)
 
@@ -892,8 +904,7 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
 
     schema = IBranch
     for_input = True
-    field_names = ['owner', 'name', 'branch_type', 'url',
-                   'summary', 'lifecycle_status', 'whiteboard']
+    field_names = ['owner', 'name', 'branch_type', 'url', 'lifecycle_status']
 
     branch = None
     custom_widget('branch_type', LaunchpadRadioWidgetWithDescription)
@@ -939,9 +950,7 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
                 name=data['name'],
                 registrant=self.user,
                 url=data.get('url'),
-                summary=data['summary'],
-                lifecycle_status=data['lifecycle_status'],
-                whiteboard=data['whiteboard'])
+                lifecycle_status=data['lifecycle_status'])
             if self.branch.branch_type == BranchType.MIRRORED:
                 self.branch.requestMirror()
         except BranchCreationForbidden:
@@ -1223,3 +1232,58 @@ class BranchRequestImportView(LaunchpadFormView):
     @property
     def action_url(self):
         return "%s/@@+request-import" % canonical_url(self.context)
+
+
+class BranchSparkView(LaunchpadView):
+    """This view generates the JSON data for the commit sparklines."""
+
+    __for__ = IBranch
+
+    # How many days to look for commits.
+    COMMIT_DAYS = 90
+
+    def _commitCounts(self):
+        """Return a dict of commit counts for rendering."""
+        epoch = (
+            datetime.now(tz=pytz.UTC) - timedelta(days=(self.COMMIT_DAYS-1)))
+        # Make a datetime for that date, but midnight.
+        epoch = epoch.replace(hour=0, minute=0, second=0, microsecond=0)
+        commits = dict(self.context.commitsForDays(epoch))
+        # However storm returns tz-unaware datetime objects.
+        day = datetime(year=epoch.year, month=epoch.month, day=epoch.day)
+        days = [day + timedelta(days=count)
+                for count in range(self.COMMIT_DAYS)]
+
+        commit_list = []
+        total_commits = 0
+        most_commits = 0
+        for index, day in enumerate(days):
+            count = commits.get(day, 0)
+            commit_list.append(count)
+            total_commits += count
+            if count >= most_commits:
+                most_commits = count
+                max_index = index
+        return {'count': total_commits,
+                'commits': commit_list,
+                'max_commits': max_index}
+
+    def render(self):
+        """Write out the commit data as a JSON string."""
+        # We want:
+        #  count: total commit count
+        #  last_commit: string to say when the last commit was
+        #  commits: an array of COMMIT_DAYS values for commits for that day
+        #  max_commits: an index into the commits array with the most commits,
+        #     most recent wins any ties.
+        values = {'count': 0, 'max_commits': 0}
+        # Check there have been commits.
+        if self.context.revision_count == 0:
+            values['last_commit'] = 'empty branch'
+        else:
+            tip = self.context.getTipRevision()
+            adapter = queryAdapter(tip.revision_date, IPathAdapter, 'fmt')
+            values['last_commit'] = adapter.approximatedate()
+            values.update(self._commitCounts())
+
+        return simplejson.dumps(values)

@@ -91,6 +91,9 @@ class IBuildQueue(Interface):
     def markAsBuilding(builder):
         """Set this queue item to a 'building' state."""
 
+    def reset():
+        """Reset this job, so it can be re-dispatched."""
+
     def updateBuild_IDLE(build_id, build_status, logtail,
                          filemap, dependencies, logger):
         """Somehow the builder forgot about the build job.

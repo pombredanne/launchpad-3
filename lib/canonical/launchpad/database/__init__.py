@@ -119,7 +119,7 @@ from canonical.launchpad.database.logintoken import *
 from lp.registry.model.codeofconduct import *
 from canonical.launchpad.database.component import *
 from canonical.launchpad.database.section import *
-from canonical.launchpad.database.shipit import *
+from canonical.shipit.model.shipit import *
 from canonical.launchpad.database.vpoexport import *
 from canonical.launchpad.database.vpotexport import *
 from lp.registry.model.karma import *
@@ -144,3 +144,4 @@ from canonical.launchpad.database.archivedependency import *
 from canonical.launchpad.database.packagediff import *
 from lp.code.model.codereviewcomment import *
 from canonical.launchpad.database.archivepermission import *
+from canonical.launchpad.database.packageset import *

@@ -22,6 +22,7 @@ from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice
 from canonical.launchpad.interfaces.archive import IArchive
 from lp.registry.interfaces.person import IPerson
+from lazr.restful.declarations import export_as_webservice_entry, exported
 from lazr.restful.fields import Reference
 
 
@@ -57,34 +58,34 @@ class IArchiveSubscriberView(Interface):
 
     id = Int(title=_('ID'), required=True, readonly=True)
 
-    archive = Reference(
-        IArchive, title=_("Archive"), required=True,
-        description=_("The archive for this subscription."))
+    archive = exported(Reference(
+        IArchive, title=_("Archive"), required=True, readonly=True,
+        description=_("The archive for this subscription.")))
 
-    registrant = Reference(
+    registrant = exported(Reference(
         IPerson, title=_("Registrant"), required=True,
-        description=_("The person who registered this subscription."))
+        description=_("The person who registered this subscription.")))
 
-    date_created = Datetime(
-        title=_("Date Created"), required=True,
-        description=_("The timestamp when the subscription was created."))
+    date_created = exported(Datetime(
+        title=_("Date Created"), required=True, readonly=True,
+        description=_("The timestamp when the subscription was created.")))
 
-    subscriber = PublicPersonChoice(
+    subscriber = exported(PublicPersonChoice(
         title=_("Subscriber"), required=True, vocabulary='ValidPersonOrTeam',
-        description=_("The person who is subscribed."))
+        description=_("The person who is subscribed.")))
 
-    date_expires = Datetime(
+    date_expires = exported(Datetime(
         title=_("Date of Expiration"), required=False,
-        description=_("The timestamp when the subscription will expire."))
+        description=_("The timestamp when the subscription will expire.")))
 
-    status = Choice(
+    status = exported(Choice(
         title=_("Status"), required=True,
         vocabulary=ArchiveSubscriberStatus,
-        description=_("The status of this subscription."))
+        description=_("The status of this subscription.")))
 
-    description = Text(
+    description = exported(Text(
         title=_("Description"), required=False,
-        description=_("Free text describing this subscription."))
+        description=_("Free text describing this subscription.")))
 
     date_cancelled = Datetime(
         title=_("Date of Cancellation"), required=False,
@@ -97,6 +98,14 @@ class IArchiveSubscriberView(Interface):
     displayname = TextLine(title=_("Subscription displayname"),
         required=False)
 
+    def getNonActiveSubscribers():
+        """Return the people included in this subscription.
+
+        :return: a storm `ResultSet` of all the people who are included in
+            this subscription who do not yet have an active token for the
+            corresponding archive.
+        :rtype: `storm.store.ResultSet`
+        """
 
 class IArchiveSubscriberEdit(Interface):
     """An interface for launchpad.Edit ops on archive subscribers."""
@@ -113,6 +122,7 @@ class IArchiveSubscriberEdit(Interface):
 
 class IArchiveSubscriber(IArchiveSubscriberView, IArchiveSubscriberEdit):
     """An interface for archive subscribers."""
+    export_as_webservice_entry()
 
 
 class IArchiveSubscriberSet(Interface):

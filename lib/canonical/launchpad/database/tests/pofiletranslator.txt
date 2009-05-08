@@ -21,7 +21,8 @@ as a superuser so we can poke at it directly.
 
     >>> stub_id = 22
     >>> pofile_id = 1
-    >>> pomsgset_id = 1
+    >>> language_id = 387
+    >>> potmsgset_id = 1
 
 
 Note that our oldest TranslationMessage references pofile #1
@@ -45,8 +46,10 @@ If we add a message, the cache is updated
 
     >>> cur.execute("""
     ...     INSERT INTO TranslationMessage(
-    ...         pofile, potmsgset, msgstr1, origin, submitter
-    ...         ) VALUES (1, 1, 1, 1, %(stub_id)s)
+    ...         pofile, potmsgset, msgstr1, origin, submitter, language
+    ...       ) VALUES (
+    ...         %(pofile_id)s, %(potmsgset_id)s, 1, 1, %(stub_id)s,
+    ...         %(language_id)s)
     ...     """, vars())
     >>> posubmission_id, date_touched = pofiletranslator(stub_id, pofile_id)
 
@@ -66,9 +69,11 @@ If we add a new submission to that pofile, the cache is updated including
 the last touched timestamp.
 
     >>> cur.execute("""
-    ...     INSERT INTO TranslationMessage (
-    ...         pofile, potmsgset, msgstr1, origin, submitter
-    ...         ) VALUES (1, 1, 2, 1, %(stub_id)s)
+    ...     INSERT INTO TranslationMessage(
+    ...         pofile, potmsgset, msgstr1, origin, submitter, language
+    ...       ) VALUES (
+    ...         %(pofile_id)s, %(potmsgset_id)s, 2, 1, %(stub_id)s,
+    ...         %(language_id)s)
     ...     """, vars())
     >>> new_posubmission_id, new_date_touched = pofiletranslator(
     ...     stub_id, pofile_id)

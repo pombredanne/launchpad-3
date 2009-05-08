@@ -135,9 +135,9 @@ default is to redirect if no cookie exists):
     >>> cookiejar.set_cookie(
     ...     Cookie(
     ...         version=0, name='inhibit_beta_redirect', value='1', port=None,
-    ...         port_specified=False, domain='.launchpad.dev', 
-    ...         domain_specified=True, domain_initial_dot=True, path='/', 
-    ...         path_specified=True, secure=False, expires=None, 
+    ...         port_specified=False, domain='.launchpad.dev',
+    ...         domain_specified=True, domain_initial_dot=True, path='/',
+    ...         path_specified=True, secure=False, expires=None,
     ...         discard=None, comment=None, comment_url=None, rest={}))
     >>> check(beta_browser.open, 'http://launchpad.dev/')
     >>> print beta_browser.url
@@ -183,9 +183,42 @@ The Ubuntu product page then redirects to the beta site:
     HTTP Error 303: See Other
     Location: http://beta.launchpad.dev/ubuntu
 
+
+== Shortcut redirection for bugs ==
+
+A bug URL, such as http://launchpad.dev/bugs/12, is commonly hit
+directly and then, eventually, redirected to a bug task such as
+https://bugs.launchpad.dev/jokosher/+bug/12.  These bug URLs can be
+redirected with fewer steps than the four it would normally take.
+
+The normal user gets redirected to the bug task page.
+
+    >>> check(user_browser.open, 'http://launchpad.dev/bugs/12')
+    HTTP Error 303: See Other
+    Location: http://bugs.launchpad.dev/jokosher/+bug/12
+
+An anonymous user gets redirected to the bug task page.
+
+    >>> anon_browser.mech_browser.set_handle_redirect(False)
+    >>> check(anon_browser.open, 'http://launchpad.dev/bugs/12')
+    HTTP Error 303: See Other
+    Location: http://bugs.launchpad.dev/jokosher/+bug/12
+
+The beta user gets redirected to the bug task page, but on the beta
+host.
+
+    >>> # Create a new beta browser that doesn't have redirection
+    >>> # override cookies.
+    >>> beta_browser = setupBrowser(auth='Basic beta-admin@launchpad.net:test')
+    >>> beta_browser.mech_browser.set_handle_redirect(False)
+    >>> check(beta_browser.open, 'http://launchpad.dev/bugs/12')
+    HTTP Error 303: See Other
+    Location: http://bugs.beta.launchpad.dev/jokosher/+bug/12
+
 Restore the config to state it was in at the start of the test.
 
     >>> config_data = config.pop('beta_data')
+
 
 == Redirection notice in OOPS timeouts ==
 
