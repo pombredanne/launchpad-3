@@ -42,8 +42,9 @@ def patch_collection_return_type(exported_class, method_name, return_type):
     :param method_name: The method name that you need to patch.
     :param return_type: The new return type for the method.
     """
-    exported_class[method_name].queryTaggedValue(
-        LAZR_WEBSERVICE_EXPORTED)['return_type'].value_type.schema = return_type
+    collection = exported_class[method_name].queryTaggedValue(
+        LAZR_WEBSERVICE_EXPORTED)
+    collection['return_type'].value_type.schema = return_type
 
 
 def patch_plain_parameter_type(exported_class, method_name, param_name,
