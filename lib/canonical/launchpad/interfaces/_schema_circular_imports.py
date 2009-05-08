@@ -21,9 +21,14 @@ from canonical.launchpad.components.apihelpers import (
     patch_plain_parameter_type, patch_choice_parameter_type,
     patch_reference_property)
 
+from canonical.launchpad.interfaces.bug import IBug
+from canonical.launchpad.interfaces.bugbranch import IBugBranch
 from lp.soyuz.interfaces.build import (
     BuildStatus, IBuild)
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
+from canonical.launchpad.interfaces.specification import ISpecification
+from canonical.launchpad.interfaces.specificationbranch import (
+    ISpecificationBranch)
 from lp.code.interfaces.branch import IBranch
 from lp.code.interfaces.branchmergeproposal import (
     BranchMergeProposalStatus, IBranchMergeProposal)
@@ -69,6 +74,8 @@ IBranch['subscribe'].queryTaggedValue(LAZR_WEBSERVICE_EXPORTED)['params'][
     'max_diff_lines'].vocabulary = BranchSubscriptionDiffSize
 IBranch['subscribe'].queryTaggedValue(LAZR_WEBSERVICE_EXPORTED)['params'][
     'code_review_level'].vocabulary = CodeReviewNotificationLevel
+IBranch['bug_branches'].value_type.schema = IBugBranch
+IBranch['spec_links'].value_type.schema = ISpecificationBranch
 
 IBranchMergeProposal['getComment'].queryTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)['return_type'].schema = ICodeReviewComment
@@ -79,6 +86,9 @@ IBranchMergeProposal['createComment'].queryTaggedValue(
         ICodeReviewComment
 IBranchMergeProposal['all_comments'].value_type.schema = ICodeReviewComment
 IBranchMergeProposal['votes'].value_type.schema = ICodeReviewVoteReference
+
+IBug['addBranch'].queryTaggedValue(
+    LAZR_WEBSERVICE_EXPORTED)['return_type'].schema = IBugBranch
 
 IPreviewDiff['branch_merge_proposal'].schema = IBranchMergeProposal
 
@@ -113,6 +123,9 @@ ISourcePackage['setBranch'].queryTaggedValue(
 ISourcePackage['setBranch'].queryTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)['params']['branch'].schema = IBranch
 patch_reference_property(ISourcePackage, 'distribution', IDistribution)
+
+ISpecification['linkBranch'].queryTaggedValue(
+    LAZR_WEBSERVICE_EXPORTED)['return_type'].schema = ISpecificationBranch
 
 IPerson['hardware_submissions'].value_type.schema = IHWSubmission
 

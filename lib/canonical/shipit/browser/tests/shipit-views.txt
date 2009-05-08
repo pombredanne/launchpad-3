@@ -1,6 +1,6 @@
 = ShipIt Pages =
 
-    >>> from canonical.launchpad.database import (
+    >>> from canonical.shipit.model.shipit import (
     ...     ShippingRequest, StandardShipItRequestSet)
     >>> from canonical.shipit.layers import ShipItUbuntuLayer
     >>> jordis_request = ShippingRequest.get(16)

@@ -89,7 +89,6 @@ from lp.registry.interfaces.distribution import IDistribution
 from canonical.launchpad.interfaces.emailaddress import (
     EmailAddressStatus, IEmailAddress, IEmailAddressSet, InvalidEmailAddress)
 from lp.registry.interfaces.gpg import IGPGKeySet
-from canonical.launchpad.interfaces.hwdb import IHWSubmissionSet
 from lp.registry.interfaces.irc import IIrcID, IIrcIDSet
 from lp.registry.interfaces.jabber import IJabberID, IJabberIDSet
 from canonical.launchpad.interfaces.launchpad import (
@@ -111,7 +110,6 @@ from canonical.launchpad.interfaces.personnotification import (
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.project import IProject
-from lp.code.interfaces.revision import IRevisionSet
 from lp.registry.interfaces.salesforce import (
     ISalesforceVoucherProxy, VOUCHER_STATUSES)
 from canonical.launchpad.interfaces.specification import (
@@ -1966,11 +1964,6 @@ class Person(
             name_parts = self.name.split('-deactivatedaccount')
             base_new_name = name_parts[0]
             self.name = self._ensureNewName(base_new_name)
-        # XXX: salgado, bug=356092 2009-04-15: The lines below won't be
-        # needed once the bug is fixed.
-        email = removeSecurityProxy(preferred_email)
-        getUtility(IRevisionSet).checkNewVerifiedEmail(email)
-        getUtility(IHWSubmissionSet).setOwnership(email)
 
     def validateAndEnsurePreferredEmail(self, email):
         """See `IPerson`."""
@@ -2006,11 +1999,6 @@ class Person(
             self.setPreferredEmail(email)
         else:
             email.status = EmailAddressStatus.VALIDATED
-            # Automated processes need access to set the account().
-            getUtility(IHWSubmissionSet).setOwnership(email)
-        # Now that we have validated the email, see if this can be
-        # matched to an existing RevisionAuthor.
-        getUtility(IRevisionSet).checkNewVerifiedEmail(email)
 
     def setContactAddress(self, email):
         """See `IPerson`."""
@@ -2074,8 +2062,6 @@ class Person(
 
         email = removeSecurityProxy(email)
         IMasterObject(email).status = EmailAddressStatus.PREFERRED
-
-        getUtility(IHWSubmissionSet).setOwnership(email)
 
         # Now we update our cache of the preferredemail.
         self._preferredemail_cached = email

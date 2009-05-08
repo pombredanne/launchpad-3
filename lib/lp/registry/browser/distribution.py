@@ -58,7 +58,7 @@ from lp.soyuz.interfaces.archive import (
     IArchiveSet, ArchivePurpose)
 from lp.registry.interfaces.distribution import (
     IDistribution, IDistributionMirrorMenuMarker, IDistributionSet)
-from canonical.launchpad.interfaces.distributionmirror import (
+from lp.registry.interfaces.distributionmirror import (
     IDistributionMirrorSet, MirrorContent, MirrorSpeed)
 from lp.registry.interfaces.distroseries import DistroSeriesStatus
 from lp.registry.interfaces.product import IProduct
@@ -513,30 +513,30 @@ class DistributionSpecificationsMenu(ApplicationMenu):
         return Link('+addspec', text, summary, icon='add')
 
 
-class DistributionTranslationsMenu(ApplicationMenu):
+class DistributionTranslationsMenu(NavigationMenu):
 
     usedfor = IDistribution
     facet = 'translations'
-    links = ['edit', 'imports', 'language_pack_admin', 'help_translate']
+    links = ['overview', 'settings', 'language_pack_admin', 'imports']
 
-    def imports(self):
-        text = 'See import queue'
-        return Link('+imports', text)
+    def overview(self):
+        text = 'Overview'
+        link = canonical_url(self.context, rootsite='translations')
+        return Link(link, text)
 
     @enabled_with_permission('launchpad.Edit')
-    def edit(self):
-        text = 'Change translators'
-        return Link('+changetranslators', text, icon='edit')
-
-    def help_translate(self):
-        text = 'Help translate'
-        link = canonical_url(self.context, rootsite='translations')
-        return Link(link, text, icon='translation')
+    def settings(self):
+        text = 'Settings'
+        return Link('+settings', text)
 
     @enabled_with_permission('launchpad.TranslationsAdmin')
     def language_pack_admin(self):
-        text = 'Change language pack admins'
+        text = 'Language pack admin'
         return Link('+select-language-pack-admin', text, icon='edit')
+
+    def imports(self):
+        text = 'Import queue'
+        return Link('+imports', text)
 
 
 class DistributionPackageSearchView(PackageSearchViewBase):

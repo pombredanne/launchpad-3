@@ -213,7 +213,7 @@ class TestQueueBuilder(TestCronscriptBase):
 
         queue_builder = self.getQueueBuilder(score_only=True)
         queue_builder.main()
-        self.assertEqual(4005, build.buildqueue_record.lastscore)
+        self.assertEqual(2505, build.buildqueue_record.lastscore)
 
     def testRunQueueBuilder(self):
         # buildd-queue-builder script runs without errors.
@@ -294,7 +294,7 @@ class TestRetryDepwait(TestCronscriptBase):
             self.number_of_pending_builds + 1,
             self.getPendingBuilds().count())
         self.assertEqual(depwait_build.buildstate.name, 'NEEDSBUILD')
-        self.assertEqual(depwait_build.buildqueue_record.lastscore, 3255)
+        self.assertEqual(depwait_build.buildqueue_record.lastscore, 1755)
 
 
 def test_suite():

@@ -10,10 +10,10 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.sqlbase import flush_database_updates
-from canonical.launchpad.database.distributionmirror import DistributionMirror
+from lp.registry.model.distributionmirror import DistributionMirror
 from canonical.launchpad.ftests import login
 from canonical.launchpad.interfaces.country import ICountrySet
-from canonical.launchpad.interfaces.distributionmirror import (
+from lp.registry.interfaces.distributionmirror import (
     IDistributionMirrorSet, MirrorContent, MirrorFreshness)
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
@@ -26,7 +26,7 @@ from canonical.testing import LaunchpadFunctionalLayer
 
 class TestDistributionMirror(unittest.TestCase):
     layer = LaunchpadFunctionalLayer
-    
+
     def setUp(self):
         login('test@canonical.com')
         mirrorset = getUtility(IDistributionMirrorSet)
@@ -191,7 +191,7 @@ class TestDistributionMirror(unittest.TestCase):
 
 class TestDistributionMirrorSet(unittest.TestCase):
     layer = LaunchpadFunctionalLayer
-    
+
     def test_getBestMirrorsForCountry_randomizes_results(self):
         """Make sure getBestMirrorsForCountry() randomizes its results."""
         def my_select(class_, query, *args, **kw):
@@ -201,7 +201,7 @@ class TestDistributionMirrorSet(unittest.TestCase):
             the 'random' string in its first item.
             """
             self.failUnlessEqual(kw['orderBy'][0].name, 'random')
-            return [1,2,3]
+            return [1, 2, 3]
 
         orig_select = DistributionMirror.select
         DistributionMirror.select = classmethod(my_select)

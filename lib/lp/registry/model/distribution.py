@@ -37,7 +37,7 @@ from canonical.launchpad.database.bugtask import BugTask
 from lp.soyuz.model.build import Build
 from canonical.launchpad.database.customlanguagecode import CustomLanguageCode
 from canonical.launchpad.database.distributionbounty import DistributionBounty
-from canonical.launchpad.database.distributionmirror import DistributionMirror
+from lp.registry.model.distributionmirror import DistributionMirror
 from lp.registry.model.distributionsourcepackage import (
     DistributionSourcePackage)
 from lp.registry.model.distributionsourcepackagecache import (
@@ -80,7 +80,7 @@ from lp.soyuz.interfaces.build import IBuildSet
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.registry.interfaces.distribution import (
     IDistribution, IDistributionSet)
-from canonical.launchpad.interfaces.distributionmirror import (
+from lp.registry.interfaces.distributionmirror import (
     IDistributionMirror, MirrorContent, MirrorStatus)
 from lp.registry.interfaces.distroseries import (
     DistroSeriesStatus, NoSuchDistroSeries)

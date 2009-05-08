@@ -64,7 +64,7 @@ from canonical.launchpad.interfaces.cve import *
 from canonical.launchpad.interfaces.cvereference import *
 from lp.registry.interfaces.distribution import *
 from canonical.launchpad.interfaces.distributionbounty import *
-from canonical.launchpad.interfaces.distributionmirror import *
+from lp.registry.interfaces.distributionmirror import *
 from lp.registry.interfaces.distributionsourcepackage import *
 from lp.soyuz.interfaces.distributionsourcepackagecache import *
 from lp.soyuz.interfaces.distributionsourcepackagerelease import *
@@ -136,7 +136,6 @@ from canonical.launchpad.interfaces.schema import *
 from canonical.launchpad.interfaces.scriptactivity import *
 from lp.soyuz.interfaces.section import *
 from canonical.launchpad.interfaces.searchservice import *
-from canonical.shipit.interfaces.shipit import *
 from lp.registry.interfaces.sourcepackage import *
 from lp.registry.interfaces.sourcepackagename import *
 from lp.soyuz.interfaces.sourcepackagerelease import *

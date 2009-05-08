@@ -24,7 +24,7 @@ from lp.soyuz.browser.sourceslist import (
 from canonical.cachedproperty import cachedproperty
 from lp.registry.interfaces.distribution import (
     IDistributionMirrorMenuMarker)
-from canonical.launchpad.interfaces.distributionmirror import (
+from lp.registry.interfaces.distributionmirror import (
     IDistributionMirror)
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.publisher import LaunchpadView

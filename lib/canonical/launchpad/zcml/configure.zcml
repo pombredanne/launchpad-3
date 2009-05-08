@@ -37,7 +37,6 @@
     <include file="diff.zcml" />
     <include file="datetime.zcml" />
     <include file="decoratedresultset.zcml" />
-    <include file="distributionmirror.zcml" />
     <include file="distroserieslanguage.zcml" />
     <include file="emailaddress.zcml" />
     <include file="feeds.zcml" />

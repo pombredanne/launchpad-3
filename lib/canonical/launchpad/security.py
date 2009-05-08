@@ -38,7 +38,7 @@ from lp.code.interfaces.codeimportmachine import (
 from lp.code.interfaces.codereviewcomment import (
     ICodeReviewComment, ICodeReviewCommentDeletion)
 from lp.registry.interfaces.distribution import IDistribution
-from canonical.launchpad.interfaces.distributionmirror import (
+from lp.registry.interfaces.distributionmirror import (
     IDistributionMirror)
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage)
@@ -840,7 +840,8 @@ class EditDistroSeriesByOwnersOrDistroOwnersOrAdmins(AuthorizationBase):
 class SeriesDrivers(AuthorizationBase):
     """Drivers can approve or decline features and target bugs.
 
-    Drivers exist for distribution and product series.
+    Drivers exist for distribution and product series.  Distribution and
+    product owners are implicitly drivers too.
     """
     permission = 'launchpad.Driver'
     usedfor = IHasDrivers
@@ -850,7 +851,7 @@ class SeriesDrivers(AuthorizationBase):
             if user.inTeam(driver):
                 return True
         admins = getUtility(ILaunchpadCelebrities).admin
-        return user.inTeam(admins)
+        return user.inTeam(self.obj.owner) or user.inTeam(admins)
 
 
 class ViewProductSeries(AuthorizationBase):

@@ -116,11 +116,11 @@ class BuildQueue(SQLBase):
         # externalized?
 
         score_pocketname = {
-            PackagePublishingPocket.PROPOSED: 0,
-            PackagePublishingPocket.BACKPORTS: 1500,
-            PackagePublishingPocket.RELEASE: 3000,
-            PackagePublishingPocket.UPDATES: 4500,
-            PackagePublishingPocket.SECURITY: 6000,
+            PackagePublishingPocket.BACKPORTS: 0,
+            PackagePublishingPocket.RELEASE: 1500,
+            PackagePublishingPocket.PROPOSED: 3000,
+            PackagePublishingPocket.UPDATES: 3000,
+            PackagePublishingPocket.SECURITY: 4500,
             }
 
         score_componentname = {

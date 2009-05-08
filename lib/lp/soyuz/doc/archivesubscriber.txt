@@ -149,11 +149,13 @@ Explicitly set the date_created for testing purposes:
 
     >>> from datetime import datetime
     >>> import pytz
-    >>> new_sub.date_created = datetime(2009, 2, 26, tzinfo=pytz.UTC)
-    >>> new_sub_to_sabdfl_ppa.date_created = datetime(
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> removeSecurityProxy(new_sub).date_created = datetime(
+    ...     2009, 2, 26, tzinfo=pytz.UTC)
+    >>> removeSecurityProxy(new_sub_to_sabdfl_ppa).date_created = datetime(
     ...     2009, 2, 22, tzinfo=pytz.UTC)
-    >>> new_team_sub_to_sabdfl_ppa.date_created = datetime(
-    ...     2009, 2, 24, tzinfo=pytz.UTC)
+    >>> removeSecurityProxy(new_team_sub_to_sabdfl_ppa).date_created = (
+    ...     datetime(2009, 2, 24, tzinfo=pytz.UTC))
 
 Commit the new subscriptions to the database.
 

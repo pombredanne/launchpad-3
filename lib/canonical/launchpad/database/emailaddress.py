@@ -67,6 +67,9 @@ class EmailAddress(SQLBase, HasOwnerMixin):
                 "This is the email address of a team's mailing list, so it "
                 "can't be deleted.")
 
+        # XXX 2009-05-04 jamesh bug=371567: This function should not
+        # be responsible for removing subscriptions, since the SSO
+        # server can't write to that table.
         for subscription in MailingListSubscription.selectBy(
             email_address=self):
             subscription.destroySelf()

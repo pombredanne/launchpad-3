@@ -234,6 +234,11 @@ class MilestoneEditView(LaunchpadEditFormView):
     custom_widget('dateexpected', DateWidget)
 
     @property
+    def cancel_url(self):
+        """The context's URL."""
+        return canonical_url(self.context)
+
+    @property
     def field_names(self):
         """See `LaunchpadFormView`.
 
