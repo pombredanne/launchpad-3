@@ -685,11 +685,6 @@ special = {
                 tearDown=tearDown,
                 layer=LaunchpadZopelessLayer
                 ),
-    'openid-fetcher.txt': LayeredDocFileSuite(
-            '../doc/openid-fetcher.txt',
-            stdout_logging=False,
-            layer=LaunchpadFunctionalLayer
-            ),
     'soyuz-set-of-uploads.txt': LayeredDocFileSuite(
             '../doc/soyuz-set-of-uploads.txt',
             layer=LaunchpadZopelessLayer,
