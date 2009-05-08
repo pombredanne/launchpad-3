@@ -492,30 +492,6 @@ these URLs in Apache.
   />
 <browser:page
   for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
-  name="+icing-ubuntu"
-  class="canonical.launchpad.browser.launchpad.UbuntuIcingFolder"
-  layer="canonical.launchpad.layers.ShipItUbuntuLayer"
-  attribute="__call__"
-  permission="zope.Public"
-  />
-<browser:page
-  for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
-  name="+icing-kubuntu"
-  class="canonical.launchpad.browser.launchpad.KubuntuIcingFolder"
-  layer="canonical.launchpad.layers.ShipItKUbuntuLayer"
-  attribute="__call__"
-  permission="zope.Public"
-  />
-<browser:page
-  for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
-  name="+icing-edubuntu"
-  class="canonical.launchpad.browser.launchpad.EdubuntuIcingFolder"
-  layer="canonical.launchpad.layers.ShipItEdUbuntuLayer"
-  attribute="__call__"
-  permission="zope.Public"
-  />
-<browser:page
-  for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
   name="+icing-contrib"
   class="canonical.launchpad.browser.launchpad.IcingContribFolder"
   attribute="__call__"

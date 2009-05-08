@@ -1,9 +1,9 @@
-= Private Team Creation =
+= Private and Private Membership Team Creation =
 
-Private teams may only be created by commercial admins
-(launchpad.Commercial permission).  This permission is controlled in
-the UI by only displaying the 'visibility' control to commercial
-admins.
+Private and Private membership teams may only be created by commercial
+admins (launchpad.Commercial permission).  This permission is
+controlled in the UI by only displaying the 'visibility' control to
+commercial admins.
 
 Unprivileged users do not see the visibility widget.
 
@@ -67,6 +67,55 @@ must be 'Restricted.'
     ...     print error
     Private teams must have a Restricted subscription policy.
 
+Likewise for a private team.
+
+    >>> login('foo.bar@canonical.com')
+    >>> foo_bar = personset.getByEmail('foo.bar@canonical.com')
+    >>> form = {
+    ...     'field.name': 'super-secret2',
+    ...     'field.displayname': 'Shhhh',
+    ...     'field.description': 'my own team description',
+    ...     'field.defaultmembershipperiod': '365',
+    ...     'field.defaultrenewalperiod': '365',
+    ...     'field.subscriptionpolicy': 'OPEN',
+    ...     'field.renewal_policy': 'NONE',
+    ...     'field.visibility': 'Private',
+    ...     'field.actions.create': 'Create',
+    ...     }
+    >>> view = create_initialized_view(
+    ...     personset, '+newteam',
+    ...     form=form, principal=foo_bar)
+
+    >>> print len(view.request.notifications)
+    0
+
+    >>> for error in view.errors:
+    ...     print error
+    Private teams must have a Restricted subscription policy.
+
+When the inputs are correct the admin can successfully create the team.
+
+    >>> form = {
+    ...     'field.name': 'super-secret2',
+    ...     'field.displayname': 'Shhhh',
+    ...     'field.description': 'my own team description',
+    ...     'field.defaultmembershipperiod': '365',
+    ...     'field.defaultrenewalperiod': '365',
+    ...     'field.subscriptionpolicy': 'RESTRICTED',
+    ...     'field.renewal_policy': 'NONE',
+    ...     'field.visibility': 'Private',
+    ...     'field.actions.create': 'Create',
+    ...     }
+    >>> view = create_initialized_view(
+    ...     personset, '+newteam',
+    ...     form=form, principal=foo_bar)
+
+    >>> print len(view.request.notifications)
+    0
+
+    >>> for error in view.errors:
+    ...     print error
+
 Commercial admins can create a team too.
 
     >>> login('commercial-member@canonical.com')
@@ -97,7 +146,7 @@ Commercial admins can create a team too.
     >>> print secret_team.visibility.name
     PRIVATE_MEMBERSHIP
 
-Admins can successfully create a private team.
+Admins can successfully create a private membership team.
 
     >>> login('foo.bar@canonical.com')
     >>> form = {
@@ -179,6 +228,7 @@ taken by a private team get the blacklist message.
     ...     print view.getFieldError(error.field_name)
     The name 'super-secret' has been blocked by the Launchpad administrators.
 
+
 = Private Team Editing =
 
 The same as when creating a new team, only commercial admins are given
@@ -205,7 +255,7 @@ And a non-public team must have restricted membership.
     >>> foo_bar = personset.getByEmail('foo.bar@canonical.com')
 
     >>> form = {
-    ...     'field.name': 'super-secret',
+    ...     'field.name': 'super-secret3',
     ...     'field.displayname': 'Shhhh',
     ...     'field.description': 'my own team description',
     ...     'field.defaultmembershipperiod': '365',
@@ -226,6 +276,42 @@ And a non-public team must have restricted membership.
     ...     print error
     Private teams must have a Restricted subscription policy.
 
+Private teams cannot be made public.
+
+    >>> super_secret2 = personset.getByName('super-secret2')
+    >>> form = {
+    ...     'field.name': 'super-secret-two',
+    ...     'field.displayname': 'New Display Name',
+    ...     'field.description': 'my own team description',
+    ...     'field.defaultmembershipperiod': '365',
+    ...     'field.defaultrenewalperiod': '365',
+    ...     'field.subscriptionpolicy': 'OPEN',
+    ...     'field.renewal_policy': 'NONE',
+    ...     'field.visibility': 'Public',
+    ...     'field.actions.save': 'Save',
+    ...     }
+    >>> view = create_initialized_view(
+    ...     super_secret2, '+edit',
+    ...     form=form, principal=foo_bar)
+
+    >>> for notification in view.request.notifications:
+    ...     print notification.message
+    A private team cannot change visibility.
+
+    >>> for error in view.errors:
+    ...     print error
+
+All changes are aborted when a data validation error occurs.  The
+displayname for the team is the old value.
+
+    >>> transaction.commit()
+    >>> super_secret2 = personset.getByName('super-secret2')
+    >>> print super_secret2.name
+    super-secret2
+
+    >>> print super_secret2.displayname
+    Shhhh
+
 = Use of 'private-' prefix =
 
 Commercial admins can create private projects with the 'private-' prefix.
@@ -239,7 +325,7 @@ Commercial admins can create private projects with the 'private-' prefix.
     ...     'field.defaultrenewalperiod': '365',
     ...     'field.subscriptionpolicy': 'RESTRICTED',
     ...     'field.renewal_policy': 'NONE',
-    ...     'field.visibility': 'Private Membership',
+    ...     'field.visibility': 'Private',
     ...     'field.actions.create': 'Create',
     ...     }
     >>> view = create_initialized_view(
@@ -263,7 +349,7 @@ users will get a blacklist message.
     ...     'field.defaultrenewalperiod': '365',
     ...     'field.subscriptionpolicy': 'RESTRICTED',
     ...     'field.renewal_policy': 'NONE',
-    ...     'field.visibility': 'Private Membership',
+    ...     'field.visibility': 'Private',
     ...     'field.actions.create': 'Create',
     ...     }
     >>> view = create_initialized_view(

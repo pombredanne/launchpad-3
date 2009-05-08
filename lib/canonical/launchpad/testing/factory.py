@@ -58,7 +58,7 @@ from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.interfaces.potemplate import IPOTemplateSet
 from canonical.launchpad.interfaces.publishing import PackagePublishingPocket
-from canonical.launchpad.interfaces.shipit import (
+from canonical.shipit.interfaces.shipit import (
     IShippingRequestSet, IStandardShipItRequestSet, ShipItFlavour,
     ShippingRequestStatus)
 from canonical.launchpad.interfaces.specification import (
@@ -266,7 +266,7 @@ class LaunchpadObjectFactory(ObjectFactory):
 
     def _stuff_preferredemail_cache(self, person):
         """Stuff the preferredemail cache.
-        
+
         cachedproperty does not get reset across transactions,
         so person.preferredemail can contain a bogus value even after
         a commit, despite all changes now being available in the main
@@ -333,7 +333,7 @@ class LaunchpadObjectFactory(ObjectFactory):
             account.status = AccountStatus.ACTIVE
 
         email.status = email_address_status
-        
+
         # Ensure updated ValidPersonCache
         flush_database_updates()
         return person
@@ -384,8 +384,8 @@ class LaunchpadObjectFactory(ObjectFactory):
                 MailingListAutoSubscribePolicy.NEVER
         account = IMasterStore(Account).get(Account, person.accountID)
         getUtility(IEmailAddressSet).new(
-            alternative_address, person,
-            EmailAddressStatus.VALIDATED, account)
+            alternative_address, person, EmailAddressStatus.VALIDATED,
+            account)
         transaction.commit()
         self._stuff_preferredemail_cache(person)
         return person
@@ -419,16 +419,28 @@ class LaunchpadObjectFactory(ObjectFactory):
                  visibility=None):
         """Create and return a new, arbitrary Team.
 
-        :param owner: The IPerson to use as the team's owner.
+        :param owner: The person or person name to use as the team's owner.
+            If not given, a person will be auto-generated.
+        :type owner: `IPerson` or string
         :param displayname: The team's display name.  If not given we'll use
             the auto-generated name.
+        :type string:
         :param email: The email address to use as the team's contact address.
+        :type email: string
         :param subscription_policy: The subscription policy of the team.
+        :type subscription_policy: `TeamSubscriptionPolicy`
         :param visibility: The team's visibility. If it's None, the default
             (public) will be used.
+        :type visibility: `PersonVisibility`
+        :return: The new team
+        :rtype: `ITeam`
         """
         if owner is None:
             owner = self.makePerson()
+        elif isinstance(owner, basestring):
+            owner = getUtility(IPersonSet).getByName(owner)
+        else:
+            pass
         if name is None:
             name = self.getUniqueString('team-name')
         if displayname is None:
@@ -474,9 +486,15 @@ class LaunchpadObjectFactory(ObjectFactory):
         return Milestone(product=product, distribution=distribution,
                          name=name)
 
+    def makeProductRelease(self, milestone=None):
+        if milestone is None:
+            milestone = self.makeMilestone()
+        return milestone.createProductRelease(
+            milestone.product.owner, datetime.now(pytz.UTC))
+
     def makeProduct(self, *args, **kwargs):
         """As makeProductNoCommit with an implicit transaction commit.
-        
+
         This ensures that generated owners and registrants are fully
         flushed and available from all Stores.
         """
@@ -1362,38 +1380,66 @@ class LaunchpadObjectFactory(ObjectFactory):
 
         return subset.new(name, translation_domain, path, owner)
 
-    def makePOFile(self, language_code, potemplate=None, owner=None):
+    def makePOFile(self, language_code, potemplate=None, owner=None,
+                   variant=None):
         """Make a new translation file."""
         if potemplate is None:
             potemplate = self.makePOTemplate(owner=owner)
-        return potemplate.newPOFile(language_code, requester=potemplate.owner)
+        return potemplate.newPOFile(language_code, variant,
+                                    requester=potemplate.owner)
 
     def makePOTMsgSet(self, potemplate, singular=None, plural=None,
-                      sequence=None):
+                      context=None, sequence=None):
         """Make a new `POTMsgSet` in the given template."""
         if singular is None and plural is None:
             singular = self.getUniqueString()
-        potmsgset = potemplate.createMessageSetFromText(singular, plural)
+        potmsgset = potemplate.createMessageSetFromText(
+            singular, plural, context=context)
         if sequence is not None:
             potmsgset.setSequence(potemplate, sequence)
+        naked_potmsgset = removeSecurityProxy(potmsgset)
+        naked_potmsgset.sync()
         return potmsgset
 
     def makeTranslationMessage(self, pofile=None, potmsgset=None,
-                               translator=None, reviewer=None,
-                               translations=None, lock_timestamp=None):
+                               translator=None, suggestion=False,
+                               reviewer=None, translations=None,
+                               lock_timestamp=None, date_updated=None,
+                               is_imported=False, force_shared=False,
+                               force_diverged=False):
         """Make a new `TranslationMessage` in the given PO file."""
         if pofile is None:
             pofile = self.makePOFile('sr')
         if potmsgset is None:
             potmsgset = self.makePOTMsgSet(pofile.potemplate)
+            potmsgset.setSequence(pofile.potemplate, 1)
         if translator is None:
             translator = self.makePerson()
         if translations is None:
             translations = [self.getUniqueString()]
+        translation_message = potmsgset.updateTranslation(
+            pofile, translator, translations, is_imported=is_imported,
+            lock_timestamp=lock_timestamp, force_suggestion=suggestion,
+            force_shared=force_shared, force_diverged=force_diverged)
+        if date_updated is not None:
+            naked_translation_message = removeSecurityProxy(
+                translation_message)
+            naked_translation_message.date_created = date_updated
+            if translation_message.reviewer is not None:
+                naked_translation_message.date_reviewed = date_updated
+            naked_translation_message.sync()
+        return translation_message
 
-        return potmsgset.updateTranslation(pofile, translator, translations,
-                                           is_imported=False,
-                                           lock_timestamp=lock_timestamp)
+    def makeSharedTranslationMessage(self, pofile=None, potmsgset=None,
+                                     translator=None, suggestion=False,
+                                     reviewer=None, translations=None,
+                                     date_updated=None, is_imported=False):
+        translation_message = self.makeTranslationMessage(
+            pofile=pofile, potmsgset=potmsgset, translator=translator,
+            suggestion=suggestion, reviewer=reviewer, is_imported=is_imported,
+            translations=translations, date_updated=date_updated,
+            force_shared=True)
+        return translation_message
 
     def makeTranslation(self, pofile, sequence,
                         english=None, translated=None,
@@ -1422,7 +1468,7 @@ class LaunchpadObjectFactory(ObjectFactory):
         translation.is_imported = is_imported
         translation.is_current = True
 
-    def makeTeamAndMailingList(self, team_name, owner_name):
+    def makeTeamAndMailingList(self, team_name, owner_name, visibility=None):
         """Make a new active mailing list for the named team.
 
         :param team_name: The new team's name.
@@ -1438,7 +1484,8 @@ class LaunchpadObjectFactory(ObjectFactory):
         team = getUtility(IPersonSet).getByName(team_name)
         if team is None:
             team = self.makeTeam(
-                owner, displayname=display_name, name=team_name)
+                owner, displayname=display_name, name=team_name,
+                visibility=visibility)
         # Any member of the mailing-list-experts team can review a list
         # registration.  It doesn't matter which one.
         experts = getUtility(ILaunchpadCelebrities).mailing_list_experts
@@ -1518,7 +1565,7 @@ class LaunchpadObjectFactory(ObjectFactory):
         return msg
 
     def makeBundleMergeDirectiveEmail(self, source_branch, target_branch,
-                                      signing_context=None):
+                                      signing_context=None, sender=None):
         """Create a merge directive email from two bzr branches.
 
         :param source_branch: The source branch for the merge directive.
@@ -1526,6 +1573,7 @@ class LaunchpadObjectFactory(ObjectFactory):
         :param signing_context: A GPGSigningContext instance containing the
             gpg key to sign with.  If None, the message is unsigned.  The
             context also contains the password and gpg signing mode.
+        :param sender: The `Person` that is sending the email.
         """
         from bzrlib.merge_directive import MergeDirective2
         md = MergeDirective2.from_objects(
@@ -1534,10 +1582,13 @@ class LaunchpadObjectFactory(ObjectFactory):
             target_branch=target_branch.warehouse_url,
             local_target_branch=target_branch.warehouse_url, time=0,
             timezone=0)
+        email = None
+        if sender is not None:
+            email = sender.preferredemail.email
         return self.makeSignedMessage(
             body='My body', subject='My subject',
             attachment_contents=''.join(md.to_lines()),
-            signing_context=signing_context)
+            signing_context=signing_context, email_address=email)
 
     def makeMergeDirective(self, source_branch=None, target_branch=None,
         source_branch_url=None, target_branch_url=None):

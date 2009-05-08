@@ -19,6 +19,7 @@ from canonical.launchpad.interfaces.account import *
 from canonical.launchpad.interfaces.archive import *
 from canonical.launchpad.interfaces.archivedependency import *
 from canonical.launchpad.interfaces.archivepermission import *
+from canonical.launchpad.interfaces.archivesubscriber import *
 from lp.registry.interfaces.announcement import *
 from canonical.launchpad.interfaces.authserver import *
 from canonical.launchpad.interfaces.authtoken import *
@@ -68,7 +69,7 @@ from canonical.launchpad.interfaces.cve import *
 from canonical.launchpad.interfaces.cvereference import *
 from lp.registry.interfaces.distribution import *
 from canonical.launchpad.interfaces.distributionbounty import *
-from canonical.launchpad.interfaces.distributionmirror import *
+from lp.registry.interfaces.distributionmirror import *
 from lp.registry.interfaces.distributionsourcepackage import *
 from canonical.launchpad.interfaces.distributionsourcepackagecache import *
 from canonical.launchpad.interfaces.distributionsourcepackagerelease import *
@@ -140,7 +141,6 @@ from canonical.launchpad.interfaces.schema import *
 from canonical.launchpad.interfaces.scriptactivity import *
 from canonical.launchpad.interfaces.section import *
 from canonical.launchpad.interfaces.searchservice import *
-from canonical.launchpad.interfaces.shipit import *
 from lp.registry.interfaces.sourcepackage import *
 from lp.registry.interfaces.sourcepackagename import *
 from canonical.launchpad.interfaces.sourcepackagerelease import *
@@ -176,6 +176,7 @@ from canonical.launchpad.interfaces.vpotexport import *
 from lp.registry.interfaces.wikiname import *
 from canonical.launchpad.interfaces.poexportrequest import *
 from canonical.launchpad.interfaces.packagediff import *
+from canonical.launchpad.interfaces.packageset import *
 
 
 from lp.answers.interfaces.answercontact import *

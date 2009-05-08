@@ -204,7 +204,7 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         self.assertEqual(
             build.title, 'i386 build of bar 1.0-1 in ubuntu breezy RELEASE')
         self.assertEqual(build.buildstate.name, 'NEEDSBUILD')
-        self.assertEqual(build.buildqueue_record.lastscore, 4005)
+        self.assertTrue(build.buildqueue_record.lastscore is not 0)
 
         #
         # Step 2: Upload a new version of bar to component universe (see
@@ -231,7 +231,7 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         self.assertEqual(
             build.title, 'i386 build of bar 1.0-10 in ubuntu breezy RELEASE')
         self.assertEqual(build.buildstate.name, 'NEEDSBUILD')
-        self.assertEqual(build.buildqueue_record.lastscore, 4005)
+        self.assertTrue(build.buildqueue_record.lastscore is not 0)
 
         #
         # Step 3: Check if a lower version upload gets rejected and the
@@ -245,13 +245,9 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
             u'bar_1.0-2.dsc: Version older than that in the archive. '
             u'1.0-2 <= 1.0-10')
 
-    def testNamedPPAUpload(self):
-        """Test PPA uploads to a named PPA location.
-
-        PPA uploads can be to a named PPA, but right now only to one
-        called "ppa".  When we switch off the old-style paths, uploading
-        to any named ppa will be possible.
-        """
+    def testNamedPPAUploadDefault(self):
+        """Test PPA uploads to the default PPA."""
+        # Upload to the default PPA, using the named-ppa path syntax.
         upload_dir = self.queueUpload("bar_1.0-1", "~name16/ppa/ubuntu")
         self.processUpload(self.uploadprocessor, upload_dir)
 
@@ -259,6 +255,36 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         self.assertEqual(queue_root.archive, self.name16.archive)
         self.assertEqual(queue_root.status, PackageUploadStatus.DONE)
         self.assertEqual(queue_root.distroseries.name, "breezy")
+
+        # Subject and PPA emails header contain the owner name since
+        # it's the default PPA.
+        contents = [
+            "Subject: [PPA name16] [ubuntu/breezy] bar 1.0-1 (Accepted)",
+            ]
+        self.assertEmail(contents, ppa_header='name16')
+
+    def testNamedPPAUploadNonDefault(self):
+        """Test PPA uploads to a named PPA."""
+        # Create a PPA named 'testing' for 'name16' user.
+        other_ppa = getUtility(IArchiveSet).new(
+            owner=self.name16, name='testing', distribution=self.ubuntu,
+            purpose=ArchivePurpose.PPA)
+
+        # Upload to a named PPA.
+        upload_dir = self.queueUpload("bar_1.0-1", "~name16/testing/ubuntu")
+        self.processUpload(self.uploadprocessor, upload_dir)
+
+        queue_root = self.uploadprocessor.last_processed_upload.queue_root
+        self.assertEqual(queue_root.archive, other_ppa)
+        self.assertEqual(queue_root.status, PackageUploadStatus.DONE)
+        self.assertEqual(queue_root.distroseries.name, "breezy")
+
+        # Subject and PPA email-header are specific for this named-ppa.
+        contents = [
+            "Subject: [PPA name16-testing] [ubuntu/breezy] bar 1.0-1 "
+                "(Accepted)",
+            ]
+        self.assertEmail(contents, ppa_header='name16-testing')
 
     def testNamedPPAUploadWithSeries(self):
         """Test PPA uploads to a named PPA location and with a distroseries.
@@ -369,7 +395,7 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         self.assertEqual(
             build.title, 'i386 build of bar 1.0-1 in ubuntu breezy RELEASE')
         self.assertEqual(build.buildstate.name, 'NEEDSBUILD')
-        self.assertEqual(build.buildqueue_record.lastscore, 4005)
+        self.assertTrue(build.buildqueue_record.lastscore is not 0)
 
         # Binary upload to the just-created build record.
         self.options.context = 'buildd'
@@ -568,7 +594,7 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         self.assertEqual(
             build.title, 'i386 build of bar 1.0-1 in ubuntu breezy RELEASE')
         self.assertEqual(build.buildstate.name, 'NEEDSBUILD')
-        self.assertEqual(build.buildqueue_record.lastscore, 4005)
+        self.assertTrue(build.buildqueue_record.lastscore is not 0)
 
     def testNotMemberUploadToTeamPPA(self):
         """Upload to a team PPA is rejected when the uploader is not member.

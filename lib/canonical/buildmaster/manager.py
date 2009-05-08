@@ -287,6 +287,7 @@ class BuilddManager(service.Service):
         dl.addBoth(done)
         return dl
 
+    @write_transaction
     def scan(self):
         """Scan all builders and dispatch build jobs to the idle ones.
 
@@ -319,7 +320,7 @@ class BuilddManager(service.Service):
             if not builder.is_available:
                 self.logger.debug('Builder is not available, ignored.')
                 job = builder.currentjob
-                if job is not None:
+                if job is not None and not builder.builderok:
                     self.logger.debug('Reseting attached job.')
                     job.reset()
                     transaction.commit()

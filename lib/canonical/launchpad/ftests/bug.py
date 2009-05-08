@@ -49,8 +49,8 @@ def print_subscribers(bug_page, subscriber_list_id):
         print ""
     else:
         for subscriber in subscriber_list.findAll('div'):
-            anchor = subscriber.a
-            if anchor is not None:
+            anchors = subscriber.findAll('a')
+            for anchor in anchors:
                 sub_display = extract_text(anchor)
                 if anchor.has_key('title'):
                     sub_display += (' (%s)' % anchor['title'])

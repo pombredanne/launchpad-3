@@ -424,6 +424,27 @@ class TestPPAHtaccessTokenGeneration(unittest.TestCase):
         script.main()
         self.assertDeactivated(tokens[0])
 
+    def testBlacklistingPPAs(self):
+        """Test that the htaccess for blacklisted PPAs are not touched."""
+        subs, tokens = self.setupDummyTokens()
+        htaccess, htpasswd = self.ensureNoFiles()
+
+        # Setup the first subscription so that it is due to be expired.
+        now = datetime.now(pytz.UTC)
+        subs[0].date_expires = now - timedelta(minutes=3)
+        self.assertEqual(subs[0].status, ArchiveSubscriberStatus.CURRENT)
+
+        script = self.getScript()
+        script.blacklist = {'cprov': ['my_other_ppa', 'ppa', 'and_another']}
+        script.main()
+
+        # The tokens will still be deactivated, and subscriptions expired.
+        self.assertDeactivated(tokens[0])
+        self.assertEqual(subs[0].status, ArchiveSubscriberStatus.EXPIRED)
+
+        # But the htaccess is not touched.
+        self.assertFalse(os.path.isfile(htaccess))
+        self.assertFalse(os.path.isfile(htpasswd))
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

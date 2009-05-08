@@ -16,10 +16,9 @@ from canonical.launchpad.interfaces.emailaddress import (
 from lp.registry.interfaces.product import (
     IProductSet, License)
 from canonical.launchpad.testing import LaunchpadObjectFactory
-from canonical.launchpad.vocabularies.dbobjects import (
-    CommercialProjectsVocabulary)
 from canonical.testing import LaunchpadFunctionalLayer
 
+from lp.registry.vocabularies import CommercialProjectsVocabulary
 
 class TestCommProjVocabulary(TestCase):
     """Test that the CommercialProjectsVocabulary behaves as expected."""
@@ -35,6 +34,7 @@ class TestCommProjVocabulary(TestCase):
         logout()
 
     def _createProjects(self):
+        """Create a proprietary projects."""
         factory = LaunchpadObjectFactory()
         # Create a person to own the projects.
         self.owner = factory.makePerson(
