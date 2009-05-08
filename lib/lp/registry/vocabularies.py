@@ -2,7 +2,7 @@
 """Vocabularies for content objects.
 
 Vocabularies that represent a set of content objects should be in this module.
-Those vocabularie that are only used for providing a UI are better placed in
+Those vocabularies that are only used for providing a UI are better placed in
 the browser code.
 
 Note that you probably shouldn't be importing stuff from these modules, as it

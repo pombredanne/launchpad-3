@@ -860,8 +860,8 @@ The vocabulary also allows us to search by IRC nickname.
 
 Since there are so many people and teams a vocabulary that includes
 them all is not very useful when displaying in the user interface.  So
-we limit the number of results.  The resuls are ordered by displayname
-and the first set of those are the ones returned
+we limit the number of results.  The results are ordered by
+displayname and the first set of those are the ones returned
 
     >>> login(ANONYMOUS)
     >>> [person.displayname for person in vocab.search('team')]
