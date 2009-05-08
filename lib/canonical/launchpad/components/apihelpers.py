@@ -75,7 +75,7 @@ def patch_choice_parameter_type(exported_class, method_name, param_name,
 
 
 def patch_reference_property(exported_class, property_name, property_type):
-    """Update a `Reference` property type.
+    """Set the type of the given property on the given class.
 
     :param exported_class: The class containing the property.
     :param property_name: The name of the property whose type you need
@@ -87,7 +87,7 @@ def patch_reference_property(exported_class, property_name, property_type):
 
 def patch_collection_property(exported_class, property_name,
                               collection_type):
-    """Update a `Collection` property type.
+    """Set the collection type of the given property on the given class.
 
     :param exported_class: The class containing the property.
     :param property_name: The name of the property whose type you need

@@ -759,7 +759,7 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers, IHasLogo,
     archive = exported(
         Reference(
             title=_("Default PPA"),
-            description=_("The PPA owned by this person and named 'ppa'."),
+            description=_("The PPA named 'ppa' owned by this person."),
             readonly=True, required=False,
             # Really IArchive, see archive.py
             schema=Interface)

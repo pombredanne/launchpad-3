@@ -465,12 +465,12 @@ We can get to the person's default PPA via the 'archive' property:
     >>> print sabdfl_archive['description']
     packages to help the humanity (you know, ubuntu)
 
-The 'ppas' property returns a collection of PPAs owned by person.
+The 'ppas' property returns a collection of PPAs owned by that
+person.
 
     >>> print_self_link_of_entries(webservice.get(
     ...     sabdfl['ppas_collection_link']).jsonBody())
     http://.../~sabdfl/+archive/ppa
-
 
 A specific PPA can be looked up by name via 'getPPAByName'
 named-operation on IPerson.
@@ -489,12 +489,11 @@ returned.
     None
 
 The method doesn't even bother to execute the lookup if the given
-'name' doesn't match the contraints for PPA names. An error message
+'name' doesn't match the constraints for PPA names. An error message
 indicating what was wrong is returned.
 
     >>> print webservice.named_get(
-    ...     sabdfl['self_link'], 'getPPAByName',
-    ...     name='XpTo@#$%')
+    ...     sabdfl['self_link'], 'getPPAByName', name='XpTo@#$%')
     HTTP/1.1 400 Bad Request
     ...
     name:
