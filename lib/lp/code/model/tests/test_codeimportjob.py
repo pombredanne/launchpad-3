@@ -983,6 +983,22 @@ class TestCodeImportJobWorkflowFinishJob(TestCaseWithFactory,
         self.failImport(code_import)
         self.assertEqual(1, code_import.consecutive_failure_count)
 
+    def test_consecutive_failure_count_other_import_non_interference(self):
+        code_import = self.factory.makeCodeImport()
+        other_import = self.factory.makeCodeImport()
+        self.failImport(code_import)
+        self.assertEqual(1, code_import.consecutive_failure_count)
+        self.failImport(other_import)
+        self.assertEqual(1, code_import.consecutive_failure_count)
+        self.succeedImport(code_import)
+        self.assertEqual(0, code_import.consecutive_failure_count)
+        self.succeedImport(other_import)
+        self.assertEqual(0, code_import.consecutive_failure_count)
+        self.failImport(code_import)
+        self.assertEqual(1, code_import.consecutive_failure_count)
+        self.failImport(other_import)
+        self.assertEqual(1, code_import.consecutive_failure_count)
+
 
 def logged_in_as(email):
     """Return a decorator that wraps functions to runs logged in as `email`.
