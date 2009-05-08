@@ -1,10 +1,9 @@
 # Copyright 2004-2008 Canonical Ltd.  All rights reserved.
-"""Run all of the pagetests, in priority order."""
-
-__metaclass__ = type
 
 import os
 import unittest
+
+from openid.consumer.discover import OPENID_1_1_TYPE, OPENID_2_0_TYPE
 
 from canonical.launchpad.testing.pages import PageTestSuite, setUpGlobs
 
@@ -20,5 +19,14 @@ def test_suite():
     suite = unittest.TestSuite()
     for storydir in stories:
         suite.addTest(PageTestSuite(storydir))
+
+    # Add per-version page tests to the suite, once for each OpenID
+    # version.
+    pagetestsdir = os.path.join('openid', 'per-version')
+    for PROTOCOL_URI in [OPENID_1_1_TYPE, OPENID_2_0_TYPE]:
+        def setUp(test, PROTOCOL_URI=PROTOCOL_URI):
+            setUpGlobs(test)
+            test.globs['PROTOCOL_URI'] = PROTOCOL_URI
+        suite.addTest(PageTestSuite(pagetestsdir, setUp=setUp))
 
     return suite

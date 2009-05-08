@@ -51,7 +51,7 @@ query membership of "myteam":
     ...     PROTOCOL_URI, 'http://openid.launchpad.dev/+id/cCGE3LA')
     >>> request = consumer.beginWithoutDiscovery(endpoint)
 
-    >>> from canonical.launchpad.browser.openidserver import (
+    >>> from canonical.ssoserver.browser.openidserver import (
     ...     LAUNCHPAD_TEAMS_NS)
     >>> request.message.namespaces.addAlias(LAUNCHPAD_TEAMS_NS, 'lp')
     'lp'

@@ -27,7 +27,7 @@ four team names:
     ...     PROTOCOL_URI, 'http://openid.launchpad.dev/+id/sabdfl_oid')
     >>> request = consumer.beginWithoutDiscovery(endpoint)
 
-    >>> from canonical.launchpad.browser.openidserver import (
+    >>> from canonical.ssoserver.browser.openidserver import (
     ...     LAUNCHPAD_TEAMS_NS)
     >>> print LAUNCHPAD_TEAMS_NS
     http://ns.launchpad.net/2007/openid-teams
