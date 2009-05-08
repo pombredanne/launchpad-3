@@ -363,8 +363,8 @@ class ArchiveViewBase(LaunchpadView):
         return self.context.getPublishedSources().count() > 0
 
     @cachedproperty
-    def repository_size(self):
-        """Return a dictionary with repository size details."""
+    def repository_usage(self):
+        """Return a dictionary with usage details of this repository."""
         def package_plural(control):
             if control == 1:
                 return 'package'

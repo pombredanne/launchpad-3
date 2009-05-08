@@ -81,24 +81,24 @@ vocabulary for selecting a series filter:
     Warty
 
 An ArchiveView provides a helper property which returns repository
-size information in a dictionary containing:
+usage details in a dictionary containing:
 
  * Number of sources and binaries published with their appropriate
    labels;
  * Number of bytes used and permitted (quota);
  * Percentage of the used quota (with centesimal precision).
 
-We will use a helper function for printing the retuned dictionary
+We will use a helper function for printing the returned dictionary
 contents.
 
-    >>> def print_repository_size(repository_size):
-    ...     for key, value in sorted(repository_size.iteritems()):
+    >>> def print_repository_usage(repository_usage):
+    ...     for key, value in sorted(repository_usage.iteritems()):
     ...         print '%s: %s' % (key, value)
 
 Celso PPA has some packages.
 
-    >>> ppa_repository_size = ppa_archive_view.repository_size
-    >>> print_repository_size(ppa_repository_size)
+    >>> ppa_repository_usage = ppa_archive_view.repository_usage
+    >>> print_repository_usage(ppa_repository_usage)
     binaries_size:   3
     binary_label:    3 binary packages
     quota:           1073741824
@@ -107,11 +107,10 @@ Celso PPA has some packages.
     used:            9929546
     used_percentage: 0.92
 
-The sampledata COPY archive has no packages and, even though, the
-information returned is correct.
+The COPY archive has no packages.
 
-    >>> copy_repository_size = copy_archive_view.repository_size
-    >>> print_repository_size(copy_repository_size)
+    >>> copy_repository_usage = copy_archive_view.repository_usage
+    >>> print_repository_usage(copy_repository_usage)
     binaries_size: 0
     binary_label: 0 binary packages
     quota: 1073741824
@@ -126,8 +125,8 @@ for their singular form.
     >>> sabdfl = getUtility(IPersonSet).getByName('sabdfl')
     >>> sabdfl_archive_view = create_initialized_view(
     ...     sabdfl.archive, name="+index")
-    >>> sabdfl_repository_size = sabdfl_archive_view.repository_size
-    >>> print_repository_size(sabdfl_repository_size)
+    >>> sabdfl_repository_usage = sabdfl_archive_view.repository_usage
+    >>> print_repository_usage(sabdfl_repository_usage)
     binaries_size: 0
     binary_label: 1 binary package
     quota: 1073741824

@@ -679,7 +679,7 @@ javascript.
     >>> print extract_text(anon_browser.contents)
     1 source package (9.5 MiB)
     1 binary package (0 bytes)
-    Estimated repository size: 9.5 MiB (0.92 %) of 1.0 GiB
+    Estimated repository size: 9.5 MiB (0.92%) of 1.0 GiB
 
 
 == Other Distribution PPAs ==
