@@ -482,8 +482,7 @@
 <metal:similar-bugs-and-filebug-form
     define-macro="show-similar-bugs-and-filebug-form">
 
-
-  <tal:similar-bugs condition="view/contextUsesMalone">
+  <tal:similar-bugs condition="view/show_duplicate_list">
     <metal:similar-bugs
         use-macro="context/@@+filebug-macros/display-similar-bugs" />
 
