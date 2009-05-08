@@ -46,6 +46,7 @@ from canonical.twistedsupport.tests.test_processmonitor import (
     makeFailure, ProcessTestsMixin)
 from lp.code.interfaces.codeimportresult import CodeImportResultStatus
 
+
 class TestWorkerMonitorProtocol(ProcessTestsMixin, TestCase):
 
     layer = TwistedLayer
@@ -401,6 +402,25 @@ def nuke_codeimport_sample_data():
         code_import.destroySelf()
 
 
+class CIWorkerMonitorProtocolForTesting(CodeImportWorkerMonitorProtocol):
+    def __init__(self, deferred, worker_monitor, log_file, clock=None):
+        """See `CodeImportWorkerMonitorProtocol.__init__`."""
+        CodeImportWorkerMonitorProtocol.__init__(
+            self, deferred, worker_monitor, log_file, clock)
+        self.reset_calls = 0
+
+    def resetTimeout(self):
+        CodeImportWorkerMonitorProtocol.resetTimeout(self)
+        self.reset_calls += 1
+
+class CIWorkerMonitorForTesting(CodeImportWorkerMonitor):
+
+    def _makeProcessProtocol(self, deferred):
+        protocol = CIWorkerMonitorProtocolForTesting(
+            deferred, self, self._log_file)
+        self._protocol = protocol
+        return protocol
+
 class TestWorkerMonitorIntegration(TestCase, TestCaseWithMemoryTransport):
 
     layer = TwistedLaunchpadZopelessLayer
@@ -488,6 +508,10 @@ class TestWorkerMonitorIntegration(TestCase, TestCaseWithMemoryTransport):
     @read_only_transaction
     def assertImported(self, ignored, code_import_id):
         """Assert that the `CodeImport` of the given id was imported."""
+        # In the in-memory tests, check that resetTimeout on the
+        # CodeImportWorkerMonitorProtocol was called at least once.
+        if self._protocol is not None:
+            self.assertPositive(self._protocol.reset_calls)
         code_import = getUtility(ICodeImportSet).get(code_import_id)
         self.assertCodeImportResultCreated(code_import)
         self.assertBranchImportedOKForCodeImport(code_import)
@@ -500,7 +524,10 @@ class TestWorkerMonitorIntegration(TestCase, TestCaseWithMemoryTransport):
         This implementation does it in-process.
         """
         self.layer.switchDbUser('codeimportworker')
-        return CodeImportWorkerMonitor(job_id, _make_silent_logger()).run()
+        monitor = CIWorkerMonitorForTesting(job_id, _make_silent_logger())
+        deferred = monitor.run()
+        self._protocol = monitor._protocol
+        return deferred
 
     def test_import_cvs(self):
         # Create a CVS CodeImport and import it.
@@ -545,6 +572,10 @@ class DeferredOnExit(protocol.ProcessProtocol):
 
 class TestWorkerMonitorIntegrationScript(TestWorkerMonitorIntegration):
     """Tests for CodeImportWorkerMonitor that execute a child process."""
+
+    def setUp(self):
+        TestCaseWithMemoryTransport.setUp(self)
+        self._protocol = None
 
     def performImport(self, job_id):
         """Perform the import job with ID job_id.
