@@ -1,7 +1,6 @@
 <configure
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser"
-    xmlns:webservice="http://namespaces.canonical.com/webservice"
     xmlns:i18n="http://namespaces.zope.org/i18n"
     xmlns:xmlrpc="http://namespaces.zope.org/xmlrpc"
     i18n_domain="launchpad">
@@ -268,7 +267,6 @@
     
     <!-- ArchiveDependency -->
     
-    <webservice:register module="lp.soyuz.interfaces.archivedependency" />
     <class
         class="canonical.launchpad.database.ArchiveDependency">
         <allow
@@ -370,7 +368,6 @@
     
     <!-- Archive -->
     
-    <webservice:register module="lp.soyuz.interfaces.archive" />
     <class
         class="canonical.launchpad.database.Archive">
         <allow
@@ -423,7 +420,6 @@
     
     <!-- ArchivePermission -->
     
-    <webservice:register module="lp.soyuz.interfaces.archivepermission" />
     <class
         class="canonical.launchpad.database.ArchivePermission">
         <allow
@@ -469,7 +465,6 @@
     
     <!-- Build -->
     
-    <webservice:register module="lp.soyuz.interfaces.build" />
     <class
         class="canonical.launchpad.database.Build">
         <require
