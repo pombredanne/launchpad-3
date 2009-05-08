@@ -7,9 +7,7 @@ user, hopefully helping them choose accurately and thus reducing
 duplicates.
 
     >>> def print_similar_bugs(content):
-    ...     bugs_list = find_tag_by_id(
-    ...         content, 'similar-bugs').findAll(
-    ...             None, {'class': 'similar-bug'})
+    ...     bugs_list = find_tags_by_class(content, 'similar-bug')
     ...     for node in bugs_list:
     ...         icon = node.findAll('img')[1]
     ...         icon_alt = icon['alt'].lstrip('(').rstrip(')') or '-'

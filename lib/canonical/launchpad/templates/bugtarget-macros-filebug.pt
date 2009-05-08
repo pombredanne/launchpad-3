@@ -398,7 +398,8 @@
               <label tal:attributes="for string:bug-already-reported-as-${bug/id}"
                      tal:condition="bugtask"
                      tal:content="structure bugtask/image:icon" />
-              <img alt="" src="/@@/bug" tal:condition="not:bugtask" />
+              <img alt="" src="/@@/bug" tal:condition="not:bugtask"
+                  class="bug-icon" />
             </td>
             <td>
               <div>
