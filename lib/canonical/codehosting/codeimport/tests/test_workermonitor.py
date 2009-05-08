@@ -403,6 +403,9 @@ def nuke_codeimport_sample_data():
 
 
 class CIWorkerMonitorProtocolForTesting(CodeImportWorkerMonitorProtocol):
+    """A `CodeImportWorkerMonitorProtocol` that counts `resetTimeout` calls.
+    """
+
     def __init__(self, deferred, worker_monitor, log_file, clock=None):
         """See `CodeImportWorkerMonitorProtocol.__init__`."""
         CodeImportWorkerMonitorProtocol.__init__(
@@ -410,16 +413,25 @@ class CIWorkerMonitorProtocolForTesting(CodeImportWorkerMonitorProtocol):
         self.reset_calls = 0
 
     def resetTimeout(self):
+        """See `ProcessMonitorProtocolWithTimeout.resetTimeout`."""
         CodeImportWorkerMonitorProtocol.resetTimeout(self)
         self.reset_calls += 1
 
+
 class CIWorkerMonitorForTesting(CodeImportWorkerMonitor):
+    """A `CodeImportWorkerMonitor` that hangs on to the process protocol."""
 
     def _makeProcessProtocol(self, deferred):
+        """See `CodeImportWorkerMonitor._makeProcessProtocol`.
+
+        We hang on to the constructed object for later inspection -- see
+        `TestWorkerMonitorIntegration.assertImported`.
+        """
         protocol = CIWorkerMonitorProtocolForTesting(
             deferred, self, self._log_file)
         self._protocol = protocol
         return protocol
+
 
 class TestWorkerMonitorIntegration(TestCase, TestCaseWithMemoryTransport):
 
@@ -526,8 +538,16 @@ class TestWorkerMonitorIntegration(TestCase, TestCaseWithMemoryTransport):
         self.layer.switchDbUser('codeimportworker')
         monitor = CIWorkerMonitorForTesting(job_id, _make_silent_logger())
         deferred = monitor.run()
-        self._protocol = monitor._protocol
-        return deferred
+        def save_protocol_object(result):
+            """Save the process protocol object.
+
+            We do this in an addBoth so that it's called after the process
+            protocol is actually constructed but before we drop the last
+            reference to the monitor object.
+            """
+            self._protocol = monitor._protocol
+            return result
+        return deferred.addBoth(save_protocol_object)
 
     def test_import_cvs(self):
         # Create a CVS CodeImport and import it.
@@ -574,7 +594,7 @@ class TestWorkerMonitorIntegrationScript(TestWorkerMonitorIntegration):
     """Tests for CodeImportWorkerMonitor that execute a child process."""
 
     def setUp(self):
-        TestCaseWithMemoryTransport.setUp(self)
+        TestWorkerMonitorIntegration.setUp(self)
         self._protocol = None
 
     def performImport(self, job_id):
