@@ -12,6 +12,7 @@ __all__ = [
 
 from datetime import timedelta
 
+from storm.locals import Store
 from storm.references import Reference
 from sqlobject import (
     ForeignKey, IntervalCol, StringCol, SQLMultipleJoin,
@@ -39,6 +40,8 @@ from lp.code.interfaces.codeimportjob import CodeImportJobState
 from lp.code.interfaces.branchnamespace import (
     get_branch_namespace)
 from lp.code.interfaces.codeimport import RevisionControlSystems
+from lp.code.model.codeimportresult import (
+    CodeImportResult, CodeImportResultStatus)
 from canonical.launchpad.mailout.codeimport import code_import_updated
 from lp.registry.interfaces.person import validate_public_person
 
@@ -151,6 +154,22 @@ class CodeImport(SQLBase):
             return True
         else:
             return False
+
+    @property
+    def consecutive_failure_count(self):
+        """See `ICodeImport`."""
+        try:
+            last_success = Store.of(self).find(
+                CodeImportResult,
+                CodeImportResult.status == CodeImportResultStatus.SUCCESS,
+                CodeImportResult.code_import == self).order_by(
+                CodeImportResult.id).values(CodeImportResult.id).next()
+        except StopIteration:
+            last_success = 0
+        return Store.of(self).find(
+            CodeImportResult,
+            CodeImportResult.code_import == self,
+            CodeImportResult.id > last_success).count()
 
     def updateFromData(self, data, user):
         """See `ICodeImport`."""
