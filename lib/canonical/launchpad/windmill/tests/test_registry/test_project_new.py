@@ -40,15 +40,15 @@ def test_projects_plusnew_step_two():
         id=u'step-title',
         validator=u'Registration details')
     # The className for hidden elements is lazr-closed  because it's set by
-    # the slide-in effect.  For seen elements, it's lazr-oepned.
+    # the slide-in effect.  For slide-out elements, it's lazr-opened.
     client.asserts.assertProperty(
         id='search-results', validator='className|lazr-closed')
     client.asserts.assertProperty(
         id=u'launchpad-form-widgets',
         validator='className|lazr-opened')
-    client.asserts.assertProperty(
+    client.asserts.assertNotProperty(
         id=u'search-results-expander',
-        validator='className|seen')
+        validator='className|unseen')
     # Clicking on the href expands the search results.
     client.click(id='search-results-expander')
     client.asserts.assertProperty(
