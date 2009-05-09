@@ -28,7 +28,7 @@
      http://www.mhonarc.org/MHonArc/doc/resources/definevar.html. -->
 <DefineVar>
 ML-FULL-TITLE
-<a href="http://launchpad.net/~$ML-NAME$">$ML-NAME$</a> mailing list archive
+<a href="https://launchpad.net/~$ML-NAME$">$ML-NAME$</a> mailing list archive
 </DefineVar>
 
 <IDXLABEL>
@@ -131,13 +131,16 @@ Thread Index
 <title>$ML-NAME$ mailing list (by date)</title>
 </head>
 <body text="#000000" bgcolor="#FFFFFF">
-<p><a href="http://launchpad.net/"><img border="0" src="http://launchpad.net/@@/launchpad-logo-and-name.png" alt="Launchpad logo and name."/></a></p>
+<p><a href="https://launchpad.net/"><img border="0" src="https://launchpad.net/@@/launchpad-logo-and-name.png" alt="Launchpad logo and name."/></a></p>
 <h1><center>$ML-FULL-TITLE$ (by date)</center></h1>
 </IDXPGBEGIN>
 
 <IDXPGEND>
 <hr/>
-(<em>$ML-FULL-TITLE$, formatted by <a href="$DOCURL$">MHonArc</a>)
+<p><strong>This is the $ML-FULL-TITLE$&mdash;&nbsp;see also the
+general <a href="https://help.launchpad.net/Teams/MailingLists"
+>help for Launchpad.net mailing lists</a>.</strong></p>
+<p><em>(Formatted by <a href="$DOCURL$">MHonArc</a>.)</em></p>
 </body>
 </html>
 </IDXPGEND>
@@ -151,13 +154,16 @@ Thread Index
 <title>$ML-NAME$ mailing list (by thread)</title>
 </head>
 <body text="#000000" bgcolor="#FFFFFF">
-<p><a href="http://launchpad.net/"><img border="0" src="http://launchpad.net/@@/launchpad-logo-and-name.png" alt="Launchpad logo and name."/></a></p>
+<p><a href="https://launchpad.net/"><img border="0" src="https://launchpad.net/@@/launchpad-logo-and-name.png" alt="Launchpad logo and name."/></a></p>
 <h1><center>$ML-FULL-TITLE$ (by thread)</center></h1>
 </TIDXPGBEGIN>
 
 <TIDXPGEND>
 <hr/>
-(<em>$ML-FULL-TITLE$, formatted by <a href="$DOCURL$">MHonArc</a>)
+<p><strong>This is the $ML-FULL-TITLE$&mdash;&nbsp;see also the
+general <a href="https://help.launchpad.net/Teams/MailingLists"
+>help for Launchpad.net mailing lists</a>.</strong></p>
+<p><em>(Formatted by <a href="$DOCURL$">MHonArc</a>.)</em></p>
 </body>
 </html>
 </TIDXPGEND>
@@ -172,12 +178,15 @@ Thread Index
 <link rev="made" href="mailto:$FROMADDR$">
 </head>
 <body text="#000000" bgcolor="#FFFFFF">
-<p><a href="http://launchpad.net/"><img border="0" src="http://launchpad.net/@@/launchpad-logo-and-name.png" alt="Launchpad logo and name."/></a></p>
+<p><a href="https://launchpad.net/"><img border="0" src="https://launchpad.net/@@/launchpad-logo-and-name.png" alt="Launchpad logo and name."/></a></p>
 </MSGPGBEGIN>
 
 <MSGPGEND>
 <hr/>
-(<em>$ML-FULL-TITLE$, formatted by <a href="$DOCURL$">MHonArc</a>)
+<p><strong>This is the $ML-FULL-TITLE$&mdash;&nbsp;see also the
+general <a href="https://help.launchpad.net/Teams/MailingLists"
+>help for Launchpad.net mailing lists</a>.</strong></p>
+<p><em>(Formatted by <a href="$DOCURL$">MHonArc</a>.)</em></p>
 </body>
 </html>
 </MSGPGEND>
