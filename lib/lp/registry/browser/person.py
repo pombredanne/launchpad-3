@@ -1146,8 +1146,9 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
 
     usedfor = ITeam
     facet = 'overview'
-    links = ['edit', 'branding', 'common_edithomepage', 'members',
-             'add_member', 'memberships', 'received_invitations', 'mugshots',
+    links = ['edit', 'branding', 'common_edithomepage', 'members', 'mugshots',
+             'add_member', 'proposed_members',
+             'memberships', 'received_invitations',
              'editemail', 'configure_mailing_list', 'moderate_mailing_list',
              'editlanguages', 'map', 'polls',
              'add_poll', 'joinleave', 'add_my_teams', 'mentorships',
@@ -1190,6 +1191,12 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
     def add_member(self):
         target = '+addmember'
         text = 'Add member'
+        return Link(target, text, icon='add')
+
+    @enabled_with_permission('launchpad.Edit')
+    def proposed_members(self):
+        target = '+editproposedmembers'
+        text = 'Approve/Decline applicants'
         return Link(target, text, icon='add')
 
     def map(self):

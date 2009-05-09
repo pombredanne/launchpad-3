@@ -279,6 +279,10 @@
               >Foo Bar (name16)</a>
           </li>
         </ul>
+        <div style="margin-top: 3px;">
+          <tal:mentorships
+            replace="structure overview_menu/mentorships/fmt:link" />
+        </div>
         </td>
         <td style="padding: 0px;" id="recently-applied"
           tal:condition="view/recently_proposed_members">
@@ -291,15 +295,14 @@
               >Foo Bar (name16)</a>
           </li>
         </ul>
+        <div style="margin-top: 3px;"
+          tal:condition="overview_menu/proposed_members/enabled"
+          tal:content="structure overview_menu/proposed_members/fmt:icon-link">
+        </div>
         </td>
       </tr>
     </table>
     </tal:can-view>
-    <div>
-      <tal:mentorships
-        replace="structure overview_menu/mentorships/fmt:link" />
-    </div>
-
     <div>
 
     </div>
