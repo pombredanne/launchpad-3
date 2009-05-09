@@ -2773,16 +2773,18 @@ class PersonView(LaunchpadView, FeedsMixin):
         The list contains email addresses when the EmailAddressVisibleState's
         PUBLIC or ALLOWED attributes are True. The preferred email
         address is the first in the list, the other validated email addresses
-        are not ordered.
+        are not ordered. When the team is the context, only the preferred
+        email address is in the list.
 
         :return: A list of email address strings that can be seen.
         """
         visible_states = (
             EmailAddressVisibleState.PUBLIC, EmailAddressVisibleState.ALLOWED)
         if self.email_address_visibility.state in visible_states:
-            emails = sorted(
-                email.email for email in self.context.validatedemails)
-            emails.insert(0, self.context.preferredemail.email)
+            emails = [self.context.preferredemail.email]
+            if not self.context.isTeam():
+                emails.extend(sorted(
+                    email.email for email in self.context.validatedemails))
             return emails
         else:
             return []
