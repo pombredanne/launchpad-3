@@ -2851,6 +2851,14 @@ class PersonView(LaunchpadView, FeedsMixin):
         else:
             return getUtility(ILaunchpadCelebrities).english.englishname
 
+    @property
+    def public_private_css(self):
+        """The CSS classes that represent the public or private state."""
+        if self.context.private:
+            return 'aside private'
+        else:
+            return 'aside public'
+
 
 class EmailAddressVisibleState:
     """The state of a person's email addresses w.r.t. the logged in user.

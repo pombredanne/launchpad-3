@@ -1,12 +1,17 @@
 = A team's home page =
 
-The home page of a team is publicly visible and contains a few interesting
-details about the team.
+The home page of a public team is visible to everyone.
 
     >>> browser.open('http://launchpad.dev/~ubuntu-team')
-    >>> print extract_text(
-    ...     find_tag_by_id(browser.contents, 'your-involvement'))
-    You must log in to join or leave this team.
+    >>> print browser.title
+    Ubuntu Team in Launchpad
+    >>> privacy_info = find_tag_by_id(browser.contents, 'privacy')
+    >>> print privacy_info['class']
+    aside public
+    >>> print extract_text(privacy_info)
+    This team is public
+
+The page contains a few interesting details about team membership.
 
     >>> print extract_text(
     ...     find_tag_by_id(browser.contents, 'recently-approved'))
@@ -55,6 +60,10 @@ the recent members sections are not displayed:
 In the above case there's no user logged in, so it doesn't actually show
 what's the user's involvement with the team. If the user logs in, he'll see
 that, though.
+
+    >>> print extract_text(
+    ...     find_tag_by_id(browser.contents, 'your-involvement'))
+    You must log in to join or leave this team.
 
     >>> browser = setupBrowser(auth='Basic foo.bar@canonical.com:test')
     >>> browser.open('http://launchpad.dev/~guadamen')
