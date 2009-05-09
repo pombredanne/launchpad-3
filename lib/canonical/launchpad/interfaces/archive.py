@@ -1121,9 +1121,9 @@ ALLOW_RELEASE_BUILDS = (
 # MONKEY PATCH TIME!
 # Fix circular dependency issues.
 from canonical.launchpad.components.apihelpers import (
-    patch_entry_return_type, patch_collection_return_type,
-    patch_plain_parameter_type, patch_choice_parameter_type,
-    patch_reference_property)
+    patch_choice_parameter_type, patch_collection_property,
+    patch_collection_return_type, patch_entry_return_type,
+    patch_plain_parameter_type, patch_reference_property)
 
 from lp.registry.interfaces.distribution import IDistribution
 patch_reference_property(IArchive, 'distribution', IDistribution)
@@ -1180,4 +1180,5 @@ patch_choice_parameter_type(
 # interfaces/person.py.
 from lp.registry.interfaces.person import IPersonPublic
 patch_reference_property(IPersonPublic, 'archive', IArchive)
-
+patch_collection_property(IPersonPublic, 'ppas', IArchive)
+patch_entry_return_type(IPersonPublic, 'getPPAByName', IArchive)

@@ -892,12 +892,17 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
                              summary=summary, branch=branch)
 
     def getRelease(self, version):
-        return ProductRelease.selectOne("""
-            ProductRelease.productseries = ProductSeries.id AND
-            ProductSeries.product = %s AND
-            ProductRelease.version = %s
-            """ % sqlvalues(self.id, version),
-            clauseTables=['ProductSeries'])
+        """See `IProduct`."""
+        store = Store.of(self)
+        origin = [
+            ProductRelease,
+            Join(Milestone, ProductRelease.milestone == Milestone.id),
+            ]
+        result = store.using(*origin)
+        return result.find(
+            ProductRelease,
+            And(Milestone.product == self,
+                Milestone.name == version)).one()
 
     def packagedInDistros(self):
         distros = Distribution.select(

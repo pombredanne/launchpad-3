@@ -41,7 +41,7 @@ from lazr.restful.fields import Reference
 from lazr.restful.declarations import (
     LAZR_WEBSERVICE_EXPORTED, export_as_webservice_entry,
     export_read_operation, exported, operation_parameters,
-    operation_returns_entry)
+    operation_returns_entry, webservice_error)
 
 
 # XXX: salgado, 2008-06-02: We should use a more generic name here as this
@@ -761,7 +761,7 @@ class IDistroSeriesSet(Interface):
 
 class NoSuchDistroSeries(NameLookupFailed):
     """Raised when we try to find a DistroSeries that doesn't exist."""
-
+    webservice_error(400) #Bad request.
     _message_prefix = "No such distribution series"
 
 
