@@ -71,7 +71,7 @@
 
       <tal:no_preferredemail
         condition="view/email_address_visibility/are_none_available">
-        No contact address
+        No contact email
         <metal:define metal:define-macro="contact">
           <tal:can-contact condition="view/can_contact">
             &nbsp; <img src="/@@/mail" alt="email"/>

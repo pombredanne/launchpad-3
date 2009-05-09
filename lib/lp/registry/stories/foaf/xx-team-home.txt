@@ -90,7 +90,7 @@ address:
     >>> print extract_text(
     ...     find_tag_by_id(sample_browser.contents, 'contact-details'))
     Contact details
-    No contact address
+    No contact email
       Contact this team
       (Launchpad notifications are sent to all team members)
     Languages: English

@@ -6,9 +6,6 @@
 
 <div class="portlet" id="contact-details"
   tal:define="overview_menu context/menu:overview">
-
-  <h2 tal:condition="context/is_team">Contact details</h2>
-
   <div class="portletContent portletBody">
 
     <table>
@@ -27,23 +24,8 @@
 
             <tal:no_preferredemail
               condition="view/email_address_visibility/are_none_available">
-              <tal:is-team condition="context/isTeam">
-                No contact address
-                <metal:define metal:define-macro="contact">
-                  <tal:can-contact condition="view/can_contact">
-                    (<a href="+contactuser"
-                       tal:attributes="title view/contact_link_title"
-                       tal:content="view/specific_contact_text">Contact this person</a>)
-                    <tal:no_preferredemail
-                      condition="view/email_address_visibility/are_none_available">
-                      <br /><small>(Launchpad notifications are sent to all
-                                    team members)</small>
-                    </tal:no_preferredemail>
-                  </tal:can-contact>
-                </metal:define>
-              </tal:is-team>
               <tal:comment replace="nothing">
-              Otherwise the user is not valid; this portlet is not used.
+              The user is not valid; this portlet is not used.
               </tal:comment>
             </tal:no_preferredemail>
 
