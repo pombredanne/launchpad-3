@@ -32,7 +32,19 @@
             <tal:cant-view-hidden-emails
               condition="view/email_address_visibility/are_hidden">
               No public address provided.
-              <tal:contact metal:use-macro="template/macros/contact" />
+              <metal:define metal:define-macro="contact">
+                <tal:can-contact condition="view/can_contact">
+                  (<a href="+contactuser"
+                     tal:attributes="title view/contact_link_title"
+                     tal:content="view/specific_contact_text">Contact
+                       this person</a>)
+                  <tal:no_preferredemail
+                    condition="view/email_address_visibility/are_none_available">
+                    <br /><small>(Launchpad notifications are sent to all
+                                  team members)</small>
+                  </tal:no_preferredemail>
+                </tal:can-contact>
+              </metal:define>
             </tal:cant-view-hidden-emails>
 
             <tal:emails
