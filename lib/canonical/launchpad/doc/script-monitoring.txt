@@ -89,7 +89,7 @@ and others where it is useful to monitor the result.
   ...             raise RuntimeError('Some failure')
   ...
   ... if __name__ == '__main__':
-  ...     script = TestScript('test-script', 'garbo-daily')
+  ...     script = TestScript('test-script', 'garbo_daily')
   ...     script.run()
   ... """)
   >>> script_file.flush()
