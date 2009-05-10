@@ -89,7 +89,10 @@ def auto_merge_branches(scan_completed):
         return
     # Get all the active branches for the product, and if the
     # last_scanned_revision is in the ancestry, then mark it as merged.
-    branches = getUtility(IAllBranches).inTarget(db_branch.target)
+    #
+    # XXX: JonathanLange 2009-05-11 spec=package-branches: This assumes that
+    # merge detection only works with product branches.
+    branches = getUtility(IAllBranches).inProduct(db_branch.product)
     branches = branches.withLifecycleStatus(
         BranchLifecycleStatus.DEVELOPMENT,
         BranchLifecycleStatus.EXPERIMENTAL,
