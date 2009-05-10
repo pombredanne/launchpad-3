@@ -180,10 +180,10 @@ class DBLoopTuner(LoopTuner):
     """
 
     # We block until replication lag is under this threshold.
-    acceptable_replication_lag = timedelta(seconds=90) # In seconds.
+    acceptable_replication_lag = timedelta(seconds=30) # In seconds.
 
     # We block if there are transactions running longer than this threshold.
-    long_running_transaction = 60*60 # In seconds
+    long_running_transaction = 30*60 # In seconds
 
     def _blockWhenLagged(self):
         """When database replication lag is high, block until it drops."""
@@ -222,7 +222,7 @@ class DBLoopTuner(LoopTuner):
                     usename,
                     datname,
                     current_query
-                FROM pg_stat_activity
+                FROM activity()
                 WHERE xact_start < CURRENT_TIMESTAMP - interval '%f seconds'
                 """ % self.long_running_transaction).get_all())
             if not results:

@@ -23,15 +23,12 @@ from canonical.launchpad.interfaces import IMasterStore, IRevisionSet
 from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
 from canonical.launchpad.interfaces.looptuner import ITunableLoop
 from canonical.launchpad.scripts.base import LaunchpadCronScript
-from canonical.launchpad.utilities.looptuner import LoopTuner
+from canonical.launchpad.utilities.looptuner import DBLoopTuner
 from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
+    IStoreSelector, AUTH_STORE, MAIN_STORE, MASTER_FLAVOR)
 from lp.code.model.codeimportresult import CodeImportResult
-from lp.code.model.revision import RevisionAuthor
+from lp.code.model.revision import RevisionAuthor, RevisionCache
 from lp.registry.model.mailinglist import MailingListSubscription
-
-from lp.code.model.codeimportresult import CodeImportResult
-from lp.code.model.revision import RevisionCache
 
 
 ONE_DAY_IN_SECONDS = 24*60*60
@@ -45,9 +42,12 @@ class TunableLoop:
     maximum_chunk_size = None # Override
     cooldown_time = 0
 
+    def __init__(self, log):
+        self.log = log
+
     def run(self):
         assert self.maximum_chunk_size is not None, "Did not override."
-        LoopTuner(
+        DBLoopTuner(
             self, self.goal_seconds,
             minimum_chunk_size = self.minimum_chunk_size,
             maximum_chunk_size = self.maximum_chunk_size,
@@ -61,7 +61,8 @@ class OAuthNoncePruner(TunableLoop):
     """
     maximum_chunk_size = 6*60*60 # 6 hours in seconds.
 
-    def __init__(self):
+    def __init__(self, log):
+        super(OAuthNoncePruner, self).__init__(log)
         self.store = IMasterStore(OAuthNonce)
         self.oldest_age = self.store.execute("""
             SELECT COALESCE(EXTRACT(EPOCH FROM
@@ -76,6 +77,10 @@ class OAuthNoncePruner(TunableLoop):
     def __call__(self, chunk_size):
         self.oldest_age = max(
             ONE_DAY_IN_SECONDS, self.oldest_age - chunk_size)
+
+        self.log.debug(
+            "Removed OAuthNonce rows older than %d seconds"
+            % self.oldest_age)
 
         self.store.find(
             OAuthNonce,
@@ -92,7 +97,8 @@ class OpenIDConsumerNoncePruner(TunableLoop):
     """
     maximum_chunk_size = 6*60*60 # 6 hours in seconds.
 
-    def __init__(self):
+    def __init__(self, log):
+        super(OpenIDConsumerNoncePruner, self).__init__(log)
         self.store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
         self.earliest_timestamp = self.store.find(
             Min(OpenIDConsumerNonce.timestamp)).one()
@@ -109,10 +115,50 @@ class OpenIDConsumerNoncePruner(TunableLoop):
             self.earliest_wanted_timestamp,
             self.earliest_timestamp + chunk_size)
 
+        self.log.debug(
+            "Removing OpenIDConsumerNonce rows older than %s"
+            % self.earliest_timestamp)
+
         self.store.find(
             OpenIDConsumerNonce,
             OpenIDConsumerNonce.timestamp < self.earliest_timestamp).remove()
         transaction.commit()
+
+
+class OpenIDAssociationPruner(TunableLoop):
+    minimum_chunk_size = 3500
+    maximum_chunk_size = 50000
+
+    table_name = 'OpenIDAssociation'
+    store_name = AUTH_STORE
+
+    _num_removed = None
+
+    def __init__(self, log):
+        super(OpenIDAssociationPruner, self).__init__(log)
+        self.store = getUtility(IStoreSelector).get(
+            self.store_name, MASTER_FLAVOR)
+
+    def __call__(self, chunksize):
+        result = self.store.execute("""
+            DELETE FROM %s
+            WHERE (server_url, handle) IN (
+                SELECT server_url, handle FROM %s
+                WHERE issued + lifetime <
+                    EXTRACT(EPOCH FROM CURRENT_TIMESTAMP)
+                LIMIT %d
+                )
+            """ % (self.table_name, self.table_name, int(chunksize)))
+        self._num_removed = result._raw_cursor.rowcount
+        transaction.commit()
+
+    def isDone(self):
+        return self._num_removed == 0
+
+
+class OpenIDConsumerAssociationPruner(OpenIDAssociationPruner):
+    table_name = 'OpenIDConsumerAssociation'
+    store_name = MAIN_STORE
 
 
 class RevisionCachePruner(TunableLoop):
@@ -141,8 +187,9 @@ class CodeImportResultPruner(TunableLoop):
     and they are not one of the 4 most recent results for that
     CodeImport.
     """
-    maximum_chunk_size = 100
-    def __init__(self):
+    maximum_chunk_size = 1000
+    def __init__(self, log):
+        super(CodeImportResultPruner, self).__init__(log)
         self.store = IMasterStore(CodeImportResult)
 
         self.min_code_import = self.store.find(
@@ -158,6 +205,11 @@ class CodeImportResultPruner(TunableLoop):
             or self.next_code_import_id > self.max_code_import)
 
     def __call__(self, chunk_size):
+        self.log.debug(
+            "Removing expired CodeImportResults for CodeImports %d -> %d" % (
+                self.next_code_import_id,
+                self.next_code_import_id + chunk_size - 1))
+
         self.store.execute("""
             DELETE FROM CodeImportResult
             WHERE
@@ -193,7 +245,8 @@ class RevisionAuthorEmailLinker(TunableLoop):
 
     maximum_chunk_size = 1000
 
-    def __init__(self):
+    def __init__(self, log):
+        super(RevisionAuthorEmailLinker, self).__init__(log)
         self.author_store = IMasterStore(RevisionAuthor)
         self.email_store = IMasterStore(EmailAddress)
 
@@ -252,7 +305,8 @@ class HWSubmissionEmailLinker(TunableLoop):
 
     maximum_chunk_size = 1000
 
-    def __init__(self):
+    def __init__(self, log):
+        super(HWSubmissionEmailLinker, self).__init__(log)
         self.submission_store = IMasterStore(HWSubmission)
         self.email_store = IMasterStore(EmailAddress)
 
@@ -311,7 +365,8 @@ class MailingListSubscriptionPruner(TunableLoop):
 
     maximum_chunk_size = 1000
 
-    def __init__(self):
+    def __init__(self, log):
+        super(MailingListSubscriptionPruner, self).__init__(log)
         self.subscription_store = IMasterStore(MailingListSubscription)
         self.email_store = IMasterStore(EmailAddress)
 
@@ -354,14 +409,24 @@ class BaseDatabaseGarbageCollector(LaunchpadCronScript):
     script_name = None # Script name for locking and database user. Override.
     tunable_loops = None # Collection of TunableLoops. Override.
 
+    # _maximum_chunk_size is used to override the defined
+    # maximum_chunk_size to allow our tests to ensure multiple calls to
+    # __call__ are required without creating huge amounts of test data.
+    _maximum_chunk_size = None
+
     def __init__(self, test_args=None):
         super(BaseDatabaseGarbageCollector, self).__init__(
-            self.script_name, dbuser=self.script_name, test_args=test_args)
+            self.script_name,
+            dbuser=self.script_name.replace('-','_'),
+            test_args=test_args)
 
     def main(self):
         for tunable_loop in self.tunable_loops:
             self.logger.info("Running %s" % tunable_loop.__name__)
-            tunable_loop().run()
+            tunable_loop = tunable_loop(log=self.logger)
+            if self._maximum_chunk_size is not None:
+                tunable_loop.maximum_chunk_size = self._maximum_chunk_size
+            tunable_loop.run()
 
 
 class HourlyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
@@ -369,8 +434,11 @@ class HourlyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
     tunable_loops = [
         OAuthNoncePruner,
         OpenIDConsumerNoncePruner,
+        OpenIDAssociationPruner,
+        OpenIDConsumerAssociationPruner,
         RevisionCachePruner,
         ]
+
 
 class DailyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
     script_name = 'garbo-daily'
