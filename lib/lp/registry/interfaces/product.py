@@ -73,8 +73,8 @@ from lazr.restful.declarations import (
     REQUEST_USER, call_with, collection_default_content,
     export_as_webservice_collection, export_as_webservice_entry,
     export_factory_operation, export_operation_as, export_read_operation,
-    exported, operation_parameters, operation_returns_collection_of,
-    rename_parameters_as)
+    exported, operation_parameters, operation_returns_entry,
+    operation_returns_collection_of, rename_parameters_as)
 
 
 # This is based on the definition of <label> in RFC 1035, section
@@ -593,13 +593,19 @@ class IProductPublic(
     def getPackage(distroseries):
         """Return a package in that distroseries for this product."""
 
+    @operation_parameters(
+        name=TextLine(title=_("Name"), required=True))
+    @operation_returns_entry(IProductSeries)
+    @export_read_operation()
     def getSeries(name):
-        """Returns the series for this product that has the name given, or
-        None."""
+        """Return the series for this product for the given name, or None."""
 
+    @operation_parameters(
+        version=TextLine(title=_("Version"), required=True))
+    @operation_returns_entry(IProductRelease)
+    @export_read_operation()
     def getRelease(version):
-        """Returns the release for this product that has the version
-        given."""
+        """Return the release for this product that has the version given."""
 
     def packagedInDistros():
         """Returns the distributions this product has been packaged in."""
