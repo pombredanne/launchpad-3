@@ -220,14 +220,6 @@ class IArchivePublic(IHasOwner):
         title=_('Date created'), required=False, readonly=True,
         description=_("The time when the archive was created."))
 
-    def getPubConfig():
-        """Return an overridden Publisher Configuration instance.
-
-        The original publisher configuration based on the distribution is
-        modified according local context, it basically fixes the archive
-        paths to cope with non-primary and PPA archives publication workflow.
-        """
-
     def getSourcesForDeletion(name=None, status=None, distroseries=None):
         """All `ISourcePackagePublishingHistory` available for deletion.
 

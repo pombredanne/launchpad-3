@@ -1525,12 +1525,6 @@ class PackageUploadCustom(SQLBase):
         copy_and_close(self.libraryfilealias, temp_file)
         return temp_file_name
 
-    @property
-    def archive_config(self):
-        """See `IPackageUploadCustom`."""
-        archive = self.packageupload.archive
-        return archive.getPubConfig()
-
     def _publishCustom(self, action_method):
         """Publish custom formats.
 
