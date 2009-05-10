@@ -12,16 +12,16 @@ import unittest
 
 
 from zope.component import getUtility
-from zope.security.proxy import removeSecurityProxy
 
+from canonical.archivepublisher.config import getPubConfig
+from canonical.archivepublisher.scripts.generate_ppa_htaccess import (
+    HtaccessTokenGenerator)
 from canonical.config import config
 from canonical.launchpad.interfaces import (
     IDistributionSet, IPersonSet, TeamMembershipStatus)
 from canonical.launchpad.interfaces.archivesubscriber import (
     ArchiveSubscriberStatus)
 from canonical.launchpad.scripts import QuietFakeLogger
-from canonical.launchpad.scripts.generate_ppa_htaccess import (
-    HtaccessTokenGenerator)
 from canonical.launchpad.testing import LaunchpadObjectFactory
 from canonical.testing.layers import LaunchpadZopelessLayer
 
@@ -70,7 +70,7 @@ class TestPPAHtaccessTokenGeneration(unittest.TestCase):
         """Ensure that the .htaccess file is generated correctly."""
         # The publisher Config object does not have an interface, so we
         # need to remove the security wrapper.
-        pub_config = removeSecurityProxy(self.ppa.getPubConfig())
+        pub_config = getPubConfig(self.ppa)
 
         filename = os.path.join(pub_config.htaccessroot, ".htaccess")
         if os.path.isfile(filename):
@@ -175,7 +175,7 @@ class TestPPAHtaccessTokenGeneration(unittest.TestCase):
         FILE_CONTENT = "Kneel before Zod!"
         # The publisher Config object does not have an interface, so we
         # need to remove the security wrapper.
-        pub_config = removeSecurityProxy(self.ppa.getPubConfig())
+        pub_config = getPubConfig(self.ppa)
         filename = os.path.join(pub_config.htaccessroot, ".htpasswd")
 
         # Write out a dummy .htpasswd
@@ -345,7 +345,7 @@ class TestPPAHtaccessTokenGeneration(unittest.TestCase):
 
     def ensureNoFiles(self):
         """Ensure the .ht* files don't already exist."""
-        pub_config = removeSecurityProxy(self.ppa.getPubConfig())
+        pub_config = getPubConfig(self.ppa)
         htaccess = os.path.join(pub_config.htaccessroot, ".htaccess")
         htpasswd = os.path.join(pub_config.htaccessroot, ".htpasswd")
         if os.path.isfile(htaccess):
