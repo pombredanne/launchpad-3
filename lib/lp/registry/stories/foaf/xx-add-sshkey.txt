@@ -1,23 +1,61 @@
+SSH keys
+========
+
+SSH keys are needed for the authentication process used for hosting
+Bazaar branches.
+
+
+Profile page
+------------
+
+User keys are shown on profile pages, and any user can see that.
+
+    >>> anon_browser.open('http://launchpad.dev/~name12')
+    >>> print anon_browser.title
+    Sample Person in Launchpad
+    >>> print extract_text(
+    ...     find_tag_by_id(anon_browser.contents, 'sshkeys'))
+    SSH Keys: andrew@trogdor
+              (view key text)
+
+Salgado does not have a key, and any user can see that.
+
+    >>> anon_browser.open('http://launchpad.dev/~salgado')
+    >>> print anon_browser.title
+    Guilherme Salgado in Launchpad
+    >>> print extract_text(
+    ...     find_tag_by_id(anon_browser.contents, 'sshkeys'))
+    SSH Keys: No keys registered
+
+Salgado see a message explaining that he can register his ssh key.
+
+    >>> browser = setupBrowser(
+    ...     auth='Basic guilherme.salgado@canonical.com:zeca')
+    >>> browser.open('http://launchpad.dev/~salgado')
+    >>> print browser.title
+    Guilherme Salgado in Launchpad
+    >>> print extract_text(
+    ...     find_tag_by_id(browser.contents, 'sshkeys'))
+    SSH Keys: Register a key to publish Bazaar branches
+
+
+Updating SSH keys
+--------------------
 
 The +editsshkeys page can be used to upload a public ssh key or to remove
-an already uploaded one.
+an already uploaded one. Salgado sees a link on his profile page to update
+his SSH keys. The page allows him to add a key.
 
-    >>> browser.addHeader(
-    ...     'Authorization', 'Basic guilherme.salgado@canonical.com:zeca')
-    >>> browser.open('http://launchpad.dev/~salgado/+editsshkeys')
-    >>> browser.url
-    'http://launchpad.dev/~salgado/+editsshkeys'
-
-    >>> print browser.contents
-    <!DOCTYPE...
-    ...<h2>Add an SSH key</h2>...
-    ...
-
+    >>> browser.getLink('Update SSH keys').click()
+    >>> print browser.title
+    Guilherme Salgado's SSH keys
+    >>> print extract_text(
+    ...     find_main_content(browser.contents).h2)
+    Add an SSH key
 
 Any key must be of the form "keytype keytext comment", where keytype must be
 either ssh-rsa or ssh-dss.  If the key doesn't match the expected format, an
 error message will be shown.
-
 
     >>> sshkey = "ssh-rsa   "
     >>> browser.getControl(name='sshkey').value = sshkey
@@ -59,7 +97,6 @@ format.
     >>> for tag in soup('p', 'informational message'):
     ...     print tag.renderContents()
     SSH public key added.
-
 
 Launchpad administrators are not allowed to poke at other user's ssh keys.
 

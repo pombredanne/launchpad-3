@@ -114,19 +114,27 @@
           </td>
         </tr>
 
-        <tal:keys repeat="sshkey context/sshkeys">
-          <tr>
-            <th tal:condition="repeat/sshkey/start">
-              SSH Keys:</th>
-            <th tal:condition="not: repeat/sshkey/start">
-            </th>
-            <td tal:content="sshkey/comment" />
-          </tr>
-          <tr tal:condition="repeat/sshkey/end">
-            <td>&nbsp;</td>
-            <td><small><a href="+sshkeys">(view key text)</a></small></td>
-          </tr>
-        </tal:keys>
+        <tr id="sshkeys">
+          <th>SSH Keys:</th>
+          <td tal:define="sshkeys context/sshkeys">
+            <tal:no_keys condition="not: sshkeys">
+              <tal:is_user condition="view/viewing_own_page">
+                Register a key to publish Bazaar branches
+              </tal:is_user>
+              <tal:other_user condition="not: view/viewing_own_page">
+                No keys registered
+              </tal:other_user>
+            </tal:no_keys>
+
+            <tal:has_keys condition="sshkeys">
+              <tal:keys repeat="sshkey sshkeys">
+                <tal:key replace="sshkey/comment" /><br />
+              </tal:keys>
+              <small><a href="+sshkeys">(view key text)</a></small>
+            </tal:has_keys>
+            <a tal:replace="structure overview_menu/editsshkeys/fmt:icon" />
+          </td>
+        </tr>
 
         <tr tal:condition="view/viewing_own_page" id="openid-info">
           <th>OpenID login:</th>
