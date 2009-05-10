@@ -362,7 +362,8 @@ class EditCodeImportForm(Interface):
     """The fields presented on the form for editing a code import."""
 
     use_template(
-        ICodeImport, ['svn_branch_url', 'cvs_root', 'cvs_module'])
+        ICodeImport,
+        ['svn_branch_url', 'cvs_root', 'cvs_module', 'git_repo_url'])
     whiteboard = copy_field(IBranch['whiteboard'])
 
 
@@ -437,9 +438,14 @@ class CodeImportEditView(CodeImportBaseView):
         # If the import is a Subversion import, then omit the CVS
         # fields, and vice versa.
         if self.code_import.rcs_type == RevisionControlSystems.CVS:
-            self.form_fields = self.form_fields.omit('svn_branch_url')
+            self.form_fields = self.form_fields.omit(
+                'svn_branch_url', 'git_repo_url')
         elif self.code_import.rcs_type == RevisionControlSystems.SVN:
-            self.form_fields = self.form_fields.omit('cvs_root', 'cvs_module')
+            self.form_fields = self.form_fields.omit(
+                'cvs_root', 'cvs_module', 'git_repo_url')
+        elif self.code_import.rcs_type == RevisionControlSystems.GIT:
+            self.form_fields = self.form_fields.omit(
+                'cvs_root', 'cvs_module', 'svn_branch_url')
         else:
             raise AssertionError('Unknown rcs_type for code import.')
 
@@ -471,6 +477,9 @@ class CodeImportEditView(CodeImportBaseView):
                 self.code_import)
         elif self.code_import.rcs_type == RevisionControlSystems.SVN:
             self._validateSVN(
+                data.get('svn_branch_url'), self.code_import)
+        elif self.code_import.rcs_type == RevisionControlSystems.GIT:
+            self._validateGit(
                 data.get('svn_branch_url'), self.code_import)
         else:
             raise AssertionError('Unknown rcs_type for code import.')
