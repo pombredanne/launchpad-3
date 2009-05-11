@@ -1,4 +1,4 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2007-2009 Canonical Ltd.  All rights reserved.
 
 """Tests for creating BugBranch items based on Bazaar revisions."""
 
@@ -6,20 +6,23 @@ __metaclass__ = type
 
 import unittest
 
+# This non-standard import is necessary to hook up the event system.
+import zope.component.event
 from zope.component import getUtility
 
 from canonical.codehosting.scanner.buglinks import (
-    BugBranchLinker, set_bug_branch_status)
+    got_new_revision, BugBranchLinker, set_bug_branch_status)
+from canonical.codehosting.scanner.fixture import make_zope_event_fixture
 from canonical.codehosting.scanner.tests.test_bzrsync import BzrSyncTestCase
 from canonical.config import config
 from canonical.launchpad.interfaces import (
     BugBranchStatus, IBugBranchSet, IBugSet, ILaunchpadCelebrities,
     NotFoundError)
-from canonical.launchpad.testing import LaunchpadObjectFactory
+from canonical.launchpad.testing import LaunchpadObjectFactory, TestCase
 from canonical.testing import LaunchpadZopelessLayer
 
 
-class RevisionPropertyParsing(BzrSyncTestCase):
+class RevisionPropertyParsing(TestCase):
     """Tests for parsing the bugs revision property.
 
     The bugs revision property holds information about Launchpad bugs which are
@@ -41,8 +44,8 @@ class RevisionPropertyParsing(BzrSyncTestCase):
     """
 
     def setUp(self):
-        BzrSyncTestCase.setUp(self)
-        self.bug_linker = BugBranchLinker(self.db_branch)
+        TestCase.setUp(self)
+        self.bug_linker = BugBranchLinker(None)
 
     def test_single(self):
         # Parsing a single line should give a dict with a single entry,
@@ -123,7 +126,7 @@ class RevisionPropertyParsing(BzrSyncTestCase):
         self.assertEquals(bugs, {})
 
 
-class TestMakeBugBranch(unittest.TestCase):
+class TestMakeBugBranch(TestCase):
     """Tests for making a BugBranch link.
 
     set_bug_branch_status(bug, branch, status) ensures that a link is created
@@ -140,6 +143,7 @@ class TestMakeBugBranch(unittest.TestCase):
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
+        TestCase.setUp(self)
         factory = LaunchpadObjectFactory()
         self.branch = factory.makeAnyBranch()
         self.bug = factory.makeBug()
@@ -233,6 +237,12 @@ class TestBugLinking(BzrSyncTestCase):
     We create a BugBranch item if we find a good 'bugs' property in a new
     mainline revision of a branch.
     """
+
+    def setUp(self):
+        BzrSyncTestCase.setUp(self)
+        fixture = make_zope_event_fixture(got_new_revision)
+        fixture.setUp()
+        self.addCleanup(fixture.tearDown)
 
     def makeFixtures(self):
         super(TestBugLinking, self).makeFixtures()

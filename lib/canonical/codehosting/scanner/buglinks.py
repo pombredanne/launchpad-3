@@ -9,8 +9,9 @@ __all__ = [
 
 import urlparse
 
-from zope.component import getUtility
+from zope.component import adapter, getUtility
 
+from canonical.codehosting.scanner import events
 from canonical.launchpad.interfaces import (
     BugBranchStatus, IBugBranchSet, IBugSet, ILaunchpadCelebrities,
     NotFoundError)
@@ -129,3 +130,11 @@ class BugBranchLinker:
                 pass
             else:
                 set_bug_branch_status(bug, self.db_branch, status)
+
+
+@adapter(events.NewRevision)
+def got_new_revision(new_revision):
+    if new_revision.isMainline():
+        linker = BugBranchLinker(new_revision.db_branch)
+        linker.createBugBranchLinksForRevision(new_revision.bzr_revision)
+
