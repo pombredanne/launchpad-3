@@ -28,8 +28,7 @@ it should be registered.
 
     >>> from zope.configuration import xmlconfig
     >>> zcmlcontext = xmlconfig.string("""
-    ... <configure
-    ...     xmlns:lp="http://namespaces.canonical.com/lp">
+    ... <configure xmlns:lp="http://namespaces.canonical.com/lp">
     ...   <include package="lp.services.inlinehelp" file="meta.zcml" />
     ...   <lp:help-folder folder="%s"/>
     ... </configure>

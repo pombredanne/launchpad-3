@@ -34,7 +34,8 @@ class IHelpFolderDirective(Interface):
 def register_help_folder(context, folder, type=IBrowserRequest):
     """Create a help folder subclass and register it with the ZCA."""
 
-    # The type parameter shadows the builtin, so access it directly.
+    # ZCML pass the type parameter via keyword parameters, so it can't be
+    # renamed and shadows the builtin. So access that type() builtin directly.
     help_folder = __builtins__['type'](
         str('+help for %s' % folder), (HelpFolder, ), {'folder': folder})
 

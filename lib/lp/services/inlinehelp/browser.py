@@ -8,8 +8,8 @@ for registering help folders.
 
 __metaclass__ = type
 __all__ = [
-  'HelpFolder'
-  ]
+    'HelpFolder',
+    ]
 
 from canonical.lazr.folder import ExportedFolder
 
