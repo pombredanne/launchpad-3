@@ -30,7 +30,7 @@
   <h1>Bazaar branches of <tal:project-name replace="context/displayname"/></h1>
 
   <div id="private-policy" tal:condition="view/new_branches_are_private" class="informational message">
-    New branches you create for <tal:name replace="context/name"/>
+    New branches you create for <tal:name replace="context/displayname"/>
     are <strong>private</strong> initially.
   </div>
 

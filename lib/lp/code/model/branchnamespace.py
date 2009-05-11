@@ -84,7 +84,7 @@ class _BaseNamespace:
             sourcepackagename = sourcepackage.sourcepackagename
 
         # If branches can be private, make them private initially.
-        private = self.canBranchesBePrivate()
+        private = self.areNewBranchesPrivate()
 
         branch = Branch(
             registrant=registrant,
@@ -201,6 +201,11 @@ class _BaseNamespace:
             return False
         else:
             return True
+
+    def areNewBranchesPrivate(self):
+        """See `IBranchNamespace`."""
+        # Always delegates to canBranchesBePrivate for now.
+        return self.canBranchesBePrivate()
 
     def canBranchesBePrivate(self):
         """See `IBranchNamespace`."""
