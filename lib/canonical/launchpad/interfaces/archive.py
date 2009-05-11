@@ -220,14 +220,6 @@ class IArchivePublic(IHasOwner):
         title=_('Date created'), required=False, readonly=True,
         description=_("The time when the archive was created."))
 
-    def getPubConfig():
-        """Return an overridden Publisher Configuration instance.
-
-        The original publisher configuration based on the distribution is
-        modified according local context, it basically fixes the archive
-        paths to cope with non-primary and PPA archives publication workflow.
-        """
-
     def getSourcesForDeletion(name=None, status=None, distroseries=None):
         """All `ISourcePackagePublishingHistory` available for deletion.
 
@@ -1121,9 +1113,9 @@ ALLOW_RELEASE_BUILDS = (
 # MONKEY PATCH TIME!
 # Fix circular dependency issues.
 from canonical.launchpad.components.apihelpers import (
-    patch_entry_return_type, patch_collection_return_type,
-    patch_plain_parameter_type, patch_choice_parameter_type,
-    patch_reference_property)
+    patch_choice_parameter_type, patch_collection_property,
+    patch_collection_return_type, patch_entry_return_type,
+    patch_plain_parameter_type, patch_reference_property)
 
 from lp.registry.interfaces.distribution import IDistribution
 patch_reference_property(IArchive, 'distribution', IDistribution)
@@ -1180,4 +1172,5 @@ patch_choice_parameter_type(
 # interfaces/person.py.
 from lp.registry.interfaces.person import IPersonPublic
 patch_reference_property(IPersonPublic, 'archive', IArchive)
-
+patch_collection_property(IPersonPublic, 'ppas', IArchive)
+patch_entry_return_type(IPersonPublic, 'getPPAByName', IArchive)

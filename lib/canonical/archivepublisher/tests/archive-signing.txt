@@ -124,7 +124,7 @@ location defined by the system configuration.
 In order to manipulate 'signing_keys' securily the target archive
 object has to be adapted to `IArchiveSigningKey`.
 
-    >>> from canonical.launchpad.interfaces.archivesigningkey import (
+    >>> from canonical.archivepublisher.interfaces.archivesigningkey import (
     ...     IArchiveSigningKey)
 
 We will adapt Celso's PPA after modifing its distribution to allow
@@ -372,13 +372,8 @@ the expected file.
 It produces a detached signature for the repository Release current
 file contents.
 
-    XXX cprov 20081205: PublishingConfig doesn't implement any
-    interfaces, when it's returned from a content class no attributes
-    can be accessed.
-
-    >>> from zope.security.proxy import removeSecurityProxy
-    >>> archive_root = removeSecurityProxy(
-    ...     cprov.archive.getPubConfig()).archiveroot
+    >>> from canonical.archivepublisher.config import getPubConfig
+    >>> archive_root = getPubConfig(cprov.archive).archiveroot
 
     >>> import os
     >>> suite_path = os.path.join(archive_root, 'dists', test_suite)
