@@ -18,10 +18,11 @@ from canonical.launchpad.fields import BugField, Summary
 from canonical.launchpad.interfaces import (
     IHasBug, IHasDateCreated, non_duplicate_branch)
 from canonical.launchpad.interfaces.bugtask import IBugTask
+from lp.code.interfaces.branchtarget import IHasBranchTarget
 from lp.registry.interfaces.person import IPerson
 
 
-class IBugBranch(IHasDateCreated, IHasBug):
+class IBugBranch(IHasDateCreated, IHasBug, IHasBranchTarget):
     """A branch linked to a bug."""
 
     id = Int(title=_("Bug Branch #"))
