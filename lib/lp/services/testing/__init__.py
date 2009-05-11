@@ -1,6 +1,6 @@
 # Copyright 2009 Canonical Ltd.  All rights reserved.
 """
-A standard test suite for
+A standard test suite for Launchpad-derived code.
 
 Assumes the following layout beneath base_dir:
 
