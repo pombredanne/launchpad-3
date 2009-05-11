@@ -13,7 +13,7 @@ from zope.component import getUtility
 from canonical.config import config
 from canonical.launchpad.scripts.base import (
     LaunchpadScript, LaunchpadScriptFailure)
-from canonical.launchpad.interfaces import (
+from canonical.shipit.interfaces.shipit import (
     IShippingRequestSet, ShippingRequestStatus)
 
 

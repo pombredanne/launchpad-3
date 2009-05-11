@@ -107,7 +107,7 @@ class PoppyInterface:
             # XXX cprov 20071024: We should replace os.system call by os.chmod
             # and fix the default permission value accordingly in poppy-upload
             if self.perms is not None:
-                os.system("chmod %s %s" % (self.perms, target_fsroot))
+                os.system("chmod %s -R %s" % (self.perms, target_fsroot))
 
             # Invoke processing script, if provided.
             if self.cmd:

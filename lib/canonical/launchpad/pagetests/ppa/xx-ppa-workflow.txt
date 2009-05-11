@@ -119,6 +119,21 @@ Empty 'description' fields are not be rendered.
     >>> print find_tag_by_id(sample_browser.contents, 'description')
     None
 
+On the other hand, the PPA 'displayname' field is required. Sample
+user can't have an emtpy displayname on his PPA.
+
+    >>> sample_browser.getLink("Change details").click()
+    >>> sample_browser.getControl(name="field.displayname").value = ('')
+    >>> sample_browser.getControl("Save").click()
+
+    >>> print sample_browser.title
+    Edit Sample testing PPA
+
+    >>> for error in get_feedback_messages(sample_browser.contents):
+    ...     print error
+    There is 1 error.
+    Required input is missing.
+
 
 == Activating Personal Package Archives for Teams ==
 
