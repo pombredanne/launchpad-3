@@ -27,7 +27,7 @@ Salgado does not have a key, and any user can see that.
     ...     find_tag_by_id(anon_browser.contents, 'sshkeys'))
     SSH Keys: No keys registered
 
-Salgado see a message explaining that he can register his ssh key.
+Salgado sees a message explaining that he can register his ssh key.
 
     >>> browser = setupBrowser(
     ...     auth='Basic guilherme.salgado@canonical.com:zeca')
