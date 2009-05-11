@@ -26,16 +26,21 @@ class Configuration:
     """A lazr.config configuration."""
     _schema_path = os.path.join(_schema_dir, 'schema-lazr.conf')
 
-    def __init__(self, conf_path, schema_path=None):
+    def __init__(self, config):
+        self.config = config
+
+    @classmethod
+    def load(cls, conf_path, schema_path=None):
         """Initialise the Configuration.
 
         :conf_path: The path to the lazr.config conf file.
         :schema_path: The path to the lazr.config schema that defines
             the configuration.
         """
-        schema_path = schema_path or self._schema_path
+        if schema_path is None:
+            schema_path = cls._schema_path
         schema = ImplicitTypeSchema(schema_path)
-        self.config = schema.load(conf_path)
+        return cls(schema.load(conf_path))
 
     def config_file_for_value(self, section, key):
         """Return the local path to the file that sets the section key."""
@@ -120,7 +125,7 @@ def main(argv=None):
         parser.error('Too many arguments.')
         # Does not return.
     conf_path = arguments[0]
-    configuration = Configuration(conf_path, options.schema_path)
+    configuration = Configuration.load(conf_path, options.schema_path)
     configuration.list_config(
         verbose=options.verbose, section_name=options.section_name)
 
