@@ -480,7 +480,7 @@ class CodeImportEditView(CodeImportBaseView):
                 data.get('svn_branch_url'), self.code_import)
         elif self.code_import.rcs_type == RevisionControlSystems.GIT:
             self._validateGit(
-                data.get('svn_branch_url'), self.code_import)
+                data.get('git_repo_url'), self.code_import)
         else:
             raise AssertionError('Unknown rcs_type for code import.')
 
