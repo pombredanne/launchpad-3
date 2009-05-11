@@ -7,7 +7,7 @@ import unittest
 from zope.testing.doctest import DocTestSuite
 
 from canonical.launchpad.testing import TestCase
-from canonical.launchpad.mail.sendmail import MailController
+from lp.services.mail.sendmail import MailController
 
 
 class TestMailController(TestCase):
@@ -146,7 +146,7 @@ class TestMailController(TestCase):
 
 def test_suite():
     suite = unittest.TestSuite()
-    suite.addTest(DocTestSuite('canonical.launchpad.mail.sendmail'))
+    suite.addTest(DocTestSuite('lp.services.mail.sendmail'))
     suite.addTests(unittest.TestLoader().loadTestsFromName(__name__))
     return suite
 

@@ -263,7 +263,7 @@ in Launchpad:
     ...     config.launchpad.specs_domain)
     >>> moin_change['Sender'] = 'webmaster@ubuntu.com'
 
-    >>> from canonical.launchpad.mail.sendmail import sendmail
+    >>> from lp.services.mail.sendmail import sendmail
     >>> from canonical.launchpad.mail.incoming import handleMail
     >>> sendmail(moin_change, bulk=False)
     '...'
