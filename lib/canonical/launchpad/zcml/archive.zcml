@@ -40,12 +40,6 @@
       />
 
   <adapter
-      for="canonical.launchpad.interfaces.archive.IArchive"
-      provides="canonical.launchpad.interfaces.archivesigningkey.IArchiveSigningKey"
-      factory="canonical.launchpad.components.archivesigningkey.ArchiveSigningKey"
-      />
-
-  <adapter
     provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
     for="canonical.launchpad.interfaces.archive.IArchive"
     factory="canonical.launchpad.browser.archive.ArchiveBreadcrumbBuilder"

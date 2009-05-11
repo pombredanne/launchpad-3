@@ -362,23 +362,53 @@ class ArchiveViewBase(LaunchpadView):
         # in storm.
         return self.context.getPublishedSources().count() > 0
 
-    @property
-    def source_count_text(self):
-        """Return the correct form of the source counter notice."""
-        number_of_sources = self.context.number_of_sources
-        if number_of_sources == 1:
-            return '%s source package' % number_of_sources
-        else:
-            return '%s source packages' % number_of_sources
+    @cachedproperty
+    def repository_usage(self):
+        """Return a dictionary with usage details of this repository."""
+        def package_plural(control):
+            if control == 1:
+                return 'package'
+            return 'packages'
 
-    @property
-    def binary_count_text(self):
-        """Return the correct form of the binary counter notice."""
+        # Calculate the label for the package counters respecting
+        # singular/plural forms.
+        number_of_sources = self.context.number_of_sources
+        source_label = '%s source %s' % (
+            number_of_sources, package_plural(number_of_sources))
+
         number_of_binaries = self.context.number_of_binaries
-        if number_of_binaries == 1:
-            return '%s binary package' % number_of_binaries
+        binary_label = '%s binary %s' % (
+            number_of_binaries, package_plural(number_of_binaries))
+
+        # Quota is stored in MiB, convert it to bytes.
+        quota = self.context.authorized_size * (2 ** 20)
+        used = self.context.estimated_size
+
+        # Calculate the usage factor and limit it to 100%.
+        used_factor = (float(used) / quota)
+        if used_factor > 1:
+            used_factor = 1
+
+        # Calculate the appropriate CSS class to be used with the usage
+        # factor. Highlight it (in red) if usage is over 90% of the quota.
+        if used_factor > 0.90:
+            used_css_class = 'red'
         else:
-            return '%s binary packages' % number_of_binaries
+            used_css_class = 'green'
+
+        # Usage percentage with 2 degrees of precision (more than enough
+        # for humans).
+        used_percentage = "%0.2f" % (used_factor * 100)
+
+        return dict(
+            source_label=source_label,
+            sources_size=self.context.sources_size,
+            binary_label=binary_label,
+            binaries_size=self.context.binaries_size,
+            used=used,
+            used_percentage=used_percentage,
+            used_css_class=used_css_class,
+            quota=quota)
 
     @property
     def archive_url(self):
