@@ -99,8 +99,8 @@ Before a project can be created though, a license for it must be selected.
     >>> print_errors(user_browser.contents)
     There is 1 error.
     ...
-    Select all licenses for this software or select Other/Proprietary
-    or Other/Open Source.
+    You must select at least one license. If you select Other/Proprietary or
+    Other/OpenSource you must include a description of the license.
 
 This time, Sample Person remembers to select a license.
 
