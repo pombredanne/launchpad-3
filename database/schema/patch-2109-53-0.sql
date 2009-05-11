@@ -8,4 +8,4 @@ CREATE VIEW HWDriverNames AS
     SELECT DISTINCT ON (name) id, name from HWDriver
         ORDER BY name, id;
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2109, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (2109, 53, 0);
