@@ -9,7 +9,7 @@ from zope.interface import Interface
 from zope.schema import ASCII, Bool
 
 from canonical.launchpad.interfaces import IMailBox
-from canonical.launchpad.mail.stub import StubMailer, TestMailer
+from lp.services.mail.stub import StubMailer, TestMailer
 from canonical.launchpad.mail.mailbox import (
     DirectoryMailBox, POP3MailBox, TestMailBox)
 from canonical.launchpad.mail.mbox import MboxMailer

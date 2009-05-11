@@ -81,7 +81,7 @@ from canonical.database.revision import confirm_dbrevision
 from canonical.database.sqlbase import cursor, ZopelessTransactionManager
 from canonical.launchpad.interfaces import IMailBox, IOpenLaunchBag
 from canonical.launchpad.ftests import ANONYMOUS, login, logout, is_logged_in
-import canonical.launchpad.mail.stub
+import lp.services.mail.stub
 from canonical.launchpad.mail.mailbox import TestMailBox
 from canonical.launchpad.scripts import execute_zcml_for_scripts
 from canonical.launchpad.testing.tests.googleserviceharness import (
@@ -282,7 +282,7 @@ class BaseLayer:
 
         BaseLayer.original_working_directory = None
         reset_logging()
-        del canonical.launchpad.mail.stub.test_emails[:]
+        del lp.services.mail.stub.test_emails[:]
         BaseLayer.test_name = None
         BaseLayer.check()
 
