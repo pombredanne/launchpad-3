@@ -93,13 +93,16 @@ class BugBranchLinker:
             raise BadLineInBugsProperty('Invalid bug status: %r' % status)
         return bug, status
 
-    def extractBugInfo(self, bug_property):
+    def extractBugInfo(self, bzr_revision):
         """Parse bug information out of the given revision property.
 
         :param bug_status_prop: A string containing lines of
             '<bug_url> <status>'.
         :return: dict mapping bug IDs to BugBranchStatuses.
         """
+        bug_property = bzr_revision.properties.get('bugs', None)
+        if bug_property is None:
+            return
         bug_statuses = {}
         for line in bug_property.splitlines():
             try:
@@ -118,11 +121,11 @@ class BugBranchLinker:
         This looks inside the 'bugs' property of the given Bazaar revision and
         creates a BugBranch record for each bug mentioned.
         """
-        bug_property = bzr_revision.properties.get('bugs', None)
-        if bug_property is None:
+        bug_info = self.extractBugInfo(bzr_revision)
+        if bug_info is None:
             return
         bug_set = getUtility(IBugSet)
-        for bug_id, status in self.extractBugInfo(bug_property).iteritems():
+        for bug_id, status in bug_info.iteritems():
             try:
                 bug = bug_set.get(bug_id)
             except NotFoundError:
