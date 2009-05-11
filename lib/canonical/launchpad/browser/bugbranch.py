@@ -62,6 +62,28 @@ class BugBranchAddView(LaunchpadFormView):
     cancel_url = next_url
 
 
+class BugBranchDeleteView(LaunchpadEditFormView):
+    """View to update a BugBranch."""
+    schema = IBugBranch
+
+    field_names = ['branch', 'bug']
+
+    custom_widget('branch', LinkWidget)
+    custom_widget('bug', LinkWidget)
+
+    def initialize(self):
+        self.bug = self.context.bug
+        LaunchpadEditFormView.initialize(self)
+
+    @property
+    def next_url(self):
+        return canonical_url(self.bug)
+
+    @action('Delete', name='delete')
+    def delete_action(self, action, data):
+        self.context.bug.removeBranch(self.context.branch, self.user)
+
+
 class BugBranchEditView(LaunchpadEditFormView):
     """View to update a BugBranch."""
     schema = IBugBranch

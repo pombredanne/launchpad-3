@@ -44,6 +44,14 @@
       name="+edit" />
 
   <browser:page
+      name="+delete"
+      for="canonical.launchpad.interfaces.IBugBranch"
+      class="canonical.launchpad.browser.BugBranchEditView"
+      facet="branches"
+      permission="launchpad.Edit"
+      template="../templates/bugbranch-delete.pt" />
+
+  <browser:page
       name="+edit"
       for="canonical.launchpad.interfaces.IBugBranch"
       class="canonical.launchpad.browser.BugBranchEditView"

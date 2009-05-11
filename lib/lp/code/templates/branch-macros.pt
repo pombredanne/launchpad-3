@@ -124,18 +124,10 @@
        </span>)
        <tal:show-edit condition="show_edit|nothing">
          <a tal:condition="bug_branch/required:launchpad.Edit"
-            tal:attributes="href string:+bug/${bug_branch/bug/id}/+edit;">
+            tal:attributes="href string:+bug/${bug_branch/bug/id}/+delete;">
            <img src="/@@/remove"/>
          </a>
        </tal:show-edit>
-       </div>
-       <div tal:condition="show_edit|nothing"
-            tal:attributes="id string:bugbranch${bug_branch/id}"
-            style="display: none"
-            >
-         <dl><dd>
-         <tal:edit-form replace="structure bug_branch/@@+branch-edit"/>
-       </dd></dl>
        </div>
     </div>
   </tal:bug-tasks>
