@@ -14,7 +14,7 @@ from canonical.launchpad.interfaces.archive import ArchivePurpose, IArchiveSet
 from canonical.launchpad.interfaces.bug import CreateBugParams, IBugSet
 from canonical.launchpad.interfaces.emailaddress import (
     EmailAddressAlreadyTaken, IEmailAddressSet, InvalidEmailAddress)
-from canonical.launchpad.interfaces.specification import ISpecificationSet
+from lp.blueprints.interfaces.specification import ISpecificationSet
 from lp.registry.interfaces.person import InvalidName
 from lp.registry.interfaces.product import IProductSet
 from lp.registry.interfaces.mailinglist import IMailingListSet

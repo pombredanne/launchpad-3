@@ -28,7 +28,7 @@ from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
 from canonical.launchpad.interfaces.searchservice import (
     GoogleResponseError, ISearchService)
-from canonical.launchpad.interfaces.specification import ISpecificationSet
+from lp.blueprints.interfaces.specification import ISpecificationSet
 from canonical.shipit.interfaces.shipit import ShipItConstants
 from canonical.launchpad.validators.name import sanitize_name
 from canonical.launchpad.webapp import (

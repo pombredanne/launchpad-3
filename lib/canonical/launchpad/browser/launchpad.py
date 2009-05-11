@@ -84,8 +84,8 @@ from lp.registry.interfaces.product import (
 from lp.registry.interfaces.project import IProjectSet
 from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageNameSet)
-from canonical.launchpad.interfaces.specification import ISpecificationSet
-from canonical.launchpad.interfaces.sprint import ISprintSet
+from lp.blueprints.interfaces.specification import ISpecificationSet
+from lp.blueprints.interfaces.sprint import ISprintSet
 from canonical.launchpad.interfaces.translationgroup import (
     ITranslationGroupSet)
 from canonical.launchpad.interfaces.translationimportqueue import (

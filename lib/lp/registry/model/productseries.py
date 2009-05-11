@@ -32,7 +32,7 @@ from canonical.launchpad.database.packaging import Packaging
 from lp.registry.interfaces.person import validate_public_person
 from canonical.launchpad.database.potemplate import POTemplate
 from lp.registry.model.productrelease import ProductRelease
-from canonical.launchpad.database.specification import (
+from lp.blueprints.model.specification import (
     HasSpecificationsMixin, Specification)
 from canonical.launchpad.database.translationimportqueue import (
     HasTranslationImportsMixin)
@@ -42,7 +42,7 @@ from canonical.launchpad.helpers import shortlist
 from lp.registry.interfaces.distroseries import DistroSeriesStatus
 from canonical.launchpad.interfaces.packaging import PackagingType
 from canonical.launchpad.interfaces.potemplate import IHasTranslationTemplates
-from canonical.launchpad.interfaces.specification import (
+from lp.blueprints.interfaces.specification import (
     SpecificationDefinitionStatus, SpecificationFilter,
     SpecificationGoalStatus, SpecificationImplementationStatus,
     SpecificationSort)

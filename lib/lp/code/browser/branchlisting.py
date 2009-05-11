@@ -47,7 +47,7 @@ from canonical.launchpad.browser.feeds import (
     ProductBranchesFeedLink, ProductRevisionsFeedLink,
     ProjectBranchesFeedLink, ProjectRevisionsFeedLink)
 from canonical.launchpad.interfaces.bugbranch import IBugBranchSet
-from canonical.launchpad.interfaces.specificationbranch import ISpecificationBranchSet
+from lp.blueprints.interfaces.specificationbranch import ISpecificationBranchSet
 from canonical.launchpad.interfaces.personproduct import (
     IPersonProduct, IPersonProductFactory)
 from canonical.launchpad.webapp import (

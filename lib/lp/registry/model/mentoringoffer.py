@@ -71,7 +71,7 @@ class MentoringOfferSet:
     def mentoring_offers(self):
         """See IHasMentoringOffers."""
         # import here to avoid circular imports
-        from canonical.launchpad.database.specification import Specification
+        from lp.blueprints.model.specification import Specification
         from canonical.launchpad.database.bugtask import BugTask
         via_specs = MentoringOffer.select("""
             Specification.id = MentoringOffer.specification AND NOT
@@ -91,7 +91,7 @@ class MentoringOfferSet:
     def recent_completed_mentorships(self):
         """See IHasMentoringOffers."""
         # import here to avoid circular imports
-        from canonical.launchpad.database.specification import Specification
+        from lp.blueprints.model.specification import Specification
         from canonical.launchpad.database.bugtask import BugTask
         now = datetime.now(pytz.timezone('UTC'))
         yearago = now - timedelta(365)
