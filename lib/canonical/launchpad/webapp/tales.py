@@ -2148,7 +2148,7 @@ class FormattersAPI:
         return url, trailers
 
     @staticmethod
-    def _linkify_bug_number(text, bugnum):
+    def _linkify_bug_number(text, bugnum, trailers=''):
         # XXX Brad Bollenbach 2006-04-10: Use a hardcoded url so
         # we still have a link for bugs that don't exist.
         url = '/bugs/%s' % bugnum
@@ -2165,7 +2165,8 @@ class FormattersAPI:
                 title = "private bug"
         title = cgi.escape(title, quote=True)
         # The text will have already been cgi escaped.
-        return '<a href="%s" title="%s">%s</a>' % (url, title, text)
+        return '<a href="%s" title="%s">%s</a>%s' % (
+            url, title, text, trailers)
 
     @staticmethod
     def _linkify_substitution(match):
@@ -2207,10 +2208,11 @@ class FormattersAPI:
         elif match.group('lpbranchurl') is not None:
             lp_url = match.group('lpbranchurl')
             path = match.group('branch')
-            if path.isdigit():
-                return FormattersAPI._linkify_bug_number(lp_url, path)
             lp_url, trailers = FormattersAPI._split_url_and_trailers(lp_url)
             path, trailers = FormattersAPI._split_url_and_trailers(path)
+            if path.isdigit():
+                return FormattersAPI._linkify_bug_number(
+                    lp_url, path, trailers)
             url = '/+branch/%s' % path
             return '<a href="%s">%s</a>%s' % (
                 cgi.escape(url, quote=True),

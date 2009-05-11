@@ -354,6 +354,13 @@ treated as a link to a bug.
     >>> print test_tales('foo/fmt:text-to-html', foo=text)
     <p><a href="/bugs/1234" title="No such bug">lp:1234</a></p>
 
+We are even smart enough to notice the trailing punctuation gunk and separate
+that from the link.
+
+    >>> text = 'lp:1234,'
+    >>> print test_tales('foo/fmt:text-to-html', foo=text)
+    <p><a href="/bugs/1234" title="No such bug">lp:1234</a>,</p>
+
 
 == OOPS references ==
 
