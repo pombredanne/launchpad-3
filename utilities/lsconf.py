@@ -26,21 +26,25 @@ class Configuration:
     """A lazr.config configuration."""
     _schema_path = os.path.join(_schema_dir, 'schema-lazr.conf')
 
-    def __init__(self, conf_path, schema_path=None):
+    def __init__(self, config):
+        self.config = config
+
+    @classmethod
+    def load(cls, conf_path, schema_path=None):
         """Initialise the Configuration.
 
         :conf_path: The path to the lazr.config conf file.
         :schema_path: The path to the lazr.config schema that defines
             the configuration.
         """
-        self.schema_path = schema_path or self._schema_path
-        self.schema = ImplicitTypeSchema(self.schema_path)
-        self.conf_path = conf_path
-        self.config = self.schema.load(self.conf_path)
+        if schema_path is None:
+            schema_path = cls._schema_path
+        schema = ImplicitTypeSchema(schema_path)
+        return cls(schema.load(conf_path))
 
     def config_file_for_value(self, section, key):
         """Return the local path to the file that sets the section key."""
-        conf_file_name = self.schema.filename
+        conf_file_name = self.config.schema.filename
         value = section[key]
         previous_config_data = self.config.data
         # Walk the stack of config_data until a change is found.
@@ -105,6 +109,9 @@ def get_option_parser():
     parser.add_option(
         "-s", "--section", dest="section_name",
         help="restrict the listing to the section")
+    parser.add_option(
+        '-i', "--instance", dest="instance_name",
+        help="the configuration instance to use")
     return parser
 
 
@@ -115,13 +122,17 @@ def main(argv=None):
     parser = get_option_parser()
     (options, arguments) = parser.parse_args(args=argv[1:])
     if len(arguments) == 0:
-        parser.error('Config file path is required.')
-        # Does not return.
-    elif len(arguments) > 1:
+        canonical_config = canonical.config.config
+        if options.instance_name:
+            canonical_config.setInstance(options.instance_name)
+        canonical_config._getConfig()
+        configuration = Configuration(canonical_config._config)
+    elif len(arguments) == 1:
+        conf_path = arguments[0]
+        configuration = Configuration.load(conf_path, options.schema_path)
+    else:
         parser.error('Too many arguments.')
         # Does not return.
-    conf_path = arguments[0]
-    configuration = Configuration(conf_path, options.schema_path)
     configuration.list_config(
         verbose=options.verbose, section_name=options.section_name)
 

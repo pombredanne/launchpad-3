@@ -8,8 +8,9 @@ from datetime import datetime
 from operator import attrgetter
 
 from zope.component import getUtility
-from zope.security.proxy import removeSecurityProxy
 
+from canonical.archivepublisher.config import getPubConfig
+from canonical.config import config
 from canonical.launchpad.interfaces.archive import IArchiveSet
 from canonical.launchpad.interfaces.archiveauthtoken import (
     IArchiveAuthTokenSet)
@@ -73,7 +74,7 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
 
         # The publisher Config object does not have an
         # interface, so we need to remove the security wrapper.
-        pub_config = removeSecurityProxy(ppa.getPubConfig())
+        pub_config = getPubConfig(ppa)
         htaccess_filename = os.path.join(pub_config.htaccessroot, ".htaccess")
         if not os.path.exists(htaccess_filename):
             # It's not there, so create it.
@@ -120,7 +121,7 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
 
         # The publisher Config object does not have an
         # interface, so we need to remove the security wrapper.
-        pub_config = removeSecurityProxy(ppa.getPubConfig())
+        pub_config = getPubConfig(ppa)
         htpasswd_filename = os.path.join(pub_config.htaccessroot, ".htpasswd")
 
         if (not os.path.isfile(htpasswd_filename) or

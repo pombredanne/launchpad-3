@@ -14,6 +14,7 @@ import unittest
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.archivepublisher.config import getPubConfig
 from canonical.config import config
 from canonical.launchpad.scripts.logger import QuietFakeLogger
 from canonical.launchpad.interfaces.archive import (
@@ -140,7 +141,7 @@ class TestPublishDistro(TestNativePublishingBase):
         """
         self.getPubSource(filecontent="flangetrousers", archive=archive)
         self.layer.txn.commit()
-        pubconf = removeSecurityProxy(archive.getPubConfig())
+        pubconf = getPubConfig(archive)
         tmp_path = "/tmp/tmpdistroot"
         if os.path.exists(tmp_path):
             shutil.rmtree(tmp_path)
