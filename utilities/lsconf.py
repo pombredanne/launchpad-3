@@ -109,6 +109,9 @@ def get_option_parser():
     parser.add_option(
         "-s", "--section", dest="section_name",
         help="restrict the listing to the section")
+    parser.add_option(
+        '-i', "--instance", dest="instance_name",
+        help="the configuration instance to use")
     return parser
 
 
@@ -119,13 +122,17 @@ def main(argv=None):
     parser = get_option_parser()
     (options, arguments) = parser.parse_args(args=argv[1:])
     if len(arguments) == 0:
-        parser.error('Config file path is required.')
-        # Does not return.
-    elif len(arguments) > 1:
+        canonical_config = canonical.config.config
+        if options.instance_name:
+            canonical_config.setInstance(options.instance_name)
+        canonical_config._getConfig()
+        configuration = Configuration(canonical_config._config)
+    elif len(arguments) == 1:
+        conf_path = arguments[0]
+        configuration = Configuration.load(conf_path, options.schema_path)
+    else:
         parser.error('Too many arguments.')
         # Does not return.
-    conf_path = arguments[0]
-    configuration = Configuration.load(conf_path, options.schema_path)
     configuration.list_config(
         verbose=options.verbose, section_name=options.section_name)
 
