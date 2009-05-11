@@ -21,6 +21,8 @@ from canonical.launchpad.interfaces.archive import (
     ArchivePurpose, IArchiveSet)
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
+from canonical.launchpad.interfaces.binarypackagerelease import (
+    BinaryPackageFormat)
 from canonical.launchpad.interfaces.publishing import PackagePublishingStatus
 from canonical.launchpad.scripts import publishdistro
 from canonical.launchpad.scripts.base import LaunchpadScriptFailure
@@ -262,6 +264,49 @@ class TestPublishDistro(TestNativePublishingBase):
         pub_source.sync()
         self.assertEqual(pub_source.status, PackagePublishingStatus.PUBLISHED)
 
+    def testPublishPrimaryDebug(self):
+        # 'ubuntutest' (default testing distribution) has no DEBUG
+        # archive, Thus an error is raised.
+        self.assertRaises(
+            LaunchpadScriptFailure,
+            self.runPublishDistro, ['--primary-debug'])
+
+        # The DEBUG repository path was not created.
+        repo_path = os.path.join(
+            config.archivepublisher.root, 'ubuntutest-debug')
+        self.assertNotExists(repo_path)
+
+        # We will create the DEBUG archive for ubuntutest, so it can
+        # be published.
+        ubuntutest = getUtility(IDistributionSet)['ubuntutest']
+        debug_archive = getUtility(IArchiveSet).new(
+            purpose=ArchivePurpose.DEBUG, owner=ubuntutest.owner,
+            distribution=ubuntutest)
+
+        # We will also create a source & binary pair of pending
+        # publications. Only the DDEB (binary) will be moved to
+        # the DEBUG archive, exactly as it would happen in normal
+        # operation, see nascentupload-ddebs.txt.
+        self.prepareBreezyAutotest()
+        pub_binaries = self.getPubBinaries(format=BinaryPackageFormat.DDEB)
+        for binary in pub_binaries:
+            binary.secure_record.archive = debug_archive
+
+        # Commit setup changes, so the script can operate on them.
+        self.layer.txn.commit()
+
+        # After publication, the DDEB is published and indexed.
+        self.runPublishDistro(['--primary-debug'])
+
+        debug_pool_path = os.path.join(repo_path, 'pool/main/f/foo')
+        self.assertEqual(
+            os.listdir(debug_pool_path), ['foo-bin_666_all.ddeb'])
+
+        debug_index_path = os.path.join(
+            repo_path, 'dists/breezy-autotest/main/binary-i386/Packages')
+        self.assertEqual(
+            open(debug_index_path).readlines()[0], 'Package: foo-bin\n')
+
     def testRunWithEmptySuites(self):
         """Try a publish-distro run on empty suites in careful_apt mode
 
@@ -301,13 +346,22 @@ class TestPublishDistro(TestNativePublishingBase):
         """Test that some command line options are mutually exclusive."""
         self.assertRaises(
             LaunchpadScriptFailure,
+            self.runPublishDistro, ['--ppa', '--partner', '--primary-debug'])
+        self.assertRaises(
+            LaunchpadScriptFailure,
             self.runPublishDistro, ['--ppa', '--partner'])
         self.assertRaises(
             LaunchpadScriptFailure,
             self.runPublishDistro, ['--ppa', '--private-ppa'])
         self.assertRaises(
             LaunchpadScriptFailure,
+            self.runPublishDistro, ['--ppa', '--primary-debug'])
+        self.assertRaises(
+            LaunchpadScriptFailure,
             self.runPublishDistro, ['--partner', '--private-ppa'])
+        self.assertRaises(
+            LaunchpadScriptFailure,
+            self.runPublishDistro, ['--partner', '--primary-debug'])
 
 
 def test_suite():
