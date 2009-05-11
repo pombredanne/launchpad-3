@@ -9,7 +9,7 @@ from optparse import OptionParser
 from canonical.config import config
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger, publishdistro)
-from canonical.launchpad.scripts.base import LaunchpadScriptFailure
+from lp.services.scripts.base import LaunchpadScriptFailure
 from canonical.lp import initZopeless
 
 

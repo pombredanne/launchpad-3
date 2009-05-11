@@ -11,7 +11,7 @@ import _pythonpath
 from canonical.archiveuploader.uploadpolicy import policy_options
 from canonical.archiveuploader.uploadprocessor import UploadProcessor
 from canonical.config import config
-from canonical.launchpad.scripts.base import (
+from lp.services.scripts.base import (
     LaunchpadScript, LaunchpadScriptFailure)
 from canonical.launchpad.scripts.soyuz_process_upload import ProcessUpload
 
