@@ -46,34 +46,10 @@
   <browser:page
       name="+delete"
       for="canonical.launchpad.interfaces.IBugBranch"
-      class="canonical.launchpad.browser.BugBranchEditView"
+      class="canonical.launchpad.browser.BugBranchDeleteView"
       facet="branches"
       permission="launchpad.Edit"
       template="../templates/bugbranch-delete.pt" />
-
-  <browser:page
-      name="+edit"
-      for="canonical.launchpad.interfaces.IBugBranch"
-      class="canonical.launchpad.browser.BugBranchEditView"
-      facet="branches"
-      permission="launchpad.Edit"
-      template="../templates/bugbranch-edit.pt" />
-
-  <browser:page
-      name="+branch-edit"
-      for="canonical.launchpad.interfaces.IBugBranch"
-      class="canonical.launchpad.browser.BugBranchBranchInlineEditView"
-      facet="branches"
-      permission="launchpad.Edit"
-      template="../templates/bugbranch-inline-edit.pt" />
-
-  <browser:page
-      name="+bug-edit"
-      for="canonical.launchpad.interfaces.IBugBranch"
-      class="canonical.launchpad.browser.BugBranchBugInlineEditView"
-      facet="branches"
-      permission="launchpad.Edit"
-      template="../templates/bugbranch-inline-edit.pt" />
 
   <!-- BugBranchSet -->
   <class class="canonical.launchpad.database.BugBranchSet">
