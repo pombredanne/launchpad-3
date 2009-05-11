@@ -20,6 +20,55 @@
  */
 YUI().use('node', 'lazr.effects', function(Y) {
     Y.on('domready', function() {
+        var valid_urls = new RegExp('^[a-z0-9][-.+a-z0-9]*$', 'i');
+
+        /* Handle key presses in the Name field for autofilling the URL
+         * field.  By ensuring that field.name exists, we only do this when
+         * we're on step 1 of the wizard.
+         *
+         * Note that we have to use the more verbose way of getting field.name
+         * because Y.get() doesn't like the dots in the Zope field names.
+         */
+        var url_field = Y.get(Y.DOM.byId('field.name'));
+        if (url_field) {
+            var name_field = Y.get(Y.DOM.byId('field.displayname'));
+            function autofill(e) {
+                var name_value = name_field.get('value');
+                /* If the displayname does not translate to a valid URL,
+                 * refuse the temptation to guess.
+                 */
+                if (name_value == '' || name_value.search(valid_urls) >= 0) {
+                    url_field.set('value', name_value);
+                }
+            }
+            name_field.on('keyup', autofill);
+            /* Prevent invalid characters from being input into the URL field.
+             */
+            url_field.on('keypress', function(e) {
+                var code = e.charCode || e.keyCode;
+                /* Ignore non-printable characters */
+                if (code >= 32 && code < 127) {
+                    var new_value = url_field.get('value') +
+                                    String.fromCharCode(code);
+                    log('new_value: ', new_value);
+                    if (new_value.search(valid_urls) < 0) {
+                        e.preventDefault();
+                    }
+                }
+            });
+            url_field.on('keyup', function(e) {
+                if (url_field.get('value') == '') {
+                    /* The user cleared the URL field; turn on autofill. */
+                    name_field.attach('keyup', autofill);
+                }
+                else {
+                    /* Honor the user's URL; turn off autofill. */
+                    name_field.detach('keyup', autofill);
+                }
+            });
+        }
+
+        /* Handle the reveals when there are search results. */
         var details_buttons = Y.get('#registration-details-buttons');
         var form_actions = Y.get('#launchpad-form-actions');
         var form_widgets = Y.get('#launchpad-form-widgets');
@@ -50,14 +99,13 @@ YUI().use('node', 'lazr.effects', function(Y) {
          * details for the search results.  It really doesn't look good
          * to leave the search results there.
          */
-        function complete_registration(event) {
+        function complete_registration(e) {
             var expander = Y.get('#search-results-expander');
 
             /* Slide in the search results and hide them under a link. */
             expander.removeClass('unseen');
-
-            connect(expander, 'onclick', function(event) {
-                event.preventDefault();
+            expander.on('click', function(e) {
+                e.preventDefault();
 
                 var arrow = Y.get('#search-results-arrow');
                 if (arrow.getAttribute('src') == '/@@/treeCollapsed') {
@@ -107,7 +155,7 @@ YUI().use('node', 'lazr.effects', function(Y) {
              * ProjectAddStepTwo.search_results_count() for details.
              */
             var steps = marker.getAttribute('value');
-            if (steps.search(/hidesearch/) < 0) {
+            if (steps.search(new RegExp('hidesearch')) < 0) {
                 marker.setAttribute('value', steps + "|hidesearch");
             }
         }
@@ -120,7 +168,7 @@ YUI().use('node', 'lazr.effects', function(Y) {
 
         if (details_buttons) {
             details_buttons.removeClass('unseen');
-            connect(details_buttons, 'onclick', complete_registration);
+            details_buttons.on('click', complete_registration);
         }
 
         /* If there are search results, hide the registration details. */

@@ -12,7 +12,6 @@ __all__ = [
 import cgi
 
 from zope.app.form import CustomWidgetFactory
-from zope.app.form.browser.textwidgets import TextWidget
 from zope.app.form.browser.widget import renderElement
 from zope.app.form.interfaces import IInputWidget
 from zope.app.form.utility import setUpWidget
@@ -30,7 +29,8 @@ from canonical.launchpad.vocabularies.dbobjects import (
 from canonical.launchpad.webapp import canonical_url
 from canonical.widgets.itemswidgets import (
     CheckBoxMatrixWidget, LaunchpadDropdownWidget, LaunchpadRadioWidget)
-from canonical.widgets.textwidgets import StrippedTextWidget
+from canonical.widgets.textwidgets import (
+    LowerCaseTextWidget, StrippedTextWidget)
 
 
 class ProductBugTrackerWidget(LaunchpadRadioWidget):
@@ -234,7 +234,7 @@ class LicenseWidget(CheckBoxMatrixWidget):
         return self.template()
 
 
-class ProductNameWidget(TextWidget):
+class ProductNameWidget(LowerCaseTextWidget):
     """A text input widget that looks like a url path component entry.
 
     URL: http://launchpad.net/[____________]

@@ -7,7 +7,7 @@ http://launchpad.net/<strong><div
         tal:condition="view/read_only"
         tal:replace="view/product_name">foo</div></strong>
 <input id="field.name" name="field.name"
-       class="textType" type="type" size="30"
+       class="lowerCaseText" type="type" size="30"
        value=""
        tal:attributes="value view/product_name;
                        type view/widget_type"
