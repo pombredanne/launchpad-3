@@ -81,6 +81,9 @@ class IBranchTarget(IPrimaryContext):
         description=_(
             'The branch that new branches will be stacked on by default.'))
 
+    supports_merge_proposals = Attribute(
+        "Does this target support merge proposals at all?")
+
     def __eq__(other):
         """Is this target the same as another target?
 

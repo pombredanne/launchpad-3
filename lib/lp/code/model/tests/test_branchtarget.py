@@ -97,6 +97,10 @@ class TestPackageBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
             ubuntu_branches.teamowner)
         self.assertEqual(default_branch, target.default_stacked_on_branch)
 
+    def test_supports_merge_proposals(self):
+        # Package branches do support merge proposals.
+        self.assertTrue(self.target.supports_merge_proposals)
+
     def test_displayname(self):
         # The display name of a source package target is the display name of
         # the source package.
@@ -139,6 +143,10 @@ class TestPersonBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
         # Junk branches are not stacked by default, ever.
         target = IBranchTarget(self.original)
         self.assertIs(None, target.default_stacked_on_branch)
+
+    def test_supports_merge_proposals(self):
+        # Personal branches do not support merge proposals.
+        self.assertFalse(self.target.supports_merge_proposals)
 
     def test_displayname(self):
         # The display name of a person branch target is ~$USER/+junk.
@@ -202,6 +210,10 @@ class TestProductBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
         branch.mirrorComplete('rev1')
         target = IBranchTarget(self.original)
         self.assertEqual(branch, target.default_stacked_on_branch)
+
+    def test_supports_merge_proposals(self):
+        # Product branches do support merge proposals.
+        self.assertTrue(self.target.supports_merge_proposals)
 
     def test_displayname(self):
         # The display name of a product branch target is the display name of

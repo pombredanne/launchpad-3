@@ -82,6 +82,11 @@ class PackageBranchTarget(_BaseBranchTarget):
         """See `IBranchTarget`."""
         return self.sourcepackage.displayname
 
+    @property
+    def supports_merge_proposals(self):
+        """See `IBranchTarget`."""
+        return True
+
 
 class PersonBranchTarget(_BaseBranchTarget):
     implements(IBranchTarget)
@@ -117,6 +122,11 @@ class PersonBranchTarget(_BaseBranchTarget):
     def collection(self):
         """See `IBranchTarget`."""
         return getUtility(IAllBranches).ownedBy(self.person).isJunk()
+
+    @property
+    def supports_merge_proposals(self):
+        """See `IBranchTarget`."""
+        return False
 
 
 class ProductBranchTarget(_BaseBranchTarget):
@@ -160,6 +170,11 @@ class ProductBranchTarget(_BaseBranchTarget):
     def collection(self):
         """See `IBranchTarget`."""
         return getUtility(IAllBranches).inProduct(self.product)
+
+    @property
+    def supports_merge_proposals(self):
+        """See `IBranchTarget`."""
+        return True
 
 
 def get_canonical_url_data_for_target(branch_target):
