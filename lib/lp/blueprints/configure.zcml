@@ -211,14 +211,14 @@
         <!-- SpecificationDelta -->
 
         <class
-            class="lp.blueprints.adapters.specification.SpecificationDelta">
+            class="lp.blueprints.adapters.SpecificationDelta">
             <allow
                 interface="lp.blueprints.interfaces.specification.ISpecificationDelta"/>
         </class>
     </facet>
     <subscriber
         for="lp.blueprints.interfaces.specification.ISpecification                                 lazr.lifecycle.interfaces.IObjectModifiedEvent"
-        handler="lp.blueprints.subscribers.specification.specification_goalstatus"/>
+        handler="lp.blueprints.subscribers.specification_goalstatus"/>
     <subscriber
         for="lp.blueprints.interfaces.specification.ISpecification                                 lazr.lifecycle.interfaces.IObjectModifiedEvent"
         handler="canonical.launchpad.mailnotification.notify_specification_modified"/>

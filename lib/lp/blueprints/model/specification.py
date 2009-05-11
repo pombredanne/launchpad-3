@@ -54,7 +54,7 @@ from lp.blueprints.model.sprintspecification import (
 from lp.blueprints.model.sprint import Sprint
 
 from lazr.lifecycle.objectdelta import ObjectDelta
-from lp.blueprints.adapters.specification import SpecificationDelta
+from lp.blueprints.adapters import SpecificationDelta
 
 
 class Specification(SQLBase, BugLinkTargetMixin):

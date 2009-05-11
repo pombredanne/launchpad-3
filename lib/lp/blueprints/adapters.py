@@ -7,6 +7,8 @@ __metaclass__ = type
 from zope.interface import implements
 
 from lp.blueprints.interfaces.specification import ISpecificationDelta
+
+
 class SpecificationDelta:
     """See canonical.launchpad.interfaces.ISpecificationDelta."""
     implements(ISpecificationDelta)
