@@ -17,10 +17,6 @@ from canonical.launchpad.interfaces import (
     NotFoundError)
 
 
-class BadLineInBugsProperty(Exception):
-    """Raised when the scanner encounters a bad line in a bug property."""
-
-
 def set_bug_branch_status(bug, branch, status):
     """Ensure there's a BugBranch for 'bug' and 'branch' set to 'status'.
 
