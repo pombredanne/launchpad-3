@@ -42,7 +42,7 @@ from canonical.launchpad.interfaces.structuralsubscription import (
 from canonical.launchpad.mail import (
     sendmail, simple_sendmail, simple_sendmail_from_person, format_address)
 from canonical.launchpad.mailout.mailwrapper import MailWrapper
-from canonical.launchpad.mailout.notificationrecipientset import (
+from lp.services.mail.notificationrecipientset import (
     NotificationRecipientSet)
 from canonical.launchpad.webapp import canonical_url
 

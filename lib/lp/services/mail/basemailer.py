@@ -14,7 +14,7 @@ __all__ = ['BaseMailer']
 from canonical.launchpad.helpers import get_email_template
 from canonical.launchpad.mail import format_address, MailController
 from canonical.launchpad.mailout import text_delta
-from canonical.launchpad.mailout.notificationrecipientset import (
+from lp.services.mail.notificationrecipientset import (
     NotificationRecipientSet)
 
 
