@@ -7,7 +7,6 @@ __metaclass__ = type
 
 __all__ = ['Archive', 'ArchiveSet']
 
-import os
 import re
 
 from lazr.lifecycle.event import ObjectCreatedEvent
@@ -22,7 +21,6 @@ from zope.event import notify
 from zope.interface import alsoProvides, implements
 from zope.security.interfaces import Unauthorized
 
-from canonical.archivepublisher.config import Config as PubConfig
 from canonical.archiveuploader.utils import re_issource, re_isadeb
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
@@ -255,53 +253,6 @@ class Archive(SQLBase):
             return self.signing_key.fingerprint
 
         return None
-
-    def getPubConfig(self):
-        """See `IArchive`."""
-        pubconf = PubConfig(self.distribution)
-        ppa_config = config.personalpackagearchive
-
-        if self.purpose == ArchivePurpose.PRIMARY:
-            pass
-        elif self.is_ppa:
-            if self.private:
-                pubconf.distroroot = ppa_config.private_root
-                pubconf.htaccessroot = os.path.join(
-                    pubconf.distroroot, self.owner.name, self.name)
-            else:
-                pubconf.distroroot = ppa_config.root
-                pubconf.htaccessroot = None
-            pubconf.archiveroot = os.path.join(
-                pubconf.distroroot, self.owner.name, self.name,
-                self.distribution.name)
-            pubconf.poolroot = os.path.join(pubconf.archiveroot, 'pool')
-            pubconf.distsroot = os.path.join(pubconf.archiveroot, 'dists')
-            pubconf.overrideroot = None
-            pubconf.cacheroot = None
-            pubconf.miscroot = None
-        elif self.purpose == ArchivePurpose.PARTNER:
-            # Reset the list of components to partner only.  This prevents
-            # any publisher runs from generating components not related to
-            # the partner archive.
-            for distroseries in pubconf._distroserieses.keys():
-                pubconf._distroserieses[
-                    distroseries]['components'] = ['partner']
-
-            pubconf.distroroot = config.archivepublisher.root
-            pubconf.archiveroot = os.path.join(pubconf.distroroot,
-                self.distribution.name + '-partner')
-            pubconf.poolroot = os.path.join(pubconf.archiveroot, 'pool')
-            pubconf.distsroot = os.path.join(pubconf.archiveroot, 'dists')
-            pubconf.overrideroot = os.path.join(
-                pubconf.archiveroot, 'overrides')
-            pubconf.cacheroot = os.path.join(pubconf.archiveroot, 'cache')
-            pubconf.miscroot = os.path.join(pubconf.archiveroot, 'misc')
-        else:
-            raise AssertionError(
-                "Unknown archive purpose %s when getting publisher config.",
-                self.purpose)
-
-        return pubconf
 
     def getBuildRecords(self, build_state=None, name=None, pocket=None,
                         user=None):

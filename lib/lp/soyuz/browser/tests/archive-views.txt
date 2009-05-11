@@ -80,14 +80,83 @@ vocabulary for selecting a series filter:
     Breezy Badger Autotest
     Warty
 
-An ArchiveView provides helpers to display the counts of source and
-binary packages within the archive:
+An ArchiveView provides a helper property which returns repository
+usage details in a dictionary containing:
 
-    >>> print ppa_archive_view.source_count_text
-    3 source packages
+ * Number of sources and binaries published with their appropriate
+   labels;
+ * Number of bytes used and permitted (quota);
+ * Percentage of the used quota (with 2 degrees of precision).
 
-    >>> print ppa_archive_view.binary_count_text
-    3 binary packages
+We will use a helper function for printing the returned dictionary
+contents.
+
+    >>> def print_repository_usage(repository_usage):
+    ...     for key, value in sorted(repository_usage.iteritems()):
+    ...         print '%s: %s' % (key, value)
+
+Celso PPA has some packages, but still below the quota.
+
+    >>> ppa_repository_usage = ppa_archive_view.repository_usage
+    >>> print_repository_usage(ppa_repository_usage)
+    binaries_size:   3
+    binary_label:    3 binary packages
+    quota:           1073741824
+    source_label:    3 source packages
+    sources_size:    9923399
+    used:            9929546
+    used_css_class:  green
+    used_percentage: 0.92
+
+Reducing the quota and making Celso's PPA usage above it. The quota
+value is updated, percentage is limited to 100 % and the CSS class has
+changed.
+
+    >>> login('foo.bar@canonical.com')
+    >>> cprov.archive.authorized_size = 1
+    >>> login(ANONYMOUS)
+
+    >>> fresh_view = create_initialized_view(
+    ...     cprov.archive, name="+index")
+    >>> print_repository_usage(fresh_view.repository_usage)
+    binaries_size:   3
+    binary_label:    3 binary packages
+    quota:           1048576
+    source_label:    3 source packages
+    sources_size:    9923399
+    used:            9929546
+    used_css_class:  red
+    used_percentage: 100.00
+
+The COPY archive has no packages.
+
+    >>> copy_repository_usage = copy_archive_view.repository_usage
+    >>> print_repository_usage(copy_repository_usage)
+    binaries_size:   0
+    binary_label:    0 binary packages
+    quota:           1073741824
+    source_label:    0 source packages
+    sources_size:    0
+    used:            0
+    used_css_class:  green
+    used_percentage: 0.00
+
+Mark's PPA has a single source, thus the package labels are adjusted
+for their singular form.
+
+    >>> sabdfl = getUtility(IPersonSet).getByName('sabdfl')
+    >>> sabdfl_archive_view = create_initialized_view(
+    ...     sabdfl.archive, name="+index")
+    >>> sabdfl_repository_usage = sabdfl_archive_view.repository_usage
+    >>> print_repository_usage(sabdfl_repository_usage)
+    binaries_size:   0
+    binary_label:    1 binary package
+    quota:           1073741824
+    source_label:    1 source package
+    sources_size:    9922683
+    used:            9924731
+    used_css_class:  green
+    used_percentage: 0.92
 
 An ArchiveView provides a batched_sources property that can be used
 to get the current batch of publishing records for an archive:
@@ -501,7 +570,6 @@ Before testing we will create a new team owned by Mark Shutteworth,
 with a private PPA attached to it.
 
     >>> login('foo.bar@canonical.com')
-    >>> sabdfl = getUtility(IPersonSet).getByName('sabdfl')
     >>> a_team = factory.makeTeam(sabdfl, name="pirulito-team")
     >>> from lp.soyuz.interfaces.archive import (
     ...     IArchiveSet, ArchivePurpose)

@@ -17,9 +17,9 @@ __all__ = []
 from lazr.restful.declarations import LAZR_WEBSERVICE_EXPORTED
 
 from canonical.launchpad.components.apihelpers import (
-    patch_entry_return_type, patch_collection_return_type,
-    patch_plain_parameter_type, patch_choice_parameter_type,
-    patch_reference_property)
+    patch_entry_return_type, patch_collection_property,
+    patch_collection_return_type, patch_plain_parameter_type,
+    patch_choice_parameter_type, patch_reference_property)
 
 from canonical.launchpad.interfaces.bug import IBug
 from canonical.launchpad.interfaces.bugbranch import IBugBranch
@@ -99,6 +99,8 @@ IPersonPublic['getMergeProposals'].queryTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)['params']['status'].value_type.vocabulary = \
         BranchMergeProposalStatus
 patch_reference_property(IPersonPublic, 'archive', IArchive)
+patch_collection_property(IPersonPublic, 'ppas', IArchive)
+patch_entry_return_type(IPersonPublic, 'getPPAByName', IArchive)
 
 IHasBuildRecords['getBuildRecords'].queryTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)[

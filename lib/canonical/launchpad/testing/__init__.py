@@ -99,9 +99,21 @@ class TestCase(unittest.TestCase):
         """
         self._cleanups.append((function, arguments, keywordArguments))
 
+    def installFixture(self, fixture):
+        """Install 'fixture', an object that has a `setUp` and `tearDown`.
+
+        `installFixture` will run 'fixture.setUp' and schedule
+        'fixture.tearDown' to be run during the test's tear down (using
+        `addCleanup`).
+
+        :param fixture: Any object that has a `setUp` and `tearDown` method.
+        """
+        fixture.setUp()
+        self.addCleanup(fixture.tearDown)
+
     def assertProvides(self, obj, interface):
         """Assert 'obj' provides 'interface'.
-        
+
         You should probably be using `assertCorrectlyProvides`.
         """
         self.assertTrue(

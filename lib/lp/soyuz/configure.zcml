@@ -395,10 +395,6 @@
         factory="lp.soyuz.browser.archive.ArchiveBadges"
         permission="zope.Public"/>
     <adapter
-        for="lp.soyuz.interfaces.archive.IArchive"
-        provides="lp.soyuz.interfaces.archivesigningkey.IArchiveSigningKey"
-        factory="lp.soyuz.adapters.archivesigningkey.ArchiveSigningKey"/>
-    <adapter
         provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
         for="lp.soyuz.interfaces.archive.IArchive"
         factory="lp.soyuz.browser.archive.ArchiveBreadcrumbBuilder"
@@ -786,12 +782,5 @@
             interface="lp.soyuz.interfaces.files.ISourcePackageReleaseFileSet"/>
     </securedutility>
 
-    <!-- ArchiveSigningKey -->
-
-    <class
-        class="lp.soyuz.adapters.archivesigningkey.ArchiveSigningKey">
-        <allow
-            interface="lp.soyuz.interfaces.archivesigningkey.IArchiveSigningKey"/>
-    </class>
 
 </configure>

@@ -284,10 +284,6 @@ special = {
             '../doc/cve-update.txt',
             setUp=cveSetUp, tearDown=tearDown, layer=LaunchpadZopelessLayer
             ),
-    'archive-signing.txt': LayeredDocFileSuite(
-            '../doc/archive-signing.txt',
-            setUp=archivepublisherSetUp, layer=LaunchpadZopelessLayer,
-            ),
     'close-account.txt': LayeredDocFileSuite(
             '../doc/close-account.txt', setUp=setUp, tearDown=tearDown,
             layer=LaunchpadZopelessLayer

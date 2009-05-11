@@ -998,88 +998,6 @@ All the attributes can be combined in order to refine the result:
     1
 
 
-== Publisher configuration provider ==
-
-IArchive has a method to provide a modified Publisher Configuration (see
-lib/archivepublisher/config.py), which provides the right paths for its
-publication according to the given distribution:
-
-    >>> # cprov 20061127: We should *never* be able to change a PPA
-    >>> # distribution, however 'ubuntu' is not prepared for publication, thus
-    >>> # we have to override the PPA to 'ubuntutest' in order to perform the
-    >>> # tests.
-
-    >>> from zope.security.proxy import removeSecurityProxy
-    >>> ubuntutest = getUtility(IDistributionSet)['ubuntutest']
-
-    >>> naked_cprov_archive = removeSecurityProxy(cprov_archive)
-    >>> naked_cprov_archive.distribution = ubuntutest
-    >>> pubconfig = naked_cprov_archive.getPubConfig()
-
-The base Archive publication location is set in the current Launchpad
-configuration file:
-
-    >>> from canonical.config import config
-    >>> pubconfig.distroroot == config.personalpackagearchive.root
-    True
-
-There is a separate location for private PPAs that is used if the
-archive is marked as private:
-
-    >>> (config.personalpackagearchive.private_root !=
-    ...  config.personalpackagearchive.root)
-    True
-
-    >>> naked_cprov_archive.private = True
-    >>> private_pubconfig = naked_cprov_archive.getPubConfig()
-    >>> (private_pubconfig.distroroot ==
-    ...  config.personalpackagearchive.private_root)
-    True
-
-    >>> naked_cprov_archive.private = False
-
-Then, the archive topology will follow:
-
-<PPA_BASE_DIR>/<PERSONNAME>/<DISTRIBUTION>
-
-    >>> pubconfig.archiveroot
-    u'/var/tmp/ppa.test/cprov/ppa/ubuntutest'
-
-    >>> pubconfig.poolroot
-    u'/var/tmp/ppa.test/cprov/ppa/ubuntutest/pool'
-
-    >>> pubconfig.distsroot
-    u'/var/tmp/ppa.test/cprov/ppa/ubuntutest/dists'
-
-Path not used in *personal* archives publication workflow are set to
-None, so they won't get created:
-
-    >>> pubconfig.overrideroot is None
-    True
-    >>> pubconfig.cacheroot is None
-    True
-    >>> pubconfig.miscroot is None
-    True
-
-Usual methods from Publisher Configuration are preserved:
-
-    >>> pubconfig.distroSeriesNames()
-    ['breezy-autotest', 'hoary-test']
-
-    >>> pubconfig.archTagsForSeries('breezy-autotest')
-    []
-
-    >>> pubconfig.componentsForSeries('breezy-autotest')
-    ['main', 'restricted', 'universe', 'multiverse']
-
-Let's restore Celso's PPA state, attaching it to ubuntu distribution
-again.
-
-    >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
-    >>> naked_cprov_archive.distribution = ubuntu
-    >>> naked_cprov_archive.syncUpdate()
-
-
 == Archive dependencies ==
 
 An Archive can depend on one or more other archives, such
@@ -1415,6 +1333,7 @@ An Archive can be retrieved via IPerson.archive property:
 IArchiveSet.getByDistroPurpose retrieves an IArchive given a distribution
 and an ArchivePurpose:
 
+    >>> ubuntutest = getUtility(IDistributionSet)['ubuntutest']
     >>> partner_archive = getUtility(IArchiveSet).getByDistroPurpose(
     ...     ubuntutest, ArchivePurpose.PARTNER)
     >>> print partner_archive.name
@@ -1468,6 +1387,8 @@ use to retrieve files from it.
 If the archive is private, the url may be different as private PPAs
 are published to a secure location.
 
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> naked_cprov_archive = removeSecurityProxy(cprov_archive)
     >>> print naked_cprov_archive.archive_url
     http://ppa.launchpad.dev/cprov/ppa/ubuntu
 
@@ -1476,18 +1397,6 @@ are published to a secure location.
 
     >>> print naked_cprov_archive.archive_url
     http://private-ppa.launchpad.dev/cprov/ppa/ubuntu
-
-The publisher config for PARTNER contains only 'partner' in its
-components.  This prevents non-partner being published in the partner
-archive.
-
-    >>> comm_pubconf = removeSecurityProxy(
-    ...     partner_archive.getPubConfig())
-    >>> for distroseries in comm_pubconf._distroserieses.keys():
-    ...     print set(
-    ...         comm_pubconf._distroserieses[distroseries]['components'])
-    set(['partner'])
-    set(['partner'])
 
 IArchive.allowUpdatesToReleasePocket returns whether the archive is allowed
 to publish to the RELEASE pocket no matter what state the distroseries is in.

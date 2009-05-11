@@ -12,13 +12,14 @@ import os
 from sha import sha
 
 from zope.component import getUtility
-from zope.security.proxy import removeSecurityProxy
 
 from canonical.archivepublisher import HARDCODED_COMPONENT_ORDER
 from canonical.archivepublisher.diskpool import DiskPool
-from canonical.archivepublisher.config import LucilleConfigError
+from canonical.archivepublisher.config import getPubConfig, LucilleConfigError
 from canonical.archivepublisher.domination import Dominator
 from canonical.archivepublisher.ftparchive import FTPArchiveHandler
+from canonical.archivepublisher.interfaces.archivesigningkey import (
+    IArchiveSigningKey)
 from canonical.archivepublisher.utils import (
     RepositoryIndexFile, get_ppa_reference)
 from canonical.database.sqlbase import sqlvalues
@@ -27,8 +28,6 @@ from lp.soyuz.model.publishing import (
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.interfaces.binarypackagerelease import (
     BinaryPackageFormat)
-from lp.soyuz.interfaces.archivesigningkey import (
-    IArchiveSigningKey)
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.publishing import (
     pocketsuffix, PackagePublishingPocket, PackagePublishingStatus)
@@ -119,15 +118,11 @@ def getPublisher(archive, allowed_suites, log, distsroot=None):
         log.debug("Finding configuration for '%s' PPA."
                   % archive.owner.name)
     try:
-        pubconf = archive.getPubConfig()
+        pubconf = getPubConfig(archive)
     except LucilleConfigError, info:
         log.error(info)
         raise
 
-    # XXX cprov 2007-01-03: remove security proxy of the Config instance
-    # returned by IArchive. This is kinda of a hack because Config doesn't
-    # have any interface yet.
-    pubconf = removeSecurityProxy(pubconf)
     disk_pool = _getDiskPool(pubconf, log)
 
     if distsroot is not None:
@@ -320,7 +315,7 @@ class Publisher(object):
                         continue
                     self.checkDirtySuiteBeforePublishing(distroseries, pocket)
                 # Retrieve components from the publisher config because
-                # it gets overridden in IArchive.getPubConfig to set the
+                # it gets overridden in getPubConfig to set the
                 # correct components for the archive being used.
                 for component_name in self._config.componentsForSeries(
                         distroseries.name):
