@@ -54,26 +54,27 @@ class BugBranchLinker:
 
         # Skip URLs that don't point to Launchpad.
         if host != 'launchpad.net':
-            raise BadLineInBugsProperty("Not a Launchpad url")
+            return None
 
+        # Remove empty path segments.
+        segments = [
+            segment for segment in path.split('/') if len(segment) > 0]
         # Don't allow Launchpad URLs that aren't /bugs/<integer>.
         try:
-            # Remove empty path segments.
-            bug_segment, bug_id = [
-                segment for segment in path.split('/') if len(segment) > 0]
-            if bug_segment != 'bugs':
-                raise ValueError('Bad path segment')
-            return int(path.split('/')[-1])
+            bug_segment, bug_id = segments
         except ValueError:
-            raise BadLineInBugsProperty('Invalid bug reference: %s' % url)
+            return None
+        if bug_segment != 'bugs':
+            return None
+        try:
+            return int(bug_id)
+        except ValueError:
+            return None
 
     def _getBugStatus(self, bzr_status):
         # Make sure the status is acceptable.
         valid_statuses = {'fixed': BugBranchStatus.FIXAVAILABLE}
-        try:
-            return valid_statuses[bzr_status.lower()]
-        except KeyError:
-            raise BadLineInBugsProperty('Invalid bug status: %r' % bzr_status)
+        return valid_statuses.get(bzr_status.lower(), None)
 
     def extractBugInfo(self, bzr_revision):
         """Parse bug information out of the given revision property.
@@ -84,13 +85,9 @@ class BugBranchLinker:
         """
         bug_statuses = {}
         for url, status in bzr_revision.iter_bugs():
-            try:
-                bug = self._getBugFromUrl(url)
-            except BadLineInBugsProperty:
-                continue
-            try:
-                status = self._getBugStatus(status)
-            except BadLineInBugsProperty:
+            bug = self._getBugFromUrl(url)
+            status = self._getBugStatus(status)
+            if bug is None or status is None:
                 continue
             bug_statuses[bug] = status
         return bug_statuses
