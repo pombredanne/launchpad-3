@@ -97,7 +97,6 @@ from lp.registry.model.pillar import pillar_sort_key
 from canonical.launchpad.validators import LaunchpadValidationError
 from lp.registry.interfaces.person import validate_public_person
 from canonical.launchpad.mailnotification import BugNotificationRecipients
-from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, DEFAULT_FLAVOR, MAIN_STORE, NotFoundError)
 
@@ -1525,6 +1524,9 @@ class BugSet:
 
         # Mark the bug reporter as affected by that bug.
         bug.markUserAffected(bug.owner)
+
+        # Tell everyone.
+        notify(ObjectCreatedEvent(bug))
 
         return bug
 

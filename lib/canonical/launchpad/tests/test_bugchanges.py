@@ -36,8 +36,7 @@ class TestBugChanges(unittest.TestCase):
         self.user = self.factory.makePerson(displayname='Arthur Dent')
         self.product = self.factory.makeProduct(
             owner=self.user, official_malone=True)
-        self.bug = self.factory.makeBug(
-            product=self.product, owner=self.user, comment="ENOTOWEL")
+        self.bug = self.factory.makeBug(product=self.product, owner=self.user)
         self.bug_task = self.bug.bugtasks[0]
 
         # Add some structural subscribers to show that notifications
@@ -65,12 +64,10 @@ class TestBugChanges(unittest.TestCase):
         """
         if bug is None:
             bug = self.bug
-
-        self.old_activities = list(bug.activity)
-        self.old_notification_ids = [
-            notification.id
-            for notification in BugNotification.selectBy(bug=self.bug,
-                                                         orderBy='id')]
+        self.old_activities = set(bug.activity)
+        self.old_notification_ids = set(
+            notification.id for notification in (
+                BugNotification.selectBy(bug=bug)))
 
     def changeAttribute(self, obj, attribute, new_value):
         """Set the value of `attribute` on `obj` to `new_value`.
@@ -450,6 +447,7 @@ class TestBugChanges(unittest.TestCase):
         # Marking a bug as public adds items to the bug's activity log
         # and notifications.
         private_bug = self.factory.makeBug(private=True)
+        self.saveOldChanges(private_bug)
         self.assertTrue(private_bug.private)
 
         bug_before_modification = Snapshot(private_bug, providing=IBug)
@@ -1239,7 +1237,7 @@ class TestBugChanges(unittest.TestCase):
         # When a bug is marked as a duplicate, activity is recorded
         # and a notification is sent.
         duplicate_bug = self.factory.makeBug()
-        self.saveOldChanges()
+        self.saveOldChanges(duplicate_bug)
         self.changeAttribute(duplicate_bug, 'duplicateof', self.bug)
 
         expected_activity = {
@@ -1265,7 +1263,7 @@ class TestBugChanges(unittest.TestCase):
         # and a notification is sent.
         duplicate_bug = self.factory.makeBug()
         duplicate_bug.duplicateof = self.bug
-        self.saveOldChanges()
+        self.saveOldChanges(duplicate_bug)
         self.changeAttribute(duplicate_bug, 'duplicateof', None)
 
         expected_activity = {
@@ -1359,7 +1357,8 @@ class TestBugChanges(unittest.TestCase):
     def test_create_bug(self):
         # When a bug is created, activity is recorded and a comment
         # notification is sent.
-        notify(ObjectCreatedEvent(self.bug))
+        new_bug = self.factory.makeBug(
+            product=self.product, owner=self.user, comment="ENOTOWEL")
 
         expected_activity = {
             'person': self.admin_user,
@@ -1371,13 +1370,14 @@ class TestBugChanges(unittest.TestCase):
             'person': self.user,
             'text': u"ENOTOWEL",
             'is_comment': True,
-            'recipients': self.bug.getBugNotificationRecipients(
+            'recipients': new_bug.getBugNotificationRecipients(
                 level=BugNotificationLevel.COMMENTS),
             }
 
         self.assertRecordedChange(
             expected_activity=expected_activity,
-            expected_notification=expected_notification)
+            expected_notification=expected_notification,
+            bug=new_bug)
 
 
 def test_suite():
