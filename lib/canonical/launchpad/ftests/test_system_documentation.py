@@ -455,11 +455,6 @@ special = {
             setUp=setUp, tearDown=tearDown,
             layer=LaunchpadZopelessLayer
             ),
-    'script-monitoring.txt': LayeredDocFileSuite(
-            '../doc/script-monitoring.txt',
-            setUp=setUp, tearDown=tearDown,
-            layer=LaunchpadZopelessLayer
-            ),
     'distroseriesqueue-debian-installer.txt': LayeredDocFileSuite(
             '../doc/distroseriesqueue-debian-installer.txt',
             setUp=distroseriesqueueSetUp, tearDown=distroseriesqueueTearDown,

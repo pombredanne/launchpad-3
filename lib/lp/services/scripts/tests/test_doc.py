@@ -20,12 +20,19 @@ from lp.registry.tests import mailinglists_helper
 here = os.path.dirname(os.path.realpath(__file__))
 
 
-special = {}
+special = {
+    'script-monitoring.txt': LayeredDocFileSuite(
+            '../doc/script-monitoring.txt',
+            setUp=setUp, tearDown=tearDown,
+            layer=LaunchpadZopelessLayer
+            ),
+}
 
 
 def test_suite():
     suite = unittest.TestSuite()
 
+    # Add the pagetests.
     stories_dir = os.path.join(os.path.pardir, 'stories')
     suite.addTest(PageTestSuite(stories_dir))
     stories_path = os.path.join(here, stories_dir)
@@ -36,11 +43,16 @@ def test_suite():
         story_path = os.path.join(stories_dir, story_dir)
         suite.addTest(PageTestSuite(story_path))
 
+    # Add the special doctests.
+    for key in sorted(special):
+        special_suite = special[key]
+        suite.addTest(special_suite)
+
     testsdir = os.path.abspath(
-        os.path.normpath(os.path.join(here, os.path.pardir, 'stories'))
+        os.path.normpath(os.path.join(here, os.path.pardir, 'doc'))
         )
 
-    # Add tests using default setup/teardown
+    # Add doctests using default setup/teardown
     filenames = [filename
                  for filename in os.listdir(testsdir)
                  if filename.endswith('.txt') and filename not in special]
