@@ -71,7 +71,7 @@ Not everything about a branch is exposed.  Hopefully most of what users
 really care about is exposed, and we will undoubtedly expand this as
 time goes on.
 
-    >>> login(ANONYMOUS)
+    >>> login('foo.bar@canonical.com')
     >>> eric = factory.makePerson(name='eric')
     >>> marley = factory.makePerson(name='marley')
     >>> fooix = factory.makeProduct(name='fooix')
@@ -80,10 +80,20 @@ time goes on.
     ...     name='trunk', title='The Fooix Trunk')
     >>> feature_branch = factory.makeAnyBranch(
     ...     owner=eric, product=fooix, name='feature-branch')
+    >>> feature_branch_bug = factory.makeBug(product=fooix,
+    ...     title='Stuff needs features')
+    >>> feature_branch_spec = factory.makeSpecification(product=fooix,
+    ...     title='Super Feature X')
     >>> merge_proposal = factory.makeBranchMergeProposal(
     ...     target_branch=branch, source_branch=feature_branch,
     ...     registrant=eric)
     >>> branch_url = '/' + branch.unique_name
+    >>> feature_branch_url = '/' + feature_branch.unique_name
+    >>> feature_branch_bug_url = '/bugs/' + str(feature_branch_bug.id)
+    >>> feature_branch_spec_url = '/' + '/'.join([
+    ...     feature_branch_spec.product.name,
+    ...     '+spec',
+    ...     feature_branch_spec.name])
     >>> logout()
 
     >>> from canonical.launchpad.testing.pages import webservice_for_person
@@ -93,6 +103,7 @@ time goes on.
     >>> pprint_entry(fooix_trunk)
     branch_format: None
     branch_type: u'Hosted'
+    bug_branches_collection_link: u'.../~eric/fooix/trunk/bug_branches'
     bzr_identity: u'lp://dev/~eric/fooix/trunk'
     control_format: None
     date_created: ...
@@ -115,6 +126,7 @@ time goes on.
     reviewer_link: None
     revision_count: 0
     self_link: u'.../~eric/fooix/trunk'
+    spec_links_collection_link: u'.../~eric/fooix/trunk/spec_links'
     subscribers_collection_link: u'http://.../~eric/fooix/trunk/subscribers'
     subscriptions_collection_link: u'http://.../~eric/fooix/trunk/subscriptions'
     summary: None
@@ -122,6 +134,83 @@ time goes on.
     unique_name: u'~eric/fooix/trunk'
     url: None
     whiteboard: None
+
+
+A branch can also be linked to a bug through the API.
+
+    >>> erics_feature_branch = webservice.get(feature_branch_url).jsonBody()
+    >>> more_features_bug = webservice.get(feature_branch_bug_url).jsonBody()
+    >>> bug_branch = webservice.named_post(
+    ...     more_features_bug['self_link'], 'linkBranch',
+    ...     branch=erics_feature_branch['self_link']).jsonBody()
+    >>> pprint_entry(bug_branch)
+    branch_link: u'http://.../~eric/fooix/feature-branch'
+    bug_link: u'http://.../bugs/...'
+    resource_type_link: u'http://.../#bug_branch'
+    self_link: u'http://.../~eric/fooix/feature-branch/+bug/...'
+
+
+Since the branch is linked to a bug, it's possible to get that bug through the
+branch.
+
+    >>> bug_branches = webservice.get(
+    ...     erics_feature_branch['bug_branches_collection_link']).jsonBody()
+    >>> bug_branch = bug_branches['entries'][0]
+    >>> pprint_entry(bug_branch)
+    branch_link: u'http://.../~eric/fooix/feature-branch'
+    bug_link: u'http://.../bugs/...'
+    resource_type_link: u'http://.../#bug_branch'
+    self_link: u'http://.../~eric/fooix/feature-branch/+bug/...'
+
+
+SpecBranch linkages can be deleted through the API as well.
+
+    >>> _unused = webservice.named_post(
+    ...     more_features_bug['self_link'], 'unlinkBranch',
+    ...     branch=erics_feature_branch['self_link']).jsonBody()
+    >>> bug_branches = webservice.get(
+    ...     erics_feature_branch['bug_branches_collection_link']).jsonBody()
+    >>> print len(bug_branches['entries'])
+    0
+
+
+A branch can also be linked to a spec through the API.
+
+    >>> erics_feature_branch = webservice.get(feature_branch_url).jsonBody()
+    >>> more_features_spec = webservice.get(feature_branch_spec_url).jsonBody()
+    >>> spec_branch = webservice.named_post(
+    ...     more_features_spec['self_link'], 'linkBranch',
+    ...     branch=erics_feature_branch['self_link']).jsonBody()
+    >>> pprint_entry(spec_branch)
+    branch_link: u'http://api.launchpad.dev/beta/~eric/fooix/feature-branch'
+    registrant_link: u'http://api.launchpad.dev/beta/~salgado'
+    resource_type_link: u'http://api.launchpad.dev/beta/#specification_branch'
+    self_link: u'http://api.launchpad.dev/beta/fooix/+spec/name28/+branch/eric/fooix/feature-branch'
+    specification_link: u'http://api.launchpad.dev/beta/fooix/+spec/name28'
+
+
+If the branch is linked to a spec, it's possible to look up that spec through
+the spec branch link.
+
+    >>> spec_branches = webservice.get(
+    ...     erics_feature_branch['spec_links_collection_link']).jsonBody()
+    >>> spec_branch = spec_branches['entries'][0]
+    >>> pprint_entry(spec_branch)
+    branch_link: u'http://api.launchpad.dev/beta/~eric/fooix/feature-branch'
+    registrant_link: u'http://api.launchpad.dev/beta/~salgado'
+    resource_type_link: u'http://api.launchpad.dev/beta/#specification_branch'
+    self_link: u'http://api.launchpad.dev/beta/fooix/+spec/name28/+branch/eric/fooix/feature-branch'
+    specification_link: u'http://api.launchpad.dev/beta/fooix/+spec/name28'
+
+
+SpecBranch linkages can be deleted through the API as well.
+
+    >>> _unused = webservice.named_post(spec_branch['self_link'],
+    ...     'delete').jsonBody()
+    >>> spec_branches = webservice.get(
+    ...     erics_feature_branch['spec_links_collection_link']).jsonBody()
+    >>> print len(spec_branches['entries'])
+    0
 
 
 There is a branch merge proposal with Fooix trunk as the target branch, so it

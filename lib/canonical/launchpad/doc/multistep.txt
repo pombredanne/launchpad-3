@@ -11,8 +11,8 @@ wizard, and one or more subclasses of StepView for each step of your wizard.
     >>> from canonical.launchpad.browser.multistep import (
     ...     MultiStepView, StepView)
 
-The controlling view must define a property `step_one` which is the view class
-of the first step in your wizard.   Each step must define a `next_step`
+The controlling view must define a property `first_step` which is the view
+class of the first step in your wizard.  Each step must define a `next_step`
 property which is the view class of the next step in the wizard.  When
 `next_step` is None, the wizard is done.
 
@@ -49,7 +49,7 @@ main_action() method to process the form.
     ...         self.next_step = StepTwo
 
     >>> class CounterView(MultiStepView):
-    ...     step_one = StepOne
+    ...     first_step = StepOne
 
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> form = {'field.actions.continue': 'Continue'}
@@ -107,7 +107,7 @@ method.
     ...         print self.step_name
 
     >>> class CounterView(MultiStepView):
-    ...     step_one = StepFour
+    ...     first_step = StepFour
 
     >>> form = {'field.actions.continue': 'Continue'}
     >>> request = LaunchpadTestRequest(form=form, method='POST')

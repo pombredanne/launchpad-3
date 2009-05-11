@@ -434,9 +434,6 @@ class IPackageUploadCustom(Interface):
             title=_("The file"), required=True, readonly=False,
             )
 
-    # useful properties
-    archive_config = Attribute("Build and return an ArchiveConfig object.")
-
     def temp_filename():
         """Return a filename containing the libraryfile for this upload.
 
