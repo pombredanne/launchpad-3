@@ -266,8 +266,6 @@ trust_root.
 An AssertionError if two or more accounts share an identifier. The
 database does not have a constraint to guard against this.
 
-    >>> from canonical.database.sqlbase import cursor
-
     >>> # Create an integrity error in the data by assigning No Privileges
     >>> # Person's openid_identifier to Sample Person.
     >>> from canonical.launchpad.interfaces import IMasterStore

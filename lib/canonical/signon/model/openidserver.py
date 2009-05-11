@@ -23,7 +23,6 @@ import psycopg2
 from sqlobject import (
     BoolCol, ForeignKey, IntCol, SQLObjectNotFound, StringCol)
 from storm.expr import Desc, Or
-from storm.store import Store
 from zope.component import getUtility
 from zope.interface import implements, classProvides
 

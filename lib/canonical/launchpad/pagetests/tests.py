@@ -6,7 +6,7 @@ __metaclass__ = type
 import os
 import unittest
 
-from canonical.launchpad.testing.pages import PageTestSuite, setUpGlobs
+from canonical.launchpad.testing.pages import PageTestSuite
 
 
 here = os.path.dirname(os.path.realpath(__file__))
