@@ -68,18 +68,6 @@ class RevisionPropertyParsing(TestCase):
         bugs = self.extractBugInfo('')
         self.assertEquals(bugs, {})
 
-    def test_bad_status(self):
-        # If the given status is invalid or mispelled, then skip it.
-        bugs = self.extractBugInfo('https://launchpad.net/bugs/9999 faxed')
-        self.assertEquals(bugs, {})
-
-    def test_continues_processing_on_error(self):
-        # Bugs that are mentioned after a bad line are still processed.
-        bugs = self.extractBugInfo(
-            'https://launchpad.net/bugs/9999 faxed\n'
-            'https://launchpad.net/bugs/8888 fixed')
-        self.assertEquals(bugs, {8888: BugBranchStatus.FIXAVAILABLE})
-
     def test_bad_bug(self):
         # If the given bug is not a valid integer, then skip it, generate an
         # OOPS and continue processing.
@@ -90,20 +78,6 @@ class RevisionPropertyParsing(TestCase):
         # References to bugs on sites other than launchpad are ignored.
         bugs = self.extractBugInfo('http://bugs.debian.org/1234 fixed')
         self.assertEquals(bugs, {})
-
-    def test_bad_line(self):
-        # If the line is malformed (doesn't contain enough fields), then skip
-        # it.
-        bugs = self.extractBugInfo('https://launchpad.net/bugs/9999')
-        self.assertEquals(bugs, {})
-
-    def test_blank_lines(self):
-        # Blank lines are silently ignored.
-        bugs = self.extractBugInfo(
-            'https://launchpad.net/bugs/9999 fixed\n\n\n'
-            'https://launchpad.net/bugs/8888 fixed\n\n')
-        self.assertEquals(bugs, {9999: BugBranchStatus.FIXAVAILABLE,
-                                 8888: BugBranchStatus.FIXAVAILABLE})
 
     def test_duplicated_line(self):
         # If a particular line is duplicated, silently ignore the duplicates.
