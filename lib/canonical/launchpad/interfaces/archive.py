@@ -37,7 +37,7 @@ from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
-    PublicPersonChoice, StrippedTextLine)
+    ParticipatingPersonChoice, PublicPersonChoice, StrippedTextLine)
 from canonical.launchpad.interfaces import IHasOwner
 from canonical.launchpad.interfaces.buildrecords import IHasBuildRecords
 from lp.registry.interfaces.gpg import IGPGKey
@@ -96,7 +96,7 @@ class IArchivePublic(IHasOwner):
     id = Attribute("The archive ID.")
 
     owner = exported(
-        PublicPersonChoice(
+        ParticipatingPersonChoice(
             title=_('Owner'), required=True, vocabulary='ValidOwner',
             description=_("""The archive owner.""")))
 
@@ -1180,4 +1180,3 @@ patch_choice_parameter_type(
 # interfaces/person.py.
 from lp.registry.interfaces.person import IPersonPublic
 patch_reference_property(IPersonPublic, 'archive', IArchive)
-

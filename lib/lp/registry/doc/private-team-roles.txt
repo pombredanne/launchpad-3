@@ -16,6 +16,9 @@ of truly private teams their utility is increased but with more
 safeguards to prevent potential data leakage.
 
 
+Bugs
+====
+
 Bug subscriptions
 -----------------
 
@@ -87,6 +90,9 @@ However a private membership team is not allowed to be a bugtask assignee.
     (name=private-membership-team, visibility=PRIVATE_MEMBERSHIP) to
     <BugTask...
 
+
+Branches
+========
 
 Branch ownership
 ----------------
@@ -172,3 +178,35 @@ But private membership teams cannot.
     PrivatePersonLinkageError: Cannot link person
     (name=private-membership-team, visibility=PRIVATE_MEMBERSHIP) to
     <BranchVisibilityTeamPolicy at...
+
+
+PPAs
+====
+
+PPA ownership
+-------------
+
+Private teams can own PPAs.
+
+    >>> from canonical.launchpad.interfaces.archive import (
+    ...     ArchivePurpose, IArchiveSet)
+    >>> from lp.registry.interfaces.distribution import (
+    ...     IDistributionSet)
+    >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
+    >>> archive_set = getUtility(IArchiveSet)
+    >>> archive = archive_set.new(
+    ...     owner=priv_team, purpose=ArchivePurpose.COPY,
+    ...     distribution=ubuntu, name='private-team-archive',
+    ...     enabled=False, require_virtualized=False)
+
+Alas, Private Membership Teams cannot own PPAs.
+
+    >>> noarchive = archive_set.new(
+    ...     owner=pm_team, purpose=ArchivePurpose.COPY,
+    ...     distribution=ubuntu, name='pmt-archive',
+    ...     enabled=False, require_virtualized=False)
+    Traceback (most recent call last):
+    ...
+    PrivatePersonLinkageError: Cannot link person
+    (name=private-membership-team, visibility=PRIVATE_MEMBERSHIP) to
+    <Archive at...
