@@ -7,14 +7,11 @@ import logging
 import os
 import unittest
 
-from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.testing.pages import PageTestSuite
 from canonical.launchpad.testing.systemdocs import (
     LayeredDocFileSuite, setUp, tearDown)
 from canonical.testing import (
-    DatabaseFunctionalLayer, DatabaseLayer, LaunchpadFunctionalLayer,
-    LaunchpadZopelessLayer)
-from lp.registry.tests import mailinglists_helper
+    LaunchpadFunctionalLayer, LaunchpadZopelessLayer)
 
 
 here = os.path.dirname(os.path.realpath(__file__))
