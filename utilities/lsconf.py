@@ -34,12 +34,12 @@ class Configuration:
             the configuration.
         """
         schema_path = schema_path or self._schema_path
-        self.schema = ImplicitTypeSchema(schema_path)
-        self.config = self.schema.load(conf_path)
+        schema = ImplicitTypeSchema(schema_path)
+        self.config = schema.load(conf_path)
 
     def config_file_for_value(self, section, key):
         """Return the local path to the file that sets the section key."""
-        conf_file_name = self.schema.filename
+        conf_file_name = self.config.schema.filename
         value = section[key]
         previous_config_data = self.config.data
         # Walk the stack of config_data until a change is found.
