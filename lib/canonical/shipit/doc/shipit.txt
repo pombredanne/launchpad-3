@@ -10,12 +10,12 @@ these CDs are sent to the user.
     >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> from canonical.launchpad.ftests import login
-    >>> from canonical.launchpad.database import ShippingRun
-    >>> from canonical.launchpad.interfaces import (
-    ...    IStandardShipItRequestSet, IShippingRequestSet, IPersonSet,
-    ...    IShippingRequest, ILaunchBag, ShippingRequestPriority,
-    ...    ShipItFlavour, ShipItArchitecture, ShippingRequestStatus,
-    ...    ShipItDistroSeries)
+    >>> from canonical.shipit.model.shipit import ShippingRun
+    >>> from canonical.shipit.interfaces.shipit import (
+    ...     IStandardShipItRequestSet, IShippingRequestSet, IShippingRequest,
+    ...     ShippingRequestPriority, ShipItFlavour, ShipItArchitecture,
+    ...     ShippingRequestStatus, ShipItDistroSeries)
+    >>> from canonical.launchpad.interfaces import ILaunchBag, IPersonSet
     >>> requestset = getUtility(IShippingRequestSet)
     >>> foobar = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
     >>> feisty = ShipItDistroSeries.FEISTY
@@ -474,7 +474,7 @@ ShipItConstants.current_distroseries.
 
     # Let's pretend the current series is Feisty so that we don't need to
     # change our sampledata when we start shipping a new release.
-    >>> from canonical.launchpad.interfaces import ShipItConstants
+    >>> from canonical.shipit.interfaces.shipit import ShipItConstants
     >>> orig_current_series = ShipItConstants.current_distroseries
     >>> ShipItConstants.current_distroseries = feisty
 

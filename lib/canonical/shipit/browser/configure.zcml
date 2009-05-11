@@ -274,4 +274,76 @@
         attribute="__call__"
         permission="zope.Public"
         />
+    <view
+        type="zope.publisher.interfaces.browser.IBrowserRequest"
+        for="canonical.shipit.fields.IShipItRecipientDisplayname"
+        provides="zope.app.form.interfaces.IInputWidget"
+        factory="canonical.shipit.browser.widgets.ShipItRecipientDisplaynameWidget"
+        permission="zope.Public"
+        />
+
+    <view
+        type="zope.publisher.interfaces.browser.IBrowserRequest"
+        for="canonical.shipit.fields.IShipItOrganization"
+        provides="zope.app.form.interfaces.IInputWidget"
+        factory="canonical.shipit.browser.widgets.ShipItOrganizationWidget"
+        permission="zope.Public"
+        />
+
+    <view
+        type="zope.publisher.interfaces.browser.IBrowserRequest"
+        for="canonical.shipit.fields.IShipItCity"
+        provides="zope.app.form.interfaces.IInputWidget"
+        factory="canonical.shipit.browser.widgets.ShipItCityWidget"
+        permission="zope.Public"
+        />
+
+    <view
+        type="zope.publisher.interfaces.browser.IBrowserRequest"
+        for="canonical.shipit.fields.IShipItProvince"
+        provides="zope.app.form.interfaces.IInputWidget"
+        factory="canonical.shipit.browser.widgets.ShipItProvinceWidget"
+        permission="zope.Public"
+        />
+
+    <view
+        type="zope.publisher.interfaces.browser.IBrowserRequest"
+        for="canonical.shipit.fields.IShipItAddressline1"
+        provides="zope.app.form.interfaces.IInputWidget"
+        factory="canonical.shipit.browser.widgets.ShipItAddressline1Widget"
+        permission="zope.Public"
+        />
+
+    <view
+        type="zope.publisher.interfaces.browser.IBrowserRequest"
+        for="canonical.shipit.fields.IShipItAddressline2"
+        provides="zope.app.form.interfaces.IInputWidget"
+        factory="canonical.shipit.browser.widgets.ShipItAddressline2Widget"
+        permission="zope.Public"
+        />
+
+    <view
+        type="zope.publisher.interfaces.browser.IBrowserRequest"
+        for="canonical.shipit.fields.IShipItPhone"
+        provides="zope.app.form.interfaces.IInputWidget"
+        factory="canonical.shipit.browser.widgets.ShipItPhoneWidget"
+        permission="zope.Public"
+        />
+
+    <view
+        type="zope.publisher.interfaces.browser.IBrowserRequest"
+        for="canonical.shipit.fields.IShipItReason"
+        provides="zope.app.form.interfaces.IInputWidget"
+        factory="canonical.shipit.browser.widgets.ShipItReasonWidget"
+        permission="zope.Public"
+        />
+
+    <view
+        type="zope.publisher.interfaces.browser.IBrowserRequest"
+        for="canonical.shipit.fields.IShipItQuantity"
+        provides="zope.app.form.interfaces.IInputWidget"
+        factory="canonical.shipit.browser.widgets.ShipItQuantityWidget"
+        permission="zope.Public"
+        />
+
 </configure>

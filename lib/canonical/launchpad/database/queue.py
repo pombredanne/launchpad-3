@@ -24,6 +24,10 @@ from zope.interface import implements
 
 from sqlobject import ForeignKey, SQLMultipleJoin, SQLObjectNotFound
 
+# XXX 2009-05-10 julian
+# This should not import from archivepublisher, but to avoid
+# that it needs a bit of redesigning here around the publication stuff.
+from canonical.archivepublisher.config import getPubConfig
 from canonical.archivepublisher.customupload import CustomUploadError
 from canonical.archivepublisher.utils import get_ppa_reference
 from canonical.archiveuploader.tagfiles import parse_tagfile_lines
@@ -1525,12 +1529,6 @@ class PackageUploadCustom(SQLBase):
         copy_and_close(self.libraryfilealias, temp_file)
         return temp_file_name
 
-    @property
-    def archive_config(self):
-        """See `IPackageUploadCustom`."""
-        archive = self.packageupload.archive
-        return archive.getPubConfig()
-
     def _publishCustom(self, action_method):
         """Publish custom formats.
 
@@ -1542,8 +1540,10 @@ class PackageUploadCustom(SQLBase):
             self.packageupload.distroseries.name,
             pocketsuffix[self.packageupload.pocket])
         try:
+            # See the XXX near the import for getPubConfig.
+            archive_config = getPubConfig(self.packageupload.archive)
             action_method(
-                self.archive_config.archiveroot, temp_filename,
+                archive_config.archiveroot, temp_filename,
                 full_suite_name)
         finally:
             shutil.rmtree(os.path.dirname(temp_filename))

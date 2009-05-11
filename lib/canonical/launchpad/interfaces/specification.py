@@ -24,6 +24,10 @@ __all__ = [
     ]
 
 
+from lazr.restful.declarations import (
+    REQUEST_USER, call_with, export_as_webservice_entry,
+    export_write_operation, operation_parameters, operation_returns_entry)
+from lazr.restful.fields import Reference
 from zope.interface import Interface, Attribute
 from zope.component import getUtility
 
@@ -34,6 +38,7 @@ from canonical.launchpad.fields import (
     ContentNameField, PublicPersonChoice, Summary, Title)
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.interfaces.launchpad import IHasOwner
+from lp.code.interfaces.branch import IBranch
 from lp.registry.interfaces.mentoringoffer import ICanBeMentored
 from canonical.launchpad.interfaces.validation import valid_webref
 from lp.registry.interfaces.project import IProject
@@ -639,6 +644,8 @@ class ISpecification(INewSpecification, INewSpecificationTarget, IHasOwner,
     ICanBeMentored):
     """A Specification."""
 
+    export_as_webservice_entry()
+
     # TomBerger 2007-06-20: 'id' is required for
     #      SQLObject to be able to assign a security-proxied
     #      specification to an attribute of another SQL object
@@ -869,6 +876,11 @@ class ISpecification(INewSpecification, INewSpecificationTarget, IHasOwner,
     def getBranchLink(branch):
         """Return the SpecificationBranch link for the branch, or None."""
 
+    @call_with(registrant=REQUEST_USER, summary=None)
+    @operation_parameters(
+        branch=Reference(schema=IBranch))
+    @operation_returns_entry(Interface) # Really IBugBranch
+    @export_write_operation()
     def linkBranch(branch, registrant, summary=None):
         """Link the given branch to this specification.
 
