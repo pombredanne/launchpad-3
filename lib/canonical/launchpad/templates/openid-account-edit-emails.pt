@@ -43,7 +43,7 @@
               <input
                  tal:replace="structure view/action_set_preferred/render" />
               <tal:comment condition="nothing">
-                XXX 2009-06-06 jamesh bug=371576: We don't support
+                XXX 2009-06-06 jamesh bug=371567: We don't support
                 deletion of email addresses yet.
               <input tal:replace="structure
                                   view/action_remove_validated/render" />

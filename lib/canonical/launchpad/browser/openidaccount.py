@@ -23,7 +23,8 @@ from canonical.launchpad.interfaces.emailaddress import (
 from canonical.launchpad.interfaces.launchpad import (
     ILaunchBag, IOpenIDApplication, IPasswordEncryptor)
 from canonical.launchpad.validators.email import valid_email
-from lp.registry.interfaces.person import IPersonSet, IPersonChangePassword
+from lp.registry.interfaces.person import (
+    IPersonSet, IPersonChangePassword, ITeam)
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, LaunchpadEditFormView,
     LaunchpadFormView)
@@ -121,7 +122,8 @@ class AccountEditEmailsView(LaunchpadFormView):
             validated = self.context.validated_emails.first()
         unvalidated = self.unvalidated_addresses
         if len(unvalidated) > 0:
-            unvalidated = unvalidated.pop()
+            # Pick one address from the unvalidated set.
+            unvalidated = iter(unvalidated).next()
         return dict(VALIDATED_SELECTED=validated,
                     UNVALIDATED_SELECTED=unvalidated)
 
@@ -244,7 +246,7 @@ class AccountEditEmailsView(LaunchpadFormView):
                 "address." % self.context.preferredemail.email)
             return self.errors
 
-        # XXX 2009-06-06 jamesh bug=371576: We don't support deletion
+        # XXX 2009-06-06 jamesh bug=371567: We don't support deletion
         # of email addresses yet, as EmailAddress.destroySelf() still
         # touches tables the SSO server has no access to.
         self.addError(
@@ -365,13 +367,11 @@ class AccountEditEmailsView(LaunchpadFormView):
         account = self.context
         if email is not None:
             if email.account == account:
-                self.addError(
-                    "The email address '%s' is already registered as your "
-                    "email address. This can be either because you already "
-                    "added this email address before or because our system "
-                    "detected it as being yours. If it was detected by our "
-                    "system, it's probably shown on this page and is waiting "
-                    "to be confirmed as yours." % newemail)
+                if email.status in [EmailAddressStatus.VALIDATED,
+                                    EmailAddressStatus.PREFERRED]:
+                    self.addError(
+                        "The email address '%s' is already registered as "
+                        "your email address." % newemail)
             elif email.personID is not None:
                 # We can't look up the reference directly, since email
                 # addresses and person objects come from different
@@ -382,14 +382,22 @@ class AccountEditEmailsView(LaunchpadFormView):
                     '%s/+requestmerge?field.dupeaccount=%s'
                     % (canonical_url(getUtility(IPersonSet),
                                      rootsite='mainsite'), owner_name))
-                self.addError(
-                    structured(
-                        "The email address '%s' is already registered to "
-                        '<a href="%s">%s</a>. If you think that is a '
-                        'duplicated account, you can <a href="%s">merge it'
-                        "</a> into your account.",
-                        newemail, canonical_url(owner), owner.browsername,
-                        merge_url))
+                if ITeam.providedBy(owner):
+                    self.addError(
+                        structured(
+                            "The email address '%s' is already registered "
+                            'to the Launchpad team <a href="%s">%s</a>.',
+                            newemail, canonical_url(owner),
+                            owner.browsername))
+                else:
+                    self.addError(
+                        structured(
+                            "The email address '%s' is already registered "
+                            'to <a href="%s">%s</a>. If you think that is a '
+                            'duplicated account, you can <a href="%s">merge '
+                            "it </a> into your account.",
+                            newemail, canonical_url(owner), owner.browsername,
+                            merge_url))
             else:
                 # There is no way to merge accounts that don't use
                 # Launchpad.

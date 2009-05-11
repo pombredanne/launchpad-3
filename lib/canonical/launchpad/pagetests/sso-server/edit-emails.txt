@@ -126,7 +126,7 @@ emails form:
 
 == Removing an Email Address ==
 
-# XXX 2009-06-06 jamesh bug=371576: We don't support deletion of email
+# XXX 2009-06-06 jamesh bug=371567: We don't support deletion of email
 # addresses yet, as EmailAddress.destroySelf() still touches tables
 # the SSO server has no access to.
 
@@ -208,10 +208,53 @@ already own:
     ...     print msg
     There is 1 error.
     The email address 'second-email@example.com' is already registered
-    as your email address. This can be either because you already
-    added this email address before or because our system detected it
-    as being yours. If it was detected by our system, it's probably
-    shown on this page and is waiting to be confirmed as yours.
+    as your email address.
+
+
+=== Attempting to Add a Guessed Address ===
+
+If the user attempts to add a guessed address associated with
+their account, it will send out another confirmation email to let them
+validate it.
+
+    >>> import transaction
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces.account import IAccountSet
+    >>> from canonical.launchpad.interfaces.emailaddress import (
+    ...     EmailAddressStatus)
+    >>> from canonical.launchpad.ftests import login, logout, ANONYMOUS
+    >>> from canonical.launchpad.testing.factory import LaunchpadObjectFactory
+
+    >>> login(ANONYMOUS)
+    >>> account = getUtility(IAccountSet).getByEmail('new-user@example.com')
+    >>> factory = LaunchpadObjectFactory()
+    >>> email = factory.makeEmail(
+    ...     'guessed-email@example.com', person=None, account=account,
+    ...     email_status=EmailAddressStatus.NEW)
+    >>> logout()
+    >>> transaction.commit()
+
+    >>> browser.open('http://openid.launchpad.dev/+edit-emails')
+    >>> browser.getControl('Add a new address').value = (
+    ...     'guessed-email@example.com')
+    >>> browser.getControl('Add', index=1).click()
+    >>> print browser.url
+    http://openid.launchpad.dev/+edit-emails
+    >>> for msg in get_feedback_messages(browser.contents):
+    ...     print msg
+    A confirmation message has been sent to ...
+
+The guessed address can then be confirmed:
+
+    >>> from_addr, to_addr, msg = stub.test_emails.pop()
+    >>> token_url = get_token_url_from_email(msg)
+    >>> browser.open(token_url)
+    >>> browser.getControl('Continue').click()
+    >>> print browser.url
+    http://openid.launchpad.dev/
+    >>> for msg in get_feedback_messages(browser.contents):
+    ...     print msg
+    Email address successfully confirmed.
 
 
 === Attempting to Add an Address Owned By Another Account ===
@@ -219,9 +262,6 @@ already own:
 If a user tries to add an address belonging to another account, it
 will fail:
 
-    >>> import transaction
-    >>> from canonical.launchpad.ftests import login, logout, ANONYMOUS
-    >>> from canonical.launchpad.testing.factory import LaunchpadObjectFactory
     >>> login(ANONYMOUS)
     >>> factory = LaunchpadObjectFactory()
     >>> account = factory.makeAccount(
@@ -279,7 +319,4 @@ they'll get a similar error:
     ...     print msg
     There is 1 error.
     The email address 'support@ubuntu.com' is already registered to
-    Ubuntu Team. If you think that is a duplicated account, you can
-    merge it into your account.
-    >>> print browser.getLink('merge it').url
-    http://launchpad.dev/people/+requestmerge?field.dupeaccount=ubuntu-team
+    the Launchpad team Ubuntu Team.
