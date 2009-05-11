@@ -91,22 +91,32 @@ Subscriptions also contain some date information:
 An email is sent to the subscribed person when the ArchiveSubscriber
 entry is created:
 
-    >>> print_emails()
-    From: Celso Providelo <celso.providelo@canonical.com>
+    >>> print_emails(include_reply_to=True)
+    From: Celso Providelo <noreply@launchpad.net>
     To: joe@example.com
+    Reply-To: Celso Providelo <celso.providelo@canonical.com>
     Subject: New PPA subscription for PPA for Celso Providelo
     Hello Joe Smith,
     <BLANKLINE>
-    You are receiving this message because Celso Providelo subscribed you to
-    the private PPA 'PPA for Celso Providelo'. This subscription enables you
-    to download software from this private PPA.
+    Launchpad: activate your archive subscription
+    ---------------------------------------------
     <BLANKLINE>
-    To activate your subscription and start downloading the software please
-    visit:
+    Celso Providelo has invited you to subscribe to a private software
+    archive hosted by Launchpad.
+    <BLANKLINE>
+    To start downloading and using software from this archive you need to
+    activate your subscription by visiting this link:
+    <BLANKLINE>
     <http://launchpad.dev/~joesmith/+archivesubscriptions>
     <BLANKLINE>
-    If you do not wish to download software from this PPA you can safely
-    ignore this message.
+    You can find out more about Celso Providelo here:
+    <BLANKLINE>
+    <http://launchpad.dev/~cprov>
+    <BLANKLINE>
+    If you'd prefer not to use software from this archive, you can safely
+    ignore this email. However, if you have any concerns you can contact the
+    Launchpad team by emailing feedback@launchpad.net
+    <BLANKLINE>
     <BLANKLINE>
     Regards,
     The Launchpad team
@@ -120,7 +130,7 @@ Add another subscription for the test user, this time to sabdfl's ppa:
     ...     joesmith, sabdfl, description=u"subscription for joesmith")
 
     >>> print_emails()
-    From: Mark Shuttleworth <mark@hbd.com>
+    From: Mark Shuttleworth <noreply@launchpad.net>
     To: joe@example.com
     ...
 
@@ -130,7 +140,7 @@ And also a subscription for a Team:
     ...     team_cprov, sabdfl, description=u"Access for cprov team")
 
     >>> print_emails()
-    From: Mark Shuttleworth <mark@hbd.com>
+    From: Mark Shuttleworth <noreply@launchpad.net>
     To: celso.providelo@canonical.com
     ...
 
@@ -139,11 +149,13 @@ Explicitly set the date_created for testing purposes:
 
     >>> from datetime import datetime
     >>> import pytz
-    >>> new_sub.date_created = datetime(2009, 2, 26, tzinfo=pytz.UTC)
-    >>> new_sub_to_sabdfl_ppa.date_created = datetime(
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> removeSecurityProxy(new_sub).date_created = datetime(
+    ...     2009, 2, 26, tzinfo=pytz.UTC)
+    >>> removeSecurityProxy(new_sub_to_sabdfl_ppa).date_created = datetime(
     ...     2009, 2, 22, tzinfo=pytz.UTC)
-    >>> new_team_sub_to_sabdfl_ppa.date_created = datetime(
-    ...     2009, 2, 24, tzinfo=pytz.UTC)
+    >>> removeSecurityProxy(new_team_sub_to_sabdfl_ppa).date_created = (
+    ...     datetime(2009, 2, 24, tzinfo=pytz.UTC))
 
 Commit the new subscriptions to the database.
 

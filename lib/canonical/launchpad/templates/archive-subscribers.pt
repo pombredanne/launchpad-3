@@ -87,8 +87,8 @@
             <td tal:content="structure subscription/subscriber/fmt:link" />
             <td tal:content="subscription/date_expires/fmt:date" />
             <td tal:content="subscription/description" />
-            <td>
-              <a class="edit" tal:attributes="href subscription/fmt:url">
+            <td tal:define="edit_link string:${subscription/fmt:url}/+edit">
+              <a class="edit" tal:attributes="href edit_link">
                 Edit/Cancel
               </a>
             </td>

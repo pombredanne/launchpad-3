@@ -18,7 +18,7 @@ from zope.schema import Choice
 from lazr.enum import DBEnumeratedType, DBItem, EnumeratedType, use_template
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import PublicPersonChoice
+from canonical.launchpad.fields import ParticipatingPersonChoice
 
 
 class InvalidVisibilityPolicy(Exception):
@@ -122,7 +122,7 @@ class IBranchVisibilityTeamPolicy(Interface):
     The team may be null, in which case the rule applies to everyone.
     """
 
-    team = PublicPersonChoice(
+    team = ParticipatingPersonChoice(
         title=_('Team'), required=True, vocabulary='ValidPersonOrTeam',
         description=_("Specifies the team that the policy applies to. "
                       "If None then the policy applies to everyone."))

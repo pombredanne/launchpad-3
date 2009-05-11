@@ -39,3 +39,6 @@ class IBugSubscription(Interface):
 
     display_subscribed_by = Attribute(
         "`subscribed_by` formatted for display.")
+
+    def canBeUnsubscribedByUser(user):
+        """Can the user unsubscribe the subscriber form the bug?"""
