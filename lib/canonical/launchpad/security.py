@@ -3,7 +3,8 @@
 """Security policies for using content objects."""
 
 __metaclass__ = type
-__all__ = []
+# Need AuthorizationBase here because canonical.shipit.security imports it.
+__all__ = ['AuthorizationBase']
 
 from zope.app.error.interfaces import IErrorReportingUtility
 from zope.interface import implements, Interface
@@ -79,9 +80,6 @@ from lp.registry.interfaces.productrelease import (
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.code.interfaces.seriessourcepackagebranch import (
     ISeriesSourcePackageBranch, IMakeOfficialBranchLinks)
-from canonical.shipit.interfaces.shipit import (
-    IRequestedCDs, IShipItApplication, IShippingRequest, IShippingRequestSet,
-    IShippingRun, IStandardShipItRequest, IStandardShipItRequestSet)
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from canonical.launchpad.interfaces.sourcepackagerelease import (
     ISourcePackageRelease)
@@ -484,58 +482,6 @@ class AdminSeriesByVCSImports(AuthorizationBase):
     def checkAuthenticated(self, user):
         vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
         return user.inTeam(vcs_imports)
-
-
-class EditRequestedCDsByRecipientOrShipItAdmins(AuthorizationBase):
-    permission = 'launchpad.Edit'
-    usedfor = IRequestedCDs
-
-    def checkAuthenticated(self, user):
-        shipitadmins = getUtility(ILaunchpadCelebrities).shipit_admin
-        return user == self.obj.request.recipient or user.inTeam(shipitadmins)
-
-
-class EditShippingRequestByRecipientOrShipItAdmins(AuthorizationBase):
-    permission = 'launchpad.Edit'
-    usedfor = IShippingRequest
-
-    def checkAuthenticated(self, user):
-        shipitadmins = getUtility(ILaunchpadCelebrities).shipit_admin
-        return user == self.obj.recipient or user.inTeam(shipitadmins)
-
-
-class AdminShippingRequestByShipItAdmins(AuthorizationBase):
-    permission = 'launchpad.Admin'
-    usedfor = IShippingRequest
-
-    def checkAuthenticated(self, user):
-        shipitadmins = getUtility(ILaunchpadCelebrities).shipit_admin
-        return user.inTeam(shipitadmins)
-
-
-class AdminShippingRunByShipItAdmins(AdminShippingRequestByShipItAdmins):
-    usedfor = IShippingRun
-
-
-class AdminStandardShipItOrderSetByShipItAdmins(
-        AdminShippingRequestByShipItAdmins):
-    usedfor = IStandardShipItRequestSet
-
-
-class AdminStandardShipItOrderByShipItAdmins(
-        AdminShippingRequestByShipItAdmins):
-    usedfor = IStandardShipItRequest
-
-
-class AdminShipItApplicationByShipItAdmins(
-        AdminShippingRequestByShipItAdmins):
-    usedfor = IShipItApplication
-
-
-class AdminShippingRequestSetByShipItAdmins(
-        AdminShippingRequestByShipItAdmins):
-    permission = 'launchpad.Admin'
-    usedfor = IShippingRequestSet
 
 
 class EditProjectMilestoneNever(AuthorizationBase):
