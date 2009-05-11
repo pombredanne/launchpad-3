@@ -580,7 +580,7 @@ class TestBzrSyncOneRevision(BzrSyncTestCase):
 
         # Sync the revision.  The second parameter is a dict of revision ids
         # to revnos, and will error if the revision id is not in the dict.
-        self.bzrsync.syncOneRevision(fake_rev, {'rev42': None})
+        self.bzrsync.syncOneRevision(None, fake_rev, {'rev42': None})
 
         # Find the revision we just synced and check that it has the correct
         # date.
