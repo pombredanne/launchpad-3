@@ -443,7 +443,7 @@ The distinct release history for a SourcePackage is obtained via
 We will use `SoyuzTestPublisher` for creating source releases in
 Ubuntu warty and hoary series.
 
-    >>> from canonical.launchpad.tests.test_publishing import (
+    >>> from lp.soyuz.tests.test_publishing import (
     ...     SoyuzTestPublisher)
     >>> test_publisher = SoyuzTestPublisher()
 
