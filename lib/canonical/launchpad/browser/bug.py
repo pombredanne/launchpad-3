@@ -163,8 +163,8 @@ class BugContextMenu(ContextMenu):
         ContextMenu.__init__(self, getUtility(ILaunchBag).bugtask)
 
     def editdescription(self):
-        """Return the 'Edit description/tags' Link."""
-        text = 'Update description / tags'
+        """Return the 'Edit description' Link."""
+        text = 'Update description'
         return Link('+edit', text, icon='edit')
 
     def visibility(self):

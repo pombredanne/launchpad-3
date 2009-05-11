@@ -1172,6 +1172,25 @@ a.unofficial-tag {
   color: #6699ee;
 }
 
+.tags-show {
+  display: block;
+  width: 45%;
+  text-align: left;
+  float: left;
+}
+
+.tags-hide {
+  display: none;
+  width: 45%;
+  text-align: left;
+  float: left;
+}
+
+/* Force the autocomplete widget to show on top of everything else */
+.yui-autocomplete {
+  z-index: 1;
+}
+
 /* === Portlets === */
 /* IE6 and  lower ignore the left padding, so we add extra positioning. */
 * html #portlets {left: 20px;}
