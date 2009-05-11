@@ -1,12 +1,8 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
-
+# Copyright 2008, 2009 Canonical Ltd.  All rights reserved.
 
 """Base class for sending out emails."""
 
-
 __metaclass__ = type
-
-
 
 __all__ = ['BaseMailer']
 
