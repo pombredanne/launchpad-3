@@ -67,6 +67,9 @@ from lp.code.interfaces.branch import (
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.interfaces.branchmergeproposal import (
     BranchMergeProposalStatus, IBranchMergeProposalGetter)
+from lp.code.interfaces.branchnamespace import (
+    get_branch_namespace, IBranchNamespacePolicy)
+from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.revision import IRevisionSet
 
 from lp.registry.browser.product import (
@@ -649,6 +652,18 @@ class BranchListingView(LaunchpadFormView, FeedsMixin):
             fields.append(field)
         self.form_fields = form.Fields(*fields)
         super(BranchListingView, self).setUpWidgets(context)
+
+    @property
+    def new_branches_are_private(self):
+        """Are new branches by the user private."""
+        if self.user is None:
+            return False
+        target = IBranchTarget(self.context)
+        if target is None:
+            return False
+        namespace = target.getNamespace(self.user)
+        policy = IBranchNamespacePolicy(namespace)
+        return policy.areNewBranchesPrivate()
 
 
 class NoContextBranchListingView(BranchListingView):

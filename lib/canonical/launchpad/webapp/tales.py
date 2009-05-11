@@ -2140,26 +2140,31 @@ class FormattersAPI:
         return url, trailers
 
     @staticmethod
+    def _linkify_bug_number(text, bugnum, trailers=''):
+        # XXX Brad Bollenbach 2006-04-10: Use a hardcoded url so
+        # we still have a link for bugs that don't exist.
+        url = '/bugs/%s' % bugnum
+
+        bugset = getUtility(IBugSet)
+        try:
+            bug = bugset.get(bugnum)
+        except NotFoundError:
+            title = "No such bug"
+        else:
+            try:
+                title = bug.title
+            except Unauthorized:
+                title = "private bug"
+        title = cgi.escape(title, quote=True)
+        # The text will have already been cgi escaped.
+        return '<a href="%s" title="%s">%s</a>%s' % (
+            url, title, text, trailers)
+
+    @staticmethod
     def _linkify_substitution(match):
         if match.group('bug') is not None:
-            bugnum = match.group('bugnum')
-            # XXX Brad Bollenbach 2006-04-10: Use a hardcoded url so
-            # we still have a link for bugs that don't exist.
-            url = '/bugs/%s' % bugnum
-            # The text will have already been cgi escaped.
-            text = match.group('bug')
-            bugset = getUtility(IBugSet)
-            try:
-                bug = bugset.get(bugnum)
-            except NotFoundError:
-                title = "No such bug"
-            else:
-                try:
-                    title = bug.title
-                except Unauthorized:
-                    title = "private bug"
-            title = cgi.escape(title, quote=True)
-            return '<a href="%s" title="%s">%s</a>' % (url, title, text)
+            return FormattersAPI._linkify_bug_number(
+                match.group('bug'), match.group('bugnum'))
         elif match.group('url') is not None:
             # The text will already have been cgi escaped.  We temporarily
             # unescape it so that we can strip common trailing characters
@@ -2194,10 +2199,13 @@ class FormattersAPI:
             return '<a href="%s">%s</a>' % (url, text)
         elif match.group('lpbranchurl') is not None:
             lp_url = match.group('lpbranchurl')
-            lp_url, trailers = FormattersAPI._split_url_and_trailers(lp_url)
             path = match.group('branch')
+            lp_url, trailers = FormattersAPI._split_url_and_trailers(lp_url)
+            path, trailers = FormattersAPI._split_url_and_trailers(path)
+            if path.isdigit():
+                return FormattersAPI._linkify_bug_number(
+                    lp_url, path, trailers)
             url = '/+branch/%s' % path
-            url, trailers = FormattersAPI._split_url_and_trailers(url)
             return '<a href="%s">%s</a>%s' % (
                 cgi.escape(url, quote=True),
                 cgi.escape(lp_url),
