@@ -11,28 +11,47 @@ __all__ = [
     ]
 
 from zope.interface import Interface
-from zope.schema import Choice, Int, Object
+from zope.schema import Choice, Int
+
+from lazr.restful.fields import Reference, ReferenceChoice
+from lazr.restful.declarations import (export_as_webservice_entry, exported,
+    export_operation_as, export_write_operation)
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import Summary
 from canonical.launchpad.interfaces.launchpad import IHasDateCreated
+from canonical.launchpad.interfaces.specification import ISpecification
+from lp.code.interfaces.branch import IBranch
 from lp.registry.interfaces.person import IPerson
 
 
 class ISpecificationBranch(IHasDateCreated):
     """A branch linked to a specification."""
 
+    export_as_webservice_entry()
+
     id = Int(title=_("Specification Branch #"))
-    specification = Choice(
-        title=_("Blueprint"), vocabulary="Specification")
-    branch = Choice(
-        title=_("Branch"), vocabulary="Branch")
+
+    specification = exported(
+        ReferenceChoice(
+            title=_("Blueprint"), vocabulary="Specification",
+            required=True,
+            readonly=True, schema=ISpecification))
+    branch = exported(
+        ReferenceChoice(
+            title=_("Branch"),
+            vocabulary="Branch",
+            required=True,
+            schema=IBranch))
     summary = Summary(title=_("Summary"), required=False)
 
-    registrant = Object(
-        schema=IPerson, readonly=True, required=True,
-        title=_("The person who linked the bug to the branch"))
+    registrant = exported(
+        Reference(
+            schema=IPerson, readonly=True, required=True,
+            title=_("The person who linked the bug to the branch")))
 
+    @export_operation_as('delete')
+    @export_write_operation()
     def destroySelf():
         """Destroy this specification branch link"""
 

@@ -40,7 +40,7 @@
             <p class="intro-text">
                 <strong>Track ideas and chunks of work as &ldquo;blueprints&rdquo;&#58;</strong> lightweight specifications that help everyone know who&rsquo;s involved and how they&rsquo;re doing. Anyone can create a blueprint, while you retain control over which of them are officially targeted for inclusion in your project&rsquo;s future releases.
             </p>
-            <div id="link-holder"><a href="https://blueprints.launchpad.net/">Visit Launchpad Blueprint &gt;</a><br /><a href="https://launchpad.net/projects/+new-guided">Add your project to Launchpad &gt;</a></div>
+            <div id="link-holder"><a href="https://blueprints.launchpad.net/">Visit Launchpad Blueprint &gt;</a><br /><a href="https://launchpad.net/projects/+new">Add your project to Launchpad &gt;</a></div>
         </div>
         <div id="page-intro-bottom"></div>
         <ul id="secondary-navigation">

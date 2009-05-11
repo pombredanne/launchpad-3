@@ -268,11 +268,14 @@ class CodeImportWorkerMonitor:
         getUtility(ICodeImportJobWorkflow).finishJob(
             job, status, log_file_alias)
 
+    def _makeProcessProtocol(self, deferred):
+        """Make an `CodeImportWorkerMonitorProtocol` for a subprocess."""
+        return CodeImportWorkerMonitorProtocol(deferred, self, self._log_file)
+
     def _launchProcess(self, source_details):
         """Launch the code-import-worker.py child process."""
         deferred = defer.Deferred()
-        protocol = CodeImportWorkerMonitorProtocol(
-            deferred, self, self._log_file)
+        protocol = self._makeProcessProtocol(deferred)
         command = [sys.executable, self.path_to_script]
         command.extend(source_details.asArguments())
         self._logger.info(

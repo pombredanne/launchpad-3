@@ -93,6 +93,20 @@ class BranchPuller(LaunchpadXMLRPCView):
             branch_type)
         return [self._getBranchPullInfo(branch) for branch in branches]
 
+    def acquireBranchToPull(self):
+        """See `IBranchPuller`."""
+        branch = getUtility(branchpuller.IBranchPuller).acquireBranchToPull()
+        if branch is not None:
+            default_branch = branch.target.default_stacked_on_branch
+            if default_branch:
+                default_branch_name = default_branch.unique_name
+            else:
+                default_branch_name = ''
+            return (branch.id, branch.getPullURL(), branch.unique_name,
+                    default_branch_name, branch.branch_type.name)
+        else:
+            return ()
+
     def mirrorComplete(self, branch_id, last_revision_id):
         """See `IBranchPuller`."""
         branch = getUtility(IBranchLookup).get(branch_id)

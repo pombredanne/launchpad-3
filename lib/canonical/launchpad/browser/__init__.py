@@ -46,7 +46,7 @@ from lp.code.browser.codereviewcomment import *
 from canonical.launchpad.browser.cve import *
 from canonical.launchpad.browser.cvereport import *
 from lp.registry.browser.distribution import *
-from canonical.launchpad.browser.distributionmirror import *
+from lp.registry.browser.distributionmirror import *
 from lp.registry.browser.distributionsourcepackage import *
 from canonical.launchpad.browser.distributionsourcepackagerelease import *
 from canonical.launchpad.browser.distribution_upstream_bug_report import *

@@ -16,9 +16,10 @@ import gpgme
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.config import config
-from canonical.launchpad.interfaces.archivesigningkey import (
+from canonical.archivepublisher.config import getPubConfig
+from canonical.archivepublisher.interfaces.archivesigningkey import (
     IArchiveSigningKey)
+from canonical.config import config
 from canonical.launchpad.interfaces.gpghandler import IGPGHandler
 from lp.registry.interfaces.gpg import IGPGKeySet, GPGKeyAlgorithm
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
@@ -34,11 +35,7 @@ class ArchiveSigningKey:
 
     @property
     def _archive_root_path(self):
-        # XXX cprov 20081104: IArchive pub configuration doesn't implement
-        # any interface.
-        from zope.security.proxy import removeSecurityProxy
-        naked_pub_config = removeSecurityProxy(self.archive.getPubConfig())
-        return naked_pub_config.archiveroot
+        return getPubConfig(self.archive).archiveroot
 
     def getPathForSecretKey(self, key):
         """See `IArchiveSigningKey`."""
@@ -63,11 +60,13 @@ class ArchiveSigningKey:
         assert self.archive.signing_key is None, (
             "Cannot override signing_keys.")
 
-        # Default PPAs are always created first, their signing-key will
-        # be always available when a named-ppa gets processed. In this case,
-        # instead of generating a new key we reuse the existing one.
+        # Always generate signing keys for the default PPA, even if it
+        # was not expecifically requested. The default PPA signing key
+        # is then propagated to the context named-ppa.
         default_ppa = self.archive.owner.archive
-        if self.archive is not default_ppa:
+        if self.archive != default_ppa:
+            if default_ppa.signing_key is None:
+                IArchiveSigningKey(default_ppa).generateSigningKey()
             self.archive.signing_key = default_ppa.signing_key
             return
 
