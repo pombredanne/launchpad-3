@@ -2207,11 +2207,7 @@ class FormattersAPI:
         elif match.group('lpbranchurl') is not None:
             lp_url = match.group('lpbranchurl')
             path = match.group('branch')
-            try:
-                int(path)
-            except ValueError:
-                pass
-            else:
+            if path.isdigit():
                 return FormattersAPI._linkify_bug_number(lp_url, path)
             lp_url, trailers = FormattersAPI._split_url_and_trailers(lp_url)
             url = '/+branch/%s' % path
