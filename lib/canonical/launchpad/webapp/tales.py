@@ -2210,8 +2210,8 @@ class FormattersAPI:
             if path.isdigit():
                 return FormattersAPI._linkify_bug_number(lp_url, path)
             lp_url, trailers = FormattersAPI._split_url_and_trailers(lp_url)
+            path, trailers = FormattersAPI._split_url_and_trailers(path)
             url = '/+branch/%s' % path
-            url, trailers = FormattersAPI._split_url_and_trailers(url)
             return '<a href="%s">%s</a>%s' % (
                 cgi.escape(url, quote=True),
                 cgi.escape(lp_url),
