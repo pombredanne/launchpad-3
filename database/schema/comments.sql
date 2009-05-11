@@ -681,9 +681,10 @@ COMMENT ON COLUMN ProductSeries.datelastsynced IS 'The timestamp when we last su
 COMMENT ON COLUMN ProductSeries.date_published_sync IS 'The saved value of datelastsynced from the last time it was older than the corresponding branch''s last_mirrored timestamp. The timestamp currently published import branch is either datelastsynced or datepublishedsync.';
 COMMENT ON COLUMN ProductSeries.branch IS 'The branch for this product
 series.';
-COMMENT ON COLUMN ProductSeries.translations_autoimport_mode IS 'At what
-level the import of translations from a branch in codehosting will happen:
-None, POT files only, POT and PO files. See also the corresponding Enum.';
+COMMENT ON COLUMN ProductSeries.translations_autoimport_mode IS 'Level of
+translations imports from codehosting branch: None, templates only, templates
+and translations. See TranslationsBranchImportMode.';
+COMMENT ON COLUMN ProductSeries.translations_branch IS 'Branch to push translations updates to.';
 
 -- ProductSeriesCodeImport
 
