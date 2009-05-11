@@ -515,8 +515,8 @@ class BaseBinaryUploadFile(PackageUploadFile):
         if not self.filename.endswith('.ddeb'):
             if control_package not in self.changes.binaries:
                 yield UploadError(
-                    "%s: control file lists name as %r, which isn't in changes "
-                    "file." % (self.filename, control_package))
+                    "%s: control file lists name as %r, which isn't in "
+                    "changes file." % (self.filename, control_package))
 
         if not re_valid_pkg_name.match(control_package):
             yield UploadError("%s: invalid package name %r." % (
