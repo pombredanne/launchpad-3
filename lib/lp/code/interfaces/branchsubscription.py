@@ -18,7 +18,7 @@ from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
 from lp.code.interfaces.branch import IBranch
-from canonical.launchpad.fields import PublicPersonChoice
+from canonical.launchpad.fields import ParticipatingPersonChoice
 from lazr.restful.declarations import (
     export_as_webservice_entry, exported)
 from lazr.restful.fields import Reference
@@ -135,7 +135,7 @@ class IBranchSubscription(Interface):
 
     id = Int(title=_('ID'), readonly=True, required=True)
     person = exported(
-        PublicPersonChoice(
+        ParticipatingPersonChoice(
             title=_('Person'), required=True, vocabulary='ValidPersonOrTeam',
             readonly=True, description=_('Enter the launchpad id, or email '
             'address of the person you wish to subscribe to this branch. '
@@ -177,4 +177,3 @@ class IBranchSubscription(Interface):
                 'Control the kind of review activity that triggers '
                 'notifications.'
                 )))
-

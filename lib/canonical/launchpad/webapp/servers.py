@@ -45,10 +45,12 @@ from lazr.restful.publisher import (
 
 from canonical.launchpad.interfaces import (
     IFeedsApplication, IPrivateApplication, IOpenIDApplication, IPerson,
-    IPersonSet, IShipItApplication, IWebServiceApplication,
-    IOAuthConsumerSet, NonceAlreadyUsed, TimestampOrderingError, ClockSkew)
+    IPersonSet, IWebServiceApplication, IOAuthConsumerSet, NonceAlreadyUsed,
+    TimestampOrderingError, ClockSkew)
+from canonical.shipit.interfaces.shipit import IShipItApplication
 import canonical.launchpad.layers
 import canonical.launchpad.versioninfo
+import canonical.shipit.layers
 
 from canonical.launchpad.webapp.adapter import (
     get_request_duration, RequestExpired)
@@ -1083,7 +1085,7 @@ class ShipItPublication(AccountPrincipalMixin, LaunchpadBrowserPublication):
 
 
 class UbuntuShipItBrowserRequest(LaunchpadBrowserRequest):
-    implements(canonical.launchpad.layers.ShipItUbuntuLayer)
+    implements(canonical.shipit.layers.ShipItUbuntuLayer)
 
     @property
     def icing_url(self):
@@ -1094,7 +1096,7 @@ class UbuntuShipItBrowserRequest(LaunchpadBrowserRequest):
 
 
 class KubuntuShipItBrowserRequest(LaunchpadBrowserRequest):
-    implements(canonical.launchpad.layers.ShipItKUbuntuLayer)
+    implements(canonical.shipit.layers.ShipItKUbuntuLayer)
 
     @property
     def icing_url(self):
@@ -1105,7 +1107,7 @@ class KubuntuShipItBrowserRequest(LaunchpadBrowserRequest):
 
 
 class EdubuntuShipItBrowserRequest(LaunchpadBrowserRequest):
-    implements(canonical.launchpad.layers.ShipItEdUbuntuLayer)
+    implements(canonical.shipit.layers.ShipItEdUbuntuLayer)
 
     @property
     def icing_url(self):

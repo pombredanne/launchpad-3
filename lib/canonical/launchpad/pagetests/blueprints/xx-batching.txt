@@ -12,13 +12,15 @@ To demonstrate this, we'll create a new project:
 
   >>> browser = user_browser
   >>> browser.open("http://launchpad.dev/projects/+new")
-  >>> browser.getControl('Name', index=0).value = 'big-project'
-  >>> browser.getControl('Display Name').value = 'Big Project'
+  >>> browser.getControl('URL', index=0).value = 'big-project'
+  >>> browser.getControl('Name').value = 'Big Project'
   >>> browser.getControl('Title').value = 'The Big Project'
   >>> browser.getControl('Summary').value = 'A big project indeed.'
+  >>> browser.getControl('Continue').click()
+
   >>> browser.getControl(name='field.licenses').value = ['GNU_GPL_V2']
   >>> browser.getControl(name='field.license_info').value = 'foo'
-  >>> browser.getControl('Publish this Project').click()
+  >>> browser.getControl('Complete Registration').click()
   >>> browser.url
   'http://launchpad.dev/big-project'
 
