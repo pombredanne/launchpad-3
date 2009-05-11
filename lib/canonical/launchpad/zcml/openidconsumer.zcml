@@ -1,0 +1,9 @@
+<configure xmlns="http://namespaces.zope.org/zope">
+
+  <utility
+      provides="..interfaces.openidconsumer.IOpenIDConsumerStoreFactory"
+      component="..database.openidconsumer.OpenIDConsumerStore">
+  </utility>
+
+</configure>
+
