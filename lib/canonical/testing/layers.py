@@ -82,7 +82,7 @@ from canonical.database.sqlbase import cursor, ZopelessTransactionManager
 from canonical.launchpad.interfaces import IMailBox, IOpenLaunchBag
 from canonical.launchpad.ftests import ANONYMOUS, login, logout, is_logged_in
 import lp.services.mail.stub
-from canonical.launchpad.mail.mailbox import TestMailBox
+from lp.services.mail.mailbox import TestMailBox
 from canonical.launchpad.scripts import execute_zcml_for_scripts
 from canonical.launchpad.testing.tests.googleserviceharness import (
     GoogleServiceTestSetup)
