@@ -645,8 +645,7 @@
                     getImportDetailsForDisplay"/>
     <require
         permission="launchpad.Edit"
-        attributes="
-                    updateFromData"/>
+        attributes="updateFromData"/>
 
     <!-- ICodeImport has no set_schema, because all modifications should be
          done through methods that create CodeImportEvent objects when
