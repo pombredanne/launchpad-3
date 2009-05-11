@@ -32,8 +32,9 @@ from canonical.launchpad.database.translationbranchapprover import (
 from lp.code.interfaces.branchsubscription import (
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel)
 from lp.code.interfaces.branchjob import (
-    IBranchDiffJob, IBranchDiffJobSource, IBranchJob, IRevisionMailJob,
-    IRevisionMailJobSource, IRosettaUploadJob, IRosettaUploadJobSource)
+    IBranchDiffJob, IBranchDiffJobSource, IBranchJob, IBranchUpgradeJob,
+    IRevisionMailJob, IRevisionMailJobSource, IRosettaUploadJob,
+    IRosettaUploadJobSource)
 from canonical.launchpad.interfaces.translations import (
     TranslationsBranchImportMode)
 from canonical.launchpad.interfaces.translationimportqueue import (
@@ -78,7 +79,7 @@ class BranchJobType(DBEnumeratedType):
         Upgrade Branch
 
         This job upgrades the branch in the hosted area.
-        """
+        """)
 
 
 class BranchJob(SQLBase):
@@ -189,6 +190,14 @@ class BranchDiffJob(BranchJobDerived):
         static_diff = StaticDiff.acquire(
             from_revision_id, to_revision_id, bzr_branch.repository)
         return static_diff
+
+
+class BranchUpgradeJob(BranchJobDerived):
+    """A Job that upgrades branches to the current stable format."""
+
+    implements(IBranchUpgradeJob)
+
+    #classProvides(IBranchUpgradeSource)
 
 
 class RevisionMailJob(BranchDiffJob):
