@@ -29,7 +29,7 @@ Submitting a bug title...
 
 Subscribing to one of the similar bugs takes us to the bug page.
 
-    >>> user_browser.getControl("This is the bug I'm trying to report").click()
+    >>> user_browser.getControl("Yes, subscribe me...").click()
 
     >>> print user_browser.url
     http://bugs.launchpad.dev/thunderbird/+bug/9
