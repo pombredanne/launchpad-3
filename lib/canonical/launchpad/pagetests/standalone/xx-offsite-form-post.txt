@@ -56,13 +56,22 @@ We do allow the post if there is no referrer:
 
 Or if the referrer is from a site managed by launchpad:
 
-  >>> browser = setupBrowserWithReferrer('http://shipit.edubuntu.dev')
+  # Go behing the curtains and change the hostname of one of our sites so that
+  # we can test this.
+  >>> from canonical.launchpad.webapp.vhosts import allvhosts
+  >>> allvhosts._hostnames.add('bzr.dev')
+
+  >>> browser = setupBrowserWithReferrer('http://bzr.dev')
   >>> browser.open('http://launchpad.dev/people/+newteam')
   >>> browser.getControl('Name', index=0).value = 'team4'
   >>> browser.getControl('Display Name').value = 'Team 4'
   >>> browser.getControl('Create').click()
   >>> print browser.url
   http://launchpad.dev/~team4
+
+  # Now retore our site's hostname.
+  >>> allvhosts.configs['code'].hostname = orig_value
+  >>> allvhosts._hostnames.remove('bzr.dev')
 
 
 == Posts to the OpenID endpoint ==
