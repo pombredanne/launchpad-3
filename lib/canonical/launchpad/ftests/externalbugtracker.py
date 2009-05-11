@@ -37,7 +37,7 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.database import BugTracker
 from canonical.launchpad.interfaces import IBugTrackerSet, IPersonSet
 from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
-from lp.soyuz.scripts import debbugs
+from canonical.launchpad.scripts import debbugs
 from canonical.launchpad.testing.systemdocs import ordered_dict_as_string
 from canonical.launchpad.webapp import urlappend
 from canonical.launchpad.xmlrpc import ExternalBugTrackerTokenAPI
