@@ -100,6 +100,19 @@ and the all_milestones_collection_link.
     http://.../mozilla/+milestone/1.0.0
 
 
+"getMilestone" returns a milestone for the given name, or None if there
+is no milestone for the given name.
+
+    >>> milestone_1_0 = webservice.named_get(
+    ...     mozilla['self_link'], "getMilestone", name="1.0").jsonBody()
+    >>> print milestone_1_0['self_link']
+    http://.../mozilla/+milestone/1.0
+
+    >>> print webservice.named_get(
+    ...     mozilla['self_link'], "getMilestone", name="fnord").jsonBody()
+    None
+
+
 == Project entry ==
 
 Projects are available at their canonical URL on the API virtual host.
@@ -226,6 +239,18 @@ and the all_milestones_collection_link.
     http://.../firefox/+milestone/1.0
     http://.../firefox/+milestone/1.0.0
 
+"getMilestone" returns a milestone for the given name, or None if there
+is no milestone for the given name.
+
+    >>> milestone_1_0 = webservice.named_get(
+    ...     firefox['self_link'], "getMilestone", name="1.0").jsonBody()
+    >>> print milestone_1_0['self_link']
+    http://.../firefox/+milestone/1.0
+
+    >>> print webservice.named_get(
+    ...     firefox['self_link'], "getMilestone", name="fnord").jsonBody()
+    None
+
 The project group can be accessed through the project_group_link.
 
     >>> webservice.get(firefox['project_group_link']).jsonBody()['self_link']
@@ -241,6 +266,13 @@ A list of series can be accessed through the series_collection_link.
     http://.../firefox/1.0
     http://.../firefox/trunk
 
+"getSeries" returns the series for the given name.
+
+    >>> series_1_0 = webservice.named_get(
+    ...     firefox['self_link'], "getSeries", name="1.0").jsonBody()
+    >>> print series_1_0['self_link']
+    http://.../firefox/1.0
+
 A list of releases can be accessed through the releases_collection_link.
 
     >>> response = webservice.get(firefox['releases_collection_link'])
@@ -252,6 +284,13 @@ A list of releases can be accessed through the releases_collection_link.
     http://.../firefox/trunk/0.9
     http://.../firefox/trunk/0.9.1
     http://.../firefox/trunk/0.9.2
+
+"getRelease" returns the release for the given version.
+
+    >>> release_0_9_1 = webservice.named_get(
+    ...     firefox['self_link'], "getRelease", version="0.9.1").jsonBody()
+    >>> print release_0_9_1['self_link']
+    http://.../firefox/trunk/0.9.1
 
 The development focus series can be accessed through the
 development_focus_link.
@@ -328,7 +367,7 @@ It is possible to get a batched list of all the projects.
     >>> project_collection['resource_type_link']
     u'http://.../#projects'
     >>> project_collection['total_size']
-    23
+    24
 
     >>> project_entries = sorted(
     ...     project_collection['entries'], key=itemgetter('display_name'))
@@ -377,10 +416,10 @@ The latest projects registered can be retrieved.
     ...    latest['entries'], key=itemgetter('display_name'))
     >>> for project in entries:
     ...     print project['display_name']
-    Bazaar
     Derby
     Launchpad Translations
     Mega Money Maker
+    Obsolete Junk
     Redfish
 
 There is a method for doing a query about attributes related to
@@ -412,6 +451,7 @@ Or those that are reviewed.
     >>> for project in entries:
     ...     print project['display_name']
     Launchpad Translations
+    Obsolete Junk
     alsa-utils
     python gnome2 dev
     unassigned syncs
@@ -787,12 +827,19 @@ host.
     is_active: True
     name: u'1.0'
     official_bug_tags: []
+    release_link: None
     resource_type_link: u'...'
     self_link: u'http://.../firefox/+milestone/1.0'
     series_target_link: u'http://.../firefox/trunk'
     summary: None
     target_link: u'http://.../firefox'
-    title: u'Milestone 1.0 for Mozilla Firefox'
+    title: u'Mozilla Firefox: 1.0'
+
+The milestone entry has a link to its release if it has one.
+
+    >>> milestone = webservice.get('/firefox/+milestone/1.0.0').jsonBody()
+    >>> print milestone['release_link']
+    http://.../firefox/1.0/1.0.0
 
 
 == Project release entries ==

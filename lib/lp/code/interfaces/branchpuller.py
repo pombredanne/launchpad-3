@@ -25,3 +25,10 @@ class IBranchPuller(Interface):
 
         :param branch_type: A value from the `BranchType` enum.
         """
+
+    def acquireBranchToPull():
+        """Return a Branch to pull and mark it as mirror-started.
+
+        :return: The branch object to pull next, or ``None`` if there is no
+            branch to pull.
+        """

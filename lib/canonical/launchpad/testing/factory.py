@@ -53,12 +53,13 @@ from canonical.launchpad.interfaces.emailaddress import (
     EmailAddressStatus, IEmailAddressSet)
 from canonical.launchpad.interfaces.gpghandler import IGPGHandler
 from canonical.launchpad.interfaces.hwdb import (
-    HWSubmissionFormat, IHWSubmissionSet)
+    HWSubmissionFormat, IHWDeviceDriverLinkSet, IHWSubmissionDeviceSet,
+    IHWSubmissionSet)
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.interfaces.potemplate import IPOTemplateSet
 from canonical.launchpad.interfaces.publishing import PackagePublishingPocket
-from canonical.launchpad.interfaces.shipit import (
+from canonical.shipit.interfaces.shipit import (
     IShippingRequestSet, IStandardShipItRequestSet, ShipItFlavour,
     ShippingRequestStatus)
 from canonical.launchpad.interfaces.specification import (
@@ -419,16 +420,28 @@ class LaunchpadObjectFactory(ObjectFactory):
                  visibility=None):
         """Create and return a new, arbitrary Team.
 
-        :param owner: The IPerson to use as the team's owner.
+        :param owner: The person or person name to use as the team's owner.
+            If not given, a person will be auto-generated.
+        :type owner: `IPerson` or string
         :param displayname: The team's display name.  If not given we'll use
             the auto-generated name.
+        :type string:
         :param email: The email address to use as the team's contact address.
+        :type email: string
         :param subscription_policy: The subscription policy of the team.
+        :type subscription_policy: `TeamSubscriptionPolicy`
         :param visibility: The team's visibility. If it's None, the default
             (public) will be used.
+        :type visibility: `PersonVisibility`
+        :return: The new team
+        :rtype: `ITeam`
         """
         if owner is None:
             owner = self.makePerson()
+        elif isinstance(owner, basestring):
+            owner = getUtility(IPersonSet).getByName(owner)
+        else:
+            pass
         if name is None:
             name = self.getUniqueString('team-name')
         if displayname is None:
@@ -473,6 +486,12 @@ class LaunchpadObjectFactory(ObjectFactory):
             name = self.getUniqueString()
         return Milestone(product=product, distribution=distribution,
                          name=name)
+
+    def makeProductRelease(self, milestone=None):
+        if milestone is None:
+            milestone = self.makeMilestone()
+        return milestone.createProductRelease(
+            milestone.product.owner, datetime.now(pytz.UTC))
 
     def makeProduct(self, *args, **kwargs):
         """As makeProductNoCommit with an implicit transaction commit.
@@ -1657,6 +1676,15 @@ class LaunchpadObjectFactory(ObjectFactory):
             date_created, format, private, contactable,
             submission_key, emailaddress, distroarchseries,
             raw_submission, filename, filesize, system)
+
+    def makeHWSubmissionDevice(self, submission, device, driver, parent,
+                               hal_device_id):
+        """Create a new HWSubmissionDevice."""
+        device_driver_link_set = getUtility(IHWDeviceDriverLinkSet)
+        device_driver_link = device_driver_link_set.getOrCreate(
+            device, driver)
+        return getUtility(IHWSubmissionDeviceSet).create(
+            device_driver_link, submission, parent, hal_device_id)
 
     def makeSSHKey(self, person=None, keytype=SSHKeyType.RSA):
         """Create a new SSHKey."""

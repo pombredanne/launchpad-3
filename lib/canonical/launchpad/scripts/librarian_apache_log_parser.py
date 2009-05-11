@@ -2,8 +2,9 @@
 
 from datetime import datetime
 import gzip
-import pytz
 import os
+import pytz
+import re
 
 from zope.component import getUtility
 
@@ -161,9 +162,9 @@ class NotALibraryFileAliasRequest(Exception):
     """The path of the request doesn't map to a LibraryFileAlias."""
 
 
-# Paths for which requests to will be answered with a 200 OK response but
-# which are not the paths to a LibraryFileAlias.
-NO_LFA_PATHS = ['/', '/robots.txt']
+# Regexp used to match paths to LibraryFileAliases.
+lfa_path_re = re.compile('^/[0-9]+/')
+multi_slashes_re = re.compile('/+')
 
 
 def get_method_and_file_id(request):
@@ -173,8 +174,8 @@ def get_method_and_file_id(request):
     if path.startswith('http://') or path.startswith('https://'):
         uri = URI(path)
         path = uri.path
-    path = os.path.normpath(path)
-    if path in NO_LFA_PATHS:
+    path = multi_slashes_re.sub('/', path)
+    if not lfa_path_re.match(path):
         raise NotALibraryFileAliasRequest(request)
     file_id = path.split('/')[1]
     return method, file_id

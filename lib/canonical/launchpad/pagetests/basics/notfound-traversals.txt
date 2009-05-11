@@ -159,7 +159,7 @@ status is returned.
 >>> check("/ubuntu/+edit", auth=True)
 >>> check("/ubuntu/+reassign", auth=True)
 >>> check("/ubuntu/+selectmemberteam", auth=True)
->>> check("/ubuntu/+changetranslators", host='translations.launchpad.dev',
+>>> check("/ubuntu/+settings", host='translations.launchpad.dev',
 ...       auth=True)
 >>> check("/ubuntu/hoary/+addmilestone", auth=True)
 >>> check("/ubuntu/+linkbounty", auth=True)

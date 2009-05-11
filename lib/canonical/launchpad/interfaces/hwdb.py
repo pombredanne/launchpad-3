@@ -231,15 +231,6 @@ class IHWSubmissionSet(Interface):
     def submissionIdExists(submission_key):
         """Return True, if a record with ths ID exists, else return False."""
 
-    def setOwnership(email):
-        """Set the owner of a submission.
-
-        If the email address given as the "ownership label" of a submission
-        is not known in Launchpad at submission time, the field
-        HWSubmission.owner is None. This method sets HWSubmission.owner
-        to a Person record, when the given email address is verified.
-        """
-
     def getByStatus(status, user=None):
         """Return the submissions with the given status.
 
@@ -275,6 +266,27 @@ class IHWSubmissionSet(Interface):
         :param owner: Limit results to submissions from this person.
 
         Only one of :distribution: or :distroseries: may be supplied.
+        """
+
+    def numSubmissionsWithDevice(bus, vendor_id, product_id, driver_name=None,
+                                 package_name=None, distro_target=None):
+        """Count the number of submissions mentioning a device.
+
+        :return: A tuple (submissions_with_device, all_submissions)
+           where submissions_with_device is the number of submissions having
+           the given device and matching the distro_target criterion and where
+           all_submissions is the number of submissions matching the
+           distro_target criterion.
+        :param bus: The `HWBus` of the device.
+        :param vendor_id: The vendor ID of the device.
+        :param product_id: The product ID of the device.
+        :param driver_name: The name of the driver used for the device
+            (optional).
+        :param package_name: The name of the package the driver is a part of.
+            (optional).
+        :param distro_target: Limit the count to submissions made for the
+            given distribution, distroseries or distroarchseries.
+            (optional).
         """
 
 
@@ -956,6 +968,25 @@ class IHWSubmissionDeviceSet(Interface):
 
         :param id: The database ID.
         :return: An IHWSubmissionDevice instance.
+        """
+
+    def numDevicesInSubmissions(
+        bus, vendor_id, product_id, driver_name=None, package_name=None,
+        distro_target=None):
+        """Count how often a device appears in HWDB submissions.
+
+        :return: The number how often the given device appears in HWDB
+            submissions.
+        :param bus: The `HWBus` of the device.
+        :param vendor_id: The vendor ID of the device.
+        :param product_id: The product ID of the device.
+        :param driver_name: Limit the count to devices controlled by the given
+            driver (optional).
+        :param package_name: Limit the count to devices controlled by a driver
+            from the given package (optional).
+        :param distro_target: Limit the count to devices appearing in HWDB
+            submissions made for the given distribution, distroseries
+            or distroarchseries (optional).
         """
 
 

@@ -10,8 +10,10 @@ __all__ = [
     'ProductBranchTarget',
     ]
 
+from zope.component import getUtility
 from zope.interface import implements
 
+from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.interfaces.branchtarget import (
     check_default_stacked_on, IBranchTarget)
 from canonical.launchpad.interfaces.publishing import PackagePublishingPocket
@@ -64,6 +66,11 @@ class PackageBranchTarget(_BaseBranchTarget):
         return PackageNamespace(owner, self.sourcepackage)
 
     @property
+    def collection(self):
+        """See `IBranchTarget`."""
+        return getUtility(IAllBranches).inSourcePackage(self.sourcepackage)
+
+    @property
     def default_stacked_on_branch(self):
         """See `IBranchTarget`."""
         return check_default_stacked_on(
@@ -106,6 +113,11 @@ class PersonBranchTarget(_BaseBranchTarget):
             PersonalNamespace)
         return PersonalNamespace(owner)
 
+    @property
+    def collection(self):
+        """See `IBranchTarget`."""
+        return getUtility(IAllBranches).ownedBy(self.person).isJunk()
+
 
 class ProductBranchTarget(_BaseBranchTarget):
     implements(IBranchTarget)
@@ -143,6 +155,11 @@ class ProductBranchTarget(_BaseBranchTarget):
         from lp.code.model.branchnamespace import (
             ProductNamespace)
         return ProductNamespace(owner, self.product)
+
+    @property
+    def collection(self):
+        """See `IBranchTarget`."""
+        return getUtility(IAllBranches).inProduct(self.product)
 
 
 def get_canonical_url_data_for_target(branch_target):

@@ -74,6 +74,17 @@ class ArchiveSourcePublication:
         """See `ISourcePackagePublishingHistory`."""
         return self._builds
 
+    def getStatusSummaryForBuilds(self):
+        """See `ISourcePackagePublishingHistory`."""
+        # XXX Michael Nelson 2009-05-08 bug=373715. It would be nice if
+        # lazr.delegates passed the delegates 'self' for pass-through
+        # methods, then we wouldn't need to proxy this method call via the
+        # IPublishingSet - instead the delegate would call
+        # ISourcePackagePublishingHistory.getStatusSummaryForBuilds() but
+        # using the delegate as self - might not be possible without
+        # duck-typing.
+        return getUtility(
+            IPublishingSet).getBuildStatusSummaryForSourcePublication(self)
 
 class ArchiveSourcePublications:
     """`ArchiveSourcePublication` iterator."""
