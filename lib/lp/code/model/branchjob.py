@@ -74,6 +74,12 @@ class BranchJobType(DBEnumeratedType):
         This job runs against a branch to upload translation files to rosetta.
         """)
 
+    UPGRADE_BRANCH = DBItem(4, """
+        Upgrade Branch
+
+        This job upgrades the branch in the hosted area.
+        """
+
 
 class BranchJob(SQLBase):
     """Base class for jobs related to branches."""
