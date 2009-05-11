@@ -33,10 +33,9 @@ class Configuration:
         :schema_path: The path to the lazr.config schema that defines
             the configuration.
         """
-        self.schema_path = schema_path or self._schema_path
-        self.schema = ImplicitTypeSchema(self.schema_path)
-        self.conf_path = conf_path
-        self.config = self.schema.load(self.conf_path)
+        schema_path = schema_path or self._schema_path
+        self.schema = ImplicitTypeSchema(schema_path)
+        self.config = self.schema.load(conf_path)
 
     def config_file_for_value(self, section, key):
         """Return the local path to the file that sets the section key."""
