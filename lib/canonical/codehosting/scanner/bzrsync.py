@@ -12,9 +12,11 @@ __all__ = [
 import logging
 
 import pytz
-from zope.component import getUtility
+
+from zope.component import adapter, getUtility
+from zope.event import notify
+
 from bzrlib.branch import BzrBranchFormat4
-from bzrlib.revision import NULL_REVISION
 from bzrlib.repofmt.weaverepo import (
     RepositoryFormat4, RepositoryFormat5, RepositoryFormat6)
 from bzrlib import urlutils
@@ -23,18 +25,10 @@ from lazr.uri import URI
 
 from canonical.codehosting import iter_list_chunks
 from canonical.codehosting.puller.worker import BranchMirrorer, BranchPolicy
-from canonical.codehosting.scanner.buglinks import BugBranchLinker
-from canonical.codehosting.scanner.email import BranchMailer
-from canonical.codehosting.scanner.mergedetection import (
-    BranchMergeDetectionHandler)
-from canonical.config import config
+from canonical.codehosting.scanner import events
 from lp.code.interfaces.branch import (
-    BranchFormat, BranchLifecycleStatus, ControlFormat, RepositoryFormat)
-from lp.code.interfaces.branchcollection import IAllBranches
-from lp.code.interfaces.branchjob import (
-    IRevisionsAddedJobSource, IRosettaUploadJobSource)
-from lp.code.interfaces.branchmergeproposal import (
-    BRANCH_MERGE_PROPOSAL_FINAL_STATES)
+    BranchFormat, ControlFormat, RepositoryFormat)
+from lp.code.interfaces.branchjob import IRosettaUploadJobSource
 from lp.code.interfaces.branchrevision import IBranchRevisionSet
 from lp.code.interfaces.revision import IRevisionSet
 
@@ -74,16 +68,10 @@ class BzrSync:
 
     def __init__(self, trans_manager, branch, logger=None):
         self.trans_manager = trans_manager
-        self.email_from = config.canonical.noreply_from_address
-
+        self.db_branch = branch
         if logger is None:
             logger = logging.getLogger(self.__class__.__name__)
         self.logger = logger
-
-        self.db_branch = branch
-        self._bug_linker = BugBranchLinker(self.db_branch)
-        self._branch_mailer = BranchMailer(self.trans_manager, self.db_branch)
-        self._merge_handler = BranchMergeDetectionHandler(self.logger)
 
     def syncBranchAndClose(self, bzr_branch=None):
         """Synchronize the database with a Bazaar branch, handling locking.
@@ -130,8 +118,8 @@ class BzrSync:
             self.retrieveDatabaseAncestry())
 
         (added_ancestry, branchrevisions_to_delete,
-            branchrevisions_to_insert) = self.planDatabaseChanges(
-            bzr_ancestry, bzr_history, db_ancestry, db_history,
+            revids_to_insert) = self.planDatabaseChanges(
+            bzr_branch, bzr_ancestry, bzr_history, db_ancestry, db_history,
             db_branch_revision_map)
         added_ancestry.difference_update(
             getUtility(IRevisionSet).onlyPresent(added_ancestry))
@@ -143,16 +131,21 @@ class BzrSync:
                 # bulk-load multiple revisions at once, but as this is only
                 # executed for revisions new to Launchpad, it doesn't seem
                 # worth it at this stage.
-                self.syncOneRevision(revision, branchrevisions_to_insert)
+                self.syncOneRevision(
+                    bzr_branch, revision, revids_to_insert)
         self.deleteBranchRevisions(branchrevisions_to_delete)
-        self.insertBranchRevisions(bzr_branch, branchrevisions_to_insert)
+        self.insertBranchRevisions(bzr_branch, revids_to_insert)
         self.trans_manager.commit()
         # Synchronize the RevisionCache for this branch.
         self.trans_manager.begin()
         getUtility(IRevisionSet).updateRevisionCacheForBranch(self.db_branch)
         self.trans_manager.commit()
 
-        self._branch_mailer.sendRevisionNotificationEmails(bzr_history)
+        # Notify any listeners that the tip of the branch has changed, but
+        # before we've actually updated the database branch.
+        initial_scan = (len(db_history) == 0)
+        notify(events.TipChanged(self.db_branch, bzr_branch, initial_scan))
+
         # The Branch table is modified by other systems, including the web UI,
         # so we need to update it in a short transaction to avoid causing
         # timeouts in the webapp. This opens a small race window where the
@@ -162,79 +155,16 @@ class BzrSync:
         # updated although it has), the race is acceptable.
         self.trans_manager.begin()
         self.updateBranchStatus(bzr_history)
-        self.autoMergeProposals(bzr_ancestry)
-        self.autoMergeBranches(bzr_ancestry)
+        notify(
+            events.ScanCompleted(
+                self.db_branch, bzr_branch, bzr_ancestry, self.logger))
         self.trans_manager.commit()
-
-    def autoMergeBranches(self, bzr_ancestry):
-        """Detect branches that have been merged."""
-        # We only check branches that have been merged into the branch that is
-        # being scanned as we already have the ancestry handy.  It is much
-        # more work to determine which other branches this branch has been
-        # merged into.  At this stage the merge detection only checks other
-        # branches merged into the scanned one.
-
-        # Only do this for non-junk branches.
-        if self.db_branch.product is None:
-            return
-        # Get all the active branches for the product, and if the
-        # last_scanned_revision is in the ancestry, then mark it as merged.
-        branches = getUtility(IAllBranches).inProduct(self.db_branch.product)
-        branches = branches.withLifecycleStatus(
-            BranchLifecycleStatus.DEVELOPMENT,
-            BranchLifecycleStatus.EXPERIMENTAL,
-            BranchLifecycleStatus.MATURE,
-            BranchLifecycleStatus.ABANDONED).getBranches()
-        for branch in branches:
-            last_scanned = branch.last_scanned_id
-            # If the branch doesn't have any revisions, not any point setting
-            # anything.
-            if last_scanned is None or last_scanned == NULL_REVISION:
-                # Skip this branch.
-                pass
-            elif branch == self.db_branch:
-                # No point merging into ourselves.
-                pass
-            elif self.db_branch.last_scanned_id == last_scanned:
-                # If the tip revisions are the same, then it is the same
-                # branch, not one merged into the other.
-                pass
-            elif last_scanned in bzr_ancestry:
-                self._merge_handler.mergeOfTwoBranches(
-                    branch, self.db_branch)
-
-    def autoMergeProposals(self, bzr_ancestry):
-        """Detect merged proposals."""
-        # Check landing candidates in non-terminal states to see if their tip
-        # is in our ancestry. If it is, set the state of the proposal to
-        # 'merged'.
-
-        # At this stage we are not going to worry about the revno
-        # which introduced the change, that will either be set through the web
-        # ui by a person, of by PQM once it is integrated.
-        for proposal in self.db_branch.landing_candidates:
-            if proposal.source_branch.last_scanned_id in bzr_ancestry:
-                self._merge_handler.mergeProposalMerge(proposal)
-
-        # Now check the landing targets.
-        final_states = BRANCH_MERGE_PROPOSAL_FINAL_STATES
-        tip_rev_id = self.db_branch.last_scanned_id
-        for proposal in self.db_branch.landing_targets:
-            if proposal.queue_status not in final_states:
-                # If there is a branch revision record for target branch with
-                # the tip_rev_id of the source branch, then it is merged.
-                branch_revision = proposal.target_branch.getBranchRevision(
-                    revision_id=tip_rev_id)
-                if branch_revision is not None:
-                    self._merge_handler.mergeProposalMerge(proposal)
 
     def retrieveDatabaseAncestry(self):
         """Efficiently retrieve ancestry from the database."""
         self.logger.info("Retrieving ancestry from database.")
         db_ancestry, db_history, db_branch_revision_map = (
             self.db_branch.getScannerData())
-        initial_scan = (len(db_history) == 0)
-        self._branch_mailer.initializeEmailQueue(initial_scan)
         return db_ancestry, db_history, db_branch_revision_map
 
     def retrieveBranchDetails(self, bzr_branch):
@@ -290,8 +220,8 @@ class BzrSync:
             RepositoryFormat, repository_string,
             RepositoryFormat.UNRECOGNIZED)
 
-    def planDatabaseChanges(self, bzr_ancestry, bzr_history, db_ancestry,
-                            db_history, db_branch_revision_map):
+    def planDatabaseChanges(self, bzr_branch, bzr_ancestry, bzr_history,
+                            db_ancestry, db_history, db_branch_revision_map):
         """Plan database changes to synchronize with bzrlib data.
 
         Use the data retrieved by `retrieveDatabaseAncestry` and
@@ -320,7 +250,9 @@ class BzrSync:
         removed_history = db_history[common_len:]
         added_history = bzr_history[common_len:]
 
-        self._branch_mailer.generateEmailForRemovedRevisions(removed_history)
+        notify(
+            events.RevisionsRemoved(
+                self.db_branch, bzr_branch, removed_history))
 
         # Merged (non-history) revisions in the database and the bzr branch.
         old_merged = db_ancestry.difference(db_history)
@@ -338,12 +270,12 @@ class BzrSync:
 
         # We must insert BranchRevision rows for all revisions which were
         # added to the ancestry or whose sequence value has changed.
-        branchrevisions_to_insert = dict(
+        revids_to_insert = dict(
             self.getRevisions(
                 bzr_history, added_merged.union(added_history)))
 
         return (added_ancestry, branchrevisions_to_delete,
-                branchrevisions_to_insert)
+                revids_to_insert)
 
     def getBazaarRevisions(self, bzr_branch, revisions):
         """Like ``get_revisions(revisions)`` but filter out ghosts first.
@@ -354,25 +286,27 @@ class BzrSync:
         revisions = bzr_branch.repository.get_parent_map(revisions)
         return bzr_branch.repository.get_revisions(revisions.keys())
 
-    def syncOneRevision(self, bzr_revision, branchrevisions_to_insert):
+    def syncOneRevision(self, bzr_branch, bzr_revision, revids_to_insert):
         """Import the revision with the given revision_id.
 
+        :param bzr_branch: The Bazaar branch that's being scanned.
         :param bzr_revision: the revision to import
         :type bzr_revision: bzrlib.revision.Revision
-        :param branchrevisions_to_insert: a dict of revision ids to integer
-            revno.  (Non-mainline revisions will not be present).
+        :param revids_to_insert: a dict of revision ids to integer
+            revno. Non-mainline revisions will be mapped to None.
         """
         revision_id = bzr_revision.revision_id
         revision_set = getUtility(IRevisionSet)
         # Revision not yet in the database. Load it.
         self.logger.debug("Inserting revision: %s", revision_id)
-        revision_set.newFromBazaarRevision(bzr_revision)
-        # If a mainline revision, add the bug branch link.
-        if branchrevisions_to_insert[revision_id] is not None:
-            self._bug_linker.createBugBranchLinksForRevision(bzr_revision)
+        db_revision = revision_set.newFromBazaarRevision(bzr_revision)
+        notify(
+            events.NewRevision(
+                self.db_branch, bzr_branch, db_revision, bzr_revision,
+                revids_to_insert[revision_id]))
 
     def getRevisions(self, bzr_history, revision_subset):
-        """Generate revision IDs that make up the branch's ancestry.
+        """Iterate over '(revid, revno)' pairs in a branch's ancestry.
 
         Generate a sequence of (revision-id, sequence) pairs to be inserted
         into the branchrevision table.
@@ -392,39 +326,30 @@ class BzrSync:
         for branchrevision in sorted(branchrevisions_to_delete):
             branch_revision_set.delete(branchrevision)
 
-    def insertBranchRevisions(self, bzr_branch, branchrevisions_to_insert):
+    def insertBranchRevisions(self, bzr_branch, revids_to_insert):
         """Insert a batch of BranchRevision rows."""
         self.logger.info("Inserting %d branchrevision records.",
-            len(branchrevisions_to_insert))
+            len(revids_to_insert))
         revision_set = getUtility(IRevisionSet)
-        revid_seq_pairs = branchrevisions_to_insert.items()
+        revid_seq_pairs = revids_to_insert.items()
         for revid_seq_pair_chunk in iter_list_chunks(revid_seq_pairs, 1000):
             self.db_branch.createBranchRevisionFromIDs(revid_seq_pair_chunk)
-
-        # Generate emails for the revisions in the revision_history
-        # for the branch.
-        mainline_revids = [
-            revid for (revid, sequence)
-            in branchrevisions_to_insert.iteritems() if sequence is not None]
-        if self.db_branch.last_scanned_id is not None:
-            job = getUtility(IRevisionsAddedJobSource).create(
-                self.db_branch, self.db_branch.last_scanned_id,
-                bzr_branch.last_revision(),
-                config.canonical.noreply_from_address)
 
     def updateBranchStatus(self, bzr_history):
         """Update the branch-scanner status in the database Branch table."""
         # Record that the branch has been updated.
-        if len(bzr_history) > 0:
+        revision_count = len(bzr_history)
+        if revision_count > 0:
             last_revision = bzr_history[-1]
             revision = getUtility(IRevisionSet).getByRevisionId(last_revision)
-            if last_revision != self.db_branch.last_scanned_id:
-                getUtility(IRosettaUploadJobSource).create(
-                    self.db_branch, self.db_branch.last_scanned_id)
         else:
             revision = None
-
-        revision_count = len(bzr_history)
         self.logger.info(
             "Updating branch scanner status: %s revs", revision_count)
         self.db_branch.updateScannedDetails(revision, revision_count)
+
+
+@adapter(events.TipChanged)
+def schedule_translation_upload(tip_changed):
+    getUtility(IRosettaUploadJobSource).create(
+        tip_changed.db_branch, tip_changed.old_tip_revision_id)
