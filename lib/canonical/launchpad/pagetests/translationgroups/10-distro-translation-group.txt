@@ -16,11 +16,8 @@ see that from the translations page.
     Translating Ubuntu
 
     >>> print extract_text(
-    ...     find_tag_by_id(anon_browser.contents,
-    ...                    'portlet-translation-permissions'))
-    Translation permissions
-    Translation group: Not assigned
-    Permissions: Open
+    ...     find_tag_by_id(anon_browser.contents, 'translation-permissions'))
+    Ubuntu is translated with Open permissions...
 
 And now make sure we can see the form to change the translation group
 and permissions on a project. For that, we are going to use Colin
@@ -29,14 +26,14 @@ Watson's account, he's one of the owners of Ubuntu.
     >>> ubuntu_owner_browser = setupBrowser(
     ...     auth='Basic colin.watson@ubuntulinux.com:test')
     >>> ubuntu_owner_browser.open(anon_browser.url)
-    >>> ubuntu_owner_browser.getLink('Change translators').click()
+    >>> ubuntu_owner_browser.getLink('Settings').click()
     >>> print ubuntu_owner_browser.title
-    Appoint Ubuntu Linux's translation group
+    Change Ubuntu Linux's translation settings
 
 Other users cannot access this page, nor see the menu link to it.
 
     >>> user_browser.open(anon_browser.url)
-    >>> user_browser.getLink('Change translators').click()
+    >>> user_browser.getLink('Settings').click()
     Traceback (most recent call last):
     ...
     LinkNotFoundError
@@ -61,7 +58,7 @@ closed permissions.
     ...         'The PolyGlot Translation Group']
     >>> ubuntu_owner_browser.getControl('Change').click()
     >>> print ubuntu_owner_browser.title
-    Appoint Ubuntu Linux's translation group
+    Change Ubuntu Linux's translation settings
 
     >>> for tag in find_tags_by_class(
     ...     ubuntu_owner_browser.contents, 'informational message'):
@@ -76,13 +73,7 @@ page.
     Translating Ubuntu
 
     >>> print extract_text(
-    ...     find_tag_by_id(anon_browser.contents,
-    ...                    'portlet-translation-permissions'))
-    Translation permissions
-    Translation group: The PolyGlot Translation Group
-    Permissions: Closed
+    ...     find_tag_by_id(anon_browser.contents, 'translation-permissions'))
+    Ubuntu is translated by The PolyGlot Translation Group
+    with Closed permissions...
 
-    >>> anon_browser.getLink('The PolyGlot Translation Group').click()
-    >>> anon_browser.title
-    '\xe2\x80\x9cThe PolyGlot Translation Group\xe2\x80\x9d
-    Launchpad translation group'

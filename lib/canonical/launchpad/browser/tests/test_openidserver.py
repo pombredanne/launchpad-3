@@ -26,7 +26,7 @@ from lp.registry.interfaces.person import IPersonSet
 from canonical.launchpad.interfaces.authtoken import (
     IAuthTokenSet, LoginTokenType)
 from canonical.launchpad.interfaces.openidserver import IOpenIDRPConfigSet
-from canonical.launchpad.interfaces.shipit import IShipitAccount
+from canonical.shipit.interfaces.shipit import IShipitAccount
 from canonical.launchpad.testing import TestCase, TestCaseWithFactory
 from canonical.launchpad.testing.systemdocs import (
     LayeredDocFileSuite, setUp, tearDown)
