@@ -347,6 +347,13 @@ Branch references are linkified:
     <a href="/+branch/foo">lp:///foo</a><br />
     <a href="/+branch/foo">lp:/foo</a></p>
 
+Text that looks like a branch reference, but is followed only by digits is
+treated as a link to a bug.
+
+    >>> text = 'lp:1234'
+    >>> print test_tales('foo/fmt:text-to-html', foo=text)
+    <p><a href="/bugs/1234" title="No such bug">lp:1234</a></p>
+
 
 == OOPS references ==
 
