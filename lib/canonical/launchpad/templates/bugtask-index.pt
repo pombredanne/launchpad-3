@@ -161,9 +161,13 @@
             define="global description context/bug/description/fmt:obfuscate-email/fmt:text-to-html" />
 
         <div id="bug-description" tal:content="structure description" />
-
-          <div id="bug-tags" tal:condition="context/bug/tags"
-               style="width: 45%: text-align: left; float: left;">
+          <script type="text/javascript"
+                  tal:define="lp_js string:${icingroot}/build"
+                  tal:attributes="src string:${lp_js}/bugs/bug_tags_entry.js">
+          </script>
+          <div id="bug-tags"
+               tal:attributes="class python: context.bug.tags and
+                                             'tags-show' or 'tags-hide'">
             Tags:
             <span id="tag-list">
               <a tal:repeat="tag view/official_tags"
@@ -179,11 +183,6 @@
                 <input type="text" id="tag-input" style="display: none; width: 25em;" />
                 <img src="/@@/spinner" id="tags-edit-spinner" style="display: none" />
                 <a href="+edit" title="Edit tags" id="edit-tags-trigger"><img src="/@@/edit" /></a>
-              <script type="text/javascript"
-                      tal:define="lp_js string:${icingroot}/build"
-                      tal:attributes="src string:${lp_js}/bugs/bug_tags_entry.js">
-              </script>
-
               <script type="text/javascript">
                   YUI().use('event', 'bugs.bug_tags_entry', function(Y) {
                       // XXX intellectronica 2009-04-16 bug #362309:
@@ -212,8 +211,9 @@
                       type="button">Cancel</button>
            </form>
           </div>
-          <div id="bug-tags" tal:condition="not: context/bug/tags"
-               style="width: 45%: text-align: left; float: left;">
+          <div id="add-bug-tags"
+               tal:attributes="class python: not(context.bug.tags) and
+                                             'tags-show' or 'tags-hide'">
             <a href="+edit" title="Add tags" id="add-tags-trigger">
               <img src="/@@/add" />
               Add tags
