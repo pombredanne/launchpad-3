@@ -1111,27 +1111,27 @@ class IHWDBApplication(ILaunchpadApplication, ITopLevelEntryLink):
         package_name=TextLine(
             title=u'A package name', required=False,
             description=u'If specified, the count is limited to devices '
-                        'controlled by a driver from this package.'),
+                        u'controlled by a driver from this package.'),
         distribution=Reference(
             IDistribution,
             title=u'A Distribution',
-            description=
+            description=(
                 u'If specified, the result set is limited to submissions '
-                'made for this distribution.',
+                u'made for this distribution.'),
             required=False),
         distroseries=Reference(
             IDistroSeries,
             title=u'A Distribution Series',
-            description=
+            description=(
                 u'If specified, the result set is limited to submissions '
-                'made for the given distribution series.',
+                u'made for the given distribution series.'),
             required=False),
         distroarchseries=Reference(
             IDistroArchSeries,
             title=u'A Distribution Series',
-            description=
+            description=(
                 u'If specified, the result set is limited to submissions '
-                'made for the given distroarchseries.',
+                u'made for the given distroarchseries.'),
             required=False))
     @export_read_operation()
     def numSubmissionsWithDevice(
@@ -1139,11 +1139,11 @@ class IHWDBApplication(ILaunchpadApplication, ITopLevelEntryLink):
         distribution=None, distroseries=None, distroarchseries=None):
         """Count the number of submissions mentioning a device.
 
-        Returns a tuple (submissions_with_device, all_submissions)
-        where submissions_with_device is the number of submissions having
-        the given device and matching the distro_target criterion and where
-        all_submissions is the number of submissions matching the
-        distro_target criterion.
+        Returns a dictionary {'submissions_with_device: n1,
+        'all_submissions': n2}, where submissions_with_device is the number
+        of submissions having the given device and matching the
+        distro target criterion and where all_submissions is the number of
+        submissions matching the distro target criterion.
 
         :param bus: The `HWBus` of the device.
         :param vendor_id: The vendor ID of the device.
@@ -1178,31 +1178,31 @@ class IHWDBApplication(ILaunchpadApplication, ITopLevelEntryLink):
         driver_name=TextLine(
             title=u'A driver name', required=False,
             description=u'If specified, the count is limited to devices '
-                        'controlled by this driver.'),
+                        u'controlled by this driver.'),
         package_name=TextLine(
             title=u'A package name', required=False,
             description=u'If specified, the count is limited to devices '
-                        'controlled by a driver from this package.'),
+                        u'controlled by a driver from this package.'),
         distribution=Reference(
             IDistribution,
             title=u'A Distribution',
-            description=
+            description=(
                 u'If specified, the result set is limited to submissions '
-                'made for this distribution.',
+                u'made for this distribution.'),
             required=False),
         distroseries=Reference(
             IDistroSeries,
             title=u'A Distribution Series',
-            description=
+            description=(
                 u'If specified, the result set is limited to submissions '
-                'made for the given distribution series.',
+                u'made for the given distribution series.'),
             required=False),
         distroarchseries=Reference(
             IDistroArchSeries,
             title=u'A Distribution Series',
-            description=
+            description=(
                 u'If specified, the result set is limited to submissions '
-                'made for the given distroarchseries.',
+                u'made for the given distroarchseries.'),
             required=False))
     @export_read_operation()
     def numOwnersOfDevice(
@@ -1210,15 +1210,15 @@ class IHWDBApplication(ILaunchpadApplication, ITopLevelEntryLink):
         distribution=None, distroseries=None, distroarchseries=None):
         """Count the number who subitted hardware reports mentioning a device.
 
-        Returns a tuple (device_owners, all_hardware_reporters)
-        where device_owners is the number of people who made a HWDB
+        Returns a dictionary {'owners': n1, 'all_submitters': n2}
+        where owners is the number of people who made a HWDB
         submission containing the given device, optionally limited
         to submissions where the device is controlled by a given
         driver from the given package, and/or limited to submissions
-        made for the given distro_target.
-        all_hardware_reporters is the number of persons who made
+        made for the given distro target.
+        all_submitters is the number of persons who made
         a HWDB submission, optionally limited to submission made
-        on the given distro_target installation.
+        on the given distro target installation.
 
         :param bus: The `HWBus` of the device.
         :param vendor_id: The vendor ID of the device.
@@ -1253,31 +1253,31 @@ class IHWDBApplication(ILaunchpadApplication, ITopLevelEntryLink):
         driver_name=TextLine(
             title=u'A driver name', required=False,
             description=u'If specified, the count is limited to devices '
-                        'controlled by this driver.'),
+                        u'controlled by this driver.'),
         package_name=TextLine(
             title=u'A package name', required=False,
             description=u'If specified, the count is limited to devices '
-                        'controlled by a driver from this package.'),
+                        u'controlled by a driver from this package.'),
         distribution=Reference(
             IDistribution,
             title=u'A Distribution',
-            description=
+            description=(
                 u'If specified, the result set is limited to submissions '
-                'made for this distribution.',
+                u'made for this distribution.'),
             required=False),
         distroseries=Reference(
             IDistroSeries,
             title=u'A Distribution Series',
-            description=
+            description=(
                 u'If specified, the result set is limited to submissions '
-                'made for the given distribution series.',
+                u'made for the given distribution series.'),
             required=False),
         distroarchseries=Reference(
             IDistroArchSeries,
             title=u'A Distribution Series',
-            description=
+            description=(
                 u'If specified, the result set is limited to submissions '
-                'made for the given distroarchseries.',
+                u'made for the given distroarchseries.'),
             required=False))
     @export_read_operation()
     def numDevicesInSubmissions(

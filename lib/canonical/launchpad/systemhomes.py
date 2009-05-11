@@ -279,28 +279,38 @@ class HWDBApplication:
         self, bus, vendor_id, product_id, driver_name=None, package_name=None,
         distribution=None, distroseries=None, distroarchseries=None):
         """See `IHWDBApplication`."""
-        return getUtility(IHWSubmissionSet).numSubmissionsWithDevice(
-            bus, vendor_id, product_id, driver_name, package_name,
-            distro_target=self.getDistroTarget(
-                distribution, distroseries, distroarchseries))
+        submissions_with_device, all_submissions = (
+            getUtility(IHWSubmissionSet).numSubmissionsWithDevice(
+                bus, vendor_id, product_id, driver_name, package_name,
+                distro_target=self.getDistroTarget(
+                    distribution, distroseries, distroarchseries)))
+        return {
+            'submissions_with_device': submissions_with_device,
+            'all_submissions': all_submissions,
+            }
 
     def numOwnersOfDevice(
         self, bus, vendor_id, product_id, driver_name=None, package_name=None,
         distribution=None, distroseries=None, distroarchseries=None):
         """See `IHWDBApplication`."""
-        return getUtility(IHWSubmissionSet).numOwnersOfDevice(
-            bus, vendor_id, product_id, driver_name, package_name,
-            distro_target=self.getDistroTarget(
-                distribution, distroseries, distroarchseries))
+        owners, all_submitters = (
+            getUtility(IHWSubmissionSet).numOwnersOfDevice(
+                bus, vendor_id, product_id, driver_name, package_name,
+                distro_target=self.getDistroTarget(
+                    distribution, distroseries, distroarchseries)))
+        return {
+            'owners': owners,
+            'all_submitters': all_submitters,
+            }
 
     def numDevicesInSubmissions(
         self, bus, vendor_id, product_id, driver_name=None, package_name=None,
         distribution=None, distroseries=None, distroarchseries=None):
         """See `IHWDBApplication`."""
         return getUtility(IHWSubmissionDeviceSet).numDevicesInSubmissions(
-            bus, vendor_id, product_id, driver_name, package_name,
-            distro_target=self.getDistroTarget(
-                distribution, distroseries, distroarchseries))
+                bus, vendor_id, product_id, driver_name, package_name,
+                distro_target=self.getDistroTarget(
+                    distribution, distroseries, distroarchseries))
 
 
 class WebServiceApplication(ServiceRootResource):
