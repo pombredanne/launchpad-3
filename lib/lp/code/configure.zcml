@@ -643,6 +643,7 @@
                     effective_update_interval
                     import_job
                     results
+                    consecutive_failure_count
                     getImportDetailsForDisplay"/>
     <require
         permission="launchpad.Edit"

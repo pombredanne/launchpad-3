@@ -45,7 +45,7 @@ from canonical.launchpad.interfaces.validation import (
     validate_shipit_city, validate_shipit_addressline1,
     validate_shipit_addressline2, validate_shipit_organization,
     validate_shipit_province, validate_shipit_postcode)
-from canonical.launchpad.fields import (
+from canonical.shipit.fields import (
     ShipItRecipientDisplayname, ShipItOrganization, ShipItCity,
     ShipItProvince, ShipItAddressline1, ShipItAddressline2, ShipItPhone,
     ShipItReason, ShipItQuantity)
