@@ -8,6 +8,7 @@ import textwrap
 
 from zope.component import getUtility
 
+from canonical.config import config
 from canonical.launchpad.helpers import (
     get_contact_email_addresses, get_email_template)
 from canonical.launchpad.interfaces import (
@@ -142,8 +143,11 @@ def code_import_updated(code_import, event, new_whiteboard, person):
             code_import, event, new_whiteboard),
         'branch': canonical_url(code_import.branch)}
 
-    from_address = format_address(
-        person.displayname, person.preferredemail.email)
+    if person:
+        from_address = format_address(
+            person.displayname, person.preferredemail.email)
+    else:
+        from_address = config.canonical.noreply_from_address
 
     interested_levels = (
         BranchSubscriptionNotificationLevel.ATTRIBUTEONLY,

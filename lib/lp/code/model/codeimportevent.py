@@ -107,7 +107,6 @@ class CodeImportEventSet:
     def newModify(self, code_import, person, token):
         """See `ICodeImportEventSet`."""
         assert code_import is not None, "code_import must not be None"
-        assert person is not None, "person must not be None"
         assert token is not None, "token must not be None"
         items = self._findModifications(code_import, token)
         if items is None:

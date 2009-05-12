@@ -211,8 +211,6 @@ details the changes that have been applied.
     >>> fail_if_argument_is_none(
     ...     event_set.newModify, None, nopriv, token)
     >>> fail_if_argument_is_none(
-    ...     event_set.newModify, svn_import, None, token)
-    >>> fail_if_argument_is_none(
     ...     event_set.newModify, svn_import, nopriv, None)
 
     >>> modify_event = event_set.newModify(svn_import, nopriv, token)
@@ -237,7 +235,7 @@ when changes were made without creating a correponding event.
     UPDATE_INTERVAL None
     SVN_BRANCH_URL u'svn://svn.example.com/trunk'
 
-If no change of interest are found, no event is created.
+If no change of interest is found, no event is created.
 
     >>> old_event_set_len = len(list(event_set.getAll()))
     >>> token = event_set.beginModify(svn_import)
