@@ -406,22 +406,22 @@ class Bug(SQLBase):
         """See `IBug`."""
         for sub in self.subscriptions:
             if sub.person.id == person.id:
-                if sub.canBeUnsubscribedByUser(unsubscribed_by):
-                    self.addChange(UnsubscribedFromBug(
-                        when=UTC_NOW, person=unsubscribed_by,
-                        unsubscribed_user=person))
-                    store = Store.of(sub)
-                    store.remove(sub)
-                    # Make sure that the subscription removal has been
-                    # flushed so that code running with implicit flushes
-                    # disabled see the change.
-                    store.flush()
-                    return
-                else:
+                if not sub.canBeUnsubscribedByUser(unsubscribed_by):
                     raise UserCannotUnsubscribePerson(
                         '%s does not have permission to unsubscribe %s.' % (
                             unsubscribed_by.displayname,
                             person.displayname))
+
+                self.addChange(UnsubscribedFromBug(
+                    when=UTC_NOW, person=unsubscribed_by,
+                    unsubscribed_user=person))
+                store = Store.of(sub)
+                store.remove(sub)
+                # Make sure that the subscription removal has been
+                # flushed so that code running with implicit flushes
+                # disabled see the change.
+                store.flush()
+                return
 
     def unsubscribeFromDupes(self, person):
         """See `IBug`."""
