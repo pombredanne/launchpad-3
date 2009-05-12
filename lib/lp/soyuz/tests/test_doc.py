@@ -214,6 +214,11 @@ def test_suite():
         story_path = os.path.join(stories_dir, story_dir)
         suite.addTest(PageTestSuite(story_path))
 
+    # Add special needs tests
+    for key in sorted(special):
+        special_suite = special[key]
+        suite.addTest(special_suite)
+
     testsdir = os.path.abspath(
         os.path.normpath(os.path.join(here, os.path.pardir, 'doc'))
         )
@@ -222,10 +227,11 @@ def test_suite():
     filenames = [filename
                  for filename in os.listdir(testsdir)
                  if filename.endswith('.txt') and filename not in special]
+
     # Sort the list to give a predictable order.
     filenames.sort()
     for filename in filenames:
-        path = os.path.join('../doc/', filename)
+        path = os.path.join('../doc', filename)
         one_test = LayeredDocFileSuite(
             path, setUp=setUp, tearDown=tearDown,
             layer=LaunchpadFunctionalLayer,
