@@ -23,12 +23,12 @@ use, but the bug is not yet targeted to that milestone.
     >>> milestone_control.displayValue
     ['(no value)']
     >>> milestone_control.displayOptions
-    ['(no value)', 'Mozilla Firefox: 1.0']
+    ['(no value)', 'Mozilla Firefox 1.0']
 
 Sample Person targets the bug to 1.0 for Firefox. This shows up in the
 Affects table, and in the selected value of the Milestone menu.
 
-    >>> milestone_control.displayValue = ['Mozilla Firefox: 1.0']
+    >>> milestone_control.displayValue = ['Mozilla Firefox 1.0']
     >>> owner_browser.getControl('Save Changes', index=0).click()
     >>> table = find_tag_by_id(owner_browser.contents, 'affected-software')
     >>> print extract_text(table)
@@ -38,7 +38,7 @@ Affects table, and in the selected value of the Milestone menu.
     >>> milestone_control = owner_browser.getControl(
     ...     name='firefox.milestone', index=0)
     >>> milestone_control.displayValue
-    ['Mozilla Firefox: 1.0']
+    ['Mozilla Firefox 1.0']
 
 Sample Person defines milestone 1.0.1 for firefox series 1.0...
 
@@ -62,13 +62,13 @@ are listed too.
     >>> milestone_control.displayValue
     ['(no value)']
     >>> milestone_control.displayOptions
-    ['(no value)', 'Mozilla Firefox: 1.0', 'Mozilla Firefox: 1.0.1']
-    >>> milestone_control.displayValue = ['Mozilla Firefox: 1.0.1']
+    ['(no value)', 'Mozilla Firefox 1.0', 'Mozilla Firefox 1.0.1']
+    >>> milestone_control.displayValue = ['Mozilla Firefox 1.0.1']
     >>> owner_browser.getControl('Save Changes', index=1).click()
     >>> milestone_control = owner_browser.getControl(
     ...     name='1.0_firefox.milestone')
     >>> milestone_control.displayValue
-    ['Mozilla Firefox: 1.0.1']
+    ['Mozilla Firefox 1.0.1']
 
 Foo Bar is a member of the Ubuntu team that owns the Ubuntu
 distribution. He decides to assign some bug to some milestones.
@@ -94,8 +94,8 @@ He targets bug #1 to milestone 5.04-rc1 for Ubuntu.
     >>> milestone_control.displayValue
     ['(no value)']
     >>> milestone_control.displayOptions
-    ['(no value)', 'Ubuntu: 5.04.rc1']
-    >>> milestone_control.displayValue = ['Ubuntu: 5.04.rc1']
+    ['(no value)', 'Ubuntu 5.04.rc1']
+    >>> milestone_control.displayValue = ['Ubuntu 5.04.rc1']
     >>> admin_browser.getControl('Save Changes', index=3).click()
     >>> table = find_tag_by_id(admin_browser.contents, 'affected-software')
     >>> print extract_text(table)
@@ -107,7 +107,7 @@ He targets bug #1 to milestone 5.04-rc1 for Ubuntu.
     >>> milestone_control = admin_browser.getControl(
     ...     name='ubuntu_mozilla-firefox.milestone')
     >>> milestone_control.displayValue
-    ['Ubuntu: 5.04.rc1']
+    ['Ubuntu 5.04.rc1']
 
 Bug #1 is already nominated for Hoary, so he can create another bugtask
 by clicking on the "approve" button for this nomination.
@@ -121,10 +121,10 @@ removes the milestone now.
     >>> milestone_control = admin_browser.getControl(
     ...     name='ubuntu_hoary_mozilla-firefox.milestone')
     >>> milestone_control.displayValue
-    ['Ubuntu: 5.04.rc1']
+    ['Ubuntu 5.04.rc1']
 
     >>> milestone_control.displayOptions
-    ['(no value)', 'Ubuntu: 5.04.rc1']
+    ['(no value)', 'Ubuntu 5.04.rc1']
     >>> milestone_control.displayValue = ['(no value)']
     >>> admin_browser.getControl('Save Changes', index=3).click()
     >>> milestone_control = admin_browser.getControl(
