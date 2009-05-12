@@ -53,7 +53,7 @@ from canonical.launchpad.helpers import truncate_text
 from canonical.launchpad.interfaces.bug import IBugSet
 from canonical.launchpad.interfaces.bugbranch import IBugBranch
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.interfaces.specificationbranch import (
+from lp.blueprints.interfaces.specificationbranch import (
     ISpecificationBranch)
 from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, enabled_with_permission,
@@ -485,8 +485,8 @@ class BranchView(LaunchpadView, FeedsMixin):
         a non-final state.
         """
         # XXX: rockstar - Eventually, this if statement needs to be:
-        # if not self.context.target.supportsMergeProposals() and will when jml
-        # gets to it in his source package branch work.
+        # if not self.context.target.supportsMergeProposals() and will when
+        # jml gets to it in his source package branch work.
         # spec=package-branches
         if not self.context.product:
             return False

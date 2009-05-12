@@ -27,7 +27,7 @@ from zope.component import getUtility
 
 from canonical.buildd.utils import notes
 from canonical.config import config
-from canonical.launchpad.interfaces.builder import IBuilderSet
+from lp.soyuz.interfaces.builder import IBuilderSet
 from canonical.launchpad.webapp import urlappend
 from canonical.librarian.db import write_transaction
 
