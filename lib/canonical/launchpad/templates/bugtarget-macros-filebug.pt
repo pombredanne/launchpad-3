@@ -462,7 +462,7 @@
                       <input type="submit"
                           id="field.actions.this_is_my_bug"
                           name="field.actions.this_is_my_bug"
-                          value="Yes, subscribe me..." />
+                          value="Yes, this is the bug I'm trying to report" />
 
                     </span>
                   </form>
