@@ -27,7 +27,7 @@ from canonical.launchpad.mail.commands import (
 from canonical.launchpad.mail.helpers import (
     ensure_not_weakly_authenticated, get_main_body, guess_bugtask,
     IncomingEmailError, parse_commands, reformat_wiki_text)
-from canonical.launchpad.mail.sendmail import sendmail, simple_sendmail
+from lp.services.mail.sendmail import sendmail, simple_sendmail
 from canonical.launchpad.mail.specexploder import get_spec_url_from_moin_mail
 from canonical.launchpad.mailnotification import (
     MailWrapper, send_process_error_notification)

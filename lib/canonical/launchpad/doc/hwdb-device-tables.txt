@@ -2024,3 +2024,99 @@ We can specify a distro target as well as a driver or package name.
     ...     package_name='linux-image-2.6.24-19-generic',
     ...     distro_target=ubuntu['hoary']['i386'])
     (0L, 2L)
+
+HWSubmission.numDeviceOwners() returns the number of device owners.
+Note that we identify owners by the email address as queried by the
+HWDB client, not by HWSubmission.owner.
+
+We have currently three submissions from two submitters, and submissions
+from both submitters metion the Seagate ST3250820NS disk. Let's add
+another, empty, submission for hoary/i386 from another submitter.
+
+    >>> submission = factory.makeHWSubmission(
+    ...     emailaddress='charles@babbage.com',
+    ...     distroarchseries=ubuntu['hoary']['i386'])
+    >>> submission.status = HWSubmissionProcessingStatus.PROCESSED
+
+Now we have three submitters, two of them own our Seagate disk.
+
+    >>> submission_set.numOwnersOfDevice(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ')
+    (2L, 3L)
+
+We can limit the results to a given driver...
+
+    >>> print submission_set.numOwnersOfDevice(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     driver_name='sd')
+    (2L, 3L)
+    >>> print submission_set.numOwnersOfDevice(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     driver_name='usb')
+    (0L, 3L)
+
+...to a distibution...
+
+    >>> print submission_set.numOwnersOfDevice(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     distro_target=ubuntu)
+    (1L, 2L)
+    >>> print submission_set.numOwnersOfDevice(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     distro_target=debian)
+    (0L, 0L)
+
+...to a distroseries...
+
+    >>> print submission_set.numOwnersOfDevice(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     distro_target=ubuntu['hoary'])
+    (1L, 2L)
+    >>> print submission_set.numOwnersOfDevice(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     distro_target=ubuntu['warty'])
+    (0L, 0L)
+
+...or to a distroarchseries.
+
+    >>> print submission_set.numOwnersOfDevice(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     distro_target=ubuntu['hoary']['i386'])
+    (1L, 2L)
+    >>> print submission_set.numOwnersOfDevice(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     distro_target=ubuntu['hoary']['hppa'])
+    (0L, 0L)
+
+We can specify a distro target as well as a driver or package name.
+
+    >>> print submission_set.numOwnersOfDevice(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     driver_name='sd', distro_target=ubuntu['hoary']['i386'])
+    (1L, 2L)
+    >>> print submission_set.numOwnersOfDevice(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     driver_name='nosense', distro_target=ubuntu['hoary']['i386'])
+    (0L, 2L)
+
+    >>> print submission_set.numOwnersOfDevice(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     package_name='linux-image-2.6.24-19-generic',
+    ...     distro_target=ubuntu['hoary']['i386'])
+    (1L, 2L)
+    >>> print submission_set.numOwnersOfDevice(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     package_name='nonsense', distro_target=ubuntu['hoary']['i386'])
+    (0L, 2L)
+
+    >>> print submission_set.numOwnersOfDevice(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     driver_name='sd', package_name='linux-image-2.6.24-19-generic',
+    ...     distro_target=ubuntu['hoary']['i386'])
+    (1L, 2L)
+    >>> print submission_set.numOwnersOfDevice(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     driver_name='nonsense',
+    ...     package_name='linux-image-2.6.24-19-generic',
+    ...     distro_target=ubuntu['hoary']['i386'])
+    (0L, 2L)

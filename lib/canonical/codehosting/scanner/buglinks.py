@@ -9,16 +9,13 @@ __all__ = [
 
 import urlparse
 
+from bzrlib.errors import InvalidBugStatus
 from zope.component import adapter, getUtility
 
 from canonical.codehosting.scanner import events
 from canonical.launchpad.interfaces import (
     BugBranchStatus, IBugBranchSet, IBugSet, ILaunchpadCelebrities,
     NotFoundError)
-
-
-class BadLineInBugsProperty(Exception):
-    """Raised when the scanner encounters a bad line in a bug property."""
 
 
 def set_bug_branch_status(bug, branch, status):
@@ -49,52 +46,34 @@ class BugBranchLinker:
     def __init__(self, db_branch):
         self.db_branch = db_branch
 
-    def _parseBugLine(self, line):
-        """Parse a line from a bug property.
-
-        :param line: A line from a Bazaar bug property.
-        :raise BadLineInBugsProperty: if the line is invalid. Raising this
-            will cause the line to be skipped.
-        :return: (bug_url, bug_id) if the line is good; None if the line
-            is technically valid but should be skipped.
-        """
-        valid_statuses = {'fixed': BugBranchStatus.FIXAVAILABLE}
-        line = line.strip()
-
-        # Skip blank lines.
-        if len(line) == 0:
-            return None
-
-        # Lines must be <url> <status>.
-        try:
-            url, status = line.split(None, 2)
-        except ValueError:
-            raise BadLineInBugsProperty('Invalid line: %r' % line)
+    def _getBugFromUrl(self, url):
         protocol, host, path, ignored, ignored = urlparse.urlsplit(url)
 
         # Skip URLs that don't point to Launchpad.
         if host != 'launchpad.net':
             return None
 
+        # Remove empty path segments.
+        segments = [
+            segment for segment in path.split('/') if len(segment) > 0]
         # Don't allow Launchpad URLs that aren't /bugs/<integer>.
         try:
-            # Remove empty path segments.
-            bug_segment, bug_id = [
-                segment for segment in path.split('/') if len(segment) > 0]
-            if bug_segment != 'bugs':
-                raise ValueError('Bad path segment')
-            bug = int(path.split('/')[-1])
+            bug_segment, bug_id = segments
         except ValueError:
-            raise BadLineInBugsProperty('Invalid bug reference: %s' % url)
-
-        # Make sure the status is acceptable.
+            return None
+        if bug_segment != 'bugs':
+            return None
         try:
-            status = valid_statuses[status.lower()]
-        except KeyError:
-            raise BadLineInBugsProperty('Invalid bug status: %r' % status)
-        return bug, status
+            return int(bug_id)
+        except ValueError:
+            return None
 
-    def extractBugInfo(self, bug_property):
+    def _getBugStatus(self, bzr_status):
+        # Make sure the status is acceptable.
+        valid_statuses = {'fixed': BugBranchStatus.FIXAVAILABLE}
+        return valid_statuses.get(bzr_status.lower(), None)
+
+    def extractBugInfo(self, bzr_revision):
         """Parse bug information out of the given revision property.
 
         :param bug_status_prop: A string containing lines of
@@ -102,13 +81,10 @@ class BugBranchLinker:
         :return: dict mapping bug IDs to BugBranchStatuses.
         """
         bug_statuses = {}
-        for line in bug_property.splitlines():
-            try:
-                parsed_line = self._parseBugLine(line)
-                if parsed_line is None:
-                    continue
-                bug, status = parsed_line
-            except BadLineInBugsProperty, e:
+        for url, status in bzr_revision.iter_bugs():
+            bug = self._getBugFromUrl(url)
+            status = self._getBugStatus(status)
+            if bug is None or status is None:
                 continue
             bug_statuses[bug] = status
         return bug_statuses
@@ -119,11 +95,12 @@ class BugBranchLinker:
         This looks inside the 'bugs' property of the given Bazaar revision and
         creates a BugBranch record for each bug mentioned.
         """
-        bug_property = bzr_revision.properties.get('bugs', None)
-        if bug_property is None:
+        try:
+            bug_info = self.extractBugInfo(bzr_revision)
+        except InvalidBugStatus:
             return
         bug_set = getUtility(IBugSet)
-        for bug_id, status in self.extractBugInfo(bug_property).iteritems():
+        for bug_id, status in bug_info.iteritems():
             try:
                 bug = bug_set.get(bug_id)
             except NotFoundError:
