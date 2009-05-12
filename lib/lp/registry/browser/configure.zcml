@@ -2007,6 +2007,12 @@
         class="lp.registry.browser.product.ProductAddView"
         permission="launchpad.AnyPerson"
         template="../templates/product-new.pt"/>
+    <browser:renamed-page
+        for="lp.registry.interfaces.product.IProductSet"
+        name="+new-guided"
+        new_name="+new"
+        rootsite="mainsite"
+        />
     <browser:menus
         classes="
             ProductFacets
