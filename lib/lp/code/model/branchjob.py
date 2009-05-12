@@ -197,7 +197,7 @@ class BranchUpgradeJob(BranchJobDerived):
 
     implements(IBranchUpgradeJob)
 
-    #classProvides(IBranchUpgradeSource)
+    classProvides(IBranchUpgradeSource)
 
 
 class RevisionMailJob(BranchDiffJob):

@@ -72,7 +72,15 @@ class IBranchDiffJobSource(Interface):
 class IBranchUpgradeJob(Interface):
     """A job to upgrade branches with out-of-date formats."""
 
-    def upgrade(branch, to_format):
+    to_format = TextLine(title=_('The format to upgrade the branch to.'))
+
+    def run():
+        """Upgrade the branch to the format specified."""
+
+
+class IBranchUpgradeJobSource(Interface):
+
+    def create(branch, to_format):
         """Upgrade a branch to a more current format.
 
         :param branch: The database branch to upgrade.
