@@ -26,7 +26,7 @@ from canonical.launchpad.interfaces import (
     ISourcePackageNameSet, NotFoundError, PackagePublishingPocket,
     PackagePublishingPriority, PackagePublishingStatus, SourcePackageUrgency)
 from canonical.launchpad.scripts import FakeLogger
-from canonical.launchpad.testing.factory import LaunchpadObjectFactory
+from lp.testing.factory import LaunchpadObjectFactory
 from canonical.testing import LaunchpadZopelessLayer
 
 

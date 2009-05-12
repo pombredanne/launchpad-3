@@ -22,7 +22,7 @@ If we add a Product and link it to a SourceForge project,
 getSFLinkedProductsWithNoneRemoteProduct() will return it.
 
     >>> from transaction import commit
-    >>> from canonical.launchpad.testing.factory import (
+    >>> from lp.testing.factory import (
     ...     LaunchpadObjectFactory)
     >>> factory = LaunchpadObjectFactory()
 
