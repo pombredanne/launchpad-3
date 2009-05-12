@@ -56,6 +56,15 @@ Distribution has some custom operations.
     >>> print series['self_link']
     http://.../ubuntu/hoary
 
+Requesting a series that does not exist is a bad request.
+
+    >>> print webservice.named_get(
+    ...     ubuntu['self_link'], 'getSeries',
+    ...     name_or_version='fnord')
+    HTTP/1.1 400 Bad Request
+    ...
+    NoSuchDistroSeries: No such distribution series: 'fnord'.
+
 "getDevelopmentSeries" returns all the distribution series for the
 distribution that are marked as in development.
 
@@ -64,6 +73,21 @@ distribution that are marked as in development.
     >>> for entry in sorted(dev_series['entries']):
     ...     print entry['self_link']
     http://.../ubuntu/hoary
+
+"getMilestone" returns a milestone for the given name, or None if there
+is no milestone for the given name.
+
+    >>> distro = distros['entries'][3]
+    >>> debian = webservice.get(distro['self_link']).jsonBody()
+
+    >>> milestone_3_1 = webservice.named_get(
+    ...     debian['self_link'], "getMilestone", name="3.1").jsonBody()
+    >>> print milestone_3_1['self_link']
+    http://.../debian/+milestone/3.1
+
+    >>> print webservice.named_get(
+    ...     debian['self_link'], "getMilestone", name="fnord").jsonBody()
+    None
 
 "getSourcePackage" returns a distribution source package for the given
 name.

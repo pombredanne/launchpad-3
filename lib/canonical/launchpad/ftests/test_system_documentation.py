@@ -329,10 +329,6 @@ special = {
             setUp=uploaderSetUp, tearDown=uploaderTearDown,
             layer=LaunchpadZopelessLayer,
             ),
-    'archive-signing.txt': LayeredDocFileSuite(
-            '../doc/archive-signing.txt',
-            setUp=archivepublisherSetUp, layer=LaunchpadZopelessLayer,
-            ),
     'build-notification.txt': LayeredDocFileSuite(
             '../doc/build-notification.txt',
             setUp=builddmasterSetUp,

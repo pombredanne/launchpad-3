@@ -757,12 +757,22 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers, IHasLogo,
     title = Attribute('Person Page Title')
 
     archive = exported(
-        Reference(title=_("Personal Package Archive"),
-                  description=_("The Archive owned by this person, his PPA."),
-                  schema=Interface)) # Really IArchive, see archive.py
+        Reference(
+            title=_("Default PPA"),
+            description=_("The PPA named 'ppa' owned by this person."),
+            readonly=True, required=False,
+            # Really IArchive, see archive.py
+            schema=Interface)
+        )
 
-    ppas = Attribute(
-        "List of PPAs owned by this person or team ordered by name.")
+    ppas = exported(
+        CollectionField(
+            title=_("PPAs for this person."),
+            description=_(
+                "PPAs owned by the context person ordered by name."),
+            readonly=True, required=False,
+            # Really IArchive, see archive.py
+            value_type=Reference(schema=Interface)))
 
     entitlements = Attribute("List of Entitlements for this person or team.")
 
@@ -1162,6 +1172,10 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers, IHasLogo,
         :return: True if the user was subscribed, false if they weren't.
         """
 
+    @operation_parameters(
+        name=TextLine(required=True, constraint=name_validator))
+    @operation_returns_entry(Interface) # Really IArchive.
+    @export_read_operation()
     def getPPAByName(name):
         """Return a PPA with the given name if it exists or None.
 

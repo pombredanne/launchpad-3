@@ -70,8 +70,16 @@
         for="..interfaces.openidserver.IOpenIDApplication"
         name="+change-password"
         permission="launchpad.AnyPerson"
-        class=".openidaccount.AccountPasswordEditview"
+        class=".openidaccount.AccountPasswordEditView"
         template="../templates/openid-account-change-password.pt"
+        />
+
+    <browser:page
+        for="..interfaces.openidserver.IOpenIDApplication"
+        name="+edit-emails"
+        permission="launchpad.AnyPerson"
+        class=".openidaccount.AccountEditEmailsView"
+        template="../templates/openid-account-edit-emails.pt"
         />
 
     <browser:page
