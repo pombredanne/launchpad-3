@@ -14,9 +14,10 @@ from sqlobject import StringCol, ForeignKey
 
 from canonical.database.sqlbase import SQLBase
 
-from lp.soyuz.interfaces.section import ISectionSelection, ISectionSet
+from lp.soyuz.interfaces.section import (
+    ISection, ISectionSelection, ISectionSet)
 from canonical.launchpad.webapp.interfaces import NotFoundError
-from canonical.lazr.interfaces.config import ISection
+
 class Section(SQLBase):
     """See ISection"""
     implements(ISection)
