@@ -1237,13 +1237,10 @@ class BranchRequestImportView(LaunchpadFormView):
 
 
 class TryImportAgainView(LaunchpadFormView):
-    """The view to provide an 'Import now' button on the branch index page.
+    """The view to provide an 'Try again' button on the branch index page.
 
     This only appears on the page of a branch with an associated code import
-    that is being actively imported and where there is a import scheduled at
-    some point in the future.
-
-    XXX update.
+    that is marked as failing.
     """
 
     schema = IBranch
@@ -1260,7 +1257,8 @@ class TryImportAgainView(LaunchpadFormView):
         if self.context.code_import.review_status != \
                  CodeImportReviewStatus.FAILING:
             self.request.response.addNotification(
-                "XXX.")
+                "The import is now %s."
+                % self.context.code_import.review_status.name)
         else:
             self.context.code_import.updateFromData(
                 {'review_status': CodeImportReviewStatus.REVIEWED}, self.user)
