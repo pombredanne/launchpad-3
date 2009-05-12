@@ -248,7 +248,7 @@ name, package_name, variant and license.
     id: 9
     license: None
     name: u'usb'
-    package_name: None
+    package_name: u''
     resource_type_link: u'http://api.launchpad.dev/beta/#h_w_driver'
     self_link: u'http://api.launchpad.dev/beta/+hwdb/+driver/9'
     id: 10
@@ -282,7 +282,7 @@ a package_name is not recorded.
     id: 9
     license: None
     name: u'usb'
-    package_name: None
+    package_name: u''
     resource_type_link: u'http://api.launchpad.dev/beta/#h_w_driver'
     self_link: u'http://api.launchpad.dev/beta/+hwdb/+driver/9'
     id: 10
@@ -308,7 +308,7 @@ the given name are returned.
     id: 9
     license: None
     name: u'usb'
-    package_name: None
+    package_name: u''
     resource_type_link: u'http://api.launchpad.dev/beta/#h_w_driver'
     self_link: u'http://api.launchpad.dev/beta/+hwdb/+driver/9'
 
