@@ -11,6 +11,10 @@
 >
 
 <body>
+  <metal:block fill-slot="head_epilogue">
+    <metal:yui-dependencies
+      use-macro="context/@@launchpad_widget_macros/yui2calendar-dependencies" />
+  </metal:block>
 
 <metal:portlets fill-slot="portlets">
   <div tal:replace="structure context/@@+portlet-details" />
