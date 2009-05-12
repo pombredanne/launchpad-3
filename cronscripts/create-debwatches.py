@@ -17,7 +17,7 @@ import _pythonpath
 from zope.component import getUtility
 
 # canonical launchpad modules
-from canonical.launchpad.scripts.debsync import (
+from lp.soyuz.scripts.debsync import (
     do_import)
 from lp.services.scripts.base import (
     LaunchpadCronScript, LaunchpadScriptFailure)

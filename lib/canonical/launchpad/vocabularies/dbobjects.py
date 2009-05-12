@@ -59,12 +59,13 @@ from canonical.launchpad.database import (
     TranslationMessage)
 from canonical.database.sqlbase import quote_like, quote, sqlvalues
 from canonical.launchpad.helpers import shortlist
-from canonical.launchpad.interfaces.archive import ArchivePurpose
+from canonical.launchpad.interfaces import IStore
+from lp.soyuz.interfaces.archive import ArchivePurpose
 from canonical.launchpad.interfaces.bugtask import IBugTask
 from canonical.launchpad.interfaces.bugtracker import BugTrackerType
 from canonical.launchpad.interfaces.language import ILanguage
 from canonical.launchpad.interfaces.languagepack import LanguagePackType
-from canonical.launchpad.interfaces.specification import SpecificationFilter
+from lp.blueprints.interfaces.specification import SpecificationFilter
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.tales import FormattersAPI
 from canonical.launchpad.webapp.vocabulary import (

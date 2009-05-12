@@ -11,7 +11,7 @@ __metaclass__ = type
 import _pythonpath
 
 from canonical.config import config
-from canonical.launchpad.scripts.buildd import SlaveScanner
+from lp.soyuz.scripts.buildd import SlaveScanner
 
 
 if __name__ == '__main__':

@@ -158,6 +158,10 @@ special = {
         '../doc/karmacache.txt',
         layer=LaunchpadZopelessLayer,
         setUp=setUp, tearDown=tearDown),
+    'sourcepackage.txt': LayeredDocFileSuite(
+        '../doc/sourcepackage.txt',
+        layer=LaunchpadFunctionalLayer,
+        setUp=setUp, tearDown=tearDown),
     }
 
 

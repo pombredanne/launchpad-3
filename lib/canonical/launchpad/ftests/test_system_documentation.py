@@ -14,8 +14,7 @@ from zope.security.management import setSecurityPolicy
 from zope.testing.cleanup import cleanUp
 
 from canonical.config import config
-from canonical.database.sqlbase import (
-    commit, ISOLATION_LEVEL_READ_COMMITTED)
+from canonical.database.sqlbase import commit
 from canonical.launchpad.ftests import ANONYMOUS, login, logout
 from canonical.launchpad.interfaces import (
     CreateBugParams, IBugTaskSet, IDistributionSet, ILanguageSet,
@@ -95,14 +94,6 @@ def archivepublisherSetUp(test):
     LaunchpadZopelessLayer.switchDbUser(config.archivepublisher.dbuser)
 
 
-def builddmasterSetUp(test):
-    """Setup the connection for the build master tests."""
-    test_dbuser = config.builddmaster.dbuser
-    test.globs['test_dbuser'] = test_dbuser
-    LaunchpadZopelessLayer.alterConnection(
-        dbuser=test_dbuser, isolation=ISOLATION_LEVEL_READ_COMMITTED)
-    setGlobs(test)
-
 def branchscannerSetUp(test):
     """Setup the user for the branch scanner tests."""
     LaunchpadZopelessLayer.switchDbUser(config.branchscanner.dbuser)
@@ -134,31 +125,6 @@ def cveSetUp(test):
     lobotomize_stevea()
     LaunchpadZopelessLayer.switchDbUser(config.cveupdater.dbuser)
     setUp(test)
-
-def statisticianSetUp(test):
-    test_dbuser = config.statistician.dbuser
-    test.globs['test_dbuser'] = test_dbuser
-    LaunchpadZopelessLayer.switchDbUser(test_dbuser)
-    setUp(test)
-
-def statisticianTearDown(test):
-    tearDown(test)
-
-def distroseriesqueueSetUp(test):
-    setUp(test)
-    # The test requires that the umask be set to 022, and in fact this comment
-    # was made in irc on 13-Apr-2007:
-    #
-    # (04:29:18 PM) kiko: barry, cprov says that the local umask is controlled
-    # enough for us to rely on it
-    #
-    # Setting it here reproduces the environment that the doctest expects.
-    # Save the old umask so we can reset it in the tearDown().
-    test.old_umask = os.umask(022)
-
-def distroseriesqueueTearDown(test):
-    os.umask(test.old_umask)
-    tearDown(test)
 
 def uploadQueueSetUp(test):
     lobotomize_stevea()
@@ -256,12 +222,6 @@ def uploadQueueBugLinkedToQuestionSetUp(test):
     uploadQueueSetUp(test)
     login(ANONYMOUS)
 
-def manageChrootSetup(test):
-    """Set up the manage-chroot.txt test."""
-    setUp(test)
-    LaunchpadZopelessLayer.switchDbUser("fiera")
-
-
 # XXX BarryWarsaw 2007-08-15 bug=132784: as a placeholder for improving
 # the harness for the mailinglist-xmlrpc.txt tests, or improving things so
 # that all this cruft isn't necessary.
@@ -323,33 +283,6 @@ special = {
     'cve-update.txt': LayeredDocFileSuite(
             '../doc/cve-update.txt',
             setUp=cveSetUp, tearDown=tearDown, layer=LaunchpadZopelessLayer
-            ),
-    'nascentupload.txt': LayeredDocFileSuite(
-            '../doc/nascentupload.txt',
-            setUp=uploaderSetUp, tearDown=uploaderTearDown,
-            layer=LaunchpadZopelessLayer,
-            ),
-    'build-notification.txt': LayeredDocFileSuite(
-            '../doc/build-notification.txt',
-            setUp=builddmasterSetUp,
-            layer=LaunchpadZopelessLayer,
-            ),
-    'buildd-slavescanner.txt': LayeredDocFileSuite(
-            '../doc/buildd-slavescanner.txt',
-            setUp=builddmasterSetUp,
-            layer=LaunchpadZopelessLayer,
-            stdout_logging_level=logging.WARNING
-            ),
-    'buildd-slave.txt': LayeredDocFileSuite(
-            '../doc/buildd-slave.txt',
-            setUp=setUp, tearDown=tearDown,
-            layer=LaunchpadZopelessLayer,
-            stdout_logging_level=logging.WARNING
-            ),
-    'buildd-scoring.txt': LayeredDocFileSuite(
-            '../doc/buildd-scoring.txt',
-            setUp=builddmasterSetUp,
-            layer=LaunchpadZopelessLayer,
             ),
     'close-account.txt': LayeredDocFileSuite(
             '../doc/close-account.txt', setUp=setUp, tearDown=tearDown,
@@ -441,21 +374,6 @@ special = {
             setUp=setUp, tearDown=tearDown,
             layer=FunctionalLayer
             ),
-    'package-cache.txt': LayeredDocFileSuite(
-            '../doc/package-cache.txt',
-            setUp=statisticianSetUp, tearDown=statisticianTearDown,
-            layer=LaunchpadZopelessLayer
-            ),
-    'distroarchseriesbinarypackage.txt': LayeredDocFileSuite(
-            '../doc/distroarchseriesbinarypackage.txt',
-            setUp=setUp, tearDown=tearDown,
-            layer=LaunchpadZopelessLayer
-            ),
-    'distroseriesqueue-debian-installer.txt': LayeredDocFileSuite(
-            '../doc/distroseriesqueue-debian-installer.txt',
-            setUp=distroseriesqueueSetUp, tearDown=distroseriesqueueTearDown,
-            layer=LaunchpadFunctionalLayer
-            ),
     'bug-set-status.txt': LayeredDocFileSuite(
             '../doc/bug-set-status.txt',
             setUp=uploadQueueSetUp,
@@ -464,18 +382,6 @@ special = {
             ),
     'bug-set-status.txt-uploader': LayeredDocFileSuite(
             '../doc/bug-set-status.txt',
-            setUp=uploaderBugsSetUp,
-            tearDown=uploaderBugsTearDown,
-            layer=LaunchpadZopelessLayer
-            ),
-    'closing-bugs-from-changelogs.txt': LayeredDocFileSuite(
-            '../doc/closing-bugs-from-changelogs.txt',
-            setUp=uploadQueueSetUp,
-            tearDown=uploadQueueTearDown,
-            layer=LaunchpadZopelessLayer
-            ),
-    'closing-bugs-from-changelogs.txt-uploader': LayeredDocFileSuite(
-            '../doc/closing-bugs-from-changelogs.txt',
             setUp=uploaderBugsSetUp,
             tearDown=uploaderBugsTearDown,
             layer=LaunchpadZopelessLayer
@@ -681,19 +587,6 @@ special = {
             stdout_logging=False,
             layer=LaunchpadFunctionalLayer
             ),
-    'soyuz-set-of-uploads.txt': LayeredDocFileSuite(
-            '../doc/soyuz-set-of-uploads.txt',
-            layer=LaunchpadZopelessLayer,
-            ),
-    'publishing.txt': LayeredDocFileSuite(
-            '../doc/publishing.txt',
-            setUp=setUp,
-            layer=LaunchpadZopelessLayer,
-            ),
-    'sourcepackagerelease-build-lookup.txt': LayeredDocFileSuite(
-            '../doc/sourcepackagerelease-build-lookup.txt',
-            layer=LaunchpadZopelessLayer,
-            ),
     'notification-text-escape.txt': LayeredDocFileSuite(
             '../doc/notification-text-escape.txt',
             setUp=test_notifications.setUp,
@@ -707,16 +600,6 @@ special = {
     'translationsoverview.txt': LayeredDocFileSuite(
             '../doc/translationsoverview.txt',
             layer=LaunchpadZopelessLayer
-            ),
-    'manage-chroot.txt': LayeredDocFileSuite(
-            '../doc/manage-chroot.txt',
-            setUp=manageChrootSetup,
-            layer=LaunchpadZopelessLayer,
-            ),
-    'build-estimated-dispatch-time.txt': LayeredDocFileSuite(
-            '../doc/build-estimated-dispatch-time.txt',
-            setUp=builddmasterSetUp,
-            layer=LaunchpadZopelessLayer,
             ),
     'hwdb-device-tables.txt': LayeredDocFileSuite(
             '../doc/hwdb-device-tables.txt',
@@ -791,7 +674,6 @@ class ProcessMailLayer(LaunchpadZopelessLayer):
 
     doctests_with_logging = [
         'incomingmail.txt',
-        'spec-mail-exploder.txt'
         ]
 
     @classmethod

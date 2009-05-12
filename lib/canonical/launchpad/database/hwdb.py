@@ -34,7 +34,7 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from sqlobject import BoolCol, ForeignKey, IntCol, StringCol
-from storm.expr import And, Count, In, Not, Or, Select
+from storm.expr import Alias, And, Count, In, Not, Or, Select
 
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -43,11 +43,10 @@ from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.validators.name import valid_name
 from lp.registry.model.distribution import Distribution
-from canonical.launchpad.database.distroarchseries import DistroArchSeries
+from lp.soyuz.model.distroarchseries import DistroArchSeries
 from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.teammembership import TeamParticipation
-from canonical.launchpad.interfaces.distroarchseries import IDistroArchSeries
-from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
+from lp.soyuz.interfaces.distroarchseries import IDistroArchSeries
 from canonical.launchpad.interfaces.hwdb import (
     HWBus, HWMainClass, HWSubClass, HWSubmissionFormat,
     HWSubmissionKeyNotUnique, HWSubmissionProcessingStatus, IHWDevice,
@@ -316,21 +315,38 @@ class HWSubmissionSet:
         # the second argument is a no-op.
         return DecoratedResultSet(result_set, lambda result: result)
 
-    def numSubmissionsWithDevice(
-        self, bus, vendor_id, product_id, driver_name=None, package_name=None,
-        distro_target=None):
-        """See `IHWSubmissionSet`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+    def _submissionsSubmitterSelects(
+        self, target_column, bus, vendor_id, product_id, driver_name,
+        package_name, distro_target):
+        """Return Select objects for statistical queries.
 
+        :return: A tuple
+            (select_device_related_records, select_all_records)
+            where select_device_related_records is a Select instance
+            returning target_column matching all other method
+            parameters, and where select_all_records is a Select
+            instance returning target_column and matching distro_target,
+        :param target_column: The records returned by the Select instance.
+        :param bus: The `HWBus` of the device.
+        :param vendor_id: The vendor ID of the device.
+        :param product_id: The product ID of the device.
+        :param driver_name: The name of the driver used for the device
+            (optional).
+        :param package_name: The name of the package the driver is a part of.
+            (optional).
+        :param distro_target: Limit the result to submissions made for the
+            given distribution, distroseries or distroarchseries.
+            (optional).
+        """
         tables, clauses = make_distro_target_clause(distro_target)
         if HWSubmission not in tables:
             tables.append(HWSubmission)
         clauses.append(
             HWSubmission.status == HWSubmissionProcessingStatus.PROCESSED)
 
-        all_submissions = store.execute(
-            Select(
-                columns=[Count()], tables=tables, where=And(*clauses)))
+        all_submissions = Select(
+            columns=[target_column], tables=tables, where=And(*clauses),
+            distinct=True)
 
         device_tables, device_clauses = (
             make_submission_device_statistics_clause(
@@ -340,12 +356,48 @@ class HWSubmissionSet:
             tables=device_tables, where=And(*device_clauses))
 
         clauses.append(In(HWSubmission.id, submission_ids))
-        submissions_with_device = store.execute(
-            Select(
-                columns=[Count()], tables=tables, where=And(*clauses)))
+        submissions_with_device = Select(
+            columns=[target_column], tables=tables, where=And(*clauses),
+            distinct=True)
 
+        return (submissions_with_device, all_submissions)
+
+    def numSubmissionsWithDevice(
+        self, bus, vendor_id, product_id, driver_name=None, package_name=None,
+        distro_target=None):
+        """See `IHWSubmissionSet`."""
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        submissions_with_device_select, all_submissions_select = (
+            self._submissionsSubmitterSelects(
+                Count(), bus, vendor_id, product_id, driver_name,
+                package_name, distro_target))
+        submissions_with_device = store.execute(
+            submissions_with_device_select)
+        all_submissions = store.execute(all_submissions_select)
         return (submissions_with_device.get_one()[0],
                 all_submissions.get_one()[0])
+
+    def numOwnersOfDevice(
+        self, bus, vendor_id, product_id, driver_name=None, package_name=None,
+        distro_target=None):
+        """See `IHWSubmissionSet`."""
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        submitters_with_device_select, all_submitters_select = (
+            self._submissionsSubmitterSelects(
+                HWSubmission.raw_emailaddress, bus, vendor_id, product_id,
+                driver_name, package_name, distro_target))
+
+        submitters_with_device = store.execute(
+            Select(
+                columns=[Count()],
+                tables=[Alias(submitters_with_device_select, 'addresses')]))
+        all_submitters = store.execute(
+            Select(
+                columns=[Count()],
+                tables=[Alias(all_submitters_select, 'addresses')]))
+
+        return (submitters_with_device.get_one()[0],
+                all_submitters.get_one()[0])
 
 
 class HWSystemFingerprint(SQLBase):

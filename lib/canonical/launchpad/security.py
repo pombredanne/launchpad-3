@@ -11,11 +11,11 @@ from zope.component import getAdapter, getUtility
 
 from canonical.launchpad.interfaces.account import IAccount
 from lp.registry.interfaces.announcement import IAnnouncement
-from canonical.launchpad.interfaces.archive import IArchive
-from canonical.launchpad.interfaces.archivepermission import (
+from lp.soyuz.interfaces.archive import IArchive
+from lp.soyuz.interfaces.archivepermission import (
     IArchivePermissionSet)
-from canonical.launchpad.interfaces.archiveauthtoken import IArchiveAuthToken
-from canonical.launchpad.interfaces.archivesubscriber import (
+from lp.soyuz.interfaces.archiveauthtoken import IArchiveAuthToken
+from lp.soyuz.interfaces.archivesubscriber import (
     IArchiveSubscriber, IPersonalArchiveSubscription)
 from lp.code.interfaces.branch import (
     IBranch, user_has_special_branch_access)
@@ -28,8 +28,8 @@ from canonical.launchpad.interfaces.bugattachment import IBugAttachment
 from canonical.launchpad.interfaces.bugbranch import IBugBranch
 from canonical.launchpad.interfaces.bugnomination import IBugNomination
 from canonical.launchpad.interfaces.bugtracker import IBugTracker
-from canonical.launchpad.interfaces.build import IBuild
-from canonical.launchpad.interfaces.builder import IBuilder, IBuilderSet
+from lp.soyuz.interfaces.build import IBuild
+from lp.soyuz.interfaces.builder import IBuilder, IBuilderSet
 from lp.code.interfaces.codeimport import ICodeImport
 from lp.code.interfaces.codeimportjob import (
     ICodeImportJobSet, ICodeImportJobWorkflow)
@@ -59,13 +59,13 @@ from lp.registry.interfaces.milestone import (
     IMilestone, IProjectMilestone)
 from canonical.launchpad.interfaces.oauth import (
     IOAuthAccessToken, IOAuthRequestToken)
-from canonical.launchpad.interfaces.packageset import IPackagesetSet
+from lp.soyuz.interfaces.packageset import IPackagesetSet
 from canonical.launchpad.interfaces.pofile import IPOFile
 from canonical.launchpad.interfaces.potemplate import (
     IPOTemplate, IPOTemplateSubset)
-from canonical.launchpad.interfaces.publishing import (
+from lp.soyuz.interfaces.publishing import (
     IBinaryPackagePublishingHistory, ISourcePackagePublishingHistory)
-from canonical.launchpad.interfaces.queue import (
+from lp.soyuz.interfaces.queue import (
     IPackageUpload, IPackageUploadQueue)
 from canonical.launchpad.interfaces.packaging import IPackaging
 from lp.registry.interfaces.person import (
@@ -83,15 +83,15 @@ from canonical.shipit.interfaces.shipit import (
     IRequestedCDs, IShipItApplication, IShippingRequest, IShippingRequestSet,
     IShippingRun, IStandardShipItRequest, IStandardShipItRequestSet)
 from lp.registry.interfaces.sourcepackage import ISourcePackage
-from canonical.launchpad.interfaces.sourcepackagerelease import (
+from lp.soyuz.interfaces.sourcepackagerelease import (
     ISourcePackageRelease)
-from canonical.launchpad.interfaces.specification import ISpecification
-from canonical.launchpad.interfaces.specificationbranch import (
+from lp.blueprints.interfaces.specification import ISpecification
+from lp.blueprints.interfaces.specificationbranch import (
     ISpecificationBranch)
-from canonical.launchpad.interfaces.specificationsubscription import (
+from lp.blueprints.interfaces.specificationsubscription import (
     ISpecificationSubscription)
-from canonical.launchpad.interfaces.sprint import ISprint
-from canonical.launchpad.interfaces.sprintspecification import (
+from lp.blueprints.interfaces.sprint import ISprint
+from lp.blueprints.interfaces.sprintspecification import (
     ISprintSpecification)
 from lp.registry.interfaces.teammembership import ITeamMembership
 from canonical.launchpad.interfaces.translationgroup import (
@@ -2151,6 +2151,18 @@ class ViewEmailAddress(AuthorizationBase):
                 or user.inTeam(celebrities.commercial_admin)
                 or user.inTeam(celebrities.launchpad_developers)
                 or user.inTeam(celebrities.admin))
+
+
+class EditEmailAddress(EditByOwnersOrAdmins):
+    permission = 'launchpad.Edit'
+    usedfor = IEmailAddress
+
+    def checkAccountAuthenticated(self, account):
+        # Always allow users to see their own email addresses.
+        if self.obj.account == account:
+            return True
+        return super(EditEmailAddress, self).checkAccountAuthenticated(
+            account)
 
 
 class EditArchivePermissionSet(AuthorizationBase):
