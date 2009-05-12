@@ -50,12 +50,12 @@ YUI().use('node', 'lazr.effects', function(Y) {
                 if (code >= 32 && code < 127) {
                     var new_value = url_field.get('value') +
                                     String.fromCharCode(code);
-                    log('new_value: ', new_value);
                     if (new_value.search(valid_urls) < 0) {
                         e.preventDefault();
                     }
                 }
             });
+            /* Explicitly typing into the URL field disables autofilling. */
             url_field.on('keyup', function(e) {
                 if (url_field.get('value') == '') {
                     /* The user cleared the URL field; turn on autofill. */
