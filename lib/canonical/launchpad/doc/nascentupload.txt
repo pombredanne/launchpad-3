@@ -879,7 +879,7 @@ This time the upload will fail because the ACLs don't let
   >>> bar_failed.is_rejected
   True
   >>> print bar_failed.rejection_message
-  Signer has no upload rights at all to this distribution.
+  Signer has no upload rights at all to this distribution's primary archive.
 
 Even in a rejected upload using 'insecure' policy, the DSC signing key
 and the changesfile sigining key are stored in NascentUpload instance
