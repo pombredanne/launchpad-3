@@ -104,6 +104,7 @@ from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageNameSet)
 from lp.registry.interfaces.ssh import ISSHKeySet, SSHKeyType
+from lp.testing import time_counter
 
 SPACE = ' '
 

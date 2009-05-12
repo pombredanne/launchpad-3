@@ -3,12 +3,14 @@
 
 __metaclass__ = type
 
+from datetime import datetime, timedelta
 from pprint import pformat
 import os
 import shutil
 import tempfile
 import unittest
 
+import pytz
 from storm.store import Store
 
 import transaction
@@ -24,7 +26,8 @@ from canonical.config import config
 # place to import them from in tests.
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 
-from lp.testing._login import *
+from lp.testing._login import (
+    ANONYMOUS, is_logged_in, login, login_person, logout)
 from lp.testing._tales import test_tales
 
 from twisted.python.util import mergeFunctionMetadata
@@ -340,6 +343,7 @@ class TestCase(unittest.TestCase):
 
     def setUp(self):
         unittest.TestCase.setUp(self)
+        from lp.testing.factory import ObjectFactory
         self.factory = ObjectFactory()
 
 
@@ -349,6 +353,7 @@ class TestCaseWithFactory(TestCase):
         TestCase.setUp(self)
         login(user)
         self.addCleanup(logout)
+        from lp.testing.factory import LaunchpadObjectFactory
         self.factory = LaunchpadObjectFactory()
         self.real_bzr_server = False
 
