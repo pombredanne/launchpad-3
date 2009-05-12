@@ -22,8 +22,10 @@ from canonical.codehosting.vfs import branch_id_to_path, get_multi_server
 from canonical.config import config
 # Import the login and logout functions here as it is a much better
 # place to import them from in tests.
-from canonical.launchpad.ftests import ANONYMOUS, login, login_person, logout
 from canonical.launchpad.webapp.interfaces import ILaunchBag
+
+from lp.testing._login import *
+from lp.testing._tales import test_tales
 from lp.testing.factory import *
 
 from twisted.python.util import mergeFunctionMetadata
