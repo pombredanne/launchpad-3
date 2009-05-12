@@ -2302,10 +2302,12 @@ context person with a given name (exact match).
     >>> another_ppa == nightly_ppa
     True
 
-When there are not matching PPAs, None is returned.
+When a suitable PPA couldn't be found, NoSuchPPA is raised.
 
     >>> print sabdfl.getPPAByName('not-found')
-    None
+    Traceback (most recent call last):
+    ...
+    NoSuchPPA: No such ppa: 'not-found'.
 
 
 == Editable displayname ==

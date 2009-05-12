@@ -15,7 +15,7 @@ from canonical.launchpad.interfaces import (
     CodeReviewVote)
 from canonical.launchpad.interfaces.message import IMessageSet
 from canonical.launchpad.mail import format_address
-from canonical.launchpad.mailout.codereviewcomment import (
+from lp.code.mail.codereviewcomment import (
     CodeReviewCommentMailer)
 from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.launchpad.webapp import canonical_url

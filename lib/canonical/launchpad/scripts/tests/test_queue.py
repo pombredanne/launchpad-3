@@ -26,7 +26,7 @@ from canonical.launchpad.interfaces import (
     ArchivePurpose, DistroSeriesStatus, IArchiveSet, IBugSet, IBugTaskSet,
     IDistributionSet, ILibraryFileAliasSet, IPackageUploadSet, IPersonSet,
     PackagePublishingPocket, PackagePublishingStatus, PackageUploadStatus)
-from canonical.launchpad.mail import stub
+from lp.services.mail import stub
 from canonical.launchpad.scripts.queue import (
     CommandRunner, CommandRunnerError, name_queue_map)
 from canonical.librarian.ftests.harness import (

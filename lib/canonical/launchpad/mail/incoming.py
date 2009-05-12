@@ -27,7 +27,7 @@ from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
 from canonical.launchpad.webapp.interaction import setupInteraction
 from canonical.launchpad.mail.commands import get_error_message
 from canonical.launchpad.mail.handlers import mail_handlers
-from canonical.launchpad.mail.signedmessage import signed_message_from_string
+from lp.services.mail.signedmessage import signed_message_from_string
 from canonical.launchpad.mailnotification import (
     send_process_error_notification)
 from canonical.librarian.interfaces import UploadFailed

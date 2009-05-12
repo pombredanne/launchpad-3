@@ -10,7 +10,7 @@ __metaclass__ = type
 from canonical.launchpad.interfaces import CodeReviewNotificationLevel
 from canonical.launchpad.mail import format_address
 from canonical.launchpad.mailout import append_footer
-from canonical.launchpad.mailout.branchmergeproposal import BMPMailer
+from lp.code.mail.branchmergeproposal import BMPMailer
 from canonical.launchpad.webapp import canonical_url
 
 

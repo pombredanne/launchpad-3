@@ -138,7 +138,7 @@ spec, and mails it to the related people.
 Let's look at the email that got sent:
 
     >>> import transaction
-    >>> from canonical.launchpad.mail import stub
+    >>> from lp.services.mail import stub
     >>> transaction.commit()
     >>> len(stub.test_emails)
     1
@@ -263,7 +263,7 @@ in Launchpad:
     ...     config.launchpad.specs_domain)
     >>> moin_change['Sender'] = 'webmaster@ubuntu.com'
 
-    >>> from canonical.launchpad.mail.sendmail import sendmail
+    >>> from lp.services.mail.sendmail import sendmail
     >>> from canonical.launchpad.mail.incoming import handleMail
     >>> sendmail(moin_change, bulk=False)
     '...'
