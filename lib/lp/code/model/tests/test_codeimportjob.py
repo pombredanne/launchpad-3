@@ -938,14 +938,16 @@ class TestCodeImportJobWorkflowFinishJob(TestCaseWithFactory,
                     code_import.branch.next_mirror_time is None)
 
     def test_fiveFailuresMarksAsFailing(self):
-        # If a code import fails five times in a row, the import is marked as
-        # FAILING.
+        # If a code import fails config.codeimport.consecutive_failure_limit
+        # times in a row, the import is marked as FAILING.
         code_import = self.factory.makeCodeImport()
-        for i in range(4):
+        failure_limit = config.codeimport.consecutive_failure_limit
+        for i in range(failure_limit - 1):
             running_job = self.makeRunningJob(code_import)
             getUtility(ICodeImportJobWorkflow).finishJob(
                 running_job, CodeImportResultStatus.FAILURE, None)
-        self.assertEqual(4, code_import.consecutive_failure_count)
+        self.assertEqual(
+            failure_limit - 1, code_import.consecutive_failure_count)
         self.assertEqual(
             CodeImportReviewStatus.REVIEWED, code_import.review_status)
         running_job = self.makeRunningJob(code_import)
