@@ -23,7 +23,7 @@ from canonical.launchpad.components.request_country import (
 from canonical.launchpad.interfaces.country import ICountrySet
 from canonical.launchpad.interfaces.geoip import (
     IGeoIP, IGeoIPRecord, IRequestLocalLanguages, IRequestPreferredLanguages)
-from canonical.launchpad.interfaces.language import ILanguageSet
+from lp.services.worlddata.interfaces.language import ILanguageSet
 
 
 class GeoIP:

@@ -221,7 +221,7 @@ concrete language.
     >>> print foo_bar.displayname
     Foo Bar
 
-    >>> from canonical.launchpad.interfaces.language import ILanguageSet
+    >>> from lp.services.worlddata.interfaces.language import ILanguageSet
     >>> spanish = getUtility(ILanguageSet).getLanguageByCode('es')
     >>> foo_bar.addLanguage(spanish)
     >>> for translator in spanish.translators:

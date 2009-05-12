@@ -142,7 +142,7 @@ from canonical.launchpad.interfaces.emailaddress import (
 from canonical.launchpad.interfaces.geoip import IRequestPreferredLanguages
 from canonical.launchpad.interfaces.gpghandler import (
     GPGKeyNotFoundError, IGPGHandler)
-from canonical.launchpad.interfaces.language import ILanguageSet
+from lp.services.worlddata.interfaces.language import ILanguageSet
 from canonical.launchpad.interfaces.launchpad import IPasswordEncryptor
 from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
 from canonical.launchpad.interfaces.oauth import IOAuthConsumerSet

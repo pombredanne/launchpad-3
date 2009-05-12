@@ -45,7 +45,7 @@ from canonical.launchpad.database.bugtarget import BugTargetBase
 from canonical.launchpad.database.bugtask import BugTask
 from lp.answers.model.faq import FAQ, FAQSearch
 from lp.registry.model.karma import KarmaContextMixin
-from canonical.launchpad.database.language import Language
+from lp.services.worlddata.model.language import Language
 from lp.registry.model.mentoringoffer import MentoringOffer
 from lp.registry.model.milestone import (
     Milestone, ProjectMilestone, milestone_sort_key)

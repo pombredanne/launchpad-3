@@ -74,7 +74,7 @@ from canonical.launchpad.database.distroarchseriesbinarypackage import *
 from canonical.launchpad.database.distroarchseriesbinarypackagerelease\
     import *
 from lp.registry.model.person import *
-from canonical.launchpad.database.language import *
+from lp.services.worlddata.model.language import *
 from canonical.launchpad.database.languagepack import *
 from canonical.launchpad.database.translationgroup import *
 from canonical.launchpad.database.translationimportqueue import *

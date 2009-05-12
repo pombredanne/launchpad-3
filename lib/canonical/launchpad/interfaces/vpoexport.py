@@ -14,7 +14,7 @@ from zope.interface import Interface
 from zope.schema import Bool, Int, Object, Text
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces.language import ILanguage
+from lp.services.worlddata.interfaces.language import ILanguage
 from canonical.launchpad.interfaces.pofile import IPOFile
 from canonical.launchpad.interfaces.potemplate import IPOTemplate
 from canonical.launchpad.interfaces.potmsgset import IPOTMsgSet

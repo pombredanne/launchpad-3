@@ -39,7 +39,7 @@ from lp.registry.interfaces.distroseries import (
     DistroSeriesStatus, IDistroSeries)
 from canonical.launchpad.interfaces.distroserieslanguage import (
     IDistroSeriesLanguageSet)
-from canonical.launchpad.interfaces.language import ILanguageSet
+from lp.services.worlddata.interfaces.language import ILanguageSet
 from canonical.launchpad.interfaces.launchpad import (
     ILaunchBag, ILaunchpadCelebrities, NotFoundError)
 from canonical.launchpad.interfaces.potemplate import IPOTemplateSet

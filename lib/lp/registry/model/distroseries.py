@@ -52,7 +52,7 @@ from canonical.launchpad.database.distroseriessourcepackagerelease import (
     DistroSeriesSourcePackageRelease)
 from canonical.launchpad.database.distroseries_translations_copy import (
     copy_active_translations)
-from canonical.launchpad.database.language import Language
+from lp.services.worlddata.model.language import Language
 from canonical.launchpad.database.languagepack import LanguagePack
 from lp.registry.model.milestone import (
     HasMilestonesMixin, Milestone)

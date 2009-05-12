@@ -94,7 +94,7 @@ from canonical.launchpad.interfaces.hwdb import *
 from lp.registry.interfaces.irc import *
 from lp.registry.interfaces.jabber import *
 from lp.registry.interfaces.karma import *
-from canonical.launchpad.interfaces.language import *
+from lp.services.worlddata.interfaces.language import *
 from canonical.launchpad.interfaces.languagepack import *
 from canonical.launchpad.interfaces.launchpad import *
 from canonical.launchpad.interfaces.launchpadstatistic import *
