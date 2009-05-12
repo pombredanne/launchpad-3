@@ -29,13 +29,13 @@ from canonical.launchpad.database.bugbranch import BugBranch
 from lp.code.model.codeimport import CodeImport, CodeImportSet
 from lp.code.model.codereviewcomment import CodeReviewComment
 from lp.registry.model.product import ProductSet
-from canonical.launchpad.database.specificationbranch import (
+from lp.blueprints.model.specificationbranch import (
     SpecificationBranch)
 from lp.registry.model.sourcepackage import SourcePackage
 from canonical.launchpad.ftests import (
     ANONYMOUS, login, login_person, logout, syncUpdate)
 from canonical.launchpad.interfaces.bug import CreateBugParams, IBugSet
-from canonical.launchpad.interfaces.specification import (
+from lp.blueprints.interfaces.specification import (
     ISpecificationSet, SpecificationDefinitionStatus)
 from lp.code.interfaces.branch import (
     BranchCannotBePrivate, BranchCannotBePublic, BranchType,
