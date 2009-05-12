@@ -109,7 +109,7 @@ class LibraryFileAliasResource(resource.Resource):
         # per Bug 5456.
         now = datetime.utcnow().replace(tzinfo=utc)
         age = now - date_created
-        age_seconds = max(age.days * 24 * 60 + age.seconds, 2 * 24 * 60)
+        age_seconds = max(age.days * 24 * 60 * 60 + age.seconds, 24 * 60 * 60)
         request.setHeader('Cache-Control', 'max-age=%d, public' % age_seconds)
         #request.setHeader('Last-Modified',
         #    date_created.strftime('%a, %d %b %Y %H:%M:%S +0000'))
