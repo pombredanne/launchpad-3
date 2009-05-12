@@ -673,4 +673,13 @@
             template="../templates/distroarchseries-admin.pt"/>
     </facet>
 
+    <browser:url
+        for="lp.soyuz.interfaces.packageset.IPackagesetSet"
+        path_expression="string:package-sets"
+        parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"/>
+    <browser:url
+        for="lp.soyuz.interfaces.packageset.IPackageset"
+        path_expression="name"
+        parent_utility="lp.soyuz.interfaces.packageset.IPackagesetSet"/>
+
 </configure>

@@ -25,10 +25,10 @@ from lp.soyuz.interfaces.archive import ComponentNotFound, SourceNotFound
 from lp.soyuz.interfaces.archivepermission import (
     ArchivePermissionType, IArchivePermission, IArchivePermissionSet,
     IArchiveUploader, IArchiveQueueAdmin)
-from canonical.launchpad.database.packageset import Packageset
+from lp.soyuz.model.packageset import Packageset
 from lp.soyuz.interfaces.component import IComponent, IComponentSet
 from canonical.launchpad.interfaces.lpstorm import IMasterStore, IStore
-from canonical.launchpad.interfaces.packageset import IPackageset
+from lp.soyuz.interfaces.packageset import IPackageset
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageName, ISourcePackageNameSet)

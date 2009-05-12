@@ -21,7 +21,7 @@ from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice
 from lp.soyuz.interfaces.archive import IArchive
 from lp.soyuz.interfaces.component import IComponent
-from canonical.launchpad.interfaces.packageset import IPackageset
+from lp.soyuz.interfaces.packageset import IPackageset
 from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageName)
 from lazr.restful.fields import Reference

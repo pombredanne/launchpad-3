@@ -56,7 +56,6 @@
     <include file="packagebugsupervisor.zcml" />
     <include file="packagecopyrequest.zcml" />
     <include file="packagerelationship.zcml" />
-    <include file="packageset.zcml" />
     <include file="packaging.zcml" />
     <include file="personnotification.zcml" />
     <include file="personproduct.zcml" />

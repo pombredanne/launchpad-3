@@ -44,7 +44,7 @@ from lp.soyuz.interfaces.publishing import (
     PackagePublishingPocket, PackagePublishingStatus)
 from lp.soyuz.interfaces.queue import QueueInconsistentStateError
 from canonical.launchpad.interfaces import ILibraryFileAliasSet
-from canonical.launchpad.interfaces.packageset import IPackagesetSet
+from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.soyuz.interfaces.archivepermission import (
     ArchivePermissionType, IArchivePermissionSet)
 from lp.soyuz.interfaces.component import IComponentSet

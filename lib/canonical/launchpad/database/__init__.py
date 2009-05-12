@@ -144,4 +144,4 @@ from lp.soyuz.model.archivedependency import *
 from lp.soyuz.model.packagediff import *
 from lp.code.model.codereviewcomment import *
 from lp.soyuz.model.archivepermission import *
-from canonical.launchpad.database.packageset import *
+from lp.soyuz.model.packageset import *

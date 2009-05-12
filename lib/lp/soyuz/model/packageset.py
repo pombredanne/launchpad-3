@@ -15,8 +15,8 @@ from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageName, ISourcePackageNameSet)
 from lp.registry.model.sourcepackagename import SourcePackageName
 
-from canonical.launchpad.interfaces import IMasterStore, IStore
-from canonical.launchpad.interfaces.packageset import (
+from canonical.launchpad.interfaces.lpstorm import IMasterStore, IStore
+from lp.soyuz.interfaces.packageset import (
     IPackageset, IPackagesetSet)
 
 

@@ -782,5 +782,33 @@
             interface="lp.soyuz.interfaces.files.ISourcePackageReleaseFileSet"/>
     </securedutility>
 
+    <!-- Packageset -->
+
+    <class
+        class="lp.soyuz.model.packageset.Packageset">
+        <allow
+            interface="lp.soyuz.interfaces.packageset.IPackagesetViewOnly"/>
+        <require
+            permission="launchpad.Edit"
+            interface="lp.soyuz.interfaces.packageset.IPackagesetEdit"/>
+    </class>
+    <class
+        class="lp.soyuz.model.packageset.PackagesetSet">
+        <implements
+            interface="lp.soyuz.interfaces.packageset.IPackagesetSet"/>
+    </class>
+    <securedutility
+        class="lp.soyuz.model.packageset.PackagesetSet"
+        provides="lp.soyuz.interfaces.packageset.IPackagesetSet">
+        <allow
+            attributes="
+                getByName
+                getByOwner
+                setsIncludingSource"/>
+        <require
+            permission="launchpad.Edit"
+            attributes="
+                new"/>
+    </securedutility>
 
 </configure>

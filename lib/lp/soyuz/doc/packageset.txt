@@ -31,7 +31,7 @@ used (from http://en.wikipedia.org/wiki/Glossary_of_graph_theory):
 So, let's start by creating a few package sets.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces.packageset import (
+    >>> from lp.soyuz.interfaces.packageset import (
     ...     IPackagesetSet)
 
     >>> login('foo.bar@canonical.com')
@@ -458,7 +458,7 @@ What sources are *directly* included by 'mozilla' but not by 'firefox'?
 Sometimes it's interesting to see what package sets include a certain
 source package name.
 
-    >>> from canonical.launchpad.interfaces.packageset import (
+    >>> from lp.soyuz.interfaces.packageset import (
     ...     IPackagesetSet)
     >>> from lp.registry.interfaces.sourcepackagename import (
     ...     ISourcePackageNameSet)

@@ -59,7 +59,7 @@ from lp.registry.interfaces.milestone import (
     IMilestone, IProjectMilestone)
 from canonical.launchpad.interfaces.oauth import (
     IOAuthAccessToken, IOAuthRequestToken)
-from canonical.launchpad.interfaces.packageset import IPackagesetSet
+from lp.soyuz.interfaces.packageset import IPackagesetSet
 from canonical.launchpad.interfaces.pofile import IPOFile
 from canonical.launchpad.interfaces.potemplate import (
     IPOTemplate, IPOTemplateSubset)
