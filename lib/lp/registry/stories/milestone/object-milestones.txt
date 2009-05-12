@@ -326,7 +326,7 @@ We'll also create a new test milestone within the "trunk" series:
     >>> milestone = 'test-milestone'
     >>> browser.getControl('Name').value = milestone
     >>> browser.getControl('Date Targeted').value = '2100-08-08'
-    >>> browser.getControl('Register milestone').click()
+    >>> browser.getControl('Register Milestone').click()
     >>> print browser.title
     Overview of Mozilla Firefox Series: trunk
 

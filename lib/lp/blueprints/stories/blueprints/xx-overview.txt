@@ -69,7 +69,7 @@ We'll also target the blueprint to a milestone. First we'll create a milestone:
     >>> browser.getControl('Name').value = '1.0.9'
     >>> browser.getControl('Date Targeted').value = '2050-05-05'
     >>> browser.getControl('Summary').value = 'First ever milestone!'
-    >>> browser.getControl('Register milestone').click()
+    >>> browser.getControl('Register Milestone').click()
 
 Now we'll target our chosen blueprint to the new milestone:
 
@@ -162,7 +162,7 @@ We'll also target the blueprint to a milestone. First we'll create a milestone:
     >>> browser.getControl('Name').value = 'drift-1'
     >>> browser.getControl('Date Targeted').value = '2050-05-05'
     >>> browser.getControl('Summary').value = 'First drift of groundhogs!'
-    >>> browser.getControl('Register milestone').click()
+    >>> browser.getControl('Register Milestone').click()
 
 Now we'll target our chosen blueprint to the new milestone:
 

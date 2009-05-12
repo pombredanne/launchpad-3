@@ -194,7 +194,7 @@ We'll add a milestone to Redfish to demonstrate this.
     >>> admin_browser.open(
     ...     'http://launchpad.dev/redfish/trunk/+addmilestone')
     >>> admin_browser.getControl('Name').value = 'foo'
-    >>> admin_browser.getControl('Register milestone').click()
+    >>> admin_browser.getControl('Register Milestone').click()
 
     >>> admin_browser.open(
     ...     'http://bugs.launchpad.dev/redfish/+bug/15/+editstatus')

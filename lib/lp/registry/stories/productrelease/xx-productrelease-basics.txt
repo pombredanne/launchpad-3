@@ -81,7 +81,7 @@ the "Keep the milestone <name> active" checkbox.
 
     >>> browser.open('http://launchpad.dev/firefox/trunk/+addmilestone')
     >>> browser.getControl('Name').value = 'bar'
-    >>> browser.getControl('Register milestone').click()
+    >>> browser.getControl('Register Milestone').click()
     >>> browser.open('http://launchpad.dev/firefox/+milestone/bar/+addrelease')
     >>> browser.getControl("Date released").value = '2009-01-01'
     >>> browser.getControl("Keep the bar milestone active.").selected = True
@@ -141,7 +141,7 @@ Let's add a release as Jeff:
     >>> browser = setupBrowser(auth='Basic jeff.waugh@ubuntulinux.com:jdub')
     >>> browser.open('http://launchpad.dev/tomcat/trunk/+addmilestone')
     >>> browser.getControl('Name').value = '0.6.6.6'
-    >>> browser.getControl('Register milestone').click()
+    >>> browser.getControl('Register Milestone').click()
     >>> browser.getLink(url='+milestone/0.6.6.6').click()
     >>> browser.getLink('Create release').click()
     >>> browser.getControl('Date released').value = '2008-12-01'
