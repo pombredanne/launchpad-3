@@ -45,13 +45,13 @@ from canonical.widgets import SearchForUpstreamPopupWidget, StrippedTextWidget
 
 class BugAlsoAffectsProductMetaView(MultiStepView):
     @property
-    def step_one(self):
+    def first_step(self):
         return ChooseProductStep
 
 
 class BugAlsoAffectsDistroMetaView(MultiStepView):
     @property
-    def step_one(self):
+    def first_step(self):
         return DistroBugTaskCreationStep
 
 

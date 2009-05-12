@@ -11,15 +11,44 @@ on. If the branch is a junk branch, then the target is the branch owner.
 
 __metaclass__ = type
 __all__ = [
+    'check_default_stacked_on',
     'IBranchTarget',
     'IHasBranchTarget',
     ]
 
 from zope.interface import Attribute, Interface
+from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad import _
 from canonical.launchpad.webapp.interfaces import IPrimaryContext
 from lazr.restful.fields import Reference
+
+
+def check_default_stacked_on(branch):
+    """Return 'branch' if suitable to be a default stacked-on branch.
+
+    Only certain branches are suitable to be default stacked-on branches.
+    Branches that are *not* suitable include:
+      - remote branches
+      - branches the user cannot see
+      - branches that have not yet been successfully processed by the puller.
+
+    If the given branch is not suitable, return None. For convenience, also
+    returns None if passed None. Otherwise, return the branch.
+    """
+    # Import here to avoid circular imports.
+    from lp.code.interfaces.branch import BranchType
+    if branch is None:
+        return None
+    try:
+        branch_type = branch.branch_type
+    except Unauthorized:
+        return None
+    if branch_type == BranchType.REMOTE:
+        return None
+    if branch.last_mirrored is None:
+        return None
+    return branch
 
 
 class IHasBranchTarget(Interface):
@@ -65,4 +94,8 @@ class IBranchTarget(IPrimaryContext):
         """
 
     def getNamespace(owner):
-        """Return a namespace for this target and the specified owner."""
+        """Return a `IBranchNamespace` for this target and the specified owner.
+        """
+
+    collection = Attribute("An IBranchCollection for this target.")
+

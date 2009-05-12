@@ -38,7 +38,7 @@ from lp.code.interfaces.codeimportmachine import (
 from lp.code.interfaces.codereviewcomment import (
     ICodeReviewComment, ICodeReviewCommentDeletion)
 from lp.registry.interfaces.distribution import IDistribution
-from canonical.launchpad.interfaces.distributionmirror import (
+from lp.registry.interfaces.distributionmirror import (
     IDistributionMirror)
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage)
@@ -51,7 +51,7 @@ from canonical.launchpad.interfaces.hwdb import IHWSubmission
 from canonical.launchpad.interfaces.language import ILanguage, ILanguageSet
 from canonical.launchpad.interfaces.languagepack import ILanguagePack
 from canonical.launchpad.interfaces.launchpad import (
-    IBazaarApplication, IHasBug, IHasDrivers, IHasOwner, IShipItApplication,
+    IBazaarApplication, IHasBug, IHasDrivers, IHasOwner,
     ILaunchpadCelebrities)
 from lp.registry.interfaces.location import IPersonLocation
 from lp.registry.interfaces.mailinglist import IMailingListSet
@@ -59,6 +59,7 @@ from lp.registry.interfaces.milestone import (
     IMilestone, IProjectMilestone)
 from canonical.launchpad.interfaces.oauth import (
     IOAuthAccessToken, IOAuthRequestToken)
+from canonical.launchpad.interfaces.packageset import IPackagesetSet
 from canonical.launchpad.interfaces.pofile import IPOFile
 from canonical.launchpad.interfaces.potemplate import (
     IPOTemplate, IPOTemplateSubset)
@@ -78,9 +79,9 @@ from lp.registry.interfaces.productrelease import (
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.code.interfaces.seriessourcepackagebranch import (
     ISeriesSourcePackageBranch, IMakeOfficialBranchLinks)
-from canonical.launchpad.interfaces.shipit import (
-    IRequestedCDs, IShippingRequest, IShippingRequestSet, IShippingRun,
-    IStandardShipItRequest, IStandardShipItRequestSet)
+from canonical.shipit.interfaces.shipit import (
+    IRequestedCDs, IShipItApplication, IShippingRequest, IShippingRequestSet,
+    IShippingRun, IStandardShipItRequest, IStandardShipItRequestSet)
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from canonical.launchpad.interfaces.sourcepackagerelease import (
     ISourcePackageRelease)
@@ -839,7 +840,8 @@ class EditDistroSeriesByOwnersOrDistroOwnersOrAdmins(AuthorizationBase):
 class SeriesDrivers(AuthorizationBase):
     """Drivers can approve or decline features and target bugs.
 
-    Drivers exist for distribution and product series.
+    Drivers exist for distribution and product series.  Distribution and
+    product owners are implicitly drivers too.
     """
     permission = 'launchpad.Driver'
     usedfor = IHasDrivers
@@ -849,7 +851,7 @@ class SeriesDrivers(AuthorizationBase):
             if user.inTeam(driver):
                 return True
         admins = getUtility(ILaunchpadCelebrities).admin
-        return user.inTeam(admins)
+        return user.inTeam(self.obj.owner) or user.inTeam(admins)
 
 
 class ViewProductSeries(AuthorizationBase):
@@ -2210,3 +2212,26 @@ class ChangeOfficialSourcePackageBranchLinks(AuthorizationBase):
         return (
             user.inTeam(celebrities.ubuntu_branches)
             or user.inTeam(celebrities.admin))
+
+
+class EditPackagesetSet(AuthorizationBase):
+    permission = 'launchpad.Edit'
+    usedfor = IPackagesetSet
+
+    def checkAuthenticated(self, user):
+        """Users must be an admin or a member of the tech board."""
+        celebrities = getUtility(ILaunchpadCelebrities)
+        if user.inTeam(celebrities.admin):
+            return True
+
+        techboard = getUtility(IPersonSet).getByName("techboard")
+        if techboard is None:
+            # We expect techboard to be present but it's not.  Log an
+            # OOPS.
+            error = AssertionError(
+                "'techboard' team is missing, has it been renamed?")
+            info = (error.__class__, error, None)
+            global_error_utility = getUtility(IErrorReportingUtility)
+            global_error_utility.raising(info)
+            return False
+        return user.inTeam(techboard)

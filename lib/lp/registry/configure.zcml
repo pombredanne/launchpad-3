@@ -5,6 +5,8 @@
     xmlns:xmlrpc="http://namespaces.zope.org/xmlrpc"
     i18n_domain="launchpad">
     <include
+        file="vocabularies.zcml"/>
+    <include
         package=".browser"/>
     <class
         class="lp.registry.model.teammembership.TeamMembershipSet">
@@ -1048,6 +1050,9 @@
         <allow
             interface="canonical.launchpad.interfaces.IHasTranslationImports"/>
         <require
+            permission="launchpad.Driver"
+            interface="lp.registry.interfaces.product.IProductDriverRestricted"/>
+        <require
             permission="launchpad.Edit"
             interface="lp.registry.interfaces.product.IProductEditRestricted"/>
         <require
@@ -1581,4 +1586,60 @@
         <allow
             interface="lp.registry.interfaces.entitlement.IEntitlementSet"/>
     </securedutility>
+
+    <!-- DistributionMirror -->
+    <class class="lp.registry.model.distributionmirror.DistributionMirror">
+        <allow interface="lp.registry.interfaces.distributionmirror.IDistributionMirror" />
+        <require
+            permission="launchpad.Edit"
+            set_attributes="name displayname description http_base_url
+                            ftp_base_url rsync_base_url enabled speed
+                            country content official_candidate" />
+        <require
+            permission="launchpad.Admin"
+            set_attributes="status owner whiteboard reviewer date_reviewed" />
+        <require
+            permission="launchpad.Admin"
+            attributes="destroySelf" />
+    </class>
+
+    <!-- DistributionMirrorSet -->
+    <class class="lp.registry.model.distributionmirror.DistributionMirrorSet">
+        <allow interface="lp.registry.interfaces.distributionmirror.IDistributionMirrorSet"/>
+    </class>
+
+    <securedutility
+        class="lp.registry.model.distributionmirror.DistributionMirrorSet"
+        provides="lp.registry.interfaces.distributionmirror.IDistributionMirrorSet">
+        <allow interface="lp.registry.interfaces.distributionmirror.IDistributionMirrorSet" />
+    </securedutility>
+
+    <!-- MirrorDistroArchSeries -->
+    <class class="lp.registry.model.distributionmirror.MirrorDistroArchSeries">
+        <allow interface="lp.registry.interfaces.distributionmirror.IMirrorDistroArchSeries" />
+        <require
+            permission="launchpad.Edit"
+            set_schema="lp.registry.interfaces.distributionmirror.IMirrorDistroArchSeries" />
+    </class>
+
+    <!-- MirrorDistroSeriesSource -->
+    <class class="lp.registry.model.distributionmirror.MirrorDistroSeriesSource">
+        <allow interface="lp.registry.interfaces.distributionmirror.IMirrorDistroSeriesSource" />
+        <require
+            permission="launchpad.Edit"
+            set_schema="lp.registry.interfaces.distributionmirror.IMirrorDistroSeriesSource" />
+    </class>
+
+    <!-- MirrorCDImageDistroSeries -->
+    <class class="lp.registry.model.distributionmirror.MirrorCDImageDistroSeries">
+        <allow interface="lp.registry.interfaces.distributionmirror.IMirrorCDImageDistroSeries" />
+    </class>
+
+    <!-- MirrorProbeRecord -->
+    <class class="lp.registry.model.distributionmirror.MirrorProbeRecord">
+        <allow interface="lp.registry.interfaces.distributionmirror.IMirrorProbeRecord" />
+        <require
+            permission="launchpad.Edit"
+            set_schema="lp.registry.interfaces.distributionmirror.IMirrorProbeRecord" />
+    </class>
 </configure>

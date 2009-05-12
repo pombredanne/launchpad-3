@@ -539,9 +539,18 @@ class TestActualImportMixin:
 
         script_path = os.path.join(
             config.root, 'scripts', 'code-import-worker.py')
+        output = tempfile.TemporaryFile()
         retcode = subprocess.call(
-            [script_path, '-qqq'] + self.source_details.asArguments())
+            [script_path] + self.source_details.asArguments(),
+            stderr=output, stdout=output)
         self.assertEqual(retcode, 0)
+
+        # It's important that the subprocess writes to stdout or stderr
+        # regularly to let the worker monitor know it's still alive.  That
+        # specifically is hard to test, but we can at least test that the
+        # process produced _some_ output.
+        output.seek(0, 2)
+        self.assertPositive(output.tell())
 
         self.addCleanup(
             lambda : clean_up_default_stores_for_import(self.source_details))

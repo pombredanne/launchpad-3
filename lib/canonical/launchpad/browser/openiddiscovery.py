@@ -51,8 +51,11 @@ class OpenIDApplicationNavigation(Navigation):
 
     def _get_active_identity(self, openid_identifier):
         """Return the IOpenIDPersistentIdentity if it is active, or None."""
-        account = getUtility(IAccountSet).getByOpenIDIdentifier(
-            openid_identifier)
+        try:
+            account = getUtility(IAccountSet).getByOpenIDIdentifier(
+                openid_identifier)
+        except LookupError:
+            account = None
         if account is None or account.status != AccountStatus.ACTIVE:
             return None
         return IOpenIDPersistentIdentity(account)
