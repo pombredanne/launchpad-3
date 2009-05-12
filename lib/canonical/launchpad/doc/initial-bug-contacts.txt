@@ -119,7 +119,7 @@ when a subscriber to the new package is already subscribed to the bug:
     >>> from lazr.lifecycle.event import ObjectModifiedEvent
     >>> from lazr.lifecycle.snapshot import Snapshot
     >>> from canonical.launchpad.interfaces import IDistroBugTask
-    >>> from canonical.launchpad.mail import stub
+    >>> from lp.services.mail import stub
 
     >>> daf = personset.getByName("daf")
     >>> ubuntu_pmount.addBugSubscription(daf, daf)

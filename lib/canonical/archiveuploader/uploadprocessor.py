@@ -60,7 +60,8 @@ from canonical.archiveuploader.nascentupload import (
     NascentUpload, FatalUploadError, EarlyReturnUploadError)
 from canonical.archiveuploader.uploadpolicy import (
     findPolicyByOptions, UploadPolicyError)
-from canonical.launchpad.interfaces.archive import IArchiveSet
+from canonical.launchpad.interfaces.archive import (
+    IArchiveSet, NoSuchPPA)
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from canonical.launchpad.webapp.errorlog import (
@@ -196,7 +197,17 @@ class UploadProcessor:
         self.moveUpload(upload_path, destination)
 
     def locateDirectories(self, fsroot):
-        """List directories in given directory, usually 'incoming'."""
+        """Return a list of upload directories in a given queue.
+
+        This method operates on the queue atomically, i.e. it suppresses
+        changes in the queue directory, like new uploads, by acquiring
+        the shared upload_queue lockfile while the directory are listed.
+
+        :param fsroot: path to a 'queue' directory to be inspected.
+
+        :return: a list of upload directories found in the queue
+            alphabetically sorted.
+        """
         # Protecting listdir by a lock ensures that we only get
         # completely finished directories listed. See
         # PoppyInterface for the other locking place.
@@ -221,9 +232,12 @@ class UploadProcessor:
             # Skip lockfile deletion, see similar code in poppyinterface.py.
             fsroot_lock.release(skip_delete=True)
 
-        dir_names = [dir_name for dir_name in dir_names if
-                     os.path.isdir(os.path.join(fsroot, dir_name))]
-        return dir_names
+        sorted_dir_names =  sorted(
+            dir_name
+            for dir_name in dir_names
+            if os.path.isdir(os.path.join(fsroot, dir_name)))
+
+        return sorted_dir_names
 
     def locateChangesFiles(self, upload_path):
         """Locate .changes files in the given upload directory.
@@ -531,8 +545,9 @@ def parse_upload_path(relative_path):
         else:
             distribution_and_suite = parts[2:]
 
-        archive = person.getPPAByName(ppa_name)
-        if archive is None:
+        try:
+            archive = person.getPPAByName(ppa_name)
+        except NoSuchPPA:
             raise PPAUploadPathError(
                 "Could not find PPA named '%s' for '%s'"
                 % (ppa_name, person_name))

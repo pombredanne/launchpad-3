@@ -39,13 +39,6 @@
         module="lp.registry.browser.distroseries"
         classes="
             DistroSeriesNavigation"/>
-    <browser:page
-        name="+addspec"
-        for="lp.registry.interfaces.distroseries.IDistroSeries"
-        class="canonical.launchpad.browser.NewSpecificationFromDistroSeriesView"
-        facet="specifications"
-        permission="launchpad.AnyPerson"
-        template="../../../canonical/launchpad/templates/specification-add.pt"/>
     <browser:url
         for="lp.registry.interfaces.distroseries.IDistroSeries"
         path_expression="name"
@@ -53,10 +46,6 @@
     <browser:defaultView
         for="lp.registry.interfaces.distroseries.IDistroSeries"
         name="+index"/>
-    <browser:defaultView
-        for="lp.registry.interfaces.distroseries.IDistroSeries"
-        name="+specs"
-        layer="canonical.launchpad.layers.BlueprintLayer"/>
     <browser:defaultView
         for="lp.registry.interfaces.distroseries.IDistroSeries"
         layer="canonical.launchpad.layers.BugsLayer"
@@ -190,12 +179,17 @@
             name="+langchart"
             template="../templates/distroseries-langchart.pt"/>
         <browser:page
-            name="+language-packs"
-            template="../templates/distroseries-language-packs.pt"/>
-        <browser:page
             name="+potlist"
             template="../templates/object-pots.pt"/>
     </browser:pages>
+    <browser:page
+        for="lp.registry.interfaces.distroseries.IDistroSeries"
+        class="lp.registry.browser.distroseries.DistroSeriesTemplatesView"
+        permission="launchpad.Edit"
+        facet="translations"
+        layer="canonical.launchpad.layers.TranslationsLayer"
+        name="+templates"
+        template="../templates/object-templates.pt" />
     <browser:page
         name="+help-translate-button"
         facet="translations"
@@ -247,32 +241,18 @@
         permission="launchpad.Admin"
         template="../templates/distroseries-addport.pt"/>
     <browser:page
-        for="lp.registry.interfaces.distroseries.IDistroSeries"
-        class="canonical.launchpad.browser.HasSpecificationsView"
-        permission="zope.Public"
-        name="+mdz-specs.csv"
-        attribute="mdzCsv"/>
-    <browser:page
         name="+ask-a-question-button"
         for="lp.registry.interfaces.distroseries.IDistroSeries"
         class="canonical.launchpad.browser.AskAQuestionButtonView"
         permission="zope.Public"/>
     <browser:page
         for="lp.registry.interfaces.distroseries.IDistroSeries"
-        class="lp.registry.browser.distroseries.DistroSeriesLanguagePackAdminView"
-        permission="launchpad.TranslationsAdmin"
-        template="../templates/distroseries-language-packs-editing.pt"
-        name="+admin-language-packs"
+        class="lp.registry.browser.distroseries.DistroSeriesLanguagePackView"
+        permission="zope.Public"
         facet="translations"
-        layer="canonical.launchpad.layers.TranslationsLayer"/>
-    <browser:page
-        for="lp.registry.interfaces.distroseries.IDistroSeries"
-        class="lp.registry.browser.distroseries.DistroSeriesFullLanguagePackRequestView"
-        permission="launchpad.LanguagePacksAdmin"
-        template="../templates/distroseries-language-packs-editing.pt"
-        name="+full-language-pack-request"
-        facet="translations"
-        layer="canonical.launchpad.layers.TranslationsLayer"/>
+        layer="canonical.launchpad.layers.TranslationsLayer"
+        name="+language-packs"
+        template="../templates/distroseries-language-packs.pt"/>
     <browser:menus
         classes="
             DistroSeriesFacets
@@ -515,21 +495,6 @@
         permission="zope.Public"/>
     <browser:pages
         for="lp.registry.interfaces.project.IProject"
-        class="canonical.launchpad.browser.HasSpecificationsView"
-        facet="specifications"
-        permission="zope.Public">
-        <browser:page
-            name="+specs"
-            template="../../../canonical/launchpad/templates/hasspecifications-specs.pt"/>
-        <browser:page
-            name="+assignments"
-            template="../../../canonical/launchpad/templates/specificationtarget-assignments.pt"/>
-        <browser:page
-            name="+portlet-latestspecs"
-            template="../../../canonical/launchpad/templates/specificationtarget-portlet-latestspecs.pt"/>
-    </browser:pages>
-    <browser:pages
-        for="lp.registry.interfaces.project.IProject"
         permission="launchpad.Edit"
         facet="overview"
         class="lp.registry.browser.project.ProjectMaintainerReassignmentView">
@@ -537,13 +502,6 @@
             name="+reassign"
             template="../../../canonical/launchpad/templates/object-reassignment.pt"/>
     </browser:pages>
-    <browser:page
-        name="+addspec"
-        for="lp.registry.interfaces.project.IProject"
-        class="canonical.launchpad.browser.NewSpecificationFromProjectView"
-        facet="specifications"
-        permission="launchpad.AnyPerson"
-        template="../../../canonical/launchpad/templates/specification-add.pt"/>
     <browser:page
         name="+register-a-blueprint-button"
         for="lp.registry.interfaces.project.IProject"
@@ -1733,13 +1691,6 @@
         path_expression="name"
         parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"/>
     <browser:page
-        name="+addspec"
-        for="lp.registry.interfaces.product.IProduct"
-        class="canonical.launchpad.browser.NewSpecificationFromProductView"
-        facet="specifications"
-        permission="launchpad.AnyPerson"
-        template="../../../canonical/launchpad/templates/specification-add.pt"/>
-    <browser:page
         for="lp.registry.interfaces.product.IProduct"
         name="+bugs-index"
         class="canonical.launchpad.browser.BugTargetBugsView"
@@ -1966,7 +1917,7 @@
         for="lp.registry.interfaces.product.IProduct"
         class="lp.registry.browser.product.ProductAddSeriesView"
         facet="overview"
-        permission="launchpad.Edit"
+        permission="launchpad.Driver"
         template="../templates/productseries-new.pt"/>
     <browser:defaultView
         for="lp.registry.interfaces.product.IProductSet"
@@ -2010,6 +1961,12 @@
         class="lp.registry.browser.product.ProductAddView"
         permission="launchpad.AnyPerson"
         template="../templates/product-new.pt"/>
+    <browser:renamed-page
+        for="lp.registry.interfaces.product.IProductSet"
+        name="+new-guided"
+        new_name="+new"
+        rootsite="mainsite"
+        />
     <browser:menus
         classes="
             ProductFacets
@@ -2034,13 +1991,6 @@
         module="lp.registry.browser.productseries"
         classes="
             ProductSeriesNavigation"/>
-    <browser:page
-        name="+addspec"
-        for="lp.registry.interfaces.productseries.IProductSeries"
-        class="canonical.launchpad.browser.NewSpecificationFromProductSeriesView"
-        facet="specifications"
-        permission="launchpad.AnyPerson"
-        template="../../../canonical/launchpad/templates/specification-add.pt"/>
     <browser:url
         for="lp.registry.interfaces.productseries.IProductSeries"
         path_expression="name"
@@ -2215,6 +2165,14 @@
         layer="canonical.launchpad.layers.TranslationsLayer"/>
     <browser:page
         for="lp.registry.interfaces.productseries.IProductSeries"
+        name="+templates"
+        class="lp.registry.browser.productseries.ProductSeriesTemplatesView"
+        facet="translations"
+        permission="launchpad.Edit"
+        template="../templates/object-templates.pt"
+        layer="canonical.launchpad.layers.TranslationsLayer"/>
+    <browser:page
+        for="lp.registry.interfaces.productseries.IProductSeries"
         name="+request-bzr-import"
         class="lp.registry.browser.productseries.ProductSeriesTranslationsBzrImportView"
         facet="translations"
@@ -2275,13 +2233,6 @@
             ProductSeriesSpecificationsMenu
             ProductSeriesTranslationsMenu"
         module="lp.registry.browser.productseries"/>
-    <browser:page
-        name="+addspec"
-        for="lp.registry.interfaces.distribution.IDistribution"
-        class="canonical.launchpad.browser.NewSpecificationFromDistributionView"
-        facet="specifications"
-        permission="launchpad.AnyPerson"
-        template="../../../canonical/launchpad/templates/specification-add.pt"/>
     <browser:defaultView
         for="lp.registry.interfaces.distribution.IDistribution"
         name="+index"/>
@@ -2554,13 +2505,13 @@
         class="canonical.launchpad.browser.HelpTranslateButtonView"
         permission="zope.Public"/>
     <browser:editform
-        name="+changetranslators"
+        name="+settings"
         for="lp.registry.interfaces.distribution.IDistribution"
         schema="lp.registry.interfaces.distribution.IDistribution"
         facet="translations"
         fields="translationgroup translationpermission"
         permission="launchpad.Edit"
-        template="../templates/distribution-translators.pt"
+        template="../templates/distribution-translation-settings.pt"
         layer="canonical.launchpad.layers.TranslationsLayer"/>
     <browser:page
         for="lp.registry.interfaces.distribution.IDistribution"

@@ -185,8 +185,9 @@ class ProductLicenseMixin:
             # License is optional on +edit page if not already set.
             self.setFieldError(
                 'licenses',
-                'Select all licenses for this software or select '
-                'Other/Proprietary or Other/Open Source.')
+                'You must select at least one license.  If you select '
+                'Other/Proprietary or Other/OpenSource you must include a '
+                'description of the license.')
         elif License.OTHER_PROPRIETARY in licenses:
             if not data.get('license_info'):
                 self.setFieldError(
@@ -392,7 +393,7 @@ class ProductOverviewMenu(ApplicationMenu):
         text = 'Show distribution packages'
         return Link('+packages', text, icon='info')
 
-    @enabled_with_permission('launchpad.Edit')
+    @enabled_with_permission('launchpad.Driver')
     def series_add(self):
         text = 'Register a series'
         return Link('+addseries', text, icon='add')

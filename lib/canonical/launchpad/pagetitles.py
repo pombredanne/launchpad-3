@@ -511,8 +511,8 @@ distribution_series = ContextTitle("%s version history")
 
 distribution_translations = ContextDisplayName('Translating %s')
 
-distribution_translators = ContextTitle(
-    smartquote("Appoint %s's translation group"))
+distribution_translation_settings = ContextTitle(
+    smartquote("Change %s's translation settings"))
 
 distribution_search = ContextDisplayName(smartquote("Search %s's packages"))
 
@@ -564,10 +564,7 @@ def distroseries_index(context, view):
     return '%s %s in Launchpad' % (
         context.distribution.title, context.version)
 
-distroseries_language_packs = ViewLabel()
-
-def distroseries_language_packs_editing(context, view):
-    """Return the view's page_title."""
+def distroseries_language_packs(context, view):
     return view.page_title
 
 distroseries_packaging = ContextDisplayName('Mapping packages to upstream '
@@ -842,12 +839,17 @@ object_reassignment = ContextTitle('Reassign %s')
 
 object_translations = ContextDisplayName('Translation templates for %s')
 
+object_templates = ContextDisplayName('Translation templates for %s')
+
 oops = 'Oops!'
 
 openid_account_change_password = 'Change your password'
 
 def openid_account_edit(context, view):
     return smartquote("%s's details") % view.account.displayname
+
+def openid_account_edit_emails(context, view):
+    return smartquote("%s's e-mail addresses") % view.account.displayname
 
 openid_default = 'OpenID Endpoint'
 

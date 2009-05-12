@@ -10,7 +10,7 @@ from zope.component import getMultiAdapter, getUtility
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.ftests import ANONYMOUS, login, login_person, logout
 from canonical.shipit.systemhome import ShipItApplication
-from canonical.launchpad.database import (
+from canonical.shipit.model.shipit import (
     ShippingRequest, ShippingRequestSet, StandardShipItRequest)
 from canonical.launchpad.layers import setFirstLayer
 from canonical.shipit.layers import ShipItKUbuntuLayer, ShipItUbuntuLayer

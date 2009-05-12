@@ -85,13 +85,13 @@ from canonical.shipit.interfaces.shipit import (
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from canonical.launchpad.interfaces.sourcepackagerelease import (
     ISourcePackageRelease)
-from canonical.launchpad.interfaces.specification import ISpecification
-from canonical.launchpad.interfaces.specificationbranch import (
+from lp.blueprints.interfaces.specification import ISpecification
+from lp.blueprints.interfaces.specificationbranch import (
     ISpecificationBranch)
-from canonical.launchpad.interfaces.specificationsubscription import (
+from lp.blueprints.interfaces.specificationsubscription import (
     ISpecificationSubscription)
-from canonical.launchpad.interfaces.sprint import ISprint
-from canonical.launchpad.interfaces.sprintspecification import (
+from lp.blueprints.interfaces.sprint import ISprint
+from lp.blueprints.interfaces.sprintspecification import (
     ISprintSpecification)
 from lp.registry.interfaces.teammembership import ITeamMembership
 from canonical.launchpad.interfaces.translationgroup import (
@@ -840,7 +840,8 @@ class EditDistroSeriesByOwnersOrDistroOwnersOrAdmins(AuthorizationBase):
 class SeriesDrivers(AuthorizationBase):
     """Drivers can approve or decline features and target bugs.
 
-    Drivers exist for distribution and product series.
+    Drivers exist for distribution and product series.  Distribution and
+    product owners are implicitly drivers too.
     """
     permission = 'launchpad.Driver'
     usedfor = IHasDrivers
@@ -850,7 +851,7 @@ class SeriesDrivers(AuthorizationBase):
             if user.inTeam(driver):
                 return True
         admins = getUtility(ILaunchpadCelebrities).admin
-        return user.inTeam(admins)
+        return user.inTeam(self.obj.owner) or user.inTeam(admins)
 
 
 class ViewProductSeries(AuthorizationBase):
@@ -2150,6 +2151,18 @@ class ViewEmailAddress(AuthorizationBase):
                 or user.inTeam(celebrities.commercial_admin)
                 or user.inTeam(celebrities.launchpad_developers)
                 or user.inTeam(celebrities.admin))
+
+
+class EditEmailAddress(EditByOwnersOrAdmins):
+    permission = 'launchpad.Edit'
+    usedfor = IEmailAddress
+
+    def checkAccountAuthenticated(self, account):
+        # Always allow users to see their own email addresses.
+        if self.obj.account == account:
+            return True
+        return super(EditEmailAddress, self).checkAccountAuthenticated(
+            account)
 
 
 class EditArchivePermissionSet(AuthorizationBase):

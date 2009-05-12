@@ -34,9 +34,9 @@ requests we want to process and the new status of these requests.
     ... # a standard LaunchpadTestRequest, which shipit is not designed to
     ... # use (see canonical_url in particular).  Therefore, for this
     ... # demonstration, we explicitly use a basic Participation.
-    >>> from canonical.launchpad.interfaces import (
+    >>> from canonical.shipit.interfaces.shipit import (
     ...     IShippingRequestSet, ShippingRequestStatus)
-    >>> from canonical.launchpad.database import ShippingRequest
+    >>> from canonical.shipit.model.shipit import ShippingRequest
     >>> from canonical.database.sqlbase import (
     ...     flush_database_updates, flush_database_caches)
     >>> from zope.component import getUtility
@@ -55,7 +55,7 @@ requests we want to process and the new status of these requests.
 
     >>> getUtility(IShippingRequestSet).processRequests(
     ...     pendingspecial, denied)
-    >>> from canonical.launchpad.mail import stub
+    >>> from lp.services.mail import stub
     >>> import transaction
     >>> transaction.commit()
     >>> len(stub.test_emails)

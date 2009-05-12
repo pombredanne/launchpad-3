@@ -11,7 +11,7 @@ from canonical.launchpad.interfaces.malone import *
 from canonical.launchpad.interfaces.validation import *
 
 # these need to be at the top, because the others depend on them sometimes
-from canonical.launchpad.interfaces.specificationtarget import *
+from lp.blueprints.interfaces.specificationtarget import *
 from lp.registry.interfaces.person import *
 from lp.registry.interfaces.pillar import *
 
@@ -141,20 +141,19 @@ from canonical.launchpad.interfaces.schema import *
 from canonical.launchpad.interfaces.scriptactivity import *
 from canonical.launchpad.interfaces.section import *
 from canonical.launchpad.interfaces.searchservice import *
-from canonical.shipit.interfaces.shipit import *
 from lp.registry.interfaces.sourcepackage import *
 from lp.registry.interfaces.sourcepackagename import *
 from canonical.launchpad.interfaces.sourcepackagerelease import *
-from canonical.launchpad.interfaces.specification import *
-from canonical.launchpad.interfaces.specificationbranch import *
-from canonical.launchpad.interfaces.specificationbug import *
-from canonical.launchpad.interfaces.specificationdependency import *
-from canonical.launchpad.interfaces.specificationfeedback import *
-from canonical.launchpad.interfaces.specificationsubscription import *
+from lp.blueprints.interfaces.specification import *
+from lp.blueprints.interfaces.specificationbranch import *
+from lp.blueprints.interfaces.specificationbug import *
+from lp.blueprints.interfaces.specificationdependency import *
+from lp.blueprints.interfaces.specificationfeedback import *
+from lp.blueprints.interfaces.specificationsubscription import *
 from canonical.launchpad.interfaces.spokenin import *
-from canonical.launchpad.interfaces.sprint import *
-from canonical.launchpad.interfaces.sprintattendance import *
-from canonical.launchpad.interfaces.sprintspecification import *
+from lp.blueprints.interfaces.sprint import *
+from lp.blueprints.interfaces.sprintattendance import *
+from lp.blueprints.interfaces.sprintspecification import *
 from lp.registry.interfaces.ssh import *
 from canonical.launchpad.interfaces.structuralsubscription import *
 from lp.registry.interfaces.teammembership import *

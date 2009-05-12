@@ -329,10 +329,6 @@ special = {
             setUp=uploaderSetUp, tearDown=uploaderTearDown,
             layer=LaunchpadZopelessLayer,
             ),
-    'archive-signing.txt': LayeredDocFileSuite(
-            '../doc/archive-signing.txt',
-            setUp=archivepublisherSetUp, layer=LaunchpadZopelessLayer,
-            ),
     'build-notification.txt': LayeredDocFileSuite(
             '../doc/build-notification.txt',
             setUp=builddmasterSetUp,
@@ -800,7 +796,6 @@ class ProcessMailLayer(LaunchpadZopelessLayer):
 
     doctests_with_logging = [
         'incomingmail.txt',
-        'spec-mail-exploder.txt'
         ]
 
     @classmethod

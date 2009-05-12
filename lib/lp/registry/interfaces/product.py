@@ -8,8 +8,9 @@ __metaclass__ = type
 __all__ = [
     'InvalidProductName',
     'IProduct',
-    'IProductEditRestricted',
     'IProductCommercialRestricted',
+    'IProductDriverRestricted',
+    'IProductEditRestricted',
     'IProductPublic',
     'IProductReviewSearch',
     'IProductSet',
@@ -58,9 +59,9 @@ from lp.registry.interfaces.pillar import IPillar
 from lp.registry.interfaces.productrelease import IProductRelease
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.project import IProject
-from canonical.launchpad.interfaces.specificationtarget import (
+from lp.blueprints.interfaces.specificationtarget import (
     ISpecificationTarget)
-from canonical.launchpad.interfaces.sprint import IHasSprints
+from lp.blueprints.interfaces.sprint import IHasSprints
 from canonical.launchpad.interfaces.translationgroup import (
     IHasTranslationGroup)
 from canonical.launchpad.validators import LaunchpadValidationError
@@ -72,8 +73,8 @@ from lazr.restful.declarations import (
     REQUEST_USER, call_with, collection_default_content,
     export_as_webservice_collection, export_as_webservice_entry,
     export_factory_operation, export_operation_as, export_read_operation,
-    exported, operation_parameters, operation_returns_collection_of,
-    rename_parameters_as)
+    exported, operation_parameters, operation_returns_entry,
+    operation_returns_collection_of, rename_parameters_as)
 
 
 # This is based on the definition of <label> in RFC 1035, section
@@ -202,12 +203,15 @@ class License(DBEnumeratedType):
     OTHER_OPEN_SOURCE = DBItem(1010, "Other/Open Source")
 
 
-class IProductEditRestricted(IOfficialBugTagTargetRestricted):
-    """`IProduct` properties which require launchpad.Edit permission."""
+class IProductDriverRestricted(Interface):
+    """`IProduct` properties which require launchpad.Driver permission."""
 
     def newSeries(owner, name, summary, branch=None):
         """Creates a new ProductSeries for this product."""
 
+
+class IProductEditRestricted(IOfficialBugTagTargetRestricted,):
+    """`IProduct` properties which require launchpad.Edit permission."""
 
 
 class IProductCommercialRestricted(Interface):
@@ -589,13 +593,19 @@ class IProductPublic(
     def getPackage(distroseries):
         """Return a package in that distroseries for this product."""
 
+    @operation_parameters(
+        name=TextLine(title=_("Name"), required=True))
+    @operation_returns_entry(IProductSeries)
+    @export_read_operation()
     def getSeries(name):
-        """Returns the series for this product that has the name given, or
-        None."""
+        """Return the series for this product for the given name, or None."""
 
+    @operation_parameters(
+        version=TextLine(title=_("Version"), required=True))
+    @operation_returns_entry(IProductRelease)
+    @export_read_operation()
     def getRelease(version):
-        """Returns the release for this product that has the version
-        given."""
+        """Return the release for this product that has the version given."""
 
     def packagedInDistros():
         """Returns the distributions this product has been packaged in."""
@@ -639,7 +649,7 @@ class IProductPublic(
 
 
 class IProduct(IProductEditRestricted, IProductCommercialRestricted,
-               IProductPublic):
+               IProductDriverRestricted, IProductPublic):
     """A Product.
 
     The Launchpad Registry describes the open source world as Projects and

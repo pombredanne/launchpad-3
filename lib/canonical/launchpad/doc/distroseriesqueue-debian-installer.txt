@@ -78,7 +78,7 @@ Make librarian files available for publication:
   >>> import transaction
   >>> transaction.commit()
 
-  >>> from canonical.launchpad.mail import stub
+  >>> from lp.services.mail import stub
   >>> len(stub.test_emails)
   2
   >>> upload.queue_root.customfiles.count()

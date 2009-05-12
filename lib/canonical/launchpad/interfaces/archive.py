@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'ALLOW_RELEASE_BUILDS',
     'ArchiveDependencyError',
     'ArchivePurpose',
     'CannotCopy',
@@ -24,7 +25,7 @@ __all__ = [
     'IPPA',
     'IPPAActivateForm',
     'MAIN_ARCHIVE_PURPOSES',
-    'ALLOW_RELEASE_BUILDS',
+    'NoSuchPPA',
     'PocketNotFound',
     'SourceNotFound',
     'default_name_by_purpose',
@@ -43,6 +44,7 @@ from canonical.launchpad.interfaces.buildrecords import IHasBuildRecords
 from lp.registry.interfaces.gpg import IGPGKey
 from lp.registry.interfaces.person import IPerson
 from canonical.launchpad.validators.name import name_validator
+from canonical.launchpad.webapp.interfaces import NameLookupFailed
 
 from lazr.restful.declarations import (
     REQUEST_USER, call_with, export_as_webservice_entry, exported,
@@ -91,6 +93,12 @@ class ComponentNotFound(Exception):
     webservice_error(400) #Bad request.
 
 
+class NoSuchPPA(NameLookupFailed):
+    """Raised when we try to look up an PPA that doesn't exist."""
+    webservice_error(400) #Bad request.
+    _message_prefix = "No such ppa"
+
+
 class IArchivePublic(IHasOwner):
     """An Archive interface for publicly available operations."""
     id = Attribute("The archive ID.")
@@ -108,7 +116,7 @@ class IArchivePublic(IHasOwner):
 
     displayname = exported(
         StrippedTextLine(
-            title=_("Displayname"), required=False,
+            title=_("Displayname"), required=True,
             description=_("Displayname for this archive.")))
 
     enabled = Bool(
@@ -219,14 +227,6 @@ class IArchivePublic(IHasOwner):
     date_created = Datetime(
         title=_('Date created'), required=False, readonly=True,
         description=_("The time when the archive was created."))
-
-    def getPubConfig():
-        """Return an overridden Publisher Configuration instance.
-
-        The original publisher configuration based on the distribution is
-        modified according local context, it basically fixes the archive
-        paths to cope with non-primary and PPA archives publication workflow.
-        """
 
     def getSourcesForDeletion(name=None, status=None, distroseries=None):
         """All `ISourcePackagePublishingHistory` available for deletion.
@@ -615,9 +615,9 @@ class IArchiveView(IHasBuildRecords):
             description=_("Whether or not to filter source names by exact"
                           " matching."),
             required=False),
-        published_since_date=Datetime(
-            title=_("Published Since Date"),
-            description=_("Return entries whose 'datepublished' is greater "
+        created_since_date=Datetime(
+            title=_("Created Since Date"),
+            description=_("Return entries whose `date_created` is greater "
                           "than or equal to this date."),
             required=False))
     # Really returns ISourcePackagePublishingHistory, see below for
@@ -626,7 +626,7 @@ class IArchiveView(IHasBuildRecords):
     @export_read_operation()
     def getPublishedSources(name=None, version=None, status=None,
                             distroseries=None, pocket=None,
-                            exact_match=False, published_since_date=None):
+                            exact_match=False, created_since_date=None):
         """All `ISourcePackagePublishingHistory` target to this archive.
 
         :param name: source name filter (exact match or SQL LIKE controlled
@@ -637,7 +637,7 @@ class IArchiveView(IHasBuildRecords):
         :param pocket: `PackagePublishingPocket` filter.
         :param exact_match: either or not filter source names by exact
                              matching.
-        :param published_since_date: Only return results whose 'datepublished'
+        :param created_since_date: Only return results whose `date_created`
             is greater than or equal to this date.
 
         :return: SelectResults containing `ISourcePackagePublishingHistory`.
@@ -1121,9 +1121,9 @@ ALLOW_RELEASE_BUILDS = (
 # MONKEY PATCH TIME!
 # Fix circular dependency issues.
 from canonical.launchpad.components.apihelpers import (
-    patch_entry_return_type, patch_collection_return_type,
-    patch_plain_parameter_type, patch_choice_parameter_type,
-    patch_reference_property)
+    patch_choice_parameter_type, patch_collection_property,
+    patch_collection_return_type, patch_entry_return_type,
+    patch_plain_parameter_type, patch_reference_property)
 
 from lp.registry.interfaces.distribution import IDistribution
 patch_reference_property(IArchive, 'distribution', IDistribution)
@@ -1180,4 +1180,5 @@ patch_choice_parameter_type(
 # interfaces/person.py.
 from lp.registry.interfaces.person import IPersonPublic
 patch_reference_property(IPersonPublic, 'archive', IArchive)
-
+patch_collection_property(IPersonPublic, 'ppas', IArchive)
+patch_entry_return_type(IPersonPublic, 'getPPAByName', IArchive)

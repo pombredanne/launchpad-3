@@ -91,16 +91,6 @@
     <include file="scriptactivity.zcml" />
     <include file="sourcepackagepublishinghistory.zcml" />
     <include file="sourcepackagerelease.zcml" />
-    <include file="specification.zcml" />
-    <include file="specificationbranch.zcml" />
-    <include file="specificationdependency.zcml" />
-    <include file="specificationfeedback.zcml" />
-    <include file="specificationgoal.zcml" />
-    <include file="specificationsubscription.zcml" />
-    <include file="specificationtarget.zcml" />
-    <include file="sprint.zcml" />
-    <include file="sprintattendance.zcml" />
-    <include file="sprintspecification.zcml" />
     <include file="structuralsubscription.zcml" />
     <include file="temporaryblobstorage.zcml" />
     <include file="translationexport.zcml" />
@@ -118,7 +108,6 @@
     <include file="archive.zcml" />
     <include file="archivedependency.zcml" />
     <include file="archivepermission.zcml" />
-    <include file="archivesigningkey.zcml" />
     <include file="webservice.zcml" />
     <include file="packagediff.zcml" />
 

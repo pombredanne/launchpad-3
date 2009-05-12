@@ -74,7 +74,8 @@ from canonical.launchpad.interfaces.lpstorm import IMasterObject, IMasterStore
 from canonical.launchpad.interfaces.account import (
     AccountCreationRationale, AccountStatus, IAccount, IAccountSet,
     INACTIVE_ACCOUNT_STATUSES)
-from canonical.launchpad.interfaces.archive import ArchivePurpose
+from canonical.launchpad.interfaces.archive import (
+    ArchivePurpose, NoSuchPPA)
 from canonical.launchpad.interfaces.archivepermission import (
     IArchivePermissionSet)
 from canonical.launchpad.interfaces.authtoken import LoginTokenType
@@ -89,7 +90,6 @@ from lp.registry.interfaces.distribution import IDistribution
 from canonical.launchpad.interfaces.emailaddress import (
     EmailAddressStatus, IEmailAddress, IEmailAddressSet, InvalidEmailAddress)
 from lp.registry.interfaces.gpg import IGPGKeySet
-from canonical.launchpad.interfaces.hwdb import IHWSubmissionSet
 from lp.registry.interfaces.irc import IIrcID, IIrcIDSet
 from lp.registry.interfaces.jabber import IJabberID, IJabberIDSet
 from canonical.launchpad.interfaces.launchpad import (
@@ -111,10 +111,9 @@ from canonical.launchpad.interfaces.personnotification import (
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.project import IProject
-from lp.code.interfaces.revision import IRevisionSet
 from lp.registry.interfaces.salesforce import (
     ISalesforceVoucherProxy, VOUCHER_STATUSES)
-from canonical.launchpad.interfaces.specification import (
+from lp.blueprints.interfaces.specification import (
     SpecificationDefinitionStatus, SpecificationFilter,
     SpecificationImplementationStatus, SpecificationSort)
 from canonical.launchpad.interfaces.lpstorm import IStore
@@ -138,7 +137,7 @@ from lp.registry.model.karma import KarmaAction, KarmaAssignedEvent, Karma
 from lp.registry.model.mentoringoffer import MentoringOffer
 from canonical.launchpad.database.sourcepackagerelease import (
     SourcePackageRelease)
-from canonical.launchpad.database.specification import (
+from lp.blueprints.model.specification import (
     HasSpecificationsMixin, Specification)
 from canonical.launchpad.database.translationimportqueue import (
     HasTranslationImportsMixin)
@@ -1966,11 +1965,6 @@ class Person(
             name_parts = self.name.split('-deactivatedaccount')
             base_new_name = name_parts[0]
             self.name = self._ensureNewName(base_new_name)
-        # XXX: salgado, bug=356092 2009-04-15: The lines below won't be
-        # needed once the bug is fixed.
-        email = removeSecurityProxy(preferred_email)
-        getUtility(IRevisionSet).checkNewVerifiedEmail(email)
-        getUtility(IHWSubmissionSet).setOwnership(email)
 
     def validateAndEnsurePreferredEmail(self, email):
         """See `IPerson`."""
@@ -2006,11 +2000,6 @@ class Person(
             self.setPreferredEmail(email)
         else:
             email.status = EmailAddressStatus.VALIDATED
-            # Automated processes need access to set the account().
-            getUtility(IHWSubmissionSet).setOwnership(email)
-        # Now that we have validated the email, see if this can be
-        # matched to an existing RevisionAuthor.
-        getUtility(IRevisionSet).checkNewVerifiedEmail(email)
 
     def setContactAddress(self, email):
         """See `IPerson`."""
@@ -2074,8 +2063,6 @@ class Person(
 
         email = removeSecurityProxy(email)
         IMasterObject(email).status = EmailAddressStatus.PREFERRED
-
-        getUtility(IHWSubmissionSet).setOwnership(email)
 
         # Now we update our cache of the preferredemail.
         self._preferredemail_cached = email
@@ -2255,7 +2242,8 @@ class Person(
     @property
     def archive(self):
         """See `IPerson`."""
-        return self.getPPAByName('ppa')
+        return Archive.selectOneBy(
+            owner=self, purpose=ArchivePurpose.PPA, name='ppa')
 
     @property
     def ppas(self):
@@ -2265,8 +2253,11 @@ class Person(
 
     def getPPAByName(self, name):
         """See `IPerson`."""
-        return Archive.selectOneBy(
+        ppa = Archive.selectOneBy(
             owner=self, purpose=ArchivePurpose.PPA, name=name)
+        if ppa is None:
+            raise NoSuchPPA(name)
+        return ppa
 
     def isBugContributor(self, user=None):
         """See `IPerson`."""

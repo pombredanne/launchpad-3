@@ -345,11 +345,33 @@ Combining 'name' and 'distroseries' filters:
     ...     name='cd', distroseries=breezy_autotest).count()
     1
 
-Using the 'published_since_date' filter:
+Using the 'created_since_date' filter. This argument accept both,
+iso-timestamp strings and datetime objects.
 
     >>> cprov_archive.getPublishedSources(
-    ...     published_since_date='2007-07-09 14:00:00').count()
+    ...     created_since_date='2007-07-09 14:00:00').count()
+    0
+
+    >>> import datetime
+    >>> instant = datetime.datetime(year=2007, month=7, day=9, hour=14)
+
+    >>> cprov_archive.getPublishedSources(
+    ...     created_since_date=instant).count()
+    0
+
+As we move the given 'create_since_date' instant to the past the
+publications in Celso's PPA start to show up.
+
+    >>> one_hour_step = datetime.timedelta(hours=1)
+    >>> one_hour_earlier = instant - one_hour_step
+    >>> cprov_archive.getPublishedSources(
+    ...     created_since_date=one_hour_earlier).count()
     1
+
+    >>> two_hours_earlier = one_hour_earlier - one_hour_step
+    >>> cprov_archive.getPublishedSources(
+    ...     created_since_date=two_hours_earlier).count()
+    3
 
 
 === Binary publication lookups ===
@@ -973,88 +995,6 @@ All the attributes can be combined in order to refine the result:
     1
 
 
-== Publisher configuration provider ==
-
-IArchive has a method to provide a modified Publisher Configuration (see
-lib/archivepublisher/config.py), which provides the right paths for its
-publication according to the given distribution:
-
-    >>> # cprov 20061127: We should *never* be able to change a PPA
-    >>> # distribution, however 'ubuntu' is not prepared for publication, thus
-    >>> # we have to override the PPA to 'ubuntutest' in order to perform the
-    >>> # tests.
-
-    >>> from zope.security.proxy import removeSecurityProxy
-    >>> ubuntutest = getUtility(IDistributionSet)['ubuntutest']
-
-    >>> naked_cprov_archive = removeSecurityProxy(cprov_archive)
-    >>> naked_cprov_archive.distribution = ubuntutest
-    >>> pubconfig = naked_cprov_archive.getPubConfig()
-
-The base Archive publication location is set in the current Launchpad
-configuration file:
-
-    >>> from canonical.config import config
-    >>> pubconfig.distroroot == config.personalpackagearchive.root
-    True
-
-There is a separate location for private PPAs that is used if the
-archive is marked as private:
-
-    >>> (config.personalpackagearchive.private_root !=
-    ...  config.personalpackagearchive.root)
-    True
-
-    >>> naked_cprov_archive.private = True
-    >>> private_pubconfig = naked_cprov_archive.getPubConfig()
-    >>> (private_pubconfig.distroroot ==
-    ...  config.personalpackagearchive.private_root)
-    True
-
-    >>> naked_cprov_archive.private = False
-
-Then, the archive topology will follow:
-
-<PPA_BASE_DIR>/<PERSONNAME>/<DISTRIBUTION>
-
-    >>> pubconfig.archiveroot
-    u'/var/tmp/ppa.test/cprov/ppa/ubuntutest'
-
-    >>> pubconfig.poolroot
-    u'/var/tmp/ppa.test/cprov/ppa/ubuntutest/pool'
-
-    >>> pubconfig.distsroot
-    u'/var/tmp/ppa.test/cprov/ppa/ubuntutest/dists'
-
-Path not used in *personal* archives publication workflow are set to
-None, so they won't get created:
-
-    >>> pubconfig.overrideroot is None
-    True
-    >>> pubconfig.cacheroot is None
-    True
-    >>> pubconfig.miscroot is None
-    True
-
-Usual methods from Publisher Configuration are preserved:
-
-    >>> pubconfig.distroSeriesNames()
-    ['breezy-autotest', 'hoary-test']
-
-    >>> pubconfig.archTagsForSeries('breezy-autotest')
-    []
-
-    >>> pubconfig.componentsForSeries('breezy-autotest')
-    ['main', 'restricted', 'universe', 'multiverse']
-
-Let's restore Celso's PPA state, attaching it to ubuntu distribution
-again.
-
-    >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
-    >>> naked_cprov_archive.distribution = ubuntu
-    >>> naked_cprov_archive.syncUpdate()
-
-
 == Archive dependencies ==
 
 An Archive can depend on one or more other archives, such
@@ -1390,6 +1330,7 @@ An Archive can be retrieved via IPerson.archive property:
 IArchiveSet.getByDistroPurpose retrieves an IArchive given a distribution
 and an ArchivePurpose:
 
+    >>> ubuntutest = getUtility(IDistributionSet)['ubuntutest']
     >>> partner_archive = getUtility(IArchiveSet).getByDistroPurpose(
     ...     ubuntutest, ArchivePurpose.PARTNER)
     >>> print partner_archive.name
@@ -1443,6 +1384,8 @@ use to retrieve files from it.
 If the archive is private, the url may be different as private PPAs
 are published to a secure location.
 
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> naked_cprov_archive = removeSecurityProxy(cprov_archive)
     >>> print naked_cprov_archive.archive_url
     http://ppa.launchpad.dev/cprov/ppa/ubuntu
 
@@ -1451,18 +1394,6 @@ are published to a secure location.
 
     >>> print naked_cprov_archive.archive_url
     http://private-ppa.launchpad.dev/cprov/ppa/ubuntu
-
-The publisher config for PARTNER contains only 'partner' in its
-components.  This prevents non-partner being published in the partner
-archive.
-
-    >>> comm_pubconf = removeSecurityProxy(
-    ...     partner_archive.getPubConfig())
-    >>> for distroseries in comm_pubconf._distroserieses.keys():
-    ...     print set(
-    ...         comm_pubconf._distroserieses[distroseries]['components'])
-    set(['partner'])
-    set(['partner'])
 
 IArchive.allowUpdatesToReleasePocket returns whether the archive is allowed
 to publish to the RELEASE pocket no matter what state the distroseries is in.
@@ -2164,6 +2095,8 @@ Set up v1.0 and 1.1 of "package3":
     ...     sourcename="package3", version="1.0", archive=cprov.archive)
     >>> discard = test_publisher.getPubSource(
     ...     sourcename="package3", version="1.1", archive=cprov.archive)
+    >>> discard = test_publisher.getPubSource(
+    ...     sourcename="package3", version="1.2", archive=cprov.archive)
 
 The underlying package discovery has the ability to do substring matches
 on the supplied package names.  However, this feature is not being used
@@ -2196,6 +2129,45 @@ Copy package3 1.0 explicitly:
     >>> [sabdfl_three] = sabdfl.archive.getPublishedSources(name="package3")
     >>> print sabdfl_three.sourcepackagerelease.version
     1.0
+
+It's also possible to copy the source and its binaries at the same time,
+by specifying the "include_binaries" boolean.
+
+'built-source' is a source package with 2 binaries in Celso's PPA:
+
+    >>> built_source = test_publisher.getPubSource(
+    ...     sourcename="built-source", version="1.0", archive=cprov.archive)
+    >>> binaries = test_publisher.getPubBinaries(
+    ...     pub_source=built_source, binaryname='from-built-source')
+    >>> len(binaries)
+    2
+
+It s not present in Mark's PPA.
+
+    >>> sabdfl.archive.getPublishedSources(name="built-source").count()
+    0
+
+'built-source' and its binaries can be copied from Celso's to Mark's
+PPA like this:
+
+    >>> sabdfl.archive.syncSource(
+    ...     "built-source", "1.0", cprov.archive, "release",
+    ...     include_binaries=True)
+
+Now, Mark's PPA has 'built-source' source and it's 2 binaries.
+
+    >>> [copy] = sabdfl.archive.getPublishedSources(name="built-source")
+    >>> len(copy.getPublishedBinaries())
+    2
+
+If copying packages into a PPA, you can only copy into the "release" pocket,
+or a CannotCopy exception is thrown.
+
+    >>> sabdfl.archive.syncSource(
+    ...     "package3", "1.2", cprov.archive, "updates")
+    Traceback (most recent call last):
+    ...
+    CannotCopy: Destination pocket must be 'release' for a PPA.
 
 
 == Publish flag ==
@@ -2341,10 +2313,12 @@ context person with a given name (exact match).
     >>> another_ppa == nightly_ppa
     True
 
-When there are not matching PPAs, None is returned.
+When a suitable PPA couldn't be found, NoSuchPPA is raised.
 
     >>> print sabdfl.getPPAByName('not-found')
-    None
+    Traceback (most recent call last):
+    ...
+    NoSuchPPA: No such ppa: 'not-found'.
 
 
 == Editable displayname ==
