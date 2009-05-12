@@ -99,7 +99,7 @@ access the delete page. Sample Person is the driver so he has those rights.
     >>> driver_browser.getLink('0.9.2').click()
     >>> print driver_browser.title
     Mozilla Firefox 0.9.2 "One (secure) Tree Hill"
-    >>> driver_browser.getLink('delete').click()
+    >>> driver_browser.getLink('Delete this milestone').click()
     >>> print driver_browser.title
     Delete Mozilla Firefox 0.9.2 "One (secure) Tree Hill"
 
