@@ -26,7 +26,6 @@ from canonical.launchpad.webapp.interfaces import ILaunchBag
 
 from lp.testing._login import *
 from lp.testing._tales import test_tales
-from lp.testing.factory import *
 
 from twisted.python.util import mergeFunctionMetadata
 
@@ -560,3 +559,25 @@ def run_with_login(person, function, *args, **kwargs):
     finally:
         logout()
         login_person(current_person)
+
+
+def time_counter(origin=None, delta=timedelta(seconds=5)):
+    """A generator for yielding datetime values.
+
+    Each time the generator yields a value, the origin is incremented
+    by the delta.
+
+    >>> now = time_counter(datetime(2007, 12, 1), timedelta(days=1))
+    >>> now.next()
+    datetime.datetime(2007, 12, 1, 0, 0)
+    >>> now.next()
+    datetime.datetime(2007, 12, 2, 0, 0)
+    >>> now.next()
+    datetime.datetime(2007, 12, 3, 0, 0)
+    """
+    if origin is None:
+        origin = datetime.now(pytz.UTC)
+    now = origin
+    while True:
+        yield now
+        now += delta

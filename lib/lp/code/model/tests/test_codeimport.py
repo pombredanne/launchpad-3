@@ -23,9 +23,9 @@ from lp.registry.interfaces.person import IPersonSet
 from lp.code.interfaces.codeimport import RevisionControlSystems
 from lp.code.interfaces.codeimportjob import ICodeImportJobWorkflow
 from lp.code.interfaces.codeimportresult import CodeImportResultStatus
-from canonical.launchpad.ftests import ANONYMOUS, login, logout
-from canonical.launchpad.testing import (
-    LaunchpadObjectFactory, TestCaseWithFactory, time_counter)
+from lp.testing import (
+    login, logout, TestCaseWithFactory, time_counter)
+from lp.testing.factory import LaunchpadObjectFactory
 from canonical.testing import (
     DatabaseFunctionalLayer, LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer)

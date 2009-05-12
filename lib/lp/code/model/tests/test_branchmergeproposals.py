@@ -41,9 +41,9 @@ from canonical.launchpad.interfaces.message import IMessageJob
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
 from lp.code.interfaces.codereviewcomment import CodeReviewVote
-from canonical.launchpad.testing import (
-    capture_events, GPGSigningContext, LaunchpadObjectFactory, login_person,
-    TestCaseWithFactory, time_counter)
+from lp.testing import (
+    capture_events, login_person, TestCaseWithFactory, time_counter)
+from lp.testing.factory import GPGSigningContext, LaunchpadObjectFactory
 from lp.testing.mail_helpers import pop_notifications
 from canonical.launchpad.webapp.testing import verifyObject
 

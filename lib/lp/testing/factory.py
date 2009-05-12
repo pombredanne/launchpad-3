@@ -10,7 +10,6 @@ __all__ = [
     'GPGSigningContext',
     'LaunchpadObjectFactory',
     'ObjectFactory',
-    'time_counter',
     ]
 
 from datetime import datetime, timedelta
@@ -66,7 +65,7 @@ from canonical.launchpad.interfaces.specification import (
     ISpecificationSet, SpecificationDefinitionStatus)
 from canonical.launchpad.interfaces.translationgroup import (
     ITranslationGroupSet)
-from canonical.launchpad.ftests import syncUpdate
+from canonical.launchpad.ftests._sqlobject import syncUpdate
 from lp.services.mail.signedmessage import SignedMessage
 from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
 from canonical.launchpad.webapp.interfaces import IStoreSelector
@@ -107,28 +106,6 @@ from lp.registry.interfaces.sourcepackagename import (
 from lp.registry.interfaces.ssh import ISSHKeySet, SSHKeyType
 
 SPACE = ' '
-
-
-def time_counter(origin=None, delta=timedelta(seconds=5)):
-    """A generator for yielding datetime values.
-
-    Each time the generator yields a value, the origin is incremented
-    by the delta.
-
-    >>> now = time_counter(datetime(2007, 12, 1), timedelta(days=1))
-    >>> now.next()
-    datetime.datetime(2007, 12, 1, 0, 0)
-    >>> now.next()
-    datetime.datetime(2007, 12, 2, 0, 0)
-    >>> now.next()
-    datetime.datetime(2007, 12, 3, 0, 0)
-    """
-    if origin is None:
-        origin = datetime.now(pytz.UTC)
-    now = origin
-    while True:
-        yield now
-        now += delta
 
 
 def default_master_store(func):
