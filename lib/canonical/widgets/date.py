@@ -231,13 +231,16 @@ class DateTimeWidget(TextWidget):
           >>> print widget.to_date
           None
 
-        The daterange is correctly expressed as JavaScript in all the
-        different permutations of to/from dates:
+        If there is no date range, we return None so it won't be included
+        on the template at all:
 
           >>> widget.from_date = None
           >>> widget.to_date = None
-          >>> widget.daterange
-          'null'
+          >>> print widget.daterange
+          None
+
+        The daterange is correctly expressed as JavaScript in all the
+        different permutations of to/from dates:
 
           >>> widget.from_date = from_date
           >>> widget.to_date = None
@@ -263,7 +266,7 @@ class DateTimeWidget(TextWidget):
         """
         self._align_date_constraints_with_time_zone()
         if not (self.from_date or self.to_date):
-            return 'null'
+            return None
         daterange = '['
         if self.from_date is None:
             daterange += 'null,'

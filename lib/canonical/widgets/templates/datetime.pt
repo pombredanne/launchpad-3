@@ -6,4 +6,16 @@
 <input size="19" type="text" class="yui2-calendar withtime"
    tal:attributes="name view/name; id view/name; value view/formvalue;
                    disabled view/disabled_flag;" />
+<tal:display_zone condition="view/display_zone">
+  in time zone: <tal:tz replace="view/time_zone_name" />
+  <a tal:condition="not: view/required_time_zone"
+     href="/people/+me/+editlocation">
+    <img src="/@@/edit"/>
+  </a>
+</tal:display_zone>
+<tal:daterange condition="view/daterange">
+  <span style="display:none;"
+        tal:attributes="id string:${view/name}-daterange"
+        tal:content="view/daterange" />
+</tal:daterange>
 </tal:root>
