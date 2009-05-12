@@ -1,10 +1,13 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
 #
 
 __metaclass__ = type
 
+from datetime import datetime
+
 from twisted.web import resource, static, error, util, server, proxy
 from twisted.internet.threads import deferToThread
+from pytz import utc
 
 from canonical.librarian.client import quote
 from canonical.librarian.db import read_transaction, write_transaction
@@ -83,7 +86,8 @@ class LibraryFileAliasResource(resource.Resource):
         try:
             alias = self.storage.getFileAlias(aliasID)
             alias.updateLastAccessed()
-            return alias.contentID, alias.filename, alias.mimetype
+            return (alias.contentID, alias.filename,
+                alias.mimetype, alias.date_created)
         except LookupError:
             raise NotFound
 
@@ -92,7 +96,7 @@ class LibraryFileAliasResource(resource.Resource):
         return fourOhFour
 
     def _cb_getFileAlias(
-            self, (dbcontentID, dbfilename, mimetype),
+            self, (dbcontentID, dbfilename, mimetype, date_created),
             filename, request
             ):
         # Return a 404 if the filename in the URL is incorrect. This offers
@@ -100,6 +104,17 @@ class LibraryFileAliasResource(resource.Resource):
         # unguessable names effectively using the filename as a secret).
         if dbfilename.encode('utf-8') != filename:
             return fourOhFour
+
+        # Set our caching headers, dynamically based on the creation date,
+        # per Bug 5456.
+        now = datetime.utcnow().replace(tzinfo=utc)
+        age = now - date_created
+        age_seconds = max(age.days * 24 * 60 + age.seconds, 2 * 24 * 60)
+        request.setHeader('Cache-Control', 'max-age=%d, public' % age_seconds)
+        #request.setHeader('Last-Modified',
+        #    date_created.strftime('%a, %d %b %Y %H:%M:%S +0000'))
+        request.lastModified = date_created.toordinal()
+
         if self.storage.hasFile(dbcontentID) or self.upstreamHost is None:
             # XXX: Brad Crittenden 2007-12-05 bug=174204: When encodings are
             # stored as part of a file's metadata this logic will be replaced.
