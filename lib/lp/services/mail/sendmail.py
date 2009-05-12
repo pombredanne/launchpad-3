@@ -40,7 +40,7 @@ from zope.security.proxy import isinstance as zisinstance
 from canonical.config import config
 from canonical.lp import isZopeless
 from canonical.launchpad.helpers import is_ascii_only
-from canonical.launchpad.mail.stub import TestMailer
+from lp.services.mail.stub import TestMailer
 from canonical.launchpad import versioninfo
 
 # email package by default ends up encoding UTF-8 messages using base64,

@@ -8,7 +8,7 @@ import email
 import operator
 import transaction
 
-from canonical.launchpad.mail import stub
+from lp.services.mail import stub
 
 
 def pop_notifications(sort_key=None, commit=True):
