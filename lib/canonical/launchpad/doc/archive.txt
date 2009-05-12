@@ -2095,6 +2095,8 @@ Set up v1.0 and 1.1 of "package3":
     ...     sourcename="package3", version="1.0", archive=cprov.archive)
     >>> discard = test_publisher.getPubSource(
     ...     sourcename="package3", version="1.1", archive=cprov.archive)
+    >>> discard = test_publisher.getPubSource(
+    ...     sourcename="package3", version="1.2", archive=cprov.archive)
 
 The underlying package discovery has the ability to do substring matches
 on the supplied package names.  However, this feature is not being used
@@ -2157,6 +2159,15 @@ Now, Mark's PPA has 'built-source' source and it's 2 binaries.
     >>> [copy] = sabdfl.archive.getPublishedSources(name="built-source")
     >>> len(copy.getPublishedBinaries())
     2
+
+If copying packages into a PPA, you can only copy into the "release" pocket,
+or a CannotCopy exception is thrown.
+
+    >>> sabdfl.archive.syncSource(
+    ...     "package3", "1.2", cprov.archive, "updates")
+    Traceback (most recent call last):
+    ...
+    CannotCopy: Destination pocket must be 'release' for a PPA.
 
 
 == Publish flag ==
