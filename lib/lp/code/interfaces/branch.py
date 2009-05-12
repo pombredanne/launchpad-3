@@ -922,6 +922,9 @@ class IBranch(IHasOwner, IHasBranchTarget):
             readonly=True,
             value_type=Reference(Interface)))
 
+    def isBranchMergeable(other_branch):
+        """Is the other branch mergeable into this branch (or vice versa)."""
+
     def addLandingTarget(registrant, target_branch, dependent_branch=None,
                          whiteboard=None, date_created=None,
                          needs_review=False, initial_comment=None,

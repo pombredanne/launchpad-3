@@ -209,6 +209,12 @@ class Branch(SQLBase):
             BranchMergeProposal.queue_status NOT IN %s
             """ % sqlvalues(self, BRANCH_MERGE_PROPOSAL_FINAL_STATES))
 
+    def isBranchMergeable(self, target_branch):
+        """See `IBranch`."""
+        # In some imaginary time we may actually check to see if this branch
+        # and the target branch have common ancestry.
+        return self.target.areBranchesMergeable(target_branch.target)
+
     def addLandingTarget(self, registrant, target_branch,
                          dependent_branch=None, whiteboard=None,
                          date_created=None, needs_review=False,
