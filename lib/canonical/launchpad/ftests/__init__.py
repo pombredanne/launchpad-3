@@ -10,6 +10,8 @@ from canonical.launchpad.ftests._sqlobject import (
 from canonical.launchpad.ftests.keys_for_tests import (
     import_public_test_keys, import_public_key, import_secret_test_key,
     decrypt_content)
+from lp.testing import (
+    login, login_person, logout, ANONYMOUS, is_logged_in, test_tales)
 
 
 def set_branding(browser, icon=True, logo=True, mugshot=True):
