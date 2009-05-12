@@ -534,8 +534,24 @@ class BasicLaunchpadRequest:
         return get_query_string_params(self)
 
 
+class LaunchpadBrowserRequestMixin:
+    """A mixin for classes that share some method implementations."""
+
+    def getRootURL(self, rootsite):
+        """See IBasicLaunchpadRequest."""
+        if rootsite is not None:
+            assert rootsite in allvhosts.configs, (
+                "rootsite is %s.  Must be in %r." % (
+                    rootsite, sorted(allvhosts.configs.keys())))
+            root_url = allvhosts.configs[rootsite].rooturl
+        else:
+            root_url = self.getApplicationURL() + '/'
+        return root_url
+
+
 class LaunchpadBrowserRequest(BasicLaunchpadRequest, BrowserRequest,
-                              NotificationRequest, ErrorReportRequest):
+                              NotificationRequest, ErrorReportRequest,
+                              LaunchpadBrowserRequestMixin):
     """Integration of launchpad mixin request classes to make an uber
     launchpad request class.
     """
@@ -726,7 +742,7 @@ def adaptRequestToResponse(request):
     return request.response
 
 
-class LaunchpadTestRequest(TestRequest):
+class LaunchpadTestRequest(TestRequest, LaunchpadBrowserRequestMixin):
     """Mock request for use in unit and functional tests.
 
     >>> request = LaunchpadTestRequest(SERVER_URL='http://127.0.0.1/foo/bar')
@@ -1087,6 +1103,10 @@ class ShipItPublication(AccountPrincipalMixin, LaunchpadBrowserPublication):
 class UbuntuShipItBrowserRequest(LaunchpadBrowserRequest):
     implements(canonical.shipit.layers.ShipItUbuntuLayer)
 
+    def getRootURL(self, rootsite):
+        """See IBasicLaunchpadRequest."""
+        return allvhosts.configs['shipitubuntu'].rooturl
+
     @property
     def icing_url(self):
         """The URL to the directory containing resources for this request."""
@@ -1098,6 +1118,10 @@ class UbuntuShipItBrowserRequest(LaunchpadBrowserRequest):
 class KubuntuShipItBrowserRequest(LaunchpadBrowserRequest):
     implements(canonical.shipit.layers.ShipItKUbuntuLayer)
 
+    def getRootURL(self, rootsite):
+        """See IBasicLaunchpadRequest."""
+        return allvhosts.configs['shipitkubuntu'].rooturl
+
     @property
     def icing_url(self):
         """The URL to the directory containing resources for this request."""
@@ -1108,6 +1132,10 @@ class KubuntuShipItBrowserRequest(LaunchpadBrowserRequest):
 
 class EdubuntuShipItBrowserRequest(LaunchpadBrowserRequest):
     implements(canonical.shipit.layers.ShipItEdUbuntuLayer)
+
+    def getRootURL(self, rootsite):
+        """See IBasicLaunchpadRequest."""
+        return allvhosts.configs['shipitedubuntu'].rooturl
 
     @property
     def icing_url(self):
@@ -1264,6 +1292,12 @@ class WebServiceClientRequest(WebServiceRequestTraversal,
             body_instream, environ, response)
         # Web service requests use content negotiation.
         self.response.setHeader('Vary', 'Cookie, Authorization, Accept')
+
+    def getRootURL(self, rootsite):
+        """See IBasicLaunchpadRequest."""
+        # When browsing the web service, we want URLs to point back at the web
+        # service, so we basically ignore rootsite.
+        return self.getApplicationURL() + '/'
 
 
 class WebServiceTestRequest(WebServiceRequestTraversal, LaunchpadTestRequest):
