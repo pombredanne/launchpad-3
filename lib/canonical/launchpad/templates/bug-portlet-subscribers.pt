@@ -8,7 +8,10 @@
 >
   <div class="section" tal:define="context_menu context/menu:context"
        metal:define-slot="heading">
-    <div tal:content="structure context_menu/subscription/render" />
+    <div
+      tal:attributes="class view/subscription_class"
+      tal:content="structure context_menu/subscription/render" />
+    <div id="sub-unsub-spinner">Subscribing...</div>
     <div tal:content="structure context_menu/addsubscriber/render" />
   </div>
   <a id="subscribers-content-link"
@@ -19,7 +22,15 @@
     <img src="/@@/spinner" />
   </div>
   <script type="text/javascript">
-    YUI().use('io-base', 'node', function(Y) {
+    YUI().use('io-base', 'node', 'bugs.bugtask_index', function(Y) {
+      // Must be done inline here to ensure the load event fires.
+      // This is a work around for a YUI3 issue with event handling.
+      var subscription_link = Y.get('.menu-link-subscription');
+      if (subscription_link) {
+          subscription_link.on('click', function(e) {
+              e.preventDefault();
+          });
+      }
       Y.on('domready', function() {
         if (Y.UA.ie) {
             return null;
@@ -36,6 +47,11 @@
           var portlet = Y.get('#portlet-subscribers');
           portlet.set('innerHTML',
                       portlet.get('innerHTML') + response.responseText);
+          // Fire a custom portlet loaded event to notify when
+          // it's safe to setup subscriber link callbacks.
+          // XXX deryck 2009-04-30 bug=369874 Now this object exists,
+          // the inline js here should be moved to bugtask-index.js.
+          Y.bugs.portlet.fire('bugs:portletloaded');
         }
 
         var config = {on: {success: on_success,

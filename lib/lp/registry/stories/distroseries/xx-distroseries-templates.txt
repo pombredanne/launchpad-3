@@ -1,0 +1,57 @@
+= Templates view for DistroSeries =
+
+The +templates view for DistroSeries gives an overview of the translation
+templates in this series and provides easy access to the various subpages of
+each template.
+
+
+== Getting there ==
+
+The view is only visible to the owner of the DistroSeries and administrators.
+
+    >>> user_browser.open(
+    ...     'http://translations.launchpad.dev/ubuntu/hoary')
+    >>> user_browser.getLink('Templates')
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
+    >>> admin_browser.open(
+    ...     'http://translations.launchpad.dev/ubuntu/hoary')
+    >>> admin_browser.getLink('Templates').click()
+    >>> print admin_browser.url
+    http://translations.launchpad.dev/ubuntu/hoary/+templates
+
+
+== The templates table ==
+
+The page shows a table of all templates and links to their subpages.
+
+    >>> table = find_tag_by_id(admin_browser.contents, 'templates_table')
+    >>> print extract_text(table)
+    Source package Template name     Actions
+    pmount         pmount            Edit Upload Download Administer
+    evolution      evolution-2.2     Edit Upload Download Administer
+    mozilla        pkgconf-mozilla   Edit Upload Download Administer
+    evolution      man               Edit Upload Download Administer
+    pmount         man               Edit Upload Download Administer
+    evolution      disabled-template Edit Upload Download Administer
+
+
+== Links to the templates ==
+
+Clicking on a template name will take the user to that template's overview
+page.
+
+    >>> admin_browser.getLink('pmount').click()
+    >>> print admin_browser.url
+    http://translations.launchpad.dev/ubuntu/hoary/+source/pmount/+pots/pmount
+
+Clicking on 'Edit' will take the user to the page to edit the template
+details. Likewise for the other links for each template.
+
+    >>> admin_browser.open(
+    ...     'http://translations.launchpad.dev/ubuntu/hoary/+templates')
+    >>> admin_browser.getLink('Edit').click()
+    >>> print admin_browser.url
+    http://translations.launchpad.dev/ubuntu/hoary/+source/pmount/+pots/pmount/+edit

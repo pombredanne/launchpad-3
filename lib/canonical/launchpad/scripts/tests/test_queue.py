@@ -298,7 +298,7 @@ class TestQueueTool(TestQueueBase):
         self.assertEqual(
             'i386 build of bar 1.0-1 in ubuntu breezy-autotest RELEASE',
             build.title)
-        self.assertEqual(build.buildqueue_record.lastscore, 3255)
+        self.assertEqual(build.buildqueue_record.lastscore, 1755)
 
     def testAcceptingBinaryDoesntGenerateEmail(self):
         """Check if accepting a binary package does not generate email."""

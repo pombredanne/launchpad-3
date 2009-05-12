@@ -190,12 +190,17 @@
             name="+langchart"
             template="../templates/distroseries-langchart.pt"/>
         <browser:page
-            name="+language-packs"
-            template="../templates/distroseries-language-packs.pt"/>
-        <browser:page
             name="+potlist"
             template="../templates/object-pots.pt"/>
     </browser:pages>
+    <browser:page
+        for="lp.registry.interfaces.distroseries.IDistroSeries"
+        class="lp.registry.browser.distroseries.DistroSeriesTemplatesView"
+        permission="launchpad.Edit"
+        facet="translations"
+        layer="canonical.launchpad.layers.TranslationsLayer"
+        name="+templates"
+        template="../templates/object-templates.pt" />
     <browser:page
         name="+help-translate-button"
         facet="translations"
@@ -259,20 +264,12 @@
         permission="zope.Public"/>
     <browser:page
         for="lp.registry.interfaces.distroseries.IDistroSeries"
-        class="lp.registry.browser.distroseries.DistroSeriesLanguagePackAdminView"
-        permission="launchpad.TranslationsAdmin"
-        template="../templates/distroseries-language-packs-editing.pt"
-        name="+admin-language-packs"
+        class="lp.registry.browser.distroseries.DistroSeriesLanguagePackView"
+        permission="zope.Public"
         facet="translations"
-        layer="canonical.launchpad.layers.TranslationsLayer"/>
-    <browser:page
-        for="lp.registry.interfaces.distroseries.IDistroSeries"
-        class="lp.registry.browser.distroseries.DistroSeriesFullLanguagePackRequestView"
-        permission="launchpad.LanguagePacksAdmin"
-        template="../templates/distroseries-language-packs-editing.pt"
-        name="+full-language-pack-request"
-        facet="translations"
-        layer="canonical.launchpad.layers.TranslationsLayer"/>
+        layer="canonical.launchpad.layers.TranslationsLayer"
+        name="+language-packs"
+        template="../templates/distroseries-language-packs.pt"/>
     <browser:menus
         classes="
             DistroSeriesFacets
@@ -1966,7 +1963,7 @@
         for="lp.registry.interfaces.product.IProduct"
         class="lp.registry.browser.product.ProductAddSeriesView"
         facet="overview"
-        permission="launchpad.Edit"
+        permission="launchpad.Driver"
         template="../templates/productseries-new.pt"/>
     <browser:defaultView
         for="lp.registry.interfaces.product.IProductSet"
@@ -2010,13 +2007,12 @@
         class="lp.registry.browser.product.ProductAddView"
         permission="launchpad.AnyPerson"
         template="../templates/product-new.pt"/>
-    <browser:page
-        name="+new-guided"
+    <browser:renamed-page
         for="lp.registry.interfaces.product.IProductSet"
-        facet="overview"
-        class="lp.registry.browser.product.ProductAddView"
-        permission="launchpad.AnyPerson"
-        template="../templates/product-new-guided.pt"/>
+        name="+new-guided"
+        new_name="+new"
+        rootsite="mainsite"
+        />
     <browser:menus
         classes="
             ProductFacets
@@ -2145,6 +2141,13 @@
         permission="launchpad.Edit"
         template="../templates/productseries-edit.pt"/>
     <browser:page
+        name="+delete"
+        for="lp.registry.interfaces.productseries.IProductSeries"
+        class="lp.registry.browser.productseries.ProductSeriesDeleteView"
+        facet="overview"
+        permission="launchpad.Edit"
+        template="../templates/productseries-delete.pt"/>
+    <browser:page
         name="+addrelease"
         for="lp.registry.interfaces.productseries.IProductSeries"
         class="canonical.launchpad.browser.ProductReleaseFromSeriesAddView"
@@ -2212,6 +2215,14 @@
         facet="translations"
         permission="launchpad.Edit"
         template="../templates/productseries-translations-settings.pt"
+        layer="canonical.launchpad.layers.TranslationsLayer"/>
+    <browser:page
+        for="lp.registry.interfaces.productseries.IProductSeries"
+        name="+templates"
+        class="lp.registry.browser.productseries.ProductSeriesTemplatesView"
+        facet="translations"
+        permission="launchpad.Edit"
+        template="../templates/object-templates.pt"
         layer="canonical.launchpad.layers.TranslationsLayer"/>
     <browser:page
         for="lp.registry.interfaces.productseries.IProductSeries"
@@ -2554,13 +2565,13 @@
         class="canonical.launchpad.browser.HelpTranslateButtonView"
         permission="zope.Public"/>
     <browser:editform
-        name="+changetranslators"
+        name="+settings"
         for="lp.registry.interfaces.distribution.IDistribution"
         schema="lp.registry.interfaces.distribution.IDistribution"
         facet="translations"
         fields="translationgroup translationpermission"
         permission="launchpad.Edit"
-        template="../templates/distribution-translators.pt"
+        template="../templates/distribution-translation-settings.pt"
         layer="canonical.launchpad.layers.TranslationsLayer"/>
     <browser:page
         for="lp.registry.interfaces.distribution.IDistribution"
@@ -2846,4 +2857,73 @@
         facet="overview"
         permission="launchpad.Edit"
         template="../templates/object-driver.pt"/>
+   <browser:defaultView
+        for="lp.registry.interfaces.distributionmirror.IDistributionMirror"
+        name="+index" />
+    <browser:url
+        for="lp.registry.interfaces.distributionmirror.IDistributionMirror"
+        path_expression="string:+mirror/${name}"
+        attribute_to_parent="distribution" />
+    <browser:page
+        for="*"
+        name="+distributionmirror-macros"
+        permission="zope.Public"
+        template="../templates/distributionmirror-macros.pt" />
+    <browser:page
+        for="lp.registry.interfaces.distributionmirror.IDistributionMirror"
+        permission="zope.Public"
+        name="+portlet-details"
+        template="../templates/distributionmirror-portlet-details.pt">
+    </browser:page>
+    <browser:page
+        name="+index"
+        for="lp.registry.interfaces.distributionmirror.IDistributionMirror"
+        class="lp.registry.browser.distributionmirror.DistributionMirrorView"
+        facet="overview"
+        permission="zope.Public"
+        template="../templates/distributionmirror-index.pt">
+    </browser:page>
+    <browser:page
+        name="+edit"
+        for="lp.registry.interfaces.distributionmirror.IDistributionMirror"
+        permission="launchpad.Edit"
+        class="lp.registry.browser.distributionmirror.DistributionMirrorEditView"
+        facet="overview"
+        template="../templates/distributionmirror-edit.pt">
+    </browser:page>
+    <browser:page
+        name="+review"
+        for="lp.registry.interfaces.distributionmirror.IDistributionMirror"
+        permission="launchpad.Admin"
+        class="lp.registry.browser.distributionmirror.DistributionMirrorReviewView"
+        facet="overview"
+        template="../templates/distributionmirror-review.pt">
+    </browser:page>
+    <browser:page
+        name="+delete"
+        for="lp.registry.interfaces.distributionmirror.IDistributionMirror"
+        permission="launchpad.Admin"
+        class="lp.registry.browser.distributionmirror.DistributionMirrorDeleteView"
+        facet="overview"
+        template="../templates/distributionmirror-delete.pt">
+    </browser:page>
+    <browser:page
+        for="lp.registry.interfaces.distributionmirror.IDistributionMirror"
+        permission="launchpad.Admin"
+        class="lp.registry.browser.distributionmirror.DistributionMirrorReassignmentView"
+        facet="overview"
+        name="+reassign"
+        template="../../../canonical/launchpad/templates/object-reassignment.pt">
+    </browser:page>
+    <browser:page
+        name="+prober-logs"
+        for="lp.registry.interfaces.distributionmirror.IDistributionMirror"
+        class="lp.registry.browser.distributionmirror.DistributionMirrorView"
+        facet="overview"
+        permission="launchpad.Edit"
+        template="../templates/distributionmirror-prober-logs.pt">
+    </browser:page>
+    <browser:menus
+        module="lp.registry.browser.distributionmirror"
+        classes="DistributionMirrorOverviewMenu" />
 </configure>

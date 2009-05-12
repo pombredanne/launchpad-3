@@ -998,6 +998,16 @@ class IPublishingSet(Interface):
         :rtype: ``dict``.
         """
 
+    def getBuildStatusSummaryForSourcePublication(source_publication):
+        """Return a summary of the build statuses for this source
+        publication.
+
+        See `ISourcePackagePublishingHistory`.getStatusSummaryForBuilds()
+        for details. The call is just proxied here so that it can also be
+        used with an ArchiveSourcePublication passed in as
+        the source_package_pub, allowing the use of the cached results.
+        """
+
 pocketsuffix = {
     PackagePublishingPocket.RELEASE: "",
     PackagePublishingPocket.SECURITY: "-security",

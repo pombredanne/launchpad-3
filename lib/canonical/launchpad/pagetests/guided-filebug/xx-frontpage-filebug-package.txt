@@ -66,8 +66,8 @@ Selecting a valid package will take us to the next filebug step.
     >>> from canonical.launchpad.ftests.bug import print_bugs_list
     >>> print_bugs_list(user_browser.contents, "similar-bugs")
     #1 Firefox does not support SVG
-    Open, last updated 2006-05-19
-
+    Open (1 comment) last updated 2006-05-19
+    Firefox needs to support embedded SVG...
 
 
 Entering a description and submitting the bug takes the user to the bug
