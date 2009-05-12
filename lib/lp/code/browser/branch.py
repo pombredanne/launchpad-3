@@ -1132,8 +1132,8 @@ class RegisterBranchMergeProposalView(LaunchpadFormView):
         return canonical_url(self.context)
 
     def initialize(self):
-        """Show a 404 if the source branch is junk."""
-        if self.context.product is None:
+        """Show a 404 if the branch target doesn't support proposals."""
+        if not self.context.target.supports_merge_proposals:
             raise NotFound(self.context, '+register-merge')
         LaunchpadFormView.initialize(self)
 
