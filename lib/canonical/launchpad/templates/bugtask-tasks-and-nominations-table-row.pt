@@ -69,7 +69,11 @@
       <metal:expander metal:use-macro="template/macros/expander" />
     </td>
 
-    <td colspan="2" style="margin: 0; padding: 0; vertical-align: middle">
+    <td class="icon left right">
+      <metal:expander metal:use-macro="template/macros/expander" />
+    </td>
+
+    <td style="margin: 0; padding: 0; vertical-align: middle">
       <tal:has_watch condition="context/bugwatch">
         <div style="text-decoration: none; padding: 0.25em">
           <tal:bugtracker-active
@@ -88,9 +92,18 @@
         </div>
       </tal:has_watch>
       <tal:has_no_watch condition="not: context/bugwatch">
-        <span tal:replace="structure view/assignee_picker_widget">
-          Assignee Name and Edit Button
-        </span>
+
+        <tal:has_assignee condition="context/assignee">
+          <a
+            style="display: block; padding: 0.25em; text-decoration: none;"
+            tal:attributes="href context/assignee/fmt:url/+assignedbugs"
+          >
+            <img tal:attributes="src context/assignee/fmt:icon_url" />
+            <tal:name replace="context/assignee/fmt:displayname">
+              assignee.displayname
+            </tal:name>
+          </a>
+        </tal:has_assignee>
       </tal:has_no_watch>
     </td>
 
