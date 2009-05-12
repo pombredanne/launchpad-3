@@ -122,6 +122,9 @@ Pages for the individual milestones show all specifications and bugtasks
 associated with that milestone for products of this project:
 
     >>> anon_browser.getLink('1.1', index=1).click()
+    >>> print anon_browser.title
+    GNOME 1.1
+
     >>> specs = find_tag_by_id(anon_browser.contents, 'milestone_specs')
     >>> print extract_text(specs)
     Blueprint Product Priority Assignee Delivery
@@ -138,6 +141,9 @@ associated with that milestone for products of this project:
 A project milestone page has the same navigation as the project:
 
     >>> anon_browser.open('http://launchpad.dev/firefox/+milestone/1.0')
+    >>> print anon_browser.title
+    Mozilla Firefox 1.0
+
     >>> print_location(anon_browser.contents)
     Hierarchy: Launchpad > Mozilla Firefox
     Tabs:
@@ -147,12 +153,15 @@ A project milestone page has the same navigation as the project:
     * Blueprints - http://blueprints.launchpad.dev/firefox
     * Translations - http://translations.launchpad.dev/firefox
     * Answers - http://answers.launchpad.dev/firefox
-    Main heading: 1.0
+    Main heading: Mozilla Firefox 1.0
 
 Similarly, a distribution milestone page has the same navigation as
 the distribution:
 
     >>> anon_browser.open('http://launchpad.dev/debian/+milestone/3.1')
+    >>> print anon_browser.title
+    Debian 3.1
+
     >>> print_location(anon_browser.contents)
     Hierarchy: Launchpad > Debian
     Tabs:
@@ -162,7 +171,7 @@ the distribution:
     * Blueprints - http://blueprints.launchpad.dev/debian
     * Translations - http://translations.launchpad.dev/debian
     * Answers - http://answers.launchpad.dev/debian
-    Main heading: 3.1
+    Main heading: Debian 3.1
 
 
 === Duplicate bugs ===
@@ -235,7 +244,7 @@ Observe that both bugs are listed in the 1.0 milestone listing:
     >>> browser.getLink('Milestone history').click()
     >>> browser.getLink(milestone_regex).click()
     >>> print browser.title
-    Mozilla Firefox: 1.0
+    Mozilla Firefox 1.0
     >>> milestone_url = browser.url
 
     >>> browser.getLink('Test Bug 1').click()
@@ -337,7 +346,7 @@ We'll also create a new test milestone within the "trunk" series:
 
     >>> browser.getLink('test-milestone').click()
     >>> print browser.title
-    Mozilla Firefox: test-milestone
+    Mozilla Firefox test-milestone
     >>> milestone_url = browser.url
 
 Let's target an existing bug to both series "1.0" and series "2.0":

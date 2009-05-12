@@ -19,10 +19,7 @@
     has_edit context/required:launchpad.Edit">
 
     <h1>
-      <tal:title tal:content="view/milestone/name"  />
-      <tal:code_name condition="view/milestone/code_name">
-        "<tal:title tal:content="view/milestone/code_name"  />"
-      </tal:code_name>
+      <tal:title tal:content="view/milestone/title"  />
       <a tal:condition="context/required:launchpad.Edit"
         tal:attributes="href context/fmt:url/+delete"
         title="Delete this release"
