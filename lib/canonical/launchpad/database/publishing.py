@@ -1257,8 +1257,9 @@ class PublishingSet:
                 bin.binarypackagerelease.build
                     for bin in published_bins
                         if bin.datepublished is not None]
+
             unpublished_builds = list(
-                set(builds).difference(published_builds))
+                set(summary['builds']).difference(published_builds))
 
             if unpublished_builds:
                 augmented_summary = {

@@ -146,6 +146,30 @@ If a build is deleted, it does not cause the build status summary to change:
     hppa build of foo 666 in ubuntutest breezy-autotest RELEASE
     i386 build of foo 666 in ubuntutest breezy-autotest RELEASE
 
+If a build of a SourcePackagePublishingHistory is manually set to
+superseded (just to cancel the build) even though the SPPH is itself
+not marked as superseded, the status summary will not include
+that build:
+
+    >>> spph = stp.getPubSource(architecturehintlist='any')
+    >>> builds = spph.createMissingBuilds()
+    >>> builds[0].buildstate = BuildStatus.SUPERSEDED
+    >>> builds[1].buildstate = BuildStatus.FULLYBUILT
+    >>> build_status_summary = spph.getStatusSummaryForBuilds()
+    >>> print_build_status_summary(build_status_summary)
+    FULLYBUILT_PENDING
+    i386 build of foo 666 in ubuntutest breezy-autotest RELEASE
+
+And after publishing the other build, the normal FULLY_BUILT status
+is achieved (without the 'canceled' build):
+
+    >>> bpr = stp.uploadBinaryForBuild(builds[1], 'foo-bin')
+    >>> bpph = stp.publishBinaryInArchive(bpr, spph.archive,
+    ...     status=PackagePublishingStatus.PUBLISHED)
+    >>> print_build_status_summary(spph.getStatusSummaryForBuilds())
+    FULLYBUILT
+    i386 build of foo 666 in ubuntutest breezy-autotest RELEASE
+
 IBinaryPackagePublishingHistory also contains similar API conveniences.
 
     >>> bpph = stp.getPubBinaries()[0]
