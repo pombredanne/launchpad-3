@@ -12,7 +12,7 @@ from zope.interface import implements
 
 from canonical.database.sqlbase import cursor
 from canonical.launchpad.interfaces.looptuner import ITunableLoop
-from canonical.launchpad.scripts.base import LaunchpadScript
+from lp.services.scripts.base import LaunchpadScript
 from canonical.launchpad.utilities.looptuner import LoopTuner
 
 

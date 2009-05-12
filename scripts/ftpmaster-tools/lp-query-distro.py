@@ -23,7 +23,7 @@
 import _pythonpath
 
 from canonical.config import config
-from canonical.launchpad.scripts.base import (LaunchpadScript,
+from lp.services.scripts.base import (LaunchpadScript,
     LaunchpadScriptFailure)
 from canonical.launchpad.scripts.ftpmaster import LpQueryDistro
 

@@ -11,7 +11,7 @@ import logging
 
 import _pythonpath
 
-from canonical.launchpad.scripts.base import LaunchpadScript
+from lp.services.scripts.base import LaunchpadScript
 from canonical.launchpad.scripts.migrate_kde_potemplates import (
     migrate_potemplates)
 

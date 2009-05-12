@@ -7,9 +7,12 @@ import logging
 import os
 import unittest
 
+from zope.security.management import setSecurityPolicy
+
 from canonical.launchpad.testing.pages import PageTestSuite
 from canonical.launchpad.testing.systemdocs import (
     LayeredDocFileSuite, setGlobs, setUp, tearDown)
+from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
 from canonical.testing import (
     DatabaseFunctionalLayer, LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer)
