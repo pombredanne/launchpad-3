@@ -145,9 +145,16 @@ still in the build queue.
     Status: Needs building
     Queued: 2006-02-14
     Estimated build start: not available
-    Build score: 10
+    Build score: 10 (What's this?)
     Build log: not available
     Finished: not available
+
+Users puzzled by the magic 'Build score' value can access a help page
+describing how it is calculated.
+ 
+     >>> print anon_browser.getLink("What's this?").url
+     https://help.launchpad.net/Packaging/BuildScores
+    
 
 == Build Retrying ==
 
