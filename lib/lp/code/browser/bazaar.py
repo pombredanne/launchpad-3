@@ -91,11 +91,10 @@ class BazaarApplicationView(LaunchpadView):
 
 class ProductInfo:
 
-    delegates(IProduct, 'product')
-
     def __init__(
-        self, product, num_branches, branch_size, elapsed):
-        self.product = product
+        self, product_name, num_branches, branch_size, elapsed):
+        self.name = product_name
+        self.url = '/' + product_name
         self.num_branches = num_branches
         self.branch_size = branch_size
         self.elapsed_since_commit = elapsed
@@ -161,9 +160,11 @@ class BazaarProductView:
         return value_to_cutoffs
 
     def products(self, num_products=None):
+        # The product_info ends up sorted on product name, as the product name
+        # is the first item of the tuple returned, and is guaranteed to be
+        # unique by the sql query.
         product_info = sorted(
-            list(getUtility(IBranchCloud).getProductsWithInfo(num_products)),
-            key=lambda data: data[0].name)
+            list(getUtility(IBranchCloud).getProductsWithInfo(num_products)))
         now = datetime.today()
         counts = sorted(zip(*product_info)[1])
         size_mapping = {
@@ -176,11 +177,11 @@ class BazaarProductView:
         num_branches_to_size = self._make_distribution_map(
             counts, size_mapping)
 
-        for product, num_branches, last_revision_date in product_info:
+        for product_name, num_branches, last_revision_date in product_info:
             # Projects with no branches are not interesting.
             if num_branches == 0:
                 continue
             branch_size = num_branches_to_size[num_branches]
             elapsed = now - last_revision_date
             yield ProductInfo(
-                product, num_branches, branch_size, elapsed)
+                product_name, num_branches, branch_size, elapsed)

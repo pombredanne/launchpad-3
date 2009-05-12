@@ -675,6 +675,66 @@ class TestMergeProposalNotification(TestCaseWithFactory):
         subscriber_set = set([source_owner, target_owner, reviewer])
         self.assertEqual(subscriber_set, set(recipients.keys()))
 
+    def test_getNotificationRecipients_Registrant(self):
+        # If the registrant of the proposal is being notified of the
+        # proposals, they get their rationale set to "Registrant".
+        registrant = self.factory.makePerson()
+        bmp = self.factory.makeBranchMergeProposal(registrant=registrant)
+        # Make sure that the registrant is subscribed.
+        bmp.source_branch.subscribe(registrant,
+            BranchSubscriptionNotificationLevel.NOEMAIL, None,
+            CodeReviewNotificationLevel.FULL)
+        recipients = bmp.getNotificationRecipients(
+            CodeReviewNotificationLevel.STATUS)
+        reason = recipients[registrant]
+        self.assertEqual("Registrant", reason.mail_header)
+        self.assertEqual(
+            "You proposed %s for merging." % bmp.source_branch.bzr_identity,
+            reason.getReason())
+
+    def test_getNotificationRecipients_Registrant_not_subscribed(self):
+        # If the registrant of the proposal is not subscribed, we don't send
+        # them any email.
+        registrant = self.factory.makePerson()
+        bmp = self.factory.makeBranchMergeProposal(registrant=registrant)
+        recipients = bmp.getNotificationRecipients(
+            CodeReviewNotificationLevel.STATUS)
+        self.assertFalse(registrant in recipients)
+
+    def test_getNotificationRecipients_Owner(self):
+        # If the owner of the source branch is subscribed (which is the
+        # default), then they get a rationale telling them they are the Owner.
+        bmp = self.factory.makeBranchMergeProposal()
+        recipients = bmp.getNotificationRecipients(
+            CodeReviewNotificationLevel.STATUS)
+        reason = recipients[bmp.source_branch.owner]
+        self.assertEqual("Owner", reason.mail_header)
+        self.assertEqual(
+            "You are the owner of %s." % bmp.source_branch.bzr_identity,
+            reason.getReason())
+
+    def test_getNotificationRecipients_team_owner(self):
+        # If the owner of the source branch is subscribed (which is the
+        # default), but the owner is a team, then none of the headers will say
+        # Owner.
+        team = self.factory.makeTeam()
+        branch = self.factory.makeProductBranch(owner=team)
+        bmp = self.factory.makeBranchMergeProposal(source_branch=branch)
+        recipients = bmp.getNotificationRecipients(
+            CodeReviewNotificationLevel.STATUS)
+        headers = set([reason.mail_header for reason in recipients.values()])
+        self.assertFalse("Owner" in headers)
+
+    def test_getNotificationRecipients_Owner_not_subscribed(self):
+        # If the owner of the source branch has unsubscribed themselves, then
+        # we don't send them eamil.
+        bmp = self.factory.makeBranchMergeProposal()
+        owner = bmp.source_branch.owner
+        bmp.source_branch.unsubscribe(owner)
+        recipients = bmp.getNotificationRecipients(
+            CodeReviewNotificationLevel.STATUS)
+        self.assertFalse(owner in recipients)
+
 
 class TestGetAddress(TestCaseWithFactory):
     """Test that the address property gives expected results."""
@@ -839,7 +899,7 @@ class TestBranchMergeProposalGetterGetProposals(TestCaseWithFactory):
         # proposals that the logged in user is able to see.
         proposal = self._make_merge_proposal('albert', 'november', 'work')
         # Mark the source branch private.
-        proposal.source_branch.private = True
+        removeSecurityProxy(proposal.source_branch).private = True
         self._make_merge_proposal('albert', 'mike', 'work')
 
         albert = getUtility(IPersonSet).getByName('albert')
@@ -878,7 +938,7 @@ class TestBranchMergeProposalGetterGetProposals(TestCaseWithFactory):
         proposal = self._make_merge_proposal(
             'xray', 'november', 'work', registrant=albert)
         # Mark the source branch private.
-        proposal.source_branch.private = True
+        removeSecurityProxy(proposal.source_branch).private = True
 
         november = getUtility(IProductSet).getByName('november')
         # The proposal is visible to charles.

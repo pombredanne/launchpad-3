@@ -1,0 +1,21 @@
+Hello %(recipient_name)s,
+
+Launchpad: activate your archive subscription
+---------------------------------------------
+
+%(registrant_name)s has invited you to subscribe to a private software archive hosted by Launchpad.
+
+To start downloading and using software from this archive you need to activate your subscription by visiting this link:
+
+<%(recipient_subscriptions_url)s>
+
+You can find out more about %(registrant_name)s here:
+
+<%(registrant_profile_url)s>
+
+If you'd prefer not to use software from this archive, you can safely ignore this email. However, if you have any concerns you can contact the Launchpad team by emailing feedback@launchpad.net
+
+
+Regards,
+The Launchpad team
+

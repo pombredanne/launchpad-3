@@ -5,8 +5,9 @@
 
 __metaclass__ = type
 __all__ = [
+    'IFindOfficialBranchLinks',
     'ISeriesSourcePackageBranch',
-    'ISeriesSourcePackageBranchSet',
+    'IMakeOfficialBranchLinks',
     ]
 
 
@@ -14,7 +15,7 @@ from zope.interface import Attribute, Interface
 from zope.schema import Choice, Datetime, Int
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces.publishing import PackagePublishingPocket
+from lp.soyuz.interfaces.publishing import PackagePublishingPocket
 
 
 class ISeriesSourcePackageBranch(Interface):
@@ -28,6 +29,8 @@ class ISeriesSourcePackageBranch(Interface):
     pocket = Choice(
         title=_("Pocket"), required=True, vocabulary=PackagePublishingPocket)
 
+    sourcepackage = Attribute('The source package')
+
     sourcepackagename = Choice(
         title=_("Package"), required=True, vocabulary='SourcePackageName')
 
@@ -40,12 +43,38 @@ class ISeriesSourcePackageBranch(Interface):
         title=_("When the branch was linked to the distribution suite."))
 
 
-class ISeriesSourcePackageBranchSet(Interface):
+class IFindOfficialBranchLinks(Interface):
+    """Find the links for official branches for pockets on source packages.
+    """
+
+    def findForBranch(branch):
+        """Get the links to source packages from a branch.
+
+        :param branch: An `IBranch`.
+        :return: An `IResultSet` of `ISeriesSourcePackageBranch` objects.
+        """
+
+    def findForSourcePackage(sourcepackage):
+        """Get the links to branches from a source package.
+
+        :param sourcepackage: An `ISourcePackage`.
+        :return: An `IResultSet` of `ISeriesSourcePackageBranch` objects.
+        """
+
+
+class IMakeOfficialBranchLinks(Interface):
     """A set of links from source packages in distribution suites to branches.
 
     This doesn't really make sense as an interface, but is provided to match
     the rest of Launchpad.
     """
+
+    def delete(sourcepackage, pocket):
+        """Remove the SeriesSourcePackageBranch for sourcepackage and pocket.
+
+        :param sourcepackage: An `ISourcePackage`.
+        :param pocket: A `PackagePublishingPocket` enum item.
+        """
 
     def new(distroseries, pocket, sourcepackagename, branch, registrant,
             date_created=None):

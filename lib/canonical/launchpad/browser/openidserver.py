@@ -47,7 +47,7 @@ from canonical.launchpad.interfaces.openidserver import (
     ILaunchpadOpenIDStoreFactory, ILoginServiceAuthorizeForm,
     ILoginServiceLoginForm, IOpenIDAuthorizationSet, IOpenIDRPConfigSet,
     IOpenIDRPSummarySet)
-from canonical.launchpad.interfaces.shipit import IShipitAccount
+from canonical.shipit.interfaces.shipit import IShipitAccount
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.webapp import (
     action, custom_widget, LaunchpadFormView, LaunchpadView)
@@ -505,6 +505,10 @@ class OpenIDView(OpenIDMixin, LaunchpadView):
         if self.account is None or not self.isIdentityOwner():
             return False
 
+        # Sites set to auto authorize are always authorized.
+        if self.rpconfig is not None and self.rpconfig.auto_authorize:
+            return True
+
         client_id = getUtility(IClientIdManager).getClientId(self.request)
         auth_set = getUtility(IOpenIDAuthorizationSet)
 
@@ -618,7 +622,10 @@ class LoginServiceMixinLoginView:
             self.addError('Please enter a valid email address.')
             return
 
-        account = getUtility(IAccountSet).getByEmail(email)
+        try:
+            account = getUtility(IAccountSet).getByEmail(email)
+        except LookupError:
+            account = None
         if action == 'login':
             self.validateEmailAndPassword(email, password)
         elif action == 'resetpassword':

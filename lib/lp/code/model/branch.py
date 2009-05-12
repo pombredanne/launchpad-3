@@ -18,7 +18,7 @@ from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements
 
-from storm.expr import And, Count, Desc, Max, Or, Select
+from storm.expr import And, Count, Desc, Max, NamedFunc, Or, Select
 from storm.store import Store
 from sqlobject import (
     ForeignKey, IntCol, StringCol, BoolCol, SQLMultipleJoin, SQLRelatedJoin)
@@ -31,31 +31,35 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad import _
+from canonical.launchpad.database.job import Job
+from canonical.launchpad.mailnotification import NotificationRecipientSet
+from canonical.launchpad.webapp import urlappend
+from canonical.launchpad.webapp.interfaces import (
+    IStoreSelector, MAIN_STORE, SLAVE_FLAVOR)
+
 from lp.code.model.branchmergeproposal import (
      BranchMergeProposal)
 from lp.code.model.branchrevision import BranchRevision
 from lp.code.model.branchsubscription import BranchSubscription
-from canonical.launchpad.database.job import Job
-from canonical.launchpad.database.revision import Revision
-from lp.code.event.branchmergeproposal import (
-    NewBranchMergeProposalEvent)
+from lp.code.model.revision import Revision
+from lp.code.event.branchmergeproposal import NewBranchMergeProposalEvent
 from lp.code.interfaces.branch import (
+    bazaar_identity, BranchCannotBePrivate, BranchCannotBePublic,
     BranchFormat, BranchLifecycleStatus, BranchMergeControlStatus,
-    BranchType, BranchTypeError, CannotDeleteBranch, ControlFormat,
-    DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch, IBranchSet, RepositoryFormat)
-from lp.code.interfaces.branch import (
-    bazaar_identity, IBranchNavigationMenu)
+    BranchType, BranchTypeError, CannotDeleteBranch,
+    ControlFormat, DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch,
+    IBranchNavigationMenu, IBranchSet, RepositoryFormat)
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.interfaces.branchmergeproposal import (
      BRANCH_MERGE_PROPOSAL_FINAL_STATES, BranchMergeProposalExists,
      BranchMergeProposalStatus, InvalidBranchMergeProposal)
+from lp.code.interfaces.branchnamespace import IBranchNamespacePolicy
 from lp.code.interfaces.branchpuller import IBranchPuller
 from lp.code.interfaces.branchtarget import IBranchTarget
-from canonical.launchpad.mailnotification import NotificationRecipientSet
-from lp.registry.interfaces.person import validate_public_person
-from canonical.launchpad.webapp import urlappend
-from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, SLAVE_FLAVOR)
+from lp.code.interfaces.seriessourcepackagebranch import (
+    IFindOfficialBranchLinks)
+from lp.registry.interfaces.person import (
+    validate_person_not_private_membership, validate_public_person)
 
 
 class Branch(SQLBase):
@@ -80,12 +84,24 @@ class Branch(SQLBase):
 
     private = BoolCol(default=False, notNull=True)
 
+    def setPrivate(self, private):
+        """See `IBranch`."""
+        if private == self.private:
+            return
+        policy = IBranchNamespacePolicy(self.namespace)
+
+        if private and not policy.canBranchesBePrivate():
+            raise BranchCannotBePrivate()
+        if not private and not policy.canBranchesBePublic():
+            raise BranchCannotBePublic()
+        self.private = private
+
     registrant = ForeignKey(
         dbName='registrant', foreignKey='Person',
         storm_validator=validate_public_person, notNull=True)
     owner = ForeignKey(
         dbName='owner', foreignKey='Person',
-        storm_validator=validate_public_person, notNull=True)
+        storm_validator=validate_person_not_private_membership, notNull=True)
     reviewer = ForeignKey(
         dbName='reviewer', foreignKey='Person',
         storm_validator=validate_public_person, default=None)
@@ -364,10 +380,7 @@ class Branch(SQLBase):
     @property
     def displayname(self):
         """See `IBranch`."""
-        if self.title:
-            return self.title
-        else:
-            return self.unique_name
+        return self.unique_name
 
     @property
     def code_reviewer(self):
@@ -449,6 +462,10 @@ class Branch(SQLBase):
                     spec_link.destroySelf))
         for series in self.associatedProductSeries():
             alteration_operations.append(ClearSeriesBranch(series, self))
+
+        series_set = getUtility(IFindOfficialBranchLinks)
+        alteration_operations.extend(
+            map(ClearOfficialPackageBranch, series_set.findForBranch(self)))
         if self.code_import is not None:
             deletion_operations.append(DeleteCodeImport(self.code_import))
         return (alteration_operations, deletion_operations)
@@ -519,11 +536,16 @@ class Branch(SQLBase):
 
     def getSubscriptionsByLevel(self, notification_levels):
         """See `IBranch`."""
-        notification_levels = [level.value for level in notification_levels]
-        return BranchSubscription.select(
-            "BranchSubscription.branch = %s "
-            "AND BranchSubscription.notification_level IN %s"
-            % sqlvalues(self, notification_levels))
+        # XXX: JonathanLange 2009-05-07 bug=373026: This is only used by real
+        # code to determine whether there are any subscribers at the given
+        # notification levels. The only code that cares about the actual
+        # object is in a test:
+        # test_only_nodiff_subscribers_means_no_diff_generated.
+        store = Store.of(self)
+        return store.find(
+            BranchSubscription,
+            BranchSubscription.branch == self,
+            BranchSubscription.notification_level.is_in(notification_levels))
 
     def hasSubscription(self, person):
         """See `IBranch`."""
@@ -762,28 +784,40 @@ class Branch(SQLBase):
         from lp.code.model.branchjob import BranchJob
         if break_references:
             self._breakReferences()
-        if self.canBeDeleted():
-            # BranchRevisions are taken care of a cascading delete
-            # in the database.
-            store = Store.of(self)
-            # Delete the branch subscriptions.
-            subscriptions = store.find(
-                BranchSubscription, BranchSubscription.branch == self)
-            subscriptions.remove()
-            # Delete any linked jobs.
-            # Using a sub-select here as joins in delete statements is not
-            # valid standard sql.
-            jobs = store.find(
-                Job,
-                Job.id.is_in(Select([BranchJob.jobID],
-                                    And(BranchJob.job == Job.id,
-                                        BranchJob.branch == self))))
-            jobs.remove()
-            # Now destroy the branch.
-            SQLBase.destroySelf(self)
-        else:
+        if not self.canBeDeleted():
             raise CannotDeleteBranch(
                 "Cannot delete branch: %s" % self.unique_name)
+        # BranchRevisions are taken care of a cascading delete
+        # in the database.
+        store = Store.of(self)
+        # Delete the branch subscriptions.
+        subscriptions = store.find(
+            BranchSubscription, BranchSubscription.branch == self)
+        subscriptions.remove()
+        # Delete any linked jobs.
+        # Using a sub-select here as joins in delete statements is not
+        # valid standard sql.
+        jobs = store.find(
+            Job,
+            Job.id.is_in(Select([BranchJob.jobID],
+                                And(BranchJob.job == Job.id,
+                                    BranchJob.branch == self))))
+        jobs.remove()
+        # Now destroy the branch.
+        SQLBase.destroySelf(self)
+
+    def commitsForDays(self, since):
+        """See `IBranch`."""
+        class DateTrunc(NamedFunc):
+            name = "date_trunc"
+        results = Store.of(self).find(
+            (DateTrunc('day', Revision.revision_date), Count(Revision.id)),
+            Revision.id == BranchRevision.revisionID,
+            Revision.revision_date > since,
+            BranchRevision.branch == self)
+        results = results.group_by(
+            DateTrunc('day', Revision.revision_date))
+        return sorted(results)
 
 
 class DeletionOperation:
@@ -792,7 +826,6 @@ class DeletionOperation:
     def __init__(self, affected_object, rationale):
         self.affected_object = affected_object
         self.rationale = rationale
-
     def __call__(self):
         """Perform the deletion operation."""
         raise NotImplementedError(DeletionOperation.__call__)
@@ -833,6 +866,19 @@ class ClearSeriesBranch(DeletionOperation):
         if self.affected_object.branch == self.branch:
             self.affected_object.branch = None
         self.affected_object.syncUpdate()
+
+
+class ClearOfficialPackageBranch(DeletionOperation):
+    """Deletion operation that clears an official package branch."""
+
+    def __init__(self, sspb):
+        DeletionOperation.__init__(
+            self, sspb, _('Branch is officially linked to a source package.'))
+
+    def __call__(self):
+        package = self.affected_object.sourcepackage
+        pocket = self.affected_object.pocket
+        package.setBranch(pocket, None, None)
 
 
 class DeleteCodeImport(DeletionOperation):
@@ -949,12 +995,13 @@ class BranchCloud:
         # Get all products, the count of all hosted & mirrored branches and
         # the last revision date.
         result = store.find(
-            (Product, Count(Branch.id), Max(Revision.revision_date)),
+            (Product.name, Count(Branch.id), Max(Revision.revision_date)),
             Branch.private == False,
             Branch.product == Product.id,
             Or(Branch.branch_type == BranchType.HOSTED,
                Branch.branch_type == BranchType.MIRRORED),
-            Branch.last_scanned_id == Revision.revision_id).group_by(Product)
+            Branch.last_scanned_id == Revision.revision_id)
+        result = result.group_by(Product.name)
         result = result.order_by(Desc(Count(Branch.id)))
         if num_products:
             result.config(limit=num_products)

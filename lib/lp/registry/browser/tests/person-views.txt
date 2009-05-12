@@ -404,17 +404,18 @@ the page does not time out before Zope can render it.
 
 Before continuing, create lots of packages that will appear in each
 section of Foo Bar's +packages page, such that there's more available
-that we're willing to display.
+than we're willing to display.
 
+    >>> login("admin@canonical.com")
     >>> from lp.registry.interfaces.distribution import (
     ...     IDistributionSet)
-    >>> from canonical.launchpad.interfaces.publishing import (
+    >>> from lp.soyuz.interfaces.publishing import (
     ...     PackagePublishingStatus)
     >>> name16 = person_set.getByName('name16')
     >>> sabdfl = person_set.getByName('sabdfl')
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
     >>> warty = ubuntu['warty']
-    >>> from canonical.launchpad.tests.test_publishing import (
+    >>> from lp.soyuz.tests.test_publishing import (
     ...     SoyuzTestPublisher)
     >>> test_pub = SoyuzTestPublisher()
     >>> test_pub.person = name16

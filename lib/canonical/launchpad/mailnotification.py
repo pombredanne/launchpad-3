@@ -41,8 +41,8 @@ from canonical.launchpad.interfaces.structuralsubscription import (
     BugNotificationLevel)
 from canonical.launchpad.mail import (
     sendmail, simple_sendmail, simple_sendmail_from_person, format_address)
-from canonical.launchpad.mailout.mailwrapper import MailWrapper
-from canonical.launchpad.mailout.notificationrecipientset import (
+from lp.services.mail.mailwrapper import MailWrapper
+from lp.services.mail.notificationrecipientset import (
     NotificationRecipientSet)
 from canonical.launchpad.webapp import canonical_url
 
@@ -1121,6 +1121,52 @@ def notify_message_held(message_approval, event):
         body = MailWrapper(72).format(
             template % replacements, force_wrap=True)
         simple_sendmail(from_address, address, subject, body)
+
+@block_implicit_flushes
+def notify_new_ppa_subscription(subscription, event):
+    """Notification that a new PPA subscription can be activated."""
+    non_active_subscribers = subscription.getNonActiveSubscribers()
+
+    registrant_name = subscription.registrant.displayname
+    ppa_name = subscription.archive.displayname
+    subject = 'New PPA subscription for ' + ppa_name
+
+    template = get_email_template('ppa-subscription-new.txt')
+
+    for person in non_active_subscribers:
+
+        if person.preferredemail is None:
+            # Don't send to people without a preferred email.
+            continue
+
+        to_address = [person.preferredemail.email]
+        recipient_subscriptions_url = "%s/+archivesubscriptions" % (
+            canonical_url(person))
+        replacements = {
+            'recipient_name': person.displayname,
+            'registrant_name': registrant_name,
+            'registrant_profile_url': canonical_url(subscription.registrant),
+            'ppa_name': ppa_name,
+            'recipient_subscriptions_url': recipient_subscriptions_url,
+            }
+        body = MailWrapper(72).format(template % replacements,
+                                      force_wrap=True)
+
+        from_address = format_address(
+            registrant_name, config.canonical.noreply_from_address)
+
+        headers = {
+            'Sender': config.canonical.bounce_address,
+            }
+
+        # If the registrant has a preferred email, then use it for the
+        # Reply-To.
+        if subscription.registrant.preferredemail:
+            headers['Reply-To'] = format_address(
+                registrant_name,
+                subscription.registrant.preferredemail.email)
+
+        simple_sendmail(from_address, to_address, subject, body, headers)
 
 
 def encode(value):

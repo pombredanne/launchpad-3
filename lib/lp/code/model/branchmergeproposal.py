@@ -64,8 +64,8 @@ from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.message import IMessageJob
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.product import IProduct
-from canonical.launchpad.mailout.branch import RecipientReason
-from canonical.launchpad.mailout.branchmergeproposal import BMPMailer
+from lp.code.mail.branch import RecipientReason
+from lp.code.mail.branchmergeproposal import BMPMailer
 from lp.registry.interfaces.person import validate_public_person
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR, IPlacelessAuthUtility, IStoreSelector, MAIN_STORE,
@@ -283,6 +283,20 @@ class BranchMergeProposal(SQLBase):
                 recipients[reviewer] = RecipientReason.forReviewer(
                     review, reviewer,
                     branch_identity_cache=branch_identity_cache)
+        # If the registrant of the proposal is getting emails, update the
+        # rationale to say that they registered it.  Don't however send them
+        # emails if they aren't asking for any.
+        if self.registrant in recipients:
+            recipients[self.registrant] = RecipientReason.forRegistrant(
+                self, branch_identity_cache=branch_identity_cache)
+        # If the owner of the source branch is getting emails, override the
+        # rationale to say they are the owner of the souce branch.
+        source_owner = self.source_branch.owner
+        if source_owner in recipients:
+            reason = RecipientReason.forSourceOwner(
+                self, branch_identity_cache=branch_identity_cache)
+            if reason is not None:
+                recipients[source_owner] = reason
 
         return recipients
 

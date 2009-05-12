@@ -10,7 +10,7 @@ from sqlobject import StringCol, ForeignKey
 
 from canonical.database.sqlbase import SQLBase
 
-from canonical.launchpad.interfaces.distributionsourcepackagecache import IDistributionSourcePackageCache
+from lp.soyuz.interfaces.distributionsourcepackagecache import IDistributionSourcePackageCache
 class DistributionSourcePackageCache(SQLBase):
     implements(IDistributionSourcePackageCache)
     _table = 'DistributionSourcePackageCache'

@@ -17,10 +17,10 @@ from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.account import AccountStatus
 from canonical.launchpad.interfaces.authtoken import LoginTokenType
+from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
 from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
 from lp.registry.interfaces.person import (
-    IPersonSet, PersonCreationRationale)
-from canonical.launchpad.interfaces.shipit import ShipItConstants
+    IPerson, IPersonSet, PersonCreationRationale)
 from canonical.launchpad.interfaces.validation import valid_password
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.webapp.interfaces import (
@@ -153,16 +153,6 @@ class LoginOrRegister:
     submitted = False
     email = None
 
-    # XXX Guilherme Salgado 2006-09-27: If you add a new origin here, you
-    # must also add a new entry on NewAccountView.urls_and_rationales in
-    # browser/logintoken.py. Ideally, we should be storing the rationale in
-    # the logintoken too, but this should do for now.
-    registered_origins = {
-        'shipit-ubuntu': ShipItConstants.ubuntu_url,
-        'shipit-edubuntu': ShipItConstants.edubuntu_url,
-        'shipit-kubuntu': ShipItConstants.kubuntu_url,
-        }
-
     def process_restricted_form(self):
         """Entry-point for the team-restricted login page.
 
@@ -188,33 +178,13 @@ class LoginOrRegister:
         elif self.request.form.get(self.submit_registration):
             self.process_registration_form()
 
-    def getApplicationURL(self):
-        # XXX Guilherme Salgado 2005-12-09: This method is needed because
-        # this view is used on shipit and we have to use an application URL
-        # different than the one we have in the request.
-        return self.request.getApplicationURL()
-
     def getRedirectionURL(self):
         """Return the URL we should redirect the user to, after finishing a
         registration or password reset process.
 
-        If the request has an 'origin' query parameter, that means the user
-        came from shipit, and thus we return the URL for it. When there's no
-        'origin' query parameter, we check the HTTP_REFERER header and if it's
-        under any URL specified in registered_origins we return it, otherwise
-        we return the current URL without the "/+login" bit.
+        IOW, the current URL without the "/+login" bit.
         """
-        request = self.request
-        origin = request.get('origin')
-        try:
-            return self.registered_origins[origin]
-        except KeyError:
-            referrer = request.getHeader('Referer')
-            if referrer:
-                for url in self.registered_origins.values():
-                    if referrer.startswith(url):
-                        return referrer
-        return request.getURL(1)
+        return self.request.getURL(1)
 
     def process_login_form(self):
         """Process the form data.
@@ -307,20 +277,34 @@ class LoginOrRegister:
                 "Please verify it and try again.")
             return
 
-        person = getUtility(IPersonSet).getByEmail(self.email)
-        if person is not None:
-            if person.is_valid_person:
+        registered_email = getUtility(IEmailAddressSet).getByEmail(self.email)
+        if registered_email is not None:
+            person = registered_email.person
+            if person is not None:
+                if person.is_valid_person:
+                    self.registration_error = (
+                        "Sorry, someone with the address %s already has a "
+                        "Launchpad account. If this is you and you've "
+                        "forgotten your password, Launchpad can "
+                        '<a href="/+forgottenpassword">reset it for you.</a>'
+                        % cgi.escape(self.email))
+                    return
+                else:
+                    # This is an unvalidated profile; let's move on with the
+                    # registration process as if we had never seen it.
+                    pass
+            else:
+                account = registered_email.account
+                assert IPerson(account, None) is None, (
+                    "This email address should be linked to the person who "
+                    "owns it.")
                 self.registration_error = (
-                    "Sorry, someone with the address %s already has a "
-                    "Launchpad account. If this is you and you've "
-                    "forgotten your password, Launchpad can "
-                    '<a href="/+forgottenpassword">reset it for you.</a>'
+                    'The email address %s is already registered in the '
+                    'Launchpad Login Service (used by the Ubuntu shop and '
+                    'other OpenID sites). Please use the same email and '
+                    'password to log into Launchpad.'
                     % cgi.escape(self.email))
                 return
-            else:
-                # This is an unvalidated profile; let's move on with the
-                # registration process as if we had never seen it.
-                pass
 
         logintokenset = getUtility(ILoginTokenSet)
         token = logintokenset.new(

@@ -57,7 +57,7 @@ not been published in the target distribution.
 It's not allowed even if the sourcepackage has been published in a
 PPA.
 
-    >>> from canonical.launchpad.ftests.ppa import publishToPPA
+    >>> from lp.soyuz.tests.ppa import publishToPPA
     >>> from canonical.launchpad.interfaces import PackagePublishingStatus
     >>> publishToPPA(
     ...     person_name='cprov',

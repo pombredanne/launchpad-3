@@ -5,7 +5,7 @@
 __metaclass__ = type
 
 from datetime import datetime, timedelta
-from unittest import TestCase, TestLoader
+from unittest import TestLoader
 
 from pytz import UTC
 
@@ -20,8 +20,8 @@ from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad import _
 from lp.code.model.branch import (
-    ClearDependentBranch, ClearSeriesBranch, DeleteCodeImport,
-    DeletionCallable, DeletionOperation)
+    ClearDependentBranch, ClearOfficialPackageBranch, ClearSeriesBranch,
+    DeleteCodeImport, DeletionCallable, DeletionOperation)
 from lp.code.model.branchjob import BranchDiffJob
 from lp.code.model.branchmergeproposal import (
     BranchMergeProposal)
@@ -29,18 +29,22 @@ from canonical.launchpad.database.bugbranch import BugBranch
 from lp.code.model.codeimport import CodeImport, CodeImportSet
 from lp.code.model.codereviewcomment import CodeReviewComment
 from lp.registry.model.product import ProductSet
-from canonical.launchpad.database.specificationbranch import (
+from lp.blueprints.model.specificationbranch import (
     SpecificationBranch)
 from lp.registry.model.sourcepackage import SourcePackage
 from canonical.launchpad.ftests import (
     ANONYMOUS, login, login_person, logout, syncUpdate)
 from canonical.launchpad.interfaces.bug import CreateBugParams, IBugSet
-from canonical.launchpad.interfaces.specification import (
+from lp.blueprints.interfaces.specification import (
     ISpecificationSet, SpecificationDefinitionStatus)
-from lp.code.interfaces.branch import BranchType, CannotDeleteBranch
+from lp.code.interfaces.branch import (
+    BranchCannotBePrivate, BranchCannotBePublic, BranchType,
+    CannotDeleteBranch)
 from lp.code.interfaces.branchmergeproposal import InvalidBranchMergeProposal
 from lp.code.interfaces.branchsubscription import (
     BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel)
+from lp.code.interfaces.seriessourcepackagebranch import (
+    IFindOfficialBranchLinks)
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
 from lp.code.interfaces.branch import (
@@ -48,12 +52,14 @@ from lp.code.interfaces.branch import (
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.branchnamespace import IBranchNamespaceSet
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.interfaces.publishing import PackagePublishingPocket
+from lp.soyuz.interfaces.publishing import PackagePublishingPocket
 from canonical.launchpad.testing import (
-    LaunchpadObjectFactory, TestCaseWithFactory)
+    LaunchpadObjectFactory, run_with_login, TestCase, TestCaseWithFactory,
+    time_counter)
 from canonical.launchpad.webapp.interfaces import IOpenLaunchBag
 
 from canonical.testing import DatabaseFunctionalLayer, LaunchpadZopelessLayer
+from lp.code.interfaces.branchvisibilitypolicy import BranchVisibilityRule
 
 
 class TestCodeImport(TestCase):
@@ -690,6 +696,40 @@ class TestBranchDeletionConsequences(TestCase):
         self.assertEqual(None, series1.branch)
         self.assertEqual(None, series2.branch)
 
+    def test_official_package_requirements(self):
+        # If a branch is officially linked to a source package, then the
+        # deletion requirements indicate the fact.
+        branch = self.factory.makePackageBranch()
+        package = branch.sourcepackage
+        pocket = PackagePublishingPocket.RELEASE
+        ubuntu_branches = getUtility(ILaunchpadCelebrities).ubuntu_branches
+        run_with_login(
+            ubuntu_branches.teamowner,
+            package.development_version.setBranch,
+            pocket, branch, ubuntu_branches.teamowner)
+        series_set = getUtility(IFindOfficialBranchLinks)
+        [link] = list(series_set.findForBranch(branch))
+        self.assertEqual(
+            {link: ('alter',
+                    _('Branch is officially linked to a source package.'))},
+            branch.deletionRequirements())
+
+    def test_official_package_branch_deleted(self):
+        # A branch that's an official package branch can be deleted if you are
+        # allowed to modify package branch links, and you pass in
+        # break_references.
+        branch = self.factory.makePackageBranch()
+        package = branch.sourcepackage
+        pocket = PackagePublishingPocket.RELEASE
+        ubuntu_branches = getUtility(ILaunchpadCelebrities).ubuntu_branches
+        run_with_login(
+            ubuntu_branches.teamowner,
+            package.development_version.setBranch,
+            pocket, branch, ubuntu_branches.teamowner)
+        self.assertEqual(False, branch.canBeDeleted())
+        branch.destroySelf(break_references=True)
+        self.assertIs(None, package.getBranch(pocket))
+
     def test_branchWithCodeImportRequirements(self):
         """Deletion requirements for a code import branch are right"""
         code_import = self.factory.makeCodeImport()
@@ -727,6 +767,22 @@ class TestBranchDeletionConsequences(TestCase):
         merge_proposal = removeSecurityProxy(self.makeMergeProposals()[0])
         ClearDependentBranch(merge_proposal)()
         self.assertEqual(None, merge_proposal.dependent_branch)
+
+    def test_ClearOfficialPackageBranch(self):
+        # ClearOfficialPackageBranch.__call__ clears the official package
+        # branch.
+        branch = self.factory.makePackageBranch()
+        package = branch.sourcepackage
+        pocket = PackagePublishingPocket.RELEASE
+        ubuntu_branches = getUtility(ILaunchpadCelebrities).ubuntu_branches
+        run_with_login(
+            ubuntu_branches.teamowner,
+            package.development_version.setBranch,
+            pocket, branch, ubuntu_branches.teamowner)
+        series_set = getUtility(IFindOfficialBranchLinks)
+        [link] = list(series_set.findForBranch(branch))
+        ClearOfficialPackageBranch(link)()
+        self.assertIs(None, package.getBranch(pocket))
 
     def test_ClearSeriesBranch(self):
         """ClearSeriesBranch.__call__ must clear the user branch."""
@@ -1276,6 +1332,135 @@ class TestPendingWrites(TestCaseWithFactory):
         transaction.commit()
         branch.startMirroring()
         self.assertEqual(True, branch.pending_writes)
+
+
+class TestBranchSetPrivate(TestCaseWithFactory):
+    """Test IBranch.setPrivate."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        # Use an admin user as we aren't checking edit permissions here.
+        TestCaseWithFactory.setUp(self, 'admin@canonical.com')
+
+    def test_public_to_public(self):
+        # Setting a public branch to be public is a no-op.
+        branch = self.factory.makeProductBranch()
+        self.assertFalse(branch.private)
+        branch.setPrivate(False)
+        self.assertFalse(branch.private)
+
+    def test_public_to_private_allowed(self):
+        # If there is a privacy policy allowing the branch owner to have
+        # private branches, then setting the branch private is allowed.
+        branch = self.factory.makeProductBranch()
+        branch.product.setBranchVisibilityTeamPolicy(
+            branch.owner, BranchVisibilityRule.PRIVATE)
+        branch.setPrivate(True)
+        self.assertTrue(branch.private)
+
+    def test_public_to_private_not_allowed(self):
+        # If there are no privacy policies allowing private branches, then
+        # BranchCannotBePrivate is rasied.
+        branch = self.factory.makeProductBranch()
+        self.assertRaises(
+            BranchCannotBePrivate,
+            branch.setPrivate,
+            True)
+
+    def test_private_to_private(self):
+        # Setting a private branch to be private is a no-op.
+        branch = self.factory.makeProductBranch(private=True)
+        self.assertTrue(branch.private)
+        branch.setPrivate(True)
+        self.assertTrue(branch.private)
+
+    def test_private_to_public_allowed(self):
+        # If the namespace policy allows public branches, then changing from
+        # private to public is allowed.
+        branch = self.factory.makeProductBranch(private=True)
+        branch.setPrivate(False)
+        self.assertFalse(branch.private)
+
+    def test_private_to_public_not_allowed(self):
+        # If the namespace policy does not allow public branches, attempting
+        # to change the branch to be public raises BranchCannotBePublic.
+        branch = self.factory.makeProductBranch(private=True)
+        branch.product.setBranchVisibilityTeamPolicy(
+            None, BranchVisibilityRule.FORBIDDEN)
+        branch.product.setBranchVisibilityTeamPolicy(
+            branch.owner, BranchVisibilityRule.PRIVATE_ONLY)
+        self.assertRaises(
+            BranchCannotBePublic,
+            branch.setPrivate,
+            False)
+
+
+class TestBranchCommitsForDays(TestCaseWithFactory):
+    """Tests for `Branch.commitsForDays`."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self)
+        # Use a 30 day epoch for the tests.
+        self.epoch = datetime.now(tz=UTC) - timedelta(days=30)
+
+    def date_generator(self, epoch_offset, delta=None):
+        if delta is None:
+            delta = timedelta(days=1)
+        return time_counter(self.epoch + timedelta(days=epoch_offset), delta)
+
+    def test_empty_branch(self):
+        # A branch with no commits returns an empty list.
+        branch = self.factory.makeAnyBranch()
+        self.assertEqual([], branch.commitsForDays(self.epoch))
+
+    def test_commits_before_epoch_not_returned(self):
+        # Commits that occur before the epoch are not returned.
+        branch = self.factory.makeAnyBranch()
+        self.factory.makeRevisionsForBranch(
+            branch, date_generator=self.date_generator(-10))
+        self.assertEqual([], branch.commitsForDays(self.epoch))
+
+    def test_commits_after_epoch_are_returned(self):
+        # Commits that occur after the epoch are returned.
+        branch = self.factory.makeAnyBranch()
+        self.factory.makeRevisionsForBranch(
+            branch, count=5, date_generator=self.date_generator(1))
+        # There is one commit for each day starting from epoch + 1.
+        start = self.epoch + timedelta(days=1)
+        # Clear off the fractional parts of the day.
+        start = datetime(start.year, start.month, start.day)
+        commits = []
+        for count in range(5):
+            commits.append((start + timedelta(days=count), 1))
+        self.assertEqual(commits, branch.commitsForDays(self.epoch))
+
+    def test_commits_are_grouped(self):
+        # The commits are grouped to give counts of commits for the days.
+        branch = self.factory.makeAnyBranch()
+        start = self.epoch + timedelta(days=1)
+        # Add 8 commits starting from 5pm (+ whatever minutes).
+        # 5, 7, 9, 11pm, then 1, 3, 5, 7am for the following day.
+        start = start.replace(hour=17)
+        date_generator = time_counter(start, timedelta(hours=2))
+        self.factory.makeRevisionsForBranch(
+            branch, count=8, date_generator=date_generator)
+        # The resulting queries return time zone unaware times.
+        first_day = datetime(start.year, start.month, start.day)
+        commits = [(first_day, 4), (first_day + timedelta(days=1), 4)]
+        self.assertEqual(commits, branch.commitsForDays(self.epoch))
+
+    def test_non_mainline_commits_count(self):
+        # Non-mainline commits are counted too.
+        branch = self.factory.makeAnyBranch()
+        start = self.epoch + timedelta(days=1)
+        revision = self.factory.makeRevision(revision_date=start)
+        branch.createBranchRevision(None, revision)
+        day = datetime(start.year, start.month, start.day)
+        commits = [(day, 1)]
+        self.assertEqual(commits, branch.commitsForDays(self.epoch))
 
 
 def test_suite():

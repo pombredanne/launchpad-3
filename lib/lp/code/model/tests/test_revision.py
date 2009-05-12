@@ -1,4 +1,4 @@
-# Copyright 2007-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2007-2009 Canonical Ltd.  All rights reserved.
 
 """Tests for Revisions."""
 
@@ -16,17 +16,19 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.sqlbase import cursor
-from lp.registry.model.karma import Karma
-from canonical.launchpad.database.revision import RevisionSet
 from canonical.launchpad.ftests import login, logout
 from canonical.launchpad.interfaces.lpstorm import IMasterObject
-from canonical.launchpad.interfaces.revision import IRevisionSet
 from canonical.launchpad.interfaces.account import AccountStatus
-from lp.code.interfaces.branch import BranchLifecycleStatus
-from lp.code.interfaces.branchlookup import IBranchLookup
+from canonical.launchpad.scripts.garbo import RevisionAuthorEmailLinker
 from canonical.launchpad.testing import (
     LaunchpadObjectFactory, TestCaseWithFactory, time_counter)
 from canonical.testing import DatabaseFunctionalLayer
+
+from lp.code.interfaces.revision import IRevisionSet
+from lp.code.interfaces.branch import BranchLifecycleStatus
+from lp.code.interfaces.branchlookup import IBranchLookup
+from lp.code.model.revision import RevisionSet
+from lp.registry.model.karma import Karma
 
 
 class TestRevisionCreationDate(TestCaseWithFactory):
@@ -160,6 +162,8 @@ class TestRevisionKarma(TestCaseWithFactory):
             [], list(RevisionSet.getRevisionsNeedingKarmaAllocated()))
         # The person registers with Launchpad.
         author = self.factory.makePerson(email=email)
+        # Garbo runs the RevisionAuthorEmailLinker job.
+        RevisionAuthorEmailLinker().run()
         # Now the kama needs allocating.
         self.assertEqual(
             [rev], list(RevisionSet.getRevisionsNeedingKarmaAllocated()))
@@ -224,7 +228,7 @@ class TestRevisionGetBranch(TestCaseWithFactory):
         # Only public branches are returned.
         b1 = self.makeBranchWithRevision(1)
         b2 = self.makeBranchWithRevision(1, owner=self.author)
-        b2.private = True
+        removeSecurityProxy(b2).private = True
         self.assertEqual(b1, self.revision.getBranch())
 
     def testAllowPrivateReturnsPrivateBranch(self):
@@ -232,7 +236,7 @@ class TestRevisionGetBranch(TestCaseWithFactory):
         # returned if they are the best match.
         b1 = self.makeBranchWithRevision(1)
         b2 = self.makeBranchWithRevision(1, owner=self.author)
-        b2.private = True
+        removeSecurityProxy(b2).private = True
         self.assertEqual(b2, self.revision.getBranch(allow_private=True))
 
     def testAllowPrivateCanReturnPublic(self):
@@ -240,7 +244,7 @@ class TestRevisionGetBranch(TestCaseWithFactory):
         # the branches.
         b1 = self.makeBranchWithRevision(1)
         b2 = self.makeBranchWithRevision(1, owner=self.author)
-        b1.private = True
+        removeSecurityProxy(b1).private = True
         self.assertEqual(b2, self.revision.getBranch(allow_private=True))
 
     def testGetBranchNotJunk(self):
@@ -339,7 +343,7 @@ class RevisionTestMixin:
         rev1 = self._makeRevision()
         b = self._makeBranch()
         b.createBranchRevision(1, rev1)
-        b.private = True
+        removeSecurityProxy(b).private = True
         self.assertEqual([], self._getRevisions())
 
     def testRevisionDateRange(self):

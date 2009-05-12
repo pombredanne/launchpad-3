@@ -26,10 +26,12 @@ from canonical.archiveuploader.dscfile import DSCFile
 from canonical.archiveuploader.nascentuploadfile import (
     UploadError, UploadWarning, CustomUploadFile, SourceUploadFile,
     BaseBinaryUploadFile)
+from lp.soyuz.interfaces.archive import ArchivePurpose, MAIN_ARCHIVE_PURPOSES
+from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
+from lp.soyuz.interfaces.publishing import PackagePublishingPocket
 from canonical.launchpad.interfaces import (
-    ArchivePurpose, IArchivePermissionSet, IBinaryPackageNameSet,
-    IDistributionSet, ILibraryFileAliasSet, ISourcePackageNameSet,
-    NotFoundError, PackagePublishingPocket, QueueInconsistentStateError)
+    IBinaryPackageNameSet, IDistributionSet, ILibraryFileAliasSet,
+    ISourcePackageNameSet, NotFoundError, QueueInconsistentStateError)
 
 
 PARTNER_COMPONENT_NAME = 'partner'
@@ -528,6 +530,13 @@ class NascentUpload:
             archive.canUpload(signer, source_name)):
             return
 
+        # Now check whether this upload can be approved due to
+        # package set based permissions.
+        ap_set = getUtility(IArchivePermissionSet)
+        if source_name is not None and signer is not None:
+            if ap_set.isSourceUploadAllowed(source_name, signer):
+                return
+
         # If source_name is None then the package must be new, but we
         # kick it out anyway because it's impossible to look up
         # any permissions for it.
@@ -536,8 +545,9 @@ class NascentUpload:
             # The user doesn't have package-specific rights or
             # component rights, so kick him out entirely.
             self.reject(
-                "Signer has no upload rights at all to this "
-                "distribution.")
+                "The signer of this package has no upload rights to this "
+                "distribution's primary archive.  Did you mean to upload "
+                "to a PPA?")
             return
 
         # New packages go straight to the upload queue; we only check upload
@@ -640,7 +650,7 @@ class NascentUpload:
         # See the comment below, in getSourceAncestry
         lookup_pockets = [self.policy.pocket, PackagePublishingPocket.RELEASE]
 
-        if self.is_ppa:
+        if self.policy.archive.purpose not in MAIN_ARCHIVE_PURPOSES:
             archive = self.policy.archive
         else:
             archive = None

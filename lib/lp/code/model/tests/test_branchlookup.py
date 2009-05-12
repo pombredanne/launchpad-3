@@ -24,7 +24,7 @@ from lp.registry.interfaces.person import NoSuchPerson
 from lp.registry.interfaces.product import (
     InvalidProductName, NoSuchProduct)
 from lp.registry.interfaces.productseries import NoSuchProductSeries
-from canonical.launchpad.interfaces.publishing import PackagePublishingPocket
+from lp.soyuz.interfaces.publishing import PackagePublishingPocket
 from lp.registry.interfaces.sourcepackagename import (
     NoSuchSourcePackageName)
 from canonical.launchpad.testing import run_with_login, TestCaseWithFactory
@@ -190,6 +190,17 @@ class TestGetByUrl(TestCaseWithFactory):
         product = self.factory.makeProduct('b')
         return self.factory.makeProductBranch(
             owner=owner, product=product, name='c')
+
+    def test_getByUrl_with_none(self):
+        """getByUrl returns None if given None."""
+        self.assertIs(None, getUtility(IBranchLookup).getByUrl(None))
+
+    def test_getByUrl_with_trailing_slash(self):
+        # Trailing slashes are stripped from the url prior to searching.
+        branch = self.makeProductBranch()
+        lookup = getUtility(IBranchLookup)
+        branch2 = lookup.getByUrl('http://bazaar.launchpad.dev/~aa/b/c/')
+        self.assertEqual(branch, branch2)
 
     def test_getByUrl_with_http(self):
         """getByUrl recognizes LP branches for http URLs."""

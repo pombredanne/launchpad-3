@@ -5,9 +5,9 @@ Run the doctests and pagetests.
 
 import logging
 import os
+import transaction
 import unittest
 
-from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.testing.pages import PageTestSuite
 from canonical.launchpad.testing.systemdocs import (
     LayeredDocFileSuite, setUp, tearDown)
@@ -56,10 +56,7 @@ def mailingListXMLRPCInternalSetUp(test):
     # IMailingListAPI interface.  Also expose the helper functions.
     mailinglist_api = ImpedenceMatchingView(context=None, request=None)
     test.globs['mailinglist_api'] = mailinglist_api
-    # Expose different commit() functions to handle the 'external' case below
-    # where there is more than one connection.  The 'internal' case here has
-    # just one coneection so the flush is all we need.
-    test.globs['commit'] = flush_database_updates
+    test.globs['commit'] = transaction.commit
 
 
 def mailingListXMLRPCExternalSetUp(test):
@@ -78,10 +75,15 @@ def mailingListXMLRPCExternalSetUp(test):
     # mailinglist-xmlrpc.txt-external declaration below, I suspect that these
     # two globals will end up being different functions.
     test.globs['mailinglist_api'] = mailinglist_api
-    test.globs['commit'] = flush_database_updates
+    test.globs['commit'] = transaction.commit
 
 
 special = {
+    'distribution-mirror.txt': LayeredDocFileSuite(
+        '../doc/distribution-mirror.txt',
+        setUp=setUp, tearDown=tearDown,
+        layer=LaunchpadFunctionalLayer,
+        ),
     'person-karma.txt': LayeredDocFileSuite(
         '../doc/person-karma.txt',
         setUp=setUp, tearDown=peopleKarmaTearDown,
@@ -152,9 +154,13 @@ special = {
         layer=LaunchpadZopelessLayer,
         ),
     'karmacache.txt': LayeredDocFileSuite(
-    '../doc/karmacache.txt',
-    layer=LaunchpadZopelessLayer,
-    setUp=setUp, tearDown=tearDown),
+        '../doc/karmacache.txt',
+        layer=LaunchpadZopelessLayer,
+        setUp=setUp, tearDown=tearDown),
+    'sourcepackage.txt': LayeredDocFileSuite(
+        '../doc/sourcepackage.txt',
+        layer=LaunchpadFunctionalLayer,
+        setUp=setUp, tearDown=tearDown),
     }
 
 

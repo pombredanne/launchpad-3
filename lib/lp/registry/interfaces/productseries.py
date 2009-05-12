@@ -27,7 +27,7 @@ from lp.registry.interfaces.milestone import (
     IHasMilestones, IMilestone)
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.productrelease import IProductRelease
-from canonical.launchpad.interfaces.specificationtarget import (
+from lp.blueprints.interfaces.specificationtarget import (
     ISpecificationGoal)
 from canonical.launchpad.interfaces.translations import (
     TranslationsBranchImportMode)
@@ -214,7 +214,7 @@ class IProductSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
                           "if this series is not maintained in Bazaar.")))
 
     translations_autoimport_mode = Choice(
-        title=_('Import mode'),
+        title=_('Import settings'),
         vocabulary=TranslationsBranchImportMode,
         required=True,
         description=_("Specify which files will be imported from the "

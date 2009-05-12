@@ -25,28 +25,28 @@ from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet)
 from canonical.launchpad.components.storm_operators import FTQ, Match, RANK
 from lp.registry.model.announcement import MakesAnnouncements
-from canonical.launchpad.database.archive import Archive
-from canonical.launchpad.database.binarypackagename import BinaryPackageName
-from canonical.launchpad.database.binarypackagerelease import (
+from lp.soyuz.model.archive import Archive
+from lp.soyuz.model.binarypackagename import BinaryPackageName
+from lp.soyuz.model.binarypackagerelease import (
     BinaryPackageRelease)
 from canonical.launchpad.database.bug import (
     BugSet, get_bug_tags, get_bug_tags_open_count)
 from canonical.launchpad.database.bugtarget import (
     BugTargetBase, OfficialBugTagTargetMixin)
 from canonical.launchpad.database.bugtask import BugTask
-from canonical.launchpad.database.build import Build
+from lp.soyuz.model.build import Build
 from canonical.launchpad.database.customlanguagecode import CustomLanguageCode
 from canonical.launchpad.database.distributionbounty import DistributionBounty
-from canonical.launchpad.database.distributionmirror import DistributionMirror
+from lp.registry.model.distributionmirror import DistributionMirror
 from lp.registry.model.distributionsourcepackage import (
     DistributionSourcePackage)
 from lp.registry.model.distributionsourcepackagecache import (
     DistributionSourcePackageCache)
-from canonical.launchpad.database.distributionsourcepackagerelease import (
+from lp.soyuz.model.distributionsourcepackagerelease import (
     DistributionSourcePackageRelease)
-from canonical.launchpad.database.distroarchseries import DistroArchSeries
+from lp.soyuz.model.distroarchseries import DistroArchSeries
 from lp.registry.model.distroseries import DistroSeries
-from canonical.launchpad.database.distroseriespackagecache import (
+from lp.soyuz.model.distroseriespackagecache import (
     DistroSeriesPackageCache)
 from lp.answers.model.faq import FAQ, FAQSearch
 from lp.registry.model.karma import KarmaContextMixin
@@ -54,46 +54,46 @@ from lp.registry.model.mentoringoffer import MentoringOffer
 from lp.registry.model.milestone import (
     HasMilestonesMixin, Milestone)
 from lp.registry.model.pillar import HasAliasMixin
-from canonical.launchpad.database.publishedpackage import PublishedPackage
-from canonical.launchpad.database.publishing import (
+from lp.soyuz.model.publishedpackage import PublishedPackage
+from lp.soyuz.model.publishing import (
     BinaryPackageFilePublishing, BinaryPackagePublishingHistory,
     SourcePackageFilePublishing, SourcePackagePublishingHistory)
-from canonical.launchpad.database.specification import (
+from lp.blueprints.model.specification import (
     HasSpecificationsMixin, Specification)
-from canonical.launchpad.database.sprint import HasSprintsMixin
+from lp.blueprints.model.sprint import HasSprintsMixin
 from lp.registry.model.sourcepackagename import SourcePackageName
-from canonical.launchpad.database.sourcepackagerelease import (
+from lp.soyuz.model.sourcepackagerelease import (
     SourcePackageRelease)
 from canonical.launchpad.database.structuralsubscription import (
     StructuralSubscriptionTargetMixin)
 from canonical.launchpad.database.translationimportqueue import (
     HasTranslationImportsMixin)
 from canonical.launchpad.helpers import shortlist
-from canonical.launchpad.interfaces.archive import (
+from lp.soyuz.interfaces.archive import (
     ArchivePurpose, IArchiveSet, MAIN_ARCHIVE_PURPOSES)
-from canonical.launchpad.interfaces.archivepermission import (
+from lp.soyuz.interfaces.archivepermission import (
     IArchivePermissionSet)
 from canonical.launchpad.interfaces.bugsupervisor import IHasBugSupervisor
 from canonical.launchpad.interfaces.bugtask import (
     BugTaskStatus, UNRESOLVED_BUGTASK_STATUSES)
-from canonical.launchpad.interfaces.build import IBuildSet
-from canonical.launchpad.interfaces.buildrecords import IHasBuildRecords
+from lp.soyuz.interfaces.build import IBuildSet
+from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.registry.interfaces.distribution import (
     IDistribution, IDistributionSet)
-from canonical.launchpad.interfaces.distributionmirror import (
+from lp.registry.interfaces.distributionmirror import (
     IDistributionMirror, MirrorContent, MirrorStatus)
 from lp.registry.interfaces.distroseries import (
     DistroSeriesStatus, NoSuchDistroSeries)
 from canonical.launchpad.interfaces.launchpad import (
     IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities, ILaunchpadUsage)
-from canonical.launchpad.interfaces.package import PackageUploadStatus
+from lp.soyuz.interfaces.package import PackageUploadStatus
 from canonical.launchpad.interfaces.packaging import PackagingType
 from lp.registry.interfaces.pillar import IPillarNameSet
-from canonical.launchpad.interfaces.publishing import (
+from lp.soyuz.interfaces.publishing import (
     active_publishing_status, PackagePublishingStatus)
 from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageName)
-from canonical.launchpad.interfaces.specification import (
+from lp.blueprints.interfaces.specification import (
     SpecificationDefinitionStatus, SpecificationFilter,
     SpecificationImplementationStatus, SpecificationSort)
 from canonical.launchpad.interfaces.structuralsubscription import (
@@ -102,7 +102,8 @@ from canonical.launchpad.interfaces.translationgroup import (
     TranslationPermission)
 from canonical.launchpad.validators.name import sanitize_name, valid_name
 from canonical.launchpad.webapp.interfaces import NotFoundError
-from lp.registry.interfaces.person import validate_public_person
+from lp.registry.interfaces.person import (
+    validate_person_not_private_membership, validate_public_person)
 from canonical.launchpad.webapp.url import urlparse
 
 from lp.answers.model.question import (
@@ -121,7 +122,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
     """A distribution of an operating system, e.g. Debian GNU/Linux."""
     implements(
         IDistribution, IFAQTarget, IHasBugSupervisor, IHasBuildRecords,
-        IHasIcon, IHasLogo, IHasMugshot, ILaunchpadUsage, IQuestionTarget, 
+        IHasIcon, IHasLogo, IHasMugshot, ILaunchpadUsage, IQuestionTarget,
         IStructuralSubscriptionTarget)
 
     _table = 'Distribution'
@@ -145,7 +146,9 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         storm_validator=validate_public_person, notNull=True)
     bug_supervisor = ForeignKey(
         dbName='bug_supervisor', foreignKey='Person',
-        storm_validator=validate_public_person, notNull=False, default=None)
+        storm_validator=validate_person_not_private_membership,
+        notNull=False,
+        default=None)
     bug_reporting_guidelines = StringCol(default=None)
     security_contact = ForeignKey(
         dbName='security_contact', foreignKey='Person',
@@ -1406,7 +1409,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         if sources_to_products:
             # Cache some more information to avoid us having to hit the
             # database hard for each product rendered.
-            list(Product.select("Product.id IN %s" % 
+            list(Product.select("Product.id IN %s" %
                  sqlvalues(sources_to_products.values()),
                  prejoins=["bug_supervisor", "bugtracker", "project",
                            "development_focus.branch"]))

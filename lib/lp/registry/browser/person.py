@@ -124,28 +124,31 @@ from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 from canonical.cachedproperty import cachedproperty
 
 from canonical.launchpad import helpers
-from canonical.launchpad.browser.archive import traverse_named_ppa
-from canonical.launchpad.browser.archivesubscription import (
+from lp.soyuz.browser.archive import traverse_named_ppa
+from lp.soyuz.browser.archivesubscription import (
     traverse_archive_subscription_for_subscriber)
 from canonical.launchpad.browser.launchpad import get_launchpad_views
 from canonical.launchpad.components.openidserver import CurrentOpenIDEndPoint
 from canonical.launchpad.interfaces.account import IAccount
 from canonical.launchpad.interfaces.account import AccountStatus
-from canonical.launchpad.interfaces.archivesubscriber import (
+from lp.soyuz.interfaces.archivesubscriber import (
     IArchiveSubscriberSet)
 from canonical.launchpad.interfaces.authtoken import LoginTokenType
 from canonical.launchpad.interfaces.bugtask import (
     BugTaskSearchParams, BugTaskStatus, UNRESOLVED_BUGTASK_STATUSES)
 from canonical.launchpad.interfaces.country import ICountry
-from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus, IEmailAddressSet
+from canonical.launchpad.interfaces.emailaddress import (
+    EmailAddressStatus, IEmailAddressSet)
 from canonical.launchpad.interfaces.geoip import IRequestPreferredLanguages
-from canonical.launchpad.interfaces.gpghandler import GPGKeyNotFoundError, IGPGHandler
+from canonical.launchpad.interfaces.gpghandler import (
+    GPGKeyNotFoundError, IGPGHandler)
 from canonical.launchpad.interfaces.language import ILanguageSet
 from canonical.launchpad.interfaces.launchpad import IPasswordEncryptor
 from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
 from canonical.launchpad.interfaces.oauth import IOAuthConsumerSet
-from canonical.launchpad.interfaces.pofiletranslator import IPOFileTranslatorSet
-from canonical.launchpad.interfaces.specification import SpecificationFilter
+from canonical.launchpad.interfaces.pofiletranslator import (
+    IPOFileTranslatorSet)
+from lp.blueprints.interfaces.specification import SpecificationFilter
 from canonical.launchpad.webapp.interfaces import (
     ILaunchBag, IOpenLaunchBag, NotFoundError, UnexpectedFormData)
 from lp.answers.interfaces.questionenums import QuestionParticipation
@@ -153,8 +156,10 @@ from lp.registry.interfaces.codeofconduct import ISignedCodeOfConductSet
 from lp.registry.interfaces.gpg import IGPGKeySet
 from lp.registry.interfaces.irc import IIrcIDSet
 from lp.registry.interfaces.jabber import IJabberIDSet
-from lp.registry.interfaces.mailinglist import CannotUnsubscribe, IMailingListSet
-from lp.registry.interfaces.mailinglistsubscription import MailingListAutoSubscribePolicy
+from lp.registry.interfaces.mailinglist import (
+    CannotUnsubscribe, IMailingListSet)
+from lp.registry.interfaces.mailinglistsubscription import (
+    MailingListAutoSubscribePolicy)
 from lp.registry.interfaces.person import (
     IEmailAddress, INewPerson, IPerson, IPersonChangePassword, IPersonClaim,
     IPersonSet, ITeam, ITeamReassignment, PersonCreationRationale,
@@ -168,7 +173,7 @@ from lp.registry.interfaces.wikiname import IWikiNameSet
 from lp.code.interfaces.branchnamespace import (
     IBranchNamespaceSet, InvalidNamespace)
 from canonical.launchpad.interfaces.bugtask import IBugTaskSet
-from canonical.launchpad.interfaces.build import (
+from lp.soyuz.interfaces.build import (
     BuildStatus, IBuildSet)
 from canonical.launchpad.interfaces.launchpad import (
     ILaunchpadCelebrities, INotificationRecipientSet, UnknownRecipientError)
@@ -181,7 +186,7 @@ from canonical.launchpad.interfaces.openidserver import (
     IOpenIDPersistentIdentity, IOpenIDRPSummarySet)
 from lp.registry.interfaces.salesforce import (
     ISalesforceVoucherProxy, SalesforceVoucherProxyException)
-from canonical.launchpad.interfaces.sourcepackagerelease import (
+from lp.soyuz.interfaces.sourcepackagerelease import (
     ISourcePackageRelease)
 from canonical.launchpad.interfaces.translationrelicensingagreement import (
     ITranslationRelicensingAgreementEdit,
@@ -195,7 +200,7 @@ from canonical.launchpad.browser.objectreassignment import (
     ObjectReassignmentView)
 from canonical.launchpad.browser.openiddiscovery import (
     XRDSContentNegotiationMixin)
-from canonical.launchpad.browser.specificationtarget import (
+from lp.blueprints.browser.specificationtarget import (
     HasSpecificationsView)
 from canonical.launchpad.browser.branding import BrandingChangeView
 from lp.registry.browser.mailinglists import (
@@ -2817,8 +2822,10 @@ class PersonView(LaunchpadView, FeedsMixin):
 
         If the person is not a team, does not have a mailing list, that
         mailing list has never been activated, or the team is private and the
-        logged in user is not a team member, return None instead.
+        logged in user is not a team member, return None instead.  The url is
+        also returned if the user is a Launchpad admin.
         """
+        celebrities = getUtility(ILaunchpadCelebrities)
         mailing_list = self.context.mailing_list
         if mailing_list is None:
             return None
@@ -2826,7 +2833,8 @@ class PersonView(LaunchpadView, FeedsMixin):
             return mailing_list.archive_url
         elif self.user is None:
             return None
-        elif self.user.inTeam(self.context):
+        elif (self.user.inTeam(self.context) or
+              self.user.inTeam(celebrities.admin)):
             return mailing_list.archive_url
         else:
             return None

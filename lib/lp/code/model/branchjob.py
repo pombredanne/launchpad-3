@@ -38,7 +38,7 @@ from canonical.launchpad.interfaces.translations import (
     TranslationsBranchImportMode)
 from canonical.launchpad.interfaces.translationimportqueue import (
     ITranslationImportQueue)
-from canonical.launchpad.mailout.branch import BranchMailer
+from lp.code.mail.branch import BranchMailer
 from canonical.launchpad.translationformat.translation_import import (
     TranslationImporter)
 from canonical.launchpad.webapp.interfaces import (
@@ -130,15 +130,15 @@ class BranchJobDerived(object):
         return not (self == other)
 
     @classmethod
-    def iterReady(klass):
+    def iterReady(cls):
         """See `IRevisionMailJobSource`."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
         jobs = store.find(
             (BranchJob),
-            And(BranchJob.job_type == klass.class_job_type,
+            And(BranchJob.job_type == cls.class_job_type,
                 BranchJob.job == Job.id,
                 Job.id.is_in(Job.ready_jobs)))
-        return (klass(job) for job in jobs)
+        return (cls(job) for job in jobs)
 
 
 class BranchDiffJob(BranchJobDerived):
@@ -148,11 +148,11 @@ class BranchDiffJob(BranchJobDerived):
 
     classProvides(IBranchDiffJobSource)
     @classmethod
-    def create(klass, branch, from_revision_spec, to_revision_spec):
+    def create(cls, branch, from_revision_spec, to_revision_spec):
         """See `IBranchDiffJobSource`."""
-        metadata = klass.getMetadata(from_revision_spec, to_revision_spec)
+        metadata = cls.getMetadata(from_revision_spec, to_revision_spec)
         branch_job = BranchJob(branch, BranchJobType.STATIC_DIFF, metadata)
-        return klass(branch_job)
+        return cls(branch_job)
 
     @staticmethod
     def getMetadata(from_revision_spec, to_revision_spec):
@@ -196,7 +196,7 @@ class RevisionMailJob(BranchDiffJob):
 
     @classmethod
     def create(
-        klass, branch, revno, from_address, body, perform_diff, subject):
+        cls, branch, revno, from_address, body, perform_diff, subject):
         """See `IRevisionMailJobSource`."""
         metadata = {
             'revno': revno,
@@ -214,7 +214,7 @@ class RevisionMailJob(BranchDiffJob):
         metadata.update(BranchDiffJob.getMetadata(from_revision_spec,
                         to_revision_spec))
         branch_job = BranchJob(branch, BranchJobType.REVISION_MAIL, metadata)
-        return klass(branch_job)
+        return cls(branch_job)
 
     @property
     def revno(self):
@@ -262,12 +262,12 @@ class RevisionsAddedJob(BranchJobDerived):
     class_job_type = BranchJobType.REVISIONS_ADDED_MAIL
 
     @classmethod
-    def create(klass, branch, last_scanned_id, last_revision_id,
+    def create(cls, branch, last_scanned_id, last_revision_id,
                from_address):
         metadata = {'last_scanned_id': last_scanned_id,
                     'last_revision_id': last_revision_id,
                     'from_address': from_address}
-        branch_job = BranchJob(branch, klass.class_job_type, metadata)
+        branch_job = BranchJob(branch, cls.class_job_type, metadata)
         return RevisionsAddedJob(branch_job)
 
     def __init__(self, context):
@@ -425,33 +425,73 @@ class RosettaUploadJob(BranchJobDerived):
         self.translation_files_changed = []
 
     @staticmethod
-    def getMetadata(from_revision_id):
+    def getMetadata(from_revision_id, force_translations_upload):
         return {
             'from_revision_id': from_revision_id,
+            'force_translations_upload': force_translations_upload,
         }
 
     @property
     def from_revision_id(self):
         return self.metadata['from_revision_id']
 
+    @property
+    def force_translations_upload(self):
+        return self.metadata['force_translations_upload']
+
     @classmethod
-    def create(klass, branch, from_revision_id):
+    def _get_any_product_series(cls, branch, force_translations_upload):
+        """Find an affected product series.
+
+        This is used to check if any product series is related to the branch
+        in order to decide if a job needs to be created.
+
+        :param branch: The IBranch that is being scanned.
+        :param force_translations_upload: Flag to override the settings in the
+            product series and upload all translation files.
+        :returns: a list of IProductSeries objects.
+        """
+        return cls._find_product_series(branch,
+                                        force_translations_upload).any()
+
+    @staticmethod
+    def _find_product_series(branch, force_translations_upload):
+        """Find affected product series.
+
+        :param branch: The IBranch that is being scanned.
+        :param force_translations_upload: Flag to override the settings in the
+            product series and upload all translation files.
+        :returns: a list of IProductSeries objects.
+        """
+        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+        if force_translations_upload:
+            productseries = store.find(
+                (ProductSeries),
+                ProductSeries.branch == branch)
+        else:
+            productseries = store.find(
+                (ProductSeries),
+                ProductSeries.branch == branch,
+                ProductSeries.translations_autoimport_mode !=
+                   TranslationsBranchImportMode.NO_IMPORT)
+        return productseries
+
+    @classmethod
+    def create(cls, branch, from_revision_id,
+               force_translations_upload=False):
         """See `IRosettaUploadJobSource`."""
         if branch is None:
             return None
         if from_revision_id is None:
             from_revision_id = NULL_REVISION
-        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
-        productseries = store.find(
-            (ProductSeries),
-            ProductSeries.branch == branch,
-            ProductSeries.translations_autoimport_mode !=
-               TranslationsBranchImportMode.NO_IMPORT).any()
+        productseries = cls._get_any_product_series(branch,
+                                                    force_translations_upload)
         if productseries is not None:
-            metadata = klass.getMetadata(from_revision_id)
+            metadata = cls.getMetadata(from_revision_id,
+                                       force_translations_upload)
             branch_job = BranchJob(
                 branch, BranchJobType.ROSETTA_UPLOAD, metadata)
-            return klass(branch_job)
+            return cls(branch_job)
         else:
             return None
 
@@ -467,7 +507,7 @@ class RosettaUploadJob(BranchJobDerived):
         yield (self.template_file_names, self.template_files_changed)
         yield (self.translation_file_names, self.translation_files_changed)
 
-    def _iter_lists_and_uploaders(self, productseries=None):
+    def _iter_lists_and_uploaders(self, productseries):
         """Iterate through all files for a productseries.
 
         File names and files are stored in different lists according to their
@@ -480,12 +520,22 @@ class RosettaUploadJob(BranchJobDerived):
         credited as the importer of these files and will vary depending on
         the file type.
         """
-        if productseries.translations_autoimport_mode in (
-            TranslationsBranchImportMode.IMPORT_TEMPLATES,):
+        if (productseries.translations_autoimport_mode in (
+            TranslationsBranchImportMode.IMPORT_TEMPLATES,
+            TranslationsBranchImportMode.IMPORT_TRANSLATIONS) or
+            self.force_translations_upload):
+            #
             yield (self.template_file_names,
                    self.template_files_changed,
                    self._uploader_person_pot(productseries))
-            # Handling for other modes will go here.
+
+        if (productseries.translations_autoimport_mode ==
+            TranslationsBranchImportMode.IMPORT_TRANSLATIONS or
+            self.force_translations_upload):
+            #
+            yield (self.translation_file_names,
+                   self.translation_files_changed,
+                   self._uploader_person_po(productseries))
 
     @property
     def file_names(self):
@@ -552,7 +602,10 @@ class RosettaUploadJob(BranchJobDerived):
     def _uploader_person_po(self, series):
         """Determine which person is the uploader for a po file."""
         # For po files, try to determine the author of the latest push.
-        uploader = self.branch.getTipRevision().revision_author.person
+        uploader = None
+        revision = self.branch.getTipRevision()
+        if revision is not None and revision.revision_author is not None:
+            uploader = revision.revision_author.person
         if uploader is None:
             uploader = self._uploader_person_pot(series)
         return uploader
@@ -564,12 +617,8 @@ class RosettaUploadJob(BranchJobDerived):
         self._init_translation_file_lists()
         # Get the product series that are connected to this branch and
         # that want to upload translations.
-        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
-        productseries = store.find(
-            (ProductSeries),
-            ProductSeries.branch == self.branch,
-            ProductSeries.translations_autoimport_mode !=
-               TranslationsBranchImportMode.NO_IMPORT)
+        productseries = self._find_product_series(
+            self.branch, self.force_translations_upload)
         translation_import_queue = getUtility(ITranslationImportQueue)
         for series in productseries:
             approver = TranslationBranchApprover(self.file_names,

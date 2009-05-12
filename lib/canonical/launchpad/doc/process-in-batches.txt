@@ -24,9 +24,9 @@ The expected 'input' argument is a `SelectResult`. We will use a
 result set containing all PUBLISHED `BinaryPackagePublishingHistory`
 records.
 
-    >>> from canonical.launchpad.database.publishing import (
+    >>> from lp.soyuz.model.publishing import (
     ...     BinaryPackagePublishingHistory)
-    >>> from canonical.launchpad.interfaces.publishing import (
+    >>> from lp.soyuz.interfaces.publishing import (
     ...     PackagePublishingStatus)
 
     >>> input = BinaryPackagePublishingHistory.selectBy(

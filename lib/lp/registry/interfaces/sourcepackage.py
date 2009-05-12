@@ -20,8 +20,7 @@ from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.bugtarget import IBugTarget
-from canonical.launchpad.interfaces.component import IComponent
-from lp.registry.interfaces.distribution import IDistribution
+from lp.soyuz.interfaces.component import IComponent
 from lazr.restful.fields import Reference
 from lazr.restful.declarations import (
     call_with, export_as_webservice_entry, export_read_operation,
@@ -63,7 +62,10 @@ class ISourcePackage(IBugTarget):
 
     distribution = exported(
         Reference(
-            IDistribution, title=_("Distribution"), required=True,
+            Interface,
+            # Really IDistribution, circular import fixed in
+            # _schema_circular_imports.
+            title=_("Distribution"), required=True,
             description=_("The distribution for this source package.")))
 
     # The interface for this is really IDistroSeries, but importing that would
@@ -186,7 +188,7 @@ class ISourcePackage(IBugTarget):
         pocket=Choice(
             title=_("Pocket"), required=True,
             vocabulary=DBEnumeratedType),
-        branch=Reference(Interface, title=_("Branch")))
+        branch=Reference(Interface, title=_("Branch"), required=False))
     @call_with(registrant=REQUEST_USER)
     @export_write_operation()
     def setBranch(pocket, branch, registrant):

@@ -20,15 +20,13 @@ from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad.fields import (
     Description, PublicPersonChoice, Summary, Title)
-from canonical.launchpad.interfaces.archive import IArchive
-from lp.registry.interfaces.distribution import IDistribution
 from canonical.launchpad.interfaces.bugtarget import IBugTarget, IHasBugs
-from canonical.launchpad.interfaces.buildrecords import IHasBuildRecords
+from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from canonical.launchpad.interfaces.languagepack import ILanguagePack
 from canonical.launchpad.interfaces.launchpad import (
     IHasAppointedDriver, IHasOwner, IHasDrivers)
 from lp.registry.interfaces.milestone import IHasMilestones
-from canonical.launchpad.interfaces.specificationtarget import (
+from lp.blueprints.interfaces.specificationtarget import (
     ISpecificationGoal)
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 
@@ -41,7 +39,7 @@ from lazr.restful.fields import Reference
 from lazr.restful.declarations import (
     LAZR_WEBSERVICE_EXPORTED, export_as_webservice_entry,
     export_read_operation, exported, operation_parameters,
-    operation_returns_entry)
+    operation_returns_entry, webservice_error)
 
 
 # XXX: salgado, 2008-06-02: We should use a more generic name here as this
@@ -159,7 +157,7 @@ class IDistroSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
             description=_("The version string for this series.")))
     distribution = exported(
         Reference(
-            IDistribution,
+            Interface, # Really IDistribution, see circular import fix below.
             title=_("Distribution"), required=True,
             description=_("The distribution for which this is a series.")))
     parent = Attribute('The structural parent of this series - the distro')
@@ -294,7 +292,7 @@ class IDistroSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
 
     main_archive = exported(
         Reference(
-            IArchive,
+            Interface, # Really IArchive, see below for circular import fix.
             title=_('Distribution Main Archive')))
 
     supported = exported(
@@ -347,6 +345,16 @@ class IDistroSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
         """
 
     def __getitem__(archtag):
+        """Return the distroarchseries for this distroseries with the
+        given architecturetag.
+        """
+
+    @operation_parameters(
+        archtag=TextLine(
+            title=_("The architecture tag"), required=True))
+    @operation_returns_entry(Interface)
+    @export_read_operation()
+    def getDistroArchSeries(archtag):
         """Return the distroarchseries for this distroseries with the
         given architecturetag.
         """
@@ -751,5 +759,9 @@ class IDistroSeriesSet(Interface):
 
 class NoSuchDistroSeries(NameLookupFailed):
     """Raised when we try to find a DistroSeries that doesn't exist."""
-
+    webservice_error(400) #Bad request.
     _message_prefix = "No such distribution series"
+
+
+# Monkey patch for circular import avoidance done in
+# _schema_circular_imports.py

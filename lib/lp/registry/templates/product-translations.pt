@@ -12,14 +12,6 @@
   <!-- metal:use-macro="context/@@main_template/master" -->
 
   <body>
-    <metal:portlets fill-slot="portlets">
-      <tal:portlet
-        condition="context/official_rosetta"
-        replace="structure context/@@+portlet-translation-groups-and-permission"
-      />
-      <tal:portlet replace="structure context/@@+portlet-preflangs" />
-    </metal:portlets>
-
     <div metal:fill-slot="main"
          tal:define="uses_translations view/uses_translations;
                      admin_user context/required:launchpad.TranslationsAdmin">
