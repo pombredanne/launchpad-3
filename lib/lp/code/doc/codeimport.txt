@@ -78,7 +78,7 @@ three members of the vcs-imports team.
 
     >>> import transaction
     >>> transaction.commit()
-    >>> from canonical.launchpad.mail import stub
+    >>> from lp.services.mail import stub
     >>> len(stub.test_emails)
     3
     >>> from canonical.launchpad.helpers import get_contact_email_addresses

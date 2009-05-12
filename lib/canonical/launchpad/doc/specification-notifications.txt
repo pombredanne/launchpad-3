@@ -24,7 +24,7 @@ Changing the status:
     >>> edit_view.initialize()
 
     >>> import transaction
-    >>> from canonical.launchpad.mail import stub
+    >>> from lp.services.mail import stub
     >>> transaction.commit()
     >>> len(stub.test_emails)
     7

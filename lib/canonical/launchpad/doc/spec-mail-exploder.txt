@@ -138,7 +138,7 @@ spec, and mails it to the related people.
 Let's look at the email that got sent:
 
     >>> import transaction
-    >>> from canonical.launchpad.mail import stub
+    >>> from lp.services.mail import stub
     >>> transaction.commit()
     >>> len(stub.test_emails)
     1
