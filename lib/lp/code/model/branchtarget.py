@@ -12,6 +12,7 @@ __all__ = [
 
 from zope.component import getUtility
 from zope.interface import implements
+from zope.security.proxy import isinstance as zope_isinstance
 
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.interfaces.branchtarget import (
@@ -87,6 +88,26 @@ class PackageBranchTarget(_BaseBranchTarget):
         """See `IBranchTarget`."""
         return True
 
+    def areBranchesMergeable(self, other_target):
+        """See `IBranchTarget`."""
+        # Branches are mergable into a PackageTarget if the source package
+        # name is the same, or the branch is associated with the linked
+        # product.
+        if zope_isinstance(other_target, PackageBranchTarget):
+            my_sourcepackagename = self.context.sourcepackagename
+            other_sourcepackagename = other_target.context.sourcepackagename
+            return my_sourcepackagename == other_sourcepackagename
+        elif zope_isinstance(other_target, ProductBranchTarget):
+            # If the sourcepackage has a related product, then branches of
+            # that product are mergeable.
+            product_series = self.sourcepackage.productseries
+            if product_series is None:
+                return False
+            else:
+                return other_target.context == product_series.product
+        else:
+            return False
+
 
 class PersonBranchTarget(_BaseBranchTarget):
     implements(IBranchTarget)
@@ -125,6 +146,10 @@ class PersonBranchTarget(_BaseBranchTarget):
 
     @property
     def supports_merge_proposals(self):
+        """See `IBranchTarget`."""
+        return False
+
+    def areBranchesMergeable(self, other_target):
         """See `IBranchTarget`."""
         return False
 
@@ -175,6 +200,24 @@ class ProductBranchTarget(_BaseBranchTarget):
     def supports_merge_proposals(self):
         """See `IBranchTarget`."""
         return True
+
+    def areBranchesMergeable(self, other_target):
+        """See `IBranchTarget`."""
+        # Branches are mergable into a PackageTarget if the source package
+        # name is the same, or the branch is associated with the linked
+        # product.
+        if zope_isinstance(other_target, ProductBranchTarget):
+            return self.product == other_target.context
+        elif zope_isinstance(other_target, PackageBranchTarget):
+            # If the sourcepackage has a related product, and that product is
+            # the same as ours, then the branches are mergeable.
+            product_series = other_target.context.productseries
+            if product_series is None:
+                return False
+            else:
+                return self.product == product_series.product
+        else:
+            return False
 
 
 def get_canonical_url_data_for_target(branch_target):

@@ -107,6 +107,42 @@ class TestPackageBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
         target = IBranchTarget(self.original)
         self.assertEqual(self.original.displayname, target.displayname)
 
+    def test_areBranchesMergeable_same_sourcepackage(self):
+        # Branches of the same sourcepackage are mergeable.
+        same_target = PackageBranchTarget(self.original)
+        self.assertTrue(self.target.areBranchesMergeable(same_target))
+
+    def test_areBranchesMergeable_same_sourcepackagename(self):
+        # Branches with the same sourcepackagename are mergeable.
+        sourcepackage = self.factory.makeSourcePackage(
+            self.original.sourcepackagename)
+        same_name = PackageBranchTarget(sourcepackage)
+        self.assertTrue(self.target.areBranchesMergeable(same_name))
+
+    def test_areBranchesMergeable_different_sourcepackage(self):
+        # Package branches for a different sorucepackagename are not
+        # mergeable.
+        branch = self.factory.makePackageBranch()
+        self.assertFalse(self.target.areBranchesMergeable(branch.target))
+
+    def test_areBranchesMergeable_personal_branches(self):
+        # Personal branches are not mergeable.
+        branch = self.factory.makePersonalBranch()
+        self.assertFalse(self.target.areBranchesMergeable(branch.target))
+
+    def test_areBranchesMergeable_unlinked_product(self):
+        # Product branches are not normally mergeable into package branches.
+        branch = self.factory.makeProductBranch()
+        self.assertFalse(self.target.areBranchesMergeable(branch.target))
+
+    def test_areBranchesMergeable_linked_product(self):
+        # Products that are linked to the packages are mergeable.
+        branch = self.factory.makeProductBranch()
+        # Link it up.
+        self.original.setPackaging(
+            branch.product.development_focus, branch.owner)
+        self.assertTrue(self.target.areBranchesMergeable(branch.target))
+
 
 class TestPersonBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
 
@@ -152,6 +188,11 @@ class TestPersonBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
         # The display name of a person branch target is ~$USER/+junk.
         target = IBranchTarget(self.original)
         self.assertEqual('~%s/+junk' % self.original.name, target.displayname)
+
+    def test_areBranchesMergeable(self):
+        # No branches are mergeable with a PersonBranchTarget.
+        branch = self.factory.makeAnyBranch()
+        self.assertFalse(self.target.areBranchesMergeable(branch.target))
 
 
 class TestProductBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
@@ -221,6 +262,33 @@ class TestProductBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
         target = IBranchTarget(self.original)
         self.assertEqual(self.original.displayname, target.displayname)
 
+    def test_areBranchesMergeable_same_product(self):
+        # Branches of the same product are mergeable.
+        same_target = ProductBranchTarget(self.original)
+        self.assertTrue(self.target.areBranchesMergeable(same_target))
+
+    def test_areBranchesMergeable_different_product(self):
+        # Branches of a different product are not mergeable.
+        other_target = ProductBranchTarget(self.factory.makeProduct())
+        self.assertFalse(self.target.areBranchesMergeable(other_target))
+
+    def test_areBranchesMergeable_personal_branches(self):
+        # Personal branches are not mergeable.
+        branch = self.factory.makePersonalBranch()
+        self.assertFalse(self.target.areBranchesMergeable(branch.target))
+
+    def test_areBranchesMergeable_unlinked_package(self):
+        # Package branches are not normally mergeable into products.
+        branch = self.factory.makePackageBranch()
+        self.assertFalse(self.target.areBranchesMergeable(branch.target))
+
+    def test_areBranchesMergeable_linked_package(self):
+        # Packages that are linked to the products are mergeable.
+        branch = self.factory.makePackageBranch()
+        # Link it up.
+        branch.sourcepackage.setPackaging(
+            self.original.development_focus, branch.owner)
+        self.assertTrue(self.target.areBranchesMergeable(branch.target))
 
 
 class TestCheckDefaultStackedOnBranch(TestCaseWithFactory):

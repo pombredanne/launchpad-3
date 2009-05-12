@@ -84,6 +84,9 @@ class IBranchTarget(IPrimaryContext):
     supports_merge_proposals = Attribute(
         "Does this target support merge proposals at all?")
 
+    def areBranchesMergeable(other_target):
+        """Are branches from other_target mergeable into this target."""
+
     def __eq__(other):
         """Is this target the same as another target?
 
