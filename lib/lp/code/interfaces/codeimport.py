@@ -230,6 +230,9 @@ class ICodeImport(Interface):
 
     results = Attribute("The results for this code import.")
 
+    consecutive_failure_count = Attribute(
+        "How many times in a row this import has failed.")
+
     def updateFromData(data, user):
         """Modify attributes of the `CodeImport`.
 

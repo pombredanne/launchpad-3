@@ -32,8 +32,9 @@ import pytz
 from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
-    ArchivePurpose, BuildStatus, IBug, IBugSet, IDistribution, IFAQSet,
+    IBug, IBugSet, IDistribution, IFAQSet,
     IProduct, IProject, ISprint, LicenseStatus, NotFoundError)
+from lp.soyuz.interfaces.archive import ArchivePurpose
 from canonical.launchpad.interfaces.launchpad import (
     IHasIcon, IHasLogo, IHasMugshot)
 from lp.registry.interfaces.person import IPerson, IPersonSet
@@ -51,6 +52,7 @@ from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.badge import IHasBadges
 from canonical.launchpad.webapp.session import get_cookie_domain
 from canonical.lazr.canonicalurl import nearest_adapter
+from lp.soyuz.interfaces.build import BuildStatus
 
 
 def escape(text, quote=True):
@@ -958,9 +960,8 @@ class PersonFormatterAPI(ObjectFormatterAPI):
         person = self._context
         url = canonical_url(person, rootsite=rootsite, view_name=view_name)
         image_url = ObjectImageDisplayAPI(person).icon_url(rootsite=rootsite)
-        return (u'<a href="%s" style="padding-left: 18px; '
-                'background: url(%s) '
-                'center left no-repeat;">%s</a>') % (
+        return (u'<a href="%s" class="bg-image" '
+                 'style="background-image: url(%s)">%s</a>') % (
             url, image_url, cgi.escape(person.browsername))
 
     def displayname(self, view_name, rootsite=None):
@@ -2148,26 +2149,31 @@ class FormattersAPI:
         return url, trailers
 
     @staticmethod
+    def _linkify_bug_number(text, bugnum, trailers=''):
+        # XXX Brad Bollenbach 2006-04-10: Use a hardcoded url so
+        # we still have a link for bugs that don't exist.
+        url = '/bugs/%s' % bugnum
+
+        bugset = getUtility(IBugSet)
+        try:
+            bug = bugset.get(bugnum)
+        except NotFoundError:
+            title = "No such bug"
+        else:
+            try:
+                title = bug.title
+            except Unauthorized:
+                title = "private bug"
+        title = cgi.escape(title, quote=True)
+        # The text will have already been cgi escaped.
+        return '<a href="%s" title="%s">%s</a>%s' % (
+            url, title, text, trailers)
+
+    @staticmethod
     def _linkify_substitution(match):
         if match.group('bug') is not None:
-            bugnum = match.group('bugnum')
-            # XXX Brad Bollenbach 2006-04-10: Use a hardcoded url so
-            # we still have a link for bugs that don't exist.
-            url = '/bugs/%s' % bugnum
-            # The text will have already been cgi escaped.
-            text = match.group('bug')
-            bugset = getUtility(IBugSet)
-            try:
-                bug = bugset.get(bugnum)
-            except NotFoundError:
-                title = "No such bug"
-            else:
-                try:
-                    title = bug.title
-                except Unauthorized:
-                    title = "private bug"
-            title = cgi.escape(title, quote=True)
-            return '<a href="%s" title="%s">%s</a>' % (url, title, text)
+            return FormattersAPI._linkify_bug_number(
+                match.group('bug'), match.group('bugnum'))
         elif match.group('url') is not None:
             # The text will already have been cgi escaped.  We temporarily
             # unescape it so that we can strip common trailing characters
@@ -2202,10 +2208,13 @@ class FormattersAPI:
             return '<a href="%s">%s</a>' % (url, text)
         elif match.group('lpbranchurl') is not None:
             lp_url = match.group('lpbranchurl')
-            lp_url, trailers = FormattersAPI._split_url_and_trailers(lp_url)
             path = match.group('branch')
+            lp_url, trailers = FormattersAPI._split_url_and_trailers(lp_url)
+            path, trailers = FormattersAPI._split_url_and_trailers(path)
+            if path.isdigit():
+                return FormattersAPI._linkify_bug_number(
+                    lp_url, path, trailers)
             url = '/+branch/%s' % path
-            url, trailers = FormattersAPI._split_url_and_trailers(url)
             return '<a href="%s">%s</a>%s' % (
                 cgi.escape(url, quote=True),
                 cgi.escape(lp_url),

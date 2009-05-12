@@ -4,7 +4,7 @@ The user 'salgado' has an unvalidated email address that was probably
 added by gina. Now he wants to validate it.
 
     # Workaround for https://launchpad.net/launchpad/+bug/39016
-    >>> from canonical.launchpad.mail import stub
+    >>> from lp.services.mail import stub
     >>> stub.test_emails[:] = []
 
     >>> browser = setupBrowser(auth='Basic salgado@ubuntu.com:zeca')

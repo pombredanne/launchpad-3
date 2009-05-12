@@ -13,7 +13,7 @@ from canonical.archiveuploader.uploadprocessor import UploadProcessor
 from canonical.config import config
 from canonical.launchpad.scripts.base import (
     LaunchpadScript, LaunchpadScriptFailure)
-from canonical.launchpad.scripts.soyuz_process_upload import ProcessUpload
+from lp.soyuz.scripts.soyuz_process_upload import ProcessUpload
 
 
 if __name__ == '__main__':

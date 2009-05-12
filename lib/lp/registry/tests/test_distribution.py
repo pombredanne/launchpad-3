@@ -8,7 +8,7 @@ import unittest
 
 from lp.registry.tests.test_distroseries import (
     TestDistroSeriesCurrentSourceReleases)
-from canonical.launchpad.interfaces.distributionsourcepackagerelease import (
+from lp.soyuz.interfaces.distributionsourcepackagerelease import (
     IDistributionSourcePackageRelease)
 from lp.registry.interfaces.distroseries import DistroSeriesStatus
 

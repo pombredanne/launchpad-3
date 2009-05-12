@@ -143,9 +143,8 @@
           <td>
             <img src="/@@/private" alt="" />
             <tal:openid-login content="view/openid_identity_url" />
-            <span class="help"
-                ><a href="https://help.launchpad.net/OpenID"
-                   >(What&rsquo;s&nbsp;this?)</a></span>
+            <a target="help" href="/+help/openid.html"
+               >(What&rsquo;s&nbsp;this?)</a>
           </td>
         </tr>
         <tr id="languages">
