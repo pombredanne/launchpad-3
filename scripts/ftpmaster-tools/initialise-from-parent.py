@@ -22,9 +22,8 @@ from canonical.config import config
 from canonical.database.sqlbase import (
     sqlvalues, flush_database_updates, cursor, flush_database_caches)
 from canonical.lp import initZopeless
-from canonical.launchpad.interfaces import (
-    BuildStatus, IDistributionSet, NotFoundError, PackageUploadStatus,
-    PackagePublishingPocket)
+from lp.soyuz.interfaces.package import PackageUploadStatus
+from canonical.launchpad.interfaces import IDistributionSet, NotFoundError
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger, logger_options)
 
@@ -103,6 +102,10 @@ def check_builds(distroseries):
     Only cares about the RELEASE pocket, which is the only one inherited
     via initialiseFromParent method.
     """
+    # Avoid circular import.
+    from lp.soyuz.interfaces.build import BuildStatus
+    from lp.soyuz.interfaces.publishing import PackagePublishingPocket
+
     parentseries = distroseries.parent_series
 
     # only the RELEASE pocket is inherited, so we only check
@@ -119,6 +122,9 @@ def check_queue(distroseries):
     Only cares about the RELEASE pocket, which is the only one inherited
     via initialiseFromParent method.
     """
+    # Avoid circular import.
+    from lp.soyuz.interfaces.publishing import PackagePublishingPocket
+
     parentseries = distroseries.parent_series
 
     # only the RELEASE pocket is inherited, so we only check

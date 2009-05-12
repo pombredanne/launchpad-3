@@ -13,8 +13,8 @@ from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 
 from canonical.launchpad.mail import format_address, simple_sendmail
-from canonical.launchpad.mailout.mailwrapper import MailWrapper
-from canonical.launchpad.mailout.notificationrecipientset import (
+from lp.services.mail.mailwrapper import MailWrapper
+from lp.services.mail.notificationrecipientset import (
     NotificationRecipientSet)
 from lp.registry.interfaces.person import IPerson
 from canonical.launchpad.webapp.publisher import canonical_url

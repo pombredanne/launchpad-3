@@ -14,11 +14,13 @@ from zope.interface import implements
 
 from sqlobject import ForeignKey
 
-from lp.registry.interfaces.mentoringoffer import IMentoringOffer, IMentoringOfferSet
+from lp.registry.interfaces.person import validate_public_person
+from lp.registry.interfaces.mentoringoffer import (
+    IMentoringOffer, IMentoringOfferSet)
+
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
-from lp.registry.interfaces.person import validate_public_person
 
 
 class MentoringOffer(SQLBase):
@@ -71,7 +73,7 @@ class MentoringOfferSet:
     def mentoring_offers(self):
         """See IHasMentoringOffers."""
         # import here to avoid circular imports
-        from canonical.launchpad.database.specification import Specification
+        from lp.blueprints.model.specification import Specification
         from canonical.launchpad.database.bugtask import BugTask
         via_specs = MentoringOffer.select("""
             Specification.id = MentoringOffer.specification AND NOT
@@ -91,7 +93,7 @@ class MentoringOfferSet:
     def recent_completed_mentorships(self):
         """See IHasMentoringOffers."""
         # import here to avoid circular imports
-        from canonical.launchpad.database.specification import Specification
+        from lp.blueprints.model.specification import Specification
         from canonical.launchpad.database.bugtask import BugTask
         now = datetime.now(pytz.timezone('UTC'))
         yearago = now - timedelta(365)

@@ -27,7 +27,7 @@ from lp.registry.interfaces.milestone import (
     IHasMilestones, IMilestone)
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.productrelease import IProductRelease
-from canonical.launchpad.interfaces.specificationtarget import (
+from lp.blueprints.interfaces.specificationtarget import (
     ISpecificationGoal)
 from canonical.launchpad.interfaces.translations import (
     TranslationsBranchImportMode)
