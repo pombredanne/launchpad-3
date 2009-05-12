@@ -39,7 +39,9 @@ This time the upload will fail because the ACLs don't let
     >>> bar_failed.is_rejected
     True
     >>> print bar_failed.rejection_message
-    Signer has no upload rights at all to this distribution's primary archive.
+    The signer of this package has no upload rights to this distribution's
+    primary archive.  Did you mean to upload to a PPA?
+
 
 We can grant selective, package set based upload permissions to the user
 in order to facilitate uploads.
