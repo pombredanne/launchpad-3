@@ -736,12 +736,12 @@ class POFile(SQLBase, POFileMixIn):
                    shared.potmsgset=POTMsgSet.id)''' % dict(
             language=quote(self.language),
             variant_clause=variant_clause))
-        beggining_of_time = "TIMESTAMP '1970-01-01 00:00:00'"
+        beginning_of_time = "TIMESTAMP '1970-01-01 00:00:00'"
         newer_than_query = (
             "TranslationMessage.date_created > COALESCE(" +
             ",".join([diverged_translation_query,
                       shared_translation_query,
-                      beggining_of_time]) + ")")
+                      beginning_of_time]) + ")")
         clauses.append(newer_than_query)
 
         # A POT set has "new" suggestions if there is a non current
