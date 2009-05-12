@@ -566,6 +566,16 @@ class POFile(SQLBase, POFileMixIn):
         """See `IPOFile`."""
         return iter(self.currentMessageSets())
 
+    def _getLanguageVariantClause(self, table='TranslationMessage'):
+        if self.variant is None:
+            clause = '%(table)s.variant IS NULL' % dict(table=table)
+        else:
+            clause = '%(table)s.variant = %(variant)s' % dict(
+                    table=table,
+                    variant=quote(self.variant))
+        return clause
+
+
     def _getClausesForPOFileMessages(self, current=True):
         """Get TranslationMessages for the POFile via TranslationTemplateItem.
 
@@ -579,13 +589,8 @@ class POFile(SQLBase, POFileMixIn):
             'TranslationMessage.language = %s' % sqlvalues(self.language)]
         if current:
             clauses.append('TranslationTemplateItem.sequence > 0')
+        clauses.append(self._getLanguageVariantClause())
 
-        if self.variant is None:
-            clauses.append(
-                'TranslationMessage.variant IS NULL')
-        else:
-            clauses.append(
-                'TranslationMessage.variant = %s' % sqlvalues(self.variant))
         return clauses
 
     def getTranslationsFilteredBy(self, person):
@@ -621,18 +626,21 @@ class POFile(SQLBase, POFileMixIn):
         diverged_translation_query = ' AND '.join(
             diverged_translation_clauses)
 
+        variant_clause = self._getLanguageVariantClause(table='diverged')
+
         shared_translation_clauses = [
             'TranslationMessage.potemplate IS NULL',
             '''NOT EXISTS (
                  SELECT * FROM TranslationMessage AS diverged
                    WHERE
-                     diverged.potemplate=%s AND
+                     diverged.potemplate=%(potemplate)s AND
                      diverged.is_current IS TRUE AND
-                     diverged.language = TranslationMessage.language AND
-                     diverged.variant IS NOT DISTINCT FROM
-                        TranslationMessage.variant AND
+                     diverged.language = %(language)s AND
+                     %(variant_clause)s AND
                      diverged.potmsgset=TranslationMessage.potmsgset)''' % (
-                sqlvalues(self.potemplate)),
+            dict(language=quote(self.language),
+                 variant_clause=variant_clause,
+                 potemplate=quote(self.potemplate))),
         ]
         shared_translation_query = ' AND '.join(shared_translation_clauses)
 
@@ -702,28 +710,32 @@ class POFile(SQLBase, POFileMixIn):
             'TranslationMessage.is_current IS NOT TRUE',
             ])
 
+        variant_clause = self._getLanguageVariantClause(table='diverged')
         diverged_translation_query = (
             '''(SELECT COALESCE(diverged.date_reviewed, diverged.date_created)
                  FROM TranslationMessage AS diverged
                  WHERE
                    diverged.is_current IS TRUE AND
-                   diverged.potemplate=%s AND
-                   diverged.language = TranslationMessage.language AND
-                   diverged.variant IS NOT DISTINCT FROM
-                       TranslationMessage.variant AND
-                   diverged.potmsgset=POTMsgSet.id)''' % (
-            sqlvalues(self.potemplate)))
+                   diverged.potemplate = %(potemplate)s AND
+                   diverged.language = %(language)s AND
+                   %(variant_clause)s AND
+                   diverged.potmsgset=POTMsgSet.id)''' % dict(
+            potemplate=quote(self.potemplate),
+            language=quote(self.language),
+            variant_clause=variant_clause))
 
+        variant_clause = self._getLanguageVariantClause(table='shared')
         shared_translation_query = (
             '''(SELECT COALESCE(shared.date_reviewed, shared.date_created)
                  FROM TranslationMessage AS shared
                  WHERE
                    shared.is_current IS TRUE AND
                    shared.potemplate IS NULL AND
-                   shared.language = TranslationMessage.language AND
-                   shared.variant IS NOT DISTINCT FROM
-                       TranslationMessage.variant AND
-                   shared.potmsgset=POTMsgSet.id)''')
+                   shared.language = %(language)s AND
+                   %(variant_clause)s AND
+                   shared.potmsgset=POTMsgSet.id)''' % dict(
+            language=quote(self.language),
+            variant_clause=variant_clause))
         beggining_of_time = "TIMESTAMP '1970-01-01 00:00:00'"
         newer_than_query = (
             "TranslationMessage.date_created > COALESCE(" +
@@ -737,8 +749,12 @@ class POFile(SQLBase, POFileMixIn):
         store = Store.of(self)
         query = (
             """POTMsgSet.id IN (SELECT DISTINCT TranslationMessage.potmsgset
-                 FROM TranslationMessage WHERE (%s))
-            """ % ' AND '.join(clauses))
+                 FROM TranslationMessage, TranslationTemplateItem, POTMsgSet
+                 WHERE (%(query)s)) AND
+               POTMsgSet.id=TranslationTemplateItem.potmsgset AND
+               TranslationTemplateItem.potemplate=%(potemplate)s
+            """ % dict(query=' AND '.join(clauses),
+                       potemplate=quote(self.potemplate)))
         return self._getOrderedPOTMsgSets(
             [POTMsgSet, TranslationTemplateItem], query)
 
@@ -759,26 +775,26 @@ class POFile(SQLBase, POFileMixIn):
             'TranslationTemplateItem.potmsgset = POTMsgSet.id',
             ])
 
+        variant_clause = self._getLanguageVariantClause(table='diverged')
         imported_no_diverged = (
             '''NOT EXISTS (
                  SELECT * FROM TranslationMessage AS diverged
                    WHERE
                      diverged.is_imported IS TRUE AND
                      diverged.id <> imported.id AND
-                     diverged.potemplate=%s AND
-                     diverged.language = TranslationMessage.language AND
-                     diverged.variant IS NOT DISTINCT FROM
-                         TranslationMessage.variant AND
+                     diverged.potemplate = %(potemplate)s AND
+                     diverged.language = %(language)s AND
+                     %(variant_clause)s AND
                      diverged.potmsgset=TranslationMessage.potmsgset)''' % (
-                sqlvalues(self.potemplate))
-            )
+            dict(potemplate=quote(self.potemplate),
+                 language=quote(self.language),
+                 variant_clause=variant_clause)))
 
         imported_clauses = [
             'imported.id <> TranslationMessage.id',
             'imported.potmsgset = POTMsgSet.id',
-            'imported.language = TranslationMessage.language',
-            'imported.variant '
-            '  IS NOT DISTINCT FROM TranslationMessage.variant',
+            'imported.language = %s' % sqlvalues(self.language),
+            self._getLanguageVariantClause(table='imported'),
             'imported.is_imported IS TRUE',
             '(imported.potemplate=%s OR ' % sqlvalues(self.potemplate) +
             '   (imported.potemplate IS NULL AND ' + imported_no_diverged
@@ -865,6 +881,8 @@ class POFile(SQLBase, POFileMixIn):
 
         # Get number of imported messages that are still synced in Launchpad.
         current_clauses = self._getClausesForPOFileMessages()
+
+        variant_clause = self._getLanguageVariantClause()
         current_clauses.extend([
             'TranslationTemplateItem.sequence > 0',
             'TranslationMessage.is_imported IS TRUE',
@@ -876,13 +894,14 @@ class POFile(SQLBase, POFileMixIn):
                     WHERE
                       current.potemplate = %(template)s AND
                       current.id <> TranslationMessage.id AND
-                      TranslationMessage.language=current.language AND
-                      TranslationMessage.variant IS NOT DISTINCT FROM
-                         current.variant AND
+                      TranslationMessage.language=%(language)s AND
+                      %(variant_clause)s AND
                       TranslationMessage.potmsgset=current.potmsgset AND
                       TranslationMessage.msgstr0 IS NOT NULL  AND
-                      TranslationMessage.is_current IS TRUE )))""" % (
-              sqlvalues(template=self.potemplate)),
+                      TranslationMessage.is_current IS TRUE )))""" % dict(
+            template=quote(self.potemplate),
+            language=quote(self.language),
+            variant_clause=variant_clause),
             ])
         self._appendCompletePluralFormsConditions(current_clauses)
         current = TranslationMessage.select(
