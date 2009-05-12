@@ -34,7 +34,7 @@ from lp.code.interfaces.codeimportjob import (
 from lp.code.interfaces.codeimportresult import (
     CodeImportResultStatus, ICodeImportResult, ICodeImportResultSet)
 from lp.registry.interfaces.person import IPersonSet
-from canonical.launchpad.ftests import ANONYMOUS, login, logout, sync
+from canonical.launchpad.ftests import ANONYMOUS, login, logout
 from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.launchpad.testing.codeimporthelpers import (
     make_finished_import, make_running_import)
@@ -711,16 +711,19 @@ class TestCodeImportJobWorkflowFinishJob(TestCaseWithFactory,
         self.machine = self.factory.makeCodeImportMachine()
         self.machine.setOnline()
 
-    def makeRunningJob(self):
+    def makeRunningJob(self, code_import=None):
         """Make and return a CodeImportJob object with state==RUNNING.
 
         This is suitable for passing into finishJob().
         """
-        code_import = self.factory.makeCodeImport()
-        job = self.factory.makeCodeImportJob(code_import)
+        if code_import is None:
+            code_import = self.factory.makeCodeImport()
+        job = code_import.import_job
+        if job is None:
+            job = self.factory.makeCodeImportJob(code_import)
         getUtility(ICodeImportJobWorkflow).startJob(job, self.machine)
-        sync(job)
         return job
+
 
     # Precondition tests. Only one of these.
 
@@ -934,6 +937,23 @@ class TestCodeImportJobWorkflowFinishJob(TestCaseWithFactory,
             else:
                 self.assertTrue(
                     code_import.branch.next_mirror_time is None)
+
+    def test_fiveFailuresMarksAsFailing(self):
+        # If a code import fails five times in a row, the import is marked as
+        # FAILING.
+        code_import = self.factory.makeCodeImport()
+        for i in range(4):
+            running_job = self.makeRunningJob(code_import)
+            getUtility(ICodeImportJobWorkflow).finishJob(
+                running_job, CodeImportResultStatus.FAILURE, None)
+        self.assertEqual(4, code_import.consecutive_failure_count)
+        self.assertEqual(
+            CodeImportReviewStatus.REVIEWED, code_import.review_status)
+        running_job = self.makeRunningJob(code_import)
+        getUtility(ICodeImportJobWorkflow).finishJob(
+            running_job, CodeImportResultStatus.FAILURE, None)
+        self.assertEqual(
+            CodeImportReviewStatus.FAILING, code_import.review_status)
 
 
 def logged_in_as(email):
