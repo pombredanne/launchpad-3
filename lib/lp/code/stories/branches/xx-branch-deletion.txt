@@ -79,6 +79,7 @@ However, you can delete a branch that's the official branch of a source
 package.
 
     >>> from zope.component import getUtility
+    >>> from zope.security.proxy import removeSecurityProxy
     >>> from canonical.launchpad.interfaces.launchpad import (
     ...     ILaunchpadCelebrities)
     >>> from canonical.launchpad.interfaces.publishing import (
@@ -87,7 +88,9 @@ package.
     >>> login(ANONYMOUS)
     >>> name12 = getUtility(IPersonSet).getByName('name12')
     >>> ubuntu_branches = getUtility(ILaunchpadCelebrities).ubuntu_branches
-    >>> login_person(ubuntu_branches.teamowner)
+    >>> removeSecurityProxy(ubuntu_branches).addMember(
+    ...     name12, ubuntu_branches.teamowner)
+    >>> login_person(name12)
     >>> branch = factory.makePackageBranch(owner=name12)
     >>> package = branch.sourcepackage
     >>> package.setBranch(
