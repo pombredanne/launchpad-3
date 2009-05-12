@@ -9,6 +9,6 @@
 <tal:daterange condition="view/daterange">
   <span style="display:none;"
         tal:attributes="id string:${view/name}-daterange"
-        tal:replace="view/daterange" />
+        tal:content="view/daterange" />
 </tal:daterange>
 </tal:root>
