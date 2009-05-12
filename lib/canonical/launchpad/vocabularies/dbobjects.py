@@ -65,7 +65,7 @@ from canonical.launchpad.interfaces.bugtask import IBugTask
 from canonical.launchpad.interfaces.bugtracker import BugTrackerType
 from canonical.launchpad.interfaces.language import ILanguage
 from canonical.launchpad.interfaces.languagepack import LanguagePackType
-from canonical.launchpad.interfaces.specification import SpecificationFilter
+from lp.blueprints.interfaces.specification import SpecificationFilter
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.tales import FormattersAPI
 from canonical.launchpad.webapp.vocabulary import (

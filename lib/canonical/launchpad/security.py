@@ -85,13 +85,13 @@ from canonical.shipit.interfaces.shipit import (
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.soyuz.interfaces.sourcepackagerelease import (
     ISourcePackageRelease)
-from canonical.launchpad.interfaces.specification import ISpecification
-from canonical.launchpad.interfaces.specificationbranch import (
+from lp.blueprints.interfaces.specification import ISpecification
+from lp.blueprints.interfaces.specificationbranch import (
     ISpecificationBranch)
-from canonical.launchpad.interfaces.specificationsubscription import (
+from lp.blueprints.interfaces.specificationsubscription import (
     ISpecificationSubscription)
-from canonical.launchpad.interfaces.sprint import ISprint
-from canonical.launchpad.interfaces.sprintspecification import (
+from lp.blueprints.interfaces.sprint import ISprint
+from lp.blueprints.interfaces.sprintspecification import (
     ISprintSpecification)
 from lp.registry.interfaces.teammembership import ITeamMembership
 from canonical.launchpad.interfaces.translationgroup import (

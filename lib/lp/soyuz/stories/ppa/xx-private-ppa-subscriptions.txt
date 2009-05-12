@@ -46,6 +46,14 @@ The PPA page includes a link to manage subscriptions:
     >>> cprov_browser.open("http://launchpad.dev/~cprov/+archive/ppa")
     >>> cprov_browser.getLink("Manage subscriptions").click()
 
+The page includes the required dependencies for the yui2-based date
+picker:
+
+    >>> print extract_all_script_and_style_links(cprov_browser.contents)
+    ...
+    http://launchpad.dev/+icing/.../build/lp/calendar.js
+    http://launchpad.dev/+icing/.../yui_2.7.0b/build/calendar/assets/skins/sam/calendar.css
+
 Initially there are no subscriptions for a newly privatized PPA (although,
 this may need to change, to add the owner/team). A heading is displayed
 with a message:
