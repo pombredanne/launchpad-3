@@ -459,10 +459,8 @@
                                id string:bug-already-reported-as-${bug/id};
                                value string:${bug/id};" />
 
-                      <input type="submit"
-                          id="field.actions.this_is_my_bug"
-                          name="field.actions.this_is_my_bug"
-                          value="Yes, this is the bug I'm trying to report" />
+                      <tal:this-is-my-bug-action
+                          replace="structure view/this_is_my_bug_action/render" />
 
                     </span>
                   </form>
