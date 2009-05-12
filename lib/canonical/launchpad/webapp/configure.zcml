@@ -470,7 +470,12 @@
         factory="canonical.launchpad.webapp.tales.CodeReviewCommentFormatterAPI"
         name="fmt"
         />
-
+    <adapter
+        for="lp.registry.interfaces.sourcepackage.ISourcePackage"
+        provides="zope.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.SourcePackageFormatterAPI"
+        name="fmt"
+        />
     <adapter
         for="canonical.launchpad.interfaces.IBugTracker"
         provides="zope.traversing.interfaces.IPathAdapter"
