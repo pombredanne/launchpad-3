@@ -37,7 +37,7 @@ Subscribing to one of the similar bugs takes us to the bug page.
 
     >>> for message in get_feedback_messages(user_browser.contents):
     ...     print message
-    You have been subscribed to this bug.
+    This bug has been marked as affecting you.
 
 Actually, on reflection, that's not our bug after all. Let's go
 back...

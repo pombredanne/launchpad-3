@@ -91,7 +91,7 @@ But, of course, we're already subscribed because we created it.
 
     >>> for message in get_feedback_messages(user_browser.contents):
     ...     print message
-    You are already subscribed to this bug.
+    This bug is already marked as affecting you.
 
 
 == Filing a bug when there are none similar ==
