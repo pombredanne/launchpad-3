@@ -823,7 +823,7 @@ class POFile(SQLBase, POFileMixIn):
             ])
 
         query = ' AND '.join(clauses)
-        origin=[POTMsgSet, TranslationMessage, TranslationTemplateItem]
+        origin = [POTMsgSet, TranslationMessage, TranslationTemplateItem]
         return self._getOrderedPOTMsgSets(origin, query)
 
     def messageCount(self):
