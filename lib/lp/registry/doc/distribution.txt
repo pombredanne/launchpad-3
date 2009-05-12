@@ -74,7 +74,7 @@ have a SourcePackageName object for it.
     >>> IDistributionSourcePackage.providedBy(evo_ubuntu)
     True
 
-    >>> from canonical.launchpad.database.sourcepackagerelease import (
+    >>> from lp.soyuz.model.sourcepackagerelease import (
     ...                                           SourcePackageRelease)
     >>> sourcepackagerelease = SourcePackageRelease.selectOneBy(
     ...     sourcepackagenameID=evo.id, version='1.0')

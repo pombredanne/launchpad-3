@@ -74,8 +74,8 @@ from canonical.launchpad.interfaces.lpstorm import IMasterObject, IMasterStore
 from canonical.launchpad.interfaces.account import (
     AccountCreationRationale, AccountStatus, IAccount, IAccountSet,
     INACTIVE_ACCOUNT_STATUSES)
-from canonical.launchpad.interfaces.archive import ArchivePurpose
-from canonical.launchpad.interfaces.archivepermission import (
+from lp.soyuz.interfaces.archive import ArchivePurpose, NoSuchPPA
+from lp.soyuz.interfaces.archivepermission import (
     IArchivePermissionSet)
 from canonical.launchpad.interfaces.authtoken import LoginTokenType
 from lp.code.interfaces.branchmergeproposal import (
@@ -112,7 +112,7 @@ from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.project import IProject
 from lp.registry.interfaces.salesforce import (
     ISalesforceVoucherProxy, VOUCHER_STATUSES)
-from canonical.launchpad.interfaces.specification import (
+from lp.blueprints.interfaces.specification import (
     SpecificationDefinitionStatus, SpecificationFilter,
     SpecificationImplementationStatus, SpecificationSort)
 from canonical.launchpad.interfaces.lpstorm import IStore
@@ -124,7 +124,7 @@ from canonical.launchpad.webapp.interfaces import (
     AUTH_STORE, ILaunchBag, IStoreSelector, MASTER_FLAVOR)
 
 
-from canonical.launchpad.database.archive import Archive
+from lp.soyuz.model.archive import Archive
 from lp.registry.model.codeofconduct import SignedCodeOfConduct
 from canonical.launchpad.database.bugtask import BugTask
 from canonical.launchpad.database.emailaddress import (
@@ -134,9 +134,9 @@ from canonical.launchpad.database.logintoken import LoginToken
 from lp.registry.model.pillar import PillarName
 from lp.registry.model.karma import KarmaAction, KarmaAssignedEvent, Karma
 from lp.registry.model.mentoringoffer import MentoringOffer
-from canonical.launchpad.database.sourcepackagerelease import (
+from lp.soyuz.model.sourcepackagerelease import (
     SourcePackageRelease)
-from canonical.launchpad.database.specification import (
+from lp.blueprints.model.specification import (
     HasSpecificationsMixin, Specification)
 from canonical.launchpad.database.translationimportqueue import (
     HasTranslationImportsMixin)
@@ -2241,7 +2241,8 @@ class Person(
     @property
     def archive(self):
         """See `IPerson`."""
-        return self.getPPAByName('ppa')
+        return Archive.selectOneBy(
+            owner=self, purpose=ArchivePurpose.PPA, name='ppa')
 
     @property
     def ppas(self):
@@ -2251,8 +2252,11 @@ class Person(
 
     def getPPAByName(self, name):
         """See `IPerson`."""
-        return Archive.selectOneBy(
+        ppa = Archive.selectOneBy(
             owner=self, purpose=ArchivePurpose.PPA, name=name)
+        if ppa is None:
+            raise NoSuchPPA(name)
+        return ppa
 
     def isBugContributor(self, user=None):
         """See `IPerson`."""

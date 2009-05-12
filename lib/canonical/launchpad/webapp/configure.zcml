@@ -226,14 +226,14 @@
         />
 
     <adapter
-        for="canonical.launchpad.interfaces.IBuild"
+        for="lp.soyuz.interfaces.build.IBuild"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.BuildImageDisplayAPI"
         name="image"
         />
 
     <adapter
-        for="canonical.launchpad.interfaces.IArchive"
+        for="lp.soyuz.interfaces.archive.IArchive"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.ArchiveImageDisplayAPI"
         name="image"

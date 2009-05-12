@@ -92,7 +92,7 @@ are once again what they were.
 
 The Translations administrators also receive an email about the error.
 
-    >>> from canonical.launchpad.mail.stub import test_emails
+    >>> from lp.services.mail.stub import test_emails
     >>> from_addr, to_addrs, body = test_emails.pop()
     >>> len(test_emails)
     0
