@@ -152,7 +152,7 @@
         for="canonical.signon.interfaces.openidserver.IOpenIDApplication"
         class="canonical.launchpad.browser.launchpad.LaunchpadImageFolder"
         permission="zope.Public"
-        layer=".signon.layers.OpenIDLayer"
+        layer="canonical.signon.layers.OpenIDLayer"
         />
 
     <!-- This should really be on ILaunchpadRoot for all layers, and we should
