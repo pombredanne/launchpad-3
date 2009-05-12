@@ -262,7 +262,7 @@ A helper function, simulate_upload does that with all the checking.
   ...     if loglevel is None or loglevel <= logging.INFO:
   ...         print "Upload complete."
 
-  >>> from canonical.launchpad.tests.mail_helpers import pop_notifications
+  >>> from lp.testing.mail_helpers import pop_notifications
   >>> def read_email():
   ...     """Pop all emails from the test mailbox, and summarize them.
   ...

@@ -14,7 +14,7 @@ All build states are supported by the current implementation, however
 only failures should be reported this time.
 
   >>> from canonical.launchpad.interfaces import IBuildSet
-  >>> from canonical.launchpad.tests.mail_helpers import pop_notifications
+  >>> from lp.testing.mail_helpers import pop_notifications
   >>> buildset = getUtility(IBuildSet)
 
 To avoid consequences of modified sampledata, specially if we add

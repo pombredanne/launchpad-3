@@ -44,7 +44,7 @@ from lp.code.interfaces.codereviewcomment import CodeReviewVote
 from canonical.launchpad.testing import (
     capture_events, GPGSigningContext, LaunchpadObjectFactory, login_person,
     TestCaseWithFactory, time_counter)
-from canonical.launchpad.tests.mail_helpers import pop_notifications
+from lp.testing.mail_helpers import pop_notifications
 from canonical.launchpad.webapp.testing import verifyObject
 
 
