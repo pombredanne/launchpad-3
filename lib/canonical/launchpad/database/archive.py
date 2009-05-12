@@ -1001,6 +1001,12 @@ class Archive(SQLBase):
         except KeyError, error:
             raise PocketNotFound(error)
 
+        # Fail immediately if the destination pocket is not Release and
+        # this archive is a PPA.
+        if self.is_ppa and pocket != PackagePublishingPocket.RELEASE:
+            raise CannotCopy(
+                "Destination pocket must be 'release' for a PPA.")
+
         # Now convert the to_series string to a real distroseries.
         if to_series is not None:
             result = getUtility(IDistroSeriesSet).queryByName(

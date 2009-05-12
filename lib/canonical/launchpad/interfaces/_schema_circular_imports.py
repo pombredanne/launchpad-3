@@ -21,8 +21,8 @@ from canonical.launchpad.interfaces.bugbranch import IBugBranch
 from canonical.launchpad.interfaces.build import (
     BuildStatus, IBuild)
 from canonical.launchpad.interfaces.buildrecords import IHasBuildRecords
-from canonical.launchpad.interfaces.specification import ISpecification
-from canonical.launchpad.interfaces.specificationbranch import (
+from lp.blueprints.interfaces.specification import ISpecification
+from lp.blueprints.interfaces.specificationbranch import (
     ISpecificationBranch)
 from lp.code.interfaces.branch import IBranch
 from lp.code.interfaces.branchmergeproposal import (

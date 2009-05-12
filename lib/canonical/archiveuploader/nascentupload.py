@@ -545,8 +545,9 @@ class NascentUpload:
             # The user doesn't have package-specific rights or
             # component rights, so kick him out entirely.
             self.reject(
-                "Signer has no upload rights at all to this "
-                "distribution.")
+                "The signer of this package has no upload rights to this "
+                "distribution's primary archive.  Did you mean to upload "
+                "to a PPA?")
             return
 
         # New packages go straight to the upload queue; we only check upload
