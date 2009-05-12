@@ -15,7 +15,7 @@ from zope.component import getUtility
 from canonical.launchpad.interfaces.account import AccountStatus
 from canonical.launchpad.interfaces.authtoken import (
     IAuthToken, IAuthTokenSet, LoginTokenType)
-from canonical.launchpad.mail import stub
+from lp.services.mail import stub
 from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.launchpad.webapp.dbpolicy import SSODatabasePolicy
 from canonical.launchpad.webapp.interfaces import IStoreSelector

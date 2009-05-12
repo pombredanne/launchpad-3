@@ -39,7 +39,8 @@ from canonical.launchpad.interfaces import (
 from lp.code.interfaces.codehosting import (
     IBranchFileSystemApplication, IBranchPullerApplication)
 from canonical.launchpad.interfaces.hwdb import (
-    IHWDeviceSet, IHWDriverSet, IHWVendorIDSet)
+    IHWDeviceSet, IHWDriverSet, IHWSubmissionDeviceSet, IHWSubmissionSet,
+    IHWVendorIDSet, ParameterError)
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from lazr.restful import ServiceRootResource
 
@@ -259,6 +260,57 @@ class HWDBApplication:
     def package_names(self):
         """See `IHWDBApplication`."""
         return getUtility(IHWDriverSet).package_names
+
+    def getDistroTarget(self, distribution, distroseries, distroarchseries):
+        distro_targets = [
+            target for target in (
+                distribution, distroseries, distroarchseries)
+            if target is not None]
+        if len(distro_targets) == 0:
+            return None
+        elif len(distro_targets) == 1:
+            return distro_targets[0]
+        else:
+            raise ParameterError(
+                'Only one of `distribution`, `distroseries` or '
+                '`distroarchseries` can be present.')
+
+    def numSubmissionsWithDevice(
+        self, bus, vendor_id, product_id, driver_name=None, package_name=None,
+        distribution=None, distroseries=None, distroarchseries=None):
+        """See `IHWDBApplication`."""
+        submissions_with_device, all_submissions = (
+            getUtility(IHWSubmissionSet).numSubmissionsWithDevice(
+                bus, vendor_id, product_id, driver_name, package_name,
+                distro_target=self.getDistroTarget(
+                    distribution, distroseries, distroarchseries)))
+        return {
+            'submissions_with_device': submissions_with_device,
+            'all_submissions': all_submissions,
+            }
+
+    def numOwnersOfDevice(
+        self, bus, vendor_id, product_id, driver_name=None, package_name=None,
+        distribution=None, distroseries=None, distroarchseries=None):
+        """See `IHWDBApplication`."""
+        owners, all_submitters = (
+            getUtility(IHWSubmissionSet).numOwnersOfDevice(
+                bus, vendor_id, product_id, driver_name, package_name,
+                distro_target=self.getDistroTarget(
+                    distribution, distroseries, distroarchseries)))
+        return {
+            'owners': owners,
+            'all_submitters': all_submitters,
+            }
+
+    def numDevicesInSubmissions(
+        self, bus, vendor_id, product_id, driver_name=None, package_name=None,
+        distribution=None, distroseries=None, distroarchseries=None):
+        """See `IHWDBApplication`."""
+        return getUtility(IHWSubmissionDeviceSet).numDevicesInSubmissions(
+                bus, vendor_id, product_id, driver_name, package_name,
+                distro_target=self.getDistroTarget(
+                    distribution, distroseries, distroarchseries))
 
 
 class WebServiceApplication(ServiceRootResource):

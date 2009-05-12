@@ -924,6 +924,20 @@ class FileBugGuidedView(FilebugShowSimilarBugsView):
         except InputErrors:
             return None
 
+    @property
+    def show_duplicate_list(self):
+        """Return whether or not to show the duplicate list.
+
+        We only show the dupes if:
+          - The context uses Malone AND
+          - There are dupes to show AND
+          - There are no widget errors.
+        """
+        return (
+            self.contextUsesMalone and
+            len(self.similar_bugs) > 0 and
+            len(self.widget_errors) == 0)
+
     def validate_search(self, action, data):
         """Make sure some keywords are provided."""
         try:

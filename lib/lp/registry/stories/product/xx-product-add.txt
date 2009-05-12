@@ -137,3 +137,17 @@ in the Mozilla Project.
     >>> user_browser.getLink('the Mozilla Project').click()
     >>> print user_browser.title
     The Mozilla Project in Launchpad
+
+
+Redirecting
+-----------
+
+The project registration workflow used to get started at
+/projects/+new-guided.  To prevent bitrot, we redirect that URL to the new
+location at /projects/+new.
+
+    >>> user_browser.open('http://launchpad.dev/projects/+new-guided')
+    >>> print user_browser.title
+    Register a project in Launchpad
+    >>> print user_browser.url
+    http://launchpad.dev/projects/+new

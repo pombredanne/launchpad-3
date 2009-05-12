@@ -112,6 +112,14 @@
   <body>
     <div id="nonfooter">
       <address>Launchpad Login Service</address>
+
+      <tal:notifications
+          define="notifications request/notifications"
+          condition="notifications">
+        <metal:notifications
+            use-macro="context/@@+main-template-macros/notifications" />
+      </tal:notifications>
+
       <div id="maincontent"><metal:block define-slot="main">
         <div id="rp"><metal:block define-slot="rp"
                          tal:define="rpconfig view/rpconfig;

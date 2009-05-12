@@ -37,7 +37,7 @@ If they don't have a Launchpad account, they can create one.
 Once they complete the account creation (by following the link sent to their
 email address), they are redirected back to shipit.
 
-    >>> from canonical.launchpad.mail import stub
+    >>> from lp.services.mail import stub
     >>> from canonical.launchpad.ftests.logintoken import (
     ...     get_token_url_from_email)
     >>> from_addr, to_addr, msg = stub.test_emails.pop()

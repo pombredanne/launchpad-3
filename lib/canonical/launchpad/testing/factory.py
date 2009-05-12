@@ -67,7 +67,7 @@ from canonical.launchpad.interfaces.specification import (
 from canonical.launchpad.interfaces.translationgroup import (
     ITranslationGroupSet)
 from canonical.launchpad.ftests import syncUpdate
-from canonical.launchpad.mail.signedmessage import SignedMessage
+from lp.services.mail.signedmessage import SignedMessage
 from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
 from canonical.launchpad.webapp.interfaces import IStoreSelector
 from lp.code.interfaces.branch import BranchType, UnknownBranchTypeError

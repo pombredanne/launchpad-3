@@ -6,7 +6,7 @@ chaining and not chaining mailers works.
 Create an overwriting, non-chaining MboxMailer.  The doctest harness creates
 the temporary file mbox_filename for us.
 
-    >>> from canonical.launchpad.mail.mbox import MboxMailer
+    >>> from lp.services.mail.mbox import MboxMailer
     >>> mailer = MboxMailer(mbox_filename, overwrite=True, mailer=None)
     >>> msg_id = mailer.send('geddy@example.com',
     ...             ['jaco@example.com', 'victor@example.com'],
@@ -73,7 +73,7 @@ Create another mailer, this time one that does not overwrite.  Both the
 message we sent above and the message we're about to send should be in the
 mbox file.
 
-    >>> from canonical.launchpad.mail.mbox import MboxMailer
+    >>> from lp.services.mail.mbox import MboxMailer
     >>> mailer = MboxMailer(mbox_filename, overwrite=False, mailer=None)
     >>> mailer.send('carol@example.com',
     ...             ['melissa@example.com'],
