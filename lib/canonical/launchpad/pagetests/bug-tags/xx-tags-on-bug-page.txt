@@ -4,7 +4,7 @@ instead we see an add link.
     >>> user_browser.open('http://bugs.launchpad.dev/firefox/+bug/1')
     >>> user_browser.url
     'http://bugs.launchpad.dev/firefox/+bug/1'
-    >>> print find_tag_by_id(user_browser.contents, 'add-bug-tags')#['class']
+    >>> print find_tag_by_id(user_browser.contents, 'add-bug-tags')
     <div id="add-bug-tags" class="tags-show">...
 
 Let's specify some tags:
