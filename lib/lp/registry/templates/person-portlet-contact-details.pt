@@ -120,7 +120,6 @@
             <tal:no_keys condition="not: sshkeys">
               <tal:is_user condition="view/viewing_own_page">
                 <a tal:replace="structure overview_menu/editsshkeys/fmt:icon-link" />
-                to publish Bazaar branches
               </tal:is_user>
               <tal:other_user condition="not: view/viewing_own_page">
                 No keys registered
@@ -129,10 +128,12 @@
 
             <tal:has_keys condition="sshkeys">
               <tal:keys repeat="sshkey sshkeys">
-                <tal:key replace="sshkey/comment" /><br />
+                <a href="+sshkeys"><tal:key replace="sshkey/comment" /></a>
+                <tal:first condition="repeat/sshkey/start">
+                  <a tal:replace="structure overview_menu/editsshkeys/fmt:icon" />
+                </tal:first>
+                <br />
               </tal:keys>
-              <small><a href="+sshkeys">(view key text)</a></small>
-              <a tal:replace="structure overview_menu/editsshkeys/fmt:icon" />
             </tal:has_keys>
           </td>
         </tr>
