@@ -20,7 +20,16 @@
  */
 YUI().use('node', 'lazr.effects', function(Y) {
     Y.on('domready', function() {
-        var valid_urls = new RegExp('^[a-z0-9][-.+a-z0-9]*$', 'i');
+        /* These two regexps serve slightly different purposes.  The first
+         * finds the leftmost run of valid url characters for the autofill
+         * operation.  The second validates the entire string, used for
+         * explicit entry into the URL field.  These are simple enough to keep
+         * in sync so it doesn't bother me that we repeat most of it.  Note
+         * that while both ignore case, only the first one should be global in
+         * order to utilize the RegExp.lastIndex behavior of .exec().
+         */
+        var valid_urls = new RegExp('^[a-z0-9][-.+a-z0-9]*', 'ig');
+        var valid_char = new RegExp('^[a-z0-9][-.+a-z0-9]*$', 'i');
 
         /* Handle key presses in the Name field for autofilling the URL
          * field.  By ensuring that field.name exists, we only do this when
@@ -34,26 +43,60 @@ YUI().use('node', 'lazr.effects', function(Y) {
             var name_field = Y.get(Y.DOM.byId('field.displayname'));
             function autofill(e) {
                 var name_value = name_field.get('value');
-                /* If the displayname does not translate to a valid URL,
-                 * refuse the temptation to guess.
-                 */
-                if (name_value == '' || name_value.search(valid_urls) >= 0) {
-                    url_field.set('value', name_value);
+                if (name_value == '') {
+                    /* When Name is empty, clear URL. */
+                    url_field.set('value', '');
+                }
+                else {
+                    /* Fill the URL field with as much of the left part of the
+                     * string as matches the regexp.  If the regexp doesn't
+                     * match (say because there's illegal stuff at the front),
+                     * don't change the current URL field.  We have to reset
+                     * lastIndex each time we get here so that search begins
+                     * at the front of the string.
+                     */
+                    valid_urls.lastIndex = 0;
+                    var match = valid_urls.exec(name_value);
+                    if (match) {
+                        var slice = name_value.slice(0, valid_urls.lastIndex);
+                        url_field.set('value', slice);
+                    }
                 }
             }
             name_field.on('keyup', autofill);
             /* Prevent invalid characters from being input into the URL field.
              */
             url_field.on('keypress', function(e) {
+                /* Handling key events is madness.  For a glimpse, see
+                 * http://unixpapa.com/js/key.html
+                 *
+                 * Additional spice for the insanity stew is given by the
+                 * rhino book, page 428.  This code is basically a rip and
+                 * remix of those two texts.
+                 */
+                var event = e || window.event;
                 var code = e.charCode || e.keyCode;
-                /* Ignore non-printable characters */
-                if (code >= 32 && code < 127) {
-                    var new_value = url_field.get('value') +
-                                    String.fromCharCode(code);
-                    if (new_value.search(valid_urls) < 0) {
-                        e.preventDefault();
-                    }
+
+                if (/* Check for special characters. */
+                    e.which == 0 || e.which == null ||
+                    /* Check for function keys (Firefox only). */
+                    e.charCode == 0 ||
+                    /* Check for ctrl or alt held down. */
+                    e.ctrlKey || e.altKey ||
+                    /* Check for ASCII control character */
+                    code < 32)
+                {
+                    return true;
                 }
+                var char = String.fromCharCode(code);
+                var new_value = url_field.get('value') + char;
+                if (new_value.search(valid_char) >= 0) {
+                    /* The character is valid. */
+                    return true;
+                }
+                e.preventDefault();
+                e.returnValue = false;
+                return false;
             });
             /* Explicitly typing into the URL field disables autofilling. */
             url_field.on('keyup', function(e) {
