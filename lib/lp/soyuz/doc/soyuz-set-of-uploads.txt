@@ -228,7 +228,7 @@ We'll be doing a lot of uploads with sanity checks, and expect them to succeed.
 A helper function, simulate_upload does that with all the checking.
 
   >>> import shutil
-  >>> from canonical.launchpad.mail import stub
+  >>> from lp.services.mail import stub
 
   >>> def simulate_upload(
   ...     leafname, is_new=False, upload_policy='anything', build_id=None,

@@ -33,7 +33,7 @@ from lp.soyuz.interfaces.package import PackageUploadStatus
 from lp.soyuz.interfaces.publishing import (
     PackagePublishingPocket, PackagePublishingStatus)
 from lp.soyuz.interfaces.queue import IPackageUploadSet
-from canonical.launchpad.mail import stub
+from lp.services.mail import stub
 from lp.soyuz.scripts.queue import (
     CommandRunner, CommandRunnerError, name_queue_map)
 from canonical.librarian.ftests.harness import (

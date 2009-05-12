@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'ALLOW_RELEASE_BUILDS',
     'ArchiveDependencyError',
     'ArchivePurpose',
     'CannotCopy',
@@ -24,7 +25,7 @@ __all__ = [
     'IPPA',
     'IPPAActivateForm',
     'MAIN_ARCHIVE_PURPOSES',
-    'ALLOW_RELEASE_BUILDS',
+    'NoSuchPPA',
     'PocketNotFound',
     'SourceNotFound',
     'default_name_by_purpose',
@@ -43,6 +44,7 @@ from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.registry.interfaces.gpg import IGPGKey
 from lp.registry.interfaces.person import IPerson
 from canonical.launchpad.validators.name import name_validator
+from canonical.launchpad.webapp.interfaces import NameLookupFailed
 
 from lazr.restful.declarations import (
     REQUEST_USER, call_with, export_as_webservice_entry, exported,
@@ -89,6 +91,12 @@ class SourceNotFound(Exception):
 class ComponentNotFound(Exception):
     """Invalid source name."""
     webservice_error(400) #Bad request.
+
+
+class NoSuchPPA(NameLookupFailed):
+    """Raised when we try to look up an PPA that doesn't exist."""
+    webservice_error(400) #Bad request.
+    _message_prefix = "No such ppa"
 
 
 class IArchivePublic(IHasOwner):

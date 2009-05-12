@@ -46,7 +46,7 @@ from lp.soyuz.adapters.archivesourcepublication import (
 from lp.soyuz.interfaces.archive import (
     ArchivePurpose, CannotCopy, IArchive, IArchiveEditDependenciesForm,
     IArchivePackageCopyingForm, IArchivePackageDeletionForm,
-    IArchiveSet, IArchiveSourceSelectionForm, IPPAActivateForm)
+    IArchiveSet, IArchiveSourceSelectionForm, IPPAActivateForm, NoSuchPPA)
 from lp.soyuz.interfaces.archivepermission import (
     ArchivePermissionType, IArchivePermissionSet)
 from lp.soyuz.interfaces.archivesubscriber import (
@@ -740,7 +740,7 @@ class ArchivePackageDeletionView(ArchiveSourceSelectionFormView):
         This overrides ArchiveViewBase.filtered_sources to use a
         different method on the context specific to deletion records.
 
-        It expects 'self.selected_status_filter' and 
+        It expects 'self.selected_status_filter' and
         'self.selected_series_filter' to be set.
         """
         return self.context.getSourcesForDeletion(
@@ -754,7 +754,7 @@ class ArchivePackageDeletionView(ArchiveSourceSelectionFormView):
 
         Overrides the ArchiveViewBase.has_sources
         to ensure that it only returns true if there are sources
-        that can be deleted in this archive."
+        that can be deleted in this archive.
         """
         # XXX cprov 20080708 bug=246200: use bool() when it gets fixed
         # in storm.
@@ -1405,7 +1405,11 @@ class ArchiveActivateView(LaunchpadFormView):
                 'name',
                 "Archives cannot have the same name as its distribution.")
 
-        if self.context.getPPAByName(proposed_name):
+        try:
+            self.context.getPPAByName(proposed_name)
+        except NoSuchPPA:
+            pass
+        else:
             self.setFieldError(
                 'name',
                 "You already have a PPA named '%s'." % proposed_name)

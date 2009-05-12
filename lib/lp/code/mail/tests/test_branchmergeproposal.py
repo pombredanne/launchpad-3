@@ -17,8 +17,8 @@ from lazr.lifecycle.event import ObjectModifiedEvent
 from canonical.launchpad.ftests import login, login_person
 from canonical.launchpad.interfaces import (
     BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel)
-from canonical.launchpad.mailout.branch import RecipientReason
-from canonical.launchpad.mailout.branchmergeproposal import (
+from lp.code.mail.branch import RecipientReason
+from lp.code.mail.branchmergeproposal import (
     BMPMailer, send_merge_proposal_modified_notifications)
 from canonical.launchpad.tests.mail_helpers import pop_notifications
 from canonical.launchpad.webapp import canonical_url

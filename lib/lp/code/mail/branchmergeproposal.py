@@ -13,7 +13,7 @@ from canonical.launchpad.mail import get_msgid
 from canonical.launchpad.interfaces import (
     CodeReviewNotificationLevel, IMergeProposalCreatedJobSource)
 from lp.registry.interfaces.person import IPerson
-from canonical.launchpad.mailout.branch import BranchMailer, RecipientReason
+from lp.code.mail.branch import BranchMailer, RecipientReason
 from canonical.launchpad.webapp import canonical_url
 
 

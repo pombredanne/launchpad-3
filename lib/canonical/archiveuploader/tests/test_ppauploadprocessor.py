@@ -31,7 +31,7 @@ from canonical.launchpad.interfaces import (
     ILaunchpadCelebrities, ILibraryFileAliasSet, NotFoundError)
 from canonical.launchpad.testing.fakepackager import FakePackager
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
-from canonical.launchpad.mail import stub
+from lp.services.mail import stub
 
 
 class TestPPAUploadProcessorBase(TestUploadProcessorBase):

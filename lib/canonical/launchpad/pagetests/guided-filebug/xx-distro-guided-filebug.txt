@@ -19,17 +19,17 @@ Submitting a bug title...
     ...     "Thunderbird crashes when opening large e-mails")
     >>> user_browser.getControl("Continue").click()
 
-...yields two similar bugs.
+...yields one similar bug.
 
     >>> from canonical.launchpad.ftests.bug import print_bugs_list
     >>> print_bugs_list(user_browser.contents, "similar-bugs")
     #9 Thunderbird crashes
-    Confirmed, last updated 2006-07-14
+    Confirmed (0 comments) last updated 2006-07-14
+    Every time I start Thunderbird...
 
 Subscribing to one of the similar bugs takes us to the bug page.
 
-    >>> user_browser.getControl('#9 Thunderbird crashes').selected = True
-    >>> user_browser.getControl('Subscribe to This Bug Report').click()
+    >>> user_browser.getControl("Yes, subscribe me...").click()
 
     >>> print user_browser.url
     http://bugs.launchpad.dev/thunderbird/+bug/9

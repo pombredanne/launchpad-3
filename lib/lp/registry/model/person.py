@@ -74,7 +74,7 @@ from canonical.launchpad.interfaces.lpstorm import IMasterObject, IMasterStore
 from canonical.launchpad.interfaces.account import (
     AccountCreationRationale, AccountStatus, IAccount, IAccountSet,
     INACTIVE_ACCOUNT_STATUSES)
-from lp.soyuz.interfaces.archive import ArchivePurpose
+from lp.soyuz.interfaces.archive import ArchivePurpose, NoSuchPPA
 from lp.soyuz.interfaces.archivepermission import (
     IArchivePermissionSet)
 from canonical.launchpad.interfaces.authtoken import LoginTokenType
@@ -2241,7 +2241,8 @@ class Person(
     @property
     def archive(self):
         """See `IPerson`."""
-        return self.getPPAByName('ppa')
+        return Archive.selectOneBy(
+            owner=self, purpose=ArchivePurpose.PPA, name='ppa')
 
     @property
     def ppas(self):
@@ -2251,8 +2252,11 @@ class Person(
 
     def getPPAByName(self, name):
         """See `IPerson`."""
-        return Archive.selectOneBy(
+        ppa = Archive.selectOneBy(
             owner=self, purpose=ArchivePurpose.PPA, name=name)
+        if ppa is None:
+            raise NoSuchPPA(name)
+        return ppa
 
     def isBugContributor(self, user=None):
         """See `IPerson`."""
