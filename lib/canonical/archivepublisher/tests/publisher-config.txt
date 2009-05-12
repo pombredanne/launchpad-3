@@ -1,5 +1,4 @@
-Publisher Configuration Provider
-================================
+= Publisher Configuration Provider =
 
 The config module has a function to provide a modified publisher configuration
 that provides the right paths for its publication according to the given
@@ -32,8 +31,7 @@ We will use a helper function for dumping publisher configurations.
     ...         print 'Components:', ', '.join(sorted_components)
 
 
-Primary
-=======
+== Primary ==
 
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> ubuntutest = getUtility(IDistributionSet)['ubuntutest']
@@ -59,8 +57,7 @@ Primary
       Components: main, multiverse, restricted, universe
 
 
-PPAs
-====
+== PPAs ==
 
 Adjust Celso's PPA to point to a configured distribution and built its
 publisher configuration.
@@ -146,8 +143,7 @@ Make Celso's PPA public again.
     >>> cprov_archive.buildd_secret = None
 
 
-Partner
-=======
+== Partner ==
 
 The publisher config for PARTNER contains only 'partner' in its
 components.  This prevents non-partner being published in the partner
@@ -177,8 +173,7 @@ archive.
       Components: partner
 
 
-DEBUG
-=====
+== DEBUG ==
 
 The publisher configuration for DEBUG archives points to directories
 besides PRIMARY repository ones, but the distribution part is
