@@ -796,7 +796,6 @@ class ProcessMailLayer(LaunchpadZopelessLayer):
 
     doctests_with_logging = [
         'incomingmail.txt',
-        'spec-mail-exploder.txt'
         ]
 
     @classmethod
