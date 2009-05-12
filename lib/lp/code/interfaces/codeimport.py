@@ -245,7 +245,7 @@ class ICodeImport(Interface):
         :param data: dictionary whose keys are attribute names and values are
             attribute values.
         :param user: user who made the change, to record in the
-            `CodeImportEvent`.
+            `CodeImportEvent`.  May be ``None``.
         :return: The MODIFY `CodeImportEvent`, if any changes were made, or
             None if no changes were made.
         """

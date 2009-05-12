@@ -230,6 +230,19 @@ actually made.
     >>> code_import.updateFromData({}, nopriv)
     >>> print_emails(group_similar=True)
 
+The person argument to updateFromData can be None, which is
+appropriate for an automated change.  In that case, the email comes
+from a 'noreply' address.
+
+    >>> modify_event = code_import.updateFromData(
+    ...     {'svn_branch_url': 'http://svn.example.org/project/trunk'},
+    ...     None)
+    >>> print_emails(group_similar=True)
+    From: noreply@launchpad.net
+    To: no-priv@canonical.com
+    Subject: Code import product.../name... status: Reviewed
+    ...
+
 
 == Update intervals ==
 
