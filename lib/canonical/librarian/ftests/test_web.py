@@ -1,7 +1,8 @@
 # Copyright 2005-2006 Canonical Ltd.  All rights reserved.
 
 from cStringIO import StringIO
-import datetime
+from datetime import datetime, timedelta
+import re
 import unittest
 from urllib2 import urlopen, HTTPError
 
@@ -15,7 +16,8 @@ from canonical.database.sqlbase import commit, flush_database_updates, cursor
 from canonical.librarian.client import LibrarianClient
 from canonical.librarian.interfaces import DownloadFailed
 from canonical.launchpad.database import LibraryFileAlias
-from canonical.launchpad.interfaces import ILibraryFileAliasSet
+from canonical.launchpad.interfaces import IMasterStore
+from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.config import config
 from canonical.database.sqlbase import commit
 from canonical.testing import LaunchpadZopelessLayer, LaunchpadFunctionalLayer
@@ -204,6 +206,51 @@ class LibrarianWebTestCase(unittest.TestCase):
         f = urlopen(url)
         self.failUnless('Disallow: /' in f.read())
 
+    def test_headers(self):
+        client = LibrarianClient()
+
+        # Upload a file so we can retrieve it.
+        sample_data = 'blah'
+        file_alias_id = client.addFile(
+            'sample', len(sample_data), StringIO(sample_data),
+            contentType='text/plain')
+        url = client.getURLForAlias(file_alias_id)
+        self.commit()
+
+        # Fetch the file via HTTP, recording the interesting headers
+        result = urlopen(url)
+        last_modified_header = result.info()['Last-Modified']
+        cache_control_header = result.info()['Cache-Control']
+
+        # The file was just created, so it will have the minimum
+        # 24 hours max-age in its Cache-Control header.
+        self.failUnlessEqual(cache_control_header, 'max-age=86400, public')
+
+        # And we should have a correct Last-Modified header too.
+        file_alias = IMasterStore(LibraryFileAlias).get(
+            LibraryFileAlias, file_alias_id)
+        self.failUnlessEqual(
+            last_modified_header,
+            file_alias.date_created.strftime('%a, %d %b %Y %H:%M:%S GMT'))
+
+        # The max-age in the Cache-Control header is dynamic. The older the
+        # file, the larger the setting.
+        file_alias.date_created = file_alias.date_created - timedelta(days=7)
+        self.commit()
+        result = urlopen(url)
+        cache_control_header = result.info()['Cache-Control']
+
+        match = re.compile(
+            '^max-age=(\d+), public$').search(cache_control_header)
+        self.failUnless(
+            match is not None,
+            'Cache-Control header does not match expected format (%s).'
+            % cache_control_header)
+        age = int(match.group(1))
+        self.failUnless(
+            age >= 7 * 24 * 60 * 60 and age <= 7 * 24 * 60 * 60 + 30,
+            'max-age should be 7 days now - got %d seconds' % age)
+
 
 class LibrarianZopelessWebTestCase(LibrarianWebTestCase):
     layer = LaunchpadZopelessLayer
@@ -234,7 +281,7 @@ class LibrarianZopelessWebTestCase(LibrarianWebTestCase):
         # that it'll be very clear if it's updated or not (otherwise, depending
         # on the resolution of clocks and things, an immediate access might not
         # look any newer).
-        LibraryFileAlias.get(id1).last_accessed = datetime.datetime(
+        LibraryFileAlias.get(id1).last_accessed = datetime(
             2004,1,1,12,0,0, tzinfo=pytz.timezone('Australia/Sydney'))
         self.commit()
 
