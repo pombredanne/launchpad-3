@@ -724,7 +724,6 @@ class TestCodeImportJobWorkflowFinishJob(TestCaseWithFactory,
         getUtility(ICodeImportJobWorkflow).startJob(job, self.machine)
         return job
 
-
     # Precondition tests. Only one of these.
 
     def test_wrongJobState(self):
