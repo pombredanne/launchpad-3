@@ -102,7 +102,7 @@
               <tal:bq_not_started condition="not: bq/builder">
                 <tr>
                   <th>Build score:</th>
-                  <td><span tal:replace="bq/lastscore"/></td>
+                  <td><span tal:replace="bq/lastscore"/> (<a href="https://help.launchpad.net/Packaging/BuildScores" target="_blank">What's this?</a>)</td>
                 </tr>
               </tal:bq_not_started>
               <tal:bq_started condition="bq/buildstart">
