@@ -485,8 +485,8 @@ class BranchView(LaunchpadView, FeedsMixin):
         a non-final state.
         """
         # XXX: rockstar - Eventually, this if statement needs to be:
-        # if not self.context.target.supportsMergeProposals() and will when jml
-        # gets to it in his source package branch work.
+        # if not self.context.target.supportsMergeProposals() and will when
+        # jml gets to it in his source package branch work.
         # spec=package-branches
         if not self.context.product:
             return False

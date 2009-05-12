@@ -18,7 +18,7 @@ class SpecificationBug(SQLBase):
 
     implements(ISpecificationBug)
 
-    _table='SpecificationBug'
+    _table = 'SpecificationBug'
     specification = ForeignKey(dbName='specification',
         foreignKey='Specification', notNull=True)
     bug = ForeignKey(dbName='bug', foreignKey='Bug',

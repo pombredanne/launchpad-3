@@ -39,13 +39,6 @@
         module="lp.registry.browser.distroseries"
         classes="
             DistroSeriesNavigation"/>
-    <browser:page
-        name="+addspec"
-        for="lp.registry.interfaces.distroseries.IDistroSeries"
-        class="lp.blueprints.browser.specification.NewSpecificationFromDistroSeriesView"
-        facet="specifications"
-        permission="launchpad.AnyPerson"
-        template="../../blueprints/templates/specification-add.pt"/>
     <browser:url
         for="lp.registry.interfaces.distroseries.IDistroSeries"
         path_expression="name"
@@ -53,10 +46,6 @@
     <browser:defaultView
         for="lp.registry.interfaces.distroseries.IDistroSeries"
         name="+index"/>
-    <browser:defaultView
-        for="lp.registry.interfaces.distroseries.IDistroSeries"
-        name="+specs"
-        layer="canonical.launchpad.layers.BlueprintLayer"/>
     <browser:defaultView
         for="lp.registry.interfaces.distroseries.IDistroSeries"
         layer="canonical.launchpad.layers.BugsLayer"
@@ -251,12 +240,6 @@
         facet="overview"
         permission="launchpad.Admin"
         template="../templates/distroseries-addport.pt"/>
-    <browser:page
-        for="lp.registry.interfaces.distroseries.IDistroSeries"
-        class="lp.blueprints.browser.specificationtarget.HasSpecificationsView"
-        permission="zope.Public"
-        name="+mdz-specs.csv"
-        attribute="mdzCsv"/>
     <browser:page
         name="+ask-a-question-button"
         for="lp.registry.interfaces.distroseries.IDistroSeries"
@@ -512,21 +495,6 @@
         permission="zope.Public"/>
     <browser:pages
         for="lp.registry.interfaces.project.IProject"
-        class="lp.blueprints.browser.specificationtarget.HasSpecificationsView"
-        facet="specifications"
-        permission="zope.Public">
-        <browser:page
-            name="+specs"
-            template="../../blueprints/templates/hasspecifications-specs.pt"/>
-        <browser:page
-            name="+assignments"
-            template="../../blueprints/templates/specificationtarget-assignments.pt"/>
-        <browser:page
-            name="+portlet-latestspecs"
-            template="../../blueprints/templates/specificationtarget-portlet-latestspecs.pt"/>
-    </browser:pages>
-    <browser:pages
-        for="lp.registry.interfaces.project.IProject"
         permission="launchpad.Edit"
         facet="overview"
         class="lp.registry.browser.project.ProjectMaintainerReassignmentView">
@@ -534,13 +502,6 @@
             name="+reassign"
             template="../../../canonical/launchpad/templates/object-reassignment.pt"/>
     </browser:pages>
-    <browser:page
-        name="+addspec"
-        for="lp.registry.interfaces.project.IProject"
-        class="lp.blueprints.browser.specification.NewSpecificationFromProjectView"
-        facet="specifications"
-        permission="launchpad.AnyPerson"
-        template="../../blueprints/templates/specification-add.pt"/>
     <browser:page
         name="+register-a-blueprint-button"
         for="lp.registry.interfaces.project.IProject"
@@ -1730,13 +1691,6 @@
         path_expression="name"
         parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"/>
     <browser:page
-        name="+addspec"
-        for="lp.registry.interfaces.product.IProduct"
-        class="lp.blueprints.browser.specification.NewSpecificationFromProductView"
-        facet="specifications"
-        permission="launchpad.AnyPerson"
-        template="../../blueprints/templates/specification-add.pt"/>
-    <browser:page
         for="lp.registry.interfaces.product.IProduct"
         name="+bugs-index"
         class="canonical.launchpad.browser.BugTargetBugsView"
@@ -2031,13 +1985,6 @@
         module="lp.registry.browser.productseries"
         classes="
             ProductSeriesNavigation"/>
-    <browser:page
-        name="+addspec"
-        for="lp.registry.interfaces.productseries.IProductSeries"
-        class="lp.blueprints.browser.specification.NewSpecificationFromProductSeriesView"
-        facet="specifications"
-        permission="launchpad.AnyPerson"
-        template="../../blueprints/templates/specification-add.pt"/>
     <browser:url
         for="lp.registry.interfaces.productseries.IProductSeries"
         path_expression="name"
@@ -2280,13 +2227,6 @@
             ProductSeriesSpecificationsMenu
             ProductSeriesTranslationsMenu"
         module="lp.registry.browser.productseries"/>
-    <browser:page
-        name="+addspec"
-        for="lp.registry.interfaces.distribution.IDistribution"
-        class="lp.blueprints.browser.specification.NewSpecificationFromDistributionView"
-        facet="specifications"
-        permission="launchpad.AnyPerson"
-        template="../../blueprints/templates/specification-add.pt"/>
     <browser:defaultView
         for="lp.registry.interfaces.distribution.IDistribution"
         name="+index"/>

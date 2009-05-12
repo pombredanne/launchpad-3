@@ -7,16 +7,12 @@ import logging
 import os
 import unittest
 
-from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.testing.pages import PageTestSuite
 from canonical.launchpad.testing.systemdocs import (
     LayeredDocFileSuite, setUp, tearDown)
 from canonical.launchpad.ftests.test_system_documentation import(
     ProcessMailLayer)
-from canonical.testing import (
-    DatabaseFunctionalLayer, DatabaseLayer, LaunchpadFunctionalLayer,
-    LaunchpadZopelessLayer)
-from lp.registry.tests import mailinglists_helper
+from canonical.testing import DatabaseFunctionalLayer
 
 
 here = os.path.dirname(os.path.realpath(__file__))
@@ -64,7 +60,7 @@ def test_suite():
         path = os.path.join('../doc/', filename)
         one_test = LayeredDocFileSuite(
             path, setUp=setUp, tearDown=tearDown,
-            layer=LaunchpadFunctionalLayer,
+            layer=DatabaseFunctionalLayer,
             stdout_logging_level=logging.WARNING
             )
         suite.addTest(one_test)

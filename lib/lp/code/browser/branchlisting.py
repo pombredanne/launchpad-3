@@ -47,7 +47,8 @@ from canonical.launchpad.browser.feeds import (
     ProductBranchesFeedLink, ProductRevisionsFeedLink,
     ProjectBranchesFeedLink, ProjectRevisionsFeedLink)
 from canonical.launchpad.interfaces.bugbranch import IBugBranchSet
-from lp.blueprints.interfaces.specificationbranch import ISpecificationBranchSet
+from lp.blueprints.interfaces.specificationbranch import (
+    ISpecificationBranchSet)
 from canonical.launchpad.interfaces.personproduct import (
     IPersonProduct, IPersonProductFactory)
 from canonical.launchpad.webapp import (
@@ -304,7 +305,7 @@ class BranchListingBatchNavigator(TableBatchNavigator):
                  canonical_url(branch, view_name='+spark'))
                 for count, branch
                 in enumerate(self._branches_for_current_batch)
-                ]);
+                ])
 
     @cachedproperty
     def _branches_for_current_batch(self):

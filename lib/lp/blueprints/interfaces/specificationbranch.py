@@ -11,7 +11,7 @@ __all__ = [
     ]
 
 from zope.interface import Interface
-from zope.schema import Choice, Int
+from zope.schema import Int
 
 from lazr.restful.fields import Reference, ReferenceChoice
 from lazr.restful.declarations import (export_as_webservice_entry, exported,

@@ -550,4 +550,70 @@
             class="lp.blueprints.browser.specificationtarget.RegisterABlueprintButtonView"
             permission="zope.Public"/>
     </facet>
+
+    <browser:page
+        name="+addspec"
+        for="lp.registry.interfaces.distribution.IDistribution"
+        class="lp.blueprints.browser.specification.NewSpecificationFromDistributionView"
+        facet="specifications"
+        permission="launchpad.AnyPerson"
+        template="../templates/specification-add.pt"/>
+
+    <browser:defaultView
+        for="lp.registry.interfaces.distroseries.IDistroSeries"
+        name="+specs"
+        layer="canonical.launchpad.layers.BlueprintLayer"/>
+    <browser:page
+        name="+addspec"
+        for="lp.registry.interfaces.distroseries.IDistroSeries"
+        class="lp.blueprints.browser.specification.NewSpecificationFromDistroSeriesView"
+        facet="specifications"
+        permission="launchpad.AnyPerson"
+        template="../templates/specification-add.pt"/>
+    <browser:page
+        for="lp.registry.interfaces.distroseries.IDistroSeries"
+        class="lp.blueprints.browser.specificationtarget.HasSpecificationsView"
+        permission="zope.Public"
+        name="+mdz-specs.csv"
+        attribute="mdzCsv"/>
+
+    <browser:pages
+        for="lp.registry.interfaces.project.IProject"
+        class="lp.blueprints.browser.specificationtarget.HasSpecificationsView"
+        facet="specifications"
+        permission="zope.Public">
+        <browser:page
+            name="+specs"
+            template="../templates/hasspecifications-specs.pt"/>
+        <browser:page
+            name="+assignments"
+            template="../templates/specificationtarget-assignments.pt"/>
+        <browser:page
+            name="+portlet-latestspecs"
+            template="../templates/specificationtarget-portlet-latestspecs.pt"/>
+    </browser:pages>
+
+    <browser:page
+        name="+addspec"
+        for="lp.registry.interfaces.project.IProject"
+        class="lp.blueprints.browser.specification.NewSpecificationFromProjectView"
+        facet="specifications"
+        permission="launchpad.AnyPerson"
+        template="../templates/specification-add.pt"/>
+
+    <browser:page
+        name="+addspec"
+        for="lp.registry.interfaces.product.IProduct"
+        class="lp.blueprints.browser.specification.NewSpecificationFromProductView"
+        facet="specifications"
+        permission="launchpad.AnyPerson"
+        template="../templates/specification-add.pt"/>
+
+    <browser:page
+        name="+addspec"
+        for="lp.registry.interfaces.productseries.IProductSeries"
+        class="lp.blueprints.browser.specification.NewSpecificationFromProductSeriesView"
+        facet="specifications"
+        permission="launchpad.AnyPerson"
+        template="../templates/specification-add.pt"/>
 </configure>

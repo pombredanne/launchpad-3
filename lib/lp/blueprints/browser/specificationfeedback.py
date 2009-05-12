@@ -11,7 +11,6 @@ from zope.component import getUtility
 
 from canonical.launchpad import _
 from canonical.launchpad.webapp.interfaces import ILaunchBag
-from lp.blueprints.interfaces.specificationfeedback import ISpecificationFeedback
 from lp.registry.interfaces.person import IPersonSet
 from canonical.launchpad.webapp import canonical_url
 
@@ -38,7 +37,8 @@ class SpecificationFeedbackAddView(AddView):
         if reviewer == requester:
             self.top_of_page_errors.append(_(
                 "You can't request feedback from yourself"))
-        elif not self.valid_feedback_request(self.context, reviewer, requester):
+        elif not self.valid_feedback_request(
+            self.context, reviewer, requester):
             self.top_of_page_errors.append(_(
                 "You've already requested feedback from %s"
                 % reviewer.displayname))

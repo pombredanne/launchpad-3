@@ -78,7 +78,8 @@ class GoalDecideView(HasSpecificationsView, LaunchpadView):
             # list for the general case, so convert it to a list
             selected_specs = [selected_specs]
 
-        specs = [self.context.getSpecification(name) for name in selected_specs]
+        specs = [self.context.getSpecification(name)
+                 for name in selected_specs]
         for spec in specs:
             if action == 'Accepted':
                 spec.acceptBy(user)

@@ -9,7 +9,8 @@ from zope.interface import implements
 
 from sqlobject import ForeignKey
 
-from lp.blueprints.interfaces.specificationdependency import ISpecificationDependency
+from lp.blueprints.interfaces.specificationdependency import (
+    ISpecificationDependency)
 from canonical.database.sqlbase import SQLBase
 
 
@@ -18,7 +19,7 @@ class SpecificationDependency(SQLBase):
 
     implements(ISpecificationDependency)
 
-    _table='SpecificationDependency'
+    _table = 'SpecificationDependency'
     specification = ForeignKey(dbName='specification',
         foreignKey='Specification', notNull=True)
     dependency = ForeignKey(dbName='dependency',

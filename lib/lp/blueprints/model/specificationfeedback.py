@@ -9,7 +9,8 @@ from zope.interface import implements
 
 from sqlobject import ForeignKey, StringCol
 
-from lp.blueprints.interfaces.specificationfeedback import ISpecificationFeedback
+from lp.blueprints.interfaces.specificationfeedback import (
+    ISpecificationFeedback)
 from lp.registry.interfaces.person import validate_public_person
 
 from canonical.database.sqlbase import SQLBase

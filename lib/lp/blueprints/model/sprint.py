@@ -20,7 +20,8 @@ from canonical.launchpad.interfaces.launchpad import (
 from lp.blueprints.interfaces.specification import (
     SpecificationFilter, SpecificationImplementationStatus, SpecificationSort)
 from lp.blueprints.interfaces.sprint import ISprint, ISprintSet
-from lp.blueprints.interfaces.sprintspecification import SprintSpecificationStatus
+from lp.blueprints.interfaces.sprintspecification import (
+    SprintSpecificationStatus)
 from canonical.database.sqlbase import (
     SQLBase, flush_database_updates, quote)
 from canonical.database.constants import DEFAULT
