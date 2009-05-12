@@ -35,6 +35,8 @@ YUI().use('node', 'lazr.effects', function(Y) {
          * field.  By ensuring that field.name exists, we only do this when
          * we're on step 1 of the wizard.
          *
+         * XXX BarryWarsaw 12-May-2009
+         * http://yuilibrary.com/projects/yui3/ticket/2423101
          * Note that we have to use the more verbose way of getting field.name
          * because Y.get() doesn't like the dots in the Zope field names.
          */

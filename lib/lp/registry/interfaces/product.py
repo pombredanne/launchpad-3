@@ -329,8 +329,8 @@ class IProductPublic(
             description=_(
                 "At least one lowercase letter or number, followed by "
                 "letters, numbers, dots, hyphens or pluses. "
-                "Keep this name short; it is used in URLs as the example "
-                "illustrates.")))
+                "Keep this name short; it is used in URLs as shown above."
+                )))
 
     displayname = exported(
         TextLine(

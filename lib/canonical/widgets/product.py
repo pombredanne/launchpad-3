@@ -250,7 +250,7 @@ class ProductNameWidget(LowerCaseTextWidget):
 
     @property
     def product_name(self):
-        return self.request.form.get('field.name', '')
+        return self.request.form.get('field.name', '').lower()
 
     @property
     def widget_type(self):
