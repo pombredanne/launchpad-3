@@ -554,7 +554,6 @@
         module="lp.code.browser.codeimport"
         classes="
             CodeImportSetNavigation"/>
-
     <browser:defaultView
         for="lp.registry.interfaces.project.IProject"
         name="+branches"

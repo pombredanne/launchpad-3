@@ -14,7 +14,7 @@ in the database, 'debug' and 'debug-bin' version '0.9', which will be
 an ancestor for the subsequent upload containing a 'debug-dbg' DDEB.
 This is done using `SoyuzTestPublisher`.
 
-    >>> from canonical.launchpad.tests.test_publishing import (
+    >>> from lp.soyuz.tests.test_publishing import (
     ...     SoyuzTestPublisher)
 
     >>> test_publisher = SoyuzTestPublisher()
@@ -127,7 +127,7 @@ published in the same archive.
 We start by creating a COPY archive and a source publication to
 receive the DDEB.
 
-    >>> from canonical.launchpad.interfaces.archive import (
+    >>> from lp.soyuz.interfaces.archive import (
     ...     IArchiveSet, ArchivePurpose)
 
     >>> copy = getUtility(IArchiveSet).new(

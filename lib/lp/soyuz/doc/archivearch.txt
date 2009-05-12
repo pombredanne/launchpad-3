@@ -1,0 +1,67 @@
+The `ArchiveArch` table facilitates the association of archives and processor
+families. This allows a user to specify (or limit) what processors the source
+packages in a certain archives will be built for.
+
+    >>> from zope.component import getUtility
+    >>> from lp.soyuz.interfaces.archive import (
+    ...     ArchivePurpose, IArchiveSet)
+    >>> from lp.soyuz.interfaces.archivearch import (
+    ...     IArchiveArchSet)
+    >>> from lp.registry.interfaces.distribution import (
+    ...     IDistributionSet)
+    >>> from lp.soyuz.interfaces.processor import (
+    ...     IProcessorFamilySet)
+
+    >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
+    >>> rebuild_owner = factory.makePerson(
+    ...     name='juergen', displayname=u'J\xc3\xbcrgen')
+    >>> rebuild_archive = getUtility(IArchiveSet).new(
+    ...     owner=rebuild_owner, purpose=ArchivePurpose.COPY,
+    ...     distribution=ubuntu, name='archivearch-test')
+    >>> aa_set = getUtility(IArchiveArchSet)
+    >>> rset = aa_set.getByArchive(rebuild_archive)
+
+The rebuild archive has no associated processor families yet.
+
+    >>> rset.count() == 0
+    True
+
+The utility allows us to associate archives with processor families and we'll
+tie the rebuild archive to the 'amd64' processor family.
+
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> amd = getUtility(IProcessorFamilySet).getByName('amd64')
+    >>> ignore_this = aa_set.new(rebuild_archive, amd)
+
+Now we have an association between the rebuild archive to the 'amd64'
+processor family.
+
+    >>> rset = aa_set.getByArchive(rebuild_archive)
+    >>> rset.count() == 1
+    True
+    >>> removeSecurityProxy(rset[0]).archive.name
+    u'archivearch-test'
+    >>> removeSecurityProxy(rset[0]).processorfamily.name
+    u'amd64'
+
+Let's add another association.
+
+    >>> x86 = getUtility(IProcessorFamilySet).getByName('x86')
+    >>> ignore_this = aa_set.new(rebuild_archive, x86)
+    >>> rset = aa_set.getByArchive(rebuild_archive)
+    >>> rset.count() == 2
+    True
+    >>> removeSecurityProxy(rset[1]).archive.name
+    u'archivearch-test'
+    >>> removeSecurityProxy(rset[1]).processorfamily.name
+    u'x86'
+
+Last but not least, we query for a concrete association.
+
+    >>> rset = aa_set.getByArchive(rebuild_archive, amd)
+    >>> rset.count() == 1
+    True
+    >>> removeSecurityProxy(rset[0]).archive.name
+    u'archivearch-test'
+    >>> removeSecurityProxy(rset[0]).processorfamily.name
+    u'amd64'

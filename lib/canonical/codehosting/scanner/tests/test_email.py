@@ -7,16 +7,21 @@ __metaclass__ = type
 import email
 import unittest
 
+# This non-standard import is necessary to hook up the event system.
+import zope.component.event
 from zope.component import getUtility
 
 from canonical.codehosting.jobs import JobRunner
+from canonical.codehosting.scanner.email import (
+    send_removed_revision_emails, queue_tip_changed_email_jobs)
+from canonical.codehosting.scanner.fixture import make_zope_event_fixture
 from canonical.codehosting.scanner.tests.test_bzrsync import BzrSyncTestCase
 from canonical.launchpad.interfaces import (
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
     CodeReviewNotificationLevel, IPersonSet)
 from lp.code.interfaces.branchjob import (
     IRevisionMailJobSource, IRevisionsAddedJobSource)
-from canonical.launchpad.mail import stub
+from lp.services.mail import stub
 from canonical.testing import LaunchpadZopelessLayer
 
 
@@ -25,6 +30,10 @@ class TestBzrSyncEmail(BzrSyncTestCase):
 
     def setUp(self):
         BzrSyncTestCase.setUp(self)
+        fixture = make_zope_event_fixture(
+            queue_tip_changed_email_jobs, send_removed_revision_emails)
+        fixture.setUp()
+        self.addCleanup(fixture.tearDown)
         stub.test_emails = []
 
     def makeDatabaseBranch(self):
@@ -82,9 +91,8 @@ class TestBzrSyncEmail(BzrSyncTestCase):
         self.assertTextIn(expected, email_body)
 
     def test_import_recommit(self):
-        # When scanning the uncommit and new commit
-        # there should be an email generated saying that
-        # 1 (in this case) revision has been removed,
+        # When scanning the uncommit and new commit there should be an email
+        # generated saying that 1 (in this case) revision has been removed,
         # and another email with the diff and log message.
         self.commitRevision('first')
         self.makeBzrSync(self.db_branch).syncBranchAndClose()
@@ -128,12 +136,16 @@ class TestBzrSyncNoEmail(BzrSyncTestCase):
 
     def setUp(self):
         BzrSyncTestCase.setUp(self)
+        fixture = make_zope_event_fixture(
+            queue_tip_changed_email_jobs, send_removed_revision_emails)
+        fixture.setUp()
+        self.addCleanup(fixture.tearDown)
         stub.test_emails = []
 
-    def assertNoPendingEmails(self, bzrsync):
-        self.assertEqual(
-            len(bzrsync._branch_mailer.pending_emails), 0,
-            "There should be no pending emails.")
+    def assertNoPendingEmails(self):
+        jobs = list(getUtility(IRevisionMailJobSource).iterReady())
+        jobs.extend(getUtility(IRevisionsAddedJobSource).iterReady())
+        self.assertEqual([], jobs, "There should be no pending emails.")
 
     def test_no_subscribers(self):
         self.assertEqual(self.db_branch.subscribers.count(), 0,
@@ -142,13 +154,13 @@ class TestBzrSyncNoEmail(BzrSyncTestCase):
     def test_empty_branch(self):
         bzrsync = self.makeBzrSync(self.db_branch)
         bzrsync.syncBranchAndClose()
-        self.assertNoPendingEmails(bzrsync)
+        self.assertNoPendingEmails()
 
     def test_import_revision(self):
         self.commitRevision()
         bzrsync = self.makeBzrSync(self.db_branch)
         bzrsync.syncBranchAndClose()
-        self.assertNoPendingEmails(bzrsync)
+        self.assertNoPendingEmails()
 
     def test_import_uncommit(self):
         self.commitRevision()
@@ -158,7 +170,7 @@ class TestBzrSyncNoEmail(BzrSyncTestCase):
         self.uncommitRevision()
         bzrsync = self.makeBzrSync(self.db_branch)
         bzrsync.syncBranchAndClose()
-        self.assertNoPendingEmails(bzrsync)
+        self.assertNoPendingEmails()
 
     def test_import_recommit(self):
         # No emails should have been generated.
@@ -172,7 +184,7 @@ class TestBzrSyncNoEmail(BzrSyncTestCase):
         self.commitRevision('second')
         bzrsync = self.makeBzrSync(self.db_branch)
         bzrsync.syncBranchAndClose()
-        self.assertNoPendingEmails(bzrsync)
+        self.assertNoPendingEmails()
 
 
 def test_suite():

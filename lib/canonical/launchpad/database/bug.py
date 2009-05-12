@@ -254,6 +254,11 @@ class Bug(SQLBase):
     users_unaffected_count = IntCol(notNull=True, default=0)
 
     @property
+    def comment_count(self):
+        """See `IBug`."""
+        return self.message_count - 1
+
+    @property
     def users_affected(self):
         """See `IBug`."""
         return [bap.person for bap
