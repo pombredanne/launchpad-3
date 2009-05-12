@@ -51,7 +51,7 @@ from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.product import License
-from canonical.launchpad.interfaces.distroarchseries import IDistroArchSeries
+from lp.soyuz.interfaces.distroarchseries import IDistroArchSeries
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.validators.email import valid_email
