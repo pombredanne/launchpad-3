@@ -1526,7 +1526,7 @@ class BugSet:
         bug.markUserAffected(bug.owner)
 
         # Tell everyone.
-        notify(ObjectCreatedEvent(bug))
+        notify(ObjectCreatedEvent(bug, user=bug.owner))
 
         return bug
 
