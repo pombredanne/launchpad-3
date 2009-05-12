@@ -162,6 +162,10 @@ class Dominator:
         section and priority, this way the just-made override will be
         preserved.
         """
+        # Avoid circular imports.
+        from lp.soyuz.model.publishing import (
+             SecureBinaryPackagePublishingHistory)
+
         dominated_series = dominated.distroarchseries.distroseries
         available_architectures = [
             das.id for das in dominated_series.architectures]
