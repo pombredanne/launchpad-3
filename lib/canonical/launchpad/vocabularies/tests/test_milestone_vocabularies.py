@@ -10,7 +10,7 @@ from zope.component import getUtility
 
 from canonical.launchpad.ftests import login, logout
 from canonical.launchpad.interfaces.bugtask import IBugTaskSet
-from canonical.launchpad.interfaces.specification import ISpecificationSet
+from lp.blueprints.interfaces.specification import ISpecificationSet
 from canonical.launchpad.testing import LaunchpadObjectFactory
 from canonical.testing import DatabaseFunctionalLayer
 

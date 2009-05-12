@@ -21,7 +21,7 @@ from canonical.launchpad.interfaces import (
     CodeReviewNotificationLevel, IPersonSet)
 from lp.code.interfaces.branchjob import (
     IRevisionMailJobSource, IRevisionsAddedJobSource)
-from canonical.launchpad.mail import stub
+from lp.services.mail import stub
 from canonical.testing import LaunchpadZopelessLayer
 
 

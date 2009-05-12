@@ -4,7 +4,7 @@
 == Setup ==
 
     >>> import email
-    >>> from canonical.launchpad.mail import stub
+    >>> from lp.services.mail import stub
     >>> from canonical.zeca.ftests.harness import ZecaTestSetup
 
 Setup the stub KeyServer:

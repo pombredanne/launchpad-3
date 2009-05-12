@@ -32,8 +32,9 @@ import pytz
 from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
-    ArchivePurpose, BuildStatus, IBug, IBugSet, IDistribution, IFAQSet,
+    IBug, IBugSet, IDistribution, IFAQSet,
     IProduct, IProject, ISprint, LicenseStatus, NotFoundError)
+from lp.soyuz.interfaces.archive import ArchivePurpose
 from canonical.launchpad.interfaces.launchpad import (
     IHasIcon, IHasLogo, IHasMugshot)
 from lp.registry.interfaces.person import IPerson, IPersonSet
@@ -51,6 +52,7 @@ from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.badge import IHasBadges
 from canonical.launchpad.webapp.session import get_cookie_domain
 from canonical.lazr.canonicalurl import nearest_adapter
+from lp.soyuz.interfaces.build import BuildStatus
 
 
 def escape(text, quote=True):
