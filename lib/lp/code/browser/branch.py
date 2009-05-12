@@ -22,6 +22,7 @@ __all__ = [
     'BranchView',
     'BranchSubscriptionsView',
     'RegisterBranchMergeProposalView',
+    'TryImportAgainView',
     ]
 
 import cgi
@@ -73,6 +74,7 @@ from lp.code.interfaces.branchmergeproposal import (
     IBranchMergeProposal, InvalidBranchMergeProposal)
 from lp.code.interfaces.branchsubscription import IBranchSubscription
 from lp.code.interfaces.branchtarget import IBranchTarget
+from lp.code.interfaces.codeimport import CodeImportReviewStatus
 from lp.code.interfaces.codeimportjob import (
     CodeImportJobState, ICodeImportJobWorkflow)
 from lp.code.interfaces.codereviewcomment import ICodeReviewComment
@@ -1232,6 +1234,48 @@ class BranchRequestImportView(LaunchpadFormView):
     @property
     def action_url(self):
         return "%s/@@+request-import" % canonical_url(self.context)
+
+
+class TryImportAgainView(LaunchpadFormView):
+    """The view to provide an 'Import now' button on the branch index page.
+
+    This only appears on the page of a branch with an associated code import
+    that is being actively imported and where there is a import scheduled at
+    some point in the future.
+
+    XXX update.
+    """
+
+    schema = IBranch
+    field_names = []
+
+    form_style = "display: inline"
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
+
+    @action('Try Again', name='tryagain')
+    def request_try_again(self, action, data):
+        if self.context.code_import.review_status != \
+                 CodeImportReviewStatus.FAILING:
+            self.request.response.addNotification(
+                "XXX.")
+        else:
+            self.context.code_import.updateFromData(
+                {'review_status': CodeImportReviewStatus.REVIEWED}, self.user)
+            getUtility(ICodeImportJobWorkflow).requestJob(
+                self.context.code_import.import_job, self.user)
+            self.request.response.addNotification(
+                "Import will be tried again as soon as possible.")
+
+    @property
+    def prefix(self):
+        return "tryagain%s" % self.context.id
+
+    @property
+    def action_url(self):
+        return "%s/@@+try-again" % canonical_url(self.context)
 
 
 class BranchSparkView(LaunchpadView):

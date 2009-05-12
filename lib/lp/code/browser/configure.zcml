@@ -431,6 +431,12 @@
         template="../templates/inline-form-only-buttons.pt"
         permission="launchpad.AnyPerson"/>
     <browser:page
+        for="lp.code.interfaces.branch.IBranch"
+        class="lp.code.browser.branch.TryImportAgainView"
+        name="+try-again"
+        template="../templates/inline-form-only-buttons.pt"
+        permission="launchpad.AnyPerson"/>
+    <browser:page
         for="lp.code.interfaces.branch.IBranchBatchNavigator"
         name="+branch-listing"
         template="../templates/branch-listing.pt"
