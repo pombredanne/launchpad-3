@@ -19,7 +19,7 @@ defaultResource = static.Data("""
         http://librarian.launchpad.net/ is a
         file repository used by <a href="https://launchpad.net/">Launchpad</a>.
         </p>
-        <p><small>Copyright 2004-2007 Canonical Ltd.</small></p>
+        <p><small>Copyright 2004-2009 Canonical Ltd.</small></p>
         <!-- kthxbye. -->
         </body></html>
         """, type='text/html')
