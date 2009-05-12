@@ -69,7 +69,7 @@ Now he finally remembered his email address.
     >>> browser.getControl('Email address').value = 'matsubara@async.com.br'
     >>> browser.getControl('E-mail Me').click()
 
-    >>> from canonical.launchpad.mail import stub
+    >>> from lp.services.mail import stub
     >>> from canonical.launchpad.ftests.logintoken import (
     ...     get_token_url_from_email)
     >>> from_addr, to_addr, msg = stub.test_emails.pop()

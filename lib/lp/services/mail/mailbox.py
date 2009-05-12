@@ -10,7 +10,7 @@ import poplib
 from zope.interface import implements
 
 from canonical.launchpad.interfaces import IMailBox, MailBoxError
-from canonical.launchpad.mail import stub
+from lp.services.mail import stub
 
 class TestMailBox:
     """Mail box used for testing.
