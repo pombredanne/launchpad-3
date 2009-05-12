@@ -36,7 +36,7 @@ Salgado sees a message explaining that he can register his ssh key.
     Guilherme Salgado in Launchpad
     >>> print extract_text(
     ...     find_tag_by_id(browser.contents, 'sshkeys'))
-    SSH Keys: Register a key to publish Bazaar branches
+    SSH Keys: Add an SSH key to publish Bazaar branches
 
 
 Updating SSH keys
@@ -46,7 +46,7 @@ The +editsshkeys page can be used to upload a public ssh key or to remove
 an already uploaded one. Salgado sees a link on his profile page to update
 his SSH keys. The page allows him to add a key.
 
-    >>> browser.getLink('Update SSH keys').click()
+    >>> browser.getLink('Add an SSH key').click()
     >>> print browser.title
     Guilherme Salgado's SSH keys
     >>> print extract_text(
@@ -120,17 +120,26 @@ menu:
     OpenPGP Keys: .../~salgado/+editpgpkeys
     Passwords: .../~salgado/+changepassword
 
-Salgado will now remove one of his ssh keys from Launchpad.
+Salgado chooses to remove one of his ssh keys from Launchpad. The link
+to edit his keys is on the page.
 
-    >>> browser.url
-    'http://launchpad.dev/~salgado/+editsshkeys'
+    >>> browser.open('http://launchpad.dev/~salgado')
+    >>> print browser.title
+    Guilherme Salgado in Launchpad
+    >>> print extract_text(
+    ...     find_tag_by_id(browser.contents, 'sshkeys'))
+    SSH Keys: salgado@canario
+              salgado@canario
+              (view key text)
+    >>> browser.getLink('Update SSH keys').click()
+    >>> print browser.title
+    Guilherme Salgado's SSH keys
 
     >>> browser.getControl('Remove', index=0).click()
     >>> soup = find_main_content(browser.contents)
     >>> for tag in soup('p', 'informational message'):
     ...     print tag.renderContents()
     Key ... removed
-
 
 If Salgado tries to remove a key that doesn't exist or one that doesn't
 belong to him, it will fail with an error message.

@@ -989,11 +989,14 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
     @enabled_with_permission('launchpad.Special')
     def editsshkeys(self):
         target = '+editsshkeys'
-        text = 'Update SSH keys'
-        summary = (
-            'Used if %s stores code on Launchpad' %
-            self.context.browsername)
-        return Link(target, text, summary, icon='edit')
+        if self.context.sshkeys.count() == 0:
+            text = 'Add an SSH key'
+            icon = 'add'
+        else:
+            text = 'Update SSH keys'
+            icon = 'edit'
+        summary = 'Used when storing code on Launchpad'
+        return Link(target, text, summary, icon=icon)
 
     @enabled_with_permission('launchpad.Edit')
     def editpgpkeys(self):
