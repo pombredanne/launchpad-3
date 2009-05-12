@@ -146,18 +146,6 @@ class CodeImport(SQLBase):
         'CodeImportResult', joinColumn='code_import',
         orderBy=['-date_job_started'])
 
-    def changeDetails(self, data, user):
-        """See `ICodeImport`."""
-        if 'review_status' in data:
-            raise AssertionError(
-                'changeDetails cannot be used to change review_status.')
-        modify_event = self.updateFromData(data, user)
-        if modify_event is not None:
-            code_import_updated(modify_event)
-            return True
-        else:
-            return False
-
     @property
     def consecutive_failure_count(self):
         """See `ICodeImport`."""
