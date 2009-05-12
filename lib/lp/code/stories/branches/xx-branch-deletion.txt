@@ -74,3 +74,29 @@ Even if you are an admin.
     Created by ...
     Delete branch
     This branch cannot be deleted as it has 1 branch sharing revisions.
+
+However, you can delete a branch that's the official branch of a source
+package.
+
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces.launchpad import (
+    ...     ILaunchpadCelebrities)
+    >>> from canonical.launchpad.interfaces.publishing import (
+    ...     PackagePublishingPocket)
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> login(ANONYMOUS)
+    >>> name12 = getUtility(IPersonSet).getByName('name12')
+    >>> ubuntu_branches = getUtility(ILaunchpadCelebrities).ubuntu_branches
+    >>> login_person(ubuntu_branches.teamowner)
+    >>> branch = factory.makePackageBranch(owner=name12)
+    >>> package = branch.sourcepackage
+    >>> package.setBranch(
+    ...     PackagePublishingPocket.RELEASE, branch, branch.registrant)
+    >>> branch_url = canonical_url(branch)
+    >>> logout()
+    >>> browser.open(branch_url)
+    >>> browser.getLink('Delete branch').click()
+    >>> browser.getControl('Delete').click()
+    >>> for message in get_feedback_messages(browser.contents):
+    ...     print message
+    Branch ... deleted...
