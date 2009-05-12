@@ -3,7 +3,8 @@
 """Security policies for using content objects."""
 
 __metaclass__ = type
-__all__ = []
+# Need AuthorizationBase here because canonical.shipit.security imports it.
+__all__ = ['AuthorizationBase']
 
 from zope.app.error.interfaces import IErrorReportingUtility
 from zope.interface import implements, Interface
@@ -11,11 +12,11 @@ from zope.component import getAdapter, getUtility
 
 from canonical.launchpad.interfaces.account import IAccount
 from lp.registry.interfaces.announcement import IAnnouncement
-from canonical.launchpad.interfaces.archive import IArchive
-from canonical.launchpad.interfaces.archivepermission import (
+from lp.soyuz.interfaces.archive import IArchive
+from lp.soyuz.interfaces.archivepermission import (
     IArchivePermissionSet)
-from canonical.launchpad.interfaces.archiveauthtoken import IArchiveAuthToken
-from canonical.launchpad.interfaces.archivesubscriber import (
+from lp.soyuz.interfaces.archiveauthtoken import IArchiveAuthToken
+from lp.soyuz.interfaces.archivesubscriber import (
     IArchiveSubscriber, IPersonalArchiveSubscription)
 from lp.code.interfaces.branch import (
     IBranch, user_has_special_branch_access)
@@ -28,8 +29,8 @@ from canonical.launchpad.interfaces.bugattachment import IBugAttachment
 from canonical.launchpad.interfaces.bugbranch import IBugBranch
 from canonical.launchpad.interfaces.bugnomination import IBugNomination
 from canonical.launchpad.interfaces.bugtracker import IBugTracker
-from canonical.launchpad.interfaces.build import IBuild
-from canonical.launchpad.interfaces.builder import IBuilder, IBuilderSet
+from lp.soyuz.interfaces.build import IBuild
+from lp.soyuz.interfaces.builder import IBuilder, IBuilderSet
 from lp.code.interfaces.codeimport import ICodeImport
 from lp.code.interfaces.codeimportjob import (
     ICodeImportJobSet, ICodeImportJobWorkflow)
@@ -59,13 +60,13 @@ from lp.registry.interfaces.milestone import (
     IMilestone, IProjectMilestone)
 from canonical.launchpad.interfaces.oauth import (
     IOAuthAccessToken, IOAuthRequestToken)
-from canonical.launchpad.interfaces.packageset import IPackagesetSet
+from lp.soyuz.interfaces.packageset import IPackagesetSet
 from canonical.launchpad.interfaces.pofile import IPOFile
 from canonical.launchpad.interfaces.potemplate import (
     IPOTemplate, IPOTemplateSubset)
-from canonical.launchpad.interfaces.publishing import (
+from lp.soyuz.interfaces.publishing import (
     IBinaryPackagePublishingHistory, ISourcePackagePublishingHistory)
-from canonical.launchpad.interfaces.queue import (
+from lp.soyuz.interfaces.queue import (
     IPackageUpload, IPackageUploadQueue)
 from canonical.launchpad.interfaces.packaging import IPackaging
 from lp.registry.interfaces.person import (
@@ -79,19 +80,16 @@ from lp.registry.interfaces.productrelease import (
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.code.interfaces.seriessourcepackagebranch import (
     ISeriesSourcePackageBranch, IMakeOfficialBranchLinks)
-from canonical.shipit.interfaces.shipit import (
-    IRequestedCDs, IShipItApplication, IShippingRequest, IShippingRequestSet,
-    IShippingRun, IStandardShipItRequest, IStandardShipItRequestSet)
 from lp.registry.interfaces.sourcepackage import ISourcePackage
-from canonical.launchpad.interfaces.sourcepackagerelease import (
+from lp.soyuz.interfaces.sourcepackagerelease import (
     ISourcePackageRelease)
-from canonical.launchpad.interfaces.specification import ISpecification
-from canonical.launchpad.interfaces.specificationbranch import (
+from lp.blueprints.interfaces.specification import ISpecification
+from lp.blueprints.interfaces.specificationbranch import (
     ISpecificationBranch)
-from canonical.launchpad.interfaces.specificationsubscription import (
+from lp.blueprints.interfaces.specificationsubscription import (
     ISpecificationSubscription)
-from canonical.launchpad.interfaces.sprint import ISprint
-from canonical.launchpad.interfaces.sprintspecification import (
+from lp.blueprints.interfaces.sprint import ISprint
+from lp.blueprints.interfaces.sprintspecification import (
     ISprintSpecification)
 from lp.registry.interfaces.teammembership import ITeamMembership
 from canonical.launchpad.interfaces.translationgroup import (
@@ -484,58 +482,6 @@ class AdminSeriesByVCSImports(AuthorizationBase):
     def checkAuthenticated(self, user):
         vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
         return user.inTeam(vcs_imports)
-
-
-class EditRequestedCDsByRecipientOrShipItAdmins(AuthorizationBase):
-    permission = 'launchpad.Edit'
-    usedfor = IRequestedCDs
-
-    def checkAuthenticated(self, user):
-        shipitadmins = getUtility(ILaunchpadCelebrities).shipit_admin
-        return user == self.obj.request.recipient or user.inTeam(shipitadmins)
-
-
-class EditShippingRequestByRecipientOrShipItAdmins(AuthorizationBase):
-    permission = 'launchpad.Edit'
-    usedfor = IShippingRequest
-
-    def checkAuthenticated(self, user):
-        shipitadmins = getUtility(ILaunchpadCelebrities).shipit_admin
-        return user == self.obj.recipient or user.inTeam(shipitadmins)
-
-
-class AdminShippingRequestByShipItAdmins(AuthorizationBase):
-    permission = 'launchpad.Admin'
-    usedfor = IShippingRequest
-
-    def checkAuthenticated(self, user):
-        shipitadmins = getUtility(ILaunchpadCelebrities).shipit_admin
-        return user.inTeam(shipitadmins)
-
-
-class AdminShippingRunByShipItAdmins(AdminShippingRequestByShipItAdmins):
-    usedfor = IShippingRun
-
-
-class AdminStandardShipItOrderSetByShipItAdmins(
-        AdminShippingRequestByShipItAdmins):
-    usedfor = IStandardShipItRequestSet
-
-
-class AdminStandardShipItOrderByShipItAdmins(
-        AdminShippingRequestByShipItAdmins):
-    usedfor = IStandardShipItRequest
-
-
-class AdminShipItApplicationByShipItAdmins(
-        AdminShippingRequestByShipItAdmins):
-    usedfor = IShipItApplication
-
-
-class AdminShippingRequestSetByShipItAdmins(
-        AdminShippingRequestByShipItAdmins):
-    permission = 'launchpad.Admin'
-    usedfor = IShippingRequestSet
 
 
 class EditProjectMilestoneNever(AuthorizationBase):
@@ -2151,6 +2097,18 @@ class ViewEmailAddress(AuthorizationBase):
                 or user.inTeam(celebrities.commercial_admin)
                 or user.inTeam(celebrities.launchpad_developers)
                 or user.inTeam(celebrities.admin))
+
+
+class EditEmailAddress(EditByOwnersOrAdmins):
+    permission = 'launchpad.Edit'
+    usedfor = IEmailAddress
+
+    def checkAccountAuthenticated(self, account):
+        # Always allow users to see their own email addresses.
+        if self.obj.account == account:
+            return True
+        return super(EditEmailAddress, self).checkAccountAuthenticated(
+            account)
 
 
 class EditArchivePermissionSet(AuthorizationBase):

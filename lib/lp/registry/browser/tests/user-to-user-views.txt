@@ -154,7 +154,7 @@ Carlos has non-ASCII characters in his name.  When he sends a message to a
 user, his real name will be properly RFC 2047 encoded.
 
     >>> transaction.abort()
-    >>> from canonical.launchpad.mail import stub
+    >>> from lp.services.mail import stub
     >>> del stub.test_emails[:]
     >>> len(stub.test_emails)
     0

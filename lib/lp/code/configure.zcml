@@ -29,7 +29,7 @@
   <subscriber
       for="lp.code.interfaces.codereviewvote.ICodeReviewVoteReference
            canonical.launchpad.event.interfaces.IReviewerNominatedEvent"
-      handler="canonical.launchpad.mailout.branchmergeproposal.send_review_requested_notifications"/>
+      handler="lp.code.mail.branchmergeproposal.send_review_requested_notifications"/>
 
   <!-- CodeImportMachine -->
 
@@ -196,11 +196,11 @@
   <subscriber
       for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposal
            canonical.launchpad.event.interfaces.INewBranchMergeProposalEvent"
-      handler="canonical.launchpad.mailout.branchmergeproposal.send_merge_proposal_created_notifications"/>
+      handler="lp.code.mail.branchmergeproposal.send_merge_proposal_created_notifications"/>
   <subscriber
       for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposal
            lazr.lifecycle.interfaces.IObjectModifiedEvent"
-      handler="canonical.launchpad.mailout.branchmergeproposal.send_merge_proposal_modified_notifications"/>
+      handler="lp.code.mail.branchmergeproposal.send_merge_proposal_modified_notifications"/>
   <subscriber
       for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposal
            canonical.launchpad.event.interfaces.INewBranchMergeProposalEvent"
@@ -491,8 +491,8 @@
   <subscriber
       for="lp.code.interfaces.branch.IBranch
            lazr.lifecycle.interfaces.IObjectModifiedEvent"
-      handler="canonical.launchpad.mailout.branch.send_branch_modified_notifications"/>
-  <class class="canonical.launchpad.mailout.branch.RecipientReason">
+      handler="lp.code.mail.branch.send_branch_modified_notifications"/>
+  <class class="lp.code.mail.branch.RecipientReason">
     <allow attributes="
                     getReason
                     branch
@@ -566,7 +566,7 @@
   <subscriber
       for="lp.code.interfaces.codereviewcomment.ICodeReviewComment
            canonical.launchpad.event.interfaces.INewCodeReviewCommentEvent"
-      handler="canonical.launchpad.mailout.codereviewcomment.send"/>
+      handler="lp.code.mail.codereviewcomment.send"/>
   <subscriber
       for="lp.code.interfaces.codereviewcomment.ICodeReviewComment
            canonical.launchpad.event.interfaces.INewCodeReviewCommentEvent"
@@ -663,7 +663,7 @@
   <subscriber
       for="lp.code.interfaces.codeimport.ICodeImport
            lazr.lifecycle.interfaces.IObjectCreatedEvent"
-      handler="canonical.launchpad.mailout.codeimport.new_import"/>
+      handler="lp.code.mail.codeimport.new_import"/>
   <facet
       facet="branches"/>
 

@@ -82,7 +82,7 @@ The publisher config for PARTNER contains only 'partner' in its
 components.  This prevents non-partner being published in the partner
 archive.
 
-    >>> from canonical.launchpad.interfaces.archive import IArchiveSet
+    >>> from lp.soyuz.interfaces.archive import IArchiveSet
     >>> partner_archive = getUtility(IArchiveSet).getByDistroAndName(
     ...     ubuntutest, 'partner')
     >>> comm_pubconf = getPubConfig(partner_archive)

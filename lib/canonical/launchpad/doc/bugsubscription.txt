@@ -665,7 +665,7 @@ there is no security contact:
     >>> ubuntu.security_contact is None
     True
 
-    >>> from canonical.launchpad.mail import stub
+    >>> from lp.services.mail import stub
     >>> transaction.commit()
     >>> stub.test_emails = []
 
@@ -878,7 +878,6 @@ an ObjectCreatedEvent is issued, since subscribe() is used in places
 where no notification should be sent.
 
     >>> from lazr.lifecycle.event import ObjectCreatedEvent
-    >>> from canonical.launchpad.mail import stub
     >>> transaction.commit()
     >>> stub.test_emails = []
     >>> bug_subscription = bug_six.subscribe(sabdfl, lifeless)
