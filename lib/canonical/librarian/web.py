@@ -3,11 +3,8 @@
 
 __metaclass__ = type
 
-from datetime import datetime
-
 from twisted.web import resource, static, error, util, server, proxy
 from twisted.internet.threads import deferToThread
-from pytz import utc
 
 from canonical.librarian.client import quote
 from canonical.librarian.db import read_transaction, write_transaction
@@ -105,14 +102,8 @@ class LibraryFileAliasResource(resource.Resource):
         if dbfilename.encode('utf-8') != filename:
             return fourOhFour
 
-        # Set our caching headers, dynamically based on the creation date,
-        # per Bug 5456.
-        now = datetime.utcnow().replace(tzinfo=utc)
-        age = now - date_created
-        age_seconds = max(age.days * 24 * 60 * 60 + age.seconds, 24 * 60 * 60)
-        request.setHeader('Cache-Control', 'max-age=%d, public' % age_seconds)
-        #request.setHeader('Last-Modified',
-        #    date_created.strftime('%a, %d %b %Y %H:%M:%S +0000'))
+        # Set our caching headers. Librarian files can be cached forever.
+        request.setHeader('Cache-Control', 'max-age=31536000, public')
         request.lastModified = date_created.toordinal()
 
         if self.storage.hasFile(dbcontentID) or self.upstreamHost is None:

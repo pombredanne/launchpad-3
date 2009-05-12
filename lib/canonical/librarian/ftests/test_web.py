@@ -2,7 +2,6 @@
 
 from cStringIO import StringIO
 from datetime import datetime, timedelta
-import re
 import unittest
 from urllib2 import urlopen, HTTPError
 
@@ -12,14 +11,12 @@ import transaction
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.database.sqlbase import commit, flush_database_updates, cursor
+from canonical.database.sqlbase import flush_database_updates, cursor
 from canonical.librarian.client import LibrarianClient
 from canonical.librarian.interfaces import DownloadFailed
 from canonical.launchpad.database import LibraryFileAlias
 from canonical.launchpad.interfaces import IMasterStore
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.config import config
-from canonical.database.sqlbase import commit
 from canonical.testing import LaunchpadZopelessLayer, LaunchpadFunctionalLayer
 
 
@@ -82,7 +79,6 @@ class LibrarianWebTestCase(unittest.TestCase):
         # displaying Ubuntu build logs in the browser.  The mimetype should be
         # "text/plain" for these files.
         client = LibrarianClient()
-        from cStringIO import StringIO
         contents = 'Build log...'
         build_log = StringIO(contents)
         alias_id = client.addFile(name="build_log.txt.gz",
@@ -104,7 +100,6 @@ class LibrarianWebTestCase(unittest.TestCase):
     def test_checkNoEncoding(self):
         # Other files should have no encoding.
         client = LibrarianClient()
-        from cStringIO import StringIO
         contents = 'Build log...'
         build_log = StringIO(contents)
         alias_id = client.addFile(name="build_log.tgz",
@@ -222,9 +217,9 @@ class LibrarianWebTestCase(unittest.TestCase):
         last_modified_header = result.info()['Last-Modified']
         cache_control_header = result.info()['Cache-Control']
 
-        # The file was just created, so it will have the minimum
-        # 24 hours max-age in its Cache-Control header.
-        self.failUnlessEqual(cache_control_header, 'max-age=86400, public')
+        # URLs point to the same content for ever, so we have a hardcoded
+        # 1 year max-age cache policy.
+        self.failUnlessEqual(cache_control_header, 'max-age=31536000, public')
 
         # And we should have a correct Last-Modified header too.
         file_alias = IMasterStore(LibraryFileAlias).get(
@@ -232,24 +227,6 @@ class LibrarianWebTestCase(unittest.TestCase):
         self.failUnlessEqual(
             last_modified_header,
             file_alias.date_created.strftime('%a, %d %b %Y %H:%M:%S GMT'))
-
-        # The max-age in the Cache-Control header is dynamic. The older the
-        # file, the larger the setting.
-        file_alias.date_created = file_alias.date_created - timedelta(days=7)
-        self.commit()
-        result = urlopen(url)
-        cache_control_header = result.info()['Cache-Control']
-
-        match = re.compile(
-            '^max-age=(\d+), public$').search(cache_control_header)
-        self.failUnless(
-            match is not None,
-            'Cache-Control header does not match expected format (%s).'
-            % cache_control_header)
-        age = int(match.group(1))
-        self.failUnless(
-            age >= 7 * 24 * 60 * 60 and age <= 7 * 24 * 60 * 60 + 30,
-            'max-age should be 7 days now - got %d seconds' % age)
 
 
 class LibrarianZopelessWebTestCase(LibrarianWebTestCase):
