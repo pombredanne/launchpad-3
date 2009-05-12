@@ -716,7 +716,8 @@ class HWDriverSet:
         if package_name in (None, ''):
             return store.find(
                 HWDriver,
-                Or(HWDriver.package_name == None, HWDriver.package_name == ''),
+                Or(HWDriver.package_name == None,
+                   HWDriver.package_name == ''),
                 HWDriver.name == name).one()
         else:
             return store.find(
