@@ -75,15 +75,14 @@ bugs we filed recently.
     >>> from canonical.launchpad.ftests.bug import print_bugs_list
     >>> print_bugs_list(user_browser.contents, "similar-bugs")
     #... Evolution crashes
-    New, last updated ...
+    New (0 comments) last updated ...
     #... Evolution crashes lots
-    New, last updated ...
+    New (0 comments) last updated ...
 
 This one matches, so we subscribe.
 
     >>> user_browser.getControl(
-    ...     label='Evolution crashes lots').selected = True
-    >>> user_browser.getControl('Subscribe to This Bug Report').click()
+    ...     "Yes, subscribe me...", index=1).click()
 
     >>> print user_browser.url
     http://bugs.launchpad.dev/evolution/+bug/...

@@ -289,6 +289,31 @@ class IHWSubmissionSet(Interface):
             (optional).
         """
 
+    def numOwnersOfDevice(bus, vendor_id, product_id, driver_name=None,
+                          package_name=None, distro_target=None):
+        """Count the number who subitted hardware reports mentioning a device.
+
+        :return: A tuple (device_owners, all_hardware_reporters)
+           where device_owners is the number of people who made a HWDB
+           submission containing the given device, optionally limited
+           to submissions where the device is controlled by a given
+           driver from the given package, and/or limited to submissions
+           made for the given distro_target.
+           all_hardware_reporters is the number of persons who made
+           a HWDB submission, optionally limited to submission made
+           on the given distro_target installation.
+        :param bus: The `HWBus` of the device.
+        :param vendor_id: The vendor ID of the device.
+        :param product_id: The product ID of the device.
+        :param driver_name: The name of the driver used for the device
+            (optional).
+        :param package_name: The name of the package the driver is a part of.
+            (optional).
+        :param distro_target: Limit the count to submissions made for the
+            given distribution, distroseries or distroarchseries.
+            (optional).
+        """
+
 
 class IHWSystemFingerprint(Interface):
     """Identifiers of a computer system."""
