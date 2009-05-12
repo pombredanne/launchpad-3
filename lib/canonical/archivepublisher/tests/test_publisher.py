@@ -24,20 +24,20 @@ from canonical.archivepublisher.publishing import (
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.ftests.keys_for_tests import gpgkeysdir
-from canonical.launchpad.interfaces.archive import (
+from lp.soyuz.interfaces.archive import (
     ArchivePurpose, IArchiveSet)
-from canonical.launchpad.interfaces.binarypackagerelease import (
+from lp.soyuz.interfaces.binarypackagerelease import (
     BinaryPackageFormat)
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.distroseries import DistroSeriesStatus
 from canonical.launchpad.interfaces.gpghandler import IGPGHandler
 from lp.registry.interfaces.person import IPersonSet
-from canonical.launchpad.interfaces.publishing import (
+from lp.soyuz.interfaces.publishing import (
     PackagePublishingPocket, PackagePublishingStatus)
 from canonical.archivepublisher.interfaces.archivesigningkey import (
     IArchiveSigningKey)
 from canonical.launchpad.testing import get_lsb_information
-from canonical.launchpad.tests.test_publishing import TestNativePublishingBase
+from lp.soyuz.tests.test_publishing import TestNativePublishingBase
 from canonical.zeca.ftests.harness import ZecaTestSetup
 
 

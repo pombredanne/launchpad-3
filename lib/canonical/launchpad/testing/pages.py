@@ -165,6 +165,21 @@ def first_tag_by_class(content, class_):
     return find_tags_by_class(content, class_, True)
 
 
+def extract_all_script_and_style_links(content):
+    """Find and return all thetags with the given name."""
+    strainer = SoupStrainer(['script', 'link'])
+    soup = BeautifulSoup(content, parseOnlyThese=strainer)
+    links = []
+    link_attr = {u'link': 'href', u'script': 'src'}
+    for script_or_style in BeautifulSoup.findAll(soup):
+        attrs = dict(script_or_style.attrs)
+        link = attrs.get(link_attr[script_or_style.name], None)
+        if link:
+            links.append(link)
+
+    return "\n".join(links)
+
+
 def find_tags_by_class(content, class_, only_first=False):
     """Find and return one or more tags matching the given class(es)"""
     match_classes = set(class_.split())
@@ -609,6 +624,8 @@ def setUpGlobs(test):
     # raises ValueError exceptions in /usr/lib/python2.4/Cookie.py
     test.globs['canonical_url'] = safe_canonical_url
     test.globs['factory'] = LaunchpadObjectFactory()
+    test.globs['extract_all_script_and_style_links'] = (
+        extract_all_script_and_style_links)
     test.globs['find_tag_by_id'] = find_tag_by_id
     test.globs['first_tag_by_class'] = first_tag_by_class
     test.globs['find_tags_by_class'] = find_tags_by_class

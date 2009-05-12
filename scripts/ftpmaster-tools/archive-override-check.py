@@ -15,11 +15,12 @@ from zope.component import getUtility
 from canonical.config import config
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger, logger_options)
-from canonical.launchpad.scripts.ftpmaster import  PubSourceChecker
-from canonical.launchpad.interfaces import (
-    IDistributionSet, NotFoundError, PackagePublishingStatus,
-    PackagePublishingPocket)
+from canonical.launchpad.interfaces import NotFoundError
 from canonical.lp import initZopeless
+from lp.registry.interfaces.distribution import IDistributionSet
+from lp.soyuz.scripts.ftpmaster import PubSourceChecker
+from lp.soyuz.interfaces.publishing import (
+    PackagePublishingStatus, PackagePublishingPocket)
 
 from contrib.glock import GlobalLock
 
