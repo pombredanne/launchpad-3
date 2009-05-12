@@ -1,4 +1,4 @@
-# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
 # We use global in this module.
 # pylint: disable-msg=W0602
 
@@ -300,7 +300,6 @@ class LaunchpadDatabase(Postgres):
         self._dsn = "%s user=%s" % (connection_string, dbuser)
 
         flags = _get_dirty_commit_flags()
-
 
         if my_dbconfig.isolation_level is None:
             self._isolation = ISOLATION_LEVEL_SERIALIZABLE
