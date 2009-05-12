@@ -48,7 +48,8 @@ the current context.
 
     >>> print_bugs_list(user_browser.contents, "similar-bugs")
     #1 Firefox does not support SVG
-    New, last updated 2006-05-19
+    New (1 comment) last updated 2006-05-19
+    Firefox needs to support embedded SVG...
 
 If the user doesn't see their bug already reported, they can proceed to
 file the bug.
@@ -106,13 +107,13 @@ As before, we get a list of similar bugs to choose from.
 
     >>> print_bugs_list(user_browser.contents, "similar-bugs")
     #1 Firefox does not support SVG
-    New, last updated 2006-05-19
+    New (1 comment) last updated 2006-05-19
+    Firefox needs to support embedded SVG...
 
 This one matches, so we subscribe.
 
     >>> user_browser.getControl(
-    ...     '#1 Firefox does not support SVG').selected = True
-    >>> user_browser.getControl('Subscribe to This Bug Report').click()
+    ...     "Yes, subscribe me...").click()
 
     >>> print user_browser.url
     http://bugs.launchpad.dev/firefox/+bug/1

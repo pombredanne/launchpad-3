@@ -52,12 +52,15 @@ import shutil
 import stat
 import sys
 
+from sqlobject import SQLObjectNotFound
+
 from zope.component import getUtility
 
 from canonical.archiveuploader.nascentupload import (
     NascentUpload, FatalUploadError, EarlyReturnUploadError)
 from canonical.archiveuploader.uploadpolicy import (
     findPolicyByOptions, UploadPolicyError)
+from lp.soyuz.interfaces.archive import IArchiveSet, NoSuchPPA
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from canonical.launchpad.webapp.errorlog import (
@@ -193,7 +196,17 @@ class UploadProcessor:
         self.moveUpload(upload_path, destination)
 
     def locateDirectories(self, fsroot):
-        """List directories in given directory, usually 'incoming'."""
+        """Return a list of upload directories in a given queue.
+
+        This method operates on the queue atomically, i.e. it suppresses
+        changes in the queue directory, like new uploads, by acquiring
+        the shared upload_queue lockfile while the directory are listed.
+
+        :param fsroot: path to a 'queue' directory to be inspected.
+
+        :return: a list of upload directories found in the queue
+            alphabetically sorted.
+        """
         # Protecting listdir by a lock ensures that we only get
         # completely finished directories listed. See
         # PoppyInterface for the other locking place.
@@ -218,9 +231,12 @@ class UploadProcessor:
             # Skip lockfile deletion, see similar code in poppyinterface.py.
             fsroot_lock.release(skip_delete=True)
 
-        dir_names = [dir_name for dir_name in dir_names if
-                     os.path.isdir(os.path.join(fsroot, dir_name))]
-        return dir_names
+        sorted_dir_names =  sorted(
+            dir_name
+            for dir_name in dir_names
+            if os.path.isdir(os.path.join(fsroot, dir_name)))
+
+        return sorted_dir_names
 
     def locateChangesFiles(self, upload_path):
         """Locate .changes files in the given upload directory.
@@ -289,6 +305,7 @@ class UploadProcessor:
         self.options.distro = distribution.name
         policy = findPolicyByOptions(self.options)
         policy.archive = archive
+
         # DistroSeries overriding respect the following precedence:
         #  1. process-upload.py command-line option (-r),
         #  2. upload path,
@@ -300,6 +317,15 @@ class UploadProcessor:
         # containing the changes file (and the other files referenced by it).
         changesfile_path = os.path.join(upload_path, changes_file)
         upload = NascentUpload(changesfile_path, policy, self.log)
+
+        # Reject source upload to buildd upload paths.
+        first_path = relative_path.split(os.path.sep)[0]
+        if first_path.isdigit() and policy.name != 'buildd':
+            error_message = (
+                "Invalid upload path (%s) for this policy (%s)" %
+                (relative_path, policy.name))
+            upload.reject(error_message)
+            self.log.error(error_message)
 
         # Store archive lookup error in the upload if it was the case.
         if error is not None:
@@ -488,7 +514,8 @@ def parse_upload_path(relative_path):
 
     first_path = parts[0]
 
-    if not first_path.startswith('~') and len(parts) <= 2:
+    if (not first_path.startswith('~') and not first_path.isdigit()
+        and len(parts) <= 2):
         # Distribution upload (<distro>[/distroseries]). Always targeted to
         # the corresponding primary archive.
         distribution, suite_name = _getDistributionAndSuite(
@@ -517,8 +544,9 @@ def parse_upload_path(relative_path):
         else:
             distribution_and_suite = parts[2:]
 
-        archive = person.getPPAByName(ppa_name)
-        if archive is None:
+        try:
+            archive = person.getPPAByName(ppa_name)
+        except NoSuchPPA:
             raise PPAUploadPathError(
                 "Could not find PPA named '%s' for '%s'"
                 % (ppa_name, person_name))
@@ -534,7 +562,17 @@ def parse_upload_path(relative_path):
             raise PPAUploadPathError(
                 "%s only supports uploads to '%s'"
                 % (archive.displayname, archive.distribution.name))
-
+    elif first_path.isdigit():
+        # This must be a binary upload from a build slave.
+        try:
+            archive = getUtility(IArchiveSet).get(int(first_path))
+        except SQLObjectNotFound:
+            raise UploadPathError(
+                "Could not find archive with id=%s" % first_path)
+        if not archive.enabled:
+            raise UploadPathError("%s is disabled" % archive.displayname)
+        distribution, suite_name = _getDistributionAndSuite(
+            parts[1:], UploadPathError)
     else:
         # Upload path does not match anything we support.
         raise UploadPathError(

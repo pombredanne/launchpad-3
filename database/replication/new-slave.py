@@ -174,7 +174,7 @@ def main():
         script += dedent("""\
         echo 'Subscribing new node to set %d.';
         subscribe set (
-            id=%d, provider=@master_node, receiver=@new_node);
+            id=%d, provider=@master_node, receiver=@new_node, forward=yes);
 
         echo 'Waiting for sync... this might take a while...';
         sync (id = @master_node);

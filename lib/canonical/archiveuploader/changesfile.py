@@ -16,9 +16,9 @@ import os
 
 from canonical.archiveuploader.dscfile import DSCFile, SignableTagFile
 from canonical.archiveuploader.nascentuploadfile import (
-    UploadError, UploadWarning, CustomUploadFile, DebBinaryUploadFile,
-    UdebBinaryUploadFile, BaseBinaryUploadFile, SourceUploadFile,
-    splitComponentAndSection)
+    BaseBinaryUploadFile,  CustomUploadFile, DdebBinaryUploadFile,
+    DebBinaryUploadFile, SourceUploadFile, UdebBinaryUploadFile,
+    UploadError, UploadWarning, splitComponentAndSection)
 from canonical.archiveuploader.utils import (
     re_isadeb, re_issource, re_changes_file_name)
 from canonical.archiveuploader.tagfiles import (
@@ -189,6 +189,11 @@ class ChangesFile(SignableTagFile):
                     package = binary_match.group(1)
                     if filename.endswith("udeb"):
                         file_instance = UdebBinaryUploadFile(
+                            filepath, digest, size, component_and_section,
+                            priority_name, package, self.version, self,
+                            self.policy, self.logger)
+                    elif filename.endswith("ddeb"):
+                        file_instance = DdebBinaryUploadFile(
                             filepath, digest, size, component_and_section,
                             priority_name, package, self.version, self,
                             self.policy, self.logger)

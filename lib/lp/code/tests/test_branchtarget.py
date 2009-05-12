@@ -15,7 +15,7 @@ from lp.code.model.branchtarget import (
 from lp.code.interfaces.branch import BranchType
 from lp.code.interfaces.branchtarget import IBranchTarget
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.interfaces.publishing import PackagePublishingPocket
+from lp.soyuz.interfaces.publishing import PackagePublishingPocket
 from canonical.launchpad.testing import run_with_login, TestCaseWithFactory
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import IPrimaryContext
@@ -37,6 +37,14 @@ class BaseBranchTargetTests:
         self.assertEqual(
             canonical_url(self.original), canonical_url(self.target))
 
+    def test_collection(self):
+        # The collection attribute is an IBranchCollection containing all
+        # branches related to the branch target.
+        self.assertEqual(self.target.collection.getBranches().count(), 0)
+        branch = self.makeBranchForTarget()
+        branches = self.target.collection.getBranches()
+        self.assertEqual([branch], list(branches))
+
 
 class TestPackageBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
 
@@ -46,6 +54,9 @@ class TestPackageBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
         TestCaseWithFactory.setUp(self)
         self.original = self.factory.makeSourcePackage()
         self.target = PackageBranchTarget(self.original)
+
+    def makeBranchForTarget(self):
+        return self.factory.makePackageBranch(sourcepackage=self.original)
 
     def test_name(self):
         # The name of a package context is distro/series/sourcepackage
@@ -86,6 +97,12 @@ class TestPackageBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
             ubuntu_branches.teamowner)
         self.assertEqual(default_branch, target.default_stacked_on_branch)
 
+    def test_displayname(self):
+        # The display name of a source package target is the display name of
+        # the source package.
+        target = IBranchTarget(self.original)
+        self.assertEqual(self.original.displayname, target.displayname)
+
 
 class TestPersonBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
 
@@ -95,6 +112,9 @@ class TestPersonBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
         TestCaseWithFactory.setUp(self)
         self.original = self.factory.makePerson()
         self.target = PersonBranchTarget(self.original)
+
+    def makeBranchForTarget(self):
+        return self.factory.makeBranch(owner=self.original, product=None)
 
     def test_name(self):
         # The name of a junk context is '+junk'.
@@ -120,6 +140,11 @@ class TestPersonBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
         target = IBranchTarget(self.original)
         self.assertIs(None, target.default_stacked_on_branch)
 
+    def test_displayname(self):
+        # The display name of a person branch target is ~$USER/+junk.
+        target = IBranchTarget(self.original)
+        self.assertEqual('~%s/+junk' % self.original.name, target.displayname)
+
 
 class TestProductBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
 
@@ -129,6 +154,9 @@ class TestProductBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
         TestCaseWithFactory.setUp(self)
         self.original = self.factory.makeProduct()
         self.target = ProductBranchTarget(self.original)
+
+    def makeBranchForTarget(self):
+        return self.factory.makeBranch(product=self.original)
 
     def test_name(self):
         self.assertEqual(self.original.name, self.target.name)
@@ -174,6 +202,13 @@ class TestProductBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
         branch.mirrorComplete('rev1')
         target = IBranchTarget(self.original)
         self.assertEqual(branch, target.default_stacked_on_branch)
+
+    def test_displayname(self):
+        # The display name of a product branch target is the display name of
+        # the product.
+        target = IBranchTarget(self.original)
+        self.assertEqual(self.original.displayname, target.displayname)
+
 
 
 class TestCheckDefaultStackedOnBranch(TestCaseWithFactory):

@@ -46,6 +46,13 @@
 
     <browser:page
         for="canonical.launchpad.interfaces.IHasBugs"
+        class="canonical.launchpad.browser.BugTargetBugTagsView"
+        name="+bugtarget-portlet-tags-content"
+        template="../templates/bugtarget-portlet-tags-content.pt" 
+        permission="zope.Public" />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IHasBugs"
         class="canonical.launchpad.browser.TextualBugTaskSearchListingView"
         permission="zope.Public"
         name="+bugs-text"
@@ -79,6 +86,14 @@
         permission="launchpad.AnyPerson" />
 
     <browser:page
+        name="+filebug-show-similar"
+        for="canonical.launchpad.interfaces.IBugTarget"
+        class="canonical.launchpad.browser.bugtarget.FilebugShowSimilarBugsView"
+        template="../templates/bugtarget-filebug-show-similar.pt"
+        facet="bugs"
+        permission="launchpad.AnyPerson" />
+
+    <browser:page
         name="+filebug-advanced"
         for="canonical.launchpad.interfaces.IBugTarget"
         class="canonical.launchpad.browser.FileBugAdvancedView"
@@ -92,7 +107,6 @@
         facet="bugs"
         permission="launchpad.Edit"
         template="../templates/official-bug-target-manage-tags.pt" />
-
 
   </facet>
 

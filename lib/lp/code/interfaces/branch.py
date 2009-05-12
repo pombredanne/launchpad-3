@@ -9,6 +9,8 @@ __all__ = [
     'bazaar_identity',
     'BRANCH_NAME_VALIDATION_ERROR_MESSAGE',
     'branch_name_validator',
+    'BranchCannotBePrivate',
+    'BranchCannotBePublic',
     'BranchCreationException',
     'BranchCreationForbidden',
     'BranchCreationNoTeamOwnedJunkBranches',
@@ -77,7 +79,8 @@ from canonical.config import config
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
-    PublicPersonChoice, Summary, Title, URIField, Whiteboard)
+    ParticipatingPersonChoice, PublicPersonChoice, Summary, Title, URIField,
+    Whiteboard)
 from canonical.launchpad.validators import LaunchpadValidationError
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.branchtarget import IHasBranchTarget
@@ -338,6 +341,13 @@ class RepositoryFormat(DBEnumeratedType):
         "1.6.1-subtree with B+Tree indices.\n"
         )
 
+    BZR_CHK1 = DBItem(400,
+        "Bazaar development format - group compression and chk inventory"
+        " (needs bzr.dev from 1.14)\n",
+        "Development repository format - rich roots, group compression"
+        " and chk inventories\n",
+        )
+
 
 class ControlFormat(DBEnumeratedType):
     """Control directory (BzrDir) format.
@@ -370,7 +380,6 @@ DEFAULT_BRANCH_STATUS_IN_LISTING = (
 
 class BranchCreationException(Exception):
     """Base class for branch creation exceptions."""
-
 
 class BranchExists(BranchCreationException):
     """Raised when creating a branch that already exists."""
@@ -448,6 +457,14 @@ class BranchTypeError(Exception):
     BranchTypeError exception is raised if one of these operations is called
     with a branch of the wrong type.
     """
+
+
+class BranchCannotBePublic(Exception):
+    """The branch cannot be made public."""
+
+
+class BranchCannotBePrivate(Exception):
+    """The branch cannot be made private."""
 
 
 class NoSuchBranch(NameLookupFailed):
@@ -667,10 +684,18 @@ class IBranch(IHasOwner, IHasBranchTarget):
             title=_('The last message we got when mirroring this branch.'),
             required=False, readonly=True))
 
-    private = Bool(
-        title=_("Keep branch confidential"), required=False,
-        description=_("Make this branch visible only to its subscribers."),
-        default=False)
+    private = exported(
+        Bool(
+            title=_("Keep branch confidential"), required=False,
+            readonly=True, default=False,
+            description=_(
+                "Make this branch visible only to its subscribers.")))
+
+    @operation_parameters(
+        private=Bool(title=_("Keep branch confidential")))
+    @export_write_operation()
+    def setPrivate(private):
+        """Set the branch privacy for this branch."""
 
     # People attributes
     registrant = exported(
@@ -679,7 +704,7 @@ class IBranch(IHasOwner, IHasBranchTarget):
             required=True, readonly=True,
             vocabulary='ValidPersonOrTeam'))
     owner = exported(
-        PublicPersonChoice(
+        ParticipatingPersonChoice(
             title=_('Owner'),
             required=True,
             vocabulary='UserTeamsParticipationPlusSelf',
@@ -747,7 +772,7 @@ class IBranch(IHasOwner, IHasBranchTarget):
     displayname = exported(
         Text(title=_('Display name'), readonly=True,
              description=_(
-                "The branch title if provided, or the unique_name.")),
+                "The branch unique_name.")),
         exported_as='display_name')
 
     # Stats and status attributes
@@ -802,15 +827,23 @@ class IBranch(IHasOwner, IHasBranchTarget):
         "See doc/bazaar for more information about the branch warehouse.")
 
     # Bug attributes
-    bug_branches = Attribute(
-        "The bug-branch link objects that link this branch to bugs. ")
+    bug_branches = exported(
+        CollectionField(
+            title=_("The bug-branch link objects that link this branch "
+                    "to bugs."),
+            readonly=True,
+            value_type=Reference(schema=Interface))) # Really IBugBranch
 
     related_bugs = Attribute(
         "The bugs related to this branch, likely branches on which "
         "some work has been done to fix this bug.")
 
     # Specification attributes
-    spec_links = Attribute("Specifications linked to this branch")
+    spec_links = exported(
+        CollectionField(
+            title=_("Specification linked to this branch."),
+            readonly=True,
+            value_type=Reference(Interface))) # Really ISpecificationBranch
 
     pending_writes = Attribute(
         "Whether there is new Bazaar data for this branch.")
@@ -1136,6 +1169,15 @@ class IBranch(IHasOwner, IHasBranchTarget):
 
         :param reason: An error message that will be displayed on the branch
             detail page.
+        """
+
+    def commitsForDays(since):
+        """Get a list of commit counts for days since `since`.
+
+        This method returns all commits for the branch, so this includes
+        revisions brought in through merges.
+
+        :return: A list of tuples like (date, count).
         """
 
 

@@ -24,7 +24,7 @@ from storm.locals import And, Store
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.launchpad.webapp.sorting import expand_numbers
 from canonical.launchpad.database.bugtarget import HasBugsBase
-from canonical.launchpad.database.specification import Specification
+from lp.blueprints.model.specification import Specification
 from lp.registry.model.productrelease import ProductRelease
 from canonical.launchpad.database.structuralsubscription import (
     StructuralSubscriptionTargetMixin)
@@ -157,13 +157,14 @@ class Milestone(SQLBase, StructuralSubscriptionTargetMixin, HasBugsBase):
     @property
     def title(self):
         """See IMilestone."""
-        title = 'Milestone %s for %s' % (self.name, self.target.displayname)
-        return title
+        if self.code_name is None:
+            return self.displayname
+        return ('%s "%s"') % (self.displayname, self.code_name)
 
     def _customizeSearchParams(self, search_params):
         """Customize `search_params` for this milestone."""
         search_params.milestone = self
-    
+
     @property
     def official_bug_tags(self):
         """See `IHasBugs`."""
@@ -232,6 +233,9 @@ class MilestoneSet:
             return default
         return milestone
 
+    def getVisibleMilestones(self):
+        """See lp.registry.interfaces.milestone.IMilestoneSet."""
+        return Milestone.selectBy(active=True, orderBy='id')
 
 class ProjectMilestone(HasBugsBase):
     """A virtual milestone implementation for project.
@@ -249,11 +253,14 @@ class ProjectMilestone(HasBugsBase):
 
     def __init__(self, target, name, dateexpected, active):
         self.name = name
+        self.code_name = None
         self.id = None
+        self.code_name = None
         self.product = None
         self.distribution = None
         self.productseries = None
         self.distroseries = None
+        self.product_release = None
         self.dateexpected = dateexpected
         self.active = active
         self.target = target
@@ -283,10 +290,7 @@ class ProjectMilestone(HasBugsBase):
     @property
     def title(self):
         """See IMilestone."""
-        title = 'Milestone %s for %s' % (self.name, self.target.displayname)
-        if self.dateexpected:
-            title += ' due ' + self.dateexpected.strftime('%Y-%m-%d')
-        return title
+        return self.displayname
 
     def _customizeSearchParams(self, search_params):
         """Customize `search_params` for this milestone."""

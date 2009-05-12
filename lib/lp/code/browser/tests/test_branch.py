@@ -5,11 +5,13 @@
 __metaclass__ = type
 __all__ = ['TestBranchView', 'test_suite']
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from textwrap import dedent
 import unittest
 
 import pytz
+import simplejson
+
 
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -18,7 +20,8 @@ from canonical.config import config
 from canonical.database.constants import UTC_NOW
 
 from lp.code.browser.branch import (
-    BranchAddView, BranchMirrorStatusView, BranchReviewerEditView, BranchView)
+    BranchAddView, BranchMirrorStatusView, BranchReviewerEditView,
+    BranchSparkView, BranchView)
 from lp.code.browser.branchlisting import PersonOwnedBranchesView
 from canonical.launchpad.helpers import truncate_text
 from lp.code.interfaces.branch import BranchLifecycleStatus, BranchType
@@ -108,11 +111,12 @@ class TestBranchMirrorHidden(TestCaseWithFactory):
             "<private server>", view.mirror_location)
 
 
-class TestBranchView(unittest.TestCase):
+class TestBranchView(TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
 
     def setUp(self):
+        TestCaseWithFactory.setUp(self)
         login(ANONYMOUS)
         self.request = LaunchpadTestRequest()
 
@@ -176,6 +180,32 @@ class TestBranchView(unittest.TestCase):
                 % (add_view.branch.next_mirror_time, now))
         finally:
             logout()
+
+    def testShowMergeLinksOnManyBranchProject(self):
+        # The merge links are shown on projects that have multiple branches.
+        product = self.factory.makeProduct(name='super-awesome-project')
+        branch1 = self.factory.makeAnyBranch(product=product)
+        branch2 = self.factory.makeAnyBranch(product=product)
+        view = BranchView(branch1, self.request)
+        view.initialize()
+        self.assertTrue(view.show_merge_links)
+
+    def testShowMergeLinksOnJunkBranch(self):
+        # The merge links are not shown on junk branches because they do not
+        # support merge proposals.
+        junk_branch = self.factory.makeBranch(product=None)
+        view = BranchView(junk_branch, self.request)
+        view.initialize()
+        self.assertFalse(view.show_merge_links)
+
+    def testShowMergeLinksOnSingleBranchProject(self):
+        # The merge links are not shown on branches attached to a project that
+        # only has one branch because it's pointless to propose it for merging
+        # if there's nothing to merge into.
+        branch = self.factory.makeAnyBranch()
+        view = BranchView(branch, self.request)
+        view.initialize()
+        self.assertFalse(view.show_merge_links)
 
 
 class TestBranchReviewerEditView(TestCaseWithFactory):
@@ -260,6 +290,84 @@ class TestBranchBzrIdentity(TestCaseWithFactory):
         navigator = view.branches()
         [decorated_branch] = navigator.branches()
         self.assertEqual("lp://dev/fooix", decorated_branch.bzr_identity)
+
+
+class TestBranchSparkView(TestCaseWithFactory):
+    """Tests for the BranchSparkView class."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_empty_branch(self):
+        # A branch with no commits produces...
+        branch = self.factory.makeAnyBranch()
+        view = BranchSparkView(branch, LaunchpadTestRequest())
+        json = simplejson.loads(view.render())
+        self.assertEqual(0, json['count'])
+        self.assertEqual('empty branch', json['last_commit'])
+
+    def test_old_commits(self):
+        # A branch with a commit older than the COMMIT_DAYS will create a list
+        # of commits that all say zero.
+        branch = self.factory.makeAnyBranch()
+        revision = self.factory.makeRevision(
+            revision_date=datetime(
+                year=2008, month=9, day=10, tzinfo=pytz.UTC))
+        branch.createBranchRevision(1, revision)
+        branch.updateScannedDetails(revision, 1)
+
+        view = BranchSparkView(branch, LaunchpadTestRequest())
+        json = simplejson.loads(view.render())
+
+        self.assertEqual(0, json['count'])
+        self.assertEqual([0] * 90, json['commits'])
+        self.assertEqual('2008-09-10', json['last_commit'])
+
+    def test_last_commit_string(self):
+        # If the last commit was very recent, we get a nicer string.
+        branch = self.factory.makeAnyBranch()
+        # Make the revision date six hours ago.
+        revision_date = datetime.now(tz=pytz.UTC) - timedelta(seconds=6*3600)
+        revision = self.factory.makeRevision(
+            revision_date=revision_date)
+        branch.createBranchRevision(1, revision)
+        branch.updateScannedDetails(revision, 1)
+
+        view = BranchSparkView(branch, LaunchpadTestRequest())
+        json = simplejson.loads(view.render())
+        self.assertEqual('6 hours ago', json['last_commit'])
+
+    def test_new_commits(self):
+        # If there are no commits for the day, there are zeros, if there are
+        # commits, then the array contains the number of commits for that day.
+        branch = self.factory.makeAnyBranch()
+        # Create a commit 5 days ago.
+        revision_date = datetime.now(tz=pytz.UTC) - timedelta(days=5)
+        revision = self.factory.makeRevision(revision_date=revision_date)
+        branch.createBranchRevision(1, revision)
+        branch.updateScannedDetails(revision, 1)
+
+        view = BranchSparkView(branch, LaunchpadTestRequest())
+        json = simplejson.loads(view.render())
+
+        self.assertEqual(1, json['count'])
+        commits = ([0] * 84) + [1, 0, 0, 0, 0, 0]
+        self.assertEqual(commits, json['commits'])
+        self.assertEqual(84, json['max_commits'])
+
+    def test_commit_for_just_now(self):
+        # A commit now should show as a commit on the last day.
+        branch = self.factory.makeAnyBranch()
+        revision_date = datetime.now(tz=pytz.UTC)
+        revision = self.factory.makeRevision(revision_date=revision_date)
+        branch.createBranchRevision(1, revision)
+        branch.updateScannedDetails(revision, 1)
+
+        view = BranchSparkView(branch, LaunchpadTestRequest())
+        json = simplejson.loads(view.render())
+
+        self.assertEqual(1, json['count'])
+        commits = ([0] * 89) + [1]
+        self.assertEqual(commits, json['commits'])
 
 
 def test_suite():

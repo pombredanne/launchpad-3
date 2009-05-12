@@ -9,24 +9,24 @@ import logging
 import pytz
 import os
 
-from zope.security.proxy import removeSecurityProxy
-
 from canonical.archivepublisher import ELIGIBLE_DOMINATION_STATES
-from canonical.archivepublisher.config import LucilleConfigError
+from canonical.archivepublisher.config import getPubConfig, LucilleConfigError
 from canonical.archivepublisher.diskpool import DiskPool
 from canonical.archivepublisher.utils import process_in_batches
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import sqlvalues
 
-from canonical.launchpad.database.publishing import (
+from lp.soyuz.model.publishing import (
     BinaryPackagePublishingHistory, SourcePackagePublishingHistory,
     SecureBinaryPackagePublishingHistory,
     SecureSourcePackagePublishingHistory)
 
-from canonical.launchpad.interfaces import (
-    ArchivePurpose, ISecureSourcePackagePublishingHistory,
-    ISecureBinaryPackagePublishingHistory, NotInPool)
+from lp.soyuz.interfaces.archive import ArchivePurpose
+from lp.soyuz.interfaces.publishing import (
+    ISecureBinaryPackagePublishingHistory,
+    ISecureSourcePackagePublishingHistory)
+from canonical.launchpad.interfaces import NotInPool
 
 
 def getDeathRow(archive, log, pool_root_override):
@@ -41,12 +41,10 @@ def getDeathRow(archive, log, pool_root_override):
     """
     log.debug("Grab Lucille config.")
     try:
-        pubconf = archive.getPubConfig()
+        pubconf = getPubConfig(archive)
     except LucilleConfigError, info:
         log.error(info)
         raise
-
-    pubconf = removeSecurityProxy(pubconf)
 
     if (pool_root_override is not None and
         archive.purpose == ArchivePurpose.PRIMARY):

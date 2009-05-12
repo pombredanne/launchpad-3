@@ -76,8 +76,16 @@
         for="canonical.launchpad.interfaces.IOpenIDApplication"
         name="+change-password"
         permission="launchpad.AnyPerson"
-        class="canonical.launchpad.browser.openidaccount.AccountPasswordEditview"
+        class="canonical.launchpad.browser.openidaccount.AccountPasswordEditView"
         template="../templates/openid-account-change-password.pt"
+        />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IOpenIDApplication"
+        name="+edit-emails"
+        permission="launchpad.AnyPerson"
+        class="canonical.launchpad.browser.openidaccount.AccountEditEmailsView"
+        template="../templates/openid-account-edit-emails.pt"
         />
 
     <browser:page
@@ -97,6 +105,23 @@
         permission="launchpad.AnyPerson"
         attribute="__call__"
         />
+
+  <browser:page
+      for="canonical.launchpad.interfaces.launchpad.IOpenIDApplication"
+      layer="canonical.launchpad.layers.OpenIDLayer"
+      class="canonical.launchpad.browser.launchpad.DoesNotExistView"
+      permission="zope.Public"
+      name="+login"
+      />
+
+  <!-- Unauthorized customization for the SSO -->
+  <browser:page
+      for="zope.exceptions.IUnauthorized"
+      layer="canonical.launchpad.layers.OpenIDLayer"
+      name="index.html"
+      permission="zope.Public"
+      class="canonical.launchpad.browser.openidserver.LoginServiceUnauthorizedView"
+      />
 
     <!-- OpenID persistent identity URLs -->
     <class

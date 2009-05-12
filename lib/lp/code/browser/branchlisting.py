@@ -25,13 +25,16 @@ __all__ = [
     ]
 
 from datetime import datetime
+import weakref
 
+import simplejson
 from storm.expr import Asc, Desc
 import pytz
 from zope.component import getUtility
 from zope.interface import implements, Interface
 from zope.formlib import form
 from zope.schema import Choice
+from zope.security.proxy import removeSecurityProxy
 from lazr.delegates import delegates
 from lazr.enum import EnumeratedType, Item
 
@@ -43,13 +46,21 @@ from canonical.launchpad.browser.feeds import (
     FeedsMixin, PersonBranchesFeedLink, PersonRevisionsFeedLink,
     ProductBranchesFeedLink, ProductRevisionsFeedLink,
     ProjectBranchesFeedLink, ProjectRevisionsFeedLink)
-from lp.registry.browser.product import (
-    ProductDownloadFileMixin, SortSeriesMixin)
-from lp.registry.model.sourcepackage import SourcePackage
 from canonical.launchpad.interfaces.bugbranch import IBugBranchSet
-from canonical.launchpad.interfaces.revision import IRevisionSet
-from canonical.launchpad.interfaces.specificationbranch import ISpecificationBranchSet
-from lp.registry.interfaces.productseries import IProductSeriesSet
+from lp.blueprints.interfaces.specificationbranch import (
+    ISpecificationBranchSet)
+from canonical.launchpad.interfaces.personproduct import (
+    IPersonProduct, IPersonProductFactory)
+from canonical.launchpad.webapp import (
+    ApplicationMenu, canonical_url, custom_widget, enabled_with_permission,
+    LaunchpadFormView, Link)
+from canonical.launchpad.webapp.authorization import (
+    check_permission, LAUNCHPAD_SECURITY_POLICY_CACHE_KEY)
+from canonical.launchpad.webapp.badge import Badge, HasBadgeBase
+from canonical.launchpad.webapp.batching import TableBatchNavigator
+from canonical.launchpad.webapp.publisher import LaunchpadView
+from canonical.widgets import LaunchpadDropdownWidget
+
 from lp.code.interfaces.branch import (
     bazaar_identity, BranchLifecycleStatus, BranchLifecycleStatusFilter,
     BranchType, DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch,
@@ -57,19 +68,18 @@ from lp.code.interfaces.branch import (
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.interfaces.branchmergeproposal import (
     BranchMergeProposalStatus, IBranchMergeProposalGetter)
+from lp.code.interfaces.branchnamespace import (
+    get_branch_namespace, IBranchNamespacePolicy)
+from lp.code.interfaces.branchtarget import IBranchTarget
+from lp.code.interfaces.revision import IRevisionSet
+
+from lp.registry.browser.product import (
+    ProductDownloadFileMixin, SortSeriesMixin)
 from lp.registry.interfaces.distroseries import DistroSeriesStatus
 from lp.registry.interfaces.person import IPerson, IPersonSet
-from canonical.launchpad.interfaces.personproduct import (
-    IPersonProduct, IPersonProductFactory)
 from lp.registry.interfaces.product import IProduct
-from canonical.launchpad.webapp import (
-    ApplicationMenu, canonical_url, custom_widget, enabled_with_permission,
-    LaunchpadFormView, Link)
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.badge import Badge, HasBadgeBase
-from canonical.launchpad.webapp.batching import TableBatchNavigator
-from canonical.launchpad.webapp.publisher import LaunchpadView
-from canonical.widgets import LaunchpadDropdownWidget
+from lp.registry.interfaces.productseries import IProductSeriesSet
+from lp.registry.model.sourcepackage import SourcePackage
 
 
 def get_plural_text(count, singular, plural):
@@ -212,9 +222,9 @@ class BranchListingSort(EnumeratedType):
         """)
 
     LIFECYCLE = Item("""
-        by lifecycle status
+        by status
 
-        Sort branches by the lifecycle status.
+        Sort branches by their status.
         """)
 
     NAME = Item("""
@@ -292,8 +302,31 @@ class BranchListingBatchNavigator(TableBatchNavigator):
         self._dev_series_map = {}
 
     @cachedproperty
+    def branch_sparks(self):
+        return simplejson.dumps([
+                ('b-%s' % (count+1),
+                 canonical_url(branch, view_name='+spark'))
+                for count, branch
+                in enumerate(self._branches_for_current_batch)
+                ])
+
+    @cachedproperty
     def _branches_for_current_batch(self):
-        return list(self.currentBatch())
+        branches = list(self.currentBatch())
+        # XXX: TimPenhey 2009-04-08 bug=324546
+        # Until there is an API to do this nicely, shove the launchpad.view
+        # permission into the request cache directly.
+        request = self.view.request
+        permission_cache = request.annotations.setdefault(
+            LAUNCHPAD_SECURITY_POLICY_CACHE_KEY,
+            weakref.WeakKeyDictionary())
+        for branch in branches:
+            naked_branch = removeSecurityProxy(branch)
+            branch_permission_cache = permission_cache.setdefault(
+                naked_branch, {})
+            branch_permission_cache['launchpad.View'] = True
+
+        return branches
 
     @cachedproperty
     def branch_ids_with_bug_links(self):
@@ -622,6 +655,18 @@ class BranchListingView(LaunchpadFormView, FeedsMixin):
             fields.append(field)
         self.form_fields = form.Fields(*fields)
         super(BranchListingView, self).setUpWidgets(context)
+
+    @property
+    def new_branches_are_private(self):
+        """Are new branches by the user private."""
+        if self.user is None:
+            return False
+        target = IBranchTarget(self.context)
+        if target is None:
+            return False
+        namespace = target.getNamespace(self.user)
+        policy = IBranchNamespacePolicy(namespace)
+        return policy.areNewBranchesPrivate()
 
 
 class NoContextBranchListingView(BranchListingView):

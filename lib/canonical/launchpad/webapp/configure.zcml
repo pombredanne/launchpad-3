@@ -34,7 +34,7 @@
     <adapter
         for="zope.publisher.interfaces.http.IHTTPRequest"
         provides="canonical.launchpad.webapp.interfaces.IDatabasePolicy"
-        factory="canonical.launchpad.webapp.dbpolicy.LaunchpadDatabasePolicy"
+        factory="canonical.launchpad.webapp.dbpolicy.LaunchpadDatabasePolicyFactory"
         />
     <adapter
         for="zope.publisher.interfaces.xmlrpc.IXMLRPCRequest"
@@ -226,14 +226,14 @@
         />
 
     <adapter
-        for="canonical.launchpad.interfaces.IBuild"
+        for="lp.soyuz.interfaces.build.IBuild"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.BuildImageDisplayAPI"
         name="image"
         />
 
     <adapter
-        for="canonical.launchpad.interfaces.IArchive"
+        for="lp.soyuz.interfaces.archive.IArchive"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.ArchiveImageDisplayAPI"
         name="image"
@@ -432,6 +432,12 @@
         for="canonical.launchpad.interfaces.IMilestone"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.MilestoneFormatterAPI"
+        name="fmt"
+        />
+    <adapter
+        for="canonical.launchpad.interfaces.IProductRelease"
+        provides="zope.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.ProductReleaseFormatterAPI"
         name="fmt"
         />
     <adapter

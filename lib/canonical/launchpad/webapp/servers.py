@@ -45,10 +45,12 @@ from lazr.restful.publisher import (
 
 from canonical.launchpad.interfaces import (
     IFeedsApplication, IPrivateApplication, IOpenIDApplication, IPerson,
-    IPersonSet, IShipItApplication, IWebServiceApplication,
-    IOAuthConsumerSet, NonceAlreadyUsed, TimestampOrderingError, ClockSkew)
+    IPersonSet, IWebServiceApplication, IOAuthConsumerSet, NonceAlreadyUsed,
+    TimestampOrderingError, ClockSkew)
+from canonical.shipit.interfaces.shipit import IShipItApplication
 import canonical.launchpad.layers
 import canonical.launchpad.versioninfo
+import canonical.shipit.layers
 
 from canonical.launchpad.webapp.adapter import (
     get_request_duration, RequestExpired)
@@ -1032,10 +1034,8 @@ class AnswersBrowserRequest(LaunchpadBrowserRequest):
 
 # ---- openid
 
-class IdPublication(LaunchpadBrowserPublication):
-    """The publication used for OpenID requests."""
-
-    root_object_interface = IOpenIDApplication
+class AccountPrincipalMixin:
+    """Mixin for publication that works with person-less accounts."""
 
     def getPrincipal(self, request):
         """Return the authenticated principal for this request.
@@ -1050,6 +1050,14 @@ class IdPublication(LaunchpadBrowserPublication):
             principal = auth_utility.unauthenticatedPrincipal()
             assert principal is not None, "Missing unauthenticated principal."
         return principal
+
+
+class IdPublication(AccountPrincipalMixin, LaunchpadBrowserPublication):
+    """The publication used for OpenID requests."""
+
+    def getApplication(self, request):
+        """Return the `IOpenIDApplication`."""
+        return getUtility(IOpenIDApplication)
 
 
 class IdBrowserRequest(LaunchpadBrowserRequest):
@@ -1070,14 +1078,14 @@ class OpenIDBrowserRequest(LaunchpadBrowserRequest):
 
 # ---- shipit
 
-class ShipItPublication(IdPublication):
+class ShipItPublication(AccountPrincipalMixin, LaunchpadBrowserPublication):
     """The publication used for the ShipIt sites."""
 
     root_object_interface = IShipItApplication
 
 
 class UbuntuShipItBrowserRequest(LaunchpadBrowserRequest):
-    implements(canonical.launchpad.layers.ShipItUbuntuLayer)
+    implements(canonical.shipit.layers.ShipItUbuntuLayer)
 
     @property
     def icing_url(self):
@@ -1088,7 +1096,7 @@ class UbuntuShipItBrowserRequest(LaunchpadBrowserRequest):
 
 
 class KubuntuShipItBrowserRequest(LaunchpadBrowserRequest):
-    implements(canonical.launchpad.layers.ShipItKUbuntuLayer)
+    implements(canonical.shipit.layers.ShipItKUbuntuLayer)
 
     @property
     def icing_url(self):
@@ -1099,7 +1107,7 @@ class KubuntuShipItBrowserRequest(LaunchpadBrowserRequest):
 
 
 class EdubuntuShipItBrowserRequest(LaunchpadBrowserRequest):
-    implements(canonical.launchpad.layers.ShipItEdUbuntuLayer)
+    implements(canonical.shipit.layers.ShipItEdUbuntuLayer)
 
     @property
     def icing_url(self):

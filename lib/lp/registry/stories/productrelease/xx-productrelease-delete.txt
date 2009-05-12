@@ -20,7 +20,7 @@ link and cannot access the +delete page.
 
     >>> user_browser.getLink('0.9.2').click()
     >>> print user_browser.title
-    Mozilla Firefox 0.9.2 in Launchpad
+    Mozilla Firefox: 0.9.2 "One (secure) Tree Hill"
     >>> user_browser.getLink(url='/firefox/trunk/0.9.2/+delete')
     Traceback (most recent call last):
     ...

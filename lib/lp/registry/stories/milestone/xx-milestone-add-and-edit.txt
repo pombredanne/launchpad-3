@@ -28,7 +28,7 @@ owner or driver. This means that No Privileges Person won't be able to
 see the link to add a milestone nor access the page directly.
 
     >>> user_browser.open('http://launchpad.dev/alsa-utils/trunk')
-    >>> user_browser.getLink('Add milestone').click()
+    >>> user_browser.getLink('Create milestone').click()
     Traceback (most recent call last):
       ...
     LinkNotFoundError
@@ -39,7 +39,7 @@ see the link to add a milestone nor access the page directly.
     Unauthorized: ...
 
     >>> user_browser.open('http://launchpad.dev/ubuntu/hoary')
-    >>> user_browser.getLink('Add milestone').click()
+    >>> user_browser.getLink('Create milestone').click()
     Traceback (most recent call last):
       ...
     LinkNotFoundError
@@ -48,201 +48,19 @@ see the link to add a milestone nor access the page directly.
       ...
     Unauthorized: ...
 
-But Sample Person will be able to use the 'Add milestone' link to
+But Sample Person will be able to use the 'Create milestone' link to
 create a new milestone.
 
     >>> test_browser = setupBrowser(auth='Basic test@canonical.com:test')
     >>> test_browser.open('http://launchpad.dev/alsa-utils/trunk')
-    >>> test_browser.getLink('Add milestone').click()
+    >>> test_browser.getLink('Create milestone').click()
     >>> test_browser.url
     'http://launchpad.dev/alsa-utils/trunk/+addmilestone'
 
     >>> test_browser.open('http://launchpad.dev/ubuntu/hoary')
-    >>> test_browser.getLink('Add milestone').click()
+    >>> test_browser.getLink('Create milestone').click()
     >>> test_browser.url
     'http://launchpad.dev/ubuntu/hoary/+addmilestone'
-
-
-== Duplicate milestone handling ==
-
-Once authorized, let's create 2 milestones!
-
-    >>> test_browser.getControl('Name').value = 'milestone1'
-    >>> test_browser.getControl('Register milestone').click()
-    >>> print milestones_in_portlet(test_browser)
-    milestone1
-
-    >>> test_browser.open('http://launchpad.dev/ubuntu/hoary/+addmilestone')
-    >>> test_browser.getControl('Name').value = 'milestone2'
-    >>> test_browser.getControl('Register milestone').click()
-    >>> print milestones_in_portlet(test_browser)
-    milestone2
-    milestone1
-
-Now let's try to create another one named milestone1.
-
-    >>> test_browser.open('http://launchpad.dev/ubuntu/hoary/+addmilestone')
-    >>> test_browser.getControl('Name').value = 'milestone1'
-    >>> test_browser.getControl('Register milestone').click()
-    >>> test_browser.url
-    'http://launchpad.dev/ubuntu/hoary/+addmilestone'
-
-    >>> for tag in find_tags_by_class(test_browser.contents, 'message'):
-    ...     print tag
-    <p class="error message">There is 1 error.</p>
-    <div class="message">The name milestone1 is already used by a milestone in Ubuntu.</div>
-
-Edit now...
-
-    >>> test_browser.open(
-    ...     'http://launchpad.dev/ubuntu/+milestone/milestone2/+edit')
-
-There's a link back to the milestone page, in case you change your mind.
-
-    >>> back_link = test_browser.getLink('Milestone milestone2 for Ubuntu')
-    >>> back_link.url
-    'http://launchpad.dev/ubuntu/+milestone/milestone2'
-
-First we try to change the name of milestone2 to milestone1, which is
-already in use.
-
-    >>> test_browser.getControl('Name').value = 'milestone1'
-    >>> test_browser.getControl('Date Targeted').value = "2030-01-01"
-    >>> test_browser.getControl('Update').click()
-    >>> test_browser.url
-    'http://launchpad.dev/ubuntu/+milestone/milestone2/+edit'
-    >>> for tag in find_tags_by_class(test_browser.contents, 'message'):
-    ...     print tag
-    <p class="error message">There is 1 error.</p>
-    <div class="message">The name milestone1 is already used by a milestone in Ubuntu.</div>
-
-Then we try to change milestone2's name to milestone3.
-
-    >>> test_browser.open(
-    ...     'http://launchpad.dev/ubuntu/+milestone/milestone2/+edit')
-    >>> test_browser.getControl('Name').value = 'milestone3'
-    >>> test_browser.getControl('Update').click()
-    >>> print milestones_in_portlet(test_browser)
-    milestone3
-    milestone1
-
-Now we do the same for a product instead of a distro.
-
-First we test the +addmilestone page.
-
-    >>> test_browser.open(
-    ...     'http://launchpad.dev/alsa-utils/trunk/+addmilestone')
-
-Once authorized, let's create 2 milestones!
-
-    >>> test_browser.getControl('Name').value = 'milestone1'
-    >>> test_browser.getControl('Register milestone').click()
-    >>> print milestones_in_portlet(test_browser)
-    milestone1
-
-    >>> test_browser.open(
-    ...     'http://launchpad.dev/alsa-utils/trunk/+addmilestone')
-    >>> test_browser.getControl('Name').value = 'milestone2'
-    >>> test_browser.getControl('Register milestone').click()
-    >>> print milestones_in_portlet(test_browser)
-    milestone2
-    milestone1
-
-Now let's try to create another one named milestone1.
-
-    >>> test_browser.open(
-    ...     'http://launchpad.dev/alsa-utils/trunk/+addmilestone')
-    >>> test_browser.getControl('Name').value = 'milestone1'
-    >>> test_browser.getControl('Register milestone').click()
-    >>> test_browser.url
-    'http://launchpad.dev/alsa-utils/trunk/+addmilestone'
-    >>> for tag in find_tags_by_class(test_browser.contents, 'message'):
-    ...     print tag
-    <p class="error message">There is 1 error.</p>
-    <div class="message">The name milestone1 is already used by a milestone in alsa-utils.</div>
-
-Edit now...
-
-First we try to change the name of milestone2 to milestone1, wich is
-already in use.
-
-    >>> test_browser.open(
-    ...     'http://launchpad.dev/alsa-utils/+milestone/milestone2/+edit')
-    >>> test_browser.getControl('Name').value = 'milestone1'
-    >>> test_browser.getControl('Update').click()
-    >>> test_browser.url
-    'http://launchpad.dev/alsa-utils/+milestone/milestone2/+edit'
-    >>> for tag in find_tags_by_class(test_browser.contents, 'message'):
-    ...     print tag
-    <p class="error message">There is 1 error.</p>
-    <div class="message">The name milestone1 is already used by a milestone in alsa-utils.</div>
-
-Then we try to change milestone2's name to milestone3.
-
-    >>> test_browser.open(
-    ...     'http://launchpad.dev/alsa-utils/+milestone/milestone2/+edit')
-    >>> test_browser.getControl('Name').value = 'milestone3'
-    >>> test_browser.getControl('Update').click()
-    >>> print milestones_in_portlet(test_browser)
-    milestone3
-    milestone1
-
-Now let's mark milestone3 as inactive to ensure it hides the milestone
-
-    >>> test_browser.open(
-    ...     'http://launchpad.dev/alsa-utils/+milestone/milestone3/+edit')
-    >>> test_browser.getControl('Active').click()
-    >>> test_browser.getControl('Update').click()
-    >>> print milestones_in_portlet(test_browser)
-    milestone1
-
-
-== Admin Edit Functionality ==
-
-We're reusing test data that was created above to test the admin edit
-functionality. The admin functionality allows us to modify the distroseries
-and productseries of the milestone.
-
-
-=== Test Distro Series ===
-
-To test distroseries, we'll switch from "ubuntu hoary" to "ubuntu warty" and
-then verify it works correctly by checking the portlet details.
-
-    >>> admin_browser.open(
-    ...     'http://launchpad.dev/ubuntu/+milestone/milestone3/+edit')
-    >>> admin_browser.getControl(name='field.distroseries').displayValue = [
-    ...     'ubuntu warty']
-    >>> admin_browser.getControl('Update').click()
-    >>> print_portlet_links(admin_browser.contents,
-    ...     'Milestone milestone3 for Ubuntu details')
-    Ubuntu: /ubuntu
-    Warty: /ubuntu/warty
-
-
-=== Test Product Series ===
-
-Because we don't have a series to test with yet, we first must create a new
-series called "main" to alsa-utils so we can test switching the series.
-
-    >>> admin_browser.open('http://launchpad.dev/alsa-utils/+addseries')
-    >>> admin_browser.getControl('Name').value = "main"
-    >>> admin_browser.getControl('Summary').value = "This is a test series."
-    >>> admin_browser.getControl('Register Series').click()
-
-Now that we have a sample series, we will access +admin and select the new
-series we just created. For this test, we'll switch from "trunk" to "main"
-and then verify it works correctly by checking the portlet details.
-
-    >>> admin_browser.open(
-    ...     'http://launchpad.dev/alsa-utils/+milestone/milestone1/+edit')
-    >>> admin_browser.getControl(name='field.productseries').displayValue = [
-    ...     'alsa-utils main']
-    >>> admin_browser.getControl('Update').click()
-    >>> print_portlet_links(admin_browser.contents,
-    ...     'Milestone milestone1 for alsa-utils details')
-    alsa-utils: /alsa-utils
-    main: /alsa-utils/main
 
 
 == Milestone bug subscriptions ==
@@ -255,7 +73,7 @@ can create structural bug subscriptions.
     >>> print user_browser.url
     http://launchpad.dev/firefox/+milestone/1.0/+subscribe
     >>> print user_browser.title
-    Bug subscriptions for Milestone 1.0 for Mozilla Firefox
+    Bug subscriptions for Mozilla Firefox: 1.0
 
 
 == Deleting milestones ==
@@ -270,7 +88,7 @@ the series.
     Mozilla Firefox Series: trunk's milestones
     >>> print extract_text(find_tag_by_id(
     ...     driver_browser.contents, 'milestones'))
-    Milestone  Date Targeted  Series Target  Summary
+    Milestone  Codename Date Targeted  Series Target  Summary
     0.9.2...
     0.9.1...
     0.9...
@@ -280,16 +98,16 @@ access the delete page. Sample Person is the driver so he has those rights.
 
     >>> driver_browser.getLink('0.9.2').click()
     >>> print driver_browser.title
-    Milestone 0.9.2 for Mozilla Firefox
+    Mozilla Firefox: 0.9.2 "One (secure) Tree Hill"
     >>> driver_browser.getLink('delete').click()
     >>> print driver_browser.title
-    Delete Milestone 0.9.2 for Mozilla Firefox
+    Delete Mozilla Firefox: 0.9.2 "One (secure) Tree Hill"
 
 The 0.9.2 release has a release and files associated with it. Sample
 Person reads that they will be deleted too.
 
     >>> print extract_text(find_main_content(driver_browser.contents))
-    Delete Milestone 0.9.2 for Mozilla Firefox ...
+    Delete Mozilla Firefox: 0.9.2 "One (secure) Tree Hill" ...
     The associated 0.9.2 release "One (secure) Tree Hill" and its files
     will be also be deleted:
     firefox-0.9.2.orig.tar.gz ...
@@ -306,6 +124,6 @@ successful.
     >>> driver_browser.getLink('See all milestones').click()
     >>> print extract_text(find_tag_by_id(
     ...     driver_browser.contents, 'milestones'))
-    Milestone  Date Targeted  Series Target  Summary
+    Milestone  Codename Date Targeted  Series Target  Summary
     0.9.1...
     0.9...

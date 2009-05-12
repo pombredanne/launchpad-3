@@ -130,40 +130,30 @@ createPersonAndEmail() method.
 
 The user can add additional email addresses. The
 validateAndEnsurePreferredEmail() method verifies that the email belongs
-to the person, and it updates the email address's status and account.
+to the person, and it updates the email address's status.
 
     >>> emailset = getUtility(IEmailAddressSet)
-    >>> validated_email = emailset.new('validated@canonical.com', p)
+    >>> validated_email = emailset.new(
+    ...     'validated@canonical.com', p, account=p.account)
     >>> validated_email.status
     <DBItem EmailAddressStatus.NEW...
-
-    >>> print validated_email.account
-    None
 
     >>> login('randomuser@randomhost.com')
     >>> p.validateAndEnsurePreferredEmail(validated_email)
     >>> validated_email.status
     <DBItem EmailAddressStatus.VALIDATED...
 
-    >>> validated_email.accountID == p.accountID
-    True
-
 The user can add a new address and set it as the preferred address. The
-setPreferredEmail() method updated the address's status and account.
+setPreferredEmail() method updated the address's status.
 
-    >>> preferred_email = emailset.new('preferred@canonical.com', p)
+    >>> preferred_email = emailset.new(
+    ...     'preferred@canonical.com', p, account=p.account)
     >>> preferred_email.status
     <DBItem EmailAddressStatus.NEW...
-
-    >>> print preferred_email.account
-    None
 
     >>> p.setPreferredEmail(preferred_email)
     >>> preferred_email.status
     <DBItem EmailAddressStatus.PREFERRED...
-
-    >>> preferred_email.accountID == p.accountID
-    True
 
     >>> login(ANONYMOUS)
 
@@ -265,7 +255,6 @@ adapt.
 Up to now there was no browser request we could use, so no caching was
 done.
 
-    >>> from canonical.lazr.utils import get_current_browser_request
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> request = LaunchpadTestRequest()
     >>> print request.annotations.get('launchpad.person_to_account_cache')
@@ -461,7 +450,7 @@ entries into teams.
     # notifications are sent when we add the owner as a member of
     # the team.
 
-    >>> from canonical.launchpad.mail import stub
+    >>> from lp.services.mail import stub
     >>> stub.test_emails = []
 
     >>> not_a_person.convertToTeam(team_owner=ddaa)
@@ -673,12 +662,23 @@ direct member of that team.
 
 === Team Visibility ===
 
-A Team can have its visibility attribute set to PersonVisibility.PUBLIC
-or PersonVisibility.PRIVATE_MEMBERSHIP. To prevent leaking of private
-membership information, private-membership teams are only allowed to be
-connected with a few different database objects. This is enforced in the
-model, but there are also checks in the form handling to provide clearer
-error messages.
+A Team can have its visibility attribute set to
+PersonVisibility.PUBLIC, PersonVisibility.PRIVATE_MEMBERSHIP, or
+PersonVisibility.PRIVATE.
+
+A PRIVATE_MEMBERSHIP team is a team that exists for the sole purpose
+of providing a membership list for the purpose of single sign on,
+etc.  PRIVATE_MEMBERSHIP teams can have mailing lists but cannot
+participate in Launchpad in other ways.
+
+Like PRIVATE_MEMBERSHIP teams, PRIVATE teams are hidden from view from
+non-members but they are allowed to actually do things in Launchpad.
+
+To prevent leaking of private membership information,
+private-membership teams are only allowed to be connected with a few
+different database objects. This is enforced in the model, but there
+are also checks in the form handling to provide clearer error
+messages.
 
 The PublicPersonChoice for interface classes and the
 validate_public_person for database classes only allow public teams to
@@ -693,7 +693,9 @@ reject it for the BugSubscription.person and
 BugSubscription.subscribed_by attributes.
 
     >>> login('foo.bar@canonical.com')
-    >>> from canonical.launchpad.interfaces import IBugSet, IPersonSet
+    >>> from canonical.launchpad.interfaces.bug import IBugSet
+    >>> from lp.registry.interfaces.person import (
+    ...     IPersonSet, PersonVisibility)
     >>> from canonical.launchpad.database import BugSubscription
     >>> person_set = getUtility(IPersonSet)
     >>> bug_set = getUtility(IBugSet)
@@ -708,12 +710,56 @@ BugSubscription.subscribed_by attributes.
     (name=myteam, visibility=PRIVATE_MEMBERSHIP) to <BugSubscription...
 
     >>> bug_subscription = BugSubscription(bug=bug, person=guadamen,
-    ...                                    subscribed_by=guadamen)
-    >>> bug_subscription.person = myteam
+    ...                                    subscribed_by=myteam)
     Traceback (most recent call last):
     ...
     PrivatePersonLinkageError: Cannot link person
     (name=myteam, visibility=PRIVATE_MEMBERSHIP) to <BugSubscription...
+
+Private teams can be subscribed to bugs.
+
+    >>> salgado = personset.getByName('salgado')
+    >>> private_team = factory.makeTeam(salgado, name='private-team',
+    ...     displayname='Private Team',
+    ...     visibility=PersonVisibility.PRIVATE)
+    >>> bug_subscription = BugSubscription(bug=bug, person=private_team,
+    ...     subscribed_by=guadamen)
+
+And they can subscribe others to bugs.
+
+    >>> bug_subscription = BugSubscription(bug=bug, person=guadamen,
+    ...     subscribed_by=private_team)
+
+Teams also have a 'private' attribute that is true if the team is
+private membership or private and false for public teams.  It is also
+false for people.
+
+    >>> myteam.private
+    True
+
+    >>> private_team.private
+    True
+
+    >>> guadamen.private
+    False
+
+    >>> salgado.private
+    False
+
+The visibility attribute may only be modified if the user has launchpad.Commercial permissions.
+
+    >>> login('commercial-member@canonical.com')
+    >>> print myteam.visibility.name
+    PRIVATE_MEMBERSHIP
+    >>> myteam.visibility = PersonVisibility.PUBLIC
+    >>> print myteam.visibility.name
+    PUBLIC
+
+    >>> login('no-priv@canonical.com')
+    >>> myteam.visibility = PersonVisibility.PRIVATE
+    Traceback (most recent call last):
+      ...
+    Unauthorized: ...
 
 
 == Latest Team Memberships ==
@@ -769,6 +815,56 @@ address:
     >>> print_people(personset.find('steve.alexander'))
     Steve Alexander (stevea): [u'steve.alexander@ubuntulinux.com']
 
+    >>> print_people(personset.find('steve.alexander@'))
+    Steve Alexander (stevea): [u'steve.alexander@ubuntulinux.com']
+
+    >>> list(personset.find('eve.alexander@'))
+    []
+
+    >>> list(personset.find('eve.alexander'))
+    []
+
+The teams returned are dependent upon the team's visibility (privacy)
+and whether the logged in user is a member of those teams.
+
+Anonymous users cannot see non-public teams, such as 'myteam'.
+
+    >>> login(ANONYMOUS)
+    >>> print_people(personset.find('team'))
+    Another a new team (new3): []
+    Hoary Gnome Team (name21): []
+    Just a new team (new-team): []
+    My Team (myteam): []
+    No Team Memberships (no-team-memberships): [u'no-team-memberships@test.com']
+    Other Team (otherteam): []
+    Simple Team (simple-team): []
+    Team Membership Janitor (team-membership-janitor): []
+    testing Spanish team (testing-spanish-team): []
+    Ubuntu Doc Team (doc): [u'doc@lists.ubuntu.com']
+    Ubuntu Gnome Team (name18): []
+    Ubuntu Team (ubuntu-team): [u'support@ubuntu.com']
+    Warty Gnome Team (warty-gnome): []
+    Warty Security Team (name20): []
+
+But Owner, a member of that team, will see it in the results.
+
+    >>> login('owner@canonical.com')
+    >>> print_people(personset.find('team'))
+    Another a new team (new3): []
+    Hoary Gnome Team (name21): []
+    Just a new team (new-team): []
+    My Team (myteam): []
+    No Team Memberships (no-team-memberships): [u'no-team-memberships@test.com']
+    Other Team (otherteam): []
+    Simple Team (simple-team): []
+    Team Membership Janitor (team-membership-janitor): []
+    testing Spanish team (testing-spanish-team): []
+    Ubuntu Doc Team (doc): [u'doc@lists.ubuntu.com']
+    Ubuntu Gnome Team (name18): []
+    Ubuntu Team (ubuntu-team): [u'support@ubuntu.com']
+    Warty Gnome Team (warty-gnome): []
+    Warty Security Team (name20): []
+
 Searching for people and teams without specifying some text to filter
 the results will cause no people/teams to be returned.
 
@@ -811,6 +907,36 @@ Searching only for Teams based on their names or email addresses:
 
     >>> print_people(personset.findTeam('translators'))
     Ubuntu Translators (ubuntu-translators): []
+
+    >>> print_people(personset.findTeam('team'))
+    Another a new team (new3): []
+    Hoary Gnome Team (name21): []
+    Just a new team (new-team): []
+    My Team (myteam): []
+    Other Team (otherteam): []
+    Simple Team (simple-team): []
+    testing Spanish team (testing-spanish-team): []
+    Ubuntu Gnome Team (name18): []
+    Ubuntu Team (ubuntu-team): [u'support@ubuntu.com']
+    Warty Gnome Team (warty-gnome): []
+    Warty Security Team (name20): []
+
+The Owner user is a member of the private membership team 'myteam' so
+the previous search will include myteam in the results.
+
+    >>> login('owner@canonical.com')
+    >>> print_people(personset.findTeam('team'))
+    Another a new team (new3): []
+    Hoary Gnome Team (name21): []
+    Just a new team (new-team): []
+    My Team (myteam): []
+    Other Team (otherteam): []
+    Simple Team (simple-team): []
+    testing Spanish team (testing-spanish-team): []
+    Ubuntu Gnome Team (name18): []
+    Ubuntu Team (ubuntu-team): [u'support@ubuntu.com']
+    Warty Gnome Team (warty-gnome): []
+    Warty Security Team (name20): []
 
 You can get the top overall contributors, that is, the people with the
 most karma.
@@ -1277,7 +1403,6 @@ but, since an emailless Person cannot be considered to be valid, it
 takes no parameters regarding to emails or passwords.
 
     >>> foo_bar = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
-    >>> person_set = getUtility(IPersonSet)
     >>> new_person = person_set.createPersonWithoutEmail(
     ...     'ix', PersonCreationRationale.BUGIMPORT,
     ...     comment="when importing bugs", displayname="Ford Prefect",

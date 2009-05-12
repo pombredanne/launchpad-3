@@ -36,6 +36,7 @@ __all__ = [
     'TeamContactMethod',
     'TeamMembershipRenewalPolicy',
     'TeamSubscriptionPolicy',
+    'validate_person_not_private_membership',
     'validate_public_person',
     ]
 
@@ -63,9 +64,10 @@ from canonical.launchpad import _
 
 from canonical.database.sqlbase import block_implicit_flushes
 from canonical.launchpad.fields import (
-    BlacklistableContentNameField, IconImageUpload,
-    is_valid_public_person_link, LogoImageUpload,
-    MugshotImageUpload, PasswordField, PublicPersonChoice, StrippedTextLine)
+    BlacklistableContentNameField, IconImageUpload, LogoImageUpload,
+    MugshotImageUpload, ParticipatingPersonChoice, PasswordField,
+    PublicPersonChoice, StrippedTextLine, is_private_membership,
+    is_valid_public_person)
 from canonical.launchpad.interfaces.account import AccountStatus, IAccount
 from canonical.launchpad.interfaces.emailaddress import IEmailAddress
 from lp.registry.interfaces.irc import IIrcID
@@ -78,7 +80,7 @@ from lp.registry.interfaces.location import (
 from lp.registry.interfaces.mailinglistsubscription import (
     MailingListAutoSubscribePolicy)
 from lp.registry.interfaces.mentoringoffer import IHasMentoringOffers
-from canonical.launchpad.interfaces.specificationtarget import (
+from lp.blueprints.interfaces.specificationtarget import (
     IHasSpecifications)
 from lp.registry.interfaces.teammembership import (
     ITeamMembership, ITeamParticipation, TeamMembershipStatus)
@@ -99,23 +101,36 @@ class PrivatePersonLinkageError(ValueError):
 
 
 @block_implicit_flushes
-def validate_public_person(obj, attr, value):
-    """Validate that the person identified by value is public."""
+def validate_person(obj, attr, value, validate_func):
+    """Validate the person using the supplied function."""
     if value is None:
         return None
     assert isinstance(value, (int, long)), (
         "Expected int for Person foreign key reference, got %r" % type(value))
 
-    # XXX sinzui 2009-04-03 bug=354881: We do not want to import form the
+    # XXX sinzui 2009-04-03 bug=354881: We do not want to import from the
     # DB. This needs cleaning up.
     from lp.registry.model.person import Person
     person = Person.get(value)
-    if not is_valid_public_person_link(person, obj):
+    if validate_func(person):
         raise PrivatePersonLinkageError(
             "Cannot link person (name=%s, visibility=%s) to %s (name=%s)"
             % (person.name, person.visibility.name,
                obj, getattr(obj, 'name', None)))
     return value
+
+
+def validate_public_person(obj, attr, value):
+    """Validate that the person identified by value is public."""
+    def validate(person):
+        return not is_valid_public_person(person)
+
+    return validate_person(obj, attr, value, validate)
+
+
+def validate_person_not_private_membership(obj, attr, value):
+    """Validate that the person (value) is not a private membership team."""
+    return validate_person(obj, attr, value, is_private_membership)
 
 
 class PersonalStanding(DBEnumeratedType):
@@ -348,8 +363,18 @@ class PersonVisibility(DBEnumeratedType):
     PRIVATE_MEMBERSHIP = DBItem(20, """
         Private Membership
 
-        Only launchpad admins and team members can view the
-        membership list for this team.
+        Only Launchpad admins and team members can view the
+        membership list for this team.  The team is severely restricted in the
+        roles it can assume.
+        """)
+
+    PRIVATE = DBItem(30, """
+        Private
+
+        Only Launchpad admins and team members can view the membership list
+        for this team or its name.  The team roles are restricted to
+        subscribing to bugs, being bug supervisor, owning code branches, and
+        having a PPA.
         """)
 
 
@@ -732,12 +757,22 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers, IHasLogo,
     title = Attribute('Person Page Title')
 
     archive = exported(
-        Reference(title=_("Personal Package Archive"),
-                  description=_("The Archive owned by this person, his PPA."),
-                  schema=Interface)) # Really IArchive, see archive.py
+        Reference(
+            title=_("Default PPA"),
+            description=_("The PPA named 'ppa' owned by this person."),
+            readonly=True, required=False,
+            # Really IArchive, see archive.py
+            schema=Interface)
+        )
 
-    ppas = Attribute(
-        "List of PPAs owned by this person or team ordered by name.")
+    ppas = exported(
+        CollectionField(
+            title=_("PPAs for this person."),
+            description=_(
+                "PPAs owned by the context person ordered by name."),
+            readonly=True, required=False,
+            # Really IArchive, see archive.py
+            value_type=Reference(schema=Interface)))
 
     entitlements = Attribute("List of Entitlements for this person or team.")
 
@@ -789,6 +824,12 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers, IHasLogo,
             title=_("Hardware submissions"),
             readonly=True, required=False,
             value_type=Reference(schema=Interface))) # HWSubmission
+
+    private = exported(Bool(
+            title=_("This team is private"),
+            readonly=True, required=False,
+            description=_("Private teams are visible only to "
+                          "their members.")))
 
     @invariant
     def personCannotHaveIcon(person):
@@ -964,14 +1005,14 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers, IHasLogo,
     # @operation_parameters(team=copy_field(ITeamMembership['team']))
     # @export_read_operation()
     def inTeam(team):
-        """Return True if this person is a member or the owner of <team>.
+        """Is this person is a member or the owner of `team`?
 
-        This method is meant to be called by objects which implement either
-        IPerson or ITeam, and it will return True when you ask if a Person is
-        a member of himself (i.e. person1.inTeam(person1)).
+        Returns `True` when you ask if an `IPerson` (or an `ITeam`,
+        since it inherits from `IPerson`) is a member of himself
+        (i.e. `person1.inTeam(person1)`).
 
-        <team> can be the id of a team, an SQLObject representing the
-        ITeam, or the name of the team.
+        :param team: An object providing `IPerson`, the name of a
+            team, or `None` (in which case `False` is returned).
         """
 
     def clearInTeamCache():
@@ -1131,13 +1172,17 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers, IHasLogo,
         :return: True if the user was subscribed, false if they weren't.
         """
 
+    @operation_parameters(
+        name=TextLine(required=True, constraint=name_validator))
+    @operation_returns_entry(Interface) # Really IArchive.
+    @export_read_operation()
     def getPPAByName(name):
-        """Return a PPA with the given name if it exists or None.
+        """Return a PPA with the given name if it exists.
 
         :param name: A string with the exact name of the ppa being looked up.
+        :raises: `NoSuchPPA` if a suitable PPA could not be found.
 
-        :return: an `IArchive` record corresponding to the PPA or None if it
-            was not found.
+        :return: a PPA `IArchive` record corresponding to the name.
         """
 
 
@@ -1232,9 +1277,6 @@ class IPersonViewRestricted(Interface):
         exported_as='proposed_members')
     proposed_member_count = Attribute("Number of PROPOSED members")
 
-    mapped_participants = CollectionField(
-        title=_("List of participants with coordinates."),
-        value_type=Reference(schema=Interface))
     mapped_participants_count = Attribute(
         "The number of mapped participants")
     unmapped_participants = CollectionField(
@@ -1242,6 +1284,13 @@ class IPersonViewRestricted(Interface):
         value_type=Reference(schema=Interface))
     unmapped_participants_count = Attribute(
         "The number of unmapped participants")
+
+    def getMappedParticipants(limit=None):
+        """List of participants with coordinates.
+
+        :param limit: The optional maximum number of items to return.
+        :return: A list of `IPerson` objects
+        """
 
     def getMappedParticipantsBounds():
         """Return a dict of the bounding longitudes latitudes, and centers.
@@ -1416,23 +1465,17 @@ class IPersonCommAdminWriteRestricted(Interface):
     visibility = exported(
         Choice(title=_("Visibility"),
                description=_(
-                   "Public visibility is standard, and Private Membership"
-                   " means that a team's members are hidden."),
+                   "Public visibility is standard.  Private Membership"
+                   " means that a team's members are hidden."
+                   "Private means the team is completely "
+                   "hidden [experimental]."
+                   ),
                required=True, vocabulary=PersonVisibility,
                default=PersonVisibility.PUBLIC))
 
 
 class IPersonSpecialRestricted(Interface):
     """IPerson methods that require launchpad.Special permission to use."""
-
-    def activateAccount(comment, password, preferred_email):
-        """Activate this person's Launchpad account.
-
-        :param comment: An explanation of why the account status changed.
-        :param password: The user's password.
-        :param preferred_email: The `EmailAddress` to set as the user's
-            preferred email address.
-        """
 
     def deactivateAccount(comment):
         """Deactivate this person's Launchpad account.
@@ -1448,6 +1491,21 @@ class IPersonSpecialRestricted(Interface):
         :param comment: An explanation of why the account status changed.
         """
 
+    def reactivate(comment, password, preferred_email):
+        """Reactivate this person and its account.
+
+        Set the account status to ACTIVE, the account's password to the given
+        one and its preferred email address.
+
+        If the person's name contains a -deactivatedaccount suffix (usually
+        added by `IPerson`.deactivateAccount(), it is removed.
+
+        :param comment: An explanation of why the account status changed.
+        :param password: The user's password.
+        :param preferred_email: The `EmailAddress` to set as the account's
+            preferred email address. It cannot be None.
+        """
+
 
 class IPerson(IPersonPublic, IPersonViewRestricted, IPersonEditRestricted,
               IPersonCommAdminWriteRestricted, IPersonSpecialRestricted,
@@ -1456,8 +1514,10 @@ class IPerson(IPersonPublic, IPersonViewRestricted, IPersonEditRestricted,
     export_as_webservice_entry(plural_name='people')
 
 
-# Set the PublicPersonChoice schema to the newly defined interface.
+# Set the schemas to the newly defined interface for classes that deferred
+# doing so when defined.
 PublicPersonChoice.schema = IPerson
+ParticipatingPersonChoice.schema = IPerson
 
 
 class INewPersonForm(IPerson):
@@ -1720,14 +1780,12 @@ class IPersonSet(Interface):
         text=TextLine(title=_("Search text"), default=u""))
     @operation_returns_collection_of(IPerson)
     @export_read_operation()
-    def find(text="", orderBy=None):
+    def find(text=""):
         """Return all non-merged Persons and Teams whose name, displayname or
         email address match <text>.
 
-        <orderBy> can be either a string with the column name you want to sort
-        or a list of column names as strings.
-        If no orderBy is specified the results will be ordered using the
-        default ordering specified in Person._defaultOrder.
+        The results will be ordered using the default ordering specified in
+        Person._defaultOrder.
 
         While we don't have Full Text Indexes in the emailaddress table, we'll
         be trying to match the text only against the beginning of an email
@@ -1738,7 +1796,7 @@ class IPersonSet(Interface):
         text=TextLine(title=_("Search text"), default=u""))
     @operation_returns_collection_of(IPerson)
     @export_read_operation()
-    def findPerson(text="", orderBy=None, exclude_inactive_accounts=True,
+    def findPerson(text="", exclude_inactive_accounts=True,
                    must_have_email=False):
         """Return all non-merged Persons with at least one email address whose
         name, displayname or email address match <text>.
@@ -1746,10 +1804,8 @@ class IPersonSet(Interface):
         If text is an empty string, all persons with at least one email
         address will be returned.
 
-        <orderBy> can be either a string with the column name you want to sort
-        or a list of column names as strings.
-        If no orderBy is specified the results will be ordered using the
-        default ordering specified in Person._defaultOrder.
+        The results will be ordered using the default ordering specified in
+        Person._defaultOrder.
 
         If exclude_inactive_accounts is True, any accounts whose
         account_status is any of INACTIVE_ACCOUNT_STATUSES will not be in the
@@ -1767,14 +1823,12 @@ class IPersonSet(Interface):
         text=TextLine(title=_("Search text"), default=u""))
     @operation_returns_collection_of(IPerson)
     @export_read_operation()
-    def findTeam(text="", orderBy=None):
+    def findTeam(text=""):
         """Return all Teams whose name, displayname or email address
         match <text>.
 
-        <orderBy> can be either a string with the column name you want to sort
-        or a list of column names as strings.
-        If no orderBy is specified the results will be ordered using the
-        default ordering specified in Person._defaultOrder.
+        The results will be ordered using the default ordering specified in
+        Person._defaultOrder.
 
         While we don't have Full Text Indexes in the emailaddress table, we'll
         be trying to match the text only against the beginning of an email
@@ -1980,7 +2034,7 @@ class NoSuchPerson(NameLookupFailed):
 # Fix value_type.schema of IPersonViewRestricted attributes.
 for name in ['allmembers', 'activemembers', 'adminmembers', 'proposedmembers',
              'invited_members', 'deactivatedmembers', 'expiredmembers',
-             'mapped_participants', 'unmapped_participants']:
+             'unmapped_participants']:
     IPersonViewRestricted[name].value_type.schema = IPerson
 
 IPersonPublic['sub_teams'].value_type.schema = ITeam

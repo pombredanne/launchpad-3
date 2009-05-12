@@ -11,12 +11,12 @@ An unpriviledged user cannot reach this page.
   ...
   Unauthorized:...
 
-In fact, the "Change details" option won't even appear for them.
+In fact, the "Settings" option won't even appear for them.
 
   >>> browser.open(
   ...     'http://translations.launchpad.dev/evolution/trunk/+pots/'
   ...     'evolution-2.2/')
-  >>> browser.getLink('Change details').click()
+  >>> browser.getLink('Settings').click()
   Traceback (most recent call last):
   ...
   LinkNotFoundError
@@ -29,7 +29,7 @@ page.
   >>> browser.open(
   ...     'http://translations.launchpad.dev/evolution/trunk/+pots/'
   ...     'evolution-2.2/')
-  >>> browser.getLink('Change details').click()
+  >>> browser.getLink('Settings').click()
   >>> print browser.url
   http://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2/+edit
 

@@ -106,7 +106,13 @@ label, p {max-width: 60em;}
 html {background: #fff; color: #000; font: 83.33% sans-serif;}
 /* Monospace text uses the reciprocal of this percentage, so that it
 exactly obeys your preferred monospace font size: */
-code, pre, samp, tt, #bug-description, .bug-comment {font: 120% monospace;}
+code, pre, samp, tt, #bug-description, .bug-comment, .bug-activity {
+  font: 120% monospace;
+}
+
+.bug-activity {
+  color: #555;
+}
 
 /* Links are blue, brighter when clicked, and greyer once visited: */
 :link, :visited               {color: #03a;    text-decoration: none;}
@@ -145,13 +151,20 @@ h2, h3, h4, h5, h6 { margin-top: 1em; }
 ul {margin-left: 0; padding-left: 22px; /* works for 14px icons */}
 
 .exception {color: #cc0000;}
-.discreet, .lesser {font-size: 90%;}
+.discreet, .lesser, .duplicate-details {font-size: 90%;}
 .offline {text-align: center; margin: 2em 0;}
 .unavailable {color: #999; background: none;}
+
+.duplicate-details { margin-bottom: 1em; }
+.duplicate-details p { padding: 0em; margin-top: 0em; margin-bottom: 0.2em; }
 
 /* Blank space at the top of the page makes the location bar more noticable.
 Ideally page margins would scale non-linearly, but absolute is next best: */
 body {margin: 0; padding: 10px 20px;}
+
+/* Using colored text as you wish. */
+.green {color: green;}
+.red {color: red;}
 
 /* === Error, warning, and informational messages === */
 /* Error, warning, and informational alerts are in a centered box: */
@@ -195,6 +208,15 @@ table.form .error {background: none;}
     color: red;
     font-weight: bold;
 }
+.sml-informational {
+  background: #d4e8ff url('/+icing/blue-fade-to-grey');
+  border: solid #666;
+  border-width: 1px 2px 2px 1px;
+  color: black;
+  padding: 5px 5px 5px 5px;
+  width:44em;
+}
+.sml-informational::before {content: url('/@@/info');}
 
 .helpwanted {background-color: #fafca9; color: black; border: 1px solid black;
     padding: 0.5em; font-size: smaller; padding-left: 3em
@@ -433,6 +455,8 @@ img.collapseIcon {text-decoration: none; vertical-align: middle;}
 fieldset .collapsed {display: none;}
 fieldset .expanded {display: block;}
 fieldset.collapsible legend {font-weight: normal;}
+
+.unseen {display: none;}
 
 form.primary.search {
   margin-bottom: 2em;
@@ -1322,16 +1346,20 @@ a.add {
 .boardBugActivityBody {
   padding: 0.5em 12px;
   background-color: #fafafa;
-  color: #555;
 }
 .boardBugActivityBody table {
   margin-bottom: 0.5em;
   margin-top: 0.5em;
 }
 .boardCommentContent { line-height: 1.5em;}
-.boardCommentFooter {background-color: #eee; padding: 0.5em 12px;}
+.boardCommentFooter {
+  background-color: #eee;
+  padding: 0.5em 12px;
+  border-top: 1px solid #ddd;
+}
 dl.faq dt {font-weight: bold;}
 dl.faq dd {margin: 1em 0 2em 4em;}
+.adminHiddenComment {background-color:yellow;}
 
 /* --- Overview --- */
 
@@ -1367,7 +1395,14 @@ body.tab-overview #actions h2, body.tab-overview #actions h2:hover {
   background: none;
   color: #83ad23;
 }
-
+body.tab-overview #description {
+    width: 50em;
+}
+body.tab-overview #description fieldset {
+    border: 1px solid gray;
+    padding: 0 1em;
+    margin:0 1em 1em 0;
+}
 /* The top-most Person portlet, Contact Details, is allowed to float up and
 beside the mugshot. */
 #contact-details {clear: none;}
@@ -1737,6 +1772,14 @@ body.tab-bugs #actions h2, body.tab-bugs #actions h2:hover {
 
 /* In a bug report page, the current context is highlighted in yellow: */
 #affected-software tr.highlight {background-color: #ff9;}
+
+/* Bug report page subscribe/unsubscribe spinner */
+div#sub-unsub-spinner {
+  background: url(/@@/spinner/) center left no-repeat;
+  color:#999;
+  display:none;
+  padding:3px 5px 2px 17px;
+}
 
 
 /* --- Blueprints --- */

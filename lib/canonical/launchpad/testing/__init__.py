@@ -99,9 +99,21 @@ class TestCase(unittest.TestCase):
         """
         self._cleanups.append((function, arguments, keywordArguments))
 
+    def installFixture(self, fixture):
+        """Install 'fixture', an object that has a `setUp` and `tearDown`.
+
+        `installFixture` will run 'fixture.setUp' and schedule
+        'fixture.tearDown' to be run during the test's tear down (using
+        `addCleanup`).
+
+        :param fixture: Any object that has a `setUp` and `tearDown` method.
+        """
+        fixture.setUp()
+        self.addCleanup(fixture.tearDown)
+
     def assertProvides(self, obj, interface):
         """Assert 'obj' provides 'interface'.
-        
+
         You should probably be using `assertCorrectlyProvides`.
         """
         self.assertTrue(
@@ -364,7 +376,7 @@ class TestCaseWithFactory(TestCase):
         return browser
 
     def create_branch_and_tree(self, tree_location='.', product=None,
-                               hosted=False, db_branch=None):
+                               hosted=False, db_branch=None, format=None):
         """Create a database branch, bzr branch and bzr checkout.
 
         :param tree_location: The path on disk to create the tree at.
@@ -372,10 +384,13 @@ class TestCaseWithFactory(TestCase):
         :param hosted: If True, create in the hosted area.  Otherwise, create
             in the mirrored area.
         :param db_branch: If supplied, the database branch to use.
+        :param format: Override the default bzrdir format to create.
         :return: a `Branch` and a workingtree.
         """
-        from bzrlib.bzrdir import BzrDir
+        from bzrlib.bzrdir import BzrDir, format_registry
         from bzrlib.transport import get_transport
+        if format is not None and isinstance(format, basestring):
+            format = format_registry.get(format)()
         if db_branch is None:
             if product is None:
                 db_branch = self.factory.makeAnyBranch()
@@ -392,7 +407,8 @@ class TestCaseWithFactory(TestCase):
             transport.clone('../..').ensure_base()
             transport.clone('..').ensure_base()
         self.addCleanup(transport.delete_tree, '.')
-        bzr_branch = BzrDir.create_branch_convenience(branch_url)
+        bzr_branch = BzrDir.create_branch_convenience(
+            branch_url, format=format)
         return db_branch, bzr_branch.create_checkout(
             tree_location, lightweight=True)
 

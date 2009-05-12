@@ -35,7 +35,9 @@ for teams (as they're defined in the ITeam interface).
     name: u'salgado'
     open_membership_invitations_collection_link: u'http://.../~salgado/open_membership_invitations'
     participants_collection_link: u'http://.../~salgado/participants'
+    ppas_collection_link: u'http://.../~salgado/ppas'
     preferred_email_address_link: u'http://.../~salgado/+email/guilherme.salgado@canonical.com'
+    private: False
     proposed_members_collection_link: u'http://.../~salgado/proposed_members'
     resource_type_link: u'http://.../#person'
     self_link: u'http://.../~salgado'
@@ -77,7 +79,9 @@ for teams (as they're defined in the ITeam interface).
     name: u'ubuntu-team'
     open_membership_invitations_collection_link: u'http://.../~ubuntu-team/open_membership_invitations'
     participants_collection_link: u'http://.../~ubuntu-team/participants'
+    ppas_collection_link: u'http://.../~ubuntu-team/ppas'
     preferred_email_address_link: u'http://.../~ubuntu-team/+email/support@ubuntu.com'
+    private: False
     proposed_members_collection_link: u'http://.../~ubuntu-team/proposed_members'
     renewal_policy: u'invite them to apply for renewal'
     resource_type_link: u'http://.../#team'
@@ -449,9 +453,10 @@ to, obviously.
     HTTP/1.1 404 Not Found
     ...
 
+
 === PPAs ===
 
-We can get to the person's PPA via the archive property:
+We can get to the person's default PPA via the 'archive' property:
 
     >>> sabdfl_archive_link = sabdfl['archive_link']
     >>> print sabdfl_archive_link
@@ -460,6 +465,44 @@ We can get to the person's PPA via the archive property:
     >>> sabdfl_archive = webservice.get(sabdfl_archive_link).jsonBody()
     >>> print sabdfl_archive['description']
     packages to help the humanity (you know, ubuntu)
+
+The 'ppas' property returns a collection of PPAs owned by that
+person.
+
+    >>> print_self_link_of_entries(webservice.get(
+    ...     sabdfl['ppas_collection_link']).jsonBody())
+    http://.../~sabdfl/+archive/ppa
+
+A specific PPA can be looked up by name via 'getPPAByName'
+named-operation on IPerson.
+
+    >>> print webservice.named_get(
+    ...     sabdfl['self_link'], 'getPPAByName',
+    ...     name='ppa').jsonBody()['self_link']
+    http://.../~sabdfl/+archive/ppa
+
+In cases where a PPA with a given name cannot be found, None is
+returned.
+
+    >>> print webservice.named_get(
+    ...     sabdfl['self_link'], 'getPPAByName', name='boing')
+    HTTP/1.1 400 Bad Request
+    ...
+    NoSuchPPA: No such ppa: 'boing'.
+
+The method doesn't even bother to execute the lookup if the given
+'name' doesn't match the constraints for PPA names. An error message
+indicating what was wrong is returned.
+
+    >>> print webservice.named_get(
+    ...     sabdfl['self_link'], 'getPPAByName', name='XpTo@#$%')
+    HTTP/1.1 400 Bad Request
+    ...
+    name:
+    Invalid name 'XpTo@#$%'. Names must start with a letter or
+    number and be lowercase. The characters <samp>+</samp>,
+    <samp>-</samp> and <samp>.</samp> are also allowed after the
+    first character.
 
 
 == Custom operations ==

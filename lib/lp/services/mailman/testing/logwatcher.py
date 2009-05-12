@@ -4,6 +4,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'BounceWatcher'
     'LogWatcher',
     'MHonArcWatcher',
     'SMTPDWatcher',
@@ -293,3 +294,12 @@ class ErrorWatcher(LogWatcher):
     """Watch logs/error."""
 
     FILENAME = 'error'
+
+
+class BounceWatcher(LogWatcher):
+    """Watch logs/bounce."""
+
+    FILENAME = 'bounce'
+
+    def wait_for_processing(self):
+        return self.wait('<BounceRunner at')

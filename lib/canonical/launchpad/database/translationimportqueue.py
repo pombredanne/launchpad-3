@@ -8,6 +8,7 @@ __all__ = [
     'TranslationImportQueue'
     ]
 
+import logging
 import tarfile
 import os.path
 import posixpath
@@ -18,6 +19,7 @@ from cStringIO import StringIO
 from zope.interface import implements
 from zope.component import getUtility
 from sqlobject import SQLObjectNotFound, StringCol, ForeignKey, BoolCol
+from storm.locals import Int, Reference
 
 from canonical.database.sqlbase import (
     cursor, quote, quote_like, SQLBase, sqlvalues)
@@ -62,12 +64,13 @@ class TranslationImportQueueEntry(SQLBase):
         storm_validator=validate_public_person, notNull=True)
     dateimported = UtcDateTimeCol(dbName='dateimported', notNull=True,
         default=DEFAULT)
-    sourcepackagename = ForeignKey(foreignKey='SourcePackageName',
-        dbName='sourcepackagename', notNull=False, default=None)
-    distroseries = ForeignKey(foreignKey='DistroSeries',
-        dbName='distroseries', notNull=False, default=None)
-    productseries = ForeignKey(foreignKey='ProductSeries',
-        dbName='productseries', notNull=False, default=None)
+    sourcepackagename_id = Int(name='sourcepackagename', allow_none=True)
+    sourcepackagename = Reference(
+        sourcepackagename_id, 'SourcePackageName.id')
+    distroseries_id = Int(name='distroseries', allow_none=True)
+    distroseries = Reference(distroseries_id, 'DistroSeries.id')
+    productseries_id = Int(name='productseries', allow_none=True)
+    productseries = Reference(productseries_id, 'ProductSeries.id')
     is_published = BoolCol(dbName='is_published', notNull=True)
     pofile = ForeignKey(foreignKey='POFile', dbName='pofile',
         notNull=False, default=None)
@@ -84,7 +87,7 @@ class TranslationImportQueueEntry(SQLBase):
     @property
     def is_targeted_to_ubuntu(self):
         return (self.distroseries is not None and
-            self.distroseries.distribution == 
+            self.distroseries.distribution ==
             getUtility(ILaunchpadCelebrities).ubuntu)
 
     @property
@@ -191,6 +194,16 @@ class TranslationImportQueueEntry(SQLBase):
             self.path, productseries=self.productseries,
             distroseries=self.distroseries,
             sourcepackagename=self.sourcepackagename)
+
+    def setStatus(self, status):
+        """See `ITranslationImportQueueEntry`."""
+        # XXX JeroenVermeulen 2009-04-09 bug=358404: This looks like a
+        # good place to set date_status_changed.
+        self.status = status
+
+    def setErrorOutput(self, output):
+        """See `ITranslationImportQueueEntry`."""
+        self.error_output = output
 
     def _findCustomLanguageCode(self, language_code):
         """Find applicable custom language code, if any."""
@@ -347,6 +360,20 @@ class TranslationImportQueueEntry(SQLBase):
             if potemplate is None:
                 # No way to guess anything...
                 return None
+
+            existing_entry = TranslationImportQueueEntry.selectOneBy(
+                importer=self.importer, path=self.path, potemplate=potemplate,
+                distroseries=self.distroseries,
+                sourcepackagename=self.sourcepackagename,
+                productseries=self.productseries)
+            if existing_entry is not None:
+                logging.warn(
+                    "%s: can't approve entry %d ('%s') "
+                    "because entry %d is in the way." % (
+                        potemplate.title, self.id, self.path,
+                        existing_entry.id))
+                return None
+
             # We got the potemplate, try to guess the language from
             # the info we have.
             self.potemplate = potemplate
@@ -358,7 +385,7 @@ class TranslationImportQueueEntry(SQLBase):
         if guessed_language is None:
             # Custom language code says to ignore imports with this language
             # code.
-            self.status = RosettaImportStatus.DELETED
+            self.setStatus(RosettaImportStatus.DELETED)
             return None
         elif guessed_language == '':
             # We don't recognize this as a translation file with a name
@@ -598,8 +625,8 @@ class TranslationImportQueue:
 
         return entry
 
-    def entryCount(self):
-        """See ITranslationImportQueue."""
+    def countEntries(self):
+        """See `ITranslationImportQueue`."""
         return TranslationImportQueueEntry.select().count()
 
     def _iterNeedsReview(self):
@@ -739,7 +766,7 @@ class TranslationImportQueue:
                 pofile=pofile, format=format)
         else:
             # It's an update.
-            entry.error_output = None
+            entry.setErrorOutput(None)
             entry.content = alias
             entry.is_published = is_published
             if potemplate is not None:
@@ -762,7 +789,7 @@ class TranslationImportQueue:
                 # We got an update for this entry. If the previous import is
                 # deleted or failed or was already imported we should retry
                 # the import now, just in case it can be imported now.
-                entry.status = RosettaImportStatus.NEEDS_REVIEW
+                entry.setStatus(RosettaImportStatus.NEEDS_REVIEW)
 
             entry.date_status_changed = UTC_NOW
             entry.format = format
@@ -1019,7 +1046,7 @@ class TranslationImportQueue:
 
             # Already know where it should be imported. The entry is approved
             # automatically.
-            entry.status = RosettaImportStatus.APPROVED
+            entry.setStatus(RosettaImportStatus.APPROVED)
             # Do the commit to save the changes.
             ztm.commit()
 
@@ -1053,7 +1080,7 @@ class TranslationImportQueue:
             if has_templates and not has_templates_unblocked:
                 # All templates on the same directory as this entry are
                 # blocked, so we can block it too.
-                entry.status = RosettaImportStatus.BLOCKED
+                entry.setStatus(RosettaImportStatus.BLOCKED)
                 num_blocked += 1
                 if ztm is not None:
                     # Do the commit to save the changes.

@@ -36,7 +36,7 @@ He can't login without first validating his email address.
   user can validate it and login.
 
   >>> import email, re
-  >>> from canonical.launchpad.mail import stub
+  >>> from lp.services.mail import stub
   >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
 
   Check if the email was sent to the right address.
