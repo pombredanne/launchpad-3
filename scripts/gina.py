@@ -36,19 +36,18 @@ from contrib.glock import GlobalLock, LockAlreadyAcquired
 from canonical import lp
 from canonical.lp import initZopeless
 from canonical.config import config
-from canonical.launchpad.interfaces import (
-    IComponentSet, PackagePublishingPocket)
+from lp.soyuz.interfaces.component import IComponentSet
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger_options, log)
 
-from canonical.launchpad.scripts.gina import ExecutionError
-from canonical.launchpad.scripts.gina.katie import Katie
-from canonical.launchpad.scripts.gina.archive import (ArchiveComponentItems,
+from lp.soyuz.scripts.gina import ExecutionError
+from lp.soyuz.scripts.gina.katie import Katie
+from lp.soyuz.scripts.gina.archive import (ArchiveComponentItems,
     PackagesMap, MangledArchiveError)
 
-from canonical.launchpad.scripts.gina.handlers import (ImporterHandler,
+from lp.soyuz.scripts.gina.handlers import (ImporterHandler,
     MultiplePackageReleaseError, NoSourcePackageError, DataSetupError)
-from canonical.launchpad.scripts.gina.packages import (SourcePackageData,
+from lp.soyuz.scripts.gina.packages import (SourcePackageData,
     BinaryPackageData, MissingRequiredArguments, DisplayNameDecodingError,
     PoolFileNotFound, InvalidVersionError)
 
@@ -115,6 +114,9 @@ def main():
 
 
 def run_gina(options, ztm, target_section):
+    # Avoid circular imports.
+    from lp.soyuz.interfaces.publishing import PackagePublishingPocket
+
     package_root = target_section.root
     keyrings_root = target_section.keyrings
     distro = target_section.distro

@@ -22,10 +22,12 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.config import config
 from canonical.librarian.interfaces import ILibrarianClient
 from canonical.librarian.utils import copy_and_close
-from canonical.launchpad.interfaces import (
-    ArchivePurpose, BuildDaemonError, BuildStatus, IBuildQueueSet,
-    BuildJobMismatch, IBuildSet, IBuilderSet, NotFoundError, pocketsuffix
-    )
+from lp.soyuz.interfaces.archive import ArchivePurpose
+from lp.soyuz.interfaces.build import BuildStatus, IBuildSet
+from lp.soyuz.interfaces.builder import (
+    BuildDaemonError, BuildJobMismatch, IBuilderSet)
+from lp.soyuz.interfaces.buildqueue import IBuildQueueSet
+from canonical.launchpad.interfaces import NotFoundError, pocketsuffix
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import (
     flush_database_updates, clear_current_connection_cache, cursor)

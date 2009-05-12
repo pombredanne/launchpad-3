@@ -104,7 +104,7 @@ Then distribution main archives (primary, partner and debug).
 
 And finally Copy archives.
 
-    >>> from canonical.launchpad.interfaces.archive import (
+    >>> from lp.soyuz.interfaces.archive import (
     ...     ArchivePurpose, IArchiveSet)
     >>> copy = getUtility(IArchiveSet).new(
     ...     owner=sabdfl, purpose=ArchivePurpose.COPY,

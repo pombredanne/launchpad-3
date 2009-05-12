@@ -26,12 +26,12 @@ from canonical.archiveuploader.dscfile import DSCFile
 from canonical.archiveuploader.nascentuploadfile import (
     UploadError, UploadWarning, CustomUploadFile, SourceUploadFile,
     BaseBinaryUploadFile)
+from lp.soyuz.interfaces.archive import ArchivePurpose, MAIN_ARCHIVE_PURPOSES
+from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
+from lp.soyuz.interfaces.publishing import PackagePublishingPocket
 from canonical.launchpad.interfaces import (
-    IArchivePermissionSet, IBinaryPackageNameSet,
-    IDistributionSet, ILibraryFileAliasSet, ISourcePackageNameSet,
-    NotFoundError, PackagePublishingPocket, QueueInconsistentStateError)
-from canonical.launchpad.interfaces.archive import (
-    ArchivePurpose, MAIN_ARCHIVE_PURPOSES)
+    IBinaryPackageNameSet, IDistributionSet, ILibraryFileAliasSet,
+    ISourcePackageNameSet, NotFoundError, QueueInconsistentStateError)
 
 
 PARTNER_COMPONENT_NAME = 'partner'
