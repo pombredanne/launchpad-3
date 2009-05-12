@@ -18,7 +18,7 @@ The mail get sent when the transaction gets commited:
 Now let's look at the sent email:
 
     >>> import email
-    >>> from canonical.launchpad.mail import stub
+    >>> from lp.services.mail import stub
     >>> from_addr, to_addr, raw_message = stub.test_emails.pop()
     >>> msg = email.message_from_string(raw_message)
     >>> msg['To']

@@ -62,12 +62,12 @@ from canonical.launchpad.interfaces.publishing import PackagePublishingPocket
 from canonical.shipit.interfaces.shipit import (
     IShippingRequestSet, IStandardShipItRequestSet, ShipItFlavour,
     ShippingRequestStatus)
-from canonical.launchpad.interfaces.specification import (
+from lp.blueprints.interfaces.specification import (
     ISpecificationSet, SpecificationDefinitionStatus)
 from canonical.launchpad.interfaces.translationgroup import (
     ITranslationGroupSet)
 from canonical.launchpad.ftests import syncUpdate
-from canonical.launchpad.mail.signedmessage import SignedMessage
+from lp.services.mail.signedmessage import SignedMessage
 from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
 from canonical.launchpad.webapp.interfaces import IStoreSelector
 from lp.code.interfaces.branch import BranchType, UnknownBranchTypeError

@@ -47,7 +47,7 @@ from canonical.launchpad.interfaces.component import IComponentSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageNameSet)
-from canonical.launchpad.mail import stub
+from lp.services.mail import stub
 from canonical.launchpad.testing.fakepackager import FakePackager
 from canonical.launchpad.tests.mail_helpers import pop_notifications
 from canonical.launchpad.webapp.errorlog import ErrorReportingUtility

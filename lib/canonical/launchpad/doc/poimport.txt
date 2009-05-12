@@ -581,7 +581,7 @@ in this test; We don't touch entries that were in the queue previously.
 And run the import script.
 
     >>> import email
-    >>> from canonical.launchpad.mail import stub
+    >>> from lp.services.mail import stub
     >>> process = ImportProcess(transaction, FakeLogger())
     >>> process.run()
     INFO    Importing: Template "firefox" in Mozilla Firefox trunk

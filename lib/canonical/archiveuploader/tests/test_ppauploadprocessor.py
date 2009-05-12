@@ -27,7 +27,7 @@ from canonical.launchpad.interfaces import (
     NonBuildableSourceUploadError)
 from canonical.launchpad.testing.fakepackager import FakePackager
 from canonical.launchpad.tests.test_publishing import SoyuzTestPublisher
-from canonical.launchpad.mail import stub
+from lp.services.mail import stub
 
 
 class TestPPAUploadProcessorBase(TestUploadProcessorBase):
