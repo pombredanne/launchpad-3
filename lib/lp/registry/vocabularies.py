@@ -80,7 +80,7 @@ from canonical.launchpad.interfaces.bugtask import (
 from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.lpstorm import IStore
-from canonical.launchpad.interfaces.specification import ISpecification
+from lp.blueprints.interfaces.specification import ISpecification
 from canonical.launchpad.interfaces.account import AccountStatus
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import (

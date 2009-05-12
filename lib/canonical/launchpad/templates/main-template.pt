@@ -431,54 +431,6 @@
         <span id="help-close"></span>
       </div>
     </div>
-    <tal:datetimepicker condition="request/needs_datetimepicker_iframe">
-      <script language="Javascript" type="text/javascript">
-          function pickDateTime(field, range) {
-              e = document.getElementById(field);
-              if (e == null) {
-                  alert(field);
-              }
-              if(self.DateTimePicker) {
-                  DateTimePicker.fPopCalendar(e, range);
-                  return false;
-              }
-          }
-      </script>
-      <iframe
-          width="174" height="189"
-          name="gToday:datetimepicker:agenda.js:DateTimePicker:plugins_time.js"
-          id="gToday:datetimepicker:agenda.js:DateTimePicker:plugins_time.js"
-          src="/+popcalxp/ipopeng.htm"
-          scrolling="no"
-          frameborder="0"
-          style="visibility:visible; z-index:9999; position:absolute;
-                 top:-500px; left:-500px;">
-      </iframe>
-    </tal:datetimepicker>
-    <tal:datepicker condition="request/needs_datepicker_iframe">
-      <script language="Javascript" type="text/javascript">
-          function pickDate(field, range) {
-              e = document.getElementById(field);
-              if (e == null) {
-                  alert(field);
-              }
-              if(self.DatePicker) {
-                  DatePicker.fPopCalendar(e, range);
-                  return false;
-              }
-          }
-      </script>
-      <iframe
-          width="174" height="189"
-          name="gToday:datepicker:agenda.js:DatePicker:plugins.js"
-          id="gToday:datepicker:agenda.js:DatePicker:plugins.js"
-          src="/+popcalxp/ipopeng.htm"
-          scrolling="no"
-          frameborder="0"
-          style="visibility:visible; z-index:9999; position:absolute;
-                 top:-500px; left:-500px;">
-      </iframe>
-    </tal:datepicker>
 
     <tal:cache condition="view/user|nothing"
                define="cache request/webservicerequest:cache;
