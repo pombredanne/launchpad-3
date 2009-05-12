@@ -14,9 +14,6 @@ __all__ = [
 from zope.component import getUtility
 
 from canonical.launchpad.webapp.interfaces import NotFoundError
-from lp.soyuz.interfaces.archive import ArchivePurpose, IArchiveSet
-from lp.registry.interfaces.distribution import IDistributionSet
-from lp.soyuz.interfaces.publishing import PackagePublishingPocket
 
 
 class PackageLocation:
@@ -85,6 +82,11 @@ def build_package_location(distribution_name, suite=None, purpose=None,
     #   - archive.ubuntu.com/ubuntu-security/hoary
     #   - security.ubuntu.com/ubuntu/hoary
     #   - archive.canonical.com/gutsy
+
+    # Avoid circular imports.
+    from lp.registry.interfaces.distribution import IDistributionSet
+    from lp.soyuz.interfaces.archive import ArchivePurpose, IArchiveSet
+    from lp.soyuz.interfaces.publishing import PackagePublishingPocket
 
     try:
         distribution = getUtility(IDistributionSet)[distribution_name]

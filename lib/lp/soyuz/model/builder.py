@@ -34,7 +34,6 @@ from canonical.database.sqlbase import SQLBase, sqlvalues
 from lp.soyuz.adapters.archivedependencies import (
     get_primary_current_component, get_sources_list_for_building)
 from lp.soyuz.model.buildqueue import BuildQueue
-from lp.soyuz.model.publishing import makePoolPath
 from lp.registry.interfaces.person import validate_public_person
 from canonical.launchpad.helpers import filenameToContentType
 from canonical.launchpad.interfaces._schema_circular_imports import IHasBuildRecords
@@ -144,6 +143,10 @@ class Builder(SQLBase):
         # The URL to the file in the archive consists of these parts:
         # archive_url / makePoolPath() / filename
         # Once this is constructed we add the http basic auth info.
+
+        # Avoid circular imports.
+        from lp.soyuz.model.publishing import makePoolPath
+
         build = build_queue_item.build
         archive = build.archive
         archive_url = archive.archive_url

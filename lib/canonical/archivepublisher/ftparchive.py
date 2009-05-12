@@ -7,9 +7,6 @@ from StringIO import StringIO
 
 from canonical.archivepublisher.utils import process_in_batches
 from canonical.database.sqlbase import sqlvalues
-from lp.soyuz.model.publishing import (
-    SourcePackagePublishingHistory, BinaryPackagePublishingHistory,
-    SourcePackageFilePublishing, BinaryPackageFilePublishing)
 from canonical.launchpad.interfaces import (
     PackagePublishingStatus, PackagePublishingPocket, pocketsuffix)
 
@@ -254,6 +251,8 @@ class FTPArchiveHandler:
 
     def getSourcesForOverrides(self, distroseries, pocket):
         """Return SelectResults containing SourcePackagePublishingHistory."""
+        # Avoid circular imports.
+        from lp.soyuz.model.publishing import SourcePackagePublishingHistory
         return SourcePackagePublishingHistory.select(
             """
             SourcePackagePublishingHistory.distroseries = %s AND
@@ -269,6 +268,9 @@ class FTPArchiveHandler:
 
     def getBinariesForOverrides(self, distroseries, pocket):
         """Return SelectResults containing BinaryPackagePublishingHistory."""
+        # Avoid circular imports.
+        from lp.soyuz.model.publishing import BinaryPackagePublishingHistory
+
         return BinaryPackagePublishingHistory.select(
             """
             BinaryPackagePublishingHistory.distroarchseries =
@@ -485,6 +487,10 @@ class FTPArchiveHandler:
 
     def generateFileLists(self, fullpublish=False):
         """Collect currently published FilePublishings and write filelists."""
+        # Avoid circular imports.
+        from lp.soyuz.model.publishing import (
+            BinaryPackageFilePublishing, SourcePackageFilePublishing)
+
         for distroseries in self.distro.serieses:
             for pocket in pocketsuffix:
                 if not fullpublish:
