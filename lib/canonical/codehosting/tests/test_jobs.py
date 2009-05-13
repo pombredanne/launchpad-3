@@ -17,7 +17,7 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.database.diff import StaticDiff
 from lp.code.interfaces.branchsubscription import (
     BranchSubscriptionDiffSize,)
-from canonical.launchpad.interfaces.job import JobStatus
+from lp.services.job.interfaces.job import JobStatus
 from lp.testing.mail_helpers import pop_notifications
 from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.launchpad.webapp import errorlog
