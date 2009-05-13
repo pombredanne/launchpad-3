@@ -14,7 +14,7 @@ from bzrlib.urlutils import escape
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.codehosting.inmemory import InMemoryFrontend
+from lp.codehosting.inmemory import InMemoryFrontend
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.ftests import ANONYMOUS, login, logout
 from canonical.launchpad.interfaces.scriptactivity import (

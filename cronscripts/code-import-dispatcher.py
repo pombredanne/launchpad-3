@@ -8,7 +8,7 @@ import _pythonpath
 
 from xmlrpclib import ServerProxy
 
-from canonical.codehosting.codeimport.dispatcher import CodeImportDispatcher
+from lp.codehosting.codeimport.dispatcher import CodeImportDispatcher
 from canonical.config import config
 from canonical.launchpad.scripts.base import LaunchpadScript
 from canonical.launchpad.webapp.errorlog import globalErrorUtility

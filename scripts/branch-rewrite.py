@@ -13,8 +13,8 @@ import _pythonpath
 import sys
 import xmlrpclib
 
-from canonical.codehosting.vfs import BlockingProxy
-from canonical.codehosting.rewrite import BranchRewriter
+from lp.codehosting.vfs import BlockingProxy
+from lp.codehosting.rewrite import BranchRewriter
 from canonical.config import config
 from canonical.launchpad.scripts.base import LaunchpadScript
 
