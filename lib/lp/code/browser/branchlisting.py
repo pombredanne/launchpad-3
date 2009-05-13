@@ -1385,13 +1385,17 @@ class SourcePackageBranchesView(BranchListingView):
             else:
                 is_dev_focus = 'sourcepackage-not-dev-focus'
             package = SourcePackage(our_sourcepackagename, series)
-            # XXX: This approach is inefficient. We should instead do
-            # something like:
+            # XXX: JonathanLange 2009-05-13: This approach is inefficient. We
+            # should instead do something like:
+            #
             #   SELECT distroseries, COUNT(id)
             #   FROM Branch
             #   WHERE distroseries IS NOT NULL
             #   AND sourcepackagename = ?
             #   GROUP BY distroseries
+            #
+            # It's not too bad though, since the number of active series is
+            # generally less than 5.
             num_branches = self._numBranchesInPackage(package)
             num_branches_text = get_plural_text(
                 num_branches, "branch", "branches")
