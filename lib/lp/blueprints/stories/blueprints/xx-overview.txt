@@ -81,7 +81,7 @@ Now we'll target our chosen blueprint to the new milestone:
     Support Native SVG Objects
     Target to a milestone...
     >>> milestones = browser.getControl('Milestone')
-    >>> milestones.displayValue = ['Mozilla Firefox: 1.0.9']
+    >>> milestones.displayValue = ['Mozilla Firefox 1.0.9']
     >>> browser.getControl('Change').click()
     >>> main = find_main_content(browser.contents)
     >>> print extract_text(main).encode('ascii', 'backslashreplace')
@@ -103,7 +103,7 @@ It's possible to navigate to the milestone directly:
 
     >>> user_browser.getLink('1.0.9').click()
     >>> print user_browser.title
-    Mozilla Firefox: 1.0.9
+    Mozilla Firefox 1.0.9
 
 
 === Viewing blueprints targeted to a distribution ===
@@ -173,7 +173,7 @@ Now we'll target our chosen blueprint to the new milestone:
     CD Media Integrity Check
     Target to a milestone...
     >>> milestones = browser.getControl('Milestone')
-    >>> milestones.displayValue = ['Ubuntu: drift-1']
+    >>> milestones.displayValue = ['Ubuntu drift-1']
     >>> browser.getControl('Change').click()
     >>> main = find_main_content(browser.contents)
     >>> print extract_text(main).encode('ascii', 'backslashreplace')
@@ -195,4 +195,4 @@ It's possible to navigate to the milestone directly:
 
     >>> user_browser.getLink('drift-1').click()
     >>> print user_browser.title
-    Ubuntu: drift-1
+    Ubuntu drift-1
