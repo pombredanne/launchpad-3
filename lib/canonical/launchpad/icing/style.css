@@ -1787,11 +1787,12 @@ body.tab-bugs #actions h2, body.tab-bugs #actions h2:hover {
 
 /* Bug report page subscribe/unsubscribe spinner */
 div#sub-unsub-spinner {
-  background: url(/@@/spinner/) center left no-repeat;
+  background: url(/@@/spinner) center left no-repeat;
   color:#999;
   display:none;
   padding:3px 5px 2px 17px;
 }
+.unsub-icon {position:absolute; right:8px;}
 
 
 /* --- Blueprints --- */
