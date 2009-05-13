@@ -63,10 +63,13 @@
         style="width: 15em; vertical-align: middle">
       <div class="status-content"
            style="width: 100%; float: left">
-        <div class="value" style="float: left"
-             tal:content="context/status/title" />
+        <a href="+edit"
+           class="value" style="float: left"
+           tal:content="context/status/title" />
         <div style="float: right; margin-right: 0.5em">
-          <img class="editicon" src="/@@/edit-grey" />
+          <a href="+edit">
+            <img class="editicon" src="/@@/edit-grey" />
+          </a>
         </div>
       </div>
     </td>

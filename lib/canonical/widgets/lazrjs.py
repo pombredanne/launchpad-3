@@ -115,7 +115,13 @@ class TextLineEditorWidget:
 
 def vocabulary_to_choice_edit_items(
     vocab, css_class_prefix=None, disabled_items=[]):
-    """ TODO """ # TODO
+    """Convert an enumerable to JSON for a ChoiceEdit.
+    
+    :vocab: The enumeration to iterate over.
+    :css_class_prefix: If present, append this to an item's value to create
+        the css_class property for it.
+    :disabled_items: A list of items that should be displayed, but disabled.
+    """
     items = []
     for item in vocab:
         new_item = {'name': item.value.title,

@@ -2991,17 +2991,20 @@ class BugTaskTableRowView(LaunchpadView):
 
     @property
     def status_widget_items(self):
-        """ """ # TODO
-        status_vocab_factory = vocab_factory(
-            BugTaskStatus, noshow=[BugTaskStatus.UNKNOWN])
+        """The available status items as JSON."""
+        if self.user is not None:
+            status_vocab_factory = vocab_factory(
+                BugTaskStatus, noshow=[BugTaskStatus.UNKNOWN])
 
-        disabled_items = [status for status in BugTaskStatus.items
-            if not self.context.canTransitionToStatus(status, self.user)]
+            disabled_items = [status for status in BugTaskStatus.items
+                if not self.context.canTransitionToStatus(status, self.user)]
 
-        items = vocabulary_to_choice_edit_items(
-            status_vocab_factory(self.context),
-            css_class_prefix='status',
-            disabled_items=disabled_items)
+            items = vocabulary_to_choice_edit_items(
+                status_vocab_factory(self.context),
+                css_class_prefix='status',
+                disabled_items=disabled_items)
+        else:
+            items = []
 
         return items
 
