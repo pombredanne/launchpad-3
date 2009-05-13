@@ -17,12 +17,14 @@ __all__ = [
     'IProjectBugAddForm',
     'InvalidBugTargetType',
     'InvalidDuplicateValue',
+    'UserCannotUnsubscribePerson',
     ]
 
 from zope.component import getUtility
 from zope.interface import Interface, Attribute
 from zope.schema import (
     Bool, Bytes, Choice, Datetime, Int, List, Object, Text, TextLine)
+from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
@@ -692,6 +694,11 @@ class IBug(ICanBeMentored):
 class InvalidDuplicateValue(Exception):
     """A bug cannot be set as the duplicate of another."""
     webservice_error(417)
+
+
+class UserCannotUnsubscribePerson(Unauthorized):
+    """User does not have persmisson to unsubscribe person or team."""
+    webservice_error(401)
 
 
 # We are forced to define these now to avoid circular import problems.

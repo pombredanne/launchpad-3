@@ -44,13 +44,15 @@ from lazr.restful.publisher import (
     WebServicePublicationMixin, WebServiceRequestTraversal)
 
 from canonical.launchpad.interfaces import (
-    IFeedsApplication, IPrivateApplication, IOpenIDApplication, IPerson,
-    IPersonSet, IWebServiceApplication, IOAuthConsumerSet, NonceAlreadyUsed,
+    IFeedsApplication, IPrivateApplication, IPerson, IPersonSet,
+    IWebServiceApplication, IOAuthConsumerSet, NonceAlreadyUsed,
     TimestampOrderingError, ClockSkew)
 from canonical.shipit.interfaces.shipit import IShipItApplication
+from canonical.signon.interfaces.openidserver import IOpenIDApplication
 import canonical.launchpad.layers
 import canonical.launchpad.versioninfo
 import canonical.shipit.layers
+import canonical.signon.layers
 
 from canonical.launchpad.webapp.adapter import (
     get_request_duration, RequestExpired)
@@ -1077,7 +1079,7 @@ class IdPublication(AccountPrincipalMixin, LaunchpadBrowserPublication):
 
 
 class IdBrowserRequest(LaunchpadBrowserRequest):
-    implements(canonical.launchpad.layers.IdLayer)
+    implements(canonical.signon.layers.IdLayer)
 
 
 # XXX sinzui 2008-09-04 bug=264783:
@@ -1089,7 +1091,7 @@ class OpenIDPublication(IdPublication):
 
 
 class OpenIDBrowserRequest(LaunchpadBrowserRequest):
-    implements(canonical.launchpad.layers.OpenIDLayer)
+    implements(canonical.signon.layers.OpenIDLayer)
 
 
 # ---- shipit

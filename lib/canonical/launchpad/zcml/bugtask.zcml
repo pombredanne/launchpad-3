@@ -103,6 +103,10 @@
         provides="canonical.launchpad.interfaces.IBug"
         factory="canonical.launchpad.database.bugtask.BugTaskToBugAdapter" />
 
+    <adapter
+        factory="canonical.launchpad.browser.bugtask.assignee_renderer"
+        name="assignee"/>
+
     <browser:pages
         for="canonical.launchpad.interfaces.IBugTask"
         class="canonical.launchpad.browser.BugTaskPortletView"
