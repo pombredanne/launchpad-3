@@ -74,7 +74,6 @@ config.setInstance('testrunner')
 
 # Remove this module's directory from path, so that zope.testbrowser
 # can import pystone from test:
-# TODO: is this still necessary?
 sys.path[:] = [p for p in sys.path if os.path.abspath(p) != BUILD_DIR]
 
 # Turn on psycopg debugging wrapper

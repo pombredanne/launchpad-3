@@ -92,7 +92,10 @@ class TacFile(Service):
             "--logfile", logfile,
             ]
 
-        env = os.environ.copy()
+        # We want to make sure that the Launchpad process will have the benefit
+        # of all of the dependency paths inserted by the buildout bin/run
+        # script. We pass them via PYTHONPATH.
+        env = dict(os.environ)
         env['PYTHONPATH'] = os.path.pathsep.join(sys.path)
 
         if config[self.section_name].spew:

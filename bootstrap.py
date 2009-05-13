@@ -11,6 +11,10 @@
 # FOR A PARTICULAR PURPOSE.
 #
 ##############################################################################
+
+# NOTE TO LAUNCHPAD DEVELOPERS: This is a bootstrapping file from the
+# zc.buildout project.  See the docstring below.
+
 """Bootstrap a buildout-based project
 
 Simply run this script in a directory containing a buildout.cfg.

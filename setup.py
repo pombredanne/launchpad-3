@@ -14,7 +14,7 @@ setup(
     name='lp',
     version=__version__,
     packages=find_packages('lib'),
-    package_dir={'':'lib'},
+    package_dir={'': 'lib'},
     include_package_data=True,
     zip_safe=False,
     maintainer='Launchpad Developers',
@@ -23,18 +23,21 @@ setup(
     license='LGPL v3',
     install_requires=[
         'setuptools',
-        ],
+    ],
     url='https://launchpad.net/',
     classifiers=[
         "Development Status :: 5 - Production/Stable",
         "Intended Audience :: Developers",
-        "Programming Language :: Python"],
+        "Programming Language :: Python",
+    ],
     extras_require=dict(
-        docs=['Sphinx',
-              'z3c.recipe.sphinxdoc']
+        docs=[
+            'Sphinx',
+            'z3c.recipe.sphinxdoc',
+        ]
     ),
     entry_points=dict(
-        console_scripts=[ # `console_scripts` is a magic name to zc.buildout
+        console_scripts=[ # `console_scripts` is a magic name to setuptools
             'killservice = lp.scripts.utilities.killservice:main',
             'run = canonical.launchpad.scripts.runlaunchpad:start_launchpad',
             'harness = canonical.database.harness:python',
