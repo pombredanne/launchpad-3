@@ -127,7 +127,7 @@ class SSHService(service.Service):
         """Create and return a `Portal` for the SSH service.
 
         This portal accepts SSH credentials and returns our customized SSH
-        avatars (see `canonical.codehosting.sshserver.auth.LaunchpadAvatar`).
+        avatars (see `lp.codehosting.sshserver.auth.LaunchpadAvatar`).
         """
         authentication_proxy = Proxy(
             config.codehosting.authentication_endpoint)

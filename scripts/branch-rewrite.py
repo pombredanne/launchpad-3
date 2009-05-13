@@ -5,7 +5,7 @@
 
 See http://httpd.apache.org/docs/2.2/mod/mod_rewrite.html#rewritemap for the
 documentation of the very simple 'protocol' Apache uses to talk to us, and
-canonical.codehosting.rewrite.BranchRewriter for the logic of the rewritemap.
+lp.codehosting.rewrite.BranchRewriter for the logic of the rewritemap.
 """
 
 import _pythonpath

@@ -53,7 +53,7 @@ def get_netstrings(line):
 
 
 class TestGetVfsFormatClasses(TestCaseWithTransport):
-    """Tests for `canonical.codehosting.puller.worker.get_vfs_format_classes`.
+    """Tests for `lp.codehosting.puller.worker.get_vfs_format_classes`.
     """
 
     def tearDown(self):

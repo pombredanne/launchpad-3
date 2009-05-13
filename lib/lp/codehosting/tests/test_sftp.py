@@ -31,7 +31,7 @@ class AsyncTransport:
 
     While this could wrap any object and make its methods return Deferreds, we
     expect this to be wrapping FatLocalTransport (and so making a Twisted
-    Transport, as defined in canonical.codehosting.sftp's docstring).
+    Transport, as defined in lp.codehosting.sftp's docstring).
     """
 
     def __init__(self, transport):
