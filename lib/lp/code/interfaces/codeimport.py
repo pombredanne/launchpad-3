@@ -251,7 +251,14 @@ class ICodeImport(Interface):
         """
 
     def tryFailingImportAgain(user):
-        """XXX.
+        """Try a failing import again.
+
+        This method sets the review_status back to REVIEWED and requests the
+        import be attempted as soon as possible.
+
+        The import must be in the FAILING state.
+
+        :param user: the user who is requesting the import be tried again.
         """
 
 

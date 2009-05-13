@@ -461,6 +461,60 @@ class TestConsecutiveFailureCount(TestCaseWithFactory):
         self.assertEqual(1, code_import.consecutive_failure_count)
 
 
+class TestTryFailingImportAgain(TestCaseWithFactory):
+    """Tests for `ICodeImport.tryFailingImportAgain`."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        # Log in a VCS Imports member.
+        TestCaseWithFactory.setUp(self, 'david.allouche@canonical.com')
+
+    def test_mustBeFailing(self):
+        # tryFailingImportAgain only succeeds for imports that are FAILING.
+        outcomes = {}
+        for status in CodeImportReviewStatus.items:
+            code_import = self.factory.makeCodeImport()
+            code_import.updateFromData(
+                {'review_status': status}, self.factory.makePerson())
+            try:
+                code_import.tryFailingImportAgain(self.factory.makePerson())
+            except AssertionError:
+                outcomes[status] = 'failed'
+            else:
+                outcomes[status] = 'succeeded'
+        self.assertEqual(
+            {CodeImportReviewStatus.NEW: 'failed',
+             CodeImportReviewStatus.REVIEWED: 'failed',
+             CodeImportReviewStatus.SUSPENDED: 'failed',
+             CodeImportReviewStatus.INVALID: 'failed',
+             CodeImportReviewStatus.FAILING: 'succeeded'},
+            outcomes)
+
+    def test_resetsStatus(self):
+        # tryFailingImportAgain sets the review_status of the import back to
+        # REVIEWED.
+        code_import = self.factory.makeCodeImport()
+        code_import.updateFromData(
+            {'review_status': CodeImportReviewStatus.FAILING},
+            self.factory.makePerson())
+        code_import.tryFailingImportAgain(self.factory.makePerson())
+        self.assertEqual(
+            CodeImportReviewStatus.REVIEWED,
+            code_import.review_status)
+
+    def test_requestsImport(self):
+        # tryFailingImportAgain requests an import.
+        code_import = self.factory.makeCodeImport()
+        code_import.updateFromData(
+            {'review_status': CodeImportReviewStatus.FAILING},
+            self.factory.makePerson())
+        requester = self.factory.makePerson()
+        code_import.tryFailingImportAgain(requester)
+        self.assertEqual(
+            requester, code_import.import_job.requesting_user)
+
+
 def make_active_import(factory, project_name=None, product_name=None,
                        branch_name=None, svn_branch_url=None,
                        cvs_root=None, cvs_module=None, git_repo_url=None,
