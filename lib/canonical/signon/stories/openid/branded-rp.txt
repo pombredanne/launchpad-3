@@ -3,7 +3,7 @@
 The OpenIDRPConfig table stores information about known RPs. These
 can be branded.
 
-    >>> from canonical.launchpad.database.openidserver import OpenIDRPConfig
+    >>> from canonical.signon.model.openidserver import OpenIDRPConfig
     >>> rpconfig = OpenIDRPConfig(
     ...     trust_root='http://launchpad.dev/+openid-consumer',
     ...     displayname='Example Displayname',
