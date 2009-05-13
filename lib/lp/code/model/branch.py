@@ -35,14 +35,13 @@ from canonical.database.enumcol import EnumCol
 from canonical.launchpad import _
 from canonical.launchpad.database.job import Job
 from canonical.launchpad.mailnotification import NotificationRecipientSet
-from canonical.launchpad.mailout.branch import (
-    send_branch_modified_notifications)
 from canonical.launchpad.webapp import urlappend
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, SLAVE_FLAVOR)
 
 from lp.code.interfaces.branch import (BranchFormat, RepositoryFormat,
     BRANCH_FORMAT_UPGRADE_PATH, REPOSITORY_FORMAT_UPGRADE_PATH)
+from lp.code.mail.branch import send_branch_modified_notifications
 from lp.code.model.branchmergeproposal import (
      BranchMergeProposal)
 from lp.code.model.branchrevision import BranchRevision
