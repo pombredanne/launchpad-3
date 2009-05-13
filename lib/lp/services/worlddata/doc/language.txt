@@ -1,9 +1,12 @@
-= LanguageSet =
+===========
+LanguageSet
+===========
 
   >>> from canonical.launchpad.interfaces import ILanguageSet
   >>> language_set = getUtility(ILanguageSet)
 
-== getLanguageByCode ==
+getLanguageByCode
+=================
 
 We can get hold of languages by their language code.
 
@@ -16,7 +19,8 @@ Or if it doesn't exist, we return None.
   >>> language_set.getLanguageByCode('not-existing') is None
   True
 
-== canonicalise_language_code ==
+canonicalise_language_code
+==========================
 
 We can convert language codes to standard form.
 
@@ -27,7 +31,8 @@ We can convert language codes to standard form.
   >>> language_set.canonicalise_language_code('pt-br')
   'pt_BR'
 
-== codes_to_languages ==
+codes_to_languages
+==================
 
 Convert a list of ISO language codes to language objects. If the code is
 unknown, it's ignored.
@@ -39,9 +44,10 @@ unknown, it's ignored.
   >>> [language.englishname for language in languages]
   [u'Spanish', u'Portuguese (Brazil)']
 
-== createLanguage ==
+createLanguage
+==============
 
-This method creates a new language in Launchpad.
+This method creates a new language.
 
   >>> foos = language_set.createLanguage('foos', 'Foo language')
   >>> print foos.code
@@ -49,7 +55,8 @@ This method creates a new language in Launchpad.
   >>> print foos.englishname
   Foo language
 
-== search ==
+search
+======
 
 We are able to search languages with this method.
 
@@ -152,11 +159,14 @@ that contain the 'e_' substring:
   de_CH German (Switzerland)
 
 
-= Language =
+========
+Language
+========
 
-The Language object represents a language in Launchpad.
+The Language object represents a language.
 
-== alt_suggestion_language ==
+alt_suggestion_language
+=======================
 
 In some languages, you could reasonably expect to find good suggestions in a
 second language. They might not be perfect but they are useful nonetheless.
@@ -197,7 +207,8 @@ are no suggestions.
     True
 
 
-== dashedcode ==
+dashedcode
+==========
 
 Although we use underscores to separate language and country codes to
 represent, for instance pt_BR, when used on web pages, it should use
@@ -207,34 +218,10 @@ instead a dash char. This method does it automatically:
   >>> print pt_BR.dashedcode
   pt-BR
 
-== translators ==
 
-We can get the list of translators (ordered by descending translation karma)
-that did some translation in Launchpad and expressed their interest for a
-concrete language.
-
-    # Sample data is not complete for this test, so we need to note that
-    # another Spanish translator expressed its interest on doing Spanish
-    # translations.  That other person is Foo Bar (name16).
-    >>> from lp.registry.interfaces.person import IPersonSet
-    >>> foo_bar = getUtility(IPersonSet).getByName('name16')
-    >>> print foo_bar.displayname
-    Foo Bar
-
-    >>> from lp.services.worlddata.interfaces.language import ILanguageSet
-    >>> spanish = getUtility(ILanguageSet).getLanguageByCode('es')
-    >>> foo_bar.addLanguage(spanish)
-    >>> for translator in spanish.translators:
-    ...     karma = 0
-    ...     for karma_category_cache in translator.karma_category_caches:
-    ...         if (karma_category_cache.category.name == 'translations'):
-    ...             karma = karma_category_cache.karmavalue
-    ...     print (translator.displayname, karma)
-    (u'Foo Bar', 164)
-    (u'Carlos Perell\xf3 Mar\xedn', 9)
-
-
-== countries ==
+=========
+countries
+=========
 
 Property holding a list of countries a language is spoken in, and allowing
 reading and setting them.

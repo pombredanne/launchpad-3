@@ -28,7 +28,6 @@
     <include file="bugtrackerperson.zcml" />
     <include file="bugwatch.zcml" />
     <include file="bug.zcml" />
-    <include file="country.zcml" />
     <include file="crowd.zcml" />
     <include file="customlanguagecode.zcml" />
     <include file="cve.zcml" />

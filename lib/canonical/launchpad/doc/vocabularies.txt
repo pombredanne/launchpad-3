@@ -755,16 +755,3 @@ Queries on empty strings also results in a valid SelectResults.
 
 # XXX Tom Berger 2007-07-05: document more vocabularies here, particularly
 # when they break!
-
-== Timezone ==
-
-The TimezoneName vocabulary should only contain timezone names that
-do not raise an exception when instantiated.
-
-    >>> import pytz
-    >>> timezone_vocabulary = vocabulary_registry.get(None, 'TimezoneName')
-    >>> for timezone in timezone_vocabulary:
-    ...     # Assign the return value of pytz.timezone() to the zone
-    ...     # variable to prevent printing out the return value.
-    ...     zone = pytz.timezone(timezone.value)
-
