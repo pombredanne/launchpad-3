@@ -60,7 +60,7 @@ from canonical.launchpad.webapp import (
     canonical_url, Navigation, redirection, stepto, urlappend)
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.interfaces.account import IAccountSet
-from canonical.launchpad.interfaces.validation import shipit_postcode_required
+from canonical.shipit.interfaces.validation import shipit_postcode_required
 from canonical.shipit.interfaces.shipit import IShipItApplication
 from canonical.launchpad.webapp.interfaces import (
     ILaunchBag, UnexpectedFormData)

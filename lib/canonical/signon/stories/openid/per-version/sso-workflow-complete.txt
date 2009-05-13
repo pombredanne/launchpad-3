@@ -45,7 +45,7 @@ an email address that has not been registered:
 Following the link sent by email will take the user to the page where
 they enter their name and password to complete the registration.
 
-    >>> from canonical.launchpad.mail import stub
+    >>> from lp.services.mail import stub
     >>> from canonical.launchpad.ftests.logintoken import (
     ...     get_token_url_from_email)
     >>> from_addr, to_addr, msg = stub.test_emails.pop()

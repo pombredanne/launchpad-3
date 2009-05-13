@@ -20,7 +20,7 @@ Several views are used to handle the various operations on a question.
     # Let's define a helper function which commits the transaction, so
     # that the notifications are queued in stub.test_emails and pops these
     # notifications from the queue.
-    >>> from canonical.launchpad.mail import stub
+    >>> from lp.services.mail import stub
     >>> import email
     >>> import transaction
     >>> def pop_notifications():

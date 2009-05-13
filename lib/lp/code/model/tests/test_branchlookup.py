@@ -24,7 +24,7 @@ from lp.registry.interfaces.person import NoSuchPerson
 from lp.registry.interfaces.product import (
     InvalidProductName, NoSuchProduct)
 from lp.registry.interfaces.productseries import NoSuchProductSeries
-from canonical.launchpad.interfaces.publishing import PackagePublishingPocket
+from lp.soyuz.interfaces.publishing import PackagePublishingPocket
 from lp.registry.interfaces.sourcepackagename import (
     NoSuchSourcePackageName)
 from canonical.launchpad.testing import run_with_login, TestCaseWithFactory

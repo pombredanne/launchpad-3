@@ -41,7 +41,6 @@ from canonical.launchpad.interfaces.launchpad import UnexpectedFormData
 from canonical.signon.interfaces.openidserver import IOpenIDRPConfigSet
 from lp.registry.interfaces.person import (
     INewPersonForm, IPerson, IPersonSet, PersonCreationRationale)
-from canonical.shipit.interfaces.shipit import ShipItConstants
 
 
 class AuthTokenSetNavigation(GetitemNavigation):
@@ -353,15 +352,6 @@ class ValidateEmailView(BaseAuthTokenView, LaunchpadFormView):
 
 class NewAccountView(BaseAuthTokenView, LaunchpadFormView):
     """Page to create a new Launchpad account."""
-
-    urls_and_rationales = {
-        ShipItConstants.ubuntu_url:
-            PersonCreationRationale.OWNER_CREATED_SHIPIT,
-        ShipItConstants.kubuntu_url:
-            PersonCreationRationale.OWNER_CREATED_SHIPIT,
-        ShipItConstants.edubuntu_url:
-            PersonCreationRationale.OWNER_CREATED_SHIPIT,
-        }
 
     created_person = None
 

@@ -74,7 +74,7 @@ If we instead pick a new email address, we can register an account:
 The user would then check their email, and find a message:
 
     >>> import email, re
-    >>> from canonical.launchpad.mail import stub
+    >>> from lp.services.mail import stub
     >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
     >>> len(stub.test_emails)
     0

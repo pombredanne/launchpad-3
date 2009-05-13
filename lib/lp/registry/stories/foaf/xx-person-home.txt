@@ -67,7 +67,7 @@ When a person visits his or her own page, they'll see their OpenID login URL.
 The URL is followed by a helpful link.
 
     >>> print user_browser.getLink('(What\xe2\x80\x99s\xc2\xa0this?)').url
-    https://help.launchpad.net/OpenID
+    http://launchpad.dev/+help/openid.html
 
 However, when the user visits someone else's page, they see no such URL.
 
