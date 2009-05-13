@@ -609,7 +609,8 @@ class POTMsgSet(SQLBase):
             if (current_message is not None and
                 current_message.potemplate is not None):
                 current_message.is_current = False
-                current_message.potemplate = None
+                if not current_message.is_imported:
+                    current_message.potemplate = None
                 if not converge_shared:
                     force_diverged = True
             if converge_shared:

@@ -609,9 +609,10 @@ class TestPOTMsgSetTranslationMessageConstraints(unittest.TestCase):
         self.assertTrue(tm0.is_current)
         self.assertFalse(tm1.is_current)
         self.assertFalse(tm2.is_current)
+        self.assertTrue(tm2.is_imported)
         self.assertEquals(tm0.potemplate, self.potemplate)
         self.assertTrue(tm1.potemplate is None)
-        self.assertTrue(tm2.potemplate is None)
+        self.assertEquals(tm2.potemplate, self.potemplate)
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
