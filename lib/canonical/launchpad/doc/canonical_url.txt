@@ -352,15 +352,19 @@ from the request.  To get this information, canonical_url uses the operation
 getApplicationURL() from
 zope.publisher.interfaces.http.IHTTPApplicationRequest.
 
-    >>> from canonical.launchpad.webapp.servers import (
-    ...     LaunchpadBrowserRequestMixin)
-    >>> class FakeRequest(LaunchpadBrowserRequestMixin):
+    >>> class FakeRequest:
     ...
     ...     implements(IHTTPApplicationRequest)
     ...
     ...     def __init__(self, applicationurl):
     ...         self.applicationurl = applicationurl
     ...         self.interaction = None
+    ...
+    ...     def getRootURL(self, rootsite):
+    ...         if rootsite is not None:
+    ...             return allvhosts.configs[rootsite].rooturl
+    ...         else:
+    ...             return self.getApplicationURL() + '/'
     ...
     ...     def getApplicationURL(self, depth=0, path_only=False):
     ...         assert depth == 0, 'this is not a real IHTTPApplicationRequest'

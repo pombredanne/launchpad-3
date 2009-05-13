@@ -426,9 +426,8 @@ To test this, we need a dummy request object that provides `getURL()`.
 
     >>> from zope.publisher.interfaces.http import IHTTPApplicationRequest
     >>> from zope.publisher.interfaces.browser import IBrowserRequest
-    >>> from canonical.launchpad.webapp.servers import (
-    ...     LaunchpadBrowserRequestMixin)
-    >>> class FakeRequest(LaunchpadBrowserRequestMixin):
+    >>> from canonical.launchpad.webapp.vhosts import allvhosts
+    >>> class FakeRequest:
     ...     implements(IHTTPApplicationRequest, IBrowserRequest)
     ... 
     ...     interaction = None
@@ -448,6 +447,12 @@ To test this, we need a dummy request object that provides `getURL()`.
     ...                 'Must set url1 in FakeRequest')
     ...             return self.url1
     ... 
+    ...     def getRootURL(self, rootsite):
+    ...         if rootsite is not None:
+    ...             return allvhosts.configs[rootsite].rooturl
+    ...         else:
+    ...             return self.getApplicationURL() + '/'
+    ...
     ...     def getApplicationURL(self):
     ...         # Just the http://place:port part, so stop at the 3rd slash.
     ...         return '/'.join(self.url.split('/', 3)[:3])

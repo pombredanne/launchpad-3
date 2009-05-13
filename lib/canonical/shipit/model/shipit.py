@@ -448,10 +448,9 @@ class ShippingRequestSet:
         request_messages = []
         shipit_root = allvhosts.configs['shipitubuntu'].rooturl
         for request in requests:
-            # XXX: Salgado, 2009-05-12: Should use canonical_url() here, but
-            # that's not really feasible as we don't have a browser request
-            # and we don't want to include shipit-specific logic into LP's
-            # canonical_url().
+            # We should use canonical_url() here, but that's not really 
+            # feasible as we don't have a browser request and we don't want 
+            # to include shipit-specific logic into LP's canonical_url().
             request_url = "%s/requests/%s" % (shipit_root, request.id)
             info = ("Request #%d, made by '%s' containing %d CDs\n(%s)"
                     % (request.id, request.recipientdisplayname,
