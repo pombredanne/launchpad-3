@@ -812,30 +812,26 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
             self.form_fields = self.form_fields.omit('owner')
             self.form_fields = any_owner_field + self.form_fields
 
-    def validate_branch_name(self, owner, product, branch_name):
-        # XXX: JonathanLange 2009-03-30 spec=package-branches: Don't look
-        # before you leap. Instead try to move the branch and then populate
-        # the error field.
-        namespace = get_branch_namespace(owner, product=product)
-        existing_branch = namespace.getByName(branch_name)
-        if existing_branch is not None:
-            # There is a branch that has the branch_name specified already.
-            self._setBranchExists(existing_branch)
+    def _getNewTarget(self, data):
+        """Get the new branch target that has been selected in 'data'."""
+        # Because the edit form doesn't currently let you change targets, the
+        # new target is always the same as the old one.
+        return self.context.target
 
     def validate(self, data):
         # Check that we're not moving a team branch to the +junk
         # pseudo project.
         owner = data['owner']
         if 'name' in data:
-            # Only validate if the name has changed, or the product has
-            # changed, or the owner has changed.
+            # Only validate if the name has changed or the owner has changed.
             if ((data['name'] != self.context.name) or
                 (owner != self.context.owner)):
-                # XXX: This is wrong, because it's still expecting a branch to
-                # have a product. We can sort that out later.
-                self.validate_branch_name(owner,
-                                          self.context.product,
-                                          data['name'])
+                namespace = self._getNewTarget(data).getNamespace(owner)
+                try:
+                    namespace.validateMove(
+                        self.context, self.user, name=data['name'])
+                except BranchExists, e:
+                    self._setBranchExists(e.existing_branch)
 
         # If the branch is a MIRRORED branch, then the url
         # must be supplied, and if HOSTED the url must *not*
