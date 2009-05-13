@@ -876,6 +876,7 @@ Generating respective "Packages" stanzas:
 This utility implements the following methods:
 
  * getBuildsForSources();
+ * getUnpublishedBuildsForSources();
  * getFilesForSources();
  * getBinaryPublicationsForSources();
  * getPackageDiffsForSources();
@@ -949,6 +950,38 @@ The `ResultSet` is ordered by ascending
 
     >>> print arch.displayname
     ubuntutest Breezy Badger Autotest i386
+
+Next we'll create two sources with two builds each (the SoyuzTestPublisher
+default) and show that the number of unpublished builds for these sources
+is correct:
+
+    >>> sources = []
+    >>> builds = []
+    >>> for count in range(2):
+    ...     spph = stp.getPubSource(architecturehintlist='any')
+    ...     missing_builds = spph.createMissingBuilds()
+    ...     for build in missing_builds:
+    ...         build.buildstate = BuildStatus.FULLYBUILT
+    ...         builds.append(build)
+    ...     sources.append(spph)
+    >>> len(builds)
+    4
+
+    >>> unpublished_builds = (
+    ...     publishing_set.getUnpublishedBuildsForSources(sources))
+    >>> unpublished_builds.count()
+    4
+
+If we then publish one of the builds, the number of unpublished builds
+reflects the change:
+
+    >>> bpr = stp.uploadBinaryForBuild(builds[0], 'foo-bin')
+    >>> bpph = stp.publishBinaryInArchive(bpr, sources[0].archive,
+    ...     status=PackagePublishingStatus.PUBLISHED)
+    >>> unpublished_builds = (
+    ...     publishing_set.getUnpublishedBuildsForSources(sources))
+    >>> unpublished_builds.count()
+    3
 
 Now we retrieve all binary publications for Celso's PPA sources.
 

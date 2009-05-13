@@ -876,6 +876,15 @@ class IPublishingSet(Interface):
         calls getBuildsForSourceIds.
         """
 
+    def getUnpublishedBuildsForSources(one_or_more_source_publications):
+        """Return all the unpublished builds for each source publication.
+
+        :param one_or_more_source_publications: list of, or a single
+            `SourcePackagePublishingHistory` object.
+        :return: a storm ResultSet containing tuples of
+            (`SourcePackagePublishingHistory`, `Build`)
+        """
+
     def getFilesForSources(one_or_more_source_publication):
         """Return all files related with each given source publication.
 

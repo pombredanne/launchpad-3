@@ -1059,6 +1059,51 @@ class PublishingSet:
 
         return self.getBuildsForSourceIds(source_publication_ids)
 
+    def getUnpublishedBuildsForSources(self,
+                                       one_or_more_source_publications):
+        """See `IPublishingSet`."""
+        # Import Build, BinaryPackageRelease and DistroArchSeries locally
+        # to avoid circular imports, since Build uses
+        # SourcePackagePublishingHistory, BinaryPackageRelease uses Build
+        # and DistroArchSeries uses BinaryPackagePublishingHistory.
+        from lp.soyuz.model.binarypackagerelease import (
+            BinaryPackageRelease)
+        from lp.soyuz.model.build import Build
+        from lp.soyuz.model.distroarchseries import (
+            DistroArchSeries)
+
+        source_publication_ids = self._extractIDs(
+            one_or_more_source_publications)
+
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        published_builds = store.find(
+            (SourcePackagePublishingHistory, Build, DistroArchSeries),
+            SourcePackagePublishingHistory.sourcepackagereleaseID ==
+                Build.sourcepackagereleaseID,
+            BinaryPackageRelease.build == Build.id,
+            BinaryPackageRelease.binarypackagenameID ==
+                BinaryPackageName.id,
+            SourcePackagePublishingHistory.distroseriesID ==
+                DistroArchSeries.distroseriesID,
+            BinaryPackagePublishingHistory.distroarchseriesID ==
+                DistroArchSeries.id,
+            BinaryPackagePublishingHistory.binarypackagerelease ==
+                BinaryPackageRelease.id,
+            BinaryPackagePublishingHistory.pocket ==
+               SourcePackagePublishingHistory.pocket,
+            BinaryPackagePublishingHistory.archiveID ==
+               SourcePackagePublishingHistory.archiveID,
+            In(BinaryPackagePublishingHistory.status,
+               [enum.value for enum in active_publishing_status]),
+            In(SourcePackagePublishingHistory.id, source_publication_ids))
+
+        # Now to return all the unpublished builds, we use the difference
+        # of all builds minus the published ones.
+        unpublished_builds = self.getBuildsForSourceIds(
+            source_publication_ids).difference(published_builds)
+
+        return unpublished_builds
+
     def getFilesForSources(self, one_or_more_source_publications):
         """See `IPublishingSet`."""
         # Import Build and BinaryPackageRelease locally to avoid circular
