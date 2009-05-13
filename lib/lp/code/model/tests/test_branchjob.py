@@ -29,12 +29,13 @@ from canonical.launchpad.tests.mail_helpers import pop_notifications
 from lp.code.interfaces.branchsubscription import (
     BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel)
 from lp.code.interfaces.branchjob import (
-    IBranchDiffJob, IBranchJob, IRevisionMailJob, IRosettaUploadJob)
+    IBranchDiffJob, IBranchJob, IBranchUpgradeJob,IRevisionMailJob,
+    IRosettaUploadJob)
 from lp.code.interfaces.branchsubscription import (
     BranchSubscriptionDiffSize,)
 from lp.code.model.branchjob import (
-    BranchDiffJob, BranchJob, BranchJobType, RevisionsAddedJob,
-    RevisionMailJob, RosettaUploadJob)
+    BranchDiffJob, BranchJob, BranchJobType, BranchUpgradeJob,
+    RevisionsAddedJob, RevisionMailJob, RosettaUploadJob)
 from lp.code.model.branchrevision import BranchRevision
 from lp.code.model.revision import RevisionSet
 
@@ -147,6 +148,19 @@ class TestBranchDiffJob(TestCaseWithFactory):
         """
         diff = self.create_rev1_diff()
         self.assertIsInstance(diff.diff.text, str)
+
+
+class TestBranchUpgradeJob(TestCaseWithFactory):
+    """Tests for `BranchUpgradeJob`."""
+
+    layer = LaunchpadZopelessLayer
+
+    def test_providesInterface(self):
+        """Ensure that BranchUpgradeJob implements IBranchUpgradeJob."""
+        branch = self.factory.makeAnyBranch()
+        job = BranchUpgradeJob.create(
+            branch, '')
+        verifyObject(IBranchUpgradeJob, job)
 
 
 class TestRevisionMailJob(TestCaseWithFactory):

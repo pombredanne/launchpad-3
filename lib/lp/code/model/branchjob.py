@@ -33,8 +33,8 @@ from lp.code.interfaces.branchsubscription import (
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel)
 from lp.code.interfaces.branchjob import (
     IBranchDiffJob, IBranchDiffJobSource, IBranchJob, IBranchUpgradeJob,
-    IRevisionMailJob, IRevisionMailJobSource, IRosettaUploadJob,
-    IRosettaUploadJobSource)
+    IBranchUpgradeJobSource, IRevisionMailJob, IRevisionMailJobSource,
+    IRosettaUploadJob, IRosettaUploadJobSource)
 from canonical.launchpad.interfaces.translations import (
     TranslationsBranchImportMode)
 from canonical.launchpad.interfaces.translationimportqueue import (
@@ -197,7 +197,23 @@ class BranchUpgradeJob(BranchJobDerived):
 
     implements(IBranchUpgradeJob)
 
-    classProvides(IBranchUpgradeSource)
+    classProvides(IBranchUpgradeJobSource)
+    @classmethod
+    def create(cls, branch, to_format):
+        """See `IBranchUpgradeJobSource`."""
+        metadata = {
+            'to_format': to_format,
+            }
+        branch_job = BranchJob(branch, BranchJobType.UPGRADE_BRANCH, metadata)
+        return cls(branch_job)
+
+    def run(self):
+        """See `IBranchUpgradeJob`."""
+
+    @property
+    def to_format(self):
+        """See `IBranchUpgradeJob`."""
+        return self.metadata['to_format']
 
 
 class RevisionMailJob(BranchDiffJob):
