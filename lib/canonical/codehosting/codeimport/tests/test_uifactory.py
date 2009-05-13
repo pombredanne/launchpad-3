@@ -7,7 +7,7 @@ __metaclass__ = type
 import unittest
 
 from canonical.codehosting.codeimport.uifactory import LoggingUIFactory
-from canonical.launchpad.testing import FakeTime, TestCase
+from lp.testing import FakeTime, TestCase
 
 
 class TestLoggingUIFactory(TestCase):

@@ -32,6 +32,9 @@
           });
       }
       Y.on('domready', function() {
+        if (Y.UA.ie) {
+            return null;
+        }
 
         Y.get('#subscribers-portlet-spinner').setStyle('display', 'block');
 

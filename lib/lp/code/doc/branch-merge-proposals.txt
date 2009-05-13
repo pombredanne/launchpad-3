@@ -36,7 +36,7 @@ All merge proposals have to be registered by a Person.
     >>> person_set = getUtility(IPersonSet)
     >>> login('test@canonical.com')
     >>> sample_person = person_set.getByEmail('test@canonical.com')
-    >>> from canonical.launchpad.testing import time_counter
+    >>> from lp.testing import time_counter
     >>> now = time_counter()
 
 In order to register a merge proposal there has to be a source branch

@@ -11,7 +11,7 @@ import unittest
 
 from canonical.launchpad.ftests import login, login_person, ANONYMOUS, logout
 from lp.registry.tests.mailinglists_helper import new_team
-from canonical.launchpad.testing.factory import LaunchpadObjectFactory
+from lp.testing.factory import LaunchpadObjectFactory
 from canonical.launchpad.xmlrpc.mailinglist import (
     MailingListAPIView, BYUSER, ENABLED)
 from canonical.testing import LaunchpadFunctionalLayer
