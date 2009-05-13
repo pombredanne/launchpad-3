@@ -199,21 +199,18 @@ class BranchUpgradeJob(BranchJobDerived):
 
     classProvides(IBranchUpgradeJobSource)
     @classmethod
-    def create(cls, branch, to_format):
+    def create(cls, branch):
         """See `IBranchUpgradeJobSource`."""
-        metadata = {
-            'to_format': to_format,
-            }
-        branch_job = BranchJob(branch, BranchJobType.UPGRADE_BRANCH, metadata)
+        branch_job = BranchJob(branch, BranchJobType.UPGRADE_BRANCH, {})
         return cls(branch_job)
 
     def run(self):
         """See `IBranchUpgradeJob`."""
-
-    @property
-    def to_format(self):
-        """See `IBranchUpgradeJob`."""
-        return self.metadata['to_format']
+        from bzrlib.upgrade import upgrade
+        branch = self.branch.getBzrBranch()
+        branch.bzrdir.check_conversion_target(
+            self.branch.get_upgrade_format())
+        upgrade(branch, self.branch.get_upgrade_format())
 
 
 class RevisionMailJob(BranchDiffJob):

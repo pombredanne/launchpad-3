@@ -158,15 +158,21 @@ class TestBranchUpgradeJob(TestCaseWithFactory):
     def test_providesInterface(self):
         """Ensure that BranchUpgradeJob implements IBranchUpgradeJob."""
         branch = self.factory.makeAnyBranch()
-        job = BranchUpgradeJob.create(branch, '1.9')
+        job = BranchUpgradeJob.create(branch)
         verifyObject(IBranchUpgradeJob, job)
 
     def test_upgrades_branch(self):
         """Ensure that a branch with an outdated format is upgraded."""
         self.useBzrBranches()
-        db_branch, tree = self.create_branch_and_tree()
-        job = BranchUpgradeJob.create(db_branch, '1.9')
+        db_branch, tree = self.create_branch_and_tree(format='knit')
+        self.assertEqual(
+            tree.branch.repository._format.get_format_string(),
+            'Bazaar-NG Knit Repository Format 1')
+        job = BranchUpgradeJob.create(db_branch)
         job.run()
+        self.assertEqual(
+            tree.branch.repository._format.get_format_string(),
+            'Some other format')
 
 
 class TestRevisionMailJob(TestCaseWithFactory):
