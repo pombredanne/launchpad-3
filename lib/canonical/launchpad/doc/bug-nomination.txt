@@ -338,7 +338,10 @@ nomination will be automatically approved.
 Since approving a nomination can affect release planning, not everyone
 is allowed to do it. For large projects, like distributions, it's not
 suitable to restrict approving nominations to only release managers,
-instead anyone that can upload a package may approve a nomination.
+instead anyone that can upload a package may approve a nomination.  The
+package upload permission system is a bit complex. Someone can be
+allowed to either upload a single source package, or all packages in a
+component, or all packages in a packageset.
 
     >>> from lp.soyuz.interfaces.archivepermission import (
     ...     IArchivePermissionSet)
@@ -350,9 +353,23 @@ instead anyone that can upload a package may approve a nomination.
     ...     ubuntu.main_archive, main_uploader, main)
     <ArchivePermission at ...>
 
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> ubuntu_evolution = ubuntu.getSourcePackage('evolution')
+    >>> evolution_uploader = factory.makePerson()
+    >>> getUtility(IArchivePermissionSet).newPackageUploader(
+    ...     ubuntu.main_archive, evolution_uploader,
+    ...     ubuntu_evolution.sourcepackagename)
+    <ArchivePermission at ...>
+    >>> ubuntu_cnews = ubuntu.getSourcePackage('cnews')
+    >>> cnews_uploader = factory.makePerson()
+    >>> getUtility(IArchivePermissionSet).newPackageUploader(
+    ...     ubuntu.main_archive, cnews_uploader,
+    ...     ubuntu_cnews.sourcepackagename)
+    <ArchivePermission at ...>
+
 For a bug nominated to a package from the 'main' component in Ubuntu,
-only those people that are allowed to upload to 'main' are allowed to
-approve the nomination.
+people that are allowed to upload to 'main' are allowed to approve the
+nomination.
 
     >>> ubuntu_evolution = ubuntu.getSourcePackage('evolution')
     >>> main_bugtask = factory.makeBugTask(target=ubuntu_evolution)
@@ -370,6 +387,14 @@ approve the nomination.
     >>> hoary_main_nomination.canApprove(main_uploader)
     True
 
+People that have been granted rights to upload that specific package are
+also allowed.
+
+    >>> hoary_main_nomination.canApprove(evolution_uploader)
+    True
+    >>> hoary_main_nomination.canApprove(cnews_uploader)
+    False
+
 Only uploaders to the relevant component are allowed to approve it. For
 example, people who are allowed only to upload to 'universe' may not
 approve 'main' nominations.
@@ -384,9 +409,9 @@ approve 'main' nominations.
     False
 
 If the bug is targeted to source packages in more than one component,
-anyone that can upload to any of the components may approve the
-nomination. This is because a nomination is tied to a release only, not
-to source packages.
+anyone that can upload to any of the components or packages may approve
+the nomination. This is because a nomination is tied to a release only,
+not to source packages.
 
     >>> hoary_cnews = ubuntu_hoary.getSourcePackage('cnews')
     >>> hoary_cnews.latest_published_component.name
@@ -396,6 +421,10 @@ to source packages.
     >>> hoary_main_nomination.canApprove(universe_uploader)
     True
     >>> hoary_main_nomination.canApprove(main_uploader)
+    True
+    >>> hoary_main_nomination.canApprove(evolution_uploader)
+    True
+    >>> hoary_main_nomination.canApprove(cnews_uploader)
     True
 
 Drivers may approve nominations as well.
@@ -423,6 +452,10 @@ uploader can approve a nomination.
     True
     >>> hoary_nomination.canApprove(universe_uploader)
     True
+    >>> hoary_nomination.canApprove(evolution_uploader)
+    False
+    >>> hoary_nomination.canApprove(cnews_uploader)
+    False
 
 
 == Declining a nomination ==
