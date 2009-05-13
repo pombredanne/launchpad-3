@@ -1209,10 +1209,10 @@ class BranchRequestImportView(LaunchpadFormView):
         if self.context.code_import.import_job is None:
             self.request.response.addNotification(
                 "This import is no longer being updated automatically.")
-        elif self.context.code_import.import_job.state != \
-                 CodeImportJobState.PENDING:
-            assert self.context.code_import.import_job.state == \
-                   CodeImportJobState.RUNNING
+        elif (self.context.code_import.import_job.state !=
+              CodeImportJobState.PENDING):
+            assert (self.context.code_import.import_job.state ==
+                    CodeImportJobState.RUNNING)
             self.request.response.addNotification(
                 "The import is already running.")
         elif self.context.code_import.import_job.requesting_user is not None:
@@ -1254,8 +1254,8 @@ class TryImportAgainView(LaunchpadFormView):
 
     @action('Try Again', name='tryagain')
     def request_try_again(self, action, data):
-        if self.context.code_import.review_status != \
-                 CodeImportReviewStatus.FAILING:
+        if (self.context.code_import.review_status !=
+            CodeImportReviewStatus.FAILING):
             self.request.response.addNotification(
                 "The import is now %s."
                 % self.context.code_import.review_status.name)

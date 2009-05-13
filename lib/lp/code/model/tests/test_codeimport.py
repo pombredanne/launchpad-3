@@ -24,8 +24,9 @@ from lp.code.interfaces.codeimport import RevisionControlSystems
 from lp.code.interfaces.codeimportjob import ICodeImportJobWorkflow
 from lp.code.interfaces.codeimportresult import CodeImportResultStatus
 from lp.testing import (
-    login, logout, TestCaseWithFactory, time_counter)
+    login, login_person, logout, TestCaseWithFactory, time_counter)
 from lp.testing.factory import LaunchpadObjectFactory
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.testing import (
     DatabaseFunctionalLayer, LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer)
@@ -468,7 +469,8 @@ class TestTryFailingImportAgain(TestCaseWithFactory):
 
     def setUp(self):
         # Log in a VCS Imports member.
-        TestCaseWithFactory.setUp(self, 'david.allouche@canonical.com')
+        TestCaseWithFactory.setUp(self)
+        login_person(getUtility(ILaunchpadCelebrities).vcs_imports.teamowner)
 
     def test_mustBeFailing(self):
         # tryFailingImportAgain only succeeds for imports that are FAILING.
