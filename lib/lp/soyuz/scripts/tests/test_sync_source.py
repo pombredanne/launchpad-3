@@ -235,7 +235,7 @@ class TestSyncSourceScript(TestCase):
     def setUp(self):
         self._home = os.getcwd()
         self._jail = os.path.abspath(
-            './lib/canonical/launchpad/scripts/tests/sync_source_home/')
+            os.path.join(__file__, os.pardir, 'sync_source_home'))
         os.chdir(self._jail)
 
     def tearDown(self):
