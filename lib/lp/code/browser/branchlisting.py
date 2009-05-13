@@ -1367,6 +1367,10 @@ class SourcePackageBranchesView(BranchListingView):
         """The number of total branches the user can see."""
         return self._getCollection().visibleByUser(self.user).count()
 
+    def _numBranchesInPackage(self, package):
+        branches = IBranchTarget(package).collection
+        return branches.visibleByUser(self.user).count()
+
     @property
     def series_links(self):
         """Links to other series in the same distro as the package."""
@@ -1374,9 +1378,21 @@ class SourcePackageBranchesView(BranchListingView):
         our_sourcepackagename = self.context.sourcepackagename
         for series in self.context.distribution.serieses:
             if series.active:
+                package = SourcePackage(our_sourcepackagename, series)
+                # XXX: This approach is inefficient. We should instead do
+                # something like:
+                #   SELECT distroseries, COUNT(id)
+                #   FROM Branch
+                #   WHERE distroseries IS NOT NULL
+                #   AND sourcepackagename = ?
+                #   GROUP BY distroseries
+                num_branches = self._numBranchesInPackage(package)
+                num_branches_text = get_plural_text(
+                    num_branches, "branch", "branches")
                 yield dict(
                     series_name=series.displayname,
-                    package=SourcePackage(our_sourcepackagename, series),
+                    package=package,
+                    num_branches='%s %s' % (num_branches, num_branches_text),
                     linked=(series != our_series))
 
 
