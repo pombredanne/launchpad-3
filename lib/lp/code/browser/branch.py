@@ -255,6 +255,10 @@ class BranchContextMenu(ContextMenu):
     @enabled_with_permission('launchpad.AnyPerson')
     def register_merge(self):
         text = 'Propose for merging into another branch'
+        # XXX: JonathanLange 2009-05-13 spec=package-branches: How about we
+        # have just one place where we decide that junk branches aren't
+        # allowed to be merged, instead of a million?
+        #
         # It is not valid to propose a junk branch for merging.
         enabled = self.context.product is not None
         return Link('+register-merge', text, icon='add', enabled=enabled)
@@ -276,6 +280,10 @@ class BranchContextMenu(ContextMenu):
             text = 'Link to another blueprint'
         else:
             text = 'Link to a blueprint'
+        # XXX: JonathanLange 2009-05-13 spec=package-branches: Actually,
+        # distroseries can also have blueprints, so it makes sense to
+        # associate package-branches with them.
+        #
         # Since the blueprints are only related to products, there is no
         # point showing this link if the branch is junk.
         enabled = self.context.product is not None
@@ -537,8 +545,14 @@ class BranchEditSchema(Interface):
     the user to be able to edit it.
     """
     use_template(IBranch, include=[
-            'owner', 'product', 'name', 'url', 'title', 'summary',
-            'lifecycle_status', 'whiteboard'])
+        'owner',
+        'name',
+        'url',
+        'title',
+        'summary',
+        'lifecycle_status',
+        'whiteboard',
+        ])
     private = copy_field(IBranch['private'], readonly=False)
 
 
@@ -562,17 +576,6 @@ class BranchEditFormView(LaunchpadEditFormView):
                 self.request.response.addNotification(
                     "The branch owner has been changed to %s (%s)"
                     % (new_owner.displayname, new_owner.name))
-        if 'product' in data:
-            new_product = data['product']
-            if new_product != self.context.product:
-                if new_product is None:
-                    # Branch has been made junk.
-                    self.request.response.addNotification(
-                        "This branch is no longer associated with a project.")
-                else:
-                    self.request.response.addNotification(
-                        "The project for this branch has been changed to %s "
-                        "(%s)" % (new_product.displayname, new_product.name))
         if 'private' in data:
             private = data.pop('private')
             if private != self.context.private:
@@ -770,7 +773,7 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
     """The main branch view for editing the branch attributes."""
 
     field_names = [
-        'owner', 'product', 'name', 'private', 'url', 'lifecycle_status']
+        'owner', 'name', 'private', 'url', 'lifecycle_status']
 
     custom_widget('lifecycle_status', LaunchpadRadioWidgetWithDescription)
 
@@ -823,19 +826,15 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
         # Check that we're not moving a team branch to the +junk
         # pseudo project.
         owner = data['owner']
-        if ('product' in data and data['product'] is None
-            and (owner is not None and owner.isTeam())):
-            self.setFieldError(
-                'product',
-                "Team-owned branches must be associated with a project.")
-        if 'product' in data and 'name' in data:
+        if 'name' in data:
             # Only validate if the name has changed, or the product has
             # changed, or the owner has changed.
-            if ((data['product'] != self.context.product) or
-                (data['name'] != self.context.name) or
+            if ((data['name'] != self.context.name) or
                 (owner != self.context.owner)):
+                # XXX: This is wrong, because it's still expecting a branch to
+                # have a product. We can sort that out later.
                 self.validate_branch_name(owner,
-                                          data['product'],
+                                          self.context.product,
                                           data['name'])
 
         # If the branch is a MIRRORED branch, then the url
