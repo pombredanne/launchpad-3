@@ -18,64 +18,64 @@
 
 <script type="text/javascript">
 function submit_filter() {
-  getElement('filter_form').submit();
+    getElement('filter_form').submit();
 }
 
 function hookUpFilterSubmission () {
-  connect('field.lifecycle', 'onchange', submit_filter);
-  if (getElement('field.sort_by')) {
-    connect('field.sort_by', 'onchange', submit_filter);
-  }
+    connect('field.lifecycle', 'onchange', submit_filter);
+    if (getElement('field.sort_by')) {
+        connect('field.sort_by', 'onchange', submit_filter);
+    }
 }
 function show_commit(id) {
-  var div = document.getElementById('branch-log-' + id);
-  if (div) {
-    div.style.display = "block";
-  }
+    var div = document.getElementById('branch-log-' + id);
+    if (div) {
+        div.style.display = "block";
+    }
 }
 function hide_commit(id) {
-  var div = document.getElementById('branch-log-' + id);
-  if (div) {
-    div.style.display = "none";
-  }
+    var div = document.getElementById('branch-log-' + id);
+    if (div) {
+        div.style.display = "none";
+    }
 }
 registerLaunchpadFunction(hookUpFilterSubmission);
 
 YUI().use('io-base', 'node', 'json-parse', function(Y) {
 
-  function doUpdate(transaction_id, response, args) {
+function doUpdate(transaction_id, response, args) {
     json_values = Y.JSON.parse(response.responseText);
     // Make sure that the branch isn't empty, and that there
     // have been commits in the last 90 days
     if(json_values.commits && json_values.count > 0) {
-      document.getElementById(args.container).innerHTML = '';
-      sparkline(args.container, json_values);
+        document.getElementById(args.container).innerHTML = '';
+        sparkline(args.container, json_values);
     }
-  }
+}
 
 
-  function renderSpark() {
+function renderSpark() {
     spark_div = 'dev_focus_spark';
 
     if(Y.get('#' + spark_div) !== null) {
-      json_url = branch_sparks[0][1];
-      var container = spark_div;
-      var uri = json_url;
-      var xhr_config = {
-          on: {
-              success: doUpdate,
-          },
-          arguments: {
-              'container': container
-          }
-      };
+        json_url = branch_sparks[0][1];
+        var container = spark_div;
+        var uri = json_url;
+        var xhr_config = {
+            on: {
+                success: doUpdate,
+            },
+            arguments: {
+                'container': container
+            }
+        };
 
       Y.io(uri, xhr_config);
     }
-  }
+}
 
 
-  function sparkline(branch_id, o) {
+function sparkline(branch_id, o) {
     var spark_div = document.getElementById(branch_id);
     var number_commits = parseInt(o.commits.length);
     var w = 160;
@@ -93,31 +93,31 @@ YUI().use('io-base', 'node', 'json-parse', function(Y) {
 
     // Figure out the max and min number of commits
     for (var i = 0; i < number_commits; i++) {
-      o.commits[i] = o.commits[i] - 0;
-      if ( o.commits[i] < min ) min = o.commits[i];
-      if ( o.commits[i] > max ) max = o.commits[i];
+        o.commits[i] = o.commits[i] - 0;
+        if ( o.commits[i] < min ) min = o.commits[i];
+        if ( o.commits[i] > max ) max = o.commits[i];
     }
 
     if (co.getContext) {
-      var c = co.getContext("2d");
-      c.strokeStyle = "black";
-      c.lineWidth = 1.0;
-      c.beginPath();
+        var c = co.getContext("2d");
+        c.strokeStyle = "black";
+        c.lineWidth = 1.0;
+        c.beginPath();
 
       for (var i = 0; i < number_commits; i++) {
-        x_pos = (w / number_commits) * i;
-        // We subtract 1 pixel here to compensate for the base line
-        y_pos = (h-1) - (((o.commits[i] - min) / (max - min)) * (h-1));
+          x_pos = (w / number_commits) * i;
+          // We subtract 1 pixel here to compensate for the base line
+          y_pos = (h-1) - (((o.commits[i] - min) / (max - min)) * (h-1));
 
-        if (i == 0) {
-          c.moveTo(x_pos, y_pos);
-        }
-        c.lineTo(x_pos, y_pos);
+          if (i == 0) {
+              c.moveTo(x_pos, y_pos);
+          }
+          c.lineTo(x_pos, y_pos);
 
-        // When was the last commit?
-        if(o.commits[i] > 0) {
-          last_commit = i+1;
-        }
+          // When was the last commit?
+          if(o.commits[i] > 0) {
+              last_commit = i+1;
+          }
 
       }
       c.stroke();
@@ -170,9 +170,10 @@ YUI().use('io-base', 'node', 'json-parse', function(Y) {
       new_div.style.top = '-10px';
 
     }
-  }
+}
 
-  Y.on("domready", renderSpark);
+Y.on("domready", renderSpark);
+
 });
 
 
