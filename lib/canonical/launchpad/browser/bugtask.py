@@ -62,11 +62,12 @@ from zope.schema.vocabulary import (
     getVocabularyRegistry, SimpleVocabulary, SimpleTerm)
 from zope.security.proxy import (
     isinstance as zope_isinstance, removeSecurityProxy)
+
 from lazr.delegates import delegates
 from lazr.enum import EnumeratedType, Item
-
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
+from lazr.uri import URI
 
 from canonical.config import config
 from canonical.database.sqlbase import cursor
@@ -79,7 +80,6 @@ from canonical.launchpad.webapp import (
     action, custom_widget, canonical_url, GetitemNavigation,
     LaunchpadEditFormView, LaunchpadFormView, LaunchpadView, Navigation,
     redirection, stepthrough)
-from lazr.uri import URI
 from canonical.launchpad.interfaces.bugattachment import (
     BugAttachmentType, IBugAttachmentSet)
 from canonical.launchpad.interfaces.bugactivity import IBugActivity
