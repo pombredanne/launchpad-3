@@ -604,26 +604,29 @@ class POTMsgSet(SQLBase):
                 pofile.date_changed = UTC_NOW
                 pofile.lasttranslator = submitter
 
-        if make_current:
-            # Deactivate previous diverged message.
-            if (current_message is not None and
-                current_message.potemplate is not None):
-                current_message.is_current = False
-                if not current_message.is_imported:
-                    current_message.potemplate = None
-                if not converge_shared:
-                    force_diverged = True
-            if converge_shared:
-                # Converging from a diverged to a shared translation.
-                new_message.potemplate = None
-            elif force_diverged:
-                # Make the message diverged.
-                new_message.potemplate = pofile.potemplate
+        # Change actual is_current flag only if it validates ok.
+        if new_message.validation_status == TranslationValidationStatus.OK:
+            if make_current:
+                # Deactivate previous diverged message.
+                if (current_message is not None and
+                    current_message.potemplate is not None):
+                    current_message.is_current = False
+                    # Do not "converge" a diverged imported message since
+                    # there might be another shared imported message.
+                    if not current_message.is_imported:
+                        current_message.potemplate = None
+                    if not converge_shared:
+                        force_diverged = True
+                if force_diverged:
+                    # Make the message diverged.
+                    new_message.potemplate = pofile.potemplate
+                else:
+                    # Either converge_shared==True, or a new message.
+                    new_message.potemplate = None
+
+                new_message.is_current = True
             else:
                 new_message.potemplate = None
-            new_message.is_current = True
-        else:
-            new_message.potemplate = None
         if is_imported:
             new_message.is_imported = True
 
@@ -773,17 +776,13 @@ class POTMsgSet(SQLBase):
                 raise TranslationConflict(
                     'The new translations were saved as suggestions to '
                     'avoid possible conflicts. Please review them.')
-
         else:
-            # Set the new current message if it validates ok.
-            if (matching_message.validation_status ==
-                TranslationValidationStatus.OK):
-                # Makes the new_message current if needed and also
-                # assignes karma for translation approval
-                self._makeTranslationMessageCurrent(
-                    pofile, matching_message, imported_message,
-                    is_imported, submitter,
-                    force_shared=force_shared, force_diverged=force_diverged)
+            # Makes the new_message current if needed and also
+            # assignes karma for translation approval
+            self._makeTranslationMessageCurrent(
+                pofile, matching_message, imported_message,
+                is_imported, submitter,
+                force_shared=force_shared, force_diverged=force_diverged)
 
         # We need this sync so we don't set self.isfuzzy to the wrong
         # value because cache problems. See bug #102382 as an example of what
