@@ -828,7 +828,6 @@ class Branch(SQLBase):
 
     def getUpgradeFormat(self):
         """See `IBranch`."""
-
         format = BzrDirMetaFormat1()
         branch_format = BRANCH_FORMAT_UPGRADE_PATH.get(self.branch_format)
         if branch_format is not None:
