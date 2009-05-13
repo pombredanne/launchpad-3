@@ -24,7 +24,7 @@ from canonical.launchpad.interfaces.translationimportqueue import (
 from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.launchpad.testing.librarianhelpers import (
     get_newest_librarian_file)
-from canonical.launchpad.tests.mail_helpers import pop_notifications
+from lp.testing.mail_helpers import pop_notifications
 
 from lp.code.interfaces.branchsubscription import (
     BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel)

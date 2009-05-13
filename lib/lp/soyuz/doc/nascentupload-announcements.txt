@@ -46,7 +46,7 @@ Helper functions to examine emails that were sent:
   >>> from lp.services.mail import stub
   >>> def by_to_addrs(a, b):
   ...     return cmp(a[1], b[1])
-  >>> from canonical.launchpad.tests.mail_helpers import pop_notifications
+  >>> from lp.testing.mail_helpers import pop_notifications
 
 Import the test keys to use 'insecure' policy.
 

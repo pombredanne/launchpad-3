@@ -26,7 +26,7 @@ from lp.code.interfaces.codehosting import (
     BRANCH_TRANSPORT, CONTROL_TRANSPORT, LAUNCHPAD_ANONYMOUS,
     LAUNCHPAD_SERVICES)
 from lp.soyuz.interfaces.publishing import PackagePublishingPocket
-from canonical.launchpad.testing import ObjectFactory
+from lp.testing.factory import ObjectFactory
 from canonical.launchpad.validators import LaunchpadValidationError
 from lp.code.xmlrpc.codehosting import (
     datetime_from_tuple, iter_split)
