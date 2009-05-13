@@ -134,8 +134,8 @@ result in an error, since the license is required.
     >>> view.initialize()
     >>> for error in view.errors:
     ...     print error
-    Select all licenses for this software or select Other/Proprietary
-    or Other/Open Source.
+    You must select at least one license.  If you select Other/Proprietary
+    or Other/OpenSource you must include a description of the license.
 
 When an open source license is selected, the project is created.
 

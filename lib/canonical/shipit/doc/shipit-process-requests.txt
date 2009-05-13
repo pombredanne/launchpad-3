@@ -55,7 +55,7 @@ requests we want to process and the new status of these requests.
 
     >>> getUtility(IShippingRequestSet).processRequests(
     ...     pendingspecial, denied)
-    >>> from canonical.launchpad.mail import stub
+    >>> from lp.services.mail import stub
     >>> import transaction
     >>> transaction.commit()
     >>> len(stub.test_emails)

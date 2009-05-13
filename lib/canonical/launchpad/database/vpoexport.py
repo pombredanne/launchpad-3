@@ -13,15 +13,15 @@ __all__ = [
 from zope.interface import implements
 
 from canonical.database.sqlbase import quote, sqlvalues, cursor
-from canonical.launchpad.database.component import Component
+from lp.soyuz.model.component import Component
 from lp.registry.model.distroseries import DistroSeries
 from canonical.launchpad.database.language import Language
-from canonical.launchpad.database.publishing import (
+from lp.soyuz.model.publishing import (
     SourcePackagePublishingHistory)
 from canonical.launchpad.database.pofile import POFile
 from canonical.launchpad.database.potemplate import POTemplate
 from canonical.launchpad.database.potmsgset import POTMsgSet
-from canonical.launchpad.database.sourcepackagerelease import (
+from lp.soyuz.model.sourcepackagerelease import (
     SourcePackageRelease)
 from canonical.launchpad.interfaces import IVPOExportSet, IVPOExport
 

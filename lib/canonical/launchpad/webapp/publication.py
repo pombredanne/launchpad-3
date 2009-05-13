@@ -181,8 +181,11 @@ class LaunchpadBrowserPublication(
         self.maybeRestrictToTeam(request)
         self.maybeBlockOffsiteFormPost(request)
 
-        # If we are running in read-only mode, notify the user.
-        if config.launchpad.read_only:
+        # If we are running in read-only mode, notify the user
+        # provided they aren't using the SSO server.
+        if config.launchpad.read_only and not (
+            layers.OpenIDLayer.providedBy(request) or
+            layers.IdLayer.providedBy(request)):
             try:
                 INotificationResponse(request).addWarningNotification(
                     structured("""

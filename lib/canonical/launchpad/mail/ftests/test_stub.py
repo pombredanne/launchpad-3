@@ -16,7 +16,8 @@ def test_simple_sendmail():
     >>> import email
     >>> from email.MIMEText import MIMEText
     >>> import transaction
-    >>> from canonical.launchpad.mail import stub, simple_sendmail
+    >>> from lp.services.mail import stub
+    >>> from lp.services.mail.sendmail import simple_sendmail
 
     >>> body = 'The email body'
     >>> subject = 'The email subject'

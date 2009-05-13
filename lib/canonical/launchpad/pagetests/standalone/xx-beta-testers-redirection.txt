@@ -72,7 +72,6 @@ parameters:
     HTTP Error 303: See Other
     Location: http://beta.launchpad.dev/ubuntu/+search?text=foo
 
-
 However, HTTP POST requests to the normal site are not redirected:
 
     >>> from urllib import urlencode
@@ -81,7 +80,6 @@ However, HTTP POST requests to the normal site are not redirected:
     ...       data=urlencode({'text': 'foo'}))
     >>> print beta_browser.url
     http://launchpad.dev/ubuntu/+search
-
 
 The redirection works for other Launchpad subdomains:
 
@@ -94,14 +92,21 @@ The redirection works for other Launchpad subdomains:
     HTTP Error 303: See Other
     Location: http://answers.beta.launchpad.dev/~name12
 
+However, domains not under the main site will not be redirected:
 
-However, domains not under the main site (such as shipit) will not be
-redirected:
+    # Go behing the curtains and change the hostname of our mainsite so that
+    # we can test this.
+    >>> config.push('mainsite_data', """
+    ...     [vhost.mainsite]
+    ...     hostname: foo.dev
+    ...     """)
 
-    >>> check(beta_browser.open, 'http://shipit.ubuntu.dev/')
+    >>> check(beta_browser.open, 'http://launchpad.dev/~name12')
     >>> print beta_browser.url
-    http://shipit.ubuntu.dev/
+    http://launchpad.dev/~name12
 
+    # Now retore our mainsite's hostname.
+    >>> dummy = config.pop('mainsite_data')
 
 So that beta testers can still access the production site, the front
 page of Launchpad does not redirect.  They will also see a message
@@ -152,13 +157,11 @@ default is to redirect if no cookie exists):
     redirection</button></p>
     </div>
 
-
 Now when they go to a page on the site, it loads as normal:
 
     >>> check(beta_browser.open, 'http://launchpad.dev/ubuntu')
     >>> print beta_browser.url
     http://launchpad.dev/ubuntu
-
 
 If a beta tester comes to Launchpad but is not yet logged in, they
 will be redirected once they do log in.  First we'll go to the Ubuntu
@@ -267,8 +270,11 @@ Check that the notification is in the timeout page
     ...
     <h1 class="exception">Timeout error</h1>
     <div id="redirect_notice" style="display:none" class="informational message">
-    <p>As a member of the Launchpad Beta Testers team, you will be
-    redirected to the beta site when viewing Launchpad pages.</p>
+    <p>Our edge server has a lower timeout threshold than launchpad.net,
+    so we can catch those before they hit a wider audience.
+    As a member of the Launchpad Beta Testers team, you're more
+    likely to experience them. If this is blocking your work, you
+    can disable redirection.</p>
     <p><button onclick="setBetaRedirect(false)">Disable redirection
     for 2 hours</button></p>
     </div>
