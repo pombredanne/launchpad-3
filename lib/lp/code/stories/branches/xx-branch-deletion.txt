@@ -82,8 +82,7 @@ package.
     >>> from zope.security.proxy import removeSecurityProxy
     >>> from canonical.launchpad.interfaces.launchpad import (
     ...     ILaunchpadCelebrities)
-    >>> from canonical.launchpad.interfaces.publishing import (
-    ...     PackagePublishingPocket)
+    >>> from lp.soyuz.interfaces.publishing import PackagePublishingPocket
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> login(ANONYMOUS)
     >>> name12 = getUtility(IPersonSet).getByName('name12')
