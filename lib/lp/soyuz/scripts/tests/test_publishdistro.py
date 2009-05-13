@@ -14,7 +14,7 @@ import unittest
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.archivepublisher.config import getPubConfig
+from lp.archivepublisher.config import getPubConfig
 from canonical.config import config
 from canonical.launchpad.scripts.logger import QuietFakeLogger
 from lp.soyuz.interfaces.archive import (

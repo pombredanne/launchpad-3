@@ -22,7 +22,7 @@ from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.interfaces.build import BuildStatus, IBuildSet
 from lp.soyuz.interfaces.buildqueue import IBuildQueueSet
 
-from canonical.archivepublisher.utils import process_in_batches
+from lp.archivepublisher.utils import process_in_batches
 from canonical.buildd.utils import notes
 from canonical.buildmaster.pas import BuildDaemonPackagesArchSpecific
 from canonical.buildmaster.buildergroup import BuilderGroup

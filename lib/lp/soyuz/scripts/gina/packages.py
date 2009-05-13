@@ -19,7 +19,7 @@ import rfc822
 
 from canonical import encoding
 
-from canonical.archivepublisher.diskpool import poolify
+from lp.archivepublisher.diskpool import poolify
 from lp.soyuz.scripts.gina.changelog import parse_changelog
 
 from canonical.database.constants import UTC_NOW

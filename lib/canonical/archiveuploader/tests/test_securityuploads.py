@@ -149,8 +149,8 @@ class TestStagedSecurityUploads(TestStagedBinaryUploadBase):
     This class will start to tests all known/possible cases using a test
     (empty) upload and its binary.
 
-     * 'lib/canonical/archivepublisher/tests/data/suite/baz_1.0-1/'
-     * 'lib/canonical/archivepublisher/tests/data/suite/baz_1.0-1_binary/'
+     * 'lib/lp/archivepublisher/tests/data/suite/baz_1.0-1/'
+     * 'lib/lp/archivepublisher/tests/data/suite/baz_1.0-1_binary/'
     """
     name = 'baz'
     version = '1.0-1'

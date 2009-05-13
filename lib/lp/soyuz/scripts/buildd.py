@@ -11,7 +11,7 @@ __all__ = [
 
 from zope.component import getUtility
 
-from canonical.archivepublisher.debversion import Version
+from lp.archivepublisher.debversion import Version
 from canonical.buildmaster.master import BuilddMaster
 from lp.soyuz.interfaces.build import IBuildSet
 from lp.soyuz.interfaces.builder import IBuilderSet
@@ -28,7 +28,7 @@ from lp.registry.interfaces.distroseries import DistroSeriesStatus
 def distroseries_sort_key(series):
     """Sort `DistroSeries` by version.
 
-    See `canonical.archivepublisher.debversion.Version` for more
+    See `lp.archivepublisher.debversion.Version` for more
     information.
     """
     return Version(series.version)
