@@ -842,8 +842,7 @@ def bug_description_xhtml_representation(context, field, request):
     """Render `IBug.description` as XHTML using the webservice."""
     formatter = FormattersAPI
     def renderer(value):
-        encoded = value.encode("utf-8")
-        nomail  = formatter(encoded).obfuscate_email()
+        nomail  = formatter(value).obfuscate_email()
         html    = formatter(nomail).text_to_html()
         return html
     return renderer
