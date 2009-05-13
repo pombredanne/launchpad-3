@@ -408,6 +408,13 @@
         />
 
     <adapter
+        for="lp.code.interfaces.seriessourcepackagebranch.ISeriesSourcePackageBranch"
+        provides="zope.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.SeriesSourcePackageBranchFormatter"
+        name="fmt"
+        />
+
+    <adapter
         for="canonical.launchpad.interfaces.diff.IPreviewDiff"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.PreviewDiffFormatterAPI"
@@ -470,7 +477,12 @@
         factory="canonical.launchpad.webapp.tales.CodeReviewCommentFormatterAPI"
         name="fmt"
         />
-
+    <adapter
+        for="lp.registry.interfaces.sourcepackage.ISourcePackage"
+        provides="zope.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.SourcePackageFormatterAPI"
+        name="fmt"
+        />
     <adapter
         for="canonical.launchpad.interfaces.IBugTracker"
         provides="zope.traversing.interfaces.IPathAdapter"
