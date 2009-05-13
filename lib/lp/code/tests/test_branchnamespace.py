@@ -222,6 +222,19 @@ class NamespaceMixin:
         self.assertRaises(
             BranchCreatorNotOwner, namespace.validateMove, branch, mover)
 
+    def test_validateMove_with_other_name(self):
+        # If you pass a name to validateMove, that'll check to see whether the
+        # branch could be safely moved given a rename.
+        namespace = self.getNamespace()
+        namespace_owner = removeSecurityProxy(namespace).owner
+        name = self.factory.getUniqueString()
+        namespace.createBranch(
+            BranchType.HOSTED, name, removeSecurityProxy(namespace).owner)
+        branch = self.factory.makeAnyBranch()
+        self.assertRaises(
+            BranchExists, namespace.validateMove, branch, namespace_owner,
+            name=name)
+
 
 class TestPersonalNamespace(TestCaseWithFactory, NamespaceMixin):
     """Tests for `PersonalNamespace`."""

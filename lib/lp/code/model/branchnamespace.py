@@ -153,9 +153,11 @@ class _BaseNamespace:
         # "branch" violates check constraint "valid_name"...'.
         IBranch['name'].validate(unicode(name))
 
-    def validateMove(self, branch, mover):
+    def validateMove(self, branch, mover, name=None):
         """See `IBranchNamespace`."""
-        self.validateBranchName(branch.name)
+        if name is None:
+            name = branch.name
+        self.validateBranchName(name)
         self.validateRegistrant(mover)
 
     def createBranchWithPrefix(self, branch_type, prefix, registrant,
