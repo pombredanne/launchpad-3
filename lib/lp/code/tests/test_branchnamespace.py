@@ -188,6 +188,45 @@ class NamespaceMixin:
             BranchType.HOSTED, name, removeSecurityProxy(namespace).owner)
         self.assertEqual(name + '-1', branch.name)
 
+    def test_validateMove(self):
+        # If the mover is allowed to move the branch into the namespace, if
+        # there are absolutely no problems at all, then validateMove raises
+        # nothing and returns None.
+        namespace = self.getNamespace()
+        namespace_owner = removeSecurityProxy(namespace).owner
+        branch = self.factory.makeAnyBranch()
+        # Doesn't raise an exception.
+        self.assertIs(None, namespace.validateMove(branch, namespace_owner))
+
+    def test_validateMove_branch_with_name_exists(self):
+        # If a branch with the same name as the given branch already exists in
+        # the namespace, validateMove raises a BranchExists error.
+        namespace = self.getNamespace()
+        namespace_owner = removeSecurityProxy(namespace).owner
+        name = self.factory.getUniqueString()
+        namespace.createBranch(
+            BranchType.HOSTED, name, removeSecurityProxy(namespace).owner)
+        branch = self.factory.makeAnyBranch(name=name)
+        self.assertRaises(
+            BranchExists, namespace.validateMove, branch, namespace_owner)
+
+    def test_validateMove_forbidden_owner(self):
+        # If the mover isn't allowed to create branches in the namespace, then
+        # they aren't allowed to move branches in there either, so
+        # validateMove wil raise a BranchCreatorNotOwner error.
+        namespace = self.getNamespace()
+        branch = self.factory.makeAnyBranch()
+        mover = self.factory.makePerson()
+        self.assertRaises(
+            BranchCreatorNotOwner, namespace.validateMove, branch, mover)
+
+    # XXX: What if move is valid, except for mover lacking edit permissions on
+    # branch?
+
+    # XXX: What if mover is lp.admin or bzr-experts? The right way to handle
+    # this is to define an lp.Edit permission on the branch namespace, and
+    # make it use the same sort of checks that lp.Edit uses on branch.
+
 
 class TestPersonalNamespace(TestCaseWithFactory, NamespaceMixin):
     """Tests for `PersonalNamespace`."""
