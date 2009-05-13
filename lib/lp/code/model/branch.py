@@ -972,19 +972,6 @@ class BranchSet:
         latest_branches.config(limit=quantity)
         return latest_branches
 
-    def getTargetBranchesForUsersMergeProposals(self, user, product):
-        """See `IBranchSet`."""
-        # XXX: JonathanLange 2008-11-27 spec=package-branches: Why the hell is
-        # this using SQL? In any case, we want to change this to allow source
-        # packages.
-        return Branch.select("""
-            BranchMergeProposal.target_branch = Branch.id
-            AND BranchMergeProposal.registrant = %s
-            AND Branch.product = %s
-            """ % sqlvalues(user, product),
-            clauseTables=['BranchMergeProposal'],
-            orderBy=['owner', 'name'], distinct=True)
-
 
 class BranchCloud:
     """See `IBranchCloud`."""

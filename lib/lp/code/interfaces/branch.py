@@ -1280,11 +1280,6 @@ class IBranchSet(Interface):
         # XXX: JonathanLange 2008-11-27 spec=package-branches: This API needs
         # to change for source package branches.
 
-    def getTargetBranchesForUsersMergeProposals(user, product):
-        """Return a sequence of branches the user has targeted before."""
-        # XXX: JonathanLange 2008-11-27 spec=package-branches: This API needs
-        # to change for source package branches.
-
 
 class IBranchDelta(Interface):
     """The quantitative changes made to a branch that was edited or altered.
