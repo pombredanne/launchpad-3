@@ -9,6 +9,7 @@ import os.path
 from unittest import TestLoader
 
 from bzrlib import errors as bzr_errors
+from bzrlib.branch import Branch
 from bzrlib.revision import NULL_REVISION
 from canonical.testing import DatabaseFunctionalLayer, LaunchpadZopelessLayer
 from sqlobject import SQLObjectNotFound
@@ -26,6 +27,7 @@ from canonical.launchpad.testing.librarianhelpers import (
     get_newest_librarian_file)
 from canonical.launchpad.tests.mail_helpers import pop_notifications
 
+from lp.code.interfaces.branch import BranchFormat, RepositoryFormat
 from lp.code.interfaces.branchsubscription import (
     BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel)
 from lp.code.interfaces.branchjob import (
@@ -165,14 +167,17 @@ class TestBranchUpgradeJob(TestCaseWithFactory):
         """Ensure that a branch with an outdated format is upgraded."""
         self.useBzrBranches()
         db_branch, tree = self.create_branch_and_tree(format='knit')
+        db_branch.branch_format = BranchFormat.BZR_BRANCH_5
+        db_branch.repository_format = RepositoryFormat.BZR_KNIT_1
         self.assertEqual(
             tree.branch.repository._format.get_format_string(),
             'Bazaar-NG Knit Repository Format 1')
         job = BranchUpgradeJob.create(db_branch)
         job.run()
+        new_branch = Branch.open(tree.branch.base)
         self.assertEqual(
-            tree.branch.repository._format.get_format_string(),
-            'Some other format')
+            new_branch.repository._format.get_format_string(),
+            'Bazaar RepositoryFormatKnitPack6 (bzr 1.9)\n')
 
 
 class TestRevisionMailJob(TestCaseWithFactory):

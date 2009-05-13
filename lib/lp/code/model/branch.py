@@ -10,6 +10,7 @@ __all__ = [
 from datetime import datetime
 
 from bzrlib.branch import Branch as BzrBranch
+from bzrlib.bzrdir import BzrDirMetaFormat1
 from bzrlib.revision import NULL_REVISION
 from bzrlib import urlutils
 import pytz
@@ -824,6 +825,19 @@ class Branch(SQLBase):
                 BRANCH_FORMAT_UPGRADE_PATH.get(self.branch_format, None)):
             return True
         return False
+
+    def getUpgradeFormat(self):
+        """See `IBranch`."""
+
+        format = BzrDirMetaFormat1()
+        branch_format = BRANCH_FORMAT_UPGRADE_PATH.get(self.branch_format)
+        if branch_format is not None:
+            format.set_branch_format(branch_format())
+        repository_format = REPOSITORY_FORMAT_UPGRADE_PATH.get(
+            self.repository_format)
+        if repository_format is not None:
+            format._set_repository_format(repository_format())
+        return format
 
 
 class DeletionOperation:

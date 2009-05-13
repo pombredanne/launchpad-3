@@ -12,6 +12,7 @@ from bzrlib.log import log_formatter, show_log
 from bzrlib.diff import show_diff_trees
 from bzrlib.revision import NULL_REVISION
 from bzrlib.revisionspec import RevisionInfo, RevisionSpec
+from bzrlib.upgrade import upgrade
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
 from lazr.enum import DBEnumeratedType, DBItem
@@ -206,11 +207,9 @@ class BranchUpgradeJob(BranchJobDerived):
 
     def run(self):
         """See `IBranchUpgradeJob`."""
-        from bzrlib.upgrade import upgrade
         branch = self.branch.getBzrBranch()
-        branch.bzrdir.check_conversion_target(
-            self.branch.get_upgrade_format())
-        upgrade(branch, self.branch.get_upgrade_format())
+        to_format = self.branch.getUpgradeFormat()
+        upgrade(branch.base, to_format)
 
 
 class RevisionMailJob(BranchDiffJob):
