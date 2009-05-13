@@ -46,16 +46,6 @@ BlueprintsLayer = BlueprintLayer
 class AnswersLayer(LaunchpadLayer):
     """The `AnswersLayer` layer."""
 
-# XXX sinzui 2008-09-04 bug=264783:
-# Remove this layer.
-class OpenIDLayer(LaunchpadLayer):
-    """The `OpenID` layer."""
-
-
-class IdLayer(LaunchpadLayer):
-    """The new OpenID `Id` layer."""
-
-
 class DebugLayer(Interface):
     """The `DebugLayer` layer.
 

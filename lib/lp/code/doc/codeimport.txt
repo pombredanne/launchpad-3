@@ -197,7 +197,7 @@ created if done through the web UI, so we'll add nopriv here.
     ...     BranchSubscriptionDiffSize.NODIFF,
     ...     CodeReviewNotificationLevel.FULL)
 
-    >>> from canonical.launchpad.tests.mail_helpers import (
+    >>> from lp.testing.mail_helpers import (
     ...     pop_notifications, print_emails)
     >>> from canonical.launchpad.interfaces import CodeImportReviewStatus
     >>> ignore_old_emails = pop_notifications()

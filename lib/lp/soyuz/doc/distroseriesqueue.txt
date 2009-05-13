@@ -690,7 +690,7 @@ Roll back modified data:
 
 Clear existing mail stack:
 
-  >>> from canonical.launchpad.tests.mail_helpers import pop_notifications
+  >>> from lp.testing.mail_helpers import pop_notifications
   >>> rubbish = pop_notifications()
 
 As mentioned above, values returned by 'getQueueItems' matching a given
