@@ -1,0 +1,430 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="view/macro:page/onecolumn"
+  i18n:domain="launchpad"
+>
+
+<style type="text/css" metal:fill-slot="head_epilogue">
+  .logtail {
+    padding-left: 2em;
+  }
+  #merge-summary {
+    margin: 1em 0;
+  }
+</style>
+
+<body>
+
+<metal:heading fill-slot="before_nav_menu"
+               tal:content="structure context/@@+heading"/>
+
+<div metal:fill-slot="main"
+     tal:define="context_menu context/menu:context">
+
+  <tal:public condition="not: context/private">
+    <div id="privacy" class="aside public">
+      This branch is public
+    </div>
+  </tal:public>
+  <tal:public condition="context/private">
+    <div id="privacy" class="aside private">
+      This branch is private
+    </div>
+  </tal:public>
+
+  <div class="aside">
+    <aside tal:content="structure context/@@+portlet-subscribers" />
+  </div>
+
+    <h1>
+      <tal:branch replace="context/bzr_identity" />
+      <a tal:define="link context_menu/delete_branch"
+         tal:condition="link/enabled"
+         tal:attributes="href link/url"
+         ><img tal:attributes="alt link/text;title link/text" src="/@@/trash-icon" /></a>
+      <a tal:define="link context_menu/edit"
+         tal:condition="link/enabled"
+         tal:attributes="href link/url"
+         ><img tal:attributes="alt link/text;title link/text" src="/@@/edit" /></a>
+    </h1>
+
+  <table id="branch-details-table">
+    <tbody>
+      <tal:not-junk-branch tal:condition="context/product">
+        <tr>
+          <th>Project:</th>
+          <td><tal:link replace="structure context/product/fmt:link" /></td>
+        </tr>
+      </tal:not-junk-branch>
+      <tr>
+        <th>Status:</th>
+        <td
+          tal:attributes="class string:branchstatus${context/lifecycle_status/name}"
+          tal:content="context/lifecycle_status/title"
+          id="branch-details-status-value" />
+      </tr>
+      <tal:mirrored-branch tal:condition="context/branch_type/enumvalue:MIRRORED">
+        <tr><th>Location:</th><td tal:content="view/mirror_location" /></tr>
+        <tal:mirror-failures tal:replace="structure context/@@+mirror-status" />
+      </tal:mirrored-branch>
+      <tal:remote-branch tal:condition="context/branch_type/enumvalue:REMOTE">
+        <tr>
+          <th>Location:</th>
+          <td tal:condition="context/url" tal:content="view/mirror_location" />
+          <td tal:condition="not: context/url" >Not specified</td>
+        </tr>
+      </tal:remote-branch>
+      <tal:show-download-url condition="view/bzr_download_url">
+        <tr>
+          <th>Get this branch:</th>
+          <td>
+            <tt>bzr branch <tal:url replace="view/bzr_download_url"/></tt>
+          </td>
+        </tr>
+      </tal:show-download-url>
+
+      <tal:hosted-branch condition="context/branch_type/enumvalue:HOSTED">
+        <tal:comment condition="nothing">
+          <!-- This is a hosted branch, display upload directions -->
+        </tal:comment>
+
+        <tal:not-logged-in condition="not:view/user">
+          <tal:comment condition="nothing">
+            <!-- The user is not logged in -->
+          </tal:comment>
+          <tr>
+            <th>Upload URL:</th>
+            <td id="upload-directions" tal:condition="not:context/owner/isTeam">
+              Only
+              <a tal:attributes="href context/owner/fmt:url"
+                 tal:content="context/owner/browsername">Person</a>
+              can upload to this branch. If you are
+              <tal:branch-owner replace="context/owner/browsername"/>
+              please <a href="+login">log in</a> for upload directions.
+            </td>
+            <td id="upload-directions" tal:condition="context/owner/isTeam">
+              Members of
+              <a tal:attributes="href context/owner/fmt:url"
+                 tal:content="context/owner/browsername">Team</a>
+              can upload to this branch. <a href="+login">Log in</a> for directions.
+            </td>
+          </tr>
+        </tal:not-logged-in>
+
+        <tal:logged-in condition="view/user">
+          <tal:cannot-upload condition="not:view/user_can_upload">
+            <tal:comment condition="nothing">
+              <!-- The user is logged in but cannot upload to the branch -->
+            </tal:comment>
+            <tr>
+              <th>Update this branch:</th>
+              <td id="upload-directions" tal:condition="not:context/owner/isTeam">
+                You cannot upload to this branch. Only
+                <a tal:attributes="href context/owner/fmt:url"
+                   tal:content="context/owner/browsername">Person</a>
+                can upload to this branch.
+              </td>
+              <td id="upload-directions" tal:condition="context/owner/isTeam">
+                You cannot upload to this branch. Members of
+                <a tal:attributes="href context/owner/fmt:url"
+                   tal:content="context/owner/browsername">Team</a>
+                can upload to this branch.
+              </td>
+            </tr>
+          </tal:cannot-upload>
+
+          <tal:can-upload condition="view/user_can_upload">
+            <tal:comment condition="nothing">
+              <!-- The user is logged in and can upload to the branch -->
+            </tal:comment>
+
+            <tr>
+              <th>Update this branch:</th>
+              <td id="upload-directions">
+                <tt>bzr push <tal:url replace="view/bzr_upload_url"/></tt>
+                <tal:comment condition="nothing">
+                  <!-- Directions to set the SSH key -->
+                </tal:comment>
+                <p tal:condition="not:view/user/sshkeys" id="ssh-key-directions">
+                  To authenticate with the Launchpad branch upload service, you need
+                  to <a tal:attributes="href string:${view/user/fmt:url}/+editsshkeys">
+                  register a SSH key </a>.
+                </p>
+              </td>
+            </tr>
+            </tal:can-upload>
+          </tal:logged-in>
+      </tal:hosted-branch>
+      <tr id="branch-format" tal:condition="context/branch_format">
+        <th>Branch format:</th>
+        <td tal:content="context/branch_format/description" />
+      </tr>
+      <tr id="repository-format"
+        tal:condition="context/repository_format">
+        <th>Repository format:</th>
+        <td tal:content="context/repository_format/description" />
+      </tr>
+      <tr id="stacked-on" tal:condition="context/stacked_on">
+        <th>Stacked on:</th>
+        <td tal:content="structure context/stacked_on/fmt:bzr-link" />
+      </tr>
+      </tbody>
+  </table>
+  <tal:branch-errors tal:replace="structure context/@@+messages" />
+
+  <tal:imported-branch tal:condition="context/branch_type/enumvalue:IMPORTED">
+    <h2>Import details</h2>
+    <div id="import-details" tal:define="branch context">
+      <tal:no-codeimport condition="not: branch/code_import">
+        <p>This branch is updated by the Launchpad import system.</p>
+      </tal:no-codeimport>
+
+      <tal:has-codeimport condition="branch/code_import"
+                          define="code_import branch/code_import">
+
+        <p><strong>Import Status:</strong>
+        <tal:status replace="code_import/review_status/title"/>
+        </p>
+
+        <tal:svn-import condition="code_import/rcs_type/enumvalue:SVN">
+          <p>This branch is an import of the Subversion branch from
+          <tal:is-web-url condition="view/svn_url_is_web">
+            <a tal:attributes="href code_import/svn_branch_url"
+                    tal:content="code_import/svn_branch_url" />.
+          </tal:is-web-url>
+          <tal:not-web-url condition="not: view/svn_url_is_web">
+              <span tal:replace="code_import/svn_branch_url" />.
+          </tal:not-web-url>
+          </p>
+        </tal:svn-import>
+
+        <tal:cvs-import condition="code_import/rcs_type/enumvalue:CVS">
+          <p>This branch is an import of the CVS module
+          <strong tal:content="code_import/cvs_module"/> from
+          <strong tal:content="code_import/cvs_root"/>.
+          </p>
+        </tal:cvs-import>
+
+        <tal:has-job define="job code_import/import_job"
+                     condition="job">
+          <div>
+          <tal:is-running condition="job/state/enumvalue:RUNNING">
+            An import is currently running on
+            <tal:machine content="structure job/machine/fmt:link" />,
+            and was started
+            <tal:date-started replace="job/date_started/fmt:displaydate">
+              2 hours ago
+            </tal:date-started>.
+            <tal:is-logtail condition="job/logtail">
+              The last few lines of the job's output were:
+              <div class="logtail">
+                <tal:logtail content="structure job/logtail/fmt:nice_pre" />
+              </div>
+            </tal:is-logtail>
+          </tal:is-running>
+          <tal:not-running condition="not: job/state/enumvalue:RUNNING">
+            The next import is scheduled to run
+            <tal:overdue condition="job/isOverdue">
+              as soon as possible<tal:requested-by
+                condition="job/requesting_user">
+                (requested by
+                <tal:requested-by-user
+                   replace="structure job/requesting_user/fmt:link">
+                  Some user.
+                </tal:requested-by-user>)</tal:requested-by>.
+            </tal:overdue>
+            <tal:not-overdue condition="not: job/isOverdue">
+              <tal:date-started replace="job/date_due/fmt:displaydate">
+                in 2 hours
+              </tal:date-started>.
+              <tal:button
+                 condition="view/user"
+                 replace="structure view/context/@@+request-import" />
+            </tal:not-overdue>
+          </tal:not-running>
+          </div>
+        </tal:has-job>
+
+        <tal:last-successful condition="code_import/date_last_successful">
+          <p>
+            Last successful import was
+            <tal:last-successful replace="code_import/date_last_successful/fmt:displaydate">
+              2 hours ago
+            </tal:last-successful>.
+          </p>
+        </tal:last-successful>
+
+        <div id="import-results" tal:condition="view/latest_code_import_results">
+          <tal:result repeat="result view/latest_code_import_results">
+            <metal:result use-macro="code_import/@@+macros/show_result"/>
+          </tal:result>
+        </div>
+
+        <tal:can-edit condition="code_import/required:launchpad.Edit">
+          <p>
+            <a tal:define="link context_menu/edit_import"
+               tal:condition="link/enabled"
+               tal:attributes="href link/url"
+               tal:content="structure link/render">
+               Edit import source or review import</a>
+          </p>
+        </tal:can-edit>
+      </tal:has-codeimport>
+    </div>
+  </tal:imported-branch>
+
+  <div id="merge-links" tal:condition="view/show_merge_links">
+    <div id="merge-summary">
+      <div id="landing-candidates">
+        &laquo;
+        <a href="+merges" tal:content="structure view/landing_candidate_count_text">
+          1 branch
+        </a>
+        proposed for merging into this one.
+
+      </div>
+
+      <div id="dependent-branches" tal:condition="context/dependent_branches">
+        &laquo;
+        <a href="+merges" tal:content="structure view/dependent_branch_count_text">
+          1 branch
+        </a>
+        dependent on this one.
+      </div>
+
+      <div id="landing-targets" tal:condition="view/landing_targets">
+        <tal:landing-candidates repeat="mergeproposal view/landing_targets">
+          <div>
+            <tal:merge-fragment tal:replace="structure mergeproposal/@@+link-summary" />
+          </div>
+        </tal:landing-candidates>
+      </div>
+      <div tal:condition="not:view/landing_targets">
+        &raquo;
+        This branch is not proposed for merging into any others.
+      </div>
+
+
+    </div>
+    <div
+      tal:define="link context_menu/register_merge"
+      tal:condition="link/enabled"
+      tal:replace="structure link/render"
+      />
+  </div>
+
+  <div tal:condition="view/show_whiteboard">
+    <div id="whiteboard">
+      <h2>Whiteboard</h2>
+      <div id="branch-whiteboard-value"
+        tal:condition="context/whiteboard"
+        tal:content="structure context/whiteboard/fmt:text-to-html">
+        Whiteboard text goes here.
+      </div>
+    </div>
+
+    <div
+      tal:define="link context/menu:context/edit_whiteboard"
+      tal:condition="link/enabled"
+      tal:content="structure link/render">
+      Edit whiteboard
+    </div>
+  </div>
+
+  <div id="related-bugs-and-blueprints">
+    <h2>Linked bug reports and blueprints</h2>
+    <div class="actions">
+      <tal:bugs tal:define="branch context;
+                            show_edit python:True;">
+        <metal:bug-branch-links use-macro="context/@@+macros/bug-branch-links"/>
+      </tal:bugs>
+      <div
+        tal:define="link context_menu/link_bug"
+        tal:condition="link/enabled"
+        tal:content="structure link/render">
+        Link to a bug
+      </div>
+    </div>
+    <div class="actions">
+      <tal:blueprints tal:define="branch context;
+                                  show_edit python:True;">
+        <metal:spec-branch-links
+            use-macro="context/@@+macros/spec-branch-links"/>
+      </tal:blueprints>
+      <div
+        tal:define="link context_menu/link_blueprint"
+        tal:condition="link/enabled"
+        tal:content="structure link/render">
+        Link to a blueprint
+      </div>
+    </div>
+  </div>
+
+
+  <div id="recent-revisions">
+  <h2 style="clear: both">Recent revisions</h2>
+
+  <p tal:condition="not:context/revision_count"
+     tal:define="branch context">
+    <metal:no-revision-message use-macro="context/@@+macros/no-revision-message" />
+  </p>
+
+  <tal:history-available condition="context/revision_count"
+                         define="branch context;
+                                 revisions branch/latest_revisions">
+    <metal:landing-target use-macro="branch/@@+macros/branch-revisions"/>
+
+    <div tal:define="link context_menu/browse_revisions"
+         tal:condition="link/enabled">
+      &raquo;
+      <span class="actions"
+          tal:content="structure link/render">
+        All revisions
+      </span>
+    </div>
+
+  </tal:history-available>
+
+  </div>
+
+      <div class="related">
+
+  <h2>Nearby</h2>
+  <ul>
+    <li tal:condition="context/product">
+      <a tal:attributes="href context/product/fmt:url">
+        Other <tal:product replace="context/product/displayname" /> branches
+      </a>
+    </li>
+    <li tal:condition="context/sourcepackage">
+      <a tal:attributes="href context/sourcepackage/fmt:url">
+        Other <tal:product replace="context/sourcepackage/displayname" /> branches
+      </a>
+    </li>
+    <li>
+      <a tal:attributes="href context/owner/fmt:url">
+        Other branches owned by <tal:person
+        replace="context/owner/fmt:displayname">Owner</tal:person>
+      </a>
+    </li>
+    <li tal:condition="not:view/owner_is_registrant">
+      <a tal:attributes="href string:${context/registrant/fmt:url}/+registeredbranches">
+        Other branches registered by <tal:person
+        replace="context/registrant/fmt:displayname">Registrant</tal:person>
+      </a>
+    </li>
+  </ul>
+
+      </div>
+
+</div><tal:comment condition="nothing"><!-- end main slot --></tal:comment>
+
+</body>
+</html>
+<!-- 1-0 done -->

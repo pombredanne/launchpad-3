@@ -183,8 +183,8 @@ Attach the es.xpi file (the translation) file.
 Before we are ready to import the attached files, we need to approve
 them first.
 
-    >>> template_entry.status = RosettaImportStatus.APPROVED
-    >>> translation_entry.status = RosettaImportStatus.APPROVED
+    >>> template_entry.setStatus(RosettaImportStatus.APPROVED)
+    >>> translation_entry.setStatus(RosettaImportStatus.APPROVED)
 
 Given that the files are attached to Librarian, we need to commit the
 transaction to make sure it's stored properly and available.
@@ -278,7 +278,7 @@ Create a PO template and put a single message set in it.
     ...     owner=mark, languagepack=True, path='po/test.pot',
     ...     header=pot_header)
     >>> potmsgset = template.createMessageSetFromText(u'blah', None)
-    >>> potmsgset.sequence = 1
+    >>> potmsgset.setSequence(template, 1)
 
 We set the template last update date to the oldest date we are going to
 play with, so it doesn't affect translations export.
@@ -293,7 +293,7 @@ on 2000/01/01.
     >>> new_translation_message = potmsgset.updateTranslation(
     ...     pofile_es, mark, translations, is_imported=False,
     ...     lock_timestamp=datetime.datetime.now(UTC))
-    >>> new_translation_message.date_reviewed = d2000_01_01
+    >>> pofile_es.date_changed = d2000_01_01
 
 Create a Welsh PO file, with an active translation submission created on
 2000/01/03.
@@ -303,7 +303,7 @@ Create a Welsh PO file, with an active translation submission created on
     >>> new_translation_message = potmsgset.updateTranslation(
     ...     pofile_cy, mark, translations, is_imported=False,
     ...     lock_timestamp=datetime.datetime.now(UTC))
-    >>> new_translation_message.date_reviewed = d2000_01_03
+    >>> pofile_cy.date_changed = d2000_01_03
     >>> transaction.commit()
 
 First, export without any existing base language pack: should get both

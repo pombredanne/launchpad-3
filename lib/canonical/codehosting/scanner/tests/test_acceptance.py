@@ -24,7 +24,7 @@ from canonical.codehosting.bzrutils import ensure_base
 from canonical.codehosting.tests.helpers import (
     create_branch_with_one_revision, LoomTestMixin)
 from canonical.config import config
-from canonical.launchpad.interfaces.branchlookup import IBranchLookup
+from lp.code.interfaces.branchlookup import IBranchLookup
 from canonical.testing import ZopelessAppServerLayer
 
 

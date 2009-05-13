@@ -18,9 +18,11 @@ from zope.component import getUtility
 
 from canonical.librarian.interfaces import ILibrarianClient
 
-from canonical.launchpad.interfaces import (
-    ArchivePurpose, BuildStatus, IBuildQueueSet, IBuildSet)
+from lp.soyuz.interfaces.archive import ArchivePurpose
+from lp.soyuz.interfaces.build import BuildStatus, IBuildSet
+from lp.soyuz.interfaces.buildqueue import IBuildQueueSet
 
+from canonical.archivepublisher.utils import process_in_batches
 from canonical.buildd.utils import notes
 from canonical.buildmaster.pas import BuildDaemonPackagesArchSpecific
 from canonical.buildmaster.buildergroup import BuilderGroup
@@ -237,13 +239,16 @@ class BuilddMaster:
         self._logger.info(
             "Found %d source(s) published." % sources_published.count())
 
-        for pubrec in sources_published:
+        def process_source(pubrec):
             builds = pubrec.createMissingBuilds(
                 architectures_available=architectures_available,
                 pas_verify=pas_verify, logger=self._logger)
-            if len(builds) == 0:
-                continue
-            self.commit()
+            if len(builds) > 0:
+                self.commit()
+
+        process_in_batches(
+            sources_published, process_source, self._logger,
+            minimum_chunk_size=1000)
 
     def addMissingBuildQueueEntries(self):
         """Create missing Buildd Jobs. """

@@ -21,20 +21,27 @@ def text_lines_to_set(text):
 
 # zope.testing.doctest: called as part of creating a DocTestSuite.
 permitted_database_imports = text_lines_to_set("""
-    zope.testing.doctest
-    canonical.librarian.db
-    canonical.doap.fileimporter
+    canonical.archivepublisher.deathrow
+    canonical.archivepublisher.domination
     canonical.archivepublisher.ftparchive
     canonical.archivepublisher.publishing
-    canonical.archivepublisher.domination
-    canonical.archivepublisher.deathrow
     canonical.codehosting.inmemory
     canonical.launchpad.browser.branchlisting
+    lp.code.browser.branchlisting
     canonical.launchpad.feed.branch
+    lp.code.feed.branch
+    canonical.launchpad.interfaces.person
+    canonical.launchpad.scripts.garbo
+    canonical.launchpad.scripts.librarian_apache_log_parser
     canonical.launchpad.vocabularies.dbobjects
-    canonical.launchpad.validators.person
+    lp.registry.vocabularies
     canonical.librarian.client
+    canonical.librarian.db
+    zope.testing.doctest
     """)
+# It's not worth creating a *Set utility for ParsedApacheLog, to be used only
+# in librarian_apache_log_parser, so instead we allow that module to import
+# from launchpad.database above.
 
 
 warned_database_imports = text_lines_to_set("""
@@ -219,10 +226,11 @@ def import_fascist(name, globals={}, locals={}, fromlist=[]):
             # (and foo actually has an __all__).  Unless foo is within a tests
             # or ftests module or bar is itself a module.
             for attrname in fromlist:
-                if (attrname == 'adapter' 
+                if (attrname in ('adapter', 'provideHandler')
                     and module.__name__ == 'zope.component'):
-                    # 'adapter' is not in zope.component.__all__, but that's
-                    # where it should be imported from.
+                    # 'adapter' and 'provideHandler' are not in
+                    # zope.component.__all__, but that's where they should be
+                    # imported from.
                     continue
                 if attrname != '__doc__' and attrname not in module.__all__:
                     if not isinstance(

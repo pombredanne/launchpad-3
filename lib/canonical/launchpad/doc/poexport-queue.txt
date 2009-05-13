@@ -12,7 +12,7 @@ and the ones that failed with the error associated.
   >>> import transaction
   >>> from zope.component import getUtility
   >>> from canonical.launchpad.interfaces import IPersonSet
-  >>> from canonical.launchpad.mail.stub import test_emails
+  >>> from lp.services.mail.stub import test_emails
   >>> from canonical.launchpad.scripts.po_export_queue import ExportResult
 
   # Function to print mail content without headers.
@@ -273,16 +273,8 @@ This pofile has both kind of messages.
 To see what is being exported we need to retrieve the exported file from the
 librarian.
 
-    >>> from canonical.launchpad.webapp.interfaces import (
-    ...     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
-    >>> from canonical.launchpad.database.librarian import LibraryFileAlias
-    >>> from canonical.librarian.interfaces import ILibrarianClient
-    >>> from storm.expr import Desc
-    >>> def getLatestLibrarianFile():
-    ...     store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-    ...     alias = store.find(LibraryFileAlias).order_by(
-    ...         Desc(LibraryFileAlias.date_created)).first()
-    ...     return getUtility(ILibrarianClient).getFileByAlias(alias.id)
+    >>> from canonical.launchpad.testing.librarianhelpers import (
+    ...     get_newest_librarian_file)
 
 Exporting this pofile yields both messages in the resulting file.
 
@@ -292,7 +284,7 @@ Exporting this pofile yields both messages in the resulting file.
     INFO:root:Stored file at http://...eo.po
 
     >>> transaction.commit()
-    >>> print getLatestLibrarianFile().read()
+    >>> print get_newest_librarian_file().read()
     # Esperanto translation for ...
     ...
     "X-Generator: Launchpad (build ...)\n"
@@ -313,7 +305,7 @@ after having been imported.
     INFO:root:Stored file at http://...eo.po
 
     >>> transaction.commit()
-    >>> print getLatestLibrarianFile().read()
+    >>> print get_newest_librarian_file().read()
     # IMPORTANT: This file does NOT contain a complete PO file structure.
     # DO NOT attempt to import this file back into Launchpad.
     ...

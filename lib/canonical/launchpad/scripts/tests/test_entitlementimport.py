@@ -11,8 +11,7 @@ from cStringIO import StringIO
 from zope.testing.loghandler import Handler
 
 from canonical.testing import LaunchpadZopelessLayer
-from canonical.launchpad import scripts
-from canonical.launchpad.scripts.entitlement import (
+from lp.registry.scripts.entitlement import (
     EntitlementExchange, EntitlementImporter,
     InvalidFormat, UnsupportedVersion)
 

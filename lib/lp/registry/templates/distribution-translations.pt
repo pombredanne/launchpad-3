@@ -1,0 +1,85 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="view/macro:page/onecolumn"
+  i18n:domain="launchpad" >
+
+  <body>
+  <div metal:fill-slot="main">
+    <h1>Translations</h1>
+
+  <ul class="helplinks">
+    <li>
+      <a href="https://help.launchpad.net/Translations"
+         id="link-to-translations-help"
+         >Help for translations
+      </a>
+      </li>
+  </ul>
+  <tal:translation_focus condition="view/translation_focus">
+    <p>
+      The current translation focus for
+      <span tal:replace="context/displayname">Ubuntu</span> is
+      <span tal:replace="view/translation_focus/version">6.06</span>
+      (<span tal:replace="view/translation_focus/displayname">Dapper</span>),
+      and we encourage you to translate it first.
+      </p>
+          <p id="translation-permissions">
+            <tal:distro replace="context/displayname">This
+            distribution</tal:distro> is translated
+            <tal:hasgroup condition="context/translationgroup">by
+              <a tal:attributes="href context/translationgroup/fmt:url"
+                 tal:content="context/translationgroup/title">translators</a>
+            </tal:hasgroup>
+            with <a href="https://help.launchpad.net/Translations/YourProject#Choosing%20a%20permissions%20policy"
+              tal:content="context/translationpermission/title">certain</a>
+            permissions.
+            <tal:permissions condition="context/required:launchpad.Edit">
+              You can modify permissions on the
+              <a
+                tal:define="link context/menu:navigation/settings"
+                tal:attributes="href link/url"
+              >Settings</a> page.
+            </tal:permissions>
+          </p>
+
+    <h2>
+      <span tal:replace="view/translation_focus/version">5.04</span>:
+      <span tal:replace="view/translation_focus/title">
+        Hoary Hedgehog
+      </span>
+    </h2>
+    <div tal:replace="structure view/translation_focus/@@+langchart" />
+  </tal:translation_focus>
+
+  <tal:secondary condition="view/secondary_translatable_serieses">
+    <h2 tal:condition="view/translation_focus">
+      Other versions of <span tal:replace="context/displayname">Ubuntu</span>
+    </h2>
+
+    <ul id="distroseries-list">
+      <li tal:repeat="distroseries view/secondary_translatable_serieses">
+        <a tal:attributes="href distroseries/fmt:url"
+                 tal:content=
+                    "string: ${distroseries/version} ${distroseries/title}"
+                >5.04 The Hoary Hedgehog Release</a>
+      </li>
+    </ul>
+  </tal:secondary>
+
+  <tal:untranslatable condition="not: view/translation_focus">
+    <p>
+      This distribution does not have any series to be translated.  Once
+      <span tal:replace="context/displayname">Ubuntu</span> has created a
+      distroseries, you will be able to find or create its translations here.
+    </p>
+  </tal:untranslatable>
+
+</div>
+</body>
+</html>

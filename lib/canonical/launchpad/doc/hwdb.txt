@@ -369,6 +369,9 @@ When an anonymous submitter later registers a Launchpad account, the field
     >>> email = getUtility(IEmailAddressSet).getByEmail(
     ...     u'beeblebrox@example.com')
     >>> user.validateAndEnsurePreferredEmail(email)
+    >>> transaction.commit()
+    >>> from canonical.launchpad.scripts.garbo import HWSubmissionEmailLinker
+    >>> HWSubmissionEmailLinker().run()
     >>> submission = hw_submission_set.getBySubmissionKey(u'unique-id-2')
     >>> print submission.owner.displayname
     Beeblebrox
@@ -397,9 +400,12 @@ When he adds this email address to his list of addresses in Launchpad,
 the field `owner` is updated.
 
     >>> email = getUtility(IEmailAddressSet).new(
-    ...     u'beeblebrox@beeblebrox.net', user)
+    ...     u'beeblebrox@beeblebrox.net', user, account=user.account)
+    >>> transaction.commit()
     >>> login_person(user)
     >>> user.validateAndEnsurePreferredEmail(email)
+    >>> transaction.commit()
+    >>> HWSubmissionEmailLinker().run()
     >>> submission = hw_submission_set.getBySubmissionKey(u'unique-id-2')
     >>> print submission.owner.displayname
     Beeblebrox
@@ -548,6 +554,7 @@ Links between a bug and a submission must be unique.
     IntegrityError: ... violates unique constraint
     "hwsubmissionbug__submission__bug__key"
 
+    >>> transaction.abort()
 
 == General Search Method ==
 
@@ -595,7 +602,7 @@ Admins have access to all submissions.
 If a distribution is specified, only those submissions that were made
 for that distribution are returned.
 
-    >>> from canonical.launchpad.interfaces.distribution import (
+    >>> from lp.registry.interfaces.distribution import (
     ...     IDistributionSet)
     >>> distribution_set = getUtility(IDistributionSet)
     >>> ubuntu = distribution_set.getByName('ubuntu')
@@ -643,7 +650,7 @@ are returned.
 If a distroseries is specified, only submissions for that distroseries
 are returned.
 
-    >>> from canonical.launchpad.testing.factory import LaunchpadObjectFactory
+    >>> from lp.testing.factory import LaunchpadObjectFactory
     >>> factory = LaunchpadObjectFactory()
 
     >>> warty = ubuntu['warty']

@@ -81,13 +81,13 @@ from canonical.database.revision import confirm_dbrevision
 from canonical.database.sqlbase import cursor, ZopelessTransactionManager
 from canonical.launchpad.interfaces import IMailBox, IOpenLaunchBag
 from canonical.launchpad.ftests import ANONYMOUS, login, logout, is_logged_in
-import canonical.launchpad.mail.stub
-from canonical.launchpad.mail.mailbox import TestMailBox
+import lp.services.mail.stub
+from lp.services.mail.mailbox import TestMailBox
 from canonical.launchpad.scripts import execute_zcml_for_scripts
 from canonical.launchpad.testing.tests.googleserviceharness import (
     GoogleServiceTestSetup)
 from canonical.launchpad.webapp.interfaces import (
-        IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
+        DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE)
 from canonical.launchpad.webapp.servers import (
     LaunchpadAccessLogger, register_launchpad_request_publication_factories)
 from canonical.lazr.timeout import (
@@ -162,7 +162,7 @@ def reconnect_stores(database_config_section='launchpad'):
     disconnect_stores()
     dbconfig.setConfigSection(database_config_section)
 
-    main_store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+    main_store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
     assert main_store is not None, 'Failed to reconnect'
 
     # Confirm the database has the right patchlevel
@@ -173,7 +173,7 @@ def reconnect_stores(database_config_section='launchpad'):
     r = main_store.execute('SELECT count(*) FROM LaunchpadDatabaseRevision')
     assert r.get_one()[0] > 0, 'Storm is not talking to the database'
 
-    session_store = getUtility(IZStorm).get('session')
+    session_store = getUtility(IZStorm).get('session', 'launchpad-session:')
     assert session_store is not None, 'Failed to reconnect'
 
 
@@ -282,7 +282,7 @@ class BaseLayer:
 
         BaseLayer.original_working_directory = None
         reset_logging()
-        del canonical.launchpad.mail.stub.test_emails[:]
+        del lp.services.mail.stub.test_emails[:]
         BaseLayer.test_name = None
         BaseLayer.check()
 
@@ -606,6 +606,13 @@ class DatabaseLayer(BaseLayer):
         from canonical.launchpad.ftests.harness import LaunchpadTestSetup
         if DatabaseLayer._reset_between_tests:
             LaunchpadTestSetup().tearDown()
+
+        # Fail tests that forget to uninstall their database policies.
+        from canonical.launchpad.webapp.adapter import StoreSelector
+        while StoreSelector.get_current() is not None:
+            BaseLayer.flagTestIsolationFailure(
+                "Database policy %s still installed"
+                % repr(StoreSelector.pop()))
 
     use_mockdb = False
     mockdb_mode = None

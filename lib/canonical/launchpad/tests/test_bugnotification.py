@@ -15,7 +15,7 @@ from canonical.launchpad.database import BugNotification
 from lazr.lifecycle.event import ObjectModifiedEvent
 from canonical.launchpad.ftests import login
 from canonical.launchpad.interfaces.bugtask import BugTaskStatus
-from canonical.launchpad.testing.factory import LaunchpadObjectFactory
+from lp.testing.factory import LaunchpadObjectFactory
 from canonical.testing import LaunchpadFunctionalLayer
 
 

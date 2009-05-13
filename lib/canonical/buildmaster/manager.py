@@ -14,22 +14,20 @@ __all__ = [
 
 import logging
 import os
+import transaction
 
 from twisted.application import service
 from twisted.internet import reactor, utils, defer
-from twisted.internet.threads import deferToThread
 from twisted.protocols.policies import TimeoutMixin
 from twisted.python import log
 from twisted.python.failure import Failure
 from twisted.web import xmlrpc
 
 from zope.component import getUtility
-from zope.security.management import endInteraction, newInteraction
 
 from canonical.buildd.utils import notes
 from canonical.config import config
-from canonical.launchpad.interfaces.build import BuildStatus
-from canonical.launchpad.interfaces.builder import IBuilderSet
+from lp.soyuz.interfaces.builder import IBuilderSet
 from canonical.launchpad.webapp import urlappend
 from canonical.librarian.db import write_transaction
 
@@ -38,14 +36,6 @@ buildd_success_result_map = {
     'ensurepresent': True,
     'build': 'BuilderStatus.BUILDING',
     }
-
-
-class FakeZTM:
-    """Fake transaction manager."""
-    def commit(self):
-        pass
-    def abort(self):
-        pass
 
 
 class QueryWithTimeoutProtocol(xmlrpc.QueryProtocol, TimeoutMixin):
@@ -143,10 +133,7 @@ class BaseDispatchResult:
     def _cleanJob(self, job):
         """Clean up in case of builder reset or dispatch failure."""
         if job is not None:
-            job.build.buildstate = BuildStatus.NEEDSBUILD
-            job.builder = None
-            job.buildstart = None
-            job.logtail = None
+            job.reset()
 
     def ___call__(self):
         raise NotImplementedError(
@@ -232,7 +219,7 @@ class BuilddManager(service.Service):
         # Ensure there are no previous annotation from the previous cycle.
         notes.notes = {}
 
-        d = deferToThread(self.scan)
+        d = defer.maybeDeferred(self.scan)
         d.addCallback(self.resumeAndDispatch)
         d.addErrback(self.scanFailed)
 
@@ -316,14 +303,12 @@ class BuilddManager(service.Service):
         handled in an asynchronous and parallel fashion.
         """
         recording_slaves = []
-
-        # Setup a new interaction since it's running in a separate thread.
-        newInteraction()
-
         builder_set = getUtility(IBuilderSet)
 
-        # Use FakeZTM to avoid partial commits.
-        builder_set.pollBuilders(self.logger, FakeZTM())
+        # Builddmaster will perform partial commits for avoiding
+        # long-living trasaction with changes that affects other
+        # parts of the system.
+        builder_set.pollBuilders(self.logger, transaction)
 
         for builder in builder_set:
             self.logger.debug("Considering %s" % builder.name)
@@ -334,6 +319,11 @@ class BuilddManager(service.Service):
 
             if not builder.is_available:
                 self.logger.debug('Builder is not available, ignored.')
+                job = builder.currentjob
+                if job is not None and not builder.builderok:
+                    self.logger.debug('Reseting attached job.')
+                    job.reset()
+                    transaction.commit()
                 continue
 
             candidate = builder.findBuildCandidate()
@@ -347,8 +337,8 @@ class BuilddManager(service.Service):
 
             builder.dispatchBuildCandidate(candidate)
             recording_slaves.append(slave)
+            transaction.commit()
 
-        endInteraction()
         return recording_slaves
 
     def checkResume(self, response, slave):

@@ -32,11 +32,12 @@ import pytz
 from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
-    ArchivePurpose, BuildStatus, IBug, IBugSet, IDistribution, IFAQSet,
+    IBug, IBugSet, IDistribution, IFAQSet,
     IProduct, IProject, ISprint, LicenseStatus, NotFoundError)
+from lp.soyuz.interfaces.archive import ArchivePurpose
 from canonical.launchpad.interfaces.launchpad import (
     IHasIcon, IHasLogo, IHasMugshot)
-from canonical.launchpad.interfaces.person import IPerson, IPersonSet
+from lp.registry.interfaces.person import IPerson, IPersonSet
 from canonical.launchpad.webapp.interfaces import (
     IApplicationMenu, IContextMenu, IFacetMenu, ILaunchBag, INavigationMenu,
     IPrimaryContext, NoCanonicalUrl)
@@ -51,6 +52,7 @@ from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.badge import IHasBadges
 from canonical.launchpad.webapp.session import get_cookie_domain
 from canonical.lazr.canonicalurl import nearest_adapter
+from lp.soyuz.interfaces.build import BuildStatus
 
 
 def escape(text, quote=True):
@@ -464,7 +466,7 @@ class ObjectFormatterAPI:
         :param view_name: If not None, the link will point to the page with
             that name on this object.
         """
-        raise NotImplemented
+        raise NotImplementedError(self.link)
 
 
 class ObjectImageDisplayAPI:
@@ -885,6 +887,7 @@ class ArchiveImageDisplayAPI(ObjectImageDisplayAPI):
             ArchivePurpose.PARTNER: '/@@/distribution',
             ArchivePurpose.PPA: '/@@/package-source',
             ArchivePurpose.COPY: '/@@/distribution',
+            ArchivePurpose.DEBUG: '/@@/distribution',
             }
 
         alt = '[%s]' % self._context.purpose.title
@@ -957,9 +960,8 @@ class PersonFormatterAPI(ObjectFormatterAPI):
         person = self._context
         url = canonical_url(person, rootsite=rootsite, view_name=view_name)
         image_url = ObjectImageDisplayAPI(person).icon_url(rootsite=rootsite)
-        return (u'<a href="%s" style="padding-left: 18px; '
-                'background: url(%s) '
-                'center left no-repeat;">%s</a>') % (
+        return (u'<a href="%s" class="bg-image" '
+                 'style="background-image: url(%s)">%s</a>') % (
             url, image_url, cgi.escape(person.browsername))
 
     def displayname(self, view_name, rootsite=None):
@@ -1356,6 +1358,23 @@ class MilestoneFormatterAPI(CustomizableFormatter):
     def _link_summary_values(self):
         """See CustomizableFormatter._link_summary_values."""
         return {'title': self._context.title}
+
+
+class ProductReleaseFormatterAPI(CustomizableFormatter):
+    """Adapter providing fmt support for Milestone objects."""
+
+    _link_summary_template = _('%(displayname)s %(code_name)s')
+    _link_permission = 'zope.Public'
+
+    def _link_summary_values(self):
+        """See CustomizableFormatter._link_summary_values."""
+        code_name = self._context.milestone.code_name
+        if code_name is None or code_name.strip() == '':
+            code_name = ''
+        else:
+            code_name = '(%s)' % code_name.strip()
+        return dict(displayname=self._context.milestone.displayname,
+                    code_name=code_name)
 
 
 class ProductSeriesFormatterAPI(CustomizableFormatter):
@@ -2112,37 +2131,55 @@ class FormattersAPI:
         return '&nbsp;' * len(groups[0])
 
     @staticmethod
+    def _split_url_and_trailers(url):
+        """Given a URL return a tuple of the URL and punctuation trailers.
+
+        :return: an unescaped url, an unescaped trailer.
+        """
+        # The text will already have been cgi escaped.  We temporarily
+        # unescape it so that we can strip common trailing characters
+        # that aren't part of the URL.
+        url = xml_unescape(url)
+        match = FormattersAPI._re_url_trailers.search(url)
+        if match:
+            trailers = match.group(1)
+            url = url[:-len(trailers)]
+        else:
+            trailers = ''
+        return url, trailers
+
+    @staticmethod
+    def _linkify_bug_number(text, bugnum, trailers=''):
+        # XXX Brad Bollenbach 2006-04-10: Use a hardcoded url so
+        # we still have a link for bugs that don't exist.
+        url = '/bugs/%s' % bugnum
+
+        bugset = getUtility(IBugSet)
+        try:
+            bug = bugset.get(bugnum)
+        except NotFoundError:
+            title = "No such bug"
+        else:
+            try:
+                title = bug.title
+            except Unauthorized:
+                title = "private bug"
+        title = cgi.escape(title, quote=True)
+        # The text will have already been cgi escaped.
+        return '<a href="%s" title="%s">%s</a>%s' % (
+            url, title, text, trailers)
+
+    @staticmethod
     def _linkify_substitution(match):
         if match.group('bug') is not None:
-            bugnum = match.group('bugnum')
-            # XXX Brad Bollenbach 2006-04-10: Use a hardcoded url so
-            # we still have a link for bugs that don't exist.
-            url = '/bugs/%s' % bugnum
-            # The text will have already been cgi escaped.
-            text = match.group('bug')
-            bugset = getUtility(IBugSet)
-            try:
-                bug = bugset.get(bugnum)
-            except NotFoundError:
-                title = "No such bug"
-            else:
-                try:
-                    title = bug.title
-                except Unauthorized:
-                    title = "private bug"
-            title = cgi.escape(title, quote=True)
-            return '<a href="%s" title="%s">%s</a>' % (url, title, text)
+            return FormattersAPI._linkify_bug_number(
+                match.group('bug'), match.group('bugnum'))
         elif match.group('url') is not None:
             # The text will already have been cgi escaped.  We temporarily
             # unescape it so that we can strip common trailing characters
             # that aren't part of the URL.
-            url = xml_unescape(match.group('url'))
-            match = FormattersAPI._re_url_trailers.search(url)
-            if match:
-                trailers = match.group(1)
-                url = url[:-len(trailers)]
-            else:
-                trailers = ''
+            url = match.group('url')
+            url, trailers = FormattersAPI._split_url_and_trailers(url)
             # We use nofollow for these links to reduce the value of
             # adding spam URLs to our comments; it's a way of moderately
             # devaluing the return on effort for spammers that consider
@@ -2172,8 +2209,16 @@ class FormattersAPI:
         elif match.group('lpbranchurl') is not None:
             lp_url = match.group('lpbranchurl')
             path = match.group('branch')
+            lp_url, trailers = FormattersAPI._split_url_and_trailers(lp_url)
+            path, trailers = FormattersAPI._split_url_and_trailers(path)
+            if path.isdigit():
+                return FormattersAPI._linkify_bug_number(
+                    lp_url, path, trailers)
             url = '/+branch/%s' % path
-            return '<a href="%s">%s</a>' % (url, lp_url)
+            return '<a href="%s">%s</a>%s' % (
+                cgi.escape(url, quote=True),
+                cgi.escape(lp_url),
+                cgi.escape(trailers))
         else:
             raise AssertionError("Unknown pattern matched.")
 

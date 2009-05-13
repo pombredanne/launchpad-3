@@ -19,11 +19,11 @@ from canonical.launchpad.testing.pages import (
 from canonical.launchpad.interfaces.bug import CreateBugParams, IBugSet
 from canonical.launchpad.interfaces.bugtask import BugTaskStatus, IBugTaskSet
 from canonical.launchpad.interfaces.bugwatch import IBugWatchSet
-from canonical.launchpad.interfaces.distribution import IDistributionSet
+from lp.registry.interfaces.distribution import IDistributionSet
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.interfaces.person import IPersonSet
-from canonical.launchpad.interfaces.product import IProductSet
-from canonical.launchpad.interfaces.sourcepackagename import (
+from lp.registry.interfaces.person import IPersonSet
+from lp.registry.interfaces.product import IProductSet
+from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageNameSet)
 
 
@@ -48,13 +48,12 @@ def print_subscribers(bug_page, subscriber_list_id):
         # no indirect subscribers), so just print an empty string.
         print ""
     else:
-        for subscriber in subscriber_list.findAll('div'):
-            anchor = subscriber.a
-            if anchor is not None:
-                sub_display = extract_text(anchor)
-                if anchor.has_key('title'):
-                    sub_display += (' (%s)' % anchor['title'])
-                print sub_display
+        anchors = subscriber_list.findAll('a')
+        for anchor in anchors:
+            sub_display = extract_text(anchor)
+            if anchor.has_key('title'):
+                sub_display += (' (%s)' % anchor['title'])
+            print sub_display
 
 
 def print_bug_affects_table(content, highlighted_only=False):

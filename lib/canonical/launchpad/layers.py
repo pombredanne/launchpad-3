@@ -11,7 +11,7 @@ from zope.interface import directlyProvides, directlyProvidedBy, Interface
 from zope.publisher.interfaces.browser import (
     IBrowserRequest, IDefaultBrowserLayer)
 
-from canonical.lazr.interfaces.rest import IWebServiceLayer
+from lazr.restful.interfaces import IWebServiceLayer
 
 
 def setAdditionalLayer(request, layer):
@@ -78,22 +78,6 @@ class PageTestLayer(LaunchpadLayer):
     The SystemErrorView base class looks at the request to see if it provides
     this interface.  If so, it renders tracebacks as plain text.
     """
-
-
-class ShipItLayer(LaunchpadLayer):
-    """The `ShipIt` layer."""
-
-
-class ShipItUbuntuLayer(ShipItLayer):
-    """The `ShipIt` for Ubuntu layer."""
-
-
-class ShipItKUbuntuLayer(ShipItLayer):
-    """The `ShipIt` for KUbuntu layer."""
-
-
-class ShipItEdUbuntuLayer(IDefaultBrowserLayer):
-    """The `ShipIt` for EdUbuntu layer."""
 
 
 class FeedsLayer(LaunchpadLayer):

@@ -23,8 +23,8 @@ from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad.interfaces import (
     BugBranchStatus, IBugBranch, IBugBranchSet, ILaunchpadCelebrities)
-from canonical.launchpad.interfaces.branchtarget import IHasBranchTarget
-from canonical.launchpad.validators.person import validate_public_person
+from lp.code.interfaces.branchtarget import IHasBranchTarget
+from lp.registry.interfaces.person import validate_public_person
 
 
 class BugBranch(SQLBase):
@@ -62,13 +62,6 @@ class BugBranch(SQLBase):
 class BugBranchSet:
 
     implements(IBugBranchSet)
-
-    def new(self, bug, branch, status, registrant):
-        "See `IBugBranchSet`."
-        bug_branch = BugBranch(
-            bug=bug, branch=branch, status=status, registrant=registrant)
-        notify(ObjectCreatedEvent(bug_branch))
-        return bug_branch
 
     def getBugBranch(self, bug, branch):
         "See `IBugBranchSet`."

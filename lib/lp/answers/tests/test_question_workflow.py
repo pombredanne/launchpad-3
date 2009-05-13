@@ -27,7 +27,7 @@ from lazr.lifecycle.interfaces import (
 from canonical.launchpad.interfaces import (
     IDistributionSet, ILanguageSet, ILaunchBag, InvalidQuestionStateError,
     IQuestion, IQuestionMessage, QuestionAction, QuestionStatus)
-from canonical.launchpad.interfaces.person import IPerson, IPersonSet
+from lp.registry.interfaces.person import IPerson, IPersonSet
 from canonical.launchpad.ftests import login, login_person, ANONYMOUS
 from canonical.launchpad.ftests.event import TestEventListener
 from canonical.testing.layers import DatabaseFunctionalLayer

@@ -72,8 +72,9 @@ They are grouped together at the beginning of the list.
 
     >>> browser.open(gfoobar_bug_url)
     >>> tags_div = find_tag_by_id(browser.contents, 'bug-tags')
-    >>> for tag_anchor in tags_div.findAll('a'):
-    ...     print tag_anchor['class'], tag_anchor.contents[0]
+    >>> for anchor in tags_div.findAll('a'):
+    ...     if anchor['href'] != '+edit':
+    ...         print anchor['class'], anchor.contents[0]
     official-tag alpha
     official-tag charlie
     unofficial-tag bravo
@@ -97,8 +98,9 @@ The tags portlet displays a mix of official and unofficial tags.
     >>> transaction.commit()
     >>> logout()
 
+    >>> from BeautifulSoup import BeautifulSoup
     >>> def print_tags_portlet(tags_portlet):
-    ...     for section in tags_portlet.findAll(
+    ...     for section in BeautifulSoup(tags_portlet).findAll(
     ...             'div', attrs={'class': 'section'}):
     ...         header = section.find('h2').contents[0]
     ...         print header
@@ -111,8 +113,8 @@ The tags portlet displays a mix of official and unofficial tags.
 
 All official tags are displayed, as well as 10 unofficial tags.
 
-    >>> browser.open(firesocks_bugs_url)
-    >>> print_tags_portlet(find_tag_by_id(browser.contents, 'portlet-tags'))
+    >>> browser.open(firesocks_bugs_url + '/+bugtarget-portlet-tags-content')
+    >>> print_tags_portlet(browser.contents)
     Official Tags
     -------------
     official-tag-01   0
@@ -155,8 +157,8 @@ The tags are sorted by popularity.
     >>> transaction.commit()
     >>> logout()
 
-    >>> browser.open(firesocks_bugs_url)
-    >>> print_tags_portlet(find_tag_by_id(browser.contents, 'portlet-tags'))
+    >>> browser.open(firesocks_bugs_url + '/+bugtarget-portlet-tags-content')
+    >>> print_tags_portlet(browser.contents)
     Official Tags
     -------------
     official-tag-07   2
@@ -194,8 +196,8 @@ If no official tags are defined, the title of the unofficial ones is changed.
     >>> transaction.commit()
     >>> logout()
 
-    >>> browser.open(firesocks_bugs_url)
-    >>> print_tags_portlet(find_tag_by_id(browser.contents, 'portlet-tags'))
+    >>> browser.open(firesocks_bugs_url + '/+bugtarget-portlet-tags-content')
+    >>> print_tags_portlet(browser.contents)
     Tags
     ----
     official-tag-07   2

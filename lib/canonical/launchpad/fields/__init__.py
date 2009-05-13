@@ -1,5 +1,5 @@
 # Copyright 2004-2006 Canonical Ltd.  All rights reserved.
-# pylint: disable-msg=E0211,W0401
+# pylint: disable-msg=E0211,E0213,W0401
 
 __metaclass__ = type
 __all__ = [
@@ -17,15 +17,6 @@ __all__ = [
     'IDescription',
     'ILocationField',
     'IPasswordField',
-    'IShipItAddressline1',
-    'IShipItAddressline2',
-    'IShipItCity',
-    'IShipItOrganization',
-    'IShipItPhone',
-    'IShipItProvince',
-    'IShipItQuantity',
-    'IShipItReason',
-    'IShipItRecipientDisplayname',
     'IStrippedTextLine',
     'ISummary',
     'ITag',
@@ -34,26 +25,19 @@ __all__ = [
     'IURIField',
     'IWhiteboard',
     'IconImageUpload',
-    'is_valid_public_person_link',
+    'is_private_membership',
+    'is_valid_public_person',
     'KEEP_SAME_IMAGE',
     'LogoImageUpload',
     'MugshotImageUpload',
     'LocationField',
+    'ParticipatingPersonChoice',
     'PasswordField',
     'PillarAliases',
     'PillarNameField',
     'ProductBugTracker',
     'ProductNameField',
     'PublicPersonChoice',
-    'ShipItAddressline1',
-    'ShipItAddressline2',
-    'ShipItCity',
-    'ShipItOrganization',
-    'ShipItPhone',
-    'ShipItProvince',
-    'ShipItQuantity',
-    'ShipItReason',
-    'ShipItRecipientDisplayname',
     'StrippedTextLine',
     'Summary',
     'Tag',
@@ -69,26 +53,25 @@ import re
 from StringIO import StringIO
 from textwrap import dedent
 
-from zope.app.form.interfaces import ConversionError
 from zope.component import getUtility
 from zope.schema import (
     Bool, Bytes, Choice, Datetime, Field, Float, Int, Password, Text,
     TextLine, Tuple)
 from zope.schema.interfaces import (
-    ConstraintNotSatisfied, IBytes, IDatetime, IField, IInt, IObject,
+    ConstraintNotSatisfied, IBytes, IDatetime, IField, IObject,
     IPassword, IText, ITextLine, Interface)
 from zope.interface import implements
 from zope.security.interfaces import ForbiddenAttribute
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces.pillar import IPillarNameSet
+from lp.registry.interfaces.pillar import IPillarNameSet
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lazr.uri import URI, InvalidURIError
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import valid_name, name_validator
 
-from canonical.lazr.fields import Reference
-from canonical.lazr.interfaces.fields import IReferenceChoice
+from lazr.restful.fields import Reference
+from lazr.restful.interfaces import IReferenceChoice
 
 
 # Marker object to tell BaseImageUpload to keep the existing image.
@@ -138,66 +121,6 @@ class ILocationField(IField):
     latitude = Float(title=_('Latitude'))
     longitude = Float(title=_('Longitude'))
     time_zone = Choice(title=_('Time zone'), vocabulary='TimezoneName')
-
-
-class IShipItRecipientDisplayname(ITextLine):
-    """A field used for the recipientdisplayname attribute on shipit forms.
-
-    This is used so we can register a special widget with width constraints to
-    this field. The size constraints are a requirement of the shipping company.
-    """
-
-class IShipItOrganization(ITextLine):
-    """A field used for the organization attribute on shipit forms.
-
-    This is used so we can register a special widget with width constraints to
-    this field. The size constraints are a requirement of the shipping company.
-    """
-
-class IShipItCity(ITextLine):
-    """A field used for the city attribute on shipit forms.
-
-    This is used so we can register a special widget with width constraints to
-    this field. The size constraints are a requirement of the shipping company.
-    """
-
-class IShipItProvince(ITextLine):
-    """A field used for the province attribute on shipit forms.
-
-    This is used so we can register a special widget with width constraints to
-    this field. The size constraints are a requirement of the shipping company.
-    """
-
-class IShipItAddressline1(ITextLine):
-    """A field used for the addressline1 attribute on shipit forms.
-
-    This is used so we can register a special widget with width constraints to
-    this field. The size constraints are a requirement of the shipping company.
-    """
-
-class IShipItAddressline2(ITextLine):
-    """A field used for the addressline2 attribute on shipit forms.
-
-    This is used so we can register a special widget with width constraints to
-    this field. The size constraints are a requirement of the shipping company.
-    """
-
-class IShipItPhone(ITextLine):
-    """A field used for the phone attribute on shipit forms.
-
-    This is used so we can register a special widget with width constraints to
-    this field. The size constraints are a requirement of the shipping company.
-    """
-
-class IShipItReason(ITextLine):
-    """A field used for the reason attribute on shipit forms.
-
-    This is used so we can register a special widget with width constraints to
-    this field. The size constraints are a requirement of the shipping company.
-    """
-
-class IShipItQuantity(IInt):
-    """A field used for the quantity of CDs on shipit forms."""
 
 
 class ITag(ITextLine):
@@ -469,7 +392,7 @@ class BlacklistableContentNameField(ContentNameField):
             return
 
         # Need a local import because of circular dependencies.
-        from canonical.launchpad.interfaces.person import IPersonSet
+        from lp.registry.interfaces.person import IPersonSet
         if getUtility(IPersonSet).isNameBlacklisted(input):
             raise LaunchpadValidationError(
                 "The name '%s' has been blocked by the Launchpad "
@@ -491,9 +414,9 @@ class PillarAliases(TextLine):
         not identical to the pillar's existing name.
         """
         context = self.context
-        from canonical.launchpad.interfaces.product import IProduct
-        from canonical.launchpad.interfaces.project import IProject
-        from canonical.launchpad.interfaces.distribution import IDistribution
+        from lp.registry.interfaces.product import IProduct
+        from lp.registry.interfaces.project import IProject
+        from lp.registry.interfaces.distribution import IDistribution
         if IProduct.providedBy(context):
             name_field = IProduct['name']
         elif IProject.providedBy(context):
@@ -519,42 +442,6 @@ class PillarAliases(TextLine):
 
     def get(self, object):
         return " ".join(object.aliases)
-
-
-class ShipItRecipientDisplayname(TextLine):
-    implements(IShipItRecipientDisplayname)
-
-
-class ShipItOrganization(TextLine):
-    implements(IShipItOrganization)
-
-
-class ShipItCity(TextLine):
-    implements(IShipItCity)
-
-
-class ShipItProvince(TextLine):
-    implements(IShipItProvince)
-
-
-class ShipItAddressline1(TextLine):
-    implements(IShipItAddressline1)
-
-
-class ShipItAddressline2(TextLine):
-    implements(IShipItAddressline2)
-
-
-class ShipItPhone(TextLine):
-    implements(IShipItPhone)
-
-
-class ShipItReason(Text):
-    implements(IShipItReason)
-
-
-class ShipItQuantity(Int):
-    implements(IShipItQuantity)
 
 
 class ProductBugTracker(Choice):
@@ -800,23 +687,54 @@ class ProductNameField(PillarNameField):
     @property
     def _content_iface(self):
         # Local import to avoid circular dependencies.
-        from canonical.launchpad.interfaces.product import IProduct
+        from lp.registry.interfaces.product import IProduct
         return IProduct
 
 
-def is_valid_public_person_link(person, other):
+def is_valid_public_person(person):
+    """Return True if the person is public."""
     from canonical.launchpad.interfaces import IPerson, PersonVisibility
     if not IPerson.providedBy(person):
         raise ConstraintNotSatisfied("Expected a person.")
     if person.visibility == PersonVisibility.PUBLIC:
         return True
     else:
+        # PRIVATE_MEMBERSHIP or PRIVATE.
+        return False
+
+
+def is_private_membership(person):
+    """True if the person/team has private membership visibility."""
+    from canonical.launchpad.interfaces import IPerson, PersonVisibility
+    if not IPerson.providedBy(person):
+        raise ConstraintNotSatisfied("Expected a person.")
+    if person.visibility == PersonVisibility.PRIVATE_MEMBERSHIP:
+        # PRIVATE_MEMBERSHIP.
+        return True
+    else:
+        # PUBLIC or PRIVATE.
         return False
 
 
 class PublicPersonChoice(Choice):
+    """A person or team who is public."""
     implements(IReferenceChoice)
     schema = IObject    # Will be set to IPerson once IPerson is defined.
 
     def constraint(self, value):
-        return is_valid_public_person_link(value, self.context)
+        return is_valid_public_person(value)
+
+
+class ParticipatingPersonChoice(Choice):
+    """A person or team who is not a private membership team.
+
+    A person can participate in all contexts.  A PRIVATE team can participate
+    in many contexts, depending up on the permissions of the logged in
+    user.  A PRIVATE MEMBERSHIP team is severely limited in the roles in which
+    it can participate.
+    """
+    implements(IReferenceChoice)
+    schema = IObject    # Will be set to IPerson once IPerson is defined.
+
+    def constraint(self, value):
+        return not is_private_membership(value)

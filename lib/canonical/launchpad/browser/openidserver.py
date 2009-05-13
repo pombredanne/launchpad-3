@@ -5,6 +5,7 @@
 __metaclass__ = type
 __all__ = [
     'LoginServiceStandaloneLoginView',
+    'LoginServiceUnauthorizedView',
     'OpenIDMixin',
     ]
 
@@ -13,6 +14,7 @@ import logging
 import pytz
 from datetime import datetime, timedelta
 from time import time
+from urllib import urlencode
 
 from BeautifulSoup import BeautifulSoup
 
@@ -21,7 +23,6 @@ from zope.app.security.interfaces import IUnauthenticatedPrincipal
 from zope.component import getUtility
 from zope.publisher.interfaces import BadRequest
 from zope.session.interfaces import ISession, IClientIdManager
-from zope.security import management
 from zope.security.proxy import isinstance as zisinstance
 
 from openid.extensions import pape
@@ -38,22 +39,25 @@ from canonical.launchpad import _
 from canonical.launchpad.components.openidserver import (
     OpenIDPersistentIdentity, CurrentOpenIDEndPoint)
 from canonical.launchpad.interfaces.account import IAccountSet, AccountStatus
-from canonical.launchpad.interfaces.person import (
+from lp.registry.interfaces.person import (
     IPerson, IPersonSet, PersonVisibility)
-from canonical.launchpad.interfaces.logintoken import (
-    ILoginTokenSet, LoginTokenType)
+from canonical.launchpad.interfaces.authtoken import (
+    IAuthTokenSet, LoginTokenType)
 from canonical.launchpad.interfaces.openidserver import (
     ILaunchpadOpenIDStoreFactory, ILoginServiceAuthorizeForm,
     ILoginServiceLoginForm, IOpenIDAuthorizationSet, IOpenIDRPConfigSet,
     IOpenIDRPSummarySet)
+from canonical.shipit.interfaces.shipit import IShipitAccount
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.webapp import (
     action, custom_widget, LaunchpadFormView, LaunchpadView)
 from canonical.launchpad.webapp.interfaces import (
-    ILaunchpadPrincipal, IPlacelessLoginSource, UnexpectedFormData)
+    IPlacelessLoginSource, UnexpectedFormData)
 from canonical.launchpad.webapp.login import (
-    logInPrincipal, logoutPerson, allowUnauthenticatedSession)
+    allowUnauthenticatedSession, logInPrincipal, logoutPerson,
+    UnauthorizedView)
 from canonical.launchpad.webapp.menu import structured
+from canonical.launchpad.webapp.url import urlappend
 from canonical.uuid import generate_uuid
 from canonical.widgets.itemswidgets import LaunchpadRadioWidget
 
@@ -221,6 +225,7 @@ class OpenIDMixin:
         """
         assert self.account is not None, (
             'Must be logged in to calculate sreg items')
+
         # Collect registration values
         values = {}
         values['fullname'] = self.account.displayname
@@ -230,21 +235,21 @@ class OpenIDMixin:
             values['nickname'] = person.name
             if person.time_zone is not None:
                 values['timezone'] = person.time_zone
-            shipment = person.lastShippedRequest()
-            if shipment is not None:
-                values['x_address1'] = shipment.addressline1
-                values['x_city'] = shipment.city
-                values['country'] = shipment.country.name
-                if shipment.addressline2 is not None:
-                    values['x_address2'] = shipment.addressline2
-                if shipment.organization is not None:
-                    values['x_organization'] = shipment.organization
-                if shipment.province is not None:
-                    values['x_province'] = shipment.province
-                if shipment.postcode is not None:
-                    values['postcode'] = shipment.postcode
-                if shipment.phone is not None:
-                    values['x_phone'] = shipment.phone
+        shipment = IShipitAccount(self.account).lastShippedRequest()
+        if shipment is not None:
+            values['x_address1'] = shipment.addressline1
+            values['x_city'] = shipment.city
+            values['country'] = shipment.country.name
+            if shipment.addressline2 is not None:
+                values['x_address2'] = shipment.addressline2
+            if shipment.organization is not None:
+                values['x_organization'] = shipment.organization
+            if shipment.province is not None:
+                values['x_province'] = shipment.province
+            if shipment.postcode is not None:
+                values['postcode'] = shipment.postcode
+            if shipment.phone is not None:
+                values['x_phone'] = shipment.phone
         return [(field, values[field])
                 for field in self.sreg_field_names if field in values]
 
@@ -500,6 +505,10 @@ class OpenIDView(OpenIDMixin, LaunchpadView):
         if self.account is None or not self.isIdentityOwner():
             return False
 
+        # Sites set to auto authorize are always authorized.
+        if self.rpconfig is not None and self.rpconfig.auto_authorize:
+            return True
+
         client_id = getUtility(IClientIdManager).getClientId(self.request)
         auth_set = getUtility(IOpenIDAuthorizationSet)
 
@@ -613,7 +622,10 @@ class LoginServiceMixinLoginView:
             self.addError('Please enter a valid email address.')
             return
 
-        account = getUtility(IAccountSet).getByEmail(email)
+        try:
+            account = getUtility(IAccountSet).getByEmail(email)
+        except LookupError:
+            account = None
         if action == 'login':
             self.validateEmailAndPassword(email, password)
         elif action == 'resetpassword':
@@ -657,30 +669,22 @@ class LoginServiceMixinLoginView:
         loginsource = getUtility(IPlacelessLoginSource)
         principal = loginsource.getPrincipalByLogin(email)
         if principal is not None and principal.validate(password):
-            person = principal.person
-            if person is None:
+            account = principal.account
+            if account is None:
                 return
-            if person.preferredemail is None:
+            if account.preferredemail is None:
                 self.addError(
                         _(
                     "The email address '${email}' has not yet been "
                     "confirmed. We sent an email to that address with "
                     "instructions on how to confirm that it belongs to you.",
                     mapping=dict(email=email)))
-                self.token = getUtility(ILoginTokenSet).new(
-                    person, email, email, LoginTokenType.VALIDATEEMAIL,
+                self.token = getUtility(IAuthTokenSet).new(
+                    account, email, email,
+                    LoginTokenType.VALIDATEEMAIL,
                     redirection_url=self.redirection_url)
-                self.token.sendEmailValidationRequest(
-                    self.request.getApplicationURL())
+                self.token.sendEmailValidationRequest()
                 self.saveRequestInSession('token' + self.token.token)
-
-            if not person.is_valid_person:
-                # Normally invalid accounts will have a NULL password
-                # so this will be rarely seen, if ever. An account with no
-                # valid email addresses might end up in this situation,
-                # such as having them flagged as OLD by a email bounce
-                # processor or manual changes by the DBA.
-                self.addError(_("This account cannot be used."))
         else:
             self.addError(_("Incorrect password for the provided "
                             "email address."))
@@ -706,28 +710,22 @@ class LoginServiceMixinLoginView:
             raise UnexpectedFormData("Unknown action.")
 
     def process_registration(self, email):
-        logintokenset = getUtility(ILoginTokenSet)
-        self.token = logintokenset.new(
+        self.token = getUtility(IAuthTokenSet).new(
             requester=None, requesteremail=None, email=email,
             tokentype=LoginTokenType.NEWPERSONLESSACCOUNT,
             redirection_url=self.redirection_url)
-        self.token.sendNewUserNeutralEmail()
+        self.token.sendNewUserEmail()
         self.saveRequestInSession('token' + self.token.token)
         self.email_heading = 'Registration mail sent'
         self.email_reason = 'to confirm your address.'
         return self.email_sent_template()
 
     def process_password_recovery(self, email):
-        # XXX: salgado, 2009-02-20: This (person = None) is a quick hack to
-        # make it possible for us to use LoginToken to reset the passwords of
-        # personless accounts.  The correct fix is to use AuthToken, which
-        # takes an account rather than a person.
-        person = None
-        logintokenset = getUtility(ILoginTokenSet)
-        self.token = logintokenset.new(
-            person, email, email, LoginTokenType.PASSWORDRECOVERY,
+        account = getUtility(IAccountSet).getByEmail(email)
+        self.token = getUtility(IAuthTokenSet).new(
+            account, email, email, LoginTokenType.PASSWORDRECOVERY,
             redirection_url=self.redirection_url)
-        self.token.sendPasswordResetNeutralEmail()
+        self.token.sendPasswordResetEmail()
         self.saveRequestInSession('token' + self.token.token)
         self.email_heading = 'Forgotten your password?'
         self.email_reason = 'with instructions on resetting your password.'
@@ -771,7 +769,8 @@ class LoginServiceStandaloneLoginView(LoginServiceMixinLoginView,
 
     def doLogin(self, email):
         super(LoginServiceStandaloneLoginView, self).doLogin(email)
-        self.next_url = '/'
+        redirect_to = self.request.form.get('redirect_url')
+        self.next_url = redirect_to or '/'
 
 
 class ProtocolErrorView(LaunchpadView):
@@ -835,3 +834,17 @@ class PreAuthorizeRPView(OpenIDMixin, LaunchpadView):
                 trust_root, http_referrer)
         self.request.response.redirect(callback)
         return u''
+
+
+class LoginServiceUnauthorizedView(UnauthorizedView):
+    """Login Service UnauthorizedView customization."""
+
+    notification_message = _('To continue, you must log in.')
+
+    def getRedirectURL(self, current_url, query_string):
+        """Return the URL to the +standalone-page and pass the redirection URL
+        as a parameter."""
+        return urlappend(
+            self.request.getApplicationURL(),
+            '+standalone-login?' + urlencode(
+                (('redirect_url', current_url + query_string), )))

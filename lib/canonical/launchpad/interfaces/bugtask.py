@@ -50,24 +50,24 @@ from lazr.enum import (
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
-    BugField, ProductNameField, PublicPersonChoice, StrippedTextLine, Summary,
-    Tag)
+    BugField, ParticipatingPersonChoice, ProductNameField, StrippedTextLine,
+    Summary, Tag)
 from canonical.launchpad.interfaces.bugwatch import (
     IBugWatch, IBugWatchSet, NoBugTrackerFound, UnrecognizedBugTrackerURL)
-from canonical.launchpad.interfaces.component import IComponent
+from lp.soyuz.interfaces.component import IComponent
 from canonical.launchpad.interfaces.launchpad import IHasDateCreated, IHasBug
-from canonical.launchpad.interfaces.mentoringoffer import ICanBeMentored
-from canonical.launchpad.interfaces.person import IPerson
+from lp.registry.interfaces.mentoringoffer import ICanBeMentored
+from lp.registry.interfaces.person import IPerson
 from canonical.launchpad.searchbuilder import all, any, NULL
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
-from canonical.lazr.interface import copy_field
-from canonical.lazr.rest.declarations import (
+from lazr.restful.interface import copy_field
+from lazr.restful.declarations import (
     REQUEST_USER, call_with, export_as_webservice_entry,
     export_write_operation, exported, operation_parameters,
     mutator_for, rename_parameters_as, webservice_error)
-from canonical.lazr.fields import CollectionField, Reference, ReferenceChoice
+from lazr.restful.fields import CollectionField, Reference, ReferenceChoice
 
 
 class BugTaskImportance(DBEnumeratedType):
@@ -366,9 +366,10 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
     statusexplanation = Text(
         title=_("Status notes (optional)"), required=False)
     assignee = exported(
-        PublicPersonChoice(title=_('Assigned to'), required=False,
-                           vocabulary='ValidAssignee',
-                           readonly=True))
+        ParticipatingPersonChoice(
+            title=_('Assigned to'), required=False,
+            vocabulary='ValidAssignee',
+            readonly=True))
     bugtargetdisplayname = exported(
         Text(title=_("The short, descriptive name of the target"),
              readonly=True),
@@ -813,23 +814,10 @@ class IBugTaskDelta(Interface):
     Likewise, if sourcepackagename is not None, product must be None.
     """
     bugtask = Attribute("The modified IBugTask.")
-    product = Attribute(
-        """The change made to the IProduct of this task.
-
-        The value is a dict like {'old' : IProduct, 'new' : IProduct},
-        or None, if no product change was made.
-        """)
-    sourcepackagename = Attribute(
-        """The change made to the ISourcePackageName of this task.
-
-        The value is a dict with the keys
-        {'old' : ISourcePackageName, 'new' : ISourcePackageName},
-        or None, if no change was made to the sourcepackagename.
-        """)
     target = Attribute(
-        """The change made to the IMilestone for this task.
+        """The change made to the IBugTarget for this task.
 
-        The value is a dict like {'old' : IMilestone, 'new' : IMilestone},
+        The value is a dict like {'old' : IBugTarget, 'new' : IBugTarget},
         or None, if no change was made to the target.
         """)
     status = Attribute(
@@ -999,7 +987,7 @@ class BugTaskSearchParams:
     def setSourcePackage(self, sourcepackage):
         """Set the sourcepackage context on which to filter the search."""
         # Import this here to avoid circular dependencies
-        from canonical.launchpad.interfaces.sourcepackage import (
+        from lp.registry.interfaces.sourcepackage import (
             ISourcePackage)
         if ISourcePackage.providedBy(sourcepackage):
             # This is a sourcepackage in a distro series.

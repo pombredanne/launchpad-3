@@ -6,6 +6,7 @@ import datetime
 import os
 import random
 import time
+import transaction
 import unittest
 
 from bzrlib.revision import NULL_REVISION, Revision as BzrRevision
@@ -18,15 +19,19 @@ import pytz
 from twisted.python.util import mergeFunctionMetadata
 from zope.component import getUtility
 
+from canonical.codehosting.bzrutils import ensure_base
+from canonical.codehosting.scanner.bzrsync import (
+    BzrSync, InvalidStackedBranchURL, schedule_translation_upload)
+from canonical.codehosting.scanner.fixture import make_zope_event_fixture
 from canonical.config import config
 from canonical.launchpad.database import (
     BranchRevision, Revision, RevisionAuthor, RevisionParent)
 from canonical.launchpad.interfaces import IRevisionSet
-from canonical.launchpad.interfaces.branchlookup import IBranchLookup
+from lp.code.interfaces.branchjob import IRosettaUploadJobSource
+from lp.code.interfaces.branchlookup import IBranchLookup
+from canonical.launchpad.interfaces.translations import (
+    TranslationsBranchImportMode)
 from canonical.launchpad.testing import LaunchpadObjectFactory
-from canonical.codehosting.scanner.bzrsync import (
-    BzrSync, InvalidStackedBranchURL)
-from canonical.codehosting.bzrutils import ensure_base
 from canonical.testing import LaunchpadZopelessLayer
 
 
@@ -195,7 +200,7 @@ class BzrSyncTestCase(TestCaseWithTransport):
             committer = self.factory.getUniqueString()
         if extra_parents is not None:
             self.bzr_tree.add_pending_merge(*extra_parents)
-        self.bzr_tree.commit(
+        return self.bzr_tree.commit(
             message, committer=committer, rev_id=rev_id,
             timestamp=timestamp, timezone=timezone, allow_pointless=True,
             revprops=revprops)
@@ -575,13 +580,69 @@ class TestBzrSyncOneRevision(BzrSyncTestCase):
 
         # Sync the revision.  The second parameter is a dict of revision ids
         # to revnos, and will error if the revision id is not in the dict.
-        self.bzrsync.syncOneRevision(fake_rev, {'rev42': None})
+        self.bzrsync.syncOneRevision(None, fake_rev, {'rev42': None})
 
         # Find the revision we just synced and check that it has the correct
         # date.
         revision = getUtility(IRevisionSet).getByRevisionId(
             fake_rev.revision_id)
         self.assertEqual(old_date, revision.revision_date)
+
+
+class TestBzrTranslationsUploadJob(BzrSyncTestCase):
+    """Tests BzrSync support for generating TranslationsUploadJobs."""
+
+    def setUp(self):
+        BzrSyncTestCase.setUp(self)
+        fixture = make_zope_event_fixture(schedule_translation_upload)
+        fixture.setUp()
+        self.addCleanup(fixture.tearDown)
+
+    def _makeProductSeries(self, mode = None):
+        """Switch to the Launchpad db user to create and configure a
+        product series that is linked to the the branch.
+        """
+        try:
+            LaunchpadZopelessLayer.switchDbUser(self.lp_db_user)
+            self.product_series = self.factory.makeProductSeries()
+            self.product_series.branch = self.db_branch
+            if mode is not None:
+                self.product_series.translations_autoimport_mode = mode
+            transaction.commit()
+        finally:
+            LaunchpadZopelessLayer.switchDbUser(config.branchscanner.dbuser)
+
+    def test_upload_on_new_revision_no_series(self):
+        # Syncing a branch with a changed tip does not create a
+        # new RosettaUploadJob if no series is linked to this branch.
+        self.commitRevision()
+        self.makeBzrSync(self.db_branch).syncBranchAndClose()
+        ready_jobs = list(getUtility(IRosettaUploadJobSource).iterReady())
+        self.assertEqual([], ready_jobs)
+
+    def test_upload_on_new_revision_series_not_configured(self):
+        # Syncing a branch with a changed tip does not create a
+        # new RosettaUploadJob if the linked product series is not 
+        # configured for translation uploads.
+        self._makeProductSeries()
+        self.commitRevision()
+        self.makeBzrSync(self.db_branch).syncBranchAndClose()
+        ready_jobs = list(getUtility(IRosettaUploadJobSource).iterReady())
+        self.assertEqual([], ready_jobs)
+
+    def test_upload_on_new_revision(self):
+        # Syncing a branch with a changed tip creates a new RosettaUploadJob.
+        self._makeProductSeries(
+            TranslationsBranchImportMode.IMPORT_TEMPLATES)
+        revision_id = self.commitRevision()
+        self.makeBzrSync(self.db_branch).syncBranchAndClose()
+        self.db_branch.last_mirrored_id = revision_id
+        self.db_branch.last_scanned_id = revision_id
+        ready_jobs = list(getUtility(IRosettaUploadJobSource).iterReady())
+        self.assertEqual(1, len(ready_jobs))
+        job = ready_jobs[0]
+        # The right job will have our branch.
+        self.assertEqual(self.db_branch, job.branch)
 
 
 class TestRevisionProperty(BzrSyncTestCase):

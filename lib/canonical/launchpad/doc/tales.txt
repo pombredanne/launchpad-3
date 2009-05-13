@@ -86,12 +86,12 @@ personal package archives (PPAs).
     >>> print test_tales("ppa/image:icon", ppa=sabdfl.archive)
     <img ... src="/@@/package-source" />
 
-Then distribution main archives (primary and partner).
+Then distribution main archives (primary, partner and debug).
 
-    >>> from canonical.launchpad.interfaces.distribution import (
+    >>> from lp.registry.interfaces.distribution import (
     ...      IDistributionSet)
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-    >>> [primary, partner] = ubuntu.all_distro_archives
+    >>> [primary, partner, debug] = ubuntu.all_distro_archives
 
     >>> print test_tales("archive/image:icon", archive=primary)
     <img ... src="/@@/distribution" />
@@ -99,9 +99,12 @@ Then distribution main archives (primary and partner).
     >>> print test_tales("archive/image:icon", archive=partner)
     <img ... src="/@@/distribution" />
 
+    >>> print test_tales("archive/image:icon", archive=debug)
+    <img ... src="/@@/distribution" />
+
 And finally Copy archives.
 
-    >>> from canonical.launchpad.interfaces.archive import (
+    >>> from lp.soyuz.interfaces.archive import (
     ...     ArchivePurpose, IArchiveSet)
     >>> copy = getUtility(IArchiveSet).new(
     ...     owner=sabdfl, purpose=ArchivePurpose.COPY,
@@ -209,17 +212,17 @@ For a person or team, fmt:link gives us a link to that person's page,
 containing the person name and an icon.
 
     >>> test_tales("person/fmt:link", person=sabdfl)
-    u'<a href="http://.../~sabdfl" style="padding-left: 18px;
-      background: url(/@@/person) center left no-repeat;">Mark Shuttleworth</a>'
+    u'<a href="http://.../~sabdfl" class="bg-image"
+    style="background-image: url(/@@/person)">Mark Shuttleworth</a>'
 
     >>> test_tales("person/fmt:link", person=matsubara)
-    u'<a href="http://launchpad.dev/~matsubara" style="padding-left: 18px;
-      background: url(/@@/person-inactive) center left no-repeat;">Diogo Matsubara</a>'
+    u'<a href="http://launchpad.dev/~matsubara" class="bg-image"
+    style="background-image: url(/@@/person-inactive)">Diogo Matsubara</a>'
 
     >>> ubuntu_team = getUtility(IPersonSet).getByName('ubuntu-team')
     >>> test_tales("person/fmt:link", person=ubuntu_team)
-    u'<a href="http://launchpad.dev/~ubuntu-team" style="padding-left: 18px;
-      background: url(/@@/team) center left no-repeat;">Ubuntu Team</a>'
+    u'<a href="http://launchpad.dev/~ubuntu-team" class="bg-image"
+    style="background-image: url(/@@/team)">Ubuntu Team</a>'
 
 The person's displayname is escaped to prevent markup from being
 interpreted by the browser. For example, a script added to Sample
@@ -283,21 +286,21 @@ For branches, fmt:link links to the branch page.
     ...     owner=eric, product=fooix, name='bar', title='The branch title')
     >>> print test_tales("branch/fmt:link", branch=branch)
     <a href=".../~eric/fooix/bar"
-       title="The branch title"><img src="/@@/branch"
+       title="~eric/fooix/bar"><img src="/@@/branch"
        alt=""/>&nbsp;~eric/fooix/bar</a>
 
 The bzr-link formatter uses the bzr identity.
 
     >>> print test_tales("branch/fmt:bzr-link", branch=branch)
     <a href="http://code.launchpad.dev/~eric/fooix/bar"
-    title="The branch title"><img src="/@@/branch"
+    title="~eric/fooix/bar"><img src="/@@/branch"
     alt=""/>&nbsp;lp://dev/~eric/fooix/bar</a>
 
     >>> login_person(fooix.owner, LaunchpadTestRequest())
-    >>> fooix.development_focus.user_branch = branch
+    >>> fooix.development_focus.branch = branch
     >>> print test_tales("branch/fmt:bzr-link", branch=branch)
     <a href=".../~eric/fooix/bar"
-       title="The branch title"><img src="/@@/branch"
+       title="~eric/fooix/bar"><img src="/@@/branch"
        alt=""/>&nbsp;lp://dev/fooix</a>
 
 
@@ -344,13 +347,14 @@ without adequate permissions, a link is not generated.
     >>> subscription = factory.makeBranchSubscription(
     ...     branch=branch, person=person)
     >>> test_tales("subscription/fmt:link", subscription=subscription)
-    u'Subscription of My Person to My Branch'
+    u'Subscription of My Person to ~person-name17/product-name12/branch19'
 
 But if we log in as the subscriber, a link is presented.
 
-    >>> login(subscription.person.preferredemail.email)
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> login(removeSecurityProxy(subscription.person.preferredemail).email)
     >>> test_tales("subscription/fmt:link", subscription=subscription)
-    u'<a href="...">Subscription of My Person to My Branch</a>'
+    u'<a href="http://code.launchpad.dev/~person-name17/product-name12/branch19/+subscription/person-name21">Subscription of My Person to ~person-name17/product-name12/branch19</a>'
 
 Merge proposals also have a link formatter, which displays branch titles:
 
@@ -361,7 +365,7 @@ Merge proposals also have a link formatter, which displays branch titles:
     >>> source = factory.makeProductBranch(
     ...     product=fooix, owner=eric, name="fix")
     >>> target = factory.makeProductBranch(product=fooix)
-    >>> fooix.development_focus.user_branch = target
+    >>> fooix.development_focus.branch = target
     >>> proposal = source.addLandingTarget(eric, target)
     >>> test_tales("proposal/fmt:link", proposal=proposal)
     u'<a href="...">[Merge] lp://dev/~eric/fooix/fix into lp://dev/fooix</a>'

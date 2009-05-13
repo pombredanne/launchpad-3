@@ -6,9 +6,16 @@ __metaclass__ = type
 __all__ = [
     'BranchLinkedToBug',
     'BranchUnlinkedFromBug',
+    'BugConvertedToQuestion',
     'BugDescriptionChange',
     'BugTagsChange',
     'BugTaskAdded',
+    'BugTaskAssigneeChange',
+    'BugTaskBugWatchChange',
+    'BugTaskImportanceChange',
+    'BugTaskMilestoneChange',
+    'BugTaskStatusChange',
+    'BugTaskTargetChange',
     'BugTitleChange',
     'BugVisibilityChange',
     'BugWatchAdded',
@@ -18,15 +25,18 @@ __all__ = [
     'SeriesNominated',
     'UnsubscribedFromBug',
     'get_bug_change_class',
+    'get_bug_changes',
     ]
 
 from textwrap import dedent
 
 from zope.interface import implements
+from zope.security.proxy import isinstance as zope_isinstance
 
-from canonical.launchpad.interfaces.bug import IBug
 from canonical.launchpad.interfaces.bugchange import IBugChange
 from canonical.launchpad.interfaces.bugtask import IBugTask
+from lp.registry.interfaces.product import IProduct
+from canonical.launchpad.webapp.publisher import canonical_url
 
 
 class NoBugChangeFoundError(Exception):
@@ -47,6 +57,49 @@ def get_bug_change_class(obj, field_name):
         raise NoBugChangeFoundError(
             "Unable to find a suitable BugChange for field '%s' on object "
             "%s" % (field_name, obj))
+
+
+def get_bug_changes(bug_delta):
+    """Generate `IBugChange` objects describing an `IBugDelta`."""
+    # The order of the field names in this list is important; this is
+    # the order in which changes will appear both in the bug activity
+    # log and in notification emails.
+    bug_change_field_names = [
+        'duplicateof', 'title', 'description', 'private', 'security_related',
+        'tags', 'attachment',
+        ]
+    for field_name in bug_change_field_names:
+        field_delta = getattr(bug_delta, field_name)
+        if field_delta is not None:
+            bug_change_class = get_bug_change_class(bug_delta.bug, field_name)
+            yield bug_change_class(
+                when=None, person=bug_delta.user, what_changed=field_name,
+                old_value=field_delta['old'], new_value=field_delta['new'])
+
+    if bug_delta.bugtask_deltas is not None:
+        bugtask_deltas = bug_delta.bugtask_deltas
+        # Use zope_isinstance, to ensure that this Just Works with
+        # security-proxied objects.
+        if not zope_isinstance(bugtask_deltas, (list, tuple)):
+            bugtask_deltas = [bugtask_deltas]
+
+        # The order here is important; see bug_change_field_names.
+        bugtask_change_field_names = [
+            'target', 'importance', 'status', 'milestone', 'bugwatch',
+            'assignee',
+            ]
+        for bugtask_delta in bugtask_deltas:
+            for field_name in bugtask_change_field_names:
+                field_delta = getattr(bugtask_delta, field_name)
+                if field_delta is not None:
+                    bug_change_class = get_bug_change_class(
+                        bugtask_delta.bugtask, field_name)
+                    yield bug_change_class(
+                        bug_task=bugtask_delta.bugtask,
+                        when=None, person=bug_delta.user,
+                        what_changed=field_name,
+                        old_value=field_delta['old'],
+                        new_value=field_delta['new'])
 
 
 class BugChangeBase:
@@ -103,6 +156,28 @@ class UnsubscribedFromBug(BugChangeBase):
         return None
 
 
+class BugConvertedToQuestion(BugChangeBase):
+    """A bug got converted into a question."""
+
+    def __init__(self, when, person, question):
+        super(BugConvertedToQuestion, self).__init__(when, person)
+        self.question = question
+
+    def getBugActivity(self):
+        """See `IBugChange`."""
+        return dict(
+            whatchanged='converted to question',
+            newvalue=str(self.question.id))
+
+    def getBugNotification(self):
+        """See `IBugChange`."""
+        return {
+            'text': (
+                '** Converted to question:\n'
+                '   %s' % canonical_url(self.question)),
+            }
+
+
 class BugTaskAdded(BugChangeBase):
     """A bug task got added to the bug."""
 
@@ -137,10 +212,6 @@ class BugTaskAdded(BugChangeBase):
         return {
             'text': '\n'.join(lines)
             }
-
-    def getBugNotificationRecipients(self):
-        """See `IBugChange`."""
-        # Send the notification to the default recipients.
 
 
 class SeriesNominated(BugChangeBase):
@@ -218,12 +289,16 @@ class BranchLinkedToBug(BugChangeBase):
 
     def getBugActivity(self):
         """See `IBugChange`."""
+        if self.branch.private:
+            return None
         return dict(
             whatchanged='branch linked',
             newvalue=self.branch.bzr_identity)
 
     def getBugNotification(self):
         """See `IBugChange`."""
+        if self.branch.private:
+            return None
         return {'text': '** Branch linked: %s' % self.branch.bzr_identity}
 
 
@@ -236,12 +311,16 @@ class BranchUnlinkedFromBug(BugChangeBase):
 
     def getBugActivity(self):
         """See `IBugChange`."""
+        if self.branch.private:
+            return None
         return dict(
             whatchanged='branch unlinked',
             oldvalue=self.branch.bzr_identity)
 
     def getBugNotification(self):
         """See `IBugChange`."""
+        if self.branch.private:
+            return None
         return {'text': '** Branch unlinked: %s' % self.branch.bzr_identity}
 
 
@@ -255,6 +334,50 @@ class BugDescriptionChange(AttributeChange):
         notification_text = (
             u"** Description changed:\n\n%s" % description_diff)
         return {'text': notification_text}
+
+
+class BugDuplicateChange(AttributeChange):
+    """Describes a change to a bug's duplicate marker."""
+
+    def getBugActivity(self):
+        if self.old_value is not None and self.new_value is not None:
+            return {
+                'whatchanged': 'changed duplicate marker',
+                'oldvalue': str(self.old_value.id),
+                'newvalue': str(self.new_value.id),
+                }
+        elif self.old_value is None:
+            return {
+                'whatchanged': 'marked as duplicate',
+                'newvalue': str(self.new_value.id),
+                }
+        elif self.new_value is None:
+            return {
+                'whatchanged': 'removed duplicate marker',
+                'oldvalue': str(self.old_value.id),
+                }
+        else:
+            raise AssertionError(
+                "There is no change: both the old bug and new bug are None.")
+
+    def getBugNotification(self):
+        if self.old_value is not None and self.new_value is not None:
+            text = ("** This bug is no longer a duplicate of bug %d\n"
+                    "   %s\n"
+                    "** This bug has been marked a duplicate of bug %d\n"
+                    "   %s" % (self.old_value.id, self.old_value.title,
+                               self.new_value.id, self.new_value.title))
+        elif self.old_value is None:
+            text = ("** This bug has been marked a duplicate of bug %d\n"
+                    "   %s" % (self.new_value.id, self.new_value.title))
+        elif self.new_value is None:
+            text = ("** This bug is no longer a duplicate of bug %d\n"
+                    "   %s" % (self.old_value.id, self.old_value.title))
+        else:
+            raise AssertionError(
+                "There is no change: both the old bug and new bug are None.")
+
+        return {'text': text}
 
 
 class BugTitleChange(AttributeChange):
@@ -442,22 +565,51 @@ class CveUnlinkedFromBug(BugChangeBase):
 
 
 class BugTaskAttributeChange(AttributeChange):
-    """Used to represent a change in a BugTask's attributes."""
+    """Used to represent a change in a BugTask's attributes.
 
-    display_attribute_map = {
-        'status': 'title',
-        'importance': 'title',
-        }
+    This is a base class. Implementations should define
+    `display_attribute` and optionally override
+    `display_activity_label` and/or `display_notification_label`.
+
+    `display_attribute` is the name of an attribute on the value
+    objects that, when fetched, is usable when recording activity and
+    sending notifications.
+    """
 
     def __init__(self, bug_task, when, person, what_changed, old_value,
                  new_value):
         super(BugTaskAttributeChange, self).__init__(
             when, person, what_changed, old_value, new_value)
-
         self.bug_task = bug_task
-        display_attribute = self.display_attribute_map[self.what_changed]
-        self.display_old_value = getattr(self.old_value, display_attribute)
-        self.display_new_value = getattr(self.new_value, display_attribute)
+
+        if self.old_value is None:
+            self.display_old_value = None
+        else:
+            self.display_old_value = getattr(
+                self.old_value, self.display_attribute)
+
+        if self.new_value is None:
+            self.display_new_value = None
+        else:
+            self.display_new_value = getattr(
+                self.new_value, self.display_attribute)
+
+    @property
+    def display_activity_label(self):
+        """The label to use when recording activity.
+
+        By default, it is the same as attribute that changed.
+        """
+        return self.what_changed
+
+    @property
+    def display_notification_label(self):
+        """The label to use for notifications.
+
+        By default, it is the same as the attribute that changed,
+        capitalized.
+        """
+        return self.what_changed.capitalize()
 
     def getBugActivity(self):
         """Return the bug activity data for this change as a dict.
@@ -465,11 +617,9 @@ class BugTaskAttributeChange(AttributeChange):
         The `whatchanged` value of the dict refers to the `BugTask`'s
         target so as to make it clear in which task the change was made.
         """
-        what_changed = '%s: %s' % (
-            self.bug_task.bugtargetname, self.what_changed)
-
         return {
-            'whatchanged': what_changed,
+            'whatchanged': '%s: %s' % (
+                self.bug_task.bugtargetname, self.display_activity_label),
             'oldvalue': self.display_old_value,
             'newvalue': self.display_new_value,
             }
@@ -484,12 +634,114 @@ class BugTaskAttributeChange(AttributeChange):
             u"** Changed in: %(bug_target_name)s\n"
             "%(label)13s: %(oldval)s => %(newval)s\n" % {
                 'bug_target_name': self.bug_task.bugtargetname,
-                'label' : self.what_changed.capitalize(),
+                'label' : self.display_notification_label,
                 'oldval' : self.display_old_value,
                 'newval' : self.display_new_value,
             })
 
         return {'text': text.rstrip()}
+
+
+class BugTaskImportanceChange(BugTaskAttributeChange):
+    """Represents a change in BugTask.importance."""
+
+    # Use `importance.title` in activity records and notifications.
+    display_attribute = 'title'
+
+
+class BugTaskStatusChange(BugTaskAttributeChange):
+    """Represents a change in BugTask.status."""
+
+    # Use `status.title` in activity records and notifications.
+    display_attribute = 'title'
+
+
+class BugTaskMilestoneChange(BugTaskAttributeChange):
+    """Represents a change in BugTask.milestone."""
+
+    # Use `milestone.name` in activity records and notifications.
+    display_attribute = 'name'
+
+
+class BugTaskBugWatchChange(BugTaskAttributeChange):
+    """Represents a change in BugTask.bugwatch."""
+
+    # Use the term "remote watch" as this is used in the UI.
+    display_activity_label = 'remote watch'
+    display_notification_label = 'Remote watch'
+
+    # Use `bugwatch.title` in activity records and notifications.
+    display_attribute = 'title'
+
+
+class BugTaskAssigneeChange(AttributeChange):
+    """Represents a change in BugTask.assignee."""
+
+    def __init__(self, bug_task, when, person,
+                 what_changed, old_value, new_value):
+        super(BugTaskAssigneeChange, self).__init__(
+            when, person, what_changed, old_value, new_value)
+        self.bug_task = bug_task
+
+    def getBugActivity(self):
+        """See `IBugChange`."""
+        def assignee_for_display(assignee):
+            if assignee is None:
+                return None
+            else:
+                return assignee.unique_displayname
+
+        return {
+            'whatchanged': '%s: assignee' % self.bug_task.bugtargetname,
+            'oldvalue': assignee_for_display(self.old_value),
+            'newvalue': assignee_for_display(self.new_value),
+            }
+
+    def getBugNotification(self):
+        """See `IBugChange`."""
+        def assignee_for_display(assignee):
+            if assignee is None:
+                return "(unassigned)"
+            else:
+                return assignee.unique_displayname
+
+        return {
+            'text': (
+                u"** Changed in: %s\n"
+                u"     Assignee: %s => %s" % (
+                    self.bug_task.bugtargetname,
+                    assignee_for_display(self.old_value),
+                    assignee_for_display(self.new_value))),
+            }
+
+
+class BugTaskTargetChange(AttributeChange):
+    """Used to represent a change in a BugTask's target."""
+
+    def __init__(self, bug_task, when, person,
+                 what_changed, old_value, new_value):
+        super(BugTaskTargetChange, self).__init__(
+            when, person, what_changed, old_value, new_value)
+        self.bug_task = bug_task
+
+    def getBugActivity(self):
+        """See `IBugChange`."""
+        return {
+            'whatchanged': 'affects',
+            'oldvalue': self.old_value.bugtargetname,
+            'newvalue': self.new_value.bugtargetname,
+            }
+
+    def getBugNotification(self):
+        """See `IBugChange`."""
+        if IProduct.providedBy(self.old_value):
+            template = u"** Project changed: %s => %s"
+        else:
+            template = u"** Package changed: %s => %s"
+        text = template % (
+            self.old_value.bugtargetname,
+            self.new_value.bugtargetname)
+        return {'text': text}
 
 
 BUG_CHANGE_LOOKUP = {
@@ -499,10 +751,15 @@ BUG_CHANGE_LOOKUP = {
     'tags': BugTagsChange,
     'title': BugTitleChange,
     'attachment': BugAttachmentChange,
+    'duplicateof': BugDuplicateChange,
     }
 
 
 BUGTASK_CHANGE_LOOKUP = {
-    'importance': BugTaskAttributeChange,
-    'status': BugTaskAttributeChange,
+    'importance': BugTaskImportanceChange,
+    'status': BugTaskStatusChange,
+    'target': BugTaskTargetChange,
+    'milestone': BugTaskMilestoneChange,
+    'bugwatch': BugTaskBugWatchChange,
+    'assignee': BugTaskAssigneeChange,
     }

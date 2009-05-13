@@ -19,10 +19,10 @@ import pytz
 from zope.component import getUtility
 
 from canonical.database.sqlbase import ISOLATION_LEVEL_DEFAULT
-from canonical.launchpad.ftests import ANONYMOUS
 from canonical.launchpad import scripts
 from canonical.launchpad.interfaces import IScriptActivitySet
 from canonical.lp import initZopeless
+from lp.testing import ANONYMOUS
 
 
 LOCK_PATH = "/var/lock/"
@@ -70,7 +70,8 @@ class LaunchpadScript:
     What you get:
         - self.logger
         - self.txn
-        - self.options
+        - self.parser (the OptionParser)
+        - self.options (the parsed options)
 
     "Give me convenience or give me death."
     """

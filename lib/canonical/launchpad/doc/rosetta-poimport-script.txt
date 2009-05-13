@@ -2,8 +2,7 @@
 
     >>> from canonical.launchpad.database import POTemplate
     >>> from canonical.launchpad.interfaces import (
-    ...     ILaunchpadCelebrities, IPersonSet, ITranslationImportQueue,
-    ...     RosettaImportStatus)
+    ...     IPersonSet, ITranslationImportQueue, RosettaImportStatus)
     >>> from canonical.config import config
     >>> import datetime
     >>> import pytz
@@ -43,7 +42,7 @@ We clean the import queue.
 
     >>> for entry in translation_import_queue:
     ...     translation_import_queue.remove(entry)
-    >>> translation_import_queue.entryCount()
+    >>> translation_import_queue.countEntries()
     0
 
 Product must have privileges which allow suggestions from those
@@ -64,9 +63,9 @@ We add a PO file to the import queue, approving it along the way.
     ...     distroseries=pofile.potemplate.distroseries,
     ...     productseries=pofile.potemplate.productseries)
     >>> entry.pofile = pofile
-    >>> entry.status = RosettaImportStatus.APPROVED
+    >>> entry.setStatus(RosettaImportStatus.APPROVED)
     >>> transaction.commit()
-    >>> translation_import_queue.entryCount()
+    >>> translation_import_queue.countEntries()
     1
 
 Now we run the import script, making sure that the DB user it runs under

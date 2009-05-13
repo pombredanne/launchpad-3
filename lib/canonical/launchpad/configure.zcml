@@ -12,8 +12,15 @@
   <authorizations module="canonical.launchpad.security" />
   <include package="canonical.launchpad.xmlrpc" />
 
+  <include package="lp.registry" />
+
   <include package="lp.answers" />
   <include package="lp.coop.answersbugs" />
+
+  <include package="lp.code" />
+
+  <include package="lp.soyuz" />
+  <include package="lp.blueprints" />
 
   <browser:url
     for="canonical.launchpad.interfaces.IPersonSet"

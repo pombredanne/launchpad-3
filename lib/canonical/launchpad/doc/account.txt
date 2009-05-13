@@ -3,6 +3,13 @@
 An Account is used by someone to Authenticate with the Launchpad login
 service.
 
+Many operations on Account and related tables are available only to
+the SSO Server.
+
+    >>> from canonical.launchpad.webapp.interfaces import IStoreSelector
+    >>> from canonical.launchpad.webapp.dbpolicy import SSODatabasePolicy
+    >>> getUtility(IStoreSelector).push(SSODatabasePolicy())
+
 
 = AccountSet =
 
@@ -27,8 +34,12 @@ Accounts are generally looked up by email address.
     >>> IAccount.providedBy(account)
     True
 
-    >>> print account_set.getByEmail('invalid@whatever')
-    None
+If the account is not found, a LookupError is raised.
+
+    >>> account_set.getByEmail('invalid@whatever')
+    Traceback (most recent call last):
+    ...
+    LookupError:...
 
 Only admins or the person attached to an account can see or edit Account
 details. This is obviously wrong, as the account should have access
@@ -43,6 +54,21 @@ Fixing this involves more surgery to Launchpad's security systems.
     Unauthorized...
 
     >>> del stub_account
+
+
+== Looking up accounts by their database ID ==
+
+If we know the ID of an account we can use the get() method.
+
+    >>> account_set.get(account.id) == account
+    True
+
+If there's no account with the given ID, a LookupError is raised.
+
+    >>> account_set.get(99999)
+    Traceback (most recent call last):
+    ...
+    LookupError:...
 
 
 == Looking up accounts by OpenID identifier ==
@@ -66,10 +92,12 @@ openid identifiers.
     >>> account_2 == account
     True
 
-None is returned if the identifier is not used by any account.
+A LookupError is raised if the identifier is not used by any account.
 
-    >>> print account_set.getByOpenIDIdentifier('no-such-identifier')
-    None
+    >>> account_set.getByOpenIDIdentifier('no-such-identifier')
+    Traceback (most recent call last):
+    ...
+    LookupError: no-such-identifier
 
 
 = The Account object =
@@ -85,6 +113,47 @@ An account has a displayname, and a preferred email address.
     No Privileges Person
     >>> print account.preferredemail.email
     no-priv@canonical.com
+
+The account can have additional validated and guessed email
+addresses.  This will be empty if the user has only a single validated
+email address:
+
+    >>> [email.email for email in account.validated_emails]
+    []
+    >>> [email.email for email in account.guessed_emails]
+    []
+
+If we add a new guessed email address, it will be included in the
+guessed list:
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     EmailAddressStatus, IEmailAddressSet)
+    >>> email = getUtility(IEmailAddressSet).new(
+    ...     "guessed-email@example.com", account=account,
+    ...     status=EmailAddressStatus.NEW)
+    >>> [email.email for email in account.guessed_emails]
+    [u'guessed-email@example.com']
+
+If we add a validated email address, it will show up in the validated
+list:
+
+    >>> email = getUtility(IEmailAddressSet).new(
+    ...     "validated-email@example.com", account=account,
+    ...     status=EmailAddressStatus.VALIDATED)
+    >>> [email.email for email in account.validated_emails]
+    [u'validated-email@example.com']
+
+We can also get a list of email addresses that are waiting for the
+user to validate:
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     IAuthTokenSet, LoginTokenType)
+    >>> token = getUtility(IAuthTokenSet).new(
+    ...     account, u"test@canonical.com", u"unvalidated-email@example.com",
+    ...     LoginTokenType.VALIDATEEMAIL, None)
+    >>> account.getUnvalidatedEmails()
+    [u'unvalidated-email@example.com']
+
 
 It also has an encrypted password.
 
@@ -164,12 +233,6 @@ unavailable.
     >>> account.displayname
     u'No Privileges Person'
 
-If an account has an associated person, it can be accessed via the
-person attribute:
-
-    >>> IPerson(account) == person
-    True
-
 An Account has an OpenID identifier used to generate the OpenID identity
 URL.
 
@@ -238,7 +301,6 @@ account with no email address is not valid:
 
 Lets add a new email address to the account:
 
-    >>> from canonical.launchpad.interfaces import IEmailAddressSet
     >>> email = getUtility(IEmailAddressSet).new(
     ...     "valid-account-test@example.com", account=account)
     >>> account.is_valid
@@ -264,7 +326,13 @@ If the account is deactivated, it won't be considered valid any more:
 From a newly created account which has no person associated with, it is
 possible to create a new person that will be associated with it.
 
-    >>> from canonical.launchpad.interfaces.person import (
+We need to change database policy here again, as the SSO Server cannot
+modify tables in the lpmain replication set.
+
+    >>> from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
+    >>> getUtility(IStoreSelector).push(MasterDatabasePolicy())
+
+    >>> from lp.registry.interfaces.person import (
     ...     PersonCreationRationale)
     >>> fresh_account, email = account_set.createAccountAndEmail(
     ...     'foo@example.com',
@@ -277,6 +345,8 @@ possible to create a new person that will be associated with it.
 
     >>> person = fresh_account.createPerson(
     ...     PersonCreationRationale.OWNER_CREATED_LAUNCHPAD)
+    >>> import transaction
+    >>> transaction.commit()
     >>> person.account == fresh_account
     True
     >>> IPerson(fresh_account) == person
@@ -303,6 +373,8 @@ address, a new Person cannot be created.
     Traceback (most recent call last):
     ...
     AssertionError: Can't create a Person for an account which has no email.
+
+    >>> db_policy = getUtility(IStoreSelector).pop()
 
 
 == OpenID identifiers ==
@@ -388,8 +460,10 @@ random token for a mnemonic has been used in the past.
     >>> removeSecurityProxy(
     ...     non_unique_account).new_openid_identifier = '111/non-unique'
     >>> syncUpdate(non_unique_account)
-    >>> print account_set.getByOpenIDIdentifier('000/non-unique')
-    None
+    >>> account_set.getByOpenIDIdentifier('000/non-unique')
+    Traceback (most recent call last):
+    ...
+    LookupError:...
 
     # Add the openid identifier to the history of used openid identifiers.
     # The model object is used because the OpenIDRPSummarySet.record() may
@@ -399,6 +473,8 @@ random token for a mnemonic has been used in the past.
     ...     openid_identifier='http://id.launchpad.dev/000/non-unique',
     ...     trust_root='http://blog.org/')
 
+    >>> import transaction
+    >>> transaction.commit()
     >>> account_set.createOpenIDIdentifier('non-unique')
     Traceback (most recent call last):
      ...
@@ -417,7 +493,7 @@ date.
 
     >>> from canonical.launchpad.interfaces.openidserver import (
     ...     IOpenIDRPSummarySet)
-    >>> from datetime import datetime, timedelta
+    >>> from datetime import datetime
     >>> import pytz
     >>> two_thousand_and_seven = datetime(2007, 1, 1, tzinfo=pytz.UTC)
     >>> two_thousand_and_eight = datetime(2008, 1, 1, tzinfo=pytz.UTC)
@@ -427,7 +503,13 @@ date.
     >>> summary = getUtility(IOpenIDRPSummarySet).record(
     ...     fresh_account, 'http://blog.example.com/',
     ...     date_used=two_thousand_and_seven)
+    >>> transaction.commit()
 
     >>> [summary.date_last_used.strftime('%Y-%m-%d')
     ...  for summary in fresh_account.recently_authenticated_rps]
     ['2008-01-01', '2007-01-01']
+
+
+== Cleanup ==
+
+    >>> db_policy = getUtility(IStoreSelector).pop()

@@ -1,0 +1,109 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
+
+<div tal:define="subscriptions context/subscriptions"
+     metal:define-macro="custom"
+     class="portlet">
+  <div class="section">
+    <div tal:define="link context/menu:context/retarget"
+         tal:condition="link/enabled"
+         tal:content="structure link/render"
+    >Retarget</div>
+    <div tal:define="link context/menu:context/supersede"
+         tal:condition="link/enabled"
+         tal:content="structure link/render"
+    >Mark superseded</div>
+  </div>
+  <div class="section">
+    <h2>Registered by</h2>
+    <dl>
+       <dt>
+         <tal:registrant tal:replace="structure context/owner/fmt:link" /><br/>
+         <div style="text-align:right;">
+           on <tal:registrant_date
+               tal:replace="structure context/datecreated/fmt:approximatedate" />
+         </div>
+      </dt>
+    </dl>
+    <tal:started condition="context/starter">
+      <h2>Started by</h2>
+      <dl>
+         <dt>
+           <tal:registrant tal:replace="structure context/starter/fmt:link" /><br/>
+           <div style="text-align:right;">
+             on <tal:started_date
+                 tal:replace="structure context/date_started/fmt:approximatedate" />
+           </div>
+        </dt>
+      </dl>
+    </tal:started>
+    <tal:completed condition="context/completer">
+      <h2>Completed by</h2>
+      <dl>
+         <dt>
+           <tal:registrant tal:replace="structure context/completer/fmt:link" /><br/>
+           <div style="text-align:right;">
+             on <tal:registrant_date
+                 tal:replace="structure context/date_completed/fmt:approximatedate" />
+           </div>
+        </dt>
+      </dl>
+    </tal:completed>
+  </div>
+  <div class="section" tal:define="context_menu context/menu:context"
+       metal:define-slot="heading">
+    <div tal:content="structure context_menu/subscription/render" />
+    <div tal:content="structure context_menu/subscribeanother/render" />
+  </div>
+  <div id="portlet-subscribers" tal:condition="subscriptions">
+    <h2>Subscribers</h2>
+    <div class="portletBody">
+      <tal:comment replace="nothing">
+        This is messy, but the portlet has to convey both subscribers and
+        whether or not they are essential. Also, in the case where a person
+        can say if the subscription is essential, that subscription
+        essentiality indicator needs to be clickable to edit, otherwise not.
+        Hence all the duplication.
+      </tal:comment>
+      <div tal:repeat="subscription subscriptions"
+           class="subscriber">
+        <a tal:condition="subscription/required:launchpad.Edit"
+           tal:attributes="href subscription/fmt:url">
+          <img
+            tal:condition="not:subscription/person/is_valid_person"
+            alt="(inactive)"
+            src="/@@/person-inactive"
+            title="No longer uses Launchpad."
+          />
+          <tal:active condition="subscription/person/is_valid_person">
+            <img
+              tal:condition="subscription/essential"
+              alt="(essential)"
+              src="/@@/subscriber-essential"
+              title="Has asked to take part in all discussions of this blueprint."
+            />
+            <img
+              tal:condition="not: subscription/essential"
+              alt=""
+              src="/@@/subscriber-inessential"
+              title="Normal subscriber."
+            />
+          </tal:active>
+        </a>
+        <tal:no_edit condition="not: subscription/required:launchpad.Edit">
+           <img tal:condition="subscription/essential"
+             src="/@@/subscriber-essential" />
+           <img tal:condition="not: subscription/essential"
+             src="/@@/subscriber-inessential" />
+        </tal:no_edit>
+        <a tal:attributes="href subscription/person/fmt:url"
+           tal:content="subscription/person/fmt:displayname"
+        />
+      </div>
+    </div>
+  </div>
+</div>
+</tal:root>

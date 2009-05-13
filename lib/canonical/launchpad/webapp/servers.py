@@ -39,16 +39,18 @@ from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 
 from canonical.lazr.interfaces.feed import IFeed
-from canonical.lazr.interfaces.rest import IWebServiceConfiguration
-from canonical.lazr.rest.publisher import (
+from lazr.restful.interfaces import IWebServiceConfiguration
+from lazr.restful.publisher import (
     WebServicePublicationMixin, WebServiceRequestTraversal)
 
 from canonical.launchpad.interfaces import (
     IFeedsApplication, IPrivateApplication, IOpenIDApplication, IPerson,
-    IPersonSet, IShipItApplication, IWebServiceApplication,
-    IOAuthConsumerSet, NonceAlreadyUsed, TimestampOrderingError, ClockSkew)
+    IPersonSet, IWebServiceApplication, IOAuthConsumerSet, NonceAlreadyUsed,
+    TimestampOrderingError, ClockSkew)
+from canonical.shipit.interfaces.shipit import IShipItApplication
 import canonical.launchpad.layers
 import canonical.launchpad.versioninfo
+import canonical.shipit.layers
 
 from canonical.launchpad.webapp.adapter import (
     get_request_duration, RequestExpired)
@@ -621,6 +623,18 @@ class BrowserFormNG:
         return value
 
 
+def web_service_request_to_browser_request(webservice_request):
+    """Convert a given webservice request into a webapp one.
+
+    Simply overrides 'SERVER_URL' to the 'mainsite', preserving headers and
+    body.
+    """
+    body = webservice_request.bodyStream.getCacheStream().read()
+    environ = dict(webservice_request.environment)
+    environ['SERVER_URL'] = allvhosts.configs['mainsite'].rooturl
+    return LaunchpadBrowserRequest(body, environ)
+
+
 class Zope3WidgetsUseIBrowserFormNGMonkeyPatch:
     """Make Zope3 widgets use IBrowserFormNG.
 
@@ -1018,15 +1032,60 @@ class AnswersBrowserRequest(LaunchpadBrowserRequest):
             'Vary', 'Cookie, Authorization, Accept-Language')
 
 
+# ---- openid
+
+class AccountPrincipalMixin:
+    """Mixin for publication that works with person-less accounts."""
+
+    def getPrincipal(self, request):
+        """Return the authenticated principal for this request.
+
+        This is only necessary because, unlike in LaunchpadBrowserPublication,
+        here we want principals representing personless accounts to be
+        returned, so that personless accounts can use our OpenID server.
+        """
+        auth_utility = getUtility(IPlacelessAuthUtility)
+        principal = auth_utility.authenticate(request)
+        if principal is None:
+            principal = auth_utility.unauthenticatedPrincipal()
+            assert principal is not None, "Missing unauthenticated principal."
+        return principal
+
+
+class IdPublication(AccountPrincipalMixin, LaunchpadBrowserPublication):
+    """The publication used for OpenID requests."""
+
+    def getApplication(self, request):
+        """Return the `IOpenIDApplication`."""
+        return getUtility(IOpenIDApplication)
+
+
+class IdBrowserRequest(LaunchpadBrowserRequest):
+    implements(canonical.launchpad.layers.IdLayer)
+
+
+# XXX sinzui 2008-09-04 bug=264783:
+# Remove OpenIDPublication and OpenIDBrowserRequest.
+class OpenIDPublication(IdPublication):
+    """The publication used for old OpenID requests."""
+
+    root_object_interface = IOpenIDApplication
+
+
+class OpenIDBrowserRequest(LaunchpadBrowserRequest):
+    implements(canonical.launchpad.layers.OpenIDLayer)
+
+
 # ---- shipit
 
-class ShipItPublication(LaunchpadBrowserPublication):
+class ShipItPublication(AccountPrincipalMixin, LaunchpadBrowserPublication):
     """The publication used for the ShipIt sites."""
 
     root_object_interface = IShipItApplication
 
+
 class UbuntuShipItBrowserRequest(LaunchpadBrowserRequest):
-    implements(canonical.launchpad.layers.ShipItUbuntuLayer)
+    implements(canonical.shipit.layers.ShipItUbuntuLayer)
 
     @property
     def icing_url(self):
@@ -1037,7 +1096,7 @@ class UbuntuShipItBrowserRequest(LaunchpadBrowserRequest):
 
 
 class KubuntuShipItBrowserRequest(LaunchpadBrowserRequest):
-    implements(canonical.launchpad.layers.ShipItKUbuntuLayer)
+    implements(canonical.shipit.layers.ShipItKUbuntuLayer)
 
     @property
     def icing_url(self):
@@ -1048,7 +1107,7 @@ class KubuntuShipItBrowserRequest(LaunchpadBrowserRequest):
 
 
 class EdubuntuShipItBrowserRequest(LaunchpadBrowserRequest):
-    implements(canonical.launchpad.layers.ShipItEdUbuntuLayer)
+    implements(canonical.shipit.layers.ShipItEdUbuntuLayer)
 
     @property
     def icing_url(self):
@@ -1224,44 +1283,6 @@ class WebServiceTestRequest(WebServiceRequestTraversal, LaunchpadTestRequest):
             test_environ.update(environ)
         super(WebServiceTestRequest, self).__init__(
             body_instream=body_instream, environ=test_environ, **kw)
-
-
-# ---- openid
-
-class IdPublication(LaunchpadBrowserPublication):
-    """The publication used for OpenID requests."""
-
-    root_object_interface = IOpenIDApplication
-
-    def getPrincipal(self, request):
-        """Return the authenticated principal for this request.
-
-        This is only necessary because, unlike in LaunchpadBrowserPublication,
-        here we want principals representing personless accounts to be
-        returned, so that personless accounts can use our OpenID server.
-        """
-        auth_utility = getUtility(IPlacelessAuthUtility)
-        principal = auth_utility.authenticate(request)
-        if principal is None:
-            principal = auth_utility.unauthenticatedPrincipal()
-            assert principal is not None, "Missing unauthenticated principal."
-        return principal
-
-
-class IdBrowserRequest(LaunchpadBrowserRequest):
-    implements(canonical.launchpad.layers.IdLayer)
-
-
-# XXX sinzui 2008-09-04 bug=264783:
-# Remove OpenIDPublication and OpenIDBrowserRequest.
-class OpenIDPublication(IdPublication):
-    """The publication used for old OpenID requests."""
-
-    root_object_interface = IOpenIDApplication
-
-
-class OpenIDBrowserRequest(LaunchpadBrowserRequest):
-    implements(canonical.launchpad.layers.OpenIDLayer)
 
 
 # ---- xmlrpc

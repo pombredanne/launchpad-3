@@ -10,7 +10,7 @@ __all__ = [
 from canonical.database.sqlbase import block_implicit_flushes
 from canonical.launchpad.interfaces import (
     IDistribution, IProduct, QuestionAction)
-from canonical.launchpad.interfaces.person import IPerson
+from lp.registry.interfaces.person import IPerson
 
 def assignKarmaUsingQuestionContext(person, question, actionname):
     """Assign Karma with the given actionname to the given person.

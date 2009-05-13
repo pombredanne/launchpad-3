@@ -22,11 +22,13 @@ import rfc822
 
 from zope.component import getAdapter, getUtility
 from zope.interface import implements
-from zope.security.proxy import isinstance as zope_isinstance
 
 from canonical.config import config
 from canonical.database.sqlbase import block_implicit_flushes
-from canonical.launchpad.components.bugchange import get_bug_change_class
+from canonical.launchpad.components.bug import BugDelta
+from canonical.launchpad.components.bugchange import get_bug_changes
+from canonical.launchpad.helpers import (
+    get_contact_email_addresses, get_email_template, shortlist)
 from canonical.launchpad.interfaces import (
     IEmailAddressSet, IHeldMessageDetails, ILaunchpadCelebrities,
     INotificationRecipientSet, IPerson, IPersonSet, ISpecification,
@@ -39,12 +41,9 @@ from canonical.launchpad.interfaces.structuralsubscription import (
     BugNotificationLevel)
 from canonical.launchpad.mail import (
     sendmail, simple_sendmail, simple_sendmail_from_person, format_address)
-from canonical.launchpad.mailout.mailwrapper import MailWrapper
-from canonical.launchpad.mailout.notificationrecipientset import (
+from lp.services.mail.mailwrapper import MailWrapper
+from lp.services.mail.notificationrecipientset import (
     NotificationRecipientSet)
-from canonical.launchpad.components.bug import BugDelta
-from canonical.launchpad.helpers import (
-    get_contact_email_addresses, get_email_template, shortlist)
 from canonical.launchpad.webapp import canonical_url
 
 
@@ -582,115 +581,6 @@ def get_unified_diff(old_text, new_text, text_width):
     return text_diff
 
 
-def get_bug_edit_notification_texts(bug_delta):
-    """Generate a list of edit notification texts based on the bug_delta.
-
-    bug_delta is an object that provides IBugDelta. The return value
-    is a list of unicode strings.
-    """
-    # figure out what's been changed; add that information to the
-    # list as appropriate
-    changes = []
-    if bug_delta.duplicateof is not None:
-        new_bug_dupe = bug_delta.duplicateof['new']
-        old_bug_dupe = bug_delta.duplicateof['old']
-        assert new_bug_dupe is not None or old_bug_dupe is not None
-        assert new_bug_dupe != old_bug_dupe
-        if old_bug_dupe is not None:
-            change_info = (
-                u"** This bug is no longer a duplicate of bug %d\n" %
-                    old_bug_dupe.id)
-            change_info += u'   %s' % old_bug_dupe.title
-            changes.append(change_info)
-        if new_bug_dupe is not None:
-            change_info = (
-                u"** This bug has been marked a duplicate of bug %d\n" %
-                    new_bug_dupe.id)
-            change_info += '   %s' % new_bug_dupe.title
-            changes.append(change_info)
-
-    # The order of the field names in this list is important; this is
-    # the order in which changes will appear both in the bug activity
-    # log and in notification emails.
-    bug_change_field_names = [
-        'title', 'description', 'private', 'security_related', 'tags',
-        'attachment',
-        ]
-    for field_name in bug_change_field_names:
-        field_delta = getattr(bug_delta, field_name)
-        if field_delta is not None:
-            bug_change_class = get_bug_change_class(bug_delta.bug, field_name)
-            change_info = bug_change_class(
-                when=None, person=bug_delta.user, what_changed=field_name,
-                old_value=field_delta['old'], new_value=field_delta['new'])
-            changes.append(change_info)
-
-    if bug_delta.bugtask_deltas is not None:
-        bugtask_deltas = bug_delta.bugtask_deltas
-        # Use zope_isinstance, to ensure that this Just Works with
-        # security-proxied objects.
-        if not zope_isinstance(bugtask_deltas, (list, tuple)):
-            bugtask_deltas = [bugtask_deltas]
-
-        for bugtask_delta in bugtask_deltas:
-            for field_name in ['importance', 'status']:
-                field_delta = getattr(bugtask_delta, field_name)
-                if field_delta is not None:
-                    bug_change_class = get_bug_change_class(
-                        bugtask_delta.bugtask, field_name)
-                    change = bug_change_class(
-                        bug_task=bugtask_delta.bugtask,
-                        when=None, person=bug_delta.user,
-                        what_changed=field_name,
-                        old_value=field_delta['old'],
-                        new_value=field_delta['new'])
-                    changes.append(change)
-
-        # XXX 2009-03-20 gmb [bug=344125]
-        #     There are two loops over bugtask_deltas here because we
-        #     have two completely unrelated ways of handling certain
-        #     fields as we transition over to the BugChange API. Trying
-        #     to do both in one loop is fraught with pain and
-        #     suffering. The second, eventually-to-be-redundant, loop
-        #     should be removed as part of the final cleanup work on
-        #     moving to the BugChange API.
-        for bugtask_delta in bugtask_deltas:
-            change_info = u''
-
-            for fieldname, displayattrname in [
-                ("product", "displayname"), ("sourcepackagename", "name"),
-                ("milestone", "name"), ("bugwatch", "title")]:
-                change = getattr(bugtask_delta, fieldname)
-                if change:
-                    oldval_display, newval_display = _get_task_change_values(
-                        change, displayattrname)
-                    change_info += _get_task_change_row(
-                        fieldname, oldval_display, newval_display)
-
-            if bugtask_delta.assignee is not None:
-                oldval_display = u"(unassigned)"
-                newval_display = u"(unassigned)"
-                if bugtask_delta.assignee.get('old'):
-                    oldval_display = (
-                        bugtask_delta.assignee['old'].unique_displayname)
-                if bugtask_delta.assignee.get('new'):
-                    newval_display = (
-                        bugtask_delta.assignee['new'].unique_displayname)
-
-                changerow = (
-                    u"%(label)13s: %(oldval)s => %(newval)s\n" % {
-                    'label' : u"Assignee", 'oldval' : oldval_display,
-                    'newval' : newval_display})
-                change_info += changerow
-
-            if len(change_info) > 0:
-                change_info = u"** Changed in: %s\n%s" % (
-                    bugtask_delta.bugtask.bugtargetname, change_info)
-                changes.append(change_info.rstrip())
-
-    return changes
-
-
 def _get_task_change_row(label, oldval_display, newval_display):
     """Return a row formatted for display in task change info."""
     return u"%(label)13s: %(oldval)s => %(newval)s\n" % {
@@ -816,7 +706,7 @@ def get_bugtask_indirect_subscribers(bugtask, recipients=None, level=None):
 
 def add_bug_change_notifications(bug_delta, old_bugtask=None):
     """Generate bug notifications and add them to the bug."""
-    changes = get_bug_edit_notification_texts(bug_delta)
+    changes = get_bug_changes(bug_delta)
     recipients = bug_delta.bug.getBugNotificationRecipients(
         old_bug=bug_delta.bug_before_modification,
         level=BugNotificationLevel.METADATA)
@@ -831,7 +721,7 @@ def add_bug_change_notifications(bug_delta, old_bugtask=None):
         #     This if..else should be removed once the new BugChange API
         #     is complete and ubiquitous.
         if IBugChange.providedBy(change):
-            bug_delta.bug.addChange(change)
+            bug_delta.bug.addChange(change, recipients=recipients)
         else:
             bug_delta.bug.addChangeNotification(
                 change, person=bug_delta.user, recipients=recipients)
@@ -872,21 +762,6 @@ def notify_bug_comment_added(bugmessage, event):
     """
     bug = bugmessage.bug
     bug.addCommentNotification(bugmessage.message)
-
-
-@block_implicit_flushes
-def notify_bug_became_question(event):
-    """Notify CC'd list that a bug was made into a question.
-
-    The event must contain the bug that became a question, and the question
-    that the bug became.
-    """
-    bug = event.bug
-    question = event.question
-    change_info = '\n'.join([
-        '** bug changed to question:\n'
-        '   %s' %  canonical_url(question)])
-    bug.addChangeNotification(change_info, person=IPerson(event.user))
 
 
 @block_implicit_flushes
@@ -1246,6 +1121,52 @@ def notify_message_held(message_approval, event):
         body = MailWrapper(72).format(
             template % replacements, force_wrap=True)
         simple_sendmail(from_address, address, subject, body)
+
+@block_implicit_flushes
+def notify_new_ppa_subscription(subscription, event):
+    """Notification that a new PPA subscription can be activated."""
+    non_active_subscribers = subscription.getNonActiveSubscribers()
+
+    registrant_name = subscription.registrant.displayname
+    ppa_name = subscription.archive.displayname
+    subject = 'New PPA subscription for ' + ppa_name
+
+    template = get_email_template('ppa-subscription-new.txt')
+
+    for person in non_active_subscribers:
+
+        if person.preferredemail is None:
+            # Don't send to people without a preferred email.
+            continue
+
+        to_address = [person.preferredemail.email]
+        recipient_subscriptions_url = "%s/+archivesubscriptions" % (
+            canonical_url(person))
+        replacements = {
+            'recipient_name': person.displayname,
+            'registrant_name': registrant_name,
+            'registrant_profile_url': canonical_url(subscription.registrant),
+            'ppa_name': ppa_name,
+            'recipient_subscriptions_url': recipient_subscriptions_url,
+            }
+        body = MailWrapper(72).format(template % replacements,
+                                      force_wrap=True)
+
+        from_address = format_address(
+            registrant_name, config.canonical.noreply_from_address)
+
+        headers = {
+            'Sender': config.canonical.bounce_address,
+            }
+
+        # If the registrant has a preferred email, then use it for the
+        # Reply-To.
+        if subscription.registrant.preferredemail:
+            headers['Reply-To'] = format_address(
+                registrant_name,
+                subscription.registrant.preferredemail.email)
+
+        simple_sendmail(from_address, to_address, subject, body, headers)
 
 
 def encode(value):

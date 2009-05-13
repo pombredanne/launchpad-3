@@ -10,15 +10,15 @@ from canonical.testing import (LaunchpadZopelessLayer)
 
 from canonical.config import config
 from canonical.codehosting.jobs import JobRunner
-from canonical.launchpad.database.branchjob import RevisionMailJob
+from lp.code.model.branchjob import RevisionMailJob
 from canonical.launchpad.interfaces import (
     BranchSubscriptionNotificationLevel,
     CodeReviewNotificationLevel)
 from canonical.launchpad.database.diff import StaticDiff
-from canonical.launchpad.interfaces.branchsubscription import (
+from lp.code.interfaces.branchsubscription import (
     BranchSubscriptionDiffSize,)
 from canonical.launchpad.interfaces.job import JobStatus
-from canonical.launchpad.tests.mail_helpers import pop_notifications
+from lp.testing.mail_helpers import pop_notifications
 from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.launchpad.webapp import errorlog
 
