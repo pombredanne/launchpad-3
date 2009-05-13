@@ -4,10 +4,10 @@
 """It provides easy integration of other scripts without database access.
 
    It should provide an easy way to retrieve current information from
-   Launchpad System when using plain shell scripts, for example:
+   Launchpad when using plain shell scripts, for example:
 
    * CURRENT distroseries name: `./ubuntu-helper.py -d ubuntu current`
-   * DEVEVELOPMENT distroseries name:
+   * DEVELOPMENT distroseries name:
        `./ubuntu-helper.py -d ubuntu development`
    * Distorelease architectures:
        `./lp-query-distro.py -d ubuntu -s feisty archs`
