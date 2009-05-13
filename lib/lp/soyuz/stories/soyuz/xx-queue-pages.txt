@@ -186,7 +186,7 @@ Inspect the ACCEPTED queue:
 Now we act on the queue, which requires admin or upload_manager permission.
 First, we need to add fake librarian files so that email notifications work:
 
-  >>> from canonical.archiveuploader.tests import (
+  >>> from lp.archiveuploader.tests import (
   ...     insertFakeChangesFileForAllPackageUploads)
   >>> insertFakeChangesFileForAllPackageUploads()
 
@@ -210,9 +210,9 @@ the builds can be created.
 Upload a new "bar" source so we can accept it later.  We need to login to
 upload.
 
-  >>> from canonical.archiveuploader.tests import (
+  >>> from lp.archiveuploader.tests import (
   ...     datadir, getPolicy, mock_logger_quiet)
-  >>> from canonical.archiveuploader.nascentupload import NascentUpload
+  >>> from lp.archiveuploader.nascentupload import NascentUpload
 
   >>> sync_policy = getPolicy(
   ...     name='sync', distro='ubuntu', distroseries='breezy-autotest')

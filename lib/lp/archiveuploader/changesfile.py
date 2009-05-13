@@ -14,14 +14,14 @@ __all__ = [
 
 import os
 
-from canonical.archiveuploader.dscfile import DSCFile, SignableTagFile
-from canonical.archiveuploader.nascentuploadfile import (
+from lp.archiveuploader.dscfile import DSCFile, SignableTagFile
+from lp.archiveuploader.nascentuploadfile import (
     BaseBinaryUploadFile,  CustomUploadFile, DdebBinaryUploadFile,
     DebBinaryUploadFile, SourceUploadFile, UdebBinaryUploadFile,
     UploadError, UploadWarning, splitComponentAndSection)
-from canonical.archiveuploader.utils import (
+from lp.archiveuploader.utils import (
     re_isadeb, re_issource, re_changes_file_name)
-from canonical.archiveuploader.tagfiles import (
+from lp.archiveuploader.tagfiles import (
     parse_tagfile, TagFileParseError)
 from canonical.launchpad.interfaces import SourcePackageUrgency
 

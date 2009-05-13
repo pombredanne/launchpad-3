@@ -17,8 +17,8 @@ uploaded into the system.
   >>> from lp.registry.interfaces.sourcepackagename import (
   ...     ISourcePackageNameSet)
 
-  >>> from canonical.archiveuploader.nascentupload import NascentUpload
-  >>> from canonical.archiveuploader.tests import (
+  >>> from lp.archiveuploader.nascentupload import NascentUpload
+  >>> from lp.archiveuploader.tests import (
   ...    datadir, getPolicy, mock_logger)
 
   >>> from canonical.launchpad.ftests import import_public_test_keys

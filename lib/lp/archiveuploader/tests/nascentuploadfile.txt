@@ -19,7 +19,7 @@ Import the test keys so we have them ready for verification
 We need to be logged into the security model in order to get any further
 
     >>> login('foo.bar@canonical.com')
-    >>> from canonical.archiveuploader.tests import (
+    >>> from lp.archiveuploader.tests import (
     ...    datadir, getPolicy, mock_logger_quiet)
 
 
@@ -33,7 +33,7 @@ considered) for the upload in question.
     >>> modified_insecure_policy.can_upload_binaries = True
     >>> modified_insecure_policy.can_upload_mixed = True
 
-    >>> from canonical.archiveuploader.changesfile import ChangesFile
+    >>> from lp.archiveuploader.changesfile import ChangesFile
 
     >>> ed_mixed_changes = ChangesFile(
     ...     datadir('ed_0.2-20_i386.changes'),
@@ -125,7 +125,7 @@ Remove the misnamed changes file copy used for testing.
 Source and Binary files are easily recognized by a regexp on the
 filenames:
 
-    >>> from canonical.archiveuploader.utils import (
+    >>> from lp.archiveuploader.utils import (
     ...     re_isadeb, re_issource)
 
 The binary regexp matches 'deb', 'ddeb' and 'udeb' filenames.
@@ -266,7 +266,7 @@ uploads.
 Address parsing is implemented by the SignableTagFile class, which
 is base for ChangesFile and DSCFile.
 
-    >>> from canonical.archiveuploader.dscfile import SignableTagFile
+    >>> from lp.archiveuploader.dscfile import SignableTagFile
     >>> sig_file = SignableTagFile()
 
 Note that the policy.{distroseries, pocket} must be already
@@ -384,7 +384,7 @@ and storing a DSC file in the LP system.
 The DSC file itself contains information about what was used to build
 the given version of source.
 
-    >>> from canonical.archiveuploader.dscfile import (
+    >>> from lp.archiveuploader.dscfile import (
     ...    DSCFile, DSCUploadedFile)
 
     >>> ed_mixed_dsc = DSCFile(
@@ -394,13 +394,13 @@ the given version of source.
     ...     modified_insecure_policy, mock_logger_quiet)
 
     >>> ed_mixed_dsc
-    <canonical.archiveuploader.dscfile.DSCFile ...>
+    <lp.archiveuploader.dscfile.DSCFile ...>
 
 So this object is exactly the same than what we already have created
 in the ChangesFile instance.
 
     >>> ed_mixed_changes.dsc
-    <canonical.archiveuploader.dscfile.DSCFile ...>
+    <lp.archiveuploader.dscfile.DSCFile ...>
 
 The DSCFile also presents a similar behaviour to access its parsed
 contents:
@@ -478,7 +478,7 @@ It also verifies the file size when the checksum matches.
 Sub-DSCFiles are DSCUploadedFile objects.
 
     >>> ed_mixed_dsc.files[0]
-    <canonical.archiveuploader.dscfile.DSCUploadedFile ...>
+    <lp.archiveuploader.dscfile.DSCUploadedFile ...>
 
 We can also inspect the list of files declared in this DSC:
 

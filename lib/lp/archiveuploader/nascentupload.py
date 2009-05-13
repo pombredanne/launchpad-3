@@ -21,9 +21,9 @@ import os
 
 from zope.component import getUtility
 
-from canonical.archiveuploader.changesfile import ChangesFile
-from canonical.archiveuploader.dscfile import DSCFile
-from canonical.archiveuploader.nascentuploadfile import (
+from lp.archiveuploader.changesfile import ChangesFile
+from lp.archiveuploader.dscfile import DSCFile
+from lp.archiveuploader.nascentuploadfile import (
     UploadError, UploadWarning, CustomUploadFile, SourceUploadFile,
     BaseBinaryUploadFile)
 from lp.soyuz.interfaces.archive import ArchivePurpose, MAIN_ARCHIVE_PURPOSES

@@ -6,9 +6,9 @@ __metaclass__ = type
 
 import unittest
 
-from canonical.archiveuploader.tests.test_securityuploads import (
+from lp.archiveuploader.tests.test_securityuploads import (
     TestStagedBinaryUploadBase)
-from canonical.archiveuploader.uploadprocessor import UploadProcessor
+from lp.archiveuploader.uploadprocessor import UploadProcessor
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.interfaces import (
     PackagePublishingPocket, PackagePublishingStatus)
@@ -28,8 +28,8 @@ class TestBuilddUploads(TestStagedBinaryUploadBase):
     This class will start to tests all known/possible cases using a test
     (empty) upload and its binary.
 
-     * 'lib/canonical/archiveuploader/tests/data/suite/foo_1.0-1/'
-     * 'lib/canonical/archiveuploader/tests/data/suite/foo_1.0-1_binary/'
+     * 'lib/lp/archiveuploader/tests/data/suite/foo_1.0-1/'
+     * 'lib/lp/archiveuploader/tests/data/suite/foo_1.0-1_binary/'
 
     This class allows uploads to ubuntu/breezy in i386 & powerpc architectures.
     """

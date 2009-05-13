@@ -1,7 +1,7 @@
 In order to prepare the tests below some initialization is required.
 
-    >>> from canonical.archiveuploader.nascentupload import NascentUpload
-    >>> from canonical.archiveuploader.tests import (
+    >>> from lp.archiveuploader.nascentupload import NascentUpload
+    >>> from lp.archiveuploader.tests import (
     ...     datadir, getPolicy, mock_logger_quiet)
     >>> from canonical.database.sqlbase import commit
     >>> from canonical.launchpad.interfaces import (

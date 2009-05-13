@@ -10,7 +10,7 @@ import os
 import sys
 import traceback
 
-from canonical.archiveuploader.uploadpolicy import findPolicyByName
+from lp.archiveuploader.uploadpolicy import findPolicyByName
 from lp.soyuz.model.queue import PackageUploadSet
 from canonical.librarian.ftests.harness import fillLibrarianFile
 

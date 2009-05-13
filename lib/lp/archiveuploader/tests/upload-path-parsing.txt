@@ -5,7 +5,7 @@ will be processed.
 
 This is decided by `parse_upload_path` function.
 
-    >>> from canonical.archiveuploader.uploadprocessor import (
+    >>> from lp.archiveuploader.uploadprocessor import (
     ...     parse_upload_path)
 
 We will use a helper function to check how `parse_upload_path` behaves

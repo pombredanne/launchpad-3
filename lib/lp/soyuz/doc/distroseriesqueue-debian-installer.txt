@@ -45,8 +45,8 @@ happen in production:
   >>> from canonical.launchpad.interfaces import IDistributionSet
   >>> ubuntutest = getUtility(IDistributionSet)['ubuntutest']
 
-  >>> from canonical.archiveuploader.nascentupload import NascentUpload
-  >>> from canonical.archiveuploader.tests import (
+  >>> from lp.archiveuploader.nascentupload import NascentUpload
+  >>> from lp.archiveuploader.tests import (
   ...     datadir, getPolicy, mock_logger, mock_logger_quiet)
 
   >>> anything_policy = getPolicy(

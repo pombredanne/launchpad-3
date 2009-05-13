@@ -76,7 +76,7 @@ from librarian into our tree, otherwise it will remain on disk causing
 problems to the next test run.
 
     >>> import os
-    >>> from canonical.archiveuploader.tests import datadir
+    >>> from lp.archiveuploader.tests import datadir
     >>> os.remove(datadir('ed-0.2-21/ed_0.2.orig.tar.gz'))
 
 After the mentioned procedure-shortcut, since ed_0.2-21 was

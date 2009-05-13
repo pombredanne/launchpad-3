@@ -9,7 +9,7 @@ import unittest
 
 from zope.component import getUtility
 
-from canonical.archiveuploader.tests.test_uploadprocessor import (
+from lp.archiveuploader.tests.test_uploadprocessor import (
     MockLogger as TestLogger)
 from canonical.config import config
 from lp.soyuz.adapters.packagelocation import (

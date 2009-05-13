@@ -14,10 +14,10 @@ from sha import sha
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.archiveuploader.tests import (
+from lp.archiveuploader.tests import (
     datadir, getPolicy, insertFakeChangesFileForAllPackageUploads,
     mock_logger_quiet)
-from canonical.archiveuploader.nascentupload import NascentUpload
+from lp.archiveuploader.nascentupload import NascentUpload
 from canonical.config import config
 from canonical.database.sqlbase import ISOLATION_LEVEL_READ_COMMITTED
 from canonical.launchpad.database import (

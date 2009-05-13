@@ -28,7 +28,7 @@ import time
 
 from zope.component import getUtility
 
-from canonical.archiveuploader.utils import (
+from lp.archiveuploader.utils import (
     prefix_multi_line_string, re_taint_free, re_isadeb, re_issource,
     re_no_epoch, re_no_revision, re_valid_version, re_valid_pkg_name,
     re_extract_src_version)

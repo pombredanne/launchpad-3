@@ -8,7 +8,7 @@ archives, getPublishedSources().
 We need to insert some dependent fake data before continuing.
 
     >>> login("foo.bar@canonical.com")
-    >>> from canonical.archiveuploader.tests import (
+    >>> from lp.archiveuploader.tests import (
     ...     insertFakeChangesFileForAllPackageUploads)
     >>> insertFakeChangesFileForAllPackageUploads()
     >>> transaction.commit()

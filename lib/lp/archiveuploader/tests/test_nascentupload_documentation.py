@@ -9,8 +9,8 @@ import unittest
 
 from zope.component import getUtility
 
-from canonical.archiveuploader.nascentupload import NascentUpload
-from canonical.archiveuploader.tests import (
+from lp.archiveuploader.nascentupload import NascentUpload
+from lp.archiveuploader.tests import (
     datadir, getPolicy, mock_logger_quiet)
 from canonical.launchpad.database import (
     ComponentSelection, LibraryFileAlias)

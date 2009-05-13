@@ -30,8 +30,8 @@ from sqlobject import ForeignKey, SQLMultipleJoin, SQLObjectNotFound
 from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.customupload import CustomUploadError
 from lp.archivepublisher.utils import get_ppa_reference
-from canonical.archiveuploader.tagfiles import parse_tagfile_lines
-from canonical.archiveuploader.utils import safe_fix_maintainer
+from lp.archiveuploader.tagfiles import parse_tagfile_lines
+from lp.archiveuploader.utils import safe_fix_maintainer
 from canonical.buildmaster.pas import BuildDaemonPackagesArchSpecific
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config

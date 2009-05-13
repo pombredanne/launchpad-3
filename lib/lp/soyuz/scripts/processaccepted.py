@@ -11,7 +11,7 @@ __all__ = [
 
 from zope.component import getUtility
 
-from canonical.archiveuploader.tagfiles import parse_tagfile_lines
+from lp.archiveuploader.tagfiles import parse_tagfile_lines
 from canonical.launchpad.interfaces.bug import IBugSet
 from canonical.launchpad.interfaces.bugtask import BugTaskStatus
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities

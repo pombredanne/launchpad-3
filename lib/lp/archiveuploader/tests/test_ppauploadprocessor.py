@@ -13,8 +13,8 @@ from email import message_from_string
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.archiveuploader.uploadprocessor import UploadProcessor
-from canonical.archiveuploader.tests.test_uploadprocessor import (
+from lp.archiveuploader.uploadprocessor import UploadProcessor
+from lp.archiveuploader.tests.test_uploadprocessor import (
     TestUploadProcessorBase)
 from canonical.config import config
 from canonical.launchpad.database import Component
@@ -798,7 +798,7 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         :return: The queue items that were uploaded.
         """
         test_files_dir = os.path.join(config.root,
-            "lib/canonical/archiveuploader/tests/data/")
+            "lib/lp/archiveuploader/tests/data/")
         upload_dir = self.queueUpload(
             "debian-installer", "~name16/ubuntu/breezy",
             test_files_dir=test_files_dir)

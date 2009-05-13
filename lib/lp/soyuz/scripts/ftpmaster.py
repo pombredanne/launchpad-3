@@ -27,7 +27,7 @@ import tempfile
 
 from zope.component import getUtility
 
-from canonical.archiveuploader.utils import re_extract_src_version
+from lp.archiveuploader.utils import re_extract_src_version
 from lp.soyuz.adapters.packagelocation import (
     PackageLocationError, build_package_location)
 from canonical.launchpad.helpers import filenameToContentType

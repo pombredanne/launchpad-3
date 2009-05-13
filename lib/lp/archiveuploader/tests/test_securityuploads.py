@@ -9,9 +9,9 @@ import unittest
 
 from zope.component import getUtility
 
-from canonical.archiveuploader.tests.test_uploadprocessor import (
+from lp.archiveuploader.tests.test_uploadprocessor import (
     TestUploadProcessorBase)
-from canonical.archiveuploader.uploadprocessor import UploadProcessor
+from lp.archiveuploader.uploadprocessor import UploadProcessor
 from lp.soyuz.model.build import Build
 from lp.soyuz.model.processor import ProcessorFamily
 from canonical.launchpad.interfaces import (

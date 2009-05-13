@@ -4,8 +4,8 @@ This test will check the upload of dist-upgrade tarballs
 
   >>> from lp.registry.interfaces.distribution import IDistributionSet
 
-  >>> from canonical.archiveuploader.nascentupload import NascentUpload
-  >>> from canonical.archiveuploader.tests import (
+  >>> from lp.archiveuploader.nascentupload import NascentUpload
+  >>> from lp.archiveuploader.tests import (
   ...    datadir, getPolicy, mock_logger)
 
   >>> ubuntutest = getUtility(IDistributionSet)['ubuntutest']

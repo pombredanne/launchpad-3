@@ -4,7 +4,7 @@
 
 import re, os, select
 
-from canonical.archiveuploader.utils import prefix_multi_line_string
+from lp.archiveuploader.utils import prefix_multi_line_string
 
 re_taint_free = re.compile(r"^[-+~\.\w]+$");
 

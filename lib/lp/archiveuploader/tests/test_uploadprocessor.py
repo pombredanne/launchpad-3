@@ -21,8 +21,8 @@ from email import message_from_string
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.archiveuploader.uploadpolicy import AbstractUploadPolicy
-from canonical.archiveuploader.uploadprocessor import UploadProcessor
+from lp.archiveuploader.uploadpolicy import AbstractUploadPolicy
+from lp.archiveuploader.uploadprocessor import UploadProcessor
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from lp.soyuz.model.archivepermission import ArchivePermission
@@ -106,7 +106,7 @@ class TestUploadProcessorBase(unittest.TestCase):
         os.makedirs(os.path.join(self.queue_folder, "incoming"))
 
         self.test_files_dir = os.path.join(config.root,
-            "lib/canonical/archiveuploader/tests/data/suite")
+            "lib/lp/archiveuploader/tests/data/suite")
 
         import_public_test_keys()
 

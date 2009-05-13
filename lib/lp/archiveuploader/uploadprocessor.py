@@ -56,9 +56,9 @@ from sqlobject import SQLObjectNotFound
 
 from zope.component import getUtility
 
-from canonical.archiveuploader.nascentupload import (
+from lp.archiveuploader.nascentupload import (
     NascentUpload, FatalUploadError, EarlyReturnUploadError)
-from canonical.archiveuploader.uploadpolicy import (
+from lp.archiveuploader.uploadpolicy import (
     findPolicyByOptions, UploadPolicyError)
 from lp.soyuz.interfaces.archive import IArchiveSet, NoSuchPPA
 from lp.registry.interfaces.distribution import IDistributionSet

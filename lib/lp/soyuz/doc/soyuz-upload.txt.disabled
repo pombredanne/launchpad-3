@@ -69,7 +69,7 @@ Good.. let's send all packages we have in the test directory to
 the poppy server. We send each package set on a different ftp
 session.
 
-  >>> from canonical.archiveuploader.tagfiles import parse_tagfile
+  >>> from lp.archiveuploader.tagfiles import parse_tagfile
   >>> from canonical.config import config
   >>> from cStringIO import StringIO
   >>> import glob

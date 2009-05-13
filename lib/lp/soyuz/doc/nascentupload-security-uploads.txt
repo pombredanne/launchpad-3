@@ -21,8 +21,8 @@ A NascentUpload is a collection of files in a directory. They
 represent what may turn out to be an acceptable upload to a launchpad
 managed archive.
 
-  >>> from canonical.archiveuploader.nascentupload import NascentUpload
-  >>> from canonical.archiveuploader.tests import (
+  >>> from lp.archiveuploader.nascentupload import NascentUpload
+  >>> from lp.archiveuploader.tests import (
   ...    datadir, getPolicy, mock_logger, mock_logger_quiet)
 
   >>> security_policy = getPolicy(name='security', distro='ubuntu')

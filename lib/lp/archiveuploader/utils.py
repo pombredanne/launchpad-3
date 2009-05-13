@@ -22,7 +22,7 @@ __all__ = [
 import email.Header
 import re
 
-from canonical.archiveuploader.tagfiles import TagFileParseError
+from lp.archiveuploader.tagfiles import TagFileParseError
 from canonical.encoding import guess as guess_encoding, ascii_smash
 
 

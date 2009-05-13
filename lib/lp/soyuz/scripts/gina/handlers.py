@@ -27,7 +27,7 @@ from canonical.database.sqlbase import quote
 from canonical.database.constants import UTC_NOW
 
 from lp.archivepublisher.diskpool import poolify
-from canonical.archiveuploader.tagfiles import parse_tagfile
+from lp.archiveuploader.tagfiles import parse_tagfile
 
 from canonical.database.sqlbase import sqlvalues
 
