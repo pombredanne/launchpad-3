@@ -47,3 +47,5 @@ build
 *.egg
 dist
 ./buildout
+./_pythonpath.py
+
