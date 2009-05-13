@@ -10,7 +10,7 @@
   </class>
 
   <adapter
-      for="canonical.launchpad.interfaces.archive.IArchive"
+      for="lp.soyuz.interfaces.archive.IArchive"
       provides="canonical.archivepublisher.interfaces.archivesigningkey.IArchiveSigningKey"
       factory="canonical.archivepublisher.archivesigningkey.ArchiveSigningKey"
 

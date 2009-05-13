@@ -22,7 +22,7 @@ from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.launchpad.interfaces.personnotification import (
     IPersonNotification, IPersonNotificationSet)
-from canonical.launchpad.mail.sendmail import format_address, simple_sendmail
+from lp.services.mail.sendmail import format_address, simple_sendmail
 
 
 class PersonNotification(SQLBase):

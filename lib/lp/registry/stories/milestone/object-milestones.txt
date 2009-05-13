@@ -200,13 +200,13 @@ To make it easy to refer to the bugs, we'll give each bug a nickname:
 
     >>> bug_1_nickname = 'test-bug-1'
     >>> browser.open(bug_1_url)
-    >>> browser.getLink('Update description / tags').click()
+    >>> browser.getLink('Update description').click()
     >>> browser.getControl('Nickname').value = bug_1_nickname
     >>> browser.getControl('Change').click()
 
     >>> bug_2_nickname = 'test-bug-2'
     >>> browser.open(bug_2_url)
-    >>> browser.getLink('Update description / tags').click()
+    >>> browser.getLink('Update description').click()
     >>> browser.getControl('Nickname').value = bug_2_nickname
     >>> browser.getControl('Change').click()
 

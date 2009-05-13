@@ -10,7 +10,7 @@ from StringIO import StringIO
 from ConfigParser import ConfigParser
 
 from canonical.config import config
-from canonical.launchpad.interfaces.archive import ArchivePurpose
+from lp.soyuz.interfaces.archive import ArchivePurpose
 
 
 def update_pub_config(pubconf):

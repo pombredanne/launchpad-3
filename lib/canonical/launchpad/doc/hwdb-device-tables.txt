@@ -1213,17 +1213,28 @@ example a Ghostscript driver of a printer or a Sane scanner backend.
 
 The submitted data does not need to contain package information for all
 drivers, hence the field package_name may be None or the empty string
-(see below).
+(see below). In both cases, a HWDriver record is created where
+package_name is the empty string.
 
     >>> driver2 = driver_set.create(package_name=None,
     ...                             name='whatever',
     ...                             license=License.GNU_GPL_V2)
     >>> print driver2.name
     whatever
-    >>> print driver2.package_name
-    None
+    >>> print repr(driver2.package_name)
+    u''
     >>> print driver2.license.title
     GNU GPL v2
+
+    >>> driver_blank_package_name = driver_set.create(package_name='',
+    ...                                               name='bar',
+    ...                             license=License.GNU_GPL_V3)
+    >>> print driver_blank_package_name.name
+    bar
+    >>> print repr(driver_blank_package_name.package_name)
+    u''
+    >>> print driver_blank_package_name.license.title
+    GNU GPL v3
 
 Since we also do not always know the license of a driver, the license
 may too be None.
@@ -1259,7 +1270,7 @@ The tuple (driver name, package name) must be unique.
     Traceback (most recent call last):
     ...
     IntegrityError: duplicate key... violates unique
-    constraint "hwdriver__name__key"
+    constraint "hwdriver__package_name__name__key"
     <BLANKLINE>
     >>> LaunchpadZopelessLayer.txn.abort()
 
@@ -1272,11 +1283,18 @@ IHWDriverSet.getByPackageAndName().
     >>> print driver.name
     usb
 
-    >>> driver = driver_set.getByPackageAndName(None, 'whatever')
-    >>> print driver.package_name
-    None
+If we want to search for a driver without a known package, we can
+pass None as well as the empty string.
+
+    >>> driver = driver_set.getByPackageAndName('', 'whatever')
+    >>> print repr(driver.package_name)
+    u''
     >>> print driver.name
     whatever
+
+    >>> driver2 = driver_set.getByPackageAndName(None, 'whatever')
+    >>> driver2.id == driver.id
+    True
 
 If no existing record matches the parameters of the
 IHWDriverSet.getByPackageAndName() call, None is returned.
@@ -1302,6 +1320,35 @@ the given parameters or creates a new one, if no existing record matches.
     foo
     >>> print driver.package_name
     linux-image-generic
+
+If we pass None as the value for package_name, we get records where
+package_name is None or the empty string.
+
+    >>> driver = driver_set.getOrCreate(None, 'whatever')
+    >>> print repr(driver.package_name)
+    u''
+    >>> print driver.name
+    whatever
+
+Older HWDriver records may store None as the package name. We can
+retrieve these records by passing None for package_name...
+
+    >>> from canonical.launchpad.database.hwdb import HWDriver
+    >>> old_driver = HWDriver(package_name=None, name=u'foo', license=None)
+    >>> print old_driver.name
+    foo
+    >>> print old_driver.package_name
+    None
+
+    >>> driver = driver_set.getOrCreate(None, 'foo')
+    >>> driver.id == old_driver.id
+    True
+
+...as well as the empty string.
+
+    >>> driver = driver_set.getOrCreate('', 'foo')
+    >>> driver.id == old_driver.id
+    True
 
 IHWDriverSet.search() returns a sequence of driver records matching the
 given parameters.
@@ -1332,15 +1379,22 @@ HWDriver.package_name=null).
     >>> drivers = driver_set.search(package_name='')
     >>> for driver in drivers:
     ...    print repr(driver.package_name), driver.name
-    None whatever
+    u'' whatever
+    u'' bar
     u'' something_else
+    None foo
 
     >>> drivers = driver_set.search(package_name='', name='whatever')
     >>> for driver in drivers:
-    ...    print driver.package_name, driver.name
-    None whatever
+    ...    print repr(driver.package_name), driver.name
+    u'' whatever
 
-If no parameters are specific, IHWDriverSet.search() returns all driver
+    >>> drivers = driver_set.search(package_name='', name='foo')
+    >>> for driver in drivers:
+    ...    print repr(driver.package_name), driver.name
+    None foo
+
+If no parameters are specified, IHWDriverSet.search() returns all driver
 records.
 
     >>> drivers = driver_set.search()
@@ -1354,9 +1408,11 @@ records.
     u'linux-image-2.6.24-19-generic' ahci
     u'linux-image-2.6.24-19-generic' sr
     u'linux-image-generic' usb
-    None whatever
+    u'' whatever
+    u'' bar
     u'' something_else
     u'linux-image-generic' foo
+    None foo
 
 HWDriverSet.getByID() returns a HWDriver record with the given database ID.
 
@@ -1431,7 +1487,6 @@ HWDriverSet.packages_names is a distinct list of known package names.
     <BLANKLINE>
     linux-image-2.6.24-19-generic
     linux-image-generic
-    None
 
 
 == HWDeviceDriverLink ==
@@ -2019,6 +2074,102 @@ We can specify a distro target as well as a driver or package name.
     ...     distro_target=ubuntu['hoary']['i386'])
     (1L, 2L)
     >>> print submission_set.numSubmissionsWithDevice(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     driver_name='nonsense',
+    ...     package_name='linux-image-2.6.24-19-generic',
+    ...     distro_target=ubuntu['hoary']['i386'])
+    (0L, 2L)
+
+HWSubmission.numDeviceOwners() returns the number of device owners.
+Note that we identify owners by the email address as queried by the
+HWDB client, not by HWSubmission.owner.
+
+We have currently three submissions from two submitters, and submissions
+from both submitters metion the Seagate ST3250820NS disk. Let's add
+another, empty, submission for hoary/i386 from another submitter.
+
+    >>> submission = factory.makeHWSubmission(
+    ...     emailaddress='charles@babbage.com',
+    ...     distroarchseries=ubuntu['hoary']['i386'])
+    >>> submission.status = HWSubmissionProcessingStatus.PROCESSED
+
+Now we have three submitters, two of them own our Seagate disk.
+
+    >>> submission_set.numOwnersOfDevice(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ')
+    (2L, 3L)
+
+We can limit the results to a given driver...
+
+    >>> print submission_set.numOwnersOfDevice(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     driver_name='sd')
+    (2L, 3L)
+    >>> print submission_set.numOwnersOfDevice(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     driver_name='usb')
+    (0L, 3L)
+
+...to a distibution...
+
+    >>> print submission_set.numOwnersOfDevice(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     distro_target=ubuntu)
+    (1L, 2L)
+    >>> print submission_set.numOwnersOfDevice(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     distro_target=debian)
+    (0L, 0L)
+
+...to a distroseries...
+
+    >>> print submission_set.numOwnersOfDevice(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     distro_target=ubuntu['hoary'])
+    (1L, 2L)
+    >>> print submission_set.numOwnersOfDevice(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     distro_target=ubuntu['warty'])
+    (0L, 0L)
+
+...or to a distroarchseries.
+
+    >>> print submission_set.numOwnersOfDevice(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     distro_target=ubuntu['hoary']['i386'])
+    (1L, 2L)
+    >>> print submission_set.numOwnersOfDevice(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     distro_target=ubuntu['hoary']['hppa'])
+    (0L, 0L)
+
+We can specify a distro target as well as a driver or package name.
+
+    >>> print submission_set.numOwnersOfDevice(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     driver_name='sd', distro_target=ubuntu['hoary']['i386'])
+    (1L, 2L)
+    >>> print submission_set.numOwnersOfDevice(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     driver_name='nosense', distro_target=ubuntu['hoary']['i386'])
+    (0L, 2L)
+
+    >>> print submission_set.numOwnersOfDevice(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     package_name='linux-image-2.6.24-19-generic',
+    ...     distro_target=ubuntu['hoary']['i386'])
+    (1L, 2L)
+    >>> print submission_set.numOwnersOfDevice(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     package_name='nonsense', distro_target=ubuntu['hoary']['i386'])
+    (0L, 2L)
+
+    >>> print submission_set.numOwnersOfDevice(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     driver_name='sd', package_name='linux-image-2.6.24-19-generic',
+    ...     distro_target=ubuntu['hoary']['i386'])
+    (1L, 2L)
+    >>> print submission_set.numOwnersOfDevice(
     ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
     ...     driver_name='nonsense',
     ...     package_name='linux-image-2.6.24-19-generic',
