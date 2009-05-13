@@ -7,7 +7,7 @@
 import _pythonpath
 
 from canonical.config import config
-from canonical.launchpad.scripts.ftpmaster import PackageRemover
+from lp.soyuz.scripts.ftpmaster import PackageRemover
 
 
 if __name__ == '__main__':
