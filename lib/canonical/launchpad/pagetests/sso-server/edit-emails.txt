@@ -223,7 +223,7 @@ validate it.
     >>> from canonical.launchpad.interfaces.emailaddress import (
     ...     EmailAddressStatus)
     >>> from canonical.launchpad.ftests import login, logout, ANONYMOUS
-    >>> from canonical.launchpad.testing.factory import LaunchpadObjectFactory
+    >>> from lp.testing.factory import LaunchpadObjectFactory
 
     >>> login(ANONYMOUS)
     >>> account = getUtility(IAccountSet).getByEmail('new-user@example.com')

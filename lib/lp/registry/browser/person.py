@@ -989,11 +989,14 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
     @enabled_with_permission('launchpad.Special')
     def editsshkeys(self):
         target = '+editsshkeys'
-        text = 'Update SSH keys'
-        summary = (
-            'Used if %s stores code on Launchpad' %
-            self.context.browsername)
-        return Link(target, text, summary, icon='edit')
+        if self.context.sshkeys.count() == 0:
+            text = 'Add an SSH key'
+            icon = 'add'
+        else:
+            text = 'Update SSH keys'
+            icon = 'edit'
+        summary = 'Used when storing code on Launchpad'
+        return Link(target, text, summary, icon=icon)
 
     @enabled_with_permission('launchpad.Edit')
     def editpgpkeys(self):
@@ -1146,8 +1149,9 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
 
     usedfor = ITeam
     facet = 'overview'
-    links = ['edit', 'branding', 'common_edithomepage', 'members',
-             'add_member', 'memberships', 'received_invitations', 'mugshots',
+    links = ['edit', 'branding', 'common_edithomepage', 'members', 'mugshots',
+             'add_member', 'proposed_members',
+             'memberships', 'received_invitations',
              'editemail', 'configure_mailing_list', 'moderate_mailing_list',
              'editlanguages', 'map', 'polls',
              'add_poll', 'joinleave', 'add_my_teams', 'mentorships',
@@ -1190,6 +1194,12 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
     def add_member(self):
         target = '+addmember'
         text = 'Add member'
+        return Link(target, text, icon='add')
+
+    @enabled_with_permission('launchpad.Edit')
+    def proposed_members(self):
+        target = '+editproposedmembers'
+        text = 'Approve/Decline applicants'
         return Link(target, text, icon='add')
 
     def map(self):
@@ -2773,16 +2783,18 @@ class PersonView(LaunchpadView, FeedsMixin):
         The list contains email addresses when the EmailAddressVisibleState's
         PUBLIC or ALLOWED attributes are True. The preferred email
         address is the first in the list, the other validated email addresses
-        are not ordered.
+        are not ordered. When the team is the context, only the preferred
+        email address is in the list.
 
         :return: A list of email address strings that can be seen.
         """
         visible_states = (
             EmailAddressVisibleState.PUBLIC, EmailAddressVisibleState.ALLOWED)
         if self.email_address_visibility.state in visible_states:
-            emails = sorted(
-                email.email for email in self.context.validatedemails)
-            emails.insert(0, self.context.preferredemail.email)
+            emails = [self.context.preferredemail.email]
+            if not self.context.isTeam():
+                emails.extend(sorted(
+                    email.email for email in self.context.validatedemails))
             return emails
         else:
             return []
@@ -2848,6 +2860,14 @@ class PersonView(LaunchpadView, FeedsMixin):
             return ', '.join(sorted(englishnames))
         else:
             return getUtility(ILaunchpadCelebrities).english.englishname
+
+    @property
+    def public_private_css(self):
+        """The CSS classes that represent the public or private state."""
+        if self.context.private:
+            return 'aside private'
+        else:
+            return 'aside public'
 
 
 class EmailAddressVisibleState:

@@ -33,7 +33,7 @@ also sends the email to the list of recipients.
     ...     CodeReviewNotificationLevel)
     >>> from lp.code.interfaces.branchlookup import IBranchLookup
     >>> from lp.code.mail.branch import BranchMailer
-    >>> from canonical.launchpad.tests.mail_helpers import pop_notifications
+    >>> from lp.testing.mail_helpers import pop_notifications
     >>> branch = getUtility(IBranchLookup).getByUniqueName(
     ...     '~name12/firefox/main')
     >>> subscription = branch.subscribe(
