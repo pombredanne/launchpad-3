@@ -25,7 +25,7 @@ import _pythonpath
 from canonical.config import config
 from canonical.launchpad.scripts.base import (LaunchpadScript,
     LaunchpadScriptFailure)
-from canonical.launchpad.scripts.ftpmaster import LpQueryDistro
+from lp.soyuz.scripts.ftpmaster import LpQueryDistro
 
 
 if __name__ == '__main__':
