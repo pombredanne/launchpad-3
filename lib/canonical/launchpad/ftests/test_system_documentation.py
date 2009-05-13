@@ -587,11 +587,6 @@ special = {
                 tearDown=tearDown,
                 layer=LaunchpadZopelessLayer
                 ),
-    'openid-fetcher.txt': LayeredDocFileSuite(
-            '../doc/openid-fetcher.txt',
-            stdout_logging=False,
-            layer=LaunchpadFunctionalLayer
-            ),
     'notification-text-escape.txt': LayeredDocFileSuite(
             '../doc/notification-text-escape.txt',
             setUp=test_notifications.setUp,
