@@ -3015,6 +3015,10 @@ class BugTaskTableRowView(LaunchpadView):
                 status_vocab_factory(self.context),
                 css_class_prefix='status',
                 disabled_items=disabled_items)
+        else:
+            items = '[]'
+
+        return items
 
     def bugtask_canonical_url(self):
         """Return the canonical url for the bugtask."""
