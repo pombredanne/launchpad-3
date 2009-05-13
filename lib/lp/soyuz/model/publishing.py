@@ -1059,9 +1059,8 @@ class PublishingSet:
 
         return self.getBuildsForSourceIds(source_publication_ids)
 
-    def getUnpublishedBuildsForSources(self,
-                                       one_or_more_source_publications):
-        """See `IPublishingSet`."""
+    def _getSourceBinaryJoinForSources(self, source_publication_ids):
+        """Return the join linking sources with binaries."""
         # Import Build, BinaryPackageRelease and DistroArchSeries locally
         # to avoid circular imports, since Build uses
         # SourcePackagePublishingHistory, BinaryPackageRelease uses Build
@@ -1072,12 +1071,7 @@ class PublishingSet:
         from lp.soyuz.model.distroarchseries import (
             DistroArchSeries)
 
-        source_publication_ids = self._extractIDs(
-            one_or_more_source_publications)
-
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        published_builds = store.find(
-            (SourcePackagePublishingHistory, Build, DistroArchSeries),
+        return (
             SourcePackagePublishingHistory.sourcepackagereleaseID ==
                 Build.sourcepackagereleaseID,
             BinaryPackageRelease.build == Build.id,
@@ -1096,6 +1090,25 @@ class PublishingSet:
             In(BinaryPackagePublishingHistory.status,
                [enum.value for enum in active_publishing_status]),
             In(SourcePackagePublishingHistory.id, source_publication_ids))
+
+    def getUnpublishedBuildsForSources(self,
+                                       one_or_more_source_publications):
+        """See `IPublishingSet`."""
+        # Import Build, BinaryPackageRelease and DistroArchSeries locally
+        # to avoid circular imports, since Build uses
+        # SourcePackagePublishingHistory and DistroArchSeries uses
+        # BinaryPackagePublishingHistory.
+        from lp.soyuz.model.build import Build
+        from lp.soyuz.model.distroarchseries import (
+            DistroArchSeries)
+
+        source_publication_ids = self._extractIDs(
+            one_or_more_source_publications)
+
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        published_builds = store.find(
+            (SourcePackagePublishingHistory, Build, DistroArchSeries),
+            self._getSourceBinaryJoinForSources(source_publication_ids))
 
         # Now to return all the unpublished builds, we use the difference
         # of all builds minus the published ones.
@@ -1157,7 +1170,6 @@ class PublishingSet:
         # and DistroArchSeries uses BinaryPackagePublishingHistory.
         from lp.soyuz.model.binarypackagerelease import (
             BinaryPackageRelease)
-        from lp.soyuz.model.build import Build
         from lp.soyuz.model.distroarchseries import (
             DistroArchSeries)
 
@@ -1168,24 +1180,7 @@ class PublishingSet:
         result_set = store.find(
             (SourcePackagePublishingHistory, BinaryPackagePublishingHistory,
              BinaryPackageRelease, BinaryPackageName, DistroArchSeries),
-            SourcePackagePublishingHistory.sourcepackagereleaseID ==
-                Build.sourcepackagereleaseID,
-            BinaryPackageRelease.build == Build.id,
-            BinaryPackageRelease.binarypackagenameID ==
-                BinaryPackageName.id,
-            SourcePackagePublishingHistory.distroseriesID ==
-                DistroArchSeries.distroseriesID,
-            BinaryPackagePublishingHistory.distroarchseriesID ==
-                DistroArchSeries.id,
-            BinaryPackagePublishingHistory.binarypackagerelease ==
-                BinaryPackageRelease.id,
-            BinaryPackagePublishingHistory.pocket ==
-               SourcePackagePublishingHistory.pocket,
-            BinaryPackagePublishingHistory.archiveID ==
-               SourcePackagePublishingHistory.archiveID,
-            In(BinaryPackagePublishingHistory.status,
-               [enum.value for enum in active_publishing_status]),
-            In(SourcePackagePublishingHistory.id, source_publication_ids))
+            self._getSourceBinaryJoinForSources(source_publication_ids))
 
         result_set.order_by(
             SourcePackagePublishingHistory.id,
