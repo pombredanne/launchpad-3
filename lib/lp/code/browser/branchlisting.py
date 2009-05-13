@@ -1376,24 +1376,31 @@ class SourcePackageBranchesView(BranchListingView):
         """Links to other series in the same distro as the package."""
         our_series = self.context.distroseries
         our_sourcepackagename = self.context.sourcepackagename
-        for series in self.context.distribution.serieses:
-            if series.active:
-                package = SourcePackage(our_sourcepackagename, series)
-                # XXX: This approach is inefficient. We should instead do
-                # something like:
-                #   SELECT distroseries, COUNT(id)
-                #   FROM Branch
-                #   WHERE distroseries IS NOT NULL
-                #   AND sourcepackagename = ?
-                #   GROUP BY distroseries
-                num_branches = self._numBranchesInPackage(package)
-                num_branches_text = get_plural_text(
-                    num_branches, "branch", "branches")
-                yield dict(
-                    series_name=series.displayname,
-                    package=package,
-                    num_branches='%s %s' % (num_branches, num_branches_text),
-                    linked=(series != our_series))
+        distribution = self.context.distribution
+        for series in distribution.serieses:
+            if not series.active:
+                continue
+            if distribution.currentseries == series:
+                is_dev_focus = 'sourcepackage-dev-focus'
+            else:
+                is_dev_focus = 'sourcepackage-not-dev-focus'
+            package = SourcePackage(our_sourcepackagename, series)
+            # XXX: This approach is inefficient. We should instead do
+            # something like:
+            #   SELECT distroseries, COUNT(id)
+            #   FROM Branch
+            #   WHERE distroseries IS NOT NULL
+            #   AND sourcepackagename = ?
+            #   GROUP BY distroseries
+            num_branches = self._numBranchesInPackage(package)
+            num_branches_text = get_plural_text(
+                num_branches, "branch", "branches")
+            yield dict(
+                series_name=series.displayname,
+                package=package,
+                num_branches='%s %s' % (num_branches, num_branches_text),
+                is_dev_focus=is_dev_focus,
+                linked=(series != our_series))
 
 
 class PersonProductOwnedBranchesView(PersonBaseBranchListingView):

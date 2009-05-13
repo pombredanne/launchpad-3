@@ -30,9 +30,9 @@
 
   <div class="related" id="branch-series-links">
     <h2>Branches in other series</h2>
-    <ul>
+    <ul class="sourcepackage-links">
       <tal:series-link repeat="link view/series_links">
-        <li>
+        <li tal:attributes="class link/is_dev_focus">
           <a tal:condition="link/linked"
              tal:attributes="href link/package/fmt:url"
              tal:content="link/series_name">
