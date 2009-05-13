@@ -40,7 +40,7 @@ from lazr.enum import DBEnumeratedType, DBItem, EnumeratedType, Item
 
 from canonical.config import config
 from canonical.launchpad.validators import LaunchpadValidationError
-from canonical.launchpad.interfaces.validation import (
+from canonical.shipit.interfaces.validation import (
     validate_shipit_recipientdisplayname, validate_shipit_phone,
     validate_shipit_city, validate_shipit_addressline1,
     validate_shipit_addressline2, validate_shipit_organization,

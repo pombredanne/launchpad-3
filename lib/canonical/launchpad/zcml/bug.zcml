@@ -38,7 +38,7 @@
                         getAlsoNotifiedSubscribers getBugWatch getBugTask
                         canBeNominatedFor getNominationFor getNominations
                         date_last_message number_of_duplicates
-                        message_count getQuestionCreatedFromBug
+                        message_count comment_count getQuestionCreatedFromBug
                         canBeAQuestion getBugTasksByPackageName
                         users_affected_count users_unaffected_count
                         readonly_duplicateof users_affected bug_messages"

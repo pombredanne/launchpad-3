@@ -48,13 +48,22 @@ But a private membership team cannot.
     <BugSubscription...
 
 A private team can subscribe others to a bug (the `subscribed_by`
-person) and unsubscribe people too.
+person).
 
     >>> priv_subscription = bug.subscribe(owner, priv_team)
-    >>> bug.unsubscribe(owner, priv_team)
 
-A private membership team cannot subscribe others to a bug or
-unsubscribe people.
+The same team cannot unsubscribe the person, though.
+
+    >>> bug.unsubscribe(owner, priv_team)
+    Traceback (most recent call last):
+    ...
+    UserCannotUnsubscribePerson: ...
+
+Only the person can unsubscribe him or her self.
+
+    >>> bug.unsubscribe(owner, owner)
+
+A private membership team cannot subscribe others to a bug.
 
     >>> pm_subscription = bug.subscribe(owner, pm_team)
     Traceback (most recent call last):
@@ -62,13 +71,6 @@ unsubscribe people.
     PrivatePersonLinkageError: Cannot link person
     (name=private-membership-team, visibility=PRIVATE_MEMBERSHIP) to
     <BugSubscription...
-
-    >>> bug.unsubscribe(priv_team, pm_team)
-    Traceback (most recent call last):
-    ...
-    PrivatePersonLinkageError: Cannot link person
-    (name=private-membership-team, visibility=PRIVATE_MEMBERSHIP) to
-    <BugActivity...
 
 
 Bug task assignee

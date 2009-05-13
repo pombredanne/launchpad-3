@@ -17,7 +17,7 @@ IProductSet.getProductsWithNoneRemoteProduct() is used for this.
     >>> list(getUtility(IProductSet).getProductsWithNoneRemoteProduct())
     []
 
-    >>> from canonical.launchpad.testing.factory import LaunchpadObjectFactory
+    >>> from lp.testing.factory import LaunchpadObjectFactory
     >>> factory = LaunchpadObjectFactory()
     >>> product = factory.makeProduct(name=u'no-remote-product')
     >>> print product.remote_product

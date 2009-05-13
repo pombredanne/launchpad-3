@@ -78,7 +78,7 @@ three members of the vcs-imports team.
 
     >>> import transaction
     >>> transaction.commit()
-    >>> from canonical.launchpad.mail import stub
+    >>> from lp.services.mail import stub
     >>> len(stub.test_emails)
     3
     >>> from canonical.launchpad.helpers import get_contact_email_addresses
@@ -197,7 +197,7 @@ created if done through the web UI, so we'll add nopriv here.
     ...     BranchSubscriptionDiffSize.NODIFF,
     ...     CodeReviewNotificationLevel.FULL)
 
-    >>> from canonical.launchpad.tests.mail_helpers import (
+    >>> from lp.testing.mail_helpers import (
     ...     pop_notifications, print_emails)
     >>> from canonical.launchpad.interfaces import CodeImportReviewStatus
     >>> ignore_old_emails = pop_notifications()
@@ -390,7 +390,7 @@ The launchpad.Edit privilege is required to use CodeImport.updateFromData.
 We saw above how changes to SVN details are displayed in emails above.
 CVS details are displayed in a similar way.
 
-    >>> from canonical.launchpad.mailout.codeimport import (
+    >>> from lp.code.mail.codeimport import (
     ...     make_email_body_for_code_import_update)
     >>> login('david.allouche@canonical.com')
     >>> data = {'cvs_root': ':pserver:anoncvs@cvs.example.com:/var/cvsroot'}
