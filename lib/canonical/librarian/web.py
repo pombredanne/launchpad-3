@@ -3,6 +3,9 @@
 
 __metaclass__ = type
 
+from datetime import datetime
+import time
+
 from twisted.web import resource, static, error, util, server, proxy
 from twisted.internet.threads import deferToThread
 
@@ -104,14 +107,14 @@ class LibraryFileAliasResource(resource.Resource):
 
         # Set our caching headers. Librarian files can be cached forever.
         request.setHeader('Cache-Control', 'max-age=31536000, public')
-        request.lastModified = date_created.toordinal()
 
         if self.storage.hasFile(dbcontentID) or self.upstreamHost is None:
             # XXX: Brad Crittenden 2007-12-05 bug=174204: When encodings are
             # stored as part of a file's metadata this logic will be replaced.
             encoding, mimetype = guess_librarian_encoding(filename, mimetype)
-            return File(mimetype, encoding,
-                        self.storage._fileLocation(dbcontentID))
+            return File(
+                mimetype, encoding, date_created,
+                self.storage._fileLocation(dbcontentID))
         else:
             return proxy.ReverseProxyResource(self.upstreamHost,
                                               self.upstreamPort, request.path)
@@ -122,10 +125,23 @@ class LibraryFileAliasResource(resource.Resource):
 
 class File(static.File):
     isLeaf = True
-    def __init__(self, contentType, encoding=None, *args, **kwargs):
+    def __init__(
+        self, contentType, encoding, modification_time, *args, **kwargs):
+        # Have to convert the UTC datetime to POSIX timestamp (localtime)
+        offset = datetime.utcnow() - datetime.now()
+        local_modification_time = modification_time - offset
+        self._modification_time = time.mktime(
+            local_modification_time.timetuple())
         static.File.__init__(self, *args, **kwargs)
         self.type = contentType
         self.encoding = encoding
+
+    def getModificationTime(self):
+        """Override the time on disk with the time from the database.
+
+        This is used by twisted to set the Last-Modified: header.
+        """
+        return self._modification_time
 
 
 class DigestSearchResource(resource.Resource):

@@ -210,6 +210,15 @@ class LibrarianWebTestCase(unittest.TestCase):
             'sample', len(sample_data), StringIO(sample_data),
             contentType='text/plain')
         url = client.getURLForAlias(file_alias_id)
+
+        # Change the date_created to a known value that doesn't match
+        # the disk timestamp. The timestamp on disk cannot be trusted.
+        file_alias = IMasterStore(LibraryFileAlias).get(
+            LibraryFileAlias, file_alias_id)
+        file_alias.date_created = datetime(
+            2001, 01, 30, 13, 45, 59, tzinfo=pytz.utc)
+
+        # Commit so the file is available from the Librarian.
         self.commit()
 
         # Fetch the file via HTTP, recording the interesting headers
@@ -222,11 +231,8 @@ class LibrarianWebTestCase(unittest.TestCase):
         self.failUnlessEqual(cache_control_header, 'max-age=31536000, public')
 
         # And we should have a correct Last-Modified header too.
-        file_alias = IMasterStore(LibraryFileAlias).get(
-            LibraryFileAlias, file_alias_id)
         self.failUnlessEqual(
-            last_modified_header,
-            file_alias.date_created.strftime('%a, %d %b %Y %H:%M:%S GMT'))
+            last_modified_header, 'Tue, 30 Jan 2001 13:45:59 GMT')
 
 
 class LibrarianZopelessWebTestCase(LibrarianWebTestCase):
