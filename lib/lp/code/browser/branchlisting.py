@@ -1375,7 +1375,7 @@ class SourcePackageBranchesView(BranchListingView):
         for series in self.context.distribution.serieses:
             if series.active:
                 yield dict(
-                    series_name=series.name,
+                    series_name=series.displayname,
                     package=SourcePackage(our_sourcepackagename, series),
                     linked=(series != our_series))
 
