@@ -9,6 +9,11 @@ import unittest
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.testing import TestCaseWithFactory
+from canonical.launchpad.validators import LaunchpadValidationError
+from canonical.testing import DatabaseFunctionalLayer
+
 from lp.code.model.branchnamespace import (
     PackageNamespace, PersonalNamespace, ProductNamespace)
 from lp.registry.model.sourcepackage import SourcePackage
@@ -27,9 +32,6 @@ from lp.registry.interfaces.person import NoSuchPerson
 from lp.registry.interfaces.product import NoSuchProduct
 from lp.registry.interfaces.sourcepackagename import (
     NoSuchSourcePackageName)
-from canonical.launchpad.testing import TestCaseWithFactory
-from canonical.launchpad.validators import LaunchpadValidationError
-from canonical.testing import DatabaseFunctionalLayer
 
 
 class NamespaceMixin:
@@ -219,13 +221,6 @@ class NamespaceMixin:
         mover = self.factory.makePerson()
         self.assertRaises(
             BranchCreatorNotOwner, namespace.validateMove, branch, mover)
-
-    # XXX: What if move is valid, except for mover lacking edit permissions on
-    # branch?
-
-    # XXX: What if mover is lp.admin or bzr-experts? The right way to handle
-    # this is to define an lp.Edit permission on the branch namespace, and
-    # make it use the same sort of checks that lp.Edit uses on branch.
 
 
 class TestPersonalNamespace(TestCaseWithFactory, NamespaceMixin):
@@ -1176,6 +1171,14 @@ class BaseValidateNewBranchMixin:
             BranchCreatorNotMemberOfOwnerTeam,
             namespace.validateRegistrant,
             self.factory.makePerson())
+
+    def test_registrant_special_access(self):
+        # If the registrant has special access to branches, then they are
+        # valid.
+        namespace = self._getNamespace(self.factory.makePerson())
+        bazaar_experts = getUtility(ILaunchpadCelebrities).bazaar_experts
+        special_person = bazaar_experts.teamowner
+        self.assertIs(None, namespace.validateRegistrant(special_person))
 
     def test_existing_branch(self):
         # If a branch exists with the same name, then BranchExists is raised.

@@ -25,7 +25,8 @@ from lp.registry.model.sourcepackage import SourcePackage
 from lp.code.interfaces.branch import (
     BranchCreationForbidden, BranchCreatorNotMemberOfOwnerTeam,
     BranchCreatorNotOwner, BranchExists, BranchLifecycleStatus,
-    BranchMergeControlStatus, IBranch, NoSuchBranch)
+    BranchMergeControlStatus, IBranch, NoSuchBranch,
+    user_has_special_branch_access)
 from lp.code.interfaces.branchnamespace import (
     IBranchNamespace, IBranchNamespacePolicy, InvalidNamespace)
 from lp.code.interfaces.branchsubscription import (
@@ -122,6 +123,8 @@ class _BaseNamespace:
 
     def validateRegistrant(self, registrant):
         """See `IBranchNamespace`."""
+        if user_has_special_branch_access(registrant):
+            return
         owner = self.owner
         if not registrant.inTeam(owner):
             if owner.isTeam():
