@@ -5,6 +5,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'bug_description_xhtml_representation',
     'BugContextMenu',
     'BugEditView',
     'BugFacets',
