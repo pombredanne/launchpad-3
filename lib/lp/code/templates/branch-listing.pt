@@ -45,18 +45,16 @@ YUI().use('io-base', 'node', 'json-parse', function(Y) {
 
   function doUpdate(transaction_id, response, args) {
     json_values = Y.JSON.parse(response.responseText);
+    // Make sure that the branch isn't empty, and that there
+    // have been commits in the last 90 days
     if(json_values.commits && json_values.count > 0) {
       document.getElementById(args.container).innerHTML = '';
       sparkline(args.container, json_values);
     }
-    else
-    {
-      //alert(json_values);
-    }
   }
 
 
-  function updateSparks() {
+  function renderSpark() {
     spark_div = 'dev_focus_spark';
 
     if(Y.get('#' + spark_div) !== null) {
@@ -108,8 +106,8 @@ YUI().use('io-base', 'node', 'json-parse', function(Y) {
 
       for (var i = 0; i < number_commits; i++) {
         x_pos = (w / number_commits) * i;
-        // We subtract 2 pixels here to compensate for the base line
-        y_pos = (h-2) - (((o.commits[i] - min) / (max - min)) * (h-2));
+        // We subtract 1 pixel here to compensate for the base line
+        y_pos = (h-1) - (((o.commits[i] - min) / (max - min)) * (h-1));
 
         if (i == 0) {
           c.moveTo(x_pos, y_pos);
@@ -124,6 +122,7 @@ YUI().use('io-base', 'node', 'json-parse', function(Y) {
       }
       c.stroke();
 
+      // Draw the base line
       c.beginPath();
       c.strokeStyle = "gray";
       c.moveTo(0,h);
@@ -173,7 +172,7 @@ YUI().use('io-base', 'node', 'json-parse', function(Y) {
     }
   }
 
-  Y.on("domready", updateSparks);
+  Y.on("domready", renderSpark);
 });
 
 
