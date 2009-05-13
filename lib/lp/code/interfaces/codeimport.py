@@ -250,6 +250,10 @@ class ICodeImport(Interface):
             None if no changes were made.
         """
 
+    def tryFailingImportAgain(user):
+        """XXX.
+        """
+
 
 class ICodeImportSet(Interface):
     """Interface representing the set of code imports."""

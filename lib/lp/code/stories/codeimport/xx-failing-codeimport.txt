@@ -49,6 +49,7 @@ requests that an import be performed immediately.
     >>> print_import_details(user_browser)
     Import Status: Reviewed
     ...
-    The next import is scheduled to run as soon as possible (requested by Sample Person).
+    The next import is scheduled to run as soon as possible (requested by
+    No Privileges Person).
     ...
 

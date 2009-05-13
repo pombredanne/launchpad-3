@@ -1260,10 +1260,7 @@ class TryImportAgainView(LaunchpadFormView):
                 "The import is now %s."
                 % self.context.code_import.review_status.name)
         else:
-            self.context.code_import.updateFromData(
-                {'review_status': CodeImportReviewStatus.REVIEWED}, self.user)
-            getUtility(ICodeImportJobWorkflow).requestJob(
-                self.context.code_import.import_job, self.user)
+            self.context.code_import.tryFailingImportAgain(self.user)
             self.request.response.addNotification(
                 "Import will be tried again as soon as possible.")
 

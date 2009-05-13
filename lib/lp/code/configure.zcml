@@ -620,35 +620,36 @@
 
   <!-- CodeImport -->
 
-  <class class="canonical.launchpad.database.CodeImport">
+  <class class="lp.code.model.codeimport.CodeImport">
     <implements interface="lp.code.interfaces.codeimport.ICodeImport"/>
-    <allow attributes="
-                    id
-                    date_created
-                    branch
-                    registrant
-                    owner
-                    assignee
-                    product
-                    series
-                    review_status
-                    rcs_type
-                    cvs_root
-                    cvs_module
-                    svn_branch_url
-                    git_repo_url
-                    date_last_successful
-                    source_product_series
-                    update_interval
-                    effective_update_interval
-                    import_job
-                    results
-                    consecutive_failure_count
-                    getImportDetailsForDisplay"/>
+    <allow attributes="id
+                       date_created
+                       branch
+                       registrant
+                       owner
+                       assignee
+                       product
+                       series
+                       review_status
+                       rcs_type
+                       cvs_root
+                       cvs_module
+                       svn_branch_url
+                       git_repo_url
+                       date_last_successful
+                       source_product_series
+                       update_interval
+                       effective_update_interval
+                       import_job
+                       results
+                       consecutive_failure_count
+                       getImportDetailsForDisplay"/>
     <require
-        permission="launchpad.Edit"
-        attributes="
-                    updateFromData"/>
+       permission="launchpad.AnyPerson"
+       attributes="tryFailingImportAgain"/>
+    <require
+       permission="launchpad.Edit"
+       attributes="updateFromData"/>
 
     <!-- ICodeImport has no set_schema, because all modifications should be
          done through methods that create CodeImportEvent objects when
