@@ -937,7 +937,7 @@ class TestCodeImportJobWorkflowFinishJob(TestCaseWithFactory,
                 self.assertTrue(
                     code_import.branch.next_mirror_time is None)
 
-    def test_fiveFailuresMarksAsFailing(self):
+    def test_enoughFailuresMarksAsFailing(self):
         # If a code import fails config.codeimport.consecutive_failure_limit
         # times in a row, the import is marked as FAILING.
         code_import = self.factory.makeCodeImport()

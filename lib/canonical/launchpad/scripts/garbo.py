@@ -155,7 +155,7 @@ class CodeImportResultPruner(TunableLoop):
                 self.next_code_import_id,
                 self.next_code_import_id,
                 chunk_size,
-                config.codeimport.consecutive_failure_limit))
+                config.codeimport.consecutive_failure_limit - 1))
         self.next_code_import_id += chunk_size
         transaction.commit()
 

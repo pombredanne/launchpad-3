@@ -15,7 +15,7 @@ from storm.store import Store
 import transaction
 
 from lp.code.model.codeimportresult import CodeImportResult
-from canoical.config import config
+from canonical.config import config
 from canonical.launchpad.database.oauth import OAuthNonce
 from canonical.launchpad.database.openidconsumer import OpenIDConsumerNonce
 from canonical.launchpad.interfaces import IMasterStore
