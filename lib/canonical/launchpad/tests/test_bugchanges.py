@@ -170,7 +170,7 @@ class TestBugChanges(unittest.TestCase):
         self.bug.unsubscribe(self.user, self.user)
         unsubscribe_activity = dict(
             whatchanged='removed subscriber Arthur Dent',
-            person=subscriber)
+            person=self.user)
         self.assertRecordedChange(expected_activity=unsubscribe_activity)
 
     def test_title_changed(self):
