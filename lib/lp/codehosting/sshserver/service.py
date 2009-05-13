@@ -97,7 +97,7 @@ class Factory(SSHFactory):
 
     def _loadKey(self, key_filename):
         key_directory = config.codehosting.host_key_pair_path
-        key_path = os.path.join(key_directory, key_filename)
+        key_path = os.path.join(config.root, key_directory, key_filename)
         return Key.fromFile(key_path)
 
     def getPublicKeys(self):
