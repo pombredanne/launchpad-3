@@ -1411,7 +1411,7 @@ class BugSet:
                 orderBy=['datecreated'])
         return bug
 
-    def createBug(self, bug_params):
+    def createBug(self, bug_params, user=None):
         """See `IBugSet`."""
         # Make a copy of the parameter object, because we might modify some
         # of its attribute values below.
@@ -1531,7 +1531,10 @@ class BugSet:
         bug.markUserAffected(bug.owner)
 
         # Tell everyone.
-        notify(ObjectCreatedEvent(bug, user=bug.owner))
+        if user is None:
+            notify(ObjectCreatedEvent(bug, user=bug.owner))
+        else:
+            notify(ObjectCreatedEvent(bug, user=user))
 
         return bug
 

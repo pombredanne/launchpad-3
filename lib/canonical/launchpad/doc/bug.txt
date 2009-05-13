@@ -37,6 +37,55 @@ raised:
       ...
     NotFoundError: 'Unable to locate bug with nickname +bugs.'
 
+== Bug creation events ==
+
+IObjectCreatedEvent events are fired off when a bug is created. First
+we will register a handler to observe the event.
+
+    >>> from zope.component import globalSiteManager
+    >>> from lazr.lifecycle.event import IObjectCreatedEvent
+
+    >>> def show_bug_creation_event(bug, event):
+    ...     print "New bug created: %s" % (bug.title,)
+    ...     print "          Owner: %s" % (bug.owner.name,)
+    ...     print "       Filed by: %s" % (event.user.name,)
+
+    >>> globalSiteManager.registerHandler(
+    ...     show_bug_creation_event, (IBug, IObjectCreatedEvent))
+
+The event can be seen when we file a bug.
+
+    >>> from canonical.launchpad.interfaces.bug import CreateBugParams
+
+    >>> params = CreateBugParams(
+    ...     owner=factory.makePerson(name='steve-harris'),
+    ...     title="Oh I hate this song",
+    ...     comment="Janick keeps playing Mr Blobby.")
+    >>> params.setBugTarget(product=factory.makeProduct())
+
+    >>> bug = bugset.createBug(params)
+    New bug created: Oh I hate this song
+              Owner: steve-harris
+           Filed by: steve-harris
+
+The bug has been filed and is owned by the same person, the owner
+specified in `params`. However, when importing bugs, a user other than
+the bug owner will create the bugs. A `user` parameter is available to
+override the user recorded in the event.
+
+    >>> bug = bugset.createBug(
+    ...     params, user=factory.makePerson(name='rod-smallwood'))
+    New bug created: Oh I hate this song
+              Owner: steve-harris
+           Filed by: rod-smallwood
+
+We must unregister the handler.
+
+    >>> globalSiteManager.unregisterHandler(
+    ...     show_bug_creation_event, (IBug, IObjectCreatedEvent))
+    True
+
+
 == Interface check ==
 
 It is guaranteed to implement the correct interface, too:
@@ -184,7 +233,7 @@ private:
     >>> all_bugs = bugset.searchAsUser(
     ...     user=current_user(), orderBy="id")
     >>> [bug.id for bug in all_bugs]
-    [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 15]
+    [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 15, ...]
 
 (This test breaks if you add a new public bug to sampledata; rely on it
 to ensure it worked!)
@@ -207,7 +256,7 @@ admin as well:
     >>> all_bugs = bugset.searchAsUser(
     ...     user=current_user(), orderBy="id")
     >>> [bug.id for bug in all_bugs]
-    [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+    [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, ...]
 
 (This test breaks if you add any bug to sampledata.)
 
@@ -255,7 +304,7 @@ and see it (bug #2) in searches:
     >>> all_bugs = bugset.searchAsUser(
     ...     user=current_user(), orderBy="id")
     >>> [bug.id for bug in all_bugs]
-    [1, 2, 3, 4, 5, 7, 8, 9, 10, 11, 12, 13, 15]
+    [1, 2, 3, 4, 5, 7, 8, 9, 10, 11, 12, 13, 15, ...]
 
 If we login as someone who *isn't* a member of the Ubuntu Team (and
 isn't otherwise someone who should be allowed to access the properties
@@ -277,7 +326,7 @@ And, as you might have guessed, is once again invisible in searches
     >>> all_bugs = bugset.searchAsUser(
     ...     user=current_user(), orderBy="id")
     >>> [bug.id for bug in all_bugs]
-    [1, 3, 4, 5, 7, 8, 9, 10, 11, 12, 13, 15]
+    [1, 3, 4, 5, 7, 8, 9, 10, 11, 12, 13, 15, ...]
 
 === Filing Public vs. Private Bugs ===
 
@@ -287,8 +336,7 @@ Let's log back in as Foo Bar to continue our examples:
 
 When a public bug is filed:
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     IProductSet, IBugSet, CreateBugParams)
+    >>> from canonical.launchpad.interfaces import IProductSet
     >>> productset = getUtility(IProductSet)
     >>> bugset = getUtility(IBugSet)
 
@@ -298,7 +346,6 @@ When a public bug is filed:
     ...     title="test firefox bug", comment="blah blah blah", owner=foobar)
     >>> params.setBugTarget(product=firefox)
     >>> added_bug = getUtility(IBugSet).createBug(params)
-    >>> notify(ObjectCreatedEvent(added_bug))
     >>> public_bug = bugset.get(added_bug.id)
 
 the submitter and the maintainer are directly subscribed. Note that
@@ -340,7 +387,6 @@ When a private bug is filed:
     ...     private=True)
     >>> params.setBugTarget(product=firefox)
     >>> added_bug = getUtility(IBugSet).createBug(params)
-    >>> notify(ObjectCreatedEvent(added_bug))
     >>> private_bug = bugset.get(added_bug.id)
 
 *only* the submitter is directly subscribed:
@@ -370,7 +416,6 @@ sourcepackage. E.g.
     ...     owner=foobar, private=True)
     >>> params.setBugTarget(distribution=ubuntu, sourcepackagename=evolution)
     >>> added_bug = getUtility(IBugSet).createBug(params)
-    >>> notify(ObjectCreatedEvent(added_bug))
     >>> private_bug = bugset.get(added_bug.id)
     >>> [subscriber.name for subscriber in private_bug.getDirectSubscribers()]
     [u'name16']
@@ -1050,9 +1095,10 @@ Users can mark bugs as affecting or not affecting them. For each bug we
 then keep a count of the number of users affected by it, as well as the
 number of users not affected by it.
 
-    >>> test_bug = factory.makeBug()
-    >>> affected_user = factory.makePerson()
-    >>> unaffected_user = factory.makePerson()
+    >>> test_bug_owner = factory.makePerson(name='paul-dianno')
+    >>> test_bug = factory.makeBug(owner=test_bug_owner)
+    >>> affected_user = factory.makePerson(name='bruce-dickinson')
+    >>> unaffected_user = factory.makePerson(name='blaze-bayley')
 
 Initially, only the bug reporter is marked as affected. Other users are neither
 marked as affected nor as unaffected.
@@ -1101,13 +1147,12 @@ And we can change whether a user is marked as affected or unaffected.
 
 We can also get the collection of users affected by a bug.
 
-    >>> for user in test_bug.users_affected:
-    ...     print user.name
-    person-name9
-    person-name14
-    person-name17
+    >>> print '\n'.join(
+    ...     sorted(user.name for user in test_bug.users_affected))
+    blaze-bayley
+    bruce-dickinson
+    paul-dianno
 
     >>> unaffecting_bug = factory.makeBug()
     >>> print unaffecting_bug.users_affected
     [<Person at ...>]
-

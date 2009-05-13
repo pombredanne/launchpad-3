@@ -840,10 +840,12 @@ class IBugSet(Interface):
         the given bug tracker and remote bug id.
         """
 
-    def createBug(bug_params):
+    def createBug(bug_params, user=None):
         """Create a bug and return it.
 
         :bug_params: A CreateBugParams object.
+        :user: The user that is creating the bug. Defaults to the bug
+            owner.
 
         Things to note when using this factory:
 
