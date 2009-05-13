@@ -352,7 +352,9 @@ from the request.  To get this information, canonical_url uses the operation
 getApplicationURL() from
 zope.publisher.interfaces.http.IHTTPApplicationRequest.
 
-    >>> class DummyRequest:
+    >>> from canonical.launchpad.webapp.servers import (
+    ...     LaunchpadBrowserRequestMixin)
+    >>> class FakeRequest(LaunchpadBrowserRequestMixin):
     ...
     ...     implements(IHTTPApplicationRequest)
     ...
@@ -365,7 +367,7 @@ zope.publisher.interfaces.http.IHTTPApplicationRequest.
     ...         assert not path_only, 'not a real IHTTPApplicationRequest'
     ...         return self.applicationurl
 
-    >>> mandrill_request = DummyRequest('https://mandrill.example.org:23')
+    >>> mandrill_request = FakeRequest('https://mandrill.example.org:23')
     >>> canonical_url(country_instance)
     u'http://launchpad.dev/countries/England'
     >>> canonical_url(country_instance, mandrill_request)
@@ -374,8 +376,7 @@ zope.publisher.interfaces.http.IHTTPApplicationRequest.
 However, if we log in, then that request should be used when none is explicitly
 given otherwise.
 
-    >>> sesame_request = DummyRequest(
-    ...     'http://muppet.example.com')
+    >>> sesame_request = FakeRequest('http://muppet.example.com')
     >>> login(ANONYMOUS, sesame_request)
     >>> canonical_url(country_instance)
     u'http://muppet.example.com/countries/England'
