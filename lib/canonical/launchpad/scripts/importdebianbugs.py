@@ -7,9 +7,8 @@ __metaclass__ = type
 from zope.component import getUtility
 
 from canonical.database.sqlbase import ZopelessTransactionManager
-from canonical.launchpad.interfaces import (
-    IBugTaskSet, ILaunchpadCelebrities)
-
+from canonical.launchpad.interfaces.bugtask import IBugTaskSet
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.scripts.checkwatches import BugWatchUpdater
 from canonical.launchpad.scripts.logger import log
 from canonical.launchpad.components.externalbugtracker import (

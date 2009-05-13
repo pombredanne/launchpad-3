@@ -623,6 +623,15 @@ The anonymous user (represented by None) also can't unsubscribe the team.
     >>> subscription.canBeUnsubscribedByUser(None)
     False
 
+A bug's unsubscribe method uses canBeUnsubscribedByUser to check
+that the unsubscribing user has the appropriate permissions.  unsubscribe
+will raise an exception if the user does not have permission.
+
+    >>> bug.unsubscribe(team, non_member)
+    Traceback (most recent call last):
+    ...
+    UserCannotUnsubscribePerson: ...
+
 
 == Automatic Subscriptions on Bug Creation ==
 
@@ -665,7 +674,7 @@ there is no security contact:
     >>> ubuntu.security_contact is None
     True
 
-    >>> from canonical.launchpad.mail import stub
+    >>> from lp.services.mail import stub
     >>> transaction.commit()
     >>> stub.test_emails = []
 
@@ -878,7 +887,6 @@ an ObjectCreatedEvent is issued, since subscribe() is used in places
 where no notification should be sent.
 
     >>> from lazr.lifecycle.event import ObjectCreatedEvent
-    >>> from canonical.launchpad.mail import stub
     >>> transaction.commit()
     >>> stub.test_emails = []
     >>> bug_subscription = bug_six.subscribe(sabdfl, lifeless)

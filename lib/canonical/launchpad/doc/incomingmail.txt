@@ -101,7 +101,7 @@ So, what happened to the message that got sent to baz.com? Since there
 wasn't a handler registered for that domain, an OOPS was recorded with
 a link to the original message.
 
-    >>> from canonical.launchpad.mail import stub
+    >>> from lp.services.mail import stub
     >>> print stub.test_emails[-1][2]
     Content-Type: multipart/mixed...
     ...

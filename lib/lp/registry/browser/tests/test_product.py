@@ -12,7 +12,7 @@ import pytz
 
 from zope.component import getMultiAdapter
 
-from canonical.launchpad.testing import time_counter, TestCaseWithFactory
+from lp.testing import time_counter, TestCaseWithFactory
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.launchpad.ftests import ANONYMOUS, login

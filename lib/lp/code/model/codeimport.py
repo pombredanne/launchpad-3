@@ -43,7 +43,7 @@ from lp.code.interfaces.branchnamespace import (
 from lp.code.interfaces.codeimport import RevisionControlSystems
 from lp.code.model.codeimportresult import (
     CodeImportResult, CodeImportResultStatus)
-from canonical.launchpad.mailout.codeimport import code_import_updated
+from lp.code.mail.codeimport import code_import_updated
 from lp.registry.interfaces.person import validate_public_person
 
 

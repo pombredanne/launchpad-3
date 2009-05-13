@@ -20,8 +20,8 @@ from canonical.launchpad.ftests import login, logout
 from canonical.launchpad.interfaces.lpstorm import IMasterObject
 from canonical.launchpad.interfaces.account import AccountStatus
 from canonical.launchpad.scripts.garbo import RevisionAuthorEmailLinker
-from canonical.launchpad.testing import (
-    LaunchpadObjectFactory, TestCaseWithFactory, time_counter)
+from lp.testing import TestCaseWithFactory, time_counter
+from lp.testing.factory import LaunchpadObjectFactory
 from canonical.testing import DatabaseFunctionalLayer
 
 from lp.code.interfaces.revision import IRevisionSet

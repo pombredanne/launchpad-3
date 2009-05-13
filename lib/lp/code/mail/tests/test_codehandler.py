@@ -42,7 +42,7 @@ from lp.code.mail.codehandler import (
 from canonical.launchpad.mail.handlers import mail_handlers
 from canonical.launchpad.testing import (
     login, login_person, TestCase, TestCaseWithFactory)
-from canonical.launchpad.tests.mail_helpers import pop_notifications
+from lp.testing.mail_helpers import pop_notifications
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
 from canonical.launchpad.webapp.interaction import (

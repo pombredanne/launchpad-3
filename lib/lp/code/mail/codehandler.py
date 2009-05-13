@@ -29,7 +29,7 @@ from canonical.launchpad.mail.commands import (
 from canonical.launchpad.mail.helpers import (
     ensure_not_weakly_authenticated, get_error_message, get_main_body,
     get_person_or_team, IncomingEmailError, parse_commands)
-from canonical.launchpad.mail.sendmail import simple_sendmail
+from lp.services.mail.sendmail import simple_sendmail
 from canonical.launchpad.mailnotification import (
     send_process_error_notification)
 from canonical.launchpad.webapp import urlparse
