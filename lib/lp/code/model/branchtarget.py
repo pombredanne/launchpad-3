@@ -79,6 +79,11 @@ class PackageBranchTarget(_BaseBranchTarget):
                 PackagePublishingPocket.RELEASE))
 
     @property
+    def default_merge_target(self):
+        """See `IBranchTarget`."""
+        return self.sourcepackage.getBranch(PackagePublishingPocket.RELEASE)
+
+    @property
     def displayname(self):
         """See `IBranchTarget`."""
         return self.sourcepackage.displayname
@@ -114,6 +119,7 @@ class PersonBranchTarget(_BaseBranchTarget):
 
     name = '+junk'
     default_stacked_on_branch = None
+    default_merge_target = None
 
     def __init__(self, person):
         self.person = person
@@ -184,6 +190,11 @@ class ProductBranchTarget(_BaseBranchTarget):
     def default_stacked_on_branch(self):
         """See `IBranchTarget`."""
         return check_default_stacked_on(self.product.development_focus.branch)
+
+    @property
+    def default_merge_target(self):
+        """See `IBranchTarget`."""
+        return self.product.development_focus.branch
 
     def getNamespace(self, owner):
         """See `IBranchTarget`."""

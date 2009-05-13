@@ -16,10 +16,10 @@ from lp.code.interfaces.branch import BranchType
 from lp.code.interfaces.branchtarget import IBranchTarget
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from lp.soyuz.interfaces.publishing import PackagePublishingPocket
-from canonical.launchpad.testing import run_with_login, TestCaseWithFactory
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import IPrimaryContext
 from canonical.testing import DatabaseFunctionalLayer
+from lp.testing import run_with_login, TestCaseWithFactory
 
 
 class BaseBranchTargetTests:
@@ -143,6 +143,19 @@ class TestPackageBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
             branch.product.development_focus, branch.owner)
         self.assertTrue(self.target.areBranchesMergeable(branch.target))
 
+    def test_default_merge_target(self):
+        # The default merge target is official release branch.
+        self.assertIs(None, self.target.default_merge_target)
+        # Now create and link a branch.
+        branch = self.factory.makePackageBranch(sourcepackage=self.original)
+        ubuntu_branches = getUtility(ILaunchpadCelebrities).ubuntu_branches
+        run_with_login(
+            ubuntu_branches.teamowner,
+            self.original.setBranch,
+            PackagePublishingPocket.RELEASE, branch,
+            ubuntu_branches.teamowner)
+        self.assertEqual(branch, self.target.default_merge_target)
+
 
 class TestPersonBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
 
@@ -193,6 +206,10 @@ class TestPersonBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
         # No branches are mergeable with a PersonBranchTarget.
         branch = self.factory.makeAnyBranch()
         self.assertFalse(self.target.areBranchesMergeable(branch.target))
+
+    def test_default_merge_target(self):
+        # The default merge target is always None.
+        self.assertIs(None, self.target.default_merge_target)
 
 
 class TestProductBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
@@ -289,6 +306,16 @@ class TestProductBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
         branch.sourcepackage.setPackaging(
             self.original.development_focus, branch.owner)
         self.assertTrue(self.target.areBranchesMergeable(branch.target))
+
+    def test_default_merge_target(self):
+        # The default merge target is the development focus branch.
+        self.assertIs(None, self.target.default_merge_target)
+        # Now create and link a branch.
+        branch = self.factory.makeProductBranch(product=self.original)
+        run_with_login(
+            self.original.owner,
+            setattr, self.original.development_focus, 'branch', branch)
+        self.assertEqual(branch, self.target.default_merge_target)
 
 
 class TestCheckDefaultStackedOnBranch(TestCaseWithFactory):

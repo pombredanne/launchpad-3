@@ -81,6 +81,9 @@ class IBranchTarget(IPrimaryContext):
         description=_(
             'The branch that new branches will be stacked on by default.'))
 
+    default_merge_target = Attribute(
+        "The branch to merge other branches into for this target.")
+
     supports_merge_proposals = Attribute(
         "Does this target support merge proposals at all?")
 
