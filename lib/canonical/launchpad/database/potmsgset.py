@@ -526,13 +526,13 @@ class POTMsgSet(SQLBase):
             pofile.potemplate, pofile.language, pofile.variant)
 
         # Converging from a diverged to a shared translation:
-        # when the new translation matches a shared one (potemplate==None),
-        # and a current translation is diverged (potemplate != None), then
-        # we want to remove divergence.
+        # when the new translation matches a shared one (iscurrent,
+        # potemplate==None), and a current translation is diverged
+        # (potemplate != None), then we want to remove divergence.
         converge_shared = force_shared
         if (not force_diverged and
             (current_message is None or
-             ((new_message.potemplate is None) and
+             ((new_message.potemplate is None and new_message.is_current) and
               (current_message.potemplate is not None)))):
             converge_shared = True
 
@@ -567,9 +567,12 @@ class POTMsgSet(SQLBase):
                         # If there was an imported message, keep the same
                         # divergence/shared state unless something was forced.
                         new_message.potemplate = imported_message.potemplate
-                    imported_message.is_imported = False
-                    imported_message.is_current = False
-                    imported_message.potemplate = None
+
+                    # Unmark diverged imported translation as 'imported'.
+                    if imported_message.potemplate is not None:
+                        imported_message.is_imported = False
+                        imported_message.is_current = False
+                        imported_message.potemplate = None
         else:
             # Non-imported translations.
             make_current = True
@@ -601,23 +604,19 @@ class POTMsgSet(SQLBase):
                 pofile.date_changed = UTC_NOW
                 pofile.lasttranslator = submitter
 
-                # Deactivate previous message.
-                if current_message:
-                    current_message.is_current = False
-                    current_message.potemplate = None
-
         if make_current:
+            # Deactivate previous diverged message.
+            if (current_message is not None and
+                current_message.potemplate is not None):
+                current_message.is_current = False
+                current_message.potemplate = None
+                if not converge_shared:
+                    force_diverged = True
             if converge_shared:
                 # Converging from a diverged to a shared translation.
-                if current_message is not None:
-                    current_message.is_current = False
                 new_message.potemplate = None
             elif force_diverged:
                 # Make the message diverged.
-                new_message.potemplate = pofile.potemplate
-            elif (current_message is not None and
-                  current_message.potemplate is not None):
-                # Keep a diverged translation diverged.
                 new_message.potemplate = pofile.potemplate
             else:
                 new_message.potemplate = None
