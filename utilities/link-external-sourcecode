@@ -48,7 +48,7 @@ def gen_missing_files(source, destination):
 def link(source, destination):
     """Symlink source to destination.
 
-    Assumes destination is mising or broken.
+    Assumes destination is missing or broken.
     """
     try:
         if islink(destination):
