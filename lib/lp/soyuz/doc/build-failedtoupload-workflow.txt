@@ -17,7 +17,7 @@ buildmaster/slave-scanner code, an build notification will be issued.
 See more information in build-notification.txt file.
 
   >>> from lp.soyuz.interfaces.build import IBuildSet
-  >>> from canonical.launchpad.tests.mail_helpers import pop_notifications
+  >>> from lp.testing.mail_helpers import pop_notifications
   >>> buildset = getUtility(IBuildSet)
 
 Let's use a sampledata build record in FAILEDTOUPLOAD:

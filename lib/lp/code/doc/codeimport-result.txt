@@ -42,7 +42,7 @@ it.
 
 Then create a result object.
 
-    >>> from canonical.launchpad.testing import time_counter
+    >>> from lp.testing import time_counter
     >>> from pytz import UTC
     >>> from datetime import datetime, timedelta
     >>> time_source = time_counter(

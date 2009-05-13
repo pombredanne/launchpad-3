@@ -18,7 +18,7 @@ If we create a couple of fooix branches, and a few other branches, we can see
 that only the fooix branches are shown.
 
     >>> login(ANONYMOUS)
-    >>> from canonical.launchpad.testing import time_counter
+    >>> from lp.testing import time_counter
     >>> from datetime import datetime, timedelta
     >>> import pytz
     >>> date_generator = time_counter(

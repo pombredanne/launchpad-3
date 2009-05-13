@@ -18,7 +18,7 @@ from canonical.launchpad.database.translationmessage import (
 from canonical.launchpad.interfaces import (
     ILanguageSet, POTMsgSetInIncompatibleTemplatesError,
     TranslationFileFormat)
-from canonical.launchpad.testing.factory import LaunchpadObjectFactory
+from lp.testing.factory import LaunchpadObjectFactory
 from canonical.testing import LaunchpadZopelessLayer
 
 
