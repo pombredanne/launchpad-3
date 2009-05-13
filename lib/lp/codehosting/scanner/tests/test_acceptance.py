@@ -87,7 +87,7 @@ class BranchScannerTest(TestCaseWithTransport, LoomTestMixin):
         #
         # This test is more of a smoke test to confirm that the script itself
         # behaves sanely. For more comprehensive tests, see
-        # lib/canonical/codehosting/tests/test_scanner_bzrsync.
+        # lib/lp/codehosting/tests/test_scanner_bzrsync.
         destination = self.getWarehouseLocation(self.db_branch)
         bzr_tree = create_branch_with_one_revision(destination)
         self.installTestBranch(self.db_branch, bzr_tree.branch)
