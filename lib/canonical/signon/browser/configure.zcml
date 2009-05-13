@@ -1,0 +1,263 @@
+<configure xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser">
+
+    <!-- OpenID virtual host root -->
+    <browser:url
+        for="..interfaces.openidserver.IOpenIDApplication"
+        urldata=".openiddiscovery.OpenIDApplicationURL"
+        />
+
+    <!-- Root navigation -->
+    <browser:navigation
+        module=".openiddiscovery"
+        classes="OpenIDApplicationNavigation"
+        />
+
+    <browser:page
+        for="*"
+        permission="zope.Public"
+        name="main_template"
+        template="../templates/loginservice-main-template.pt"
+        layer="..layers.OpenIDLayer" />
+
+    <browser:page
+        for="*"
+        permission="zope.Public"
+        name="main_template"
+        template="../templates/loginservice-main-template.pt"
+        layer="..layers.IdLayer" />
+
+    <!-- Root document -->
+
+    <browser:defaultView
+        for="..interfaces.openidserver.IOpenIDApplication"
+        name="+index"
+        />
+
+    <browser:page
+        layer="..layers.OpenIDLayer"
+        for="..interfaces.openidserver.IOpenIDApplication"
+        permission="zope.Public"
+        name="+index"
+        class=".openiddiscovery.OpenIDApplicationIndexView"
+        />
+
+    <browser:page
+        layer="..layers.IdLayer"
+        for="..interfaces.openidserver.IOpenIDApplication"
+        permission="zope.Public"
+        name="+index"
+        class=".openiddiscovery.OpenIDApplicationIndexView"
+        />
+
+    <browser:page
+        for="..interfaces.openidserver.IOpenIDApplication"
+        name="+xrds"
+        permission="zope.Public"
+        class=".openiddiscovery.OpenIDApplicationIndexView"
+        attribute="xrds"
+        />
+
+    <browser:page
+        for="..interfaces.openidserver.IOpenIDApplication"
+        name="+edit"
+        permission="launchpad.AnyPerson"
+        class=".openidaccount.AccountEditView"
+        template="../templates/openid-account-edit.pt"
+        />
+
+    <browser:page
+        for="..interfaces.openidserver.IOpenIDApplication"
+        name="+change-password"
+        permission="launchpad.AnyPerson"
+        class=".openidaccount.AccountPasswordEditView"
+        template="../templates/openid-account-change-password.pt"
+        />
+
+    <browser:page
+        for="..interfaces.openidserver.IOpenIDApplication"
+        name="+edit-emails"
+        permission="launchpad.AnyPerson"
+        class=".openidaccount.AccountEditEmailsView"
+        template="../templates/openid-account-edit-emails.pt"
+        />
+
+    <browser:page
+        for="..interfaces.openidserver.IOpenIDApplication"
+        layer="..layers.OpenIDLayer"
+        class=".openidserver.PreAuthorizeRPView"
+        name="+pre-authorize-rp"
+        permission="launchpad.AnyPerson"
+        attribute="__call__"
+        />
+
+    <browser:page
+        for="..interfaces.openidserver.IOpenIDApplication"
+        layer="..layers.IdLayer"
+        class=".openidserver.PreAuthorizeRPView"
+        name="+pre-authorize-rp"
+        permission="launchpad.AnyPerson"
+        attribute="__call__"
+        />
+
+  <browser:page
+      for="..interfaces.openidserver.IOpenIDApplication"
+      layer="..layers.OpenIDLayer"
+      class="canonical.launchpad.browser.launchpad.DoesNotExistView"
+      permission="zope.Public"
+      name="+login"
+      />
+
+  <!-- Unauthorized customization for the SSO -->
+  <browser:page
+      for="zope.exceptions.IUnauthorized"
+      layer="..layers.OpenIDLayer"
+      name="index.html"
+      permission="zope.Public"
+      class=".openidserver.LoginServiceUnauthorizedView"
+      />
+
+    <!-- OpenID persistent identity URLs -->
+    <browser:url
+        for="..interfaces.openidserver.IOpenIDPersistentIdentity"
+        path_expression="string:${openid_identifier}"
+        parent_utility="..interfaces.openidserver.IOpenIDApplication"
+        />
+
+    <browser:defaultView
+        for="..interfaces.openidserver.IOpenIDPersistentIdentity"
+        name="+index"
+        />
+
+    <browser:page
+        for="..interfaces.openidserver.IOpenIDPersistentIdentity"
+        name="+index"
+        template="../templates/openidpersistentidentity-index.pt"
+        permission="zope.Public"
+        class=".openiddiscovery.PersistentIdentityView"
+        />
+
+    <browser:page
+        for="..interfaces.openidserver.IOpenIDPersistentIdentity"
+        name="+xrds"
+        permission="zope.Public"
+        class=".openiddiscovery.PersistentIdentityView"
+        attribute="xrds"
+        />
+
+    <!-- Old OpenID Provider -->
+    <browser:page
+        layer="..layers.OpenIDLayer"
+        for="..interfaces.openidserver.IOpenIDApplication"
+        permission="zope.Public"
+        name="+openid"
+        class=".openidserver.OpenIDView"
+        />
+
+    <!-- New OpenID Provider -->
+    <browser:page
+        layer="..layers.IdLayer"
+        for="..interfaces.openidserver.IOpenIDApplication"
+        permission="zope.Public"
+        name="+openid"
+        class=".openidserver.OpenIDView"
+        />
+
+    <browser:page
+        for="..interfaces.openidserver.IOpenIDApplication"
+        permission="zope.Public"
+        name="+decide"
+        class=".openidserver.LoginServiceAuthorizeView"
+        />
+
+    <browser:page
+        for="..interfaces.openidserver.IOpenIDApplication"
+        permission="zope.Public"
+        name="+login-register"
+        class=".openidserver.LoginServiceLoginView"
+        />
+
+    <browser:page
+        for="..interfaces.openidserver.IOpenIDApplication"
+        permission="zope.Public"
+        name="+standalone-login"
+        class=".openidserver.LoginServiceStandaloneLoginView"
+        template="../templates/loginservice-standalone-login.pt"
+        />
+
+    <browser:page
+        for="openid.server.server.ProtocolError"
+        name="index.html"
+        permission="zope.Public"
+        class=".openidserver.ProtocolErrorView"
+        />
+
+    <!-- IOpenIDRPConfig -->
+    <browser:url
+        for="..interfaces.openidserver.IOpenIDRPConfig"
+        path_expression="string:${id}"
+        parent_utility="..interfaces.openidserver.IOpenIDRPConfigSet"
+        />
+
+    <browser:page
+        for="..interfaces.openidserver.IOpenIDRPConfig"
+        name="+edit"
+        class=".openidrpconfig.OpenIDRPConfigEditView"
+        permission="launchpad.Admin"
+        template="../templates/openidrpconfig-edit.pt"
+        />
+
+    <browser:defaultView
+        for="..interfaces.openidserver.IOpenIDRPConfig"
+        name="+edit"
+        />
+
+    <!-- IOpenIDRPConfigSet -->
+
+    <browser:url
+        for="..interfaces.openidserver.IOpenIDRPConfigSet"
+        path_expression="string:+rpconfig"
+        parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
+        />
+
+    <browser:navigation
+        module=".openidrpconfig"
+        classes="OpenIDRPConfigSetNavigation"
+        />
+
+    <browser:page
+        for="..interfaces.openidserver.IOpenIDRPConfigSet"
+        name="+add"
+        class=".openidrpconfig.OpenIDRPConfigAddView"
+        permission="launchpad.Admin"
+        template="../templates/openidrpconfig-add.pt"
+        />
+
+    <browser:page
+        for="..interfaces.openidserver.IOpenIDRPConfigSet"
+        name="+index"
+        permission="launchpad.Admin"
+        template="../templates/openidrpconfigset-index.pt"
+        />
+
+    <browser:defaultView
+        for="..interfaces.openidserver.IOpenIDRPConfigSet"
+        name="+index"
+        />
+
+    <!-- A simple view used by the page tests. -->
+    <browser:page
+        for="canonical.launchpad.interfaces.ILaunchpadRoot"
+        name="+openid-consumer"
+        permission="zope.Public"
+        class="..testing.openidhelpers.ConsumerView"
+        layer="canonical.launchpad.layers.PageTestLayer"
+        />
+
+    <browser:page
+        for="*"
+        permission="zope.Public"
+        name="loginservice_macros"
+        template="../templates/loginservice-macros.pt" />
+
+</configure>

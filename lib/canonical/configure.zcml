@@ -150,10 +150,10 @@
     <!-- virtual host: openid -->
     <browser:page
         name=""
-        for="canonical.launchpad.interfaces.IOpenIDApplication"
+        for="canonical.signon.interfaces.openidserver.IOpenIDApplication"
         class="canonical.launchpad.browser.launchpad.LaunchpadImageFolder"
         permission="zope.Public"
-        layer="canonical.launchpad.layers.OpenIDLayer"
+        layer="canonical.signon.layers.OpenIDLayer"
         />
 
     <!-- This should really be on ILaunchpadRoot for all layers, and we should
@@ -170,5 +170,6 @@
     <include package="canonical.launchpad" />
     <include package="canonical.lazr" />
     <include package="canonical.shipit" />
+    <include package="canonical.signon" />
 
 </configure>
