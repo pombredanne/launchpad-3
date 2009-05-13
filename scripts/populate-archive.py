@@ -7,13 +7,11 @@
     the script will abort with an error.
 """
 
-
-import sys
-
 import _pythonpath
 
 from canonical.config import config
 from lp.soyuz.scripts.populate_archive import ArchivePopulator
+
 
 if __name__ == '__main__':
     script = ArchivePopulator(

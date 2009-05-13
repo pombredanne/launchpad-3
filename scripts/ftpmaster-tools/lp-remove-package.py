@@ -1,6 +1,6 @@
 #!/usr/bin/python2.4
 # Copyright 2007 Canonical Ltd.  All rights reserved.
-
+# pylint: disable-msg=W0403
 """Launchpad version of ftpmaster-tools/remove-package.py."""
 
 
