@@ -482,7 +482,9 @@ def canonical_url(
                     'step for "%s".' % (view_name, obj.__class__.__name__))
         urlparts.insert(0, view_name)
 
-    if request is None:
+    if request is None and rootsite is not None:
+        root_url = allvhosts.configs[rootsite].rooturl
+    elif request is None:
         root_url = allvhosts.configs['mainsite'].rooturl
     else:
         root_url = request.getRootURL(rootsite)

@@ -1337,7 +1337,7 @@ class PublicXMLRPCPublication(LaunchpadBrowserPublication):
 
 
 class PublicXMLRPCRequest(BasicLaunchpadRequest, XMLRPCRequest,
-                          ErrorReportRequest):
+                          ErrorReportRequest, LaunchpadBrowserRequestMixin):
     """Request type for doing public XML-RPC in Launchpad."""
 
     def _createResponse(self):
