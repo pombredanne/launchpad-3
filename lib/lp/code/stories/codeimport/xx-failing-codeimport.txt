@@ -1,0 +1,22 @@
+= Retrying a failed import =
+
+If there is an import that has failed more than the configured
+'consecutive_failure_limit' times in a row, it is marked as failed in
+the UI.
+
+    >>> login('admin@canonical.com')
+    >>> from canonical.launchpad.testing.codeimporthelpers import (
+    ...     make_finished_import)
+    >>> from lp.code.interfaces.codeimportresult import CodeImportResultStatus
+    >>> from canonical.config import config
+    >>> product = factory.makeProduct(name='imported')
+    >>> code_import = factory.makeCodeImport(
+    ...     product=product, branch_name='trunk')
+    >>> for i in range(config.codeimport.consecutive_failure_limit):
+    ...     dummy = make_finished_import(
+    ...         code_import, CodeImportResultStatus.FAILURE,
+    ...         factory=factory)
+    >>> logout()
+
+    >>> user_browser.open(
+    ...     'http://code.launchpad.dev/~vcs-imports/imported/trunk')
