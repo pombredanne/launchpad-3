@@ -41,7 +41,7 @@ function hide_commit(id) {
 }
 registerLaunchpadFunction(hookUpFilterSubmission);
 
-YUI().use('io-base', 'lazr.anim', 'node', 'json-parse', function(Y) {
+YUI().use('io-base', 'node', 'json-parse', function(Y) {
 
   function doUpdate(transaction_id, response, args) {
     json_values = Y.JSON.parse(response.responseText);
@@ -59,7 +59,7 @@ YUI().use('io-base', 'lazr.anim', 'node', 'json-parse', function(Y) {
   function updateSparks() {
     spark_div = 'dev_focus_spark';
 
-    if(Y.get(spark_div)) {
+    if(Y.get('#' + spark_div) !== null) {
       json_url = branch_sparks[0][1];
       var container = spark_div;
       var uri = json_url;
@@ -86,12 +86,6 @@ YUI().use('io-base', 'lazr.anim', 'node', 'json-parse', function(Y) {
     var h = 12;
     var co = document.createElement("canvas");
 
-    if (co.getContext) {
-      spark_div.style.display = 'inline';
-    } else {
-      return false;
-    }
-
     co.style.height = h;
     co.style.width = w;
     co.width = w;
@@ -114,7 +108,8 @@ YUI().use('io-base', 'lazr.anim', 'node', 'json-parse', function(Y) {
 
       for (var i = 0; i < number_commits; i++) {
         x_pos = (w / number_commits) * i;
-        y_pos = h - (((o.commits[i] - min) / (max - min)) * h);
+        // We subtract 2 pixels here to compensate for the base line
+        y_pos = (h-2) - (((o.commits[i] - min) / (max - min)) * (h-2));
 
         if (i == 0) {
           c.moveTo(x_pos, y_pos);
@@ -129,6 +124,12 @@ YUI().use('io-base', 'lazr.anim', 'node', 'json-parse', function(Y) {
       }
       c.stroke();
 
+      c.beginPath();
+      c.strokeStyle = "gray";
+      c.moveTo(0,h);
+      c.lineTo(w,h);
+      c.stroke();
+
       // Marks the point with the most commits
       c.fillStyle = 'red';
       c.beginPath();
@@ -137,7 +138,8 @@ YUI().use('io-base', 'lazr.anim', 'node', 'json-parse', function(Y) {
             2, 0, (Math.PI*2), true);
       c.fill();
 
-      new_text = document.createTextNode(o.commits[o.max_commits] + ' commits');
+      // Shows the number of max commits
+      new_text = document.createTextNode(o.commits[o.max_commits] + ' max commits');
       new_div = document.createElement('div');
       new_div.setAttribute('id', 'txt_max_' + branch_id);
       new_div.appendChild(new_text);
@@ -149,13 +151,15 @@ YUI().use('io-base', 'lazr.anim', 'node', 'json-parse', function(Y) {
       new_div.style.left = (((w / number_commits) * o.max_commits)-14) + 'px';
 
 
+      // Marks the point of last commit
       c.fillStyle = 'blue';
       c.beginPath();
       c.arc((w / number_commits) * last_commit, h-2,
             2, 0, (Math.PI*2), true);
       c.fill();
 
-      new_text = document.createTextNode(o.last_commit);
+      // Shows the date of the last commit and time frame
+      new_text = document.createTextNode('90 days - Last commit ' + o.last_commit);
       new_div = document.createElement('div');
       new_div.setAttribute('id', 'txt_' + branch_id);
       new_div.appendChild(new_text);
@@ -163,10 +167,9 @@ YUI().use('io-base', 'lazr.anim', 'node', 'json-parse', function(Y) {
       new_div.style.fontSize = '8px';
       new_div.style.color = 'blue';
       new_div.style.position = 'relative';
-      new_div.style.left = (((w / number_commits) * last_commit)-24) + 'px';
+      new_div.style.left = '2px';
       new_div.style.top = '-10px';
 
-      spark_div.style.display = 'inline';
     }
   }
 
@@ -274,7 +277,7 @@ YUI().use('io-base', 'lazr.anim', 'node', 'json-parse', function(Y) {
                 tal:content="branch/date_last_modified/fmt:datetime">
             2005-02-12 13:45 EST
           </span>
-          <div tal:condition="branch/is_development_focus" id="dev_focus_spark">
+          <div tal:condition="branch/is_development_focus" id="dev_focus_spark" style="top:10px; position:relative; height:18px;">
             <div tal:attributes="id string:b-${repeat/branch/number}">
             <span tal:attributes="title branch/date_last_modified/fmt:datetime"
                   tal:content="branch/since_updated/fmt:approximateduration/use-digits">
