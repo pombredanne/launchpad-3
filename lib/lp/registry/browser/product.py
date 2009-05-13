@@ -185,8 +185,9 @@ class ProductLicenseMixin:
             # License is optional on +edit page if not already set.
             self.setFieldError(
                 'licenses',
-                'Select all licenses for this software or select '
-                'Other/Proprietary or Other/Open Source.')
+                'You must select at least one license.  If you select '
+                'Other/Proprietary or Other/OpenSource you must include a '
+                'description of the license.')
         elif License.OTHER_PROPRIETARY in licenses:
             if not data.get('license_info'):
                 self.setFieldError(
@@ -1629,8 +1630,10 @@ class ProductEditPeopleView(LaunchpadEditFormView):
         'driver',
         ]
 
-    custom_widget('owner', PersonPickerWidget, header="Select the maintainer")
-    custom_widget('driver', PersonPickerWidget, header="Select the driver")
+    custom_widget('owner', PersonPickerWidget, header="Select the maintainer",
+                  include_create_team_link=True)
+    custom_widget('driver', PersonPickerWidget, header="Select the driver",
+                  include_create_team_link=True)
 
     @action(_('Save changes'), name='save')
     def save_action(self, action, data):

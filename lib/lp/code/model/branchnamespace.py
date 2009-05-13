@@ -371,8 +371,6 @@ class PackageNamespace(_BaseNamespace):
     implements(IBranchNamespace, IBranchNamespacePolicy)
 
     def __init__(self, person, sourcepackage):
-        if not config.codehosting.package_branches_enabled:
-            raise Unauthorized("Package branches are disabled.")
         self.owner = person
         self.sourcepackage = sourcepackage
 

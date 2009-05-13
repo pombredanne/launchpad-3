@@ -8,9 +8,10 @@ from optparse import OptionParser
 
 from canonical.config import config
 from canonical.launchpad.scripts import (
-    execute_zcml_for_scripts, logger, publishdistro)
+    execute_zcml_for_scripts, logger)
 from lp.services.scripts.base import LaunchpadScriptFailure
 from canonical.lp import initZopeless
+from lp.soyuz.scripts import publishdistro
 
 
 if __name__ == "__main__":

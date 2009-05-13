@@ -19,7 +19,7 @@ from lp.services.testing import build_test_suite
 from canonical.launchpad.testing.browser import (
     setUp as setUpBrowser,
     tearDown as tearDownBrowser)
-from canonical.launchpad.testing.factory import LaunchpadObjectFactory
+from lp.testing.factory import LaunchpadObjectFactory
 from canonical.launchpad.testing.systemdocs import LayeredDocFileSuite
 from canonical.testing.layers import LayerProcessController
 from lp.services.mailman.testing import helpers

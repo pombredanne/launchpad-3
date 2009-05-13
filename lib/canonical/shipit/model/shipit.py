@@ -51,7 +51,7 @@ from canonical.database.enumcol import EnumCol
 from canonical.launchpad.helpers import intOrZero, shortlist
 from canonical.launchpad.datetimeutils import make_mondays_between
 from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.mail.sendmail import simple_sendmail
+from lp.services.mail.sendmail import simple_sendmail
 
 from canonical.launchpad.interfaces.account import IAccount
 from lp.registry.interfaces.person import IPerson

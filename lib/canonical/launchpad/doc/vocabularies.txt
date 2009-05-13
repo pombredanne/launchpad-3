@@ -696,7 +696,7 @@ PPA vocabulary searches consider the owner FTI and the PPA FTI.
 
 We will create an additional PPA for Celso named 'testing'
 
-    >>> from canonical.launchpad.interfaces.archive import (
+    >>> from lp.soyuz.interfaces.archive import (
     ...     ArchivePurpose, IArchiveSet)
 
     >>> login_person(current_user)

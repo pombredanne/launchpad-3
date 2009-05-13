@@ -9,7 +9,7 @@ import unittest
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces import ILanguageSet
-from canonical.launchpad.testing.factory import LaunchpadObjectFactory
+from lp.testing.factory import LaunchpadObjectFactory
 from canonical.testing import LaunchpadZopelessLayer
 
 

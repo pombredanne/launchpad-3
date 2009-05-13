@@ -80,7 +80,7 @@ from lp.registry.interfaces.location import (
 from lp.registry.interfaces.mailinglistsubscription import (
     MailingListAutoSubscribePolicy)
 from lp.registry.interfaces.mentoringoffer import IHasMentoringOffers
-from canonical.launchpad.interfaces.specificationtarget import (
+from lp.blueprints.interfaces.specificationtarget import (
     IHasSpecifications)
 from lp.registry.interfaces.teammembership import (
     ITeamMembership, ITeamParticipation, TeamMembershipStatus)
@@ -1177,12 +1177,12 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers, IHasLogo,
     @operation_returns_entry(Interface) # Really IArchive.
     @export_read_operation()
     def getPPAByName(name):
-        """Return a PPA with the given name if it exists or None.
+        """Return a PPA with the given name if it exists.
 
         :param name: A string with the exact name of the ppa being looked up.
+        :raises: `NoSuchPPA` if a suitable PPA could not be found.
 
-        :return: an `IArchive` record corresponding to the PPA or None if it
-            was not found.
+        :return: a PPA `IArchive` record corresponding to the name.
         """
 
 
