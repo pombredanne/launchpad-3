@@ -37,8 +37,8 @@
              tal:attributes="href link/package/fmt:url"
              tal:content="link/series_name">
           </a>
-          <tal:not-linked tal:condition="not: link/linked"
-                          tal:replace="link/series_name" />
+          <b tal:condition="not: link/linked"
+             tal:content="link/series_name" />
         </li>
       </tal:series-link>
     </ul>
