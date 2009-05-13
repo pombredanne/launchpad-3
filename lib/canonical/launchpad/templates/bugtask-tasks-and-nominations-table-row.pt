@@ -59,12 +59,12 @@
     </tal:conjoined-task>
 
     <tal:not-conjoined-task condition="not:is_conjoined_slave">
-    <td tal:attributes="class string:status${context/status/name}"
-        style="width: 15em; vertical-align: middle">
+    <td style="width: 15em; vertical-align: middle">
       <div class="status-content"
            style="width: 100%; float: left">
         <a href="+edit"
-           class="value" style="float: left"
+           tal:attributes="class string:value status${context/status/name}"
+           style="float: left"
            tal:content="context/status/title" />
         <div style="float: right; margin-right: 0.5em">
           <a href="+edit">
@@ -129,14 +129,14 @@
   </tr>
   <script type="text/javascript" tal:content="string:
     YUI().use('event', 'bugs.bugtask_edit', function(Y) {
-        Y.on('contentready',
+        Y.on('load',
              function(e) {
                  Y.bugs.setup_bugtask_row('${row_id}',
                                           '${context/fmt:url}',
                                           ${view/status_widget_items},
                                           '${context/status/title}');
              },
-             '#${row_id}');
+             window);
     });
   "/>
   <tal:form condition="view/displayEditForm">
