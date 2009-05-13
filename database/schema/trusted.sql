@@ -408,7 +408,7 @@ BEGIN
 
     IF v_trash_old THEN
         -- Was this somebody's most-recently-changed message?
-        SELECT INTO v_old_entry_count id FROM POFileTranslator
+        SELECT INTO v_old_entry_count COUNT(id) FROM POFileTranslator
         WHERE latest_message = OLD.id;
 
         IF v_old_entry_count > 0 THEN
