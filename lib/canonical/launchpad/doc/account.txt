@@ -453,7 +453,7 @@ All OpenIDRPSummaries are checked to ensure the openid identifier has
 never been used. An error is raised in the unlikely event that every
 random token for a mnemonic has been used in the past.
 
-    >>> from canonical.launchpad.database import OpenIDRPSummary
+    >>> from canonical.signon.model.openidserver import OpenIDRPSummary
 
     # Change the new_openid_identifier to ensure that the no account
     # uses '000/non-unique'.
@@ -491,7 +491,7 @@ store that information, which can then later be shown to the account's owner
 using IAccount.recently_authenticated_rps.  These are sorted descending by
 date.
 
-    >>> from canonical.launchpad.interfaces.openidserver import (
+    >>> from canonical.signon.interfaces.openidserver import (
     ...     IOpenIDRPSummarySet)
     >>> from datetime import datetime
     >>> import pytz

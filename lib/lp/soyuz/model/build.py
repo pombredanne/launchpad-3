@@ -986,6 +986,7 @@ class BuildSet:
                                 BuildStatus.FAILEDTOUPLOAD)
         needsbuild = collect_builds(BuildStatus.NEEDSBUILD)
         building = collect_builds(BuildStatus.BUILDING)
+        successful = collect_builds(BuildStatus.FULLYBUILT)
 
         # Note: the BuildStatus DBItems are used here to summarize the
         # status of a set of builds:s
@@ -1007,7 +1008,7 @@ class BuildSet:
         else:
             return {
                 'status': BuildSetStatus.FULLYBUILT,
-                'builds': builds,
+                'builds': successful,
                 }
 
     def _prefetchBuildData(self, results):

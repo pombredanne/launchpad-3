@@ -6,9 +6,6 @@
 
 <div class="portlet" id="contact-details"
   tal:define="overview_menu context/menu:overview">
-
-  <h2 tal:condition="context/is_team">Contact details</h2>
-
   <div class="portletContent portletBody">
 
     <table>
@@ -27,30 +24,27 @@
 
             <tal:no_preferredemail
               condition="view/email_address_visibility/are_none_available">
-              <tal:is-team condition="context/isTeam">
-                No contact address
-                <metal:define metal:define-macro="contact">
-                  <tal:can-contact condition="view/can_contact">
-                    (<a href="+contactuser"
-                       tal:attributes="title view/contact_link_title"
-                       tal:content="view/specific_contact_text">Contact this person</a>)
-                    <tal:no_preferredemail
-                      condition="view/email_address_visibility/are_none_available">
-                      <br /><small>(Launchpad notifications are sent to all
-                                    team members)</small>
-                    </tal:no_preferredemail>
-                  </tal:can-contact>
-                </metal:define>
-              </tal:is-team>
               <tal:comment replace="nothing">
-              Otherwise the user is not valid; this portlet is not used.
+              The user is not valid; this portlet is not used.
               </tal:comment>
             </tal:no_preferredemail>
 
             <tal:cant-view-hidden-emails
               condition="view/email_address_visibility/are_hidden">
               No public address provided.
-              <tal:contact metal:use-macro="template/macros/contact" />
+              <metal:define metal:define-macro="contact">
+                <tal:can-contact condition="view/can_contact">
+                  (<a href="+contactuser"
+                     tal:attributes="title view/contact_link_title"
+                     tal:content="view/specific_contact_text">Contact
+                       this person</a>)
+                  <tal:no_preferredemail
+                    condition="view/email_address_visibility/are_none_available">
+                    <br /><small>(Launchpad notifications are sent to all
+                                  team members)</small>
+                  </tal:no_preferredemail>
+                </tal:can-contact>
+              </metal:define>
             </tal:cant-view-hidden-emails>
 
             <tal:emails
@@ -120,19 +114,29 @@
           </td>
         </tr>
 
-        <tal:keys repeat="sshkey context/sshkeys">
-          <tr>
-            <th tal:condition="repeat/sshkey/start">
-              SSH Keys:</th>
-            <th tal:condition="not: repeat/sshkey/start">
-            </th>
-            <td tal:content="sshkey/comment" />
-          </tr>
-          <tr tal:condition="repeat/sshkey/end">
-            <td>&nbsp;</td>
-            <td><small><a href="+sshkeys">(view key text)</a></small></td>
-          </tr>
-        </tal:keys>
+        <tr id="sshkeys">
+          <th>SSH Keys:</th>
+          <td tal:define="sshkeys context/sshkeys">
+            <tal:no_keys condition="not: sshkeys">
+              <tal:is_user condition="view/viewing_own_page">
+                <a tal:replace="structure overview_menu/editsshkeys/fmt:icon-link" />
+              </tal:is_user>
+              <tal:other_user condition="not: view/viewing_own_page">
+                No keys registered
+              </tal:other_user>
+            </tal:no_keys>
+
+            <tal:has_keys condition="sshkeys">
+              <tal:keys repeat="sshkey sshkeys">
+                <a href="+sshkeys"><tal:key replace="sshkey/comment" /></a>
+                <tal:first condition="repeat/sshkey/start">
+                  <a tal:replace="structure overview_menu/editsshkeys/fmt:icon" />
+                </tal:first>
+                <br />
+              </tal:keys>
+            </tal:has_keys>
+          </td>
+        </tr>
 
         <tr tal:condition="view/viewing_own_page" id="openid-info">
           <th>OpenID login:</th>
