@@ -13,7 +13,7 @@ in an obsolete distroseries.
 import _pythonpath
 
 from canonical.config import config
-from canonical.launchpad.scripts.ftpmaster import ObsoleteDistroseries
+from lp.soyuz.scripts.ftpmaster import ObsoleteDistroseries
 
 
 if __name__ == '__main__':

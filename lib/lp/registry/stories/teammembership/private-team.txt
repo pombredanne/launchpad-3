@@ -31,6 +31,14 @@ admins and members of that team can see the team.
     >>> cprov_browser.title
     'Private Team in Launchpad'
 
+The page states that the team is private.
+
+    >>> privacy_info = find_tag_by_id(cprov_browser.contents, 'privacy')
+    >>> print privacy_info['class']
+    aside private
+    >>> print extract_text(privacy_info)
+    This team is private
+
 A normal user cannot see the team.
 
     >>> user_browser.open('http://launchpad.dev/~private-team')

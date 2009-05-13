@@ -1491,7 +1491,7 @@ class ProjectAddStepOne(StepView):
     def main_action(self, data):
         self.next_step = ProjectAddStepTwo
         self.request.form['displayname'] = data['displayname']
-        self.request.form['name'] = data['name']
+        self.request.form['name'] = data['name'].lower()
         self.request.form['summary'] = data['summary']
 
 
@@ -1630,8 +1630,10 @@ class ProductEditPeopleView(LaunchpadEditFormView):
         'driver',
         ]
 
-    custom_widget('owner', PersonPickerWidget, header="Select the maintainer")
-    custom_widget('driver', PersonPickerWidget, header="Select the driver")
+    custom_widget('owner', PersonPickerWidget, header="Select the maintainer",
+                  include_create_team_link=True)
+    custom_widget('driver', PersonPickerWidget, header="Select the driver",
+                  include_create_team_link=True)
 
     @action(_('Save changes'), name='save')
     def save_action(self, action, data):
