@@ -23,13 +23,11 @@ from canonical.archivepublisher.interfaces.archivesigningkey import (
 from canonical.archivepublisher.utils import (
     RepositoryIndexFile, get_ppa_reference)
 from canonical.database.sqlbase import sqlvalues
-from canonical.launchpad.database.publishing import (
-    SourcePackagePublishingHistory, BinaryPackagePublishingHistory)
-from canonical.launchpad.interfaces.archive import ArchivePurpose
-from canonical.launchpad.interfaces.binarypackagerelease import (
+from lp.soyuz.interfaces.archive import ArchivePurpose
+from lp.soyuz.interfaces.binarypackagerelease import (
     BinaryPackageFormat)
-from canonical.launchpad.interfaces.component import IComponentSet
-from canonical.launchpad.interfaces.publishing import (
+from lp.soyuz.interfaces.component import IComponentSet
+from lp.soyuz.interfaces.publishing import (
     pocketsuffix, PackagePublishingPocket, PackagePublishingStatus)
 
 from canonical.librarian.client import LibrarianClient
@@ -233,6 +231,9 @@ class Publisher(object):
         OBSOLETE), scheduledeletiondate NULL and dateremoved NULL as
         dirty, to ensure that they are processed in death row.
         """
+        from lp.soyuz.model.publishing import (
+            SourcePackagePublishingHistory, BinaryPackagePublishingHistory)
+
         self.log.debug("* Step A2: Mark pockets with deletions as dirty")
 
         # Query part that is common to both queries below.

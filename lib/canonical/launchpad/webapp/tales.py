@@ -32,8 +32,9 @@ import pytz
 from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
-    ArchivePurpose, BuildStatus, IBug, IBugSet, IDistribution, IFAQSet,
+    IBug, IBugSet, IDistribution, IFAQSet,
     IProduct, IProject, ISprint, LicenseStatus, NotFoundError)
+from lp.soyuz.interfaces.archive import ArchivePurpose
 from canonical.launchpad.interfaces.launchpad import (
     IHasIcon, IHasLogo, IHasMugshot)
 from lp.registry.interfaces.person import IPerson, IPersonSet
@@ -51,6 +52,7 @@ from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.badge import IHasBadges
 from canonical.launchpad.webapp.session import get_cookie_domain
 from canonical.lazr.canonicalurl import nearest_adapter
+from lp.soyuz.interfaces.build import BuildStatus
 
 
 def escape(text, quote=True):
@@ -464,7 +466,9 @@ class ObjectFormatterAPI:
         :param view_name: If not None, the link will point to the page with
             that name on this object.
         """
-        raise NotImplementedError(self.link)
+        raise NotImplementedError(
+            "No link implementation for %r, IPathAdapter implementation "
+            "for %r." % (self, self._context))
 
 
 class ObjectImageDisplayAPI:
@@ -958,9 +962,8 @@ class PersonFormatterAPI(ObjectFormatterAPI):
         person = self._context
         url = canonical_url(person, rootsite=rootsite, view_name=view_name)
         image_url = ObjectImageDisplayAPI(person).icon_url(rootsite=rootsite)
-        return (u'<a href="%s" style="padding-left: 18px; '
-                'background: url(%s) '
-                'center left no-repeat;">%s</a>') % (
+        return (u'<a href="%s" class="bg-image" '
+                 'style="background-image: url(%s)">%s</a>') % (
             url, image_url, cgi.escape(person.browsername))
 
     def displayname(self, view_name, rootsite=None):
@@ -1138,6 +1141,16 @@ class PillarFormatterAPI(CustomizableFormatter):
                     license_status.description, html,
                     license_status.title)
         return html
+
+
+class SourcePackageFormatterAPI(CustomizableFormatter):
+    """Adapter for ISourcePackage objects to a formatted string."""
+
+    _link_summary_template = '%(displayname)s'
+
+    def _link_summary_values(self):
+        displayname = self._context.displayname
+        return {'displayname': displayname}
 
 
 class BranchFormatterAPI(ObjectFormatterAPI):
@@ -1681,6 +1694,23 @@ class DateTimeFormatterAPI:
 
     def isodate(self):
         return self._datetime.isoformat()
+
+
+class SeriesSourcePackageBranchFormatter(ObjectFormatterAPI):
+    """Formatter for a SourcePackage, Pocket -> Branch link.
+
+    Since the link object is never really interesting in and of itself, we
+    always link to the source package instead.
+    """
+
+    def url(self, view_name=None, rootsite=None):
+        return queryAdapter(
+            self._context.sourcepackage, IPathAdapter, 'fmt').url(
+                view_name, rootsite)
+
+    def link(self, view_name):
+        return queryAdapter(
+            self._context.sourcepackage, IPathAdapter, 'fmt').link(view_name)
 
 
 class DurationFormatterAPI:

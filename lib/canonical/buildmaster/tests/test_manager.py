@@ -19,13 +19,13 @@ from canonical.buildmaster.manager import (
     BaseDispatchResult, BuilddManager, FailDispatchResult, RecordingSlave,
     ResetDispatchResult, buildd_success_result_map)
 from canonical.launchpad.ftests import ANONYMOUS, login
-from canonical.launchpad.ftests.soyuzbuilddhelpers import SaneBuildingSlave
-from canonical.launchpad.interfaces.build import BuildStatus
-from canonical.launchpad.interfaces.builder import IBuilderSet
-from canonical.launchpad.interfaces.buildqueue import IBuildQueueSet
+from lp.soyuz.tests.soyuzbuilddhelpers import SaneBuildingSlave
+from lp.soyuz.interfaces.build import BuildStatus
+from lp.soyuz.interfaces.builder import IBuilderSet
+from lp.soyuz.interfaces.buildqueue import IBuildQueueSet
 from lp.registry.interfaces.distribution import IDistributionSet
 from canonical.launchpad.scripts.logger import BufferLogger
-from canonical.launchpad.tests.test_publishing import SoyuzTestPublisher
+from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from canonical.testing.layers import (
     LaunchpadZopelessLayer, TwistedLayer)
 

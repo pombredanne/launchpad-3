@@ -12,8 +12,8 @@ from zope.component import getUtility
 from canonical.archiveuploader.tests.test_uploadprocessor import (
     TestUploadProcessorBase)
 from canonical.archiveuploader.uploadprocessor import UploadProcessor
-from canonical.launchpad.database.build import Build
-from canonical.launchpad.database.processor import ProcessorFamily
+from lp.soyuz.model.build import Build
+from lp.soyuz.model.processor import ProcessorFamily
 from canonical.launchpad.interfaces import (
     IDistributionSet, PackagePublishingPocket, PackageUploadStatus)
 

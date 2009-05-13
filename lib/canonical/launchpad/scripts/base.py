@@ -19,10 +19,10 @@ import pytz
 from zope.component import getUtility
 
 from canonical.database.sqlbase import ISOLATION_LEVEL_DEFAULT
-from canonical.launchpad.ftests import ANONYMOUS
 from canonical.launchpad import scripts
 from canonical.launchpad.interfaces import IScriptActivitySet
 from canonical.lp import initZopeless
+from lp.testing import ANONYMOUS
 
 
 LOCK_PATH = "/var/lock/"
