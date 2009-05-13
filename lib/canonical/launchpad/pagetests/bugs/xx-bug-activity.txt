@@ -201,7 +201,7 @@ We'll add a milestone to Redfish to demonstrate this.
     >>> admin_browser.getControl('Status').value = ['Confirmed']
     >>> admin_browser.getControl('Importance').value = ['High']
     >>> admin_browser.getControl(
-    ...     'Milestone').displayValue = ['Redfish: foo']
+    ...     'Milestone').displayValue = ['Redfish foo']
 
     >>> admin_browser.getControl(
     ...     name='redfish.assignee.option').value = [
