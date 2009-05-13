@@ -1,18 +1,15 @@
-If we look at a bug which hasn't got any tags we can see that there's a
-message saying that there are no tags, together with a link to edit
-them.
+If we look at a bug which hasn't got any tags the tags display is hidden, and
+instead we see an add link.
 
     >>> user_browser.open('http://bugs.launchpad.dev/firefox/+bug/1')
     >>> user_browser.url
     'http://bugs.launchpad.dev/firefox/+bug/1'
-    >>> 'Tags:' in user_browser.contents
-    False
+    >>> print find_tag_by_id(user_browser.contents, 'add-bug-tags')
+    <div id="add-bug-tags" class="tags-show">...
 
-Let's follow the link and specify some tags:
+Let's specify some tags:
 
-    >>> user_browser.getLink(text="Update description / tags").click()
-    >>> user_browser.url
-    'http://bugs.launchpad.dev/firefox/+bug/1/+edit'
+    >>> user_browser.open('http://bugs.launchpad.dev/firefox/+bug/1/+edit')
     >>> tags = user_browser.getControl('Tags')
     >>> tags.value
     ''
@@ -56,9 +53,7 @@ Now the tags will be displayed on the bug page:
 Simply changing the ordering of the bug tags won't cause anything to
 happen.
 
-    >>> user_browser.getLink(text="Update description / tags").click()
-    >>> user_browser.url
-    'http://bugs.launchpad.dev/firefox/+bug/1/+edit'
+    >>> user_browser.open('http://bugs.launchpad.dev/firefox/+bug/1/+edit')
     >>> tags = user_browser.getControl('Tags')
     >>> tags.value
     'bar foo'
@@ -70,9 +65,7 @@ happen.
 
 Let's delete the tags we added.
 
-    >>> user_browser.getLink(text="Update description / tags").click()
-    >>> user_browser.url
-    'http://bugs.launchpad.dev/firefox/+bug/1/+edit'
+    >>> user_browser.open('http://bugs.launchpad.dev/firefox/+bug/1/+edit')
     >>> user_browser.getControl('Tags').value
     'bar foo'
     >>> user_browser.getControl('Tags').value = ''
@@ -110,8 +103,7 @@ Using official tags for the first time does not require confirmation.
     >>> transaction.commit()
     >>> logout()
     
-    >>> user_browser.open('http://bugs.launchpad.dev/firefox/+bug/1')
-    >>> user_browser.getLink(text="Update description / tags").click()
+    >>> user_browser.open('http://bugs.launchpad.dev/firefox/+bug/1/+edit')
     >>> user_browser.getControl('Tags').value = 'an-official-tag'
     >>> user_browser.getControl('Change').click()
     >>> user_browser.getControl('Yes, define new tag')

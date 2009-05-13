@@ -22,7 +22,7 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.testing import browser
 from canonical.launchpad.testing.systemdocs import (
     LayeredDocFileSuite, setUp, setGlobs, tearDown)
-from canonical.launchpad.tests.mail_helpers import pop_notifications
+from lp.testing.mail_helpers import pop_notifications
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
 from canonical.launchpad.webapp.tests import test_notifications
 from canonical.testing import (
@@ -582,11 +582,6 @@ special = {
                 tearDown=tearDown,
                 layer=LaunchpadZopelessLayer
                 ),
-    'openid-fetcher.txt': LayeredDocFileSuite(
-            '../doc/openid-fetcher.txt',
-            stdout_logging=False,
-            layer=LaunchpadFunctionalLayer
-            ),
     'notification-text-escape.txt': LayeredDocFileSuite(
             '../doc/notification-text-escape.txt',
             setUp=test_notifications.setUp,

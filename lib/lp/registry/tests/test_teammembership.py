@@ -19,7 +19,7 @@ from lp.registry.interfaces.person import (
     IPersonSet, TeamSubscriptionPolicy)
 from lp.registry.interfaces.teammembership import (
     CyclicalTeamMembershipError, ITeamMembershipSet, TeamMembershipStatus)
-from canonical.launchpad.testing.factory import LaunchpadObjectFactory
+from lp.testing.factory import LaunchpadObjectFactory
 from canonical.launchpad.testing.systemdocs import (
     default_optionflags, LayeredDocFileSuite, setUp, tearDown)
 from canonical.testing import LaunchpadFunctionalLayer

@@ -19,7 +19,7 @@ member in good standing (as is the default).
     >>> logout()
 
     # Ignore any notifications up to this point.
-    >>> from canonical.launchpad.tests import mail_helpers
+    >>> from lp.testing import mail_helpers
     >>> ignore = mail_helpers.pop_notifications()
 
     >>> from canonical.launchpad.ftests import login, logout

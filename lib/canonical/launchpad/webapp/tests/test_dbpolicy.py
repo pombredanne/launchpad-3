@@ -13,7 +13,8 @@ from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
 from canonical.config import config
 from canonical.launchpad.interfaces import IMasterStore, ISlaveStore
 from canonical.launchpad.layers import (
-    IdLayer, FeedsLayer, OpenIDLayer, setFirstLayer, WebServiceLayer)
+    FeedsLayer, setFirstLayer, WebServiceLayer)
+from canonical.signon.layers import IdLayer, OpenIDLayer
 from canonical.launchpad.testing import TestCase
 from canonical.launchpad.webapp.dbpolicy import (
     BaseDatabasePolicy, LaunchpadDatabasePolicy, MasterDatabasePolicy,
