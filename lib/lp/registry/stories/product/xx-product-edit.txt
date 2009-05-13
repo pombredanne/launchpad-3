@@ -266,9 +266,8 @@ again have zero licenses.
     http://launchpad.dev/newproductname/+edit
     >>> print "\n".join(get_feedback_messages(browser.contents))
     There is 1 error.
-    Select all licenses for this software or select
-    Other/Proprietary or Other/Open Source.
-
+    You must select at least one license. If you select Other/Proprietary
+    or Other/OpenSource you must include a description of the license.
 
 == Launchpad developers can use the reviewer whiteboard ==
 

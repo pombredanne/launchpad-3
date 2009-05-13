@@ -340,8 +340,9 @@ is allowed to do it. For large projects, like distributions, it's not
 suitable to restrict approving nominations to only release managers,
 instead anyone that can upload a package may approve a nomination.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     IArchivePermissionSet, TeamSubscriptionPolicy)
+    >>> from lp.soyuz.interfaces.archivepermission import (
+    ...     IArchivePermissionSet)
+    >>> from canonical.launchpad.interfaces import TeamSubscriptionPolicy
     >>> from canonical.launchpad.database import Component
     >>> foo_bar = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
     >>> main_uploaders = getUtility(IPersonSet).newTeam(

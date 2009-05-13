@@ -10,7 +10,7 @@ are not editable for obvious reasons.
 First, check that the edit link is visible on the branch page and click on
 that link to load the +edit form for the branch.
 
-    >>> from canonical.launchpad.mail import stub
+    >>> from lp.services.mail import stub
     >>> stub.test_emails = []
 
 The link to edit the branch details is only available to the branch owner,

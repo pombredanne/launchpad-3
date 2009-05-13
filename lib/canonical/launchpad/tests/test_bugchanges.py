@@ -19,7 +19,7 @@ from canonical.launchpad.interfaces.bugtask import (
     BugTaskImportance, BugTaskStatus)
 from canonical.launchpad.interfaces.structuralsubscription import (
     BugNotificationLevel)
-from canonical.launchpad.testing.factory import LaunchpadObjectFactory
+from lp.testing.factory import LaunchpadObjectFactory
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.testing import LaunchpadFunctionalLayer
 
@@ -166,7 +166,8 @@ class TestBugChanges(unittest.TestCase):
         subscriber = self.factory.makePerson(displayname='Mom')
         bug_subscription = self.bug.subscribe(self.user, subscriber)
         self.saveOldChanges()
-        self.bug.unsubscribe(self.user, subscriber)
+        # Only the user can unsubscribe him or her self.
+        self.bug.unsubscribe(self.user, self.user)
         unsubscribe_activity = dict(
             whatchanged='removed subscriber Arthur Dent',
             person=subscriber)

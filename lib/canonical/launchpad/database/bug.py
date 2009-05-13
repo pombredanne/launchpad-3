@@ -41,7 +41,8 @@ from canonical.launchpad.components.bugchange import (
 from canonical.launchpad.fields import DuplicateBug
 from canonical.launchpad.interfaces import IQuestionTarget
 from canonical.launchpad.interfaces.bug import (
-    IBug, IBugBecameQuestionEvent, IBugSet, InvalidDuplicateValue)
+    IBug, IBugBecameQuestionEvent, IBugSet, InvalidDuplicateValue,
+    UserCannotUnsubscribePerson)
 from canonical.launchpad.interfaces.bugactivity import IBugActivitySet
 from canonical.launchpad.interfaces.bugattachment import (
     BugAttachmentType, IBugAttachmentSet)
@@ -254,6 +255,11 @@ class Bug(SQLBase):
     users_unaffected_count = IntCol(notNull=True, default=0)
 
     @property
+    def comment_count(self):
+        """See `IBug`."""
+        return self.message_count - 1
+
+    @property
     def users_affected(self):
         """See `IBug`."""
         return [bap.person for bap
@@ -400,6 +406,12 @@ class Bug(SQLBase):
         """See `IBug`."""
         for sub in self.subscriptions:
             if sub.person.id == person.id:
+                if not sub.canBeUnsubscribedByUser(unsubscribed_by):
+                    raise UserCannotUnsubscribePerson(
+                        '%s does not have permission to unsubscribe %s.' % (
+                            unsubscribed_by.displayname,
+                            person.displayname))
+
                 self.addChange(UnsubscribedFromBug(
                     when=UTC_NOW, person=unsubscribed_by,
                     unsubscribed_user=person))

@@ -19,7 +19,7 @@ from canonical.archivepublisher.scripts.generate_ppa_htaccess import (
 from canonical.config import config
 from canonical.launchpad.interfaces import (
     IDistributionSet, IPersonSet, TeamMembershipStatus)
-from canonical.launchpad.interfaces.archivesubscriber import (
+from lp.soyuz.interfaces.archivesubscriber import (
     ArchiveSubscriberStatus)
 from canonical.launchpad.scripts import QuietFakeLogger
 from canonical.launchpad.testing import LaunchpadObjectFactory
