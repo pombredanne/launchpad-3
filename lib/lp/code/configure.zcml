@@ -400,6 +400,7 @@
                     pending_writes
                     commitsForDays
                     needs_upgrading
+                    getUpgradeFormat
                     "/>
     <require
         permission="launchpad.Edit"
