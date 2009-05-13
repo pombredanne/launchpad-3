@@ -292,6 +292,13 @@
         attribute="__call__"
         permission="zope.Public"
         />
+    <browser:page
+        name=""
+        for="canonical.shipit.interfaces.shipit.IShipItApplication"
+        class="canonical.launchpad.browser.launchpad.LaunchpadImageFolder"
+        permission="zope.Public"
+        />
+
     <view
         type="zope.publisher.interfaces.browser.IBrowserRequest"
         for="canonical.shipit.fields.IShipItRecipientDisplayname"
