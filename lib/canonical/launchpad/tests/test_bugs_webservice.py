@@ -6,7 +6,7 @@ __metaclass__ = type
 
 import unittest
 
-from BeautifulSoup import BeautifulSoup, BeautifulStoneSoup
+from BeautifulSoup import BeautifulSoup
 from simplejson import dumps
 
 from canonical.launchpad.ftests import login
@@ -34,7 +34,7 @@ class TestBugDescriptionRepresentation(unittest.TestCase):
 
     def findBugDescription(self, response):
         """Find the bug description field in an XHTML document fragment."""
-        soup = BeautifulStoneSoup(response.consumeBody())
+        soup = BeautifulSoup(response.consumeBody())
         dt = soup.find('dt', text="description").parent
         dd = dt.findNextSibling('dd')
         return str(dd.contents.pop())
