@@ -151,13 +151,20 @@ h2, h3, h4, h5, h6 { margin-top: 1em; }
 ul {margin-left: 0; padding-left: 22px; /* works for 14px icons */}
 
 .exception {color: #cc0000;}
-.discreet, .lesser {font-size: 90%;}
+.discreet, .lesser, .duplicate-details {font-size: 90%;}
 .offline {text-align: center; margin: 2em 0;}
 .unavailable {color: #999; background: none;}
+
+.duplicate-details { margin-bottom: 1em; }
+.duplicate-details p { padding: 0em; margin-top: 0em; margin-bottom: 0.2em; }
 
 /* Blank space at the top of the page makes the location bar more noticable.
 Ideally page margins would scale non-linearly, but absolute is next best: */
 body {margin: 0; padding: 10px 20px;}
+
+/* Using colored text as you wish. */
+.green {color: green;}
+.red {color: red;}
 
 /* === Error, warning, and informational messages === */
 /* Error, warning, and informational alerts are in a centered box: */
@@ -448,6 +455,8 @@ img.collapseIcon {text-decoration: none; vertical-align: middle;}
 fieldset .collapsed {display: none;}
 fieldset .expanded {display: block;}
 fieldset.collapsible legend {font-weight: normal;}
+
+.unseen {display: none;}
 
 form.primary.search {
   margin-bottom: 2em;
@@ -1303,17 +1312,29 @@ ul.iconed {
 }
 
 /* Various custom link icons */
+
+a.bg-image {
+    /* A background-image should be specified on the element. */
+    background-repeat: no-repeat;
+    background-position: center left;
+    background-attachment: scroll;
+    line-height: 130%;
+    padding-top: 0.5em;
+    padding-bottom: 0.5em;
+    padding-left: 18px;
+}
+
 a.info {
     background: url('/@@/info') no-repeat scroll left center;
-    padding-left:18px;
+    padding-left: 18px;
 }
 a.edit {
     background: url('/@@/edit') no-repeat scroll left center;
-    padding-left:18px;
+    padding-left: 18px;
 }
 a.add {
     background: url('/@@/add') no-repeat scroll left center;
-    padding-left:18px;
+    padding-left: 18px;
 }
 
 /* == Application-specific styles == */
@@ -1763,6 +1784,14 @@ body.tab-bugs #actions h2, body.tab-bugs #actions h2:hover {
 
 /* In a bug report page, the current context is highlighted in yellow: */
 #affected-software tr.highlight {background-color: #ff9;}
+
+/* Bug report page subscribe/unsubscribe spinner */
+div#sub-unsub-spinner {
+  background: url(/@@/spinner/) center left no-repeat;
+  color:#999;
+  display:none;
+  padding:3px 5px 2px 17px;
+}
 
 
 /* --- Blueprints --- */

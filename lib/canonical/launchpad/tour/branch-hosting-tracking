@@ -46,7 +46,7 @@
             <p class="intro-text">
                If your code's not in Bazaar, Launchpad will even run a continuous import of Subversion and CVS repositories directly into a Bazaar branch.
             </p>
-            <div id="link-holder"><a href="https://code.launchpad.net/">Visit Launchpad Code &gt;</a><br /><a href="https://launchpad.net/projects/+new-guided">Add your project to Launchpad &gt;</a></div>
+            <div id="link-holder"><a href="https://code.launchpad.net/">Visit Launchpad Code &gt;</a><br /><a href="https://launchpad.net/projects/+new">Add your project to Launchpad &gt;</a></div>
         </div>
         <div id="page-intro-bottom"></div>
         <ul id="secondary-navigation">

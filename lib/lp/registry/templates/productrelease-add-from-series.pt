@@ -11,6 +11,9 @@
 >
 <body>
 <metal:block fill-slot="head_epilogue">
+  <metal:yui-dependencies
+    use-macro="context/@@launchpad_widget_macros/yui2calendar-dependencies" />
+
   <tal:script
     replace="structure string:&lt;script type='text/javascript'&gt;" />
     YUI().use('dom', 'node', 'io-base', 'lazr.anim', 'lazr.formoverlay',

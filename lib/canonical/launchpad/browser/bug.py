@@ -198,15 +198,8 @@ class BugContextMenu(ContextMenu):
             text = 'Unsubscribe'
             icon = 'remove'
         else:
-            for team in user.teams_participated_in:
-                if (self.context.bug.isSubscribed(team) or
-                    self.context.bug.isSubscribedToDupes(team)):
-                    text = 'Subscribe/Unsubscribe'
-                    icon = 'edit'
-                    break
-            else:
-                text = 'Subscribe'
-                icon = 'add'
+            text = 'Subscribe'
+            icon = 'add'
         return Link('+subscribe', text, icon=icon)
 
     def addsubscriber(self):
@@ -406,6 +399,14 @@ class BugView(LaunchpadView):
         if user is None:
             return False
         return self.context.isSubscribed(user)
+
+    @property
+    def subscription_class(self):
+        """Returns a CSS class name based on subscription status."""
+        if self.context.isSubscribed(self.user):
+            return 'subscribed-true'
+        else:
+            return 'subscribed-false'
 
     def duplicates(self):
         """Return a list of dicts of duplicates.

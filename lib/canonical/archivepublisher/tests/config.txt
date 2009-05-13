@@ -1,0 +1,94 @@
+Publisher Configuration Provider
+================================
+
+The config module has a function to provide a modified publisher configuration
+that provides the right paths for its publication according to the given
+archive.
+
+    >>> # cprov 20061127: We should *never* be able to change a PPA
+    >>> # distribution, however 'ubuntu' is not prepared for publication, thus
+    >>> # we have to override the PPA to 'ubuntutest' in order to perform the
+    >>> # tests.
+
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> ubuntutest = getUtility(IDistributionSet)['ubuntutest']
+    >>> cprov = getUtility(IPersonSet).getByName('cprov')
+    >>> cprov_archive = cprov.archive
+    >>> cprov_archive.distribution = ubuntutest
+
+    >>> from canonical.archivepublisher.config import getPubConfig
+    >>> pubconfig = getPubConfig(cprov_archive)
+
+The base Archive publication location is set in the current Launchpad
+configuration file:
+
+    >>> from canonical.config import config
+    >>> pubconfig.distroroot == config.personalpackagearchive.root
+    True
+
+There is a separate location for private PPAs that is used if the
+archive is marked as private:
+
+    >>> (config.personalpackagearchive.private_root !=
+    ...  config.personalpackagearchive.root)
+    True
+
+    >>> cprov_archive.private = True
+    >>> cprov_archive.buildd_secret = "secret"
+    >>> private_pubconfig = getPubConfig(cprov_archive)
+    >>> (private_pubconfig.distroroot ==
+    ...  config.personalpackagearchive.private_root)
+    True
+
+    >>> cprov_archive.private = False
+    >>> cprov_archive.buildd_secret = None
+
+Then, the archive topology will follow:
+
+<PPA_BASE_DIR>/<PERSONNAME>/<DISTRIBUTION>
+
+    >>> print pubconfig.archiveroot
+    /var/tmp/ppa.test/cprov/ppa/ubuntutest
+
+    >>> print pubconfig.poolroot
+    /var/tmp/ppa.test/cprov/ppa/ubuntutest/pool
+
+    >>> print pubconfig.distsroot
+    /var/tmp/ppa.test/cprov/ppa/ubuntutest/dists
+
+Paths not used for the personal archives publication workflow are set to
+None, so they won't get created:
+
+    >>> pubconfig.overrideroot is None
+    True
+    >>> pubconfig.cacheroot is None
+    True
+    >>> pubconfig.miscroot is None
+    True
+
+Usual methods from the publisher configuration are preserved:
+
+    >>> pubconfig.distroSeriesNames()
+    ['breezy-autotest', 'hoary-test']
+
+    >>> pubconfig.archTagsForSeries('breezy-autotest')
+    []
+
+    >>> pubconfig.componentsForSeries('breezy-autotest')
+    ['main', 'restricted', 'universe', 'multiverse']
+
+The publisher config for PARTNER contains only 'partner' in its
+components.  This prevents non-partner being published in the partner
+archive.
+
+    >>> from lp.soyuz.interfaces.archive import IArchiveSet
+    >>> partner_archive = getUtility(IArchiveSet).getByDistroAndName(
+    ...     ubuntutest, 'partner')
+    >>> comm_pubconf = getPubConfig(partner_archive)
+    >>> for distroseries in comm_pubconf._distroserieses.keys():
+    ...     print set(
+    ...         comm_pubconf._distroserieses[distroseries]['components'])
+    set(['partner'])
+    set(['partner'])
+

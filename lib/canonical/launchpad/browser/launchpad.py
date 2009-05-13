@@ -7,12 +7,10 @@ __all__ = [
     'ApplicationButtons',
     'BrowserWindowDimensions',
     'DoesNotExistView',
-    'EdubuntuIcingFolder',
     'get_launchpad_views',
     'Hierarchy',
     'IcingContribFolder',
     'IcingFolder',
-    'KubuntuIcingFolder',
     'LaunchpadRootNavigation',
     'LaunchpadImageFolder',
     'LinkView',
@@ -25,7 +23,6 @@ __all__ = [
     'SoftTimeoutView',
     'StructuralHeaderPresentation',
     'StructuralObjectPresentation',
-    'UbuntuIcingFolder',
     ]
 
 
@@ -53,7 +50,7 @@ from canonical.lazr import ExportedFolder, ExportedImageFolder
 from canonical.launchpad.helpers import intOrZero
 
 from lp.registry.interfaces.announcement import IAnnouncementSet
-from canonical.launchpad.interfaces.binarypackagename import (
+from lp.soyuz.interfaces.binarypackagename import (
     IBinaryPackageNameSet)
 from canonical.launchpad.interfaces.bounty import IBountySet
 from lp.code.interfaces.branchlookup import (
@@ -61,7 +58,7 @@ from lp.code.interfaces.branchlookup import (
 from lp.code.interfaces.branchnamespace import InvalidNamespace
 from canonical.launchpad.interfaces.bug import IBugSet
 from canonical.launchpad.interfaces.bugtracker import IBugTrackerSet
-from canonical.launchpad.interfaces.builder import IBuilderSet
+from lp.soyuz.interfaces.builder import IBuilderSet
 from lp.code.interfaces.codeimport import ICodeImportSet
 from lp.registry.interfaces.codeofconduct import ICodeOfConductSet
 from canonical.launchpad.interfaces.cve import ICveSet
@@ -87,8 +84,8 @@ from lp.registry.interfaces.product import (
 from lp.registry.interfaces.project import IProjectSet
 from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageNameSet)
-from canonical.launchpad.interfaces.specification import ISpecificationSet
-from canonical.launchpad.interfaces.sprint import ISprintSet
+from lp.blueprints.interfaces.specification import ISpecificationSet
+from lp.blueprints.interfaces.sprint import ISprintSet
 from canonical.launchpad.interfaces.translationgroup import (
     ITranslationGroupSet)
 from canonical.launchpad.interfaces.translationimportqueue import (
@@ -854,28 +851,6 @@ class IcingContribFolder(ExportedFolder):
 
     folder = os.path.join(
         os.path.dirname(os.path.realpath(__file__)), '../icing-contrib/')
-
-
-class UbuntuIcingFolder(ExportedFolder):
-    """Export the Ubuntu icing."""
-
-    folder = os.path.join(
-        os.path.dirname(os.path.realpath(__file__)), '../icing-ubuntu/')
-
-
-class KubuntuIcingFolder(ExportedFolder):
-    """Export the Kubuntu icing."""
-
-    folder = os.path.join(
-        os.path.dirname(os.path.realpath(__file__)), '../icing-kubuntu/')
-
-
-class EdubuntuIcingFolder(ExportedFolder):
-    """Export the Edubuntu icing."""
-
-    folder = os.path.join(
-        os.path.dirname(os.path.realpath(__file__)), '../icing-edubuntu/')
-
 
 
 class LaunchpadTourFolder(ExportedFolder):

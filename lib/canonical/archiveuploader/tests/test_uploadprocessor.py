@@ -25,29 +25,33 @@ from canonical.archiveuploader.uploadpolicy import AbstractUploadPolicy
 from canonical.archiveuploader.uploadprocessor import UploadProcessor
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
-from canonical.launchpad.database.archivepermission import ArchivePermission
-from canonical.launchpad.database.binarypackagename import BinaryPackageName
-from canonical.launchpad.database.binarypackagerelease import (
+from lp.soyuz.model.archivepermission import ArchivePermission
+from lp.soyuz.model.binarypackagename import BinaryPackageName
+from lp.soyuz.model.binarypackagerelease import (
     BinaryPackageRelease)
-from canonical.launchpad.database.component import Component
-from canonical.launchpad.database.publishing import (
+from lp.soyuz.model.component import Component
+from lp.soyuz.model.publishing import (
     SourcePackagePublishingHistory, BinaryPackagePublishingHistory)
 from lp.registry.model.sourcepackagename import SourcePackageName
-from canonical.launchpad.database.sourcepackagerelease import (
+from lp.soyuz.model.sourcepackagerelease import (
     SourcePackageRelease)
 from canonical.launchpad.ftests import import_public_test_keys
-from canonical.launchpad.interfaces import (
-    ArchivePurpose, DistroSeriesStatus, IArchiveSet, IArchivePermissionSet,
-    IDistributionSet, ILibraryFileAliasSet, IPackagesetSet,
-    PackagePublishingPocket, PackagePublishingStatus, PackageUploadStatus,
-    QueueInconsistentStateError)
-from canonical.launchpad.interfaces.archivepermission import (
-    ArchivePermissionType)
-from canonical.launchpad.interfaces.component import IComponentSet
+from lp.registry.interfaces.distribution import IDistributionSet
+from lp.registry.interfaces.distroseries import DistroSeriesStatus
+from lp.soyuz.interfaces.archive import ArchivePurpose, IArchiveSet
+from lp.soyuz.interfaces.package import PackageUploadStatus
+from lp.soyuz.interfaces.publishing import (
+    PackagePublishingPocket, PackagePublishingStatus)
+from lp.soyuz.interfaces.queue import QueueInconsistentStateError
+from canonical.launchpad.interfaces import ILibraryFileAliasSet
+from lp.soyuz.interfaces.packageset import IPackagesetSet
+from lp.soyuz.interfaces.archivepermission import (
+    ArchivePermissionType, IArchivePermissionSet)
+from lp.soyuz.interfaces.component import IComponentSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageNameSet)
-from canonical.launchpad.mail import stub
+from lp.services.mail import stub
 from canonical.launchpad.testing.fakepackager import FakePackager
 from canonical.launchpad.tests.mail_helpers import pop_notifications
 from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
@@ -313,33 +317,39 @@ class TestUploadProcessor(TestUploadProcessorBase):
         up = UploadProcessor(self.options, None, self.log)
 
     def testLocateDirectories(self):
-        """locateDirectories should return a list of subdirs in a directory.
+        """Return a sorted list of subdirs in a directory.
 
         We don't test that we block on the lockfile, as this is trivial
         code but tricky to test.
         """
         testdir = tempfile.mkdtemp()
         try:
+            os.mkdir("%s/dir3" % testdir)
             os.mkdir("%s/dir1" % testdir)
             os.mkdir("%s/dir2" % testdir)
 
             up = UploadProcessor(self.options, None, self.log)
             located_dirs = up.locateDirectories(testdir)
-            self.assertEqual(sorted(located_dirs), ["dir1", "dir2"])
+            self.assertEqual(located_dirs, ['dir1', 'dir2', 'dir3'])
         finally:
             shutil.rmtree(testdir)
 
     def testLocateChangesFiles(self):
-        """locateChangesFiles should return the .changes files in a folder."""
+        """locateChangesFiles should return the .changes files in a folder.
+
+        'source' changesfiles come first. Files that are not named as
+        changesfiles are ignored.
+        """
         testdir = tempfile.mkdtemp()
         try:
             open("%s/1.changes" % testdir, "w").close()
-            open("%s/2.changes" % testdir, "w").close()
+            open("%s/2_source.changes" % testdir, "w").close()
             open("%s/3.not_changes" % testdir, "w").close()
+
             up = UploadProcessor(self.options, None, self.log)
             located_files = up.locateChangesFiles(testdir)
             self.assertEqual(
-                sorted(located_files), ["1.changes", "2.changes"])
+                located_files, ["2_source.changes", "1.changes"])
         finally:
             shutil.rmtree(testdir)
 
@@ -874,7 +884,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
             build.title,
             'i386 build of foocomm 1.0-2 in ubuntu breezy RELEASE')
         self.assertEqual(build.buildstate.name, 'NEEDSBUILD')
-        self.assertEqual(build.buildqueue_record.lastscore, 4255)
+        self.assertTrue(build.buildqueue_record.lastscore is not None)
 
         # Upload the next binary version of the package.
         upload_dir = self.queueUpload("foocomm_1.0-2_binary")

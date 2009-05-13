@@ -15,14 +15,18 @@
   </div>
 
   <tal:show-map condition="view/should_show_map_portlet">
-    <tal:map condition="context/latitude">
+    <div style="width: 400px;" tal:condition="context/latitude">
+      <div id="person_map_actions"
+        style="position:relative; z-index: 9999;
+               float:right; width: 8.5em; margin: 2px;
+               background-color: white; padding-bottom:1px;"></div>
       <div id="person_map_div" class="small-map"
-        style="height: 200px; border: 1px;"></div>
+        style="height: 200px; border: 1px; margin-top: 4px;"></div>
       <tal:mapscript replace="structure view/map_portlet_html" />
-       <div id="person_map_actions">
-        <a tal:replace="structure overview_menu/editlocation/fmt:link-icon" /> &nbsp;
+      <div style="margin-top: 0px;">
+        <a tal:replace="structure overview_menu/editlocation/fmt:link-icon" />
       </div>
-    </tal:map>
+    </div>
 
     <tal:comment condition="nothing">
       When a person's location is unset we can be sure any user will have
