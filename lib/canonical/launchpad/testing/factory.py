@@ -48,7 +48,7 @@ from canonical.launchpad.interfaces.bugtask import BugTaskStatus
 from canonical.launchpad.interfaces.bugtracker import (
     BugTrackerType, IBugTrackerSet)
 from canonical.launchpad.interfaces.bugwatch import IBugWatchSet
-from canonical.launchpad.interfaces.country import ICountrySet
+from lp.services.worlddata.interfaces.country import ICountrySet
 from canonical.launchpad.interfaces.emailaddress import (
     EmailAddressStatus, IEmailAddressSet)
 from canonical.launchpad.interfaces.gpghandler import IGPGHandler

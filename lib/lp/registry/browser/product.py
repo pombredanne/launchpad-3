@@ -57,7 +57,7 @@ from canonical.launchpad import _
 from canonical.launchpad.fields import PillarAliases, PublicPersonChoice
 from canonical.launchpad.interfaces.bugtask import RESOLVED_BUGTASK_STATUSES
 from canonical.launchpad.interfaces.bugwatch import IBugTracker
-from canonical.launchpad.interfaces.country import ICountry
+from lp.services.worlddata.interfaces.country import ICountry
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.interfaces.translationimportqueue import (

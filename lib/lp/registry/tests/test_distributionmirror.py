@@ -12,7 +12,7 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.database.sqlbase import flush_database_updates
 from lp.registry.model.distributionmirror import DistributionMirror
 from canonical.launchpad.ftests import login
-from canonical.launchpad.interfaces.country import ICountrySet
+from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.registry.interfaces.distributionmirror import (
     IDistributionMirrorSet, MirrorContent, MirrorFreshness)
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities

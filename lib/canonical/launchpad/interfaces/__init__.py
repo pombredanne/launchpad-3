@@ -63,7 +63,7 @@ from lp.code.interfaces.codereviewcomment import *
 from lp.code.interfaces.codereviewvote import *
 from lp.registry.interfaces.commercialsubscription import *
 from canonical.launchpad.interfaces.component import *
-from canonical.launchpad.interfaces.country import *
+from lp.services.worlddata.interfaces.country import *
 from canonical.launchpad.interfaces.customlanguagecode import *
 from canonical.launchpad.interfaces.cve import *
 from canonical.launchpad.interfaces.cvereference import *
@@ -150,7 +150,7 @@ from canonical.launchpad.interfaces.specificationbug import *
 from canonical.launchpad.interfaces.specificationdependency import *
 from canonical.launchpad.interfaces.specificationfeedback import *
 from canonical.launchpad.interfaces.specificationsubscription import *
-from canonical.launchpad.interfaces.spokenin import *
+from lp.services.worlddata.interfaces.spokenin import *
 from canonical.launchpad.interfaces.sprint import *
 from canonical.launchpad.interfaces.sprintattendance import *
 from canonical.launchpad.interfaces.sprintspecification import *

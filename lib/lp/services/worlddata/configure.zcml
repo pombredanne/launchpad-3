@@ -3,4 +3,36 @@
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
     <include file="vocabularies.zcml"/>
+
+    <class class="canonical.launchpad.database.Country">
+        <allow interface="canonical.launchpad.interfaces.ICountry" />
+    </class>
+
+    <class class="canonical.launchpad.database.CountrySet">
+        <allow interface="canonical.launchpad.interfaces.ICountrySet" />
+    </class>
+
+    <securedutility
+        class="canonical.launchpad.database.CountrySet"
+        provides="canonical.launchpad.interfaces.ICountrySet">
+        <allow interface="canonical.launchpad.interfaces.ICountrySet" />
+    </securedutility>
+
+    <class class="canonical.launchpad.database.Continent">
+        <allow interface="canonical.launchpad.interfaces.IContinent" />
+    </class>
+
+    <class class="canonical.launchpad.database.Language">
+        <allow interface="canonical.launchpad.interfaces.ILanguage"/>
+        <require
+            permission="launchpad.Admin"
+            set_schema="canonical.launchpad.interfaces.ILanguage" />
+    </class>
+
+    <securedutility
+        class="canonical.launchpad.database.LanguageSet"
+        provides="canonical.launchpad.interfaces.ILanguageSet">
+        <allow interface="canonical.launchpad.interfaces.ILanguageSet" />
+    </securedutility>
+
 </configure>

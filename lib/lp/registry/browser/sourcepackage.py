@@ -25,7 +25,7 @@ from canonical.launchpad.browser.poexportrequest import BaseExportView
 from lp.answers.browser.questiontarget import (
     QuestionTargetFacetMixin, QuestionTargetAnswersMenu)
 from canonical.launchpad.browser.translations import TranslationsMixin
-from canonical.launchpad.interfaces.country import ICountry
+from lp.services.worlddata.interfaces.country import ICountry
 from canonical.launchpad.interfaces.packaging import IPackaging
 from canonical.launchpad.interfaces.potemplate import IPOTemplateSet
 from canonical.launchpad.interfaces.publishing import PackagePublishingPocket

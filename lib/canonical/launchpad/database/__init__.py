@@ -102,7 +102,7 @@ from canonical.launchpad.database.bountysubscription import *
 from lp.registry.model.mentoringoffer import *
 from canonical.launchpad.database.message import *
 from canonical.launchpad.database.queue import *
-from canonical.launchpad.database.country import *
+from lp.services.worlddata.model.country import *
 from lp.services.scripts.model.scriptactivity import *
 from canonical.launchpad.database.specification import *
 from canonical.launchpad.database.specificationbranch import *
@@ -110,7 +110,7 @@ from canonical.launchpad.database.specificationbug import *
 from canonical.launchpad.database.specificationdependency import *
 from canonical.launchpad.database.specificationfeedback import *
 from canonical.launchpad.database.specificationsubscription import *
-from canonical.launchpad.database.spokenin import *
+from lp.services.worlddata.model.spokenin import *
 from canonical.launchpad.database.sprint import *
 from canonical.launchpad.database.sprintattendance import *
 from canonical.launchpad.database.sprintspecification import *
