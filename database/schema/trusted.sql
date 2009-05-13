@@ -388,7 +388,7 @@ CREATE OR REPLACE FUNCTION mv_pofiletranslator_translationmessage()
 RETURNS TRIGGER
 VOLATILE SECURITY DEFINER AS $$
 DECLARE
-    v_old_entry INTEGER;
+    v_old_entry_count INTEGER;
     v_trash_old BOOLEAN;
 BEGIN
     -- If we are deleting a row, we need to remove the existing
@@ -408,13 +408,15 @@ BEGIN
 
     IF v_trash_old THEN
         -- Was this somebody's most-recently-changed message?
-        SELECT INTO v_old_entry id FROM POFileTranslator
+        SELECT INTO v_old_entry_count id FROM POFileTranslator
         WHERE latest_message = OLD.id;
 
-        IF v_old_entry IS NOT NULL THEN
-            -- Delete the old record.
+        IF v_old_entry_count > 0 THEN
+            -- Delete old records.
             DELETE FROM POFileTranslator
-            WHERE POFileTranslator.id = v_old_entry;
+            WHERE POFileTranslator.id IN (
+              SELECT id FROM POFileTranslator
+              WHERE latest_message = OLD.id);
 
             -- Insert a past record if there is one.
             INSERT INTO POFileTranslator (
