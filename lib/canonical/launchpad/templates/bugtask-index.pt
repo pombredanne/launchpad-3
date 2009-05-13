@@ -17,6 +17,10 @@
               tal:define="lp_js string:${icingroot}/build"
               tal:attributes="src string:${lp_js}/bugs/bugtask-index.js">
       </script>
+      <script type="text/javascript"
+              tal:define="lp_js string:${icingroot}/build"
+              tal:attributes="src string:${lp_js}/bugs/bugtask_tags_entry.js">
+      </script>
       <script type="text/javascript">
         YUI().use('base', 'node', 'oop', 'event', 'bugs.bugtask_index', function(Y) {
             Y.bugs.setup_bugtask_index();
@@ -166,8 +170,9 @@
                   tal:attributes="src string:${lp_js}/bugs/bug_tags_entry.js">
           </script>
           <div id="bug-tags"
-               tal:attributes="class python: context.bug.tags and
-                                             'tags-show' or 'tags-hide'">
+               tal:attributes="class python: ('tags-container ' +
+                                              (context.bug.tags and
+                                               'tags-show' or 'tags-hide'))">
             Tags:
             <span id="tag-list">
               <a tal:repeat="tag view/official_tags"
@@ -212,8 +217,9 @@
            </form>
           </div>
           <div id="add-bug-tags"
-               tal:attributes="class python: not(context.bug.tags) and
-                                             'tags-show' or 'tags-hide'">
+               tal:attributes="class python: ('tags-container ' +
+                                              (not(context.bug.tags) and
+                                              'tags-show' or 'tags-hide'))">
             <a href="+edit" title="Add tags" id="add-tags-trigger">
               <img src="/@@/add" />
               Add tags
