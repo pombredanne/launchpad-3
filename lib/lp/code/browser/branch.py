@@ -1122,9 +1122,9 @@ class RegisterBranchMergeProposalView(LaunchpadFormView):
         # If there is a development focus branch for the product, then default
         # the reviewer to be the review team for that branch.
         reviewer = None
-        dev_focus_branch = self.context.product.development_focus.branch
-        if dev_focus_branch is not None:
-            reviewer = dev_focus_branch.code_reviewer
+        default_target = self.context.target.default_merge_target
+        if default_target is not None and default_target != self.context:
+            reviewer = default_target.code_reviewer
         return {'reviewer': reviewer}
 
     @property
@@ -1178,11 +1178,11 @@ class RegisterBranchMergeProposalView(LaunchpadFormView):
                 "The target branch cannot be the same as the source branch.")
         else:
             # Make sure that the target_branch is in the same project.
-            if target_branch.product != source_branch.product:
+            if not target_branch.isBranchMergeable(source_branch):
                 self.setFieldError(
                     'target_branch',
-                    "The target branch must belong to the same project "
-                    "as the source branch.")
+                    "This branch is not mergeable into %s." %
+                    target_branch.bzr_identity)
 
 
 class BranchRequestImportView(LaunchpadFormView):
