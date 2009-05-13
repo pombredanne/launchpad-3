@@ -58,7 +58,7 @@ logger object that will extract tracebacks for the purposes of this doctest.
 Helper functions to examine emails that were sent:
 
   >>> from lp.services.mail import stub
-  >>> from canonical.launchpad.tests.mail_helpers import pop_notifications
+  >>> from lp.testing.mail_helpers import pop_notifications
   >>> def by_to_addrs(a, b):
   ...     return cmp(a[1], b[1])
 

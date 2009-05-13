@@ -466,7 +466,9 @@ class ObjectFormatterAPI:
         :param view_name: If not None, the link will point to the page with
             that name on this object.
         """
-        raise NotImplementedError(self.link)
+        raise NotImplementedError(
+            "No link implementation for %r, IPathAdapter implementation "
+            "for %r." % (self, self._context))
 
 
 class ObjectImageDisplayAPI:
@@ -1141,6 +1143,16 @@ class PillarFormatterAPI(CustomizableFormatter):
         return html
 
 
+class SourcePackageFormatterAPI(CustomizableFormatter):
+    """Adapter for ISourcePackage objects to a formatted string."""
+
+    _link_summary_template = '%(displayname)s'
+
+    def _link_summary_values(self):
+        displayname = self._context.displayname
+        return {'displayname': displayname}
+
+
 class BranchFormatterAPI(ObjectFormatterAPI):
     """Adapter for IBranch objects to a formatted string."""
 
@@ -1682,6 +1694,23 @@ class DateTimeFormatterAPI:
 
     def isodate(self):
         return self._datetime.isoformat()
+
+
+class SeriesSourcePackageBranchFormatter(ObjectFormatterAPI):
+    """Formatter for a SourcePackage, Pocket -> Branch link.
+
+    Since the link object is never really interesting in and of itself, we
+    always link to the source package instead.
+    """
+
+    def url(self, view_name=None, rootsite=None):
+        return queryAdapter(
+            self._context.sourcepackage, IPathAdapter, 'fmt').url(
+                view_name, rootsite)
+
+    def link(self, view_name):
+        return queryAdapter(
+            self._context.sourcepackage, IPathAdapter, 'fmt').link(view_name)
 
 
 class DurationFormatterAPI:
