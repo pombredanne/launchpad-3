@@ -166,7 +166,8 @@ class TestBugChanges(unittest.TestCase):
         subscriber = self.factory.makePerson(displayname='Mom')
         bug_subscription = self.bug.subscribe(self.user, subscriber)
         self.saveOldChanges()
-        self.bug.unsubscribe(self.user, subscriber)
+        # Only the user can unsubscribe him or her self.
+        self.bug.unsubscribe(self.user, self.user)
         unsubscribe_activity = dict(
             whatchanged='removed subscriber Arthur Dent',
             person=subscriber)

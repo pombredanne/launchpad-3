@@ -781,20 +781,37 @@ class HWDriverSet:
 
     def create(self, package_name, name, license):
         """See `IHWDriverSet`."""
+        if package_name is None:
+            package_name = ''
         return HWDriver(package_name=package_name, name=name, license=license)
 
     def getByPackageAndName(self, package_name, name):
         """See `IHWDriverSet`."""
-        return HWDriver.selectOneBy(package_name=package_name,
-                                    name=name)
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        if package_name in (None, ''):
+            return store.find(
+                HWDriver,
+                Or(HWDriver.package_name == None,
+                   HWDriver.package_name == ''),
+                HWDriver.name == name).one()
+        else:
+            return store.find(
+                HWDriver, HWDriver.package_name == package_name,
+                HWDriver.name == name).one()
 
     def getOrCreate(self, package_name, name, license=None):
         """See `IHWDriverSet`."""
-        link = HWDriver.selectOneBy(package_name=package_name,
-                                    name=name)
-        if link is None:
+        # Bugs 306265, 369769: If the method parameter package_name is
+        # None, and if no matching record exists, we create new records
+        # with package_name = '', but we must also search for old records
+        # where package_name == None in order to avoid the creation of
+        # two records where on rcord has package_name=None and the other
+        # package_name=''.
+        driver = self.getByPackageAndName(package_name, name)
+
+        if driver is None:
             return self.create(package_name, name, license)
-        return link
+        return driver
 
     def search(self, package_name=None, name=None):
         """See `IHWDriverSet`."""

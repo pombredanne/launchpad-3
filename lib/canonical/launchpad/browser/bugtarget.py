@@ -596,19 +596,19 @@ class FileBugViewBase(LaunchpadFormView):
 
         self.request.response.redirect(canonical_url(bug.bugtasks[0]))
 
-    @action("Subscribe to This Bug Report", name="this_is_my_bug",
-            failure=handleSubmitBugFailure)
+    @action("Yes, this is the bug I'm trying to report",
+            name="this_is_my_bug", failure=handleSubmitBugFailure)
     def this_is_my_bug_action(self, action, data):
         """Subscribe to the bug suggested."""
         bug = data.get('bug_already_reported_as')
 
-        if bug.isSubscribed(self.user):
+        if bug.isUserAffected(self.user):
             self.request.response.addNotification(
-                "You are already subscribed to this bug.")
+                "This bug is already marked as affecting you.")
         else:
-            bug.subscribe(self.user, self.user)
+            bug.markUserAffected(self.user)
             self.request.response.addNotification(
-                "You have been subscribed to this bug.")
+                "This bug has been marked as affecting you.")
 
         self.next_url = canonical_url(bug.bugtasks[0])
 

@@ -212,17 +212,17 @@ For a person or team, fmt:link gives us a link to that person's page,
 containing the person name and an icon.
 
     >>> test_tales("person/fmt:link", person=sabdfl)
-    u'<a href="http://.../~sabdfl" style="padding-left: 18px;
-      background: url(/@@/person) center left no-repeat;">Mark Shuttleworth</a>'
+    u'<a href="http://.../~sabdfl" class="bg-image"
+    style="background-image: url(/@@/person)">Mark Shuttleworth</a>'
 
     >>> test_tales("person/fmt:link", person=matsubara)
-    u'<a href="http://launchpad.dev/~matsubara" style="padding-left: 18px;
-      background: url(/@@/person-inactive) center left no-repeat;">Diogo Matsubara</a>'
+    u'<a href="http://launchpad.dev/~matsubara" class="bg-image"
+    style="background-image: url(/@@/person-inactive)">Diogo Matsubara</a>'
 
     >>> ubuntu_team = getUtility(IPersonSet).getByName('ubuntu-team')
     >>> test_tales("person/fmt:link", person=ubuntu_team)
-    u'<a href="http://launchpad.dev/~ubuntu-team" style="padding-left: 18px;
-      background: url(/@@/team) center left no-repeat;">Ubuntu Team</a>'
+    u'<a href="http://launchpad.dev/~ubuntu-team" class="bg-image"
+    style="background-image: url(/@@/team)">Ubuntu Team</a>'
 
 The person's displayname is escaped to prevent markup from being
 interpreted by the browser. For example, a script added to Sample
