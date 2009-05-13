@@ -367,9 +367,6 @@ component, or all packages in a packageset.
     ...     ubuntu_cnews.sourcepackagename)
     <ArchivePermission at ...>
 
-
-XXX: Add a packageset as well.
-
 For a bug nominated to a package from the 'main' component in Ubuntu,
 people that are allowed to upload to 'main' are allowed to approve the
 nomination.
