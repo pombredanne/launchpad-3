@@ -35,7 +35,7 @@ from lp.soyuz.interfaces.publishing import (
     PackagePublishingPocket, PackagePublishingPriority,
     PackagePublishingStatus)
 from canonical.launchpad.scripts import FakeLogger
-from canonical.launchpad.testing.factory import LaunchpadObjectFactory
+from lp.testing.factory import LaunchpadObjectFactory
 from canonical.testing import LaunchpadZopelessLayer
 
 

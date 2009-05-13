@@ -21,7 +21,7 @@ for the member.
     ...     transaction.commit()
 
     >>> from lp.services.mail import stub
-    >>> from canonical.launchpad.tests.mail_helpers import (
+    >>> from lp.testing.mail_helpers import (
     ...     pop_notifications, print_distinct_emails)
 
     >>> from zope.component import getUtility
