@@ -158,9 +158,15 @@ class TestBranchUpgradeJob(TestCaseWithFactory):
     def test_providesInterface(self):
         """Ensure that BranchUpgradeJob implements IBranchUpgradeJob."""
         branch = self.factory.makeAnyBranch()
-        job = BranchUpgradeJob.create(
-            branch, '')
+        job = BranchUpgradeJob.create(branch, '1.9')
         verifyObject(IBranchUpgradeJob, job)
+
+    def test_upgrades_branch(self):
+        """Ensure that a branch with an outdated format is upgraded."""
+        self.useBzrBranches()
+        db_branch, tree = self.create_branch_and_tree()
+        job = BranchUpgradeJob.create(db_branch, '1.9')
+        job.run()
 
 
 class TestRevisionMailJob(TestCaseWithFactory):
