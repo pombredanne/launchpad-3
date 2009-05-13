@@ -410,11 +410,17 @@ method. However this time we'll use a different importance:
 Observe that both bug tasks are now listed in the test milestone listing:
 
     >>> browser.open(milestone_url)
-    >>> print extract_text(find_tag_by_id(browser.contents,
-    ...                                   'milestone_bugtasks'))
-    Bug report     Importance ...
-    Test Bug 1     Critical   ...
-    Test Bug 1     High       ...
+    >>> bug_table = find_tag_by_id(browser.contents, 'milestone_bugtasks')
+    >>> print extract_text(bug_table )
+    Bug report       Importance  Assignee  Status
+    #19 Test Bug 1   Critical              New
+    #19 Test Bug 1   High                  New
+
+Each bugtask has one or more badges.
+
+    >>> print bug_table.findAll('tr')[1]
+    <tr>...Test Bug 1...<img ... alt="milestone test-milestone"
+                             ... src="/@@/milestone" />...
 
 
 === Bugs targeted to development focus series ===

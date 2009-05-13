@@ -200,7 +200,8 @@
       <thead>
         <tr>
           <th colspan="2">Blueprint</th>
-          <th tal:condition="view/is_project_milestone">
+          <th style="width: 14em"
+            tal:condition="view/is_project_milestone">
             Product
           </th>
           <th style="width: 9em;">Priority</th>
@@ -254,8 +255,9 @@
     <table class="listing sortable" id="milestone_bugtasks">
       <thead>
         <tr>
-          <th colspan="3">Bug report</th>
-          <th tal:condition="view/is_project_milestone">
+          <th colspan="4">Bug report</th>
+          <th style="width: 14em"
+            tal:condition="view/is_project_milestone">
             Product
           </th>
           <th style="width: 9em;">Importance</th>
@@ -275,6 +277,9 @@
                tal:content="bugtask/bug/title/fmt:shorten/65">
                Bug Title Here
             </a>
+          </td>
+          <td style="width: 33px; padding-right: 5px;">
+            <img src="/@@/info" tal:replace="structure bugtask/image:badges" />
           </td>
           <td tal:condition="view/is_project_milestone">
             <span class="sortkey" tal:content="bugtask/target/displayname" />
