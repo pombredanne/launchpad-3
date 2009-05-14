@@ -37,8 +37,8 @@ from lp.registry.interfaces.person import IPerson
 
 from lazr.restful.fields import Reference
 from lazr.restful.declarations import (
-    LAZR_WEBSERVICE_EXPORTED, export_as_webservice_entry,
-    export_read_operation, exported, operation_returns_collection_of)
+    export_as_webservice_entry, export_read_operation, exported,
+    operation_returns_collection_of)
 
 
 #

@@ -15,12 +15,10 @@ __all__ = [
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements
-from zope.security.interfaces import Unauthorized
 
 from lazr.lifecycle.event import ObjectCreatedEvent
 from storm.locals import And
 
-from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.database import Branch
 from lp.registry.model.sourcepackage import SourcePackage

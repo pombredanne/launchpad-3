@@ -60,7 +60,6 @@ class TestGetVfsFormatClasses(TestCaseWithTransport):
         # This makes sure the connections held by the branches opened in the
         # test are dropped, so the daemon threads serving those branches can
         # exit.
-        import gc
         gc.collect()
         super(TestGetVfsFormatClasses, self).tearDown()
 

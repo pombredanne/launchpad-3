@@ -1080,7 +1080,7 @@ class TestProductNamespaceCanBranchesBePublic(TestCaseWithFactory):
         self.assertBranchesMustBePrivate(person)
         self.assertBranchesMustBePrivate(team)
 
-    def test_team_member_with_private_only_rule(self):
+    def test_team_member_with_private_only_rule_public_base_rule(self):
         # If a person is a member of a team that has a PRIVATE_ONLY rule, and
         # the base rule is PUBLIC, then the branches must be private in the
         # team namespace, but can be public in the personal namespace.

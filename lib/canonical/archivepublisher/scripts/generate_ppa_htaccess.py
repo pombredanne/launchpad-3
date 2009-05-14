@@ -10,12 +10,6 @@ from operator import attrgetter
 from zope.component import getUtility
 
 from canonical.archivepublisher.config import getPubConfig
-from canonical.config import config
-from lp.soyuz.interfaces.archive import IArchiveSet
-from lp.soyuz.interfaces.archiveauthtoken import (
-    IArchiveAuthTokenSet)
-from lp.soyuz.interfaces.archivesubscriber import (
-    ArchiveSubscriberStatus, IArchiveSubscriberSet)
 from canonical.launchpad.scripts.base import LaunchpadCronScript
 
 

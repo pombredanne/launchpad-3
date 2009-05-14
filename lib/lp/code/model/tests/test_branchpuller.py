@@ -16,7 +16,7 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.database.constants import UTC_NOW
 from lp.code.interfaces.branch import BranchType, BranchTypeError
 from lp.code.interfaces.branchpuller import IBranchPuller
-from canonical.launchpad.testing import TestCase, TestCaseWithFactory
+from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.testing.layers import DatabaseFunctionalLayer
 
 

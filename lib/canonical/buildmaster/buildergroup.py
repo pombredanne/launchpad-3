@@ -22,7 +22,6 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.config import config
 from canonical.librarian.interfaces import ILibrarianClient
 from canonical.librarian.utils import copy_and_close
-from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.interfaces.build import BuildStatus, IBuildSet
 from lp.soyuz.interfaces.builder import (
     BuildDaemonError, BuildJobMismatch, IBuilderSet)
