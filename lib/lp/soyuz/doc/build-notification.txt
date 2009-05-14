@@ -409,7 +409,7 @@ in the main archive, the important differences are:
 
  * We only warn the uploader (person specified in 'Changed-By'
    changesfile) and the signer (person who owns the GPG key used to
-   signed the package) if the package was not copied.  Additionally,
+   sign the package) if the package was not copied.  Additionally,
    the Changed-By person is only notified if they are the PPA owner or
    they are in the team owning the PPA (to avoid spamming the innocent
    when PPA users upload unchanged source packages).
@@ -528,10 +528,10 @@ he will be notified.
 
   >>> commit()
   >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
-  >>> from lp.testing.factory import LaunchpadObjectFactory
-  >>> factory = LaunchpadObjectFactory()
-  >>> team = factory.makeTeam(
-  ...     owner=failed_candidate.sourcepackagerelease.creator)
+  >>> team = factory.makeTeam(owner=cprov, email="team@example.com")
+  >>> sabdfl = failed_candidate.sourcepackagerelease.creator
+  >>> team.addMember(sabdfl, sabdfl)
+  >>> discard = pop_notifications() # Discard team join email.
   >>> team_ppa = factory.makeArchive(owner=team)
   >>> naked_candidate = removeSecurityProxy(failed_candidate)
   >>> naked_candidate.archive = team_ppa
@@ -541,17 +541,19 @@ he will be notified.
 
   >>> failed_candidate.notify()
 
-This notification will be sent to both the package uploader (name16) and
-the package creator (mark@hdb.com).
+This notification will be sent to the package uploader
+(foo.bar@canonical.com), the package creator (mark@hdb.com) and the archive
+team's contact address (team@example.com).
 
   >>> notifications = pop_notifications()
   >>> len(notifications)
-  2
+  3
 
   >>> for notification in notifications:
   ...     print notification['To']
   foo.bar@canonical.com
   mark@hbd.com
+  team@example.com
 
 
 Named PPA notifications
