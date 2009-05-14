@@ -7,21 +7,13 @@
     the script will abort with an error.
 """
 
-
-import sys
-
 import _pythonpath
 
 from canonical.config import config
-from canonical.launchpad.scripts.populate_archive import ArchivePopulator
-from canonical.launchpad.scripts.ftpmaster import (
-    PackageLocationError, SoyuzScriptError)
+from lp.soyuz.scripts.populate_archive import ArchivePopulator
+
 
 if __name__ == '__main__':
     script = ArchivePopulator(
         'populate-archive', dbuser=config.archivepublisher.dbuser)
-    try:
-        script.lock_and_run()
-    except (SoyuzScriptError, PackageLocationError), e:
-        print str(e)
-        sys.exit(1)
+    script.lock_and_run()

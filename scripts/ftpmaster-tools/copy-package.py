@@ -6,7 +6,7 @@
 import _pythonpath
 
 from canonical.config import config
-from canonical.launchpad.scripts.packagecopier import PackageCopier
+from lp.soyuz.scripts.packagecopier import PackageCopier
 
 
 if __name__ == '__main__':
