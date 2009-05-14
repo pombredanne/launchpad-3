@@ -26,7 +26,7 @@ selected facet is the Answers facet.
     >>> anon_browser.open(
     ...     'http://answers.launchpad.dev/ubuntu/hoary/+source/mozilla-firefox')
     >>> print anon_browser.title
-    Questions for Ubuntu Hoary mozilla-firefox
+    Questions for mozilla-firefox in Ubuntu Hoary
 
 == Project ==
 

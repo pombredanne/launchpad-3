@@ -879,7 +879,7 @@ You can get the set of bugtasks for at bug with the 'bugtasks' attribute:
     Ubuntu
     Hoary
     mozilla-firefox in debian
-    Debian Woody mozilla-firefox
+    mozilla-firefox in Debian Woody
 
 You can also get a list of the "LP pillars" affected by a particular bug.
 
