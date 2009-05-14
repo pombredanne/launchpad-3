@@ -9,7 +9,6 @@ __all__ = ['NewEvents', 'test_suite']
 from datetime import datetime
 from pytz import UTC
 import StringIO
-import transaction
 import unittest
 
 from sqlobject.sqlbuilder import SQLConstant
