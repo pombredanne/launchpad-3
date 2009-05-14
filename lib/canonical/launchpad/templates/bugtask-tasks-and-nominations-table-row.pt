@@ -128,7 +128,7 @@
     </tal:not-conjoined-task>
   </tr>
   <script type="text/javascript" tal:content="string:
-    YUI().use('event', 'bugs.bugtask_edit', function(Y) {
+    YUI().use('event', 'bugs.bugtask_index', function(Y) {
         Y.on('load',
              function(e) {
                  Y.bugs.setup_bugtask_row('${row_id}',
