@@ -17,6 +17,10 @@
               tal:define="lp_js string:${icingroot}/build"
               tal:attributes="src string:${lp_js}/bugs/bugtask-index.js">
       </script>
+      <script type="text/javascript"
+              tal:define="lp_js string:${icingroot}/build"
+              tal:attributes="src string:${lp_js}/bugs/bug_tags_entry.js">
+      </script>
       <script type="text/javascript">
         YUI().use('base', 'node', 'oop', 'event', 'bugs.bugtask_index', function(Y) {
             Y.bugs.setup_bugtask_index();
@@ -25,6 +29,9 @@
     </metal:block>
 
     <div metal:fill-slot="main" tal:define="context_menu context/menu:context">
+      <div id="tags-autocomplete">
+       <div id="tags-autocomplete-content"></div>
+      </div>
       <p class="object timestamp">
 
           Bug #<tal:block content="context/bug/id"/> reported
@@ -158,21 +165,63 @@
             define="global description context/bug/description/fmt:obfuscate-email/fmt:text-to-html" />
 
         <div id="bug-description" tal:content="structure description" />
-
-          <div id="bug-tags" tal:condition="context/bug/tags"
-               style="width: 45%: text-align: left; float: right;">
+          <div id="bug-tags"
+               tal:attributes="class python: ('tags-container ' +
+                                              (context.bug.tags and
+                                               'tags-show' or 'tags-hide'))">
             Tags:
-            <a tal:repeat="tag view/official_tags"
-               tal:content="tag"
-               class="official-tag"
-               tal:attributes="href string:${context/target/fmt:url}/+bugs?field.tag=${tag}">tag</a>
-            <a tal:repeat="tag view/unofficial_tags"
-               tal:content="tag"
-               class="unofficial-tag"
-               tal:attributes="href string:${context/target/fmt:url}/+bugs?field.tag=${tag}">tag</a>
-          </div>
+            <span id="tag-list">
+              <a tal:repeat="tag view/official_tags"
+                 tal:content="tag"
+                 class="official-tag"
+                 tal:attributes="href string:${context/target/fmt:url}/+bugs?field.tag=${tag}">tag</a>
+              <a tal:repeat="tag view/unofficial_tags"
+                 tal:content="tag"
+                 class="unofficial-tag"
+                 tal:attributes="href string:${context/target/fmt:url}/+bugs?field.tag=${tag}">tag</a>
+            </span>
+            <form id="tags-form" style="display: inline">
+                <input type="text" id="tag-input" style="display: none; width: 25em;" />
+                <img src="/@@/spinner" id="tags-edit-spinner" style="display: none" />
+                <a href="+edit" title="Edit tags" id="edit-tags-trigger"><img src="/@@/edit" /></a>
+              <script type="text/javascript">
+                  YUI().use('event', 'node', 'bugs.bug_tags_entry', function(Y) {
+                      // XXX intellectronica 2009-04-16 bug #362309:
+                      // The load event fires very late on bug pages that take a
+                      // long time to render, but we prefer to use it since the
+                      // domready event isn't reliable in YUI3 yet. To make sure
+                      // that user doesn't click the trigger and navigates to the
+                      // non-JS form, we first disable the link. This is awful and
+                      // must be fixed as soon as YUI3 is fixed.
+                      Y.get('#edit-tags-trigger').on('click', function(e) {
+                        e.halt();
+                      });
+                      Y.on('load',
+                           function(e) {
+                               Y.bugs.setup_tag_entry(available_official_tags);
+                           },
+                           window);
+                  });
+              </script>
 
-          <div style="width: 45%: text-align: right; float: left;" class="clearfix">
+              <button class="lazr-pos lazr-btn yui-ieditor-submit_button"
+                      id="edit-tags-ok" style="display: none"
+                      type="button">Ok</button>
+              <button class="lazr-neg lazr-btn yui-ieditor-cancel_button"
+                      id="edit-tags-cancel" style="display: none"
+                      type="button">Cancel</button>
+           </form>
+          </div>
+          <div id="add-bug-tags"
+               tal:attributes="class python: ('tags-container ' +
+                                              (not(context.bug.tags) and
+                                              'tags-show' or 'tags-hide'))">
+            <a href="+edit" title="Add tags" id="add-tags-trigger">
+              <img src="/@@/add" />
+              Add tags
+            </a>
+          </div>
+          <div style="width: 45%: text-align: right; float: right;" class="clearfix">
             <tal:editdescription
                 define="link context_menu/editdescription"
                 condition="link/enabled"

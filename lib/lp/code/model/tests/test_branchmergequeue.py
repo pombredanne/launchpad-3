@@ -10,7 +10,7 @@ from unittest import TestLoader
 from zope.security.proxy import isinstance
 
 from canonical.launchpad.ftests import login_person
-from canonical.launchpad.testing import TestCaseWithFactory
+from lp.testing import TestCaseWithFactory
 from lp.code.model.branchmergequeue import (
     BranchMergeQueueSet, MultiBranchMergeQueue, SingleBranchMergeQueue)
 from lp.code.interfaces.branch import (

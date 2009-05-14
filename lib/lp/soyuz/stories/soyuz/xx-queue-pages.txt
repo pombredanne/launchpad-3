@@ -231,7 +231,7 @@ upload.
 Swallow any email generated at the upload:
 
   >>> from lp.services.mail import stub
-  >>> from canonical.launchpad.tests.mail_helpers import pop_notifications
+  >>> from lp.testing.mail_helpers import pop_notifications
   >>> swallow = pop_notifications()
 
 Set up a second browser on the same page to simulate accidentally posting to the

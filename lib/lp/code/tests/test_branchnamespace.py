@@ -10,7 +10,6 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.testing import DatabaseFunctionalLayer
 
@@ -32,6 +31,7 @@ from lp.registry.interfaces.person import NoSuchPerson
 from lp.registry.interfaces.product import NoSuchProduct
 from lp.registry.interfaces.sourcepackagename import (
     NoSuchSourcePackageName)
+from lp.testing import TestCaseWithFactory
 
 
 class NamespaceMixin:

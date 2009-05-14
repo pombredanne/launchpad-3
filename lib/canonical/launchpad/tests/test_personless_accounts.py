@@ -3,7 +3,7 @@
 import unittest
 
 from canonical.launchpad.ftests import ANONYMOUS, login
-from canonical.launchpad.testing import TestCaseWithFactory
+from lp.testing import TestCaseWithFactory
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.testing import DatabaseFunctionalLayer
 

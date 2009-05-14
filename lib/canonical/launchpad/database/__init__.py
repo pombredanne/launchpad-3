@@ -119,7 +119,6 @@ from canonical.launchpad.database.logintoken import *
 from lp.registry.model.codeofconduct import *
 from lp.soyuz.model.component import *
 from lp.soyuz.model.section import *
-from canonical.shipit.model.shipit import *
 from canonical.launchpad.database.vpoexport import *
 from canonical.launchpad.database.vpotexport import *
 from lp.registry.model.karma import *
@@ -136,7 +135,6 @@ from lp.registry.model.gpgkey import *
 from lp.soyuz.model.archive import *
 from canonical.launchpad.database.emailaddress import *
 from canonical.launchpad.database.oauth import *
-from canonical.launchpad.database.openidserver import *
 from lp.registry.model.entitlement import *
 from lp.registry.model.mailinglist import *
 from canonical.launchpad.database.hwdb import *

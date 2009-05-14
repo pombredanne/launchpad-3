@@ -1,0 +1,52 @@
+<configure xmlns="http://namespaces.zope.org/zope">
+
+    <class class=".openidserver.OpenIDAuthorization">
+        <allow
+            interface="..interfaces.openidserver.IOpenIDAuthorization"
+            />
+    </class>
+
+    <securedutility
+        class=".openidserver.OpenIDAuthorizationSet"
+        provides="..interfaces.openidserver.IOpenIDAuthorizationSet">
+        <allow
+            interface="..interfaces.openidserver.IOpenIDAuthorizationSet"
+            />
+    </securedutility>
+
+    <utility
+        provides="..interfaces.openidserver.ILaunchpadOpenIDStoreFactory"
+        component=".openidserver.LaunchpadOpenIDStore">
+    </utility>
+
+    <class
+        class=".openidserver.OpenIDRPConfig">
+      <allow interface="..interfaces.openidserver.IOpenIDRPConfig" />
+      <require
+          permission="launchpad.Admin"
+          attributes="destroySelf"
+          set_schema="..interfaces.openidserver.IOpenIDRPConfig" />
+    </class>
+
+    <securedutility
+        class=".openidserver.OpenIDRPConfigSet"
+        provides="..interfaces.openidserver.IOpenIDRPConfigSet">
+      <allow
+          interface="..interfaces.openidserver.IOpenIDRPConfigSet"
+          />
+    </securedutility>
+
+    <class
+        class=".openidserver.OpenIDRPSummary">
+        <allow interface="..interfaces.openidserver.IOpenIDRPSummary" />
+    </class>
+
+    <securedutility
+        class=".openidserver.OpenIDRPSummarySet"
+        provides="..interfaces.openidserver.IOpenIDRPSummarySet">
+        <allow
+            interface="..interfaces.openidserver.IOpenIDRPSummarySet" />
+    </securedutility>
+
+
+</configure>
