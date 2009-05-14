@@ -255,8 +255,7 @@ class BranchContextMenu(ContextMenu):
     @enabled_with_permission('launchpad.AnyPerson')
     def register_merge(self):
         text = 'Propose for merging into another branch'
-        # It is not valid to propose a junk branch for merging.
-        enabled = self.context.product is not None
+        enabled = self.context.target.supports_merge_proposals
         return Link('+register-merge', text, icon='add', enabled=enabled)
 
     def landing_candidates(self):
@@ -484,11 +483,7 @@ class BranchView(LaunchpadView, FeedsMixin):
         Merge proposal links should not be shown if there is only one branch in
         a non-final state.
         """
-        # XXX: rockstar - Eventually, this if statement needs to be:
-        # if not self.context.target.supportsMergeProposals() and will when
-        # jml gets to it in his source package branch work.
-        # spec=package-branches
-        if not self.context.product:
+        if not self.context.target.supports_merge_proposals:
             return False
         return self.context.target.collection.getBranches().count() > 1
 
