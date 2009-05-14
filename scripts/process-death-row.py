@@ -28,7 +28,7 @@ import _pythonpath
 
 from zope.component import getUtility
 
-from canonical.archivepublisher.deathrow import getDeathRow
+from lp.archivepublisher.deathrow import getDeathRow
 from canonical.config import config
 from canonical.launchpad.interfaces import IDistributionSet
 from canonical.launchpad.scripts.base import LaunchpadScript
