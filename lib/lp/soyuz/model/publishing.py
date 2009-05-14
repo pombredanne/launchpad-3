@@ -1123,15 +1123,16 @@ class PublishingSet:
         published_builds = store.find(
             (SourcePackagePublishingHistory, Build, DistroArchSeries),
             self._getSourceBinaryJoinForSources(source_publication_ids))
+        published_builds.order_by(
+            SourcePackagePublishingHistory.id,
+            DistroArchSeries.architecturetag)
 
         # Now to return all the unpublished builds, we use the difference
         # of all builds minus the published ones.
         unpublished_builds = self.getBuildsForSourceIds(
             source_publication_ids).difference(published_builds)
 
-        return unpublished_builds#.order_by(
-#            SourcePackagePublishingHistory.id,
-#            DistroArchSeries.architecturetag)
+        return unpublished_builds
 
     def getFilesForSources(self, one_or_more_source_publications):
         """See `IPublishingSet`."""
