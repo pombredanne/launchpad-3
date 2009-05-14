@@ -1,4 +1,7 @@
 #!/usr/bin/env python2.5
+#
+# Copyright <YEARS> Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3; see the file LICENSE for
 
 """
 This script is here to help us discover what the text equivalent of a

@@ -1,4 +1,7 @@
 #!/bin/sh
+#
+# Copyright <YEARS> Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3; see the file LICENSE for
 
 if [ -n "$1" ]; then
     USER=$1

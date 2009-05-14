@@ -1,4 +1,8 @@
 #!/usr/bin/python2.4
+#
+# Copyright <YEARS> Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3; see the file LICENSE for
+
 import sys
 from canonical.lp import initZopeless
 from canonical.database import postgresql
