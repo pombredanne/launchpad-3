@@ -142,7 +142,7 @@ error message instead.
 
 Set the canned fault.
 
-    >>> from canonical.launchpad.ftests.salesforce import (
+    >>> from lp.registry.tests.salesforce import (
     ...     SalesforceXMLRPCTestTransport)
     >>> SalesforceXMLRPCTestTransport.forced_fault = (
     ...     'redeemVoucher', 'NotFound','Something was not found.')
