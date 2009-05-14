@@ -32,13 +32,13 @@
     <h2>Branches in other series</h2>
     <ul class="sourcepackage-links">
       <tal:series-link repeat="link view/series_links">
-        <li tal:attributes="class link/is_dev_focus">
+        <li tal:attributes="class link/dev_focus_css">
           <a tal:condition="link/linked"
              tal:attributes="href link/package/fmt:url"
              tal:content="link/series_name">
           </a>
-          <b tal:condition="not: link/linked"
-             tal:content="link/series_name" />
+          <strong tal:condition="not: link/linked"
+                  tal:content="link/series_name" />
           (<tal:num-branches tal:content="link/num_branches"/>)
         </li>
       </tal:series-link>

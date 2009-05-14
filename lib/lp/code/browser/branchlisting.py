@@ -1381,12 +1381,12 @@ class SourcePackageBranchesView(BranchListingView):
             if not series.active:
                 continue
             if distribution.currentseries == series:
-                is_dev_focus = 'sourcepackage-dev-focus'
+                dev_focus_css = 'sourcepackage-dev-focus'
             else:
-                is_dev_focus = 'sourcepackage-not-dev-focus'
+                dev_focus_css = 'sourcepackage-not-dev-focus'
             package = SourcePackage(our_sourcepackagename, series)
-            # XXX: JonathanLange 2009-05-13: This approach is inefficient. We
-            # should instead do something like:
+            # XXX: JonathanLange 2009-05-13 bug=376295: This approach is
+            # inefficient. We should instead do something like:
             #
             #   SELECT distroseries, COUNT(id)
             #   FROM Branch
@@ -1403,7 +1403,7 @@ class SourcePackageBranchesView(BranchListingView):
                 series_name=series.displayname,
                 package=package,
                 num_branches='%s %s' % (num_branches, num_branches_text),
-                is_dev_focus=is_dev_focus,
+                dev_focus_css=dev_focus_css,
                 linked=(series != our_series))
 
 
