@@ -83,12 +83,19 @@ We'll create a test class that actually implements the methods we need.
     ...     def getBugNotification(self):
     ...         return self.bug_notification_data
 
+    >>> activity_to_ignore = set()
     >>> def print_bug_activity(activity):
     ...     for activity in activity:
-    ...         print "%s: %s %s => %s (%s)" % (
-    ...             activity.datechanged, activity.whatchanged,
-    ...             activity.oldvalue, activity.newvalue,
-    ...             activity.person.displayname)
+    ...         if activity not in activity_to_ignore:
+    ...             print "%s: %s %s => %s (%s)" % (
+    ...                 activity.datechanged, activity.whatchanged,
+    ...                 activity.oldvalue, activity.newvalue,
+    ...                 activity.person.displayname)
+
+Creating bugs generates activity records, indirectly, using the
+addChange() API, but we want to ignore them for now.
+
+    >>> activity_to_ignore.update(example_bug.activity)
 
 BugActivity entries are added when addChange() is called.
 

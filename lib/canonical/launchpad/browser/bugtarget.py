@@ -508,9 +508,6 @@ class FileBugViewBase(LaunchpadFormView):
         if 'milestone' in data:
             bugtask.milestone = data['milestone']
 
-        # Tell everyone.
-        notify(ObjectCreatedEvent(bug))
-
         for comment in extra_data.comments:
             bug.newMessage(self.user, bug.followup_subject(), comment)
             notifications.append(
