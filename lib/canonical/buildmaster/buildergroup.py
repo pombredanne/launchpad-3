@@ -1,4 +1,4 @@
-# Copyright Canonical Limited 2004-2007
+# Copyright Canonical Limited 2004-2009
 """Builder Group model.
 
 Implement methods to deal with builder and their results.
@@ -421,8 +421,8 @@ class BuilderGroup:
                 if os.path.exists(upload_final_location):
                     log_filepath = os.path.join(
                         upload_final_location, 'uploader.log')
+                    uploader_log_file = open(log_filepath)
                     try:
-                        uploader_log_file = open(log_filepath)
                         uploader_log_content = uploader_log_file.read()
                     finally:
                         uploader_log_file.close()
