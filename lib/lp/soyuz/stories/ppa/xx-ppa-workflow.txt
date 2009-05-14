@@ -45,6 +45,15 @@ the PPA in Launchpad UI and the later indicating that the user has
 read and accepted the conditions. The is also an optional 'description'
 text-area.
 
+There is also a message, near the form actions, in which the user is
+warned about the fact the activating this PPA will block renaming of
+the context launchpad user.
+
+    >>> print extract_text(
+    ...     first_tag_by_class(sample_browser.contents, 'actions'))
+    Activating this PPA will block future renaming of Sample Person
+    ...
+
 'Displayname' is required.
 
     >>> sample_browser.getControl("Activate").click()
@@ -192,6 +201,17 @@ Let's proceed with the required permissions:
     >>> sample_browser.getControl(name="field.accepted").value = True
     >>> sample_browser.getControl(
     ...    name="field.description").value = 'Hoohay for Team PPA.'
+
+The user is, again, warned about the fact that activating this PPA
+will block renaming of the context team.
+
+    >>> print extract_text(
+    ...     first_tag_by_class(sample_browser.contents, 'actions'))
+    Activating this PPA will block future renaming of Landscape Developers
+    ...
+
+That understood, the PPA gets activated.
+
     >>> sample_browser.getControl("Activate").click()
 
     >>> print sample_browser.title
@@ -500,6 +520,15 @@ all his PPAs.
     PPA contents description: (Optional)
       A short description of this PPA. URLs are allowed and will be
       rendered as links.
+
+Note that, differently than the time when the first PPA was activated,
+this time there is no warning about the fact that the context renaming
+will be blocked. We assumed that, at this point, this is already a
+known aspect.
+
+    >>> print extract_text(
+    ...     first_tag_by_class(cprov_browser.contents, 'actions'))
+    or Cancel
 
 If Celso does not fill 'PPA name' an error is raised.
 
