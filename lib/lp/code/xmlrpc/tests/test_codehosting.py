@@ -515,7 +515,7 @@ class AcquireBranchToPullTestsViaEndpoint(TestCaseWithFactory,
     def assertBranchIsAquired(self, branch):
         """See `AcquireBranchToPullTests`."""
         pull_info = self.storage.acquireBranchToPull()
-        default_branch= branch.target.default_stacked_on_branch
+        default_branch = branch.target.default_stacked_on_branch
         if default_branch:
             default_branch_name = default_branch
         else:
