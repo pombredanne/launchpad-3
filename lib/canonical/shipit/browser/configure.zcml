@@ -10,6 +10,24 @@
             ShipItNavigation
             ShippingRequestSetNavigation
             StandardShipItRequestSetNavigation"/>
+    <publisher
+        name="shipit-ubuntu"
+        factory="canonical.shipit.browser.ubuntu_request_publication_factory"
+        methods="*"
+        mimetypes="*"
+        priority="100" />
+    <publisher
+        name="shipit-kubuntu"
+        factory="canonical.shipit.browser.kubuntu_request_publication_factory"
+        methods="*"
+        mimetypes="*"
+        priority="110" />
+    <publisher
+        name="shipit-edubuntu"
+        factory="canonical.shipit.browser.edubuntu_request_publication_factory"
+        methods="*"
+        mimetypes="*"
+        priority="120" />
     <browser:page
         for="*"
         permission="zope.Public"
@@ -274,6 +292,13 @@
         attribute="__call__"
         permission="zope.Public"
         />
+    <browser:page
+        name=""
+        for="canonical.shipit.interfaces.shipit.IShipItApplication"
+        class="canonical.launchpad.browser.launchpad.LaunchpadImageFolder"
+        permission="zope.Public"
+        />
+
     <view
         type="zope.publisher.interfaces.browser.IBrowserRequest"
         for="canonical.shipit.fields.IShipItRecipientDisplayname"

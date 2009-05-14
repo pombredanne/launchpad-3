@@ -27,7 +27,7 @@ from lp.registry.interfaces.person import NoSuchPerson
 from lp.registry.interfaces.product import NoSuchProduct
 from lp.registry.interfaces.sourcepackagename import (
     NoSuchSourcePackageName)
-from canonical.launchpad.testing import TestCaseWithFactory
+from lp.testing import TestCaseWithFactory
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.testing import DatabaseFunctionalLayer
 

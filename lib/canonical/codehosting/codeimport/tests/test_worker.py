@@ -31,7 +31,7 @@ from canonical.codehosting.codeimport.tests.servers import (
 from canonical.codehosting.tests.helpers import (
     create_branch_with_one_revision)
 from canonical.config import config
-from canonical.launchpad.testing import LaunchpadObjectFactory
+from lp.testing.factory import LaunchpadObjectFactory
 from canonical.testing import BaseLayer
 
 import pysvn

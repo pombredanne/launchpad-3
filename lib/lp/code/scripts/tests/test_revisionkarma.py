@@ -11,7 +11,7 @@ from unittest import TestLoader
 from canonical.config import config
 from canonical.launchpad.database.emailaddress import EmailAddressSet
 from canonical.launchpad.scripts.garbo import RevisionAuthorEmailLinker
-from canonical.launchpad.testing import TestCaseWithFactory
+from lp.testing import TestCaseWithFactory
 from canonical.testing import LaunchpadZopelessLayer
 
 from lp.code.model.revision import RevisionSet

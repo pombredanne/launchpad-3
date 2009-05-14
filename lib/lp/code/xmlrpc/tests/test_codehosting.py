@@ -22,8 +22,8 @@ from canonical.launchpad.interfaces.scriptactivity import (
 from lp.code.interfaces.codehosting import (
     BRANCH_TRANSPORT, CONTROL_TRANSPORT)
 from canonical.launchpad.interfaces.launchpad import ILaunchBag
-from canonical.launchpad.testing import (
-    LaunchpadObjectFactory, TestCase, TestCaseWithFactory)
+from lp.testing import TestCase, TestCaseWithFactory
+from lp.testing.factory import LaunchpadObjectFactory
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from canonical.launchpad.xmlrpc import faults
 from canonical.testing import DatabaseFunctionalLayer, FunctionalLayer

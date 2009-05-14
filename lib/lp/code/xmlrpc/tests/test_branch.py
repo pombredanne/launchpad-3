@@ -18,7 +18,7 @@ from lp.code.interfaces.branch import BranchType
 from lp.code.interfaces.branchlookup import (
     ISourcePackagePocketFactory)
 from lp.soyuz.interfaces.publishing import PackagePublishingPocket
-from canonical.launchpad.testing import TestCaseWithFactory
+from lp.testing import TestCaseWithFactory
 from lazr.uri import URI
 from lp.code.xmlrpc.branch import PublicCodehostingAPI
 from canonical.launchpad.xmlrpc import faults

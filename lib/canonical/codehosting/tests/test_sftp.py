@@ -22,7 +22,7 @@ from canonical.codehosting.inmemory import InMemoryFrontend, XMLRPCWrapper
 from canonical.codehosting.sftp import (
     FatLocalTransport, TransportSFTPServer, FileIsADirectory)
 from canonical.codehosting.sshserver.auth import LaunchpadAvatar
-from canonical.launchpad.testing import LaunchpadObjectFactory
+from lp.testing.factory import LaunchpadObjectFactory
 from canonical.testing.layers import TwistedLayer
 
 

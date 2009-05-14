@@ -26,7 +26,7 @@ from lp.code.interfaces.branchsubscription import (
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
     CodeReviewNotificationLevel)
 from lp.code.interfaces.codehosting import LAUNCHPAD_SERVICES
-from canonical.launchpad.testing import TestCaseWithFactory
+from lp.testing import TestCaseWithFactory
 from canonical.launchpad.testing.databasehelpers import (
     remove_all_sample_data_branches)
 from canonical.launchpad.webapp.interfaces import (
