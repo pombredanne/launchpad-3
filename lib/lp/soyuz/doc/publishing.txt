@@ -159,7 +159,7 @@ After publishing the second binary, the status changes to FULLYBUILT as
 per normal:
 
     >>> bpr = stp.uploadBinaryForBuild(builds[1], 'foo-bin')
-    >>> binary_publishings = stp.publishBinaryInArchive(bpr, spph.archive,
+    >>> bpph = stp.publishBinaryInArchive(bpr, spph.archive,
     ...     status=PackagePublishingStatus.PUBLISHED)
     >>> print_build_status_summary(spph.getStatusSummaryForBuilds())
     FULLYBUILT

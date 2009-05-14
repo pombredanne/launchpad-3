@@ -896,10 +896,7 @@ class IPublishingSet(Interface):
         :param one_or_more_source_publications: list of, or a single
             `SourcePackagePublishingHistory` object.
         :param build_states: list of build states to which the result should
-            be limited.        :param build_states: list of build states to which the result should
             be limited. Defaults to BuildStatus.FULLYBUILT if none are
-            specified.
- Defaults to BuildStatus.FULLYBUILT if none are
             specified.
         :return: a storm ResultSet containing tuples of
             (`SourcePackagePublishingHistory`, `Build`)
