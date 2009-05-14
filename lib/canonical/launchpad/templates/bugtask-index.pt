@@ -19,7 +19,7 @@
       </script>
       <script type="text/javascript"
               tal:define="lp_js string:${icingroot}/build"
-              tal:attributes="src string:${lp_js}/bugs/bugtask_tags_entry.js">
+              tal:attributes="src string:${lp_js}/bugs/bug_tags_entry.js">
       </script>
       <script type="text/javascript">
         YUI().use('base', 'node', 'oop', 'event', 'bugs.bugtask_index', function(Y) {
@@ -185,7 +185,7 @@
                 <img src="/@@/spinner" id="tags-edit-spinner" style="display: none" />
                 <a href="+edit" title="Edit tags" id="edit-tags-trigger"><img src="/@@/edit" /></a>
               <script type="text/javascript">
-                  YUI().use('event', 'bugs.bug_tags_entry', function(Y) {
+                  YUI().use('event', 'node', 'bugs.bug_tags_entry', function(Y) {
                       // XXX intellectronica 2009-04-16 bug #362309:
                       // The load event fires very late on bug pages that take a
                       // long time to render, but we prefer to use it since the
