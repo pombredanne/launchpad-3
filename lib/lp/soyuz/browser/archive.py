@@ -60,7 +60,7 @@ from canonical.launchpad.interfaces.launchpad import (
     ILaunchpadCelebrities, NotFoundError)
 from lp.soyuz.interfaces.packagecopyrequest import (
     IPackageCopyRequestSet)
-from lp.registry.interfaces.person import IPersonSet
+from lp.registry.interfaces.person import IPersonSet, PersonVisibility
 from lp.soyuz.interfaces.publishing import (
     PackagePublishingPocket, active_publishing_status,
     inactive_publishing_status, IPublishingSet)
@@ -562,7 +562,7 @@ class ArchiveSourcePackageListViewBase(ArchiveViewBase):
     def filtered_sources(self):
         """Return the source results for display after filtering.
 
-        It expects 'self.selected_status_filter' and 
+        It expects 'self.selected_status_filter' and
         'self.selected_series_filter' to be set.
         """
         return self.context.getPublishedSources(
@@ -1376,12 +1376,23 @@ class ArchiveActivateView(LaunchpadFormView):
         """
         LaunchpadFormView.setUpFields(self)
 
+        self.is_private = (
+            self.context.visibility == PersonVisibility.PRIVATE)
+
         if self.context.archive is not None:
-            self.form_fields = self.form_fields.select(
-                'name', 'displayname', 'description')
+            if self.is_private:
+                self.form_fields = self.form_fields.select(
+                    'name', 'displayname', 'buildd_secret', 'description')
+            else:
+                self.form_fields = self.form_fields.select(
+                    'name', 'displayname', 'description')
         else:
-            self.form_fields = self.form_fields.select(
-                'displayname', 'accepted', 'description')
+            if self.is_private:
+                self.form_fields = self.form_fields.select(
+                    'displayname', 'accepted', 'buildd_secret', 'description')
+            else:
+                self.form_fields = self.form_fields.select(
+                    'displayname', 'accepted', 'description')
 
     def validate(self, data):
         """Ensure user has checked the 'accepted' checkbox."""
@@ -1437,6 +1448,11 @@ class ArchiveActivateView(LaunchpadFormView):
             owner=self.context, purpose=ArchivePurpose.PPA,
             distribution=ubuntu, name=name,
             displayname=data['displayname'], description=data['description'])
+
+        if self.is_private:
+            ppa.buildd_secret = data['buildd_secret']
+            ppa.private = True
+
         self.next_url = canonical_url(ppa)
 
 
