@@ -221,27 +221,22 @@ class Branch(SQLBase):
                          initial_comment=None, review_requests=None,
                          review_diff=None):
         """See `IBranch`."""
-        if self.product is None:
+        if not self.target.supports_merge_proposals:
             raise InvalidBranchMergeProposal(
-                'Junk branches cannot be used as source branches.')
-        if not IBranch.providedBy(target_branch):
-            raise InvalidBranchMergeProposal(
-                'Target branch must implement IBranch.')
+                '%s branches do not support merge proposals.'
+                % self.target.displayname)
         if self == target_branch:
             raise InvalidBranchMergeProposal(
                 'Source and target branches must be different.')
-        if self.product != target_branch.product:
+        if not target_branch.isBranchMergeable(self):
             raise InvalidBranchMergeProposal(
-                'The source branch and target branch must be branches of the '
-                'same project.')
+                '%s is not mergeable into %s' % (
+                    self.bzr_identity, target_branch.bzr_identity))
         if dependent_branch is not None:
-            if not IBranch.providedBy(dependent_branch):
+            if not self.isBranchMergeable(dependent_branch):
                 raise InvalidBranchMergeProposal(
-                    'Dependent branch must implement IBranch.')
-            if self.product != dependent_branch.product:
-                raise InvalidBranchMergeProposal(
-                    'The source branch and dependent branch must be branches '
-                    'of the same project.')
+                    '%s is not mergeable into %s' % (
+                        dependent_branch.bzr_identity, self.bzr_identity))
             if self == dependent_branch:
                 raise InvalidBranchMergeProposal(
                     'Source and dependent branches must be different.')
