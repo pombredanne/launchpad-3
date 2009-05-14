@@ -16,7 +16,6 @@ from lp.registry.interfaces.person import *
 from lp.registry.interfaces.pillar import *
 
 from canonical.launchpad.interfaces.account import *
-from lp.soyuz.interfaces.archive import *
 from lp.soyuz.interfaces.archivedependency import *
 from lp.soyuz.interfaces.archivepermission import *
 from lp.soyuz.interfaces.archivesubscriber import *
