@@ -9,6 +9,11 @@
   metal:use-macro="view/macro:page/pillarindex"
   i18n:domain="launchpad">
 <body>
+  <metal:block fill-slot="head_epilogue">
+    <metal:yui-dependencies
+      use-macro="context/@@launchpad_widget_macros/yui2calendar-dependencies" />
+  </metal:block>
+
   <h1 metal:fill-slot="heading">Meetings and Sprints</h1>
 
 <metal:leftportlets fill-slot="portlets_one">

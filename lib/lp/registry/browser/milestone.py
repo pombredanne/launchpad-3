@@ -63,7 +63,9 @@ class MilestoneContextMenu(ContextMenu):
         # ProjectMilestones are virtual milestones and do not have
         # any properties which can be edited.
         enabled = not IProjectMilestone.providedBy(self.context)
-        return Link('+edit', text, icon='edit', enabled=enabled)
+        summary = "Edit this milestone"
+        return Link(
+            '+edit', text, icon='edit', summary=summary, enabled=enabled)
 
     def subscribe(self):
         enabled = not IProjectMilestone.providedBy(self.context)
@@ -201,7 +203,7 @@ class MilestoneAddView(LaunchpadFormView):
 
     custom_widget('dateexpected', DateWidget)
 
-    @action(_('Register milestone'), name='register')
+    @action(_('Register Milestone'), name='register')
     def register_action(self, action, data):
         """Use the newMilestone method on the context to make a milestone."""
         milestone = self.context.newMilestone(

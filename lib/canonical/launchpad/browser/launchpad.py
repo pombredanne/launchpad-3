@@ -50,7 +50,7 @@ from canonical.lazr import ExportedFolder, ExportedImageFolder
 from canonical.launchpad.helpers import intOrZero
 
 from lp.registry.interfaces.announcement import IAnnouncementSet
-from canonical.launchpad.interfaces.binarypackagename import (
+from lp.soyuz.interfaces.binarypackagename import (
     IBinaryPackageNameSet)
 from canonical.launchpad.interfaces.bounty import IBountySet
 from lp.code.interfaces.branchlookup import (
@@ -58,7 +58,7 @@ from lp.code.interfaces.branchlookup import (
 from lp.code.interfaces.branchnamespace import InvalidNamespace
 from canonical.launchpad.interfaces.bug import IBugSet
 from canonical.launchpad.interfaces.bugtracker import IBugTrackerSet
-from canonical.launchpad.interfaces.builder import IBuilderSet
+from lp.soyuz.interfaces.builder import IBuilderSet
 from lp.code.interfaces.codeimport import ICodeImportSet
 from lp.registry.interfaces.codeofconduct import ICodeOfConductSet
 from canonical.launchpad.interfaces.cve import ICveSet
@@ -76,7 +76,7 @@ from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
 from lp.registry.interfaces.mailinglist import IMailingListSet
 from canonical.launchpad.interfaces.malone import IMaloneApplication
 from lp.registry.interfaces.mentoringoffer import IMentoringOfferSet
-from canonical.launchpad.interfaces.openidserver import IOpenIDRPConfigSet
+from canonical.signon.interfaces.openidserver import IOpenIDRPConfigSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.registry.interfaces.product import (

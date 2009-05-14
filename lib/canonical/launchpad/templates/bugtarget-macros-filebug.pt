@@ -447,7 +447,7 @@
                     tal:define="description bug/description/fmt:shorten/500/fmt:obfuscate-email/fmt:text-to-html"
                     tal:content="structure description" />
 
-                <div class="lesser" tal:condition="bugtask">
+                <div class="lesser">
                   <form action="."
                       tal:attributes="action view/action_url"
                       method="post"
@@ -459,10 +459,8 @@
                                id string:bug-already-reported-as-${bug/id};
                                value string:${bug/id};" />
 
-                      <input type="submit"
-                          id="field.actions.this_is_my_bug"
-                          name="field.actions.this_is_my_bug"
-                          value="Yes, subscribe me..." />
+                      <tal:this-is-my-bug-action
+                          replace="structure view/this_is_my_bug_action/render" />
 
                     </span>
                   </form>

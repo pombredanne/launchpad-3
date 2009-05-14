@@ -115,7 +115,7 @@ When we want other users to track a specification we can subscribe them.
 
 When we subscribe someone else to a blueprint, they get notified by email.
 
-    >>> from canonical.launchpad.tests.mail_helpers import pop_notifications
+    >>> from lp.testing.mail_helpers import pop_notifications
     >>> last_email = pop_notifications()[-1]
     >>> last_email['To']
     '...stuart.bishop@canonical.com...'

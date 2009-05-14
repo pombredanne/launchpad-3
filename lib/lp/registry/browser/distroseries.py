@@ -30,9 +30,9 @@ from canonical.database.constants import UTC_NOW
 from canonical.launchpad import _
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
-from canonical.launchpad.browser.build import BuildRecordsView
+from lp.soyuz.browser.build import BuildRecordsView
 from canonical.launchpad.browser.packagesearch import PackageSearchViewBase
-from canonical.launchpad.browser.queue import QueueItemsView
+from lp.soyuz.browser.queue import QueueItemsView
 from canonical.launchpad.browser.translations import TranslationsMixin
 from canonical.launchpad.interfaces.country import ICountry
 from lp.registry.interfaces.distroseries import (

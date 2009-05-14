@@ -16,7 +16,7 @@ from zope.interface import implements
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.interfaces.branchtarget import (
     check_default_stacked_on, IBranchTarget)
-from canonical.launchpad.interfaces.publishing import PackagePublishingPocket
+from lp.soyuz.interfaces.publishing import PackagePublishingPocket
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 
 

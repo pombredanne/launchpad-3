@@ -19,6 +19,7 @@
 
   <include package="lp.code" />
 
+  <include package="lp.soyuz" />
   <include package="lp.blueprints" />
 
   <browser:url

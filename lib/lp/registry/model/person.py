@@ -74,9 +74,8 @@ from canonical.launchpad.interfaces.lpstorm import IMasterObject, IMasterStore
 from canonical.launchpad.interfaces.account import (
     AccountCreationRationale, AccountStatus, IAccount, IAccountSet,
     INACTIVE_ACCOUNT_STATUSES)
-from canonical.launchpad.interfaces.archive import (
-    ArchivePurpose, NoSuchPPA)
-from canonical.launchpad.interfaces.archivepermission import (
+from lp.soyuz.interfaces.archive import ArchivePurpose, NoSuchPPA
+from lp.soyuz.interfaces.archivepermission import (
     IArchivePermissionSet)
 from canonical.launchpad.interfaces.authtoken import LoginTokenType
 from lp.code.interfaces.branchmergeproposal import (
@@ -125,7 +124,7 @@ from canonical.launchpad.webapp.interfaces import (
     AUTH_STORE, ILaunchBag, IStoreSelector, MASTER_FLAVOR)
 
 
-from canonical.launchpad.database.archive import Archive
+from lp.soyuz.model.archive import Archive
 from lp.registry.model.codeofconduct import SignedCodeOfConduct
 from canonical.launchpad.database.bugtask import BugTask
 from canonical.launchpad.database.emailaddress import (
@@ -135,7 +134,7 @@ from canonical.launchpad.database.logintoken import LoginToken
 from lp.registry.model.pillar import PillarName
 from lp.registry.model.karma import KarmaAction, KarmaAssignedEvent, Karma
 from lp.registry.model.mentoringoffer import MentoringOffer
-from canonical.launchpad.database.sourcepackagerelease import (
+from lp.soyuz.model.sourcepackagerelease import (
     SourcePackageRelease)
 from lp.blueprints.model.specification import (
     HasSpecificationsMixin, Specification)

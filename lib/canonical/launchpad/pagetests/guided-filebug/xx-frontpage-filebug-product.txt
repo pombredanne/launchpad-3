@@ -76,6 +76,18 @@ also matches, but is a duplicate of bug 5 so does not appear.
     Open (1 comment) last updated 2006-05-19
     Firefox needs to support embedded SVG images...
 
+A user can click on any of the "Yes, this is my bug" buttons to mark the
+bug as affecting them.
+
+    >>> user_browser.getControl(
+    ...     name='field.actions.this_is_my_bug', index=0).click()
+    >>> print user_browser.url
+    http://bugs.launchpad.dev/firefox/+bug/5
+
+    >>> for message in find_tags_by_class(user_browser.contents, 'message'):
+    ...     print message.renderContents()
+    This bug has been marked as affecting you.
+
 If the current user is not permitted to view the duplicated bug (in
 other words, the main bug) then it, and the duplicate it was found
 from, are omitted from the search results.
