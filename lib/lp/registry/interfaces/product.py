@@ -168,6 +168,7 @@ class LicenseStatus(DBEnumeratedType):
         40, "Unspecified",
         u"This project&rsquo;s license has not been specified.")
 
+
 class License(DBEnumeratedType):
     """Licenses under which a project's code can be released."""
 
@@ -176,6 +177,7 @@ class License(DBEnumeratedType):
         'EDUCATIONAL_COMMUNITY', 'AFFERO', 'GNU_GPL_V2','GNU_GPL_V3',
         'GNU_LGPL_V2_1','GNU_LGPL_V3', 'MIT', 'MPL', 'OPEN_SOFTWARE', 'PERL',
         'PHP', 'PUBLIC_DOMAIN', 'PYTHON', 'ZPL',
+        'CC_BY', 'CC_BY_SA', 'CC_0',
         'OTHER_PROPRIETARY', 'OTHER_OPEN_SOURCE')
 
     ACADEMIC = DBItem(10, "Academic Free License")
@@ -198,6 +200,11 @@ class License(DBEnumeratedType):
     PUBLIC_DOMAIN = DBItem(220, "Public Domain")
     PYTHON = DBItem(230, "Python License")
     ZPL = DBItem(280, "Zope Public License")
+    # http://creativecommons.org/about/licenses
+    CC_BY = DBItem(300, 'Creative Commons - Attribution')
+    CC_BY_SA = DBItem(310, 'Creative Commons - Attribution Share Alike')
+    # http://creativecommons.org/about/cc0
+    CC_0 = DBItem(320, 'Creative Commons - No Rights Reserved')
 
     OTHER_PROPRIETARY = DBItem(1000, "Other/Proprietary")
     OTHER_OPEN_SOURCE = DBItem(1010, "Other/Open Source")
