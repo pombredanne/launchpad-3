@@ -179,7 +179,7 @@ The publisher configuration for DEBUG archives points to directories
 besides PRIMARY repository ones, but the distribution part is
 modified to be clearly different than the PRIMARY one.
 
-    >>> from canonical.launchpad.interfaces.archive import ArchivePurpose
+    >>> from lp.soyuz.interfaces.archive import ArchivePurpose
     >>> debug_archive = getUtility(IArchiveSet).new(
     ...     purpose=ArchivePurpose.DEBUG, owner=ubuntutest.owner,
     ...     distribution=ubuntutest)
