@@ -897,8 +897,8 @@ class POFile(SQLBase, POFileMixIn):
                       current.language=%(language)s AND
                       %(variant_clause)s AND
                       TranslationMessage.potmsgset=current.potmsgset AND
-                      TranslationMessage.msgstr0 IS NOT NULL  AND
-                      TranslationMessage.is_current IS TRUE )))""" % dict(
+                      current.msgstr0 IS NOT NULL AND
+                      current.is_current IS TRUE )))""" % dict(
             template=quote(self.potemplate),
             language=quote(self.language),
             variant_clause=variant_clause),
@@ -1268,7 +1268,7 @@ class DummyPOFile(POFileMixIn):
         """See `IPOFile`."""
         return 0
 
-    def nonUpdatesCount(self, language=None):
+    def newCount(self, language=None):
         """See `IRosettaStats`."""
         return 0
 
@@ -1292,7 +1292,7 @@ class DummyPOFile(POFileMixIn):
         """See `IRosettaStats`."""
         return 0.0
 
-    def nonUpdatesPercentage(self, language=None):
+    def newPercentage(self, language=None):
         """See `IRosettaStats`."""
         return 0.0
 
