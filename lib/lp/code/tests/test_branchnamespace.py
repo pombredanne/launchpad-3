@@ -222,6 +222,18 @@ class NamespaceMixin:
         self.assertRaises(
             BranchCreatorNotOwner, namespace.validateMove, branch, mover)
 
+    def test_validateMove_not_team_member(self):
+        # If the mover isn't allowed to create branches in the namespace
+        # because they aren't a member of the team that owns the namespace,
+        # validateMove raises a BranchCreatorNotMemberOfOwnerTeam error.
+        team = self.factory.makeTeam()
+        namespace = self.getNamespace(person=team)
+        branch = self.factory.makeAnyBranch()
+        mover = self.factory.makePerson()
+        self.assertRaises(
+            BranchCreatorNotMemberOfOwnerTeam,
+            namespace.validateMove, branch, mover)
+
     def test_validateMove_with_other_name(self):
         # If you pass a name to validateMove, that'll check to see whether the
         # branch could be safely moved given a rename.
@@ -241,8 +253,10 @@ class TestPersonalNamespace(TestCaseWithFactory, NamespaceMixin):
 
     layer = DatabaseFunctionalLayer
 
-    def getNamespace(self):
-        return get_branch_namespace(person=self.factory.makePerson())
+    def getNamespace(self, person=None):
+        if person is None:
+            person = self.factory.makePerson()
+        return get_branch_namespace(person=person)
 
     def test_name(self):
         # A personal namespace has branches with names starting with
@@ -282,10 +296,11 @@ class TestProductNamespace(TestCaseWithFactory, NamespaceMixin):
 
     layer = DatabaseFunctionalLayer
 
-    def getNamespace(self):
+    def getNamespace(self, person=None):
+        if person is None:
+            person = self.factory.makePerson()
         return get_branch_namespace(
-            person=self.factory.makePerson(),
-            product=self.factory.makeProduct())
+            person=person, product=self.factory.makeProduct())
 
     def test_name(self):
         # A product namespace has branches with names starting with ~foo/bar.
@@ -380,9 +395,11 @@ class TestPackageNamespace(TestCaseWithFactory, NamespaceMixin):
 
     layer = DatabaseFunctionalLayer
 
-    def getNamespace(self):
+    def getNamespace(self, person=None):
+        if person is None:
+            person = self.factory.makePerson()
         return get_branch_namespace(
-            person=self.factory.makePerson(),
+            person=person,
             distroseries=self.factory.makeDistroRelease(),
             sourcepackagename=self.factory.makeSourcePackageName())
 

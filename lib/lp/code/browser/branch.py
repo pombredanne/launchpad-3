@@ -812,12 +812,6 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
             self.form_fields = self.form_fields.omit('owner')
             self.form_fields = any_owner_field + self.form_fields
 
-    def _getNewTarget(self, data):
-        """Get the new branch target that has been selected in 'data'."""
-        # Because the edit form doesn't currently let you change targets, the
-        # new target is always the same as the old one.
-        return self.context.target
-
     def validate(self, data):
         # Check that we're not moving a team branch to the +junk
         # pseudo project.
@@ -826,7 +820,8 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
             # Only validate if the name has changed or the owner has changed.
             if ((data['name'] != self.context.name) or
                 (owner != self.context.owner)):
-                namespace = self._getNewTarget(data).getNamespace(owner)
+                # We only allow moving within the same branch target for now.
+                namespace = self.context.target.getNamespace(owner)
                 try:
                     namespace.validateMove(
                         self.context, self.user, name=data['name'])
