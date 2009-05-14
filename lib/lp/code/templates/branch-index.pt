@@ -252,12 +252,12 @@
         </tal:has-job>
 
         <tal:failing condition="code_import/review_status/enumvalue:FAILING">
-          <p id="failing-try-again">
+          <div id="failing-try-again">
             The import has been suspended because it failed
             <tal:failure-limit content="modules/canonical.config/config/codeimport/consecutive_failure_limit"/>
             or more times in succession.
             <tal:try-again condition="view/user" replace="structure view/context/@@+try-again" />
-          </p>
+          </div>
         </tal:failing>
 
         <tal:last-successful condition="code_import/date_last_successful">
