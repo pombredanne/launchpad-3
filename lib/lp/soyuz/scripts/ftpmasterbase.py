@@ -17,8 +17,6 @@ from lp.soyuz.adapters.packagelocation import (
     build_package_location)
 from lp.soyuz.interfaces.component import IComponentSet
 from canonical.launchpad.webapp.interfaces import NotFoundError
-from lp.soyuz.interfaces.archive import ArchivePurpose
-from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.services.scripts.base import (
     LaunchpadScript, LaunchpadScriptFailure)
 
@@ -53,9 +51,6 @@ class SoyuzScript(LaunchpadScript):
     """
     location = None
     success_message = "Done."
-    published_status = [
-        PackagePublishingStatus.PENDING,
-        PackagePublishingStatus.PUBLISHED]
 
     def add_my_options(self):
         """Adds SoyuzScript default options.
@@ -144,9 +139,12 @@ class SoyuzScript(LaunchpadScript):
         """Return a suitable `SourcePackagePublishingHistory`."""
         assert self.location is not None, 'Undefined location.'
 
+        # Avoiding circular imports.
+        from lp.soyuz.interfaces.publishing import active_publishing_status
+
         published_sources = self.location.archive.getPublishedSources(
             name=name, version=self.options.version,
-            status=self.published_status,
+            status=active_publishing_status,
             distroseries=self.location.distroseries,
             pocket=self.location.pocket,
             exact_match=True)
@@ -168,6 +166,10 @@ class SoyuzScript(LaunchpadScript):
         will restrict the lookup accordingly.
         """
         assert self.location is not None, 'Undefined location.'
+
+        # Avoiding circular imports.
+        from lp.soyuz.interfaces.publishing import active_publishing_status
+
         target_binaries = []
 
         if self.options.architecture is None:
@@ -182,7 +184,7 @@ class SoyuzScript(LaunchpadScript):
         for architecture in architectures:
             binaries = self.location.archive.getAllPublishedBinaries(
                     name=name, version=self.options.version,
-                    status=self.published_status,
+                    status=active_publishing_status,
                     distroarchseries=architecture,
                     pocket=self.location.pocket,
                     exact_match=True)
@@ -236,6 +238,9 @@ class SoyuzScript(LaunchpadScript):
 
     def setupLocation(self):
         """Setup `PackageLocation` for context distribution and suite."""
+        # Avoid circular imports.
+        from lp.soyuz.interfaces.archive import ArchivePurpose
+
         # These can raise PackageLocationError, but we're happy to pass
         # it upwards.
         if getattr(self.options, 'partner_archive', ''):

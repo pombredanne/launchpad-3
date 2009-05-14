@@ -48,9 +48,9 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 
+from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.launchpad.helpers import intOrZero, shortlist
 from canonical.launchpad.datetimeutils import make_mondays_between
-from canonical.launchpad.webapp import canonical_url
 from lp.services.mail.sendmail import simple_sendmail
 
 from canonical.launchpad.interfaces.account import IAccount
@@ -446,10 +446,15 @@ class ShippingRequestSet:
 
         requests = ShippingRequest.selectBy(status=status)
         request_messages = []
+        shipit_root = allvhosts.configs['shipitubuntu'].rooturl
         for request in requests:
+            # We should use canonical_url() here, but that's not really 
+            # feasible as we don't have a browser request and we don't want 
+            # to include shipit-specific logic into LP's canonical_url().
+            request_url = "%s/requests/%s" % (shipit_root, request.id)
             info = ("Request #%d, made by '%s' containing %d CDs\n(%s)"
                     % (request.id, request.recipientdisplayname,
-                       request.getTotalCDs(), canonical_url(request)))
+                       request.getTotalCDs(), request_url))
             request_messages.append(info)
             getattr(request, method_name)()
         fullpath = os.path.join(

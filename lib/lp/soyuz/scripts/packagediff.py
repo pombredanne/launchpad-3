@@ -9,10 +9,9 @@ __all__ = [
 
 from zope.component import getUtility
 
-from lp.soyuz.interfaces.packagediff import IPackageDiffSet
 from lp.services.scripts.base import (
-from canonical.launchpad.scripts.base import (
     LaunchpadCronScript, LaunchpadScriptFailure)
+from lp.soyuz.interfaces.packagediff import IPackageDiffSet
 
 
 class ProcessPendingPackageDiffs(LaunchpadCronScript):

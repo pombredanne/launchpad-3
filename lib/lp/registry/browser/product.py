@@ -1491,7 +1491,7 @@ class ProjectAddStepOne(StepView):
     def main_action(self, data):
         self.next_step = ProjectAddStepTwo
         self.request.form['displayname'] = data['displayname']
-        self.request.form['name'] = data['name']
+        self.request.form['name'] = data['name'].lower()
         self.request.form['summary'] = data['summary']
 
 
