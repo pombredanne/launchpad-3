@@ -1367,7 +1367,7 @@ internals. There are three essential methods to fetch distinct
 information to be cached in the decorated objects:
 
   * getBuildsBySource;
-  * getBinariesBySource;
+  * getUnpublishedBuildsBySource;
   * getChangesFileBySources
 
 They exclude the extra references ('prejoins') returned  from the
@@ -1385,13 +1385,14 @@ Builds by source.
     ...     real_pub.getBuilds(), builds_by_source.get(real_pub, []))
     Matches
 
-Binary publications by source.
+Unpublished builds by source.
 
-    >>> binaries_by_source = decorated_set.getBinariesBySource()
+    >>> unpublished_builds_by_source = (
+    ...     decorated_set.getUnpublishedBuildsBySource())
 
     >>> compare_ids(
-    ...     real_pub.getPublishedBinaries(),
-    ...     binaries_by_source.get(real_pub, []))
+    ...     real_pub.getUnpublishedBuilds(),
+    ...     unpublished_builds_by_source.get(real_pub, []))
     Matches
 
 getChangesFileBySources() returns a dictionary mapping each individual
@@ -1437,14 +1438,14 @@ publications.
 methods:
   * sourcepackagerelease;
   * getBuilds;
-  * getPublishedBinaries.
+  * getUnpublishedBuilds.
 
     >>> compare_ids(real_pub.getBuilds(), decorated_pub.getBuilds())
     Matches
 
     >>> compare_ids(
-    ...     real_pub.getPublishedBinaries(),
-    ...     decorated_pub.getPublishedBinaries())
+    ...     real_pub.getUnpublishedBuilds(),
+    ...     decorated_pub.getUnpublishedBuilds())
     Matches
 
 The 'sourcepackagerelease' attribute from a decorated

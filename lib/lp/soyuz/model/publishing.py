@@ -1324,9 +1324,10 @@ class PublishingSet:
         if (source_publication.status in active_publishing_status and
                 summary['status'] == BuildSetStatus.FULLYBUILT):
 
-            unpublished_builds = source_publication.getUnpublishedBuilds()
+            unpublished_builds = list(
+                source_publication.getUnpublishedBuilds())
 
-            if unpublished_builds.count() > 0:
+            if unpublished_builds:
                 augmented_summary = {
                     'status': BuildSetStatus.FULLYBUILT_PENDING,
                     'builds': unpublished_builds
