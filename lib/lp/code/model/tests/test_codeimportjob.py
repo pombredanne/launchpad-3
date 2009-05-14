@@ -35,7 +35,7 @@ from lp.code.interfaces.codeimportresult import (
     CodeImportResultStatus, ICodeImportResult, ICodeImportResultSet)
 from lp.registry.interfaces.person import IPersonSet
 from canonical.launchpad.ftests import ANONYMOUS, login, logout, sync
-from canonical.launchpad.testing import TestCaseWithFactory
+from lp.testing import TestCaseWithFactory
 from canonical.launchpad.testing.codeimporthelpers import (
     make_finished_import, make_running_import)
 from canonical.launchpad.testing.pages import get_feedback_messages

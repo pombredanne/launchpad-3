@@ -7,7 +7,7 @@ __metaclass__ = type
 import unittest
 
 from lp.code.browser.branch import BranchNavigationMenu
-from canonical.launchpad.testing import TestCaseWithFactory
+from lp.testing import TestCaseWithFactory
 from canonical.testing import LaunchpadFunctionalLayer
 
 

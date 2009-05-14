@@ -7,7 +7,7 @@ __metaclass__ = type
 from unittest import TestLoader
 
 from lp.code.interfaces.branch import IBranchNavigationMenu
-from canonical.launchpad.testing import TestCaseWithFactory
+from lp.testing import TestCaseWithFactory
 from canonical.testing import LaunchpadZopelessLayer
 
 

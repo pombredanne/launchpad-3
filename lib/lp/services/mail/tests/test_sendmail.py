@@ -6,7 +6,7 @@ import unittest
 
 from zope.testing.doctest import DocTestSuite
 
-from canonical.launchpad.testing import TestCase
+from lp.testing import TestCase
 from lp.services.mail.sendmail import MailController
 
 

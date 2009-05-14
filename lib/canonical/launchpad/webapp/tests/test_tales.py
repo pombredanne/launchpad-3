@@ -9,7 +9,7 @@ from zope.security.proxy import removeSecurityProxy
 from zope.testing.doctestunit import DocTestSuite
 
 from canonical.launchpad.ftests import test_tales
-from canonical.launchpad.testing import login, TestCase, TestCaseWithFactory
+from lp.testing import login, TestCase, TestCaseWithFactory
 from canonical.launchpad.testing.pages import find_tags_by_class
 from canonical.launchpad.webapp.tales import FormattersAPI
 from canonical.testing import (
