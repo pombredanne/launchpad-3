@@ -6,51 +6,121 @@
   xml:lang="en"
   lang="en"
   dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/onecolumn"
   i18n:domain="launchpad"
 >
 
 <body>
+  <div metal:fill-slot="main"
+    tal:define="overview_menu context/menu:overview">
 
-<metal:leftportlets fill-slot="portlets_one">
-  <div tal:replace="structure context/@@+portlet-packages" />
-  <div tal:replace="structure context/@@+portlet-milestones" />
-</metal:leftportlets>
+    <h1>
+      <tal:title content="context/title">Release series details</tal:title>
+      <a tal:replace="structure overview_menu/delete/fmt:icon" />
+      <a tal:replace="structure overview_menu/edit/fmt:icon" />
+    </h1>
 
-<metal:rightportlets fill-slot="portlets_two">
-  <div tal:replace="structure context/@@+portlet-details" />
-  <div tal:replace="structure context/product/@@+portlet-summary" />
-</metal:rightportlets>
+    <table id="series-details" style="margin-bottom: 1em;">
+      <tr>
+        <th>Project:</th>
+        <td><tal:link replace="structure context/product/fmt:link" /></td>
+      </tr>
+      <tr>
+        <th>Series:</th>
+        <td><tal:name replace="context/name" /></td>
+      </tr>
+      <tr>
+        <th>Status:</th>
+        <td>
+          <strong tal:content="context/status/title" />
+        </td>
+      </tr>
+      <tr>
+        <th>Drivers:</th>
+        <td>
+        <tal:per_driver repeat="driver context/drivers">
+          <a tal:replace="structure driver/fmt:link">driver</a>
+        </tal:per_driver>
+        <a tal:replace="structure overview_menu/driver/fmt:icon" />
+        </td>
+      </tr>
+    </table>
 
-<metal:heading fill-slot="pageheading">
-  <h1>Release series overview</h1>
-</metal:heading>
+    <div id="description">
+      <fieldset>
+        <legend>Summary</legend>
+        <p class="documentDescription"
+          tal:content="structure context/summary/fmt:text-to-html">
+          $ProductSeries.summary goes here. This should be quite short,
+          just a single paragraph of text really, giving the status of
+          this series of releases.
+        </p>
+      </fieldset>
+    </div>
 
-<div metal:fill-slot="main">
+    <div>
+      <a tal:replace="structure overview_menu/subscribe/fmt:icon-link" />
+    </div>
 
+    <h2 style="margin-top: 2em;">Milestones and releases</h2>
 
-  <div id="series-details">
-    <p tal:content="context/summary">
-        $ProductSeries.summary goes here. This should be quite short,
-        just a single paragraph of text really, giving the status of
-        this series of releases.
-    </p>
-    Status: <strong tal:content="context/status/title" />
-  </div>
+    <table tal:replace="structure context/@@+table-releases" />
 
-    <tal:has_releases condition="context/releases">
+    <div>
+      <a tal:replace="structure overview_menu/create_milestone/fmt:icon-link" />
+      <a tal:replace="structure overview_menu/create_release/fmt:icon-link" />
+    </div>
 
-      <h2>Releases</h2>
-
-      <div tal:replace="structure context/@@+table-releases" />
-
-    </tal:has_releases>
-
-    <h2>Code for this series</h2>
+    <h2 style="margin-top: 2em;">Code for this series</h2>
 
     <div tal:replace="structure context/@@+code-summary" />
 
-</div>
+    <div>
+      <a tal:replace="structure overview_menu/link_branch/fmt:icon-link" />
+    </div>
 
+    <h2 style="margin-top: 2em;">Distribution packaging</h2>
+
+    <p>
+      This series is packaged in the following places:
+    </p>
+
+    <ul>
+      <li tal:repeat="package context/sourcepackages">
+         <tal:distro tal:content="package/distroseries/distribution/displayname">
+           Ubuntu
+         </tal:distro>
+         <tal:series tal:replace="package/distroseries/displayname">
+           Warty
+         </tal:series>
+         <a tal:content="package/name"
+            tal:attributes="href package/fmt:url">apache</a>
+      </li>
+    </ul>
+
+    <div>
+      <a tal:replace="structure overview_menu/ubuntupkg/fmt:icon-link" />
+      <a tal:replace="structure overview_menu/add_package/fmt:icon-link" />
+    </div>
+
+    <h2 style="margin-top: 2em;">Related series</h2>
+
+    <ul>
+      <li>
+        <a tal:attributes="href context/product/fmt:url/+series">All
+          series for the
+          <tal:project replace="context/product/displayname" /> project</a>
+      </li>
+      <li>
+        <a tal:attributes="href context/product/fmt:url/+milestones">All
+          milestones for the
+          <tal:project replace="context/product/displayname" /> project</a>
+      </li>
+    </ul>
+
+    <p>
+      <a tal:replace="structure overview_menu/rdf/fmt:icon-link" />
+    </p>
+  </div>
 </body>
 </html>

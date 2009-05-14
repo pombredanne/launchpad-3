@@ -5,27 +5,56 @@
   omit-tag="">
 
 <table class="listing"
-  tal:condition="context/releases"
+  tal:condition="context/milestones"
   tal:attributes="id string:series_${context/name}">
   <thead>
     <tr>
-      <th>Version</th>
-      <th>Codename</th>
-      <th>Date Released</th>
+      <th>Version "Codename"</th>
+      <th>Expected</th>
+      <th>Released</th>
+      <th>Summary</th>
     </tr>
   </thead>
   <tbody>
-    <tr tal:repeat="release context/releases">
-      <td><a tal:content="release/version"
-             tal:attributes="href release/fmt:url">version</a></td> 
-      <td><span tal:replace="release/codename">code name</span></td>
+    <tr tal:repeat="milestone context/all_milestones">
+      <tal:menu define="milestone_menu milestone/menu:context">
+      <td>
+        <img src="/@@/milestone" alt="" />
+        <a tal:content="milestone/title"
+           tal:attributes="href milestone/fmt:url">version</a>
+      </td>
       <td>
         <span
+          tal:attributes="title milestone/dateexpected/fmt:datetime"
+          tal:content="milestone/dateexpected/fmt:approximatedate">
+          2005-12-13
+        </span>
+        <tal:empty-date condition="not: milestone/dateexpected">
+          None <a tal:replace="structure milestone_menu/edit/fmt:icon" />
+        </tal:empty-date>
+      </td>
+      <td>
+        <span
+          tal:define="release milestone/product_release"
+          tal:condition="release"
           tal:attributes="title release/datereleased/fmt:datetime"
           tal:content="release/datereleased/fmt:approximatedate">
           2005-12-13
         </span>
+        <tal:no-release condition="not: milestone/product_release">
+          <em tal:condition="not: milestone/active">
+            <img src="/@@/info"/> This is an inactive milestone
+          </em>
+          <tal:yet condition="milestone/active">
+            not yet released
+            <a tal:replace="structure milestone_menu/create_release/fmt:icon" />
+          </tal:yet>
+        </tal:no-release>
       </td>
+      <td tal:content="structure milestone/summary/fmt:shorten/80/fmt:text-to-html">
+        milestone summary
+      </td>
+      </tal:menu>
     </tr>
   </tbody>
 </table>
