@@ -231,12 +231,12 @@ class Branch(SQLBase):
         if not target_branch.isBranchMergeable(self):
             raise InvalidBranchMergeProposal(
                 '%s is not mergeable into %s' % (
-                    self.bzr_identity, target_branch.bzr_identity))
+                    self.displayname, target_branch.displayname))
         if dependent_branch is not None:
             if not self.isBranchMergeable(dependent_branch):
                 raise InvalidBranchMergeProposal(
                     '%s is not mergeable into %s' % (
-                        dependent_branch.bzr_identity, self.bzr_identity))
+                        dependent_branch.displayname, self.displayname))
             if self == dependent_branch:
                 raise InvalidBranchMergeProposal(
                     'Source and dependent branches must be different.')
@@ -254,7 +254,7 @@ class Branch(SQLBase):
             raise BranchMergeProposalExists(
                 'There is already a branch merge proposal registered for '
                 'branch %s to land on %s that is still active.'
-                % (self.unique_name, target_branch.unique_name))
+                % (self.displayname, target_branch.displayname))
 
         if date_created is None:
             date_created = UTC_NOW
@@ -381,7 +381,7 @@ class Branch(SQLBase):
     @property
     def displayname(self):
         """See `IBranch`."""
-        return self.unique_name
+        return self.bzr_identity
 
     @property
     def code_reviewer(self):
