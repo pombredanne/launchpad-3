@@ -45,7 +45,7 @@ if the user is not logged in, they will be asked to log in.
 
     >>> browser.getLink('Link to a bug report').click()
     >>> browser.title
-    'Link branch \xe2\x80\x9c~name12/gnome-terminal/klingon\xe2\x80\x9d to a bug report'
+    'Link branch \xe2\x80\x9clp://dev/~name12/gnome-terminal/klingon\xe2\x80\x9d to a bug report'
 
 When linking from a branch to a bug, the bug widget is used.  This
 requires the user to enter a bug number.
@@ -124,7 +124,7 @@ links to a page restricted with the launchpad.AnyPerson permission.
     >>> browser.getControl('Continue').click()
 
     >>> printBugBranchLinks(browser)
-    ~name12/gnome-terminal/scanned (Development)
+    lp://dev/~name12/gnome-terminal/scanned (Development)
 
     >>> browser.getLink('~name12/gnome-terminal/scanned').click()
     >>> printBugBranchLinks(browser)
@@ -157,10 +157,10 @@ But we're here to register a branch:
 This registers a branch and links it to the bug:
 
     >>> print_notifications(browser)
-    Registered ~name12/thunderbird/branch
+    Registered lp://dev/~name12/thunderbird/branch
     ...
     >>> printBugBranchLinks(browser)
-    ~name12/thunderbird/branch (Development)
+    lp://dev/~name12/thunderbird/branch (Development)
 
 However, if the bug isn't on a project, we don't (can't!) register a branch.
 
@@ -191,7 +191,7 @@ Each bug-branch link has a whiteboard to give more details about the link.
     >>> browser.open(
     ...     'http://launchpad.dev/bugs/11')
     >>> printBugBranchLinks(browser)
-    ~name12/gnome-terminal/scanned (Development)
+    lp://dev/~name12/gnome-terminal/scanned (Development)
 
 The whiteboard contents are available on the (bug|branch) page.
 
@@ -201,7 +201,7 @@ The whiteboard contents are available on the (bug|branch) page.
     ...     ' * Adjusting the lambda probe')
     >>> browser.getControl('Update').click()
     >>> printBugBranchLinks(browser)
-    ~name12/gnome-terminal/scanned (Development)
+    lp://dev/~name12/gnome-terminal/scanned (Development)
       This is a fix for the problem and involved:
        * Fixing the doodad
        * Adjusting the lambda probe

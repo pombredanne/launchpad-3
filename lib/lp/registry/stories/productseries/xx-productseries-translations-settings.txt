@@ -23,7 +23,7 @@ displayed on the page.
     >>> branch = find_tag_by_id(browser.contents, 'branch-display')
     >>> print extract_text(branch)
     The official Bazaar branch is:
-    ~vcs-imports/evolution/main
+    lp://dev/evolution
 
 When the official Bazaar branch gets removed from the product series,
 a message indicating so is displayed instead of the branch. The
