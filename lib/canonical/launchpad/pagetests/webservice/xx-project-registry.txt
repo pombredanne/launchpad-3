@@ -358,6 +358,13 @@ Similarly the date_created attribute cannot be modified.
     >>> firefox['date_created'] == original_date_created
     True
 
+"get_timeline" returns a lightweight representation of the
+project's hierarchy of series, milestones, and releases.
+
+    >>> timeline = webservice.named_get(
+    ...     firefox['self_link'], "get_timeline").jsonBody()
+    >>> print timeline
+    foo
 
 == Project collection ==
 
@@ -684,6 +691,14 @@ virtual host.
     status: u'Active Development'
     summary: u'Foobadoo support for Babadoo'
     title: u'Babadoo Series: foobadoo'
+
+"get_timeline" returns a lightweight representation of the
+series' milestones and releases.
+
+    >>> timeline = webservice.named_get(
+    ...     babadoo_foobadoo['self_link'], "get_timeline").jsonBody()
+    >>> print timeline
+    foo
 
 = Creating a milestone on the product series =
 

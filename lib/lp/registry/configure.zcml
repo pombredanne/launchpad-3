@@ -1280,6 +1280,18 @@
         for="canonical.launchpad.event.interfaces.ITeamInvitationEvent"
         handler="canonical.launchpad.mailnotification.notify_invitation_to_join_team"/>
 
+    <!-- This is class TimelineLandmark -->
+    <class class="lp.registry.model.productseries.TimelineLandmark">
+        <allow
+            interface="lp.registry.interfaces.productseries.ITimelineLandmark"/>
+    </class>
+
+    <!-- This is class TimelineSeries -->
+    <class class="lp.registry.model.productseries.TimelineSeries">
+        <allow
+            interface="lp.registry.interfaces.productseries.ITimelineSeries"/>
+    </class>
+
     <!-- This is class ProductSeries -->
 
     <class

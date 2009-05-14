@@ -50,11 +50,31 @@ from canonical.launchpad.interfaces.structuralsubscription import (
     IStructuralSubscriptionTarget)
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.registry.interfaces.productseries import (
-    IProductSeries, IProductSeriesSet)
+    IProductSeries, IProductSeriesSet, ITimelineLandmark, ITimelineSeries)
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from canonical.launchpad.interfaces.translations import (
     TranslationsBranchImportMode)
+
+
+class TimelineSeries:
+    """See `ITimelineSeries`."""
+    implements(ITimelineSeries)
+
+    def __init__(self, name, is_development_focus, landmarks):
+        self.name = name
+        self.is_development_focus = is_development_focus
+        self.landmarks = landmarks
+
+
+class TimelineLandmark:
+    """See `ITimelineLandmark`."""
+    implements(ITimelineLandmark)
+
+    def __init__(self, name, code_name, type):
+        self.name = name
+        self.code_name = code_name
+        self.type = type
 
 
 class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
@@ -440,6 +460,25 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
             orderBy=['-priority','name'],
             clauseTables = ['ProductSeries', 'Product'])
         return shortlist(result, 300)
+
+    def getTimeline(self, include_inactive=False):
+        landmarks = []
+        for j, milestone in enumerate(self.all_milestones):
+            if milestone.product_release is None:
+                # Skip inactive milestones, but include releases,
+                # even if include_inactive is False.
+                if not include_inactive and not milestone.active:
+                    continue
+                node_type = 'milestone'
+            else:
+                node_type = 'release'
+            landmarks.append(TimelineLandmark(
+                name=milestone.name, code_name=milestone.code_name,
+                type=node_type))
+        return TimelineSeries(
+            name=self.name,
+            is_development_focus=self.is_development_focus,
+            landmarks=landmarks)
 
 
 class ProductSeriesSet:

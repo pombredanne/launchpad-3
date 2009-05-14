@@ -10,10 +10,12 @@ __all__ = [
     'IProductSeriesEditRestricted',
     'IProductSeriesPublic',
     'IProductSeriesSet',
+    'ITimelineLandmark',
+    'ITimelineSeries',
     'NoSuchProductSeries',
     ]
 
-from zope.schema import Choice, Datetime, Int, Text, TextLine
+from zope.schema import Bool, Choice, Datetime, Int, Text, TextLine
 from zope.interface import Interface, Attribute
 
 from canonical.launchpad.fields import (
@@ -40,8 +42,33 @@ from canonical.launchpad import _
 
 from lazr.restful.fields import CollectionField, Reference, ReferenceChoice
 from lazr.restful.declarations import (
-    export_as_webservice_entry, export_factory_operation, exported,
+    export_as_webservice_entry, export_factory_operation, export_operation_as,
+    export_read_operation, exported, operation_returns_entry,
     rename_parameters_as)
+
+
+class ITimelineLandmark(Interface):
+    """Lightweight representation of an `IProductSeries`."""
+    name = exported(TextLine(title=_("Name"), readonly=True))
+    code_name = exported(TextLine(title=_("Code name"), readonly=True))
+    type = exported(
+        TextLine(
+            title=_("Type"),
+            description=_("Either 'milestone' or 'release'.")))
+
+
+class ITimelineSeries(Interface):
+    """Lightweight representation of an `IMilestone` or `IProductSeries`."""
+    name = exported(TextLine(title=_("Name"), readonly=True))
+    is_development_focus = exported(
+        Bool(
+            title=_("Series is focus of development"),
+            readonly=True))
+    landmarks = exported(
+        CollectionField(
+            title=_("Milestones and releases"),
+            readonly=True,
+            value_type=Reference(schema=ITimelineLandmark)))
 
 
 class ProductSeriesNameField(ContentNameField):
@@ -258,6 +285,12 @@ class IProductSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
 
     is_development_focus = Attribute(
         _("Is this series the development focus for the product?"))
+
+    @operation_returns_entry(ITimelineSeries)
+    @export_read_operation()
+    @export_operation_as('get_timeline')
+    def getTimeline():
+        """Return basic timeline data useful for creating a diagram."""
 
 
 class IProductSeries(IProductSeriesEditRestricted, IProductSeriesPublic):

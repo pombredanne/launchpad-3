@@ -57,7 +57,8 @@ from lp.registry.interfaces.commercialsubscription import (
 from lp.registry.interfaces.mentoringoffer import IHasMentoringOffers
 from lp.registry.interfaces.pillar import IPillar
 from lp.registry.interfaces.productrelease import IProductRelease
-from lp.registry.interfaces.productseries import IProductSeries
+from lp.registry.interfaces.productseries import (
+    IProductSeries, ITimelineSeries)
 from lp.registry.interfaces.project import IProject
 from lp.blueprints.interfaces.specificationtarget import (
     ISpecificationTarget)
@@ -646,6 +647,12 @@ class IProductPublic(
         as this Product is using, is linked to a bug task targeted to
         this Product.
         """
+
+    @operation_returns_collection_of(ITimelineSeries)
+    @export_read_operation()
+    @export_operation_as('get_timeline')
+    def getTimeline():
+        """Return basic timeline data useful for creating a diagram."""
 
 
 class IProduct(IProductEditRestricted, IProductCommercialRestricted,

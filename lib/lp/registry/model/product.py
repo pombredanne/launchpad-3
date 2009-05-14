@@ -967,6 +967,13 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
                 BugTask.bugwatch == BugWatch.id,
                 BugWatch.bugtracker == self.getExternalBugTracker()))
 
+    def getTimeline(self, include_inactive=False):
+        timeline = []
+        for series in self.serieses:
+            timeline.append(
+                series.getTimeline(include_inactive=include_inactive))
+        return timeline
+
 
 class ProductSet:
     implements(IProductSet)
