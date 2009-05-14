@@ -113,6 +113,13 @@ class PackageBranchTarget(_BaseBranchTarget):
         else:
             return False
 
+    def assignKarma(self, person, action_name):
+        """See `IBranchTarget`."""
+        person.assignKarma(
+            action_name,
+            distribution=self.context.distribution,
+            sourcepackagename=self.context.sourcepackagename)
+
 
 class PersonBranchTarget(_BaseBranchTarget):
     implements(IBranchTarget)
@@ -158,6 +165,10 @@ class PersonBranchTarget(_BaseBranchTarget):
     def areBranchesMergeable(self, other_target):
         """See `IBranchTarget`."""
         return False
+
+    def assignKarma(self, person, action_name):
+        """See `IBranchTarget`."""
+        # Does nothing. No karma for +junk.
 
 
 class ProductBranchTarget(_BaseBranchTarget):
@@ -229,6 +240,11 @@ class ProductBranchTarget(_BaseBranchTarget):
                 return self.product == product_series.product
         else:
             return False
+
+    def assignKarma(self, person, action_name):
+        """See `IBranchTarget`."""
+        person.assignKarma(action_name, product=self.product)
+
 
 
 def get_canonical_url_data_for_target(branch_target):
