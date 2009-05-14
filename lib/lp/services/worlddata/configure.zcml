@@ -4,39 +4,39 @@
     i18n_domain="launchpad">
     <include file="vocabularies.zcml"/>
 
-    <class class="lp.services.worlddata.model.country.Country">
+    <class class=".model.country.Country">
         <allow
-            interface="lp.services.worlddata.interfaces.country.ICountry" />
+            interface=".interfaces.country.ICountry" />
     </class>
 
-    <class class="lp.services.worlddata.model.country.CountrySet">
+    <class class=".model.country.CountrySet">
         <allow
-            interface="lp.services.worlddata.interfaces.country.ICountrySet" />
+            interface=".interfaces.country.ICountrySet" />
     </class>
 
     <securedutility
-        class="lp.services.worlddata.model.country.CountrySet"
-        provides="lp.services.worlddata.interfaces.country.ICountrySet">
+        class=".model.country.CountrySet"
+        provides=".interfaces.country.ICountrySet">
         <allow
-            interface="lp.services.worlddata.interfaces.country.ICountrySet" />
+            interface=".interfaces.country.ICountrySet" />
     </securedutility>
 
-    <class class="lp.services.worlddata.model.country.Continent">
+    <class class=".model.country.Continent">
         <allow
-            interface="lp.services.worlddata.interfaces.country.IContinent" />
+            interface=".interfaces.country.IContinent" />
     </class>
 
-    <class class="lp.services.worlddata.model.language.Language">
-        <allow interface="lp.services.worlddata.interfaces.language.ILanguage"/>
+    <class class=".model.language.Language">
+        <allow interface=".interfaces.language.ILanguage"/>
         <require
             permission="launchpad.Admin"
-            set_schema="lp.services.worlddata.interfaces.language.ILanguage" />
+            set_schema=".interfaces.language.ILanguage" />
     </class>
 
     <securedutility
-        class="lp.services.worlddata.model.language.LanguageSet"
-        provides="lp.services.worlddata.interfaces.language.ILanguageSet">
-        <allow interface="lp.services.worlddata.interfaces.language.ILanguageSet" />
+        class=".model.language.LanguageSet"
+        provides=".interfaces.language.ILanguageSet">
+        <allow interface=".interfaces.language.ILanguageSet" />
     </securedutility>
 
 </configure>
