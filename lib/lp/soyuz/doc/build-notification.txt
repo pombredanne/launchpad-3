@@ -1,8 +1,10 @@
-= Build Notification System =
+=========================
+Build Notification System
+=========================
 
 IBuild instance implements the 'notify' method which sends a status
-report about the current record to the
-ISourcePackageRelease.creator.preferred email.
+report about the current record to the ISourcePackageRelease.creator
+and the package uploader's preferred email address.
 
 We rely on get_contact_email_addresses() to DTRT, either use the
 Team.contactaddress of the Launchpad Buildd Celebrity or the
@@ -387,7 +389,9 @@ Just to keep the config sane, as it was before:
 
   >>> config_data = config.pop('notify_owner')
 
-== PPA build notifications ==
+
+PPA build notifications
+=======================
 
 As for the normal (main archive) build candidates we are also able
 send notification about current (changed) PPA build record status.
@@ -405,7 +409,10 @@ in the main archive, the important differences are:
 
  * We only warn the uploader (person specified in 'Changed-By'
    changesfile) and the signer (person who owns the GPG key used to
-   signed the package) if the package was not copied.
+   signed the package) if the package was not copied.  Additionally,
+   the Changed-By person is only notified if they are the PPA owner or
+   they are in the team owning the PPA (to avoid spamming the innocent
+   when PPA users upload unchanged source packages).
 
   >>> from canonical.launchpad.interfaces import IPersonSet
   >>> cprov = getUtility(IPersonSet).getByName('cprov')
@@ -488,7 +495,7 @@ We also make 'Foo Bar' the source signer.
   >>> commit()
   >>> LaunchpadZopelessLayer.switchDbUser(test_dbuser)
 
-Since 'sabdlf' is the 'creator' it makes the failed-to-build source to
+Since 'sabdfl' is the 'creator' it makes the failed-to-build source
 look like a 'sponsored' upload.
 
   >>> print failed_candidate.sourcepackagerelease.creator.name
@@ -498,22 +505,57 @@ Finally we issue the notification.
 
   >>> failed_candidate.notify()
 
-As expected for a 'not-copied and sponsored' PPA upload, all the three
+As expected for a 'not-copied and sponsored' PPA upload, only two
 people involved with the source are notified.
 
  * 'cprov' who owns the PPA where the source is being built;
  * 'name16' who signed the source upload;
- * 'sabdlf' who was listed as the creator of the source revision.
+
+However, 'sabdfl' who was listed as the creator of the source revision is
+not notified because he is not in the PPA team or its owner.
 
   >>> notifications = pop_notifications()
   >>> len(notifications)
-  3
+  2
 
   >>> for notification in notifications:
   ...     print notification['To']
   celso.providelo@canonical.com
   foo.bar@canonical.com
+
+If the failed build candidate is for a PPA where sabdfl is a member,
+he will be notified.
+
+  >>> commit()
+  >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+  >>> from lp.testing.factory import LaunchpadObjectFactory
+  >>> factory = LaunchpadObjectFactory()
+  >>> team = factory.makeTeam(
+  ...     owner=failed_candidate.sourcepackagerelease.creator)
+  >>> team_ppa = factory.makeArchive(owner=team)
+  >>> naked_candidate = removeSecurityProxy(failed_candidate)
+  >>> naked_candidate.archive = team_ppa
+  >>> naked_candidate.sourcepackagerelease.upload_archive = team_ppa
+  >>> commit()
+  >>> LaunchpadZopelessLayer.switchDbUser(test_dbuser)
+
+  >>> failed_candidate.notify()
+
+This notification will be sent to both the package uploader (name16) and
+the package creator (mark@hdb.com).
+
+  >>> notifications = pop_notifications()
+  >>> len(notifications)
+  2
+
+  >>> for notification in notifications:
+  ...     print notification['To']
+  foo.bar@canonical.com
   mark@hbd.com
+
+
+Named PPA notifications
+=======================
 
 Named PPA build notifications contain a specific reference to the PPA
 in context. We will override the testing build to be in the context of
