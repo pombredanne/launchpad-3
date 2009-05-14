@@ -148,7 +148,7 @@ def spec_modified(spec, event):
 
 def _karma_for_branch(person, action_name, branch):
     """Assign karma related to a branch."""
-    if branch.target.context == branch.onwer:
+    if branch.target.context == branch.owner:
         # No karma for junk branches.
         return
     person.assignKarma(
