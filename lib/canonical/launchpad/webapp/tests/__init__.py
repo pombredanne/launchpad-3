@@ -7,7 +7,7 @@ from zope.component import getGlobalSiteManager, provideUtility
 from zope.interface import implements
 import unittest
 
-from canonical.launchpad.testing import TestCase
+from lp.testing import TestCase
 
 class DummyWebServiceConfiguration:
     """A totally vanilla web service configuration."""

@@ -16,7 +16,7 @@ from lp.code.interfaces.branch import BranchType
 from lp.code.interfaces.branchtarget import IBranchTarget
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from lp.soyuz.interfaces.publishing import PackagePublishingPocket
-from canonical.launchpad.testing import run_with_login, TestCaseWithFactory
+from lp.testing import run_with_login, TestCaseWithFactory
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import IPrimaryContext
 from canonical.testing import DatabaseFunctionalLayer

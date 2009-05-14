@@ -8,7 +8,7 @@ from canonical.launchpad.database.message import MessageSet
 from lp.code.event.branchmergeproposal import (
     NewCodeReviewCommentEvent)
 from lp.code.interfaces.codereviewcomment import CodeReviewVote
-from canonical.launchpad.testing import TestCaseWithFactory
+from lp.testing import TestCaseWithFactory
 from canonical.testing import (
     DatabaseFunctionalLayer, LaunchpadFunctionalLayer)
 

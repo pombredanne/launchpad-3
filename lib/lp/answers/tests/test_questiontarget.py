@@ -17,7 +17,7 @@ from lp.registry.interfaces.distribution import IDistributionSet
 from canonical.launchpad.interfaces.language import ILanguageSet
 from canonical.launchpad.testing.systemdocs import (
     LayeredDocFileSuite, setUp, tearDown)
-from canonical.launchpad.testing import TestCaseWithFactory
+from lp.testing import TestCaseWithFactory
 
 
 class TestQuestionTarget_answer_contacts_with_languages(TestCaseWithFactory):

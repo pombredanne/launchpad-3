@@ -11,7 +11,7 @@ from canonical.launchpad.interfaces.translationexporter import (
     ITranslationFormatExporter)
 from canonical.launchpad.interfaces.translationfileformat import (
     TranslationFileFormat)
-from canonical.launchpad.testing import TestCaseWithFactory
+from lp.testing import TestCaseWithFactory
 from canonical.launchpad.translationformat.gettext_po_exporter import (
     GettextPOExporter)
 from canonical.launchpad.translationformat.gettext_po_parser import (

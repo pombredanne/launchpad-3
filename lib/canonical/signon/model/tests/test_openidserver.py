@@ -13,7 +13,7 @@ import transaction
 
 from zope.component import getUtility
 
-from canonical.launchpad.testing import TestCaseWithFactory
+from lp.testing import TestCaseWithFactory
 from canonical.launchpad.webapp.dbpolicy import (
     SlaveDatabasePolicy, SSODatabasePolicy)
 from canonical.launchpad.webapp.interfaces import (

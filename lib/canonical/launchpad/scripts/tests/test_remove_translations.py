@@ -23,7 +23,8 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.scripts.base import LaunchpadScriptFailure
 from canonical.launchpad.scripts.remove_translations import (
     RemoveTranslations, remove_translations)
-from canonical.launchpad.testing import LaunchpadObjectFactory, TestCase
+from lp.testing import TestCase
+from lp.testing.factory import LaunchpadObjectFactory
 from canonical.testing import LaunchpadZopelessLayer
 
 
