@@ -85,7 +85,7 @@ class CodeImportReviewStatus(DBEnumeratedType):
         This code import has been approved, but it has been suspended
         and is not processed.""")
 
-    FAILING = DBItem(40, """Failing
+    FAILING = DBItem(40, """Failed
 
         The code import is failing for some reason and is no longer being
         attempted.""")

@@ -189,7 +189,8 @@
                           define="code_import branch/code_import">
 
         <p><strong>Import Status:</strong>
-        <tal:status replace="code_import/review_status/title"/>
+          <span tal:attributes="class string:codeimport${code_import/review_status/name}"
+                tal:content="code_import/review_status/title"/>
         </p>
 
         <tal:svn-import condition="code_import/rcs_type/enumvalue:SVN">
@@ -252,7 +253,7 @@
         </tal:has-job>
 
         <tal:failing condition="code_import/review_status/enumvalue:FAILING">
-          <div id="failing-try-again">
+          <div id="failing-try-again" class="message warning">
             The import has been suspended because it failed
             <tal:failure-limit content="modules/canonical.config/config/codeimport/consecutive_failure_limit"/>
             or more times in succession.
