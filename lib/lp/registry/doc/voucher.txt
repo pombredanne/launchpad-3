@@ -8,7 +8,7 @@ open source projects.
 For testing purposes we use a custom XML-RPC transport which
 implements a mock proxy in the transport and avoids network traffic.
 
-    >>> from canonical.launchpad.ftests.salesforce import (
+    >>> from lp.registry.tests.salesforce import (
     ...     SalesforceXMLRPCTestTransport)
     >>> import xmlrpclib
     >>> test_transport = SalesforceXMLRPCTestTransport()

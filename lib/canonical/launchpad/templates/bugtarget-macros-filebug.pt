@@ -447,7 +447,7 @@
                     tal:define="description bug/description/fmt:shorten/500/fmt:obfuscate-email/fmt:text-to-html"
                     tal:content="structure description" />
 
-                <div class="lesser" tal:condition="bugtask">
+                <div class="lesser">
                   <form action="."
                       tal:attributes="action view/action_url"
                       method="post"

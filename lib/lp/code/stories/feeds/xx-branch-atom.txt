@@ -11,7 +11,7 @@ using BeautifulStoneSoup instead of BeautifulSoup or the helper functions.
 == Create some specific branches to use for this test ==
 
     >>> login(ANONYMOUS)
-    >>> from canonical.launchpad.testing import time_counter
+    >>> from lp.testing import time_counter
     >>> from datetime import datetime, timedelta
     >>> import pytz
     >>> date_generator = time_counter(
