@@ -415,6 +415,17 @@ watch, there can be a lot of comments. To avoid causing a lot of e-mail
 notifications to be sent, only one notification is sent for all the
 comments.
 
+    >>> from canonical.launchpad.database.bugnotification import (
+    ...     BugNotification)
+    >>> old_notifications = set()
+    >>> def get_new_notifications(bug):
+    ...     new_notifications = [
+    ...         notification for notification in (
+    ...             BugNotification.selectBy(bug=bug, orderBy='id'))
+    ...         if notification not in old_notifications]
+    ...     old_notifications.update(new_notifications)
+    ...     return new_notifications
+
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
     >>> import pytz
     >>> from datetime import datetime, timedelta
@@ -424,6 +435,9 @@ comments.
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
 
+    >>> get_new_notifications(bug_watch.bug)
+    [...]
+
     >>> external_bugtracker.remote_comments = {
     ...     '1': 'First imported comment (initial import)',
     ...     '2': 'Second imported comment (initial import)',
@@ -432,9 +446,7 @@ comments.
     >>> bugwatch_updater.importBugComments(external_bugtracker, bug_watch)
     INFO:...:Imported 2 comments for remote bug 42 ...
 
-    >>> from canonical.launchpad.database.bugnotification import (
-    ...     BugNotification)
-    >>> notifications = list(BugNotification.selectBy(bug=bug_watch.bug))
+    >>> notifications = get_new_notifications(bug=bug_watch.bug)
     >>> len(notifications)
     1
 
@@ -473,6 +485,9 @@ If we already have comments imported for a bug watch, one notification
 will be sent for each subsequent imported comment, even if there is
 more than one.
 
+    >>> get_new_notifications(bug_watch.bug)
+    [...]
+
     >>> external_bugtracker.poster_tuple = (
     ...     "Joe Bloggs", "joe.bloggs@example.com")
     >>> external_bugtracker.remote_comments = {
@@ -484,9 +499,7 @@ more than one.
     >>> bugwatch_updater.importBugComments(external_bugtracker, bug_watch)
     INFO:...:Imported 2 comments for remote bug 42 ...
 
-    >>> notifications = list(BugNotification.selectBy(
-    ...     bug=bug_watch.bug, orderBy='id'))
-    >>> notifications = notifications[1:]
+    >>> notifications = get_new_notifications(bug_watch.bug)
     >>> len(notifications)
     2
     >>> for notification in notifications:
