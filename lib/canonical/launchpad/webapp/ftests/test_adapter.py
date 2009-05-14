@@ -13,7 +13,7 @@ def test_suite():
             layer=LaunchpadFunctionalLayer),
 # XXX Julian 2009-05-13, bug=376171
 # Temporarily disabled because of intermittent failures.
-#        LayeredDocFileSuite(
+#       LayeredDocFileSuite(
 #            'test_adapter_timeout.txt',
 #            layer=PageTestLayer),
         LayeredDocFileSuite(
