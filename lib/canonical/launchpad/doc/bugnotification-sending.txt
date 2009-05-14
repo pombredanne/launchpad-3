@@ -729,11 +729,20 @@ notification will be sent to all members individually.
     >>> flush_notifications()
 
 
-== Bug Filed Notification ==
+== Duplicates ==
 
-Generating notifications when a new bug is filed is just a special case
-of a comment notification. If we add a comment notification for the
-initial message of the bug, it will result in a bug filed notification:
+    >>> from canonical.config import config
+    >>> from canonical.database.sqlbase import commit
+    >>> from canonical.testing import LaunchpadZopelessLayer
+
+    >>> def switch_db_to_launchpad():
+    ...     commit()
+    ...     LaunchpadZopelessLayer.switchDbUser('launchpad')
+
+    >>> def switch_db_to_bugnotification():
+    ...     commit()
+    ...     LaunchpadZopelessLayer.switchDbUser(
+    ...         config.malone.bugnotification_dbuser)
 
     >>> from canonical.launchpad.interfaces import (
     ...     IDistributionSet, CreateBugParams)
@@ -743,38 +752,19 @@ initial message of the bug, it will result in a bug filed notification:
     ...     datecreated=ten_minutes_ago)
     >>> params = CreateBugParams(
     ...     msg=description, owner=sample_person, title='new bug')
+
+    >>> switch_db_to_launchpad()
     >>> new_bug = ubuntu.createBug(params)
-    >>> new_bug.addCommentNotification(description)
-    >>> description == new_bug.initial_message
-    True
-
-    >>> notifications = getUtility(IBugNotificationSet).getNotificationsToSend()
-    >>> len(notifications)
-    1
-
-    >>> for bug_notifications, messages in get_email_notifications(notifications):
-    ...     for message in messages:
-    ...         print_notification_headers(message)
-    ...         print
-    To: support@ubuntu.com
-    From: Sample Person <test@canonical.com>
-    Subject: [Bug ...] [NEW] new bug
-    X-Launchpad-Message-Rationale: Registrant (Ubuntu) @ubuntu-team
-    <BLANKLINE>
-    To: test@canonical.com
-    From: Sample Person <test@canonical.com>
-    Subject: [Bug ...] [NEW] new bug
-    X-Launchpad-Message-Rationale: Subscriber
-    <BLANKLINE>
+    >>> switch_db_to_bugnotification()
 
     >>> flush_notifications()
 
 
-== Duplicates ==
-
-If the bug is a duplicate of another bug, a marker gets inserted at the
+If a bug is a duplicate of another bug, a marker gets inserted at the
 top of the email:
 
+    ...     title='subject', summary='a description of the bug.', sample_person,
+    ...     datecreated=ten_minutes_ago)
     >>> new_bug.duplicateof = bug_one
     >>> comment = getUtility(IMessageSet).fromText(
     ...     'subject', 'a comment.', sample_person,
@@ -887,11 +877,13 @@ inserted at the top of the message body.
     >>> sec_vuln_description = getUtility(IMessageSet).fromText(
     ...     'Zero-day on Frobulator', 'Woah.', sample_person,
     ...     datecreated=ten_minutes_ago)
+
+    >>> switch_db_to_launchpad()
     >>> sec_vuln_bug = ubuntu.createBug(CreateBugParams(
     ...         msg=sec_vuln_description, owner=sample_person,
     ...         title='Zero-day on Frobulator',
     ...         security_related=True, private=True))
-    >>> sec_vuln_bug.addCommentNotification(sec_vuln_description)
+    >>> switch_db_to_bugnotification()
 
     >>> sec_vuln_bug.security_related
     True
@@ -1140,19 +1132,12 @@ If we add a tag to bug three that will also be included in the header.
 The tags will be space-separated to allow the list to be wrapped if it
 gets over-long.
 
-    >>> from canonical.database.sqlbase import commit
-    >>> from canonical.config import config
-    >>> from canonical.testing import LaunchpadZopelessLayer
-
-    >>> commit()
-    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+    >>> switch_db_to_launchpad()
 
     >>> bug_three.unsubscribe(sample_person, sample_person)
     >>> bug_three.tags = [u'layout-test', u'another-tag', u'yet-another']
-    >>> commit()
 
-    >>> LaunchpadZopelessLayer.switchDbUser(
-    ...     config.malone.bugnotification_dbuser)
+    >>> switch_db_to_bugnotification()
 
     >>> bug_three = getUtility(IBugSet).get(3)
     >>> for message in trigger_and_get_email_messages(bug_three):
@@ -1162,14 +1147,9 @@ gets over-long.
 If we remove the tags from the bug, the X-Launchpad-Bug-Tags header
 won't be included.
 
-    >>> commit()
-    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
-
+    >>> switch_db_to_launchpad()
     >>> bug_three.tags = []
-    >>> commit()
-
-    >>> LaunchpadZopelessLayer.switchDbUser(
-    ...     config.malone.bugnotification_dbuser)
+    >>> switch_db_to_bugnotification()
 
     >>> bug_three = getUtility(IBugSet).get(3)
     >>> for message in trigger_and_get_email_messages(bug_three):
@@ -1376,8 +1356,7 @@ structural subscribers. Structural subcribers can select the
 notification level of the subscription.
 
     >>> flush_notifications()
-    >>> commit()
-    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+    >>> switch_db_to_launchpad()
 
     >>> from lp.registry.interfaces.product import IProductSet
     >>> from canonical.launchpad.interfaces.structuralsubscription import (
@@ -1386,9 +1365,8 @@ notification level of the subscription.
     >>> mr_no_privs = getUtility(IPersonSet).getByName('no-priv')
     >>> subscription_no_priv = firefox.addBugSubscription(
     ...     mr_no_privs, mr_no_privs)
-    >>> commit()
-    >>> LaunchpadZopelessLayer.switchDbUser(
-    ...     config.malone.bugnotification_dbuser)
+
+    >>> switch_db_to_bugnotification()
 
 The notifications generated by addCommentNotification() are sent only to
 structural subscribers with the notification level COMMENTS or higher.
@@ -1455,13 +1433,11 @@ If Sample Person's notification level is set to METADATA, he receives
 no comment notifications.
 
     >>> flush_notifications()
-    >>> commit()
-    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+    >>> switch_db_to_launchpad()
     >>> subscription_no_priv.bug_notification_level = (
     ...     BugNotificationLevel.METADATA)
-    >>> commit()
-    >>> LaunchpadZopelessLayer.switchDbUser(
-    ...     config.malone.bugnotification_dbuser)
+    >>> switch_db_to_bugnotification()
+
     >>> comment = getUtility(IMessageSet).fromText(
     ...     'subject', 'no comment for no-priv.', sample_person,
     ...     datecreated=ten_minutes_ago)
@@ -1573,13 +1549,10 @@ If Sample Person sets his notification level to LIFECYCLE, he receives
 no notifications created by addChangeNotification().
 
     >>> flush_notifications()
-    >>> commit()
-    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+    >>> switch_db_to_launchpad()
     >>> subscription_no_priv.bug_notification_level = (
     ...     BugNotificationLevel.LIFECYCLE)
-    >>> commit()
-    >>> LaunchpadZopelessLayer.switchDbUser(
-    ...     config.malone.bugnotification_dbuser)
+    >>> switch_db_to_bugnotification()
 
     >>> bug_one.addChangeNotification('** Summary changed to: something.',
     ...     sample_person, when=ten_minutes_ago)
