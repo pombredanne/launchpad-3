@@ -483,17 +483,17 @@
             interface="lp.registry.interfaces.jabber.IJabberIDSet"/>
     </securedutility>
     <class
-        class="canonical.launchpad.utilities.SalesforceVoucherProxy">
+        class="lp.registry.utilities.salesforce.SalesforceVoucherProxy">
         <allow
             interface="lp.registry.interfaces.salesforce.ISalesforceVoucherProxy"/>
     </class>
     <class
-        class="canonical.launchpad.utilities.Voucher">
+        class="lp.registry.utilities.salesforce.Voucher">
         <allow
             interface="lp.registry.interfaces.salesforce.ISalesforceVoucher"/>
     </class>
     <securedutility
-        class="canonical.launchpad.utilities.SalesforceVoucherProxy"
+        class="lp.registry.utilities.salesforce.SalesforceVoucherProxy"
         provides="lp.registry.interfaces.salesforce.ISalesforceVoucherProxy">
         <allow
             interface="lp.registry.interfaces.salesforce.ISalesforceVoucherProxy"/>
