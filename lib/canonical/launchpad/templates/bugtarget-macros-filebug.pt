@@ -451,13 +451,23 @@
                   <form action="."
                       tal:attributes="action view/action_url"
                       method="post"
-                      accept-charset="UTF-8">
+                      accept-charset="UTF-8"
+                      class="this-is-my-bug-form">
 
                     <span style="padding-left: 1.5em">
-                      <input type="hidden" name="field.bug_already_reported_as"
-                           tal:attributes="
-                               id string:bug-already-reported-as-${bug/id};
-                               value string:${bug/id};" />
+                      <input type="hidden"
+                          name="field.bug_already_reported_as"
+                          class="bug-already-reported-as"
+                          tal:attributes="
+                              id string:bug-already-reported-as-${bug/id};
+                              value string:${bug/id};" />
+                      <input type="hidden"
+                          name="field.subscribe_to_existing_bug"
+                          class="subscribe-to-existing-bug"
+                          value="no"
+                          tal:attributes="
+                              id string:bug-already-reported-as-${bug/id};"
+                          />
 
                       <tal:this-is-my-bug-action
                           replace="structure view/this_is_my_bug_action/render" />

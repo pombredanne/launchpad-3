@@ -801,6 +801,9 @@ class IBugAddForm(IBug):
     assignee = PublicPersonChoice(
         title=_('Assign to'), required=False,
         vocabulary='ValidAssignee')
+    subscribe_to_existing_bug = Bool(
+        title=_('Updates for this bug tracker are enabled'),
+        required=True, default=False)
 
 
 class IProjectBugAddForm(IBugAddForm):

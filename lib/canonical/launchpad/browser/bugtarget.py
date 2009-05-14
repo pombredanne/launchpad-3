@@ -31,13 +31,17 @@ from zope.app.form.interfaces import InputErrors
 from zope.app.pagetemplate import ViewPageTemplateFile
 from zope.component import getUtility
 from zope.event import notify
+from zope.formlib import form
 from zope.interface import implements
 from zope.publisher.interfaces import NotFound
 from zope.publisher.interfaces.browser import IBrowserPublisher
+from zope.schema import Choice
+from zope.schema.vocabulary import SimpleVocabulary
 
 from lazr.lifecycle.event import ObjectCreatedEvent
 
 from canonical.cachedproperty import cachedproperty
+from canonical.launchpad import _
 from canonical.launchpad.browser.bugtask import BugTaskSearchListingView
 from canonical.launchpad.browser.feeds import (
     BugFeedLink, BugTargetLatestBugsFeedLink, FeedsMixin,
@@ -232,6 +236,11 @@ class FileBugData:
         self.attachments = []
 
 
+# A simple vocabulary for the subscribe_to_existing_bug form field.
+SUBSCRIBE_TO_BUG_VOCABULARY = SimpleVocabulary.fromItems(
+    [('yes', True), ('no', False)])
+
+
 class FileBugViewBase(LaunchpadFormView):
     """Base class for views related to filing a bug."""
 
@@ -269,7 +278,7 @@ class FileBugViewBase(LaunchpadFormView):
         context = self.context
         field_names = ['title', 'comment', 'tags', 'security_related',
                        'bug_already_reported_as', 'filecontent', 'patch',
-                       'attachment_description']
+                       'attachment_description', 'subscribe_to_existing_bug']
         if (IDistribution.providedBy(context) or
             IDistributionSourcePackage.providedBy(context)):
             field_names.append('packagename')
@@ -386,6 +395,21 @@ class FileBugViewBase(LaunchpadFormView):
         if "packagename" in self.field_names:
             self.widgets["packagename"].onKeyPress = (
                 "selectWidget('choose', event)")
+
+    def setUpFields(self):
+        """Set up the form fields. See `LaunchpadFormView`."""
+        super(FileBugViewBase, self).setUpFields()
+
+        # Override the vocabulary for the subscribe_to_existing_bug
+        # field.
+        subscribe_field = Choice(
+            __name__='subscribe_to_existing_bug',
+            title=_('Updates for this bug tracker are'),
+            vocabulary=SUBSCRIBE_TO_BUG_VOCABULARY,
+            required=True, default=False)
+
+        self.form_fields = self.form_fields.omit('subscribe_to_existing_bug')
+        self.form_fields += form.Fields(subscribe_field)
 
     def contextUsesMalone(self):
         """Does the context use Malone as its official bugtracker?"""
@@ -601,6 +625,7 @@ class FileBugViewBase(LaunchpadFormView):
     def this_is_my_bug_action(self, action, data):
         """Subscribe to the bug suggested."""
         bug = data.get('bug_already_reported_as')
+        subscribe = data.get('subscribe_to_existing_bug')
 
         if bug.isUserAffected(self.user):
             self.request.response.addNotification(
@@ -609,6 +634,17 @@ class FileBugViewBase(LaunchpadFormView):
             bug.markUserAffected(self.user)
             self.request.response.addNotification(
                 "This bug has been marked as affecting you.")
+
+        # If the user wants to be subscribed, subscribe them, unless
+        # they're already subscribed.
+        if subscribe:
+            if bug.isSubscribed(self.user):
+                self.request.response.addNotification(
+                    "You are already subscribed to this bug.")
+            else:
+                bug.subscribe(self.user, self.user)
+                self.request.response.addNotification(
+                    "You have been subscribed to this bug.")
 
         self.next_url = canonical_url(bug.bugtasks[0])
 
