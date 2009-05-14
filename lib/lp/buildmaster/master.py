@@ -24,8 +24,8 @@ from lp.soyuz.interfaces.buildqueue import IBuildQueueSet
 
 from lp.archivepublisher.utils import process_in_batches
 from canonical.buildd.utils import notes
-from canonical.buildmaster.pas import BuildDaemonPackagesArchSpecific
-from canonical.buildmaster.buildergroup import BuilderGroup
+from lp.buildmaster.pas import BuildDaemonPackagesArchSpecific
+from lp.buildmaster.buildergroup import BuilderGroup
 from canonical.config import config
 
 

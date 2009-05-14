@@ -30,7 +30,7 @@ from sqlobject import ForeignKey, StringCol, BoolCol
 from storm.expr import Desc, In, LeftJoin
 from storm.store import Store
 
-from canonical.buildmaster.master import determineArchitecturesToBuild
+from lp.buildmaster.master import determineArchitecturesToBuild
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol

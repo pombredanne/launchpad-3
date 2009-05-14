@@ -95,7 +95,7 @@ Hoary has only 'hppa' and 'i386' architectures.
 See if the code which determines archs to build does the right thing for
 each of these options:
 
-    >>> from canonical.buildmaster.master import (
+    >>> from lp.buildmaster.master import (
     ...     determineArchitecturesToBuild)
 
     >>> def print_build_architectures(pub, pas_verify=None):
@@ -182,7 +182,7 @@ Create a harness that lets us easily test PAS statements:
     >>> import os
     >>> import tempfile
     >>> import shutil
-    >>> from canonical.buildmaster.pas import BuildDaemonPackagesArchSpecific
+    >>> from lp.buildmaster.pas import BuildDaemonPackagesArchSpecific
 
     >>> def getPASVerifier(pas_string):
     ...   """Build and return a PAS verifier based on the string provided."""

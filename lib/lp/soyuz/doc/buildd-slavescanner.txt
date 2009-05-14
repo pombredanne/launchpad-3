@@ -31,7 +31,7 @@ standard output with noisily output.
 First let's test an essential part of the Build-master class, the
 BuilderGroup() class, by creating an empty BuilderGroup object
 
-    >>> from canonical.buildmaster.buildergroup import BuilderGroup
+    >>> from lp.buildmaster.buildergroup import BuilderGroup
 
     >>> buildergroup = BuilderGroup(
     ...     logging.getLogger(), local_transaction)

@@ -15,7 +15,7 @@ from zope.component import getUtility
 
 from canonical.buildd.tests import BuilddSlaveTestSetup
 from canonical.config import config
-from canonical.buildmaster.manager import (
+from lp.buildmaster.manager import (
     BaseDispatchResult, BuilddManager, FailDispatchResult, RecordingSlave,
     ResetDispatchResult, buildd_success_result_map)
 from canonical.launchpad.ftests import ANONYMOUS, login

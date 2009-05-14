@@ -14,7 +14,7 @@ able to:
 
 == Setting up ==
 
-    >>> from canonical.buildmaster.master import BuilddMaster
+    >>> from lp.buildmaster.master import BuilddMaster
 
 Import the bunch of required database classes:
 

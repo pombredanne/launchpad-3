@@ -12,7 +12,7 @@ the it to start a build procedure.
 Those tasks are implemented by the BuilddMaster and BuilderGroup
 classes.
 
-    >>> from canonical.buildmaster.master import BuilddMaster
+    >>> from lp.buildmaster.master import BuilddMaster
     >>> bm = BuilddMaster(logger, transaction)
 
 Setup the test builder:
