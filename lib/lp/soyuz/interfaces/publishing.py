@@ -582,6 +582,13 @@ class ISourcePackagePublishingHistory(ISecureSourcePackagePublishingHistory):
         :return: a list of `IBuilds`.
         """
 
+    def getUnpublishedBuilds():
+        """Return a resultset of `IBuild` objects in this context that are
+        not published.
+
+        :return: a result set of `IBuilds`.
+        """
+
     def createMissingBuilds(architectures_available=None, pas_verify=None,
                             logger=None):
         """Create missing Build records for a published source.

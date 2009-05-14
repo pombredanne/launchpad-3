@@ -111,6 +111,13 @@ Create a helper for printing the build status summary:
     hppa build of foo 666 in ubuntutest breezy-autotest RELEASE
     i386 build of foo 666 in ubuntutest breezy-autotest RELEASE
 
+The underlying method being used here is getUnpublishedBuilds():
+
+    >>> for build in spph.getUnpublishedBuilds():
+    ...     print build.title
+    hppa build of foo 666 in ubuntutest breezy-autotest RELEASE
+    i386 build of foo 666 in ubuntutest breezy-autotest RELEASE
+
 If one of the builds becomes published, it will not appear in the summary:
 
     >>> from lp.soyuz.interfaces.publishing import (
@@ -120,6 +127,12 @@ If one of the builds becomes published, it will not appear in the summary:
     ...     status=PackagePublishingStatus.PUBLISHED)
     >>> print_build_status_summary(spph.getStatusSummaryForBuilds())
     FULLYBUILT_PENDING
+    i386 build of foo 666 in ubuntutest breezy-autotest RELEASE
+
+Nor will it be included in the unpublished builds:
+
+    >>> for build in spph.getUnpublishedBuilds():
+    ...     print build.title
     i386 build of foo 666 in ubuntutest breezy-autotest RELEASE
 
 After publishing the second binary, the status changes to FULLYBUILT as
@@ -132,6 +145,11 @@ per normal:
     FULLYBUILT
     hppa build of foo 666 in ubuntutest breezy-autotest RELEASE
     i386 build of foo 666 in ubuntutest breezy-autotest RELEASE
+
+There are no longer any unpublished builds for the source package:
+
+    >>> for build in spph.getUnpublishedBuilds():
+    ...     print build.title
 
 If a build is deleted, it does not cause the build status summary to change:
 
@@ -326,6 +344,7 @@ architecture-specific binaries in ubuntu/breezy-autotest.
     ...     architecturehintlist='any',
     ...     status=PackagePublishingStatus.PUBLISHED,
     ...     pocket=PackagePublishingPocket.PROPOSED)
+
     >>> binaries = test_publisher.getPubBinaries(
     ...     pub_source=source,
     ...     status=PackagePublishingStatus.PUBLISHED,

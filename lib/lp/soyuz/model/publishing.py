@@ -53,6 +53,8 @@ from lp.soyuz.interfaces.publishing import (
     PoolFileOverwriteError)
 from lp.soyuz.interfaces.build import BuildSetStatus, BuildStatus, IBuildSet
 from lp.soyuz.scripts.changeoverride import ArchiveOverriderError
+from canonical.launchpad.components.decoratedresultset import (
+    DecoratedResultSet)
 from canonical.launchpad.webapp.interfaces import (
         IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from lp.registry.interfaces.person import validate_public_person
@@ -517,6 +519,18 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         result_set = publishing_set.getBuildsForSources(self)
 
         return [build for source, build, arch in result_set]
+
+    def getUnpublishedBuilds(self):
+        """See `ISourcePackagePublishingHistory`."""
+        publishing_set = getUtility(IPublishingSet)
+        result_set = publishing_set.getUnpublishedBuildsForSources(self)
+
+        # Create a function that will just return the second item
+        # in the result tuple (the build).
+        def result_to_build(result):
+            return result[1]
+
+        return DecoratedResultSet(result_set, result_to_build)
 
     @property
     def changes_file_url(self):
@@ -1115,7 +1129,9 @@ class PublishingSet:
         unpublished_builds = self.getBuildsForSourceIds(
             source_publication_ids).difference(published_builds)
 
-        return unpublished_builds
+        return unpublished_builds#.order_by(
+#            SourcePackagePublishingHistory.id,
+#            DistroArchSeries.architecturetag)
 
     def getFilesForSources(self, one_or_more_source_publications):
         """See `IPublishingSet`."""
