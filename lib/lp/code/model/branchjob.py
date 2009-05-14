@@ -211,6 +211,22 @@ class BranchUpgradeJob(BranchJobDerived):
         to_format = self.branch.getUpgradeFormat()
         upgrade(branch.base, to_format)
 
+    def getUpgradeFormat(self):
+        """See `IBranch`."""
+        format = BzrDirMetaFormat1()
+        branch_format = BRANCH_FORMAT_UPGRADE_PATH.get(self.branch_format)
+        repository_format = REPOSITORY_FORMAT_UPGRADE_PATH.get(
+            self.repository_format)
+        if branch_format is None or repository_format is None:
+            branch = self.getBzrBranch()
+            if branch_format is None:
+                branch_format = type(branch._format)
+            if repository_format is None:
+                repository_format = type(branch.repository._format)
+        format.set_branch_format(branch_format())
+        format._set_repository_format(repository_format())
+        return format
+
 
 class RevisionMailJob(BranchDiffJob):
     """A Job that calculates the a diff related to a Branch."""

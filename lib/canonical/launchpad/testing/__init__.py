@@ -364,7 +364,8 @@ class TestCaseWithFactory(TestCase):
         return browser
 
     def create_branch_and_tree(self, tree_location='.', product=None,
-                               hosted=False, db_branch=None, format=None):
+                               hosted=False, db_branch=None, format=None,
+                               **kwargs):
         """Create a database branch, bzr branch and bzr checkout.
 
         :param tree_location: The path on disk to create the tree at.
@@ -381,9 +382,9 @@ class TestCaseWithFactory(TestCase):
             format = format_registry.get(format)()
         if db_branch is None:
             if product is None:
-                db_branch = self.factory.makeAnyBranch()
+                db_branch = self.factory.makeAnyBranch(**kwargs)
             else:
-                db_branch = self.factory.makeProductBranch(product)
+                db_branch = self.factory.makeProductBranch(product, **kwargs)
         if hosted:
             branch_url = db_branch.getPullURL()
         else:

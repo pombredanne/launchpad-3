@@ -1199,9 +1199,6 @@ class IBranch(IHasOwner, IHasBranchTarget):
 
     needs_upgrading = Attribute("Whether the branch needs to be upgraded.")
 
-    def getUpgradeFormat():
-        """Return the metadir format that the branch should be upgraded to."""
-
 
 class IBranchSet(Interface):
     """Interface representing the set of branches."""

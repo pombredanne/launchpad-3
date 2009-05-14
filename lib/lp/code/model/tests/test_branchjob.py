@@ -9,7 +9,8 @@ import os.path
 from unittest import TestLoader
 
 from bzrlib import errors as bzr_errors
-from bzrlib.branch import Branch
+from bzrlib.branch import Branch, BzrBranchFormat7
+from bzrlib.repofmt.pack_repo import RepositoryFormatKnitPack6
 from bzrlib.revision import NULL_REVISION
 from canonical.testing import DatabaseFunctionalLayer, LaunchpadZopelessLayer
 from sqlobject import SQLObjectNotFound
@@ -178,6 +179,58 @@ class TestBranchUpgradeJob(TestCaseWithFactory):
         self.assertEqual(
             new_branch.repository._format.get_format_string(),
             'Bazaar RepositoryFormatKnitPack6 (bzr 1.9)\n')
+
+    def test_getUpgradeFormat_all_formats(self):
+        # getUpgradeFormat should return a BzrDirMetaFormat1 object with the
+        # most up to date branch and repository formats.
+        self.useBzrBranches()
+        branch = self.factory.makePersonalBranch(
+            branch_format=BranchFormat.BZR_BRANCH_5,
+            repository_format=RepositoryFormat.BZR_REPOSITORY_4)
+
+        format = removeSecurityProxy(branch.getUpgradeFormat())
+        self.assertTrue(isinstance(
+            format.get_branch_format(),
+            BRANCH_FORMAT_UPGRADE_PATH.get(BranchFormat.BZR_BRANCH_5)))
+        self.assertTrue(isinstance(
+            format._repository_format,
+            REPOSITORY_FORMAT_UPGRADE_PATH.get(
+                RepositoryFormat.BZR_REPOSITORY_4)))
+
+    def test_getUpgradeFormat_no_branch_upgrade_needed(self):
+        # getUpgradeFormat should not downgrade the branch format when it is
+        # more up to date than the default formats provided.
+        self.useBzrBranches()
+        branch = self.factory.makePersonalBranch(
+            branch_format=BranchFormat.BZR_BRANCH_7,
+            repository_format=RepositoryFormat.BZR_KNIT_1)
+        branch, _unused = self.create_branch_and_tree(db_branch=branch)
+
+        format = removeSecurityProxy(branch.getUpgradeFormat())
+        self.assertTrue(isinstance(
+            format.get_branch_format(),
+            BzrBranchFormat7))
+        self.assertTrue(isinstance(
+            format._repository_format,
+            REPOSITORY_FORMAT_UPGRADE_PATH.get(
+                RepositoryFormat.BZR_KNIT_1)))
+
+    def test_getUpgradeFormat_no_repository_upgrade_needed(self):
+        # getUpgradeFormat should not downgrade the branch format when it is
+        # more up to date than the default formats provided.
+        self.useBzrBranches()
+        branch = self.factory.makePersonalBranch(
+            branch_format=BranchFormat.BZR_BRANCH_4,
+            repository_format=RepositoryFormat.BZR_KNITPACK_6)
+        branch, _unused = self.create_branch_and_tree(db_branch=branch)
+
+        format = removeSecurityProxy(branch.getUpgradeFormat())
+        self.assertTrue(isinstance(
+            format.get_branch_format(),
+            BRANCH_FORMAT_UPGRADE_PATH.get(BranchFormat.BZR_BRANCH_4)))
+        self.assertTrue(isinstance(
+            format._repository_format,
+            RepositoryFormatKnitPack6))
 
 
 class TestRevisionMailJob(TestCaseWithFactory):

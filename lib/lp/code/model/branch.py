@@ -826,18 +826,6 @@ class Branch(SQLBase):
             return True
         return False
 
-    def getUpgradeFormat(self):
-        """See `IBranch`."""
-        format = BzrDirMetaFormat1()
-        branch_format = BRANCH_FORMAT_UPGRADE_PATH.get(self.branch_format)
-        if branch_format is not None:
-            format.set_branch_format(branch_format())
-        repository_format = REPOSITORY_FORMAT_UPGRADE_PATH.get(
-            self.repository_format)
-        if repository_format is not None:
-            format._set_repository_format(repository_format())
-        return format
-
 
 class DeletionOperation:
     """Represent an operation to perform as part of branch deletion."""

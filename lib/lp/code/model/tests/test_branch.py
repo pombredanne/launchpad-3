@@ -389,21 +389,6 @@ class TestBranch(TestCaseWithFactory):
             repository_format=RepositoryFormat.BZR_REPOSITORY_4)
         self.assertTrue(branch.needs_upgrading)
 
-    def test_getUpgradeFormat(self):
-        # getUpgradeFormat should return a BzrDirMetaFormat1 object with the
-        # most up to date formats.
-        branch = self.factory.makePersonalBranch(
-            branch_format=BranchFormat.BZR_BRANCH_5,
-            repository_format=RepositoryFormat.BZR_REPOSITORY_4)
-        format = removeSecurityProxy(branch.getUpgradeFormat())
-        self.assertTrue(isinstance(
-            format.get_branch_format(),
-            BRANCH_FORMAT_UPGRADE_PATH.get(BranchFormat.BZR_BRANCH_5)))
-        self.assertTrue(isinstance(
-            format._repository_format,
-            REPOSITORY_FORMAT_UPGRADE_PATH.get(
-                RepositoryFormat.BZR_REPOSITORY_4)))
-
 
 class TestBzrIdentity(TestCaseWithFactory):
     """Test IBranch.bzr_identity."""
