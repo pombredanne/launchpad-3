@@ -72,7 +72,7 @@ class TargetBranchWidget(LaunchpadRadioWidget):
         collection = branch.target.collection.targetedBy(logged_in_user)
         collection = collection.visibleByUser(logged_in_user)
         branches = collection.getBranches().config(distinct=True)
-        target_branches = branches.config(limit=5)
+        target_branches = list(branches.config(limit=5))
         # If there is a development focus branch, make sure it is always
         # shown, and as the first item.
         if self.default_target is not None:
