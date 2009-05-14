@@ -4,35 +4,39 @@
     i18n_domain="launchpad">
     <include file="vocabularies.zcml"/>
 
-    <class class="canonical.launchpad.database.Country">
-        <allow interface="canonical.launchpad.interfaces.ICountry" />
+    <class class=".model.country.Country">
+        <allow
+            interface=".interfaces.country.ICountry" />
     </class>
 
-    <class class="canonical.launchpad.database.CountrySet">
-        <allow interface="canonical.launchpad.interfaces.ICountrySet" />
+    <class class=".model.country.CountrySet">
+        <allow
+            interface=".interfaces.country.ICountrySet" />
     </class>
 
     <securedutility
-        class="canonical.launchpad.database.CountrySet"
-        provides="canonical.launchpad.interfaces.ICountrySet">
-        <allow interface="canonical.launchpad.interfaces.ICountrySet" />
+        class=".model.country.CountrySet"
+        provides=".interfaces.country.ICountrySet">
+        <allow
+            interface=".interfaces.country.ICountrySet" />
     </securedutility>
 
-    <class class="canonical.launchpad.database.Continent">
-        <allow interface="canonical.launchpad.interfaces.IContinent" />
+    <class class=".model.country.Continent">
+        <allow
+            interface=".interfaces.country.IContinent" />
     </class>
 
-    <class class="canonical.launchpad.database.Language">
-        <allow interface="canonical.launchpad.interfaces.ILanguage"/>
+    <class class=".model.language.Language">
+        <allow interface=".interfaces.language.ILanguage"/>
         <require
             permission="launchpad.Admin"
-            set_schema="canonical.launchpad.interfaces.ILanguage" />
+            set_schema=".interfaces.language.ILanguage" />
     </class>
 
     <securedutility
-        class="canonical.launchpad.database.LanguageSet"
-        provides="canonical.launchpad.interfaces.ILanguageSet">
-        <allow interface="canonical.launchpad.interfaces.ILanguageSet" />
+        class=".model.language.LanguageSet"
+        provides=".interfaces.language.ILanguageSet">
+        <allow interface=".interfaces.language.ILanguageSet" />
     </securedutility>
 
 </configure>
