@@ -152,6 +152,8 @@
               tal:attributes="src string:${yui}/widget/widget-stdmod.js"></script>
       <script type="text/javascript"
               tal:attributes="src string:${yui}/overlay/overlay.js"></script>
+      <script type="text/javascript"
+              tal:attributes="src string:${yui}/node-menunav/node-menunav.js"></script>
 
       <script type="text/javascript"
               tal:attributes="src string:${icingroot}/MochiKit.js"></script>
