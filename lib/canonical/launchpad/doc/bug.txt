@@ -919,7 +919,7 @@ use getBugTask() to get it.
     >>> mozilla_in_woody = debian_woody.getSourcePackage('mozilla-firefox')
     >>> mozilla_in_woody_task = bug_two.getBugTask(mozilla_in_woody)
     >>> mozilla_in_woody_task.target.displayname
-    u'Debian Woody mozilla-firefox'
+    u'mozilla-firefox in Debian Woody'
 
 If the bug isn't targeted to the target, None is returned.
 
