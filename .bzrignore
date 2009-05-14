@@ -46,6 +46,7 @@ parts
 build
 *.egg
 dist
-./buildout
+./eggs
+./download-cache
 ./_pythonpath.py
 

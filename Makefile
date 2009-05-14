@@ -99,7 +99,20 @@ inplace: build
 
 build: $(BZR_VERSION_INFO) compile apidoc
 
-bin/buildout:
+eggs:
+	# Usually this is linked via link-external-dependencies, but in
+	# deployment we create this ourselves.
+	mkdir eggs
+
+download-cache:
+	@echo "Missing buildout/download-cache."
+	@echo "Developers: please run utilities/link-external-dependencies."
+	@exit 1
+
+# The download-cache dependency comes *before* eggs so that developers get the
+# warning before the eggs directory is made.  The target for the eggs directory
+# is only there for deployment convenience.
+bin/buildout: download-cache eggs
 	$(PYTHON) bootstrap.py
 
 bin/py: bin/buildout

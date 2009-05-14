@@ -164,7 +164,7 @@ If you use the ``rocketfuel-get`` script, run that, and you will be done.
 If you don't, you have just a bit more initial set up.  I'll assume you
 maintain a pattern similar to what the ``rocketfuel-*`` scripts use: you have a
 local, pristine branch of trunk from which you make your other branches.  You
-manually update the trunk and rsync sourcecode when necessary.  When you makes
+manually update the trunk and rsync sourcecode when necessary.  When you make
 a branch, you use ``utilities/link-external-sourcecode``.
 
 Developers that take this approach should do the following, where ``trunk`` is
@@ -172,10 +172,9 @@ the trunk branch from which you make local branches.
 
 ::
 
-    cd trunk
-    mkdir -p buildout/eggs
-    cd buildout
     bzr co lp:lp-source-dependencies download-cache
+
+Then run ``make`` in the trunk.
 
 See the `Everyday Usage: Manual`_ section for further instructions on how to
 work without the ``rocketfuel-*`` scripts.
@@ -202,17 +201,9 @@ If you don't use the rocketfuel scripts, you will still use
 cannot find a version of a dependency, do the following, from within the
 branch::
 
-    bzr up ./buildout/download-cache
+    bzr up download-cache
 
-Alternatively, you can use this alias, which is intended to be a discoverable
-mnemonic.
-
-::
-
-    bin/update-download-cache
-
-After either of the above commands, retry your make (or run ``bin/buildout``
-from the branch).
+After this, retry your make (or run ``bin/buildout`` from the branch).
 
 That's it for everyday usage.
 
@@ -333,16 +324,14 @@ you might notice seven new items in the checkout.
     zc.buildout documentation of the ``versions`` option in the ``[buildout]``
     section.
 
-``buildout``
-    The buildout directory is either manually created locally or linked via
-    ``link-external-dependencies``.  Unless you set it up differently yourself,
-    this directory is shared by all your branches.  It contains two
-    directories``eggs`` and ``download-cache``.
-
+``eggs``
     The ``eggs`` directory holds the eggs built from the downloaded
-    distributions.  This is local to your system--we do not manage them
-    in a branch.  One reason for this is that eggs are often platform-specific.
-    
+    distributions. Unless you set it up differently yourself, this directory is
+    shared by all your branches. This directory is local to your system--we do
+    not manage it in a branch. One reason for this is that eggs are often
+    platform-specific.
+
+``download-cache``
     The ``download-cache`` directory is a set of downloaded distributions--that
     is, exact copies of the items that would typically be obtained from the
     Python Package Index ("PyPI"), or another download source. We manage the
@@ -423,7 +412,7 @@ Let's suppose that we want to add the "lazr.foo" package as a dependency.
       lazr.foo = 1.1.2
 
 3.  [OPTIONAL] Add the desired distribution of lazr.foo 1.1.2 to the
-    ``buildout/download-cache/dist`` directory.
+    ``download-cache/dist`` directory.
 
 4.  Run the following command (or your variation)::
 
@@ -431,13 +420,13 @@ Let's suppose that we want to add the "lazr.foo" package as a dependency.
 
     The first part (``./bin/buildout -v buildout:install-from-cache=false``)
     will run buildout, allowing it to download source packages from the
-    Internet to ``buildout/download-cache/dist``.  The second part (``tee
-    out.txt``) will dump the full output to the ``out.txt`` file in case you
-    need to debug a problem.  The last part (``grep 'Picked'``) will filter the
-    output so that only additional packages--dependencies of your
-    dependency--will be listed.  Look at the output.  You need to see if it
-    means that you have dependencies, some of which may be indirect
-    dependencies.  Here's an imaginary example output::
+    Internet to ``download-cache/dist``. The second part (``tee out.txt``) will
+    dump the full output to the ``out.txt`` file in case you need to debug a
+    problem. The last part (``grep 'Picked'``) will filter the output so that
+    only additional packages--dependencies of your dependency--will be listed.
+    Look at the output. You need to see if it means that you have dependencies,
+    some of which may be indirect dependencies. Here's an imaginary example
+    output::
 
         Picked: setuptools 0.6c9    
         Picked: lazr.foom = 1.4
@@ -449,9 +438,9 @@ Let's suppose that we want to add the "lazr.foo" package as a dependency.
     repeatedly.
     
     In our example, other than the spurious ``setuptools`` listing, this means
-    that these packages have also been added to your
-    ``buildout/download-cache/dist`` directory.  You also need to add those
-    versions to the ``versions.conf`` file::
+    that these packages have also been added to your ``download-cache/dist``
+    directory. You also need to add those versions to the ``versions.conf``
+    file::
     
         lazr.foom = 1.4
         zope.bar = 3.6.1
@@ -466,9 +455,16 @@ Let's suppose that we want to add the "lazr.foo" package as a dependency.
     include or ignore the uncommitted distributions, it will refuse to start
     an instance.
 
-6.  Commit the changes (``cd buildout/download-cache``, ``bzr up``,
-    ``bzr commit -m 'Add lazr.foo 1.1.2 to the download cache'``) to the
-    shared download cache when you are sure it is what you want.
+6.  Commit the changes (``cd download-cache``, ``bzr up``,
+    ``bzr commit -m 'Add lazr.foom 1.1.2 and depdendencies to the download
+    cache'``) to the shared download cache when you are sure it is what you
+    want.
+
+You should only add packages to the download-cache.
+
+*Never* modify a package in the download-cache.
+
+Only remove a package if you have explicit permission to do so.
 
 Upgrade a Package
 =================
@@ -559,10 +555,9 @@ create a tar.gz in the ``dist`` directory named
 subversion revision should be part of the package name.  The -bDEV option
 specifies that the 'DEV' suffix should be added to the version number.
 
-We could then put the tar.gz file in Launchpad's
-``buildout/download-cache/dist`` directory, specify ``feedvalidator =
-0.0.0DEV-r1049`` in the ``versions.cfg`` file, and proceed with the usual steps
-to update or add a new package.
+We could then put the tar.gz file in Launchpad's ``download-cache/dist``
+directory, specify ``feedvalidator = 0.0.0DEV-r1049`` in the ``versions.cfg``
+file, and proceed with the usual steps to update or add a new package.
 
 If you use a bzr branch, you might use the ``-d`` option instead of the ``-r``
 option when you create the distribution.  This will add the date instead of the
