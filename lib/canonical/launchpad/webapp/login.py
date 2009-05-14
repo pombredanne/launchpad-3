@@ -1,4 +1,4 @@
-# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
 """Stuff to do with logging in and logging out."""
 
 __metaclass__ = type
@@ -23,6 +23,7 @@ from lp.registry.interfaces.person import (
     IPerson, IPersonSet, PersonCreationRationale)
 from canonical.launchpad.interfaces.validation import valid_password
 from canonical.launchpad.validators.email import valid_email
+from canonical.launchpad.webapp.authorization import READ_PERMISSIONS
 from canonical.launchpad.webapp.interfaces import (
     ILaunchpadPrincipal, IPlacelessAuthUtility, IPlacelessLoginSource)
 from canonical.launchpad.webapp.interfaces import (
@@ -38,9 +39,23 @@ class UnauthorizedView(SystemErrorView):
     forbidden_page = ViewPageTemplateFile(
         '../templates/launchpad-forbidden.pt')
 
+    read_only_page = ViewPageTemplateFile(
+        '../templates/launchpad-readonlyfailure.pt')
+
     notification_message = _('To continue, you must log in to Launchpad.')
 
     def __call__(self):
+        # In read only mode, Unauthorized exceptions get raised by the
+        # security policy when write permissions are requested. We need
+        # to render the read-only failure screen so the user knows their
+        # request failed for operational reasons rather than a genuine
+        # permission problem.
+        if config.launchpad.read_only:
+            permission = self.context[-1]
+            if permission not in READ_PERMISSIONS:
+                self.request.response.setStatus(503) # Service Unavailable
+                return self.read_only_page()
+
         if IUnauthenticatedPrincipal.providedBy(self.request.principal):
             if 'loggingout' in self.request.form:
                 target = '%s?loggingout=1' % self.request.URL[-2]
