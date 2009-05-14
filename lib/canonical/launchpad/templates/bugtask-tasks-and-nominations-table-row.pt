@@ -59,9 +59,19 @@
     </tal:conjoined-task>
 
     <tal:not-conjoined-task condition="not:is_conjoined_slave">
-    <td tal:attributes="class string:status${context/status/name}"
-        tal:define="expander_link_text context/status/title">
-      <metal:expander metal:use-macro="template/macros/expander" />
+    <td style="width: 15em; vertical-align: middle">
+      <div class="status-content"
+           style="width: 100%; float: left">
+        <a href="+edit"
+           tal:attributes="class string:value status${context/status/name}"
+           style="float: left"
+           tal:content="context/status/title" />
+        <div style="float: right; margin-right: 0.5em">
+          <a href="+edit">
+            <img class="editicon" src="/@@/edit-grey" />
+          </a>
+        </div>
+      </div>
     </td>
 
     <td tal:attributes="class string:importance${context/importance/name}"
@@ -117,6 +127,18 @@
       <td tal:condition="not:context/milestone"></td>
     </tal:not-conjoined-task>
   </tr>
+  <script type="text/javascript" tal:content="string:
+    YUI().use('event', 'bugs.bugtask_index', function(Y) {
+        Y.on('load',
+             function(e) {
+                 Y.bugs.setup_bugtask_row('${row_id}',
+                                          '${context/fmt:url}',
+                                          ${view/status_widget_items},
+                                          '${context/status/title}');
+             },
+             window);
+    });
+  "/>
   <tal:form condition="view/displayEditForm">
     <tr
       tal:attributes="id form_row_id"

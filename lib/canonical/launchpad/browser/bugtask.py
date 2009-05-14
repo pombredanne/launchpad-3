@@ -143,7 +143,8 @@ from canonical.widgets.bugtask import (
     NewLineToSpacesWidget, NominationReviewActionWidget)
 from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 from canonical.widgets.lazrjs import (
-    InlineEditPickerWidget, TextLineEditorWidget)
+    InlineEditPickerWidget, vocabulary_to_choice_edit_items,
+    TextLineEditorWidget)
 from canonical.widgets.project import ProjectScopeWidget
 
 from lp.registry.vocabularies import MilestoneVocabulary
@@ -3001,6 +3002,24 @@ class BugTaskTableRowView(LaunchpadView):
         return self.request.getNearest(ICveSet) == (None, None)
 
     @property
+    def status_widget_items(self):
+        """The available status items as JSON."""
+        if self.user is not None:
+            status_vocab_factory = vocab_factory(
+                BugTaskStatus, noshow=[BugTaskStatus.UNKNOWN])
+
+            disabled_items = [status for status in BugTaskStatus.items
+                if not self.context.canTransitionToStatus(status, self.user)]
+
+            items = vocabulary_to_choice_edit_items(
+                status_vocab_factory(self.context),
+                css_class_prefix='status',
+                disabled_items=disabled_items)
+        else:
+            items = '[]'
+
+        return items
+
     def bugtask_canonical_url(self):
         """Return the canonical url for the bugtask."""
         return canonical_url(self.context)
