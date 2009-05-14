@@ -4,14 +4,29 @@ from canonical.launchpad.windmill.testing import lpuser
 
 from windmill.authoring import WindmillTestClient
 
-WAIT_PAGELOAD = u'30000'
-WAIT_ELEMENT_COMPLETE = u'30000'
-WAIT_CHECK_CHANGE = u'1000'
+WAIT_PAGELOAD = u'3000000'
+WAIT_ELEMENT_COMPLETE = u'3000000'
+WAIT_CHECK_CHANGE = u'3000'
 FILEBUG_URL = 'http://launchpad.dev:8085/firefox/+filebug'
+
 DUPLICATE_BUG_DIV = u'//div[@id="details-for-bug-4"]'
 DUPLICATE_BUG_EXPANDER = u'//img[@id="bug-details-expander-bug-4"]'
 BUG_NOT_REPORTED_BUTTON = u'//input[@id="bug-not-already-reported"]'
 FILEBUG_FORM = u'//div[@id="bug_reporting_form"]'
+THIS_IS_MY_BUG_BUTTON = u'//input[@id="this-is-my-bug-4"]'
+FORM_OVERLAY = u'//div[@id="duplicate-overlay-bug-4"]/table'
+FORM_OVERLAY_CANCEL = (
+    u'//div[@id="duplicate-overlay-bug-4"]'
+    '//button[@name="field.actions.cancel"]')
+FORM_OVERLAY_SUBMIT = (
+    u'//div[@id="duplicate-overlay-bug-4"]'
+    '//button[@name="field.actions.this_is_my_bug"]')
+
+# JavaScript expressions for testing.
+FORM_NOT_VISIBLE = (
+    u'element.className.search("yui-lazr-formoverlay-hidden") != -1')
+FORM_VISIBLE = (
+    u'element.className.search("yui-lazr-formoverlay-hidden") == -1')
 
 
 def test_duplicate_finder():
@@ -44,6 +59,9 @@ def test_duplicate_finder():
     # The expander for the duplicate should be collapsed.
     client.asserts.assertProperty(
         xpath=DUPLICATE_BUG_EXPANDER, validator='src|/@@/treeCollapsed')
+
+    # Initially the form overlay is hidden
+    client.asserts.assertElemJS(xpath=FORM_OVERLAY, js=FORM_NOT_VISIBLE)
 
     # Clicking on the expander will expand it and show the details div.
     client.click(xpath=DUPLICATE_BUG_EXPANDER)
@@ -91,3 +109,15 @@ def test_duplicate_finder():
         xpath=DUPLICATE_BUG_EXPANDER, validator='src|/@@/treeExpanded')
     client.asserts.assertProperty(
         xpath=DUPLICATE_BUG_DIV, validator='style.display|block')
+
+    # Clicking on the "Yes, this is my bug button" will show a form
+    # overlay, which will offer the user the option to subscribe to the
+    # bug.
+    client.click(xpath=THIS_IS_MY_BUG_BUTTON)
+    client.waits.sleep(milliseconds=WAIT_CHECK_CHANGE)
+    client.asserts.assertElemJS(xpath=FORM_OVERLAY, js=FORM_VISIBLE)
+
+    # Clicking the cancel button will make the overlay go away again.
+    client.click(xpath=FORM_OVERLAY_CANCEL)
+    client.waits.sleep(milliseconds=WAIT_CHECK_CHANGE)
+    client.asserts.assertElemJS(xpath=FORM_OVERLAY, js=FORM_NOT_VISIBLE)

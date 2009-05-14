@@ -469,9 +469,14 @@
                               id string:bug-already-reported-as-${bug/id};"
                           />
 
-                      <tal:this-is-my-bug-action
-                          replace="structure view/this_is_my_bug_action/render" />
+                      <input type="submit"
+                          name="field.actions.this_is_my_bug"
+                          tal:attributes="id string:this-is-my-bug-${bug/id}"
+                          value="Yes, this is the bug I'm trying to report"
+                          />
 
+                      <div tal:attributes="id string:duplicate-overlay-bug-${bug/id}"
+                      ></div>
                     </span>
                   </form>
                 </div>
