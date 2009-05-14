@@ -605,7 +605,7 @@ class TestWorkerMonitorIntegrationScript(TestWorkerMonitorIntegration):
         This implementation does it in a child process.
         """
         script_path = os.path.join(
-            config.root, 'scripts', 'code-import-worker-db.py')
+            config.root, 'scripts', 'code-import-worker-monitor.py')
         process_end_deferred = defer.Deferred()
         # The "childFDs={0:0, 1:1, 2:2}" means that any output from the script
         # goes to the test runner's console rather than to pipes that noone is

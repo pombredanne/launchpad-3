@@ -6,7 +6,7 @@
 By 'processing a code import' we mean importing or updating code from a
 remote, non-Bazaar, repository.
 
-This script is usually run by the code-import-worker-db.py script that
+This script is usually run by the code-import-worker-monitor.py script that
 communicates progress and results to the database.
 """
 
