@@ -1,6 +1,6 @@
 # Copyright 2009 Canonical Ltd.  All rights reserved.
 
-"""Module docstring goes here."""
+"""Tests for the `IProviderOpenIDStore` utility."""
 
 __metaclass__ = type
 
@@ -18,7 +18,7 @@ from lp.testing import TestCase
 
 
 class ProviderOpenIDStoreTests(BaseStormOpenIDStoreTestsMixin, TestCase):
-    """Tests for the `ProviderOpenIDStore` utility."""
+    """Tests for the `IProviderOpenIDStore` utility."""
 
     layer = DatabaseFunctionalLayer
 
@@ -34,4 +34,3 @@ class ProviderOpenIDStoreTests(BaseStormOpenIDStoreTestsMixin, TestCase):
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
-

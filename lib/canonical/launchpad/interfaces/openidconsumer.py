@@ -3,12 +3,10 @@
 """Interfaces for OpenID consumer functions."""
 
 __metaclass__ = type
-__all__ = ['IOpenIDConsumerStoreFactory']
+__all__ = ['IOpenIDConsumerStore']
 
 from zope.interface import Interface
 
-class IOpenIDConsumerStoreFactory(Interface):
-    """Factory to create OpenIDConsumerStore instances."""
 
-    def __call__():
-        """Create a LaunchpadOpenIDStore instance."""
+class IOpenIDConsumerStore(Interface):
+    """An OpenID association and nonce store for Launchpad."""

@@ -113,7 +113,9 @@ class BaseStormOpenIDStoreTestsMixin:
         self.assertEqual(
             self.store.useNonce('server-url', timestamp, 'salt'), False)
 
-    def test_cleanupNonces(self):
+    # Test disabled because we aren't cleaning up nonces via the
+    # OpenIDStore.
+    def disabled_test_cleanupNonces(self):
         timestamp = time.time()
         self.assertEqual(
             self.store.useNonce('server1', timestamp, 'salt1'), True)

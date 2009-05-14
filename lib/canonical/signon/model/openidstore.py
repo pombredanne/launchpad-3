@@ -23,6 +23,7 @@ class ProviderNonce(BaseStormOpenIDNonce):
 
 
 class ProviderOpenIDStore(BaseStormOpenIDStore):
+    """An association store for the OpenID Provider."""
     implements(IProviderOpenIDStore)
 
     Association = ProviderAssociation
