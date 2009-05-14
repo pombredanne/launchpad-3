@@ -6,6 +6,8 @@ __all__ = [
     'DecoratedResultSet',
     ]
 
+from zope.security.proxy import removeSecurityProxy
+
 from storm.expr import Column
 from storm.zope.interfaces import IResultSet
 
@@ -153,7 +155,8 @@ class DecoratedResultSet(object):
         # Only override the method call if
         #  1) The result set has the distinct config set
         #  2) count was called without any args or kwargs
-        if self.result_set._distinct and len(args) == 0 and len(kwargs) == 0:
+        is_distinct = removeSecurityProxy(self.result_set)._distinct
+        if is_distinct and len(args) == 0 and len(kwargs) == 0:
             spec = self.result_set._find_spec
             columns, tables = spec.get_columns_and_tables()
 

@@ -520,10 +520,11 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
 
         return [build for source, build, arch in result_set]
 
-    def getUnpublishedBuilds(self):
+    def getUnpublishedBuilds(self, build_states=None):
         """See `ISourcePackagePublishingHistory`."""
         publishing_set = getUtility(IPublishingSet)
-        result_set = publishing_set.getUnpublishedBuildsForSources(self)
+        result_set = publishing_set.getUnpublishedBuildsForSources(
+            self, build_states)
 
         # Create a function that will just return the second item
         # in the result tuple (the build).
@@ -1004,7 +1005,8 @@ class PublishingSet:
 
     implements(IPublishingSet)
 
-    def getBuildsForSourceIds(self, source_publication_ids, archive=None):
+    def getBuildsForSourceIds(
+        self, source_publication_ids, archive=None, build_states=None):
         """See `IPublishingSet`."""
         # Import Build and DistroArchSeries locally to avoid circular
         # imports, since that Build uses SourcePackagePublishingHistory
@@ -1019,6 +1021,12 @@ class PublishingSet:
         if archive is not None:
             extra_exprs.append(
                 SourcePackagePublishingHistory.archive == archive)
+
+        # If an optional list of build states was passed in as a parameter,
+        # ensure that the result is limited to builds in those states.
+        if build_states is not None:
+            extra_exprs.append(
+                Build.buildstate.is_in(build_states))
 
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         result_set = store.find(
@@ -1106,7 +1114,8 @@ class PublishingSet:
             In(SourcePackagePublishingHistory.id, source_publication_ids))
 
     def getUnpublishedBuildsForSources(self,
-                                       one_or_more_source_publications):
+                                       one_or_more_source_publications,
+                                       build_states=None):
         """See `IPublishingSet`."""
         # Import Build, BinaryPackageRelease and DistroArchSeries locally
         # to avoid circular imports, since Build uses
@@ -1116,13 +1125,20 @@ class PublishingSet:
         from lp.soyuz.model.distroarchseries import (
             DistroArchSeries)
 
+        # The default build state that we'll search for is FULLYBUILT
+        if build_states is None:
+            build_states = [BuildStatus.FULLYBUILT]
+
         source_publication_ids = self._extractIDs(
             one_or_more_source_publications)
 
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         published_builds = store.find(
             (SourcePackagePublishingHistory, Build, DistroArchSeries),
-            self._getSourceBinaryJoinForSources(source_publication_ids))
+            self._getSourceBinaryJoinForSources(source_publication_ids),
+            BinaryPackagePublishingHistory.datepublished != None,
+            Build.buildstate.is_in(build_states))
+
         published_builds.order_by(
             SourcePackagePublishingHistory.id,
             DistroArchSeries.architecturetag)
@@ -1130,7 +1146,8 @@ class PublishingSet:
         # Now to return all the unpublished builds, we use the difference
         # of all builds minus the published ones.
         unpublished_builds = self.getBuildsForSourceIds(
-            source_publication_ids).difference(published_builds)
+            source_publication_ids,
+            build_states=build_states).difference(published_builds)
 
         return unpublished_builds
 
@@ -1307,16 +1324,9 @@ class PublishingSet:
         if (source_publication.status in active_publishing_status and
                 summary['status'] == BuildSetStatus.FULLYBUILT):
 
-            published_bins = source_publication.getPublishedBinaries()
-            published_builds = [
-                bin.binarypackagerelease.build
-                    for bin in published_bins
-                        if bin.datepublished is not None]
+            unpublished_builds = source_publication.getUnpublishedBuilds()
 
-            unpublished_builds = list(
-                set(summary['builds']).difference(published_builds))
-
-            if unpublished_builds:
+            if unpublished_builds.count() > 0:
                 augmented_summary = {
                     'status': BuildSetStatus.FULLYBUILT_PENDING,
                     'builds': unpublished_builds

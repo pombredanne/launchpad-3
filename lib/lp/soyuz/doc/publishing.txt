@@ -135,11 +135,31 @@ Nor will it be included in the unpublished builds:
     ...     print build.title
     i386 build of foo 666 in ubuntutest breezy-autotest RELEASE
 
+By default, only FULLYBUILT builds are included in the returned
+unpublished builds:
+
+    >>> builds[1].buildstate = BuildStatus.SUPERSEDED
+    >>> for build in spph.getUnpublishedBuilds():
+    ...     print build.title
+
+But the returned build-states can be set explicitly:
+
+    >>> for build in spph.getUnpublishedBuilds(build_states=[
+    ...     BuildStatus.FULLYBUILT,
+    ...     BuildStatus.SUPERSEDED
+    ...     ]):
+    ...     print build.title
+    i386 build of foo 666 in ubuntutest breezy-autotest RELEASE
+
+Just switch it back to FULLYBUILT before continuing:
+
+    >>> builds[1].buildstate = BuildStatus.FULLYBUILT
+    
 After publishing the second binary, the status changes to FULLYBUILT as
 per normal:
 
     >>> bpr = stp.uploadBinaryForBuild(builds[1], 'foo-bin')
-    >>> bpph = stp.publishBinaryInArchive(bpr, spph.archive,
+    >>> binary_publishings = stp.publishBinaryInArchive(bpr, spph.archive,
     ...     status=PackagePublishingStatus.PUBLISHED)
     >>> print_build_status_summary(spph.getStatusSummaryForBuilds())
     FULLYBUILT

@@ -582,10 +582,13 @@ class ISourcePackagePublishingHistory(ISecureSourcePackagePublishingHistory):
         :return: a list of `IBuilds`.
         """
 
-    def getUnpublishedBuilds():
+    def getUnpublishedBuilds(build_states=None):
         """Return a resultset of `IBuild` objects in this context that are
         not published.
 
+        :param build_states: list of build states to which the result should
+            be limited. Defaults to BuildStatus.FULLYBUILT if none are
+            specified.
         :return: a result set of `IBuilds`.
         """
 
@@ -848,7 +851,7 @@ class IPublishingSet(Interface):
             binary publications.
         """
 
-    def getBuildsForSourceIds(source_ids, archive=None):
+    def getBuildsForSourceIds(source_ids, archive=None, build_states=None):
         """Return all builds related with each given source publication.
 
         The returned ResultSet contains entries with the wanted `Build`s
@@ -871,6 +874,9 @@ class IPublishingSet(Interface):
         :param archive: An optional archive with which to filter the source
                         ids.
         :type archive: `IArchive`
+        :param build_states: optional list of build states to which the
+            result will be limited. Defaults to all states if ommitted.
+        :type build_states: ``list`` or None
         :return: a storm ResultSet containing tuples as
             (`SourcePackagePublishingHistory`, `Build`, `DistroArchSeries`)
         :rtype: `storm.store.ResultSet`.
@@ -883,11 +889,18 @@ class IPublishingSet(Interface):
         calls getBuildsForSourceIds.
         """
 
-    def getUnpublishedBuildsForSources(one_or_more_source_publications):
-        """Return all the unpublished builds for each source publication.
+    def getUnpublishedBuildsForSources(one_or_more_source_publications,
+                                       build_states=None):
+        """Return all the unpublished builds for each source.
 
         :param one_or_more_source_publications: list of, or a single
             `SourcePackagePublishingHistory` object.
+        :param build_states: list of build states to which the result should
+            be limited.        :param build_states: list of build states to which the result should
+            be limited. Defaults to BuildStatus.FULLYBUILT if none are
+            specified.
+ Defaults to BuildStatus.FULLYBUILT if none are
+            specified.
         :return: a storm ResultSet containing tuples of
             (`SourcePackagePublishingHistory`, `Build`)
         """
