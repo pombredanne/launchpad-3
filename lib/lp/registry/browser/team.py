@@ -206,14 +206,16 @@ class TeamEditView(TeamFormMixin, HasRenewalPolicyMixin,
     def setUpWidgets(self):
         """See `LaunchpadViewForm`.
 
-        When a team has a mailing list, renames are prohibited.
-        Also when a team is private renames are prohibited.
+        When a team has a mailing list, a PPA or is private, renames
+        are prohibited.
         """
         mailing_list = getUtility(IMailingListSet).get(self.context.name)
-        writable = ((mailing_list is None or
-                     mailing_list.status == MailingListStatus.PURGED) and
-                    self.context.visibility != PersonVisibility.PRIVATE
-                    )
+        writable = (
+            (mailing_list is None or
+             mailing_list.status == MailingListStatus.PURGED) and
+            self.context.visibility != PersonVisibility.PRIVATE and
+            self.context.archive is None
+            )
 
         if not writable:
             # This makes the field's widget display (i.e. read) only.
@@ -222,6 +224,8 @@ class TeamEditView(TeamFormMixin, HasRenewalPolicyMixin,
         if not writable:
             if self.context.visibility == PersonVisibility.PRIVATE:
                 message = _('You cannot change the name of a private team.')
+            elif self.context.archive is not None:
+                message = _('This team has a PPA and may not be renamed.')
             else:
                 message = _(
                     'This team has a mailing list and may not be renamed.')

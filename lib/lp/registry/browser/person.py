@@ -3676,6 +3676,23 @@ class PersonEditView(BasePersonEditView):
         """The URL that the 'Cancel' link should return to."""
         return canonical_url(self.context)
 
+    def setUpWidgets(self):
+        """See `LaunchpadViewForm`.
+
+        When a user has a PPA renames are prohibited.
+        """
+        writable = self.context.archive is None
+        if not writable:
+            # This makes the field's widget display (i.e. read) only.
+            self.form_fields['name'].for_display = True
+        super(PersonEditView, self).setUpWidgets()
+        if not writable:
+            # We can't change the widget's .hint directly because that's a
+            # read-only property.  But that property just delegates to the
+            # context's underlying description, so change that instead.
+            self.widgets['name'].context.description = _(
+                'This user has a PPA and may not be renamed.')
+
     def validate(self, data):
         """If the name changed, warn the user about the implications."""
         new_name = data.get('name')

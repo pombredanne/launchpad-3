@@ -134,6 +134,25 @@ user can't have an emtpy displayname on his PPA.
     There is 1 error.
     Required input is missing.
 
+Once the PPA is activated, Sample user account cannot be renamed
+anymore. Changing the account name affects the PPA repository paths
+and we don't have infrastructure in place to support that yet. See
+more information about the feature in bug #87326.
+
+    >>> sample_browser.open("http://launchpad.dev/~name12/+edit")
+    >>> sample_browser.getControl(name='field.name').value = 'el-duderino'
+    Traceback (most recent call last):
+    ...
+    LookupError: name 'field.name'
+
+    >>> print extract_text(
+    ...     first_tag_by_class(sample_browser.contents, 'form'))
+    Display Name:
+    ...
+    Name: name12
+    This user has a PPA and may not be renamed.
+    ...
+
 
 == Activating Personal Package Archives for Teams ==
 
@@ -218,6 +237,21 @@ page and discard the changes.
     ...     find_tag_by_id(sample_browser.contents, 'description'))
     Description
     Yay, I can change it.
+
+Similarly to users, teams with assigned PPAs cannot be renamed either.
+
+    >>> sample_browser.open(
+    ...     "http://launchpad.dev/~landscape-developers/+edit")
+    >>> sample_browser.getControl(name='field.name').value = 'duderinos'
+    Traceback (most recent call last):
+    ...
+    LookupError: name 'field.name'
+
+    >>> print extract_text(
+    ...     first_tag_by_class(sample_browser.contents, 'form'))
+    Name: landscape-developers
+    This team has a PPA and may not be renamed.
+    ...
 
 
 == Activating someone else's Personal Package Archives  ==
