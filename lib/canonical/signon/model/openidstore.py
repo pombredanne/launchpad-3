@@ -12,7 +12,6 @@ import time
 
 from openid.association import Association
 from openid.store.interface import OpenIDStore
-from storm.base import Storm
 from storm.properties import Int, RawStr, Unicode
 from zope.interface import implements
 
@@ -20,7 +19,7 @@ from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from canonical.signon.interfaces.openidstore import IProviderOpenIDStore
 
 
-class DatabaseAssociation(Storm):
+class DatabaseAssociation:
     """Database representation of a stored OpenID association."""
 
     __storm_table__ = 'OpenIDAssociation'
