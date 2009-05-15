@@ -52,7 +52,6 @@ __all__ = [
     'ILaunchpadSearch',
     'ILaunchpadUsage',
     'INotificationRecipientSet',
-    'IOpenIDApplication',
     'IOpenLaunchBag',
     'IPasswordChangeApp',
     'IPasswordEncryptor',
@@ -188,10 +187,6 @@ class IRosettaApplication(ILaunchpadApplication):
 
 class IBazaarApplication(ILaunchpadApplication):
     """Bazaar Application"""
-
-
-class IOpenIDApplication(ILaunchpadApplication):
-    """Launchpad Login Service application root."""
 
 
 class IPrivateApplication(ILaunchpadApplication):

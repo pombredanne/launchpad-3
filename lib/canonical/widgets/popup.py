@@ -291,10 +291,21 @@ class VocabularyPickerWidget(SinglePopupWidget):
             step_title=self.step_title,
             show_widget_id=self.show_widget_id,
             input_id=self.name)
-        return ('(<a id="%s" href="javascript:" class="js-action">'
-                'Choose&hellip;</a>)'
+        # If the YUI widget or javascript is not supported in the browser,
+        # it will degrade to being this "Find..." link instead of the
+        # "Choose..." link.
+        return ('(<a id="%s" href="/people/">'
+                'Find&hellip;</a>)'
                 '\n<script>\n%s\n</script>') % (self.show_widget_id, js)
 
 
 class PersonPickerWidget(VocabularyPickerWidget):
     header = 'Select a person or team'
+    include_create_team_link = False
+
+    def chooseLink(self):
+        link = super(PersonPickerWidget, self).chooseLink()
+        if self.include_create_team_link:
+            link += ('or (<a href="/people/+newteam">'
+                     'Create a new team&hellip;</a>)')
+        return link

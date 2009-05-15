@@ -6,6 +6,7 @@
     i18n_domain="launchpad">
     <include
         package=".browser"/>
+    <authorizations module="canonical.shipit.security" />
 
     <!-- This is only used on shipit. That's why it's here. -->
 

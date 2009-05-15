@@ -38,7 +38,7 @@ from canonical.launchpad.interfaces.translations import (
     TranslationsBranchImportMode)
 from canonical.launchpad.interfaces.translationimportqueue import (
     ITranslationImportQueue)
-from canonical.launchpad.mailout.branch import BranchMailer
+from lp.code.mail.branch import BranchMailer
 from canonical.launchpad.translationformat.translation_import import (
     TranslationImporter)
 from canonical.launchpad.webapp.interfaces import (

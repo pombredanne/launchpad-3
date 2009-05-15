@@ -62,9 +62,9 @@ from lp.registry.model.productrelease import ProductRelease
 from lp.registry.model.productseries import ProductSeries
 from lp.answers.model.question import (
     QuestionTargetSearch, QuestionTargetMixin)
-from canonical.launchpad.database.specification import (
+from lp.blueprints.model.specification import (
     HasSpecificationsMixin, Specification)
-from canonical.launchpad.database.sprint import HasSprintsMixin
+from lp.blueprints.model.sprint import HasSprintsMixin
 from canonical.launchpad.database.translationimportqueue import (
     HasTranslationImportsMixin)
 from canonical.launchpad.database.structuralsubscription import (
@@ -87,7 +87,7 @@ from lp.registry.interfaces.product import (
     IProduct, IProductSet, License, LicenseStatus)
 from canonical.launchpad.interfaces.structuralsubscription import (
     IStructuralSubscriptionTarget)
-from canonical.launchpad.interfaces.specification import (
+from lp.blueprints.interfaces.specification import (
     SpecificationDefinitionStatus, SpecificationFilter,
     SpecificationImplementationStatus, SpecificationSort)
 from canonical.launchpad.interfaces.translationgroup import (
@@ -966,6 +966,13 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             And(BugTask.product == self.id,
                 BugTask.bugwatch == BugWatch.id,
                 BugWatch.bugtracker == self.getExternalBugTracker()))
+
+    def getTimeline(self, include_inactive=False):
+        timeline = []
+        for series in self.serieses:
+            timeline.append(
+                series.getTimeline(include_inactive=include_inactive))
+        return timeline
 
 
 class ProductSet:

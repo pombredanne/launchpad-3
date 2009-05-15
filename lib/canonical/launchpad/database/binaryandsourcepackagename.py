@@ -20,7 +20,7 @@ from canonical.launchpad.interfaces import (
     IBinaryAndSourcePackageName)
 from lp.registry.model.sourcepackagename import (
     getSourcePackageDescriptions)
-from canonical.launchpad.database.binarypackagename import (
+from lp.soyuz.model.binarypackagename import (
     getBinaryPackageDescriptions)
 
 class BinaryAndSourcePackageName(SQLBase):

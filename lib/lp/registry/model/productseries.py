@@ -32,7 +32,7 @@ from canonical.launchpad.database.packaging import Packaging
 from lp.registry.interfaces.person import validate_public_person
 from canonical.launchpad.database.potemplate import POTemplate
 from lp.registry.model.productrelease import ProductRelease
-from canonical.launchpad.database.specification import (
+from lp.blueprints.model.specification import (
     HasSpecificationsMixin, Specification)
 from canonical.launchpad.database.translationimportqueue import (
     HasTranslationImportsMixin)
@@ -42,13 +42,15 @@ from canonical.launchpad.helpers import shortlist
 from lp.registry.interfaces.distroseries import DistroSeriesStatus
 from canonical.launchpad.interfaces.packaging import PackagingType
 from canonical.launchpad.interfaces.potemplate import IHasTranslationTemplates
-from canonical.launchpad.interfaces.specification import (
+from lp.blueprints.interfaces.specification import (
     SpecificationDefinitionStatus, SpecificationFilter,
     SpecificationGoalStatus, SpecificationImplementationStatus,
     SpecificationSort)
-from canonical.launchpad.interfaces.structuralsubscription import IStructuralSubscriptionTarget
+from canonical.launchpad.interfaces.structuralsubscription import (
+    IStructuralSubscriptionTarget)
 from canonical.launchpad.webapp.interfaces import NotFoundError
-from lp.registry.interfaces.productseries import IProductSeries, IProductSeriesSet
+from lp.registry.interfaces.productseries import (
+    IProductSeries, IProductSeriesSet)
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from canonical.launchpad.interfaces.translations import (
@@ -438,6 +440,25 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
             orderBy=['-priority','name'],
             clauseTables = ['ProductSeries', 'Product'])
         return shortlist(result, 300)
+
+    def getTimeline(self, include_inactive=False):
+        landmarks = []
+        for j, milestone in enumerate(self.all_milestones):
+            if milestone.product_release is None:
+                # Skip inactive milestones, but include releases,
+                # even if include_inactive is False.
+                if not include_inactive and not milestone.active:
+                    continue
+                node_type = 'milestone'
+            else:
+                node_type = 'release'
+            landmarks.append(dict(
+                name=milestone.name, code_name=milestone.code_name,
+                type=node_type))
+        return dict(
+            name=self.name,
+            is_development_focus=self.is_development_focus,
+            landmarks=landmarks)
 
 
 class ProductSeriesSet:

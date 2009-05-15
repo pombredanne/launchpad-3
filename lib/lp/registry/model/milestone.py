@@ -24,7 +24,7 @@ from storm.locals import And, Store
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.launchpad.webapp.sorting import expand_numbers
 from canonical.launchpad.database.bugtarget import HasBugsBase
-from canonical.launchpad.database.specification import Specification
+from lp.blueprints.model.specification import Specification
 from lp.registry.model.productrelease import ProductRelease
 from canonical.launchpad.database.structuralsubscription import (
     StructuralSubscriptionTargetMixin)

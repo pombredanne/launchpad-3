@@ -59,9 +59,9 @@ from lp.registry.interfaces.pillar import IPillar
 from lp.registry.interfaces.productrelease import IProductRelease
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.project import IProject
-from canonical.launchpad.interfaces.specificationtarget import (
+from lp.blueprints.interfaces.specificationtarget import (
     ISpecificationTarget)
-from canonical.launchpad.interfaces.sprint import IHasSprints
+from lp.blueprints.interfaces.sprint import IHasSprints
 from canonical.launchpad.interfaces.translationgroup import (
     IHasTranslationGroup)
 from canonical.launchpad.validators import LaunchpadValidationError
@@ -646,6 +646,11 @@ class IProductPublic(
         as this Product is using, is linked to a bug task targeted to
         this Product.
         """
+
+    @export_read_operation()
+    @export_operation_as('get_timeline')
+    def getTimeline():
+        """Return basic timeline data useful for creating a diagram."""
 
 
 class IProduct(IProductEditRestricted, IProductCommercialRestricted,
