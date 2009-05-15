@@ -9,7 +9,7 @@ WAIT_ELEMENT_COMPLETE = u'30000'
 WAIT_CHECK_CHANGE = u'1000'
 BUG_URL = u'http://bugs.launchpad.dev:8085/bugs/11'
 SUBSCRIPTION_LINK = u'//div[@id="portlet-subscribers"]/div/div/a'
-SUBSCRIBERS_LIST_PERSON = u'//div[@id="subscriber-name12"]'
+SAMPLE_PERSON_ID = u'subscriber-name12'
 
 def test_inline_subscriber():
     """Test inline subscribing on bugs pages.
@@ -27,7 +27,7 @@ def test_inline_subscriber():
 
     # Ensure the subscriber's portlet has finished loading.
     client.waits.forElement(
-        xpath=u'//div[@id="subscribers-links"]', timeout=WAIT_ELEMENT_COMPLETE)
+        id=u'subscribers-links', timeout=WAIT_ELEMENT_COMPLETE)
 
     # "Sample Person" should not be subscribed initially.
     client.asserts.assertText(
@@ -41,10 +41,10 @@ def test_inline_subscriber():
     client.waits.sleep(milliseconds=WAIT_CHECK_CHANGE)
     client.asserts.assertText(
         xpath=SUBSCRIPTION_LINK, validator=u'Unsubscribe')
-    client.asserts.assertNode(xpath=SUBSCRIBERS_LIST_PERSON)
+    client.asserts.assertNode(id=SAMPLE_PERSON_ID)
     client.asserts.assertProperty(
         xpath=SUBSCRIPTION_LINK,
-        validator='style.backgroundImage|url(/@@/remove)')
+        validator=u'style.backgroundImage|url(/@@/remove)')
 
     # Make sure the unsubscribe link also works, that
     # the person's named is removed from the subscriber's list,
@@ -55,8 +55,8 @@ def test_inline_subscriber():
         xpath=SUBSCRIPTION_LINK, validator=u'Subscribe')
     client.asserts.assertProperty(
         xpath=SUBSCRIPTION_LINK,
-        validator='style.backgroundImage|url(/@@/add)')
-    client.asserts.assertNotNode(xpath=SUBSCRIBERS_LIST_PERSON)
+        validator=u'style.backgroundImage|url(/@@/add)')
+    client.asserts.assertNotNode(id=SAMPLE_PERSON_ID)
 
     # Subscribe again in order to check that the minus icon
     # next to the subscriber's name works as an inline unsubscribe link.
@@ -64,14 +64,14 @@ def test_inline_subscriber():
     client.waits.sleep(milliseconds=WAIT_CHECK_CHANGE)
     client.asserts.assertText(
         xpath=SUBSCRIPTION_LINK, validator=u'Unsubscribe')
-    client.click(xpath=u'//a[@id="unsubscribe-name12"]/img')
+    client.click(id=u'unsub-icon-name12')
     client.waits.sleep(milliseconds=WAIT_CHECK_CHANGE)
     client.asserts.assertText(
         xpath=SUBSCRIPTION_LINK, validator=u'Subscribe')
     client.asserts.assertProperty(
         xpath=SUBSCRIPTION_LINK,
-        validator='style.backgroundImage|url(/@@/add)')
-    client.asserts.assertNotNode(xpath=SUBSCRIBERS_LIST_PERSON)
+        validator=u'style.backgroundImage|url(/@@/add)')
+    client.asserts.assertNotNode(id=SAMPLE_PERSON_ID)
 
     # To test unsubscribing of teams, a team must first be subscribed.
     # To confirm, look for the Ubuntu Team element after subscribing.
@@ -82,7 +82,7 @@ def test_inline_subscriber():
     client.click(id=u'field.actions.add')
     client.waits.forPageLoad(timeout=WAIT_PAGELOAD)
     client.waits.forElement(
-        xpath=u'//div[@id="subscribers-links"]', timeout=WAIT_ELEMENT_COMPLETE)
+        id=u'subscribers-links', timeout=WAIT_ELEMENT_COMPLETE)
     client.asserts.assertNode(id=u'subscriber-ubuntu-team')
 
     # Sample Person is logged in currently. She is not a
@@ -95,7 +95,7 @@ def test_inline_subscriber():
     lpuser.FOO_BAR.ensure_login(client)
     client.waits.forPageLoad(timeout=WAIT_PAGELOAD)
     client.waits.forElement(
-        xpath=u'//div[@id="subscribers-links"]', timeout=WAIT_ELEMENT_COMPLETE)
+        id=u'subscribers-links', timeout=WAIT_ELEMENT_COMPLETE)
 
     # Now test inline unsubscribing of a team, by ensuring
     # that Ubuntu Team is removed from the subscribers list.
