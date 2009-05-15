@@ -759,6 +759,11 @@
     <allow interface="canonical.launchpad.interfaces.IRevisionSet" />
   </securedutility>
 
-  <lp:help-folder 
+  <!-- Linked branches -->
+  <adapter factory="lp.code.model.linkedbranch.ProductSeriesLinkedBranch" />
+  <adapter factory="lp.code.model.linkedbranch.ProductLinkedBranch" />
+  <adapter factory="lp.code.model.linkedbranch.PackageLinkedBranch" />
+
+  <lp:help-folder
       folder="help" type="canonical.launchpad.layers.CodeLayer" />
 </configure>

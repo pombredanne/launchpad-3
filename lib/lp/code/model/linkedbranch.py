@@ -7,7 +7,7 @@ __metaclass__ = type
 # adapting another object.
 __all__ = []
 
-from zope.component import adapts, getSiteManager
+from zope.component import adapts
 from zope.interface import implements
 
 from lp.code.interfaces.branchlookup import ICanHasLinkedBranch
@@ -70,9 +70,3 @@ class PackageLinkedBranch:
         package = self.suite_sourcepackage.sourcepackage
         pocket = self.suite_sourcepackage.pocket
         return package.getBranch(pocket)
-
-
-sm = getSiteManager()
-sm.registerAdapter(ProductSeriesLinkedBranch)
-sm.registerAdapter(ProductLinkedBranch)
-sm.registerAdapter(PackageLinkedBranch)
