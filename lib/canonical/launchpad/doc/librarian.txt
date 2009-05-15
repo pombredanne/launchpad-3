@@ -564,6 +564,45 @@ public `LibraryFileAlias` the traversal chain is extended with a
     >>> view.target == public_file.http_url
     True
 
+We will create a new LibraryFileAlias pointing to a deleted content.
+
+    >>> from canonical.launchpad.database import (
+    ...     LibraryFileAlias, LibraryFileContent)
+    >>> from canonical.launchpad.webapp.interfaces import (
+    ...     IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
+
+    >>> store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+
+    >>> deleted_content = LibraryFileContent(
+    ...     filesize=1, sha1='f00', md5='f00', deleted=True)
+    >>> ignore = store.add(deleted_content)
+
+    >>> deleted_file = LibraryFileAlias(
+    ...     content=deleted_content, filename='deleted.txt',
+    ...     mimetype='text/plain')
+    >>> ignore = store.add(deleted_file)
+
+    >>> store.commit()
+
+    >>> deleted_file = getUtility(ILibraryFileAliasSet)[deleted_file.id]
+    >>> print deleted_file.content.deleted
+    True
+
+Files in this condition can be handled by the view and it raises an
+appropriate AssertionError when it gets traversed.
+
+    >>> deleted_view = StreamOrRedirectLibraryFileAliasView(
+    ...     deleted_file, empty_request)
+
+    >>> verifyObject(IBrowserPublisher, deleted_view)
+    True
+
+    >>> view, extra = deleted_view.browserDefault(empty_request)
+    Traceback (most recent call last):
+    ...
+    AssertionError: StreamOrRedirectLibraryFileAliasView can not
+    operate on deleted librarian files, since their URL is undefined.
+
 
 == Download counts ==
 
