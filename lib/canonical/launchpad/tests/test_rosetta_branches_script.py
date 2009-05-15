@@ -21,7 +21,7 @@ from canonical.launchpad.interfaces.translations import (
 from canonical.launchpad.interfaces.translationimportqueue import (
     ITranslationImportQueue, RosettaImportStatus)
 from canonical.launchpad.scripts.tests import run_script
-from canonical.launchpad.testing import TestCaseWithFactory
+from lp.testing import TestCaseWithFactory
 from canonical.launchpad.webapp.errorlog import globalErrorUtility
 
 class TestRosettaBranchesScript(TestCaseWithFactory):

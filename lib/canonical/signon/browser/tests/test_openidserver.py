@@ -22,7 +22,6 @@ import transaction
 from canonical.launchpad.ftests import ANONYMOUS, login, login_person, logout
 from canonical.launchpad.interfaces.authtoken import (
     IAuthTokenSet, LoginTokenType)
-from canonical.launchpad.testing import TestCase, TestCaseWithFactory
 from canonical.launchpad.testing.systemdocs import (
     LayeredDocFileSuite, setUp, tearDown)
 from canonical.launchpad.testing.pages import setupBrowser
@@ -33,8 +32,9 @@ from canonical.shipit.interfaces.shipit import IShipitAccount
 from canonical.signon.browser.openidserver import OpenIDMixin
 from canonical.signon.interfaces.openidserver import IOpenIDRPConfigSet
 from canonical.signon.model.openidserver import OpenIDAuthorization
-from lp.registry.interfaces.person import IPersonSet
 from canonical.testing import DatabaseFunctionalLayer
+from lp.registry.interfaces.person import IPersonSet
+from lp.testing import TestCase, TestCaseWithFactory
 
 
 class SSODatabasePolicyTestCase(TestCaseWithFactory):

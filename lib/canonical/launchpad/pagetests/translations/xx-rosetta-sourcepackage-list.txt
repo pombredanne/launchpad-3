@@ -8,7 +8,7 @@ translation overview for Evolution in Hoary.
     ...     'http://translations.launchpad.dev/ubuntu/hoary/'
     ...     '+source/evolution')
     >>> print anon_browser.title.encode('ascii','backslashreplace')
-    Translation templates for Ubuntu Hoary evolution
+    Translation templates for evolution in Ubuntu Hoary
 
     >>> content = find_main_content(anon_browser.contents)
     >>> print extract_text(content.findAll('h1')[0]).encode(

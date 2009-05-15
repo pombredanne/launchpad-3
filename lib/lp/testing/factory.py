@@ -193,8 +193,8 @@ class LaunchpadObjectFactory(ObjectFactory):
     def makeCopyArchiveLocation(self, distribution=None, owner=None,
         name=None):
         """Create and return a new arbitrary location for copy packages."""
-        copy_archive = self._makeArchive(distribution, owner, name,
-                                         ArchivePurpose.COPY)
+        copy_archive = self.makeArchive(distribution, owner, name,
+                                        ArchivePurpose.COPY)
 
         distribution = copy_archive.distribution
         distroseries = distribution.currentseries
@@ -674,7 +674,7 @@ class LaunchpadObjectFactory(ObjectFactory):
         :param branch: The branch that should be the default stacked-on
             branch.
         """
-        from canonical.launchpad.testing import run_with_login
+        from lp.testing import run_with_login
         # 'branch' might be private, so we remove the security proxy to get at
         # the methods.
         naked_branch = removeSecurityProxy(branch)
@@ -1283,12 +1283,16 @@ class LaunchpadObjectFactory(ObjectFactory):
             architecturetag, processorfamily, official, owner,
             supports_virtualized)
 
-    def _makeArchive(self, distribution=None, owner=None, name=None,
+    def makeArchive(self, distribution=None, owner=None, name=None,
                     purpose = None):
         """Create and return a new arbitrary archive.
-
-        Note: this shouldn't generally be used except by other factory
-        methods such as makeCopyArchiveLocation.
+        
+        :param distribution: Supply IDistribution, defaults to a new one
+            made with makeDistribution().
+        :param owner: Supper IPerson, defaults to a new one made with
+            makePerson().
+        :param name: Name of the archive, defaults to a random string.
+        :param purpose: Supply ArchivePurpose, defaults to PPA.
         """
         if distribution is None:
             distribution = self.makeDistribution()

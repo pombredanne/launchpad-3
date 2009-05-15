@@ -8,7 +8,7 @@ from zope.component import getUtility
 
 from canonical.launchpad.interfaces.translationimportqueue import (
     ITranslationImportQueue, RosettaImportStatus)
-from canonical.launchpad.testing import TestCaseWithFactory
+from lp.testing import TestCaseWithFactory
 from canonical.launchpad.database.translationbranchapprover import (
     TranslationBranchApprover)
 from canonical.testing import LaunchpadZopelessLayer
