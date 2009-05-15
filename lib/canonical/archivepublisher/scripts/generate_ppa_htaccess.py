@@ -94,7 +94,8 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
         :return: The filename of the htpasswd file that was generated.
         """
         # Create a temporary file that will be a new .htpasswd.
-        fd, temp_filename = tempfile.mkstemp()
+        pub_config = getPubConfig(ppa)
+        fd, temp_filename = tempfile.mkstemp(dir=pub_config.htaccessroot)
 
         # The first .htpasswd entry is the buildd_secret.
         list_of_users = [

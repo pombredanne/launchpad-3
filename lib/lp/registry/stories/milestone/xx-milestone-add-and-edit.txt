@@ -73,7 +73,7 @@ can create structural bug subscriptions.
     >>> print user_browser.url
     http://launchpad.dev/firefox/+milestone/1.0/+subscribe
     >>> print user_browser.title
-    Bug subscriptions for Mozilla Firefox: 1.0
+    Bug subscriptions for Mozilla Firefox 1.0
 
 
 == Deleting milestones ==
@@ -98,16 +98,16 @@ access the delete page. Sample Person is the driver so he has those rights.
 
     >>> driver_browser.getLink('0.9.2').click()
     >>> print driver_browser.title
-    Mozilla Firefox: 0.9.2 "One (secure) Tree Hill"
-    >>> driver_browser.getLink('delete').click()
+    Mozilla Firefox 0.9.2 "One (secure) Tree Hill"
+    >>> driver_browser.getLink('Delete this milestone').click()
     >>> print driver_browser.title
-    Delete Mozilla Firefox: 0.9.2 "One (secure) Tree Hill"
+    Delete Mozilla Firefox 0.9.2 "One (secure) Tree Hill"
 
 The 0.9.2 release has a release and files associated with it. Sample
 Person reads that they will be deleted too.
 
     >>> print extract_text(find_main_content(driver_browser.contents))
-    Delete Mozilla Firefox: 0.9.2 "One (secure) Tree Hill" ...
+    Delete Mozilla Firefox 0.9.2 "One (secure) Tree Hill" ...
     The associated 0.9.2 release "One (secure) Tree Hill" and its files
     will be also be deleted:
     firefox-0.9.2.orig.tar.gz ...

@@ -267,7 +267,7 @@ Only the name of the milestone is required.
 
     >>> form = {
     ...     'field.name': '1.1',
-    ...     'field.actions.register': 'Register milestone',
+    ...     'field.actions.register': 'Register Milestone',
     ...     }
     >>> view = create_initialized_view(
     ...     firefox_1_0, '+addmilestone', form=form)
@@ -282,7 +282,7 @@ cannot create a duplicate milestone.
     >>> form = {
     ...     'field.name': '1.1',
     ...     'field.code_name': 'impossible',
-    ...     'field.actions.register': 'Register milestone',
+    ...     'field.actions.register': 'Register Milestone',
     ...     }
     >>> view = create_initialized_view(
     ...     firefox_1_0, '+addmilestone', form=form)

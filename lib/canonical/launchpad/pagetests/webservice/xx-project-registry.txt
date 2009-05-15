@@ -833,7 +833,7 @@ host.
     series_target_link: u'http://.../firefox/trunk'
     summary: None
     target_link: u'http://.../firefox'
-    title: u'Mozilla Firefox: 1.0'
+    title: u'Mozilla Firefox 1.0'
 
 The milestone entry has a link to its release if it has one.
 

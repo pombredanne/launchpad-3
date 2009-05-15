@@ -68,8 +68,8 @@ It also allows filtering on milestones.
     ...     distro_advanced_search_listingview.getMilestoneWidgetValues())
     >>> for value in milestones:
     ...     print value['title']
-    Debian: 3.1
-    Debian: 3.1-rc1
+    Debian 3.1
+    Debian 3.1-rc1
 
 The same milestone will be available for a debian package.
 
@@ -82,8 +82,8 @@ The same milestone will be available for a debian package.
     ...     package_advanced_search_listingview.getMilestoneWidgetValues())
     >>> for value in milestones:
     ...     print value['title']
-    Debian: 3.1
-    Debian: 3.1-rc1
+    Debian 3.1
+    Debian 3.1-rc1
 
 A triager may find it useful to query for bugs with no package:
 
@@ -347,7 +347,8 @@ Check what milestones are displayed on the advanced search form:
     ...     mozilla, '+bugs', form_values)
     >>> for value in advanced_search_view.getMilestoneWidgetValues():
     ...     print value['title']
-    Mozilla Firefox: 1.0
+    Mozilla Firefox 1.0
+
 
 Bug Filters Portlet
 -------------------

@@ -1172,6 +1172,16 @@ a.unofficial-tag {
   color: #6699ee;
 }
 
+.tags-container {
+  width: 45%;
+  text-align: left;
+  float: left;
+}
+
+.tags-show { display: block; }
+
+.tags-hide { display: none; }
+
 /* === Portlets === */
 /* IE6 and  lower ignore the left padding, so we add extra positioning. */
 * html #portlets {left: 20px;}
@@ -1793,11 +1803,12 @@ body.tab-bugs #actions h2, body.tab-bugs #actions h2:hover {
 
 /* Bug report page subscribe/unsubscribe spinner */
 div#sub-unsub-spinner {
-  background: url(/@@/spinner/) center left no-repeat;
+  background: url(/@@/spinner) center left no-repeat;
   color:#999;
   display:none;
   padding:3px 5px 2px 17px;
 }
+.unsub-icon {position:absolute; right:8px;}
 
 
 /* --- Blueprints --- */
