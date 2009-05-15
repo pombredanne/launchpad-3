@@ -1418,7 +1418,7 @@ class BugSet:
                 orderBy=['datecreated'])
         return bug
 
-    def createBug(self, bug_params, user=None):
+    def createBug(self, bug_params):
         """See `IBugSet`."""
         # Make a copy of the parameter object, because we might modify some
         # of its attribute values below.
@@ -1428,7 +1428,7 @@ class BugSet:
                 "datecreated", "security_related", "private",
                 "distribution", "sourcepackagename", "binarypackagename",
                 "product", "status", "subscribers", "tags",
-                "subscribe_reporter"])
+                "subscribe_owner", "filed_by"])
 
         if not (params.comment or params.description or params.msg):
             raise AssertionError(
@@ -1482,7 +1482,7 @@ class BugSet:
             security_related=params.security_related,
             **extra_params)
 
-        if params.subscribe_reporter:
+        if params.subscribe_owner:
             bug.subscribe(params.owner, params.owner)
         if params.tags:
             bug.tags = params.tags
@@ -1538,10 +1538,10 @@ class BugSet:
         bug.markUserAffected(bug.owner)
 
         # Tell everyone.
-        if user is None:
-            notify(ObjectCreatedEvent(bug, user=bug.owner))
+        if params.filed_by is None:
+            notify(ObjectCreatedEvent(bug, user=params.owner))
         else:
-            notify(ObjectCreatedEvent(bug, user=user))
+            notify(ObjectCreatedEvent(bug, user=params.filed_by))
 
         return bug
 

@@ -59,7 +59,7 @@ class CreateBugParams:
     def __init__(self, owner, title, comment=None, description=None, msg=None,
                  status=None, datecreated=None, security_related=False,
                  private=False, subscribers=(), binarypackagename=None,
-                 tags=None, subscribe_reporter=True):
+                 tags=None, subscribe_owner=True, filed_by=None):
         self.owner = owner
         self.title = title
         self.comment = comment
@@ -75,7 +75,8 @@ class CreateBugParams:
         self.sourcepackagename = None
         self.binarypackagename = binarypackagename
         self.tags = tags
-        self.subscribe_reporter = subscribe_reporter
+        self.subscribe_owner = subscribe_owner
+        self.filed_by = filed_by
 
     def setBugTarget(self, product=None, distribution=None,
                      sourcepackagename=None):
@@ -847,12 +848,10 @@ class IBugSet(Interface):
         the given bug tracker and remote bug id.
         """
 
-    def createBug(bug_params, user=None):
+    def createBug(bug_params):
         """Create a bug and return it.
 
         :bug_params: A CreateBugParams object.
-        :user: The user that is creating the bug. Defaults to the bug
-            owner.
 
         Things to note when using this factory:
 

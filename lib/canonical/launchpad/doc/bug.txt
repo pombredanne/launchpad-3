@@ -57,11 +57,12 @@ The event can be seen when we file a bug.
 
     >>> from canonical.launchpad.interfaces.bug import CreateBugParams
 
+    >>> steve_harris = factory.makePerson(name='steve-harris')
     >>> params = CreateBugParams(
-    ...     owner=factory.makePerson(name='steve-harris'),
-    ...     title="Oh I hate this song",
+    ...     owner=steve_harris, title="Oh I hate this song",
     ...     comment="Janick keeps playing Mr Blobby.")
-    >>> params.setBugTarget(product=factory.makeProduct())
+    >>> jukebox = factory.makeProduct()
+    >>> params.setBugTarget(product=jukebox)
 
     >>> bug = bugset.createBug(params)
     New bug created: Oh I hate this song
@@ -70,12 +71,17 @@ The event can be seen when we file a bug.
 
 The bug has been filed and is owned by the same person, the owner
 specified in `params`. However, when importing bugs, a user other than
-the bug owner will create the bugs. A `user` parameter is available to
-override the user recorded in the event.
+the bug owner will create the bugs. A `CreateBugParams.filed_by`
+parameter is available to override the user recorded in the event.
 
-    >>> bug = bugset.createBug(
-    ...     params, user=factory.makePerson(name='rod-smallwood'))
-    New bug created: Oh I hate this song
+    >>> rod_smallwood = factory.makePerson(name='rod-smallwood')
+    >>> params = CreateBugParams(
+    ...     owner=steve_harris, filed_by=rod_smallwood,
+    ...     title="Steve really hates this song",
+    ...     comment="He thinks Janick is doing it, but it's really me.")
+    >>> params.setBugTarget(product=jukebox)
+    >>> bug = bugset.createBug(params)
+    New bug created: Steve really hates this song
               Owner: steve-harris
            Filed by: rod-smallwood
 
@@ -429,7 +435,7 @@ when importing bugs.
 
     >>> params = CreateBugParams(
     ...     owner=current_user(), title="test", comment="test",
-    ...     subscribe_reporter=False)
+    ...     subscribe_owner=False)
     >>> bug = ubuntu.createBug(params)
     >>> [person.name for person in bug.getDirectSubscribers()]
     []
