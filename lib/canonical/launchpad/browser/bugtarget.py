@@ -31,7 +31,7 @@ from zope.app.form.interfaces import InputErrors
 from zope.app.pagetemplate import ViewPageTemplateFile
 from zope.component import getUtility
 from zope.event import notify
-from zope.formlib import form
+from zope import formlib
 from zope.interface import implements
 from zope.publisher.interfaces import NotFound
 from zope.publisher.interfaces.browser import IBrowserPublisher
@@ -409,7 +409,7 @@ class FileBugViewBase(LaunchpadFormView):
             required=True, default=False)
 
         self.form_fields = self.form_fields.omit('subscribe_to_existing_bug')
-        self.form_fields += form.Fields(subscribe_field)
+        self.form_fields += formlib.form.Fields(subscribe_field)
 
     def contextUsesMalone(self):
         """Does the context use Malone as its official bugtracker?"""
