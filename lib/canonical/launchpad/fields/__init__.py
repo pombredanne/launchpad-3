@@ -16,6 +16,7 @@ __all__ = [
     'IBugField',
     'IDescription',
     'ILocationField',
+    'INoneableTextLine',
     'IPasswordField',
     'IStrippedTextLine',
     'ISummary',
@@ -28,9 +29,10 @@ __all__ = [
     'is_private_membership',
     'is_valid_public_person',
     'KEEP_SAME_IMAGE',
+    'LocationField',
     'LogoImageUpload',
     'MugshotImageUpload',
-    'LocationField',
+    'NoneableTextLine',
     'ParticipatingPersonChoice',
     'PasswordField',
     'PillarAliases',
@@ -85,11 +87,17 @@ class IStrippedTextLine(ITextLine):
 class ITitle(IStrippedTextLine):
     """A Field that implements a launchpad Title"""
 
+class INoneableTextLine(IStrippedTextLine):
+    """A field that is None if it's value is empty or whitespace."""
+
 class ISummary(IText):
     """A Field that implements a Summary"""
 
 class IDescription(IText):
     """A Field that implements a Description"""
+
+class INoneableDescription(IDescription):
+    """A field that is None if it's value is empty or whitespace."""
 
 class IWhiteboard(IText):
     """A Field that implements a Whiteboard"""
@@ -182,6 +190,10 @@ class StrippedTextLine(TextLine):
     implements(IStrippedTextLine)
 
 
+class NoneableTextLine(StrippedTextLine):
+    implements(INoneableTextLine)
+
+
 # Title
 # A field to capture a launchpad object title
 class Title(StrippedTextLine):
@@ -198,6 +210,10 @@ class Summary(Text):
 # A field capture a Launchpad object description
 class Description(Text):
     implements(IDescription)
+
+
+class NoneableDescription(Description):
+    implements(INoneableDescription)
 
 
 # Whiteboard
