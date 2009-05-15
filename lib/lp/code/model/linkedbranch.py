@@ -7,8 +7,8 @@ __metaclass__ = type
 # adapting another object.
 __all__ = []
 
-from zope.component import adapter, getSiteManager
-from zope.interface import implementer, implements
+from zope.component import adapts, getSiteManager
+from zope.interface import implements
 
 from lp.code.interfaces.branchlookup import ICanHasLinkedBranch
 from lp.registry.interfaces.product import IProduct
@@ -25,29 +25,54 @@ class HasLinkedBranch:
         self.branch = branch
 
 
-@adapter(IProductSeries)
-@implementer(ICanHasLinkedBranch)
-def product_series_linked_branch(product_series):
-    """The series branch of a product series is its linked branch."""
-    return HasLinkedBranch(product_series.branch)
+class ProductSeriesLinkedBranch:
+    """Implement a linked branch for a product series."""
+
+    adapts(IProductSeries)
+    implements(ICanHasLinkedBranch)
+
+    def __init__(self, product_series):
+        self.product_series = product_series
+
+    @property
+    def branch(self):
+        """See `ICanHasLinkedBranch`."""
+        return self.product_series.branch
 
 
-@adapter(IProduct)
-@implementer(ICanHasLinkedBranch)
-def product_linked_branch(product):
-    """The series branch of a product's development focus is its branch."""
-    return HasLinkedBranch(product.development_focus.branch)
+class ProductLinkedBranch:
+    """Implement a linked branch for a product."""
+
+    adapts(IProduct)
+    implements(ICanHasLinkedBranch)
+
+    def __init__(self, product):
+        self.product = product
+
+    @property
+    def branch(self):
+        """See `ICanHasLinkedBranch`."""
+        return ICanHasLinkedBranch(self.product.development_focus).branch
 
 
-@adapter(ISuiteSourcePackage)
-@implementer(ICanHasLinkedBranch)
-def package_linked_branch(suite_sourcepackage):
-    package = suite_sourcepackage.sourcepackage
-    pocket = suite_sourcepackage.pocket
-    return HasLinkedBranch(package.getBranch(pocket))
+class PackageLinkedBranch:
+    """Implement a linked branch for a source package pocket."""
+
+    adapts(ISuiteSourcePackage)
+    implements(ICanHasLinkedBranch)
+
+    def __init__(self, suite_sourcepackage):
+        self.suite_sourcepackage = suite_sourcepackage
+
+    @property
+    def branch(self):
+        """See `ICanHasLinkedBranch`."""
+        package = self.suite_sourcepackage.sourcepackage
+        pocket = self.suite_sourcepackage.pocket
+        return package.getBranch(pocket)
 
 
 sm = getSiteManager()
-sm.registerAdapter(product_series_linked_branch)
-sm.registerAdapter(product_linked_branch)
-sm.registerAdapter(package_linked_branch)
+sm.registerAdapter(ProductSeriesLinkedBranch)
+sm.registerAdapter(ProductLinkedBranch)
+sm.registerAdapter(PackageLinkedBranch)
