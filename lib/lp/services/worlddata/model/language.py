@@ -11,8 +11,9 @@ from sqlobject import (
 
 from canonical.database.sqlbase import quote_like, SQLBase, sqlvalues
 from canonical.database.enumcol import EnumCol
-from canonical.launchpad.interfaces import (
-    ILanguageSet, ILanguage, NotFoundError, TextDirection)
+from canonical.launchpad.webapp.interfaces import NotFoundError
+from lp.services.worlddata.interfaces.language import (
+    ILanguageSet, ILanguage, TextDirection)
 
 
 class Language(SQLBase):

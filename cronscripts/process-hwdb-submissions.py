@@ -20,7 +20,7 @@ submissions that cannot be processed are set to the status INVALID.
 
 import _pythonpath
 
-from canonical.launchpad.scripts.base import LaunchpadCronScript
+from lp.services.scripts.base import LaunchpadCronScript
 from canonical.launchpad.scripts.hwdbsubmissions import (
     process_pending_submissions)
 
