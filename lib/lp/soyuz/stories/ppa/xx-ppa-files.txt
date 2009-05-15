@@ -348,6 +348,7 @@ proxy redirects to the public http url.
     Location: http://localhost:58000/.../test-pkg_1.0.dsc
     ...
 
+
 == Compatibility URL Redirection ==
 
 If a script or otherwise is trying to access +archive/+files, we make
@@ -383,3 +384,52 @@ The same redirection happens for +archive/+build/blah urls:
     Location: http://.../~no-priv/+archive/ppa/+build/31/+files/...
     ...
 
+
+== Deleted library files ==
+
+Unused PPA files get expired and deleted after a configurable period,
+so Launchpad doesn't have to host them forever. They are also
+immediately deleted in case of reported ToS violation.
+
+We will attach an existing file (the 'test-pkg_1.0.dsc') to a deleted
+LibraryFileContent.
+
+    >>> from canonical.launchpad.database import LibraryFileContent
+    >>> from canonical.launchpad.webapp.interfaces import (
+    ...     IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
+
+    >>> login('foo.bar@canonical.com')
+
+    >>> store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+
+    >>> deleted_content = LibraryFileContent(
+    ...     filesize=1, sha1='f00', md5='f00', deleted=True)
+    >>> ignore = store.add(deleted_content)
+
+    >>> store.commit()
+
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> removeSecurityProxy(dsc_file).content = deleted_content
+
+    >>> commit()
+
+The librarian URL for a deleted file is None, by convention. See
+`ILibraryFileAlias` for more information on this.
+
+    >>> print dsc_file.http_url
+    None
+
+    >>> logout()
+
+If by any chance, mostly bookmarked URLs, it gets accessed via the
+LP proxy URL a proper NotFound error is raised, informing the correct
+filename and the context archive.
+
+    >>> print file_lp_url
+    http://launchpad.dev/~no-priv/+archive/ppa/+files/test-pkg_1.0.dsc
+
+    >>> no_priv_browser.open(file_lp_url)
+    Traceback (most recent call last):
+    ...
+    DeletedProxiedLibraryFileAlias:
+    Object: u'test-pkg_1.0.dsc', name: <Archive at ...>

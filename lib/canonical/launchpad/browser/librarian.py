@@ -5,6 +5,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'DeletedProxiedLibraryFileAlias',
     'FileNavigationMixin',
     'LibraryFileAliasMD5View',
     'LibraryFileAliasView',
@@ -142,6 +143,10 @@ class StreamOrRedirectLibraryFileAliasView(LaunchpadView):
         raise NotFound(name, self.context)
 
 
+class DeletedProxiedLibraryFileAlias(NotFound):
+    """Raised when a deleted `ProxiedLibraryFileAlias` is accessed."""
+
+
 class FileNavigationMixin:
     """Navigate to `LibraryFileAlias` hosted in a context.
 
@@ -162,6 +167,11 @@ class FileNavigationMixin:
         if not check_permission('launchpad.View', self.context):
             raise Unauthorized()
         library_file  = self.context.getFileByName(filename)
+
+        # Deleted library files result in NotFound-like error.
+        if library_file.content.deleted:
+            raise DeletedProxiedLibraryFileAlias(filename, self.context)
+
         return StreamOrRedirectLibraryFileAliasView(
             library_file, self.request)
 
