@@ -8,7 +8,7 @@ from unittest import TestCase, TestLoader
 
 from lp.registry.model.person import PersonSet
 from canonical.launchpad.ftests import login, logout, ANONYMOUS
-from canonical.launchpad.testing import LaunchpadObjectFactory
+from lp.testing.factory import LaunchpadObjectFactory
 from canonical.launchpad.testing.databasehelpers import (
     remove_all_sample_data_branches)
 from canonical.testing import LaunchpadFunctionalLayer

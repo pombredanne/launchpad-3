@@ -7,7 +7,7 @@ import unittest
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.testing import DatabaseFunctionalLayer
-from canonical.launchpad.testing import TestCaseWithFactory
+from lp.testing import TestCaseWithFactory
 
 
 class TestPOTemplate(TestCaseWithFactory):

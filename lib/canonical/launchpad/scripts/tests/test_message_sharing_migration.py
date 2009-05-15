@@ -9,7 +9,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.registry.interfaces.distribution import IDistributionSet
 from canonical.launchpad.interfaces.language import ILanguageSet
-from canonical.launchpad.testing import TestCaseWithFactory
+from lp.testing import TestCaseWithFactory
 from canonical.launchpad.scripts.message_sharing_migration import (
     find_potemplate_equivalence_classes_for, merge_potmsgsets,
     merge_translationmessages, template_precedence)

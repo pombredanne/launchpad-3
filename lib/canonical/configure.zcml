@@ -156,16 +156,6 @@
         layer="canonical.signon.layers.OpenIDLayer"
         />
 
-    <!-- This should really be on ILaunchpadRoot for all layers, and we should
-         be registering views on the launchpad main side front page object
-         thing on ILaunchpadApplication. -->
-    <browser:page
-        name=""
-        for="canonical.shipit.interfaces.shipit.IShipItApplication"
-        class="canonical.launchpad.browser.launchpad.LaunchpadImageFolder"
-        permission="zope.Public"
-        />
-
     <include package="canonical.widgets" />
     <include package="canonical.launchpad" />
     <include package="canonical.lazr" />
