@@ -111,36 +111,16 @@ Set the branch status back to its initial state.
     >>> browser.getControl('Change Branch').click()
 
 
-== Changing branch product and name ==
+== Changing branch name ==
 
-The edit form allows changing the product of a branch.
-
-    >>> browser.open('http://launchpad.dev/~name12/+junk/junk.dev')
-    >>> browser.getLink('Change branch details').click()
-    >>> browser.getControl('Project').value = 'tomcat'
-    >>> browser.getControl('Change Branch').click()
-
-Posting this form should redirect us to the branch page, which is a new URL
-since changing the product associated to a branch changed the branch's
-canonical URL
-
-    >>> browser.url
-    'http://code.launchpad.dev/~name12/tomcat/junk.dev'
-
-A notification is also shown as moving a branch between projects is a big deal.
-
-    >>> for message in get_feedback_messages(browser.contents):
-    ...     print extract_text(message)
-    The project for this branch has been changed to Tomcat (tomcat)
-
-In the same way, the edit form allows changing the name of a branch, and must
-correctly redirect to the new branch page.
+The edit form allows changing the name of a branch, and must correctly
+redirect to the new branch page.
 
     >>> browser.getLink('Change branch details').click()
     >>> browser.getControl('Name').value = 'junk'
     >>> browser.getControl('Change Branch').click()
     >>> browser.url
-    'http://code.launchpad.dev/~name12/tomcat/junk'
+    'http://code.launchpad.dev/~name12/gnome-terminal/junk'
 
 Branch names are less strictly constrained than most others in Launchpad
 -- they are not restricted to lower case, and can contain underscores in
@@ -151,38 +131,16 @@ validator.
     >>> browser.getControl('Name').value = 'USELESS_junk'
     >>> browser.getControl('Change Branch').click()
     >>> browser.url
-    'http://code.launchpad.dev/~name12/tomcat/USELESS_junk'
+    'http://code.launchpad.dev/~name12/gnome-terminal/USELESS_junk'
 
-We can also detach a branch from a product, making it a junk branch. While we
-are it, we also reset the branch name to its original value, and check that the
+We can also reset the branch name to its original value, and check that the
 branch was moved back to its original location.
 
     >>> browser.getLink('Change branch details').click()
     >>> browser.getControl('Name').value = 'junk.dev'
-    >>> browser.getControl('Project').value = ''
     >>> browser.getControl('Change Branch').click()
     >>> browser.url
-    'http://code.launchpad.dev/~name12/+junk/junk.dev'
-
-A message is also shown when the branch has the project association removed.
-
-    >>> for message in get_feedback_messages(browser.contents):
-    ...     print extract_text(message)
-    This branch is no longer associated with a project.
-
-However, we cannot detach a team-owned branch from a product, for the
-reasons given in xx-branch-reassign.txt.
-
-    >>> browser.open('http://code.launchpad.dev/~landscape-developers/landscape/trunk')
-    >>> browser.getLink('Change branch details').click()
-    >>> browser.getControl('Project').value = ''
-    >>> browser.getControl('Change Branch').click()
-    >>> browser.url
-    'http://code.launchpad.dev/%7Elandscape-developers/landscape/trunk/+edit'
-    >>> for msg in get_feedback_messages(browser.contents):
-    ...     print msg
-    There is 1 error.
-    Team-owned branches must be associated with a project.
+    'http://code.launchpad.dev/~name12/gnome-terminal/junk.dev'
 
 
 == Name conflicts ==
@@ -191,52 +149,11 @@ The product and branch name contributes to the unique name of a branch.
 The name of a branch has to be unique over all the branches of that
 product for the given branch owner.
 
-There is an existing main branch in Firefox that is owned by Sample Person.
+Since we can't change the product on the edit form, we only have to worry
+about conflicts when changing the branch name.
 
-    >>> browser.open('http://launchpad.dev/~name12/firefox/main')
-
-If we try to move the main branch of GNOME Terminal there, that would cause a
-name conflict, because both branches would have the same name.
-
-Okay, trying to move a branch from GNOME Terminal to Firefox is a silly idea,
-but that is just for the needs of the demonstration.
-
-    >>> browser.open('http://launchpad.dev'
-    ...     '/~name12/gnome-terminal/main/+edit')
-    >>> browser.getControl('Project').value = 'firefox'
-    >>> browser.getControl('Change Branch').click()
-    >>> browser.url
-    'http://launchpad.dev/%7Ename12/gnome-terminal/main/+edit'
-
-This should have displayed an error message next to the name field.
-
-    >>> for msg in get_feedback_messages(browser.contents):
-    ...     print msg
-    There is 1 error.
-    You already have a branch for Mozilla Firefox called main.
-
-Since we are clearly in a substance-induced state of altered consciousness, we
-will now try to rename this branch in a way that conflicts with an existing
-junk branch.
-
-That tests two interesting corner cases: trying to turn a branch into a junk
-branch, and changing the product and the branch name at the same time.
-
-    >>> browser.open('http://launchpad.dev'
-    ...     '/~name12/gnome-terminal/main/+edit')
-    >>> browser.getControl('Project').value = ''
-    >>> browser.getControl('Name').value = 'junk.dev'
-    >>> browser.getControl('Change Branch').click()
-    >>> browser.url
-    'http://launchpad.dev/%7Ename12/gnome-terminal/main/+edit'
-    >>> for msg in get_feedback_messages(browser.contents):
-    ...     print msg
-    There is 1 error.
-    You already have a branch for ~name12/+junk called junk.dev.
-
-Finally, let's try just to change the name of the branch to the name of some
-branch we already own in the same product. So we have tested all the
-combinations of changing name and product that can cause an error.
+Let's try to change the name of the branch to the name of some branch we
+already own in the same product.
 
     >>> browser.open('http://launchpad.dev'
     ...     '/~name12/gnome-terminal/main/+edit')
@@ -248,19 +165,6 @@ combinations of changing name and product that can cause an error.
     ...     print msg
     There is 1 error.
     You already have a branch for GNOME Terminal called 2.6.
-
-If the user enters an invalid product name they will get an error
-message about that, but no error about the branch name since we don't
-know if it conflicts or not:
-
-    >>> browser.getControl('Project').value = 'no-such-product'
-    >>> browser.getControl('Change Branch').click()
-    >>> browser.url
-    'http://launchpad.dev/%7Ename12/gnome-terminal/main/+edit'
-    >>> for msg in get_feedback_messages(browser.contents):
-    ...     print msg
-    There is 1 error.
-    Invalid value
 
 
 == URL validation ==
@@ -377,40 +281,6 @@ When the owner is changed a notification is shown.
     >>> for message in get_feedback_messages(browser.contents):
     ...     print extract_text(message)
     The branch owner has been changed to Landscape Developers (landscape-developers)
-
-If both the project and owner are changed, both notification messages are
-shown.
-
-    >>> browser.getLink('Change branch details').click()
-    >>> browser.getControl('Owner').displayValue = ['Sample Person']
-    >>> browser.getControl('Project').value = ''
-    >>> browser.getControl('Change Branch').click()
-    >>> for message in get_feedback_messages(browser.contents):
-    ...     print extract_text(message)
-    The branch owner has been changed to Sample Person (name12)
-    This branch is no longer associated with a project.
-
-
-== Preventing the assignment of a +junk branch to a team ==
-
-+junk branches are a facility to host small snippets of code that do
-not call for collaboration features.  Once a team is needed to
-collaborate on a branch, we consider they also really want a project
-to support their collaboration.
-
-One of two potential ways of creating a +junk team branch is to assign
-a +junk branch from yourself to a team.
-
-    >>> browser.getLink('Change branch details').click()
-    >>> browser.getControl('Owner').displayValue = ['Landscape Developers']
-    >>> browser.getControl('Change Branch').click()
-    >>> for message in get_feedback_messages(browser.contents):
-    ...     print extract_text(message)
-    There is 1 error.
-    Team-owned branches must be associated with a project.
-
-(The other is changing the product of a team owned branch to the +junk
-pseudo project, which is tested above).
 
 
 === Assignment to anyone ===
