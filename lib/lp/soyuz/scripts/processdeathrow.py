@@ -3,6 +3,11 @@
 
 This script removes obsolete files from the selected archive(s) pool.
 """
+# Disable warning on catching bare 'Exception', it's needed as a
+# production artifact for continuing processing data that doesn't
+# have problems.
+# pylint: disable-msg=W0703
+
 __metaclass__ = type
 
 __all__ = [
@@ -63,7 +68,7 @@ class DeathRowProcessor(LaunchpadScript):
             "Unpublishing death row for %s." % archive.displayname)
         try:
             death_row.reap(self.options.dry_run)
-        except:
+        except Exception, e:
             self.logger.exception(
                 "Unexpected exception while doing death-row unpublish")
             self.txn.abort()
