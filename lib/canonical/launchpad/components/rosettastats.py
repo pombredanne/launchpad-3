@@ -11,7 +11,7 @@ class RosettaStats(object):
 
     def testStatistics(self):
         """See IRosettaStats."""
-        if self.newCount()+self.updatesCount() != self.rosettaCount():
+        if (self.newCount() + self.updatesCount()) != self.rosettaCount():
             return False
         if self.untranslatedCount() < 0:
             return False
