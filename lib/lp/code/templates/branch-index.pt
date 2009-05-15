@@ -199,7 +199,7 @@
                   enctype="multipart/form-data" accept-charset="UTF-8">
               <noscript>
                 <img src="/@@/retry" />
-                <input id="tryagain.actions.tryagain" name="tryagain.actions.tryagain" value="Try Again" class="button" type="submit">
+                <input id="tryagain.actions.tryagain" name="tryagain.actions.tryagain" value="Try Again" class="button" type="submit" />
               </noscript>
               <input
                  type="hidden"
@@ -213,6 +213,7 @@
                   YUI().use('event', 'node', function(Y) {
                     Y.on("domready", function () { Y.get('#tryagainlink').setStyle('display', 'inline') });
                   });
+              </script>
             </form>
         </div>
 
