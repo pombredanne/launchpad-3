@@ -36,6 +36,12 @@ class BaseStormOpenIDAssociation:
         super(BaseStormOpenIDAssociation, self).__init__()
         self.server_url = server_url.decode('UTF-8')
         self.handle = association.handle.decode('ASCII')
+        self.update(association)
+
+    def update(self, association):
+        assert self.handle == association.handle.decode('ASCII'), (
+            "Association handle does not match (expected %r, got %r" %
+            (self.handle, association.handle))
         self.secret = association.secret
         self.issued = association.issued
         self.lifetime = association.lifetime
@@ -72,7 +78,14 @@ class BaseStormOpenIDStore(OpenIDStore):
     def storeAssociation(self, server_url, association):
         """See `OpenIDStore`."""
         store = IMasterStore(self.Association)
-        store.add(self.Association(server_url, association))
+        db_assoc = store.get(
+            self.Association, (server_url.decode('UTF-8'),
+                               association.handle.decode('ASCII')))
+        if db_assoc is None:
+            db_assoc = self.Association(server_url, association)
+            store.add(db_assoc)
+        else:
+            db_assoc.update(association)
 
     def getAssociation(self, server_url, handle=None):
         """See `OpenIDStore`."""
