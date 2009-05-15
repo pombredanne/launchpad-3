@@ -5,78 +5,22 @@
 __metaclass__ = type
 __all__ = []
 
-from textwrap import dedent
 import unittest
 
 import transaction
 from zope.component import getUtility
-from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
-
-from canonical.launchpad.database.account import Account
-from canonical.launchpad.ftests import login
 from canonical.launchpad.interfaces.account import (
     AccountCreationRationale, IAccountSet)
 from canonical.launchpad.interfaces.authtoken import (
     IAuthTokenSet, LoginTokenType)
 from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
-from canonical.launchpad.testing import TestCaseWithFactory
-from canonical.launchpad.webapp.dbpolicy import (
-    SlaveDatabasePolicy, SSODatabasePolicy)
-from canonical.launchpad.webapp.interfaces import (
-    AUTH_STORE, IStoreSelector, SLAVE_FLAVOR)
+from lp.testing import TestCaseWithFactory
+from canonical.launchpad.webapp.dbpolicy import SSODatabasePolicy
+from canonical.launchpad.webapp.interfaces import IStoreSelector
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.interfaces.person import (
     IPerson, PersonCreationRationale)
-
-
-class TestAccountSetRetriesWhenAccountNotFound(TestCaseWithFactory):
-    """Methods of IAccountSet that fetch accounts will retry using the master
-    database if the object is not found when using the default one.
-    """
-    layer = DatabaseFunctionalLayer
-
-    def setUp(self):
-        super(TestAccountSetRetriesWhenAccountNotFound, self).setUp()
-        self.account = self.factory.makeAccount('Test account')
-        # Store the preferred email address here, since it won't be
-        # visible after changing the database policy.
-        self.account_email = removeSecurityProxy(
-            self.account.preferredemail).email
-        login(self.account_email)
-        config_overlay = dedent("""
-            [database]
-            auth_slave: dbname=launchpad_empty
-            """)
-        config.push('empty_slave', config_overlay)
-        self._assertSlaveDBIsEmpty()
-        getUtility(IStoreSelector).push(SlaveDatabasePolicy())
-        self.account_set = getUtility(IAccountSet)
-
-    def tearDown(self):
-        getUtility(IStoreSelector).pop()
-        config.pop('empty_slave')
-        super(TestAccountSetRetriesWhenAccountNotFound, self).tearDown()
-
-    def _assertSlaveDBIsEmpty(self):
-        slave_store = getUtility(IStoreSelector).get(
-            AUTH_STORE, SLAVE_FLAVOR)
-        self.assertEqual(slave_store.find(Account).count(), 0)
-
-    def test_get(self):
-        self.assertIsNot(self.account_set.get(self.account.id), None)
-
-    def test_getByOpenIDIdentifier(self):
-        self.assertIsNot(
-            self.account_set.getByOpenIDIdentifier(
-                self.account.openid_identifier),
-            None)
-
-    def test_getByEmail(self):
-        self.assertIsNot(
-            self.account_set.getByEmail(self.account_email),
-            None)
 
 
 class CreatePersonTests(TestCaseWithFactory):

@@ -23,7 +23,8 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.scripts.base import LaunchpadScriptFailure
 from canonical.launchpad.scripts.remove_translations import (
     RemoveTranslations, remove_translations)
-from canonical.launchpad.testing import LaunchpadObjectFactory, TestCase
+from lp.testing import TestCase
+from lp.testing.factory import LaunchpadObjectFactory
 from canonical.testing import LaunchpadZopelessLayer
 
 
@@ -242,7 +243,7 @@ class TestRemoveTranslations(TestCase):
             "Diese Nachricht soll nicht erloescht werden.")
 
         self.untranslated_message = self.factory.makePOTMsgSet(
-            self.potemplate, 'This message is untranslated.')
+            self.potemplate, 'This message is untranslated.', sequence=0)
 
         self._checkInvariant()
 
@@ -259,7 +260,8 @@ class TestRemoveTranslations(TestCase):
     def _makeMessages(self, template_text, nl_text, de_text,
                       submitter=None, is_imported=False):
         """Create message, and translate it to Dutch & German."""
-        message = self.factory.makePOTMsgSet(self.potemplate, template_text)
+        message = self.factory.makePOTMsgSet(self.potemplate, template_text,
+                                             sequence=0)
         owner = self.potemplate.owner
         new_nl_message = self._setTranslation(
             message, self.nl_pofile, nl_text, submitter=submitter,
@@ -371,7 +373,8 @@ class TestRemoveTranslations(TestCase):
 
         unrelated_nl_pofile = self.factory.makePOFile('nl')
         potmsgset = self.factory.makePOTMsgSet(
-            unrelated_nl_pofile.potemplate, 'Foo')
+            unrelated_nl_pofile.potemplate, 'Foo',
+            sequence=0)
         unrelated_nl_message = potmsgset.updateTranslation(
             unrelated_nl_pofile, unrelated_nl_pofile.potemplate.owner,
             {0: "Foe"}, is_imported=False,
@@ -388,7 +391,8 @@ class TestRemoveTranslations(TestCase):
         # Remove messages by language.  Pass the ids of one Dutch
         # message and one German message, but specify Dutch as the
         # language to delete from; only the Dutch message is deleted.
-        potmsgset = self.factory.makePOTMsgSet(self.potemplate, 'Bar')
+        potmsgset = self.factory.makePOTMsgSet(self.potemplate, 'Bar',
+                                               sequence=0)
         message = self._setTranslation(potmsgset, self.nl_pofile, 'Cafe')
 
         self._removeMessages(
@@ -399,7 +403,8 @@ class TestRemoveTranslations(TestCase):
     def test_RemoveByNotLanguage(self):
         # Remove messages, but spare otherwise matching messages that
         # are in German.
-        potmsgset = self.factory.makePOTMsgSet(self.potemplate, 'Hi')
+        potmsgset = self.factory.makePOTMsgSet(self.potemplate, 'Hi',
+                                               sequence=0)
         message = self._setTranslation(potmsgset, self.nl_pofile, 'Hoi')
 
         self._removeMessages(
@@ -552,7 +557,8 @@ class TestRemoveTranslationsUnmasking(TestCase):
         factory = LaunchpadObjectFactory()
         self.pofile = factory.makePOFile('lo')
         potemplate = self.pofile.potemplate
-        self.potmsgset = factory.makePOTMsgSet(potemplate, 'foo')
+        self.potmsgset = factory.makePOTMsgSet(potemplate, 'foo',
+                                               sequence=0)
 
     def _setTranslation(self, text, is_imported=False):
         return self.potmsgset.updateTranslation(

@@ -21,10 +21,10 @@ from canonical.launchpad.interfaces.translations import (
     TranslationsBranchImportMode)
 from canonical.launchpad.interfaces.translationimportqueue import (
     ITranslationImportQueue, RosettaImportStatus)
-from canonical.launchpad.testing import TestCaseWithFactory
+from lp.testing import TestCaseWithFactory
 from canonical.launchpad.testing.librarianhelpers import (
     get_newest_librarian_file)
-from canonical.launchpad.tests.mail_helpers import pop_notifications
+from lp.testing.mail_helpers import pop_notifications
 
 from lp.code.interfaces.branchsubscription import (
     BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel)
@@ -557,13 +557,17 @@ class TestRosettaUploadJob(TestCaseWithFactory):
         return self._runJobWithFiles(
             import_mode, ((file_name, file_content),))
 
-    def _runJobWithFiles(self, import_mode, files):
+    def _runJobWithFiles(self, import_mode, files,
+                         do_upload_translations=False):
         self._makeBranchWithTreeAndFiles(files)
-        return self._runJob(import_mode, NULL_REVISION)
+        return self._runJob(import_mode, NULL_REVISION,
+                            do_upload_translations)
 
-    def _runJob(self, import_mode, revision_id):
+    def _runJob(self, import_mode, revision_id,
+                do_upload_translations=False):
         self._makeProductSeries(import_mode)
-        job = RosettaUploadJob.create(self.branch, revision_id)
+        job = RosettaUploadJob.create(self.branch, revision_id,
+                                      do_upload_translations)
         if job is not None:
             job.run()
         queue = getUtility(ITranslationImportQueue)
@@ -657,6 +661,39 @@ class TestRosettaUploadJob(TestCaseWithFactory):
             (('foo.pot',), ('eo.po',), ('README',))
             )
         self.assertEqual([], entries)
+
+    def test_upload_translations(self):
+        # A PO file can be uploaded if the series is configured for it.
+        po_path = "eo.po"
+        entries = self._runJobWithFile(
+            TranslationsBranchImportMode.IMPORT_TRANSLATIONS, po_path)
+        self.assertEqual(1, len(entries))
+        entry = entries[0]
+        self.assertEqual(po_path, entry.path)
+
+    def test_upload_template_and_translations(self):
+        # The same configuration will upload template and translation files
+        # in one go. Other files are still ignored.
+        entries = self._runJobWithFiles(
+            TranslationsBranchImportMode.IMPORT_TRANSLATIONS,
+            (('foo.pot',), ('eo.po',), ('fr.po',), ('README',)))
+        self.assertEqual(3, len(entries))
+
+    def test_upload_extra_translations_no_import(self):
+        # Even if the series is configured not to upload any files, the
+        # job can be told to upload template and translation files.
+        entries = self._runJobWithFiles(
+            TranslationsBranchImportMode.NO_IMPORT,
+            (('foo.pot',), ('eo.po',), ('fr.po',), ('README',)), True)
+        self.assertEqual(3, len(entries))
+
+    def test_upload_extra_translations_import_templates(self):
+        # Even if the series is configured to only upload template files, the
+        # job can be told to upload translation files, too.
+        entries = self._runJobWithFiles(
+            TranslationsBranchImportMode.IMPORT_TEMPLATES,
+            (('foo.pot',), ('eo.po',), ('fr.po',), ('README',)), True)
+        self.assertEqual(3, len(entries))
 
     def test_upload_approved(self):
         # A single new entry should be created approved.

@@ -25,30 +25,35 @@ from canonical.archiveuploader.uploadpolicy import AbstractUploadPolicy
 from canonical.archiveuploader.uploadprocessor import UploadProcessor
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
-from canonical.launchpad.database.archivepermission import ArchivePermission
-from canonical.launchpad.database.binarypackagename import BinaryPackageName
-from canonical.launchpad.database.binarypackagerelease import (
+from lp.soyuz.model.archivepermission import ArchivePermission
+from lp.soyuz.model.binarypackagename import BinaryPackageName
+from lp.soyuz.model.binarypackagerelease import (
     BinaryPackageRelease)
-from canonical.launchpad.database.component import Component
-from canonical.launchpad.database.publishing import (
+from lp.soyuz.model.component import Component
+from lp.soyuz.model.publishing import (
     SourcePackagePublishingHistory, BinaryPackagePublishingHistory)
 from lp.registry.model.sourcepackagename import SourcePackageName
-from canonical.launchpad.database.sourcepackagerelease import (
+from lp.soyuz.model.sourcepackagerelease import (
     SourcePackageRelease)
 from canonical.launchpad.ftests import import_public_test_keys
-from canonical.launchpad.interfaces import (
-    ArchivePurpose, DistroSeriesStatus, IArchiveSet, IDistributionSet,
-    ILibraryFileAliasSet, PackagePublishingPocket, PackagePublishingStatus,
-    PackageUploadStatus, QueueInconsistentStateError)
-from canonical.launchpad.interfaces.archivepermission import (
-    ArchivePermissionType)
-from canonical.launchpad.interfaces.component import IComponentSet
+from lp.registry.interfaces.distribution import IDistributionSet
+from lp.registry.interfaces.distroseries import DistroSeriesStatus
+from lp.soyuz.interfaces.archive import ArchivePurpose, IArchiveSet
+from lp.soyuz.interfaces.package import PackageUploadStatus
+from lp.soyuz.interfaces.publishing import (
+    PackagePublishingPocket, PackagePublishingStatus)
+from lp.soyuz.interfaces.queue import QueueInconsistentStateError
+from canonical.launchpad.interfaces import ILibraryFileAliasSet
+from lp.soyuz.interfaces.packageset import IPackagesetSet
+from lp.soyuz.interfaces.archivepermission import (
+    ArchivePermissionType, IArchivePermissionSet)
+from lp.soyuz.interfaces.component import IComponentSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageNameSet)
-from canonical.launchpad.mail import stub
+from lp.services.mail import stub
 from canonical.launchpad.testing.fakepackager import FakePackager
-from canonical.launchpad.tests.mail_helpers import pop_notifications
+from lp.testing.mail_helpers import pop_notifications
 from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
 from canonical.testing import LaunchpadZopelessLayer
 
@@ -312,33 +317,39 @@ class TestUploadProcessor(TestUploadProcessorBase):
         up = UploadProcessor(self.options, None, self.log)
 
     def testLocateDirectories(self):
-        """locateDirectories should return a list of subdirs in a directory.
+        """Return a sorted list of subdirs in a directory.
 
         We don't test that we block on the lockfile, as this is trivial
         code but tricky to test.
         """
         testdir = tempfile.mkdtemp()
         try:
+            os.mkdir("%s/dir3" % testdir)
             os.mkdir("%s/dir1" % testdir)
             os.mkdir("%s/dir2" % testdir)
 
             up = UploadProcessor(self.options, None, self.log)
             located_dirs = up.locateDirectories(testdir)
-            self.assertEqual(sorted(located_dirs), ["dir1", "dir2"])
+            self.assertEqual(located_dirs, ['dir1', 'dir2', 'dir3'])
         finally:
             shutil.rmtree(testdir)
 
     def testLocateChangesFiles(self):
-        """locateChangesFiles should return the .changes files in a folder."""
+        """locateChangesFiles should return the .changes files in a folder.
+
+        'source' changesfiles come first. Files that are not named as
+        changesfiles are ignored.
+        """
         testdir = tempfile.mkdtemp()
         try:
             open("%s/1.changes" % testdir, "w").close()
-            open("%s/2.changes" % testdir, "w").close()
+            open("%s/2_source.changes" % testdir, "w").close()
             open("%s/3.not_changes" % testdir, "w").close()
+
             up = UploadProcessor(self.options, None, self.log)
             located_files = up.locateChangesFiles(testdir)
             self.assertEqual(
-                sorted(located_files), ["1.changes", "2.changes"])
+                located_files, ["2_source.changes", "1.changes"])
         finally:
             shutil.rmtree(testdir)
 
@@ -491,6 +502,77 @@ class TestUploadProcessor(TestUploadProcessorBase):
             queue_item.status, PackageUploadStatus.UNAPPROVED,
             "Expected queue item to be in UNAPPROVED status.")
 
+    def _checkCopyArchiveUploadToDistro(self, pocket_to_check,
+                                        status_to_check):
+        """Check binary copy archive uploads for given pocket and status.
+
+        This helper method tests that buildd binary uploads to copy
+        archives work when the
+            * destination pocket is `pocket_to_check`
+            * associated distroseries is in state `status_to_check`.
+
+        See bug 369512.
+        """
+        # Set up the uploadprocessor with appropriate options and logger
+        uploadprocessor = self.setupBreezyAndGetUploadProcessor()
+
+        # Upload 'bar-1.0-1' source and binary to ubuntu/breezy.
+        upload_dir = self.queueUpload("bar_1.0-1")
+        self.processUpload(uploadprocessor, upload_dir)
+        bar_source_pub = self._publishPackage('bar', '1.0-1')
+        [bar_original_build] = bar_source_pub.createMissingBuilds()
+
+        # Create a COPY archive for building in non-virtual builds.
+        uploader = getUtility(IPersonSet).getByName('name16')
+        copy_archive = getUtility(IArchiveSet).new(
+            owner=uploader, purpose=ArchivePurpose.COPY,
+            distribution=self.ubuntu, name='the-copy-archive')
+        copy_archive.require_virtualized = False
+
+        # Copy 'bar-1.0-1' source to the COPY archive.
+        bar_copied_source = bar_source_pub.copyTo(
+            bar_source_pub.distroseries, pocket_to_check, copy_archive)
+        [bar_copied_build] = bar_copied_source.createMissingBuilds()
+
+        # Make ubuntu/breezy the current distro.
+        self.breezy.status = status_to_check
+        self.layer.txn.commit()
+
+        shutil.rmtree(upload_dir)
+        self.options.context = 'buildd'
+        self.options.buildid = bar_copied_build.id
+        upload_dir = self.queueUpload(
+            "bar_1.0-1_binary", "%s/ubuntu" % copy_archive.id)
+        self.processUpload(uploadprocessor, upload_dir)
+
+        # Make sure the upload succeeded.
+        self.assertEqual(
+            uploadprocessor.last_processed_upload.is_rejected, False)
+
+    def testCopyArchiveUploadToCurrentDistro(self):
+        """Check binary copy archive uploads to RELEASE pockets.
+
+        Buildd binary uploads to COPY archives (resulting from successful
+        builds) should be allowed to go to the RELEASE pocket even though
+        the distro series has a CURRENT status.
+
+        See bug 369512.
+        """
+        self._checkCopyArchiveUploadToDistro(
+            PackagePublishingPocket.RELEASE, DistroSeriesStatus.CURRENT)
+
+    def testCopyArchiveUploadToSupportedDistro(self):
+        """Check binary copy archive uploads to RELEASE pockets.
+
+        Buildd binary uploads to COPY archives (resulting from successful
+        builds) should be allowed to go to the RELEASE pocket even though
+        the distro series has a SUPPORTED status.
+
+        See bug 369512.
+        """
+        self._checkCopyArchiveUploadToDistro(
+            PackagePublishingPocket.RELEASE, DistroSeriesStatus.SUPPORTED)
+
     def testDuplicatedBinaryUploadGetsRejected(self):
         """The upload processor rejects duplicated binary uploads.
 
@@ -553,6 +635,58 @@ class TestUploadProcessor(TestUploadProcessorBase):
             str(error),
             "The following files are already published in Primary "
             "Archive for Ubuntu Linux:\nbar_1.0-1_i386.deb")
+
+    def testBinaryUploadToCopyArchive(self):
+        """Copy archive binaries are not checked against the primary archive.
+
+        When a buildd binary upload to a copy archive is performed the
+        version should not be checked against the primary archive but
+        against the copy archive in question.
+        """
+        uploadprocessor = self.setupBreezyAndGetUploadProcessor()
+
+        # Upload 'bar-1.0-1' source and binary to ubuntu/breezy.
+        upload_dir = self.queueUpload("bar_1.0-1")
+        self.processUpload(uploadprocessor, upload_dir)
+        bar_source_old = self._publishPackage('bar', '1.0-1')
+
+        # Upload 'bar-1.0-1' source and binary to ubuntu/breezy.
+        upload_dir = self.queueUpload("bar_1.0-2")
+        self.processUpload(uploadprocessor, upload_dir)
+        [bar_source_pub] = self.ubuntu.main_archive.getPublishedSources(
+            name='bar', version='1.0-2', exact_match=True)
+        [bar_original_build] = bar_source_pub.getBuilds()
+
+        self.options.context = 'buildd'
+        self.options.buildid = bar_original_build.id
+        upload_dir = self.queueUpload("bar_1.0-2_binary")
+        self.processUpload(uploadprocessor, upload_dir)
+        [bar_binary_pub] = self._publishPackage("bar", "1.0-2", source=False)
+
+        # Create a COPY archive for building in non-virtual builds.
+        uploader = getUtility(IPersonSet).getByName('name16')
+        copy_archive = getUtility(IArchiveSet).new(
+            owner=uploader, purpose=ArchivePurpose.COPY,
+            distribution=self.ubuntu, name='no-source-uploads')
+        copy_archive.require_virtualized = False
+
+        # Copy 'bar-1.0-1' source to the COPY archive.
+        bar_copied_source = bar_source_old.copyTo(
+            bar_source_pub.distroseries, bar_source_pub.pocket,
+            copy_archive)
+        [bar_copied_build] = bar_copied_source.createMissingBuilds()
+
+        shutil.rmtree(upload_dir)
+        self.options.buildid = bar_copied_build.id
+        upload_dir = self.queueUpload(
+            "bar_1.0-1_binary", "%s/ubuntu" % copy_archive.id)
+        self.processUpload(uploadprocessor, upload_dir)
+
+        # The binary just uploaded is accepted because it's destined for a
+        # copy archive and the PRIMARY and the COPY archives are isolated
+        # from each other.
+        self.assertEqual(
+            uploadprocessor.last_processed_upload.is_rejected, False)
 
     def testPartnerArchiveMissingForPartnerUploadFails(self):
         """A missing partner archive should produce a rejection email.
@@ -750,7 +884,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
             build.title,
             'i386 build of foocomm 1.0-2 in ubuntu breezy RELEASE')
         self.assertEqual(build.buildstate.name, 'NEEDSBUILD')
-        self.assertEqual(build.buildqueue_record.lastscore, 4255)
+        self.assertTrue(build.buildqueue_record.lastscore is not None)
 
         # Upload the next binary version of the package.
         upload_dir = self.queueUpload("foocomm_1.0-2_binary")
@@ -1148,6 +1282,69 @@ class TestUploadProcessor(TestUploadProcessorBase):
         self.assertEqual(
             status, PackageUploadStatus.DONE,
             "Expected NEW status, got %s" % status.value)
+
+    def testPackagesetUploadPermissions(self):
+        """Test package set based upload permissions."""
+        self.setupBreezy()
+        # Remove our favourite uploader from the team that has
+        # permissions to all components at upload time.
+        uploader = getUtility(IPersonSet).getByName('name16')
+        distro_team = getUtility(IPersonSet).getByName('ubuntu-team')
+        uploader.leave(distro_team)
+
+        # Now give name16 specific permissions to "restricted" only.
+        restricted = getUtility(IComponentSet)["restricted"]
+        ArchivePermission(
+            archive=self.ubuntu.main_archive,
+            permission=ArchivePermissionType.UPLOAD, person=uploader,
+            component=restricted)
+
+        uploadprocessor = UploadProcessor(
+            self.options, self.layer.txn, self.log)
+
+        # Upload the first version and accept it to make it known in
+        # Ubuntu.  The uploader has rights to upload NEW packages to
+        # components that he does not have direct rights to.
+        upload_dir = self.queueUpload("bar_1.0-1")
+        self.processUpload(uploadprocessor, upload_dir)
+        bar_source_pub = self._publishPackage('bar', '1.0-1')
+        # Clear out emails generated during upload.
+        ignore = pop_notifications()
+
+        # Now upload the next version.
+        upload_dir = self.queueUpload("bar_1.0-2")
+        self.processUpload(uploadprocessor, upload_dir)
+
+        # Make sure it failed.
+        self.assertEqual(
+            uploadprocessor.last_processed_upload.rejection_message,
+            u"Signer is not permitted to upload to the component 'universe'"
+                " of file 'bar_1.0-2.dsc'.")
+
+        # Now put in place a package set, add 'bar' to it and define a
+        # permission for the former.
+        bar_package = getUtility(ISourcePackageNameSet).queryByName("bar")
+        ap_set = getUtility(IArchivePermissionSet)
+        ps_set = getUtility(IPackagesetSet)
+        foo_ps = ps_set.new(
+            u'foo-pkg-set', u'Packages that require special care.', uploader)
+        self.layer.txn.commit()
+
+        foo_ps.add((bar_package,))
+        ap_set.newPackagesetUploader(uploader, foo_ps)
+
+        # The uploader now does have a package set based upload permissions
+        # to 'bar'.
+        self.assertTrue(ap_set.isSourceUploadAllowed('bar', uploader))
+
+        # Upload the package again.
+        self.processUpload(uploadprocessor, upload_dir)
+
+        # Check that it worked,
+        status = uploadprocessor.last_processed_upload.queue_root.status
+        self.assertEqual(
+            status, PackageUploadStatus.DONE,
+            "Expected DONE status, got %s" % status.value)
 
 
 def test_suite():

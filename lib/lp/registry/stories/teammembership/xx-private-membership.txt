@@ -30,9 +30,17 @@ A team member should be able to view the +members page.
 
 == Team Page ==
 
-A team member will be able to see these parts of the team page.
+The page states that the team is private.
 
     >>> browser.open('http://launchpad.dev/~myteam')
+    >>> privacy_info = find_tag_by_id(browser.contents, 'privacy')
+    >>> print privacy_info['class']
+    aside private
+    >>> print extract_text(privacy_info)
+    This team is private
+
+A team member will be able to see these parts of the team page.
+
     >>> find_tag_by_id(browser.contents, 'recently-approved')
     <...<a href="/~member">Gold Member (member)</a>...
 
@@ -105,12 +113,13 @@ on other members' overview or +assignedbugs pages.
     My Team
     Other Team
 
+
 === Indirect Membership ===
 
 If a person is a member of a public team that is a member of a private
-membership team then he is indirectly a member of the private team.
-The rules for disclosing that information are the same as for direct
-membership.
+membership team then he is indirectly a member of the private
+membership team.  The rules for disclosing that information are the
+same as for direct membership.
 
 My Team invites the Launchpad Admins team to join them.
 

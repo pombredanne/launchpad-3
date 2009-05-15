@@ -24,29 +24,29 @@ from lp.code.model.branch import Branch
 from canonical.launchpad.database.bug import get_bug_tags_open_count
 from canonical.launchpad.database.bugtarget import BugTargetBase
 from canonical.launchpad.database.bugtask import BugTask
-from canonical.launchpad.database.build import Build
-from canonical.launchpad.database.distributionsourcepackagerelease import (
+from lp.soyuz.model.build import Build
+from lp.soyuz.model.distributionsourcepackagerelease import (
     DistributionSourcePackageRelease)
-from canonical.launchpad.database.distroseriessourcepackagerelease import (
+from lp.soyuz.model.distroseriessourcepackagerelease import (
     DistroSeriesSourcePackageRelease)
 from canonical.launchpad.database.packaging import Packaging
 from canonical.launchpad.database.potemplate import POTemplate
-from canonical.launchpad.database.publishing import (
+from lp.soyuz.model.publishing import (
     SourcePackagePublishingHistory)
 from lp.answers.model.question import (
     QuestionTargetMixin, QuestionTargetSearch)
 from lp.code.model.seriessourcepackagebranch import (
     SeriesSourcePackageBranch)
-from canonical.launchpad.database.sourcepackagerelease import (
+from lp.soyuz.model.sourcepackagerelease import (
     SourcePackageRelease)
 from canonical.launchpad.database.translationimportqueue import (
     HasTranslationImportsMixin)
 from canonical.launchpad.helpers import shortlist
-from canonical.launchpad.interfaces.build import BuildStatus
-from canonical.launchpad.interfaces.buildrecords import IHasBuildRecords
+from lp.soyuz.interfaces.build import BuildStatus
+from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from canonical.launchpad.interfaces.packaging import PackagingType
 from canonical.launchpad.interfaces.potemplate import IHasTranslationTemplates
-from canonical.launchpad.interfaces.publishing import (
+from lp.soyuz.interfaces.publishing import (
     PackagePublishingPocket, PackagePublishingStatus)
 from lp.answers.interfaces.questioncollection import (
     QUESTION_STATUS_DEFAULT_SEARCH)
@@ -316,17 +316,15 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         The results are ordered by descending version.
         """
         query = """
-            SourcePackagePublishingHistory.distroseries =
-                DistroSeries.id AND
+            SourcePackagePublishingHistory.distroseries = %s AND
             SourcePackagePublishingHistory.sourcepackagerelease =
                 SourcePackageRelease.id AND
             SourcePackageRelease.sourcepackagename = %s AND
-            DistroSeries.distribution = %s AND
             SourcePackagePublishingHistory.archive IN %s
-        """ % sqlvalues(self.sourcepackagename, self.distribution,
-                            self.distribution.all_distro_archive_ids)
+        """ % sqlvalues(self.distroseries, self.sourcepackagename,
+                        self.distribution.all_distro_archive_ids)
 
-        clauseTables = ['DistroSeries', 'SourcePackagePublishingHistory']
+        clauseTables = ['SourcePackagePublishingHistory']
         order_const = "debversion_sort_key(SourcePackageRelease.version)"
 
         # Selecting ordered distinct `SourcePackageReleases` requires us

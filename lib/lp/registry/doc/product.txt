@@ -139,10 +139,10 @@ default the latest five are returned.
     >>> projects = [project.displayname for project in latest]
     >>> for project in sorted(projects):
     ...     print project
-    Bazaar
     Derby
     Launchpad Translations
     Mega Money Maker
+    Obsolete Junk
     Redfish
 
 The quantity can be specified and that many, if available, will be
@@ -152,9 +152,9 @@ returned.
     >>> projects = [project.displayname for project in latest]
     >>> for project in sorted(projects):
     ...     print project
-    Derby
     Launchpad Translations
     Mega Money Maker
+    Obsolete Junk
 
 
 == Translatable Products ==
@@ -430,6 +430,26 @@ To get all milestones of a given product we have the .all_milestones property.
 
     >>> [milestone.name for milestone in firefox.all_milestones]
     [u'1.0.0', u'0.9.2', u'0.9.1', u'0.9', u'1.0', u'1.0-rc1']
+
+
+== Release ==
+
+All the releases for a Product can be retrieved through the releases property.
+
+    >>> for release in firefox.releases:
+    ...     print release.version
+    0.9
+    0.9.1
+    0.9.2
+    1.0.0
+
+A single release can be retrieved via the getRelease() method by passing the
+version argument.
+
+    >>> release = firefox.getRelease('0.9.1')
+    >>> print release.version
+    0.9.1
+
 
 == Products With Branches ==
 

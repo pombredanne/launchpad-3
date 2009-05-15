@@ -321,7 +321,7 @@ The status is now IMPORTED:
 And the statistics reflect it.
 
     >>> pofile.currentCount()
-    3
+    2
 
 Here's a current message: i.e. it has a corresponding current message
 set in the PO template.
@@ -333,7 +333,7 @@ set in the PO template.
 And should be accepted by our validator.
 
     >>> published = message.potmsgset.getImportedTranslationMessage(
-    ...     pofile.language)
+    ...     pofile.potemplate, pofile.language)
     >>> published.validation_status == TranslationValidationStatus.OK
     True
 
@@ -342,7 +342,7 @@ Fuzzy translations are ignored.
     >>> def get_pofile_translation_message(pofile, msgid):
     ...     potmsgset = pofile.potemplate.getPOTMsgSetByMsgIDText(msgid)
     ...     return potmsgset.getCurrentTranslationMessage(
-    ...         pofile.language, pofile.variant)
+    ...         pofile.potemplate, pofile.language, pofile.variant)
     >>> message = get_pofile_translation_message(pofile, u'bar')
     >>> print message
     None
@@ -354,7 +354,7 @@ We can also get the ones that have validation errors.
     1
     >>> for potmsgset in potmsgsets:
     ...     translationmessages = potmsgset.getLocalTranslationMessages(
-    ...         pofile.language)
+    ...         pofile.potemplate, pofile.language)
     ...     for translationmessage in translationmessages:
     ...         assert (
     ...             translationmessage.validation_status ==
@@ -366,7 +366,7 @@ Check that the plural form was imported correctly.
     >>> potmsgset = pofile.potemplate.getPOTMsgSetByMsgIDText(
     ...     u'Singular %d', u'Plural %d')
     >>> imported_translationmessage = potmsgset.getImportedTranslationMessage(
-    ...     pofile.language)
+    ...     pofile.potemplate, pofile.language)
     >>> print imported_translationmessage.validation_status.name
     OK
     >>> imported_translationmessage.translations
@@ -466,7 +466,7 @@ from imported files (currentCount), and none updated or added in
 Launchpad Translations.
 
     >>> pofile.currentCount()
-    3
+    2
     >>> pofile.updatesCount()
     0
     >>> pofile.rosettaCount()
@@ -492,7 +492,7 @@ files are now counted as coming from Launchpad translations
     >>> pofile.updatesCount()
     0
     >>> pofile.rosettaCount()
-    2
+    1
 
 This time, our notification email reports complete success, except
 that nothing is emailed out (subject is None) because this is a published
@@ -581,7 +581,7 @@ in this test; We don't touch entries that were in the queue previously.
 And run the import script.
 
     >>> import email
-    >>> from canonical.launchpad.mail import stub
+    >>> from lp.services.mail import stub
     >>> process = ImportProcess(transaction, FakeLogger())
     >>> process.run()
     INFO    Importing: Template "firefox" in Mozilla Firefox trunk
@@ -743,9 +743,10 @@ And there are no more entries to import
 We've imported a new translation for "Foo %s."
 
     >>> welsh = getUtility(ILanguageSet).getLanguageByCode('cy')
-    >>> foos = potemplate['Foo %s'].getLocalTranslationMessages(welsh)
+    >>> foos = potemplate['Foo %s'].getLocalTranslationMessages(
+    ...     potemplate, welsh)
     >>> sorted([foo.msgstr0.translation for foo in foos])
-    [u'Bar', u'Bars']
+    [u'Bar', u'Bars', u'blah %i']
 
 Since this last upload was not the upstream one, however, its credits
 message translations were ignored.
@@ -754,7 +755,8 @@ message translations were ignored.
     ...     pofile, u'translator-credits')
     >>> message.msgstr0.translation
     u'helpful@example.com'
-    >>> potemplate['translator-credits'].getLocalTranslationMessages(welsh)
+    >>> list(potemplate['translator-credits'].getLocalTranslationMessages(
+    ...     potemplate, welsh))
     []
 
 Imports so far have been associated with a product series. We can also
@@ -884,7 +886,8 @@ specified):
 
     >>> potmsgset_plural = firefox_potemplate.getPOTMsgSetByMsgIDText(
     ...     u'Singular %d', u'Plural %d')
-    >>> current_dv = potmsgset_plural.getCurrentTranslationMessage(divehi)
+    >>> current_dv = potmsgset_plural.getCurrentTranslationMessage(
+    ...     firefox_potemplate, divehi)
     >>> current_dv.translations
     [u'First form %d', u'Second form %d']
 

@@ -12,7 +12,7 @@ from canonical.config import config
 from canonical.database.sqlbase import ISOLATION_LEVEL_READ_COMMITTED
 from canonical.launchpad.scripts.base import (
     LaunchpadCronScript, LaunchpadScriptFailure)
-from canonical.launchpad.interfaces import (
+from canonical.shipit.interfaces.shipit import (
     IShippingRequestSet, ShipItConstants, ShipItDistroSeries,
     ShippingRequestPriority)
 

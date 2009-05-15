@@ -35,9 +35,19 @@
 <div metal:fill-slot="main" class="pillar"
   tal:define="overview_menu context/menu:overview">
 
-  <div class="actions" style="float:right; margin:0"
-    tal:condition="overview_menu/edit/enabled"
-    tal:content="structure overview_menu/edit/fmt:link-icon">
+  <div style="float:right; margin:0">
+    <div id="privacy" tal:attributes="class view/public_private_css">
+      <div id="privacy-text">
+        This team is
+        <tal:public condition="not: context/private">public</tal:public>
+        <tal:private condition="context/private">private</tal:private>
+      </div>
+    </div>
+
+    <div class="actions" style="text-align:right;"
+      tal:condition="overview_menu/edit/enabled"
+      tal:content="structure overview_menu/edit/fmt:link-icon">
+    </div>
   </div>
 
   <tal:icon replace="structure context/image:mugshot" />
@@ -71,7 +81,7 @@
 
       <tal:no_preferredemail
         condition="view/email_address_visibility/are_none_available">
-        No contact address
+        No contact email
         <metal:define metal:define-macro="contact">
           <tal:can-contact condition="view/can_contact">
             &nbsp; <img src="/@@/mail" alt="email"/>
@@ -269,6 +279,10 @@
               >Foo Bar (name16)</a>
           </li>
         </ul>
+        <div style="margin-top: 3px;">
+          <tal:mentorships
+            replace="structure overview_menu/mentorships/fmt:link" />
+        </div>
         </td>
         <td style="padding: 0px;" id="recently-applied"
           tal:condition="view/recently_proposed_members">
@@ -281,15 +295,14 @@
               >Foo Bar (name16)</a>
           </li>
         </ul>
+        <div style="margin-top: 3px;"
+          tal:condition="overview_menu/proposed_members/enabled"
+          tal:content="structure overview_menu/proposed_members/fmt:icon-link">
+        </div>
         </td>
       </tr>
     </table>
     </tal:can-view>
-    <div>
-      <tal:mentorships
-        replace="structure overview_menu/mentorships/fmt:link" />
-    </div>
-
     <div>
 
     </div>

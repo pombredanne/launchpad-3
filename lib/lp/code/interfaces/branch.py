@@ -79,7 +79,8 @@ from canonical.config import config
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
-    PublicPersonChoice, Summary, Title, URIField, Whiteboard)
+    ParticipatingPersonChoice, PublicPersonChoice, Summary, Title, URIField,
+    Whiteboard)
 from canonical.launchpad.validators import LaunchpadValidationError
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.branchtarget import IHasBranchTarget
@@ -703,7 +704,7 @@ class IBranch(IHasOwner, IHasBranchTarget):
             required=True, readonly=True,
             vocabulary='ValidPersonOrTeam'))
     owner = exported(
-        PublicPersonChoice(
+        ParticipatingPersonChoice(
             title=_('Owner'),
             required=True,
             vocabulary='UserTeamsParticipationPlusSelf',
@@ -826,15 +827,23 @@ class IBranch(IHasOwner, IHasBranchTarget):
         "See doc/bazaar for more information about the branch warehouse.")
 
     # Bug attributes
-    bug_branches = Attribute(
-        "The bug-branch link objects that link this branch to bugs. ")
+    bug_branches = exported(
+        CollectionField(
+            title=_("The bug-branch link objects that link this branch "
+                    "to bugs."),
+            readonly=True,
+            value_type=Reference(schema=Interface))) # Really IBugBranch
 
     related_bugs = Attribute(
         "The bugs related to this branch, likely branches on which "
         "some work has been done to fix this bug.")
 
     # Specification attributes
-    spec_links = Attribute("Specifications linked to this branch")
+    spec_links = exported(
+        CollectionField(
+            title=_("Specification linked to this branch."),
+            readonly=True,
+            value_type=Reference(Interface))) # Really ISpecificationBranch
 
     pending_writes = Attribute(
         "Whether there is new Bazaar data for this branch.")
@@ -1160,6 +1169,15 @@ class IBranch(IHasOwner, IHasBranchTarget):
 
         :param reason: An error message that will be displayed on the branch
             detail page.
+        """
+
+    def commitsForDays(since):
+        """Get a list of commit counts for days since `since`.
+
+        This method returns all commits for the branch, so this includes
+        revisions brought in through merges.
+
+        :return: A list of tuples like (date, count).
         """
 
 

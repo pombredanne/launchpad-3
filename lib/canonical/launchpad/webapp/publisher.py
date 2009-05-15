@@ -24,8 +24,6 @@ __all__ = [
     ]
 
 
-import zope.security.management
-
 from zope.app import zapi
 from zope.app.publisher.interfaces.xmlrpc import IXMLRPCView
 from zope.app.publisher.xmlrpc import IMethodPublisher
@@ -38,9 +36,7 @@ from zope.security.checker import ProxyFactory, NamesChecker
 from zope.traversing.browser.interfaces import IAbsoluteURL
 
 from canonical.cachedproperty import cachedproperty
-from canonical.launchpad.layers import (
-    setFirstLayer, ShipItUbuntuLayer, ShipItKUbuntuLayer, ShipItEdUbuntuLayer,
-    WebServiceLayer)
+from canonical.launchpad.layers import setFirstLayer
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.launchpad.webapp.interfaces import (
     ICanonicalUrlData, ILaunchBag, ILaunchpadApplication, ILaunchpadContainer,
@@ -486,45 +482,13 @@ def canonical_url(
                     'step for "%s".' % (view_name, obj.__class__.__name__))
         urlparts.insert(0, view_name)
 
-    # XXX flacoste 2008/03/18 The check for the WebServiceLayer is kind
-    # of hackish, the idea is that when browsing the web service, we want
-    # URLs to point back at the web service, so we basically ignore rootsite.
-    # I don't feel like designing a proper solution today, we'll need
-    # to revisit this anyway once we tackle API versioning.
-    # Plus we already have a bunch of layer-specific hacks below...
-    if WebServiceLayer.providedBy(request) or rootsite is None:
-        # This means we should use the request, or fall back to the main site.
-
-        # If there is no request, fall back to the root_url from the
-        # config file.
-        if request is None:
-            root_url = allvhosts.configs['mainsite'].rooturl
-        else:
-            root_url = request.getApplicationURL() + '/'
+    if request is None and rootsite is not None:
+        root_url = allvhosts.configs[rootsite].rooturl
+    elif request is None:
+        root_url = allvhosts.configs['mainsite'].rooturl
     else:
-        # We should use the site given.
-        if rootsite in allvhosts.configs:
-            root_url = allvhosts.configs[rootsite].rooturl
-        elif rootsite == 'shipit':
-            # Special case for shipit.  We need to take the request's layer
-            # into account.
-            if ShipItUbuntuLayer.providedBy(request):
-                root_url = allvhosts.configs['shipitubuntu'].rooturl
-            elif ShipItEdUbuntuLayer.providedBy(request):
-                root_url = allvhosts.configs['shipitedubuntu'].rooturl
-            elif ShipItKUbuntuLayer.providedBy(request):
-                root_url = allvhosts.configs['shipitkubuntu'].rooturl
-            elif request is None:
-                # Fall back to shipitubuntu_root_url
-                root_url = allvhosts.configs['shipitubuntu'].rooturl
-            else:
-                raise AssertionError(
-                    "Shipit canonical urls must be used only with request "
-                    "== None or a request providing one of the ShipIt Layers")
-        else:
-            raise AssertionError("rootsite is %s.  Must be in %r." % (
-                    rootsite, sorted(allvhosts.configs.keys())
-                    ))
+        root_url = request.getRootURL(rootsite)
+
     path = u'/'.join(reversed(urlparts))
     if (path_only_if_possible and
         request is not None and

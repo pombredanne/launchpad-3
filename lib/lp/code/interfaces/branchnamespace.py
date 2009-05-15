@@ -85,6 +85,14 @@ class IBranchNamespacePolicy(Interface):
         :return: A Boolean value.
         """
 
+    def areNewBranchesPrivate():
+        """Are new branches in this namespace private?
+
+        No check is made about whether or not a user can create branches.
+
+        :return: A Boolean value.
+        """
+
     def canBranchesBePrivate():
         """Can branches by the user be private in this namespace?
 

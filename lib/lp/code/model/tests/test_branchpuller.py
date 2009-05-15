@@ -16,7 +16,7 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.database.constants import UTC_NOW
 from lp.code.interfaces.branch import BranchType, BranchTypeError
 from lp.code.interfaces.branchpuller import IBranchPuller
-from canonical.launchpad.testing import TestCase, TestCaseWithFactory
+from lp.testing import TestCase, TestCaseWithFactory
 from canonical.testing.layers import DatabaseFunctionalLayer
 
 
@@ -220,6 +220,85 @@ class TestRemoteBranches(TestCaseWithFactory):
         puller = getUtility(IBranchPuller)
         self.assertRaises(
             BranchTypeError, puller.getPullQueue, BranchType.REMOTE)
+
+
+class AcquireBranchToPullTests:
+    """Tests for acquiring branches to pull.
+
+    The tests apply to branches accessed directly or through an XML-RPC style
+    endpoint -- implement `assertNoBranchIsAquired`, `assertBranchIsAquired`
+    and `startMirroring` as appropriate.
+    """
+
+    def assertNoBranchIsAquired(self):
+        """Assert that there is no branch to pull."""
+        raise NotImplementedError(self.assertNoBranchIsAquired)
+
+    def assertBranchIsAquired(self, branch):
+        """Assert that ``branch`` is the next branch to be pulled."""
+        raise NotImplementedError(self.assertBranchIsAquired)
+
+    def startMirroring(self, branch):
+        """Mark that ``branch`` has begun mirroring."""
+        raise NotImplementedError(self.startMirroring)
+
+    def test_empty(self):
+        # If there is no branch that needs pulling, acquireBranchToPull
+        # returns None.
+        self.assertNoBranchIsAquired()
+
+    def test_simple(self):
+        # If there is one branch that needs mirroring, acquireBranchToPull
+        # returns that.
+        branch = self.factory.makeAnyBranch()
+        branch.requestMirror()
+        self.assertBranchIsAquired(branch)
+
+    def test_no_inprogress(self):
+        # If a branch is being mirrored, it is not returned.
+        branch = self.factory.makeAnyBranch()
+        branch.requestMirror()
+        self.startMirroring(branch)
+        self.assertNoBranchIsAquired()
+
+    def test_first_requested_returned(self):
+        # If two branches are to be mirrored, the one that was requested first
+        # is returned.
+        first_branch = self.factory.makeAnyBranch()
+        # You can only request a mirror now, so to pretend that we requested
+        # it some time ago, we cheat with removeSecurityProxy().
+        first_branch.requestMirror()
+        naked_first_branch = removeSecurityProxy(first_branch)
+        naked_first_branch.next_mirror_time -= timedelta(seconds=100)
+        second_branch = self.factory.makeAnyBranch()
+        second_branch.requestMirror()
+        naked_second_branch = removeSecurityProxy(second_branch)
+        naked_second_branch.next_mirror_time -= timedelta(seconds=50)
+        self.assertBranchIsAquired(naked_first_branch)
+
+
+class TestAcquireBranchToPullDirectly(TestCaseWithFactory,
+                                      AcquireBranchToPullTests):
+    """Direct tests for `IBranchPuller.acquireBranchToPull`."""
+
+    layer = DatabaseFunctionalLayer
+
+    def assertNoBranchIsAquired(self):
+        """See `AcquireBranchToPullTests`."""
+        acquired_branch = getUtility(IBranchPuller).acquireBranchToPull()
+        self.assertEqual(None, acquired_branch)
+
+    def assertBranchIsAquired(self, branch):
+        """See `AcquireBranchToPullTests`."""
+        acquired_branch = getUtility(IBranchPuller).acquireBranchToPull()
+        self.assertEqual(branch, acquired_branch)
+        self.assertIsNot(None, acquired_branch.last_mirror_attempt)
+        self.assertIs(None, acquired_branch.next_mirror_time)
+
+    def startMirroring(self, branch):
+        """See `AcquireBranchToPullTests`."""
+        branch.startMirroring()
+
 
 
 def test_suite():

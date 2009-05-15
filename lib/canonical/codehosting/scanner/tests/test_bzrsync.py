@@ -19,6 +19,10 @@ import pytz
 from twisted.python.util import mergeFunctionMetadata
 from zope.component import getUtility
 
+from canonical.codehosting.bzrutils import ensure_base
+from canonical.codehosting.scanner.bzrsync import (
+    BzrSync, InvalidStackedBranchURL, schedule_translation_upload)
+from canonical.codehosting.scanner.fixture import make_zope_event_fixture
 from canonical.config import config
 from canonical.launchpad.database import (
     BranchRevision, Revision, RevisionAuthor, RevisionParent)
@@ -27,10 +31,7 @@ from lp.code.interfaces.branchjob import IRosettaUploadJobSource
 from lp.code.interfaces.branchlookup import IBranchLookup
 from canonical.launchpad.interfaces.translations import (
     TranslationsBranchImportMode)
-from canonical.launchpad.testing import LaunchpadObjectFactory
-from canonical.codehosting.scanner.bzrsync import (
-    BzrSync, InvalidStackedBranchURL)
-from canonical.codehosting.bzrutils import ensure_base
+from lp.testing.factory import LaunchpadObjectFactory
 from canonical.testing import LaunchpadZopelessLayer
 
 
@@ -579,7 +580,7 @@ class TestBzrSyncOneRevision(BzrSyncTestCase):
 
         # Sync the revision.  The second parameter is a dict of revision ids
         # to revnos, and will error if the revision id is not in the dict.
-        self.bzrsync.syncOneRevision(fake_rev, {'rev42': None})
+        self.bzrsync.syncOneRevision(None, fake_rev, {'rev42': None})
 
         # Find the revision we just synced and check that it has the correct
         # date.
@@ -593,6 +594,9 @@ class TestBzrTranslationsUploadJob(BzrSyncTestCase):
 
     def setUp(self):
         BzrSyncTestCase.setUp(self)
+        fixture = make_zope_event_fixture(schedule_translation_upload)
+        fixture.setUp()
+        self.addCleanup(fixture.tearDown)
 
     def _makeProductSeries(self, mode = None):
         """Switch to the Launchpad db user to create and configure a

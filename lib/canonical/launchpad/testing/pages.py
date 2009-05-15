@@ -1,5 +1,7 @@
-# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
+
 """Testing infrastructure for page tests."""
+
 # Stop lint warning about not initializing TestCase parent on
 # PageStoryTestCase, see the comment bellow.
 # pylint: disable-msg=W0231
@@ -29,9 +31,7 @@ from zope.component import getUtility
 from zope.testbrowser.testing import Browser
 from zope.testing import doctest
 
-from canonical.launchpad.ftests import ANONYMOUS, login, login_person, logout
 from canonical.launchpad.interfaces import IOAuthConsumerSet, OAUTH_REALM
-from canonical.launchpad.testing import LaunchpadObjectFactory
 from canonical.launchpad.testing.systemdocs import (
     LayeredDocFileSuite, SpecialOutputChecker, strip_prefix)
 from canonical.launchpad.webapp import canonical_url
@@ -39,6 +39,9 @@ from canonical.launchpad.webapp.interfaces import OAuthPermission
 from canonical.launchpad.webapp.url import urlsplit
 from canonical.testing import PageTestLayer
 from lazr.restful.testing.webservice import WebServiceCaller
+from lp.testing import ANONYMOUS, login, login_person, logout
+from lp.testing.factory import LaunchpadObjectFactory
+
 
 class UnstickyCookieHTTPCaller(HTTPCaller):
     """HTTPCaller subclass that do not carry cookies across requests.
@@ -143,8 +146,11 @@ class DuplicateIdError(Exception):
 
 def find_tag_by_id(content, id):
     """Find and return the tag with the given ID"""
-    elements_with_id = [tag for tag in BeautifulSoup(
-        content, parseOnlyThese=SoupStrainer(id=id))]
+    if isinstance(content, PageElement):
+        elements_with_id = content.findAll(True, {'id': id})
+    else:
+        elements_with_id = [tag for tag in BeautifulSoup(
+                            content, parseOnlyThese=SoupStrainer(id=id))]
     if len(elements_with_id) == 0:
         return None
     elif len(elements_with_id) == 1:
@@ -157,6 +163,21 @@ def find_tag_by_id(content, id):
 def first_tag_by_class(content, class_):
     """Find and return the first tag matching the given class(es)"""
     return find_tags_by_class(content, class_, True)
+
+
+def extract_all_script_and_style_links(content):
+    """Find and return all thetags with the given name."""
+    strainer = SoupStrainer(['script', 'link'])
+    soup = BeautifulSoup(content, parseOnlyThese=strainer)
+    links = []
+    link_attr = {u'link': 'href', u'script': 'src'}
+    for script_or_style in BeautifulSoup.findAll(soup):
+        attrs = dict(script_or_style.attrs)
+        link = attrs.get(link_attr[script_or_style.name], None)
+        if link:
+            links.append(link)
+
+    return "\n".join(links)
 
 
 def find_tags_by_class(content, class_, only_first=False):
@@ -282,13 +303,15 @@ def extract_link_from_tag(tag, base=None):
         return urljoin(base, href)
 
 
-def extract_text(content, extract_image_text=False, skip_tags=['script']):
+def extract_text(content, extract_image_text=False, skip_tags=None):
     """Return the text stripped of all tags.
 
     All runs of tabs and spaces are replaced by a single space and runs of
     newlines are replaced by a single newline. Leading and trailing white
     spaces are stripped.
     """
+    if skip_tags is None:
+        skip_tags = ['script']
     if not isinstance(content, PageElement):
         soup = BeautifulSoup(content)
     else:
@@ -601,6 +624,8 @@ def setUpGlobs(test):
     # raises ValueError exceptions in /usr/lib/python2.4/Cookie.py
     test.globs['canonical_url'] = safe_canonical_url
     test.globs['factory'] = LaunchpadObjectFactory()
+    test.globs['extract_all_script_and_style_links'] = (
+        extract_all_script_and_style_links)
     test.globs['find_tag_by_id'] = find_tag_by_id
     test.globs['first_tag_by_class'] = first_tag_by_class
     test.globs['find_tags_by_class'] = find_tags_by_class

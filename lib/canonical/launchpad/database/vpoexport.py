@@ -13,15 +13,15 @@ __all__ = [
 from zope.interface import implements
 
 from canonical.database.sqlbase import quote, sqlvalues, cursor
-from canonical.launchpad.database.component import Component
+from lp.soyuz.model.component import Component
 from lp.registry.model.distroseries import DistroSeries
 from canonical.launchpad.database.language import Language
-from canonical.launchpad.database.publishing import (
+from lp.soyuz.model.publishing import (
     SourcePackagePublishingHistory)
 from canonical.launchpad.database.pofile import POFile
 from canonical.launchpad.database.potemplate import POTemplate
 from canonical.launchpad.database.potmsgset import POTMsgSet
-from canonical.launchpad.database.sourcepackagerelease import (
+from lp.soyuz.model.sourcepackagerelease import (
     SourcePackageRelease)
 from canonical.launchpad.interfaces import IVPOExportSet, IVPOExport
 
@@ -52,6 +52,7 @@ class VPOExportSet:
         'msgid_plural',
         'is_current',
         'is_imported',
+        'diverged',
         'translation0',
         'translation1',
         'translation2',
@@ -71,6 +72,7 @@ class VPOExportSet:
         VIEW_NAME_PREFIX+'potemplate',
         VIEW_NAME_PREFIX+'language',
         VIEW_NAME_PREFIX+'variant',
+        VIEW_NAME_PREFIX+'diverged NULLS LAST',
         'CASE '
             'WHEN '+VIEW_NAME_PREFIX+'sequence = 0 THEN NULL '
             'ELSE '+VIEW_NAME_PREFIX+'sequence '
@@ -157,14 +159,7 @@ class VPOExportSet:
             conditions.append("""
                 (
                     POTemplate.date_last_updated > %s OR
-                    EXISTS (
-                        SELECT *
-                        FROM TranslationMessage
-                        WHERE
-                            TranslationMessage.pofile = POFile.id AND
-                            TranslationMessage.is_current AND
-                            TranslationMessage.date_reviewed > %s
-                    )
+                    POFile.date_changed > %s
                 )
                 """ % sqlvalues(date, date))
 
@@ -242,6 +237,7 @@ class VPOExport:
          self.msgid_plural,
          self.is_current,
          self.is_imported,
+         self.diverged,
          self.translation0,
          self.translation1,
          self.translation2,

@@ -46,16 +46,6 @@ BlueprintsLayer = BlueprintLayer
 class AnswersLayer(LaunchpadLayer):
     """The `AnswersLayer` layer."""
 
-# XXX sinzui 2008-09-04 bug=264783:
-# Remove this layer.
-class OpenIDLayer(LaunchpadLayer):
-    """The `OpenID` layer."""
-
-
-class IdLayer(LaunchpadLayer):
-    """The new OpenID `Id` layer."""
-
-
 class DebugLayer(Interface):
     """The `DebugLayer` layer.
 
@@ -78,22 +68,6 @@ class PageTestLayer(LaunchpadLayer):
     The SystemErrorView base class looks at the request to see if it provides
     this interface.  If so, it renders tracebacks as plain text.
     """
-
-
-class ShipItLayer(LaunchpadLayer):
-    """The `ShipIt` layer."""
-
-
-class ShipItUbuntuLayer(ShipItLayer):
-    """The `ShipIt` for Ubuntu layer."""
-
-
-class ShipItKUbuntuLayer(ShipItLayer):
-    """The `ShipIt` for KUbuntu layer."""
-
-
-class ShipItEdUbuntuLayer(IDefaultBrowserLayer):
-    """The `ShipIt` for EdUbuntu layer."""
 
 
 class FeedsLayer(LaunchpadLayer):

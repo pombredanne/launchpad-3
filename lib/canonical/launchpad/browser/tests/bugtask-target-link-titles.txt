@@ -7,7 +7,7 @@ title.
 
     >>> from canonical.launchpad.browser.bugtask import (
     ...     BugTasksAndNominationsView)
-    >>> from canonical.launchpad.tests.test_publishing import (
+    >>> from lp.soyuz.tests.test_publishing import (
     ...     SoyuzTestPublisher)
     >>> publisher = SoyuzTestPublisher()
     >>> factory = publisher.factory

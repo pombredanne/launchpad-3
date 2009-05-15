@@ -17,6 +17,7 @@ __all__ = [
     'BranchNavigation',
     'BranchNavigationMenu',
     'BranchInProductView',
+    'BranchSparkView',
     'BranchURL',
     'BranchView',
     'BranchSubscriptionsView',
@@ -25,7 +26,9 @@ __all__ = [
 
 import cgi
 from datetime import datetime, timedelta
+
 import pytz
+import simplejson
 
 from zope.app.form.browser import TextAreaWidget
 from zope.traversing.interfaces import IPathAdapter
@@ -50,7 +53,8 @@ from canonical.launchpad.helpers import truncate_text
 from canonical.launchpad.interfaces.bug import IBugSet
 from canonical.launchpad.interfaces.bugbranch import IBugBranch
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.interfaces.specificationbranch import ISpecificationBranch
+from lp.blueprints.interfaces.specificationbranch import (
+    ISpecificationBranch)
 from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, enabled_with_permission,
     LaunchpadView, Navigation, NavigationMenu, stepto, stepthrough,
@@ -472,6 +476,21 @@ class BranchView(LaunchpadView, FeedsMixin):
                 return '<private server>'
 
         return branch.url
+
+    @property
+    def show_merge_links(self):
+        """Return whether or not merge proposal links should be shown.
+
+        Merge proposal links should not be shown if there is only one branch in
+        a non-final state.
+        """
+        # XXX: rockstar - Eventually, this if statement needs to be:
+        # if not self.context.target.supportsMergeProposals() and will when
+        # jml gets to it in his source package branch work.
+        # spec=package-branches
+        if not self.context.product:
+            return False
+        return self.context.target.collection.getBranches().count() > 1
 
 
 class DecoratedMergeProposal:
@@ -1213,3 +1232,58 @@ class BranchRequestImportView(LaunchpadFormView):
     @property
     def action_url(self):
         return "%s/@@+request-import" % canonical_url(self.context)
+
+
+class BranchSparkView(LaunchpadView):
+    """This view generates the JSON data for the commit sparklines."""
+
+    __for__ = IBranch
+
+    # How many days to look for commits.
+    COMMIT_DAYS = 90
+
+    def _commitCounts(self):
+        """Return a dict of commit counts for rendering."""
+        epoch = (
+            datetime.now(tz=pytz.UTC) - timedelta(days=(self.COMMIT_DAYS-1)))
+        # Make a datetime for that date, but midnight.
+        epoch = epoch.replace(hour=0, minute=0, second=0, microsecond=0)
+        commits = dict(self.context.commitsForDays(epoch))
+        # However storm returns tz-unaware datetime objects.
+        day = datetime(year=epoch.year, month=epoch.month, day=epoch.day)
+        days = [day + timedelta(days=count)
+                for count in range(self.COMMIT_DAYS)]
+
+        commit_list = []
+        total_commits = 0
+        most_commits = 0
+        for index, day in enumerate(days):
+            count = commits.get(day, 0)
+            commit_list.append(count)
+            total_commits += count
+            if count >= most_commits:
+                most_commits = count
+                max_index = index
+        return {'count': total_commits,
+                'commits': commit_list,
+                'max_commits': max_index}
+
+    def render(self):
+        """Write out the commit data as a JSON string."""
+        # We want:
+        #  count: total commit count
+        #  last_commit: string to say when the last commit was
+        #  commits: an array of COMMIT_DAYS values for commits for that day
+        #  max_commits: an index into the commits array with the most commits,
+        #     most recent wins any ties.
+        values = {'count': 0, 'max_commits': 0}
+        # Check there have been commits.
+        if self.context.revision_count == 0:
+            values['last_commit'] = 'empty branch'
+        else:
+            tip = self.context.getTipRevision()
+            adapter = queryAdapter(tip.revision_date, IPathAdapter, 'fmt')
+            values['last_commit'] = adapter.approximatedate()
+            values.update(self._commitCounts())
+
+        return simplejson.dumps(values)

@@ -21,9 +21,9 @@ from canonical.launchpad.database.job import Job
 from canonical.launchpad.ftests import login
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.interfaces.message import IMessageJob
-from canonical.launchpad.mail.sendmail import MailController
-from canonical.launchpad.testing import (
-    LaunchpadObjectFactory, TestCaseWithFactory)
+from lp.services.mail.sendmail import MailController
+from lp.testing import TestCaseWithFactory
+from lp.testing.factory import LaunchpadObjectFactory
 from canonical.launchpad.webapp.testing import verifyObject
 
 

@@ -124,28 +124,31 @@ from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 from canonical.cachedproperty import cachedproperty
 
 from canonical.launchpad import helpers
-from canonical.launchpad.browser.archive import traverse_named_ppa
-from canonical.launchpad.browser.archivesubscription import (
+from lp.soyuz.browser.archive import traverse_named_ppa
+from lp.soyuz.browser.archivesubscription import (
     traverse_archive_subscription_for_subscriber)
 from canonical.launchpad.browser.launchpad import get_launchpad_views
-from canonical.launchpad.components.openidserver import CurrentOpenIDEndPoint
+from canonical.signon.adapters.openidserver import CurrentOpenIDEndPoint
 from canonical.launchpad.interfaces.account import IAccount
 from canonical.launchpad.interfaces.account import AccountStatus
-from canonical.launchpad.interfaces.archivesubscriber import (
+from lp.soyuz.interfaces.archivesubscriber import (
     IArchiveSubscriberSet)
 from canonical.launchpad.interfaces.authtoken import LoginTokenType
 from canonical.launchpad.interfaces.bugtask import (
     BugTaskSearchParams, BugTaskStatus, UNRESOLVED_BUGTASK_STATUSES)
 from canonical.launchpad.interfaces.country import ICountry
-from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus, IEmailAddressSet
+from canonical.launchpad.interfaces.emailaddress import (
+    EmailAddressStatus, IEmailAddressSet)
 from canonical.launchpad.interfaces.geoip import IRequestPreferredLanguages
-from canonical.launchpad.interfaces.gpghandler import GPGKeyNotFoundError, IGPGHandler
+from canonical.launchpad.interfaces.gpghandler import (
+    GPGKeyNotFoundError, IGPGHandler)
 from canonical.launchpad.interfaces.language import ILanguageSet
 from canonical.launchpad.interfaces.launchpad import IPasswordEncryptor
 from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
 from canonical.launchpad.interfaces.oauth import IOAuthConsumerSet
-from canonical.launchpad.interfaces.pofiletranslator import IPOFileTranslatorSet
-from canonical.launchpad.interfaces.specification import SpecificationFilter
+from canonical.launchpad.interfaces.pofiletranslator import (
+    IPOFileTranslatorSet)
+from lp.blueprints.interfaces.specification import SpecificationFilter
 from canonical.launchpad.webapp.interfaces import (
     ILaunchBag, IOpenLaunchBag, NotFoundError, UnexpectedFormData)
 from lp.answers.interfaces.questionenums import QuestionParticipation
@@ -153,8 +156,10 @@ from lp.registry.interfaces.codeofconduct import ISignedCodeOfConductSet
 from lp.registry.interfaces.gpg import IGPGKeySet
 from lp.registry.interfaces.irc import IIrcIDSet
 from lp.registry.interfaces.jabber import IJabberIDSet
-from lp.registry.interfaces.mailinglist import CannotUnsubscribe, IMailingListSet
-from lp.registry.interfaces.mailinglistsubscription import MailingListAutoSubscribePolicy
+from lp.registry.interfaces.mailinglist import (
+    CannotUnsubscribe, IMailingListSet)
+from lp.registry.interfaces.mailinglistsubscription import (
+    MailingListAutoSubscribePolicy)
 from lp.registry.interfaces.person import (
     IEmailAddress, INewPerson, IPerson, IPersonChangePassword, IPersonClaim,
     IPersonSet, ITeam, ITeamReassignment, PersonCreationRationale,
@@ -168,7 +173,7 @@ from lp.registry.interfaces.wikiname import IWikiNameSet
 from lp.code.interfaces.branchnamespace import (
     IBranchNamespaceSet, InvalidNamespace)
 from canonical.launchpad.interfaces.bugtask import IBugTaskSet
-from canonical.launchpad.interfaces.build import (
+from lp.soyuz.interfaces.build import (
     BuildStatus, IBuildSet)
 from canonical.launchpad.interfaces.launchpad import (
     ILaunchpadCelebrities, INotificationRecipientSet, UnknownRecipientError)
@@ -177,11 +182,11 @@ from canonical.launchpad.interfaces.message import (
 from lp.registry.interfaces.pillar import IPillarNameSet
 from canonical.launchpad.interfaces.personproduct import IPersonProductFactory
 from lp.registry.interfaces.product import IProduct
-from canonical.launchpad.interfaces.openidserver import (
+from canonical.signon.interfaces.openidserver import (
     IOpenIDPersistentIdentity, IOpenIDRPSummarySet)
 from lp.registry.interfaces.salesforce import (
     ISalesforceVoucherProxy, SalesforceVoucherProxyException)
-from canonical.launchpad.interfaces.sourcepackagerelease import (
+from lp.soyuz.interfaces.sourcepackagerelease import (
     ISourcePackageRelease)
 from canonical.launchpad.interfaces.translationrelicensingagreement import (
     ITranslationRelicensingAgreementEdit,
@@ -193,9 +198,9 @@ from canonical.launchpad.browser.bugtask import BugTaskSearchListingView
 from canonical.launchpad.browser.feeds import FeedsMixin
 from canonical.launchpad.browser.objectreassignment import (
     ObjectReassignmentView)
-from canonical.launchpad.browser.openiddiscovery import (
+from canonical.signon.browser.openiddiscovery import (
     XRDSContentNegotiationMixin)
-from canonical.launchpad.browser.specificationtarget import (
+from lp.blueprints.browser.specificationtarget import (
     HasSpecificationsView)
 from canonical.launchpad.browser.branding import BrandingChangeView
 from lp.registry.browser.mailinglists import (
@@ -984,11 +989,14 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
     @enabled_with_permission('launchpad.Special')
     def editsshkeys(self):
         target = '+editsshkeys'
-        text = 'Update SSH keys'
-        summary = (
-            'Used if %s stores code on Launchpad' %
-            self.context.browsername)
-        return Link(target, text, summary, icon='edit')
+        if self.context.sshkeys.count() == 0:
+            text = 'Add an SSH key'
+            icon = 'add'
+        else:
+            text = 'Update SSH keys'
+            icon = 'edit'
+        summary = 'Used when storing code on Launchpad'
+        return Link(target, text, summary, icon=icon)
 
     @enabled_with_permission('launchpad.Edit')
     def editpgpkeys(self):
@@ -1141,8 +1149,9 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
 
     usedfor = ITeam
     facet = 'overview'
-    links = ['edit', 'branding', 'common_edithomepage', 'members',
-             'add_member', 'memberships', 'received_invitations', 'mugshots',
+    links = ['edit', 'branding', 'common_edithomepage', 'members', 'mugshots',
+             'add_member', 'proposed_members',
+             'memberships', 'received_invitations',
              'editemail', 'configure_mailing_list', 'moderate_mailing_list',
              'editlanguages', 'map', 'polls',
              'add_poll', 'joinleave', 'add_my_teams', 'mentorships',
@@ -1185,6 +1194,12 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
     def add_member(self):
         target = '+addmember'
         text = 'Add member'
+        return Link(target, text, icon='add')
+
+    @enabled_with_permission('launchpad.Edit')
+    def proposed_members(self):
+        target = '+editproposedmembers'
+        text = 'Approve/Decline applicants'
         return Link(target, text, icon='add')
 
     def map(self):
@@ -2768,16 +2783,18 @@ class PersonView(LaunchpadView, FeedsMixin):
         The list contains email addresses when the EmailAddressVisibleState's
         PUBLIC or ALLOWED attributes are True. The preferred email
         address is the first in the list, the other validated email addresses
-        are not ordered.
+        are not ordered. When the team is the context, only the preferred
+        email address is in the list.
 
         :return: A list of email address strings that can be seen.
         """
         visible_states = (
             EmailAddressVisibleState.PUBLIC, EmailAddressVisibleState.ALLOWED)
         if self.email_address_visibility.state in visible_states:
-            emails = sorted(
-                email.email for email in self.context.validatedemails)
-            emails.insert(0, self.context.preferredemail.email)
+            emails = [self.context.preferredemail.email]
+            if not self.context.isTeam():
+                emails.extend(sorted(
+                    email.email for email in self.context.validatedemails))
             return emails
         else:
             return []
@@ -2817,8 +2834,10 @@ class PersonView(LaunchpadView, FeedsMixin):
 
         If the person is not a team, does not have a mailing list, that
         mailing list has never been activated, or the team is private and the
-        logged in user is not a team member, return None instead.
+        logged in user is not a team member, return None instead.  The url is
+        also returned if the user is a Launchpad admin.
         """
+        celebrities = getUtility(ILaunchpadCelebrities)
         mailing_list = self.context.mailing_list
         if mailing_list is None:
             return None
@@ -2826,7 +2845,8 @@ class PersonView(LaunchpadView, FeedsMixin):
             return mailing_list.archive_url
         elif self.user is None:
             return None
-        elif self.user.inTeam(self.context):
+        elif (self.user.inTeam(self.context) or
+              self.user.inTeam(celebrities.admin)):
             return mailing_list.archive_url
         else:
             return None
@@ -2840,6 +2860,14 @@ class PersonView(LaunchpadView, FeedsMixin):
             return ', '.join(sorted(englishnames))
         else:
             return getUtility(ILaunchpadCelebrities).english.englishname
+
+    @property
+    def public_private_css(self):
+        """The CSS classes that represent the public or private state."""
+        if self.context.private:
+            return 'aside private'
+        else:
+            return 'aside public'
 
 
 class EmailAddressVisibleState:
@@ -2915,7 +2943,7 @@ class PersonIndexView(XRDSContentNegotiationMixin, PersonView):
     """View class for person +index and +xrds pages."""
 
     xrds_template = ViewPageTemplateFile(
-        "../../../canonical/launchpad/templates/person-xrds.pt")
+        "../../../canonical/signon/templates/person-xrds.pt")
 
     def initialize(self):
         super(PersonIndexView, self).initialize()

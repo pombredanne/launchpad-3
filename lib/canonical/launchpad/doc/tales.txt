@@ -104,7 +104,7 @@ Then distribution main archives (primary, partner and debug).
 
 And finally Copy archives.
 
-    >>> from canonical.launchpad.interfaces.archive import (
+    >>> from lp.soyuz.interfaces.archive import (
     ...     ArchivePurpose, IArchiveSet)
     >>> copy = getUtility(IArchiveSet).new(
     ...     owner=sabdfl, purpose=ArchivePurpose.COPY,
@@ -212,17 +212,17 @@ For a person or team, fmt:link gives us a link to that person's page,
 containing the person name and an icon.
 
     >>> test_tales("person/fmt:link", person=sabdfl)
-    u'<a href="http://.../~sabdfl" style="padding-left: 18px;
-      background: url(/@@/person) center left no-repeat;">Mark Shuttleworth</a>'
+    u'<a href="http://.../~sabdfl" class="bg-image"
+    style="background-image: url(/@@/person)">Mark Shuttleworth</a>'
 
     >>> test_tales("person/fmt:link", person=matsubara)
-    u'<a href="http://launchpad.dev/~matsubara" style="padding-left: 18px;
-      background: url(/@@/person-inactive) center left no-repeat;">Diogo Matsubara</a>'
+    u'<a href="http://launchpad.dev/~matsubara" class="bg-image"
+    style="background-image: url(/@@/person-inactive)">Diogo Matsubara</a>'
 
     >>> ubuntu_team = getUtility(IPersonSet).getByName('ubuntu-team')
     >>> test_tales("person/fmt:link", person=ubuntu_team)
-    u'<a href="http://launchpad.dev/~ubuntu-team" style="padding-left: 18px;
-      background: url(/@@/team) center left no-repeat;">Ubuntu Team</a>'
+    u'<a href="http://launchpad.dev/~ubuntu-team" class="bg-image"
+    style="background-image: url(/@@/team)">Ubuntu Team</a>'
 
 The person's displayname is escaped to prevent markup from being
 interpreted by the browser. For example, a script added to Sample
@@ -279,7 +279,7 @@ team's icon.
 
 For branches, fmt:link links to the branch page.
 
-    >>> from canonical.launchpad.testing import login_person
+    >>> from lp.testing import login_person
     >>> eric = factory.makePerson(name='eric')
     >>> fooix = factory.makeProduct(name='fooix')
     >>> branch = factory.makeProductBranch(
@@ -879,17 +879,20 @@ request.
 
 Make a mock-up IBrowserRequest, and use this as the interaction.
 
-    >>> from zope.publisher.interfaces.browser import \
-    ...     IBrowserApplicationRequest
     >>> from zope.interface import implements
+    >>> from canonical.launchpad.webapp.interfaces import (
+    ...     ILaunchpadBrowserApplicationRequest)
     >>> class MockBrowserRequest:
-    ...     implements(IBrowserApplicationRequest)
+    ...     implements(ILaunchpadBrowserApplicationRequest,)
     ...
     ...     interaction = None
     ...     principal = None
     ...
     ...     def __init__(self):
     ...         self.annotations = {}
+    ...
+    ...     def getRootURL(self, rootsite):
+    ...         return self.getApplicationURL() + '/'
     ...
     ...     def getApplicationURL(self):
     ...         return 'https://mandrill.example.org:23'

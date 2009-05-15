@@ -1,4 +1,4 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2008, 2009 Canonical Ltd.  All rights reserved.
 
 """Tests for the internal codehosting API."""
 
@@ -8,6 +8,7 @@ import datetime
 import pytz
 import unittest
 
+from bzrlib.tests import multiply_tests
 from bzrlib.urlutils import escape
 
 from zope.component import getUtility
@@ -16,23 +17,25 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.codehosting.inmemory import InMemoryFrontend
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.ftests import ANONYMOUS, login, logout
-from lp.code.interfaces.branch import (
-    BranchType, BRANCH_NAME_VALIDATION_ERROR_MESSAGE)
-from lp.code.interfaces.branchlookup import IBranchLookup
-from lp.code.interfaces.branchtarget import IBranchTarget
 from canonical.launchpad.interfaces.scriptactivity import (
     IScriptActivitySet)
 from lp.code.interfaces.codehosting import (
     BRANCH_TRANSPORT, CONTROL_TRANSPORT)
 from canonical.launchpad.interfaces.launchpad import ILaunchBag
-from canonical.launchpad.testing import (
-    LaunchpadObjectFactory, TestCase, TestCaseWithFactory)
+from lp.testing import TestCase, TestCaseWithFactory
+from lp.testing.factory import LaunchpadObjectFactory
 from canonical.launchpad.webapp.interfaces import NotFoundError
+from canonical.launchpad.xmlrpc import faults
+from canonical.testing import DatabaseFunctionalLayer, FunctionalLayer
+
+from lp.code.interfaces.branch import (
+    BranchType, BRANCH_NAME_VALIDATION_ERROR_MESSAGE)
+from lp.code.interfaces.branchlookup import IBranchLookup
+from lp.code.interfaces.branchtarget import IBranchTarget
+from lp.code.model.tests.test_branchpuller import AcquireBranchToPullTests
 from lp.code.xmlrpc.codehosting import (
     BranchFileSystem, BranchPuller, LAUNCHPAD_ANONYMOUS, LAUNCHPAD_SERVICES,
     iter_split, run_with_login)
-from canonical.launchpad.xmlrpc import faults
-from canonical.testing import DatabaseFunctionalLayer, FunctionalLayer
 
 
 UTC = pytz.timezone('UTC')
@@ -492,6 +495,72 @@ class BranchPullQueueTest(TestCaseWithFactory):
     def test_requestMirrorPutsBranchInQueue_imported(self):
         branch = self.makeBranchAndRequestMirror(BranchType.IMPORTED)
         self.assertBranchQueues([], [], [branch])
+
+
+class AcquireBranchToPullTestsViaEndpoint(TestCaseWithFactory,
+                                          AcquireBranchToPullTests):
+    """Tests for `acquireBranchToPull` method of `IBranchPuller`."""
+
+    def setUp(self):
+        super(AcquireBranchToPullTestsViaEndpoint, self).setUp()
+        frontend = self.frontend()
+        self.storage = frontend.getPullerEndpoint()
+        self.factory = frontend.getLaunchpadObjectFactory()
+
+    def assertNoBranchIsAquired(self):
+        """See `AcquireBranchToPullTests`."""
+        pull_info = self.storage.acquireBranchToPull()
+        self.assertEqual((), pull_info)
+
+    def assertBranchIsAquired(self, branch):
+        """See `AcquireBranchToPullTests`."""
+        pull_info = self.storage.acquireBranchToPull()
+        default_branch= branch.target.default_stacked_on_branch
+        if default_branch:
+            default_branch_name = default_branch
+        else:
+            default_branch_name = ''
+        self.assertEqual(
+            pull_info,
+            (branch.id, branch.getPullURL(), branch.unique_name,
+             default_branch_name, branch.branch_type.name))
+        self.assertIsNot(None, branch.last_mirror_attempt)
+        self.assertIs(None, branch.next_mirror_time)
+
+    def startMirroring(self, branch):
+        """See `AcquireBranchToPullTests`."""
+        self.storage.startMirroring(branch.id)
+
+    def test_branch_type_returned_hosted(self):
+        branch = self.factory.makeAnyBranch(branch_type=BranchType.HOSTED)
+        branch.requestMirror()
+        pull_info = self.storage.acquireBranchToPull()
+        _, _, _, _, branch_type = pull_info
+        self.assertEqual('HOSTED', branch_type)
+
+    def test_branch_type_returned_mirrored(self):
+        branch = self.factory.makeAnyBranch(branch_type=BranchType.MIRRORED)
+        branch.requestMirror()
+        pull_info = self.storage.acquireBranchToPull()
+        _, _, _, _, branch_type = pull_info
+        self.assertEqual('MIRRORED', branch_type)
+
+    def test_branch_type_returned_import(self):
+        branch = self.factory.makeAnyBranch(branch_type=BranchType.IMPORTED)
+        branch.requestMirror()
+        pull_info = self.storage.acquireBranchToPull()
+        _, _, _, _, branch_type = pull_info
+        self.assertEqual('IMPORTED', branch_type)
+
+    def test_default_stacked_on_branch_returned(self):
+        branch = self.factory.makeProductBranch()
+        self.factory.enableDefaultStackingForProduct(branch.product)
+        branch.requestMirror()
+        pull_info = self.storage.acquireBranchToPull()
+        _, _, _, default_stacked_on_branch, _ = pull_info
+        self.assertEqual(
+            default_stacked_on_branch,
+            branch.target.default_stacked_on_branch.unique_name)
 
 
 class BranchFileSystemTest(TestCaseWithFactory):
@@ -1086,6 +1155,7 @@ def test_suite():
     puller_tests = unittest.TestSuite(
         [loader.loadTestsFromTestCase(BranchPullerTest),
          loader.loadTestsFromTestCase(BranchPullQueueTest),
+         loader.loadTestsFromTestCase(AcquireBranchToPullTestsViaEndpoint),
          loader.loadTestsFromTestCase(BranchFileSystemTest),
          ])
     scenarios = [
@@ -1094,16 +1164,7 @@ def test_suite():
         ('inmemory', {'frontend': InMemoryFrontend,
                       'layer': FunctionalLayer}),
         ]
-    try:
-        from bzrlib.tests import multiply_tests
-        multiply_tests(puller_tests, scenarios, suite)
-    except ImportError:
-        # XXX: MichaelHudson, 2009-03-11: This except clause can be deleted
-        # once sourcecode/bzr has bzr.dev r4102.
-        from bzrlib.tests import adapt_tests, TestScenarioApplier
-        applier = TestScenarioApplier()
-        applier.scenarios = scenarios
-        adapt_tests(puller_tests, applier, suite)
+    multiply_tests(puller_tests, scenarios, suite)
     suite.addTests(
         map(loader.loadTestsFromTestCase,
             [TestRunWithLogin, TestIterateSplit]))

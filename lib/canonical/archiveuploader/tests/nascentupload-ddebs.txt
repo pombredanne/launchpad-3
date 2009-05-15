@@ -14,7 +14,7 @@ in the database, 'debug' and 'debug-bin' version '0.9', which will be
 an ancestor for the subsequent upload containing a 'debug-dbg' DDEB.
 This is done using `SoyuzTestPublisher`.
 
-    >>> from canonical.launchpad.tests.test_publishing import (
+    >>> from lp.soyuz.tests.test_publishing import (
     ...     SoyuzTestPublisher)
 
     >>> test_publisher = SoyuzTestPublisher()
@@ -127,12 +127,21 @@ published in the same archive.
 We start by creating a COPY archive and a source publication to
 receive the DDEB.
 
-    >>> from canonical.launchpad.interfaces.archive import (
+    >>> from lp.soyuz.interfaces.archive import (
     ...     IArchiveSet, ArchivePurpose)
 
     >>> copy = getUtility(IArchiveSet).new(
     ...     owner=ubuntu.owner, purpose=ArchivePurpose.COPY,
     ...     name='test-rebuild')
+
+    >>> copied_source = source_ancestry.copyTo(
+    ...     hoary, source_ancestry.pocket, copy)
+
+    >>> LaunchpadZopelessLayer.txn.commit()
+    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+
+    >>> binary_ancestry2 = test_publisher.getPubBinaries(
+    ...     binaryname='debug-bin', pub_source=copied_source, archive=copy)
 
     >>> src_pub = test_publisher.getPubSource(
     ...     sourcename='debug', version='1.0', archive=copy)

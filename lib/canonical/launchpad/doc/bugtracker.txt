@@ -68,8 +68,7 @@ a comment to the bug watch against remote bug 123543 to demonstrate
 this.
 
     >>> import transaction
-    >>> from canonical.launchpad.testing.factory import (
-    ...     LaunchpadObjectFactory)
+    >>> from lp.testing.factory import LaunchpadObjectFactory
     >>> factory = LaunchpadObjectFactory()
     >>> message = factory.makeMessage(
     ...     'Unpushed comment', '... is unpushed')

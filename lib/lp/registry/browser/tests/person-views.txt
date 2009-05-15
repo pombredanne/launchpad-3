@@ -123,6 +123,22 @@ be hidden.
     >>> view.visible_email_addresses
     [u'support@ubuntu.com']
 
+It is possible for a team to have more than one valid address, but only
+the preferred address is listed in the visible_email_addresses property.
+
+    >>> from canonical.launchpad.interfaces.emailaddress import (
+    ...     EmailAddressStatus, IEmailAddressSet)
+
+    >>> email_address_set = getUtility(IEmailAddressSet)
+    >>> email_address = email_address_set.new(
+    ...     'ubuntu_team@canonical.com',
+    ...     person=ubuntu_team,
+    ...     status=EmailAddressStatus.VALIDATED)
+    >>> ubuntu_team.setContactAddress(email_address)
+    >>> view = create_initialized_view(ubuntu_team, '+index')
+    >>> view.visible_email_addresses
+    [u'ubuntu_team@canonical.com']
+
 When the user or team does not have a validated contact address, the
 email addresses state is NONE_AVAILABLE.
 
@@ -409,13 +425,13 @@ than we're willing to display.
     >>> login("admin@canonical.com")
     >>> from lp.registry.interfaces.distribution import (
     ...     IDistributionSet)
-    >>> from canonical.launchpad.interfaces.publishing import (
+    >>> from lp.soyuz.interfaces.publishing import (
     ...     PackagePublishingStatus)
     >>> name16 = person_set.getByName('name16')
     >>> sabdfl = person_set.getByName('sabdfl')
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
     >>> warty = ubuntu['warty']
-    >>> from canonical.launchpad.tests.test_publishing import (
+    >>> from lp.soyuz.tests.test_publishing import (
     ...     SoyuzTestPublisher)
     >>> test_pub = SoyuzTestPublisher()
     >>> test_pub.person = name16
@@ -607,10 +623,6 @@ message just for him.
 
 EmailToPersonView will use the contact address when the team has one.
 
-    >>> from canonical.launchpad.interfaces.emailaddress import (
-    ...     EmailAddressStatus, IEmailAddressSet)
-
-    >>> email_address_set = getUtility(IEmailAddressSet)
     >>> email_address = email_address_set.new(
     ...     'landscapers@canonical.com',
     ...     person=landscape_developers,

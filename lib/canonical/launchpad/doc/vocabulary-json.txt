@@ -50,6 +50,7 @@ A successful search.
     {
         "entries": [
             {
+                "api_uri": "\/~guadamen",
                 "image": "\/@@\/team",
                 "title": "GuadaMen",
                 "value": "guadamen"
@@ -64,7 +65,7 @@ Multiple entries.
     >>> view = create_vocabulary_view(form)
     >>> result = simplejson.loads(view())
     >>> result['total_size']
-    8
+    7
     >>> len(result['entries'])
     5
 
@@ -77,12 +78,13 @@ Size and offset parameters can be passed in to switch between batches.
     {
         "entries": [
             {
+                "api_uri": "\/~commercial-admins",
                 "image": "\/@@\/team",
                 "title": "Commercial Subscription Admins",
                 "value": "commercial-admins"
             }
         ],
-        "total_size": 8
+        "total_size": 7
     }
 
     >>> form = dict(name='ValidPersonOrTeam', search_text='admin',
@@ -92,13 +94,14 @@ Size and offset parameters can be passed in to switch between batches.
     {
         "entries": [
             {
+                "api_uri": "\/~name16",
                 "description": "foo.bar@canonical.com",
                 "image": "\/@@\/person",
                 "title": "Foo Bar",
                 "value": "name16"
             }
         ],
-        "total_size": 8
+        "total_size": 7
     }
 
 Long descriptions will be truncated.
@@ -109,6 +112,7 @@ Long descriptions will be truncated.
     {
         "entries": [
             {
+                "api_uri": "\/apache",
                 "description": "The Apache projects are characterized by a
                                 collaborative, consensus based dev...",
                 "image": "\/@@\/project",

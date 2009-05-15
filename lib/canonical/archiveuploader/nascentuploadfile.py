@@ -33,19 +33,19 @@ from canonical.archiveuploader.utils import (
     re_no_epoch, re_no_revision, re_valid_version, re_valid_pkg_name,
     re_extract_src_version)
 from canonical.encoding import guess as guess_encoding
-from canonical.launchpad.interfaces.binarypackagename import (
+from lp.soyuz.interfaces.binarypackagename import (
     IBinaryPackageNameSet)
-from canonical.launchpad.interfaces.binarypackagerelease import (
+from lp.soyuz.interfaces.binarypackagerelease import (
     BinaryPackageFormat)
-from canonical.launchpad.interfaces.build import (
+from lp.soyuz.interfaces.build import (
     BuildStatus, IBuildSet)
-from canonical.launchpad.interfaces.component import IComponentSet
+from lp.soyuz.interfaces.component import IComponentSet
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.launchpad.interfaces.package import (
+from lp.soyuz.interfaces.package import (
     PackageUploadCustomFormat, PackageUploadStatus)
-from canonical.launchpad.interfaces.publishing import (
+from lp.soyuz.interfaces.publishing import (
     PackagePublishingPriority)
-from canonical.launchpad.interfaces.section import ISectionSet
+from lp.soyuz.interfaces.section import ISectionSet
 from canonical.librarian.utils import filechunks
 
 
@@ -506,10 +506,17 @@ class BaseBinaryUploadFile(PackageUploadFile):
     def verifyPackage(self):
         """Check if the binary is in changesfile and its name is valid."""
         control_package = self.control.get("Package", '')
-        if control_package not in self.changes.binaries:
-            yield UploadError(
-                "%s: control file lists name as %r, which isn't in changes "
-                "file." % (self.filename, control_package))
+
+        # Since DDEBs are generated after the original DEBs are processed
+        # and considered by `dpkg-genchanges` they are only half-incorporated
+        # the the binary upload changes file. DDEBs are only listed in the
+        # Files/Checksums-Sha1/ChecksumsSha256 sections and missing from
+        # Binary/Description.
+        if not self.filename.endswith('.ddeb'):
+            if control_package not in self.changes.binaries:
+                yield UploadError(
+                    "%s: control file lists name as %r, which isn't in "
+                    "changes file." % (self.filename, control_package))
 
         if not re_valid_pkg_name.match(control_package):
             yield UploadError("%s: invalid package name %r." % (

@@ -146,4 +146,4 @@ milestone page.
     >>> browser.getControl(name='firefox.actions.save').click()
     >>> browser.getLink('1.0').click()
     >>> print browser.title
-    Milestone 1.0 for Mozilla Firefox
+    Mozilla Firefox 1.0

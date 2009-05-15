@@ -10,16 +10,20 @@ import unittest
 from zope.component import getAdapter, getUtility
 from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
 
+from canonical.config import config
 from canonical.launchpad.interfaces import IMasterStore, ISlaveStore
 from canonical.launchpad.layers import (
-    IdLayer, FeedsLayer, OpenIDLayer, setFirstLayer, WebServiceLayer)
-from canonical.launchpad.testing import TestCase
+    FeedsLayer, setFirstLayer, WebServiceLayer)
+from canonical.signon.layers import IdLayer, OpenIDLayer
+from lp.testing import TestCase
 from canonical.launchpad.webapp.dbpolicy import (
     BaseDatabasePolicy, LaunchpadDatabasePolicy, MasterDatabasePolicy,
-    SlaveDatabasePolicy, SlaveOnlyDatabasePolicy, SSODatabasePolicy)
+    ReadOnlyLaunchpadDatabasePolicy, SlaveDatabasePolicy,
+    SlaveOnlyDatabasePolicy, SSODatabasePolicy)
 from canonical.launchpad.webapp.interfaces import (
     ALL_STORES, AUTH_STORE, DEFAULT_FLAVOR, DisallowedStore, IDatabasePolicy,
-    IStoreSelector, MAIN_STORE, MASTER_FLAVOR, SLAVE_FLAVOR)
+    IStoreSelector, MAIN_STORE, MASTER_FLAVOR, ReadOnlyModeDisallowedStore,
+    SLAVE_FLAVOR)
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.launchpad.webapp.tests import DummyConfigurationTestCase
 from canonical.testing.layers import DatabaseFunctionalLayer, FunctionalLayer
@@ -218,12 +222,65 @@ class LayerDatabasePolicyTestCase(DummyConfigurationTestCase):
         policy = IDatabasePolicy(request)
         self.assertIsInstance(policy, SSODatabasePolicy)
 
+    def test_read_only_mode_uses_ReadOnlyLaunchpadDatabasePolicy(self):
+        config.push('read_only', """
+            [launchpad]
+            read_only: True""")
+        try:
+            request = LaunchpadTestRequest(
+                SERVER_URL='http://launchpad.dev')
+            policy = IDatabasePolicy(request)
+            self.assertIsInstance(policy, ReadOnlyLaunchpadDatabasePolicy)
+        finally:
+            config.pop('read_only')
+
+    def test_read_only_mode_IdLayer_uses_SSODatabasePolicy(self):
+        config.push('read_only', """
+            [launchpad]
+            read_only: True""")
+        try:
+            request = LaunchpadTestRequest(
+                SERVER_URL='http://openid.launchpad.dev/+openid')
+            setFirstLayer(request, IdLayer)
+            policy = IDatabasePolicy(request)
+            self.assertIsInstance(policy, SSODatabasePolicy)
+        finally:
+            config.pop('read_only')
+
     def test_other_request_uses_LaunchpadDatabasePolicy(self):
         """By default, requests should use the LaunchpadDatabasePolicy."""
         server_url = 'http://launchpad.dev/'
         request = LaunchpadTestRequest(SERVER_URL=server_url)
         policy = IDatabasePolicy(request)
         self.assertIsInstance(policy, LaunchpadDatabasePolicy)
+
+
+class ReadOnlyLaunchpadDatabasePolicyTestCase(BaseDatabasePolicyTestCase):
+    """Tests for the `ReadOnlyModeLaunchpadDatabasePolicy`"""
+
+    def setUp(self):
+        self.policy = ReadOnlyLaunchpadDatabasePolicy()
+        BaseDatabasePolicyTestCase.setUp(self)
+
+    def test_defaults(self):
+        # default Store is the slave.
+        for store in ALL_STORES:
+            self.assertCorrectlyProvides(
+                getUtility(IStoreSelector).get(store, DEFAULT_FLAVOR),
+                ISlaveStore)
+
+    def test_slave_allowed(self):
+        for store in ALL_STORES:
+            self.assertCorrectlyProvides(
+                getUtility(IStoreSelector).get(store, SLAVE_FLAVOR),
+                ISlaveStore)
+
+    def test_master_disallowed(self):
+        store_selector = getUtility(IStoreSelector)
+        for store in ALL_STORES:
+            self.assertRaises(
+                ReadOnlyModeDisallowedStore,
+                store_selector.get, store, MASTER_FLAVOR)
 
 
 def test_suite():

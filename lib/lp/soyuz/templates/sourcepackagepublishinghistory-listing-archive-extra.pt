@@ -1,0 +1,76 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  tal:define="published_source_and_binary_files
+              view/published_source_and_binary_files"
+  omit-tag="">
+  <p tal:condition="view/builds_successful_and_pending" class="sml-informational">
+    Note: Some binary packages for this source are not yet published in the
+    repository.
+  </p>
+  <h3>Publishing details</h3>
+    <tal:block replace="structure context/@@+record-details" />
+
+  <h3>Changelog</h3>
+    <tal:changelog
+       replace="structure context/sourcepackagerelease/@@+changelog"/>
+
+  <div tal:attributes="id
+                       string:diff-for-${context/sourcepackagerelease/version}"
+       tal:define="diffs view/available_diffs"
+       tal:condition="diffs">
+    <h3>Available diffs</h3>
+    <ul>
+       <li tal:repeat="diff diffs">
+          <tal:pending condition="not: diff/date_fulfilled">
+             <tal:pending-diff replace="diff/title">
+               1.0 (in Ubuntu) to 1.1
+             </tal:pending-diff>
+          </tal:pending>
+          <tal:fulfilled condition="diff/date_fulfilled">
+             <a tal:attributes="href diff/diff_content/http_url"
+                tal:content="diff/title">1.0 (in Ubuntu) to 1.1</a>
+             (<tal:size
+                replace="diff/diff_content/content/filesize/fmt:bytes"
+                >100 bytes</tal:size>)
+          </tal:fulfilled>
+       </li>
+    </ul>
+  </div>
+
+  <h3>Builds</h3>
+  <ul style="margin-top: 0; margin-bottom: 0">
+    <li tal:repeat="build view/builds">
+      <tal:icon replace="structure build/image:icon" />
+      <a tal:attributes="href build/fmt:url"
+         tal:content="build/distroarchseries/architecturetag">i386</a>
+      <strong tal:condition="python: build in view.pending_builds">
+        - Pending publication
+      </strong>
+    </li>
+  </ul>
+
+  <tal:built-packages condition="view/built_packages" omit-tag="">
+    <h3>Built packages</h3>
+    <ul tal:repeat="package view/built_packages"
+        style="margin-top: 0; margin-bottom: 0">
+      <li>
+        <b><tal:name replace="package/binarypackagename"/></b>
+        <tal:summary replace="package/summary"/>
+      </li>
+    </ul>
+  </tal:built-packages>
+
+  <h3>Package files</h3>
+  <span tal:condition="not: published_source_and_binary_files"
+     style="padding-left: 1em">No files published for this package.</span>
+  <ul style="margin-top: 0; margin-bottom: 0">
+    <li tal:repeat="file published_source_and_binary_files"
+        tal:attributes="class string: package ${file/class}">
+      <a tal:attributes ="href file/url" tal:content="file/filename"></a>
+         (<span tal:replace="file/filesize/fmt:bytes" />)
+    </li>
+  </ul>
+
+</tal:root>

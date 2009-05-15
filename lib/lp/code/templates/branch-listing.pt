@@ -18,28 +18,166 @@
 
 <script type="text/javascript">
 function submit_filter() {
-  getElement('filter_form').submit();
+    getElement('filter_form').submit();
 }
 
 function hookUpFilterSubmission () {
-  connect('field.lifecycle', 'onchange', submit_filter);
-  if (getElement('field.sort_by')) {
-    connect('field.sort_by', 'onchange', submit_filter);
-  }
+    connect('field.lifecycle', 'onchange', submit_filter);
+    if (getElement('field.sort_by')) {
+        connect('field.sort_by', 'onchange', submit_filter);
+    }
 }
 function show_commit(id) {
-  var div = document.getElementById('branch-log-' + id);
-  if (div) {
-    div.style.display = "block";
-  }
+    var div = document.getElementById('branch-log-' + id);
+    if (div) {
+        div.style.display = "block";
+    }
 }
 function hide_commit(id) {
-  var div = document.getElementById('branch-log-' + id);
-  if (div) {
-    div.style.display = "none";
-  }
+    var div = document.getElementById('branch-log-' + id);
+    if (div) {
+        div.style.display = "none";
+    }
 }
 registerLaunchpadFunction(hookUpFilterSubmission);
+
+YUI().use('io-base', 'node', 'json-parse', function(Y) {
+
+function doUpdate(transaction_id, response, args) {
+    json_values = Y.JSON.parse(response.responseText);
+    // Make sure that the branch isn't empty, and that there
+    // have been commits in the last 90 days
+    if(json_values.commits && json_values.count > 0) {
+        document.getElementById(args.container).innerHTML = '';
+        sparkline(args.container, json_values);
+    }
+}
+
+
+function renderSpark() {
+    spark_div = 'dev_focus_spark';
+
+    if(Y.get('#' + spark_div) !== null) {
+        json_url = branch_sparks[0][1];
+        var container = spark_div;
+        var uri = json_url;
+        var xhr_config = {
+            on: {
+                success: doUpdate,
+            },
+            arguments: {
+                'container': container
+            }
+        };
+
+      Y.io(uri, xhr_config);
+    }
+}
+
+
+function sparkline(branch_id, o) {
+    var spark_div = document.getElementById(branch_id);
+    var number_commits = parseInt(o.commits.length);
+    var w = 160;
+    var min = 9999;
+    var max = -1;
+    var h = 12;
+    var co = document.createElement("canvas");
+
+    co.style.height = h;
+    co.style.width = w;
+    co.width = w;
+    co.height = h;
+
+    spark_div.appendChild(co);
+
+    // Figure out the max and min number of commits
+    for (var i = 0; i < number_commits; i++) {
+        o.commits[i] = o.commits[i] - 0;
+        if ( o.commits[i] < min ) min = o.commits[i];
+        if ( o.commits[i] > max ) max = o.commits[i];
+    }
+
+    if (co.getContext) {
+        var c = co.getContext("2d");
+        c.strokeStyle = "black";
+        c.lineWidth = 1.0;
+        c.beginPath();
+
+      for (var i = 0; i < number_commits; i++) {
+          x_pos = (w / number_commits) * i;
+          // We subtract 1 pixel here to compensate for the base line
+          y_pos = (h-1) - (((o.commits[i] - min) / (max - min)) * (h-1));
+
+          if (i == 0) {
+              c.moveTo(x_pos, y_pos);
+          }
+          c.lineTo(x_pos, y_pos);
+
+          // When was the last commit?
+          if(o.commits[i] > 0) {
+              last_commit = i+1;
+          }
+
+      }
+      c.stroke();
+
+      // Draw the base line
+      c.beginPath();
+      c.strokeStyle = "gray";
+      c.moveTo(0,h);
+      c.lineTo(w,h);
+      c.stroke();
+
+      // Marks the point with the most commits
+      c.fillStyle = 'red';
+      c.beginPath();
+      c.arc((w / number_commits) * o.max_commits,
+            h+2 - (((o.commits[o.max_commits] - min) / (max - min)) * h),
+            2, 0, (Math.PI*2), true);
+      c.fill();
+
+      // Shows the number of max commits
+      new_text = document.createTextNode(o.commits[o.max_commits] + ' max commits');
+      new_div = document.createElement('div');
+      new_div.setAttribute('id', 'txt_max_' + branch_id);
+      new_div.appendChild(new_text);
+      document.getElementById(branch_id).appendChild(new_div);
+      new_div.style.fontSize = '8px';
+      new_div.style.color = 'red';
+      new_div.style.position = 'relative';
+      new_div.style.top = '-22px';
+      new_div.style.left = (((w / number_commits) * o.max_commits)-14) + 'px';
+
+
+      // Marks the point of last commit
+      c.fillStyle = 'blue';
+      c.beginPath();
+      c.arc((w / number_commits) * last_commit, h-2,
+            2, 0, (Math.PI*2), true);
+      c.fill();
+
+      // Shows the date of the last commit and time frame
+      new_text = document.createTextNode('90 days - Last commit ' + o.last_commit);
+      new_div = document.createElement('div');
+      new_div.setAttribute('id', 'txt_' + branch_id);
+      new_div.appendChild(new_text);
+      document.getElementById(branch_id).appendChild(new_div);
+      new_div.style.fontSize = '8px';
+      new_div.style.color = 'blue';
+      new_div.style.position = 'relative';
+      new_div.style.left = '2px';
+      new_div.style.top = '-10px';
+
+    }
+}
+
+Y.on("domready", renderSpark);
+
+});
+
+
+
 </script>
 
   <tal:needs-batch condition="context/multiple_pages">
@@ -139,10 +277,14 @@ registerLaunchpadFunction(hookUpFilterSubmission);
                 tal:content="branch/date_last_modified/fmt:datetime">
             2005-02-12 13:45 EST
           </span>
-          <span tal:attributes="title branch/date_last_modified/fmt:datetime"
-                tal:content="branch/since_updated/fmt:approximateduration/use-digits">
-            sometime
+          <div tal:condition="branch/is_development_focus" id="dev_focus_spark" style="top:10px; position:relative; height:18px;">
+            <div tal:attributes="id string:b-${repeat/branch/number}">
+            <span tal:attributes="title branch/date_last_modified/fmt:datetime"
+                  tal:content="branch/since_updated/fmt:approximateduration/use-digits">
+                sometime
             </span> ago
+            </div>
+          </div>
         </td>
 
         <tal:no_commit condition="not: branch/last_commit">
@@ -210,3 +352,8 @@ registerLaunchpadFunction(hookUpFilterSubmission);
   <tal:navigation replace="structure context/@@+navigation-links-lower" />
 
 </div>
+
+<tal:script
+    replace="structure string:&lt;script type='text/javascript'&gt;" />
+var branch_sparks = <tal:array replace="context/branch_sparks"/>;
+<tal:script replace="structure string:&lt;/script&gt;" />

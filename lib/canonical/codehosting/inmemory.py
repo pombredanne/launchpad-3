@@ -8,6 +8,7 @@ __all__ = [
     'XMLRPCWrapper'
     ]
 
+import operator
 from xmlrpclib import Fault
 
 from bzrlib.urlutils import escape, unescape
@@ -24,8 +25,8 @@ from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.codehosting import (
     BRANCH_TRANSPORT, CONTROL_TRANSPORT, LAUNCHPAD_ANONYMOUS,
     LAUNCHPAD_SERVICES)
-from canonical.launchpad.interfaces.publishing import PackagePublishingPocket
-from canonical.launchpad.testing import ObjectFactory
+from lp.soyuz.interfaces.publishing import PackagePublishingPocket
+from lp.testing.factory import ObjectFactory
 from canonical.launchpad.validators import LaunchpadValidationError
 from lp.code.xmlrpc.codehosting import (
     datetime_from_tuple, iter_split)
@@ -198,7 +199,18 @@ class FakeBranch(FakeDatabaseObject):
         return '~%s/%s/%s' % (self.owner.name, product, self.name)
 
     def getPullURL(self):
-        pass
+        return 'lp-fake:///' + self.unique_name
+
+    @property
+    def target(self):
+        if self.product is None:
+            if self.distroseries is None:
+                target = self.owner
+            else:
+                target = self.sourcepackage
+        else:
+            target = self.product
+        return IBranchTarget(target)
 
     def requestMirror(self):
         self.next_mirror_time = UTC_NOW
@@ -306,6 +318,8 @@ class FakeObjectFactory(ObjectFactory):
     def makeBranch(self, branch_type=None, stacked_on=None, private=False,
                    product=DEFAULT_PRODUCT, owner=None, name=None,
                    registrant=None, sourcepackage=None):
+        if branch_type is None:
+            branch_type = BranchType.HOSTED
         if branch_type == BranchType.MIRRORED:
             url = self.getUniqueURL()
         else:
@@ -448,6 +462,24 @@ class FakeBranchPuller:
                 and branch.next_mirror_time < UTC_NOW):
                 queue.append(self._getBranchPullInfo(branch))
         return queue
+
+    def acquireBranchToPull(self):
+        branches = sorted(
+            [branch for branch in self._branch_set
+            if branch.next_mirror_time is not None],
+            key=operator.attrgetter('next_mirror_time'))
+        if branches:
+            branch = branches[-1]
+            self.startMirroring(branch.id)
+            default_branch = branch.target.default_stacked_on_branch
+            if default_branch:
+                default_branch_name = default_branch.unique_name
+            else:
+                default_branch_name = ''
+            return (branch.id, branch.getPullURL(), branch.unique_name,
+                    default_branch_name, branch.branch_type.name)
+        else:
+            return ()
 
     def startMirroring(self, branch_id):
         branch = self._branch_set.get(branch_id)

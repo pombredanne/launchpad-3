@@ -12,8 +12,7 @@ from canonical.launchpad.interfaces import (
     IPersonSet, ITranslationImportQueue)
 from canonical.launchpad.interfaces.translationgroup import (
     TranslationPermission)
-from canonical.launchpad.testing import (
-    LaunchpadObjectFactory)
+from lp.testing.factory import LaunchpadObjectFactory
 from canonical.launchpad.translationformat.gettext_po_importer import (
     GettextPOImporter)
 from canonical.launchpad.translationformat.translation_import import (
@@ -330,7 +329,8 @@ class FileImporterTestCase(unittest.TestCase):
             potmsgset = po_importer.pofile.potemplate.getPOTMsgSetByMsgIDText(
                                                         unicode(TEST_MSGID))
             message = potmsgset.getCurrentTranslationMessage(
-                po_importer.pofile.language, po_importer.pofile.variant)
+                po_importer.potemplate, po_importer.pofile.language,
+                po_importer.pofile.variant)
             self.failUnless(message is not None,
                 "POFileImporter.importFile did not create an "
                 "ITranslationMessage object in the database.")
@@ -393,7 +393,7 @@ class FileImporterTestCase(unittest.TestCase):
         potmsgset = po_importer.pofile.potemplate.getPOTMsgSetByMsgIDText(
             unicode(TEST_MSGID_ERROR))
         message = potmsgset.getLocalTranslationMessages(
-            po_importer.pofile.language)[0]
+            po_importer.potemplate, po_importer.pofile.language)[0]
         self.failUnless(message is not None,
             "POFileImporter.importFile did not create an "
             "ITranslationMessage object with format errors in the database.")
@@ -418,7 +418,7 @@ class FileImporterTestCase(unittest.TestCase):
         potmsgset = po_importer.pofile.potemplate.getPOTMsgSetByMsgIDText(
             unicode(TEST_MSGID_ERROR))
         messages = potmsgset.getLocalTranslationMessages(
-            po_importer.pofile.language)
+            po_importer.pofile.potemplate, po_importer.pofile.language)
 
         for message in messages:
             if message.potmsgset.msgid_singular.msgid == TEST_MSGID_ERROR:

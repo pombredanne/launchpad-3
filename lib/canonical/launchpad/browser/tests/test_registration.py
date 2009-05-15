@@ -9,7 +9,7 @@ from canonical.launchpad.browser.tests.registration import (
 from canonical.launchpad.interfaces.authtoken import LoginTokenType
 from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
 from lp.registry.interfaces.person import IPerson
-from canonical.launchpad.testing import TestCaseWithFactory
+from lp.testing import TestCaseWithFactory
 from canonical.launchpad.testing.pages import get_feedback_messages
 from canonical.testing import DatabaseFunctionalLayer
 

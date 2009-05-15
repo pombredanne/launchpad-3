@@ -18,7 +18,7 @@ from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements
 
-from storm.expr import And, Count, Desc, Max, Or, Select
+from storm.expr import And, Count, Desc, Max, NamedFunc, Or, Select
 from storm.store import Store
 from sqlobject import (
     ForeignKey, IntCol, StringCol, BoolCol, SQLMultipleJoin, SQLRelatedJoin)
@@ -58,7 +58,8 @@ from lp.code.interfaces.branchpuller import IBranchPuller
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.seriessourcepackagebranch import (
     IFindOfficialBranchLinks)
-from lp.registry.interfaces.person import validate_public_person
+from lp.registry.interfaces.person import (
+    validate_person_not_private_membership, validate_public_person)
 
 
 class Branch(SQLBase):
@@ -100,7 +101,7 @@ class Branch(SQLBase):
         storm_validator=validate_public_person, notNull=True)
     owner = ForeignKey(
         dbName='owner', foreignKey='Person',
-        storm_validator=validate_public_person, notNull=True)
+        storm_validator=validate_person_not_private_membership, notNull=True)
     reviewer = ForeignKey(
         dbName='reviewer', foreignKey='Person',
         storm_validator=validate_public_person, default=None)
@@ -535,11 +536,16 @@ class Branch(SQLBase):
 
     def getSubscriptionsByLevel(self, notification_levels):
         """See `IBranch`."""
-        notification_levels = [level.value for level in notification_levels]
-        return BranchSubscription.select(
-            "BranchSubscription.branch = %s "
-            "AND BranchSubscription.notification_level IN %s"
-            % sqlvalues(self, notification_levels))
+        # XXX: JonathanLange 2009-05-07 bug=373026: This is only used by real
+        # code to determine whether there are any subscribers at the given
+        # notification levels. The only code that cares about the actual
+        # object is in a test:
+        # test_only_nodiff_subscribers_means_no_diff_generated.
+        store = Store.of(self)
+        return store.find(
+            BranchSubscription,
+            BranchSubscription.branch == self,
+            BranchSubscription.notification_level.is_in(notification_levels))
 
     def hasSubscription(self, person):
         """See `IBranch`."""
@@ -799,6 +805,19 @@ class Branch(SQLBase):
         jobs.remove()
         # Now destroy the branch.
         SQLBase.destroySelf(self)
+
+    def commitsForDays(self, since):
+        """See `IBranch`."""
+        class DateTrunc(NamedFunc):
+            name = "date_trunc"
+        results = Store.of(self).find(
+            (DateTrunc('day', Revision.revision_date), Count(Revision.id)),
+            Revision.id == BranchRevision.revisionID,
+            Revision.revision_date > since,
+            BranchRevision.branch == self)
+        results = results.group_by(
+            DateTrunc('day', Revision.revision_date))
+        return sorted(results)
 
 
 class DeletionOperation:

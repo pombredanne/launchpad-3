@@ -192,7 +192,7 @@ Now we create a few branches that we pretend were updated in a
 definite order.
 
     >>> from datetime import datetime
-    >>> from canonical.launchpad.testing import time_counter
+    >>> from lp.testing import time_counter
     >>> import pytz
     >>> today = datetime.now(pytz.timezone('UTC'))
     >>> product = factory.makeProduct(name='product')
@@ -254,12 +254,6 @@ Or using the URL of the mirror of the branch on Launchpad:
     ...     new_junk_branch.unique_name)
     >>> branch_lookup.getByUrl(junkcode_mirrored) == new_junk_branch
     True
-
-The provided URL must not have any trailing slash:
-
-    >>> try: branch_lookup.getByUrl(new_url + '/')
-    ... except AssertionError: print 'trailing slash not allowed'
-    trailing slash not allowed
 
 If no branch is found for the specified URL, getByUrl returns None.
 

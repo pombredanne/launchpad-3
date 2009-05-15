@@ -230,6 +230,9 @@ class ICodeImport(Interface):
 
     results = Attribute("The results for this code import.")
 
+    consecutive_failure_count = Attribute(
+        "How many times in a row this import has failed.")
+
     def updateFromData(data, user):
         """Modify attributes of the `CodeImport`.
 
@@ -252,7 +255,8 @@ class ICodeImportSet(Interface):
     """Interface representing the set of code imports."""
 
     def new(registrant, product, branch_name, rcs_type, svn_branch_url=None,
-            cvs_root=None, cvs_module=None, review_status=None):
+            cvs_root=None, cvs_module=None, git_repo_url=None,
+            review_status=None):
         """Create a new CodeImport."""
 
     def getAll():
@@ -279,6 +283,9 @@ class ICodeImportSet(Interface):
 
     def getByCVSDetails(cvs_root, cvs_module):
         """Get the CodeImport with the specified CVS details."""
+
+    def getByGitDetails(git_repo_url):
+        """Get the CodeImport with the specified Git details."""
 
     def getBySVNDetails(svn_branch_url):
         """Get the CodeImport with the specified SVN details."""
