@@ -17,6 +17,8 @@ from zope.interface import implements
 from storm.locals import And, Desc
 from storm.store import Store
 
+from lazr.restful.interfaces import IJSONPublishable
+
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
@@ -59,22 +61,31 @@ from canonical.launchpad.interfaces.translations import (
 
 class TimelineSeries:
     """See `ITimelineSeries`."""
-    implements(ITimelineSeries)
+    implements(ITimelineSeries, IJSONPublishable)
 
     def __init__(self, name, is_development_focus, landmarks):
         self.name = name
         self.is_development_focus = is_development_focus
         self.landmarks = landmarks
 
+    def toDataForJSON(self):
+        return dict(
+            name=self.name,
+            is_development_focus=self.is_development_focus,
+            landmarks=self.landmarks)
+
 
 class TimelineLandmark:
     """See `ITimelineLandmark`."""
-    implements(ITimelineLandmark)
+    implements(ITimelineLandmark, IJSONPublishable)
 
     def __init__(self, name, code_name, type):
         self.name = name
         self.code_name = code_name
         self.type = type
+
+    def toDataForJSON(self):
+        return dict(name=self.name, code_name=self.code_name, type=self.type)
 
 
 class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,

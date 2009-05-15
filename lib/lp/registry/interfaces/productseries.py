@@ -15,7 +15,7 @@ __all__ = [
     'NoSuchProductSeries',
     ]
 
-from zope.schema import Bool, Choice, Datetime, Int, Text, TextLine
+from zope.schema import Bool, Choice, Datetime, Int, Object, Text, TextLine
 from zope.interface import Interface, Attribute
 
 from canonical.launchpad.fields import (
@@ -49,6 +49,7 @@ from lazr.restful.declarations import (
 
 class ITimelineLandmark(Interface):
     """Lightweight representation of an `IProductSeries`."""
+
     name = exported(TextLine(title=_("Name"), readonly=True))
     code_name = exported(TextLine(title=_("Code name"), readonly=True))
     type = exported(
@@ -59,6 +60,7 @@ class ITimelineLandmark(Interface):
 
 class ITimelineSeries(Interface):
     """Lightweight representation of an `IMilestone` or `IProductSeries`."""
+
     name = exported(TextLine(title=_("Name"), readonly=True))
     is_development_focus = exported(
         Bool(
@@ -68,7 +70,7 @@ class ITimelineSeries(Interface):
         CollectionField(
             title=_("Milestones and releases"),
             readonly=True,
-            value_type=Reference(schema=ITimelineLandmark)))
+            value_type=Object(schema=ITimelineLandmark)))
 
 
 class ProductSeriesNameField(ContentNameField):

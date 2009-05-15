@@ -648,7 +648,7 @@ class IProductPublic(
         this Product.
         """
 
-    @operation_returns_collection_of(ITimelineSeries)
+    @operation_returns_entry(ITimelineSeries)
     @export_read_operation()
     @export_operation_as('get_timeline')
     def getTimeline():
