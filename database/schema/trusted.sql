@@ -411,8 +411,6 @@ BEGIN
         SELECT INTO v_delete_old_rows id FROM POFileTranslator
         WHERE latest_message = OLD.id;
 
-        RAISE NOTICE 'v_delete_old_rows is currently %', v_delete_old_rows;
-
         IF v_delete_old_rows IS NOT NULL THEN
             -- Delete old records.
             DELETE FROM POFileTranslator
