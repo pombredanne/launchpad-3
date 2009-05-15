@@ -72,3 +72,33 @@ def test_inline_subscriber():
         xpath=SUBSCRIPTION_LINK,
         validator='style.backgroundImage|url(/@@/add)')
     client.asserts.assertNotNode(xpath=SUBSCRIBERS_LIST_PERSON)
+
+    # To test unsubscribing of teams, a team must first be subscribed.
+    # To confirm, look for the Ubuntu Team element after subscribing.
+    client.click(link=u'Subscribe someone else')
+    client.waits.forElement(
+        id=u'field.person', timeout=WAIT_ELEMENT_COMPLETE)
+    client.type(text=u'ubuntu-team', id=u'field.person')
+    client.click(id=u'field.actions.add')
+    client.waits.forPageLoad(timeout=WAIT_PAGELOAD)
+    client.waits.forElement(
+        xpath=u'//div[@id="subscribers-links"]', timeout=WAIT_ELEMENT_COMPLETE)
+    client.asserts.assertNode(id=u'subscriber-ubuntu-team')
+
+    # Sample Person is logged in currently. She is not a
+    # member of Ubuntu Team, and so, does not have permission
+    # to unsubscribe the team.
+    client.asserts.assertNotNode(id=u'unsubscribe-icon-ubuntu-team')
+
+    # Login Foo Bar who is a member of Ubuntu Team.
+    # After login, wait for the page load and subscribers portlet.
+    lpuser.FOO_BAR.ensure_login(client)
+    client.waits.forPageLoad(timeout=WAIT_PAGELOAD)
+    client.waits.forElement(
+        xpath=u'//div[@id="subscribers-links"]', timeout=WAIT_ELEMENT_COMPLETE)
+
+    # Now test inline unsubscribing of a team, by ensuring
+    # that Ubuntu Team is removed from the subscribers list.
+    client.click(id=u'unsubscribe-icon-ubuntu-team')
+    client.waits.sleep(milliseconds=WAIT_CHECK_CHANGE)
+    client.asserts.assertNotNode(id=u'subscriber-ubuntu-team')
