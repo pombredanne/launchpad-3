@@ -16,15 +16,6 @@ from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.suitesourcepackage import ISuiteSourcePackage
 
 
-class HasLinkedBranch:
-    """A thing that has a linked branch."""
-
-    implements(ICanHasLinkedBranch)
-
-    def __init__(self, branch):
-        self.branch = branch
-
-
 class ProductSeriesLinkedBranch:
     """Implement a linked branch for a product series."""
 
