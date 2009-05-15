@@ -14,7 +14,7 @@ from lp.registry.browser.person import PersonNavigation
 from canonical.launchpad.browser.personproduct import PersonProductNavigation
 from canonical.launchpad.interfaces.personproduct import (
     IPersonProduct, IPersonProductFactory)
-from canonical.launchpad.testing import TestCaseWithFactory
+from lp.testing import TestCaseWithFactory
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.launchpad.webapp.servers import StepsToGo
 from canonical.testing import DatabaseFunctionalLayer

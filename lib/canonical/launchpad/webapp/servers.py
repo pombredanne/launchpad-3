@@ -47,11 +47,8 @@ from canonical.launchpad.interfaces import (
     IFeedsApplication, IPrivateApplication, IPerson, IPersonSet,
     IWebServiceApplication, IOAuthConsumerSet, NonceAlreadyUsed,
     TimestampOrderingError, ClockSkew)
-from canonical.shipit.interfaces.shipit import IShipItApplication
 from canonical.signon.interfaces.openidserver import IOpenIDApplication
 import canonical.launchpad.layers
-import canonical.launchpad.versioninfo
-import canonical.shipit.layers
 import canonical.signon.layers
 
 from canonical.launchpad.webapp.adapter import (
@@ -1094,58 +1091,6 @@ class OpenIDBrowserRequest(LaunchpadBrowserRequest):
     implements(canonical.signon.layers.OpenIDLayer)
 
 
-# ---- shipit
-
-class ShipItPublication(AccountPrincipalMixin, LaunchpadBrowserPublication):
-    """The publication used for the ShipIt sites."""
-
-    root_object_interface = IShipItApplication
-
-
-class UbuntuShipItBrowserRequest(LaunchpadBrowserRequest):
-    implements(canonical.shipit.layers.ShipItUbuntuLayer)
-
-    def getRootURL(self, rootsite):
-        """See IBasicLaunchpadRequest."""
-        return allvhosts.configs['shipitubuntu'].rooturl
-
-    @property
-    def icing_url(self):
-        """The URL to the directory containing resources for this request."""
-        return "%s+icing-ubuntu/rev%d" % (
-            allvhosts.configs['shipitubuntu'].rooturl,
-            canonical.launchpad.versioninfo.revno)
-
-
-class KubuntuShipItBrowserRequest(LaunchpadBrowserRequest):
-    implements(canonical.shipit.layers.ShipItKUbuntuLayer)
-
-    def getRootURL(self, rootsite):
-        """See IBasicLaunchpadRequest."""
-        return allvhosts.configs['shipitkubuntu'].rooturl
-
-    @property
-    def icing_url(self):
-        """The URL to the directory containing resources for this request."""
-        return "%s+icing-kubuntu/rev%d" % (
-            allvhosts.configs['shipitkubuntu'].rooturl,
-            canonical.launchpad.versioninfo.revno)
-
-
-class EdubuntuShipItBrowserRequest(LaunchpadBrowserRequest):
-    implements(canonical.shipit.layers.ShipItEdUbuntuLayer)
-
-    def getRootURL(self, rootsite):
-        """See IBasicLaunchpadRequest."""
-        return allvhosts.configs['shipitedubuntu'].rooturl
-
-    @property
-    def icing_url(self):
-        """The URL to the directory containing resources for this request."""
-        return "%s+icing-edubuntu/rev%d" % (
-            allvhosts.configs['shipitedubuntu'].rooturl,
-            canonical.launchpad.versioninfo.revno)
-
 # ---- feeds
 
 class FeedsPublication(LaunchpadBrowserPublication):
@@ -1482,12 +1427,6 @@ def register_launchpad_request_publication_factories():
         VHRP('id', IdBrowserRequest, IdPublication),
         # XXX sinzui 2008-09-04 bug=264783: Remove openid.
         VHRP('openid', OpenIDBrowserRequest, OpenIDPublication),
-        VHRP('shipitubuntu', UbuntuShipItBrowserRequest,
-             ShipItPublication),
-        VHRP('shipitkubuntu', KubuntuShipItBrowserRequest,
-             ShipItPublication),
-        VHRP('shipitedubuntu', EdubuntuShipItBrowserRequest,
-             ShipItPublication),
         VHRP('feeds', FeedsBrowserRequest, FeedsPublication),
         WebServiceRequestPublicationFactory(
             'api', WebServiceClientRequest, WebServicePublication),
