@@ -31,7 +31,7 @@ from canonical.codehosting.vfs.transport import (
     get_chrooted_transport, get_readonly_transport, _MultiServer)
 from canonical.codehosting.bzrutils import get_branch_stacked_on_url
 from canonical.config import config
-from canonical.launchpad.scripts.base import LaunchpadScript
+from lp.services.scripts.base import LaunchpadScript
 
 
 def get_server(read_only):

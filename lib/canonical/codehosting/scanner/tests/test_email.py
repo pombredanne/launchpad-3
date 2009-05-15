@@ -11,7 +11,7 @@ import unittest
 import zope.component.event
 from zope.component import getUtility
 
-from canonical.codehosting.jobs import JobRunner
+from lp.services.job.runner import JobRunner
 from canonical.codehosting.scanner.email import (
     send_removed_revision_emails, queue_tip_changed_email_jobs)
 from canonical.codehosting.scanner.fixture import make_zope_event_fixture
