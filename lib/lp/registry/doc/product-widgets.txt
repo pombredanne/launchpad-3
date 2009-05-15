@@ -26,7 +26,7 @@ Firefox uses Launchpad as its bug tracker.
 
 The custom field's missing value (i.e. None) represents the 'no bug tracker'
 option.  This is displayed by the widget as the project having a bug tracker
-in an specified external location.
+in a specified external location.
 
     >>> from canonical.launchpad.interfaces import IProduct
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
