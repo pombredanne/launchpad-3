@@ -731,6 +731,8 @@ notification will be sent to all members individually.
 
 == Duplicates ==
 
+We will need some helper functions.
+
     >>> from canonical.config import config
     >>> from canonical.database.sqlbase import commit
     >>> from canonical.testing import LaunchpadZopelessLayer
@@ -743,6 +745,8 @@ notification will be sent to all members individually.
     ...     commit()
     ...     LaunchpadZopelessLayer.switchDbUser(
     ...         config.malone.bugnotification_dbuser)
+
+We will also need a fresh new bug.
 
     >>> from canonical.launchpad.interfaces import (
     ...     IDistributionSet, CreateBugParams)
@@ -759,12 +763,9 @@ notification will be sent to all members individually.
 
     >>> flush_notifications()
 
-
 If a bug is a duplicate of another bug, a marker gets inserted at the
 top of the email:
 
-    ...     title='subject', summary='a description of the bug.', sample_person,
-    ...     datecreated=ten_minutes_ago)
     >>> new_bug.duplicateof = bug_one
     >>> comment = getUtility(IMessageSet).fromText(
     ...     'subject', 'a comment.', sample_person,

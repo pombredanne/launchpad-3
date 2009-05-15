@@ -230,13 +230,18 @@ firefox_crashes bug, we can still access properties of this bug:
 Note that a search will return all public bugs, omitting bug 14 which is
 private:
 
-    >>> all_bugs = bugset.searchAsUser(
-    ...     user=current_user(), orderBy="id")
-    >>> [bug.id for bug in all_bugs]
-    [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 15, ...]
+    >>> from canonical.launchpad.database.bug import Bug
+    >>> from canonical.launchpad.interfaces.lpstorm import IStore
+    >>> all_bugs = set(IStore(Bug).find(Bug).values(Bug.id))
 
-(This test breaks if you add a new public bug to sampledata; rely on it
-to ensure it worked!)
+    >>> def hidden_bugs():
+    ...     found_bugs = set(
+    ...         bug.id for bug in bugset.searchAsUser(
+    ...             user=current_user()))
+    ...     return sorted(all_bugs - found_bugs)
+
+    >>> hidden_bugs()
+    [14]
 
 Likewise Foo Bar, an admin, can access the bug.
 
@@ -250,15 +255,11 @@ Likewise Foo Bar, an admin, can access the bug.
     >>> firefox_crashes.title
     u'Firefox crashes when Save As dialog for a nonexistent window is closed'
 
-Bug 14, which is private, is  returned by the search results for an
+Bug 14, which is private, is returned by the search results for an
 admin as well:
 
-    >>> all_bugs = bugset.searchAsUser(
-    ...     user=current_user(), orderBy="id")
-    >>> [bug.id for bug in all_bugs]
-    [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, ...]
-
-(This test breaks if you add any bug to sampledata.)
+    >>> hidden_bugs()
+    []
 
 As one would expect, the permissions are team aware. So, let's retrieve a bug
 and set it private (as Foo Bar again who, of course, is an admin.)
@@ -299,12 +300,11 @@ Jeff Waugh, a member of the Ubuntu Team, is able to access this bug:
     >>> blackhole_trash_folder.title
     u'Blackhole Trash folder'
 
-and see it (bug #2) in searches:
+Bug #2 is visible to him in searches. Note that bugs #6 and #14 are
+hidden from him.
 
-    >>> all_bugs = bugset.searchAsUser(
-    ...     user=current_user(), orderBy="id")
-    >>> [bug.id for bug in all_bugs]
-    [1, 2, 3, 4, 5, 7, 8, 9, 10, 11, 12, 13, 15, ...]
+    >>> hidden_bugs()
+    [6, 14]
 
 If we login as someone who *isn't* a member of the Ubuntu Team (and
 isn't otherwise someone who should be allowed to access the properties
@@ -320,13 +320,11 @@ Unauthorized:
       ...
     Unauthorized: (..., 'title', 'launchpad.View')
 
-And, as you might have guessed, is once again invisible in searches
-(notice that bug #6 is also invisible to No Privileges Person):
+And, as you might have guessed, bug #2 is invisible in searches, in
+addition to bugs #6 and #14:
 
-    >>> all_bugs = bugset.searchAsUser(
-    ...     user=current_user(), orderBy="id")
-    >>> [bug.id for bug in all_bugs]
-    [1, 3, 4, 5, 7, 8, 9, 10, 11, 12, 13, 15, ...]
+    >>> hidden_bugs()
+    [2, 6, 14]
 
 === Filing Public vs. Private Bugs ===
 
