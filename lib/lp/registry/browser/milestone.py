@@ -203,6 +203,14 @@ class MilestoneAddView(LaunchpadFormView):
 
     custom_widget('dateexpected', DateWidget)
 
+    def validate(self, data):
+        """See `LaunchpadFormView`.
+
+        Empty string are None.
+        """
+        data['code_name'] = data.get('code_name', '').strip() or None
+        data['summary'] = data.get('summary', '').strip() or None
+
     @action(_('Register Milestone'), name='register')
     def register_action(self, action, data):
         """Use the newMilestone method on the context to make a milestone."""
