@@ -24,23 +24,23 @@ Bug subscriptions
 
     >>> # Create the necessary teams.
     >>> from lp.registry.interfaces.person import PersonVisibility
-    >>> owner = factory.makePerson(name='team-owner')
+    >>> team_owner = factory.makePerson(name='team-owner')
     >>> login('foo.bar@canonical.com')
     >>> priv_team = factory.makeTeam(name='private-team',
-    ...     owner=owner,
+    ...     owner=team_owner,
     ...     visibility=PersonVisibility.PRIVATE)
     >>> pm_team = factory.makeTeam(name='private-membership-team',
-    ...     owner=owner,
+    ...     owner=team_owner,
     ...     visibility=PersonVisibility.PRIVATE_MEMBERSHIP)
 
 A private team can be subscribed to a bug.
 
     >>> bug = factory.makeBug()
-    >>> priv_subscription = bug.subscribe(priv_team, owner)
+    >>> priv_subscription = bug.subscribe(priv_team, team_owner)
 
 But a private membership team cannot.
 
-    >>> pm_subscription = bug.subscribe(pm_team, owner)
+    >>> pm_subscription = bug.subscribe(pm_team, team_owner)
     Traceback (most recent call last):
     ...
     PrivatePersonLinkageError: Cannot link person
@@ -50,22 +50,22 @@ But a private membership team cannot.
 A private team can subscribe others to a bug (the `subscribed_by`
 person).
 
-    >>> priv_subscription = bug.subscribe(owner, priv_team)
+    >>> priv_subscription = bug.subscribe(team_owner, priv_team)
 
 The same team cannot unsubscribe the person, though.
 
-    >>> bug.unsubscribe(owner, priv_team)
+    >>> bug.unsubscribe(team_owner, priv_team)
     Traceback (most recent call last):
     ...
     UserCannotUnsubscribePerson: ...
 
 Only the person can unsubscribe him or her self.
 
-    >>> bug.unsubscribe(owner, owner)
+    >>> bug.unsubscribe(team_owner, team_owner)
 
 A private membership team cannot subscribe others to a bug.
 
-    >>> pm_subscription = bug.subscribe(owner, pm_team)
+    >>> pm_subscription = bug.subscribe(team_owner, pm_team)
     Traceback (most recent call last):
     ...
     PrivatePersonLinkageError: Cannot link person
@@ -190,13 +190,13 @@ PPA ownership
 
 Private teams can own PPAs.
 
-    >>> from canonical.launchpad.interfaces.archive import (
+    >>> from lp.soyuz.interfaces.archive import (
     ...     ArchivePurpose, IArchiveSet)
     >>> from lp.registry.interfaces.distribution import (
     ...     IDistributionSet)
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
     >>> archive_set = getUtility(IArchiveSet)
-    >>> archive = archive_set.new(
+    >>> private_archive = archive_set.new(
     ...     owner=priv_team, purpose=ArchivePurpose.COPY,
     ...     distribution=ubuntu, name='private-team-archive',
     ...     enabled=False, require_virtualized=False)
@@ -212,3 +212,28 @@ Alas, Private Membership Teams cannot own PPAs.
     PrivatePersonLinkageError: Cannot link person
     (name=private-membership-team, visibility=PRIVATE_MEMBERSHIP) to
     <Archive at...
+
+PPA subscriptions
+-----------------
+
+Private teams can be subscribed to private PPAs.
+
+    >>> login('foo.bar@canonical.com')
+    >>> another_priv_team = factory.makeTeam(name='another-private-team',
+    ...     owner=team_owner,
+    ...     visibility=PersonVisibility.PRIVATE)
+
+    >>> # We must login as the archive owner to add the subscription.
+    >>> login_person(team_owner)
+    >>> subscription = private_archive.newSubscription(subscriber=another_priv_team,
+    ...     registrant=team_owner)
+
+Private Membership Teams cannot subscribe to private PPAs.
+
+    >>> nosubscription = private_archive.newSubscription(subscriber=pm_team,
+    ...     registrant=team_owner)
+    Traceback (most recent call last):
+    ...
+    PrivatePersonLinkageError: Cannot link person
+    (name=private-membership-team, visibility=PRIVATE_MEMBERSHIP) to
+    <...ArchiveSubscriber object at...
