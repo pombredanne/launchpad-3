@@ -1114,10 +1114,12 @@ class RegisterBranchMergeProposalView(LaunchpadFormView):
     @property
     def initial_values(self):
         """The default reviewer is the code reviewer of the target."""
-        # If there is a development focus branch for the product, then default
+        # If there is a default merge branch for the target, then default
         # the reviewer to be the review team for that branch.
         reviewer = None
         default_target = self.context.target.default_merge_target
+        # Don't set the reviewer if the default branch is the same as the
+        # current context.
         if default_target is not None and default_target != self.context:
             reviewer = default_target.code_reviewer
         return {'reviewer': reviewer}
