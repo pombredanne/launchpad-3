@@ -13,7 +13,7 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.launchpad.interfaces import TranslationValidationStatus
 from canonical.launchpad.interfaces.translationcommonformat import (
     ITranslationFileData)
-from canonical.launchpad.testing import TestCaseWithFactory
+from lp.testing import TestCaseWithFactory
 from lp.testing.factory import LaunchpadObjectFactory
 from canonical.testing import LaunchpadZopelessLayer
 

@@ -279,7 +279,7 @@ team's icon.
 
 For branches, fmt:link links to the branch page.
 
-    >>> from canonical.launchpad.testing import login_person
+    >>> from lp.testing import login_person
     >>> eric = factory.makePerson(name='eric')
     >>> fooix = factory.makeProduct(name='fooix')
     >>> branch = factory.makeProductBranch(

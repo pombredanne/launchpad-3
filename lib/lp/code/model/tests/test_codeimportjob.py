@@ -34,7 +34,7 @@ from lp.code.interfaces.codeimportresult import (
     CodeImportResultStatus, ICodeImportResult, ICodeImportResultSet)
 from lp.registry.interfaces.person import IPersonSet
 from canonical.launchpad.ftests import ANONYMOUS, login, logout
-from canonical.launchpad.testing import TestCaseWithFactory
+from lp.testing import TestCaseWithFactory
 from canonical.launchpad.testing.codeimporthelpers import (
     make_finished_import, make_running_import)
 from canonical.launchpad.testing.pages import get_feedback_messages
@@ -82,8 +82,8 @@ class TestCodeImportJobSetGetJobForMachine(TestCaseWithFactory):
 
         (<job state>, <date_due time delta>, <requesting user, if present>).
 
-    The time delta is measured in seconds relative to the present, so using a
-    value of -1 creates a job with a date_due of 1 second ago.  The instance
+    The time delta is measured in days relative to the present, so using a
+    value of -1 creates a job with a date_due of 1 day ago.  The instance
     method makeJob() creates actual CodeImportJob objects from these specs.
     """
 
@@ -106,7 +106,7 @@ class TestCodeImportJobSetGetJobForMachine(TestCaseWithFactory):
             getUtility(ICodeImportJobWorkflow).startJob(job, self.machine)
         naked_job = removeSecurityProxy(job)
         naked_job.date_due = SQLConstant(
-            "CURRENT_TIMESTAMP AT TIME ZONE 'UTC' + '%d seconds'"
+            "CURRENT_TIMESTAMP AT TIME ZONE 'UTC' + '%d days'"
             % date_due_delta)
         naked_job.requesting_user = requesting_user
         return job
@@ -150,12 +150,12 @@ class TestCodeImportJobSetGetJobForMachine(TestCaseWithFactory):
     def test_mostOverdueJobsFirst(self):
         # The job that was due longest ago should be selected, then the next
         # longest, etc.
-        five_seconds_ago = self.makeJob(CodeImportJobState.PENDING, -5)
-        two_seconds_ago = self.makeJob(CodeImportJobState.PENDING, -2)
-        ten_seconds_ago = self.makeJob(CodeImportJobState.PENDING, -10)
-        self.assertJobIsSelected(ten_seconds_ago)
-        self.assertJobIsSelected(five_seconds_ago)
-        self.assertJobIsSelected(two_seconds_ago)
+        five_days_ago = self.makeJob(CodeImportJobState.PENDING, -5)
+        two_days_ago = self.makeJob(CodeImportJobState.PENDING, -2)
+        ten_days_ago = self.makeJob(CodeImportJobState.PENDING, -10)
+        self.assertJobIsSelected(ten_days_ago)
+        self.assertJobIsSelected(five_days_ago)
+        self.assertJobIsSelected(two_days_ago)
 
     def test_requestedJobWins(self):
         # A job that is requested by a user is selected over ones that
@@ -172,26 +172,26 @@ class TestCodeImportJobSetGetJobForMachine(TestCaseWithFactory):
         person_a = self.factory.makePerson()
         person_b = self.factory.makePerson()
         person_c = self.factory.makePerson()
-        five_seconds_ago = self.makeJob(
+        five_days_ago = self.makeJob(
             CodeImportJobState.PENDING, -5, person_b)
-        two_seconds_ago = self.makeJob(
+        two_days_ago = self.makeJob(
             CodeImportJobState.PENDING, -2, person_a)
-        ten_seconds_ago = self.makeJob(
+        ten_days_ago = self.makeJob(
             CodeImportJobState.PENDING, -10, person_c)
-        self.assertJobIsSelected(ten_seconds_ago)
-        self.assertJobIsSelected(five_seconds_ago)
-        self.assertJobIsSelected(two_seconds_ago)
+        self.assertJobIsSelected(ten_days_ago)
+        self.assertJobIsSelected(five_days_ago)
+        self.assertJobIsSelected(two_days_ago)
 
     def test_independentOfCreationOrder(self):
         # The order the jobs are created doesn't affect the outcome (the way
         # the other tests are written, an implementation that returned the
         # most recently created due job would pass).
-        ten_seconds_ago = self.makeJob(CodeImportJobState.PENDING, -10)
-        five_seconds_ago = self.makeJob(CodeImportJobState.PENDING, -5)
-        two_seconds_ago = self.makeJob(CodeImportJobState.PENDING, -2)
-        self.assertJobIsSelected(ten_seconds_ago)
-        self.assertJobIsSelected(five_seconds_ago)
-        self.assertJobIsSelected(two_seconds_ago)
+        ten_days_ago = self.makeJob(CodeImportJobState.PENDING, -10)
+        five_days_ago = self.makeJob(CodeImportJobState.PENDING, -5)
+        two_days_ago = self.makeJob(CodeImportJobState.PENDING, -2)
+        self.assertJobIsSelected(ten_days_ago)
+        self.assertJobIsSelected(five_days_ago)
+        self.assertJobIsSelected(two_days_ago)
 
     def test_notReturnedTwice(self):
         # Once a job has been selected by getJobForMachine, it should not be
