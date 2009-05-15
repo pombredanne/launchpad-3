@@ -10,7 +10,7 @@ from BeautifulSoup import BeautifulSoup
 from simplejson import dumps
 
 from canonical.launchpad.ftests import login
-from canonical.launchpad.testing import LaunchpadObjectFactory
+from lp.testing.factory import LaunchpadObjectFactory
 from canonical.launchpad.testing.pages import LaunchpadWebServiceCaller
 from canonical.testing import DatabaseFunctionalLayer
 

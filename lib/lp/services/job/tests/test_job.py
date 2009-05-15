@@ -14,7 +14,7 @@ from storm.locals import Store
 from lp.services.job.model.job import (
     InvalidTransition, Job, LeaseHeld)
 from lp.services.job.interfaces.job import IJob, JobStatus
-from canonical.launchpad.testing import TestCase
+from lp.testing import TestCase
 from canonical.launchpad.webapp.testing import verifyObject
 
 

@@ -16,7 +16,7 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.database.diff import StaticDiff
 from lp.code.interfaces.branchsubscription import (
     BranchSubscriptionDiffSize,)
-from canonical.launchpad.testing import TestCaseWithFactory
+from lp.testing import TestCaseWithFactory
 
 
 class TestRevisionMailJob(TestCaseWithFactory):

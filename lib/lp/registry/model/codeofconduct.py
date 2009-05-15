@@ -25,7 +25,8 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from lp.services.mail.sendmail import simple_sendmail, format_address
 from canonical.launchpad.webapp import canonical_url
 
-from canonical.launchpad.interfaces.gpghandler import GPGVerificationError, IGPGHandler
+from canonical.launchpad.interfaces.gpghandler import (
+    GPGVerificationError, IGPGHandler)
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.registry.interfaces.codeofconduct import (
     ICodeOfConduct, ICodeOfConductConf, ICodeOfConductSet,

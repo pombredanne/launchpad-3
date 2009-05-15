@@ -20,7 +20,7 @@ from canonical.shipit.interfaces.shipit import (
     IShipitAccount, ShipItArchitecture, ShipItDistroSeries, ShipItFlavour,
     ShippingRequestPriority, ShippingRequestStatus, ShippingRequestType)
 from lp.registry.interfaces.person import IPersonSet
-from canonical.launchpad.testing import TestCaseWithFactory
+from lp.testing import TestCaseWithFactory
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing import LaunchpadFunctionalLayer
 

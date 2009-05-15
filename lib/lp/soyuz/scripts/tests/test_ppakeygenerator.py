@@ -13,7 +13,7 @@ from lp.registry.interfaces.gpg import IGPGKeySet
 from lp.registry.interfaces.person import IPersonSet
 from lp.services.scripts.base import LaunchpadScriptFailure
 from lp.soyuz.scripts.ppakeygenerator import PPAKeyGenerator
-from canonical.launchpad.testing import TestCase
+from lp.testing import TestCase
 from canonical.testing import LaunchpadZopelessLayer
 
 

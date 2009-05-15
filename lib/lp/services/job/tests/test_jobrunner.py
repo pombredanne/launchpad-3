@@ -11,7 +11,7 @@ from canonical.testing import LaunchpadZopelessLayer
 from lp.services.job.runner import JobRunner
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
-from canonical.launchpad.testing import TestCaseWithFactory
+from lp.testing import TestCaseWithFactory
 from canonical.launchpad.webapp import errorlog
 
 

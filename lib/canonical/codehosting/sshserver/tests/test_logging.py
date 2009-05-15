@@ -22,7 +22,7 @@ from canonical.codehosting.sshserver.accesslog import (
     LoggingManager)
 from canonical.config import config
 from canonical.launchpad.scripts import WatchedFileHandler
-from canonical.launchpad.testing import TestCase
+from lp.testing import TestCase
 from canonical.testing import reset_logging
 
 

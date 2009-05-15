@@ -71,7 +71,7 @@ private _getExternalBugTrackersAndWatches() method, which returns a set of
     ...     Bugzilla, BugzillaLPPlugin, BUG_TRACKER_CLASSES)
     >>> from canonical.launchpad.interfaces.bugtracker import (
     ...     BugTrackerType)
-    >>> from canonical.launchpad.testing import LaunchpadObjectFactory
+    >>> from lp.testing.factory import LaunchpadObjectFactory
 
     >>> factory = LaunchpadObjectFactory()
     >>> standard_bugzilla = factory.makeBugTracker()

@@ -31,7 +31,8 @@ from canonical.codehosting.puller.worker import (
 from canonical.codehosting.puller.tests import (
     AcceptAnythingPolicy, BlacklistPolicy, PullerWorkerMixin, WhitelistPolicy)
 from lp.code.interfaces.branch import BranchType
-from canonical.launchpad.testing import LaunchpadObjectFactory, TestCase
+from lp.testing import TestCase
+from lp.testing.factory import LaunchpadObjectFactory
 from lazr.uri import URI
 from canonical.testing import reset_logging
 
@@ -60,7 +61,6 @@ class TestGetVfsFormatClasses(TestCaseWithTransport):
         # This makes sure the connections held by the branches opened in the
         # test are dropped, so the daemon threads serving those branches can
         # exit.
-        import gc
         gc.collect()
         super(TestGetVfsFormatClasses, self).tearDown()
 

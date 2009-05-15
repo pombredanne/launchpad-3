@@ -14,7 +14,8 @@ from zope.interface import implements
 
 from storm.expr import Desc
 
-from lp.soyuz.interfaces.distributionsourcepackagerelease import IDistributionSourcePackageRelease
+from lp.soyuz.interfaces.distributionsourcepackagerelease import (
+    IDistributionSourcePackageRelease)
 from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
 from canonical.database.sqlbase import sqlvalues
 

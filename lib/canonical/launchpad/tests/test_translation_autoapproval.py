@@ -15,7 +15,7 @@ from canonical.launchpad.database import (
     TranslationImportQueue)
 from canonical.launchpad.interfaces import (
     ICustomLanguageCode, RosettaImportStatus)
-from canonical.launchpad.testing import LaunchpadObjectFactory
+from lp.testing.factory import LaunchpadObjectFactory
 from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing import LaunchpadZopelessLayer
 

@@ -27,7 +27,7 @@ from lp.soyuz.scripts.ftpmaster import (
 from lp.soyuz.scripts.populate_archive import ArchivePopulator
 from canonical.launchpad.scripts import BufferLogger
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
-from canonical.launchpad.testing import TestCase
+from lp.testing import TestCase
 from canonical.testing import LaunchpadZopelessLayer
 from canonical.testing.layers import DatabaseLayer
 

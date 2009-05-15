@@ -117,7 +117,7 @@ Ubuntu Hoary".)
     * Blueprints - not linked
     * Translations - http://translations.launchpad.dev/ubuntu/hoary/+source/alsa-utils
     * Answers (selected) - not linked
-    Main heading: Questions for Ubuntu Hoary alsa-utils
+    Main heading: Questions for alsa-utils in Ubuntu Hoary
 
 
 == Distribution series source package release ==
