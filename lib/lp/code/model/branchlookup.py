@@ -8,8 +8,8 @@ __metaclass__ = type
 __all__ = []
 
 from zope.component import (
-    adapter, adapts, getSiteManager, getUtility, queryMultiAdapter)
-from zope.interface import implementer, implements
+    adapts, getSiteManager, getUtility, queryMultiAdapter)
+from zope.interface import implements
 
 from storm.expr import Join
 from sqlobject import SQLObjectNotFound
@@ -33,11 +33,9 @@ from lp.registry.interfaces.distroseries import (
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.registry.interfaces.product import (
     InvalidProductName, IProduct, NoSuchProduct)
-from lp.registry.interfaces.productseries import (
-    IProductSeries, NoSuchProductSeries)
+from lp.registry.interfaces.productseries import NoSuchProductSeries
 from lp.registry.interfaces.sourcepackagename import (
     NoSuchSourcePackageName)
-from lp.registry.interfaces.suitesourcepackage import ISuiteSourcePackage
 from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import (
@@ -155,44 +153,10 @@ class DistroSeriesTraversable:
         return sourcepackage.getSuiteSourcePackage(self.pocket)
 
 
-class HasLinkedBranch:
-    """A thing that has a linked branch."""
-
-    implements(ICanHasLinkedBranch)
-
-    def __init__(self, branch):
-        self.branch = branch
-
-
-@adapter(IProductSeries)
-@implementer(ICanHasLinkedBranch)
-def product_series_linked_branch(product_series):
-    """The series branch of a product series is its linked branch."""
-    return HasLinkedBranch(product_series.branch)
-
-
-@adapter(IProduct)
-@implementer(ICanHasLinkedBranch)
-def product_linked_branch(product):
-    """The series branch of a product's development focus is its branch."""
-    return HasLinkedBranch(product.development_focus.branch)
-
-
-@adapter(ISuiteSourcePackage)
-@implementer(ICanHasLinkedBranch)
-def package_linked_branch(suite_sourcepackage):
-    package = suite_sourcepackage.sourcepackage
-    pocket = suite_sourcepackage.pocket
-    return HasLinkedBranch(package.getBranch(pocket))
-
-
 sm = getSiteManager()
 sm.registerAdapter(ProductTraversable)
 sm.registerAdapter(DistributionTraversable)
 sm.registerAdapter(DistroSeriesTraversable)
-sm.registerAdapter(product_series_linked_branch)
-sm.registerAdapter(product_linked_branch)
-sm.registerAdapter(package_linked_branch)
 
 
 class LinkedBranchTraverser:
