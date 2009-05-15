@@ -9,7 +9,9 @@ import os.path
 from unittest import TestLoader
 
 from bzrlib import errors as bzr_errors
-from bzrlib.branch import Branch, BzrBranchFormat7
+from bzrlib.branch import Branch, BzrBranchFormat5, BzrBranchFormat7
+from bzrlib.bzrdir import BzrDirMetaFormat1
+from bzrlib.repofmt.knitrepo import RepositoryFormatKnit1
 from bzrlib.repofmt.pack_repo import RepositoryFormatKnitPack6
 from bzrlib.revision import NULL_REVISION
 from canonical.testing import DatabaseFunctionalLayer, LaunchpadZopelessLayer
@@ -28,7 +30,9 @@ from canonical.launchpad.testing.librarianhelpers import (
     get_newest_librarian_file)
 from canonical.launchpad.tests.mail_helpers import pop_notifications
 
-from lp.code.interfaces.branch import BranchFormat, RepositoryFormat
+from lp.code.interfaces.branch import (BranchFormat,
+    BRANCH_FORMAT_UPGRADE_PATH, RepositoryFormat,
+    REPOSITORY_FORMAT_UPGRADE_PATH)
 from lp.code.interfaces.branchsubscription import (
     BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel)
 from lp.code.interfaces.branchjob import (
@@ -173,6 +177,7 @@ class TestBranchUpgradeJob(TestCaseWithFactory):
         self.assertEqual(
             tree.branch.repository._format.get_format_string(),
             'Bazaar-NG Knit Repository Format 1')
+
         job = BranchUpgradeJob.create(db_branch)
         job.run()
         new_branch = Branch.open(tree.branch.base)
@@ -187,8 +192,9 @@ class TestBranchUpgradeJob(TestCaseWithFactory):
         branch = self.factory.makePersonalBranch(
             branch_format=BranchFormat.BZR_BRANCH_5,
             repository_format=RepositoryFormat.BZR_REPOSITORY_4)
+        job = BranchUpgradeJob.create(branch)
 
-        format = removeSecurityProxy(branch.getUpgradeFormat())
+        format = job.getUpgradeFormat()
         self.assertTrue(isinstance(
             format.get_branch_format(),
             BRANCH_FORMAT_UPGRADE_PATH.get(BranchFormat.BZR_BRANCH_5)))
@@ -197,6 +203,18 @@ class TestBranchUpgradeJob(TestCaseWithFactory):
             REPOSITORY_FORMAT_UPGRADE_PATH.get(
                 RepositoryFormat.BZR_REPOSITORY_4)))
 
+    def make_format(self, branch_format=None, repo_format=None):
+        # Return a Bzr MetaDir format with the provided branch and repository
+        # formats.
+        if branch_format is None:
+            branch_format = BzrBranchFormat7
+        if repo_format is None:
+            repo_format = RepositoryFormatKnitPack6
+        format = BzrDirMetaFormat1()
+        format.set_branch_format(branch_format())
+        format._set_repository_format(repo_format())
+        return format
+
     def test_getUpgradeFormat_no_branch_upgrade_needed(self):
         # getUpgradeFormat should not downgrade the branch format when it is
         # more up to date than the default formats provided.
@@ -204,9 +222,12 @@ class TestBranchUpgradeJob(TestCaseWithFactory):
         branch = self.factory.makePersonalBranch(
             branch_format=BranchFormat.BZR_BRANCH_7,
             repository_format=RepositoryFormat.BZR_KNIT_1)
-        branch, _unused = self.create_branch_and_tree(db_branch=branch)
+        _format = self.make_format(repo_format=RepositoryFormatKnit1)
+        branch, _unused = self.create_branch_and_tree(db_branch=branch,
+            format=_format)
+        job = BranchUpgradeJob.create(branch)
 
-        format = removeSecurityProxy(branch.getUpgradeFormat())
+        format = job.getUpgradeFormat()
         self.assertTrue(isinstance(
             format.get_branch_format(),
             BzrBranchFormat7))
@@ -222,9 +243,12 @@ class TestBranchUpgradeJob(TestCaseWithFactory):
         branch = self.factory.makePersonalBranch(
             branch_format=BranchFormat.BZR_BRANCH_4,
             repository_format=RepositoryFormat.BZR_KNITPACK_6)
-        branch, _unused = self.create_branch_and_tree(db_branch=branch)
+        _format = self.make_format(branch_format=BzrBranchFormat5)
+        branch, _unused = self.create_branch_and_tree(db_branch=branch,
+            format=_format)
+        job = BranchUpgradeJob.create(branch)
 
-        format = removeSecurityProxy(branch.getUpgradeFormat())
+        format = job.getUpgradeFormat()
         self.assertTrue(isinstance(
             format.get_branch_format(),
             BRANCH_FORMAT_UPGRADE_PATH.get(BranchFormat.BZR_BRANCH_4)))

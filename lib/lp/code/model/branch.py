@@ -10,7 +10,6 @@ __all__ = [
 from datetime import datetime
 
 from bzrlib.branch import Branch as BzrBranch
-from bzrlib.bzrdir import BzrDirMetaFormat1
 from bzrlib.revision import NULL_REVISION
 from bzrlib import urlutils
 import pytz

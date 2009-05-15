@@ -8,6 +8,7 @@ __all__ = [
 
 from StringIO import StringIO
 
+from bzrlib.bzrdir import BzrDirMetaFormat1
 from bzrlib.log import log_formatter, show_log
 from bzrlib.diff import show_diff_trees
 from bzrlib.revision import NULL_REVISION
@@ -24,6 +25,8 @@ import transaction
 from zope.component import getUtility
 from zope.interface import classProvides, implements
 
+from lp.code.interfaces.branch import (BRANCH_FORMAT_UPGRADE_PATH,
+    REPOSITORY_FORMAT_UPGRADE_PATH)
 from lp.code.model.branch import Branch
 from canonical.launchpad.database.diff import StaticDiff
 from canonical.launchpad.database.job import Job
@@ -208,17 +211,18 @@ class BranchUpgradeJob(BranchJobDerived):
     def run(self):
         """See `IBranchUpgradeJob`."""
         branch = self.branch.getBzrBranch()
-        to_format = self.branch.getUpgradeFormat()
+        to_format = self.getUpgradeFormat()
         upgrade(branch.base, to_format)
 
     def getUpgradeFormat(self):
         """See `IBranch`."""
         format = BzrDirMetaFormat1()
-        branch_format = BRANCH_FORMAT_UPGRADE_PATH.get(self.branch_format)
+        branch_format = BRANCH_FORMAT_UPGRADE_PATH.get(
+            self.branch.branch_format)
         repository_format = REPOSITORY_FORMAT_UPGRADE_PATH.get(
-            self.repository_format)
+            self.branch.repository_format)
         if branch_format is None or repository_format is None:
-            branch = self.getBzrBranch()
+            branch = self.branch.getBzrBranch()
             if branch_format is None:
                 branch_format = type(branch._format)
             if repository_format is None:
