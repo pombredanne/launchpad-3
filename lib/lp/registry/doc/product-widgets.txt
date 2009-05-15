@@ -1,35 +1,48 @@
-= Choosing a Product Bugtracker =
+=============================
+Project (nee product) widgets
+=============================
 
-When choosing which bug tracker a Product uses, there are three possible
-options. A product can choose to use Launchpad as its bug tracker, an external
-bug tracker, or no specific bug tracker, which means either none or its
-Project's bug tracker. This information is captured using two
-attributes, 'official_malone' and 'bugtracker', and we'll use a custom
-widget and a custom field in order to set these values. This is
-presented to the user as radio buttons, where the option for using an
-external bug tracker includes a dropdown for choosing the correct
-tracker.
+Projects (which used to be referred to as 'products') have their own widgets
+for specifying their attributes.
 
-Let's take Firefox as an example, it uses Launchpad as its bug tracker.
 
-    >>> from BeautifulSoup import BeautifulSoup
+Choosing a bugtracker
+=====================
+
+When choosing which bug tracker a project uses, there are three possible
+options.  A project can use Launchpad, an external bug tracker, or no specific
+bug tracker.  This information is captured using two attributes,
+'official_malone' and 'bugtracker', and we'll use a custom widget and a custom
+field in order to set these values.  This is presented to the user as radio
+buttons, where the option for using an external bug tracker includes a drop
+down menu for choosing the correct tracker.
+
+Firefox uses Launchpad as its bug tracker.
+
     >>> from canonical.launchpad.interfaces import IProductSet
     >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> firefox.official_malone
     True
 
-If we render the widget, it will have the 'No bug tracker' option
-selected, since that's what the custom field's missing value represent.
+The custom field's missing value (i.e. None) represents the 'no bug tracker'
+option.  This is displayed by the widget as the project having a bug tracker
+in a specified external location.
 
     >>> from canonical.launchpad.interfaces import IProduct
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> from canonical.widgets.product import ProductBugTrackerWidget
-    >>> product_bugtracker = IProduct['bugtracker'].bind(
-    ...     firefox)
+
+    >>> product_bugtracker = IProduct['bugtracker'].bind(firefox)
     >>> widget = ProductBugTrackerWidget(
     ...     product_bugtracker, product_bugtracker.vocabulary,
     ...     LaunchpadTestRequest())
 
+Firefox has not yet selected a bug tracker.
+
+    >>> print firefox.project.bugtracker
+    None
+
+    >>> from BeautifulSoup import BeautifulSoup
     >>> from canonical.launchpad.testing.pages import extract_text
     >>> def print_items(html):
     ...     soup = BeautifulSoup(html)
@@ -45,19 +58,13 @@ selected, since that's what the custom field's missing value represent.
     ( ) By emailing an upstream bug contact:
     (*) Somewhere else
 
-The selected option says "No bug tracker" since Firefox's project
-doesn't have a bug tracker specified
-
-    >>> firefox.project.bugtracker is None
-    True
-
-If we specify a bug tracker for the project, this will change.  Now the
-bug tracker will be listed instead, since it's unlikely that a product
-is part of a project (using a bug tracker), but still doesn't use any
-bug tracker to track its bugs.
+Firefox chooses to use the Gnome Bugzilla bug tracker, and the widget displays
+this bug tracker as selected.
 
     >>> from canonical.launchpad.interfaces import IBugTrackerSet
-    >>> gnome_bugzilla = getUtility(IBugTrackerSet).getByName('gnome-bugzilla')
+    >>> tracker_set = getUtility(IBugTrackerSet)
+
+    >>> gnome_bugzilla = tracker_set.getByName('gnome-bugzilla')
     >>> login('foo.bar@canonical.com')
     >>> firefox.project.bugtracker = gnome_bugzilla
 
@@ -67,8 +74,7 @@ bug tracker to track its bugs.
     ( ) By emailing an upstream bug contact:
     (*) In the the Mozilla Project bug tracker (GnomeGBug GTracker)
 
-And if Firefox wouldn't have a project at all, "No bug tracker" is once
-again showed.
+On second thought, Firefox has no specified bug tracker.
 
     >>> old_firefox_project = firefox.project
     >>> firefox.project = None
@@ -79,12 +85,10 @@ again showed.
     ( ) By emailing an upstream bug contact:
     (*) Somewhere else
 
-If we call setRenderedValue with a specific bug tracker, the
-External bug tracker option will be selected.
+Calling the widget's setRenderedValue() with a specific bug tracker overrides
+the display of the selected bug tracker.
 
-    >>> from canonical.launchpad.interfaces import IBugTrackerSet
-    >>> mozilla_bugtracker = getUtility(IBugTrackerSet).getByName(
-    ...     'mozilla.org')
+    >>> mozilla_bugtracker = tracker_set.getByName('mozilla.org')
     >>> widget.setRenderedValue(mozilla_bugtracker)
 
     >>> print_items(widget())
@@ -93,11 +97,10 @@ External bug tracker option will be selected.
     ( ) By emailing an upstream bug contact:
     ( ) Somewhere else
 
-If the bug tracker is an Email Address bug tracker, the "By emailing"
-option is selected instead.
+When the bug tracker is an Email Address bug tracker, the "By emailing" option
+is shown as selected instead.
 
-    >>> from canonical.launchpad.interfaces import IBugTrackerSet
-    >>> email_bugtracker = getUtility(IBugTrackerSet).getByName('email')
+    >>> email_bugtracker = tracker_set.getByName('email')
     >>> widget.setRenderedValue(email_bugtracker)
 
     >>> print_items(widget())
@@ -106,8 +109,8 @@ option is selected instead.
     (*) By emailing an upstream bug contact:
     ( ) Somewhere else
 
-The custom field has a marker attribute which represents Launchpad. If we call
-setRenderedValue with this marker, the "In Launchpad" option is selected.
+When the bug tracker is the marker attribute representing Launchpad, the
+widget is displayed as having the 'In Launchpad' option selected.
 
     >>> widget.setRenderedValue(widget.context.malone_marker)
     >>> print_items(widget())
@@ -116,159 +119,203 @@ setRenderedValue with this marker, the "In Launchpad" option is selected.
     ( ) By emailing an upstream bug contact:
     ( ) Somewhere else
 
-Now, let's pass some request values to the widget to show how it reacts
-on different user inputs. We start by simply passing 'malone' to it,
-which means that bugs are tracked in Launchpad. This will mean that
-getInputValue will return the special Malone marker object we used
-above. We'll also pass a bug tracker value to the widget, which won't
-affect what getInputValue() returns.
+A user selects the Malone bug tracker, indicating that bugs are tracked in
+Launchpad.
 
     >>> form = {
-    ...     'field.bugtracker': 'malone', 'field.bugtracker.bugtracker': '3'}
+    ...     'field.bugtracker': 'malone',
+    ...     'field.bugtracker.bugtracker': '3',
+    ...     }
     >>> widget = ProductBugTrackerWidget(
     ...     product_bugtracker, product_bugtracker.vocabulary,
     ...     LaunchpadTestRequest(form=form))
+
+    # This is just a generic object so there's no other way to test it.
     >>> widget.getInputValue() is product_bugtracker.malone_marker
     True
 
-If we look more closely, we can see that the bugtracker value we passed
-to the widget caused the sub-widget used to select the bug tracker to
-have the correct value.
+The bugtracker value passed to the widget caused the sub-widget used to select
+the bug tracker to have the correct value.
 
     >>> widget.bugtracker_widget.getInputValue().id
     3
-    >>> widget.bugtracker_widget.getInputValue().name
-    u'debbugs'
+    >>> print widget.bugtracker_widget.getInputValue().name
+    debbugs
 
-If we indicate that we want to use an external bug tracker, the selected
-bug tracker will be returned. The same bug tracker as above will be
-passed as well.
+By indicating an external bug tracker, the selected bug tracker will be
+returned.
 
     >>> form['field.bugtracker'] = 'external'
     >>> widget = ProductBugTrackerWidget(
     ...     product_bugtracker, product_bugtracker.vocabulary,
     ...     LaunchpadTestRequest(form=form))
     >>> debbugs = widget.getInputValue()
-    >>> debbugs.name
-    u'debbugs'
+    >>> print debbugs.name
+    debbugs
 
-The sub-widget for selecting the external bug tracker will of
-course also have debbugs as its input value.
+The sub-widget for selecting the external bug tracker also has debbugs as its
+input value.
 
-    >>> widget.getInputValue() == debbugs
-    True
+    >>> print widget.getInputValue().name
+    debbugs
 
-And finally, if we choose to use the Project's bug tracker, or no bug
-tracker at all, using 'project', None will be returned.
+The project's bug tracker, or no bug tracker, at all is selected.
 
     >>> form['field.bugtracker'] = 'project'
     >>> widget = ProductBugTrackerWidget(
     ...     product_bugtracker, product_bugtracker.vocabulary,
     ...     LaunchpadTestRequest(form=form))
-    >>> widget.getInputValue() is None
-    True
+    >>> print widget.getInputValue()
+    None
 
+We can't use the value returned from getInputValue() to set an attribute on
+the project directly.  Instead the custom field ProductBugTracker is used.  It
+knows how to deal with the special malone marker when getting and setting the
+values.
 
-We can't use the value returned from getInputValue() to set an
-attribute on the Product directly. Instead the custom field,
-ProductBugTracker, is used. It knows how to deal with the special
-malone marker when getting and setting the values.
-
-Firefox still uses Malone officially, which means that the field
-returns the marker object.
+Firefox still uses Malone officially, which means that the field returns the
+marker object.
 
     >>> firefox.official_malone
     True
-    >>> firefox.bugtracker is None
-    True
+    >>> print firefox.bugtracker
+    None
     >>> product_bugtracker.get(firefox) is product_bugtracker.malone_marker
     True
 
-If we pass a bug tracker to the field's set method, it will unset
-official_malone and set the bug tracker.
+Passing a bug tracker to the field's set method will unset official_malone and
+set the bug tracker.
 
     >>> login('test@canonical.com')
     >>> product_bugtracker.set(firefox, debbugs)
     >>> firefox.official_malone
     False
-    >>> firefox.bugtracker.name
-    u'debbugs'
+    >>> print firefox.bugtracker.name
+    debbugs
 
-If we choose to use Malone again, the changes above will be reverted.
+Choosing to use Malone again, the changes above will be reverted.
 
     >>> product_bugtracker.set(firefox, product_bugtracker.malone_marker)
     >>> firefox.official_malone
     True
-    >>> firefox.bugtracker is None
-    True
+    >>> print firefox.bugtracker
+    None
 
-If we pass None to the field's set method, Firefox will once again
-switch to not using Malone, and its bug tracker will be set to None.
+Passing None to the field's set method, Firefox will once again switch to not
+using Malone, and its bug tracker will be set to None.
 
     >>> product_bugtracker.set(firefox, None)
     >>> firefox.official_malone
     False
-    >>> firefox.bugtracker is None
-    True
+    >>> print firefox.bugtracker
+    None
 
-= Choosing a License =
 
-A custom widget to display a link to the license policy.
+Choosing a License
+==================
 
+A custom widget is used to display a link to the license policy.
+
+    >>> from canonical.launchpad.interfaces import License
     >>> from canonical.widgets.product import LicenseWidget
 
-Set up a test request and test widget.
+    >>> form = {'field.licenses': []}
 
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-    >>> from canonical.launchpad.interfaces import (
-    ...     IProduct, IProductSet, License)
     >>> product = getUtility(IProductSet).get(1)
     >>> licenses_field = IProduct['licenses'].bind(product)
     >>> vtype = licenses_field.value_type
-    >>> request = LaunchpadTestRequest(form={'field.licenses': []})
+    >>> request = LaunchpadTestRequest(form=form)
     >>> license_widget = LicenseWidget(licenses_field, vtype, request)
 
-There should be one checkbox for each license, and there should be a
-link to the license policy. There are currently 10 deprecated licenses
-in the License enum.
+The widget has one checkbox for each license, and it also has a link to the
+license policy.
 
     >>> html = license_widget()
     >>> soup = BeautifulSoup(html)
-    >>> len(soup.table('input')) == len(License)
-    True
-    >>> soup.a['href']
-    u'https://help.launchpad.net/Legal/ProjectLicensing'
+    >>> len(License)
+    25
+    >>> len(soup.table('input'))
+    25
+    >>> print soup.a['href']
+    https://help.launchpad.net/Legal/ProjectLicensing
 
-Zero selected licenses should return an empty set and the html
-output should have zero checked inputs.
+No licenses are selected.
 
     >>> license_widget.getInputValue()
     Set([])
     >>> soup.findAll('input', checked='checked')
     []
 
-One selected licenses should return a single-item set and the html
-output should have one checked input.
+One license, the GNU GPL v2, is selected.
 
-    >>> request = LaunchpadTestRequest(form={'field.licenses': ['GNU_GPL_V2']})
+    >>> form['field.licenses'] = ['GNU_GPL_V2']
+    >>> request = LaunchpadTestRequest(form=form)
     >>> license_widget = LicenseWidget(licenses_field, vtype, request)
+
+    >>> def print_checked_items(html):
+    ...     soup = BeautifulSoup(html)
+    ...     inputs = soup('input')
+    ...     for input in inputs:
+    ...         if input.get('checked'):
+    ...             print '(*)', input.get('value')
+    ...         else:
+    ...             print '( )', input.get('value')
+
     >>> license_widget.getInputValue()
     Set([<DBItem License.GNU_GPL_V2, (130) ...>])
-    >>> html = license_widget()
-    >>> soup = BeautifulSoup(html)
-    >>> soup.findAll('input', checked='checked')
-    [<... checked="checked" ... value="GNU_GPL_V2" />]
 
-Two selected licenses should return a single-item set and the html
-output should have one checked input.
+    >>> print_checked_items(license_widget())
+    ( ) ACADEMIC
+    ...
+    (*) GNU_GPL_V2
+    ( ) GNU_GPL_V3
+    ( ) GNU_LGPL_V2_1
+    ( ) GNU_LGPL_V3
+    ...
 
-    >>> request = LaunchpadTestRequest(
-    ...     form={'field.licenses': ['GNU_LGPL_V2_1', 'GNU_GPL_V2']})
+A second license is selected.
+
+    >>> form['field.licenses'] = ['GNU_LGPL_V2_1', 'GNU_GPL_V2']
+    >>> request = LaunchpadTestRequest(form=form)
     >>> license_widget = LicenseWidget(licenses_field, vtype, request)
-    >>> license_widget.getInputValue()
-    Set([<...License.GNU_GPL_V2...>, <...License.GNU_LGPL_V2_1...>])
-    >>> html = license_widget()
-    >>> soup = BeautifulSoup(html)
-    >>> soup.findAll('input', checked='checked')
-    [<...checked="checked"...value="GNU_GPL_V2" />,
-    <...checked="checked"...value="GNU_LGPL_V2_1" />]
+
+    >>> sorted(license_widget.getInputValue())
+    [<DBItem License.GNU_GPL_V2, (130) GNU GPL v2>,
+     <DBItem License.GNU_LGPL_V2_1, (150) GNU LGPL v2.1>]
+
+    >>> print_checked_items(license_widget())
+    ( ) ACADEMIC
+    ...
+    (*) GNU_GPL_V2
+    ( ) GNU_GPL_V3
+    (*) GNU_LGPL_V2_1
+    ( ) GNU_LGPL_V3
+    ...
+
+There are three Creative Commons licenses.
+
+    >>> form['field.licenses'] = []
+    >>> request = LaunchpadTestRequest(form=form)
+    >>> license_widget = LicenseWidget(licenses_field, vtype, request)
+
+    >>> print_checked_items(license_widget())
+    ( ) ACADEMIC
+    ...
+    ( ) CC_BY
+    ( ) CC_BY_SA
+    ( ) CC_0
+    ...
+
+Any of the three Creative Commons licenses can be selected.
+
+    >>> form['field.licenses'] = ['CC_BY', 'CC_BY_SA', 'CC_0']
+    >>> request = LaunchpadTestRequest(form=form)
+    >>> license_widget = LicenseWidget(licenses_field, vtype, request)
+
+    >>> print_checked_items(license_widget())
+    ( ) ACADEMIC
+    ...
+    (*) CC_BY
+    (*) CC_BY_SA
+    (*) CC_0
+    ...
