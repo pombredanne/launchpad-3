@@ -912,8 +912,14 @@ class POFile(SQLBase, POFileMixIn):
         # from imports.
         updates = self.getPOTMsgSetChangedInLaunchpad().count()
 
+        # Get total number of messages in a POTemplate.
+        if self.potemplate.messageCount() > 0:
+            total = self.potemplate.messageCount()
+        else:
+            total = self.potemplate.getPOTMsgSets().count()
+            self.potemplate.messagecount = total
+
         # Get number of translations done only in Launchpad.
-        total = self.potemplate.messageCount()
         untranslated = self.getPOTMsgSetUntranslated().count()
         translated = total - untranslated
         rosetta = translated - current
