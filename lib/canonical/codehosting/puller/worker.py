@@ -1,4 +1,4 @@
-# Copyright 2006-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2006-2009 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 
@@ -11,7 +11,6 @@ from bzrlib.branch import Branch
 from bzrlib.bzrdir import BzrDir
 from bzrlib import errors
 from bzrlib.plugins.loom.branch import LoomSupport
-from bzrlib.progress import DummyProgress
 from bzrlib.remote import RemoteBranch, RemoteBzrDir, RemoteRepository
 from bzrlib.transport import get_transport
 from bzrlib import urlutils
@@ -391,7 +390,8 @@ class BranchMirrorer(object):
         else:
             revision_id = 'null:'
         self._runWithTransformFallbackLocationHookInstalled(
-            bzrdir.clone_on_transport, dest_transport, revision_id=revision_id)
+            bzrdir.clone_on_transport, dest_transport,
+            revision_id=revision_id)
         branch = Branch.open(destination_url)
         return branch
 

@@ -27,7 +27,8 @@ def test_inline_subscriber():
 
     # Ensure the subscriber's portlet has finished loading.
     client.waits.forElement(
-        xpath=u'//div[@id="subscribers-links"]', timeout=WAIT_ELEMENT_COMPLETE)
+        xpath=u'//div[@id="subscribers-links"]',
+        timeout=WAIT_ELEMENT_COMPLETE)
 
     # "Sample Person" should not be subscribed initially.
     client.asserts.assertText(

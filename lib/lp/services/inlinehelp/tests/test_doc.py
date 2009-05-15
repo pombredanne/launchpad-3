@@ -3,10 +3,7 @@
 Run the doctests.
 """
 
-import os
-
-from canonical.launchpad.testing.systemdocs import (
-    LayeredDocFileSuite)
+from canonical.launchpad.testing.systemdocs import LayeredDocFileSuite
 
 def test_suite():
     return LayeredDocFileSuite('../README.txt')
