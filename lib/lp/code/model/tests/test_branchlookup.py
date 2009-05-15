@@ -341,20 +341,17 @@ class TestLinkedBranchTraverser(TestCaseWithFactory):
         # `traverse` resolves 'distro/series/package' to the release pocket of
         # that package in that series.
         package = self.factory.makeSourcePackage()
-        self.assertTraverses(
-            package.path,
-            getUtility(ISourcePackagePocketFactory).new(
-                package, PackagePublishingPocket.RELEASE))
+        ssp = package.getSuiteSourcePackage(PackagePublishingPocket.RELEASE)
+        self.assertTraverses(package.path, ssp)
 
     def test_traverse_source_package_pocket(self):
         # `traverse` resolves 'distro/series-pocket/package' to the official
         # branch for 'pocket' on that package.
         package = self.factory.makeSourcePackage()
         pocket = PackagePublishingPocket.BACKPORTS
-        path = package.getPocketPath(pocket)
-        sourcepackagepocket = getUtility(ISourcePackagePocketFactory).new(
-            package, pocket)
-        self.assertTraverses(path, sourcepackagepocket)
+        ssp = package.getSuiteSourcePackage(pocket)
+        package = self.factory.makeSourcePackage()
+        self.assertTraverses(ssp.path, ssp)
 
     def test_no_such_distribution(self):
         # `traverse` raises `NoSuchProduct` error if the distribution doesn't
@@ -489,9 +486,9 @@ class TestGetByLPPath(TestCaseWithFactory):
         exception = self.assertRaises(
             NoLinkedBranch,
             self.branch_lookup.getByLPPath, sourcepackage.path)
-        sourcepackagepocket =  getUtility(ISourcePackagePocketFactory).new(
-            sourcepackage, PackagePublishingPocket.RELEASE)
-        self.assertEqual(sourcepackagepocket, exception.component)
+        suite_sourcepackage = sourcepackage.getSuiteSourcePackage(
+            PackagePublishingPocket.RELEASE)
+        self.assertEqual(suite_sourcepackage, exception.component)
 
     def test_distribution_linked_branch(self):
         # Distributions cannot have linked branches, so `getByLPPath` raises a
@@ -562,50 +559,6 @@ class TestGetByLPPath(TestCaseWithFactory):
         result = self.branch_lookup.getByLPPath(
             '%s/other/bits' % package.path)
         self.assertEqual((branch, None), result)
-
-
-class TestSourcePackagePocket(TestCaseWithFactory):
-    """Tests for the SourcePackagePocket wrapper class."""
-
-    layer = DatabaseFunctionalLayer
-
-    def makeSourcePackagePocket(self, sourcepackage=None, pocket=None):
-        if sourcepackage is None:
-            sourcepackage = self.factory.makeSourcePackage()
-        if pocket is None:
-            pocket = PackagePublishingPocket.RELEASE
-        return getUtility(ISourcePackagePocketFactory).new(
-            sourcepackage, pocket)
-
-    def test_branch(self):
-        # The 'branch' attribute is the linked branch for the pocket on that
-        # packet.
-        package = self.factory.makeSourcePackage()
-        branch = self.factory.makePackageBranch(sourcepackage=package)
-        registrant = self.factory.makePerson()
-        ubuntu_branches = getUtility(ILaunchpadCelebrities).ubuntu_branches
-        run_with_login(
-            ubuntu_branches.teamowner,
-            package.setBranch,
-            PackagePublishingPocket.SECURITY, branch, registrant)
-        package_pocket = self.makeSourcePackagePocket(
-            sourcepackage=package, pocket=PackagePublishingPocket.SECURITY)
-        self.assertEqual(branch, package_pocket.branch)
-
-    def test_display_name(self):
-        # A SourcePackagePocket also has a display name, so we can use it in
-        # error messages.
-        package_pocket = self.makeSourcePackagePocket()
-        self.assertEqual(
-            package_pocket.sourcepackage.getPocketPath(package_pocket.pocket),
-            package_pocket.displayname)
-
-    def test_equality(self):
-        package = self.factory.makeSourcePackage()
-        pocket = PackagePublishingPocket.SECURITY
-        package_pocket1 = self.makeSourcePackagePocket(package, pocket)
-        package_pocket2 = self.makeSourcePackagePocket(package, pocket)
-        self.assertEqual(package_pocket1, package_pocket2)
 
 
 def test_suite():

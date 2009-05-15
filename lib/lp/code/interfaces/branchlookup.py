@@ -163,31 +163,3 @@ class ISourcePackagePocketFactory(Interface):
         :param pocket: A `DBItem` of `PackagePublishingPocket`.
         :return: `ISourcePackagePocket`.
         """
-
-
-class ISourcePackagePocket(ICanHasLinkedBranch):
-    """A wrapper around a source package and a pocket.
-
-    Used to provide a single object that can be used in exceptions about a
-    sourcepackage and a pocket not having an official linked branch.
-    """
-
-    # XXX: JonathanLange 2009-03-26: This ought to go away when ISourcePackage
-    # gets a pocket attribute.
-
-    displayname = Attribute("The display name")
-    pocket = Attribute("The pocket.")
-    sourcepackage = Attribute("The source package.")
-
-    def __eq__(other):
-        """Is this source package pocket equal to another?
-
-        True if and only if the package and pocket of the other are equal to
-        our package and pocket.
-        """
-
-    def __ne__(other):
-        """Is this source package pocket not equal to another?
-
-        True if and only if self and other are not equal.
-        """

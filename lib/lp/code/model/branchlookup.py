@@ -9,7 +9,7 @@ __all__ = []
 
 from zope.component import (
     adapter, adapts, getSiteManager, getUtility, queryMultiAdapter)
-from zope.interface import classProvides, implementer, implements
+from zope.interface import implementer, implements
 
 from storm.expr import Join
 from sqlobject import SQLObjectNotFound
@@ -24,8 +24,7 @@ from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.code.interfaces.branch import NoSuchBranch
 from lp.code.interfaces.branchlookup import (
     CannotHaveLinkedBranch, IBranchLookup, ICanHasLinkedBranch,
-    ILinkedBranchTraversable, ILinkedBranchTraverser, ISourcePackagePocket,
-    ISourcePackagePocketFactory, NoLinkedBranch)
+    ILinkedBranchTraversable, ILinkedBranchTraverser, NoLinkedBranch)
 from lp.code.interfaces.branchnamespace import (
     IBranchNamespaceSet, InvalidNamespace)
 from lp.registry.interfaces.distribution import IDistribution
@@ -38,6 +37,7 @@ from lp.registry.interfaces.productseries import (
     IProductSeries, NoSuchProductSeries)
 from lp.registry.interfaces.sourcepackagename import (
     NoSuchSourcePackageName)
+from lp.registry.interfaces.suitesourcepackage import ISuiteSourcePackage
 from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import (
@@ -152,8 +152,7 @@ class DistroSeriesTraversable:
         sourcepackage = self.distroseries.getSourcePackage(name)
         if sourcepackage is None:
             raise NoSuchSourcePackageName(name)
-        return getUtility(ISourcePackagePocketFactory).new(
-            sourcepackage, self.pocket)
+        return sourcepackage.getSuiteSourcePackage(self.pocket)
 
 
 class HasLinkedBranch:
@@ -179,12 +178,21 @@ def product_linked_branch(product):
     return HasLinkedBranch(product.development_focus.branch)
 
 
+@adapter(ISuiteSourcePackage)
+@implementer(ICanHasLinkedBranch)
+def package_linked_branch(suite_sourcepackage):
+    package = suite_sourcepackage.sourcepackage
+    pocket = suite_sourcepackage.pocket
+    return HasLinkedBranch(package.getBranch(pocket))
+
+
 sm = getSiteManager()
 sm.registerAdapter(ProductTraversable)
 sm.registerAdapter(DistributionTraversable)
 sm.registerAdapter(DistroSeriesTraversable)
 sm.registerAdapter(product_series_linked_branch)
 sm.registerAdapter(product_linked_branch)
+sm.registerAdapter(package_linked_branch)
 
 
 class LinkedBranchTraverser:
@@ -203,53 +211,6 @@ class LinkedBranchTraverser:
             if traversable is None:
                 break
         return context
-
-
-class SourcePackagePocket:
-    """A source package and a pocket.
-
-    This exists to provide a consistent interface for the error condition of
-    users looking up official branches for the pocket of a source package
-    where no such linked branch exists. All of the other "no linked branch"
-    cases have a single object for which there is no linked branch -- this is
-    the equivalent for source packages.
-    """
-
-    implements(ISourcePackagePocket)
-    classProvides(ISourcePackagePocketFactory)
-
-    def __init__(self, sourcepackage, pocket):
-        self.sourcepackage = sourcepackage
-        self.pocket = pocket
-
-    @classmethod
-    def new(cls, package, pocket):
-        """See `ISourcePackagePocketFactory`."""
-        return cls(package, pocket)
-
-    def __eq__(self, other):
-        """See `ISourcePackagePocket`."""
-        try:
-            other = ISourcePackagePocket(other)
-        except TypeError:
-            return NotImplemented
-        return (
-            self.sourcepackage == other.sourcepackage
-            and self.pocket == other.pocket)
-
-    def __ne__(self, other):
-        """See `ISourcePackagePocket`."""
-        return not (self == other)
-
-    @property
-    def displayname(self):
-        """See `ISourcePackagePocket`."""
-        return self.sourcepackage.getPocketPath(self.pocket)
-
-    @property
-    def branch(self):
-        """See `ISourcePackagePocket`."""
-        return self.sourcepackage.getBranch(self.pocket)
 
 
 class BranchLookup:

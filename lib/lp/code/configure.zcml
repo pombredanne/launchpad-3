@@ -273,9 +273,6 @@
   <class class="lp.code.model.branchlookup.BranchLookup">
     <allow interface="lp.code.interfaces.branchlookup.IBranchLookup"/>
   </class>
-  <class class="lp.code.model.branchlookup.SourcePackagePocket">
-    <allow interface="lp.code.model.branchlookup.ISourcePackagePocket"/>
-  </class>
   <securedutility
       class="lp.code.model.branchlookup.BranchLookup"
       provides="lp.code.interfaces.branchlookup.IBranchLookup">
@@ -285,11 +282,6 @@
       class="lp.code.model.branchlookup.LinkedBranchTraverser"
       provides="lp.code.interfaces.branchlookup.ILinkedBranchTraverser">
     <allow interface="lp.code.interfaces.branchlookup.ILinkedBranchTraverser"/>
-  </securedutility>
-  <securedutility
-      component="lp.code.model.branchlookup.SourcePackagePocket"
-      provides="lp.code.interfaces.branchlookup.ISourcePackagePocketFactory">
-    <allow interface="lp.code.interfaces.branchlookup.ISourcePackagePocketFactory"/>
   </securedutility>
   <securedutility
       class="lp.code.model.branchscanner.BranchScanner"
