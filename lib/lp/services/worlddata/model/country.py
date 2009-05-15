@@ -10,8 +10,9 @@ from sqlobject import StringCol, SQLRelatedJoin, ForeignKey
 
 from canonical.database.constants import DEFAULT
 from canonical.database.sqlbase import SQLBase
-from canonical.launchpad.interfaces import (
-    ICountry, ICountrySet, IContinent, NotFoundError)
+from canonical.launchpad.interfaces import NotFoundError
+from lp.services.worlddata.interfaces.country import (
+    ICountry, ICountrySet, IContinent)
 
 
 class Country(SQLBase):

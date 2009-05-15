@@ -16,7 +16,7 @@ from zope.schema import Int
 
 
 class ISpokenIn(Interface):
-    """The SPokenIn description."""
+    """The SpokenIn description."""
 
     id = Int(
             title=_('SpokenInID'), required=True, readonly=True,
