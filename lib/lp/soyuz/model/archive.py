@@ -113,7 +113,8 @@ class Archive(SQLBase):
         If the owner of the archive is private, then the archive cannot be
         made public.
         """
-        if value is False:
+        if not value:
+            # The archive is transitioning from public to private.
             assert self.owner.visibility != PersonVisibility.PRIVATE, (
                 "Private teams may not have public PPAs.")
         return value

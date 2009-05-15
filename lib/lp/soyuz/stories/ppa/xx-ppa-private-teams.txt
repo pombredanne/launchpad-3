@@ -60,8 +60,9 @@ Administrator changes to the PPA
 An administrator viewing the PPA administration page sees that it is
 marked private.
 
-   >>> admin_browser.open('http://launchpad.dev/~private-team/+archive/ppa/+admin')
-   >>> print admin_browser.getControl(name='field.private').value
+   >>> admin_browser.open(
+   ...     'http://launchpad.dev/~private-team/+archive/ppa/+admin')
+   >>> admin_browser.getControl(name='field.private').value
    True
 
 Attempting to change the PPA to public is thwarted.

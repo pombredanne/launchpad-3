@@ -185,6 +185,7 @@ But private membership teams cannot.
 PPAs
 ====
 
+
 PPA ownership
 -------------
 
@@ -213,6 +214,7 @@ Alas, Private Membership Teams cannot own PPAs.
     (name=private-membership-team, visibility=PRIVATE_MEMBERSHIP) to
     <Archive at...
 
+
 PPA subscriptions
 -----------------
 
@@ -225,7 +227,8 @@ Private teams can be subscribed to private PPAs.
 
     >>> # We must login as the archive owner to add the subscription.
     >>> login_person(team_owner)
-    >>> subscription = private_archive.newSubscription(subscriber=another_priv_team,
+    >>> subscription = private_archive.newSubscription(
+    ...     subscriber=another_priv_team,
     ...     registrant=team_owner)
 
 Private Membership Teams cannot subscribe to private PPAs.

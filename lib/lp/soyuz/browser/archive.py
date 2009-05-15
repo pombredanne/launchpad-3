@@ -1444,8 +1444,9 @@ class ArchiveActivateView(LaunchpadFormView):
     def is_private_team(self):
         """Is the person a private team?
 
-        This method will return True only if the visibility is PRIVATE.
-        PUBLIC and PRIVATE_MEMBERSHIP return False.
+        :return: True only if visibility is PRIVATE.  False is returned when
+        the visibility is PUBLIC and PRIVATE_MEMBERSHIP.
+        :rtype: bool
         """
         return self.context.visibility == PersonVisibility.PRIVATE
 
@@ -1521,7 +1522,8 @@ class ArchiveAdminView(BaseArchiveEditView):
     def owner_is_private_team(self):
         """Is the owner a private team?
 
-        This method will return True only if the visibility is PRIVATE.
-        PUBLIC and PRIVATE_MEMBERSHIP return False.
+        :return: True only if visibility is PRIVATE.  False is returned when
+        the visibility is PUBLIC and PRIVATE_MEMBERSHIP.
+        :rtype: bool
         """
         return self.context.owner.visibility == PersonVisibility.PRIVATE
