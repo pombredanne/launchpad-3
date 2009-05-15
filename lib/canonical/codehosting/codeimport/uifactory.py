@@ -128,7 +128,8 @@ class LoggingTextProgressView(TextProgressView):
                      + self._transport_repaint_frequency):
             # guard against clock stepping backwards, and don't update too
             # often
-            rate = self._bytes_since_update / (now - self._transport_update_time)
+            rate = self._bytes_since_update / (
+                now - self._transport_update_time)
             scheme = getattr(transport, '_scheme', None) or repr(transport)
             if direction == 'read':
                 dir_char = '>'

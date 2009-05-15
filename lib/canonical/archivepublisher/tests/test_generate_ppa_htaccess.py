@@ -22,7 +22,7 @@ from canonical.launchpad.interfaces import (
 from lp.soyuz.interfaces.archivesubscriber import (
     ArchiveSubscriberStatus)
 from canonical.launchpad.scripts import QuietFakeLogger
-from canonical.launchpad.testing import LaunchpadObjectFactory
+from lp.testing.factory import LaunchpadObjectFactory
 from canonical.testing.layers import LaunchpadZopelessLayer
 
 
@@ -142,6 +142,13 @@ class TestPPAHtaccessTokenGeneration(unittest.TestCase):
         # Generate the passwd file.
         script = self.getScript()
         filename = script.generateHtpasswd(self.ppa, tokens)
+        
+        # It should be a temp file in the same directory as the intended
+        # target file when it's renamed, so that os.rename() won't
+        # complain about renaming across file systems.
+        pub_config = getPubConfig(self.ppa)
+        self.assertEqual(
+            pub_config.htaccessroot, os.path.dirname(filename))
 
         # Read it back in.
         file = open(filename, "r")

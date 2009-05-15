@@ -23,7 +23,7 @@ distribution series.
 
     >>> pprint_entry(evolution)
     bug_reporting_guidelines: None
-    displayname: u'Ubuntu Hoary evolution'
+    displayname: u'evolution in Ubuntu Hoary'
     distribution_link: u'http://.../ubuntu'
     distroseries_link: u'http://.../ubuntu/hoary'
     name: u'evolution'
