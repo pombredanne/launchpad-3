@@ -1089,7 +1089,7 @@ class RegisterProposalSchema(Interface):
     """The schema to define the form for registering a new merge proposal."""
     target_branch = Choice(
         title=_('Target Branch'),
-        vocabulary='BranchRestrictedOnProduct', required=True, readonly=True,
+        vocabulary='Branch', required=True, readonly=True,
         description=_(
             "The branch that the source branch will be merged into."))
 
