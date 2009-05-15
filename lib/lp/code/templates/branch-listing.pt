@@ -277,14 +277,24 @@ Y.on("domready", renderSpark);
                 tal:content="branch/date_last_modified/fmt:datetime">
             2005-02-12 13:45 EST
           </span>
-          <div tal:condition="branch/is_development_focus" id="dev_focus_spark" style="top:10px; position:relative; height:18px;">
+          <tal:block condition="branch/is_development_focus">
+            <div id="dev_focus_spark" style="top:10px; position:relative; height:18px;">
+              <div tal:attributes="id string:b-${repeat/branch/number}">
+              <span tal:attributes="title branch/date_last_modified/fmt:datetime"
+                    tal:content="branch/since_updated/fmt:approximateduration/use-digits">
+                  sometime
+              </span> ago
+              </div>
+            </div>
+          </tal:block>
+          <tal:block condition="not: branch/is_development_focus">
             <div tal:attributes="id string:b-${repeat/branch/number}">
             <span tal:attributes="title branch/date_last_modified/fmt:datetime"
                   tal:content="branch/since_updated/fmt:approximateduration/use-digits">
                 sometime
             </span> ago
             </div>
-          </div>
+          </tal:block>
         </td>
 
         <tal:no_commit condition="not: branch/last_commit">
