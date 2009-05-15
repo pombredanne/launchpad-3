@@ -185,7 +185,7 @@ class TestBranchUpgradeJob(TestCaseWithFactory):
             new_branch.repository._format.get_format_string(),
             'Bazaar RepositoryFormatKnitPack6 (bzr 1.9)\n')
 
-    def test_getUpgradeFormat_all_formats(self):
+    def test_upgrade_format_all_formats(self):
         # getUpgradeFormat should return a BzrDirMetaFormat1 object with the
         # most up to date branch and repository formats.
         self.useBzrBranches()
@@ -194,7 +194,7 @@ class TestBranchUpgradeJob(TestCaseWithFactory):
             repository_format=RepositoryFormat.BZR_REPOSITORY_4)
         job = BranchUpgradeJob.create(branch)
 
-        format = job.getUpgradeFormat()
+        format = job.upgrade_format
         self.assertTrue(isinstance(
             format.get_branch_format(),
             BRANCH_FORMAT_UPGRADE_PATH.get(BranchFormat.BZR_BRANCH_5)))
@@ -215,7 +215,7 @@ class TestBranchUpgradeJob(TestCaseWithFactory):
         format._set_repository_format(repo_format())
         return format
 
-    def test_getUpgradeFormat_no_branch_upgrade_needed(self):
+    def test_upgrade_format_no_branch_upgrade_needed(self):
         # getUpgradeFormat should not downgrade the branch format when it is
         # more up to date than the default formats provided.
         self.useBzrBranches()
@@ -227,7 +227,7 @@ class TestBranchUpgradeJob(TestCaseWithFactory):
             format=_format)
         job = BranchUpgradeJob.create(branch)
 
-        format = job.getUpgradeFormat()
+        format = job.upgrade_format
         self.assertTrue(isinstance(
             format.get_branch_format(),
             BzrBranchFormat7))
@@ -236,7 +236,7 @@ class TestBranchUpgradeJob(TestCaseWithFactory):
             REPOSITORY_FORMAT_UPGRADE_PATH.get(
                 RepositoryFormat.BZR_KNIT_1)))
 
-    def test_getUpgradeFormat_no_repository_upgrade_needed(self):
+    def test_upgrade_format_no_repository_upgrade_needed(self):
         # getUpgradeFormat should not downgrade the branch format when it is
         # more up to date than the default formats provided.
         self.useBzrBranches()
@@ -248,7 +248,7 @@ class TestBranchUpgradeJob(TestCaseWithFactory):
             format=_format)
         job = BranchUpgradeJob.create(branch)
 
-        format = job.getUpgradeFormat()
+        format = job.upgrade_format
         self.assertTrue(isinstance(
             format.get_branch_format(),
             BRANCH_FORMAT_UPGRADE_PATH.get(BranchFormat.BZR_BRANCH_4)))

@@ -211,10 +211,11 @@ class BranchUpgradeJob(BranchJobDerived):
     def run(self):
         """See `IBranchUpgradeJob`."""
         branch = self.branch.getBzrBranch()
-        to_format = self.getUpgradeFormat()
+        to_format = self.upgrade_format
         upgrade(branch.base, to_format)
 
-    def getUpgradeFormat(self):
+    @property
+    def upgrade_format(self):
         """See `IBranch`."""
         format = BzrDirMetaFormat1()
         branch_format = BRANCH_FORMAT_UPGRADE_PATH.get(
