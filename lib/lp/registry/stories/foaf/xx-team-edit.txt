@@ -114,13 +114,13 @@ a hold of to change.
     ...
     LookupError: name 'field.name'
 
-The reason why the field is immutable is diplayed in the field
+The reason why the field is immutable is displayed in the field
 description.
 
     >>> print extract_text(
     ...     first_tag_by_class(browser.contents, 'form'))
     Name: landscape-developers
-    This team cannot be renamed because it has a mailling list.
+    This team cannot be renamed because it has a mailing list.
     ...
 
 Of course, teams without mailing lists still have an editable name field.
@@ -152,7 +152,7 @@ Of course, teams without mailing lists still have an editable name field.
     ...
     LookupError: name 'field.name'
 
-The reason why the field is immutable is diplayed in the field
+The reason why the field is immutable is displayed in the field
 description.
 
     >>> print extract_text(
@@ -168,7 +168,7 @@ Since public teams can have mailing lists and PPAs simultaneously,
 there will be scenarios where more than one of these conditions are
 actually blocking the team to be renamed.
 
-The Landscape Developers team already has a mailling list, we will
+The Landscape Developers team already has a mailing list, we will
 also activate its PPA.
 
     >>> browser.open('http://launchpad.dev/~landscape-developers')
@@ -194,5 +194,5 @@ a complete explanation about why it cannot be modified.
     >>> print extract_text(
     ...     first_tag_by_class(browser.contents, 'form'))
     Name: landscape-developers
-    This team cannot be renamed because it has a mailling list and a PPA.
+    This team cannot be renamed because it has a mailing list and a PPA.
     ...

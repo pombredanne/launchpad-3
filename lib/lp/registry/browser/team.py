@@ -210,13 +210,13 @@ class TeamEditView(TeamFormMixin, HasRenewalPolicyMixin,
         are prohibited.
         """
         mailing_list = getUtility(IMailingListSet).get(self.context.name)
-        has_mailling_list = (
+        has_mailing_list = (
             mailing_list is not None and
             mailing_list.status != MailingListStatus.PURGED)
         is_private = self.context.visibility == PersonVisibility.PRIVATE
         has_ppa = self.context.archive is not None
 
-        block_renaming = (has_mailling_list or is_private or has_ppa)
+        block_renaming = (has_mailing_list or is_private or has_ppa)
         if block_renaming:
             # This makes the field's widget display (i.e. read) only.
             self.form_fields['name'].for_display = True
@@ -227,17 +227,17 @@ class TeamEditView(TeamFormMixin, HasRenewalPolicyMixin,
         # read-only mode if necessary.
         if block_renaming:
             # Group the read-only mode reasons in textual form.
-            # Private teams can't be associated with mailling lists
+            # Private teams can't be associated with mailing lists
             # or PPAs yet, so it's a dominant condition.
             if is_private:
                 reason = 'is private'
             else:
-                if not has_mailling_list:
+                if not has_mailing_list:
                     reason = 'has a PPA'
                 elif not has_ppa:
-                    reason = 'has a mailling list'
+                    reason = 'has a mailing list'
                 else:
-                    reason = 'has a mailling list and a PPA'
+                    reason = 'has a mailing list and a PPA'
 
             # We can't change the widget's .hint directly because that's a
             # read-only property.  But that property just delegates to the
