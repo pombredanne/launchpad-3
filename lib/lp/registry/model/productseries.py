@@ -17,8 +17,6 @@ from zope.interface import implements
 from storm.locals import And, Desc
 from storm.store import Store
 
-from lazr.restful.interfaces import IJSONPublishable
-
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
@@ -52,40 +50,11 @@ from canonical.launchpad.interfaces.structuralsubscription import (
     IStructuralSubscriptionTarget)
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.registry.interfaces.productseries import (
-    IProductSeries, IProductSeriesSet, ITimelineLandmark, ITimelineSeries)
+    IProductSeries, IProductSeriesSet)
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from canonical.launchpad.interfaces.translations import (
     TranslationsBranchImportMode)
-
-
-class TimelineSeries:
-    """See `ITimelineSeries`."""
-    implements(ITimelineSeries, IJSONPublishable)
-
-    def __init__(self, name, is_development_focus, landmarks):
-        self.name = name
-        self.is_development_focus = is_development_focus
-        self.landmarks = landmarks
-
-    def toDataForJSON(self):
-        return dict(
-            name=self.name,
-            is_development_focus=self.is_development_focus,
-            landmarks=self.landmarks)
-
-
-class TimelineLandmark:
-    """See `ITimelineLandmark`."""
-    implements(ITimelineLandmark, IJSONPublishable)
-
-    def __init__(self, name, code_name, type):
-        self.name = name
-        self.code_name = code_name
-        self.type = type
-
-    def toDataForJSON(self):
-        return dict(name=self.name, code_name=self.code_name, type=self.type)
 
 
 class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
@@ -483,10 +452,10 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
                 node_type = 'milestone'
             else:
                 node_type = 'release'
-            landmarks.append(TimelineLandmark(
+            landmarks.append(dict(
                 name=milestone.name, code_name=milestone.code_name,
                 type=node_type))
-        return TimelineSeries(
+        return dict(
             name=self.name,
             is_development_focus=self.is_development_focus,
             landmarks=landmarks)

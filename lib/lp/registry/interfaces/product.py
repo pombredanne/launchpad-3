@@ -57,8 +57,7 @@ from lp.registry.interfaces.commercialsubscription import (
 from lp.registry.interfaces.mentoringoffer import IHasMentoringOffers
 from lp.registry.interfaces.pillar import IPillar
 from lp.registry.interfaces.productrelease import IProductRelease
-from lp.registry.interfaces.productseries import (
-    IProductSeries, ITimelineSeries)
+from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.project import IProject
 from lp.blueprints.interfaces.specificationtarget import (
     ISpecificationTarget)
