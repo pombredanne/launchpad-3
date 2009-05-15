@@ -128,11 +128,8 @@ class TestGarbo(TestCaseWithFactory):
         self.failUnlessEqual(store.find(OpenIDConsumerNonce).count(), 0)
 
         for timestamp in timestamps:
-            nonce = store.add(OpenIDConsumerNonce())
-            nonce.server_url = unicode(timestamp)
-            nonce.timestamp = timestamp
-            nonce.salt = u'aa'
-            store.add(nonce)
+            store.add(OpenIDConsumerNonce(
+                    u'http://server/', timestamp, u'aa'))
         transaction.commit()
 
         # Make sure we have 4 nonces now.
