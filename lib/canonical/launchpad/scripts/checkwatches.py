@@ -760,16 +760,10 @@ class BugWatchUpdater(object):
                     external_bugtracker.baseurl, package_name))
         summary, description = (
             external_bugtracker.getBugSummaryAndDescription(remote_bug))
-        bug_params = CreateBugParams(
-            reporter, summary, description, subscribe_reporter=False)
-        if IDistribution.providedBy(bug_target):
-            bug_params.setBugTarget(distribution=bug_target)
-        else:
-            bug_params.setBugTarget(
-                distribution=bug_target.distribution,
-                sourcepackagename=bug_target.sourcepackagename)
-        bug = getUtility(IBugSet).createBug(
-            bug_params, getUtility(ILaunchpadCelebrities).bug_watch_updater)
+        bug = bug_target.createBug(
+            CreateBugParams(
+                reporter, summary, description, subscribe_owner=False,
+                filed_by=getUtility(ILaunchpadCelebrities).bug_watch_updater))
         [added_task] = bug.bugtasks
         bug_watch = getUtility(IBugWatchSet).createBugWatch(
             bug=bug,

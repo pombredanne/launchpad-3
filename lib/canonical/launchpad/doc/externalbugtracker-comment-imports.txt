@@ -25,7 +25,7 @@ and BugWatch instances with which to work.
     >>> bug = firefox.createBug(
     ...     CreateBugParams(sample_person, "Yet another test bug",
     ...         "Yet another test description.",
-    ...         subscribe_reporter=False))
+    ...         subscribe_owner=False))
 
     >>> bug_watch = bug.addWatch(bug_tracker, '123456', sample_person)
 
