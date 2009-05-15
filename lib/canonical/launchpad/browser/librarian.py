@@ -129,7 +129,7 @@ class StreamOrRedirectLibraryFileAliasView(LaunchpadView):
         chain with this view. If the context file is public return the
         appropriate `RedirectionView` for its HTTP url.
         """
-        assert self.context.content.deleted is False, (
+        assert not self.context.content.deleted, (
             "StreamOrRedirectLibraryFileAliasView can not operate on "
             "deleted librarian files, since their URL is undefined.")
 
