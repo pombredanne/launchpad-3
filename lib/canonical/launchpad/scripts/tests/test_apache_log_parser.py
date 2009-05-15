@@ -18,7 +18,7 @@ from canonical.launchpad.scripts.librarian_apache_log_parser import (
     get_method_and_file_id, NotALibraryFileAliasRequest, parse_file)
 from canonical.launchpad.scripts.logger import BufferLogger
 from canonical.launchpad.ftests import ANONYMOUS, login
-from canonical.launchpad.testing import TestCase
+from lp.testing import TestCase
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from canonical.testing import (

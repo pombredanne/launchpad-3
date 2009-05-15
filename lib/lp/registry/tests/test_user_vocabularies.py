@@ -10,7 +10,7 @@ from zope.schema.vocabulary import getVocabularyRegistry
 
 from lp.registry.interfaces.person import PersonVisibility
 from canonical.launchpad.ftests import login, login_person
-from canonical.launchpad.testing import TestCaseWithFactory
+from lp.testing import TestCaseWithFactory
 from canonical.testing import LaunchpadFunctionalLayer
 
 
