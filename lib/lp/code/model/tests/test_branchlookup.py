@@ -15,7 +15,7 @@ from canonical.config import config
 from lp.code.interfaces.branch import NoSuchBranch
 from lp.code.interfaces.branchlookup import (
     CannotHaveLinkedBranch, IBranchLookup, ILinkedBranchTraverser,
-    ISourcePackagePocketFactory, NoLinkedBranch)
+    NoLinkedBranch)
 from lp.code.interfaces.branchnamespace import (
     get_branch_namespace, InvalidNamespace)
 from lp.registry.interfaces.distroseries import NoSuchDistroSeries

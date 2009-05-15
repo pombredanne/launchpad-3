@@ -10,8 +10,6 @@ __all__ = [
     'ICanHasLinkedBranch',
     'ILinkedBranchTraversable',
     'ILinkedBranchTraverser',
-    'ISourcePackagePocket',
-    'ISourcePackagePocketFactory',
     'NoLinkedBranch',
     ]
 
@@ -150,16 +148,4 @@ class IBranchLookup(Interface):
         :return: a tuple of (`IBranch`, extra_path). 'extra_path' is used to
             make things like 'bzr cat lp:~foo/bar/baz/README' work. Trailing
             paths are not handled for shortcut paths.
-        """
-
-
-class ISourcePackagePocketFactory(Interface):
-    """Utility for constructing source package pocket wrappers."""
-
-    def new(package, pocket):
-        """Construct a new `ISourcePackagePocket`.
-
-        :param package: An `ISourcePackagePocket`.
-        :param pocket: A `DBItem` of `PackagePublishingPocket`.
-        :return: `ISourcePackagePocket`.
         """
