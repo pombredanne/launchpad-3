@@ -110,7 +110,7 @@ As before, we get a list of similar bugs to choose from.
     New (1 comment) last updated 2006-05-19
     Firefox needs to support embedded SVG...
 
-This one matches, so we subscribe.
+This one matches, so we mark it as affecting us.
 
     >>> user_browser.getControl(
     ...     "Yes, this is the bug I'm trying to report").click()
@@ -121,6 +121,28 @@ This one matches, so we subscribe.
     >>> for message in get_feedback_messages(user_browser.contents):
     ...     print message
     This bug has been marked as affecting you.
+
+It's also possible to subscribe to the suggested duplicates. This is
+handled by a Javascript FormOverlay, but for the sake of integration
+testing we'll test it here, too.
+
+    >>> user_browser.open("http://bugs.launchpad.dev/firefox/+filebug")
+    >>> user_browser.getControl("Summary").value = (
+    ...     "SVG images aren't displayed")
+    >>> user_browser.getControl("Continue").click()
+
+There's a hidden field on the "yes, this is my bug" form, which we can
+set to ensure that we get subscribed to the bug.
+
+    >>> user_browser.getControl(
+    ...     name="field.subscribe_to_existing_bug").value = 'yes'
+    >>> user_browser.getControl(
+    ...     "Yes, this is the bug I'm trying to report").click()
+
+    >>> for message in get_feedback_messages(user_browser.contents):
+    ...     print message
+    This bug is already marked as affecting you.
+    You have been subscribed to this bug.
 
 
 == Filing a bug when there are none similar ==
