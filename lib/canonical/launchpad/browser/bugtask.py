@@ -473,8 +473,6 @@ class BugTaskView(LaunchpadView, CanBeMentoredView, FeedsMixin):
         else:
             self.context = context
 
-        self.expand_reply_box = False
-
     def initialize(self):
         """Set up the needed widgets."""
         bug = self.context.bug
