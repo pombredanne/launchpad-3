@@ -59,7 +59,6 @@ from canonical.launchpad.database import (
     TranslationMessage)
 from canonical.database.sqlbase import quote_like, quote, sqlvalues
 from canonical.launchpad.helpers import shortlist
-from canonical.launchpad.interfaces import IStore
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from canonical.launchpad.interfaces.bugtask import IBugTask
 from canonical.launchpad.interfaces.bugtracker import BugTrackerType

@@ -18,12 +18,9 @@ from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser import TextWidget
 from zope.component import getUtility
 from zope.formlib import form
-from zope.interface import alsoProvides, implements
-from zope.security.proxy import removeSecurityProxy
+from zope.interface import implements
 
 from canonical.cachedproperty import cachedproperty
-from canonical.launchpad.components.decoratedresultset import (
-    DecoratedResultSet)
 from lp.soyuz.interfaces.archive import IArchiveSet
 from lp.soyuz.interfaces.archiveauthtoken import (
     IArchiveAuthTokenSet)

@@ -1,4 +1,5 @@
 # Copyright 2009 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=C0102
 
 """Tests for `LoggingUIFactory`."""
 
