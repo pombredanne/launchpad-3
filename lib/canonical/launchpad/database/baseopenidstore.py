@@ -127,18 +127,6 @@ class BaseStormOpenIDStore(OpenIDStore):
         store.add(self.Nonce(server_url, timestamp, salt))
         return True
 
-    def cleanupNonces(self, _now=None):
-        """See `OpenIDStore`."""
-        store = IMasterStore(self.Nonce)
-        if _now is None:
-            _now = int(time.time())
-        expired = store.find(
-            self.Nonce, self.Nonce.timestamp < _now - nonce.SKEW)
-        count = expired.count()
-        if count > 0:
-            expired.remove()
-        return count
-
     def cleanupAssociations(self):
         """See `OpenIDStore`."""
         store = IMasterStore(self.Association)
