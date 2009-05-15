@@ -82,7 +82,6 @@ class IBranchUpgradeJobSource(Interface):
         """Upgrade a branch to a more current format.
 
         :param branch: The database branch to upgrade.
-        :param to_format: The format to upgrade the branch to.
         """
 
 
