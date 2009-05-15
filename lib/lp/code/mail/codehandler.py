@@ -520,7 +520,8 @@ class CodeHandler:
         # access to any needed but not supplied revisions.
         md.target_branch = target_url
         md.install_revisions(bzr_branch.repository)
-        bzr_branch.pull(bzr_branch, stop_revision=md.revision_id)
+        bzr_branch.pull(bzr_branch, stop_revision=md.revision_id,
+                        overwrite=True)
 
     def findMergeDirectiveAndComment(self, message):
         """Extract the comment and Merge Directive from a SignedMessage."""

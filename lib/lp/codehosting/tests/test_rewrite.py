@@ -13,7 +13,7 @@ from lp.codehosting.vfs import branch_id_to_path
 from lp.codehosting.inmemory import InMemoryFrontend, XMLRPCWrapper
 from lp.codehosting.rewrite import BranchRewriter
 from canonical.config import config
-from canonical.launchpad.testing import TestCase, TestCaseWithFactory
+from lp.testing import TestCase, TestCaseWithFactory
 from canonical.launchpad.scripts import QuietFakeLogger
 from canonical.testing.layers import ZopelessAppServerLayer
 

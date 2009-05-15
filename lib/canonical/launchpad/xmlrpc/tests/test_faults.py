@@ -6,7 +6,7 @@ __metaclass__ = type
 
 import unittest
 
-from canonical.launchpad.testing import TestCase
+from lp.testing import TestCase
 from canonical.launchpad.xmlrpc import faults
 
 

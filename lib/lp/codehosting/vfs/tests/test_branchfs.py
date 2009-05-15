@@ -32,7 +32,7 @@ from lp.codehosting.vfs.transport import AsyncVirtualTransport
 from lp.code.interfaces.branch import BranchType
 from lp.code.interfaces.codehosting import (
     BRANCH_TRANSPORT, CONTROL_TRANSPORT)
-from canonical.launchpad.testing import TestCase
+from lp.testing import TestCase
 from canonical.testing import TwistedLayer
 
 

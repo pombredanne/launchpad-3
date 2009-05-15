@@ -14,15 +14,8 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.soyuz.adapters.packagelocation import (
     build_package_location)
-from lp.soyuz.interfaces.publishing import PackagePublishingStatus
-from lp.soyuz.interfaces.archive import (
-    ArchivePurpose, IArchiveSet)
-from lp.soyuz.interfaces.archivearch import IArchiveArchSet
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.packagecloner import IPackageCloner
-from lp.soyuz.interfaces.packagecopyrequest import (
-    IPackageCopyRequestSet)
-from lp.registry.interfaces.person import IPersonSet
 from lp.soyuz.interfaces.processor import IProcessorFamilySet
 from lp.soyuz.scripts.ftpmasterbase import (
     SoyuzScript, SoyuzScriptError)
@@ -86,6 +79,14 @@ class ArchivePopulator(SoyuzScript):
         :param packageset_delta_flag: only show packages that are fresher or
             new in the origin archive. Do not copy anything.
         """
+        # Avoid circular imports.
+        from lp.registry.interfaces.person import IPersonSet
+        from lp.soyuz.interfaces.archive import (
+            ArchivePurpose, IArchiveSet)
+        from lp.soyuz.interfaces.archivearch import IArchiveArchSet
+        from lp.soyuz.interfaces.packagecopyrequest import (
+            IPackageCopyRequestSet)
+
         def loadProcessorFamilies(proc_family_names):
             """Load processor families for specified family names."""
             proc_family_set = getUtility(IProcessorFamilySet)
@@ -386,6 +387,9 @@ class ArchivePopulator(SoyuzScript):
         :param proc_families: the list of processor families for
             which to create builds (optional).
         """
+        # Avoid circular imports.
+        from lp.soyuz.interfaces.publishing import active_publishing_status
+
         self.logger.info("Processing %s." % distroseries.name)
 
         # Listify the architectures to avoid hitting this MultipleJoin
@@ -410,12 +414,8 @@ class ArchivePopulator(SoyuzScript):
         # Both, PENDING and PUBLISHED sources will be considered for
         # as PUBLISHED. It's part of the assumptions made in:
         # https://launchpad.net/soyuz/+spec/build-unpublished-source
-        pending = (
-            PackagePublishingStatus.PENDING,
-            PackagePublishingStatus.PUBLISHED,
-            )
         sources_published = archive.getPublishedSources(
-            distroseries=distroseries, status=pending)
+            distroseries=distroseries, status=active_publishing_status)
 
         self.logger.info(
             "Found %d source(s) published." % sources_published.count())

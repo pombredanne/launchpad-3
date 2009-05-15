@@ -9,7 +9,7 @@ import unittest
 from bzrlib.transport.memory import MemoryTransport
 
 from lp.codehosting.vfs.transport import get_readonly_transport
-from canonical.launchpad.testing import TestCase
+from lp.testing import TestCase
 
 
 class TestReadOnly(TestCase):

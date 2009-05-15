@@ -16,7 +16,7 @@ from lp.codehosting.puller.worker import (
     BadUrl, BranchMirrorer, BranchPolicy, PullerWorker, PullerWorkerProtocol)
 from lp.codehosting.tests.helpers import LoomTestMixin
 from canonical.config import config
-from canonical.launchpad.testing import TestCaseWithFactory
+from lp.testing import TestCaseWithFactory
 
 
 class BlacklistPolicy(BranchPolicy):

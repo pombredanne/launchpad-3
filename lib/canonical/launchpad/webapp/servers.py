@@ -47,11 +47,8 @@ from canonical.launchpad.interfaces import (
     IFeedsApplication, IPrivateApplication, IPerson, IPersonSet,
     IWebServiceApplication, IOAuthConsumerSet, NonceAlreadyUsed,
     TimestampOrderingError, ClockSkew)
-from canonical.shipit.interfaces.shipit import IShipItApplication
 from canonical.signon.interfaces.openidserver import IOpenIDApplication
 import canonical.launchpad.layers
-import canonical.launchpad.versioninfo
-import canonical.shipit.layers
 import canonical.signon.layers
 
 from canonical.launchpad.webapp.adapter import (
@@ -536,8 +533,24 @@ class BasicLaunchpadRequest:
         return get_query_string_params(self)
 
 
+class LaunchpadBrowserRequestMixin:
+    """A mixin for classes that share some method implementations."""
+
+    def getRootURL(self, rootsite):
+        """See IBasicLaunchpadRequest."""
+        if rootsite is not None:
+            assert rootsite in allvhosts.configs, (
+                "rootsite is %s.  Must be in %r." % (
+                    rootsite, sorted(allvhosts.configs.keys())))
+            root_url = allvhosts.configs[rootsite].rooturl
+        else:
+            root_url = self.getApplicationURL() + '/'
+        return root_url
+
+
 class LaunchpadBrowserRequest(BasicLaunchpadRequest, BrowserRequest,
-                              NotificationRequest, ErrorReportRequest):
+                              NotificationRequest, ErrorReportRequest,
+                              LaunchpadBrowserRequestMixin):
     """Integration of launchpad mixin request classes to make an uber
     launchpad request class.
     """
@@ -728,7 +741,7 @@ def adaptRequestToResponse(request):
     return request.response
 
 
-class LaunchpadTestRequest(TestRequest):
+class LaunchpadTestRequest(TestRequest, LaunchpadBrowserRequestMixin):
     """Mock request for use in unit and functional tests.
 
     >>> request = LaunchpadTestRequest(SERVER_URL='http://127.0.0.1/foo/bar')
@@ -1078,46 +1091,6 @@ class OpenIDBrowserRequest(LaunchpadBrowserRequest):
     implements(canonical.signon.layers.OpenIDLayer)
 
 
-# ---- shipit
-
-class ShipItPublication(AccountPrincipalMixin, LaunchpadBrowserPublication):
-    """The publication used for the ShipIt sites."""
-
-    root_object_interface = IShipItApplication
-
-
-class UbuntuShipItBrowserRequest(LaunchpadBrowserRequest):
-    implements(canonical.shipit.layers.ShipItUbuntuLayer)
-
-    @property
-    def icing_url(self):
-        """The URL to the directory containing resources for this request."""
-        return "%s+icing-ubuntu/rev%d" % (
-            allvhosts.configs['shipitubuntu'].rooturl,
-            canonical.launchpad.versioninfo.revno)
-
-
-class KubuntuShipItBrowserRequest(LaunchpadBrowserRequest):
-    implements(canonical.shipit.layers.ShipItKUbuntuLayer)
-
-    @property
-    def icing_url(self):
-        """The URL to the directory containing resources for this request."""
-        return "%s+icing-kubuntu/rev%d" % (
-            allvhosts.configs['shipitkubuntu'].rooturl,
-            canonical.launchpad.versioninfo.revno)
-
-
-class EdubuntuShipItBrowserRequest(LaunchpadBrowserRequest):
-    implements(canonical.shipit.layers.ShipItEdUbuntuLayer)
-
-    @property
-    def icing_url(self):
-        """The URL to the directory containing resources for this request."""
-        return "%s+icing-edubuntu/rev%d" % (
-            allvhosts.configs['shipitedubuntu'].rooturl,
-            canonical.launchpad.versioninfo.revno)
-
 # ---- feeds
 
 class FeedsPublication(LaunchpadBrowserPublication):
@@ -1267,6 +1240,12 @@ class WebServiceClientRequest(WebServiceRequestTraversal,
         # Web service requests use content negotiation.
         self.response.setHeader('Vary', 'Cookie, Authorization, Accept')
 
+    def getRootURL(self, rootsite):
+        """See IBasicLaunchpadRequest."""
+        # When browsing the web service, we want URLs to point back at the web
+        # service, so we basically ignore rootsite.
+        return self.getApplicationURL() + '/'
+
 
 class WebServiceTestRequest(WebServiceRequestTraversal, LaunchpadTestRequest):
     """Test request for the webservice.
@@ -1303,7 +1282,7 @@ class PublicXMLRPCPublication(LaunchpadBrowserPublication):
 
 
 class PublicXMLRPCRequest(BasicLaunchpadRequest, XMLRPCRequest,
-                          ErrorReportRequest):
+                          ErrorReportRequest, LaunchpadBrowserRequestMixin):
     """Request type for doing public XML-RPC in Launchpad."""
 
     def _createResponse(self):
@@ -1448,12 +1427,6 @@ def register_launchpad_request_publication_factories():
         VHRP('id', IdBrowserRequest, IdPublication),
         # XXX sinzui 2008-09-04 bug=264783: Remove openid.
         VHRP('openid', OpenIDBrowserRequest, OpenIDPublication),
-        VHRP('shipitubuntu', UbuntuShipItBrowserRequest,
-             ShipItPublication),
-        VHRP('shipitkubuntu', KubuntuShipItBrowserRequest,
-             ShipItPublication),
-        VHRP('shipitedubuntu', EdubuntuShipItBrowserRequest,
-             ShipItPublication),
         VHRP('feeds', FeedsBrowserRequest, FeedsPublication),
         WebServiceRequestPublicationFactory(
             'api', WebServiceClientRequest, WebServicePublication),

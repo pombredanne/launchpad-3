@@ -14,7 +14,7 @@ from lp.codehosting.vfs.branchfsclient import (
     BranchFileSystemClient, NotInCache, trap_fault)
 from lp.codehosting.inmemory import InMemoryFrontend, XMLRPCWrapper
 from lp.code.interfaces.codehosting import BRANCH_TRANSPORT
-from canonical.launchpad.testing import FakeTime
+from lp.testing import FakeTime
 from canonical.launchpad.xmlrpc.tests.test_faults import (
     TestFaultOne, TestFaultTwo)
 

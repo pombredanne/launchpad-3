@@ -39,7 +39,7 @@ from canonical.launchpad.ftests import login, logout
 from canonical.launchpad.interfaces import (
     CodeImportReviewStatus, ICodeImportJobSet, ICodeImportJobWorkflow,
     ICodeImportSet)
-from canonical.launchpad.testing import LaunchpadObjectFactory
+from lp.testing.factory import LaunchpadObjectFactory
 from canonical.testing.layers import (
     TwistedLayer, TwistedLaunchpadZopelessLayer)
 from canonical.twistedsupport.tests.test_processmonitor import (
