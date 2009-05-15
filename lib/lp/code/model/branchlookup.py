@@ -23,10 +23,10 @@ from lp.registry.model.product import Product
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.code.interfaces.branch import NoSuchBranch
 from lp.code.interfaces.branchlookup import (
-    CannotHaveLinkedBranch, IBranchLookup, ICanHasLinkedBranch,
-    ILinkedBranchTraversable, ILinkedBranchTraverser, NoLinkedBranch)
+    IBranchLookup, ILinkedBranchTraversable, ILinkedBranchTraverser)
 from lp.code.interfaces.branchnamespace import (
     IBranchNamespaceSet, InvalidNamespace)
+from lp.code.interfaces.linkedbranch import get_linked_branch, NoLinkedBranch
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import (
     IDistroSeries, IDistroSeriesSet)
@@ -348,12 +348,7 @@ class BranchLookup:
             doesn't.
         :return: The linked branch, an `IBranch`.
         """
-        has_linked_branch = adapt(provided, ICanHasLinkedBranch)
-        if has_linked_branch is None:
-            raise CannotHaveLinkedBranch(provided)
-        branch = has_linked_branch.branch
-        if branch is None:
-            raise NoLinkedBranch(provided)
+        branch = get_linked_branch(provided)
         if not check_permission('launchpad.View', branch):
             raise NoLinkedBranch(provided)
         return branch

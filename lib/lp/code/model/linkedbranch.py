@@ -10,7 +10,7 @@ __all__ = []
 from zope.component import adapts
 from zope.interface import implements
 
-from lp.code.interfaces.branchlookup import ICanHasLinkedBranch
+from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.suitesourcepackage import ISuiteSourcePackage

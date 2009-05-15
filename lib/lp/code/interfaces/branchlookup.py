@@ -5,39 +5,12 @@
 
 __metaclass__ = type
 __all__ = [
-    'CannotHaveLinkedBranch',
     'IBranchLookup',
-    'ICanHasLinkedBranch',
     'ILinkedBranchTraversable',
     'ILinkedBranchTraverser',
-    'NoLinkedBranch',
     ]
 
-from zope.interface import Attribute, Interface
-
-
-class CannotHaveLinkedBranch(Exception):
-    """Raised when we try to look up the linked branch for a thing that can't.
-    """
-
-    def __init__(self, component):
-        self.component = component
-        Exception.__init__(
-            self, "%r cannot have linked branches." % (component,))
-
-
-class NoLinkedBranch(Exception):
-    """Raised when there's no linked branch for a thing."""
-
-    def __init__(self, component):
-        self.component = component
-        Exception.__init__(self, "%r has no linked branch." % (component,))
-
-
-class ICanHasLinkedBranch(Interface):
-    """Something that has a linked branch."""
-
-    branch = Attribute("The linked branch.")
+from zope.interface import Interface
 
 
 class ILinkedBranchTraversable(Interface):
