@@ -1246,8 +1246,6 @@ class TryImportAgainView(LaunchpadFormView):
     schema = IBranch
     field_names = []
 
-    form_style = "display: inline"
-
     @property
     def next_url(self):
         return canonical_url(self.context)
@@ -1267,10 +1265,6 @@ class TryImportAgainView(LaunchpadFormView):
     @property
     def prefix(self):
         return "tryagain"
-
-    @property
-    def action_url(self):
-        return "%s/@@+try-again" % canonical_url(self.context)
 
 
 class BranchSparkView(LaunchpadView):
