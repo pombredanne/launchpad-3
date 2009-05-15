@@ -326,11 +326,19 @@ class TrackerItemImporterTestCase(unittest.TestCase):
         self.assertEqual(attachment.libraryfile.filename, 'hello.txt')
         self.assertEqual(attachment.libraryfile.mimetype, 'text/plain')
 
-        self.assertEqual(bug.activity.count(), 1)
+        self.assertEqual(bug.activity.count(), 2)
+
+        # Activity record for bug creation.
         self.assertEqual(bug.activity[0].person,
                          getUtility(ILaunchpadCelebrities).bug_importer)
         self.assertEqual(bug.activity[0].whatchanged, 'bug')
-        self.assertEqual(bug.activity[0].message,
+        self.assertEqual(bug.activity[0].message, 'added bug')
+
+        # Activity record for importing.
+        self.assertEqual(bug.activity[1].person,
+                         getUtility(ILaunchpadCelebrities).bug_importer)
+        self.assertEqual(bug.activity[1].whatchanged, 'bug')
+        self.assertEqual(bug.activity[1].message,
                          'Imported SF tracker item #1278591')
 
 
