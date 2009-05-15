@@ -1266,7 +1266,7 @@ class TryImportAgainView(LaunchpadFormView):
 
     @property
     def prefix(self):
-        return "tryagain%s" % self.context.id
+        return "tryagain"
 
     @property
     def action_url(self):
