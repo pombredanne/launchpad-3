@@ -10,7 +10,7 @@ from zope.interface import implements
 
 from canonical.codehosting.scanner.fixture import (
     Fixtures, FixtureWithCleanup, IFixture, run_with_fixture, with_fixture)
-from canonical.launchpad.testing import TestCase
+from lp.testing import TestCase
 
 
 class LoggingFixture:

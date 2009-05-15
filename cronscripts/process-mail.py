@@ -8,7 +8,7 @@ import _pythonpath
 from zope.component.interfaces import ComponentLookupError
 
 from canonical.config import config
-from canonical.launchpad.scripts.base import (
+from lp.services.scripts.base import (
     LaunchpadCronScript, LaunchpadScriptFailure)
 from canonical.launchpad.mail.incoming import handleMail
 from canonical.launchpad.interfaces import IMailBox

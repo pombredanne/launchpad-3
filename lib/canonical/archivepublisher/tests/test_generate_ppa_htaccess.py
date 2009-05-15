@@ -22,7 +22,7 @@ from canonical.launchpad.interfaces import (
 from lp.soyuz.interfaces.archivesubscriber import (
     ArchiveSubscriberStatus)
 from canonical.launchpad.scripts import QuietFakeLogger
-from canonical.launchpad.testing import LaunchpadObjectFactory
+from lp.testing.factory import LaunchpadObjectFactory
 from canonical.testing.layers import LaunchpadZopelessLayer
 
 

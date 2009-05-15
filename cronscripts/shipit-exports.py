@@ -10,7 +10,7 @@ from zope.component import getUtility
 
 from canonical.config import config
 from canonical.database.sqlbase import ISOLATION_LEVEL_READ_COMMITTED
-from canonical.launchpad.scripts.base import (
+from lp.services.scripts.base import (
     LaunchpadCronScript, LaunchpadScriptFailure)
 from canonical.shipit.interfaces.shipit import (
     IShippingRequestSet, ShipItConstants, ShipItDistroSeries,
@@ -45,7 +45,8 @@ class ShipitExports(LaunchpadCronScript):
         elif self.options.priority == 'high':
             priority = ShippingRequestPriority.HIGH
         else:
-            raise LaunchpadScriptFailure('Wrong value for argument --priority: %s'
+            raise LaunchpadScriptFailure(
+                'Wrong value for argument --priority: %s'
                 % self.options.priority)
 
         distroseries = ShipItConstants.current_distroseries
@@ -58,7 +59,8 @@ class ShipitExports(LaunchpadCronScript):
                     series.name for series in ShipItDistroSeries.items)
                 raise LaunchpadScriptFailure(
                     'Invalid value for argument --distroseries: %s. Valid '
-                    'values are: %s' % (self.options.distroseries, valid_names))
+                    'values are: %s'
+                    % (self.options.distroseries, valid_names))
 
         requestset = getUtility(IShippingRequestSet)
         requestset.exportRequestsToFiles(priority, self.txn, distroseries)
@@ -67,6 +69,7 @@ class ShipitExports(LaunchpadCronScript):
 
 
 if __name__ == '__main__':
-    script = ShipitExports('shipit-export-orders', dbuser=config.shipit.dbuser)
+    script = ShipitExports(
+        'shipit-export-orders', dbuser=config.shipit.dbuser)
     script.lock_and_run()
 

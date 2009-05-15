@@ -1,5 +1,5 @@
 #!/usr/bin/python2.4
-# Copyright 2005 Canonical Ltd.  All rights reserved.
+# Copyright 2005-2009 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=C0103,W0403
 
 """Script to generate reports with data from ShipIt orders."""
@@ -14,7 +14,7 @@ import pytz
 
 from canonical.config import config
 from canonical.uuid import generate_uuid
-from canonical.launchpad.scripts.base import LaunchpadCronScript
+from lp.services.scripts.base import LaunchpadCronScript
 from canonical.launchpad.interfaces import ILibraryFileAliasSet
 from canonical.shipit.interfaces.shipit import (
     IShippingRequestSet, IShipItReportSet)
@@ -30,7 +30,7 @@ class ShipitReporter(LaunchpadCronScript):
         fileset = getUtility(ILibraryFileAliasSet)
         csv_file.seek(0)
         now = datetime.now(pytz.timezone('UTC'))
-        filename = ('%s-%s-%s.csv' 
+        filename = ('%s-%s-%s.csv'
                     % (basename, now.strftime('%y-%m-%d'), generate_uuid()))
         return fileset.create(
             name=filename, size=len(csv_file.getvalue()), file=csv_file,
@@ -50,12 +50,14 @@ class ShipitReporter(LaunchpadCronScript):
 
         self.txn.begin()
         csv_file = requestset.generateCountryBasedReport()
-        reportset.new(self._createLibraryFileAlias(csv_file, 'OrdersByCountry'))
+        reportset.new(
+            self._createLibraryFileAlias(csv_file, 'OrdersByCountry'))
         self.txn.commit()
 
         self.txn.begin()
         csv_file = requestset.generateShipmentSizeBasedReport()
-        reportset.new(self._createLibraryFileAlias(csv_file, 'OrdersBySize'))
+        reportset.new(
+            self._createLibraryFileAlias(csv_file, 'OrdersBySize'))
         self.txn.commit()
 
         self.txn.begin()
@@ -63,7 +65,8 @@ class ShipitReporter(LaunchpadCronScript):
         # For now this will be hardcoded as the date when a new ShipIt is
         # opened.
         start_date = date(2007, 4, 5)
-        csv_file = requestset.generateWeekBasedReport(start_date, date.today())
+        csv_file = requestset.generateWeekBasedReport(
+            start_date, date.today())
         reportset.new(self._createLibraryFileAlias(csv_file, 'OrdersByWeek'))
         self.txn.commit()
 

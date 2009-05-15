@@ -28,7 +28,7 @@ from canonical.codehosting.puller.worker import (
 from canonical.config import config
 from canonical.launchpad.interfaces import BranchType
 from lp.code.interfaces.branchlookup import IBranchLookup
-from canonical.launchpad.testing import ObjectFactory
+from lp.testing.factory import ObjectFactory
 from canonical.launchpad.webapp import errorlog
 from canonical.launchpad.xmlrpc import faults
 from canonical.testing import (

@@ -11,10 +11,10 @@ from canonical.database.constants import UTC_NOW
 from canonical.testing import LaunchpadZopelessLayer
 from storm.locals import Store
 
-from canonical.launchpad.database.job import (
+from lp.services.job.model.job import (
     InvalidTransition, Job, LeaseHeld)
-from canonical.launchpad.interfaces.job import IJob, JobStatus
-from canonical.launchpad.testing import TestCase
+from lp.services.job.interfaces.job import IJob, JobStatus
+from lp.testing import TestCase
 from canonical.launchpad.webapp.testing import verifyObject
 
 

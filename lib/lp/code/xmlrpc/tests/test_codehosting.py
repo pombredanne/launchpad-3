@@ -17,13 +17,13 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.codehosting.inmemory import InMemoryFrontend
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.ftests import ANONYMOUS, login, logout
-from canonical.launchpad.interfaces.scriptactivity import (
+from lp.services.scripts.interfaces.scriptactivity import (
     IScriptActivitySet)
 from lp.code.interfaces.codehosting import (
     BRANCH_TRANSPORT, CONTROL_TRANSPORT)
 from canonical.launchpad.interfaces.launchpad import ILaunchBag
-from canonical.launchpad.testing import (
-    LaunchpadObjectFactory, TestCase, TestCaseWithFactory)
+from lp.testing import TestCase, TestCaseWithFactory
+from lp.testing.factory import LaunchpadObjectFactory
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from canonical.launchpad.xmlrpc import faults
 from canonical.testing import DatabaseFunctionalLayer, FunctionalLayer
@@ -515,7 +515,7 @@ class AcquireBranchToPullTestsViaEndpoint(TestCaseWithFactory,
     def assertBranchIsAquired(self, branch):
         """See `AcquireBranchToPullTests`."""
         pull_info = self.storage.acquireBranchToPull()
-        default_branch= branch.target.default_stacked_on_branch
+        default_branch = branch.target.default_stacked_on_branch
         if default_branch:
             default_branch_name = default_branch
         else:

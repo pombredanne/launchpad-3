@@ -12,7 +12,6 @@ from subprocess import PIPE, Popen
 import sys
 import unittest
 from urlparse import urlparse
-import xmlrpclib
 
 import transaction
 
@@ -23,7 +22,6 @@ from bzrlib import errors
 from bzrlib.tests import HttpServer
 from bzrlib.transport import get_transport
 from bzrlib.upgrade import upgrade
-from bzrlib import urlutils
 
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
