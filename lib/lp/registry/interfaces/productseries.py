@@ -288,7 +288,6 @@ class IProductSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
     is_development_focus = Attribute(
         _("Is this series the development focus for the product?"))
 
-    @operation_returns_entry(ITimelineSeries)
     @export_read_operation()
     @export_operation_as('get_timeline')
     def getTimeline():

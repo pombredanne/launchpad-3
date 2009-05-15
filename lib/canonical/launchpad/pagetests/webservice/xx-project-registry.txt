@@ -361,10 +361,9 @@ Similarly the date_created attribute cannot be modified.
 "get_timeline" returns a lightweight representation of the
 project's hierarchy of series, milestones, and releases.
 
-    >>> from pprint import pprint
     >>> timeline = webservice.named_get(
     ...     firefox['self_link'], "get_timeline").jsonBody()
-    >>> pprint(timeline)
+    >>> print pretty(timeline)
     [{u'is_development_focus': False,
       u'landmarks': [{u'code_name': u'First Stable Release',
                       u'name': u'1.0.0',
@@ -716,8 +715,11 @@ series' milestones and releases.
 
     >>> timeline = webservice.named_get(
     ...     babadoo_foobadoo['self_link'], "get_timeline").jsonBody()
-    >>> pprint(timeline)
-    {u'landmarks': [], u'name': u'foobadoo', u'is_development_focus': False}
+    >>> print pretty(timeline)
+    {u'is_development_focus': False,
+     u'landmarks': [],
+     u'name': u'foobadoo'}
+
 
 = Creating a milestone on the product series =
 
