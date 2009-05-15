@@ -56,9 +56,9 @@ from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.branchnamespace import IBranchNamespaceSet
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from lp.soyuz.interfaces.publishing import PackagePublishingPocket
-from canonical.launchpad.testing import (
-    LaunchpadObjectFactory, run_with_login, TestCase, TestCaseWithFactory,
-    time_counter)
+from lp.testing import (
+    run_with_login, TestCase, TestCaseWithFactory, time_counter)
+from lp.testing.factory import LaunchpadObjectFactory
 from canonical.launchpad.webapp.interfaces import IOpenLaunchBag
 
 from canonical.testing import DatabaseFunctionalLayer, LaunchpadZopelessLayer

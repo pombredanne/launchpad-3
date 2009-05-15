@@ -36,7 +36,7 @@ translation, we get two POFileTranslator records for each of the POFiles.
     >>> LaunchpadZopelessLayer.switchDbUser('postgres')
     >>> from canonical.database.sqlbase import sqlvalues
     >>> from canonical.launchpad.database import POFileTranslator
-    >>> from canonical.launchpad.testing.factory import LaunchpadObjectFactory
+    >>> from lp.testing.factory import LaunchpadObjectFactory
     >>> factory = LaunchpadObjectFactory()
 
     >>> foo = factory.makeProduct()

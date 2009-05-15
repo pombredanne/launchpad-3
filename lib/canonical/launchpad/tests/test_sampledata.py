@@ -14,7 +14,7 @@ import subprocess
 import unittest
 
 from canonical.testing.layers import DatabaseLayer
-from canonical.launchpad.testing import TestCase
+from lp.testing import TestCase
 
 class SampleDataTestCase(TestCase):
     layer = DatabaseLayer

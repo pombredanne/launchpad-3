@@ -30,7 +30,6 @@ from lp.registry.interfaces.product import IProductSet
 from canonical.launchpad.interfaces.searchservice import (
     GoogleResponseError, ISearchService)
 from lp.blueprints.interfaces.specification import ISpecificationSet
-from canonical.shipit.interfaces.shipit import ShipItConstants
 from canonical.launchpad.validators.name import sanitize_name
 from canonical.launchpad.webapp import (
     action, LaunchpadFormView, LaunchpadView, safe_action)
@@ -41,6 +40,9 @@ from lazr.batchnavigator.z3batching import batch
 from canonical.launchpad.webapp.vhosts import allvhosts
 
 from lp.answers.interfaces.questioncollection import IQuestionSet
+
+
+shipit_faq_url = 'http://www.ubuntu.com/getubuntu/shipit-faq'
 
 
 class LaunchpadRootIndexView(HasAnnouncementsView, LaunchpadView):
@@ -303,7 +305,7 @@ class LaunchpadSearchView(LaunchpadFormView):
     @property
     def shipit_faq_url(self):
         """The shipit FAQ URL."""
-        return ShipItConstants.faq_url
+        return shipit_faq_url
 
     @property
     def has_matches(self):

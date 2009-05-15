@@ -29,14 +29,15 @@ Submitting a bug title...
 
 Subscribing to one of the similar bugs takes us to the bug page.
 
-    >>> user_browser.getControl("Yes, subscribe me...").click()
+    >>> user_browser.getControl(
+    ...     "Yes, this is the bug I'm trying to report").click()
 
     >>> print user_browser.url
     http://bugs.launchpad.dev/thunderbird/+bug/9
 
     >>> for message in get_feedback_messages(user_browser.contents):
     ...     print message
-    You have been subscribed to this bug.
+    This bug has been marked as affecting you.
 
 Actually, on reflection, that's not our bug after all. Let's go
 back...
