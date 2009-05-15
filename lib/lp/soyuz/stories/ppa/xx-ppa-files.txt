@@ -205,8 +205,8 @@ Buildlog, upload_log and binary changesfile are served via the Build
     >>> check_urls(no_priv_browser, build_links,
     ...            'http://launchpad.dev/~no-priv/+archive/ppa/+build/31')
     test-bin_1.0_i386.changes:    OK
-    buildlog_...txt.gz:          OK
-    upload_..._log.txt:          OK
+    buildlog_...txt.gz:           OK
+    upload_..._log.txt:           OK
 
 Package-diff files, in the expandable-row area, are served via the PPA
 '+files' traversal.
@@ -420,6 +420,21 @@ The librarian URL for a deleted file is None, by convention. See
     None
 
     >>> logout()
+
+In this circumstance, when a file is deleted, the file reference
+remains in the PPA page, but it's not a link anymore.
+
+    >>> no_priv_browser.open("http://launchpad.dev/~no-priv/+archive/ppa")
+
+    >>> expander_id = find_tags_by_class(
+    ...     no_priv_browser.contents, 'expander')[1]['id']
+    >>> no_priv_browser.getLink(id=expander_id).click()
+
+    >>> check_urls(no_priv_browser, ppa_1_0_links,
+    ...            'http://launchpad.dev/~no-priv/+archive/ppa')
+    test-pkg_1.0.dsc:     NOT FOUND
+    test-pkg_1.0.tar.gz:  OK
+    test-bin_1.0_all.deb: OK
 
 If by any chance, mostly bookmarked URLs, it gets accessed via the
 LP proxy URL a proper NotFound error is raised, informing the correct

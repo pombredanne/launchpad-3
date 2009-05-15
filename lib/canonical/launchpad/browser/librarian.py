@@ -192,9 +192,15 @@ class ProxiedLibraryFileAlias:
     def http_url(self):
         """Return the webapp URL for the context `LibraryFileAlias`.
 
+        Preserve the `LibraryFileAlias.http_url` behavior for deleted
+        files, returning None.
+
         Mask webservice requests if it's the case, so the returned URL will
         be always relative to the parent webapp URL.
         """
+        if self.context.content.deleted:
+            return None
+
         request = get_current_browser_request()
         if WebServiceLayer.providedBy(request):
             request = IWebBrowserOriginatingRequest(request)
