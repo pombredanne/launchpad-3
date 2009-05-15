@@ -210,29 +210,40 @@ class TeamEditView(TeamFormMixin, HasRenewalPolicyMixin,
         are prohibited.
         """
         mailing_list = getUtility(IMailingListSet).get(self.context.name)
-        writable = (
-            (mailing_list is None or
-             mailing_list.status == MailingListStatus.PURGED) and
-            self.context.visibility != PersonVisibility.PRIVATE and
-            self.context.archive is None
-            )
+        has_mailling_list = (
+            mailing_list is not None and
+            mailing_list.status != MailingListStatus.PURGED)
+        is_private = self.context.visibility == PersonVisibility.PRIVATE
+        has_ppa = self.context.archive is not None
 
-        if not writable:
+        block_renaming = (has_mailling_list or is_private or has_ppa)
+        if block_renaming:
             # This makes the field's widget display (i.e. read) only.
             self.form_fields['name'].for_display = True
+
         super(TeamEditView, self).setUpWidgets()
-        if not writable:
-            if self.context.visibility == PersonVisibility.PRIVATE:
-                message = _('You cannot change the name of a private team.')
-            elif self.context.archive is not None:
-                message = _('This team has a PPA and may not be renamed.')
+
+        # Tweak the field form-help including an explanation for the
+        # read-only mode if necessary.
+        if block_renaming:
+            # Group the read-only mode reasons in textual form.
+            # Private teams can't be associated with mailling lists
+            # or PPAs yet, so it's a dominant condition.
+            if is_private:
+                reason = 'is private'
             else:
-                message = _(
-                    'This team has a mailing list and may not be renamed.')
+                if not has_mailling_list:
+                    reason = 'has a PPA'
+                elif not has_ppa:
+                    reason = 'has a mailling list'
+                else:
+                    reason = 'has a mailling list and a PPA'
+
             # We can't change the widget's .hint directly because that's a
             # read-only property.  But that property just delegates to the
             # context's underlying description, so change that instead.
-            self.widgets['name'].context.description = message
+            self.widgets['name'].context.description = _(
+                'This team cannot be renamed because it %s.' % reason)
 
 
 def generateTokenAndValidationEmail(email, team):

@@ -270,7 +270,7 @@ Similarly to users, teams with assigned PPAs cannot be renamed either.
     >>> print extract_text(
     ...     first_tag_by_class(sample_browser.contents, 'form'))
     Name: landscape-developers
-    This team has a PPA and may not be renamed.
+    This team cannot be renamed because it has a PPA.
     ...
 
 

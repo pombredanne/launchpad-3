@@ -114,6 +114,15 @@ a hold of to change.
     ...
     LookupError: name 'field.name'
 
+The reason why the field is immutable is diplayed in the field
+description.
+
+    >>> print extract_text(
+    ...     first_tag_by_class(browser.contents, 'form'))
+    Name: landscape-developers
+    This team cannot be renamed because it has a mailling list.
+    ...
+
 Of course, teams without mailing lists still have an editable name field.
 
     >>> print MailingListSet().get('guadamen')
@@ -142,3 +151,48 @@ Of course, teams without mailing lists still have an editable name field.
     Traceback (most recent call last):
     ...
     LookupError: name 'field.name'
+
+The reason why the field is immutable is diplayed in the field
+description.
+
+    >>> print extract_text(
+    ...     first_tag_by_class(browser.contents, 'form'))
+    Name: private-team
+    This team cannot be renamed because it is private.
+    ...
+
+
+== Multiple conditions blocking team renaming ==
+
+Since public teams can have mailing lists and PPAs simultaneously,
+there will be scenarios where more than one of these conditions are
+actually blocking the team to be renamed.
+
+The Landscape Developers team already has a mailling list, we will
+also activate its PPA.
+
+    >>> browser.open('http://launchpad.dev/~landscape-developers')
+    >>> browser.getLink('Create a new PPA').click()
+    >>> browser.getControl(
+    ...     name="field.displayname").value = 'Devel PPA'
+    >>> browser.getControl(name="field.accepted").value = True
+    >>> browser.getControl(
+    ...    name="field.description").value = 'Hoohay for Team PPA.'
+    >>> browser.getControl("Activate").click()
+
+Back in the team edit form, the 'name' field remains read-only and has
+a complete explanation about why it cannot be modified.
+
+    >>> browser.getLink('Overview').click()
+    >>> browser.getLink('Change details').click()
+
+    >>> browser.getControl(name='field.name').value
+    Traceback (most recent call last):
+    ...
+    LookupError: name 'field.name'
+
+    >>> print extract_text(
+    ...     first_tag_by_class(browser.contents, 'form'))
+    Name: landscape-developers
+    This team cannot be renamed because it has a mailling list and a PPA.
+    ...
