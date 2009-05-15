@@ -64,7 +64,7 @@ def test_inline_subscriber():
     client.waits.sleep(milliseconds=WAIT_CHECK_CHANGE)
     client.asserts.assertText(
         xpath=SUBSCRIPTION_LINK, validator=u'Unsubscribe')
-    client.click(id=u'unsub-icon-name12')
+    client.click(id=u'unsubscribe-icon-name12')
     client.waits.sleep(milliseconds=WAIT_CHECK_CHANGE)
     client.asserts.assertText(
         xpath=SUBSCRIPTION_LINK, validator=u'Subscribe')
