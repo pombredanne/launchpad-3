@@ -2,6 +2,10 @@
 
 """Customized widgets used in Launchpad."""
 
+# XXX sinzui 2009-05-15 bug=377095: This module should be broken up and
+# moved into canonical.widgets.
+
+
 __metaclass__ = type
 
 __all__ = [
