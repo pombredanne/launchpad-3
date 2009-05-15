@@ -3,7 +3,7 @@
 """OpenID Consumer related database classes."""
 
 __metaclass__ = type
-__all__ = ['OpenIDConsumerNonce']
+__all__ = ['BaseOpenIDStore', 'OpenIDConsumerNonce']
 
 from openid.store.sqlstore import PostgreSQLStore
 import psycopg2
@@ -33,22 +33,18 @@ class OpenIDConsumerNonce(Storm):
     salt = Unicode()
 
 
-class OpenIDConsumerStore(PostgreSQLStore):
+class BaseOpenIDStore(PostgreSQLStore):
     """The standard OpenID Library PostgreSQL store with overrides to
     ensure it plays nicely with Zope3 and Launchpad.
-
-    This class is for use by Launchpad as an OpenID client.
-
-    It is registered as a factory to provide a way for instances to be
-    created from browser code without warnings, as getUtility is not
-    suitable as this class is not thread safe.
     """
     classProvides(IOpenIDConsumerStoreFactory)
 
     exceptions = psycopg2
     settings_table = None
-    associations_table = 'OpenIDConsumerAssociation'
-    nonces_table = 'OpenIDConsumerNonce'
+
+    associations_table = None # Override.
+    nonces_table = None # Override.
+    storm_store = None # Override.
 
     def __init__(self):
         # No need to pass in the connection - we have better ways of
@@ -63,10 +59,13 @@ class OpenIDConsumerStore(PostgreSQLStore):
         """
         # We seem to need to force the use of the master store here,
         # as we need to write on GET.
-        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
-        self.cur = store._connection._raw_connection.cursor()
+        connection = getUtility(IStoreSelector).get(
+            self.storm_store, MASTER_FLAVOR)._connection
+        connection._ensure_connected()
         try:
-            return func(*args, **kwargs)
+            self.cur = connection._check_disconnect(
+                connection._raw_connection.cursor)
+            return connection._check_disconnect(func, *args, **kwargs)
         finally:
             self.cur = None
 
@@ -75,3 +74,19 @@ class OpenIDConsumerStore(PostgreSQLStore):
         raise AssertionError("Tables should not be created automatically")
 
     txn_createTables = createTables
+
+
+class OpenIDConsumerStore(BaseOpenIDStore):
+    """The standard OpenID Library PostgreSQL store with overrides to
+    ensure it plays nicely with Zope3 and Launchpad.
+
+    `BaseOpenIDStore` for use by Launchpad as an OpenID client.
+
+    It is registered as a factory to provide a way for instances to be
+    created from browser code without warnings; getUtility is not
+    suitable as this class is not thread safe.
+    """
+    classProvides(IOpenIDConsumerStoreFactory)
+    associations_table = 'OpenIDConsumerAssociation'
+    nonces_table = 'OpenIDConsumerNonce'
+    store = MAIN_STORE

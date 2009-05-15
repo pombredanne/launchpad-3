@@ -18,8 +18,6 @@ from datetime import datetime
 import pytz
 import re
 
-from openid.store.sqlstore import PostgreSQLStore
-import psycopg2
 from sqlobject import (
     BoolCol, ForeignKey, IntCol, SQLObjectNotFound, StringCol)
 from storm.expr import Desc, Or
@@ -30,6 +28,7 @@ from canonical.database.constants import DEFAULT, UTC_NOW, NEVER_EXPIRES
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
+from canonical.launchpad.database.openidconsumer import BaseOpenIDStore
 from canonical.launchpad.interfaces import IMasterStore, IStore
 from canonical.launchpad.interfaces.account import AccountStatus
 from lp.registry.interfaces.person import PersonCreationRationale
@@ -69,7 +68,7 @@ class OpenIDAuthorizationSet:
 
     def isAuthorized(self, account, trust_root, client_id):
         """See IOpenIDAuthorizationSet.
-        
+
         The use of the master Store is forced to avoid replication
         race conditions.
         """
@@ -198,46 +197,21 @@ class OpenIDRPConfigSet:
                OpenIDRPConfig.trust_root==trust_root[:-1])).one()
 
 
-class LaunchpadOpenIDStore(PostgreSQLStore):
+class LaunchpadOpenIDStore(BaseOpenIDStore):
     """The standard OpenID Library PostgreSQL store with overrides to
     ensure it plays nicely with Zope3 and Launchpad.
 
-    This class is used by the SSO Server (OpenID Provider)
+    `BaseOpenIDStore` for the SSO Server (OpenID Provider)
 
     It is registered as a factory to provide a way for instances to be
-    created from browser code without warnings, as getUtility is not
+    created from browser code without warnings; getUtility is not
     suitable as this class is not thread safe.
     """
     classProvides(ILaunchpadOpenIDStoreFactory)
 
-    exceptions = psycopg2
-    settings_table = None
     associations_table = 'OpenIDAssociation'
     nonces_table = 'OpenIDNonce'
-
-    def __init__(self):
-        # No need to pass in the connection - we have better ways of
-        # getting a cursor.
-        PostgreSQLStore.__init__(self, None)
-
-    def _callInTransaction(self, func, *args, **kwargs):
-        """Open a fresh cursor and call the given method.
-
-        No transactional semantics in Launchpad because Z3 is already
-        fully transactional so there is no need to reinvent the wheel.
-        """
-        store = getUtility(IStoreSelector).get(AUTH_STORE, MASTER_FLAVOR)
-        self.cur = store._connection._raw_connection.cursor()
-        try:
-            return func(*args, **kwargs)
-        finally:
-            self.cur = None
-
-    def createTables(self):
-        """Not desired in Launchpad - raise an exception."""
-        raise AssertionError("Tables should not be created automatically")
-
-    txn_createTables = createTables
+    storm_store = AUTH_STORE
 
 
 class OpenIDRPSummary(SQLBase):
