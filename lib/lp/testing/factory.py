@@ -47,7 +47,6 @@ from canonical.launchpad.interfaces.bugtask import BugTaskStatus
 from canonical.launchpad.interfaces.bugtracker import (
     BugTrackerType, IBugTrackerSet)
 from canonical.launchpad.interfaces.bugwatch import IBugWatchSet
-from canonical.launchpad.interfaces.country import ICountrySet
 from canonical.launchpad.interfaces.emailaddress import (
     EmailAddressStatus, IEmailAddressSet)
 from canonical.launchpad.interfaces.gpghandler import IGPGHandler
@@ -58,9 +57,6 @@ from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.interfaces.potemplate import IPOTemplateSet
 from lp.soyuz.interfaces.publishing import PackagePublishingPocket
-from canonical.shipit.interfaces.shipit import (
-    IShippingRequestSet, IStandardShipItRequestSet, ShipItFlavour,
-    ShippingRequestStatus)
 from lp.blueprints.interfaces.specification import (
     ISpecificationSet, SpecificationDefinitionStatus)
 from canonical.launchpad.interfaces.translationgroup import (
@@ -197,8 +193,8 @@ class LaunchpadObjectFactory(ObjectFactory):
     def makeCopyArchiveLocation(self, distribution=None, owner=None,
         name=None):
         """Create and return a new arbitrary location for copy packages."""
-        copy_archive = self._makeArchive(distribution, owner, name,
-                                         ArchivePurpose.COPY)
+        copy_archive = self.makeArchive(distribution, owner, name,
+                                        ArchivePurpose.COPY)
 
         distribution = copy_archive.distribution
         distroseries = distribution.currentseries
@@ -678,7 +674,7 @@ class LaunchpadObjectFactory(ObjectFactory):
         :param branch: The branch that should be the default stacked-on
             branch.
         """
-        from canonical.launchpad.testing import run_with_login
+        from lp.testing import run_with_login
         # 'branch' might be private, so we remove the security proxy to get at
         # the methods.
         naked_branch = removeSecurityProxy(branch)
@@ -1221,28 +1217,6 @@ class LaunchpadObjectFactory(ObjectFactory):
         syncUpdate(series)
         return series
 
-    def makeShipItRequest(self, flavour=ShipItFlavour.UBUNTU):
-        """Create a `ShipItRequest` associated with a newly created person.
-
-        The request's status will be approved and it will contain an arbitrary
-        number of CDs of the given flavour.
-        """
-        brazil = getUtility(ICountrySet)['BR']
-        city = 'Sao Carlos'
-        addressline = 'Antonio Rodrigues Cajado 1506'
-        name = 'Guilherme Salgado'
-        phone = '+551635015218'
-        person = self.makePerson()
-        request = getUtility(IShippingRequestSet).new(
-            person, name, brazil, city, addressline, phone)
-        # We don't want to login() as the person used to create the request,
-        # so we remove the security proxy for changing the status.
-        removeSecurityProxy(request).status = ShippingRequestStatus.APPROVED
-        template = getUtility(IStandardShipItRequestSet).getByFlavour(
-            flavour)[0]
-        request.setQuantities({flavour: template.quantities})
-        return request
-
     def makeLibraryFileAlias(self, log_data=None):
         """Make a library file, and return the alias."""
         if log_data is None:
@@ -1309,12 +1283,16 @@ class LaunchpadObjectFactory(ObjectFactory):
             architecturetag, processorfamily, official, owner,
             supports_virtualized)
 
-    def _makeArchive(self, distribution=None, owner=None, name=None,
+    def makeArchive(self, distribution=None, owner=None, name=None,
                     purpose = None):
         """Create and return a new arbitrary archive.
-
-        Note: this shouldn't generally be used except by other factory
-        methods such as makeCopyArchiveLocation.
+        
+        :param distribution: Supply IDistribution, defaults to a new one
+            made with makeDistribution().
+        :param owner: Supper IPerson, defaults to a new one made with
+            makePerson().
+        :param name: Name of the archive, defaults to a random string.
+        :param purpose: Supply ArchivePurpose, defaults to PPA.
         """
         if distribution is None:
             distribution = self.makeDistribution()

@@ -1,8 +1,8 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
-__metaclass__ = type
-
 """Library access methods to gina."""
+
+__metaclass__ = type
 
 import os
 import sha

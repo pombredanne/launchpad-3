@@ -5,7 +5,7 @@
 __metaclass__ = type
 
 import unittest
-from canonical.launchpad.testing import TestCase
+from lp.testing import TestCase
 
 
 class LoggingResult(unittest.TestResult):

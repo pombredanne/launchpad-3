@@ -601,8 +601,15 @@ class Build(SQLBase):
             self.archive == self.sourcepackagerelease.upload_archive)
 
         if package_was_not_copied and config.builddmaster.notify_owner:
-            recipients = recipients.union(
-                get_contact_email_addresses(creator))
+            if (self.archive.is_ppa and creator.inTeam(self.archive.owner)
+                or
+                not self.archive.is_ppa):
+                # If this is a PPA, the package creator should only be
+                # notified if they are the PPA owner or in the PPA team.
+                # (see bug 375757)
+                # Non-PPA notifications inform the creator regardless.
+                recipients = recipients.union(
+                    get_contact_email_addresses(creator))
             dsc_key = self.sourcepackagerelease.dscsigningkey
             if dsc_key:
                 recipients = recipients.union(

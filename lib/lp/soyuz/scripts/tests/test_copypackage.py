@@ -34,7 +34,7 @@ from canonical.launchpad.scripts import QuietFakeLogger
 from lp.soyuz.scripts.ftpmasterbase import SoyuzScriptError
 from lp.soyuz.scripts.packagecopier import (
     PackageCopier, UnembargoSecurityPackage)
-from canonical.launchpad.testing import TestCase
+from lp.testing import TestCase
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from canonical.testing import DatabaseLayer, LaunchpadZopelessLayer
 

@@ -12,7 +12,8 @@ from zope.component import getUtility
 from canonical.config import config
 from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
 from canonical.launchpad.scripts.garbo import RevisionAuthorEmailLinker
-from canonical.launchpad.testing import LaunchpadObjectFactory, TestCase
+from lp.testing import TestCase
+from lp.testing.factory import LaunchpadObjectFactory
 from canonical.testing import LaunchpadZopelessLayer
 from lp.code.model.revision import RevisionAuthor, RevisionSet
 from lp.registry.interfaces.person import IPersonSet
