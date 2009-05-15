@@ -1081,7 +1081,7 @@ class TestPOFileStatistics(TestCaseWithFactory):
 
     def test_POFile_updateStatistics_newCount_changed(self):
         # If we change an 'imported' translation through
-        # Launchpad, it's not still not considered 'new',
+        # Launchpad, it's still not considered 'new',
         # but an 'update' instead.
         imported = self.factory.makeTranslationMessage(
             pofile=self.pofile,
