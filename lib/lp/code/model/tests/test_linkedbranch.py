@@ -7,9 +7,14 @@ __metaclass__ = type
 
 import unittest
 
+from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
+
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
-from lp.testing import TestCaseWithFactory
+from lp.soyuz.interfaces.publishing import PackagePublishingPocket
+from lp.testing import run_with_login, TestCaseWithFactory
 
 
 class TestLinkedBranch(TestCaseWithFactory):
@@ -23,6 +28,29 @@ class TestLinkedBranch(TestCaseWithFactory):
             product=product_series.product)
         self.assertEqual(
             product_series.branch, ICanHasLinkedBranch(product_series).branch)
+
+    def test_product(self):
+        # The linked branch of a product is the linked branch of its
+        # development focus product series.
+        branch = self.factory.makeProductBranch()
+        product = branch.product
+        removeSecurityProxy(product).development_focus.branch = branch
+        self.assertEqual(branch, ICanHasLinkedBranch(product).branch)
+
+    def test_suitesourcepackage(self):
+        # The linked branch of a suite source package is the official branch
+        # for the pocket of that source package.
+        branch = self.factory.makeAnyBranch()
+        sourcepackage = self.factory.makeSourcePackage()
+        pocket = PackagePublishingPocket.RELEASE
+        ubuntu_branches = getUtility(ILaunchpadCelebrities).ubuntu_branches
+        registrant = ubuntu_branches.teamowner
+        run_with_login(
+            ubuntu_branches.teamowner,
+            sourcepackage.setBranch, pocket, branch, registrant)
+        suite_sourcepackage = sourcepackage.getSuiteSourcePackage(pocket)
+        self.assertEqual(
+            branch, ICanHasLinkedBranch(suite_sourcepackage).branch)
 
 
 def test_suite():
