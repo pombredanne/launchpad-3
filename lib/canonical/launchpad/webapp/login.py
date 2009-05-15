@@ -23,12 +23,11 @@ from lp.registry.interfaces.person import (
     IPerson, IPersonSet, PersonCreationRationale)
 from canonical.launchpad.interfaces.validation import valid_password
 from canonical.launchpad.validators.email import valid_email
-from canonical.launchpad.webapp.authorization import READ_PERMISSIONS
-from canonical.launchpad.webapp.interfaces import (
-    ILaunchpadPrincipal, IPlacelessAuthUtility, IPlacelessLoginSource)
-from canonical.launchpad.webapp.interfaces import (
-    CookieAuthLoggedInEvent, LoggedOutEvent)
 from canonical.launchpad.webapp.error import SystemErrorView
+from canonical.launchpad.webapp.interfaces import (
+    CookieAuthLoggedInEvent, ILaunchpadPrincipal, IPlacelessAuthUtility,
+    IPlacelessLoginSource, LoggedOutEvent)
+from canonical.launchpad.webapp.metazcml import ILaunchpadPermission
 from canonical.launchpad.webapp.url import urlappend
 
 
@@ -51,8 +50,10 @@ class UnauthorizedView(SystemErrorView):
         # request failed for operational reasons rather than a genuine
         # permission problem.
         if config.launchpad.read_only:
-            permission = self.context[-1]
-            if permission not in READ_PERMISSIONS:
+            # Our context is an Unauthorized exception, which acts like
+            # a tuple containing (object, attribute_requested, permission).
+            lp_permission = getUtility(ILaunchpadPermission, self.context[2])
+            if lp_permission.access_level != "read":
                 self.request.response.setStatus(503) # Service Unavailable
                 return self.read_only_page()
 

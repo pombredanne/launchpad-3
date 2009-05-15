@@ -33,10 +33,6 @@ from canonical.launchpad.webapp.metazcml import ILaunchpadPermission
 steveIsFixingThis = False
 
 
-# List of permissions that are never used to protect write operations.
-READ_PERMISSIONS = ['zope.Public', 'launchpad.View']
-
-
 LAUNCHPAD_SECURITY_POLICY_CACHE_KEY = 'launchpad.security_policy_cache'
 
 
@@ -122,10 +118,15 @@ class LaunchpadSecurityPolicy(ParanoidSecurityPolicy):
           after the permission, use that to check the permission.
         - Otherwise, deny.
         """
-        # Shortcut in read-only mode.
-        if (config.launchpad.read_only
-            and permission not in READ_PERMISSIONS):
-            return False
+        # Shortcut in read-only mode. We have to do this now to avoid
+        # accidentally using cached results. This will be important when
+        # Launchpad automatically fails over to read-only mode when the
+        # master database is unavailable.
+        if config.launchpad.read_only:
+            lp_permission = getUtility(ILaunchpadPermission, permission)
+            if lp_permission.access_level != "read":
+                return False
+
         # If we have a view, get its context and use that to get an
         # authorization adapter.
         if IView.providedBy(object):
