@@ -290,7 +290,7 @@ class TestBranchCollectionFilters(TestCaseWithFactory):
         self.assertEqual([new_branch], list(branches.getBranches()))
 
     def test_targetedBy(self):
-        # Only distinct branches that are merge targets are returned.
+        # Only branches that are merge targets are returned.
         target_branch = self.factory.makeProductBranch()
         registrant = self.factory.makePerson()
         self.factory.makeBranchMergeProposal(
