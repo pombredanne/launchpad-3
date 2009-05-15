@@ -1376,23 +1376,12 @@ class ArchiveActivateView(LaunchpadFormView):
         """
         LaunchpadFormView.setUpFields(self)
 
-        self.is_private = (
-            self.context.visibility == PersonVisibility.PRIVATE)
-
         if self.context.archive is not None:
-            if self.is_private:
-                self.form_fields = self.form_fields.select(
-                    'name', 'displayname', 'buildd_secret', 'description')
-            else:
-                self.form_fields = self.form_fields.select(
-                    'name', 'displayname', 'description')
+            self.form_fields = self.form_fields.select(
+                'name', 'displayname', 'description')
         else:
-            if self.is_private:
-                self.form_fields = self.form_fields.select(
-                    'displayname', 'accepted', 'buildd_secret', 'description')
-            else:
-                self.form_fields = self.form_fields.select(
-                    'displayname', 'accepted', 'description')
+            self.form_fields = self.form_fields.select(
+                'displayname', 'accepted', 'description')
 
     def validate(self, data):
         """Ensure user has checked the 'accepted' checkbox."""
@@ -1449,11 +1438,16 @@ class ArchiveActivateView(LaunchpadFormView):
             distribution=ubuntu, name=name,
             displayname=data['displayname'], description=data['description'])
 
-        if self.is_private:
-            ppa.buildd_secret = data['buildd_secret']
-            ppa.private = True
-
         self.next_url = canonical_url(ppa)
+
+    @property
+    def is_private_team(self):
+        """Is the person a private team?
+
+        This method will return True only if the visibility is PRIVATE.
+        PUBLIC and PRIVATE_MEMBERSHIP return False.
+        """
+        return self.context.visibility == PersonVisibility.PRIVATE
 
 
 class ArchiveBuildsView(ArchiveViewBase, BuildRecordsView):
@@ -1513,7 +1507,21 @@ class ArchiveAdminView(BaseArchiveEditView):
                 'buildd_secret',
                 'Required for private archives.')
 
-        if data.get('buildd_secret') is not None and not data['private']:
+        if self.owner_is_private_team and not data['private']:
+            self.setFieldError(
+                'private',
+                'Private teams may not have public archives.')
+
+        elif data.get('buildd_secret') is not None and not data['private']:
             self.setFieldError(
                 'buildd_secret',
                 'Do not specify for non-private archives')
+
+    @property
+    def owner_is_private_team(self):
+        """Is the owner a private team?
+
+        This method will return True only if the visibility is PRIVATE.
+        PUBLIC and PRIVATE_MEMBERSHIP return False.
+        """
+        return self.context.owner.visibility == PersonVisibility.PRIVATE
