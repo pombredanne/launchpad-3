@@ -102,7 +102,7 @@ Also, the filename must be given and the template name must be a valid name.
 
 Specifying po file data for po templates is not a good idea either.
 
-    >>> from canonical.launchpad.interfaces.language import ILanguageSet
+    >>> from lp.services.worlddata.interfaces.language import ILanguageSet
     >>> language = getUtility(ILanguageSet).getLanguageByCode('eo')
     >>> from canonical.launchpad.interfaces.potemplate import IPOTemplateSet
     >>> potemplate = getUtility(IPOTemplateSet).getPOTemplateByPathAndOrigin(

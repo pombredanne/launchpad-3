@@ -15,9 +15,9 @@ from zope.component import getUtility
 from storm.sqlobject import SQLObjectNotFound
 
 from canonical.config import config
-from canonical.launchpad.interfaces.country import ICountrySet
+from lp.services.worlddata.interfaces.country import ICountrySet
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.launchpad.scripts.base import LaunchpadCronScript
+from lp.services.scripts.base import LaunchpadCronScript
 from canonical.launchpad.scripts.librarian_apache_log_parser import (
     create_or_update_parsedlog_entry, DBUSER, get_files_to_parse, parse_file)
 from canonical.launchpad.webapp.interfaces import NotFoundError

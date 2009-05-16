@@ -584,7 +584,7 @@ The count starts at 0, and cannot be changed directly.
 To change that, we have to use the updateDownloadCount() method, which takes
 care of creating/updating the necessary LibraryFileDownloadCount entries.
 
-    >>> from canonical.launchpad.interfaces.country import ICountrySet
+    >>> from lp.services.worlddata.interfaces.country import ICountrySet
     >>> country_set = getUtility(ICountrySet)
     >>> november_1st_2006 = datetime(2006, 11, 1)
     >>> brazil = country_set['BR']

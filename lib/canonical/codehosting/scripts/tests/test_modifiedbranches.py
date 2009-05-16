@@ -14,7 +14,7 @@ from canonical.codehosting.scripts.modifiedbranches import (
     ModifiedBranchesScript)
 from canonical.codehosting.vfs import branch_id_to_path
 from canonical.config import config
-from canonical.launchpad.scripts.base import LaunchpadScriptFailure
+from lp.services.scripts.base import LaunchpadScriptFailure
 from lp.testing import TestCase, TestCaseWithFactory
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.code.interfaces.branch import BranchType

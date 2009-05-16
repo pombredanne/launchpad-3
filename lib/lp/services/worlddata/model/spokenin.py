@@ -8,7 +8,7 @@ from zope.interface import implements
 
 from sqlobject import ForeignKey
 
-from canonical.launchpad.interfaces import ISpokenIn
+from lp.services.worlddata.interfaces.spokenin import ISpokenIn
 from canonical.database.sqlbase import SQLBase
 
 class SpokenIn(SQLBase):
