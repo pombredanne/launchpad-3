@@ -17,7 +17,7 @@ from lp.soyuz.interfaces.archive import (
     ArchivePurpose, IArchiveSet, MAIN_ARCHIVE_PURPOSES)
 from lp.registry.interfaces.distribution import IDistributionSet
 from canonical.launchpad.scripts import logger, logger_options
-from canonical.launchpad.scripts.base import LaunchpadScriptFailure
+from lp.services.scripts.base import LaunchpadScriptFailure
 from canonical.launchpad.webapp.interfaces import NotFoundError
 
 # XXX Julian 2008-02-07 bug=189866:

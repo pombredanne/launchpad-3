@@ -200,29 +200,6 @@ the retried request in the master store:
     ...
 
 
-== Profiling scripts ==
-
-All scripts derived from LaunchpadScript support a --profile option.
-The profile data is saved in the argument when the program exits.
-
-    >>> from canonical.launchpad.scripts.base import LaunchpadScript
-    >>> class ProfiledScript(LaunchpadScript):
-    ...     def main(self):
-    ...         pass
-    ...     def _init_zca(self, use_web_security):
-    ...         pass
-    ...     def _init_db(self, implicit_begin, isolation):
-    ...         pass
-
-    >>> profile_file = os.path.join(profile_dir, 'myscript.prof')
-    >>> script = ProfiledScript(
-    ...     'test-script.py', test_args=[
-    ...         'test-script.py', '--profile', profile_file])
-
-    >>> script.run()
-    >>> stats = pstats2.Stats(profile_file)
-
-
 == Memory profiling ==
 
 It is possible to keep a log of the memory profile of the application. That's

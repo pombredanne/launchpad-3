@@ -17,7 +17,7 @@ import logging
 from canonical.librarian import librariangc
 from canonical.database.sqlbase import ISOLATION_LEVEL_AUTOCOMMIT
 from canonical.config import config
-from canonical.launchpad.scripts.base import LaunchpadCronScript
+from lp.services.scripts.base import LaunchpadCronScript
 
 
 class LibrarianGC(LaunchpadCronScript):

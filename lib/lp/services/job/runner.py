@@ -10,7 +10,7 @@ import sys
 
 import transaction
 
-from canonical.launchpad.interfaces.job import LeaseHeld
+from lp.services.job.interfaces.job import LeaseHeld
 from canonical.launchpad.webapp import errorlog
 
 

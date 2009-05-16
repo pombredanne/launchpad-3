@@ -778,7 +778,7 @@ class POTMsgSet(SQLBase):
                     'avoid possible conflicts. Please review them.')
         else:
             # Makes the new_message current if needed and also
-            # assignes karma for translation approval
+            # assigns karma for translation approval.
             self._makeTranslationMessageCurrent(
                 pofile, matching_message, imported_message,
                 is_imported, submitter,
