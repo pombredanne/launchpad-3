@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 
+import gc
 from StringIO import StringIO
 import unittest
 
@@ -12,6 +13,7 @@ import bzrlib.branch
 from bzrlib.branch import BranchReferenceFormat, BzrBranchFormat7
 from bzrlib.bzrdir import BzrDir, BzrDirMetaFormat1
 from bzrlib.errors import NotBranchError
+from bzrlib.tests.http_server import HttpServer
 from bzrlib.remote import RemoteBranch
 from bzrlib.repofmt.pack_repo import RepositoryFormatKnitPack1
 from bzrlib.revision import NULL_REVISION
@@ -25,12 +27,13 @@ from canonical.codehosting.puller.worker import (
     BranchMirrorer, BranchPolicy, BranchReferenceForbidden,
     HostedBranchPolicy, ImportedBranchPolicy, MirroredBranchPolicy,
     PullerWorkerProtocol, StackedOnBranchNotFound, get_vfs_format_classes,
-    install_worker_ui_factory)
+    install_worker_ui_factory, WORKER_ACTIVITY_NETWORK)
 from canonical.codehosting.puller.tests import (
     AcceptAnythingPolicy, BlacklistPolicy, PullerWorkerMixin, WhitelistPolicy)
-from canonical.launchpad.interfaces.branch import BranchType
-from canonical.launchpad.testing import LaunchpadObjectFactory, TestCase
-from canonical.launchpad.webapp.uri import URI
+from lp.code.interfaces.branch import BranchType
+from lp.testing import TestCase
+from lp.testing.factory import LaunchpadObjectFactory
+from lazr.uri import URI
 from canonical.testing import reset_logging
 
 
@@ -58,7 +61,6 @@ class TestGetVfsFormatClasses(TestCaseWithTransport):
         # This makes sure the connections held by the branches opened in the
         # test are dropped, so the daemon threads serving those branches can
         # exit.
-        import gc
         gc.collect()
         super(TestGetVfsFormatClasses, self).tearDown()
 
@@ -66,9 +68,11 @@ class TestGetVfsFormatClasses(TestCaseWithTransport):
         # get_vfs_format_classes for a returns the underlying format classes
         # of the branch, repo and bzrdir, even if the branch is a
         # RemoteBranch.
-        self.transport_server = server.SmartTCPServer_for_testing
         vfs_branch = self.make_branch('.')
-        remote_branch = bzrlib.branch.Branch.open(self.get_url('.'))
+        smart_server = server.SmartTCPServer_for_testing()
+        smart_server.setUp(self.get_vfs_only_server())
+        self.addCleanup(smart_server.tearDown)
+        remote_branch = bzrlib.branch.Branch.open(smart_server.get_url())
         # Check that our set up worked: remote_branch is Remote and
         # source_branch is not.
         self.assertIsInstance(remote_branch, RemoteBranch)
@@ -254,7 +258,7 @@ class TestPullerWorker(TestCaseWithTransport, PullerWorkerMixin):
         # Mirroring a non-stacked branch sends '' as the stacked-on location
         # to the master.
         source_branch = self.make_branch(
-            'source-branch', format='development')
+            'source-branch', format='1.9')
         protocol_output = StringIO()
         to_mirror = self.makePullerWorker(
             source_branch.base, self.get_url('destdir'),
@@ -267,9 +271,9 @@ class TestPullerWorker(TestCaseWithTransport, PullerWorkerMixin):
     def testSendsStackedInfo(self):
         # Mirroring a stacked branch sends the stacked-on location to the
         # master.
-        base_branch = self.make_branch('base_branch', format='development')
+        base_branch = self.make_branch('base_branch', format='1.9')
         stacked_branch = self.make_branch(
-            'stacked-branch', format='development')
+            'stacked-branch', format='1.9')
         stacked_branch.set_stacked_on_url(base_branch.base)
         protocol_output = StringIO()
         to_mirror = self.makePullerWorker(
@@ -285,9 +289,9 @@ class TestPullerWorker(TestCaseWithTransport, PullerWorkerMixin):
         # The stacked-on location sent to the master is the stacked-on
         # location of the _destination_ branch not the source branch in the
         # case that they are different.
-        base_branch = self.make_branch('base_branch', format='development')
+        base_branch = self.make_branch('base_branch', format='1.9')
         stacked_branch = self.make_branch(
-            'stacked-branch', format='development')
+            'stacked-branch', format='1.9')
         protocol_output = StringIO()
         to_mirror = self.makePullerWorker(
             stacked_branch.base, self.get_url('destdir'),
@@ -680,7 +684,7 @@ class TestWorkerProtocol(TestCaseInTempDir, PullerWorkerMixin):
     def test_progressMade(self):
         # Calling 'progressMade' sends an arbitrary string indicating
         # progress.
-        self.protocol.progressMade()
+        self.protocol.progressMade('test')
         self.assertSentNetstrings(['progressMade', '0'])
 
     def test_setStackedOn(self):
@@ -702,14 +706,14 @@ class TestWorkerProtocol(TestCaseInTempDir, PullerWorkerMixin):
 
 
 class TestWorkerProgressReporting(TestCaseWithTransport):
-    """Tests for the WorkerProgressBar progress reporting mechanism."""
+    """Tests for the progress reporting mechanism."""
 
     class StubProtocol:
         """A stub for PullerWorkerProtocol that just defines progressMade."""
         def __init__(self):
-            self.call_count = 0
-        def progressMade(self):
-            self.call_count += 1
+            self.calls = []
+        def progressMade(self, type):
+            self.calls.append(type)
 
     def setUp(self):
         TestCaseWithTransport.setUp(self)
@@ -720,16 +724,40 @@ class TestWorkerProgressReporting(TestCaseWithTransport):
         bzrlib.ui.ui_factory = self.saved_factory
         reset_logging()
 
+    def getHttpServerForCwd(self):
+        """Get an `HttpServer` instance that serves from '.'."""
+        server = HttpServer()
+        server.setUp()
+        self.addCleanup(server.tearDown)
+        # The gc.collect allows the threads behind any HTTP requests to exit.
+        self.addCleanup(gc.collect)
+        return server
+
     def test_simple(self):
         # Even the simplest of pulls should call progressMade at least once.
-        p = self.StubProtocol()
-        install_worker_ui_factory(p)
         b1 = self.make_branch('some-branch')
         b2_tree = self.make_branch_and_tree('some-other-branch')
-        b2 = b2_tree.branch
         b2_tree.commit('rev1', allow_pointless=True)
-        b1.pull(b2)
-        self.assertPositive(p.call_count)
+
+        p = self.StubProtocol()
+        install_worker_ui_factory(p)
+        b1.pull(b2_tree.branch)
+        self.assertPositive(len(p.calls))
+
+    def test_network(self):
+        # Even the simplest of pulls over a transport that reports activity
+        # (here, HTTP) should call progressMade with a type of 'activity'.
+        b1 = self.make_branch('some-branch')
+        b2_tree = self.make_branch_and_tree('some-other-branch')
+        b2_tree.commit('rev1', allow_pointless=True)
+        http_server = self.getHttpServerForCwd()
+
+        p = self.StubProtocol()
+        install_worker_ui_factory(p)
+        b2_http = bzrlib.branch.Branch.open(
+            http_server.get_url() + 'some-other-branch')
+        b1.pull(b2_http)
+        self.assertSubset([WORKER_ACTIVITY_NETWORK], p.calls)
 
 
 def test_suite():

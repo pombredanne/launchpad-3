@@ -83,7 +83,7 @@ comes from a previous export from Rosetta and when did it happen.
 
 We must approve the entry to be able to import it.
 
-    >>> entry.status = RosettaImportStatus.APPROVED
+    >>> entry.setStatus(RosettaImportStatus.APPROVED)
 
 We do the import.
 
@@ -153,7 +153,7 @@ Now, attach the file again, but this time as published.
 
 We must approve the entry to be able to import it.
 
-    >>> entry.status = RosettaImportStatus.APPROVED
+    >>> entry.setStatus(RosettaImportStatus.APPROVED)
 
 We do the import.
 
@@ -167,8 +167,11 @@ The status is now IMPORTED:
 The import code has also composed an email with the notification of the
 import.
 
-    >>> subject
-    u'Translation import - Welsh (cy) - firefox in Mozilla Firefox trunk'
+    >>> print subject
+    None
+    >>> print message
+    Hello Mark Shuttleworth,
+    ...
 
 There was no error output this time.
 

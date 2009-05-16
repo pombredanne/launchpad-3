@@ -1,0 +1,56 @@
+
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="view/macro:page/onecolumn"
+  i18n:domain="launchpad"
+>
+
+<body>
+
+<div metal:fill-slot="main">
+  <div id="packages">
+
+  <h1>Uploaded packages</h1>
+
+  <tal:navigation_top
+       replace="structure view/batchnav/@@+navigation-links-upper" />
+
+  <tal:uploaded-packages
+    define="sourcepackagereleases view/batch">
+
+  <table class="listing" condition="sourcepackagereleases">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Uploaded to</th>
+        <th>Version</th>
+        <th>When</th>
+        <th>Failures</th>
+        <th>Bugs</th>
+        <th>Questions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <div metal:use-macro="context/@@+person-macros/sourcepackagerelease-rows" />
+    </tbody>
+  </table>
+
+  <tal:navigation_bottom
+       replace="structure view/batchnav/@@+navigation-links-lower" />
+
+  <tal:no_packages condition="not: sourcepackagereleases">
+    <tal:name replace="context/fmt:displayname"/> has not uploaded any packages.
+  </tal:no_packages>
+
+  </tal:uploaded-packages>
+  </div>
+</div>
+
+</body>
+</html>

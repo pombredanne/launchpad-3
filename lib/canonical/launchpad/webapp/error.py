@@ -231,3 +231,17 @@ class TranslationUnavailableView(SystemErrorView):
 
     def __call__(self):
         return self.index()
+
+
+class ReadOnlyErrorView(SystemErrorView):
+    """View rendered when an InvalidBatchSizeError is raised."""
+
+    response_code = 503
+
+    def isSystemError(self):
+        """We don't need to log these errors in the SiteLog."""
+        return False
+
+    def __call__(self):
+        return self.index()
+

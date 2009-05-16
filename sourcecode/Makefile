@@ -6,7 +6,6 @@ PYTHON=python${PYTHON_VERSION}
 # detection.
 build_dirs:=bzr cscvs lazr-js lsprof pygettextpo pygpgme storm twisted zope
 test_dirs:=bzr cscvs pygettextpo storm twisted zope
-launchpad_test_dirs:=
 
 STORM_TESTDB = storm_test
 
@@ -22,11 +21,6 @@ all:
 
 check: build storm_testdb
 	@ for subdir in ${test_dirs}; do \
-		$(MAKE) -C $$subdir check $(TEST_ENV_VARS) || exit $$?;\
-	done
-
-check_for_launchpad: build
-	@ for subdir in ${launchpad_test_dirs}; do \
 		$(MAKE) -C $$subdir check $(TEST_ENV_VARS) || exit $$?;\
 	done
 
@@ -46,4 +40,4 @@ storm_testdb:
 	fi
 	createdb $(STORM_TESTDB)
 
-.PHONY: check check_for_launchpad all build storm_testdb
+.PHONY: check all build storm_testdb

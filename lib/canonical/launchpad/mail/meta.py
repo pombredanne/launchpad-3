@@ -9,9 +9,10 @@ from zope.interface import Interface
 from zope.schema import ASCII, Bool
 
 from canonical.launchpad.interfaces import IMailBox
-from canonical.launchpad.mail.stub import StubMailer, TestMailer
-from canonical.launchpad.mail.mailbox import TestMailBox, POP3MailBox
-from canonical.launchpad.mail.mbox import MboxMailer
+from lp.services.mail.stub import StubMailer, TestMailer
+from lp.services.mail.mailbox import (
+    DirectoryMailBox, POP3MailBox, TestMailBox)
+from lp.services.mail.mbox import MboxMailer
 
 
 
@@ -53,6 +54,20 @@ def pop3MailBoxHandler(_context, host, user, password, ssl=False):
         _context, IMailBox, component=POP3MailBox( host, user, password, ssl))
 
 
+class IDirectoryMailBoxDirective(Interface):
+    """Configure a mail box which interfaces to a directory of raw files."""
+    directory = ASCII(
+            title=u"Directory",
+            description=u"The directory containing the raw mail files.",
+            required=True,
+            )
+
+
+def directorymailBoxHandler(_context, directory):
+    """Create the DirectoryMailBox and register the utility."""
+    utility(_context, IMailBox, component=DirectoryMailBox(directory))
+
+
 class IStubMailerDirective(IMailerDirective):
     from_addr = ASCII(
             title=u"From Address",
@@ -62,7 +77,8 @@ class IStubMailerDirective(IMailerDirective):
     to_addr = ASCII(
             title=u"To Address",
             description=
-                u"All outgoing emails will be redirected to this email address",
+                (u"All outgoing emails will be redirected to this email "
+                 u"address"),
             required=True,
             )
     mailer = ASCII(
@@ -92,7 +108,8 @@ def stubMailerHandler(
            callable = handler,
            args = (
                'provideUtility',
-               IMailer, StubMailer(from_addr, [to_addr], mailer, rewrite), name,
+               IMailer, StubMailer(from_addr, [to_addr], mailer, rewrite),
+               name,
                )
            )
 

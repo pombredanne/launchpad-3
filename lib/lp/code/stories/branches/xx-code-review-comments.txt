@@ -1,0 +1,107 @@
+= Code Review Comments =
+
+Set up required objects
+
+    >>> # We need to be admin to add a landing target to a random branch
+    >>> login('foo.bar@canonical.com')
+    >>> merge_proposal = factory.makeBranchMergeProposal()
+    >>> merge_proposal_url = canonical_url(merge_proposal)
+    >>> eric = factory.makePerson(
+    ...     name="eric", email="eric@example.com", password="test",
+    ...     displayname="Eric the Viking")
+    >>> ignored = merge_proposal.nominateReviewer(
+    ...     eric, merge_proposal.registrant)
+    >>> logout()
+
+    >>> eric_browser = setupBrowser(auth="Basic eric@example.com:test")
+    >>> eric_browser.open(merge_proposal_url)
+    >>> eric_browser.getLink('Add a comment').click()
+    >>> eric_browser.getControl(name='field.comment').value = ('This is a '
+    ... 'very long comment about what things should be done to the source '
+    ... 'branch to land it.  When this comment is replied to, it '
+    ... 'should wrap the line properly.')
+    >>> eric_browser.getControl(name='field.actions.add').click()
+    >>> eric_browser.url == merge_proposal_url
+    True
+
+Adding a comment or review to a merge proposal will take the user back
+to the main merge proposal page.
+
+    >>> anon_browser.open(merge_proposal_url)
+    >>> def print_comments(klass, browser=None, index=0):
+    ...     if browser is None:
+    ...         browser = anon_browser
+    ...     tags = find_tags_by_class(browser.contents, klass)
+    ...     for count, tag in enumerate(tags):
+    ...         if count == index:
+    ...             print extract_text(tag)
+
+    >>> print_comments('boardCommentDetails')
+    Eric the Viking wrote ...
+    >>> print_comments('boardCommentBody')
+    This is a very long comment about what things should be done to the
+    source branch to land it. When this comment is replied to, it should
+    wrap the line properly.
+    >>> print_comments('commentSuffix')
+    Reply
+
+The person's name links back to the main site for that person.
+
+    >>> print anon_browser.getLink('Eric the Viking').url
+    http://launchpad.dev/~eric
+
+Reply link is displayed even if the user isn't logged in.
+
+    >>> anon_browser.getLink('Reply').click()
+    Traceback (most recent call last):
+    Unauthorized:...
+
+We can reply to a comment.
+
+    >>> eric_browser.open(merge_proposal_url)
+    >>> eric_browser.getLink('Reply').click()
+    >>> print eric_browser.getControl(name='field.comment').value.replace(
+    ...     '\r\n', '\n') # doctest: -NORMALIZE_WHITESPACE
+    > This is a very long comment about what things should be done to the source
+    > branch to land it.  When this comment is replied to, it should wrap the line
+    > properly.
+
+    >>> eric_browser.getControl(name='field.comment').value = ('I like this.\n'
+    ... 'I wish I had time to review it properly\n\n'
+    ... 'This is a longer\nmessage with several\nlines')
+    >>> eric_browser.getControl(name='field.actions.add').click()
+
+After this, we are taken to the main page for the merge proposal
+
+    >>> print_comments('boardCommentBody', eric_browser, index=1)
+    I like this.
+    I wish I had time to review it properly
+    This is a longer message with several lines
+
+
+== Reviewing ==
+
+When replying normally there is only a comment field shown.  If the user
+wants to review the branch, they click on the [Review] link shown in the
+vote summary table.
+
+    >>> eric_browser.getLink('[Review]').click()
+    >>> eric_browser.getControl('Reviewer says').displayValue = ['Abstain']
+    >>> eric_browser.getControl('Review type').value = 'timeless'
+    >>> eric_browser.getControl('Save Review').click()
+
+    >>> print_comments('boardCommentDetails', eric_browser, index=2)
+    timeless Abstain   Eric the Viking voted ...second...ago
+    >>> print_comments('boardCommentBody', eric_browser, index=2)
+
+
+== Vote summaries ==
+
+The summary of the votes that have been made for a code review are shown
+in a table at the top of the page.
+
+    >>> print extract_text(find_tag_by_id(
+    ...     eric_browser.contents, 'code-review-votes'))
+    Reviewer         Review Type    Date Requested    Status
+    Eric the Viking  timeless       ...               Abstain ...second...ago
+    Review via email: mp+1@code.launchpad.dev

@@ -20,18 +20,18 @@ from zope.schema import (
     Bool, Choice, Int, List, Object, Text, TextLine)
 from zope.schema.interfaces import IObject
 from zope.component import getUtility
+from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
     ContentNameField, StrippedTextLine, URIField)
-from canonical.launchpad.interfaces.person import IPerson
+from lp.registry.interfaces.person import IPerson
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import name_validator
 
-from canonical.lazr import DBEnumeratedType, DBItem
-from canonical.lazr.rest.declarations import (
+from lazr.restful.declarations import (
     export_as_webservice_entry, exported)
-from canonical.lazr.fields import CollectionField, Reference
+from lazr.restful.fields import CollectionField, Reference
 
 
 LOCATION_SCHEMES_ALLOWED = 'http', 'https', 'mailto'
@@ -231,12 +231,21 @@ class IBugTracker(Interface):
         'Bug messages that have been imported from this bug tracker.')
     multi_product = Attribute(
         "This bug tracker tracks multiple remote products.")
+    active = exported(
+        Bool(
+            title=_('Updates for this bug tracker are enabled'),
+            required=True, default=True))
 
-    def getBugFilingAndSearchLinks(remote_product):
+    def getBugFilingAndSearchLinks(remote_product, summary=None,
+                                   description=None):
         """Return the bug filing and search links for the tracker.
 
         :param remote_product: The name of the product on which the bug
             is to be filed or search for.
+        :param summary: The string with which to pre-filly the summary
+            field of the upstream bug tracker's search and bug filing forms.
+        :param description: The string with which to pre-filly the description
+            field of the upstream bug tracker's bug filing form.
         :return: A dict of the absolute URL of the bug filing form and
             the search form for `remote_product` on the remote tracker,
             in the form {'bug_filing_url': foo, 'search_url': bar}. If

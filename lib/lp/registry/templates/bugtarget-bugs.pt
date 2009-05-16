@@ -1,0 +1,196 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="view/macro:page/default2.0"
+  i18n:domain="malone"
+>
+  <metal:block fill-slot="head_epilogue">
+    <script type="text/javascript" src="/+icing/FormatAndColor.js"></script>
+    <script type="text/javascript" src="/+icing/PlotKit_Packed.js"></script>
+  </metal:block>
+  <metal:portlets fill-slot="portlets">
+    <tal:block content="structure context/@@+portlet-bugfilters" />
+    <tal:block content="structure context/@@+portlet-bugtags" />
+    <tal:releasecriticalbugs
+      tal:condition="view/shouldShowReleaseCriticalPortlet"
+      tal:content="structure context/@@+portlet-bugtasklist-seriesbugs" />
+  </metal:portlets>
+  <body>
+    <div metal:fill-slot="main" class="tab-bugs"
+         tal:define="search_url string:+bugs;
+                     advanced_search_url string:+bugs?advanced=1">
+      <h1>Bugs in <tal:context replace="context/title">Ubuntu</tal:context></h1>
+      <metal:search
+        use-macro="context/@@+bugtarget-macros-search/simple-search-form"
+      />
+      <script type="text/javascript"><!--
+           $('field.searchtext').focus();
+      --></script>
+
+      <div class="columns">
+          <script type="text/javascript"
+               tal:content="structure view/getChartJavascript">
+          </script>
+        <div class="two column left">
+          <div id="bugs-chart" height="200" width="200">
+            <noscript>
+            <ul>
+              <li tal:repeat="bug_count view/bug_count_items"
+                  tal:content="string:${bug_count/count} ${bug_count/label} bugs">
+                12 Unconfirmed bugs
+              </li>
+            </ul>
+            </noscript>
+          </div>
+        </div>
+        <div class="two column right">
+          <h2>Key contacts</h2>
+          <table class="summary" style="width: 100%;">
+            <tbody>
+              <tr>
+                <th>Driver:</th>
+                <td colspan="2">
+                  <tal:none condition="not:context/driver">None set</tal:none>
+                  <a
+                    tal:condition="context/driver"
+                    tal:replace="structure context/driver/fmt:link"
+                  >John Smith</a>
+                </td>
+              </tr>
+              <tr tal:define="bug_supervisor context/bug_supervisor">
+                <th>Bug supervisor:</th>
+                <td>
+                  <tal:none condition="not:bug_supervisor"
+                  >None set</tal:none>
+                  <a
+                    tal:condition="bug_supervisor"
+                    tal:replace="structure bug_supervisor/fmt:link"
+                  >Bob Johnson</a>
+                </td>
+                <td>
+                  <tal:edit-bug-supervisor
+                      condition="context/menu:bugs/bugsupervisor|nothing">
+                    <a tal:define="link context/menu:bugs/bugsupervisor"
+                       tal:condition="link/enabled"
+                       tal:attributes="href link/url; title link/text">
+                      <img tal:attributes="alt link/text" src="/@@/edit" />
+                    </a>
+                  </tal:edit-bug-supervisor>
+                </td>
+              </tr>
+              <tr tal:define="securitycontact context/security_contact">
+                <th>Security contact:</th>
+                <td>
+                  <tal:none condition="not:securitycontact"
+                  >None set</tal:none>
+                  <a
+                    tal:condition="securitycontact"
+                    tal:replace="structure securitycontact/fmt:link"
+                  >Billy Anderson</a>
+                </td>
+                <td>
+                  <tal:edit-securitycontact
+                      condition="context/menu:bugs/securitycontact|nothing">
+                    <a tal:define="link context/menu:bugs/securitycontact"
+                       tal:condition="link/enabled"
+                       tal:attributes="href link/url; title link/text">
+                      <img tal:attributes="alt link/text" src="/@@/edit" />
+                    </a>
+                  </tal:edit-securitycontact>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <ul class="cross-reference">
+            <li id="bugtracker">
+              <strong>Bug tracker:</strong>
+              <tal:bugtracker replace="structure view/bugtracker" />
+            </li>
+            <li tal:define="fixed_elsewhere view/bugs_fixed_elsewhere_info">
+              <a tal:attributes="href fixed_elsewhere/url">
+                <strong tal:content="fixed_elsewhere/count">42</strong>
+                <tal:label
+                  tal:replace="fixed_elsewhere/label">bugs</tal:label>
+                fixed elsewhere
+              </a>
+            </li>
+            <li tal:define="cve_bugs view/open_cve_bugs_info">
+              <a tal:attributes="href cve_bugs/url">
+                <strong tal:content="cve_bugs/count"></strong>
+                open CVE
+                <tal:label tal:replace="cve_bugs/label">bugs</tal:label>
+              </a>
+              <tal:cve-reports
+                  condition="context/menu:bugs/cve|nothing">
+                -<a tal:define="link context/menu:bugs/cve"
+                   tal:replace="structure link/render"
+                   tal:condition="link/enabled">
+                  CVE reports
+                </a>
+              </tal:cve-reports>
+            </li>
+            <li tal:define="pending_bugwatches view/pending_bugwatches_info"
+                tal:condition="pending_bugwatches">
+              <a tal:attributes="href pending_bugwatches/url">
+                <strong tal:content="pending_bugwatches/count"></strong>
+                <tal:label
+                  tal:replace="pending_bugwatches/label">bugs</tal:label>
+                <tal:need-or-needs
+                    define="count pending_bugwatches/count"
+                    content="python:(count == 1) and 'needs' or 'need'" />
+                forwarding upstream
+              </a>
+            </li>
+            <li tal:define="expirable_bugs view/expirable_bugs_info"
+              tal:condition="expirable_bugs">
+              <a tal:attributes="href expirable_bugs/url">
+                <strong tal:content="expirable_bugs/count"></strong>
+                incomplete
+                <tal:label
+                  tal:replace="expirable_bugs/label">bugs</tal:label>
+                can expire
+              </a>
+            </li>
+            <tal:review-nominations
+                condition="context/menu:bugs/nominations|nothing">
+              <li tal:define="link context/menu:bugs/nominations">
+                <a tal:attributes="href link/url"
+                   tal:content="link/text" />
+              </li>
+            </tal:review-nominations>
+            <li style="font-weight: bold;">
+              <a href="+bugs">List all open bugs</a>
+            </li>
+            <li>
+              <tal:subscribe define="link context/menu:bugs/subscribe"
+                             replace="structure link/render" />
+            </li>
+          </ul>
+          <ul class="rollover buttons">
+            <li>
+              <a href="+filebug">
+                <img
+                  alt="Report a bug"
+                  src="/+icing/but-sml-reportabug.gif"
+                />
+              </a>
+            </li>
+            <li tal:content="structure context/@@+ask-a-question-button" />
+          </ul>
+        </div><!-- two column right -->
+      </div><!-- columns -->
+      <div class="clear"></div>
+      <div class="left">
+        <tal:reported replace="structure context/@@+portlet-latestbugs" />
+      </div>
+      <div class="right">
+        <tal:touched replace="structure context/@@+portlet-recently-touched-bugs" />
+      </div>
+    </div><!-- main -->
+  </body>
+</html>

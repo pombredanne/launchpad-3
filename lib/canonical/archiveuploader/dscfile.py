@@ -32,10 +32,11 @@ from canonical.archiveuploader.utils import (
     prefix_multi_line_string, safe_fix_maintainer, ParseMaintError,
     re_valid_pkg_name, re_valid_version, re_issource)
 from canonical.encoding import guess as guess_encoding
+from lp.registry.interfaces.person import IPersonSet, PersonCreationRationale
+from lp.soyuz.interfaces.archive import ArchivePurpose
 from canonical.launchpad.interfaces import (
-    ArchivePurpose, GPGVerificationError, IGPGHandler, IGPGKeySet,
-    IPersonSet, ISourcePackageNameSet, NotFoundError,
-    PersonCreationRationale)
+    GPGVerificationError, IGPGHandler, IGPGKeySet,
+    ISourcePackageNameSet, NotFoundError)
 from canonical.librarian.utils import copy_and_close
 
 
@@ -333,7 +334,7 @@ class DSCFile(SourceUploadFile, SignableTagFile):
                 library_file = self.policy.distro.getFileByName(
                     filename, source=True, binary=False, archive=archive)
                 self.logger.debug(
-                    "%s found in %s" % (filename, archive.title))
+                    "%s found in %s" % (filename, archive.displayname))
                 return library_file, archive
             except NotFoundError:
                 pass
@@ -369,7 +370,7 @@ class DSCFile(SourceUploadFile, SignableTagFile):
                         "has different contents. See more information about "
                         "this error in "
                         "https://help.launchpad.net/Packaging/UploadErrors." %
-                        (sub_dsc_file.filename, file_archive.title))
+                        (sub_dsc_file.filename, file_archive.displayname))
                     files_missing = True
                     continue
 

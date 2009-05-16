@@ -16,7 +16,7 @@ This view is only accessible for administrators.
 In real life, entries in the import queue have been uploaded by a person.
 We will create the entry by hand but need a person to be named as importer.
 
-    >>> from canonical.launchpad.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> importer = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
     >>> print importer.displayname
     Foo Bar
@@ -25,7 +25,7 @@ A real entry would have been uploaded in the context of productseries or a
 sourcepackage within a distroseries. So we need to get a productseries for
 our entry.
 
-    >>> from canonical.launchpad.interfaces.productseries import (
+    >>> from lp.registry.interfaces.productseries import (
     ...     IProductSeriesSet)
     >>> productseries = getUtility(IProductSeriesSet).get(3)
     >>> print productseries.name
@@ -57,10 +57,8 @@ to get it new for each subsequent test.
 
 Upon initialisation the view sets the file type.
 
-    >>> for key, val in view.initial_values.items():
-    ...     print key, val
-    file_type Translation Template (POT)
-    path demo.pot
+    >>> print view.initial_values['file_type']
+    Template
 
 Validating correct data should not produce an error.
 
@@ -104,7 +102,7 @@ Also, the filename must be given and the template name must be a valid name.
 
 Specifying po file data for po templates is not a good idea either.
 
-    >>> from canonical.launchpad.interfaces.language import ILanguageSet
+    >>> from lp.services.worlddata.interfaces.language import ILanguageSet
     >>> language = getUtility(ILanguageSet).getLanguageByCode('eo')
     >>> from canonical.launchpad.interfaces.potemplate import IPOTemplateSet
     >>> potemplate = getUtility(IPOTemplateSet).getPOTemplateByPathAndOrigin(
@@ -149,6 +147,65 @@ The potemplate entry for the new template is also created.
     True
     >>> pot_entry.potemplate != None
     True
+
+The Ubuntu distribution gets special treatment for the language pack flag.
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     ILaunchpadCelebrities)
+    >>> ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+    >>> ubuntuseries = factory.makeDistroRelease(ubuntu)
+    >>> packagename = factory.makeSourcePackageName()
+
+We can upload to a sourcepackagename in the Ubuntu series.
+
+    >>> ubuntu_entry = queue.addOrUpdateEntry(
+    ...     'demo.pot', '# foo', True,
+    ...     importer, distroseries=ubuntuseries,
+    ...     sourcepackagename=packagename)
+    >>> ubuntu_view = getTranslationEntryView(ubuntu_entry)
+
+The form now has a field for languagepacks. The value of the field defaults
+to "True" as no potemplate has been set yet.
+
+    >>> ubuntu_view.context.potemplate == None
+    True
+    >>> 'languagepack' in ubuntu_view.field_names
+    True
+    >>> ubuntu_view.initial_values['languagepack'] == True
+    True
+
+Submitting this form will set the languagepack flag in the newly created
+potemplate.
+
+    >>> data = {
+    ...     'file_type': TranslationFileType.POT,
+    ...     'path': 'demo.pot',
+    ...     'name': 'demo-name',
+    ...     'translation_domain': 'demo-domain',
+    ...     'languagepack': True}
+    >>> ubuntu_view.validate(data)
+    >>> ubuntu_view._change_action(data)
+    >>> ubuntu_entry.potemplate.languagepack == True
+    True
+
+Once the template has been set, the view will display its languagepack value
+as the default value.
+
+    >>> ubuntu_entry.potemplate.languagepack = False
+    >>> ubuntu_view = getTranslationEntryView(ubuntu_entry)
+    >>> ubuntu_view.initial_values['languagepack'] == False
+    True
+
+For non-Ubuntu distroseries, languagepack is not displayed.
+
+    >>> other_series = factory.makeDistroRelease()
+    >>> other_entry = queue.addOrUpdateEntry(
+    ...     'demo.pot', '# foo', True,
+    ...     importer, distroseries=other_series,
+    ...     sourcepackagename=packagename)
+    >>> other_view = getTranslationEntryView(other_entry)
+    >>> 'languagepack' in other_view.field_names
+    False
 
 When importing po files, only the relevant templates should be made
 available for selection.

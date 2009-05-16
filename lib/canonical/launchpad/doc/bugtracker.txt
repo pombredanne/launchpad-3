@@ -68,8 +68,7 @@ a comment to the bug watch against remote bug 123543 to demonstrate
 this.
 
     >>> import transaction
-    >>> from canonical.launchpad.testing.factory import (
-    ...     LaunchpadObjectFactory)
+    >>> from lp.testing.factory import LaunchpadObjectFactory
     >>> factory = LaunchpadObjectFactory()
     >>> message = factory.makeMessage(
     ...     'Unpushed comment', '... is unpushed')
@@ -351,51 +350,64 @@ We will forge some BugMessage records before trying again:
 
 The IBugTracker interface defines a method, getBugFilingAndSearchLinks(),
 which returns the URLs of the bug filing form and the bug search on the remote
-bug tracker as a dict. It accepts a parameter, remote_product, which is the
-name of the product on the remote tracker and is used to ensure that the bug
-filing form is set to file a bug on the correct remote product.
+bug tracker as a dict. It accepts three parameters: remote_product, which is the
+name of the product on the remote tracker; summary, which is the bug summary
+to be passed to the remote bug tracker for searching or filing and
+description, which is the full description of the bug. This is only passed to
+the bug filing form as it is too specific for the search form.
 
     >>> def print_links(links_dict):
     ...     for key in sorted(links_dict):
     ...         print "%s: %s" % (key, links_dict[key])
 
-    >>> links = mozilla_bugzilla.getBugFilingAndSearchLinks('testproduct')
+    >>> links = mozilla_bugzilla.getBugFilingAndSearchLinks(
+    ...     remote_product='testproduct', summary="Foo", description="Bar")
     >>> print_links(links)
-    bug_filing_url: https://bugzilla.../enter_bug.cgi?product=testproduct
-    bug_search_url: https://bugzilla.../query.cgi?product=testproduct
+    bug_filing_url:
+    https://.../enter_bug.cgi?product=testproduct&short_desc=Foo&long_desc=Bar
+    bug_search_url:
+    https://.../query.cgi?product=testproduct&short_desc=Foo
 
 For the RT tracker we specify a Queue in which to file a ticket.
 
     >>> example_rt = factory.makeBugTracker(
     ...     'http://rt.example.com', BugTrackerType.RT)
-    >>> links = example_rt.getBugFilingAndSearchLinks('42')
+    >>> links = example_rt.getBugFilingAndSearchLinks(
+    ...     remote_product='42', summary="Foo", description="Bar")
     >>> print_links(links)
-    bug_filing_url: http://rt.example.com/Ticket/Create.html?Queue=42
-    bug_search_url: http://.../Search/Build.html?Query=Queue = '42'
+    bug_filing_url:
+    http://.../Ticket/Create.html?Queue=42&Subject=Foo&Content=Bar
+    bug_search_url:
+    http://.../Search/Build.html?Query=Queue = '42' AND Subject LIKE 'Foo'
 
 SourceForge and its kin use a Group ID and an ATID to specify which
 product a bug should be filed against. These are stored as an
 ampersand-separated string and getBugFilingAndSearchLinks() expects them
-to be passed to it in that form.
+to be passed to it in that form. SourceForge-type bug trackers don't accept
+summary and description parameters for bug filing, so we don't include them in
+the URL for the bug filing form.
 
     >>> example_sourceforge = factory.makeBugTracker(
     ...     'http://forge.example.com', BugTrackerType.SOURCEFORGE)
-    >>> links = example_sourceforge.getBugFilingAndSearchLinks('123&456')
+    >>> links = example_sourceforge.getBugFilingAndSearchLinks(
+    ...     remote_product='123&456', summary='Foo', description='Bar')
     >>> print_links(links)
-    bug_filing_url: http://.../tracker/?func=add&group_id=123&atid=456
-    bug_search_url: http://.../search/?group_id=123&type...artifact
+    bug_filing_url: http://...tracker/?func=add&group_id=123&atid=456
+    bug_search_url: .../search/?group_id=123&some_word=Foo&type...artifact
 
 The URL returned by the SourceForge celebrity points to the new version
 of the SourceForge bug tracker.
 
     >>> sourceforge = getUtility(IBugTrackerSet).getByName('sf')
-    >>> links = sourceforge.getBugFilingAndSearchLinks('123&456')
+    >>> links = sourceforge.getBugFilingAndSearchLinks(
+    ...     remote_product='123&456', summary='Foo', description='Bar')
     >>> print_links(links)
     bug_filing_url: http://.../tracker2/?func=add&group_id=123&atid=456
-    bug_search_url: http://.../search/?group_id=123&type...artifact
+    bug_search_url: .../search/?group_id=123&some_word=Foo&type...artifact
 
 Savane uses a single group URL parameter to specify which product the
-bug should be filed against.
+bug should be filed against. Savane ignores the summary and description
+parameters altogether, so they aren't included in the URL.
 
     >>> example_savane = factory.makeBugTracker(
     ...     'http://savane.example.com', BugTrackerType.SAVANE)
@@ -409,31 +421,41 @@ static URLs or track only one product.
 
     >>> example_phpproject = factory.makeBugTracker(
     ...     'http://php.example.com', BugTrackerType.PHPPROJECT)
-    >>> links = example_phpproject.getBugFilingAndSearchLinks('testproduct')
+    >>> links = example_phpproject.getBugFilingAndSearchLinks(
+    ...     remote_product='testproduct', summary="Foo", description="Bar")
     >>> print_links(links)
-    bug_filing_url: http://php.example.com/report.php
-    bug_search_url: http://php.example.com/search.php
+    bug_filing_url: http://.../report.php?in[sdesc]=Foo&in[ldesc]=Bar
+    bug_search_url: http://php.example.com/search.php?search_for=Foo
+
+Trac's bug filing form doesn't accept data in the query string, so we don't
+include it.
 
     >>> example_trac = factory.makeBugTracker(
     ...     'http://trac.example.com', BugTrackerType.TRAC)
-    >>> links = example_trac.getBugFilingAndSearchLinks('testproduct')
+    >>> links = example_trac.getBugFilingAndSearchLinks(
+    ...     remote_product='testproduct', summary="Foo", description="Bar")
     >>> print_links(links)
     bug_filing_url: http://trac.example.com/newticket
-    bug_search_url: http://trac.example.com/search?ticket=on
+    bug_search_url: http://trac.example.com/search?ticket=on&q=Foo
 
     >>> example_roundup = factory.makeBugTracker(
     ...     'http://roundup.example.com', BugTrackerType.ROUNDUP)
-    >>> links = example_roundup.getBugFilingAndSearchLinks('testproduct')
+    >>> links = example_roundup.getBugFilingAndSearchLinks(
+    ...     remote_product='testproduct', summary="Foo", description="Bar")
     >>> print_links(links)
-    bug_filing_url: http://roundup.example.com/issue?@template=item
-    bug_search_url: http://roundup.example.com/issue?@template=search
+    bug_filing_url: http://.../issue?@template=item&title=Foo&@note=Bar
+    bug_search_url: http://.../issue?@template=search&@search_text=Foo
+
+Mantis tends to ignore query string parameters passed to the search
+form, so we don't try.
 
     >>> example_mantis = factory.makeBugTracker(
     ...     'http://mantis.example.com', BugTrackerType.MANTIS)
-    >>> links = example_mantis.getBugFilingAndSearchLinks('testproduct')
+    >>> links = example_mantis.getBugFilingAndSearchLinks(
+    ...     remote_product='testproduct', summary="Foo", description="Bar")
     >>> print_links(links)
-    bug_filing_url: http://mantis.example.com/bug_report_advanced_page.php
-    bug_search_url: http://mantis.example.com/view_all_bug_page.php
+    bug_filing_url: .../bug_report_advanced_page.php?summary=Foo&description=Bar
+    bug_search_url: .../view_all_bug_page.php
 
 The EMAILADDRESS BugTrackerType is a special case and returns None for
 both filing and searching URLs.
@@ -450,18 +472,39 @@ However, it is possible to obtain a bug search URL for Debbugs-using
 products.
 
     >>> debbugs = getUtility(IBugTrackerSet).getByName('debbugs')
-    >>> links = debbugs.getBugFilingAndSearchLinks('testproduct')
+    >>> links = debbugs.getBugFilingAndSearchLinks(
+    ...     remote_product='testproduct', summary="Foo", description="Bar")
     >>> print_links(links)
     bug_filing_url: None
-    bug_search_url: http://.../cgi-bin/pkgreport.cgi?package=testproduct
+    bug_search_url: .../search.cgi?phrase=Foo...&attribute_value=testproduct
 
-The remote_product values passed to getBugFilingAndSearchLinks() are
-URL-encoded to ensure that the returned URL is valid.
+You can pass None for the summary and description parameters. It will be
+converted to an empty string before it's passed to the remote bug tracker.
 
-    >>> links = mozilla_bugzilla.getBugFilingAndSearchLinks('@testproduct&')
+    >>> links = mozilla_bugzilla.getBugFilingAndSearchLinks(
+    ...     'test', None, None)
     >>> print_links(links)
-    bug_filing_url: https://.../enter_bug.cgi?product=%40testproduct%26
-    bug_search_url: https://.../query.cgi?product=%40testproduct%26
+    bug_filing_url: ...?product=test&short_desc=&long_desc=
+    bug_search_url: ...?product=test&short_desc=
+
+The remote_product, summary and description values are URL-encoded to ensure
+that the returned URL is valid.
+
+    >>> links = mozilla_bugzilla.getBugFilingAndSearchLinks(
+    ...     remote_product='@test&', summary="%&", description="()")
+    >>> print_links(links)
+    bug_filing_url: ...?product=%40test%26&short_desc=%25%26&long_desc=%28%29
+    bug_search_url: ...?product=%40test%26&short_desc=%25%26
+
+getBugFilingAndSearchLinks() will also handle unicode values in the
+summary and description correctly.
+
+    >>> links = mozilla_bugzilla.getBugFilingAndSearchLinks(
+    ...     remote_product='test', summary=u"\xabHi\xa9",
+    ...     description=u"\xa8\xa7")
+    >>> print_links(links)
+    bug_filing_url: ...&short_desc=%C2%ABHi%C2%A9&long_desc=%C2%A8%C2%A7
+    bug_search_url: ...?product=test&short_desc=%C2%ABHi%C2%A9
 
 
 == BugTracker.multi_product ==

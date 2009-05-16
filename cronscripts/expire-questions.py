@@ -18,8 +18,8 @@ __all__ = ['ExpireQuestions']
 import _pythonpath
 
 from canonical.config import config
-from canonical.launchpad.scripts.base import LaunchpadCronScript
-from canonical.launchpad.scripts.questionexpiration import QuestionJanitor
+from lp.services.scripts.base import LaunchpadCronScript
+from lp.answers.scripts.questionexpiration import QuestionJanitor
 
 
 class ExpireQuestions(LaunchpadCronScript):

@@ -134,7 +134,7 @@ For example, no Firefox bugs are found when searching for
     >>> found_bugtasks.count()
     0
 
-If we add a comment containg the the search string to bug one, that bug
+If we add a comment containing the search string to bug one, that bug
 will be returned by the search only if search_comments is True.
 
     >>> from canonical.launchpad.interfaces import IBugSet
@@ -614,7 +614,7 @@ closed after a certain date.
     >>> import pytz
     >>> from datetime import datetime, timedelta
     >>> from canonical.launchpad.searchbuilder import greater_than
-    >>> product = factory.makeProduct()
+    >>> product = factory.makeProductNoCommit()
     >>> utc_now = datetime(2008, 9, 4, 12, 0, 0, tzinfo=pytz.timezone('UTC'))
     >>> not_closed_bug = factory.makeBug(product=product, title="Not closed")
     >>> bug_closed_a_day_ago = factory.makeBug(
@@ -644,7 +644,7 @@ It's possible to search for bugs with an attachment of a certain type.
     >>> from canonical.launchpad.interfaces import (
     ...     BugAttachmentType, IBugAttachmentSet, ILibraryFileAliasSet,
     ...     IMessageSet)
-    >>> product = factory.makeProduct()
+    >>> product = factory.makeProductNoCommit()
     >>> patch_bug = factory.makeBug(
     ...     product=product)
     >>> filecontent = 'Some diff data'
@@ -687,6 +687,20 @@ attachment was added, there is still only one bug with attachments.
 
     >>> product.searchTasks(search_params).count()
     1
+
+== Searching for bugs affecting a user ==
+
+We can search for bugs which a user marked as affecting them.
+
+    >>> affecting_bug = factory.makeBug(title='A bug affecting a user')
+    >>> affected_user = factory.makePerson(name='affected-user')
+    >>> affecting_bug.markUserAffected(affected_user)
+    >>> target = affecting_bug.bugtasks[0].target
+    >>> affecting_tasks = target.searchTasks(
+    ...     None, user=None, affected_user=affected_user)
+    >>> for task in affecting_tasks:
+    ...     print task.bug.title
+    A bug affecting a user
 
 
 == Ordering search results ==
@@ -755,7 +769,7 @@ Here is the list of bugs for Ubuntu, sorted by their number of comments.
     1 Firefox does not support SVG [3 comments]
     10 another test bug [2 comments]
     9 Thunderbird crashes [1 comments]
-    19 Bug to be fixed in trunk [0 comments]
+    19 Bug to be fixed in trunk [1 comments]
 
 
 == Searching using a flat interface ==
@@ -786,7 +800,7 @@ If we want to restrict the search using certain parameters pass them to
 the function directly. Here we search Ubuntu again, but only bugs for
 the firefox package.
 
-    >>> from canonical.launchpad.interfaces.sourcepackagename import (
+    >>> from lp.registry.interfaces.sourcepackagename import (
     ...     ISourcePackageNameSet)
     >>> source_package_name_set = getUtility(ISourcePackageNameSet)
     >>> firefox_source_package = source_package_name_set['mozilla-firefox']

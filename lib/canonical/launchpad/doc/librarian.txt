@@ -563,3 +563,111 @@ public `LibraryFileAlias` the traversal chain is extended with a
 
     >>> view.target == public_file.http_url
     True
+
+Files in this condition cannot be handled by the view and it raises an
+appropriate AssertionError when it gets traversed.
+
+    # Create a new LibraryFileAlias pointing to a deleted content.
+    >>> from canonical.launchpad.database import (
+    ...     LibraryFileAlias, LibraryFileContent)
+    >>> from canonical.launchpad.webapp.interfaces import (
+    ...     IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
+
+    >>> store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+    >>> deleted_content = LibraryFileContent(
+    ...     filesize=1, sha1='f00', md5='f00', deleted=True)
+    >>> ignore = store.add(deleted_content)
+    >>> deleted_file = LibraryFileAlias(
+    ...     content=deleted_content, filename='deleted.txt',
+    ...     mimetype='text/plain')
+    >>> ignore = store.add(deleted_file)
+    >>> store.commit()
+
+    >>> deleted_file = getUtility(ILibraryFileAliasSet)[deleted_file.id]
+    >>> print deleted_file.content.deleted
+    True
+
+    >>> deleted_view = StreamOrRedirectLibraryFileAliasView(
+    ...     deleted_file, empty_request)
+
+    >>> view, extra = deleted_view.browserDefault(empty_request)
+    Traceback (most recent call last):
+    ...
+    AssertionError: StreamOrRedirectLibraryFileAliasView can not
+    operate on deleted librarian files, since their URL is undefined.
+
+
+== Download counts ==
+
+The download counts for librarian files are stored in the
+LibraryFileDownloadCount table, broken down by day and country, but there's
+also a 'hits' attribute on ILibraryFileAlias, which holds the total number of
+times that file has been downloaded.
+
+The count starts at 0, and cannot be changed directly.
+
+    >>> public_file.hits
+    0
+    >>> public_file.hits = 10
+    Traceback (most recent call last):
+    ...
+    ForbiddenAttribute: ...
+
+To change that, we have to use the updateDownloadCount() method, which takes
+care of creating/updating the necessary LibraryFileDownloadCount entries.
+
+    >>> from lp.services.worlddata.interfaces.country import ICountrySet
+    >>> country_set = getUtility(ICountrySet)
+    >>> november_1st_2006 = datetime(2006, 11, 1)
+    >>> brazil = country_set['BR']
+    >>> public_file.updateDownloadCount(november_1st_2006, brazil, count=1)
+    >>> public_file.hits
+    1
+
+This was the first hit for that file from Brazil on 2006 November first, so a
+new LibraryFileDownloadCount was created.
+
+    >>> from canonical.launchpad.database.librarian import (
+    ...     LibraryFileDownloadCount)
+    >>> from storm.locals import Store
+    >>> store = Store.of(public_file)
+    >>> brazil_entry = store.find(
+    ...     LibraryFileDownloadCount, libraryfilealias=public_file,
+    ...     country=brazil, day=november_1st_2006).one()
+    >>> brazil_entry.count
+    1
+
+Below we simulate a hit from Japan on that same day, which will also create a
+new LibraryFileDownloadCount.
+
+    >>> japan = country_set['JP']
+    >>> public_file.updateDownloadCount(november_1st_2006, japan, count=3)
+    >>> public_file.hits
+    4
+
+    >>> japan_entry = store.find(
+    ...     LibraryFileDownloadCount, libraryfilealias=public_file,
+    ...     country=japan, day=november_1st_2006).one()
+    >>> japan_entry.count
+    3
+
+If there's another hit from Brazil on the same day, the existing entry will be
+updated.
+
+    >>> public_file.updateDownloadCount(november_1st_2006, brazil, count=2)
+    >>> public_file.hits
+    6
+    >>> brazil_entry.count
+    3
+
+If the hit happened on a different day, a separate entry would be created.
+
+    >>> november_2nd_2006 = datetime(2006, 11, 2)
+    >>> public_file.updateDownloadCount(november_2nd_2006, brazil, count=10)
+    >>> public_file.hits
+    16
+    >>> brazil_entry2 = store.find(
+    ...     LibraryFileDownloadCount, libraryfilealias=public_file,
+    ...     country=brazil, day=november_2nd_2006).one()
+    >>> brazil_entry2.count
+    10

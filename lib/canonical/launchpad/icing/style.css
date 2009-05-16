@@ -106,15 +106,21 @@ label, p {max-width: 60em;}
 html {background: #fff; color: #000; font: 83.33% sans-serif;}
 /* Monospace text uses the reciprocal of this percentage, so that it
 exactly obeys your preferred monospace font size: */
-code, pre, samp, tt, #bug-description, .bug-comment {font: 120% monospace;}
+code, pre, samp, tt, #bug-description, .bug-comment, .bug-activity {
+  font: 120% monospace;
+}
+
+.bug-activity {
+  color: #555;
+}
 
 /* Links are blue, brighter when clicked, and greyer once visited: */
 :link, :visited               {color: #03a;    text-decoration: none;}
 :link:hover, :visited:hover   {                text-decoration: underline;}
 :link:active, :visited:active {color: #36c;}
 /* Links that don't open separate pages are green to denote their behavior: */
-a[onclick], .collapsible legend a               {color: #063;}
-a[onclick]:active, .collapsible legend a:active {color: #093;}
+a[onclick], .collapsible legend a, a.js-action               {color: #063;}
+a[onclick]:active, .collapsible legend a:active, a.js-action {color: #093;}
 
 /* Help links */
 a.help {
@@ -145,13 +151,20 @@ h2, h3, h4, h5, h6 { margin-top: 1em; }
 ul {margin-left: 0; padding-left: 22px; /* works for 14px icons */}
 
 .exception {color: #cc0000;}
-.discreet, .lesser {font-size: 90%;}
+.discreet, .lesser, .duplicate-details {font-size: 90%;}
 .offline {text-align: center; margin: 2em 0;}
 .unavailable {color: #999; background: none;}
+
+.duplicate-details { margin-bottom: 1em; }
+.duplicate-details p { padding: 0em; margin-top: 0em; margin-bottom: 0.2em; }
 
 /* Blank space at the top of the page makes the location bar more noticable.
 Ideally page margins would scale non-linearly, but absolute is next best: */
 body {margin: 0; padding: 10px 20px;}
+
+/* Using colored text as you wish. */
+.green {color: green;}
+.red {color: red;}
 
 /* === Error, warning, and informational messages === */
 /* Error, warning, and informational alerts are in a centered box: */
@@ -195,6 +208,15 @@ table.form .error {background: none;}
     color: red;
     font-weight: bold;
 }
+.sml-informational {
+  background: #d4e8ff url('/+icing/blue-fade-to-grey');
+  border: solid #666;
+  border-width: 1px 2px 2px 1px;
+  color: black;
+  padding: 5px 5px 5px 5px;
+  width:44em;
+}
+.sml-informational::before {content: url('/@@/info');}
 
 .helpwanted {background-color: #fafca9; color: black; border: 1px solid black;
     padding: 0.5em; font-size: smaller; padding-left: 3em
@@ -433,6 +455,8 @@ img.collapseIcon {text-decoration: none; vertical-align: middle;}
 fieldset .collapsed {display: none;}
 fieldset .expanded {display: block;}
 fieldset.collapsible legend {font-weight: normal;}
+
+.unseen {display: none;}
 
 form.primary.search {
   margin-bottom: 2em;
@@ -1062,6 +1086,101 @@ div.aside {clear: right; float: right; margin-left: 20px; width: 200px;}
 .pillar div.portlet, .pillar div.section {clear: both; margin-bottom: 2em;}
 .pillar div.portlet h2, .pillar div.section h2 {margin-top: 0;}
 
+/* === Official Bug Tag Management === */
+
+.official-tags-layout-table {
+  width: 100%;
+}
+
+.official-tags-layout-table td {
+  padding: 0;
+}
+
+.official-tags-layout-table th {
+  text-align: left;
+  font-size: 1.25em;
+  padding-bottom: 5px;
+}
+
+.official-tags-layout-table .left-column,
+.official-tags-layout-table .right-column {
+  vertical-align: top;
+  width: 45%;
+}
+
+.official-tags-layout-table .middle-column {
+  text-align: center;
+  padding: 20px;
+}
+
+.official-tags-layout-table .middle-column input[type='submit'] {
+  width: 75px;
+  margin: 5px;
+}
+
+.official-tags-layout-table .input-field-layout-table td {
+  border-style: none;
+  padding: 5px;
+}
+
+.official-tags-layout-table ul {
+  list-style-type: none;
+  padding-left: 0 !important;
+  margin: 0 !important;
+}
+
+.official-tags-layout-table li.selected {
+  background-color: #eee;
+}
+
+.official-tags-layout-table ul .tag-used-count {
+  color: #888;
+  font-size: 75%;
+}
+
+.official-tags-layout-table .list-scrollable-area {
+  height: 10em;
+  overflow-y: scroll;
+  border-style: solid;
+  border-width: 1px;
+  border-color: #eee;
+}
+
+.official-tags-layout-table .left-column .list-scrollable-area {
+  background-color: #fefecc;
+}
+
+.official-tag-error-message {
+  padding-top: 1em;
+  padding-bottom: 1em;
+}
+
+.official-tag-error-message-header {
+  font-weight: bold;
+  font-size: 1.25em;
+  margin-left: 1em;
+}
+
+.official-tag-error-message-value {
+  color: red;
+  text-decoration: underline;
+}
+
+a.official-tag { /* Looks just like a normal link */ }
+
+a.unofficial-tag {
+  color: #6699ee;
+}
+
+.tags-container {
+  width: 45%;
+  text-align: left;
+  float: left;
+}
+
+.tags-show { display: block; }
+
+.tags-hide { display: none; }
 
 /* === Portlets === */
 /* IE6 and  lower ignore the left padding, so we add extra positioning. */
@@ -1152,7 +1271,20 @@ highlighting menu items, so padding is handled by the contents instead: */
   padding-left: 0 !important;
   text-indent: 0.5em;
 }
+
+.related ul.sourcepackage-links li.sourcepackage-not-dev-focus:before {
+    content: "";
+    display: inline-block;
+    width: 1.5em;
+}
+.related ul.sourcepackage-links li.sourcepackage-dev-focus:before {
+    content: "⇒ ";
+    display: inline-block;
+    width: 1.5em;
+}
+
 .related ul li:before {content: "\00BB \0020";}
+
 
 /* --- Various custom list formats --- */
 
@@ -1195,6 +1327,39 @@ ul.translation, li.translation       {list-style-image: url(/@@/translation);}
 ul.link, li.link                     {list-style-image: url(/@@/link);}
 ul.webref, li.webref                 {list-style-image: url(/@@/link);}
 
+/* --- A list with icons instead of bullets --- */
+ul.iconed {
+  list-style-type: none;
+  padding-left: 0 !important;
+  margin: 0 !important;
+}
+
+/* Various custom link icons */
+
+a.bg-image {
+    /* A background-image should be specified on the element. */
+    background-repeat: no-repeat;
+    background-position: center left;
+    background-attachment: scroll;
+    line-height: 130%;
+    padding-top: 0.5em;
+    padding-bottom: 0.5em;
+    padding-left: 18px;
+}
+
+a.info {
+    background: url('/@@/info') no-repeat scroll left center;
+    padding-left: 18px;
+}
+a.edit {
+    background: url('/@@/edit') no-repeat scroll left center;
+    padding-left: 18px;
+}
+a.add {
+    background: url('/@@/add') no-repeat scroll left center;
+    padding-left: 18px;
+}
+
 /* == Application-specific styles == */
 
 #application-footer strong {font-weight: normal;}
@@ -1207,12 +1372,29 @@ ul.webref, li.webref                 {list-style-image: url(/@@/link);}
 .boardCommentSummary {margin: 0.3em 0 0.3em 0;}
 .remoteBugComment {background-color: #f6f6f6;}
 * html .boardComment {float: left; clear: both; width: 99%;} /* IE float bug */
-.boardCommentDetails {background-color: #eee; padding: 0.5em 12px;}
+.boardCommentDetails {
+  background-color: #eee;
+  padding: 0.5em 12px;
+  border-bottom: 1px solid #ddd
+}
 .boardCommentBody {padding: 0.5em 12px 0;}
+.boardBugActivityBody {
+  padding: 0.5em 12px;
+  background-color: #fafafa;
+}
+.boardBugActivityBody table {
+  margin-bottom: 0.5em;
+  margin-top: 0.5em;
+}
 .boardCommentContent { line-height: 1.5em;}
-.boardCommentFooter {background-color: #eee; padding: 0.5em 12px;}
+.boardCommentFooter {
+  background-color: #eee;
+  padding: 0.5em 12px;
+  border-top: 1px solid #ddd;
+}
 dl.faq dt {font-weight: bold;}
 dl.faq dd {margin: 1em 0 2em 4em;}
+.adminHiddenComment {background-color:yellow;}
 
 /* --- Overview --- */
 
@@ -1248,7 +1430,14 @@ body.tab-overview #actions h2, body.tab-overview #actions h2:hover {
   background: none;
   color: #83ad23;
 }
-
+body.tab-overview #description {
+    width: 50em;
+}
+body.tab-overview #description fieldset {
+    border: 1px solid gray;
+    padding: 0 1em;
+    margin:0 1em 1em 0;
+}
 /* The top-most Person portlet, Contact Details, is allowed to float up and
 beside the mugshot. */
 #contact-details {clear: none;}
@@ -1387,6 +1576,11 @@ div#signing-key p {
     padding-left: 18px;
 }
 
+/* build status links should always be padded. */
+td.build_status a {
+    margin: 0 0 0 0.4em;
+}
+
 div#signing-key a {
     font-weight: bold;
 }
@@ -1420,7 +1614,7 @@ p.update-failure-message {
     padding-left: 18px;
 }
 
-p.update-in-progress-message {
+.update-in-progress-message {
     background: url(/@@/spinner) center left no-repeat;
     padding-left: 18px;
 }
@@ -1493,6 +1687,26 @@ body.tab-branches #actions h2, body.tab-branches #actions h2:hover {
   vertical-align: middle;
   text-align: center;
   height: 2.5em;
+}
+
+#branch-pending-writes {
+  background: #FFF59C;
+  width: 40em;
+  padding-left: 1em;
+  padding-right: 1em;
+  padding-top: 0.2em;
+  padding-bottom: 0.2em;
+  -moz-border-radius: 5px;
+  -o-border-radius: 5px;
+  -webkit-border-radius: 5px;
+}
+
+#branch-pending-writes h3 {
+  color: black;
+  font-weight: bold;
+  text-align: center;
+  font-size: 160%;
+  margin-top: 0.5em;
 }
 
 .mergeproposal p {margin: 0.5em 0 }
@@ -1593,6 +1807,15 @@ body.tab-bugs #actions h2, body.tab-bugs #actions h2:hover {
 
 /* In a bug report page, the current context is highlighted in yellow: */
 #affected-software tr.highlight {background-color: #ff9;}
+
+/* Bug report page subscribe/unsubscribe spinner */
+div#sub-unsub-spinner {
+  background: url(/@@/spinner) center left no-repeat;
+  color:#999;
+  display:none;
+  padding:3px 5px 2px 17px;
+}
+.unsub-icon {position:absolute; right:8px;}
 
 
 /* --- Blueprints --- */

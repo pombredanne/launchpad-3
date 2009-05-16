@@ -11,9 +11,10 @@ from zope.app.security.interfaces import IAuthenticationUtility, IPrincipal
 from zope.app.pluggableauth.interfaces import IPrincipalSource
 from zope.traversing.interfaces import IContainmentRoot
 from zope.schema import Bool, Choice, Datetime, Int, Object, Text, TextLine
+from lazr.batchnavigator.interfaces import IBatchNavigator
+from lazr.enum import DBEnumeratedType, DBItem, use_template
 
 from canonical.launchpad import _
-from canonical.lazr import DBEnumeratedType, DBItem, use_template
 
 
 class TranslationUnavailable(Exception):
@@ -57,16 +58,6 @@ class POSTToNonCanonicalURL(UnexpectedFormData):
     """
 
 
-class InvalidBatchSizeError(AssertionError):
-    """Received a batch parameter that exceed our configured max size."""
-
-    # XXX flacoste 2008/05/09 bug=185958:
-    # Ideally, we would use webservice_error, to set this up and
-    # register the view, but cyclic imports prevents us from doing
-    # so. This should be fixed once we move webapp stuff into LAZR.
-    __lazr_webservice_error__ = 400
-
-
 class ILaunchpadContainer(Interface):
     """Marker interface for objects used as the context of something."""
 
@@ -100,11 +91,11 @@ class IAuthorization(Interface):
         on the adapted object.  Otherwise returns False.
         """
 
-    def checkAuthenticated(user):
-        """Returns True if the user has that permission on the adapted
+    def checkAccountAuthenticated(account):
+        """Returns True if the account has that permission on the adapted
         object.  Otherwise returns False.
 
-        The argument `user` is the person who is authenticated.
+        The argument `account` is the account who is authenticated.
         """
 
 
@@ -367,6 +358,7 @@ class ILaunchBag(Interface):
     bug = Attribute('IBug, or None')
     bugtask = Attribute('IBugTask, or None')
 
+    account = Attribute('Currently authenticated IAccount, or None')
     user = Attribute('Currently authenticated IPerson, or None')
     login = Attribute('The login used by the authenticated person, or None')
 
@@ -408,6 +400,13 @@ class IBasicLaunchpadRequest(Interface):
     query_string_params = Attribute(
         'A dictionary of the query string parameters.')
 
+    def getRootURL(rootsite):
+        """Return this request's root URL.
+        
+        If rootsite is not None, then return the root URL for that rootsite,
+        looked up from our config.
+        """
+
     def getNearest(*some_interfaces):
         """Searches for the last traversed object to implement one of
         the given interfaces.
@@ -437,7 +436,7 @@ class IBrowserFormNG(Interface):
         """
 
     def getAll(name, default=None):
-        """Return the the list of values submitted under field name.
+        """Return the list of values submitted under field name.
 
         If the field wasn't submitted return the default value. (If default
         is None, an empty list will be returned. It is an error to use
@@ -457,26 +456,6 @@ class ILaunchpadBrowserApplicationRequest(
         title=u'IBrowserFormNG object containing the submitted form data',
         schema=IBrowserFormNG)
 
-
-# XXX SteveAlexander 2005-09-14: These need making into a launchpad version
-#     rather than the zope versions for the publisher simplification work.
-# class IEndRequestEvent(Interface):
-#     """An event which gets sent when the publication is ended"""
-#
-# # called in zopepublication's endRequest method, after ending
-# # the interaction.  it is used only by local sites, to clean
-# # up per-thread state.
-# class EndRequestEvent(object):
-#     """An event which gets sent when the publication is ended"""
-#     implements(IEndRequestEvent)
-#     def __init__(self, ob, request):
-#         self.object = ob
-#         self.request = request
-
-
-#
-#
-#
 
 class IPrincipalIdentifiedEvent(Interface):
     """An event that is sent after a principal has been recovered from the
@@ -629,6 +608,8 @@ class ILaunchpadPrincipal(IPrincipal):
         title=_("The level of access this principal has."),
         vocabulary=AccessLevel, default=AccessLevel.WRITE_PRIVATE)
 
+    account = Attribute("The IAccount the principal represents.")
+
     person = Attribute("The IPerson the principal represents.")
 
 
@@ -763,28 +744,6 @@ class IErrorReportRequest(Interface):
 # Batch Navigation
 #
 
-class IBatchNavigator(Interface):
-    """A batch navigator for a specified set of results."""
-
-    batch = Attribute("The IBatch for which navigation links are provided.")
-
-    heading = Attribute(
-        "The heading describing the kind of objects in the batch.")
-
-    def setHeadings(singular, plural):
-        """Set the heading for singular and plural results."""
-
-    def prevBatchURL():
-        """Return a URL to the previous chunk of results."""
-
-    def nextBatchURL():
-        """Return a URL to the next chunk of results."""
-
-    def batchPageURLs():
-        """Return a list of links representing URLs to pages of
-        results."""
-
-
 class ITableBatchNavigator(IBatchNavigator):
     """A batch navigator for tabular listings."""
 
@@ -827,17 +786,36 @@ class IPrimaryContext(Interface):
 #
 # Database policies
 #
+
+MAIN_STORE = 'main' # The main database.
+AUTH_STORE = 'auth' # The authentication database.
+
+ALL_STORES = frozenset([MAIN_STORE, AUTH_STORE])
+
+DEFAULT_FLAVOR = 'default' # Default flavor for current state.
+MASTER_FLAVOR = 'master' # The master database.
+SLAVE_FLAVOR = 'slave' # A slave database.
+
+
 class IDatabasePolicy(Interface):
     """Implement database policy based on the request.
 
     The publisher adapts the request to `IDatabasePolicy` to
     instantiate the policy for the current request.
     """
-    def beforeTraversal():
-        """Install the database policy into the current thread."""
+    def getStore(name, flavor):
+        """Retrieve a Store.
 
-    def afterCall():
-        """Perform any necessary cleanup of the database policy."""
+        :param name: one of ALL_STORES.
+
+        :param flavor: MASTER_FLAVOR, SLAVE_FLAVOR, or DEFAULT_FLAVOR.
+        """
+
+    def install():
+        """Hook called when policy is pushed onto the `IStoreSelector`."""
+
+    def uninstall():
+        """Hook called when policy is popped from the `IStoreSelector`."""
 
 
 class MasterUnavailable(Exception):
@@ -845,12 +823,25 @@ class MasterUnavailable(Exception):
     """
 
 
-MAIN_STORE = 'main' # The main database.
-AUTH_STORE = 'auth' # The authentication database.
+class DisallowedStore(Exception):
+    """A request was made to access a Store that has been disabled
+    by the current policy.
+    """
 
-DEFAULT_FLAVOR = 'default' # Default flavor for current state.
-MASTER_FLAVOR = 'master' # The master database.
-SLAVE_FLAVOR = 'slave' # A slave database.
+
+class ReadOnlyModeViolation(Exception):
+    """An attempt was made to write to a slave Store in read-only mode.
+
+    This can happen in legacy code where writes are being made to an
+    object retrieved from the default Store rather than casting the
+    object to a writable version using IMasterObject(obj).
+    """
+
+
+class ReadOnlyModeDisallowedStore(DisallowedStore, ReadOnlyModeViolation):
+    """A request was made to access a Store that cannot be granted
+    because we are running in read-only mode.
+    """
 
 
 class IStoreSelector(Interface):
@@ -868,6 +859,19 @@ class IStoreSelector(Interface):
     databases as we are prepared to pay for, so they will perform better
     because they are less loaded.
     """
+    def push(dbpolicy):
+        """Install an `IDatabasePolicy` as the default for this thread."""
+
+    def pop():
+        """Uninstall the most recently pushed `IDatabasePolicy` from
+        this thread.
+
+        Returns the `IDatabasePolicy` removed.
+        """
+
+    def get_current():
+        """Return the currently installed `IDatabasePolicy`."""
+
     def get(name, flavor):
         """Retrieve a Storm Store.
 
@@ -886,6 +890,15 @@ class IStoreSelector(Interface):
         for backwards compatibility, and new code should explicitly state
         if they want a master or a slave.
 
-        :raises MasterUnavailable: A master database was requested but
-            it is not available.
+        :raises MasterUnavailable:
+
+        :raises DisallowedStore:
         """
+
+
+class IWebBrowserOriginatingRequest(Interface):
+    """Marker interface for converting webservice requests into webapp ones.
+
+    It's used in the webservice domain for calculating webapp URLs, for
+    instance, `ProxiedLibraryFileAlias`.
+    """

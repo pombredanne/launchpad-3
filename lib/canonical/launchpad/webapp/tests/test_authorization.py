@@ -10,17 +10,20 @@ import unittest
 import transaction
 
 from zope.app.testing import ztapi
-from zope.interface import implements, classProvides
+from zope.component import provideAdapter
+from zope.interface import classProvides, implements, Interface
 from zope.testing.cleanup import CleanUp
 
 from canonical.lazr.interfaces import IObjectPrivacy
 
-from canonical.launchpad.interfaces.person import IPerson
+from canonical.launchpad.interfaces.account import IAccount
 from canonical.launchpad.security import AuthorizationBase
-from canonical.launchpad.testing import ObjectFactory
+from lp.testing.factory import ObjectFactory
+from canonical.launchpad.webapp.authentication import LaunchpadPrincipal
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
 from canonical.launchpad.webapp.interfaces import (
-    IAuthorization, IStoreSelector)
+    AccessLevel, IAuthorization, ILaunchpadPrincipal, ILaunchpadContainer,
+    IStoreSelector)
 from canonical.launchpad.webapp.metazcml import ILaunchpadPermission
 from canonical.launchpad.webapp.servers import LaunchpadBrowserRequest
 
@@ -44,13 +47,13 @@ class Checker(AuthorizationBase):
         self.calls.append('checkUnauthenticated')
         return False
 
-    def checkAuthenticated(self, user):
-        """See `IAuthorization.checkAuthenticated`.
+    def checkAccountAuthenticated(self, account):
+        """See `IAuthorization.checkAccountAuthenticated`.
 
         We record the call and then return False, arbitrarily chosen, to keep
         the policy from complaining.
         """
-        self.calls.append(('checkAuthenticated', user))
+        self.calls.append(('checkAccountAuthenticated', account))
         return False
 
 
@@ -85,13 +88,15 @@ class PermissionAccessLevel:
     access_level = 'read'
 
 
-class FakePersonPrincipal:
-    """A minimal principal that can be adapted to `IPerson`.
+class FakeAccount:
+    """A minimal object to represent an account."""
+    implements(IAccount)
 
-    For simplicity we declare this class implements `IPerson` so it will
-    just adapt to itself.
-    """
-    implements(IPerson)
+
+class FakeLaunchpadPrincipal:
+    """A minimal principal implementing `ILaunchpadPrincipal`"""
+    implements(ILaunchpadPrincipal)
+    account = FakeAccount()
     scope = None
     access_level = ''
 
@@ -110,6 +115,12 @@ class FakeStoreSelector:
     @staticmethod
     def get(name, flavor):
         return FakeStore()
+    @staticmethod
+    def push(dbpolicy):
+        pass
+    @staticmethod
+    def pop():
+        pass
 
 
 class TestCheckPermissionCaching(CleanUp, unittest.TestCase):
@@ -162,7 +173,7 @@ class TestCheckPermissionCaching(CleanUp, unittest.TestCase):
     def test_checkPermission_cache_authenticated(self):
         # checkPermission caches the result of checkAuthenticated for a
         # particular object and permission.
-        principal = FakePersonPrincipal()
+        principal = FakeLaunchpadPrincipal()
         request = self.makeRequest()
         request.setPrincipal(principal)
         policy = LaunchpadSecurityPolicy(request)
@@ -172,11 +183,13 @@ class TestCheckPermissionCaching(CleanUp, unittest.TestCase):
         # calls the checker.
         policy.checkPermission(permission, obj)
         self.assertEqual(
-            [('checkAuthenticated', principal)], checker_factory.calls)
+            [('checkAccountAuthenticated', principal.account)],
+            checker_factory.calls)
         # A subsequent identical call does not call the checker.
         policy.checkPermission(permission, obj)
         self.assertEqual(
-            [('checkAuthenticated', principal)], checker_factory.calls)
+            [('checkAccountAuthenticated', principal.account)],
+            checker_factory.calls)
 
     def test_checkPermission_clearSecurityPolicyCache_resets_cache(self):
         # Calling clearSecurityPolicyCache on the request clears the cache.
@@ -200,7 +213,7 @@ class TestCheckPermissionCaching(CleanUp, unittest.TestCase):
     def test_checkPermission_setPrincipal_resets_cache(self):
         # Setting the principal on the request clears the cache of results
         # (this is important during login).
-        principal = FakePersonPrincipal()
+        principal = FakeLaunchpadPrincipal()
         request = self.makeRequest()
         policy = LaunchpadSecurityPolicy(request)
         obj, permission, checker_factory = (
@@ -215,7 +228,8 @@ class TestCheckPermissionCaching(CleanUp, unittest.TestCase):
         # rather than finding a value in the cache.
         policy.checkPermission(permission, obj)
         self.assertEqual(
-            ['checkUnauthenticated', ('checkAuthenticated', principal)],
+            ['checkUnauthenticated', ('checkAccountAuthenticated',
+                                      principal.account)],
             checker_factory.calls)
 
     def test_checkPermission_commit_clears_cache(self):
@@ -236,6 +250,72 @@ class TestCheckPermissionCaching(CleanUp, unittest.TestCase):
         self.assertEqual(
             ['checkUnauthenticated', 'checkUnauthenticated'],
             checker_factory.calls)
+
+
+class TestLaunchpadSecurityPolicy_getPrincipalsAccessLevel(
+    CleanUp, unittest.TestCase):
+
+    def setUp(self):
+        self.principal = LaunchpadPrincipal(
+            'foo.bar@canonical.com', 'foo', 'foo', object())
+        self.security = LaunchpadSecurityPolicy()
+        provideAdapter(
+            adapt_loneobject_to_container, [ILoneObject], ILaunchpadContainer)
+
+    def test_no_scope(self):
+        """Principal's access level is used when no scope is given."""
+        self.principal.access_level = AccessLevel.WRITE_PUBLIC
+        self.principal.scope = None
+        self.failUnlessEqual(
+            self.security._getPrincipalsAccessLevel(
+                self.principal, LoneObject()),
+            self.principal.access_level)
+
+    def test_object_within_scope(self):
+        """Principal's access level is used when object is within scope."""
+        obj = LoneObject()
+        self.principal.access_level = AccessLevel.WRITE_PUBLIC
+        self.principal.scope = obj
+        self.failUnlessEqual(
+            self.security._getPrincipalsAccessLevel(self.principal, obj),
+            self.principal.access_level)
+
+    def test_object_not_within_scope(self):
+        """READ_PUBLIC is used when object is /not/ within scope."""
+        obj = LoneObject()
+        obj2 = LoneObject()  # This is out of obj's scope.
+        self.principal.scope = obj
+
+        self.principal.access_level = AccessLevel.WRITE_PUBLIC
+        self.failUnlessEqual(
+            self.security._getPrincipalsAccessLevel(self.principal, obj2),
+            AccessLevel.READ_PUBLIC)
+
+        self.principal.access_level = AccessLevel.READ_PRIVATE
+        self.failUnlessEqual(
+            self.security._getPrincipalsAccessLevel(self.principal, obj2),
+            AccessLevel.READ_PUBLIC)
+
+        self.principal.access_level = AccessLevel.WRITE_PRIVATE
+        self.failUnlessEqual(
+            self.security._getPrincipalsAccessLevel(self.principal, obj2),
+            AccessLevel.READ_PUBLIC)
+
+
+class ILoneObject(Interface):
+    """A marker interface for objects that only contain themselves."""
+
+
+class LoneObject:
+    implements(ILoneObject, ILaunchpadContainer)
+
+    def isWithin(self, context):
+        return self == context
+
+
+def adapt_loneobject_to_container(loneobj):
+    """Adapt a LoneObject to an `ILaunchpadContainer`."""
+    return loneobj
 
 
 def test_suite():

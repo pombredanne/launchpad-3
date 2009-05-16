@@ -14,6 +14,7 @@ __all__ = [
 
 from zope.interface import Interface
 from zope.schema import Bool, Bytes, Choice, Int, TextLine
+from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad.interfaces.message import IMessage
 from canonical.launchpad.interfaces.launchpad import IHasBug
@@ -21,10 +22,10 @@ from canonical.launchpad.interfaces.launchpad import IHasBug
 from canonical.launchpad.fields import Title
 from canonical.launchpad import _
 
-from canonical.lazr.enum import DBEnumeratedType, DBItem
-from canonical.lazr.fields import Reference
-from canonical.lazr.rest.declarations import (
-    export_as_webservice_entry, export_write_operation, exported)
+from lazr.restful.fields import Reference
+from lazr.restful.declarations import (
+    call_with, export_as_webservice_entry, export_write_operation, exported,
+    REQUEST_USER)
 
 
 class BugAttachmentType(DBEnumeratedType):
@@ -80,8 +81,9 @@ class IBugAttachment(IHasBug):
         Reference(IMessage, title=_("The message that was created when we "
                                     "added this attachment.")))
 
+    @call_with(user=REQUEST_USER)
     @export_write_operation()
-    def removeFromBug():
+    def removeFromBug(user):
         """Remove the attachment from the bug."""
 
 

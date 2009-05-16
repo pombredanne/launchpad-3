@@ -1,4 +1,4 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
 """Browser code for the launchpad application."""
 
 __metaclass__ = type
@@ -6,11 +6,11 @@ __all__ = [
     'AppFrontPageSearchView',
     'ApplicationButtons',
     'BrowserWindowDimensions',
-    'IcingContribFolder',
-    'EdubuntuIcingFolder',
+    'DoesNotExistView',
+    'get_launchpad_views',
     'Hierarchy',
+    'IcingContribFolder',
     'IcingFolder',
-    'KubuntuIcingFolder',
     'LaunchpadRootNavigation',
     'LaunchpadImageFolder',
     'LinkView',
@@ -23,15 +23,15 @@ __all__ = [
     'SoftTimeoutView',
     'StructuralHeaderPresentation',
     'StructuralObjectPresentation',
-    'UbuntuIcingFolder',
     ]
 
 
 import cgi
-import urllib
 import operator
 import os
+import re
 import time
+import urllib
 from datetime import timedelta, datetime
 from urlparse import urlunsplit
 
@@ -39,6 +39,7 @@ from zope.datetime import parseDatetimetz, tzinfo, DateTimeError
 from zope.component import getUtility, queryAdapter
 from zope.interface import implements
 from zope.publisher.interfaces import NotFound
+from zope.publisher.interfaces.browser import IBrowserPublisher
 from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
 from zope.security.interfaces import Unauthorized
 from zope.traversing.interfaces import ITraversable
@@ -48,20 +49,23 @@ from canonical.config import config
 from canonical.lazr import ExportedFolder, ExportedImageFolder
 from canonical.launchpad.helpers import intOrZero
 
-from canonical.launchpad.interfaces.announcement import IAnnouncementSet
-from canonical.launchpad.interfaces.binarypackagename import (
+from lp.registry.interfaces.announcement import IAnnouncementSet
+from lp.soyuz.interfaces.binarypackagename import (
     IBinaryPackageNameSet)
 from canonical.launchpad.interfaces.bounty import IBountySet
+from lp.code.interfaces.branchlookup import (
+    CannotHaveLinkedBranch, IBranchLookup, NoLinkedBranch)
+from lp.code.interfaces.branchnamespace import InvalidNamespace
 from canonical.launchpad.interfaces.bug import IBugSet
 from canonical.launchpad.interfaces.bugtracker import IBugTrackerSet
-from canonical.launchpad.interfaces.builder import IBuilderSet
-from canonical.launchpad.interfaces.codeimport import ICodeImportSet
-from canonical.launchpad.interfaces.codeofconduct import ICodeOfConductSet
+from lp.soyuz.interfaces.builder import IBuilderSet
+from lp.code.interfaces.codeimport import ICodeImportSet
+from lp.registry.interfaces.codeofconduct import ICodeOfConductSet
 from canonical.launchpad.interfaces.cve import ICveSet
-from canonical.launchpad.interfaces.distribution import IDistributionSet
-from canonical.launchpad.interfaces.karma import IKarmaActionSet
+from lp.registry.interfaces.distribution import IDistributionSet
+from lp.registry.interfaces.karma import IKarmaActionSet
 from canonical.launchpad.interfaces.hwdb import IHWDBApplication
-from canonical.launchpad.interfaces.language import ILanguageSet
+from lp.services.worlddata.interfaces.language import ILanguageSet
 from canonical.launchpad.interfaces.launchpad import (
     IAppFrontPageSearchForm, IBazaarApplication, ILaunchpadCelebrities,
     IRosettaApplication, IStructuralHeaderPresentation,
@@ -69,18 +73,19 @@ from canonical.launchpad.interfaces.launchpad import (
 from canonical.launchpad.interfaces.launchpadstatistic import (
     ILaunchpadStatisticSet)
 from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
-from canonical.launchpad.interfaces.mailinglist import IMailingListSet
+from lp.registry.interfaces.mailinglist import IMailingListSet
 from canonical.launchpad.interfaces.malone import IMaloneApplication
-from canonical.launchpad.interfaces.mentoringoffer import IMentoringOfferSet
-from canonical.launchpad.interfaces.person import IPersonSet
-from canonical.launchpad.interfaces.pillar import IPillarNameSet
-from canonical.launchpad.interfaces.product import IProductSet
-from canonical.launchpad.interfaces.project import IProjectSet
-from canonical.launchpad.interfaces.questioncollection import IQuestionSet
-from canonical.launchpad.interfaces.sourcepackagename import (
+from lp.registry.interfaces.mentoringoffer import IMentoringOfferSet
+from canonical.signon.interfaces.openidserver import IOpenIDRPConfigSet
+from lp.registry.interfaces.person import IPersonSet
+from lp.registry.interfaces.pillar import IPillarNameSet
+from lp.registry.interfaces.product import (
+    InvalidProductName, IProductSet)
+from lp.registry.interfaces.project import IProjectSet
+from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageNameSet)
-from canonical.launchpad.interfaces.specification import ISpecificationSet
-from canonical.launchpad.interfaces.sprint import ISprintSet
+from lp.blueprints.interfaces.specification import ISpecificationSet
+from lp.blueprints.interfaces.sprint import ISprintSet
 from canonical.launchpad.interfaces.translationgroup import (
     ITranslationGroupSet)
 from canonical.launchpad.interfaces.translationimportqueue import (
@@ -92,10 +97,10 @@ from canonical.launchpad.webapp import (
     canonical_url, custom_widget)
 from canonical.launchpad.webapp.interfaces import (
     IBreadcrumbBuilder, ILaunchBag, ILaunchpadRoot, INavigationMenu,
-    POSTToNonCanonicalURL)
+    NotFoundError, POSTToNonCanonicalURL)
 from canonical.launchpad.webapp.publisher import RedirectionView
 from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.uri import URI
+from lazr.uri import URI
 from canonical.launchpad.webapp.url import urlparse, urlappend
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.widgets.project import ProjectScopeWidget
@@ -107,6 +112,8 @@ from canonical.widgets.project import ProjectScopeWidget
 #     code and for TALES namespace code to use.
 #     Same for MenuAPI.
 from canonical.launchpad.webapp.tales import DurationFormatterAPI, MenuAPI
+
+from lp.answers.interfaces.questioncollection import IQuestionSet
 
 
 class MaloneApplicationNavigation(Navigation):
@@ -249,6 +256,10 @@ class Hierarchy(LaunchpadView):
         working_url = baseurl
         for segment in urlparts[2].split('/'):
             working_url = urlappend(working_url, segment)
+            # Segments starting with '+' should be ignored because they
+            # will never correspond to an object in navigation.
+            if segment.startswith('+'):
+                continue
             pathurls.append(working_url)
 
         # We assume a 1:1 relationship between the traversed_objects list and
@@ -579,12 +590,43 @@ class LaunchpadRootNavigation(Navigation):
         return self.redirectSubTree(
             'https://help.launchpad.net/Feedback', status=301)
 
+    @stepto('+branch')
+    def redirect_branch(self):
+        """Redirect /+branch/<foo> to the branch named 'foo'.
+
+        'foo' can be the unique name of the branch, or any of the aliases for
+        the branch.
+        """
+        path = '/'.join(self.request.stepstogo)
+        try:
+            branch_data = getUtility(IBranchLookup).getByLPPath(path)
+        except (CannotHaveLinkedBranch, NoLinkedBranch, InvalidNamespace,
+                InvalidProductName):
+            raise NotFoundError
+        branch, trailing = branch_data
+        if branch is None:
+            raise NotFoundError
+        url = canonical_url(branch)
+        if trailing is not None:
+            url = urlappend(url, trailing)
+        return self.redirectSubTree(url)
+
+    @stepto('+builds')
+    def redirect_buildfarm(self):
+        """Redirect old /+builds requests to new URL, /builders."""
+        new_url = '/builders'
+        return self.redirectSubTree(
+            urlappend(new_url, '/'.join(self.request.stepstogo)))
+
+    # XXX cprov 2009-03-19 bug=345877: path segments starting with '+'
+    # should never correspond to a valid traversal, they confuse the
+    # hierarchical navigation model.
     stepto_utilities = {
         '+announcements': IAnnouncementSet,
         'binarypackagenames': IBinaryPackageNameSet,
         'bounties': IBountySet,
         'bugs': IMaloneApplication,
-        '+builds': IBuilderSet,
+        'builders': IBuilderSet,
         '+code': IBazaarApplication,
         '+code-imports': ICodeImportSet,
         'codeofconduct': ICodeOfConductSet,
@@ -607,6 +649,7 @@ class LaunchpadRootNavigation(Navigation):
         '+groups': ITranslationGroupSet,
         'translations': IRosettaApplication,
         'questions': IQuestionSet,
+        '+rpconfig': IOpenIDRPConfigSet,
         # These three have been renamed, and no redirects done, as the old
         # urls now point to the product pages.
         #'bazaar': IBazaarApplication,
@@ -684,32 +727,58 @@ class LaunchpadRootNavigation(Navigation):
         if self.request.method == 'POST':
             return None
 
-        # If no redirection host is set, don't redirect.
         mainsite_host = config.vhost.mainsite.hostname
-        redirection_host = config.launchpad.beta_testers_redirection_host
-        if redirection_host is None:
-            return None
+
         # If the hostname for our URL isn't under the main site
         # (e.g. shipit.ubuntu.com), don't redirect.
         uri = URI(self.request.getURL())
         if not uri.host.endswith(mainsite_host):
             return None
 
-        # Only redirect if the user is a member of beta testers team,
-        # don't redirect.
+        beta_host = config.launchpad.beta_testers_redirection_host
         user = getUtility(ILaunchBag).user
-        if user is None or not user.inTeam(
-            getUtility(ILaunchpadCelebrities).launchpad_beta_testers):
-            return None
+        # Test to see if the user is None before attempting to get the
+        # launchpad_beta_testers celebrity.  In the odd test where the
+        # database is empty the series of tests will work.
+        if user is None:
+            user_is_beta_tester = False
+        else:
+            beta_testers = (
+                getUtility(ILaunchpadCelebrities).launchpad_beta_testers)
+            if user.inTeam(beta_testers):
+                user_is_beta_tester = True
+            else:
+                user_is_beta_tester = False
 
-        # Alter the host name to point at the redirection target.
-        new_host = uri.host[:-len(mainsite_host)] + redirection_host
-        uri = uri.replace(host=new_host)
-        # Complete the URL from the environment.
-        uri = uri.replace(path=self.request['PATH_INFO'])
-        query_string = self.request.get('QUERY_STRING')
-        if query_string:
-            uri = uri.replace(query=query_string)
+        # If the request is for a bug then redirect straight to that bug.
+        bug_match = re.match("/bugs/(\d+)$", self.request['PATH_INFO'])
+        if bug_match:
+            bug_number = bug_match.group(1)
+            bug_set = getUtility(IBugSet)
+            try:
+                bug = bug_set.get(bug_number)
+            except NotFoundError, e:
+                raise NotFound(self.context, bug_number)
+            if not check_permission("launchpad.View", bug):
+                raise Unauthorized("Bug %s is private" % bug_number)
+            uri = URI(canonical_url(bug.default_bugtask))
+            if beta_host is not None and user_is_beta_tester:
+                # Alter the host name to point at the beta target.
+                new_host = uri.host[:-len(mainsite_host)] + beta_host
+                uri = uri.replace(host=new_host)
+        else:
+            # If no redirection host is set or the user is not a beta tester,
+            # don't redirect.
+            if beta_host is None or not user_is_beta_tester:
+                return None
+            # Alter the host name to point at the beta target.
+            new_host = uri.host[:-len(mainsite_host)] + beta_host
+            uri = uri.replace(host=new_host)
+            # Complete the URL from the environment.
+            uri = uri.replace(path=self.request['PATH_INFO'])
+            query_string = self.request.get('QUERY_STRING')
+            if query_string:
+                uri = uri.replace(query=query_string)
 
         # Empty the traversal stack, since we're redirecting.
         self.request.setTraversalStack([])
@@ -782,28 +851,6 @@ class IcingContribFolder(ExportedFolder):
 
     folder = os.path.join(
         os.path.dirname(os.path.realpath(__file__)), '../icing-contrib/')
-
-
-class UbuntuIcingFolder(ExportedFolder):
-    """Export the Ubuntu icing."""
-
-    folder = os.path.join(
-        os.path.dirname(os.path.realpath(__file__)), '../icing-ubuntu/')
-
-
-class KubuntuIcingFolder(ExportedFolder):
-    """Export the Kubuntu icing."""
-
-    folder = os.path.join(
-        os.path.dirname(os.path.realpath(__file__)), '../icing-kubuntu/')
-
-
-class EdubuntuIcingFolder(ExportedFolder):
-    """Export the Edubuntu icing."""
-
-    folder = os.path.join(
-        os.path.dirname(os.path.realpath(__file__)), '../icing-edubuntu/')
-
 
 
 class LaunchpadTourFolder(ExportedFolder):
@@ -1015,3 +1062,53 @@ class BrowserWindowDimensions(LaunchpadView):
 
     def render(self):
         return u'Thanks.'
+
+
+def get_launchpad_views(cookies):
+    """The state of optional page elements the user may choose to view.
+
+    :param cookies: The request.cookies object that contains launchpad_views.
+    :return: A dict of all the view states.
+    """
+    views = {
+        'small_maps': True,
+        }
+    cookie = cookies.get('launchpad_views', '')
+    if len(cookie) > 0:
+        pairs = cookie.split('&')
+        for pair in pairs:
+            parts = pair.split('=')
+            if len(parts) != 2:
+                # The cookie is malformed, possibly hacked.
+                continue
+            key, value = parts
+            if not key in views:
+                # The cookie may be hacked.
+                continue
+            # 'false' is the value that the browser script sets to disable a
+            # part of a page. Any other value is considered to be 'true'.
+            views[key] = value != 'false'
+    return views
+
+
+class DoesNotExistView:
+    """A view that simply raises NotFound when rendered.
+
+    Useful to register as a view that shouldn't appear on a particular
+    virtual host.
+    """
+    implements(IBrowserPublisher)
+
+    def __init__(self, context, request):
+        self.context = context
+
+    def publishTraverse(self, request, name):
+        """See `IBrowserPublisher`."""
+        return self
+
+    def browserDefault(self, request):
+        """See `IBrowserPublisher`."""
+        return self, ()
+
+    def __call__(self):
+        raise NotFound(self.context, self.__name__)

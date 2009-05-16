@@ -11,16 +11,33 @@ __all__ = [
     'ensure_base',
     'get_branch_stacked_on_url',
     'HttpAsLocalTransport',
+    'is_branch_stackable',
     ]
 
 from bzrlib.builtins import _create_prefix as create_prefix
 from bzrlib import config
-from bzrlib.errors import NoSuchFile, NotStacked, UnstackableBranchFormat
+from bzrlib.errors import (
+    NoSuchFile, NotStacked, UnstackableBranchFormat,
+    UnstackableRepositoryFormat)
 from bzrlib.remote import RemoteBzrDir
 from bzrlib.transport import register_transport, unregister_transport
 from bzrlib.transport.local import LocalTransport
 
-from canonical.launchpad.webapp.uri import URI
+from lazr.uri import URI
+
+
+def is_branch_stackable(bzr_branch):
+    """Return True if the bzr_branch is able to be stacked."""
+    try:
+        bzr_branch.get_stacked_on_url()
+    except (UnstackableBranchFormat, UnstackableRepositoryFormat):
+        return False
+    except NotStacked:
+        # This is fine.
+        return True
+    else:
+        # If nothing is raised, then stackable (and stacked even).
+        return True
 
 
 def get_branch_stacked_on_url(a_bzrdir):
@@ -59,6 +76,8 @@ def get_branch_stacked_on_url(a_bzrdir):
         raise UnstackableBranchFormat(
             a_bzrdir._format, a_bzrdir.root_transport.base)
     format = find_branch_format()
+    if not format.supports_stacking():
+        raise UnstackableBranchFormat(format, a_bzrdir.root_transport.base)
     branch_transport = a_bzrdir.get_branch_transport(None)
     # XXX: JonathanLange 2008-09-04: We should be using BranchConfig here, but
     # that requires opening the Branch. Bazaar should grow APIs to let us

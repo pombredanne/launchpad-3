@@ -1,0 +1,22 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
+>
+  <body>
+    <metal:block fill-slot="auth">
+      <form action="/+login-register" method="post" accept-charset="UTF-8">
+        <tal:widget replace="structure view/widgets/nonce/hidden" />
+        <tal:form-fields 
+          metal:use-macro="context/@@loginservice_macros/login_or_register" />
+      </form>
+    </metal:block>
+  </body>
+</html>
+

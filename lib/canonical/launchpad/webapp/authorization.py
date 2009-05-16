@@ -32,8 +32,7 @@ from canonical.launchpad.webapp.metazcml import ILaunchpadPermission
 steveIsFixingThis = False
 
 
-LAUNCHPAD_SECURITY_POLICY_CACHE_KEY = (
-    'launchpad.security_policy_cache')
+LAUNCHPAD_SECURITY_POLICY_CACHE_KEY = 'launchpad.security_policy_cache'
 
 
 class LaunchpadSecurityPolicy(ParanoidSecurityPolicy):
@@ -157,10 +156,6 @@ class LaunchpadSecurityPolicy(ParanoidSecurityPolicy):
             if not self._checkPrivacy(access_level, objecttoauthorize):
                 return False
 
-        # XXX kiko 2007-02-07:
-        # webapp shouldn't be depending on launchpad interfaces..
-        from canonical.launchpad.interfaces import IPerson
-
         # This check shouldn't be needed, strictly speaking.
         # However, it is here as a "belt and braces".
 
@@ -187,11 +182,11 @@ class LaunchpadSecurityPolicy(ParanoidSecurityPolicy):
             if authorization is None:
                 return False
             else:
-                user = IPerson(principal, None)
-                if user is None:
-                    result = authorization.checkUnauthenticated()
+                if ILaunchpadPrincipal.providedBy(principal):
+                    result = authorization.checkAccountAuthenticated(
+                        principal.account)
                 else:
-                    result = authorization.checkAuthenticated(user)
+                    result = authorization.checkUnauthenticated()
                 if type(result) is not bool:
                     warnings.warn(
                         'authorization returning non-bool value: %r' %

@@ -27,10 +27,11 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import SQLBase
 from canonical.database.enumcol import EnumCol
 
+from canonical.launchpad.components.bugchange import BugTaskAdded
 from canonical.launchpad.interfaces import (
-    BugNominationStatus, IBugNomination, IBugTaskSet, IBugNominationSet,
+    BugNominationStatus, IBugNomination, IBugNominationSet,
     ILaunchpadCelebrities, NotFoundError)
-from canonical.launchpad.validators.person import validate_public_person
+from lp.registry.interfaces.person import validate_public_person
 
 class BugNomination(SQLBase):
     implements(IBugNomination)
@@ -65,30 +66,25 @@ class BugNomination(SQLBase):
         self.status = BugNominationStatus.APPROVED
         self.decider = approver
         self.date_decided = datetime.now(pytz.timezone('UTC'))
-
-        bugtaskset = getUtility(IBugTaskSet)
+        targets = []
         if self.distroseries:
             # Figure out which packages are affected in this distro for
             # this bug.
-            targets = []
             distribution = self.distroseries.distribution
             distroseries = self.distroseries
             for task in self.bug.bugtasks:
                 if not task.distribution == distribution:
                     continue
-                if task.sourcepackagename:
-                    bugtaskset.createTask(
-                        bug=self.bug, owner=approver,
-                        distroseries=distroseries,
-                        sourcepackagename=task.sourcepackagename)
+                if task.sourcepackagename is not None:
+                    targets.append(distroseries.getSourcePackage(
+                        task.sourcepackagename))
                 else:
-                    bugtaskset.createTask(
-                        bug=self.bug, owner=approver,
-                        distroseries=distroseries)
+                    targets.append(distroseries)
         else:
-            bugtaskset.createTask(
-                bug=self.bug, owner=approver,
-                productseries=self.productseries)
+            targets.append(self.productseries)
+        for target in targets:
+            bug_task = self.bug.addTask(approver, target)
+            self.bug.addChange(BugTaskAdded(UTC_NOW, approver, bug_task))
 
     def decline(self, decliner):
         """See IBugNomination."""
@@ -119,24 +115,27 @@ class BugNomination(SQLBase):
         if self.distroseries is not None:
             # For distributions anyone that can upload to the
             # distribution may approve nominations.
-            bug_components = set()
+            bug_packagenames_and_components = set()
             distribution = self.distroseries.distribution
             for bugtask in self.bug.bugtasks:
                 if (bugtask.distribution == distribution
                     and bugtask.sourcepackagename is not None):
                     source_package = self.distroseries.getSourcePackage(
                         bugtask.sourcepackagename)
-                    bug_components.add(
-                        source_package.latest_published_component)
-            if len(bug_components) == 0:
+                    bug_packagenames_and_components.add(
+                        bugtask.sourcepackagename)
+                    if source_package.latest_published_component is not None:
+                        bug_packagenames_and_components.add(
+                            source_package.latest_published_component)
+            if len(bug_packagenames_and_components) == 0:
                 # If the bug isn't targeted to a source package, allow
                 # any uploader to approve the nomination.
-                bug_components = set(
+                bug_packagenames_and_components = set(
                     upload_component.component
                     for upload_component in distribution.uploaders)
-            for upload_component in distribution.uploaders:
-                if (upload_component.component in bug_components and
-                    person.inTeam(upload_component.person)):
+            for packagename_or_component in bug_packagenames_and_components:
+                if distribution.main_archive.canUpload(
+                    person, packagename_or_component):
                     return True
 
         return False

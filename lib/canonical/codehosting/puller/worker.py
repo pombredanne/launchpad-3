@@ -1,4 +1,4 @@
-# Copyright 2006-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2006-2009 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 
@@ -11,7 +11,6 @@ from bzrlib.branch import Branch
 from bzrlib.bzrdir import BzrDir
 from bzrlib import errors
 from bzrlib.plugins.loom.branch import LoomSupport
-from bzrlib.progress import DummyProgress
 from bzrlib.remote import RemoteBranch, RemoteBzrDir, RemoteRepository
 from bzrlib.transport import get_transport
 from bzrlib import urlutils
@@ -21,10 +20,10 @@ import bzrlib.ui
 from canonical.config import config
 from canonical.codehosting.vfs import get_puller_server
 from canonical.codehosting.puller import get_lock_id_for_branch_id
-from canonical.launchpad.interfaces.branch import (
+from lp.code.interfaces.branch import (
     BranchType, get_blacklisted_hostnames)
 from canonical.launchpad.webapp import errorlog
-from canonical.launchpad.webapp.uri import URI, InvalidURIError
+from lazr.uri import URI, InvalidURIError
 
 
 __all__ = [
@@ -142,7 +141,9 @@ class PullerWorkerProtocol:
     def mirrorFailed(self, message, oops_id):
         self.sendEvent('mirrorFailed', message, oops_id)
 
-    def progressMade(self):
+    def progressMade(self, type):
+        # 'type' is ignored; we only care about the type of progress in the
+        # tests of the progress reporting.
         self.sendEvent('progressMade')
 
     def log(self, fmt, *args):
@@ -389,7 +390,8 @@ class BranchMirrorer(object):
         else:
             revision_id = 'null:'
         self._runWithTransformFallbackLocationHookInstalled(
-            bzrdir.clone_on_transport, dest_transport, revision_id=revision_id)
+            bzrdir.clone_on_transport, dest_transport,
+            revision_id=revision_id)
         branch = Branch.open(destination_url)
         return branch
 
@@ -836,27 +838,8 @@ class PullerWorker:
                 (self.source, self.dest, id(self)))
 
 
-class WorkerProgressBar(DummyProgress):
-    """A progress bar that informs a PullerWorkerProtocol of progress."""
-
-    def _event(self, *args, **kw):
-        """Inform the PullerWorkerProtocol of progress.
-
-        This method is attached to the class as all of the progress bar
-        methods: tick, update, child_update, clear and note.
-        """
-        self.puller_worker_protocol.progressMade()
-
-    tick = _event
-    update = _event
-    child_update = _event
-    clear = _event
-    note = _event
-
-    def child_progress(self, **kwargs):
-        """As we don't care about nesting progress bars, return self."""
-        return self
-
+WORKER_ACTIVITY_PROGRESS_BAR = 'progress bar'
+WORKER_ACTIVITY_NETWORK = 'network'
 
 class PullerWorkerUIFactory(SilentUIFactory):
     """An UIFactory that always says yes to breaking locks."""
@@ -877,7 +860,15 @@ class PullerWorkerUIFactory(SilentUIFactory):
             return False
 
     def _progress_updated(self, task):
-        self.puller_worker_protocol.progressMade()
+        self.puller_worker_protocol.progressMade(WORKER_ACTIVITY_PROGRESS_BAR)
+
+    def report_transport_activity(self, transport, byte_count, direction):
+        # <poolie> mwhudson: if you're feeling paranoid i suggest you check
+        #          the 'action' or whatever it's called is 'read'/'write'
+        # <poolie> if we add a soft timeout like 'no io for two seconds' then
+        #          we'd make a new action
+        if direction in ['read', 'write']:
+            self.puller_worker_protocol.progressMade(WORKER_ACTIVITY_NETWORK)
 
 
 def install_worker_ui_factory(puller_worker_protocol):

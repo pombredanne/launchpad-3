@@ -29,8 +29,7 @@
                         owner duplicateof communityscore communitytimestamp
                         hits hitstimestamp activityscore activitytimestamp
                         displayname activity initial_message bug_branches
-                        productinfestations packageinfestations watches
-                        cves cve_links duplicates
+                        watches cves cve_links duplicates
                         attachments questions specifications followup_subject
                         isSubscribed messages getBugNotificationRecipients
                         hasBranch security_related tags getMessageChunks
@@ -39,19 +38,22 @@
                         getAlsoNotifiedSubscribers getBugWatch getBugTask
                         canBeNominatedFor getNominationFor getNominations
                         date_last_message number_of_duplicates
-                        message_count getQuestionCreatedFromBug
+                        message_count comment_count getQuestionCreatedFromBug
                         canBeAQuestion getBugTasksByPackageName
-                        users_affected_count users_unaffected_count"
+                        users_affected_count users_unaffected_count
+                        readonly_duplicateof users_affected bug_messages"
             />
         <require
             permission="launchpad.Edit"
             attributes="addChangeNotification addCommentNotification addWatch
+                        removeWatch
                         linkCVE linkCVEAndReturnNothing unlinkCVE findCvesInText
-                        newMessage linkMessage addBranch addAttachment
+                        newMessage linkMessage addBranch removeBranch
+                        addAttachment
                         unsubscribeFromDupes subscribe unsubscribe addNomination
                         expireNotifications setStatus setPrivate
                         convertToQuestion isUserAffected
-                        markUserAffected addTask"
+                        markUserAffected addTask addChange markAsDuplicate"
             set_attributes="datecreated date_last_updated name title description
                             ownerID owner duplicateof communityscore
                             communitytimestamp hits hitstimestamp activityscore
@@ -62,12 +64,21 @@
             permission="launchpad.AnyPerson"
             attributes="offerMentoring retractMentoring"
             />
+        <require
+            permission="launchpad.Admin"
+            attributes="setCommentVisibility"
+            />
     </class>
 
     <adapter
         for="canonical.launchpad.interfaces.IBug"
         provides="canonical.launchpad.webapp.interfaces.ILaunchpadContainer"
         factory="canonical.launchpad.components.launchpadcontainer.LaunchpadBugContainer"
+        />
+
+    <adapter
+        factory="canonical.launchpad.browser.bug.bug_description_xhtml_representation"
+        name="description"
         />
 
     <browser:menus
@@ -158,6 +169,7 @@
     <browser:page
         for="canonical.launchpad.interfaces.IBug"
         name="+bug-portlet-subscribers-content"
+        class="canonical.launchpad.browser.bugsubscription.BugPortletSubcribersContents"
         template="../templates/bug-portlet-subscribers-content.pt" 
         permission="zope.Public" />
 

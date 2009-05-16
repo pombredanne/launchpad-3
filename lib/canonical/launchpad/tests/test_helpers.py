@@ -11,7 +11,7 @@ from canonical.launchpad import helpers
 from canonical.launchpad.ftests import login
 from canonical.launchpad.translationformat import LaunchpadWriteTarFile
 from canonical.launchpad.interfaces import ILanguageSet, IPerson, ILaunchBag
-from canonical.launchpad.testing import LaunchpadObjectFactory
+from lp.testing.factory import LaunchpadObjectFactory
 
 
 def make_test_tarball_1():
@@ -212,6 +212,42 @@ def test_preferred_or_request_languages():
 
     >>> tearDown()
     '''
+
+
+def test_shortlist_returns_all_elements():
+    """
+    Override the warning function since by default all warnings raises an
+    exception and we can't test the return value of the function.
+
+    >>> import warnings
+
+    >>> def warn(message, category=None, stacklevel=2):
+    ...     if category is None:
+    ...         category = 'UserWarning'
+    ...     else:
+    ...         category = category.__class__.__name__
+    ...     print "%s: %s" % (category, message)
+
+    >>> old_warn = warnings.warn
+    >>> warnings.warn = warn
+
+    Show that shortlist doesn't crop the results when a warning is
+    printed.
+
+    >>> from canonical.launchpad.helpers import shortlist
+    >>> shortlist(list(range(10)), longest_expected=5) #doctest: +ELLIPSIS
+    UserWarning: shortlist() should not...
+    [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+
+    >>> shortlist(xrange(10), longest_expected=5) #doctest: +ELLIPSIS
+    UserWarning: shortlist() should not...
+    [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+
+    Reset our monkey patch.
+
+    >>> warnings.warn = old_warn
+
+    """
 
 
 class TruncateTextTest(unittest.TestCase):

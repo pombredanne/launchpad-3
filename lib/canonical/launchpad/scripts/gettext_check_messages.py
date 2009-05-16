@@ -13,7 +13,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.interfaces import ITranslationMessageSet
 from canonical.launchpad.helpers import validate_translation
-from canonical.launchpad.scripts.base import LaunchpadScript
+from lp.services.scripts.base import LaunchpadScript
 
 
 class GettextCheckMessages(LaunchpadScript):
@@ -111,7 +111,7 @@ class GettextCheckMessages(LaunchpadScript):
         potmsgset = translationmessage.potmsgset
         pofile = translationmessage.pofile
         return potmsgset.getImportedTranslationMessage(
-            pofile.language, pofile.variant)
+            pofile.potemplate, pofile.language, pofile.variant)
 
     def _check_and_fix(self, translationmessage):
         """Check message against gettext, and fix it if necessary."""

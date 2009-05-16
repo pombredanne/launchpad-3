@@ -15,13 +15,15 @@ __all__ = [
     'IOAuthRequestToken',
     'IOAuthRequestTokenSet',
     'NonceAlreadyUsed',
+    'TimestampOrderingError',
+    'ClockSkew',
     ]
 
 from zope.schema import Bool, Choice, Datetime, Object, TextLine
 from zope.interface import Attribute, Interface
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces.person import IPerson
+from lp.registry.interfaces.person import IPerson
 from canonical.launchpad.webapp.interfaces import AccessLevel, OAuthPermission
 
 
@@ -151,16 +153,25 @@ class IOAuthAccessToken(IOAuthToken):
         description=_('The level of access given to the application acting '
                       'on your behalf.'))
 
-    def ensureNonce(nonce, timestamp):
-        """Ensure the nonce hasn't been used with a different timestamp.
+    def checkNonceAndTimestamp(nonce, timestamp):
+        """Verify the nonce and timestamp.
 
-        :raises NonceAlreadyUsed: If the nonce has been used before with a
-            timestamp not in the accepted range (+/- `NONCE_TIME_WINDOW`
-            seconds from the timestamp stored in the database).
+        - Ensure the nonce hasn't been used with the same timestamp.
+        - Ensure this is a first access, or this timestamp is no older than
+          last timestamp minus `TIMESTAMP_ACCEPTANCE_WINDOW`.
+        - Ensure this timestamp is within +/- `TIMESTAMP_SKEW_WINDOW` of the
+          server's concept of now.
 
-        If the nonce has never been used together with this token before,
-        we store it in the database with the given timestamp and associated
-        with this token.
+        :raises NonceAlreadyUsed: If the nonce has been used before with the
+            same timestamp.
+        :raises TimestampOrderingError: If the timestamp is older than the
+            last timestamp minus `TIMESTAMP_ACCEPTANCE_WINDOW`.
+        :raises ClockSkew: If the timestamp is not within
+            +/- `TIMESTAMP_SKEW_WINDOW` of now.
+
+        If the nonce has never been used together with this token and
+        timestamp before, we store it in the database with the given timestamp
+        and associated with this token.
         """
 
 
@@ -234,6 +245,14 @@ class IOAuthNonce(Interface):
     access_token = Object(schema=IOAuthAccessToken, title=_('The token'))
     nonce = TextLine(title=_('Nonce'), required=True, readonly=True)
 
+# Note that these three exceptions are converted to Unauthorized (equating to
+# 401 status) in webapp/servers.py, WebServicePublication.getPrincipal.
 
 class NonceAlreadyUsed(Exception):
     """Nonce has been used together with same token but another timestamp."""
+
+class TimestampOrderingError(Exception):
+    """Timestamp is too old, compared to the last request."""
+
+class ClockSkew(Exception):
+    """Timestamp is too far off from server's clock."""

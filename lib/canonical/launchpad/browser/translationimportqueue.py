@@ -1,4 +1,4 @@
-# Copyright 2005-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2005-2009 Canonical Ltd.  All rights reserved.
 
 """Browser views for ITranslationImportQueue."""
 
@@ -22,11 +22,12 @@ from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.browser.hastranslationimports import (
     HasTranslationImportsView)
-from canonical.launchpad.interfaces.distroseries import IDistroSeries
+from lp.registry.interfaces.distroseries import IDistroSeries
 from canonical.launchpad.interfaces.translationimportqueue import (
     ITranslationImportQueueEntry, IEditTranslationImportQueueEntry,
-    ITranslationImportQueue, RosettaImportStatus, TranslationFileType)
-from canonical.launchpad.interfaces.language import ILanguageSet
+    ITranslationImportQueue, RosettaImportStatus,
+    SpecialTranslationImportTargetFilter, TranslationFileType)
+from lp.services.worlddata.interfaces.language import ILanguageSet
 from canonical.launchpad.interfaces.pofile import IPOFileSet
 from canonical.launchpad.interfaces.potemplate import IPOTemplateSet
 from canonical.launchpad.webapp.interfaces import (
@@ -66,7 +67,15 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
 
         if self.context.sourcepackagename is not None:
             field_values['sourcepackagename'] = self.context.sourcepackagename
-        if( file_type in (TranslationFileType.POT,
+        if self.context.is_targeted_to_ubuntu:
+            if self.context.potemplate is None:
+                # Default for Ubuntu templates is to
+                # include them in languagepacks.
+                field_values['languagepack'] = True
+            else:
+                field_values['languagepack'] = (
+                    self.context.potemplate.languagepack)
+        if (file_type in (TranslationFileType.POT,
                           TranslationFileType.UNSPEC) and
                           self.context.potemplate is not None):
             field_values['name'] = (
@@ -109,7 +118,7 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
     def initialize(self):
         """Remove some fields based on the entry handled."""
         self.field_names = ['file_type', 'path', 'sourcepackagename',
-                            'name', 'translation_domain',
+                            'name', 'translation_domain', 'languagepack',
                             'potemplate', 'potemplate_name',
                             'language', 'variant']
 
@@ -117,6 +126,10 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
             # We are handling an entry for a productseries, this field is not
             # useful here.
             self.field_names.remove('sourcepackagename')
+
+        if not self.context.is_targeted_to_ubuntu:
+            # Only show languagepack for Ubuntu packages.
+            self.field_names.remove('languagepack')
 
         # Execute default initialisation.
         LaunchpadFormView.initialize(self)
@@ -272,6 +285,7 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
         name = data.get('name')
         sourcepackagename = data.get('sourcepackagename')
         translation_domain = data.get('translation_domain')
+        languagepack = data.get('languagepack')
 
         if self.path_changed:
             self.context.path = path
@@ -298,6 +312,10 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
             # note it here.
             potemplate.from_sourcepackagename = (
                 self.context.sourcepackagename)
+
+        if self.context.is_targeted_to_ubuntu:
+            potemplate.languagepack = languagepack
+
         return potemplate
 
     def _changeActionPO(self, data):
@@ -369,7 +387,7 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
         # Store the associated IPOTemplate.
         self.context.potemplate = potemplate
 
-        self.context.status = RosettaImportStatus.APPROVED
+        self.context.setStatus(RosettaImportStatus.APPROVED)
         self.context.date_status_changed = UTC_NOW
 
 
@@ -452,6 +470,11 @@ class TranslationImportTargetVocabularyFactory:
                     pass
 
         terms = [SimpleTerm('all', 'all', 'All targets')]
+
+        for item in SpecialTranslationImportTargetFilter.items:
+            term_name = '[%s]' % item.name
+            terms.append(SimpleTerm(term_name, term_name, item.title))
+
         for target in targets:
             if IDistroSeries.providedBy(target):
                 # Distroseries are not pillar names, we need to note

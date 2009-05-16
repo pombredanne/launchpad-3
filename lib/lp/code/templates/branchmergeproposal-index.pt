@@ -1,0 +1,146 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="view/macro:page/onecolumn"
+  i18n:domain="launchpad"
+>
+
+<body>
+
+<style type="text/css" metal:fill-slot="head_epilogue">
+  #code-review-votes {
+    margin: 2em 0;
+  }
+</style>
+
+<div metal:fill-slot="main"
+     tal:define="context_menu context/menu:context">
+
+  <h1>Proposal to merge branch
+    <a tal:define="link context_menu/delete"
+       tal:condition="link/enabled"
+       tal:attributes="href link/url"
+       ><img src="/@@/trash-icon" tal:attributes="title link/text; alt link/text" />
+    </a>
+</h1>
+
+  <div class="aside">
+    <aside tal:content="structure context/@@+pagelet-subscribers" />
+  </div>
+
+  <div id="nonportlets">
+
+  <tal:summary replace="structure context/@@+pagelet-summary" />
+
+  <tal:superseded-proposal condition="context/supersedes">
+    <p id="superseded-proposal">
+      This proposal supersedes a
+      <a tal:attributes="href context/supersedes/fmt:url">
+        proposal from
+        <tal:when replace="context/supersedes/date_created/fmt:date" /></a>.
+    </p>
+  </tal:superseded-proposal>
+  <tal:superseded-by condition="context/superseded_by">
+    <p id="superseded-by">
+      This proposal has been superseded by a
+      <a tal:attributes="href context/superseded_by/fmt:url">
+        proposal from
+        <tal:when replace="context/superseded_by/date_created/fmt:date" /></a>.
+    </p>
+  </tal:superseded-by>
+
+  <tal:commit-message condition="context/commit_message">
+    <h2>Proposed commit message
+    </h2>
+
+    <div id="commit-message">
+      <p tal:content="structure context/commit_message/fmt:text-to-html">
+        Commit message
+      </p>
+    </div>
+  </tal:commit-message>
+
+  <tal:whiteboard condition="context/whiteboard">
+    <h2>Whiteboard</h2>
+    <div id="branch-whiteboard-value" class="whiteboard"
+      tal:content="structure context/whiteboard/fmt:text-to-html">
+      Whiteboard text goes here.
+    </div>
+  </tal:whiteboard>
+
+  <tal:votes replace="structure context/@@+votes"/>
+
+  <tal:comments repeat="row view/comments" >
+    <div tal:content="structure row/comment/@@+fragment"
+         tal:attributes="style row/style" />
+  </tal:comments>
+
+  <div tal:define="link context/menu:context/add_comment"
+       tal:condition="link/enabled"
+       tal:content="structure link/render">
+       Add comment
+  </div>
+
+  <div id="related-bugs-and-blueprints"
+    tal:define="branch context/source_branch"
+    tal:condition="view/has_bug_or_spec"
+    >
+    <h2>Linked bug reports and blueprints</h2>
+    <div class="actions">
+
+      <metal:bug-branch-links use-macro="branch/@@+macros/bug-branch-links"/>
+    </div>
+    <div class="actions">
+      <metal:spec-branch-links use-macro="branch/@@+macros/spec-branch-links"/>
+    </div>
+  </div>
+
+  <div id="source-revisions"
+       tal:condition="not: context/queue_status/enumvalue:MERGED">
+
+    <tal:history-available condition="context/source_branch/revision_count"
+                           define="branch context/source_branch;
+                                   revisions view/unlanded_revisions">
+      <h2>Unmerged revisions</h2>
+      <metal:landing-target use-macro="branch/@@+macros/branch-revisions"/>
+    </tal:history-available>
+
+    <tal:remote-branch condition="context/source_branch/branch_type/enumvalue:REMOTE">
+      <h2>Unmerged revisions</h2>
+      <p>Recent revisions are not available due to the source branch being remote.</p>
+    </tal:remote-branch>
+  </div>
+
+  </div><!-- non-portlets-->
+
+  <div id="review-diff" tal:condition="context/review_diff">
+  <h2>Review Diff</h2>
+  <div class="boardComment attachment"
+       tal:define="attachment context/review_diff/diff/diff_text">
+    <tal:real-diff condition="attachment">
+      <div class="boardCommentDetails filename">
+        <a tal:attributes="href attachment/getURL">
+          <img src="/@@/download"/>
+          Download diff
+        </a>
+      </div>
+      <div class="boardCommentBody attachmentBody">
+        <tal:diff replace="structure view/review_diff/fmt:diff" />
+      </div>
+    </tal:real-diff>
+    <tal:empty-diff condition="not: attachment">
+      <div class="boardCommentBody attachmentBody">
+        <em>Empty</em>
+      </div>
+    </tal:empty-diff>
+  </div>
+  </div>
+
+</div>
+</body>
+</html>

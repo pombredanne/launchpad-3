@@ -5,12 +5,14 @@
 
 __metaclass__ = type
 
+import os
 import cgi
 import simplejson
 
 from zope.interface import Attribute, implements, Interface
 from zope.app import zapi
 from zope.schema import TextLine
+from zope.schema.interfaces import IChoice
 from zope.app.form.browser.interfaces import ISimpleInputWidget
 from zope.app.form.browser.itemswidgets import (
     ItemsWidgetBase, SingleDataHelper)
@@ -48,6 +50,7 @@ class ISinglePopupWidget(ISimpleInputWidget):
 
         An empty list should be returned if 'too many' results are found.
         """
+
 
 class SinglePopupWidget(SingleDataHelper, ItemsWidgetBase):
     """Window popup widget for single item choices from a huge vocabulary.
@@ -122,7 +125,7 @@ class SinglePopupWidget(SingleDataHelper, ItemsWidgetBase):
                          class="%(cssClass)s" />""" % d
 
     def chooseLink(self):
-        return """(<a href="%s">Choose&hellip;</a>)
+        return """(<a href="%s" class="js-action">Choose&hellip;</a>)
 
             <iframe style="display: none"
                     id="popup_iframe_%s"
@@ -249,3 +252,60 @@ class SearchForUpstreamPopupView(SinglePopupView):
                 '<a href="%s/+affects-new-product" target="_parent">'
                 'Register it</a>.' % canonical_url(self.context))
 
+
+class VocabularyPickerWidget(SinglePopupWidget):
+    """Wrapper for the lazr-js picker/picker.js widget."""
+
+    popup_name = 'popup-vocabulary-picker'
+
+    header = 'Select an item'
+
+    step_title = 'Search'
+
+    @property
+    def suffix(self):
+        return self.name.replace('.', '-')
+
+    @property
+    def show_widget_id(self):
+        return 'show-widget-%s' % self.suffix
+
+    def chooseLink(self):
+        js_file = os.path.join(os.path.dirname(__file__),
+                               'templates/vocabulary-picker.js')
+        js_template = open(js_file).read()
+
+        choice = IChoice(self.context)
+        if choice.vocabularyName is None:
+            # The webservice that provides the results of the search
+            # must be passed in the name of the vocabulary which is looked
+            # up by the vocabulary registry.
+            raise ValueError(
+                "The %r.%s interface attribute doesn't have its "
+                "vocabulary specified as a string, so it can't be loaded "
+                "by the vocabulary registry."
+                % (choice.context, choice.__name__))
+        js = js_template % dict(
+            vocabulary=choice.vocabularyName,
+            header=self.header,
+            step_title=self.step_title,
+            show_widget_id=self.show_widget_id,
+            input_id=self.name)
+        # If the YUI widget or javascript is not supported in the browser,
+        # it will degrade to being this "Find..." link instead of the
+        # "Choose..." link.
+        return ('(<a id="%s" href="/people/">'
+                'Find&hellip;</a>)'
+                '\n<script>\n%s\n</script>') % (self.show_widget_id, js)
+
+
+class PersonPickerWidget(VocabularyPickerWidget):
+    header = 'Select a person or team'
+    include_create_team_link = False
+
+    def chooseLink(self):
+        link = super(PersonPickerWidget, self).chooseLink()
+        if self.include_create_team_link:
+            link += ('or (<a href="/people/+newteam">'
+                     'Create a new team&hellip;</a>)')
+        return link

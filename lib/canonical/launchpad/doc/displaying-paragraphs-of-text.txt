@@ -218,6 +218,9 @@ links:
     ...     'bug report 123\n'
     ...     'bug no. 123\n'
     ...     'bug#123\n'
+    ...     'bug-123\n'
+    ...     'bug-report-123\n'
+    ...     'bug=123\n'
     ...     'bug\n'
     ...     '#123\n'
     ...     'debug #52\n')
@@ -233,6 +236,9 @@ links:
     <a href="/bugs/123" title="No such bug">bug report 123</a><br />
     <a href="/bugs/123" title="No such bug">bug no. 123</a><br />
     <a href="/bugs/123" title="No such bug">bug#123</a><br />
+    <a href="/bugs/123" title="No such bug">bug-123</a><br />
+    <a href="/bugs/123" title="No such bug">bug-report-123</a><br />
+    <a href="/bugs/123" title="No such bug">bug=123</a><br />
     <a href="/bugs/123" title="No such bug">bug<br />
     #123</a><br />
     debug #52</p>
@@ -274,7 +280,7 @@ Bug.setPrivate adds all indirect subscribers to the bug as direct
 subscribers, but we want to see what the bug looks like if we're not a
 subscriber.
 
-    >>> firefox_crashes.unsubscribe(current_user)
+    >>> firefox_crashes.unsubscribe(current_user, current_user)
 
 A private bug has a title "private bug".
 
@@ -290,12 +296,16 @@ FAQ references are global, and also linkified:
     >>> text = (
     ...     'faq 1\n'
     ...     'faq #2\n'
+    ...     'faq-2\n'
+    ...     'faq=2\n'
     ...     'faq item 1\n'
     ...     'faq  number  2\n'
     ...     )
     >>> print test_tales('foo/fmt:text-to-html', foo=text)
     <p><a href="http://answers.launchpad.dev/ubuntu/+faq/1">faq 1</a><br />
     <a href="http://answers.launchpad.dev/ubuntu/+faq/2">faq #2</a><br />
+    <a href="http://answers.launchpad.dev/ubuntu/+faq/2">faq-2</a><br />
+    <a href="http://answers.launchpad.dev/ubuntu/+faq/2">faq=2</a><br />
     <a href="http://answers.launchpad.dev/ubuntu/+faq/1">faq item 1</a><br />
     <a href="http://answers.launchpad.dev/ubuntu/+faq/2">faq  number  2</a></p>
 
@@ -306,6 +316,50 @@ Except, that is, when the FAQ doesn't exist:
     ...     )
     >>> print test_tales('foo/fmt:text-to-html', foo=text)
     <p>faq 999</p>
+
+
+== Branch references ==
+
+Branch references are linkified:
+
+    >>> text = (
+    ...     'lp:~foo/bar/baz\n'
+    ...     'lp:~foo/bar/bug-123\n'
+    ...     'lp:~foo/+junk/baz\n'
+    ...     'lp:~foo/ubuntu/jaunty/evolution/baz\n'
+    ...     'lp:foo/bar\n'
+    ...     'lp:foo\n'
+    ...     'lp:foo,\n'
+    ...     'lp:foo/bar.\n'
+    ...     'lp:foo/bar/baz\n'
+    ...     'lp:///foo\n'
+    ...     'lp:/foo\n')
+    >>> print test_tales('foo/fmt:text-to-html', foo=text)
+    <p><a href="/+branch/~foo/bar/baz">lp:~foo/bar/baz</a><br />
+    <a href="/+branch/~foo/bar/bug-123">lp:~foo/bar/bug-123</a><br />
+    <a href="/+branch/~foo/+junk/baz">lp:~foo/+junk/baz</a><br />
+    <a href="/+branch/~foo/ubuntu/jaunty/evolution/baz">lp:~foo/ubuntu/jaunty/evolution/baz</a><br />
+    <a href="/+branch/foo/bar">lp:foo/bar</a><br />
+    <a href="/+branch/foo">lp:foo</a><br />
+    <a href="/+branch/foo">lp:foo</a>,<br />
+    <a href="/+branch/foo/bar">lp:foo/bar</a>.<br />
+    <a href="/+branch/foo/bar/baz">lp:foo/bar/baz</a><br />
+    <a href="/+branch/foo">lp:///foo</a><br />
+    <a href="/+branch/foo">lp:/foo</a></p>
+
+Text that looks like a branch reference, but is followed only by digits is
+treated as a link to a bug.
+
+    >>> text = 'lp:1234'
+    >>> print test_tales('foo/fmt:text-to-html', foo=text)
+    <p><a href="/bugs/1234" title="No such bug">lp:1234</a></p>
+
+We are even smart enough to notice the trailing punctuation gunk and separate
+that from the link.
+
+    >>> text = 'lp:1234,'
+    >>> print test_tales('foo/fmt:text-to-html', foo=text)
+    <p><a href="/bugs/1234" title="No such bug">lp:1234</a>,</p>
 
 
 == OOPS references ==
@@ -415,9 +469,16 @@ is dealing with bugs, and 'url' when it is dealing with URLs.
 First, let's try a match of nothing it understands.  This is a bug, so we get
 an AssertionError.
 
-    >>> matchobj = re.match('(?P<bug>xxx)?(?P<faq>www)?(?P<url>yyy)?(?P<oops>zzz)?', 'fish')
+    >>> matchobj = re.match(
+    ...     ('(?P<bug>xxx)?(?P<faq>www)?(?P<url>yyy)?(?P<oops>zzz)?'
+    ...      '(?P<lpbranchurl>www)?'),
+    ...     'fish')
     >>> sorted(matchobj.groupdict().items())
-    [('bug', None), ('faq', None), ('oops', None), ('url', None)]
+    [('bug', None),
+     ('faq', None),
+      ('lpbranchurl', None),
+      ('oops', None),
+      ('url', None)]
     >>> FormattersAPI._linkify_substitution(matchobj)
     Traceback (most recent call last):
     ...

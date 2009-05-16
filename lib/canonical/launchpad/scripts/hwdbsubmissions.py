@@ -15,12 +15,12 @@ __all__ = [
 
 import bz2
 from cStringIO import StringIO
+import cElementTree as etree
 from datetime import datetime, timedelta
 from logging import getLogger
 import os
 import re
 import sys
-import cElementTree as etree
 
 import pytz
 
@@ -30,6 +30,7 @@ from zope.interface import implements
 from canonical.lazr.xml import RelaxNGValidator
 
 from canonical.config import config
+from canonical.librarian.interfaces import LibrarianServerError
 from canonical.launchpad.interfaces.hwdb import (
     HWBus, HWSubmissionProcessingStatus, IHWDeviceDriverLinkSet, IHWDeviceSet,
     IHWDriverSet, IHWSubmissionDeviceSet, IHWSubmissionSet, IHWVendorIDSet,
@@ -54,6 +55,13 @@ _time_regex = re.compile(r"""
     re.VERBOSE)
 
 ROOT_UDI = '/org/freedesktop/Hal/devices/computer'
+
+# These UDIs appears in some submissions more than once.
+KNOWN_DUPLICATE_UDIS = set((
+    '/org/freedesktop/Hal/devices/ssb__null_',
+    '/org/freedesktop/Hal/devices/uinput',
+    '/org/freedesktop/Hal/devices/ignored-device',
+    ))
 
 # See include/linux/pci_ids.h in the Linux kernel sources for a complete
 # list of PCI class and subclass codes.
@@ -222,7 +230,7 @@ class SubmissionParser(object):
         """Parse the <client> node in the <summary> section.
 
         :return: A dictionary with keys 'name', 'version', 'plugins'.
-                 Name and version describe the the client program that
+                 Name and version describe the client program that
                  produced the submission. Pugins is a list with one
                  entry per client plugin; each entry is dictionary with
                  the keys 'name' and 'version'.
@@ -428,36 +436,16 @@ class SubmissionParser(object):
             aliases.append(alias)
         return aliases
 
-    def _parseDmi(self, dmi_node):
-        """Parse the <dmi> node.
-        """
-        # We don't store any DMI data at present, but the HWDB client
-        # for Jaunty will soon be able to include DMI data.
-        # For now, we'll just log a warning for submissions containing
-        # DMI data in order to be able to process these submissions
-        # again later, once we can store the DMI data.
-        # See bug 327147.
-        self._logWarning('Submission contains unprocessed DMI data.')
-
-    def _parseLspci(self, lspci_node):
-        """Parse the <lspci> node.
-        """
-        # We don't store the content of the <lspci> node at present, but
-        # the HWDB client for Jaunty will soon be able to include this
-        # data. For now, we'll just log a warning for submissions containing
-        # lspci output in order to be able to process these submissions
-        # again later, once we can store the lspci output.
-        # See bug 327147.
-        self._logWarning('Submission contains unprocessed lspci data.')
+    _parse_hardware_section = {
+        'hal': _parseHAL,
+        'processors': _parseProcessors,
+        'aliases': _parseAliases}
 
     def _setHardwareSectionParsers(self):
         self._parse_hardware_section = {
             'hal': self._parseHAL,
             'processors': self._parseProcessors,
-            'aliases': self._parseAliases,
-            'dmi': self._parseDmi,
-            'lspci': self._parseLspci,
-            }
+            'aliases': self._parseAliases}
 
     def _parseHardware(self, hardware_node):
         """Parse the <hardware> part of a submission.
@@ -682,12 +670,24 @@ class SubmissionParser(object):
             questions.append(question)
         return questions
 
+    def _parseContext(self, context_node):
+        """Parse the <context> part of a submission.
+
+        We don't do anything real right now, but simply log a warning
+        that this submission contains a <context> section, so that
+        we can parse it again later, once we have the SQL tables needed
+        to store the data.
+        """
+        self._logWarning('Submission contains unprocessed <context> data.')
+
     def _setMainSectionParsers(self):
         self._parse_system = {
             'summary': self._parseSummary,
             'hardware': self._parseHardware,
             'software': self._parseSoftware,
-            'questions': self._parseQuestions}
+            'questions': self._parseQuestions,
+            'context': self._parseContext,
+            }
 
     def parseMainSections(self, submission_doc):
         # The RelaxNG validation ensures that submission_doc has exactly
@@ -795,14 +795,36 @@ class SubmissionParser(object):
     def getUDIDeviceMap(self, devices):
         """Return a dictionary which maps UDIs to HAL devices.
 
-        If a UDI is used more than once, a ValueError is raised.
+        Also check, if a UDI is used more than once.
+
+        Generally, a duplicate UDI indicates a bad or bogus submission,
+        but we have some UDIs where the duplicate UDI is caused by a
+        bug in HAL, see
+        http://lists.freedesktop.org/archives/hal/2009-April/013250.html
+        In these cases, we simply remove the duplicates, otherwise, a
+        ValueError is raised.
         """
         udi_device_map = {}
-        for device in devices:
-            if device['udi'] in udi_device_map:
-                raise ValueError('Duplicate UDI: %s' % device['udi'])
+        duplicates = []
+        for index in xrange(len(devices)):
+            device = devices[index]
+            udi = device['udi']
+            if udi in udi_device_map:
+                if 'info.parent' in device['properties']:
+                    parent_udi = device['properties']['info.parent'][0]
+                else:
+                    parent_udi = None
+                if (udi in KNOWN_DUPLICATE_UDIS or
+                    parent_udi in KNOWN_DUPLICATE_UDIS):
+                    duplicates.append(index)
+                    continue
+                else:
+                    raise ValueError('Duplicate UDI: %s' % device['udi'])
             else:
-                udi_device_map[device['udi']] = device
+                udi_device_map[udi] = device
+        duplicates.reverse()
+        for index in duplicates:
+            devices.pop(index)
         return udi_device_map
 
     def _getIDUDIMaps(self, devices):
@@ -982,9 +1004,14 @@ class SubmissionParser(object):
         :param submission: An IHWSubmission instance.
         """
         raw_submission = submission.raw_submission
-        raw_submission.open()
-        submission_data = raw_submission.read()
+        # This script runs once per day and can need a few hours to run.
+        # Short-lived Librarian server failures or a server restart should
+        # not break this script, so let's wait for 10 minutes for a
+        # response from the Librarian.
+        raw_submission.open(timeout=600)
+        submission_data = raw_submission.read(timeout=600)
         raw_submission.close()
+
         # We assume that the data has been sent bzip2-compressed,
         # but this is not checked when the data is submitted.
         expanded_data = None
@@ -1552,7 +1579,7 @@ class HALDevice:
 
         If the vendor name is 'ATA', and if the model name contains
         at least one ' ' character, the string before the first ' ' is
-        returned as the vendor name, and the the string after the first
+        returned as the vendor name, and the string after the first
         ' ' is returned as the model name.
 
         In all other cases, vendor and model name are returned unmodified.
@@ -1815,6 +1842,15 @@ class ProcessingLoop(object):
         """See `ITunableLoop`."""
         return self.finished
 
+    def reportOops(self, error_explanation):
+        """Create an OOPS report and the OOPS ID."""
+        info = sys.exc_info()
+        properties = [('error-explanation', error_explanation)]
+        request = ScriptRequest(properties)
+        error_utility = ErrorReportingUtility()
+        error_utility.raising(info, request)
+        self.logger.error('%s (%s)' % (error_explanation, request.oopsid))
+
     def __call__(self, chunk_size):
         """Process a batch of yet unprocessed HWDB submissions."""
         # chunk_size is a float; we compare it below with an int value,
@@ -1831,6 +1867,14 @@ class ProcessingLoop(object):
         submissions = list(submissions)
         if len(submissions) < chunk_size:
             self.finished = True
+
+        # Note that we must either change the status of each submission
+        # in the loop below or we must abort the submission processing
+        # entirely: getUtility(IHWSubmissionSet).getByStatus() above
+        # returns the oldest submissions first, so if one submission
+        # would remain in the status SUBMITTED, it would be returned
+        # in the next loop run again, leading to a potentially endless
+        # loop.
         for submission in submissions:
             try:
                 parser = SubmissionParser(self.logger)
@@ -1842,18 +1886,31 @@ class ProcessingLoop(object):
             except (KeyboardInterrupt, SystemExit):
                 # We should never catch these exceptions.
                 raise
+            except LibrarianServerError, error:
+                # LibrarianServerError is raised when the server could
+                # not be reaches for 30 minutes.
+                #
+                # In this case we can neither validate nor invalidate the
+                # submission. Moreover, the attempt to process the next
+                # submission will most likely also fail, so we should give
+                # up for now.
+                #
+                # This exception is raised before any data for the current
+                # submission is processed, hence we can commit submissions
+                # processed in previous runs of this loop without causing
+                # any inconsistencies.
+                self.transaction.commit()
+
+                self.reportOops(
+                    'Could not reach the Librarian while processing HWDB '
+                    'submission %s' % submission.submission_key)
+                raise
             except Exception, error:
-                info = sys.exc_info()
-                message = (
+                self.transaction.abort()
+                self.reportOops(
                     'Exception while processing HWDB submission %s'
                     % submission.submission_key)
-                properties = [('error-explanation', message)]
-                request = ScriptRequest(properties)
-                error_utility = ErrorReportingUtility()
-                error_utility.raising(info, request)
-                self.logger.error('%s (%s)' % (message, request.oopsid))
 
-                self.transaction.abort()
                 self._invalidateSubmission(submission)
                 # Ensure that this submission is marked as bad, even if
                 # further submissions in this batch raise an exception.

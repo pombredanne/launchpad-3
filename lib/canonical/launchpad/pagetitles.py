@@ -119,21 +119,25 @@ class ViewLabel:
 
 # Functions and strings used as the titles of pages.
 
-archive_admin = ContextTitle('Administer %s')
+archive_admin = ContextDisplayName('Administer %s')
 
 archive_activate = 'Activate Personal Package Archive'
 
-archive_builds = ContextTitle('Builds for %s')
+archive_builds = ContextDisplayName('Builds for %s')
 
-archive_copy_packages = ContextTitle('Copy packages from %s')
+archive_copy_packages = ContextDisplayName('Copy packages from %s')
 
-archive_delete_packages = ContextTitle('Delete packages from %s')
+archive_delete_packages = ContextDisplayName('Delete packages from %s')
 
-archive_edit = ContextTitle('Edit %s')
+archive_edit = ContextDisplayName('Edit %s')
 
-archive_edit_dependencies = ContextTitle('Edit dependencies for %s')
+archive_edit_dependencies = ContextDisplayName('Edit dependencies for %s')
 
-archive_index = ContextTitle('%s')
+archive_index = ContextDisplayName('%s')
+
+archive_subscriber_edit = ContextDisplayName('Edit %s')
+
+archive_subscribers = ContextDisplayName('Manage subscriptions for %s')
 
 bazaar_all_branches = 'All branches in the Launchpad Bazaar'
 
@@ -159,6 +163,8 @@ bounty_link = ContextTitle('Link a bounty to %s')
 bounty_index = ContextTitle(smartquote('Bounty "%s" in Launchpad'))
 
 bounty_subscription = ContextTitle(smartquote('Subscription to bounty "%s"'))
+
+branch_add = 'Register a branch'
 
 branch_associations = ContextDisplayName(smartquote(
     '"%s" branch associations'))
@@ -195,11 +201,14 @@ branchmergeproposal_delete = 'Delete proposal to merge branch'
 
 branchmergeproposal_edit = ViewLabel()
 
+branchmergeproposal_commitmessage_edit = ViewLabel()
+
 branchmergeproposal_editstatus = ViewLabel()
 
 branchmergeproposal_enqueue = 'Queue branch for merging'
 
-branchmergeproposal_index = 'Proposal to merge branch'
+def branchmergeproposal_index(context, view):
+    return 'Proposal to merge %s' % context.source_branch.bzr_identity
 
 branchmergeproposal_request_review = ViewLabel()
 
@@ -306,10 +315,6 @@ def bugwatch_comments(context, view):
     """Return the title for a page of imported comments for a bug watch."""
     return "Bug #%d - Comments imported from bug watch %s on %s" % (
         context.bug.id, context.remotebug, context.bugtracker.title)
-
-# bugpackageinfestations_index is a redirect
-
-# bugproductinfestations_index is a redirect
 
 def bugs_assigned(context, view):
     """Return the page title for the bugs assigned to the logged-in user."""
@@ -506,8 +511,8 @@ distribution_series = ContextTitle("%s version history")
 
 distribution_translations = ContextDisplayName('Translating %s')
 
-distribution_translators = ContextTitle(
-    smartquote("Appoint %s's translation group"))
+distribution_translation_settings = ContextTitle(
+    smartquote("Change %s's translation settings"))
 
 distribution_search = ContextDisplayName(smartquote("Search %s's packages"))
 
@@ -559,10 +564,7 @@ def distroseries_index(context, view):
     return '%s %s in Launchpad' % (
         context.distribution.title, context.version)
 
-distroseries_language_packs = ViewLabel()
-
-def distroseries_language_packs_editing(context, view):
-    """Return the view's page_title."""
+def distroseries_language_packs(context, view):
     return view.page_title
 
 distroseries_packaging = ContextDisplayName('Mapping packages to upstream '
@@ -700,6 +702,8 @@ launchpad_unexpectedformdata = 'Error: Unexpected form data'
 
 launchpad_librarianfailure = "Sorry, you can't do this right now"
 
+launchpad_readonlyfailure = "Sorry, you can't do this right now"
+
 # launchpad_widget_macros doesn't need a title.
 
 launchpadstatisticset_index = 'Launchpad statistics'
@@ -728,6 +732,8 @@ logintoken_mergepeople = 'Merge Launchpad accounts'
 logintoken_newaccount = 'Create a new Launchpad account'
 
 logintoken_resetpassword = 'Forgotten your password?'
+
+loginservice_standalone_login = loginservice_login
 
 logintoken_validateemail = 'Confirm e-mail address'
 
@@ -797,6 +803,8 @@ milestone_index = ContextTitle('%s')
 
 milestone_edit = ContextTitle('Edit %s')
 
+milestone_delete = ContextTitle('Delete %s')
+
 announcement_add = 'Make an announcement'
 
 announcement_delete = 'Permanently delete this announcement'
@@ -831,9 +839,22 @@ object_reassignment = ContextTitle('Reassign %s')
 
 object_translations = ContextDisplayName('Translation templates for %s')
 
+object_templates = ContextDisplayName('Translation templates for %s')
+
 oops = 'Oops!'
 
-openid_index = 'Launchpad OpenID Server'
+openid_account_change_password = 'Change your password'
+
+def openid_account_edit(context, view):
+    return smartquote("%s's details") % view.account.displayname
+
+def openid_account_edit_emails(context, view):
+    return smartquote("%s's e-mail addresses") % view.account.displayname
+
+openid_default = 'OpenID Endpoint'
+
+def openid_index(context, view):
+    return 'Welcome %s' % view.account.displayname
 
 def openid_invalid_identity(context, view):
     """Return the page title to the invalid identity page."""
@@ -845,6 +866,8 @@ openidrpconfig_edit = ContextDisplayName(
     'Edit Relying Party Configuration for %s')
 
 openidrpconfigset_index = 'OpenID Relying Party Configurations'
+
+official_bug_target_manage_tags = 'Manage Official Bug Tags'
 
 def package_bugs(context, view):
     """Return the page title bug in a package."""
@@ -868,6 +891,11 @@ people_requestmerge = 'Merge Launchpad accounts'
 
 people_requestmerge_multiple = 'Merge Launchpad accounts'
 
+person_archive_subscription = ContextDisplayName('%s')
+
+person_archive_subscriptions = ContextDisplayName(
+    '%s\'s private archive subscriptions')
+
 person_answer_contact_for = ContextDisplayName(
     'Projects for which %s is an answer contact')
 
@@ -876,8 +904,6 @@ person_bounties = ContextDisplayName('Bounties for %s')
 def person_branches(context, view):
     """Return the view's heading."""
     return view.heading
-
-person_branch_add = 'Register a branch'
 
 person_changepassword = 'Change your password'
 
@@ -968,6 +994,10 @@ person_uploaded_packages = ContextDisplayName('Software uploaded by %s')
 person_vouchers = ContextDisplayName(
     'Commercial subscription vouchers for %s')
 
+def personproduct_branches(context, view):
+    """Return the view's heading."""
+    return view.heading
+
 pofile_edit = ContextTitle(smartquote('Edit "%s" details'))
 
 pofile_export = ContextTitle(smartquote('Download translation for "%s"'))
@@ -1016,7 +1046,7 @@ potemplate_upload = ContextTitle(smartquote('Upload files for "%s"'))
 
 potemplate_export = ContextTitle(smartquote('Download translations for "%s"'))
 
-product_active_reviews = 'Pending proposals'
+product_active_reviews = ContextDisplayName('Pending proposals for %s')
 
 product_add_from_project = 'Register a project in your project group'
 
@@ -1063,7 +1093,9 @@ product_translations = ContextTitle('Translations of %s in Launchpad')
 
 product_translators = ContextTitle('Set translation group for %s')
 
-productrelease_add = ContextTitle('Register a new %s release in Launchpad')
+productrelease_add = ContextDisplayName('Publish the release of %s')
+
+productrelease_add_from_series = productrelease_add
 
 productrelease_delete = ContextTitle('Delete %s in Launchpad')
 
@@ -1085,12 +1117,19 @@ productseries_linkbranch = ContextTitle('Link an existing branch to %s')
 
 productseries_index = ContextTitle('Overview of %s')
 
+productseries_delete = ContextTitle('Delete %s')
+
 productseries_packaging = ContextDisplayName(
     'Packaging of %s in distributions')
 
 productseries_review = ContextTitle('Review %s')
 
 productseries_translations_upload = 'Request new translations upload'
+
+productseries_translations_settings = 'Settings for translations'
+
+productseries_translations_bzr_import = (
+    'Request translations import from Bazaar branch')
 
 productseries_ubuntupkg = 'Ubuntu source package'
 
@@ -1157,8 +1196,6 @@ rosetta_about = 'About Launchpad Translations'
 rosetta_index = 'Launchpad Translations'
 
 rosetta_products = 'Projects with Translations in Launchpad'
-
-product_branch_add = 'Register a branch'
 
 def productseries_edit(context, view):
     """Return the page title for changing a product series details."""
@@ -1236,6 +1273,8 @@ shipit_index_ubuntu = 'Request an Ubuntu CD'
 
 shipit_login = 'ShipIt'
 
+shipit_login_error = 'ShipIt - Unsuccessful login'
+
 shipit_myrequest = "Your ShipIt order"
 
 shipit_oops = 'Error: Oops'
@@ -1263,6 +1302,8 @@ signedcodeofconduct_acknowledge = 'Acknowledge code of conduct signature'
 signedcodeofconduct_activate = ContextDisplayName('Activating %s')
 
 signedcodeofconduct_deactivate = ContextDisplayName('Deactivating %s')
+
+sourcepackage_branches = ContextDisplayName('Branches of %s')
 
 sourcepackage_bugs = ContextDisplayName('Bugs in %s')
 

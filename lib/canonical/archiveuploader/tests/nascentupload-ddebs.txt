@@ -1,0 +1,180 @@
+== Uploading DDEBs ==
+
+DDEBs ('.ddeb' extension) are essentially a Debian binary packages,
+they only use a different extension as a convenience to identify their
+contents easily. They contain debug symbols stripped from one or more
+packages during their build process.
+
+On a client system, DDEB installation is optional, it's only necessary
+for obtaining extra information about crashes in the corresponding
+feature.
+
+First we will create a source and a corresponding binary publication
+in the database, 'debug' and 'debug-bin' version '0.9', which will be
+an ancestor for the subsequent upload containing a 'debug-dbg' DDEB.
+This is done using `SoyuzTestPublisher`.
+
+    >>> from lp.soyuz.tests.test_publishing import (
+    ...     SoyuzTestPublisher)
+
+    >>> test_publisher = SoyuzTestPublisher()
+
+    >>> from zope.component import getUtility
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> hoary = ubuntu.getSeries('hoary')
+
+    >>> unused = test_publisher.setUpDefaultDistroSeries(hoary)
+
+    >>> source_ancestry = test_publisher.getPubSource(
+    ...     sourcename='debug', version='0.99')
+
+We need a slightly different database setup for creating binaries.
+
+    >>> from canonical.config import config
+    >>> from canonical.testing import LaunchpadZopelessLayer
+
+    >>> LaunchpadZopelessLayer.txn.commit()
+    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+
+    >>> binary_ancestry = test_publisher.getPubBinaries(
+    ...     binaryname='debug-bin', pub_source=source_ancestry)
+
+    >>> LaunchpadZopelessLayer.txn.commit()
+    >>> LaunchpadZopelessLayer.switchDbUser('uploader')
+
+With that done, we now upload a new source, 'debug - 1.0', which is
+immediately accepted and stands pending publication.
+
+    >>> src = getUploadForSource(
+    ...     'suite/debug_1.0/debug_1.0_source.changes')
+    >>> src.process()
+    >>> result = src.do_accept()
+    >>> print src.queue_root.status.name
+    DONE
+
+    >>> [src_pub] = src.queue_root.archive.getPublishedSources(
+    ...     name='debug', version='1.0', exact_match=True)
+
+    >>> print src_pub.displayname, src_pub.status.name
+    debug 1.0 in hoary PENDING
+
+At this point a deb and a ddeb, produced during a normal build
+process, are uploaded. This is exactly the same procedure used for
+binary uploads with only ordinary debs.
+
+    >>> bin = getUploadForBinary(
+    ...     'suite/debug_1.0/debug_1.0_i386.changes')
+
+DDEBs undergo exactly the same checks as ordinary DEBs. These are
+never considered NEW, so the binary upload has a 'never-seen-before'
+DDEB even though it isn't parked in queue for review.
+
+    >>> bin.process()
+    >>> result = bin.do_accept()
+    >>> print bin.queue_root.status.name
+    ACCEPTED
+
+Again, binary publications need an extra database setup.
+
+    >>> LaunchpadZopelessLayer.txn.commit()
+    >>> LaunchpadZopelessLayer.switchDbUser(config.uploadqueue.dbuser)
+
+    >>> bin_pubs = bin.queue_root.realiseUpload()
+
+    >>> LaunchpadZopelessLayer.txn.commit()
+    >>> LaunchpadZopelessLayer.switchDbUser('uploader')
+
+Now, both, binary and debug-symbol packages are pending publication.
+
+    >>> for bin_pub in bin_pubs:
+    ...     print '%s %s %s' % (
+    ...         bin_pub.displayname, bin_pub.status.name,
+    ...         bin_pub.archive.purpose.name)
+    debug-bin 1.0 in hoary i386 PENDING PRIMARY
+    debug-dbg 1.0 in hoary i386 PENDING DEBUG
+
+DEBs and DDEBs are uploaded to separate archives, because the size
+impact of uploading them to a single archive on mirrors would be
+unacceptable.
+
+The DDEB is stored appropriately in the database.
+
+    >>> [deb_pub, ddeb_pub] = bin_pubs
+    >>> ddeb = ddeb_pub.binarypackagerelease
+
+    >>> print ddeb.title
+    debug-dbg-1.0
+
+The corresponding `BinaryPackageRelease` is recorded with DDEB format.
+
+    >>> print ddeb.binpackageformat.name
+    DDEB
+
+And its corresponding file is also stored as DDEB filetype.
+
+    >>> for bin_file in ddeb.files:
+    ...     print bin_file.libraryfile.filename, bin_file.filetype.name
+    debug-dbg_1.0_i386.ddeb DDEB
+
+
+== DDEBs in other archives ==
+
+DDEBs can be produced in other contexts than the primary archive. For
+instance, a COPY (test-rebuild) archive. In this case, they will be
+published in the same archive.
+
+We start by creating a COPY archive and a source publication to
+receive the DDEB.
+
+    >>> from lp.soyuz.interfaces.archive import (
+    ...     IArchiveSet, ArchivePurpose)
+
+    >>> copy = getUtility(IArchiveSet).new(
+    ...     owner=ubuntu.owner, purpose=ArchivePurpose.COPY,
+    ...     name='test-rebuild')
+
+    >>> copied_source = source_ancestry.copyTo(
+    ...     hoary, source_ancestry.pocket, copy)
+
+    >>> LaunchpadZopelessLayer.txn.commit()
+    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+
+    >>> binary_ancestry2 = test_publisher.getPubBinaries(
+    ...     binaryname='debug-bin', pub_source=copied_source, archive=copy)
+
+    >>> src_pub = test_publisher.getPubSource(
+    ...     sourcename='debug', version='1.0', archive=copy)
+
+    >>> print src_pub.displayname, src_pub.status.name
+    debug 1.0 in hoary PENDING
+
+Now we upload the DEB and the DDEB, which are auto-accepted.
+
+    >>> bin = getUploadForBinary(
+    ...     'suite/debug_1.0/debug_1.0_i386.changes')
+    >>> bin.policy.archive = copy
+
+    >>> bin.process()
+    >>> result = bin.do_accept()
+    >>> print bin.queue_root.status.name
+    ACCEPTED
+
+When published, DDEB ends up in the same archive as the DEB, unlike
+the ones in the primary archive.
+
+    >>> LaunchpadZopelessLayer.txn.commit()
+    >>> LaunchpadZopelessLayer.switchDbUser(config.uploadqueue.dbuser)
+
+    >>> bin_pubs = bin.queue_root.realiseUpload()
+
+    >>> LaunchpadZopelessLayer.txn.commit()
+    >>> LaunchpadZopelessLayer.switchDbUser('uploader')
+
+    >>> for bin_pub in bin_pubs:
+    ...     print '%s %s %s' % (
+    ...         bin_pub.displayname, bin_pub.status.name,
+    ...         bin_pub.archive.purpose.name)
+    debug-bin 1.0 in hoary i386 PENDING COPY
+    debug-dbg 1.0 in hoary i386 PENDING COPY
+

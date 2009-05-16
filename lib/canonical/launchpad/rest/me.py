@@ -14,7 +14,7 @@ from zope.interface import implements
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from canonical.launchpad.interfaces import IPerson, IPersonSet
 
-from canonical.lazr.interfaces.rest import (
+from lazr.restful.interfaces import (
     IJSONRequestCache, ITopLevelEntryLink)
 
 class IMeLink(ITopLevelEntryLink, ICanonicalUrlData):
@@ -49,4 +49,6 @@ def cache_me_link_when_principal_identified(event):
     except TypeError:
         cache = None
     if cache is not None:
-        cache.links['me'] = IPerson(event.principal)
+        person = IPerson(event.principal, None)
+        if person is not None:
+            cache.links['me'] = person

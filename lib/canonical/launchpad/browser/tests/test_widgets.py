@@ -16,14 +16,15 @@ from canonical.launchpad import _
 from canonical.launchpad.browser.widgets import (
     BranchPopupWidget, NoProductError)
 from canonical.launchpad.ftests import ANONYMOUS, login, logout
-from canonical.launchpad.interfaces import BranchType, IBranchSet
-from canonical.launchpad.testing import LaunchpadObjectFactory
+from canonical.launchpad.interfaces import BranchType
+from lp.code.interfaces.branchlookup import IBranchLookup
+from lp.testing.factory import LaunchpadObjectFactory
 from canonical.launchpad.vocabularies import (
     BranchRestrictedOnProductVocabulary, BranchVocabulary)
 from canonical.testing import LaunchpadFunctionalLayer
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.launchpad.webapp.uri import URI
+from lazr.uri import URI
 
 
 class DummyLaunchBag:
@@ -157,7 +158,7 @@ class TestBranchPopupWidget(unittest.TestCase):
         """_toFieldValue falls back to making a branch if it's given a URL."""
         url = self.factory.getUniqueURL()
         # Check that there's no branch with this URL.
-        self.assertIs(None, getUtility(IBranchSet).getByUrl(url))
+        self.assertIs(None, getUtility(IBranchLookup).getByUrl(url))
 
         branch = self.popup._toFieldValue(url)
         self.assertEqual(url, branch.url)

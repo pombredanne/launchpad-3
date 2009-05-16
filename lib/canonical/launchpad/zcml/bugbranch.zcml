@@ -23,14 +23,14 @@
   <browser:page
       for="canonical.launchpad.interfaces.IBugBranch"
       name="+hierarchy"
-      class="canonical.launchpad.browser.branch.BranchHierarchy"
+      class="lp.code.browser.branch.BranchHierarchy"
       attribute="__call__"
       permission="zope.Public"
       />
 
   <subscriber
       for="canonical.launchpad.interfaces.IBugBranch
-           canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
+           lazr.lifecycle.interfaces.IObjectCreatedEvent"
       handler="canonical.launchpad.subscribers.karma.bug_branch_created"
       />
 

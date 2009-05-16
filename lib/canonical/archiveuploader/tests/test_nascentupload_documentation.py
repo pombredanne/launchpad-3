@@ -1,9 +1,10 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
-"""Runs the nascentupload-epoch-handling.txt test."""
+"""Runs the doctests for archiveuploader module."""
 
 __metaclass__ = type
 
+import os
 import unittest
 
 from zope.component import getUtility
@@ -13,22 +14,27 @@ from canonical.archiveuploader.tests import (
     datadir, getPolicy, mock_logger_quiet)
 from canonical.launchpad.database import (
     ComponentSelection, LibraryFileAlias)
-from canonical.launchpad.ftests import login, logout
-from canonical.launchpad.interfaces.component import IComponentSet
-from canonical.launchpad.interfaces.distribution import IDistributionSet
+from canonical.launchpad.ftests import import_public_test_keys, login, logout
+from lp.soyuz.interfaces.component import IComponentSet
+from lp.registry.interfaces.distribution import IDistributionSet
 from canonical.launchpad.testing.systemdocs import (
     LayeredDocFileSuite, setGlobs)
 from canonical.testing import LaunchpadZopelessLayer
 
 
 def getUploadForSource(upload_path):
-    """Return a NascentUpload object for bar 1.0-1 source."""
+    """Return a NascentUpload object for a source."""
     policy = getPolicy(name='sync', distro='ubuntu', distroseries='hoary')
     return NascentUpload(datadir(upload_path), policy, mock_logger_quiet)
 
+def getPPAUploadForSource(upload_path, ppa):
+    """Return a NascentUpload object for a PPA source."""
+    policy = getPolicy(name='insecure', distro='ubuntu', distroseries='hoary')
+    policy.archive = ppa
+    return NascentUpload(datadir(upload_path), policy, mock_logger_quiet)
 
 def getUploadForBinary(upload_path):
-    """Return a NascentUpload object for binaries of bar 1:1.0-9 source."""
+    """Return a NascentUpload object for binaries."""
     policy = getPolicy(name='sync', distro='ubuntu', distroseries='hoary')
     policy.can_upload_binaries = True
     policy.can_upload_mixed = True
@@ -40,9 +46,11 @@ def testGlobalsSetup(test):
 
     We can use the getUpload* without unnecessary imports.
     """
+    import_public_test_keys()
     setGlobs(test)
     test.globs['getUploadForSource'] = getUploadForSource
     test.globs['getUploadForBinary'] = getUploadForBinary
+    test.globs['getPPAUploadForSource'] = getPPAUploadForSource
 
 
 def prepareHoaryForUploads(test):
@@ -84,12 +92,19 @@ def tearDown(test):
 
 
 def test_suite():
-    return LayeredDocFileSuite(
-       'nascentupload-closing-bugs.txt',
-       'nascentupload-epoch-handling.txt',
-       'nascentupload-publishing-accepted-sources.txt',
-       setUp=setUp, tearDown=tearDown, layer=LaunchpadZopelessLayer)
+    suite = unittest.TestSuite()
+    tests_dir = os.path.dirname(os.path.realpath(__file__))
 
+    filenames = [
+        filename
+        for filename in os.listdir(tests_dir)
+        if filename.lower().endswith('.txt')
+        ]
 
-if __name__ == '__main__':
-    unittest.main(defaultTest='test_suite')
+    for filename in sorted(filenames):
+        test = LayeredDocFileSuite(
+            filename, setUp=setUp, tearDown=tearDown,
+            layer=LaunchpadZopelessLayer)
+        suite.addTest(test)
+
+    return suite

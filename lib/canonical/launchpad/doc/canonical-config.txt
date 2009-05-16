@@ -19,7 +19,7 @@ simple configuration).
     >>> config.database.db_statement_timeout is None
     True
     >>> config.launchpad.dbuser
-    'launchpad'
+    'launchpad_main'
     >>> config.librarian.dbuser
     'librarian'
     >>> config.librarian.upload_host
@@ -100,7 +100,7 @@ can be changed for a feature.
 And the test can remove the data when it is done to restore the config.
 
     >>> config.pop('test_data')
-    (<lazr.config.ConfigData ...>,)
+    (<lazr.config...ConfigData ...>,)
     >>> config.answertracker.email_domain
     'answers.launchpad.net'
 
@@ -127,7 +127,7 @@ conf file is loaded.
     >>> config.filename
     '.../configs/development/launchpad-lazr.conf'
     >>> config.extends.filename
-    '.../canonical/config/schema-lazr.conf'
+    '.../configs/canonical-lazr.conf'
 
     >>> config.answertracker.days_before_expiration
     15

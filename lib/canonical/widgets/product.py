@@ -3,7 +3,11 @@
 """Widgets related to IProduct."""
 
 __metaclass__ = type
-
+__all__ = [
+    'LicenseWidget',
+    'ProductBugTrackerWidget',
+    'ProductNameWidget',
+    ]
 
 import cgi
 
@@ -25,7 +29,8 @@ from canonical.launchpad.vocabularies.dbobjects import (
 from canonical.launchpad.webapp import canonical_url
 from canonical.widgets.itemswidgets import (
     CheckBoxMatrixWidget, LaunchpadDropdownWidget, LaunchpadRadioWidget)
-from canonical.widgets.textwidgets import StrippedTextWidget
+from canonical.widgets.textwidgets import (
+    LowerCaseTextWidget, StrippedTextWidget)
 
 
 class ProductBugTrackerWidget(LaunchpadRadioWidget):
@@ -47,7 +52,7 @@ class ProductBugTrackerWidget(LaunchpadRadioWidget):
             context=field.context)
         if self.bugtracker_widget.extra is None:
             self.bugtracker_widget.extra = ''
-        ## Select the the corresponding radio option automatically if
+        ## Select the corresponding radio option automatically if
         ## the user selects a bug tracker.
         self.bugtracker_widget.extra += (
             ' onchange="selectWidget(\'%s.2\', event);"' % self.name)
@@ -64,7 +69,7 @@ class ProductBugTrackerWidget(LaunchpadRadioWidget):
             self, 'upstream_email_address', self.upstream_email_address,
             IInputWidget, prefix=self.name, value='',
             context=self.upstream_email_address.context)
-        ## Select the the corresponding radio option automatically if
+        ## Select the corresponding radio option automatically if
         ## the user starts typing.
         if self.upstream_email_address_widget.extra is None:
             self.upstream_email_address_widget.extra = ''
@@ -227,3 +232,29 @@ class LicenseWidget(CheckBoxMatrixWidget):
     def __call__(self):
         self.checkbox_matrix = super(LicenseWidget, self).__call__()
         return self.template()
+
+
+class ProductNameWidget(LowerCaseTextWidget):
+    """A text input widget that looks like a url path component entry.
+
+    URL: http://launchpad.net/[____________]
+    """
+    template = ViewPageTemplateFile('templates/project-url.pt')
+
+    def __init__(self, *args):
+        self.read_only = False
+        super(ProductNameWidget, self).__init__(*args)
+
+    def __call__(self):
+        return self.template()
+
+    @property
+    def product_name(self):
+        return self.request.form.get('field.name', '').lower()
+
+    @property
+    def widget_type(self):
+        if self.read_only:
+            return 'hidden'
+        else:
+            return 'text'

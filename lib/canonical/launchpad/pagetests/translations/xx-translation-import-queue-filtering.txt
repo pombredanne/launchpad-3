@@ -67,6 +67,8 @@ targets.
 
     >>> print_targets(browser)
     All targets
+    Any project
+    Any distribution
     Evolution
 
 
@@ -106,6 +108,8 @@ now shows up in the target dropdown with an asterisk.
 
     >>> print_targets(browser)
     All targets
+    Any project
+    Any distribution
     Evolution*
 
 
@@ -157,6 +161,8 @@ no entries matching the status that Carlos is filtering for.
 
     >>> print_targets(browser)
     All targets
+    Any project
+    Any distribution
     Evolution
 
 Carlos changes the status of the third entry to Blocked.
@@ -181,6 +187,8 @@ The entry now shows up in the Blocked filter.
 
     >>> print_targets(browser)
     All targets
+    Any project
+    Any distribution
     Evolution*
 
 And the entries that need review are only 99.
@@ -283,12 +291,82 @@ Carlos selects that option and filters for it.
 
 The only entry that shows up now is the one Carlos just uploaded.
 
+    >>> def represent_queue_entry(entry_html):
+    ...     text_contents = extract_text(entry_html)
+    ...     return text_contents.encode('ascii', 'backslashreplace')
+
     >>> import_list = find_tag_by_id(
     ...     user_browser.contents, 'import-entries-list')
     >>> first_entry = import_list.findNext('tr')
-    >>> print extract_text(first_entry).encode('ascii', 'backslashreplace')
+    >>> print represent_queue_entry(first_entry)
     foo.pot in evolution in Ubuntu Hoary
     Needs Review
+
+
+=== Special target filters ===
+
+Besides the unfiltered view and the specific distroseries, package, or
+productseries views, the page can also filter by "special" targets.
+This is useful for the Launchpad Translations team, which regularly
+goes over unreviewed template uploads for all projects outside of
+Ubuntu.
+
+    >>> import re
+
+    >>> def summarize_displayed_queue_entries(browser):
+    ...     """Show import queue entries that browser currently sees."""
+    ...     output = []
+    ...     import_list = find_tag_by_id(
+    ...         browser.contents, 'import-entries-list') 
+    ...     for entry in import_list.findAll('tr'):
+    ...         output.append(represent_queue_entry(entry))
+    ...     return '\n'.join(output)
+
+    >>> browser.open('http://translations.launchpad.dev/+imports')
+
+The queue has uploads for Hoary (a Distribution release series) and for
+Evolution (a separate project registered in Launchpad).
+
+    >>> print_targets(browser)
+    All targets
+    Any project
+    Any distribution
+    Hoary
+    Evolution
+
+    >>> user_browser.getControl(
+    ...     name='field.filter_target', index=0).value = ['[PRODUCT]']
+    >>> user_browser.getControl('Filter').click()
+
+The "Any project" filter here shows only those Evolution uploads.
+
+    >>> displayed_entries = summarize_displayed_queue_entries(user_browser)
+    >>> print displayed_entries
+    po/evolution-2.2-test.pot in Evolution Series: trunk ...
+    po/pt_BR.po in Evolution Series: trunk ...
+    foo-01.po in Evolution Series: trunk ...
+    foo-02.po in Evolution Series: trunk ...
+    foo-03.po in Evolution Series: trunk ...
+
+None of the Hoary uploads are shown.
+
+    >>> print re.findall('Hoary', displayed_entries)
+    []
+
+The "Any distribution" filter on the other hand shows the Hoary upload
+(for "evolution" the package), but not the uploads for "Evolution" the
+project.
+
+    >>> user_browser.getControl(
+    ...     name='field.filter_target', index=0).value = ['[DISTRIBUTION]']
+    >>> user_browser.getControl('Filter').click()
+
+    >>> displayed_entries = summarize_displayed_queue_entries(user_browser)
+    >>> print displayed_entries
+    foo.pot in evolution in Ubuntu Hoary ...
+
+    >>> print re.findall('Evolution', displayed_entries)
+    []
 
 
 === Target filter validation ===

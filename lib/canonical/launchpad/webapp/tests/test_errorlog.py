@@ -28,7 +28,7 @@ from canonical.launchpad.layers import WebServiceLayer
 from canonical.launchpad.webapp.errorlog import (
     ErrorReportingUtility, ScriptRequest, _is_sensitive)
 from canonical.launchpad.webapp.interfaces import TranslationUnavailable
-from canonical.lazr.rest.declarations import webservice_error
+from lazr.restful.declarations import webservice_error
 
 
 UTC = pytz.timezone('UTC')
@@ -414,6 +414,7 @@ class TestErrorReportingUtility(unittest.TestCase):
 
         # verify that the oopsid was set on the request
         self.assertEqual(request.oopsid, 'OOPS-91T1')
+        self.assertEqual(request.oops.id, 'OOPS-91T1')
 
     def test_raising_with_xmlrpc_request(self):
         # Test ErrorReportingUtility.raising() with an XML-RPC request.

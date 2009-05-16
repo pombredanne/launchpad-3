@@ -1,26 +1,44 @@
-<div
-  xmlns:tal="http://xml.zope.org/namespaces/tal"
-  xmlns:metal="http://xml.zope.org/namespaces/metal"
-  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  class="portlet" id="portlet-tags"
-  tal:define="bug_tags view/getUsedBugTagsWithURLs"
-  tal:condition="bug_tags">
-
-  <h2>Tags</h2>
-
-  <div class="portletBody">
-
-    <table width="100%">
-      <tr tal:repeat="bug_tag_info bug_tags">
-        <td>
-          <a tal:content="bug_tag_info/tag"
-             tal:attributes=" href bug_tag_info/url">
-            crash
-          </a>
-        </td>
-        <td tal:content="bug_tag_info/count">20</td>
-      </tr>
-    </table>
-
+<div xmlns:tal="http://xml.zope.org/namespaces/tal"
+     xmlns:metal="http://xml.zope.org/namespaces/metal"
+     xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+     class="portlet" id="portlet-tags">
+  <div id="tags-portlet-spinner"
+       style="text-align: center; display: none">
+    <img src="/@@/spinner" />
   </div>
+  <a id="tags-content-link"
+     tal:attributes="href context/fmt:url/+bugtarget-portlet-tags-content"></a>
+  <script type="text/javascript">
+    YUI().use('io-base', 'node', function(Y) {
+      Y.on('domready', function() {
+        Y.get('#tags-portlet-spinner').setStyle('display', 'block');
+
+        function hide_spinner() {
+          Y.get('#tags-portlet-spinner').setStyle('display', 'none');
+        }
+
+        function on_success(transactionid, response, arguments) {
+          hide_spinner();
+          var portlet = Y.get('#portlet-tags');
+          portlet.set('innerHTML',
+                      response.responseText + portlet.get('innerHTML'));
+        }
+
+        var config = {on: {success: on_success,
+                           failure: hide_spinner}};
+        var url = Y.get('#tags-content-link').getAttribute('href').replace('bugs.', '');
+        Y.io(url, config);
+      });
+    });
+  </script>
+
+  <p tal:condition="view/show_manage_tags_link"
+     style="text-align:right">
+    <a tal:attributes="href context/fmt:url/+manage-official-tags">
+      <img src="/@@/edit" alt="Edit official tags" />
+    </a>
+    <a tal:attributes="href context/fmt:url/+manage-official-tags">
+      Edit official tags
+    </a>
+  </p>
 </div>

@@ -16,14 +16,15 @@ from z3c.ptcompat import ViewPageTemplateFile
 from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.account import AccountStatus
-from canonical.launchpad.interfaces.logintoken import (
-    ILoginTokenSet, LoginTokenType)
-from canonical.launchpad.interfaces.person import IPersonSet
-from canonical.launchpad.interfaces.shipit import ShipItConstants
+from canonical.launchpad.interfaces.authtoken import LoginTokenType
+from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
+from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
+from lp.registry.interfaces.person import (
+    IPerson, IPersonSet, PersonCreationRationale)
 from canonical.launchpad.interfaces.validation import valid_password
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.webapp.interfaces import (
-    IPlacelessAuthUtility, IPlacelessLoginSource)
+    ILaunchpadPrincipal, IPlacelessAuthUtility, IPlacelessLoginSource)
 from canonical.launchpad.webapp.interfaces import (
     CookieAuthLoggedInEvent, LoggedOutEvent)
 from canonical.launchpad.webapp.error import SystemErrorView
@@ -36,6 +37,8 @@ class UnauthorizedView(SystemErrorView):
 
     forbidden_page = ViewPageTemplateFile(
         '../templates/launchpad-forbidden.pt')
+
+    notification_message = _('To continue, you must log in to Launchpad.')
 
     def __call__(self):
         if IUnauthenticatedPrincipal.providedBy(self.request.principal):
@@ -57,29 +60,36 @@ class UnauthorizedView(SystemErrorView):
                         'page that requires authentication.')
             # If we got any query parameters, then preserve them in the
             # new URL. Except for the BrowserNotifications
-            query_string = self.request.get('QUERY_STRING', '')
-            if query_string:
-                query_string = '?' + query_string
-            target = self.request.getURL()
+            current_url = self.request.getURL()
             while True:
                 nextstep = self.request.stepstogo.consume()
                 if nextstep is None:
                     break
-                target = urlappend(target, nextstep)
-            target = urlappend(target, '+login' + query_string)
+                current_url = urlappend(current_url, nextstep)
+            query_string = self.request.get('QUERY_STRING', '')
+            if query_string:
+                query_string = '?' + query_string
+            target = self.getRedirectURL(current_url, query_string)
             # A dance to assert that we want to break the rules about no
             # unauthenticated sessions. Only after this next line is it safe
             # to use the ``addNoticeNotification`` method.
             allowUnauthenticatedSession(self.request)
-            self.request.response.addNoticeNotification(_(
-                    'To continue, you must log in to Launchpad.'
-                    ))
+            self.request.response.addNoticeNotification(
+                self.notification_message)
             self.request.response.redirect(target)
             # Maybe render page with a link to the redirection?
             return ''
         else:
             self.request.response.setStatus(403) # Forbidden
             return self.forbidden_page()
+
+    def getRedirectURL(self, current_url, query_string):
+        """Get the URL to redirect to.
+        :param current_url: The URL of the current page.
+        :param query_string: The string that should be appended to the current
+            url.
+        """
+        return urlappend(current_url, '+login' + query_string)
 
 
 class BasicLoginPage:
@@ -143,16 +153,6 @@ class LoginOrRegister:
     submitted = False
     email = None
 
-    # XXX Guilherme Salgado 2006-09-27: If you add a new origin here, you
-    # must also add a new entry on NewAccountView.urls_and_rationales in
-    # browser/logintoken.py. Ideally, we should be storing the rationale in
-    # the logintoken too, but this should do for now.
-    registered_origins = {
-        'shipit-ubuntu': ShipItConstants.ubuntu_url,
-        'shipit-edubuntu': ShipItConstants.edubuntu_url,
-        'shipit-kubuntu': ShipItConstants.kubuntu_url,
-        }
-
     def process_restricted_form(self):
         """Entry-point for the team-restricted login page.
 
@@ -178,33 +178,13 @@ class LoginOrRegister:
         elif self.request.form.get(self.submit_registration):
             self.process_registration_form()
 
-    def getApplicationURL(self):
-        # XXX Guilherme Salgado 2005-12-09: This method is needed because
-        # this view is used on shipit and we have to use an application URL
-        # different than the one we have in the request.
-        return self.request.getApplicationURL()
-
     def getRedirectionURL(self):
         """Return the URL we should redirect the user to, after finishing a
         registration or password reset process.
 
-        If the request has an 'origin' query parameter, that means the user
-        came from shipit, and thus we return the URL for it. When there's no
-        'origin' query parameter, we check the HTTP_REFERER header and if it's
-        under any URL specified in registered_origins we return it, otherwise
-        we return the current URL without the "/+login" bit.
+        IOW, the current URL without the "/+login" bit.
         """
-        request = self.request
-        origin = request.get('origin')
-        try:
-            return self.registered_origins[origin]
-        except KeyError:
-            referrer = request.getHeader('Referer')
-            if referrer:
-                for url in self.registered_origins.values():
-                    if referrer.startswith(url):
-                        return referrer
-        return request.getURL(1)
+        return self.request.getURL(1)
 
     def process_login_form(self):
         """Process the form data.
@@ -226,23 +206,25 @@ class LoginOrRegister:
                 "The password provided contains non-ASCII characters.")
             return
 
-        appurl = self.getApplicationURL()
         loginsource = getUtility(IPlacelessLoginSource)
         principal = loginsource.getPrincipalByLogin(email)
-        if (principal is not None
-            and principal.person.account_status == AccountStatus.DEACTIVATED):
+        if principal is None or not principal.validate(password):
+            self.login_error = "The email address and password do not match."
+        elif principal.person is None:
+            logInPrincipalAndMaybeCreatePerson(self.request, principal, email)
+            self.redirectMinusLogin()
+        elif principal.person.account_status == AccountStatus.DEACTIVATED:
             self.login_error = _(
                 'The email address belongs to a deactivated account. '
                 'Use the "Forgotten your password" link to reactivate it.')
-        elif (principal is not None
-            and principal.person.account_status == AccountStatus.SUSPENDED):
+        elif principal.person.account_status == AccountStatus.SUSPENDED:
             email_link = (
                 'mailto:feedback@launchpad.net?subject=SUSPENDED%20account')
             self.login_error = _(
                 'The email address belongs to a suspended account. '
                 'Contact a <a href="%s">Launchpad admin</a> '
                 'about this issue.' % email_link)
-        elif principal is not None and principal.validate(password):
+        else:
             person = getUtility(IPersonSet).getByEmail(email)
             if person.preferredemail is None:
                 self.login_error = _(
@@ -255,10 +237,10 @@ class LoginOrRegister:
                     ) % email
                 token = getUtility(ILoginTokenSet).new(
                     person, email, email, LoginTokenType.VALIDATEEMAIL)
-                token.sendEmailValidationRequest(appurl)
+                token.sendEmailValidationRequest()
                 return
             if person.is_valid_person:
-                logInPerson(self.request, principal, email)
+                logInPrincipal(self.request, principal, email)
                 self.redirectMinusLogin()
             else:
                 # Normally invalid accounts will have a NULL password
@@ -267,8 +249,6 @@ class LoginOrRegister:
                 # such as having them flagged as OLD by a email bounce
                 # processor or manual changes by the DBA.
                 self.login_error = "This account cannot be used."
-        else:
-            self.login_error = "The email address and password do not match."
 
     def process_registration_form(self):
         """A user has asked to join launchpad.
@@ -297,20 +277,34 @@ class LoginOrRegister:
                 "Please verify it and try again.")
             return
 
-        person = getUtility(IPersonSet).getByEmail(self.email)
-        if person is not None:
-            if person.is_valid_person:
+        registered_email = getUtility(IEmailAddressSet).getByEmail(self.email)
+        if registered_email is not None:
+            person = registered_email.person
+            if person is not None:
+                if person.is_valid_person:
+                    self.registration_error = (
+                        "Sorry, someone with the address %s already has a "
+                        "Launchpad account. If this is you and you've "
+                        "forgotten your password, Launchpad can "
+                        '<a href="/+forgottenpassword">reset it for you.</a>'
+                        % cgi.escape(self.email))
+                    return
+                else:
+                    # This is an unvalidated profile; let's move on with the
+                    # registration process as if we had never seen it.
+                    pass
+            else:
+                account = registered_email.account
+                assert IPerson(account, None) is None, (
+                    "This email address should be linked to the person who "
+                    "owns it.")
                 self.registration_error = (
-                    "Sorry, someone with the address %s already has a "
-                    "Launchpad account. If this is you and you've "
-                    "forgotten your password, Launchpad can "
-                    '<a href="/+forgottenpassword">reset it for you.</a>'
+                    'The email address %s is already registered in the '
+                    'Launchpad Login Service (used by the Ubuntu shop and '
+                    'other OpenID sites). Please use the same email and '
+                    'password to log into Launchpad.'
                     % cgi.escape(self.email))
                 return
-            else:
-                # This is an unvalidated profile; let's move on with the
-                # registration process as if we had never seen it.
-                pass
 
         logintokenset = getUtility(ILoginTokenSet)
         token = logintokenset.new(
@@ -371,16 +365,34 @@ class LoginOrRegister:
         return '\n'.join(L)
 
 
-def logInPerson(request, principal, email):
-    """Log the person in. Password validation must be done in callsites."""
+def logInPrincipal(request, principal, email):
+    """Log the principal in. Password validation must be done in callsites."""
     session = ISession(request)
     authdata = session['launchpad.authenticateduser']
     assert principal.id is not None, 'principal.id is None!'
     request.setPrincipal(principal)
-    authdata['personid'] = principal.id
+    authdata['accountid'] = principal.id
     authdata['logintime'] = datetime.utcnow()
     authdata['login'] = email
     notify(CookieAuthLoggedInEvent(request, email))
+
+
+def logInPrincipalAndMaybeCreatePerson(request, principal, email):
+    """Log the principal in, creating a Person if necessary.
+
+    If the given principal has no associated person, we create a new
+    person, fetch a new principal and set it in the request.
+
+    Password validation must be done in callsites.
+    """
+    logInPrincipal(request, principal, email)
+    if ILaunchpadPrincipal.providedBy(principal) and principal.person is None:
+        person = principal.account.createPerson(
+            PersonCreationRationale.OWNER_CREATED_LAUNCHPAD)
+        new_principal = getUtility(IPlacelessLoginSource).getPrincipal(
+            principal.id)
+        assert ILaunchpadPrincipal.providedBy(new_principal)
+        request.setPrincipal(new_principal)
 
 
 def expireSessionCookie(request, client_id_manager=None,
@@ -414,13 +426,22 @@ def allowUnauthenticatedSession(request, duration=timedelta(minutes=10)):
         expireSessionCookie(request, client_id_manager, duration)
 
 
+# XXX: salgado, 2009-02-19: Rename this to logOutPrincipal(), to be consistent
+# with logInPrincipal().  Or maybe logUserOut(), in case we don't care about
+# consistency.
 def logoutPerson(request):
     """Log the user out."""
     session = ISession(request)
     authdata = session['launchpad.authenticateduser']
-    previous_login = authdata.get('personid')
+    account_variable_name = 'accountid'
+    previous_login = authdata.get(account_variable_name)
+    if previous_login is None:
+        # This is for backwards compatibility, when we used to store the
+        # person's ID in the 'personid' session variable.
+        account_variable_name = 'personid'
+        previous_login = authdata.get(account_variable_name)
     if previous_login is not None:
-        authdata['personid'] = None
+        authdata[account_variable_name] = None
         authdata['logintime'] = datetime.utcnow()
         auth_utility = getUtility(IPlacelessAuthUtility)
         principal = auth_utility.unauthenticatedPrincipal()

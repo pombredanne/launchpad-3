@@ -426,7 +426,8 @@ To test this, we need a dummy request object that provides `getURL()`.
 
     >>> from zope.publisher.interfaces.http import IHTTPApplicationRequest
     >>> from zope.publisher.interfaces.browser import IBrowserRequest
-    >>> class DummyRequest:
+    >>> from canonical.launchpad.webapp.vhosts import allvhosts
+    >>> class FakeRequest:
     ...     implements(IHTTPApplicationRequest, IBrowserRequest)
     ... 
     ...     interaction = None
@@ -443,9 +444,15 @@ To test this, we need a dummy request object that provides `getURL()`.
     ...             return self.url
     ...         else:
     ...             assert self.url1 is not None, (
-    ...                 'Must set url1 in DummyRequest')
+    ...                 'Must set url1 in FakeRequest')
     ...             return self.url1
     ... 
+    ...     def getRootURL(self, rootsite):
+    ...         if rootsite is not None:
+    ...             return allvhosts.configs[rootsite].rooturl
+    ...         else:
+    ...             return self.getApplicationURL() + '/'
+    ...
     ...     def getApplicationURL(self):
     ...         # Just the http://place:port part, so stop at the 3rd slash.
     ...         return '/'.join(self.url.split('/', 3)[:3])
@@ -459,7 +466,7 @@ To test this, we need a dummy request object that provides `getURL()`.
     ... 
     ...     def setPrincipal(self, principal):
     ...         self.principal = principal
-    >>> from canonical.launchpad.webapp.uri import URI
+    >>> from lazr.uri import URI
 
 The following request is for a url that is different from all of the
 facet menu links for 'sesamestreet'.  So, all links will be linked.
@@ -474,7 +481,7 @@ facet menu links for 'sesamestreet'.  So, all links will be linked.
 This next request is for +foo, but with a query string.  So, both links
 will still be linked.
 
-    >>> request = DummyRequest(
+    >>> request = FakeRequest(
     ...     'http://launchpad.dev/sesamestreet/+foo', query="123")
     >>> facets = Facets(street)
     >>> for link in facets.iterlinks():
@@ -864,7 +871,7 @@ link should appear linked. The request is also set as the menu's
     >>> from canonical.launchpad.ftests import test_tales
     >>> from canonical.launchpad.webapp import LaunchpadView
 
-    >>> request = DummyRequest('http://launchpad.dev/sesamestreet/+bar')
+    >>> request = FakeRequest('http://launchpad.dev/sesamestreet/+bar')
     >>> view = LaunchpadView(house, request)
     >>> view.__launchpad_facetname__ = 'bar'
 
@@ -887,7 +894,7 @@ is because the URL of '+bar' is the same as the request in the view.
 
 Let's try again, this time with a request from the participation.
 
-    >>> participation = DummyRequest(
+    >>> participation = FakeRequest(
     ...     'http://launchpad.dev/sesamestreet/+bar')
     >>> login(ANONYMOUS, participation)
 
@@ -913,7 +920,7 @@ name.
     >>> from zope.app.testing import ztapi
     >>> ztapi.setDefaultViewName(IStreet, '+baz', None)
 
-    >>> request = DummyRequest(
+    >>> request = FakeRequest(
     ...     'http://launchpad.dev/sesamestreet/+baz',
     ...     url1='http://launchpad.dev/sesamestreet/')
 

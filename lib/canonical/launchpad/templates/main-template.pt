@@ -4,7 +4,7 @@
   define-macro="master"
   tal:define="
     revno modules/canonical.launchpad.versioninfo/revno | string:unknown;
-    version string:Launchpad 2.2.2 (r${revno});
+    version string:Launchpad 2.2.4 (r${revno});
   "
 ><metal:doctype define-slot="doctype"><tal:doctype tal:replace="structure string:&lt;!DOCTYPE html PUBLIC &quot;-//W3C//DTD XHTML 1.0 Transitional//EN&quot; &quot;http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd&quot;&gt;" /></metal:doctype>
 <metal:block define-slot="top_slot" />
@@ -30,7 +30,10 @@
       CONTEXTS python:{'template':template, 'context': context, 'view':view};
   "
 >
-  <head>
+  <head tal:define="yui string:${icingroot}/yui/3.0.0pr2/build;
+                lazr_js string:${icingroot}/lazr/build;
+                lp_js string:${icingroot}/build"
+  >
     <title tal:content="CONTEXTS/fmt:pagetitle" i18n:translate="">Launchpad</title>
     <tal:atomfeeds condition="view/feed_links | nothing">
       <tal:loop repeat="link view/feed_links">
@@ -84,11 +87,28 @@
         tal:attributes="href
         string:${icingroot}/lazr/build/inlineedit/assets/skins/sam/editor.css"
         />
+    <link rel="stylesheet" type="text/css"
+        tal:attributes="href
+        string:${icingroot}/lazr/build/autocomplete/assets/skins/sam/autocomplete.css"
+        />
+    <link rel="stylesheet" type="text/css"
+        tal:attributes="href
+        string:${icingroot}/lazr/build/overlay/assets/skins/sam/pretty-overlay.css"
+        />
+    <link rel="stylesheet" type="text/css"
+        tal:attributes="href
+        string:${icingroot}/lazr/build/formoverlay/assets/formoverlay.css"
+        />
+    <link rel="stylesheet" type="text/css"
+        tal:attributes="href
+        string:${icingroot}/lazr/build/picker/assets/skins/sam/picker.css"
+        />
+    <link rel="stylesheet" type="text/css"
+        tal:attributes="href
+        string:${icingroot}/lazr/build/activator/assets/skins/sam/activator.css"
+        />
 
-    <tal:devmode define="yui string:${icingroot}/yui/3.0.0pr2/build;
-                         lazr_js string:${icingroot}/lazr/build;
-                         lp_js string:${icingroot}/build"
-                    condition="devmode">
+    <tal:devmode condition="devmode">
       <script type="text/javascript"
               tal:attributes="src string:${yui}/yui/yui.js"></script>
       <script type="text/javascript"
@@ -110,6 +130,8 @@
       <script type="text/javascript"
               tal:attributes="src string:${yui}/base/base.js"></script>
       <script type="text/javascript"
+              tal:attributes="src string:${yui}/substitute/substitute.js"></script>
+      <script type="text/javascript"
               tal:attributes="src string:${yui}/anim/anim.js"></script>
       <script type="text/javascript"
               tal:attributes="src string:${yui}/classnamemanager/classnamemanager.js"></script>
@@ -117,6 +139,22 @@
               tal:attributes="src string:${yui}/plugin/plugin.js"></script>
       <script type="text/javascript"
               tal:attributes="src string:${yui}/widget/widget.js"></script>
+      <script type="text/javascript"
+              tal:attributes="src string:${yui}/widget/widget-position-ext.js"></script>
+      <script type="text/javascript"
+              tal:attributes="src string:${yui}/cookie/cookie.js"></script>
+      <script type="text/javascript"
+              tal:attributes="src string:${yui}/widget/widget-position.js"></script>
+      <script type="text/javascript"
+              tal:attributes="src string:${yui}/widget/widget-position-ext.js"></script>
+      <script type="text/javascript"
+              tal:attributes="src string:${yui}/widget/widget-stack.js"></script>
+      <script type="text/javascript"
+              tal:attributes="src string:${yui}/widget/widget-stdmod.js"></script>
+      <script type="text/javascript"
+              tal:attributes="src string:${yui}/overlay/overlay.js"></script>
+      <script type="text/javascript"
+              tal:attributes="src string:${yui}/node-menunav/node-menunav.js"></script>
 
       <script type="text/javascript"
               tal:attributes="src string:${icingroot}/MochiKit.js"></script>
@@ -127,7 +165,22 @@
       <script type="text/javascript"
               tal:attributes="src string:${lazr_js}/inlineedit/editor.js"></script>
       <script type="text/javascript"
+              tal:attributes="src string:${lazr_js}/autocomplete/autocomplete.js"></script>
+      <script type="text/javascript"
+              tal:attributes="src string:${lazr_js}/overlay/overlay.js"></script>
+      <script type="text/javascript"
+              tal:attributes="src string:${lazr_js}/activator/activator.js"></script>
+      <script type="text/javascript"
+              tal:attributes="src string:${lazr_js}/picker/picker.js"></script>
+      <script type="text/javascript"
+              tal:attributes="src string:${lazr_js}/formoverlay/formoverlay.js"></script>
+      <script type="text/javascript"
+              tal:attributes="src string:${lazr_js}/effects/effects.js"></script>
+
+      <script type="text/javascript"
               tal:attributes="src string:${lp_js}/lp/lp.js"></script>
+      <script type="text/javascript"
+              tal:attributes="src string:${lp_js}/lp/picker.js"></script>
       <script type="text/javascript"
               tal:attributes="src string:${lp_js}/sorttable/sorttable.js"></script>
       <script type="text/javascript"
@@ -168,6 +221,9 @@
                 ></script>
       </tal:not-devmode>
     </tal:needs-gmap2>
+    <script type="text/javascript"
+            tal:define="lp_js string:${icingroot}/build"
+            tal:attributes="src string:${lp_js}/lp/mapping.js"></script>
     <link rel="shortcut icon" href="/@@/launchpad.png" />
     <metal:block define-slot="head_epilogue"></metal:block>
   </head>
@@ -384,54 +440,6 @@
         <span id="help-close"></span>
       </div>
     </div>
-    <tal:datetimepicker condition="request/needs_datetimepicker_iframe">
-      <script language="Javascript" type="text/javascript">
-          function pickDateTime(field, range) {
-              e = document.getElementById(field);
-              if (e == null) {
-                  alert(field);
-              }
-              if(self.DateTimePicker) {
-                  DateTimePicker.fPopCalendar(e, range);
-                  return false;
-              }
-          }
-      </script>
-      <iframe
-          width="174" height="189"
-          name="gToday:datetimepicker:agenda.js:DateTimePicker:plugins_time.js"
-          id="gToday:datetimepicker:agenda.js:DateTimePicker:plugins_time.js"
-          src="/+popcalxp/ipopeng.htm"
-          scrolling="no"
-          frameborder="0"
-          style="visibility:visible; z-index:999; position:absolute;
-                 top:-500px; left:-500px;">
-      </iframe>
-    </tal:datetimepicker>
-    <tal:datepicker condition="request/needs_datepicker_iframe">
-      <script language="Javascript" type="text/javascript">
-          function pickDate(field, range) {
-              e = document.getElementById(field);
-              if (e == null) {
-                  alert(field);
-              }
-              if(self.DatePicker) {
-                  DatePicker.fPopCalendar(e, range);
-                  return false;
-              }
-          }
-      </script>
-      <iframe
-          width="174" height="189"
-          name="gToday:datepicker:agenda.js:DatePicker:plugins.js"
-          id="gToday:datepicker:agenda.js:DatePicker:plugins.js"
-          src="/+popcalxp/ipopeng.htm"
-          scrolling="no"
-          frameborder="0"
-          style="visibility:visible; z-index:999; position:absolute;
-                 top:-500px; left:-500px;">
-      </iframe>
-    </tal:datepicker>
 
     <tal:cache condition="view/user|nothing"
                define="cache request/webservicerequest:cache;

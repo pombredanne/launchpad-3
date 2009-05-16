@@ -132,9 +132,19 @@ The Launchpad Administrators team is a member of that team.
     True
 
 
+== obsolete_junk ==
+
+The 'Obsolete Junk' project is used to hold undeletable objects like
+productseries that other projects no longer want.
+
+    >>> obsolete_junk = getUtility(IProductSet).getByName('obsolete-junk')
+    >>> celebs.obsolete_junk == obsolete_junk
+    True
+
+
 == commercial_admin ==
 
-There is a 'Commercial Subscrpition Admins' team that has 
+There is a 'Commercial Subscription Admins' team that has
 administrative power over the license review process and
 has the ability to de-activate projects.
 
@@ -179,4 +189,14 @@ There is a 'PPA key guard' celebrity which owns all PPA
 
     >>> ppa_key_guard = personset.getByName('ppa-key-guard')
     >>> celebs.ppa_key_guard == ppa_key_guard
+    True
+
+
+== Ubuntu branches ==
+
+There's a celebrity that is the only Person allowed to set the official branch
+for a source package. It's called ubuntu-branches.
+
+    >>> ubuntu_branches = personset.getByName('ubuntu-branches')
+    >>> celebs.ubuntu_branches == ubuntu_branches
     True

@@ -13,13 +13,12 @@ __all__ = [
     ]
 
 import os
-import re
 
 from canonical.archiveuploader.dscfile import DSCFile, SignableTagFile
 from canonical.archiveuploader.nascentuploadfile import (
-    UploadError, UploadWarning, CustomUploadFile, DebBinaryUploadFile,
-    UdebBinaryUploadFile, BaseBinaryUploadFile, SourceUploadFile,
-    splitComponentAndSection)
+    BaseBinaryUploadFile,  CustomUploadFile, DdebBinaryUploadFile,
+    DebBinaryUploadFile, SourceUploadFile, UdebBinaryUploadFile,
+    UploadError, UploadWarning, splitComponentAndSection)
 from canonical.archiveuploader.utils import (
     re_isadeb, re_issource, re_changes_file_name)
 from canonical.archiveuploader.tagfiles import (
@@ -96,18 +95,25 @@ class ChangesFile(SignableTagFile):
                 "Format out of acceptable range for changes file. Range "
                 "1.5 - 2.0, format %g" % format)
 
-        match_changes = re_changes_file_name.match(self.filename)
-        if match_changes is None:
-            raise UploadError(
-                '%s -> inappropriate changesfile name, '
-                'should follow "<pkg>_<version>_<arch>.changes" format'
-                % self.filename)
-        self.filename_archtag = match_changes.group(3)
-
         if policy.unsigned_changes_ok:
             self.logger.debug("Changes file can be unsigned.")
         else:
             self.processSignature()
+
+    def checkFileName(self):
+        """Make sure the changes file name is well-formed.
+        
+        Please note: for well-formed changes file names the `filename_archtag`
+        property will be set appropriately.
+        """
+        match_changes = re_changes_file_name.match(self.filename)
+        if match_changes is None:
+            yield UploadError(
+                '%s -> inappropriate changesfile name, '
+                'should follow "<pkg>_<version>_<arch>.changes" format'
+                % self.filename)
+        else:
+            self.filename_archtag = match_changes.group(3)
 
     def processAddresses(self):
         """Parse addresses and build person objects.
@@ -186,6 +192,11 @@ class ChangesFile(SignableTagFile):
                             filepath, digest, size, component_and_section,
                             priority_name, package, self.version, self,
                             self.policy, self.logger)
+                    elif filename.endswith("ddeb"):
+                        file_instance = DdebBinaryUploadFile(
+                            filepath, digest, size, component_and_section,
+                            priority_name, package, self.version, self,
+                            self.policy, self.logger)
                     else:
                         file_instance = DebBinaryUploadFile(
                             filepath, digest, size, component_and_section,
@@ -250,7 +261,7 @@ class ChangesFile(SignableTagFile):
 
     @property
     def binary_package_files(self):
-        """Return a list of BaseBinaryUploadFile initialized in this context."""
+        """Get a list of BaseBinaryUploadFile initialized in this context."""
         return self._getFilesByType(BaseBinaryUploadFile)
 
     @property

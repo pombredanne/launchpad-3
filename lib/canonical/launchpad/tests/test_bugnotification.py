@@ -7,14 +7,15 @@ __metaclass__ = type
 import unittest
 
 from zope.event import notify
-from zope.interface import implements, providedBy
+from zope.interface import providedBy
+
+from lazr.lifecycle.snapshot import Snapshot
 
 from canonical.launchpad.database import BugNotification
-from canonical.launchpad.event import SQLObjectModifiedEvent
+from lazr.lifecycle.event import ObjectModifiedEvent
 from canonical.launchpad.ftests import login
 from canonical.launchpad.interfaces.bugtask import BugTaskStatus
-from canonical.launchpad.testing.factory import LaunchpadObjectFactory
-from canonical.launchpad.webapp.snapshot import Snapshot
+from lp.testing.factory import LaunchpadObjectFactory
 from canonical.testing import LaunchpadFunctionalLayer
 
 
@@ -44,7 +45,7 @@ class TestNotificationRecipientsOfPrivateBugs(unittest.TestCase):
             self.product_bugtask, providing=providedBy(self.product_bugtask))
         self.product_bugtask.transitionToStatus(
             BugTaskStatus.INVALID, self.private_bug.owner)
-        notify(SQLObjectModifiedEvent(
+        notify(ObjectModifiedEvent(
             self.product_bugtask, bugtask_before_modification, ['status'],
             user=self.reporter))
         latest_notification = BugNotification.selectFirst(orderBy='-id')
@@ -68,7 +69,7 @@ class TestNotificationRecipientsOfPrivateBugs(unittest.TestCase):
         bug_before_modification = Snapshot(
             self.private_bug, providing=providedBy(self.private_bug))
         self.private_bug.description = 'description'
-        notify(SQLObjectModifiedEvent(
+        notify(ObjectModifiedEvent(
             self.private_bug, bug_before_modification, ['description'],
             user=self.reporter))
         latest_notification = BugNotification.selectFirst(orderBy='-id')

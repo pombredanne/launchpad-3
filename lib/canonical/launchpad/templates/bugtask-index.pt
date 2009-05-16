@@ -9,7 +9,29 @@
   metal:use-macro="view/macro:page/onecolumn"
 >
   <body>
+    <metal:block fill-slot="head_epilogue">
+      <script type='text/javascript' tal:content="string:var yui_base='${yui}';" />
+      <script type='text/javascript' id='available-official-tags-js'
+              tal:content="view/available_official_tags_js" />
+      <script type="text/javascript"
+              tal:define="lp_js string:${icingroot}/build"
+              tal:attributes="src string:${lp_js}/bugs/bugtask-index.js">
+      </script>
+      <script type="text/javascript"
+              tal:define="lp_js string:${icingroot}/build"
+              tal:attributes="src string:${lp_js}/bugs/bug_tags_entry.js">
+      </script>
+      <script type="text/javascript">
+        YUI().use('base', 'node', 'oop', 'event', 'bugs.bugtask_index', function(Y) {
+            Y.bugs.setup_bugtask_index();
+        });
+      </script>
+    </metal:block>
+
     <div metal:fill-slot="main" tal:define="context_menu context/menu:context">
+      <div id="tags-autocomplete">
+       <div id="tags-autocomplete-content"></div>
+      </div>
       <p class="object timestamp">
 
           Bug #<tal:block content="context/bug/id"/> reported
@@ -68,46 +90,20 @@
           # you have just now converted the report into a question.
         </tal:XXX>
       </p>
-      <form
-          tal:condition="not:view/isReportedInContext"
-          class="error message"
-          name="alsooccursin"
-          method="POST"
-          >
-
-        This bug isn't linked to
-        <strong><a
-           tal:attributes="href string:${context/target/fmt:url}"
-           tal:content="context/bugtargetdisplayname"
-           >Mozilla Firefox</a></strong>.  Would you like to report it here as
-           well?<br/>
-
-        <tal:loggedin condition="request/lp:person">
-
-          <center><input
-              type="submit"
-              name="reportbug"
-              value=""
-              tal:attributes="value string:Yes, report in ${context/bugtargetdisplayname}"
-              /></center>
-        </tal:loggedin>
-        <tal:notloggedin condition="not:request/lp:person">
-          If you want to report it in <tal:block
-          content="context/bugtargetdisplayname" />,
-          you must <a href="+login">log in</a> first.
-        </tal:notloggedin>
-
-      </form>
 
       <table style="width: 100%; margin-bottom: 0.33em;">
         <tr>
           <td style="text-align: left; width: 50%;">
+            <span id="mark-duplicate-text"
+                tal:define="link context_menu/markduplicate"
+                tal:condition="python: link.enabled and not
+                              context.bug.duplicateof"
+            >
             <a
-              tal:define="link context_menu/markduplicate"
-              tal:condition="python: link.enabled and not
-                            context.bug.duplicateof"
-              tal:attributes="href link/url">
+              tal:attributes="href link/url"
+              class="menu-link-mark-dupe">
               <img src="/@@/bug-dupe-icon" /> Mark as duplicate</a>
+            </span>
             <tal:block
               tal:condition="context/bug/duplicates"
               tal:define="number_of_dupes context/bug/duplicates/count"
@@ -121,7 +117,8 @@
             <tal:block
               tal:define="duplicateof context/bug/duplicateof"
               tal:condition="duplicateof"
-            >Duplicate of
+            >
+              <span id="mark-duplicate-text">Duplicate of
               <a
                 tal:condition="duplicateof/required:launchpad.View"
                 tal:attributes="href duplicateof/fmt:url; title
@@ -140,7 +137,7 @@
               tal:attributes="href link/url">
               <img src="/@@/edit" />
             </a>
-
+            </span>
             </tal:block>
           </td>
 
@@ -168,16 +165,63 @@
             define="global description context/bug/description/fmt:obfuscate-email/fmt:text-to-html" />
 
         <div id="bug-description" tal:content="structure description" />
-
-          <div id="bug-tags" tal:define="tags context/bug/tags" tal:condition="tags"
-               style="width: 45%: text-align: left; float: right;">
+          <div id="bug-tags"
+               tal:attributes="class python: ('tags-container ' +
+                                              (context.bug.tags and
+                                               'tags-show' or 'tags-hide'))">
             Tags:
-            <a tal:repeat="tag tags"
-               tal:content="tag"
-               tal:attributes="href string:${context/target/fmt:url}/+bugs?field.tag=${tag}">tag</a>
-          </div>
+            <span id="tag-list">
+              <a tal:repeat="tag view/official_tags"
+                 tal:content="tag"
+                 class="official-tag"
+                 tal:attributes="href string:${context/target/fmt:url}/+bugs?field.tag=${tag}">tag</a>
+              <a tal:repeat="tag view/unofficial_tags"
+                 tal:content="tag"
+                 class="unofficial-tag"
+                 tal:attributes="href string:${context/target/fmt:url}/+bugs?field.tag=${tag}">tag</a>
+            </span>
+            <form id="tags-form" style="display: inline">
+                <input type="text" id="tag-input" style="display: none; width: 25em;" />
+                <img src="/@@/spinner" id="tags-edit-spinner" style="display: none" />
+                <a href="+edit" title="Edit tags" id="edit-tags-trigger"><img src="/@@/edit" /></a>
+              <script type="text/javascript">
+                  YUI().use('event', 'node', 'bugs.bug_tags_entry', function(Y) {
+                      // XXX intellectronica 2009-04-16 bug #362309:
+                      // The load event fires very late on bug pages that take a
+                      // long time to render, but we prefer to use it since the
+                      // domready event isn't reliable in YUI3 yet. To make sure
+                      // that user doesn't click the trigger and navigates to the
+                      // non-JS form, we first disable the link. This is awful and
+                      // must be fixed as soon as YUI3 is fixed.
+                      Y.get('#edit-tags-trigger').on('click', function(e) {
+                        e.halt();
+                      });
+                      Y.on('load',
+                           function(e) {
+                               Y.bugs.setup_tag_entry(available_official_tags);
+                           },
+                           window);
+                  });
+              </script>
 
-          <div style="width: 45%: text-align: right; float: left;" class="clearfix">
+              <button class="lazr-pos lazr-btn yui-ieditor-submit_button"
+                      id="edit-tags-ok" style="display: none"
+                      type="button">Ok</button>
+              <button class="lazr-neg lazr-btn yui-ieditor-cancel_button"
+                      id="edit-tags-cancel" style="display: none"
+                      type="button">Cancel</button>
+           </form>
+          </div>
+          <div id="add-bug-tags"
+               tal:attributes="class python: ('tags-container ' +
+                                              (not(context.bug.tags) and
+                                              'tags-show' or 'tags-hide'))">
+            <a href="+edit" title="Add tags" id="add-tags-trigger">
+              <img src="/@@/add" />
+              Add tags
+            </a>
+          </div>
+          <div style="width: 45%: text-align: right; float: right;" class="clearfix">
             <tal:editdescription
                 define="link context_menu/editdescription"
                 condition="link/enabled"
@@ -260,12 +304,27 @@
       </div>
 
       <tal:comments>
-        <tal:comment repeat="comment view/visible_comments_for_display">
-          <tal:comment-box condition="comment/can_be_shown">
-            <metal:comment-box
-                metal:use-macro="context/@@bugcomment-macros/comment-box" />
-          </tal:comment-box>
+        <tal:comment repeat="comment_or_activity view/activity_and_comments">
+          <tal:is-comment
+              define="comment comment_or_activity/comment|nothing"
+              condition="comment">
+            <tal:comment-box condition="python: comment.can_be_shown and
+                                       (view.user_is_admin or
+                                       comment.visible)"
+                             replace="structure comment/@@+box">
+            </tal:comment-box>
+          </tal:is-comment>
+
+          <tal:is-activity
+              define="activity_list comment_or_activity/activity|nothing;
+                      activity_date comment_or_activity/date|nothing;
+                      activity_person comment_or_activity/person|nothing"
+              condition="activity_list">
+              <metal:comment-box
+                  metal:use-macro="context/@@bugcomment-macros/activity-box" />
+          </tal:is-activity>
         </tal:comment>
+
         <tal:comment-list-complete
             tal:condition="not:view/visible_comments_truncated_for_display">
           <tal:logged-in condition="view/user">
@@ -274,6 +333,7 @@
               <div tal:content="structure context/@@+addcomment-form" />
             </fieldset>
           </tal:logged-in>
+
           <tal:not-logged-in condition="not: view/user">
             <div align="center" id="add-comment-login-first">
               To post a comment you must <a
@@ -348,6 +408,10 @@
         <div tal:replace="structure context/bug/@@+portlet-attachments" />
         <div tal:replace="structure context/bug/@@+portlet-watch" />
         <div tal:replace="structure context/@@+portlet-search" />
+      </div>
+      <div>
+        <div id="duplicate-form-container"></div>
+        <div id="privacy-form-container"></div>
       </div>
     </div>
   </body>

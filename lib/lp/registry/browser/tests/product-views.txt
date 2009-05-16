@@ -1,0 +1,302 @@
+= Product Pages =
+
+The browser module for product has many view classes that should be
+tested in this pages test.  As it is this test is pretty sparse.
+
+
+== Product View ==
+
+The page at /product_name includes overview information about the product.
+
+
+=== Effective Driver ===
+
+The `effective_driver` property on the view shows the product driver,
+if one exists.  If the product does not have a driver, then the driver
+for the project is returned.  If the product has no project or the
+project has no driver then None is returned.
+
+    >>> from lp.registry.interfaces.product import IProductSet
+    >>> from lp.registry.interfaces.project import IProjectSet
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from canonical.launchpad.ftests import ANONYMOUS
+    >>> login('foo.bar@canonical.com')
+    >>> mozilla = getUtility(IProjectSet).getByName('mozilla')
+    >>> firefox = getUtility(IProductSet).getByName('firefox')
+    >>> cprov = getUtility(IPersonSet).getByName('cprov')
+    >>> sabdfl = getUtility(IPersonSet).getByName('sabdfl')
+
+Neither Mozilla nor Firefox has a driver set.
+
+    >>> print mozilla.driver
+    None
+    >>> print firefox.driver
+    None
+
+Thus the effective driver for Firefox is None.
+    >>> view = create_initialized_view(firefox, name='+index')
+    >>> print view.effective_driver
+    None
+
+Setting the driver for the Mozilla project trickles down to Firefox.
+
+    >>> mozilla.driver = sabdfl
+
+But since the effective_driver is a cached property it will not show
+up on this view instance.
+
+    >>> print view.effective_driver
+    None
+
+Creating a new view shows the new driver.
+
+    >>> view = create_initialized_view(firefox, name='+index')
+    >>> print view.effective_driver.name
+    sabdfl
+
+Setting the driver for Firefox shows that it is used for the product,
+after a new view is obtained.
+
+    >>> firefox.driver = cprov
+    >>> print view.effective_driver.name
+    sabdfl
+    >>> view = create_initialized_view(firefox, name='+index')
+    >>> print view.effective_driver.name
+    cprov
+
+=== Displaying Commercial Subscription Information ===
+
+Only project maintainers, Launchpad administrators, and Launchpad
+Commercial members are to see commercial subscription information on
+the product overview page.
+
+For product maintainers the property is true.  Sample Person
+(test@canonical.com) is the owner of the Firefox product.
+
+    >>> login('test@canonical.com')
+    >>> view = create_initialized_view(firefox, name='+index')
+    >>> print view.show_commercial_subscription_info
+    True
+
+For Launchpad admins the property is true.
+
+    >>> login('foo.bar@canonical.com')
+    >>> view = create_initialized_view(firefox, name='+index')
+    >>> print view.show_commercial_subscription_info
+    True
+
+For Launchpad commercial members th property is true.
+
+    >>> login('commercial-member@canonical.com')
+    >>> view = create_initialized_view(firefox, name='+index')
+    >>> print view.show_commercial_subscription_info
+    True
+
+But for a no-privileges user the property is false.
+
+    >>> login('no-priv@canonical.com')
+    >>> view = create_initialized_view(firefox, name='+index')
+    >>> print view.show_commercial_subscription_info
+    False
+
+And for an anonymous user it is false.
+
+    >>> login(ANONYMOUS)
+    >>> view = create_initialized_view(firefox, name='+index')
+    >>> print view.show_commercial_subscription_info
+    False
+
+
+== Reviewing a projects licensing ==
+
+Launchpad commercial members and Launchpad admins can review a project's
+licenses.
+
+    >>> login('commercial-member@canonical.com')
+    >>> view = create_initialized_view(firefox, name='+review-license')
+    >>> print view.label
+    Review project licensing
+
+The view allow the reviewer to see and change project privileges and
+judge the licenses.
+
+    >>> view.field_names
+    ['active', 'private_bugs', 'license_reviewed', 'license_approved',
+     'reviewer_whiteboard']
+
+The reviewer can deactivate a project if he concludes it is bogus.
+
+    >>> firefox.active
+    True
+
+    >>> form = {
+    ...     'field.active.used': '', # unchecked
+    ...     'field.reviewer_whiteboard': 'Looks bogus',
+    ...     'field.actions.change': 'Change',
+    ...     }
+    >>> view = create_initialized_view(
+    ...     firefox, name='+review-license', form=form)
+    >>> view.errors
+    []
+    >>> firefox.active
+    False
+    >>> print firefox.reviewer_whiteboard
+    Looks bogus
+
+The reviewer can enable privileged features like private bugs. He can
+also reactivate the project at the same time.
+
+    >>> firefox.private_bugs
+    False
+
+    >>> form = {
+    ...     'field.active': 'on',
+    ...     'field.private_bugs': 'on',
+    ...     'field.reviewer_whiteboard': 'Reinstated old project',
+    ...     'field.actions.change': 'Change',
+    ...     }
+    >>> view = create_initialized_view(
+    ...     firefox, name='+review-license', form=form)
+    >>> view.errors
+    []
+    >>> firefox.active
+    True
+    >>> firefox.private_bugs
+    True
+    >>> print firefox.reviewer_whiteboard
+    Reinstated old project
+
+A project with proprietary license cannot be approved; the owner must
+purchase a commercial subscription.
+
+    >>> from lp.registry.interfaces.product import License
+
+    >>> firefox.private_bugs = False
+    >>> login('test@canonical.com')
+    >>> firefox.licenses = [License.OTHER_PROPRIETARY]
+
+    >>> login('commercial-member@canonical.com')
+    >>> firefox.license_approved
+    False
+
+    >>> form = {
+    ...     'field.active': 'on',
+    ...     'field.reviewer_whiteboard': 'Approved',
+    ...     'field.license_approved': 'on',
+    ...     'field.actions.change': 'Change',
+    ...     }
+    >>> view = create_initialized_view(
+    ...     firefox, name='+review-license', form=form)
+    >>> view.errors
+    [u'Proprietary projects may not be manually approved to use Launchpad.
+       Proprietary projects must use the commercial subscription voucher
+       system to be allowed to use Launchpad.']
+    >>> firefox.license_approved
+    False
+    >>> print firefox.reviewer_whiteboard
+    None
+
+A project with additional license information must be approved by a reviewer.
+If the reviewer does not approve the project, just review, the project does
+not qualify for free hosting. The owner must purchase a commercial
+subscription.
+
+    >>> login('test@canonical.com')
+    >>> firefox.licenses = [License.GNU_GPL_V2]
+    >>> firefox.license_info = "May not be used for commercial purposes"
+
+    >>> login('commercial-member@canonical.com')
+    >>> firefox.license_approved
+    False
+
+    >>> form = {
+    ...     'field.active': 'on',
+    ...     'field.reviewer_whiteboard': 'This is not a free license',
+    ...     'field.license_reviewed': 'on',
+    ...     'field.actions.change': 'Change',
+    ...     }
+    >>> view = create_initialized_view(
+    ...     firefox, name='+review-license', form=form)
+    >>> view.errors
+    []
+    >>> firefox.license_reviewed
+    True
+    >>> firefox.license_approved
+    False
+    >>> firefox.qualifies_for_free_hosting
+    False
+
+The owner can correct the license information and have it re-reviewed for
+approval.
+
+    >>> login('test@canonical.com')
+    >>> firefox.licenses = [License.GNU_GPL_V2]
+    >>> firefox.license_info = "Free as cats."
+
+    >>> login('commercial-member@canonical.com')
+    >>> firefox.license_approved
+    False
+
+    >>> form = {
+    ...     'field.active': 'on',
+    ...     'field.reviewer_whiteboard': 'This is not a free license',
+    ...     'field.license_approved': 'on',
+    ...     'field.actions.change': 'Change',
+    ...     }
+    >>> view = create_initialized_view(
+    ...     firefox, name='+review-license', form=form)
+    >>> view.errors
+    []
+    >>> firefox.license_reviewed
+    True
+    >>> firefox.license_approved
+    True
+    >>> firefox.qualifies_for_free_hosting
+    True
+
+If the owner updated the license by adding an Other/Open Source licenses,
+the project must be reviewed again
+
+    >>> login('test@canonical.com')
+    >>> firefox.licenses = [License.GNU_GPL_V2, License.OTHER_OPEN_SOURCE]
+    >>> firefox.license_info = "Some images are cc-sa."
+
+    >>> login('commercial-member@canonical.com')
+    >>> firefox.license_approved
+    False
+
+    >>> form = {
+    ...     'field.active': 'on',
+    ...     'field.reviewer_whiteboard': 'This is not a free license',
+    ...     'field.license_approved': 'on',
+    ...     'field.actions.change': 'Change',
+    ...     }
+    >>> view = create_initialized_view(
+    ...     firefox, name='+review-license', form=form)
+    >>> view.errors
+    []
+    >>> firefox.license_reviewed
+    True
+    >>> firefox.license_approved
+    True
+    >>> firefox.qualifies_for_free_hosting
+    True
+
+
+== Adding a product series ==
+
+Drivers, which include project driver and owners can access the
++addseries view.
+
+    >>> from canonical.launchpad.webapp.authorization import check_permission
+
+    >>> login_person(firefox.owner)
+    >>> view = create_view(firefox, name='+addseries')
+    >>> check_permission('launchpad.Driver', view)
+    True
+
+    >>> firefox.driver = factory.makePerson()
+    >>> login_person(firefox.driver)
+    >>> view = create_view(firefox, name='+addseries')
+    >>> check_permission('launchpad.Driver', view)
+    True

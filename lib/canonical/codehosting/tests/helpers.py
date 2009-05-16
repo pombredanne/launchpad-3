@@ -1,4 +1,4 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2007-2009 Canonical Ltd.  All rights reserved.
 
 """Common helpers for codehosting tests."""
 
@@ -164,12 +164,12 @@ def adapt_suite(adapter, base_suite):
     return suite
 
 
-def create_branch_with_one_revision(branch_dir):
+def create_branch_with_one_revision(branch_dir, format=None):
     """Create a dummy Bazaar branch at the given directory."""
     if not os.path.exists(branch_dir):
         os.makedirs(branch_dir)
     try:
-        tree = BzrDir.create_standalone_workingtree(branch_dir)
+        tree = BzrDir.create_standalone_workingtree(branch_dir, format)
     except FileExists:
         return
     f = open(os.path.join(branch_dir, 'hello'), 'w')
@@ -186,7 +186,12 @@ class TestResultWrapper:
         self.result = result
 
     def addError(self, test_case, exc_info):
-        if not isinstance(exc_info[1], (TestSkipped, TestNotApplicable)):
+        if isinstance(exc_info[1], (TestSkipped, TestNotApplicable)):
+            # If Bazaar says the test was skipped, or that it wasn't
+            # applicable to this environment, then treat that like a success.
+            # After all, it's not exactly an error, is it?
+            self.result.addSuccess(test_case)
+        else:
             self.result.addError(test_case, exc_info)
 
     def addFailure(self, test_case, exc_info):

@@ -2,12 +2,12 @@
 """Tests of the HWDB submissions parser."""
 
 from cStringIO import StringIO
+import cElementTree as etree
 from datetime import datetime
 import logging
 import os
 from unittest import TestCase, TestLoader
 
-import cElementTree as etree
 import pytz
 
 from zope.testing.loghandler import Handler
@@ -505,45 +505,6 @@ class TestHWDBSubmissionParser(TestCase):
                            'model': 'MD 4394'}],
                          'Invalid parsing result for <aliases>')
 
-    def testDmi(self):
-        """The content of the <dmi> node is at present not processed.
-
-        Instead, a log warning is issued.
-        """
-        parser = SubmissionParser(self.log)
-        parser.submission_key = 'Test of <dmi> parsing.'
-        node = etree.fromstring("""<dmi>
-        # dmidecode 2.9
-        SMBIOS 2.4 present.
-        73 structures occupying 2436 bytes.
-        Table at 0x000E0010.
-
-        Handle 0x0000, DMI type 0, 24 bytes
-        BIOS Information
-        </dmi>
-        """)
-        parser._parseDmi(node)
-        self.assertWarningMessage(
-            parser.submission_key,
-            'Submission contains unprocessed DMI data.')
-
-    def testLspci(self):
-        """The content of the <lspci> node is at present not processed.
-
-        Instead, a log warning is issued.
-        """
-        parser = SubmissionParser(self.log)
-        parser.submission_key = 'Test of <lspci> parsing.'
-        node = etree.fromstring("""<lspci>
-        00:00.0 Host bridge: Memory Controller Hub (rev 0c)
-        00:01.0 PCI bridge: PCI Express Root Port (rev 0c)
-        </lspci>
-        """)
-        parser._parseLspci(node)
-        self.assertWarningMessage(
-            parser.submission_key,
-            'Submission contains unprocessed lspci data.')
-
     def testHardware(self):
         """The <hardware> tag is converted into a dictionary."""
         test = self
@@ -563,22 +524,10 @@ class TestHWDBSubmissionParser(TestCase):
             test.assertEqual(node.tag, 'aliases')
             return 'parsed alias data'
 
-        def _parseDmi(self, node):
-            test.assertTrue(isinstance(self, SubmissionParser))
-            test.assertEqual(node.tag, 'dmi')
-            return 'parsed dmi data'
-
-        def _parseLspci(self, node):
-            test.assertTrue(isinstance(self, SubmissionParser))
-            test.assertEqual(node.tag, 'lspci')
-            return 'parsed lspci data'
-
         parser = SubmissionParser(self.log)
         parser._parseHAL = lambda node: _parseHAL(parser, node)
         parser._parseProcessors = lambda node: _parseProcessors(parser, node)
         parser._parseAliases = lambda node: _parseAliases(parser, node)
-        parser._parseDmi = lambda node: _parseDmi(parser, node)
-        parser._parseLspci = lambda node: _parseLspci(parser, node)
         parser._setHardwareSectionParsers()
 
         node = etree.fromstring("""
@@ -586,18 +535,13 @@ class TestHWDBSubmissionParser(TestCase):
                 <hal/>
                 <processors/>
                 <aliases/>
-                <dmi/>
-                <lspci/>
             </hardware>
             """)
         result = parser._parseHardware(node)
         self.assertEqual(result,
                          {'hal': 'parsed HAL data',
                           'processors': 'parsed processor data',
-                          'aliases': 'parsed alias data',
-                          'dmi': 'parsed dmi data',
-                          'lspci': 'parsed lspci data',
-                          },
+                          'aliases': 'parsed alias data'},
                          'Invalid parsing result for <hardware>')
 
     def testLsbRelease(self):
@@ -872,6 +816,19 @@ class TestHWDBSubmissionParser(TestCase):
               'command': 'hdparm -t /dev/sda'}],
             'Invalid parsing result for measurement question')
 
+    def testContext(self):
+        """The content of the <context> node is currently not processed.
+
+        Instead, a log warning is issued.
+        """
+        parser = SubmissionParser(self.log)
+        parser.submission_key = 'Test of <context> parsing'
+        node = etree.fromstring('<context/>')
+        parser._parseContext(node)
+        self.assertWarningMessage(
+            parser.submission_key,
+            'Submission contains unprocessed <context> data.')
+
     def testMainParser(self):
         """Test SubmissionParser.parseMainSections
 
@@ -1126,10 +1083,34 @@ class TestHWDBSubmissionParser(TestCase):
 
     def testUDIDeviceMap(self):
         """Test the creation of the mapping UDI -> device."""
-        device1 = {'id': 1,
-                   'udi': ROOT_UDI}
-        device2 = {'id': 2,
-                   'udi': self.DEVICE_2_UDI}
+        SSB_UDI = '/org/freedesktop/Hal/devices/ssb__null_'
+        SSB_CHILD_UDI = '/org/freedesktop/Hal/devices/net_00_1a_73_a3_8f_a4_0'
+        device1 = {
+              'id': 1,
+              'udi': ROOT_UDI,
+              }
+        device2 = {
+            'id': 2,
+            'udi': self.DEVICE_2_UDI,
+            'properties': {
+                'info.parent': (ROOT_UDI, 'str'),
+                },
+            }
+        device3 = {
+            'id': 3,
+            'udi': SSB_UDI,
+            'properties': {
+                'info.parent': (ROOT_UDI, 'str'),
+                },
+            }
+        device4 = {
+            'id': 4,
+            'udi': SSB_CHILD_UDI,
+            'properties': {
+                'info.parent': (SSB_UDI, 'str'),
+                },
+            }
+
         devices = [device1, device2]
 
         parser = SubmissionParser()
@@ -1139,9 +1120,27 @@ class TestHWDBSubmissionParser(TestCase):
                           self.DEVICE_2_UDI: device2},
                          'Invalid result of SubmissionParser.getUDIDeviceMap')
 
-        # Duplicate UDIs raise a ValueError.
+        # Generally, duplicate UDIs raise a ValueError.
         devices.append(device2)
         self.assertRaises(ValueError, parser.getUDIDeviceMap, devices)
+
+        # Exceptions are devices with certain UDIs which are known
+        # to appear sometimes more than once in HWDB submissions.
+        devices = [device1, device2, device3, device4, device3, device4]
+        udi_devices = parser.getUDIDeviceMap(devices)
+        self.assertEqual(
+            udi_devices,
+            {
+                ROOT_UDI: device1,
+                self.DEVICE_2_UDI: device2,
+                SSB_UDI: device3,
+                SSB_CHILD_UDI: device4,
+                },
+            'Unexpected result of processing a device list with duplicate '
+            'SSB UDIs')
+        self.assertEqual(
+            devices, [device1, device2, device3, device4],
+            'Unexpected list of devices after removing duplicates.')
 
     def testIDUDIMaps(self):
         """Test of SubmissionParser._getIDUDIMaps."""

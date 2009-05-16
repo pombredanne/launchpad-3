@@ -225,9 +225,9 @@ class SSHTestCase(TestCaseWithTransport, LoomTestMixin):
             config.codehosting.authentication_endpoint)
         branchfs = xmlrpclib.ServerProxy(config.codehosting.branchfs_endpoint)
         if creator is None:
-            creator_id = authserver.getUser(user)['id']
+            creator_id = authserver.getUserAndSSHKeys(user)['id']
         else:
-            creator_id = authserver.getUser(creator)['id']
+            creator_id = authserver.getUserAndSSHKeys(creator)['id']
         if branch_root is None:
             branch_root = self.server._mirror_root
         branch_id = branchfs.createBranch(
@@ -315,7 +315,8 @@ class AcceptanceTests(SSHTestCase):
         return database.Branch(
             registrant=owner,
             name=branch_name, owner=owner, author=owner, product=product,
-            url=url, title=None, lifecycle_status=BranchLifecycleStatus.NEW,
+            url=url, title=None,
+            lifecycle_status=BranchLifecycleStatus.DEVELOPMENT,
             summary=None, whiteboard=None, private=private,
             date_created=UTC_NOW, branch_type=branch_type)
 
@@ -613,7 +614,6 @@ def make_server_tests(base_suite, servers):
 
 
 def make_smoke_tests(base_suite):
-    from bzrlib import tests
     from bzrlib.tests.per_repository import (
         all_repository_format_scenarios,
         )
@@ -626,19 +626,23 @@ def make_smoke_tests(base_suite):
         'RepositoryFormat5',
         'RepositoryFormat6',
         'RepositoryFormat7',
-        # Using RemoteRepositoryFormat doesn't make sense when testing push to
-        # remote server.
-        'RemoteRepositoryFormat',
         ]
     scenarios = all_repository_format_scenarios()
     scenarios = [
         scenario for scenario in scenarios
         if scenario[0] not in excluded_scenarios
         and not scenario[0].startswith('RemoteRepositoryFormat')]
-    adapter = tests.TestScenarioApplier()
-    adapter.scenarios = scenarios
     new_suite = unittest.TestSuite()
-    tests.adapt_tests(base_suite, adapter, new_suite)
+    try:
+        from bzrlib.tests import multiply_tests
+        multiply_tests(base_suite, scenarios, new_suite)
+    except ImportError:
+        # XXX: MichaelHudson, 2009-03-11: This except clause can be deleted
+        # once sourcecode/bzr has bzr.dev r4102.
+        from bzrlib.tests import adapt_tests, TestScenarioApplier
+        adapter = TestScenarioApplier()
+        adapter.scenarios = scenarios
+        adapt_tests(base_suite, adapter, new_suite)
     return new_suite
 
 

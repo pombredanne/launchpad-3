@@ -1,0 +1,182 @@
+= Registering new accounts =
+
+When registering new accounts, we always check if the email address used
+is not already registered in Launchpad.
+
+
+== Email addresses cannot be registered twice ==
+
+If the email address is registered and assigned to an account that has
+been validated, we show a message and point the user to the forgotten
+password page.
+
+    >>> browser.open('http://launchpad.dev/')
+    >>> browser.getLink('Log in / Register').click()
+
+    >>> browser.getControl('E-mail address:', index=1).value = (
+    ...     'test@canonical.com')
+    >>> browser.getControl('Register').click()
+
+    >>> for message in get_feedback_messages(browser.contents):
+    ...     print message
+    Sorry, someone with the address test@canonical.com already has a
+    Launchpad account. If this is you and you've forgotten your password,
+    Launchpad can reset it for you.
+
+
+== Claiming a profile via registration ==
+
+On the other hand, if the email is assigned to a profile that has not
+been validated, we pretend that we have never seen this email and move
+on with the registration process.
+
+    >>> browser.getControl('E-mail address:', index=1).value = 'mpo@iki.fi'
+    >>> browser.getControl('Register').click()
+
+    >>> print extract_text(find_tag_by_id(browser.contents, 'address'))
+    Instructions on completing your registration have been sent to...
+
+    >>> from lp.services.mail import stub
+    >>> from canonical.launchpad.ftests.logintoken import (
+    ...     get_token_url_from_email)
+    >>> from_addr, to_addr, msg = stub.test_emails.pop()
+    >>> token_url = get_token_url_from_email(msg)
+    >>> token_url
+    'http://launchpad.dev/token/...'
+
+    >>> browser.open(token_url)
+    >>> browser.url == '%s/+newaccount' % token_url
+    True
+
+    >>> browser.getControl('Name').value = 'My name'
+    >>> label = 'Hide my email addresses from other Launchpad users'
+    >>> browser.getControl(label).selected = True
+    >>> browser.getControl(name='field.password').value = 'foo'
+    >>> browser.getControl(name='field.password_dupe').value = 'foo'
+
+    >>> browser.getControl('Continue').click()
+    >>> browser.url
+    'http://launchpad.dev'
+
+    >>> for message in get_feedback_messages(browser.contents):
+    ...     print message
+    Registration completed successfully
+
+It's also possible that a person tries to register a new account using an
+email address that is already set as the preferred email of an existing
+unvalidated profile, like some accounts imported from Ubuntu's bugzilla.
+Although these accounts are not considered valid (that's why we allow the
+users to proceed with the registration as if we haven't heard of the given
+email address before), they /do/ have a preferred email and we need to handle
+this.
+
+    (To see kiko's email we must be logged in, so we'll use user_browser)
+    >>> user_browser.open('http://launchpad.dev/~kiko')
+    >>> unregistered_user_info = find_tag_by_id(
+    ...     user_browser.contents, 'not-lp-user-or-team')
+    >>> unregistered_user_info.li.renderContents()
+    '...christian.reis@ubuntulinux.com...'
+
+    >>> anon_browser.open('http://launchpad.dev/')
+    >>> anon_browser.getLink('Log in / Register').click()
+
+    >>> anon_browser.getControl('E-mail address:', index=1).value = (
+    ...     'christian.reis@ubuntulinux.com')
+    >>> anon_browser.getControl('Register').click()
+
+    >>> from_addr, to_addr, msg = stub.test_emails.pop()
+    >>> to_addr
+    ['christian.reis@ubuntulinux.com']
+    >>> token_url = get_token_url_from_email(msg)
+    >>> token_url
+    'http://launchpad.dev/token/...'
+
+    >>> anon_browser.open(token_url)
+    >>> anon_browser.url == "%s/+newaccount" % token_url
+    True
+
+    >>> anon_browser.getControl('Name').value = 'My name'
+    >>> anon_browser.getControl(name='field.password').value = 'foo'
+    >>> anon_browser.getControl(name='field.password_dupe').value = 'foo'
+    >>> anon_browser.getControl('Continue').click()
+
+    >>> anon_browser.url
+    'http://launchpad.dev'
+    >>> for message in get_feedback_messages(anon_browser.contents):
+    ...     print message
+    Registration completed successfully
+
+
+== Suspended email addresses cannot use registration ==
+
+Users with suspended accounts cannot reactivate their account using
+registration.
+
+    # Open up the black box and shine a light on the test's inner workings.
+    # Create a user with a SUSPENDED account.
+    >>> from canonical.launchpad.interfaces.account import AccountStatus
+
+    # Only admins can suspend an account.
+    >>> login('foo.bar@canonical.com')
+    >>> bad_user = factory.makePerson(
+    ...     email='bad-user@canonical.com',
+    ...     name='bad-user',
+    ...     password='invalid')
+    >>> from canonical.launchpad.interfaces import IMasterObject
+    >>> IMasterObject(bad_user.account).status = AccountStatus.SUSPENDED
+    >>> logout()
+
+Bad User has a suspended account. He discovers that his account is disabled
+when he visits his profile page.
+
+    >>> browser = setupBrowser()
+    >>> browser.open('http://launchpad.dev/~bad-user')
+    >>> browser.title
+    'Bad-user does not use Launchpad'
+
+He believes he can reactivate his account by re-registering with his
+email address.
+
+    >>> browser.getLink('Log in / Register').click()
+    >>> browser.title
+    'Log in or register with Launchpad'
+
+    >>> browser.getControl('E-mail address:', index=1).value = (
+    ...     'bad-user@canonical.com')
+    >>> browser.getControl('Register').click()
+
+    >>> print extract_text(find_main_content(browser.contents).p)
+    Instructions on completing your registration have been sent to
+    bad-user@canonical.com.
+
+Bad User retrieves the URL from the email and opens it in his browser.
+
+    >>> len(stub.test_emails)
+    1
+    >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
+    >>> link = get_token_url_from_email(raw_msg)
+    >>> to_addrs
+    ['bad-user@canonical.com']
+    >>> link
+    'http://launchpad.dev/token/...'
+
+    >>> browser.open(link)
+    >>> browser.url
+    'http://launchpad.dev/token/.../+newaccount'
+
+Bad User types his name and password twice to verify it and submits it with
+the Continue button. He is disappointed to see that his account is still
+suspended, and that he is instructed to contact an admin.
+
+    >>> browser.getControl('Name').value = 'Bad User'
+    >>> browser.getControl(name='field.password').value = 'test'
+    >>> browser.getControl(name='field.password_dupe').value = 'test'
+    >>> browser.getControl('Continue').click()
+
+    >>> for tag in find_tags_by_class(
+    ...     browser.contents, 'warning'):
+    ...     print tag
+    <div ...>This profile cannot be claimed because the account is suspended.
+    Contact a <a href="mailto:feedback@launchpad.net?subject=SU...">Launchpad
+    admin</a> about this issue.</div>
+

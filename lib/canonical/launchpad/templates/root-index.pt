@@ -42,7 +42,7 @@
         accept-charset="UTF-8"
         style="text-align: center"
       >
-        <img src="/@@/launchpad-logo-and-name.png" 
+        <img src="/@@/launchpad-logo-and-name.png"
              alt=""
              style="margin: 0 9em 1em 0"/>
         <br />
@@ -70,15 +70,15 @@
           <div style="margin:auto;">
             <ul>
               <li tal:repeat="project view/featured_projects_col_a">
-                <a tal:content="structure project/fmt:link" />
+                <a tal:replace="structure project/fmt:link" />
               </li>
             </ul>
             <ul>
               <li tal:repeat="project view/featured_projects_col_b">
-                <a tal:content="structure project/fmt:link" />
+                <a tal:replace="structure project/fmt:link" />
               </li>
             </ul>
-            <div tal:condition="context/required:launchpad.Admin" 
+            <div tal:condition="context/required:launchpad.Admin"
                  style="margin:auto; clear:both; text-align: center; padding-top: 1em;">
               <a href="+featuredprojects">&raquo; Manage featured project list</a>
             </div>
@@ -88,23 +88,16 @@
         <div class="three column middle">
           <h2>What&#8217;s new?</h2>
           <ul style="padding: 0; margin: auto;">
-
             <li class="news">
-              <a href="http://blog.launchpad.net/?p=534">
-                <strong>Improved upstream bug links</strong><br />
-                New quick-links to find and report bugs in external trackers.
+              <a href="http://blog.launchpad.net/?p=733">
+                <strong>Continuous translation and template imports from Bazaar</strong><br />
+                Import your project's translations and translation templates directly into Launchpad from your project's official Bazaar branches.
               </a>
            </li>
             <li class="news">
-              <a href="http://blog.launchpad.net/coming-features/ajax-in-launchpad">
-                <strong>AJAX in Launchpad</strong><br />
-                Read more about how we're making Launchpad's interface more responsive using AJAX.
-              </a>
-           </li>           
-           <li class="news">
-              <a href="http://blog.launchpad.net/?p=556">
-                <strong>Tuning Launchpad in Performance Week</strong><br />
-                Faster PPA overviews, snappier translations pages, speedier project cloud. Read all about it!
+              <a href="http://blog.launchpad.net/?p=658">
+                <strong>Multiple PPAs</strong><br />
+                Need more than one Personal Package Archive? No problem: additional archives are now available to teams and individuals.
               </a>
            </li>
            <li class="news">
@@ -115,7 +108,7 @@
            </li>
           </ul>
           <div class="discreet" style="text-align: right">
-            Updated 2009-02-26.
+            Updated 2009-04-29.
             <a href="http://blog.launchpad.net">Read our blog!</a>
           </div>
         </div>
@@ -123,8 +116,8 @@
           <div style="margin:auto; width:230px;">
             <h2>Get started</h2>
               <div class="home-banners">
-                <a href="/projects/+new-guided"><img src="/@@/add"
-                /></a> <a href="/projects/+new-guided">Create a new project</a><br/>
+                <a href="/projects/+new"><img src="/@@/add"
+                /></a> <a href="/projects/+new">Create a new project</a><br/>
                 <a href="/people/+newteam"><img src="/@@/add"
                 /></a> <a href="/people/+newteam">Create a new team</a>
               </div>

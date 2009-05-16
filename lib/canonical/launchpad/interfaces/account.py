@@ -5,22 +5,24 @@
 __metaclass__ = type
 
 __all__ = [
-        'AccountStatus',
-        'AccountCreationRationale',
-        'IAccount',
-        'IAccountPrivate',
-        'IAccountPublic',
-        'IAccountSet',
-        'INACTIVE_ACCOUNT_STATUSES',
-        ]
+    'AccountStatus',
+    'AccountCreationRationale',
+    'IAccount',
+    'IAccountPrivate',
+    'IAccountPublic',
+    'IAccountSet',
+    'IAccountSpecialRestricted',
+    'INACTIVE_ACCOUNT_STATUSES',
+    ]
 
 
 from zope.interface import Interface
-from zope.schema import Choice, Datetime, Int, Text, TextLine
+from zope.schema import Bool, Choice, Datetime, Int, List, Text, TextLine
+from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import StrippedTextLine, PasswordField
-from canonical.lazr import DBEnumeratedType, DBItem
+from lazr.restful.fields import CollectionField, Reference
 
 
 class AccountStatus(DBEnumeratedType):
@@ -57,7 +59,7 @@ INACTIVE_ACCOUNT_STATUSES = [
 
 class AccountCreationRationale(DBEnumeratedType):
     """The rationale for the creation of a given account.
-    
+
     These statuses are seeded from PersonCreationRationale, as our
     initial accounts where split from the Person table. A number of the
     creation rationales only make sense in this historical context (eg.
@@ -181,47 +183,144 @@ class IAccountPublic(Interface):
     id = Int(title=_('ID'), required=True, readonly=True)
 
     displayname = StrippedTextLine(
-            title=_('Display Name'), required=True, readonly=False,
-                description=_("Your name as you would like it displayed."))
+        title=_('Display Name'), required=True, readonly=False,
+        description=_("Your name as you would like it displayed."))
 
     status = Choice(
         title=_("The status of this account"), required=True,
         readonly=False, vocabulary=AccountStatus)
 
+    is_valid = Bool(
+        title=_("True if this account is active and has a valid email."),
+        required=True, readonly=True)
+
+    # We should use schema=IEmailAddress here, but we can't because that would
+    # cause circular dependencies.
+    preferredemail = Reference(
+        title=_("Preferred email address"),
+        description=_("The preferred email address for this person. "
+                      "The one we'll use to communicate with them."),
+        readonly=True, required=False, schema=Interface)
+
+    validated_emails = CollectionField(
+        title=_("Confirmed e-mails of this account."),
+        description=_(
+            "Confirmed e-mails are the ones in the VALIDATED state.  The "
+            "user has confirmed that they are active and that they control "
+            "them."),
+        readonly=True, required=False,
+        value_type=Reference(schema=Interface))
+
+    guessed_emails = CollectionField(
+        title=_("Guessed e-mails of this account."),
+        description=_(
+            "Guessed e-mails are the ones in the NEW state.  We believe "
+            "that the user owns the address, but they have not confirmed "
+            "the fact."),
+        readonly=True, required=False,
+        value_type=Reference(schema=Interface))
+
+    def getUnvalidatedEmails():
+        """Get a list of the unvalidated email addresses for this account.
+
+        An unvalidated email address is one which the user has tried
+        to add to their account but has not yet replied to the
+        corresponding confirmation email."""
+
+    def setPreferredEmail(email):
+        """Set the given email address as this account's preferred one.
+
+        If ``email`` is None, the preferred email address is unset, which
+        will make the account invalid.
+        """
+
+    def validateAndEnsurePreferredEmail(email):
+        """Ensure this account has a preferred email.
+
+        If this account doesn't have a preferred email, <email> will be set as
+        this account's preferred one. Otherwise it'll be set as VALIDATED and
+        this account will keep their old preferred email.
+
+        This method is meant to be the only one to change the status of an
+        email address, but as we all know the real world is far from ideal
+        and we have to deal with this in one more place, which is the case
+        when people explicitly want to change their preferred email address.
+        On that case, though, all we have to do is use
+        account.setPreferredEmail().
+        """
+
 
 class IAccountPrivate(Interface):
     """Private information on an `IAccount`."""
     date_created = Datetime(
-            title=_('Date Created'), required=True, readonly=True)
+        title=_('Date Created'), required=True, readonly=True)
 
     creation_rationale = Choice(
-            title=_("Rationale for this account's creation."), required=True,
-            readonly=True, values=AccountCreationRationale.items)
-
+        title=_("Rationale for this account's creation."), required=True,
+        readonly=True, values=AccountCreationRationale.items)
 
     date_status_set = Datetime(
-            title=_('Date status last modified.'),
-            required=True, readonly=False)
+        title=_('Date status last modified.'),
+        required=True, readonly=False)
 
     status_comment = Text(
         title=_("Why are you deactivating your account?"),
         required=False, readonly=False)
 
     openid_identifier = TextLine(
-            title=_("Key used to generate opaque OpenID identities."),
-            readonly=True, required=True)
+        title=_("Key used to generate opaque OpenID identities."),
+        readonly=True, required=True)
 
     # XXX sinzui 2008-09-04 bug=264783:
     # Remove this attribute.
     new_openid_identifier = TextLine(
-            title=_("Key used to generate New opaque OpenID identities."),
-            readonly=True, required=True)
+        title=_("Key used to generate New opaque OpenID identities."),
+        readonly=True, required=True)
 
     password = PasswordField(
-            title=_("Password."), readonly=False, required=True)
+        title=_("Password."), readonly=False, required=True)
+
+    recently_authenticated_rps = List(
+        title=_("Most recently authenticated relying parties."),
+        description=_(
+            "A list of up to 10 `IOpenIDRPSummary` objects representing the "
+            "OpenID Relying Parties in which this account authenticated "
+            "most recently."),
+        readonly=False, required=True)
+
+    def createPerson(self, rationale):
+        """Create and return a new `IPerson` associated with this account."""
 
 
-class IAccount(IAccountPublic, IAccountPrivate):
+class IAccountSpecialRestricted(Interface):
+    """Attributes of `IAccount` protected with launchpad.Special."""
+
+    # XXX sinzui 2008-07-14 bug=248518:
+    # This method would assert the password is not None, but
+    # setPreferredEmail() passes the Person's current password, which may
+    # be None.  Once that callsite is fixed, we will be able to check that the
+    # password is not None here and get rid of the reactivate() method below.
+    def activate(comment, password, preferred_email):
+        """Activate this account.
+
+        Set the account status to ACTIVE, the account's password to the given
+        one and its preferred email address.
+
+        :param comment: An explanation of why the account status changed.
+        :param password: The user's password.
+        :param preferred_email: The `EmailAddress` to set as the account's
+            preferred email address. It cannot be None.
+        """
+
+    def reactivate(comment, password, preferred_email):
+        """Reactivate this account.
+
+        Just like `IAccountSpecialRestricted`.activate() above, but here the
+        password can't be None or the empty string.
+        """
+
+
+class IAccount(IAccountPublic, IAccountPrivate, IAccountSpecialRestricted):
     """Interface describing an `Account`."""
 
 
@@ -232,7 +331,7 @@ class IAccountSet(Interface):
             password=None, password_is_encrypted=False):
         """Create a new `IAccount`.
 
-        :param rationale: An `AccountStatus` value.
+        :param rationale: An `AccountCreationRationale` value.
         :param displayname: The user's display name.
         :param openid_mnemonic: The human-readable component in the account's
             openid_identifier.
@@ -244,13 +343,28 @@ class IAccountSet(Interface):
         :return: The newly created `IAccount` provider.
         """
 
+    def get(id):
+        """Return the `IAccount` with the given id.
+
+        :raises LookupError: If the account is not found.
+        """
+
+    def createAccountAndEmail(email, rationale, displayname, password,
+                              password_is_encrypted=False):
+        """Create and return both a new `IAccount` and `IEmailAddress`.
+
+        The account will be in the ACTIVE state, with the email address set as
+        its preferred email address.
+        """
+
     def getByEmail(email):
         """Return the `IAccount` linked to the given email address.
 
         :param email: A string, not an `IEmailAddress` provider.
 
-        :return: An `IAccount`, or None if the given email address
-        does not exist in the database or is not linked to an `IAccount`.
+        :return: An `IAccount`.
+
+        :raises LookupError: If the account is not found.
         """
 
     def getByOpenIDIdentifier(openid_identity):
@@ -258,8 +372,8 @@ class IAccountSet(Interface):
 
          :param open_identifier: An ascii compatible string that is either
              the old or new openid_identifier that belongs to an account.
-         :return: An `IAccount`, or None if the the openid_identifier does
-             not belong to an account.
+         :return: An `IAccount`
+         :raises LookupError: If the account is not found.
          """
 
     def createOpenIDIdentifier(mnemonic):

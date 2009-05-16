@@ -1,0 +1,102 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  omit-tag="">
+
+<metal:macro define-macro="sourcepackagerelease-rows">
+
+  <tal:comment replace="nothing">
+    This macro expects the following variables defined:
+    :sourcepackagereleases: A list of SourcePackageRelease objects
+  </tal:comment>
+
+  <tr tal:repeat="sourcepackagerelease sourcepackagereleases">
+  <tal:define define="spr sourcepackagerelease;
+                     distroseries spr/upload_distroseries">
+    <td>
+      <a tal:attributes="href string:${distroseries/distribution/fmt:url}/+source/${spr/name}"
+         class="distrosrcpackage"
+         tal:content="spr/sourcepackagename/name">
+      </a>
+    </td>
+    <td>
+      <a tal:attributes="href string:${distroseries/fmt:url}/+source/${spr/name}"
+         class="distroseriessrcpackage"
+         tal:content="distroseries/fullseriesname">
+      </a>
+    </td>
+    <td>
+      <a tal:attributes="href string:${distroseries/distribution/fmt:url}/+source/${spr/name}/${spr/version}"
+         class="distrosrcpackagerelease"
+         tal:content="spr/version">
+      </a>
+    </td>
+    <td
+      tal:attributes="title spr/dateuploaded/fmt:datetime"
+      tal:content="spr/dateuploaded/fmt:approximatedate">
+      2005-10-24
+    </td>
+    <td>
+      <tal:needs_building condition="spr/needs_building">
+          Not yet built
+      </tal:needs_building>
+      <tal:built condition="not: spr/needs_building">
+          <tal:failed repeat="build spr/failed_builds">
+             <a tal:attributes="href build/fmt:url"
+                tal:content="build/distroarchseries/architecturetag" />
+          </tal:failed>
+          <tal:not_failed condition="not: spr/failed_builds">
+             None
+          </tal:not_failed>
+      </tal:built>
+    </td>
+    <td style="text-align: right">
+      <a tal:attributes="href string:${spr/distrosourcepackage/fmt:url}/+bugs"
+         tal:content="spr/open_bugs">
+      </a>
+    </td>
+    <td style="text-align: right">
+      <a tal:attributes="href string:${spr/sourcepackage/fmt:url}/+questions"
+         tal:content="spr/open_questions">
+      </a>
+    </td>
+  </tal:define>
+  </tr>
+</metal:macro>
+
+<metal:macro define-macro="private-team-js">
+  <tal:comment replace="nothing">
+    This macro inserts the javascript necessary to automatically insert the
+    private team prefix into a name field.  It is here since it is shared in
+    multiple templates.
+  </tal:comment>
+  <tal:script define="private_prefix view/private_prefix|nothing"
+              condition="private_prefix">
+  <script type="text/javascript"
+          tal:content="string:
+    YUI().use('node', 'event', function(Y) {
+      // Prepend/remove 'private-' from team name based on visibility
+      // setting.  User can choose to edit it back out, if they wish.
+      function visibility_on_change(e) {
+        var visibility = e.target;
+        var prefix = (visibility.get('value') == 'PRIVATE')
+          ? '$private_prefix' : '';
+        // XXX: Brad Crittenden 2009-01-30
+        // bug=http://yuilibrary.com/projects/yui3/ticket/2423101
+        // Dotted CSS selectors not parsed correctly.  Therefore not
+        // using Y.get().
+        var name = document.getElementById('field.name');
+        name.value = prefix + name.value.replace(/^$private_prefix/, '');
+
+      };
+      // Attach the function to the onchange event.
+      // XXX: Brad Crittenden 2009-01-30
+      // bug=http://yuilibrary.com/projects/yui3/ticket/2423101
+      // Dotted CSS selectors not parsed correctly.
+      Y.on('change', visibility_on_change, document.getElementById('field.visibility'));
+    });">
+  </script>
+  </tal:script>
+</metal:macro>
+
+</tal:root>

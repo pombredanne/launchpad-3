@@ -5,6 +5,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'bug_description_xhtml_representation',
     'BugContextMenu',
     'BugEditView',
     'BugFacets',
@@ -29,17 +30,23 @@ import re
 import pytz
 
 from zope.app.form.browser import TextWidget
-from zope.component import getUtility
+from zope.component import adapter, getUtility
 from zope.event import notify
 from zope import formlib
-from zope.interface import implements, providedBy, Interface
+from zope.interface import implements, implementer, providedBy, Interface
 from zope.schema import Bool, Choice
+from zope.schema.interfaces import IText
 from zope.security.interfaces import Unauthorized
+
+from lazr.enum import EnumeratedType, Item
+from lazr.lifecycle.event import ObjectModifiedEvent
+from lazr.lifecycle.snapshot import Snapshot
+from lazr.restful.interfaces import (
+    IFieldHTMLRenderer, IWebServiceClientRequest)
 
 from canonical.cachedproperty import cachedproperty
 
 from canonical.launchpad import _
-from canonical.launchpad.event import SQLObjectModifiedEvent
 from canonical.launchpad.interfaces import (
     BugTaskStatus,
     BugTaskSearchParams,
@@ -62,9 +69,7 @@ from canonical.launchpad.webapp import (
     custom_widget, redirection, stepthrough, structured)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
-from canonical.launchpad.webapp.snapshot import Snapshot
-
-from canonical.lazr import EnumeratedType, Item
+from canonical.launchpad.webapp.tales import FormattersAPI
 
 from canonical.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
 from canonical.widgets.bug import BugTagsWidget
@@ -174,7 +179,7 @@ class BugContextMenu(ContextMenu):
 
     def markduplicate(self):
         """Return the 'Mark as duplicate' Link."""
-        return Link('+duplicate', '')
+        return Link('+duplicate', 'Mark as duplicate')
 
     def addupstream(self):
         """Return the 'lso affects project' Link."""
@@ -198,15 +203,8 @@ class BugContextMenu(ContextMenu):
             text = 'Unsubscribe'
             icon = 'remove'
         else:
-            for team in user.teams_participated_in:
-                if (self.context.bug.isSubscribed(team) or
-                    self.context.bug.isSubscribedToDupes(team)):
-                    text = 'Subscribe/Unsubscribe'
-                    icon = 'edit'
-                    break
-            else:
-                text = 'Subscribe'
-                icon = 'add'
+            text = 'Subscribe'
+            icon = 'add'
         return Link('+subscribe', text, icon=icon)
 
     def addsubscriber(self):
@@ -407,6 +405,14 @@ class BugView(LaunchpadView):
             return False
         return self.context.isSubscribed(user)
 
+    @property
+    def subscription_class(self):
+        """Returns a CSS class name based on subscription status."""
+        if self.context.isSubscribed(self.user):
+            return 'subscribed-true'
+        else:
+            return 'subscribed-false'
+
     def duplicates(self):
         """Return a list of dicts of duplicates.
 
@@ -445,6 +451,8 @@ class BugWithoutContextView:
     The user is redirected, to the oldest IBugTask ('oldest' being
     defined as the IBugTask with the smallest ID.)
     """
+    # XXX: BradCrittenden 2009-04-28 This class can go away since the
+    # publisher now takes care of the redirection to a bug task.
     def redirectToNewBugPage(self):
         """Redirect the user to the 'first' report of this bug."""
         # An example of practicality beating purity.
@@ -496,7 +504,7 @@ class BugEditView(BugEditViewBase):
             return
         bugtarget = self.context.target
         newly_defined_tags = set(data['tags']).difference(
-            bugtarget.getUsedBugTags())
+            bugtarget.getUsedBugTags() + bugtarget.official_bug_tags)
         # Display the confirm button in a notification message. We want
         # it to be slightly smaller than usual, so we can't simply let
         # it render itself.
@@ -559,7 +567,8 @@ class BugSecrecyEditView(BugEditViewBase):
             default=False)
         super(BugSecrecyEditView, self).setUpFields()
         self.form_fields = self.form_fields.omit('private')
-        self.form_fields = formlib.form.Fields(private_field) + self.form_fields
+        self.form_fields = (
+            formlib.form.Fields(private_field) + self.form_fields)
 
     @property
     def initial_values(self):
@@ -588,7 +597,7 @@ class BugSecrecyEditView(BugEditViewBase):
             # makes the change. We have applied the 'private' change
             # already, so updateBugFromData will only send an event if
             # 'security_related' is changed, and we can't have that.
-            notify(SQLObjectModifiedEvent(
+            notify(ObjectModifiedEvent(
                     bug, bug_before_modification, ['private']))
 
         # Apply other changes.
@@ -822,3 +831,18 @@ class BugMarkAsAffectingUserView(LaunchpadFormView):
         self.context.bug.markUserAffected(
             self.user, data['affects'] == BugAffectingUserChoice.YES)
         self.request.response.redirect(canonical_url(self.context.bug))
+
+
+# XXX mars 2009-05-12 bug=372847
+# This will likely have to change or be removed when the bug description
+# changes from IText to IDescription.
+@adapter(IBug, IText, IWebServiceClientRequest)
+@implementer(IFieldHTMLRenderer)
+def bug_description_xhtml_representation(context, field, request):
+    """Render `IBug.description` as XHTML using the webservice."""
+    formatter = FormattersAPI
+    def renderer(value):
+        nomail  = formatter(value).obfuscate_email()
+        html    = formatter(nomail).text_to_html()
+        return html
+    return renderer

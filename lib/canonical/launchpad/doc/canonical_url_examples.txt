@@ -129,7 +129,7 @@ An ISourcePackage.
 
 An IDistributionSourcePackage.
 
-    >>> from canonical.launchpad.interfaces.sourcepackagename import (
+    >>> from lp.registry.interfaces.sourcepackagename import (
     ...     ISourcePackageNameSet)
     >>> sourcepackagenameset = getUtility(ISourcePackageNameSet)
     >>> ubuntu_firefox = celebs.ubuntu.getSourcePackage(
@@ -264,7 +264,7 @@ A private bugtask, as an anonymous user.
     >>> login("foo.bar@canonical.com")
     >>> distro_series_task.bug.setPrivate(False, getUtility(ILaunchBag).user)
     True
-    >>> distro_series_task.bug.unsubscribe(current_user)
+    >>> distro_series_task.bug.unsubscribe(current_user, current_user)
 
 An IBugWatchSet.
 
@@ -320,9 +320,9 @@ A bug from a remote bug tracker.
 
 An IBranch.
 
-    >>> from canonical.launchpad.interfaces import IBranchSet
+    >>> from lp.code.interfaces.branchlookup import IBranchLookup
 
-    >>> branch = getUtility(IBranchSet).get(10)
+    >>> branch = getUtility(IBranchLookup).get(10)
 
     >>> canonical_url(branch)
     u'http://code.launchpad.dev/~sabdfl/firefox/release-0.9.2'
@@ -341,8 +341,8 @@ An IBugBranch.
 
 Set up example Branch Merge Proposal
 
-    >>> mainline = getUtility(IBranchSet).get(15)
-    >>> release26 = getUtility(IBranchSet).get(16)
+    >>> mainline = getUtility(IBranchLookup).get(15)
+    >>> release26 = getUtility(IBranchLookup).get(16)
     >>> merge_proposal = mainline.addLandingTarget(mainline.owner, release26)
 
 Branch merge proposals should have a canonical URL.  (Based on their source
@@ -401,7 +401,8 @@ Also, we can get the url to a translation message.
 
     >>> potmsgset = potemplate.getPOTMsgSetBySequence(1)
     >>> translationmessage = potmsgset.getCurrentTranslationMessage(
-    ...     pofile.language)
+    ...     pofile.potemplate, pofile.language)
+    >>> translationmessage.setPOFile(pofile)
     >>> print canonical_url(translationmessage)
     http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/1
 
@@ -409,7 +410,7 @@ Even for a dummy one.
 
     >>> potmsgset = potemplate.getPOTMsgSetBySequence(20)
     >>> translationmessage = potmsgset.getCurrentDummyTranslationMessage(
-    ...     pofile.language)
+    ...     pofile.potemplate, pofile.language)
     >>> print canonical_url(translationmessage)
     http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/20
 
@@ -433,7 +434,8 @@ Also, we can get the url to a dummy one
 
     >>> potmsgset = potemplate.getPOTMsgSetBySequence(1)
     >>> translationmessage = potmsgset.getCurrentTranslationMessage(
-    ...     pofile.language)
+    ...     pofile.potemplate, pofile.language)
+    >>> translationmessage.setPOFile(pofile)
     >>> print canonical_url(translationmessage)
     http://launchpad.dev/evolution/trunk/+pots/evolution-2.2/es/1
 
@@ -441,7 +443,7 @@ Even for a dummy PO msgset
 
     >>> potmsgset = potemplate.getPOTMsgSetBySequence(20)
     >>> translationmessage = potmsgset.getCurrentDummyTranslationMessage(
-    ...     pofile.language)
+    ...     pofile.potemplate, pofile.language)
     >>> print canonical_url(translationmessage)
     http://launchpad.dev/evolution/trunk/+pots/evolution-2.2/es/20
 

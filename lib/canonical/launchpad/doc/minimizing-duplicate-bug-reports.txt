@@ -68,7 +68,7 @@ immediately.
     True
     >>> bug_one.isSubscribed(current_user)
     True
-    >>> bug_one.unsubscribe(current_user)
+    >>> bug_one.unsubscribe(current_user, current_user)
     >>> flush_database_updates()
 
     >>> for bug in firefox.getMostCommonBugs(current_user):

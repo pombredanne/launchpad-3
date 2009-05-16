@@ -30,11 +30,26 @@
 
     <browser:page
         for="canonical.launchpad.interfaces.IHasBugs"
+        class="canonical.launchpad.browser.BugListingPortletView"
+        permission="zope.Public"
+        name="+bugtarget-portlet-bugfilters-content"
+        template="../templates/bugtarget-portlet-bugfilters-content.pt"
+        />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IHasBugs"
         class="canonical.launchpad.browser.BugTargetBugTagsView"
         permission="zope.Public"
         name="+portlet-bugtags"
         template="../templates/bugtarget-portlet-bugtags.pt"
         />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IHasBugs"
+        class="canonical.launchpad.browser.BugTargetBugTagsView"
+        name="+bugtarget-portlet-tags-content"
+        template="../templates/bugtarget-portlet-tags-content.pt" 
+        permission="zope.Public" />
 
     <browser:page
         for="canonical.launchpad.interfaces.IHasBugs"
@@ -71,11 +86,27 @@
         permission="launchpad.AnyPerson" />
 
     <browser:page
+        name="+filebug-show-similar"
+        for="canonical.launchpad.interfaces.IBugTarget"
+        class="canonical.launchpad.browser.bugtarget.FilebugShowSimilarBugsView"
+        template="../templates/bugtarget-filebug-show-similar.pt"
+        facet="bugs"
+        permission="launchpad.AnyPerson" />
+
+    <browser:page
         name="+filebug-advanced"
         for="canonical.launchpad.interfaces.IBugTarget"
         class="canonical.launchpad.browser.FileBugAdvancedView"
         facet="bugs"
         permission="launchpad.AnyPerson" />
+
+    <browser:page
+        name="+manage-official-tags"
+        for="canonical.launchpad.interfaces.IOfficialBugTagTargetRestricted"
+        class="canonical.launchpad.browser.OfficialBugTagsManageView"
+        facet="bugs"
+        permission="launchpad.Edit"
+        template="../templates/official-bug-target-manage-tags.pt" />
 
   </facet>
 

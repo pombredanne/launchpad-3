@@ -17,8 +17,8 @@ from zope.schema import Choice, Datetime, Int, TextLine
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.validation import valid_cve_sequence
 
-from canonical.lazr import DBEnumeratedType, DBItem
-from canonical.lazr.rest.declarations import (
+from lazr.enum import DBEnumeratedType, DBItem
+from lazr.restful.declarations import (
     collection_default_content, export_as_webservice_collection,
     export_as_webservice_entry, exported)
 

@@ -3,6 +3,7 @@
   xmlns="http://namespaces.zope.org/zope"
   xmlns:browser="http://namespaces.zope.org/browser"
   xmlns:xmlrpc="http://namespaces.zope.org/xmlrpc"
+  xmlns:lp="http://namespaces.canonical.com/lp"
   i18n_domain="canonical.launchpad">
 
   <!--  XXX: Steve Alexander 2004-11-24:
@@ -91,7 +92,7 @@
 
   <!-- InvalidBatchSizeError -->
   <browser:page
-      for="canonical.launchpad.webapp.interfaces.InvalidBatchSizeError"
+      for="lazr.batchnavigator.interfaces.InvalidBatchSizeError"
       name="index.html"
       permission="zope.Public"
       template="../templates/launchpad-invalidbatchsize.pt"
@@ -115,6 +116,31 @@
       template="../templates/launchpad-librarianfailure.pt"
       class="canonical.launchpad.webapp.error.SystemErrorView"
       />
+
+  <!-- ReadOnlyModeViolation -->
+  <browser:page
+      for="canonical.launchpad.webapp.interfaces.ReadOnlyModeViolation"
+      name="index.html"
+      permission="zope.Public"
+      template="../templates/launchpad-readonlyfailure.pt"
+      class="canonical.launchpad.webapp.error.ReadOnlyErrorView"
+      />
+
+  <!-- Vocabularies -->
+  <browser:page
+    for="canonical.launchpad.interfaces.ILaunchpadRoot"
+    permission="zope.Public"
+    class="canonical.launchpad.browser.vocabulary.HugeVocabularyJSONView"
+    name="+huge-vocabulary"
+    />
+
+  <adapter
+    factory="canonical.launchpad.browser.vocabulary.default_pickerentry_adapter"
+    />
+
+  <adapter
+    factory="canonical.launchpad.browser.vocabulary.person_to_pickerentry"
+    />
 
 <facet facet="overview">
 
@@ -253,21 +279,21 @@
   <browser:page
       for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
       name="+search"
-      class="canonical.launchpad.browser.root.LaunchpadSearchView"
+      class="lp.registry.browser.root.LaunchpadSearchView"
       template="../templates/launchpad-search.pt"
       permission="zope.Public" />
 
   <browser:page
       for="*"
       name="+search-form"
-      class="canonical.launchpad.browser.root.LaunchpadSearchFormView"
+      class="lp.registry.browser.root.LaunchpadSearchFormView"
       template="../templates/launchpad-search-form.pt"
       permission="zope.Public" />
 
   <browser:page
       for="*"
       name="+primary-search-form"
-      class="canonical.launchpad.browser.root.LaunchpadPrimarySearchFormView"
+      class="lp.registry.browser.root.LaunchpadPrimarySearchFormView"
       template="../templates/launchpad-search-form.pt"
       permission="zope.Public" />
 
@@ -323,6 +349,22 @@
       permission="zope.Public"
       />
 
+  <browser:page
+      for="canonical.launchpad.webapp.interfaces.ILink"
+      name="+inline-icon"
+      class="canonical.launchpad.browser.launchpad.LinkView"
+      template="../templates/launchpad-inline-icon-link.pt"
+      permission="zope.Public"
+      />
+
+  <browser:page
+      for="canonical.launchpad.webapp.interfaces.ILink"
+      name="+inline-suffix"
+      class="canonical.launchpad.browser.launchpad.LinkView"
+      template="../templates/launchpad-inline-suffix-link.pt"
+      permission="zope.Public"
+      />
+
   <!-- hierarchy -->
   <browser:page
       for="zope.interface.Interface"
@@ -345,53 +387,6 @@
 
 </facet>
 
-<facet facet="branches">
-
-  <browser:page
-      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
-      name="+project-cloud"
-      class="canonical.launchpad.browser.BazaarProductView"
-      template="../templates/code-in-branches.pt"
-      permission="zope.Public"
-      />
-  <browser:page
-      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
-      name="+recently-registered-branches"
-      class="canonical.launchpad.browser.RecentlyRegisteredBranchesView"
-      template="../templates/branch-listing-cross-product.pt"
-      permission="zope.Public"
-      />
-  <browser:page
-      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
-      name="+recently-imported-branches"
-      class="canonical.launchpad.browser.RecentlyImportedBranchesView"
-      template="../templates/branch-listing-cross-product.pt"
-      permission="zope.Public"
-      />
-  <browser:page
-      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
-      name="+recently-changed-branches"
-      class="canonical.launchpad.browser.RecentlyChangedBranchesView"
-      template="../templates/branch-listing-cross-product.pt"
-      permission="zope.Public"
-      />
-  <browser:page
-      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
-      name="+code-import-list"
-      class="canonical.launchpad.browser.ProductSeriesSourceListView"
-      template="../templates/sources-list.pt"
-      permission="zope.Public"
-      />
-
-  <browser:page
-      for="zope.interface.Interface"
-      name="+test-webservice-js"
-      template="../templates/test-webservice-js.pt"
-      permission="zope.Public"
-      />
-
-
-</facet>
 
 <adapter
   provides="canonical.lazr.interfaces.IObjectPrivacy"
@@ -450,34 +445,23 @@ these URLs in Apache.
   />
 <browser:page
   for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
-  name="+icing-ubuntu"
-  class="canonical.launchpad.browser.launchpad.UbuntuIcingFolder"
-  layer="canonical.launchpad.layers.ShipItUbuntuLayer"
-  attribute="__call__"
-  permission="zope.Public"
-  />
-<browser:page
-  for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
-  name="+icing-kubuntu"
-  class="canonical.launchpad.browser.launchpad.KubuntuIcingFolder"
-  layer="canonical.launchpad.layers.ShipItKUbuntuLayer"
-  attribute="__call__"
-  permission="zope.Public"
-  />
-<browser:page
-  for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
-  name="+icing-edubuntu"
-  class="canonical.launchpad.browser.launchpad.EdubuntuIcingFolder"
-  layer="canonical.launchpad.layers.ShipItEdUbuntuLayer"
-  attribute="__call__"
-  permission="zope.Public"
-  />
-<browser:page
-  for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
   name="+icing-contrib"
   class="canonical.launchpad.browser.launchpad.IcingContribFolder"
   attribute="__call__"
   permission="zope.Public"
+  />
+
+<!-- Help folders -->
+<lp:help-folder
+  folder="../help/bugs" type="canonical.launchpad.layers.BugsLayer"
+  />
+<lp:help-folder
+  folder="../help/blueprints" 
+  type="canonical.launchpad.layers.BlueprintsLayer"
+  />
+<lp:help-folder
+  folder="../help/translations" 
+  type="canonical.launchpad.layers.TranslationsLayer"
   />
 
 <browser:page

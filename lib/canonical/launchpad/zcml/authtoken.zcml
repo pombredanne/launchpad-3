@@ -1,0 +1,84 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    xmlns:i18n="http://namespaces.zope.org/i18n"
+    i18n_domain="launchpad">
+
+<facet facet="overview">
+
+    <!-- AuthToken -->
+    <class class="canonical.launchpad.database.authtoken.AuthToken">
+        <require
+            permission="zope.Public"
+            interface="canonical.launchpad.interfaces.IAuthToken" />
+    </class>
+
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IAuthToken"
+        name="+index" />
+
+    <browser:url
+        for="canonical.launchpad.interfaces.IAuthToken"
+        path_expression="token"
+        parent_utility="canonical.launchpad.interfaces.IAuthTokenSet"
+        rootsite="openid"
+        />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IAuthToken"
+        name="+index"
+        permission="zope.Public"
+        class="canonical.launchpad.browser.authtoken.AuthTokenView"
+        template="../templates/logintoken-index.pt"
+        />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IAuthToken"
+        name="+validateemail"
+        permission="zope.Public"
+        class="canonical.launchpad.browser.authtoken.ValidateEmailView"
+        template="../templates/logintoken-validateemail.pt"
+        />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IAuthToken"
+        name="+resetpassword"
+        permission="zope.Public"
+        class="canonical.launchpad.browser.authtoken.ResetPasswordView"
+        template="../templates/logintoken-resetpassword.pt"
+        />
+
+    <browser:page
+        name="+newaccount"
+        for="canonical.launchpad.interfaces.IAuthToken"
+        class="canonical.launchpad.browser.authtoken.NewAccountView"
+        permission="zope.Public"
+        template="../templates/logintoken-newaccount.pt"
+        />
+
+    <!-- AuthTokenSet -->
+    <class class="canonical.launchpad.database.authtoken.AuthTokenSet">
+        <allow interface="canonical.launchpad.interfaces.IAuthTokenSet" />
+    </class>
+
+    <securedutility
+        class="canonical.launchpad.database.authtoken.AuthTokenSet"
+        provides="canonical.launchpad.interfaces.IAuthTokenSet">
+        <allow interface="canonical.launchpad.interfaces.IAuthTokenSet" />
+    </securedutility>
+
+    <browser:navigation
+        module="canonical.launchpad.browser.authtoken"
+        classes="AuthTokenSetNavigation"
+        />
+
+    <browser:url
+        for="canonical.launchpad.interfaces.IAuthTokenSet"
+        path_expression="string:token"
+        parent_utility="canonical.signon.interfaces.openidserver.IOpenIDApplication"
+        />
+
+
+</facet>
+
+</configure>

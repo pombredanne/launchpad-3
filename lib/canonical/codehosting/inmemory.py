@@ -1,4 +1,4 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2008, 2009 Canonical Ltd.  All rights reserved.
 
 """In-memory doubles of core codehosting objects."""
 
@@ -8,20 +8,27 @@ __all__ = [
     'XMLRPCWrapper'
     ]
 
+import operator
 from xmlrpclib import Fault
 
 from bzrlib.urlutils import escape, unescape
 
+from zope.component import adapter, getSiteManager
+from zope.interface import implementer
+
 from canonical.database.constants import UTC_NOW
-from canonical.launchpad.database.branchnamespace import BranchNamespaceSet
-from canonical.launchpad.interfaces.branch import (
-    BranchCreationNoTeamOwnedJunkBranches, BranchType, IBranch)
-from canonical.launchpad.interfaces.codehosting import (
+from lp.code.model.branchnamespace import BranchNamespaceSet
+from lp.code.model.branchtarget import (
+    PackageBranchTarget, ProductBranchTarget)
+from lp.code.interfaces.branch import BranchType, IBranch
+from lp.code.interfaces.branchtarget import IBranchTarget
+from lp.code.interfaces.codehosting import (
     BRANCH_TRANSPORT, CONTROL_TRANSPORT, LAUNCHPAD_ANONYMOUS,
     LAUNCHPAD_SERVICES)
-from canonical.launchpad.testing import ObjectFactory
+from lp.soyuz.interfaces.publishing import PackagePublishingPocket
+from lp.testing.factory import ObjectFactory
 from canonical.launchpad.validators import LaunchpadValidationError
-from canonical.launchpad.xmlrpc.codehosting import (
+from lp.code.xmlrpc.codehosting import (
     datetime_from_tuple, iter_split)
 from canonical.launchpad.xmlrpc import faults
 
@@ -105,12 +112,51 @@ class FakeSourcePackage:
         self.sourcepackagename = sourcepackagename
         self.distroseries = distroseries
 
+    def __hash__(self):
+        return hash((self.sourcepackagename.id, self.distroseries.id))
+
+    def __eq__(self, other):
+        return (self.sourcepackagename.id == other.sourcepackagename.id
+                and self.distroseries.id == other.distroseries.id)
+
+    def __ne__(self, other):
+        return not (self == other)
+
     @property
     def distribution(self):
         if self.distroseries is not None:
             return self.distroseries.distribution
         else:
             return None
+
+    @property
+    def development_version(self):
+        name = '%s-devel' % self.distribution.name
+        dev_series = self._distroseries_set.getByName(name)
+        if dev_series is None:
+            dev_series = FakeDistroSeries(name, self.distribution)
+            self._distroseries_set._add(dev_series)
+        return self.__class__(self.sourcepackagename, dev_series)
+
+    @property
+    def path(self):
+        return '%s/%s/%s' % (
+            self.distribution.name,
+            self.distroseries.name,
+            self.sourcepackagename.name)
+
+    def getBranch(self, pocket):
+        return self.distroseries._linked_branches.get(
+            (self, pocket), None)
+
+    def setBranch(self, pocket, branch, registrant):
+        self.distroseries._linked_branches[self, pocket] = branch
+
+
+@adapter(FakeSourcePackage)
+@implementer(IBranchTarget)
+def fake_source_package_to_branch_target(fake_package):
+    return PackageBranchTarget(fake_package)
 
 
 class FakeBranch(FakeDatabaseObject):
@@ -153,7 +199,18 @@ class FakeBranch(FakeDatabaseObject):
         return '~%s/%s/%s' % (self.owner.name, product, self.name)
 
     def getPullURL(self):
-        pass
+        return 'lp-fake:///' + self.unique_name
+
+    @property
+    def target(self):
+        if self.product is None:
+            if self.distroseries is None:
+                target = self.owner
+            else:
+                target = self.sourcepackage
+        else:
+            target = self.product
+        return IBranchTarget(target)
 
     def requestMirror(self):
         self.next_mirror_time = UTC_NOW
@@ -197,21 +254,18 @@ class FakeProduct(FakeDatabaseObject):
         self.name = name
         self.development_focus = FakeProductSeries()
 
-    @property
-    def default_stacked_on_branch(self):
-        b = self.development_focus.user_branch
-        if b is None:
-            return None
-        elif b._mirrored:
-            return b
-        else:
-            return None
+
+@adapter(FakeProduct)
+@implementer(IBranchTarget)
+def fake_product_to_branch_target(fake_product):
+    """Adapt a `FakeProduct` to `IBranchTarget`."""
+    return ProductBranchTarget(fake_product)
 
 
 class FakeProductSeries(FakeDatabaseObject):
     """Fake product series."""
 
-    user_branch = None
+    branch = None
 
 
 class FakeScriptActivity(FakeDatabaseObject):
@@ -236,6 +290,7 @@ class FakeDistroSeries(FakeDatabaseObject):
     def __init__(self, name, distribution):
         self.name = name
         self.distribution = distribution
+        self._linked_branches = {}
 
 
 class FakeSourcePackageName(FakeDatabaseObject):
@@ -263,6 +318,8 @@ class FakeObjectFactory(ObjectFactory):
     def makeBranch(self, branch_type=None, stacked_on=None, private=False,
                    product=DEFAULT_PRODUCT, owner=None, name=None,
                    registrant=None, sourcepackage=None):
+        if branch_type is None:
+            branch_type = BranchType.HOSTED
         if branch_type == BranchType.MIRRORED:
             url = self.getUniqueURL()
         else:
@@ -292,6 +349,12 @@ class FakeObjectFactory(ObjectFactory):
 
     def makeAnyBranch(self, **kwargs):
         return self.makeProductBranch(**kwargs)
+
+    def makePackageBranch(self, sourcepackage=None, **kwargs):
+        if sourcepackage is None:
+            sourcepackage = self.makeSourcePackage()
+        return self.makeBranch(
+            product=None, sourcepackage=sourcepackage, **kwargs)
 
     def makePersonalBranch(self, owner=None, **kwargs):
         if owner is None:
@@ -326,7 +389,9 @@ class FakeObjectFactory(ObjectFactory):
             distroseries = self.makeDistroRelease()
         if sourcepackagename is None:
             sourcepackagename = self.makeSourcePackageName()
-        return FakeSourcePackage(sourcepackagename, distroseries)
+        package = FakeSourcePackage(sourcepackagename, distroseries)
+        package._distroseries_set = self._distroseries_set
+        return package
 
     def makeTeam(self, owner):
         team = FakeTeam(name=self.getUniqueString(), members=[owner])
@@ -352,9 +417,22 @@ class FakeObjectFactory(ObjectFactory):
         """
         if branch is None:
             branch = self.makeBranch(product=product)
-        branch._mirrored = True
-        product.development_focus.user_branch = branch
+        product.development_focus.branch = branch
+        branch.last_mirrored = 'rev1'
         return branch
+
+    def enableDefaultStackingForPackage(self, package, branch):
+        """Give 'package' a default stacked-on branch.
+
+        :param package: The package to give a default stacked-on branch to.
+        :param branch: The branch that should be the default stacked-on
+            branch.
+        """
+        package.development_version.setBranch(
+            PackagePublishingPocket.RELEASE, branch, branch.owner)
+        branch.last_mirrored = 'rev1'
+        return branch
+
 
 class FakeBranchPuller:
 
@@ -366,7 +444,7 @@ class FakeBranchPuller:
         default_branch = ''
         if branch.product is not None:
             series = branch.product.development_focus
-            user_branch = series.user_branch
+            user_branch = series.branch
             if (user_branch is not None
                 and not (
                     user_branch.private
@@ -384,6 +462,24 @@ class FakeBranchPuller:
                 and branch.next_mirror_time < UTC_NOW):
                 queue.append(self._getBranchPullInfo(branch))
         return queue
+
+    def acquireBranchToPull(self):
+        branches = sorted(
+            [branch for branch in self._branch_set
+            if branch.next_mirror_time is not None],
+            key=operator.attrgetter('next_mirror_time'))
+        if branches:
+            branch = branches[-1]
+            self.startMirroring(branch.id)
+            default_branch = branch.target.default_stacked_on_branch
+            if default_branch:
+                default_branch_name = default_branch.unique_name
+            else:
+                default_branch_name = ''
+            return (branch.id, branch.getPullURL(), branch.unique_name,
+                    default_branch_name, branch.branch_type.name)
+        else:
+            return ()
 
     def startMirroring(self, branch_id):
         branch = self._branch_set.get(branch_id)
@@ -476,9 +572,6 @@ class FakeBranchFilesystem:
                  % (registrant.displayname, owner.displayname)))
         product = sourcepackage = None
         if data['product'] == '+junk':
-            if owner.isTeam():
-                return faults.PermissionDenied(
-                    BranchCreationNoTeamOwnedJunkBranches.error_message)
             product = None
         elif data['product'] is not None:
             product = self._product_set.getByName(data['product'])
@@ -502,7 +595,8 @@ class FakeBranchFilesystem:
                 return faults.NotFound(
                     "No such source package: '%s'."
                     % (data['sourcepackagename'],))
-            sourcepackage = FakeSourcePackage(sourcepackagename, distroseries)
+            sourcepackage = self._factory.makeSourcePackage(
+                distroseries, sourcepackagename)
         else:
             return faults.PermissionDenied(
                 "Cannot create branch at '%s'" % branch_path)
@@ -541,19 +635,41 @@ class FakeBranchFilesystem:
         person = self._person_set.get(person_id)
         return person.inTeam(branch.owner)
 
-    def _serializeControlDirectory(self, requester, product_path,
-                                   trailing_path):
+    def _get_product_target(self, path):
         try:
-            owner_name, product_name, bazaar = product_path.split('/')
+            owner_name, product_name = path.split('/')
         except ValueError:
             # Wrong number of segments -- can't be a product.
             return
-        if bazaar != '.bzr':
-            return
         product = self._product_set.getByName(product_name)
-        if product is None:
+        return product
+
+    def _get_package_target(self, path):
+        try:
+            owner_name, distro_name, series_name, package_name = (
+                path.split('/'))
+        except ValueError:
+            # Wrong number of segments -- can't be a package.
             return
-        default_branch = product.default_stacked_on_branch
+        distro = self._distribution_set.getByName(distro_name)
+        distroseries = self._distroseries_set.getByName(series_name)
+        sourcepackagename = self._sourcepackagename_set.getByName(
+            package_name)
+        if None in (distro, distroseries, sourcepackagename):
+            return
+        return self._factory.makeSourcePackage(
+            distroseries, sourcepackagename)
+
+    def _serializeControlDirectory(self, requester, product_path,
+                                   trailing_path):
+        if not ('.bzr' == trailing_path or trailing_path.startswith('.bzr/')):
+            return
+        target = self._get_product_target(product_path)
+        if target is None:
+            target = self._get_package_target(product_path)
+        if target is None:
+            return
+        default_branch = IBranchTarget(target).default_stacked_on_branch
         if default_branch is None:
             return
         if not self._canRead(requester, default_branch):
@@ -561,7 +677,7 @@ class FakeBranchFilesystem:
         return (
             CONTROL_TRANSPORT,
             {'default_stack_on': escape('/' + default_branch.unique_name)},
-            '/'.join([bazaar, trailing_path]))
+            trailing_path)
 
     def _serializeBranch(self, requester_id, branch, trailing_path):
         if not self._canRead(requester_id, branch):
@@ -623,6 +739,9 @@ class InMemoryFrontend:
             self._branch_set, self._person_set, self._product_set,
             self._distribution_set, self._distroseries_set,
             self._sourcepackagename_set, self._factory)
+        sm = getSiteManager()
+        sm.registerAdapter(fake_product_to_branch_target)
+        sm.registerAdapter(fake_source_package_to_branch_target)
 
     def getFilesystemEndpoint(self):
         """See `LaunchpadDatabaseFrontend`.
@@ -648,11 +767,11 @@ class InMemoryFrontend:
         """
         return self._factory
 
-    def getBranchSet(self):
+    def getBranchLookup(self):
         """See `LaunchpadDatabaseFrontend`.
 
-        Returns a partial implementation of `IBranchSet` -- enough to pass the
-        tests.
+        Returns a partial implementation of `IBranchLookup` -- enough to pass
+        the tests.
         """
         return self._branch_set
 

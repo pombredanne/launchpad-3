@@ -1,0 +1,52 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="view/macro:page/onecolumn"
+  i18n:domain="launchpad"
+>
+
+<body>
+  <div metal:fill-slot="main"
+    tal:define="overview_menu context/menu:overview">
+
+    <h1>
+      Edit &#8220;<span tal:replace="context/browsername">
+      Foo</span>&#8221; team
+    </h1>
+
+    <div metal:use-macro="context/@@launchpad_form/form" />
+
+    <metal:js use-macro="context/@@+person-macros/private-team-js" />
+
+    <h2 style="margin-top: 2em;">Other actions</h2>
+
+    <ul style="list-style-type:none; padding-left:1.5em;">
+      <li
+        tal:content="structure overview_menu/branding/fmt:link-icon">
+        Change branding
+      </li>
+      <li
+        tal:content="structure overview_menu/common_edithomepage/fmt:link-icon">
+        Change home page
+      </li>
+      <li
+        tal:content="structure overview_menu/editlanguages/fmt:link-icon">
+        Set preferred language
+      </li>
+      <li
+        tal:content="structure overview_menu/reassign/fmt:link-icon">
+        Change owner
+      </li>
+      <li
+        tal:content="structure overview_menu/editemail/fmt:link-icon">
+        Change contact address
+      </li>
+    </ul>
+  </div>
+</body>
+</html>

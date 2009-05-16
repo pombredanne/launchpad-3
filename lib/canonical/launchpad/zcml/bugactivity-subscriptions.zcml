@@ -13,38 +13,18 @@
 
     <subscriber
         for="canonical.launchpad.interfaces.IBug
-             canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
+             lazr.lifecycle.interfaces.IObjectModifiedEvent"
         handler="canonical.launchpad.subscribers.bugactivity.record_bug_edited" />
 
     <subscriber
-        for="canonical.launchpad.interfaces.IBugTask
-             zope.lifecycleevent.interfaces.IObjectCreatedEvent"
-        handler="canonical.launchpad.subscribers.bugactivity.record_bug_task_added" />
+        for="canonical.launchpad.interfaces.bugcve.IBugCve
+             lazr.lifecycle.interfaces.IObjectCreatedEvent"
+        handler="canonical.launchpad.subscribers.bugactivity.record_cve_linked_to_bug" />
 
-     <subscriber
-        for="canonical.launchpad.interfaces.IBugTask
-             canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
-        handler="canonical.launchpad.subscribers.bugactivity.record_bug_task_edited" />
-
-  <subscriber
-     for="canonical.launchpad.interfaces.IBugProductInfestation
-          zope.lifecycleevent.interfaces.IObjectCreatedEvent"
-     handler="canonical.launchpad.subscribers.bugactivity.record_product_infestation_added" />
-
-  <subscriber
-     for="canonical.launchpad.interfaces.IBugProductInfestation
-          canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
-     handler="canonical.launchpad.subscribers.bugactivity.record_product_infestation_edited" />
-
-  <subscriber
-     for="canonical.launchpad.interfaces.IBugPackageInfestation
-          zope.lifecycleevent.interfaces.IObjectCreatedEvent"
-     handler="canonical.launchpad.subscribers.bugactivity.record_package_infestation_added" />
-
-  <subscriber
-     for="canonical.launchpad.interfaces.IBugPackageInfestation
-          canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
-     handler="canonical.launchpad.subscribers.bugactivity.record_package_infestation_edited" />
+    <subscriber
+        for="canonical.launchpad.interfaces.bugcve.IBugCve
+             lazr.lifecycle.interfaces.IObjectDeletedEvent"
+        handler="canonical.launchpad.subscribers.bugactivity.record_cve_unlinked_from_bug" />
 
   <subscriber
      for="canonical.launchpad.interfaces.IBugSubscription
@@ -53,12 +33,7 @@
 
   <subscriber
      for="canonical.launchpad.interfaces.IBugSubscription
-          canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
+          lazr.lifecycle.interfaces.IObjectModifiedEvent"
      handler="canonical.launchpad.subscribers.bugactivity.record_bugsubscription_edited" />
-
-  <subscriber
-     for="canonical.launchpad.interfaces.IBugAttachment
-          canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
-     handler="canonical.launchpad.subscribers.bugactivity.record_bug_attachment_added" />
 
 </configure>

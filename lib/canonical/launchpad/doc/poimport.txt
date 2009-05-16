@@ -127,7 +127,7 @@ transaction to make sure it's stored properly.
 
 The entry gets approved, so it can be imported.
 
-    >>> entry.status = RosettaImportStatus.APPROVED
+    >>> entry.setStatus(RosettaImportStatus.APPROVED)
 
     >>> import datetime
     >>> import pytz
@@ -203,7 +203,7 @@ The entry must have been approved for import.
 The entry indicates what file it is to be imported to; importing it to
 any other file would be an error.
 
-    >>> entry.status = RosettaImportStatus.APPROVED
+    >>> entry.setStatus(RosettaImportStatus.APPROVED)
     >>> from canonical.launchpad.interfaces import IPOTemplateSet
     >>> other_product = getUtility(IProductSet).getByName('netapplet')
     >>> other_productseries = other_product.getSeries('trunk')
@@ -255,7 +255,7 @@ validation errors.
     ... "PO-Revision-Date: 2005-06-03 19:41+0100\n"
     ... "Last-Translator: Carlos Perello Marin <carlos@canonical.com>\n"
     ... "Content-Type: text/plain; charset=UTF-8\n"
-    ... "Plural-Forms: nplurals=4; plural=n==1) ? "
+    ... "Plural-Forms: nplurals=4; plural=(n==1) ? "
     ...     "0 : n==2 ? 1 : (n != 8 || n != 11) ? 2 : 3;\n"
     ... "X-Rosetta-Export-Date: %s\n"
     ...
@@ -306,7 +306,7 @@ Set it as the place where the entry should be imported.
 
 We must approve the entry to be able to import it.
 
-    >>> entry.status = RosettaImportStatus.APPROVED
+    >>> entry.setStatus(RosettaImportStatus.APPROVED)
 
 And we do the import.
 
@@ -321,7 +321,7 @@ The status is now IMPORTED:
 And the statistics reflect it.
 
     >>> pofile.currentCount()
-    3
+    2
 
 Here's a current message: i.e. it has a corresponding current message
 set in the PO template.
@@ -333,7 +333,7 @@ set in the PO template.
 And should be accepted by our validator.
 
     >>> published = message.potmsgset.getImportedTranslationMessage(
-    ...     pofile.language)
+    ...     pofile.potemplate, pofile.language)
     >>> published.validation_status == TranslationValidationStatus.OK
     True
 
@@ -342,7 +342,7 @@ Fuzzy translations are ignored.
     >>> def get_pofile_translation_message(pofile, msgid):
     ...     potmsgset = pofile.potemplate.getPOTMsgSetByMsgIDText(msgid)
     ...     return potmsgset.getCurrentTranslationMessage(
-    ...         pofile.language, pofile.variant)
+    ...         pofile.potemplate, pofile.language, pofile.variant)
     >>> message = get_pofile_translation_message(pofile, u'bar')
     >>> print message
     None
@@ -354,7 +354,7 @@ We can also get the ones that have validation errors.
     1
     >>> for potmsgset in potmsgsets:
     ...     translationmessages = potmsgset.getLocalTranslationMessages(
-    ...         pofile.language)
+    ...         pofile.potemplate, pofile.language)
     ...     for translationmessage in translationmessages:
     ...         assert (
     ...             translationmessage.validation_status ==
@@ -366,7 +366,7 @@ Check that the plural form was imported correctly.
     >>> potmsgset = pofile.potemplate.getPOTMsgSetByMsgIDText(
     ...     u'Singular %d', u'Plural %d')
     >>> imported_translationmessage = potmsgset.getImportedTranslationMessage(
-    ...     pofile.language)
+    ...     pofile.potemplate, pofile.language)
     >>> print imported_translationmessage.validation_status.name
     OK
     >>> imported_translationmessage.translations
@@ -379,10 +379,11 @@ translator.
     >>> imported_translationmessage.submitter.displayname
     u'Carlos Perell\xf3 Mar\xedn'
 
-The import process produces an email warning us of partial failure.
+The import process produces an email warning us of partial failure, but
+doesn't send it out for published uploads (indicated with subject of None).
 
-    >>> subject
-    u'Translation problems - Welsh (cy) - firefox in Mozilla Firefox trunk'
+    >>> print subject
+    None
     >>> print body
     Hello Mark Shuttleworth,
     <BLANKLINE>
@@ -427,7 +428,7 @@ Now, let's import one without errors.
     ... "PO-Revision-Date: 2005-06-03 20:41+0100\n"
     ... "Last-Translator: Foo <no-priv@canonical.com>\n"
     ... "Content-Type: text/plain; charset=UTF-8\n"
-    ... "Plural-Forms: nplurals=4; plural=n==1) ? "
+    ... "Plural-Forms: nplurals=4; plural=(n==1) ? "
     ...     "0 : n==2 ? 1 : (n != 8 || n != 11) ? 2 : 3;\n"
     ... "X-Rosetta-Export-Date: %s\n"
     ...
@@ -458,14 +459,14 @@ Set it as the place where the entry should be imported.
 
 We must approve the entry to be able to import it.
 
-    >>> entry.status = RosettaImportStatus.APPROVED
+    >>> entry.setStatus(RosettaImportStatus.APPROVED)
 
 At this point, the statistics note that we have 3 translations coming
 from imported files (currentCount), and none updated or added in
 Launchpad Translations.
 
     >>> pofile.currentCount()
-    3
+    2
     >>> pofile.updatesCount()
     0
     >>> pofile.rosettaCount()
@@ -491,12 +492,14 @@ files are now counted as coming from Launchpad translations
     >>> pofile.updatesCount()
     0
     >>> pofile.rosettaCount()
-    2
+    1
 
-This time, our notification email reports complete success.
+This time, our notification email reports complete success, except
+that nothing is emailed out (subject is None) because this is a published
+upload.
 
-    >>> subject
-    u'Translation import - Welsh (cy) - firefox in Mozilla Firefox trunk'
+    >>> print subject
+    None
     >>> print body
     Hello Rosetta Administrators,
     <BLANKLINE>
@@ -541,7 +544,7 @@ The entry must have been approved for import.
 The entry indicates what file it is to be imported to; importing it to
 any other file would be an error.
 
-    >>> entry.status = RosettaImportStatus.APPROVED
+    >>> entry.setStatus(RosettaImportStatus.APPROVED)
     >>> other_pofile = potemplate.newPOFile('de')
     >>> other_pofile.importFromQueue(entry)
     Traceback (most recent call last):
@@ -571,14 +574,14 @@ in this test; We don't touch entries that were in the queue previously.
     ...     if (entry.status == RosettaImportStatus.IMPORTED or
     ...         entry.status == RosettaImportStatus.FAILED) and (
     ...         entry.productseries == series):
-    ...         entry.status = RosettaImportStatus.APPROVED
+    ...         entry.setStatus(RosettaImportStatus.APPROVED)
     ...     syncUpdate(entry)
     >>> transaction.commit()
 
 And run the import script.
 
     >>> import email
-    >>> from canonical.launchpad.mail import stub
+    >>> from lp.services.mail import stub
     >>> process = ImportProcess(transaction, FakeLogger())
     >>> process.run()
     INFO    Importing: Template "firefox" in Mozilla Firefox trunk
@@ -591,17 +594,7 @@ The import script also generates the emails similar to the ones we saw
 composed before, but also sends them.
 
     >>> len(stub.test_emails)
-    3
-    >>> from_addr, to_addrs, raw_message = stub.test_emails.pop()
-    >>> msg = email.message_from_string(raw_message)
-    >>> msg["Subject"]
-    'Translation import - Welsh (cy) - firefox in Mozilla Firefox trunk'
-    >>> print msg.get_payload(decode=True)
-    Hello Rosetta Administrators,
-    <BLANKLINE>
-    ...
-    This mail is to notify you that all translations have now been imported.
-    ...
+    2
 
     >>> from_addr, to_addrs, raw_message = stub.test_emails.pop()
     >>> msg = email.message_from_string(raw_message)
@@ -681,7 +674,7 @@ We flush the entry contents.
 
     >>> for entry in translation_import_queue:
     ...     translation_import_queue.remove(entry)
-    >>> translation_import_queue.entryCount()
+    >>> translation_import_queue.countEntries()
     0
 
 Attach the first version of the file.
@@ -695,7 +688,7 @@ Attach the first version of the file.
 
 It's in the queue now.
 
-    >>> translation_import_queue.entryCount()
+    >>> translation_import_queue.countEntries()
     1
 
 For the second version, we need a new importer, in this case, Jordi.
@@ -713,7 +706,7 @@ Attach the second version of the file.
 
 It's in the queue now.
 
-    >>> translation_import_queue.entryCount()
+    >>> translation_import_queue.countEntries()
     2
     >>> print entry.status.name
     NEEDS_REVIEW
@@ -750,9 +743,10 @@ And there are no more entries to import
 We've imported a new translation for "Foo %s."
 
     >>> welsh = getUtility(ILanguageSet).getLanguageByCode('cy')
-    >>> foos = potemplate['Foo %s'].getLocalTranslationMessages(welsh)
+    >>> foos = potemplate['Foo %s'].getLocalTranslationMessages(
+    ...     potemplate, welsh)
     >>> sorted([foo.msgstr0.translation for foo in foos])
-    [u'Bar', u'Bars']
+    [u'Bar', u'Bars', u'blah %i']
 
 Since this last upload was not the upstream one, however, its credits
 message translations were ignored.
@@ -761,13 +755,14 @@ message translations were ignored.
     ...     pofile, u'translator-credits')
     >>> message.msgstr0.translation
     u'helpful@example.com'
-    >>> potemplate['translator-credits'].getLocalTranslationMessages(welsh)
+    >>> list(potemplate['translator-credits'].getLocalTranslationMessages(
+    ...     potemplate, welsh))
     []
 
 Imports so far have been associated with a product series. We can also
 submit translations for a distroseries.
 
-    >>> from canonical.launchpad.interfaces.distribution import (
+    >>> from lp.registry.interfaces.distribution import (
     ...     IDistributionSet)
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> warty = ubuntu.getSeries('warty')
@@ -799,7 +794,7 @@ normal:
     ...     potemplate.path, potemplate_contents, True, potemplate.owner,
     ...     sourcepackagename=firefox_name, distroseries=warty,
     ...     potemplate=potemplate)
-    >>> entry.status = RosettaImportStatus.APPROVED
+    >>> entry.setStatus(RosettaImportStatus.APPROVED)
     >>> syncUpdate(entry)
     >>> transaction.commit()
 
@@ -879,7 +874,7 @@ We now import this POFile as Divehi translation of Firefox trunk:
     >>> # Allow Librarian to see the change.
     >>> transaction.commit()
     >>> entry.pofile = firefox_dv
-    >>> entry.status = RosettaImportStatus.APPROVED
+    >>> entry.setStatus(RosettaImportStatus.APPROVED)
     >>> (subject, body) = firefox_dv.importFromQueue(entry, FakeLogger())
     >>> flush_database_updates()
     >>> print entry.status.name
@@ -891,7 +886,8 @@ specified):
 
     >>> potmsgset_plural = firefox_potemplate.getPOTMsgSetByMsgIDText(
     ...     u'Singular %d', u'Plural %d')
-    >>> current_dv = potmsgset_plural.getCurrentTranslationMessage(divehi)
+    >>> current_dv = potmsgset_plural.getCurrentTranslationMessage(
+    ...     firefox_potemplate, divehi)
     >>> current_dv.translations
     [u'First form %d', u'Second form %d']
 
@@ -902,3 +898,55 @@ language, we should not have to reimport all translations):
     >>> current_dv.msgstr2.translation
     u'Third form %d'
 
+== Published import notifications ==
+
+Add a published POFile import (i.e. from a package or bzr branch),
+approve and import it.
+
+    >>> pofile_contents = r'''
+    ... msgid ""
+    ... msgstr ""
+    ... "PO-Revision-Date: 2005-05-03 20:41+0100\n"
+    ... "Last-Translator: Carlos Perello Marin <carlos@canonical.com>\n"
+    ... "Content-Type: text/plain; charset=UTF-8\n"
+    ... "Plural-Forms: nplurals=4; plural=(n==1) "
+    ...     "? 0 : n==2 ? 1 : (n != 8 || n != 11) ? 2 : 3;\n"
+    ...
+    ... msgid "foo"
+    ... msgstr "blah"
+    ... '''
+    >>> pofile = factory.makePOFile('sr')
+    >>> published = True
+    >>> entry = translation_import_queue.addOrUpdateEntry(
+    ...     pofile.path, pofile_contents, published, person,
+    ...     productseries=pofile.potemplate.productseries,
+    ...     potemplate=pofile.potemplate, pofile=pofile)
+    >>> transaction.commit()
+    >>> entry.setStatus(RosettaImportStatus.APPROVED)
+    >>> (subject, message) = pofile.importFromQueue(entry)
+
+Import succeeds but no email is sent out.
+
+    >>> entry.status == RosettaImportStatus.IMPORTED
+    True
+    >>> print subject
+    None
+
+For syntax errors, failure notification is still sent out.
+
+    # Remove final quote from the contents, causing a syntax error.
+    >>> pofile_contents = pofile_contents[:-2]
+    >>> entry = translation_import_queue.addOrUpdateEntry(
+    ...     pofile.path, pofile_contents, published, person,
+    ...     productseries=pofile.potemplate.productseries,
+    ...     potemplate=pofile.potemplate, pofile=pofile)
+    >>> transaction.commit()
+    >>> entry.setStatus(RosettaImportStatus.APPROVED)
+    >>> (subject, message) = pofile.importFromQueue(entry)
+
+Import fails and email is sent out even though it's a published upload.
+
+    >>> entry.status == RosettaImportStatus.FAILED
+    True
+    >>> subject
+    u'Import problem - Serbian (sr) - ...'

@@ -9,8 +9,8 @@ within the scope of a token's context and grant or deny access to it.
 
     >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.launchpad.webapp.interfaces import ILaunchpadContainer
-    >>> from canonical.launchpad.interfaces.product import IProductSet
-    >>> from canonical.launchpad.interfaces.distribution import (
+    >>> from lp.registry.interfaces.product import IProductSet
+    >>> from lp.registry.interfaces.distribution import (
     ...     IDistributionSet)
     >>> firefox = getUtility(IProductSet)['firefox']
     >>> mozilla = firefox.project
@@ -69,7 +69,7 @@ A distribution source package is within itself or its distribution.
 An ILaunchpadContainer will never be within something which doesn't
 provide ILaunchpadContainer as well.
 
-    >>> from canonical.launchpad.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> salgado = getUtility(IPersonSet).getByName('salgado')
     >>> ILaunchpadContainer(firefox).isWithin(salgado)
     False
@@ -104,7 +104,7 @@ But it's not within anything other than its tasks' targets.
 A branch is within its product, in case it is associated with one.
 
     >>> sample_person = getUtility(IPersonSet).getByName('name12')
-    >>> from canonical.launchpad.interfaces.branchnamespace import (
+    >>> from lp.code.interfaces.branchnamespace import (
     ...     get_branch_namespace)
     >>> firefox_main = get_branch_namespace(
     ...     sample_person, product=firefox).getByName('main')

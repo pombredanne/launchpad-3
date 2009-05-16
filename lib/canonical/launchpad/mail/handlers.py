@@ -21,22 +21,20 @@ from canonical.launchpad.interfaces import (
     ILaunchBag, IMailHandler,
     IMessageSet, IQuestionSet, ISpecificationSet,
     QuestionStatus)
-from canonical.launchpad.mail.codehandler import CodeHandler
+from lp.code.mail.codehandler import CodeHandler
 from canonical.launchpad.mail.commands import (
     BugEmailCommands, get_error_message)
 from canonical.launchpad.mail.helpers import (
     ensure_not_weakly_authenticated, get_main_body, guess_bugtask,
     IncomingEmailError, parse_commands, reformat_wiki_text)
-from canonical.launchpad.mail.sendmail import sendmail, simple_sendmail
+from lp.services.mail.sendmail import sendmail, simple_sendmail
 from canonical.launchpad.mail.specexploder import get_spec_url_from_moin_mail
 from canonical.launchpad.mailnotification import (
     MailWrapper, send_process_error_notification)
 from canonical.launchpad.webapp import urlparse
 
-from canonical.launchpad.event import (
-    SQLObjectCreatedEvent)
-from canonical.launchpad.event.interfaces import (
-    ISQLObjectCreatedEvent)
+from lazr.lifecycle.event import ObjectCreatedEvent
+from lazr.lifecycle.interfaces import IObjectCreatedEvent
 
 
 class MaloneHandler:
@@ -107,7 +105,7 @@ class MaloneHandler:
                         if bug_event is not None:
                             notify(bug_event)
                         if (bugtask_event is not None and
-                            not ISQLObjectCreatedEvent.providedBy(bug_event)):
+                            not IObjectCreatedEvent.providedBy(bug_event)):
                             notify(bugtask_event)
                         bugtask = None
                         bugtask_event = None
@@ -140,14 +138,14 @@ class MaloneHandler:
                             bugmessage = bug.linkMessage(
                                 message, bug_watch)
 
-                            notify(SQLObjectCreatedEvent(bugmessage))
+                            notify(ObjectCreatedEvent(bugmessage))
                             add_comment_to_bug = False
                         else:
                             message = bug.initial_message
                         self.processAttachments(bug, message, signed_msg)
                     elif IBugTaskEmailCommand.providedBy(command):
                         if bugtask_event is not None:
-                            if not ISQLObjectCreatedEvent.providedBy(
+                            if not IObjectCreatedEvent.providedBy(
                                 bug_event):
                                 notify(bugtask_event)
                             bugtask_event = None
@@ -188,7 +186,7 @@ class MaloneHandler:
                     raise IncomingEmailError(
                         get_error_message('no-affects-target-on-submit.txt'))
             if bugtask_event is not None:
-                if not ISQLObjectCreatedEvent.providedBy(bug_event):
+                if not IObjectCreatedEvent.providedBy(bug_event):
                     notify(bugtask_event)
 
         except IncomingEmailError, error:

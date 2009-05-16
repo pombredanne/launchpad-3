@@ -6,6 +6,8 @@ __metaclass__ = type
 __all__ = [
     'BugComment',
     'BugCommentView',
+    'BugCommentBoxView',
+    'BugCommentBoxExpandedReplyView',
     'build_comments_from_chunks',
     'should_display_remote_comments',
     ]
@@ -15,10 +17,10 @@ from zope.interface import implements
 
 from canonical.launchpad.interfaces.bugmessage import (
     IBugComment, IBugMessageSet)
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.interfaces.person import IPersonSet
+from lp.registry.interfaces.person import IPersonSet
 from canonical.launchpad.webapp import canonical_url, LaunchpadView
 from canonical.launchpad.webapp.interfaces import ILaunchBag
+from canonical.launchpad.webapp.authorization import check_permission
 
 from canonical.config import config
 
@@ -68,6 +70,15 @@ def build_comments_from_chunks(chunks, bugtask, truncate=False):
         comments[message_id].synchronized = (
             bug_message.remote_comment_id is not None)
 
+    for bug_message in bugtask.bug.bug_messages:
+        comment = comments.get(bug_message.messageID, None)
+        # XXX intellectronica 2009-04-22, bug=365092: Currently, there are
+        # some bug messages for which no chunks exist in the DB, so we need to
+        # make sure that we skip them, since the corresponding message wont
+        # have been added to the comments dictionary in the section above.
+        if comment is not None:
+            comment.visible = bug_message.visible
+
     for comment in comments.values():
         # Once we have all the chunks related to a comment set up,
         # we get the text set up for display.
@@ -88,7 +99,8 @@ class BugComment:
     """
     implements(IBugComment)
 
-    def __init__(self, index, message, bugtask, display_if_from_bugwatch):
+    def __init__(self, index, message, bugtask, display_if_from_bugwatch,
+                 activity=None):
         self.index = index
         self.bugtask = bugtask
         self.bugwatch = None
@@ -103,6 +115,11 @@ class BugComment:
         self.chunks = []
         self.bugattachments = []
 
+        if activity is None:
+            activity = []
+
+        self.activity = activity
+
         self.synchronized = False
 
     @property
@@ -112,6 +129,21 @@ class BugComment:
             return False
         else:
             return True
+
+    @property
+    def show_for_admin(self):
+        """Show hidden comments for Launchpad admins.
+
+        This is used in templates to add a class to hidden
+        comments to enable display for admins, so the admin
+        can see the comment even after it is hidden.
+        """
+        user = getUtility(ILaunchBag).user
+        is_admin = check_permission('launchpad.Admin', user)
+        if is_admin and not self.visible:
+            return True
+        else:
+            return False
 
     def setupText(self, truncate=False):
         """Set the text for display and truncate it if necessary.
@@ -165,6 +197,14 @@ class BugComment:
     def add_comment_url(self):
         return canonical_url(self.bugtask, view_name='+addcomment')
 
+    @property
+    def show_footer(self):
+        """Return True if the footer should be shown for this comment."""
+        if len(self.activity) > 0 or self.bugwatch:
+            return True
+        else:
+            return False
+
 
 class BugCommentView(LaunchpadView):
     """View for a single bug comment."""
@@ -175,4 +215,15 @@ class BugCommentView(LaunchpadView):
         bugtask = getUtility(ILaunchBag).bugtask
         LaunchpadView.__init__(self, bugtask, request)
         self.comment = context
-        self.expand_reply_box = True
+
+
+class BugCommentBoxView(LaunchpadView):
+    """Render a comment box with reply field collapsed."""
+
+    expand_reply_box = False
+
+
+class BugCommentBoxExpandedReplyView(LaunchpadView):
+    """Render a comment box with reply field expanded."""
+
+    expand_reply_box = True

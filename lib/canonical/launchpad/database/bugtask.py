@@ -24,16 +24,18 @@ from sqlobject import (
     ForeignKey, StringCol, SQLObjectNotFound)
 from sqlobject.sqlbuilder import SQLConstant
 
-from storm.expr import And, Alias, AutoTables, Join, LeftJoin, SQL
-
+from storm.expr import And, Alias, AutoTables, In, Join, LeftJoin, SQL
 from storm.sqlobject import SQLObjectResultSet
+from storm.zope.interfaces import IResultSet, ISQLObjectResultSet
 
 import pytz
 
 from zope.component import getUtility
 from zope.interface import implements, alsoProvides
 from zope.interface.interfaces import IMethod
-from zope.security.proxy import isinstance as zope_isinstance
+from zope.security.proxy import (
+    isinstance as zope_isinstance, removeSecurityProxy)
+from lazr.enum import DBItem
 
 from canonical.config import config
 
@@ -44,9 +46,7 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.nl_search import nl_phrase_search
 from canonical.database.enumcol import EnumCol
 
-from canonical.lazr.enum import DBItem
-
-from canonical.launchpad.database.pillar import pillar_sort_key
+from lp.registry.model.pillar import pillar_sort_key
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces.bugnomination import BugNominationStatus
 from canonical.launchpad.interfaces.bugtask import (
@@ -56,25 +56,26 @@ from canonical.launchpad.interfaces.bugtask import (
     INullBugTask, IProductSeriesBugTask, IUpstreamBugTask, IllegalTarget,
     RESOLVED_BUGTASK_STATUSES, UNRESOLVED_BUGTASK_STATUSES,
     UserCannotEditBugTaskImportance, UserCannotEditBugTaskStatus)
-from canonical.launchpad.interfaces.distribution import (
+from lp.registry.interfaces.distribution import (
     IDistribution, IDistributionSet)
-from canonical.launchpad.interfaces.distributionsourcepackage import (
+from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage)
-from canonical.launchpad.interfaces.distroseries import (
+from lp.registry.interfaces.distroseries import (
     IDistroSeries, IDistroSeriesSet)
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.interfaces.milestone import IProjectMilestone
-from canonical.launchpad.interfaces.product import IProduct, IProductSet
-from canonical.launchpad.interfaces.productseries import (
+from lp.registry.interfaces.milestone import IProjectMilestone
+from lp.registry.interfaces.product import IProduct, IProductSet
+from lp.registry.interfaces.productseries import (
     IProductSeries, IProductSeriesSet)
-from canonical.launchpad.interfaces.project import IProject
-from canonical.launchpad.interfaces.publishing import PackagePublishingStatus
-from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
-from canonical.launchpad.interfaces.sourcepackagename import (
+from lp.registry.interfaces.project import IProject
+from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+from lp.registry.interfaces.sourcepackage import ISourcePackage
+from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageNameSet)
 from canonical.launchpad.searchbuilder import (
     all, any, greater_than, NULL, not_equals)
-from canonical.launchpad.validators.person import validate_public_person
+from lp.registry.interfaces.person import (
+    validate_person_not_private_membership, validate_public_person)
 from canonical.launchpad.webapp.interfaces import (
         IStoreSelector, DEFAULT_FLAVOR, MAIN_STORE, NotFoundError)
 
@@ -134,19 +135,18 @@ def bugtask_sort_key(bugtask):
 class BugTaskDelta:
     """See `IBugTaskDelta`."""
     implements(IBugTaskDelta)
-    def __init__(self, bugtask, product=None,
-                 sourcepackagename=None, status=None, importance=None,
+    def __init__(self, bugtask, status=None, importance=None,
                  assignee=None, milestone=None, statusexplanation=None,
-                 bugwatch=None):
+                 bugwatch=None, target=None):
         self.bugtask = bugtask
-        self.product = product
-        self.sourcepackagename = sourcepackagename
-        self.status = status
-        self.importance = importance
+
         self.assignee = assignee
-        self.target = milestone
-        self.statusexplanation = statusexplanation
         self.bugwatch = bugwatch
+        self.importance = importance
+        self.milestone = milestone
+        self.status = status
+        self.statusexplanation = statusexplanation
+        self.target = target
 
 
 class BugTaskMixin:
@@ -398,7 +398,7 @@ def validate_status(self, attr, value):
 def validate_assignee(self, attr, value):
     value = validate_conjoined_attribute(self, attr, value)
     # Check if this assignee is public.
-    return validate_public_person(self, attr, value)
+    return validate_person_not_private_membership(self, attr, value)
 
 
 @block_implicit_flushes
@@ -850,8 +850,7 @@ class BugTask(SQLBase, BugTaskMixin):
             # No change to the assignee, so nothing to do.
             return
 
-        UTC = pytz.timezone('UTC')
-        now = datetime.datetime.now(UTC)
+        now = datetime.datetime.now(pytz.UTC)
         if self.assignee and not assignee:
             # The assignee is being cleared, so clear the date_assigned
             # value.
@@ -988,24 +987,20 @@ class BugTask(SQLBase, BugTaskMixin):
 
     def getDelta(self, old_task):
         """See `IBugTask`."""
-        changes = {}
-        if ((IUpstreamBugTask.providedBy(old_task) and
-             IUpstreamBugTask.providedBy(self)) or
-            (IProductSeriesBugTask.providedBy(old_task) and
-             IProductSeriesBugTask.providedBy(self))):
-            if old_task.product != self.product:
-                changes["product"] = {}
-                changes["product"]["old"] = old_task.product
-                changes["product"]["new"] = self.product
-        elif ((IDistroBugTask.providedBy(old_task) and
-               IDistroBugTask.providedBy(self)) or
-              (IDistroSeriesBugTask.providedBy(old_task) and
-               IDistroSeriesBugTask.providedBy(self))):
-            if old_task.sourcepackagename != self.sourcepackagename:
-                old = old_task
-                changes["sourcepackagename"] = {}
-                changes["sourcepackagename"]["new"] = self.sourcepackagename
-                changes["sourcepackagename"]["old"] = old.sourcepackagename
+        valid_interfaces = [
+            IUpstreamBugTask,
+            IProductSeriesBugTask,
+            IDistroBugTask,
+            IDistroSeriesBugTask,
+            ]
+
+        # This tries to find a matching pair of bug tasks, i.e. where
+        # both provide IUpstreamBugTask, or both IDistroBugTask.
+        # Failing that, it drops off the bottom of the loop and raises
+        # the TypeError.
+        for interface in valid_interfaces:
+            if interface.providedBy(self) and interface.providedBy(old_task):
+                break
         else:
             raise TypeError(
                 "Can't calculate delta on bug tasks of incompatible types: "
@@ -1013,7 +1008,8 @@ class BugTask(SQLBase, BugTaskMixin):
 
         # calculate the differences in the fields that both types of tasks
         # have in common
-        for field_name in ("status", "importance",
+        changes = {}
+        for field_name in ("target", "status", "importance",
                            "assignee", "bugwatch", "milestone"):
             old_val = getattr(old_task, field_name)
             new_val = getattr(self, field_name)
@@ -1511,6 +1507,17 @@ class BugTaskSet:
             """ % sqlvalues(bug_commenter=params.bug_commenter)
             extra_clauses.append(bug_commenter_clause)
 
+        if params.affected_user:
+            affected_user_clause = """
+            BugTask.id IN (
+                SELECT BugTask.id FROM BugTask, BugAffectsPerson
+                WHERE BugTask.bug = BugAffectsPerson.bug
+                AND BugAffectsPerson.person = %(affected_user)s
+                AND BugAffectsPerson.affected = TRUE
+            )
+            """ % sqlvalues(affected_user=params.affected_user)
+            extra_clauses.append(affected_user_clause)
+
         if params.nominated_for:
             mappings = sqlvalues(
                 target=params.nominated_for,
@@ -1729,6 +1736,36 @@ class BugTaskSet:
         bugtasks = SQLObjectResultSet(BugTask, orderBy=orderby,
                                       prepared_result_set=result)
         return bugtasks
+
+    def getAssignedMilestonesFromSearch(self, search_results):
+        """See `IBugTaskSet`."""
+        # XXX: Gavin Panella 2009-03-05 bug=338184: There is currently
+        # no clean way to get the underlying Storm ResultSet from an
+        # SQLObjectResultSet, so we must remove the security proxy for
+        # a moment.
+        if ISQLObjectResultSet.providedBy(search_results):
+            search_results = removeSecurityProxy(search_results)._result_set
+        # Check that we have a Storm result set before we start doing
+        # things with it.
+        assert IResultSet.providedBy(search_results), (
+            "search_results must provide IResultSet or ISQLObjectResultSet")
+        # Remove ordering and make distinct.
+        search_results = search_results.order_by().config(distinct=True)
+        # Get milestone IDs.
+        milestone_ids = [
+            milestone_id for milestone_id in (
+                search_results.values(BugTask.milestoneID))
+            if milestone_id is not None]
+        # Query for milestones.
+        if len(milestone_ids) == 0:
+            return []
+        else:
+            # Import here because of cyclic references.
+            from lp.registry.model.milestone import (
+                Milestone, milestone_sort_key)
+            milestones = search_results._store.find(
+                Milestone, In(Milestone.id, milestone_ids))
+            return sorted(milestones, key=milestone_sort_key, reverse=True)
 
     def createTask(self, bug, owner, product=None, productseries=None,
                    distribution=None, distroseries=None,

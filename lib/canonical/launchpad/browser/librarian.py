@@ -5,9 +5,11 @@
 __metaclass__ = type
 
 __all__ = [
-    'LibraryFileAliasView',
-    'LibraryFileAliasMD5View',
+    'DeletedProxiedLibraryFileAlias',
     'FileNavigationMixin',
+    'LibraryFileAliasMD5View',
+    'LibraryFileAliasView',
+    'ProxiedLibraryFileAlias',
     'StreamOrRedirectLibraryFileAliasView',
     ]
 
@@ -21,10 +23,17 @@ from zope.publisher.interfaces.browser import IBrowserPublisher
 from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad.interfaces import ILibraryFileAlias
+from canonical.launchpad.layers import WebServiceLayer
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.publisher import (
-    LaunchpadView, RedirectionView, stepthrough)
+    LaunchpadView, RedirectionView, canonical_url, stepthrough)
+from canonical.launchpad.webapp.interfaces import (
+    IWebBrowserOriginatingRequest)
+from canonical.launchpad.webapp.url import urlappend
+from canonical.lazr.utils import get_current_browser_request
 from canonical.librarian.utils import filechunks, guess_librarian_encoding
+
+from lazr.delegates import delegates
 
 
 class LibraryFileAliasView(LaunchpadView):
@@ -120,6 +129,10 @@ class StreamOrRedirectLibraryFileAliasView(LaunchpadView):
         chain with this view. If the context file is public return the
         appropriate `RedirectionView` for its HTTP url.
         """
+        assert not self.context.content.deleted, (
+            "StreamOrRedirectLibraryFileAliasView can not operate on "
+            "deleted librarian files, since their URL is undefined.")
+
         if self.context.restricted:
             return self, ()
 
@@ -128,6 +141,10 @@ class StreamOrRedirectLibraryFileAliasView(LaunchpadView):
     def publishTraverse(self, request, name):
         """See `IBrowserPublisher`."""
         raise NotFound(name, self.context)
+
+
+class DeletedProxiedLibraryFileAlias(NotFound):
+    """Raised when a deleted `ProxiedLibraryFileAlias` is accessed."""
 
 
 class FileNavigationMixin:
@@ -150,5 +167,45 @@ class FileNavigationMixin:
         if not check_permission('launchpad.View', self.context):
             raise Unauthorized()
         library_file  = self.context.getFileByName(filename)
+
+        # Deleted library files result in NotFound-like error.
+        if library_file.content.deleted:
+            raise DeletedProxiedLibraryFileAlias(filename, self.context)
+
         return StreamOrRedirectLibraryFileAliasView(
             library_file, self.request)
+
+
+class ProxiedLibraryFileAlias:
+    """A `LibraryFileAlias` proxied via webapp.
+
+    Overrides `ILibraryFileAlias.http_url` to always point to the webapp URL,
+    even when called from the webservice domain.
+    """
+    delegates(ILibraryFileAlias)
+
+    def __init__(self, context, parent):
+        self.context = context
+        self.parent = parent
+
+    @property
+    def http_url(self):
+        """Return the webapp URL for the context `LibraryFileAlias`.
+
+        Preserve the `LibraryFileAlias.http_url` behavior for deleted
+        files, returning None.
+
+        Mask webservice requests if it's the case, so the returned URL will
+        be always relative to the parent webapp URL.
+        """
+        if self.context.content.deleted:
+            return None
+
+        request = get_current_browser_request()
+        if WebServiceLayer.providedBy(request):
+            request = IWebBrowserOriginatingRequest(request)
+
+        parent_url = canonical_url(self.parent, request=request)
+        traversal_url = urlappend(parent_url, '+files')
+        url = urlappend(traversal_url, self.context.filename)
+        return url

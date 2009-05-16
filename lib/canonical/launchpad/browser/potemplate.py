@@ -9,6 +9,7 @@ __all__ = [
     'POTemplateEditView',
     'POTemplateFacets',
     'POTemplateExportView',
+    'POTemplateMenu',
     'POTemplateNavigation',
     'POTemplateSetNavigation',
     'POTemplateSubsetNavigation',
@@ -30,16 +31,16 @@ from zope.publisher.browser import FileUpload
 
 from canonical.launchpad import helpers, _
 from canonical.launchpad.browser.poexportrequest import BaseExportView
-from canonical.launchpad.browser.productseries import ProductSeriesFacets
+from lp.registry.browser.productseries import ProductSeriesFacets
 from canonical.launchpad.browser.translations import TranslationsMixin
-from canonical.launchpad.browser.sourcepackage import SourcePackageFacets
+from lp.registry.browser.sourcepackage import SourcePackageFacets
 from canonical.launchpad.interfaces import (
     IPOTemplate, IPOTemplateSet, ILaunchBag, IPOFileSet, IPOTemplateSubset,
     ITranslationImporter, ITranslationImportQueue, IProductSeries,
     ISourcePackage, NotFoundError)
 from canonical.launchpad.webapp import (
-    action, ApplicationMenu, canonical_url, enabled_with_permission,
-    GetitemNavigation, LaunchpadView, LaunchpadEditFormView, Link, Navigation,
+    action, canonical_url, enabled_with_permission, GetitemNavigation,
+    LaunchpadView, LaunchpadEditFormView, Link, Navigation, NavigationMenu,
     StandardLaunchpadFacets)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
@@ -88,8 +89,10 @@ class POTemplateFacets(StandardLaunchpadFacets):
         StandardLaunchpadFacets.__init__(self, context)
         target = context.translationtarget
         if IProductSeries.providedBy(target):
+            self._is_product_series = True
             self.target_facets = ProductSeriesFacets(target)
         elif ISourcePackage.providedBy(target):
+            self._is_product_series = False
             self.target_facets = SourcePackageFacets(target)
         else:
             # We don't know yet how to handle this target.
@@ -139,39 +142,42 @@ class POTemplateFacets(StandardLaunchpadFacets):
 
     def branches(self):
         branches_link = self.target_facets.branches()
-        # XXX thumper: 2008-01-16
-        # See bug 183433 about changing the target.
-        # branches_link.target = self.target
+        if not self._is_product_series:
+            branches_link.target = self.target
         return branches_link
 
 
-class POTemplateAppMenus(ApplicationMenu):
+class POTemplateMenu(NavigationMenu):
+    """Navigation menus for `IPOTemplate` objects."""
     usedfor = IPOTemplate
     facet = 'translations'
-    links = ['status', 'upload', 'download', 'edit', 'administer']
+    # XXX: henninge 2009-04-22 bug=365112: The order in this list was
+    # rearranged so that the last item is public. The desired order is:
+    # links = ['overview', 'upload', 'download', 'edit', 'administer']
+    links = ['overview', 'edit', 'administer', 'upload', 'download']
 
-    def status(self):
-        text = 'Show translation status'
+    def overview(self):
+        text = 'Overview'
         return Link('', text)
 
     @enabled_with_permission('launchpad.Edit')
     def upload(self):
-        text = 'Upload a file'
-        return Link('+upload', text, icon='edit')
+        text = 'Upload'
+        return Link('+upload', text)
 
     def download(self):
-        text = 'Download translations'
-        return Link('+export', text, icon='download')
+        text = 'Download'
+        return Link('+export', text)
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
-        text = 'Change details'
-        return Link('+edit', text, icon='edit')
+        text = 'Settings'
+        return Link('+edit', text)
 
     @enabled_with_permission('launchpad.Admin')
     def administer(self):
         text = 'Administer'
-        return Link('+admin', text, icon='edit')
+        return Link('+admin', text)
 
 
 class POTemplateSubsetView:

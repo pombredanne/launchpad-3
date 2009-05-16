@@ -379,8 +379,8 @@ subscribers.
 
     >>> from zope.event import notify
 
-    >>> from canonical.launchpad.event import SQLObjectModifiedEvent
-    >>> from canonical.launchpad.webapp.snapshot import Snapshot
+    >>> from lazr.lifecycle.event import ObjectModifiedEvent
+    >>> from lazr.lifecycle.snapshot import Snapshot
     >>> from canonical.launchpad.interfaces import IBug
 
     >>> print_displayname(linux_source_bug.getDirectSubscribers())
@@ -392,7 +392,7 @@ subscribers.
     True
 
     >>> notify(
-    ...     SQLObjectModifiedEvent(
+    ...     ObjectModifiedEvent(
     ...         linux_source_bug, bug_before_modification, ["private"]))
 
     >>> print_displayname(linux_source_bug.getDirectSubscribers())
@@ -481,7 +481,7 @@ When Sample Person is unsubscribed from linux_source_bug, he is no
 longer included in the result of getBugNotificationRecipients() for
 the COMMENTS level...
 
-   >>> linux_source_bug.unsubscribe(mr_no_privs)
+   >>> linux_source_bug.unsubscribe(mr_no_privs, mr_no_privs)
    >>> recipients = linux_source_bug.getBugNotificationRecipients(
    ...     level=BugNotificationLevel.COMMENTS)
    >>> addresses = recipients.getEmails()
@@ -494,7 +494,7 @@ the COMMENTS level...
 
 ...but remains included for the level LIFECYCLE.
 
-   >>> linux_source_bug.unsubscribe(mr_no_privs)
+   >>> linux_source_bug.unsubscribe(mr_no_privs, mr_no_privs)
    >>> recipients = linux_source_bug.getBugNotificationRecipients(
    ...     level=BugNotificationLevel.LIFECYCLE)
    >>> addresses = recipients.getEmails()
@@ -549,7 +549,7 @@ IBug.subscribe and IBug.unsubscribe:
     >>> bug.isSubscribed(foobar)
     True
 
-    >>> bug.unsubscribe(foobar)
+    >>> bug.unsubscribe(foobar, foobar)
     >>> bug.isSubscribed(foobar)
     False
 
@@ -576,6 +576,62 @@ the user was unsubscribed.
 
     >>> bug_six.isSubscribed(sample_person)
     False
+
+
+=== Determining whether a user can unsubscribe someone ===
+
+As user can't unsubscribe just anyone from a bug. To check whether
+someone can be unusubscribed, the canBeUnsubscribedByUser() method on
+the BugSubscription object is used.
+
+The user can of course unsubscribe himself, even if someone else
+subscribed him.
+
+    >>> bug = factory.makeBug()
+    >>> subscriber = factory.makePerson()
+    >>> subscribed_by = factory.makePerson()
+    >>> subscription = bug.subscribe(subscriber, subscribed_by)
+    >>> subscription.canBeUnsubscribedByUser(subscriber)
+    True
+
+The one who subscribed the subscriber doesn't have permission to
+unsubscribe him.
+
+    >>> subscription.canBeUnsubscribedByUser(subscribed_by)
+    False
+
+The anonymous user (represented by None) also can't unsubscribe him.
+
+    >>> subscription.canBeUnsubscribedByUser(None)
+    False
+
+A user can unsubscribe a team he's a member of.
+
+    >>> team = factory.makeTeam()
+    >>> member = factory.makePerson()
+    >>> member.join(team)
+    >>> subscription = bug.subscribe(team, subscribed_by)
+    >>> subscription.canBeUnsubscribedByUser(member)
+    True
+
+    >>> non_member = factory.makePerson()
+    >>> subscription.canBeUnsubscribedByUser(non_member)
+    False
+
+The anonymous user (represented by None) also can't unsubscribe the team.
+
+    >>> subscription.canBeUnsubscribedByUser(None)
+    False
+
+A bug's unsubscribe method uses canBeUnsubscribedByUser to check
+that the unsubscribing user has the appropriate permissions.  unsubscribe
+will raise an exception if the user does not have permission.
+
+    >>> bug.unsubscribe(team, non_member)
+    Traceback (most recent call last):
+    ...
+    UserCannotUnsubscribePerson: ...
+
 
 == Automatic Subscriptions on Bug Creation ==
 
@@ -618,7 +674,7 @@ there is no security contact:
     >>> ubuntu.security_contact is None
     True
 
-    >>> from canonical.launchpad.mail import stub
+    >>> from lp.services.mail import stub
     >>> transaction.commit()
     >>> stub.test_emails = []
 
@@ -827,15 +883,14 @@ subscriptions themselves, rather than the subscribers.
 
 When a user is subscribed to a bug by someone other than themselves,
 they receive an email notification. The notification is sent only when
-an SQLObjectCreatedEvent is issued, since subscribe() is used in places
+an ObjectCreatedEvent is issued, since subscribe() is used in places
 where no notification should be sent.
 
-    >>> from canonical.launchpad.event import SQLObjectCreatedEvent
-    >>> from canonical.launchpad.mail import stub
+    >>> from lazr.lifecycle.event import ObjectCreatedEvent
     >>> transaction.commit()
     >>> stub.test_emails = []
-    >>> bug_subscription = bug.subscribe(sabdfl, lifeless)
-    >>> notify(SQLObjectCreatedEvent(bug_subscription))
+    >>> bug_subscription = bug_six.subscribe(sabdfl, lifeless)
+    >>> notify(ObjectCreatedEvent(bug_subscription))
     >>> transaction.commit()
     >>> len(stub.test_emails)
     1

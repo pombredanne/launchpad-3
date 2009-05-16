@@ -5,7 +5,7 @@
 __metaclass__ = type
 
 import unittest
-from canonical.launchpad.testing import TestCase
+from lp.testing import TestCase
 
 
 class LoggingResult(unittest.TestResult):
@@ -135,7 +135,7 @@ class TestAddCleanup(unittest.TestCase):
             ['setUp', 'runTest', 'second', 'first', 'tearDown'])
 
     def test_error_in_cleanups_are_captured(self):
-        # If a cleanup raises an error, we want to record it and fail the the
+        # If a cleanup raises an error, we want to record it and fail the
         # test, even though we go on to run other cleanups.
         self.test.addCleanup(lambda: 1/0)
         self.test.run(self.logging_result)

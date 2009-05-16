@@ -42,7 +42,7 @@ It returns the edited bugtask.
     >>> firefox_bugtask.status.name
     'CONFIRMED'
 
-It also emits an SQLObjectModifiedEvent so that BugNotification and
+It also emits an ObjectModifiedEvent so that BugNotification and
 BugActivity records are created.
 
     >>> from canonical.launchpad.database import BugNotification
@@ -260,6 +260,6 @@ targeted to the non-current series of course.
     >>> ubuntu_firefox_task = bug.setStatus(
     ...     warty_firefox, BugTaskStatus.INCOMPLETE, no_priv)
     >>> ubuntu_firefox_task.target.displayname
-    u'Ubuntu Warty mozilla-firefox'
+    u'mozilla-firefox in Ubuntu Warty'
     >>> ubuntu_firefox_task.status.name
     'INCOMPLETE'

@@ -16,7 +16,7 @@ import xmlrpclib
 from canonical.codehosting.vfs import BlockingProxy
 from canonical.codehosting.rewrite import BranchRewriter
 from canonical.config import config
-from canonical.launchpad.scripts.base import LaunchpadScript
+from lp.services.scripts.base import LaunchpadScript
 
 
 class BranchRewriteScript(LaunchpadScript):

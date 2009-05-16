@@ -1,5 +1,5 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
-# pylint: disable-msg=E0211,E0213
+# pylint: disable-msg=E0211,E0213,E0602
 
 """Interfaces related to bugs."""
 
@@ -9,64 +9,67 @@ __all__ = [
     'CreateBugParams',
     'CreatedBugWithNoBugTasksError',
     'IBug',
-    'IBugBecameQuestionEvent',
-    'IBugSet',
-    'IBugDelta',
     'IBugAddForm',
+    'IBugBecameQuestionEvent',
+    'IBugDelta',
+    'IBugSet',
     'IFrontPageBugAddForm',
-    'InvalidBugTargetType',
     'IProjectBugAddForm',
+    'InvalidBugTargetType',
+    'InvalidDuplicateValue',
+    'UserCannotUnsubscribePerson',
     ]
 
 from zope.component import getUtility
 from zope.interface import Interface, Attribute
 from zope.schema import (
     Bool, Bytes, Choice, Datetime, Int, List, Object, Text, TextLine)
+from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
     BugField, ContentNameField, DuplicateBug, PublicPersonChoice, Tag, Title)
 from canonical.launchpad.interfaces.bugattachment import IBugAttachment
 from canonical.launchpad.interfaces.bugtarget import IBugTarget
-from canonical.launchpad.interfaces.bugtask import IBugTask
+from canonical.launchpad.interfaces.bugtask import (
+    BugTaskImportance, BugTaskStatus, IBugTask)
 from canonical.launchpad.interfaces.bugwatch import IBugWatch
 from canonical.launchpad.interfaces.cve import ICve
 from canonical.launchpad.interfaces.launchpad import NotFoundError
 from canonical.launchpad.interfaces.message import IMessage
-from canonical.launchpad.interfaces.mentoringoffer import ICanBeMentored
-from canonical.launchpad.interfaces.person import IPerson
+from lp.code.interfaces.branch import IBranch
+from lp.registry.interfaces.mentoringoffer import ICanBeMentored
+from lp.registry.interfaces.person import IPerson
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.validators.bugattachment import (
     bug_attachment_size_constraint)
 
-from canonical.lazr.rest.declarations import (
+from lazr.restful.declarations import (
     REQUEST_USER, call_with, export_as_webservice_entry,
     export_factory_operation, export_operation_as, export_write_operation,
-    exported, mutator_for, operation_parameters, rename_parameters_as,
-    webservice_error)
-from canonical.lazr.fields import CollectionField, Reference
-from canonical.lazr.interface import copy_field
+    exported, mutator_for, operation_parameters, operation_returns_entry,
+    rename_parameters_as, webservice_error)
+from lazr.restful.fields import CollectionField, Reference
+from lazr.restful.interface import copy_field
 
 
 class CreateBugParams:
     """The parameters used to create a bug."""
 
     def __init__(self, owner, title, comment=None, description=None, msg=None,
-                 status=None, assignee=None, datecreated=None,
-                 security_related=False, private=False, subscribers=(),
-                 binarypackagename=None, tags=None, subscribe_reporter=True):
+                 status=None, datecreated=None, security_related=False,
+                 private=False, subscribers=(), binarypackagename=None,
+                 tags=None, subscribe_reporter=True):
         self.owner = owner
         self.title = title
         self.comment = comment
         self.description = description
         self.msg = msg
         self.status = status
-        self.assignee = assignee
         self.datecreated = datecreated
         self.security_related = security_related
         self.private = private
         self.subscribers = subscribers
-
         self.product = None
         self.distribution = None
         self.sourcepackagename = None
@@ -168,8 +171,9 @@ class IBug(ICanBeMentored):
     ownerID = Int(title=_('Owner'), required=True, readonly=True)
     owner = exported(
         Reference(IPerson, title=_("The owner's IPerson"), readonly=True))
-    duplicateof = exported(
-        DuplicateBug(title=_('Duplicate Of'), required=False),
+    duplicateof = DuplicateBug(title=_('Duplicate Of'), required=False)
+    readonly_duplicateof = exported(
+        DuplicateBug(title=_('Duplicate Of'), required=False, readonly=True),
         exported_as='duplicate_of')
     private = exported(
         Bool(title=_("This bug report should be private"), required=False,
@@ -205,8 +209,6 @@ class IBug(ICanBeMentored):
         schema=IBugTask)
     affected_pillars = Attribute(
         'The "pillars", products or distributions, affected by this bug.')
-    productinfestations = Attribute('List of product release infestations.')
-    packageinfestations = Attribute('List of package release infestations.')
     watches = exported(
         CollectionField(
             title=_("All bug watches associated with this bug."),
@@ -275,6 +277,17 @@ class IBug(ICanBeMentored):
     users_unaffected_count = exported(
         Int(title=_('The number of users unaffected by this bug'),
             required=True, readonly=True))
+    users_affected = exported(CollectionField(
+            title=_('Users affected'),
+            value_type=Reference(schema=IPerson),
+            readonly=True))
+
+    # Adding related BugMessages provides a hook for getting at
+    # BugMessage.visible when building bug comments.
+    bug_messages = Attribute('The bug messages related to this object.')
+    comment_count = Attribute(
+        "The number of comments on this bug, not including the initial "
+        "comment.")
 
     messages = CollectionField(
             title=_("The messages related to this object, in reverse "
@@ -314,9 +327,11 @@ class IBug(ICanBeMentored):
         :return: an `IBugSubscription`.
         """
 
-    @call_with(person=REQUEST_USER)
+    @operation_parameters(
+        person=Reference(IPerson, title=_('Person'), required=False))
+    @call_with(unsubscribed_by=REQUEST_USER)
     @export_write_operation()
-    def unsubscribe(person):
+    def unsubscribe(person, unsubscribed_by):
         """Remove this person's subscription to this bug."""
 
     def unsubscribeFromDupes(person):
@@ -385,6 +400,16 @@ class IBug(ICanBeMentored):
     def addCommentNotification(message, recipients=None):
         """Add a bug comment notification."""
 
+    def addChange(change, recipients=None):
+        """Record a change to the bug.
+
+        :param change: An `IBugChange` instance from which to take the
+            change data.
+        :param recipients: A set of `IBugNotificationRecipient`s to whom
+            to send notifications about this change. If None is passed
+            the default list of recipients for the bug will be used.
+        """
+
     def expireNotifications():
         """Expire any pending notifications that have not been emailed.
 
@@ -403,6 +428,9 @@ class IBug(ICanBeMentored):
         tracker, owned by the person given as the owner.
         """
 
+    def removeWatch(bug_watch, owner):
+        """Remove a bug watch from the bug."""
+
     @call_with(owner=REQUEST_USER)
     @operation_parameters(target=copy_field(IBugTask['target']))
     @export_factory_operation(IBugTask, [])
@@ -412,6 +440,12 @@ class IBug(ICanBeMentored):
     def hasBranch(branch):
         """Is this branch linked to this bug?"""
 
+    @call_with(registrant=REQUEST_USER, whiteboard=None, status=None)
+    @operation_parameters(
+        branch=Reference(schema=IBranch))
+    @operation_returns_entry(Interface) # Really IBugBranch
+    @export_operation_as('linkBranch')
+    @export_write_operation()
     def addBranch(branch, registrant, whiteboard=None, status=None):
         """Associate a branch with this bug.
 
@@ -421,6 +455,18 @@ class IBug(ICanBeMentored):
         :param status: The status of the fix in the branch
 
         Returns an IBugBranch.
+        """
+
+    @call_with(user=REQUEST_USER)
+    @operation_parameters(
+        branch=Reference(schema=IBranch))
+    @export_operation_as('unlinkBranch')
+    @export_write_operation()
+    def removeBranch(branch, user):
+        """Unlink a branch from this bug.
+
+        :param branch: The branch being unlinked from the bug
+        :param user: The user unlinking the branch
         """
 
     @call_with(owner=REQUEST_USER)
@@ -458,7 +504,7 @@ class IBug(ICanBeMentored):
     @call_with(user=REQUEST_USER)
     @operation_parameters(cve=Reference(ICve, title=_('CVE'), required=True))
     @export_write_operation()
-    def unlinkCVE(cve, user=None):
+    def unlinkCVE(cve, user):
         """Ensure that any links between this bug and the given CVE are
         removed.
         """
@@ -574,9 +620,10 @@ class IBug(ICanBeMentored):
 
             :target: The target of the bugtask that should be modified.
             :status: The status the bugtask should be set to.
-            :user: The IPerson doing the change.
+            :user: The `IPerson` doing the change.
 
-        If a bug task was edited, emit a SQLObjectModifiedEvent and
+        If a bug task was edited, emit a 
+        `lazr.lifecycle.interfaces.IObjectModifiedEvent` and
         return the edited bugtask.
 
         Return None if no bugtask was edited.
@@ -628,6 +675,32 @@ class IBug(ICanBeMentored):
     @export_write_operation()
     def markUserAffected(user, affected=True):
         """Mark :user: as affected by this bug."""
+
+    @mutator_for(readonly_duplicateof)
+    @operation_parameters(duplicate_of=copy_field(readonly_duplicateof))
+    @export_write_operation()
+    def markAsDuplicate(duplicate_of):
+        """Mark this bug as a duplicate of another."""
+
+    @operation_parameters(
+        comment_number=Int(
+            title=_('The number of the comment in the list of messages.'),
+            required=True),
+        visible=Bool(title=_('Show this comment?'), required=True))
+    @call_with(user=REQUEST_USER)
+    @export_write_operation()
+    def setCommentVisibility(user, comment_number, visible):
+        """Set the visible attribute on a bug comment."""
+
+
+class InvalidDuplicateValue(Exception):
+    """A bug cannot be set as the duplicate of another."""
+    webservice_error(417)
+
+
+class UserCannotUnsubscribePerson(Unauthorized):
+    """User does not have persmisson to unsubscribe person or team."""
+    webservice_error(401)
 
 
 # We are forced to define these now to avoid circular import problems.
@@ -712,6 +785,24 @@ class IBugAddForm(IBug):
     patch = Bool(title=u"This attachment is a patch", required=False,
         default=False)
     attachment_description = Title(title=u'Description', required=False)
+    status = Choice(
+        title=_('Status'),
+        values=list(
+            item for item in BugTaskStatus.items.items
+            if item != BugTaskStatus.UNKNOWN),
+        default=IBugTask['status'].default)
+    importance = Choice(
+        title=_('Importance'),
+        values=list(
+            item for item in BugTaskImportance.items.items
+            if item != BugTaskImportance.UNKNOWN),
+        default=IBugTask['importance'].default)
+    milestone = Choice(
+        title=_('Milestone'), required=False,
+        vocabulary='Milestone')
+    assignee = PublicPersonChoice(
+        title=_('Assign to'), required=False,
+        vocabulary='ValidAssignee')
 
 
 class IProjectBugAddForm(IBugAddForm):

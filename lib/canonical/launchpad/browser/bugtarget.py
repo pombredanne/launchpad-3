@@ -13,6 +13,7 @@ __all__ = [
     "FileBugGuidedView",
     "FrontPageFileBugAdvancedView",
     "FrontPageFileBugGuidedView",
+    "OfficialBugTagsManageView",
     "ProjectFileBugGuidedView",
     "ProjectFileBugAdvancedView",
     ]
@@ -20,6 +21,8 @@ __all__ = [
 import cgi
 from cStringIO import StringIO
 from email import message_from_string
+from operator import itemgetter
+from simplejson import dumps
 import tempfile
 import urllib
 
@@ -32,31 +35,37 @@ from zope.publisher.interfaces import NotFound
 from zope.publisher.interfaces.browser import IBrowserPublisher
 from z3c.ptcompat import ViewPageTemplateFile
 
+from lazr.lifecycle.event import ObjectCreatedEvent
+
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.browser.bugtask import BugTaskSearchListingView
 from canonical.launchpad.browser.feeds import (
     BugFeedLink, BugTargetLatestBugsFeedLink, FeedsMixin,
     PersonLatestBugsFeedLink)
-from canonical.launchpad.event.sqlobjectevent import SQLObjectCreatedEvent
-from canonical.launchpad.interfaces.bugtarget import IBugTarget
+from canonical.launchpad.interfaces.bugsupervisor import IHasBugSupervisor
+from canonical.launchpad.interfaces.bugtarget import (
+    IBugTarget, IOfficialBugTagTargetPublic, IOfficialBugTagTargetRestricted)
+from canonical.launchpad.interfaces.bugtask import (
+    BugTaskStatus, IBugTaskSet, UNRESOLVED_BUGTASK_STATUSES)
 from canonical.launchpad.interfaces.launchpad import (
     IHasExternalBugTracker, ILaunchpadUsage)
 from canonical.launchpad.interfaces import (
-    IBug, IBugTaskSet, ILaunchBag, IDistribution, IDistroSeries, IProduct,
-    IProject, IDistributionSourcePackage, NotFoundError,
-    CreateBugParams, IBugAddForm, ILaunchpadCelebrities,
-    IProductSeries, ITemporaryStorageManager, IMaloneApplication,
-    IFrontPageBugAddForm, IProjectBugAddForm, UNRESOLVED_BUGTASK_STATUSES,
-    BugTaskStatus)
+    CreateBugParams, IBug, IBugAddForm, IDistribution,
+    IDistributionSourcePackage, IDistroSeries, IFrontPageBugAddForm,
+    ILaunchBag, ILaunchpadCelebrities, IMaloneApplication, IProduct,
+    IProductSeries, IProject, IProjectBugAddForm, ITemporaryStorageManager,
+    NotFoundError)
 from canonical.launchpad.webapp import (
-    LaunchpadFormView, LaunchpadView, action, canonical_url, custom_widget,
-    safe_action, urlappend)
+    LaunchpadEditFormView, LaunchpadFormView, LaunchpadView, action,
+    canonical_url, custom_widget, safe_action, urlappend)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.tales import BugTrackerFormatterAPI
-from canonical.widgets.bug import BugTagsWidget
+from canonical.widgets.bug import BugTagsWidget, LargeBugTagsWidget
 from canonical.widgets.launchpadtarget import LaunchpadTargetWidget
-from canonical.launchpad.vocabularies import ValidPersonOrTeamVocabulary
+from canonical.launchpad.validators.name import valid_name_pattern
 from canonical.launchpad.webapp.menu import structured
+
+from lp.registry.vocabularies import ValidPersonOrTeamVocabulary
 
 
 class FileBugDataParser:
@@ -271,6 +280,11 @@ class FileBugViewBase(LaunchpadFormView):
         elif not IProduct.providedBy(context):
             raise AssertionError('Unknown context: %r' % context)
 
+        if IHasBugSupervisor.providedBy(context):
+            if self.user.inTeam(context.bug_supervisor):
+                field_names.extend(
+                    ['assignee', 'importance', 'milestone', 'status'])
+
         return field_names
 
     @property
@@ -482,7 +496,20 @@ class FileBugViewBase(LaunchpadFormView):
             params.private = extra_data.private
 
         self.added_bug = bug = context.createBug(params)
-        notify(SQLObjectCreatedEvent(bug))
+
+        # Apply any extra options given by a bug supervisor.
+        bugtask = self.added_bug.default_bugtask
+        if 'assignee' in data:
+            bugtask.transitionToAssignee(data['assignee'])
+        if 'status' in data:
+            bugtask.transitionToStatus(data['status'], self.user)
+        if 'importance' in data:
+            bugtask.transitionToImportance(data['importance'], self.user)
+        if 'milestone' in data:
+            bugtask.milestone = data['milestone']
+
+        # Tell everyone.
+        notify(ObjectCreatedEvent(bug))
 
         for comment in extra_data.comments:
             bug.newMessage(self.user, bug.followup_subject(), comment)
@@ -569,19 +596,19 @@ class FileBugViewBase(LaunchpadFormView):
 
         self.request.response.redirect(canonical_url(bug.bugtasks[0]))
 
-    @action("Subscribe to This Bug Report", name="this_is_my_bug",
-            failure=handleSubmitBugFailure)
+    @action("Yes, this is the bug I'm trying to report",
+            name="this_is_my_bug", failure=handleSubmitBugFailure)
     def this_is_my_bug_action(self, action, data):
         """Subscribe to the bug suggested."""
         bug = data.get('bug_already_reported_as')
 
-        if bug.isSubscribed(self.user):
+        if bug.isUserAffected(self.user):
             self.request.response.addNotification(
-                "You are already subscribed to this bug.")
+                "This bug is already marked as affecting you.")
         else:
-            bug.subscribe(self.user, self.user)
+            bug.markUserAffected(self.user)
             self.request.response.addNotification(
-                "You have been subscribed to this bug.")
+                "This bug has been marked as affecting you.")
 
         self.next_url = canonical_url(bug.bugtasks[0])
 
@@ -755,59 +782,33 @@ class FileBugAdvancedView(FileBugViewBase):
         return self.template()
 
 
-class FileBugGuidedView(FileBugViewBase):
+class FilebugShowSimilarBugsView(FileBugViewBase):
+    """A view for showing possible dupes for a bug.
+
+    This view will only be used to populate asynchronously-driven parts
+    of a page.
+    """
     schema = IBugAddForm
-    # XXX: Brad Bollenbach 2006-10-04: This assignment to actions is a
-    # hack to make the action decorator Just Work across inheritance.
-    actions = FileBugViewBase.actions
-    custom_widget('title', TextWidget, displayWidth=40)
-    custom_widget('tags', BugTagsWidget)
 
     _MATCHING_BUGS_LIMIT = 10
-    _SEARCH_FOR_DUPES = ViewPageTemplateFile(
-        "../templates/bugtarget-filebug-search.pt")
-    _FILEBUG_FORM = ViewPageTemplateFile(
-        "../templates/bugtarget-filebug-submit-bug.pt")
 
-    template = _SEARCH_FOR_DUPES
-
-    focused_element_id = 'field.title'
-
-    @safe_action
-    @action("Continue", name="search", validator="validate_search")
-    def search_action(self, action, data):
-        """Search for similar bug reports."""
-        # Don't give focus to any widget, to ensure that the browser
-        # won't scroll past the "possible duplicates" list.
-        self.initial_focus_widget = None
-        return self.showFileBugForm()
-
-    def getSearchContext(self):
+    @property
+    def search_context(self):
         """Return the context used to search for similar bugs."""
-        if IDistributionSourcePackage.providedBy(self.context):
-            return self.context
+        return self.context
 
-        search_context = self.getMainContext()
-        if IProject.providedBy(search_context):
-            assert self.widgets['product'].hasValidInput(), (
-                "This method should be called only when we know which"
-                " product the user selected.")
-            search_context = self.widgets['product'].getInputValue()
-        elif IMaloneApplication.providedBy(search_context):
-            if self.widgets['bugtarget'].hasValidInput():
-                search_context = self.widgets['bugtarget'].getInputValue()
-            else:
-                search_context = None
-
-        return search_context
+    @property
+    def search_text(self):
+        """Return the search string entered by the user."""
+        return self.request.get('title')
 
     @cachedproperty
     def similar_bugs(self):
         """Return the similar bugs based on the user search."""
-        title = self.getSearchText()
+        title = self.search_text
         if not title:
             return []
-        search_context = self.getSearchContext()
+        search_context = self.search_context
         if search_context is None:
             return []
         elif IProduct.providedBy(search_context):
@@ -855,10 +856,56 @@ class FileBugGuidedView(FileBugViewBase):
 
         return matching_bugs
 
+
+class FileBugGuidedView(FilebugShowSimilarBugsView):
+    # XXX: Brad Bollenbach 2006-10-04: This assignment to actions is a
+    # hack to make the action decorator Just Work across inheritance.
+    actions = FileBugViewBase.actions
+    custom_widget('title', TextWidget, displayWidth=40)
+    custom_widget('tags', BugTagsWidget)
+
+    _SEARCH_FOR_DUPES = ViewPageTemplateFile(
+        "../templates/bugtarget-filebug-search.pt")
+    _FILEBUG_FORM = ViewPageTemplateFile(
+        "../templates/bugtarget-filebug-submit-bug.pt")
+
+    template = _SEARCH_FOR_DUPES
+
+    focused_element_id = 'field.title'
+
+    @safe_action
+    @action("Continue", name="search", validator="validate_search")
+    def search_action(self, action, data):
+        """Search for similar bug reports."""
+        # Don't give focus to any widget, to ensure that the browser
+        # won't scroll past the "possible duplicates" list.
+        self.initial_focus_widget = None
+        return self.showFileBugForm()
+
+    @property
+    def search_context(self):
+        """Return the context used to search for similar bugs."""
+        if IDistributionSourcePackage.providedBy(self.context):
+            return self.context
+
+        search_context = self.getMainContext()
+        if IProject.providedBy(search_context):
+            assert self.widgets['product'].hasValidInput(), (
+                "This method should be called only when we know which"
+                " product the user selected.")
+            search_context = self.widgets['product'].getInputValue()
+        elif IMaloneApplication.providedBy(search_context):
+            if self.widgets['bugtarget'].hasValidInput():
+                search_context = self.widgets['bugtarget'].getInputValue()
+            else:
+                search_context = None
+
+        return search_context
+
     @cachedproperty
     def most_common_bugs(self):
         """Return a list of the most duplicated bugs."""
-        search_context = self.getSearchContext()
+        search_context = self.search_context
         if search_context is None:
             return []
         else:
@@ -869,12 +916,27 @@ class FileBugGuidedView(FileBugViewBase):
     def found_possible_duplicates(self):
         return self.similar_bugs or self.most_common_bugs
 
-    def getSearchText(self):
+    @property
+    def search_text(self):
         """Return the search string entered by the user."""
         try:
             return self.widgets['title'].getInputValue()
         except InputErrors:
             return None
+
+    @property
+    def show_duplicate_list(self):
+        """Return whether or not to show the duplicate list.
+
+        We only show the dupes if:
+          - The context uses Malone AND
+          - There are dupes to show AND
+          - There are no widget errors.
+        """
+        return (
+            self.contextUsesMalone and
+            len(self.similar_bugs) > 0 and
+            len(self.widget_errors) == 0)
 
     def validate_search(self, action, data):
         """Make sure some keywords are provided."""
@@ -1261,4 +1323,65 @@ class BugTargetBugTagsView(LaunchpadView):
         return [
             {'tag': tag, 'count': count, 'url': self._getSearchURL(tag)}
             for tag, count in bug_tag_counts]
+
+    @property
+    def official_tags(self):
+        """Get the official tags to diplay."""
+        official_tags = set(self.context.official_bug_tags)
+        tags = [tag for tag in self.getUsedBugTagsWithURLs()
+                if tag['tag'] in official_tags]
+        used_tags = set(tag['tag'] for tag in tags)
+        tags.sort(key=itemgetter('count'), reverse=True)
+        for tag in sorted(official_tags - used_tags):
+            tags.append(
+                {'tag': tag, 'count': 0, 'url': self._getSearchURL(tag)})
+        return tags
+
+    @property
+    def other_tags(self):
+        """Get the unofficial tags to diplay."""
+        official_tags = set(self.context.official_bug_tags)
+        tags = [tag for tag in self.getUsedBugTagsWithURLs()
+                if tag['tag'] not in official_tags]
+        tags.sort(key=itemgetter('count'), reverse=True)
+        return tags[:10]
+
+    @property
+    def show_manage_tags_link(self):
+        """Should a link to a "manage official tags" page be shown?"""
+        return (IOfficialBugTagTargetRestricted.providedBy(self.context) and
+                check_permission('launchpad.Edit', self.context))
+
+
+class OfficialBugTagsManageView(LaunchpadEditFormView):
+    """View class for management of official bug tags."""
+
+    schema = IOfficialBugTagTargetPublic
+    custom_widget('official_bug_tags', LargeBugTagsWidget)
+
+    @action('Save', name='save')
+    def save_action(self, action, data):
+        """Action for saving new official bug tags."""
+        self.context.official_bug_tags = data['official_bug_tags']
+        self.next_url = canonical_url(self.context)
+
+    @property
+    def tags_js_data(self):
+        """Return the JSON representation of the bug tags."""
+        used_tags = dict(self.context.getUsedBugTagsWithOpenCounts(self.user))
+        official_tags = list(self.context.official_bug_tags)
+        return """<script type="text/javascript">
+                      var used_bug_tags = %s;
+                      var official_bug_tags = %s;
+                      var valid_name_pattern = %s;
+                  </script>
+               """ % (
+               dumps(used_tags),
+               dumps(official_tags),
+               dumps(valid_name_pattern.pattern))
+
+    @property
+    def cancel_url(self):
+        """The URL the user is sent to when clicking the "cancel" link."""
+        return canonical_url(self.context)
 

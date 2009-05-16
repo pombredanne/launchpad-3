@@ -12,24 +12,22 @@ import os
 from sha import sha
 
 from zope.component import getUtility
-from zope.security.proxy import removeSecurityProxy
 
 from canonical.archivepublisher import HARDCODED_COMPONENT_ORDER
 from canonical.archivepublisher.diskpool import DiskPool
-from canonical.archivepublisher.config import LucilleConfigError
+from canonical.archivepublisher.config import getPubConfig, LucilleConfigError
 from canonical.archivepublisher.domination import Dominator
 from canonical.archivepublisher.ftparchive import FTPArchiveHandler
-from canonical.archivepublisher.utils import RepositoryIndexFile
-from canonical.database.sqlbase import sqlvalues
-from canonical.launchpad.database.publishing import (
-    SourcePackagePublishingHistory, BinaryPackagePublishingHistory)
-from canonical.launchpad.interfaces.archive import ArchivePurpose
-from canonical.launchpad.interfaces.binarypackagerelease import (
-    BinaryPackageFormat)
-from canonical.launchpad.interfaces.archivesigningkey import (
+from canonical.archivepublisher.interfaces.archivesigningkey import (
     IArchiveSigningKey)
-from canonical.launchpad.interfaces.component import IComponentSet
-from canonical.launchpad.interfaces.publishing import (
+from canonical.archivepublisher.utils import (
+    RepositoryIndexFile, get_ppa_reference)
+from canonical.database.sqlbase import sqlvalues
+from lp.soyuz.interfaces.archive import ArchivePurpose
+from lp.soyuz.interfaces.binarypackagerelease import (
+    BinaryPackageFormat)
+from lp.soyuz.interfaces.component import IComponentSet
+from lp.soyuz.interfaces.publishing import (
     pocketsuffix, PackagePublishingPocket, PackagePublishingStatus)
 
 from canonical.librarian.client import LibrarianClient
@@ -113,20 +111,16 @@ def getPublisher(archive, allowed_suites, log, distsroot=None):
     """
     if archive.purpose != ArchivePurpose.PPA:
         log.debug("Finding configuration for %s %s."
-                  % (archive.distribution.name, archive.title))
+                  % (archive.distribution.name, archive.displayname))
     else:
         log.debug("Finding configuration for '%s' PPA."
                   % archive.owner.name)
     try:
-        pubconf = archive.getPubConfig()
+        pubconf = getPubConfig(archive)
     except LucilleConfigError, info:
         log.error(info)
         raise
 
-    # XXX cprov 2007-01-03: remove security proxy of the Config instance
-    # returned by IArchive. This is kinda of a hack because Config doesn't
-    # have any interface yet.
-    pubconf = removeSecurityProxy(pubconf)
     disk_pool = _getDiskPool(pubconf, log)
 
     if distsroot is not None:
@@ -237,6 +231,9 @@ class Publisher(object):
         OBSOLETE), scheduledeletiondate NULL and dateremoved NULL as
         dirty, to ensure that they are processed in death row.
         """
+        from lp.soyuz.model.publishing import (
+            SourcePackagePublishingHistory, BinaryPackagePublishingHistory)
+
         self.log.debug("* Step A2: Mark pockets with deletions as dirty")
 
         # Query part that is common to both queries below.
@@ -319,7 +316,7 @@ class Publisher(object):
                         continue
                     self.checkDirtySuiteBeforePublishing(distroseries, pocket)
                 # Retrieve components from the publisher config because
-                # it gets overridden in IArchive.getPubConfig to set the
+                # it gets overridden in getPubConfig to set the
                 # correct components for the archive being used.
                 for component_name in self._config.componentsForSeries(
                         distroseries.name):
@@ -393,8 +390,8 @@ class Publisher(object):
                 archtag=arch.architecturetag, pocket=pocket,
                 component=component, archive=self.archive):
                 stanza = bpp.getIndexStanza().encode('utf-8') + '\n\n'
-                if (bpp.binarypackagerelease.binpackageformat ==
-                    BinaryPackageFormat.DEB):
+                if (bpp.binarypackagerelease.binpackageformat in
+                    (BinaryPackageFormat.DEB, BinaryPackageFormat.DDEB)):
                     package_index.write(stanza)
                 elif (bpp.binarypackagerelease.binpackageformat ==
                       BinaryPackageFormat.UDEB):
@@ -433,6 +430,22 @@ class Publisher(object):
         if self.cannotModifySuite(distroseries, pocket):
             raise AssertionError(
                 "Oops, tainting RELEASE pocket of %s." % distroseries)
+
+    def _getOrigin(self):
+        """Return the contents of the Release file Origin field.
+
+        Primary, Partner and Copy archives use the distribution displayname.
+        For PPAs we use a more specific value that follows
+        `get_ppa_reference`.
+
+        :return: a text that should be used as the value of the Release file
+            'Origin' field.
+        """
+        # XXX al-maisan, 2008-11-19, bug=299981. If this file is released
+        # from a copy archive then modify the origin to indicate so.
+        if not self.archive.is_ppa:
+            return self.distro.displayname
+        return "LP-PPA-%s" % get_ppa_reference(self.archive)
 
     def _writeDistroSeries(self, distroseries, pocket):
         """Write out the Release files for the provided distroseries."""
@@ -473,15 +486,8 @@ class Publisher(object):
         f = open(os.path.join(
             self._config.distsroot, full_name, "Release"), "w")
 
-        # XXX al-maisan, 2008-11-19, bug=299981. If this file is released
-        # from a copy archive then modify the origin to indicate so.
-        if self.archive.is_ppa:
-            origin = "LP-PPA-%s" % self.archive.owner.name
-        else:
-            origin = self.distro.displayname
-
         stanza = DISTRORELEASE_STANZA % (
-                    origin,
+                    self._getOrigin(),
                     self.distro.displayname,
                     full_name,
                     distroseries.version,
@@ -519,17 +525,7 @@ class Publisher(object):
         # XXX kiko 2006-08-24: Untested method.
 
         full_name = distroseries.name + pocketsuffix[pocket]
-
-        # Only the primary archive has uncompressed and bz2 archives.
-        if self.archive.purpose == ArchivePurpose.PRIMARY:
-            index_suffixes = ('', '.gz', '.bz2')
-        else:
-            # We don't generate bz2 indexes for other archives for
-            # simplicity (they use NoMoreAptFtparchive approach).
-            # The plain index has to be listed in the Release, but not
-            # necessarily has to be on disk, its checksum is used for
-            # verification in client applications like dpkg/apt/smart.
-            index_suffixes = ('', '.gz')
+        index_suffixes = ('', '.gz', '.bz2')
 
         self.log.debug("Writing Release file for %s/%s/%s" % (
             full_name, component, architecture))
@@ -564,18 +560,11 @@ class Publisher(object):
         f = open(os.path.join(self._config.distsroot, full_name,
                               component, architecture, "Release"), "w")
 
-        # XXX cprov, 2009-01-06, bug=299981. If this file is released
-        # from a copy archive then modify the origin to indicate so.
-        if self.archive.is_ppa:
-            origin = "LP-PPA-%s" % self.archive.owner.name
-        else:
-            origin = self.distro.displayname
-
         stanza = DISTROARCHRELEASE_STANZA % (
                 full_name,
                 distroseries.version,
                 component,
-                origin,
+                self._getOrigin(),
                 self.distro.displayname,
                 clean_architecture)
         f.write(stanza)

@@ -47,10 +47,16 @@ if [ -z "$1" ]; then
     bzr diff > /dev/null
     diff_status=$?
     if [ $diff_status -eq 0 ] ; then
-        # No uncommitted changes in the tree, lint changes relative to the
-        # parent.
-        rev=`bzr info | sed '/parent branch:/!d; s/ *parent branch: /ancestor:/'`
-        rev_option="-r $rev"
+        # No uncommitted changes in the tree.
+        bzr status | grep "^Current thread:" > /dev/null
+        if [ $? -eq 0 ] ; then
+            # This is a loom, lint changes relative to the lower thread.
+            rev_option="-r thread:"
+        else
+            # Lint changes relative to the parent.
+            rev=`bzr info | sed '/parent branch:/!d; s/ *parent branch: /ancestor:/'`
+            rev_option="-r $rev"
+        fi
     elif [ $diff_status -eq 1 ] ; then
         # Uncommitted changes in the tree, lint those changes.
         rev_option=""
@@ -263,8 +269,8 @@ if [ ! -z "$pyflakes_notices" ]; then
     group_lines_by_file "$pyflakes_notices"
 fi
 
-
-export PYTHONPATH="/usr/share/pycentral/pylint/site-packages:lib:$PYTHONPATH"
+extra_path="/usr/share/pyshared:/usr/share/pycentral/pylint/site-packages"
+export PYTHONPATH="$extra_path:lib:$PYTHONPATH"
 pylint="python2.4 -Wi::DeprecationWarning `which pylint`"
 
 # XXX sinzui 2007-10-18 bug=154140:
@@ -281,6 +287,7 @@ sed_deletes="$sed_deletes /Undefined variable.*valida/d; "
 sed_deletes="$sed_deletes s,^/.*lib/canonical/,lib/canonical,; "
 sed_deletes="$sed_deletes /ENABLED/d; "
 sed_deletes="$sed_deletes /BYUSER/d; "
+sed_deletes="$sed_deletes /zope.*No module/d;"
 
 # Note that you can disable specific tests by placing pylint
 # instruction in a comment:

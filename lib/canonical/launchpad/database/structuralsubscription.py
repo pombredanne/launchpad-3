@@ -18,7 +18,7 @@ from canonical.launchpad.interfaces import (
     IDistribution, IDistributionSourcePackage, IDistroSeries, IMilestone,
     IProduct, IProductSeries, IProject, IStructuralSubscription,
     IStructuralSubscriptionTarget)
-from canonical.launchpad.validators.person import validate_public_person
+from lp.registry.interfaces.person import validate_public_person
 
 class StructuralSubscription(SQLBase):
     """A subscription to a Launchpad structure."""
@@ -265,3 +265,24 @@ class StructuralSubscriptionTargetMixin:
             return parent
         else:
             return None
+
+    @property
+    def target_type_display(self):
+        """See `IStructuralSubscriptionTarget`."""
+        if IDistributionSourcePackage.providedBy(self):
+            return 'package'
+        elif IProduct.providedBy(self):
+            return 'project'
+        elif IProject.providedBy(self):
+            return 'project group'
+        elif IDistribution.providedBy(self):
+            return 'distribution'
+        elif IMilestone.providedBy(self):
+            return 'milestone'
+        elif IProductSeries.providedBy(self):
+            return 'project series'
+        elif IDistroSeries.providedBy(self):
+            return 'distribution series'
+        else:
+            raise AssertionError(
+                '%s is not a valid structural subscription target.', self)

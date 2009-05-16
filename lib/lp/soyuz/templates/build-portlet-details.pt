@@ -1,0 +1,56 @@
+<div
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  class="portlet">
+
+  <h2>Build details</h2>
+
+  <div class="portletBody portletContent">
+
+   <table>
+    <tr>
+      <th>Package:</th>
+      <td>
+         <a tal:condition="not: context/archive/purpose/enumvalue:PPA"
+            tal:define="dspr context/distributionsourcepackagerelease"
+            tal:content="dspr/displayname"
+            tal:attributes="href dspr/fmt:url">foobar</a>
+         <tal:ppa condition="context/archive/purpose/enumvalue:PPA">
+           <span tal:replace="context/sourcepackagerelease/title" /> in
+           <a tal:replace="structure context/archive/owner/fmt:link"/> PPA
+         </tal:ppa>
+      </td>
+    </tr>
+    <tr>
+      <th>Built on:</th>
+      <td>
+        <a tal:content="context/distroarchseries/displayname"
+           tal:attributes="href context/distroarchseries/fmt:url"
+        >warty i386</a>
+      </td>
+    </tr>
+    <tr>
+      <th>Status:</th>
+      <td tal:content="context/buildstate/title">Fully built</td>
+    </tr>
+    <tr>
+      <th>Queued:</th>
+      <td>
+        <span tal:attributes="title context/datecreated/fmt:datetime"
+              tal:content="context/datecreated/fmt:approximatedate">
+          2005-10-05 5:45</span>
+      </td>
+    </tr>
+    <tr tal:condition="context/datebuilt">
+      <th>Finished:</th>
+      <td>
+        <span tal:attributes="title context/datebuilt/fmt:datetime"
+              tal:content="context/datebuilt/fmt:approximatedate">
+         2005-10-05 5:45</span>
+      </td>
+    </tr>
+   </table>
+
+  </div>
+</div>

@@ -1,4 +1,5 @@
 # Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0213
 
 """The Launchpad code hosting file system.
 
@@ -47,6 +48,7 @@ __all__ = [
     'AsyncLaunchpadTransport',
     'branch_id_to_path',
     'get_lp_server',
+    'get_multi_server',
     'get_puller_server',
     'get_scanner_server',
     'LaunchpadInternalServer',
@@ -60,7 +62,7 @@ from bzrlib.errors import (
     NoSuchFile, PermissionDenied, TransportNotPossible)
 from bzrlib.transport import get_transport
 from bzrlib.transport.memory import MemoryServer
-from bzrlib.urlutils import unescape
+from bzrlib import urlutils
 
 from twisted.internet import defer
 from twisted.python import failure
@@ -74,7 +76,7 @@ from canonical.codehosting.vfs.transport import (
     AsyncVirtualServer, AsyncVirtualTransport, _MultiServer,
     get_chrooted_transport, get_readonly_transport, TranslationError)
 from canonical.config import config
-from canonical.launchpad.interfaces.codehosting import (
+from lp.code.interfaces.codehosting import (
     BRANCH_TRANSPORT, CONTROL_TRANSPORT, LAUNCHPAD_SERVICES)
 from canonical.launchpad.xmlrpc import faults
 
@@ -145,15 +147,33 @@ def get_puller_server():
     the hosted branch area and is read-only, the other points to the mirrored
     area and is read/write.
     """
+    return get_multi_server(write_mirrored=True)
+
+
+def get_multi_server(write_hosted=False, write_mirrored=False):
+    """Get a server with access to both mirrored and hosted areas.
+
+    The server wraps up two `LaunchpadInternalServer`s. One of them points to
+    the hosted branch area, the other points to the mirrored area.
+
+    Write permision defaults to False, but can be overridden.
+    :param write_hosted: if True, lp-hosted URLs are writeable.  Otherwise,
+        they are read-only.
+    :param write_mirrored: if True, lp-mirrored URLs are writeable.
+        Otherwise, they are read-only.
+    """
     proxy = xmlrpclib.ServerProxy(config.codehosting.branchfs_endpoint)
     branchfs_endpoint = BlockingProxy(proxy)
     hosted_transport = get_chrooted_transport(
-        config.codehosting.hosted_branches_root)
+        config.codehosting.hosted_branches_root, mkdir=True)
+    if not write_hosted:
+        hosted_transport = get_readonly_transport(hosted_transport)
     mirrored_transport = get_chrooted_transport(
-        config.codehosting.mirrored_branches_root)
+        config.codehosting.mirrored_branches_root, mkdir=True)
+    if not write_mirrored:
+        mirrored_transport = get_readonly_transport(mirrored_transport)
     hosted_server = LaunchpadInternalServer(
-        'lp-hosted:///', branchfs_endpoint,
-        get_readonly_transport(hosted_transport))
+        'lp-hosted:///', branchfs_endpoint, hosted_transport)
     mirrored_server = LaunchpadInternalServer(
         'lp-mirrored:///', branchfs_endpoint, mirrored_transport)
     return _MultiServer(hosted_server, mirrored_server)
@@ -281,7 +301,8 @@ class TransportDispatch:
             return transport
         format = BzrDirFormat.get_default_format()
         bzrdir = format.initialize_on_transport(transport)
-        bzrdir.get_config().set_default_stack_on(unescape(default_stack_on))
+        bzrdir.get_config().set_default_stack_on(
+            urlutils.unescape(default_stack_on))
         return get_readonly_transport(transport)
 
 
@@ -362,6 +383,18 @@ class LaunchpadInternalServer(_BaseLaunchpadServer):
         super(LaunchpadInternalServer, self).__init__(
             scheme, authserver, LAUNCHPAD_SERVICES)
         self._transport_dispatch = BranchTransportDispatch(branch_transport)
+
+    def setUp(self):
+        super(LaunchpadInternalServer, self).setUp()
+        try:
+            self._transport_dispatch.base_transport.ensure_base()
+        except TransportNotPossible:
+            pass
+
+    def destroy(self):
+        """Delete the on-disk branches and tear down."""
+        self._transport_dispatch.base_transport.delete_tree('.')
+        self.tearDown()
 
 
 class AsyncLaunchpadTransport(AsyncVirtualTransport):
@@ -521,17 +554,28 @@ class LaunchpadServer(_BaseLaunchpadServer):
         return deferred.addCallback(got_path_info)
 
 
-def get_lp_server(branchfs_client, user_id, hosted_url, mirror_url):
+def get_lp_server(user_id, branchfs_endpoint_url=None, hosted_directory=None,
+                  mirror_directory=None):
     """Create a Launchpad server.
 
-    :param branchfs_client: An `xmlrpclib.ServerProxy` (or equivalent) for the
-        branch file system end-point.
     :param user_id: A unique database ID of the user whose branches are
         being served.
-    :param hosted_url: Where the branches are uploaded to.
-    :param mirror_url: Where all Launchpad branches are mirrored.
+    :param branchfs_endpoint_url: URL for the branch file system end-point.
+    :param hosted_directory: Where the branches are uploaded to.
+    :param mirror_directory: Where all Launchpad branches are mirrored.
     :return: A `LaunchpadServer`.
     """
+    # Get the defaults from the config.
+    if hosted_directory is None:
+        hosted_directory = config.codehosting.hosted_branches_root
+    if mirror_directory is None:
+        mirror_directory = config.codehosting.mirrored_branches_root
+    if branchfs_endpoint_url is None:
+        branchfs_endpoint_url = config.codehosting.branchfs_endpoint
+
+    hosted_url = urlutils.local_path_to_url(hosted_directory)
+    mirror_url = urlutils.local_path_to_url(mirror_directory)
+    branchfs_client = xmlrpclib.ServerProxy(branchfs_endpoint_url)
     # XXX: JonathanLange 2007-05-29: The 'chroot' lines lack unit tests.
     hosted_transport = get_chrooted_transport(hosted_url)
     mirror_transport = get_chrooted_transport(mirror_url)

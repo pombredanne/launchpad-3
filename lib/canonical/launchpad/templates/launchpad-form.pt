@@ -17,12 +17,12 @@
           enctype="multipart/form-data"
           accept-charset="UTF-8">
 
-      <div metal:define-macro="formbody">
+      <h1 tal:condition="view/label"
+          tal:content="view/label"
+          metal:define-slot="heading"
+          >Add Something</h1>
 
-        <h1 tal:condition="view/label"
-            tal:content="view/label"
-            metal:define-slot="heading"
-            >Add Something</h1>
+      <div metal:define-macro="formbody">
 
         <p metal:define-slot="extra_info" tal:replace="nothing">
           This is the description of the form.
@@ -65,12 +65,14 @@
         </div>
 
       </div>
-      <div class="actions" metal:define-slot="buttons">
+      <div class="actions" id="launchpad-form-actions"
+           metal:define-slot="buttons">
         <input tal:repeat="action view/actions"
                tal:replace="structure action/render"
           />
         <tal:has-cancel-link condition="view/cancel_url">
-          or <a tal:attributes="href view/cancel_url">Cancel</a>
+          <tal:or condition="view/has_available_actions">or</tal:or>
+          <a tal:attributes="href view/cancel_url">Cancel</a>
         </tal:has-cancel-link>
       </div>
 
@@ -83,7 +85,7 @@
   </div>
 
   <metal:macro define-macro="widget_rows">
-    <table class="form">
+    <table class="form" id="launchpad-form-widgets">
       <tal:block define="widgets widgets|view/widgets"
                  repeat="widget widgets">
 

@@ -137,6 +137,7 @@ defaults = [
     '--tests-pattern=^f?tests$',
     '--test-path=%s' % os.path.join(here, 'lib'),
     '--package=canonical',
+    '--package=lp',
     ]
 
 # Monkey-patch os.listdir to randomise the results
@@ -158,6 +159,15 @@ def listdir(path):
 os.listdir = listdir
 
 
+from canonical.testing.customresult import (
+    filter_tests,
+    list_tests,
+    patch_find_tests,
+    patch_zope_testresult,
+    )
+from subunit import TestProtocolClient
+
+
 if __name__ == '__main__':
     # Extract arguments so we can see them too. We need to strip
     # --resume-layer and --default stuff if found as get_options can't
@@ -173,6 +183,22 @@ if __name__ == '__main__':
         args.insert(0, sys.argv[0])
     else:
         args = sys.argv
+
+    def load_list(option, opt_str, list_name, parser):
+        patch_find_tests(filter_tests(list_name))
+    testrunner.parser.add_option(
+        '--load-list', type=str, action='callback', callback=load_list)
+
+    def list_test_option(option, opt, value, parser):
+        patch_find_tests(list_tests)
+    testrunner.parser.add_option(
+        '--list', action='callback', callback=list_test_option)
+
+    def use_subunit(option, opt, value, parser):
+        patch_zope_testresult(TestProtocolClient(sys.stdout))
+    testrunner.parser.add_option(
+        '--subunit', action='callback', callback=use_subunit)
+
     options = testrunner.get_options(args=args, defaults=defaults)
 
     # Turn on Layer profiling if requested.

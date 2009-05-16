@@ -4,6 +4,8 @@
 
 __metaclass__ = type
 
+
+import bz2
 import gzip
 import os
 import shutil
@@ -15,26 +17,27 @@ import unittest
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.archivepublisher.config import getPubConfig
 from canonical.archivepublisher.diskpool import DiskPool
 from canonical.archivepublisher.publishing import (
     Publisher, getPublisher, sha256)
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.ftests.keys_for_tests import gpgkeysdir
-from canonical.launchpad.interfaces.archive import (
+from lp.soyuz.interfaces.archive import (
     ArchivePurpose, IArchiveSet)
-from canonical.launchpad.interfaces.binarypackagerelease import (
+from lp.soyuz.interfaces.binarypackagerelease import (
     BinaryPackageFormat)
-from canonical.launchpad.interfaces.distribution import IDistributionSet
-from canonical.launchpad.interfaces.distroseries import DistroSeriesStatus
+from lp.registry.interfaces.distribution import IDistributionSet
+from lp.registry.interfaces.distroseries import DistroSeriesStatus
 from canonical.launchpad.interfaces.gpghandler import IGPGHandler
-from canonical.launchpad.interfaces.person import IPersonSet
-from canonical.launchpad.interfaces.publishing import (
+from lp.registry.interfaces.person import IPersonSet
+from lp.soyuz.interfaces.publishing import (
     PackagePublishingPocket, PackagePublishingStatus)
-from canonical.launchpad.interfaces.archivesigningkey import (
+from canonical.archivepublisher.interfaces.archivesigningkey import (
     IArchiveSigningKey)
-from canonical.launchpad.testing import get_lsb_information
-from canonical.launchpad.tests.test_publishing import TestNativePublishingBase
+from lp.testing import get_lsb_information
+from lp.soyuz.tests.test_publishing import TestNativePublishingBase
 from canonical.zeca.ftests.harness import ZecaTestSetup
 
 
@@ -94,7 +97,7 @@ class TestPublisher(TestPublisherBase):
     def testPublishPartner(self):
         """Test that a partner package is published to the right place."""
         archive = self.ubuntutest.getArchiveByComponent('partner')
-        pub_config = removeSecurityProxy(archive.getPubConfig())
+        pub_config = getPubConfig(archive)
         pub_config.setupArchiveDirs()
         disk_pool = DiskPool(
             pub_config.poolroot, pub_config.temproot, self.logger)
@@ -134,7 +137,7 @@ class TestPublisher(TestPublisherBase):
         """
         archive = self.ubuntutest.getArchiveByComponent('partner')
         self.ubuntutest['breezy-autotest'].status = DistroSeriesStatus.CURRENT
-        pub_config = removeSecurityProxy(archive.getPubConfig())
+        pub_config = getPubConfig(archive)
         pub_config.setupArchiveDirs()
         disk_pool = DiskPool(
             pub_config.poolroot, pub_config.temproot, self.logger)
@@ -415,26 +418,37 @@ class TestPublisher(TestPublisherBase):
                              uncompressed_file_path):
         """Assert that a compressed file is equal to its uncompressed version.
 
-        Check that a compressed file, such as Packages.gz and Sources.gz
-        matches its uncompressed partner.  The file paths are relative to
-        breezy-autotest/main under the archive_publisher's configured dist
-        root.  'breezy-autotest' is our test distroseries name.
+        Check that a compressed file, such as Packages.gz and Sources.gz,
+        and bz2 variations, matches its uncompressed partner.  The file
+        paths are relative to breezy-autotest/main under the
+        archive_publisher's configured dist root. 'breezy-autotest' is
+        our test distroseries name.
 
         The contents of the uncompressed file is returned as a list of lines
         in the file.
         """
-        index_gz_path = os.path.join(
+        index_compressed_path = os.path.join(
             archive_publisher._config.distsroot, 'breezy-autotest', 'main',
             compressed_file_path)
         index_path = os.path.join(
             archive_publisher._config.distsroot, 'breezy-autotest', 'main',
             uncompressed_file_path)
-        index_gz_contents = gzip.GzipFile(
-            filename=index_gz_path).read().splitlines()
+
+        if index_compressed_path.endswith('.gz'):
+            index_compressed_contents = gzip.GzipFile(
+                filename=index_compressed_path).read().splitlines()
+        elif index_compressed_path.endswith('.bz2'):
+            index_compressed_contents = bz2.BZ2File(
+                filename=index_compressed_path).read().splitlines()
+        else:
+            raise AssertionError(
+                'Unsupported compression: %s' % compressed_file_path)
+
         index_file = open(index_path,'r')
         index_contents = index_file.read().splitlines()
         index_file.close()
-        self.assertEqual(index_gz_contents, index_contents)
+
+        self.assertEqual(index_compressed_contents, index_contents)
 
         return index_contents
 
@@ -474,6 +488,10 @@ class TestPublisher(TestPublisherBase):
         # A compressed and uncompressed Sources file are written;
         # ensure that they are the same after uncompressing the former.
         index_contents = self._checkCompressedFile(
+            archive_publisher, os.path.join('source', 'Sources.bz2'),
+            os.path.join('source', 'Sources'))
+
+        index_contents = self._checkCompressedFile(
             archive_publisher, os.path.join('source', 'Sources.gz'),
             os.path.join('source', 'Sources'))
 
@@ -495,6 +513,10 @@ class TestPublisher(TestPublisherBase):
         # A compressed and an uncompressed Packages file are written;
         # ensure that they are the same after uncompressing the former.
         index_contents = self._checkCompressedFile(
+            archive_publisher, os.path.join('binary-i386', 'Packages.bz2'),
+            os.path.join('binary-i386', 'Packages'))
+
+        index_contents = self._checkCompressedFile(
             archive_publisher, os.path.join('binary-i386', 'Packages.gz'),
             os.path.join('binary-i386', 'Packages'))
 
@@ -510,6 +532,7 @@ class TestPublisher(TestPublisherBase):
              'Filename: pool/main/f/foo/foo-bin_666_all.deb',
              'Size: 18',
              'MD5sum: 008409e7feb1c24a6ccab9f6a62d24c5',
+             'SHA1: 30b7b4e583fa380772c5a40e428434628faef8cf',
              'Description: Foo app is great',
              ' My leading spaces are normalised to a single space but not '
              'trailing.  ',
@@ -520,6 +543,11 @@ class TestPublisher(TestPublisherBase):
         # A compressed and an uncompressed Packages file are written for
         # 'debian-installer' section for each architecture. It will list
         # the 'udeb' files.
+        index_contents = self._checkCompressedFile(
+            archive_publisher,
+            os.path.join('debian-installer', 'binary-i386', 'Packages.bz2'),
+            os.path.join('debian-installer', 'binary-i386', 'Packages'))
+
         index_contents = self._checkCompressedFile(
             archive_publisher,
             os.path.join('debian-installer', 'binary-i386', 'Packages.gz'),
@@ -537,6 +565,7 @@ class TestPublisher(TestPublisherBase):
              'Filename: pool/main/f/foo/bingo_666_all.udeb',
              'Size: 18',
              'MD5sum: 008409e7feb1c24a6ccab9f6a62d24c5',
+             'SHA1: 30b7b4e583fa380772c5a40e428434628faef8cf',
              'Description: Foo app is great',
              ' nice udeb',
              ''],
@@ -779,6 +808,14 @@ class TestPublisher(TestPublisherBase):
         self.assertNotEqual(
             text, file, "Python-apt no longer creates bad SHA256 sums.")
 
+    def _getReleaseFileOrigin(self, contents):
+        origin_header = 'Origin: '
+        [origin_line] = [
+            line for line in contents.splitlines()
+            if line.startswith(origin_header)]
+        origin = origin_line.replace(origin_header, '')
+        return origin
+
     def testReleaseFile(self):
         """Test release file writing.
 
@@ -801,8 +838,16 @@ class TestPublisher(TestPublisherBase):
 
         release_file = os.path.join(
             self.config.distsroot, 'breezy-autotest', 'Release')
-        release_contents = open(release_file).read().splitlines()
+        release_contents = open(release_file).read()
 
+        # Primary archive distroseries Release 'Origin' contains
+        # the distribution displayname.
+        self.assertEqual(
+            self._getReleaseFileOrigin(release_contents), 'ubuntutest')
+
+        # XXX cprov 20090427: we should write a Release file parsing for
+        # making tests less cryptic.
+        release_contents = release_contents.splitlines()
         md5_header = 'MD5Sum:'
         self.assertTrue(md5_header in release_contents)
         md5_header_index = release_contents.index(md5_header)
@@ -829,6 +874,15 @@ class TestPublisher(TestPublisherBase):
             first_sha256_line,
             (' 297125e9b0f5da85552691597c9c4920aafd187e18a4e01d2ba70d'
              '8d106a6338              114 main/source/Release'))
+
+        # Primary archive architecture Release files 'Origin' contain
+        # the distribution displayname.
+        arch_release_file = os.path.join(
+            publisher._config.distsroot, 'breezy-autotest',
+            'main/source/Release')
+        arch_release_contents = open(arch_release_file).read()
+        self.assertEqual(
+            self._getReleaseFileOrigin(arch_release_contents), 'ubuntutest')
 
     def testReleaseFileForPPA(self):
         """Test release file writing for PPA
@@ -863,85 +917,120 @@ class TestPublisher(TestPublisherBase):
 
         release_file = os.path.join(
             archive_publisher._config.distsroot, 'breezy-autotest', 'Release')
-        release_contents = open(release_file).read().splitlines()
+        release_contents = open(release_file).read()
+        self.assertEqual(
+            self._getReleaseFileOrigin(release_contents), 'LP-PPA-cprov')
 
-        origin_header = 'Origin: '
-        origin_lines = [line for line in release_contents if
-                        line.startswith(origin_header)]
-        [origin] = origin_lines
-        # Throw away 'Origin: ' prefix.
-        origin = origin.replace(origin_header, '')
-        self.assertEqual(origin,
-            'LP-PPA-%s' % archive_publisher.archive.owner.name)
-
+        # XXX cprov 20090427: we should write a Release file parsing for
+        # making tests less cryptic.
+        release_contents = release_contents.splitlines()
         md5_header = 'MD5Sum:'
         self.assertTrue(md5_header in release_contents)
         md5_header_index = release_contents.index(md5_header)
 
-        plain_sources_md5_line = release_contents[md5_header_index + 11]
+        plain_sources_md5_line = release_contents[md5_header_index + 15]
         self.assertEqual(
             plain_sources_md5_line,
             (' 7d9b0817f5ff4a1d3f53f97bcc9c7658              '
              '229 main/source/Sources'))
-        release_md5_line = release_contents[md5_header_index + 12]
+        release_md5_line = release_contents[md5_header_index + 17]
         self.assertEqual(
             release_md5_line,
             (' f8351af2392a90cb0b62f0feba49fa42              '
              '116 main/source/Release'))
         # We can't probe checksums of compressed files because they contain
         # timestamps, their checksum varies with time.
-        gz_sources_md5_line = release_contents[md5_header_index + 13]
+        bz2_sources_md5_line = release_contents[md5_header_index + 16]
+        self.assertTrue('main/source/Sources.bz2' in bz2_sources_md5_line)
+        gz_sources_md5_line = release_contents[md5_header_index + 18]
         self.assertTrue('main/source/Sources.gz' in gz_sources_md5_line)
 
         sha1_header = 'SHA1:'
         self.assertTrue(sha1_header in release_contents)
         sha1_header_index = release_contents.index(sha1_header)
 
-        plain_sources_sha1_line = release_contents[sha1_header_index + 11]
+        plain_sources_sha1_line = release_contents[sha1_header_index + 15]
         self.assertEqual(
             plain_sources_sha1_line,
             (' a2da1a8407fc4e2373266e56ccc7afadf8e08a3a              '
              '229 main/source/Sources'))
-        release_sha1_line = release_contents[sha1_header_index + 12]
+        release_sha1_line = release_contents[sha1_header_index + 17]
         self.assertEqual(
             release_sha1_line,
             (' b080b75dcfc245825d5872bb644afe00f2661fa3              '
              '116 main/source/Release'))
         # See above.
-        gz_sources_sha1_line = release_contents[sha1_header_index + 13]
+        bz2_sources_sha1_line = release_contents[sha1_header_index + 16]
+        self.assertTrue('main/source/Sources.bz2' in bz2_sources_sha1_line)
+        gz_sources_sha1_line = release_contents[sha1_header_index + 18]
         self.assertTrue('main/source/Sources.gz' in gz_sources_sha1_line)
 
         sha256_header = 'SHA256:'
         self.assertTrue(sha256_header in release_contents)
         sha256_header_index = release_contents.index(sha256_header)
 
-        plain_sources_sha256_line = release_contents[sha256_header_index + 11]
+        plain_sources_sha256_line = release_contents[sha256_header_index + 15]
         self.assertEqual(
             plain_sources_sha256_line,
             (' 979d959ead8ddc29e4347a64058a372d30df58a51a4615b43fb7499'
              '8a9e07c78              229 main/source/Sources'))
-        release_sha256_line = release_contents[sha256_header_index + 12]
+        release_sha256_line = release_contents[sha256_header_index + 17]
         self.assertEqual(
             release_sha256_line,
             (' 8186d7a342c728179da7ce5d045e0a009c4c04cf3f146036d614d29'
              '6fa8c4359              116 main/source/Release'))
         # See above.
-        gz_sources_sha256_line = release_contents[sha256_header_index + 13]
+        bz2_sources_sha256_line = release_contents[sha256_header_index + 16]
+        self.assertTrue('main/source/Sources.bz2' in bz2_sources_sha256_line)
+        gz_sources_sha256_line = release_contents[sha256_header_index + 18]
         self.assertTrue('main/source/Sources.gz' in gz_sources_sha256_line)
 
         # Architecture Release files also have a distinct Origin: for PPAs.
         arch_release_file = os.path.join(
             archive_publisher._config.distsroot, 'breezy-autotest',
             'main/source/Release')
-        arch_release_contents = open(arch_release_file).read().splitlines()
-        origin_lines = [
-            line for line in arch_release_contents
-            if line.startswith(origin_header)
-            ]
-        [origin] = origin_lines
+        arch_release_contents = open(arch_release_file).read()
         self.assertEqual(
-            origin,
-            'Origin: LP-PPA-%s' % archive_publisher.archive.owner.name)
+            self._getReleaseFileOrigin(arch_release_contents), 'LP-PPA-cprov')
+
+    def testReleaseFileForNamedPPA(self):
+        # Named PPA have a distint Origin: field, so packages from it can
+        # be pinned if necessary.
+
+        # Create a named-ppa for Celso.
+        cprov = getUtility(IPersonSet).getByName('cprov')
+        named_ppa = getUtility(IArchiveSet).new(
+            owner=cprov, name='testing', distribution=self.ubuntutest,
+            purpose=ArchivePurpose.PPA)
+
+        # Setup the publisher for it and publish its repository.
+        allowed_suites = []
+        archive_publisher = getPublisher(
+            named_ppa, allowed_suites, self.logger)
+        pub_source = self.getPubSource(
+            filecontent='Hello world', archive=named_ppa)
+
+        archive_publisher.A_publish(False)
+        self.layer.txn.commit()
+        archive_publisher.C_writeIndexes(False)
+        archive_publisher.D_writeReleaseFiles(False)
+
+        # Check the distinct Origin: field content in the main Release file
+        # and the architecture specific one.
+        release_file = os.path.join(
+            archive_publisher._config.distsroot, 'breezy-autotest', 'Release')
+        release_contents = open(release_file).read()
+        self.assertEqual(
+            self._getReleaseFileOrigin(release_contents),
+            'LP-PPA-cprov-testing')
+
+        arch_release_file = os.path.join(
+            archive_publisher._config.distsroot, 'breezy-autotest',
+            'main/source/Release')
+        arch_release_contents = open(arch_release_file).read()
+        self.assertEqual(
+            self._getReleaseFileOrigin(arch_release_contents),
+            'LP-PPA-cprov-testing')
 
     def testReleaseFileForPartner(self):
         """Test Release file writing for Partner archives.

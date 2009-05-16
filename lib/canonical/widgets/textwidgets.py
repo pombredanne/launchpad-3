@@ -9,7 +9,6 @@ from zope.app.form.browser.textwidgets import TextAreaWidget, TextWidget
 from zope.app.form.interfaces import ConversionError
 
 from canonical.launchpad.interfaces import UnexpectedFormData
-from canonical.launchpad.webapp.uri import URI, InvalidURIError
 
 # XXX matsubara 2006-05-10: Should I move our NewLineToSpacesWidget to
 # this module?
@@ -45,6 +44,17 @@ class TokensTextWidget(StrippedTextWidget):
         """
         normalised_text = re.sub(r'[^\w-]+', ' ', input)
         return super(TokensTextWidget, self)._toFieldValue(normalised_text)
+
+
+class NoneableTextWidget(StrippedTextWidget):
+    """A widget that that is None if it's value is empty or whitespace."""
+
+    def _toFieldValue(self, input):
+        value = super(NoneableTextWidget, self)._toFieldValue(input)
+        if value == '':
+            return None
+        else:
+            return value
 
 
 class LocalDateTimeWidget(TextWidget):

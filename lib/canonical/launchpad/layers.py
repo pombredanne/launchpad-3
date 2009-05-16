@@ -11,8 +11,7 @@ from zope.interface import directlyProvides, directlyProvidedBy, Interface
 from zope.publisher.interfaces.browser import (
     IBrowserRequest, IDefaultBrowserLayer)
 
-from canonical.lazr.interfaces.rest import (
-    WebServiceLayer as LazrWebServiceLayer)
+from lazr.restful.interfaces import IWebServiceLayer
 
 
 def setAdditionalLayer(request, layer):
@@ -47,16 +46,6 @@ BlueprintsLayer = BlueprintLayer
 class AnswersLayer(LaunchpadLayer):
     """The `AnswersLayer` layer."""
 
-# XXX sinzui 2008-09-04 bug=264783:
-# Remove this layer.
-class OpenIDLayer(LaunchpadLayer):
-    """The `OpenID` layer."""
-
-
-class IdLayer(LaunchpadLayer):
-    """The new OpenID `Id` layer."""
-
-
 class DebugLayer(Interface):
     """The `DebugLayer` layer.
 
@@ -81,26 +70,10 @@ class PageTestLayer(LaunchpadLayer):
     """
 
 
-class ShipItLayer(LaunchpadLayer):
-    """The `ShipIt` layer."""
-
-
-class ShipItUbuntuLayer(ShipItLayer):
-    """The `ShipIt` for Ubuntu layer."""
-
-
-class ShipItKUbuntuLayer(ShipItLayer):
-    """The `ShipIt` for KUbuntu layer."""
-
-
-class ShipItEdUbuntuLayer(IDefaultBrowserLayer):
-    """The `ShipIt` for EdUbuntu layer."""
-
-
 class FeedsLayer(LaunchpadLayer):
     """The `FeedsLayer` Layer."""
 
 
-class WebServiceLayer(LazrWebServiceLayer, LaunchpadLayer):
+class WebServiceLayer(IWebServiceLayer, LaunchpadLayer):
     """The layer for web service requests."""
 

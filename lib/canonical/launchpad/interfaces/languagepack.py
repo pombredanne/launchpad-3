@@ -16,7 +16,7 @@ from zope.interface import Attribute, Interface
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
-from canonical.lazr import DBEnumeratedType, DBItem
+from lazr.enum import DBEnumeratedType, DBItem
 
 
 class LanguagePackType(DBEnumeratedType):

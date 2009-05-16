@@ -1,0 +1,39 @@
+= Karma =
+
+Launchpad assigns a person karma for performing actions beneficial to
+the community.  A person's current total karma is available on their
+profile page.
+
+    >>> anon_browser.open('http://launchpad.dev/~name12')
+    >>> print anon_browser.title
+    Sample Person in Launchpad
+
+    >>> karma = find_tag_by_id(anon_browser.contents, 'karma-total')
+    >>> print karma.renderContents()
+    138
+
+The navigation menu links to Sample Person's karma summary page, which
+details their karma-generating activities.
+
+    >>> print_navigation_links(anon_browser.contents)
+    Profile
+    Related Software: ...
+    Karma: http://launchpad.dev/~name12/+karma
+    Personal Package Archives: ...
+
+    >>> anon_browser.getLink('Karma').click()
+    >>> print anon_browser.title
+    Sample Person's karma in Launchpad
+
+    >>> print find_tag_by_id(
+    ...     anon_browser.contents, 'karmapoints').renderContents()
+    <BLANKLINE>
+    ...
+    <td>Bug Management</td>
+    <td>94</td>
+    ...
+    <td>Specification Tracking</td>
+    <td>44</td>
+    ...
+    <BLANKLINE>
+
