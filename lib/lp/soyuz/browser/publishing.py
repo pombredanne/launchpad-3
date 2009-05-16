@@ -227,7 +227,7 @@ class SourcePublishingRecordView(BasePublishingRecordView):
             BuildSetStatus.BUILDING: '/@@/build-building',
             BuildSetStatus.NEEDSBUILD: '/@@/build-needed',
             BuildSetStatus.FAILEDTOBUILD: '/@@/no',
-            BuildSetStatus.FULLYBUILT_PENDING: '/@@/build-success-pending'
+            BuildSetStatus.FULLYBUILT_PENDING: '/@@/build-success-publishing'
             }
 
         return image_map.get(self.build_status_summary['status'], '/@@/yes')
