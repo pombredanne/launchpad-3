@@ -355,5 +355,5 @@ Y.on("domready", renderSpark);
 
 <tal:script
     replace="structure string:&lt;script type='text/javascript'&gt;" />
-var branch_sparks = <tal:array replace="context/branch_sparks"/>;
+<tal:var tal:replace="string:var branch_sparks =" /><tal:array replace="context/branch_sparks"/><tal:comma replace="string:;;" />
 <tal:script replace="structure string:&lt;/script&gt;" />

@@ -7,7 +7,6 @@
   lang="en"
   dir="ltr"
   metal:use-macro="view/macro:page/onecolumn"
-  i18n:domain="malone"
 >
   <body>
 <div metal:fill-slot="main">
@@ -32,7 +31,7 @@
           <td tal:content="python:log.datechanged.strftime('%d %b %y %H:%M')">
             13 Sep 04 14:15
           </td>
-          <td><tal:person tal:replace="structure log/person/fmt:link">person</person></td>
+          <td><tal:person tal:replace="structure log/person/fmt:link">person</tal:person></td>
 	  <td tal:content="log/whatchanged">description</td>
 	  <td><tal:oldvalue tal:replace="log/oldvalue">this</tal:oldvalue></td>
 	  <td><tal:newvalue tal:replace="log/newvalue">that</tal:newvalue></td>
