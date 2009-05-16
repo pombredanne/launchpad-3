@@ -46,6 +46,11 @@
     </div>
 
   <div class="actions" metal:fill-slot="buttons">
+    <p tal:condition="not: context/ppas">
+      <img src="/@@/warning" />
+      Activating this PPA <b>will block</b> future renaming of
+      <tal:context replace="structure context/fmt:link" />
+    </p>
     <input tal:replace="structure view/actions/field.actions.activate/render" />
     or <a tal:attributes="href context/fmt:url">Cancel</a>
   </div>
