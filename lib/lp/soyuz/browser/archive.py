@@ -60,7 +60,7 @@ from canonical.launchpad.interfaces.launchpad import (
     ILaunchpadCelebrities, NotFoundError)
 from lp.soyuz.interfaces.packagecopyrequest import (
     IPackageCopyRequestSet)
-from lp.registry.interfaces.person import IPersonSet
+from lp.registry.interfaces.person import IPersonSet, PersonVisibility
 from lp.soyuz.interfaces.publishing import (
     PackagePublishingPocket, active_publishing_status,
     inactive_publishing_status, IPublishingSet)
@@ -562,7 +562,7 @@ class ArchiveSourcePackageListViewBase(ArchiveViewBase):
     def filtered_sources(self):
         """Return the source results for display after filtering.
 
-        It expects 'self.selected_status_filter' and 
+        It expects 'self.selected_status_filter' and
         'self.selected_series_filter' to be set.
         """
         return self.context.getPublishedSources(
@@ -1437,7 +1437,18 @@ class ArchiveActivateView(LaunchpadFormView):
             owner=self.context, purpose=ArchivePurpose.PPA,
             distribution=ubuntu, name=name,
             displayname=data['displayname'], description=data['description'])
+
         self.next_url = canonical_url(ppa)
+
+    @property
+    def is_private_team(self):
+        """Is the person a private team?
+
+        :return: True only if visibility is PRIVATE.  False is returned when
+        the visibility is PUBLIC and PRIVATE_MEMBERSHIP.
+        :rtype: bool
+        """
+        return self.context.visibility == PersonVisibility.PRIVATE
 
 
 class ArchiveBuildsView(ArchiveViewBase, BuildRecordsView):
@@ -1497,7 +1508,22 @@ class ArchiveAdminView(BaseArchiveEditView):
                 'buildd_secret',
                 'Required for private archives.')
 
-        if data.get('buildd_secret') is not None and not data['private']:
+        if self.owner_is_private_team and not data['private']:
+            self.setFieldError(
+                'private',
+                'Private teams may not have public archives.')
+
+        elif data.get('buildd_secret') is not None and not data['private']:
             self.setFieldError(
                 'buildd_secret',
                 'Do not specify for non-private archives')
+
+    @property
+    def owner_is_private_team(self):
+        """Is the owner a private team?
+
+        :return: True only if visibility is PRIVATE.  False is returned when
+        the visibility is PUBLIC and PRIVATE_MEMBERSHIP.
+        :rtype: bool
+        """
+        return self.context.owner.visibility == PersonVisibility.PRIVATE
