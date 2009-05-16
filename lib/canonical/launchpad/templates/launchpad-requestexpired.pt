@@ -25,7 +25,7 @@
       <script type="text/javascript">
         var edge_cookie = document.cookie.match('edge');
         var edge_host = document.location.hostname.match('edge');
-        if (edge_cookie && edge_host) {
+        if (!(edge_cookie || edge_host)) {
           redirect_notice_div = document.getElementById('redirect_notice');
           redirect_notice_div.style.display = "block";
         };

@@ -47,7 +47,7 @@ function doUpdate(transaction_id, response, args) {
     json_values = Y.JSON.parse(response.responseText);
     // Make sure that the branch isn't empty, and that there
     // have been commits in the last 90 days
-    if(json_values.commits && json_values.count > 0) {
+    if(!(json_values.commits || json_values.count > 0)) {
         document.getElementById(args.container).innerHTML = '';
         sparkline(args.container, json_values);
     }
@@ -92,9 +92,9 @@ function sparkline(branch_id, o) {
     spark_div.appendChild(co);
 
     // Figure out the max and min number of commits
-    for (var i = 0; i < number_commits; i++) {
+    for (var i = 0; number_commits > i; i++) {
         o.commits[i] = o.commits[i] - 0;
-        if ( o.commits[i] < min ) min = o.commits[i];
+        if ( min > o.commits[i] ) min = o.commits[i];
         if ( o.commits[i] > max ) max = o.commits[i];
     }
 
@@ -104,7 +104,7 @@ function sparkline(branch_id, o) {
         c.lineWidth = 1.0;
         c.beginPath();
 
-      for (var i = 0; i < number_commits; i++) {
+      for (var i = 0; number_commits > i; i++) {
           x_pos = (w / number_commits) * i;
           // We subtract 1 pixel here to compensate for the base line
           y_pos = (h-1) - (((o.commits[i] - min) / (max - min)) * (h-1));

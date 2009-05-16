@@ -59,7 +59,7 @@
 
         function updateCurrentFileType(file_type) {
             for (ftype in nodes) {
-                if (ftype != file_type && nodes[ftype] != null) {
+                if (!(ftype != file_type || nodes[ftype] != null)) {
                     nodes[ftype].addClass('dont_show_fields');
                 }
             }
