@@ -78,6 +78,13 @@ class TestGetCodeEmailCommands(TestCase):
         self.assertEqual('status', command.name)
         self.assertEqual(['approved'], command.string_args)
 
+    def test_merge_command(self):
+        # Merge is an alias for the status command.
+        [command] = CodeEmailCommands.getCommands(" merge approved")
+        self.assertIsInstance(command, UpdateStatusEmailCommand)
+        self.assertEqual('merge', command.name)
+        self.assertEqual(['approved'], command.string_args)
+
     def test_reviewer_command(self):
         # Check that the add review command is correctly created.
         [command] = CodeEmailCommands.getCommands(
@@ -187,11 +194,11 @@ class TestCodeHandler(TestCaseWithFactory):
         Error message:
 
         The 'review' command expects any of the following arguments:
-        abstain, approve, disapprove, needs_fixing, resubmit
+        abstain, approve, disapprove, needs-fixing, needs-info, resubmit
 
         For example:
 
-            review needs_fixing
+            review needs-fixing
 
 
         -- 
@@ -1025,10 +1032,27 @@ class TestVoteEmailCommand(TestCase):
 
     def test_getVoteNeedsFixingAlias(self):
         """Test the needs_fixing aliases of needsfixing and needs-fixing."""
+        command = VoteEmailCommand('vote', ['needs_fixing'])
+        self.assertVoteAndTag(CodeReviewVote.NEEDS_FIXING, None, command)
         command = VoteEmailCommand('vote', ['needsfixing'])
         self.assertVoteAndTag(CodeReviewVote.NEEDS_FIXING, None, command)
         command = VoteEmailCommand('vote', ['needs-fixing'])
         self.assertVoteAndTag(CodeReviewVote.NEEDS_FIXING, None, command)
+
+    def test_getVoteNeedsInfoAlias(self):
+        """Test the needs_info review type and its aliases."""
+        command = VoteEmailCommand('vote', ['needs_info'])
+        self.assertVoteAndTag(CodeReviewVote.NEEDS_INFO, None, command)
+        command = VoteEmailCommand('vote', ['needsinfo'])
+        self.assertVoteAndTag(CodeReviewVote.NEEDS_INFO, None, command)
+        command = VoteEmailCommand('vote', ['needs-info'])
+        self.assertVoteAndTag(CodeReviewVote.NEEDS_INFO, None, command)
+        command = VoteEmailCommand('vote', ['needs_information'])
+        self.assertVoteAndTag(CodeReviewVote.NEEDS_INFO, None, command)
+        command = VoteEmailCommand('vote', ['needsinformation'])
+        self.assertVoteAndTag(CodeReviewVote.NEEDS_INFO, None, command)
+        command = VoteEmailCommand('vote', ['needs-information'])
+        self.assertVoteAndTag(CodeReviewVote.NEEDS_INFO, None, command)
 
 
 class TestUpdateStatusEmailCommand(TestCaseWithFactory):

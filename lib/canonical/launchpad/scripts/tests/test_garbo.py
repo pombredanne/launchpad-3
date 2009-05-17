@@ -13,6 +13,7 @@ from pytz import UTC
 from storm.expr import Min
 from storm.store import Store
 import transaction
+from zope.component import getUtility
 
 from lp.code.model.codeimportresult import CodeImportResult
 from canonical.config import config
@@ -23,9 +24,12 @@ from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
 from lp.code.interfaces.codeimportresult import CodeImportResultStatus
 from lp.testing import TestCase, TestCaseWithFactory
 from canonical.launchpad.scripts.garbo import (
-    DailyDatabaseGarbageCollector, HourlyDatabaseGarbageCollector)
+    DailyDatabaseGarbageCollector, HourlyDatabaseGarbageCollector,
+    OpenIDAssociationPruner, OpenIDConsumerAssociationPruner)
 from canonical.launchpad.scripts.tests import run_script
 from canonical.launchpad.scripts.logger import QuietFakeLogger
+from canonical.launchpad.webapp.interfaces import (
+    IStoreSelector, MASTER_FLAVOR)
 from canonical.testing.layers import (
     DatabaseLayer, LaunchpadScriptLayer, LaunchpadZopelessLayer)
 from lp.registry.interfaces.person import PersonCreationRationale
@@ -60,20 +64,21 @@ class TestGarbo(TestCaseWithFactory):
         self.runDaily()
         self.runHourly()
 
-    def runDaily(self):
-        LaunchpadZopelessLayer.switchDbUser('garbo-daily')
+    def runDaily(self, maximum_chunk_size=2):
+        LaunchpadZopelessLayer.switchDbUser('garbo_daily')
         collector = DailyDatabaseGarbageCollector(test_args=[])
+        collector._maximum_chunk_size = maximum_chunk_size
         collector.logger = QuietFakeLogger()
         collector.main()
 
-    def runHourly(self):
-        LaunchpadZopelessLayer.switchDbUser('garbo-hourly')
+    def runHourly(self, maximum_chunk_size=2):
+        LaunchpadZopelessLayer.switchDbUser('garbo_hourly')
         collector = HourlyDatabaseGarbageCollector(test_args=[])
+        collector._maximum_chunk_size = maximum_chunk_size
         collector.logger = QuietFakeLogger()
         collector.main()
 
     def test_OAuthNoncePruner(self):
-        store = IMasterStore(OAuthNonce)
         now = datetime.utcnow().replace(tzinfo=UTC)
         timestamps = [
             now - timedelta(days=2), # Garbage
@@ -82,6 +87,7 @@ class TestGarbo(TestCaseWithFactory):
             now, # Not garbage
             ]
         LaunchpadZopelessLayer.switchDbUser('testadmin')
+        store = IMasterStore(OAuthNonce)
 
         # Make sure we start with 0 nonces.
         self.failUnlessEqual(store.find(OAuthNonce).count(), 0)
@@ -96,7 +102,9 @@ class TestGarbo(TestCaseWithFactory):
         # Make sure we have 4 nonces now.
         self.failUnlessEqual(store.find(OAuthNonce).count(), 4)
 
-        self.runHourly()
+        self.runHourly(maximum_chunk_size=60) # 1 minute maximum chunk size
+
+        store = IMasterStore(OAuthNonce)
 
         # Now back to two, having removed the two garbage entries.
         self.failUnlessEqual(store.find(OAuthNonce).count(), 2)
@@ -137,7 +145,9 @@ class TestGarbo(TestCaseWithFactory):
         self.failUnlessEqual(store.find(OpenIDConsumerNonce).count(), 4)
 
         # Run the garbage collector.
-        self.runHourly()
+        self.runHourly(maximum_chunk_size=60) # 1 minute maximum chunks.
+
+        store = IMasterStore(OpenIDConsumerNonce)
 
         # We should now have 2 nonces.
         self.failUnlessEqual(store.find(OpenIDConsumerNonce).count(), 2)
@@ -171,18 +181,21 @@ class TestGarbo(TestCaseWithFactory):
 
         # Nothing is removed, because we always keep the
         # ``results_to_keep_count`` latest.
+        store = IMasterStore(CodeImportResult)
         self.failUnlessEqual(
             results_to_keep_count,
             store.find(CodeImportResult).count())
 
         new_code_import_result(now - timedelta(days=31))
         self.runDaily()
+        store = IMasterStore(CodeImportResult)
         self.failUnlessEqual(
             results_to_keep_count,
             store.find(CodeImportResult).count())
 
         new_code_import_result(now - timedelta(days=29))
         self.runDaily()
+        store = IMasterStore(CodeImportResult)
         self.failUnlessEqual(
             results_to_keep_count,
             store.find(CodeImportResult).count())
@@ -192,6 +205,53 @@ class TestGarbo(TestCaseWithFactory):
             store.find(
                 Min(CodeImportResult.date_created)).one().replace(tzinfo=UTC)
             >= now - timedelta(days=30))
+
+    def test_OpenIDAssociationPruner(self, pruner=OpenIDAssociationPruner):
+        store_name = pruner.store_name
+        table_name = pruner.table_name
+        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        store_selector = getUtility(IStoreSelector)
+        store = store_selector.get(store_name, MASTER_FLAVOR)
+        now = time.time()
+        # Create some associations in the past with lifetimes
+        for delta in range(0, 20):
+            store.execute("""
+                INSERT INTO %s (server_url, handle, issued, lifetime)
+                VALUES (%s, %s, %d, %d)
+                """ % (table_name, str(delta), str(delta), now-10, delta))
+        transaction.commit()
+
+        # Ensure that we created at least one expirable row (using the
+        # test start time as 'now').
+        num_expired = store.execute("""
+            SELECT COUNT(*) FROM %s
+            WHERE issued + lifetime < %f
+            """ % (table_name, now)).get_one()[0]
+        self.failUnless(num_expired > 0)
+
+        # Expire all those expirable rows, and possibly a few more if this
+        # test is running slow.
+        self.runHourly()
+
+        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        store = store_selector.get(store_name, MASTER_FLAVOR)
+        # Confirm all the rows we know should have been expired have
+        # been expired. These are the ones that would be expired using
+        # the test start time as 'now'.
+        num_expired = store.execute("""
+            SELECT COUNT(*) FROM %s
+            WHERE issued + lifetime < %f
+            """ % (table_name, now)).get_one()[0]
+        self.failUnlessEqual(num_expired, 0)
+
+        # Confirm that we haven't expired everything. This test will fail
+        # if it has taken 10 seconds to get this far.
+        num_unexpired = store.execute(
+            "SELECT COUNT(*) FROM %s" % table_name).get_one()[0]
+        self.failUnless(num_unexpired > 0)
+
+    def test_OpenIDConsumerAssociationPruner(self):
+        self.test_OpenIDAssociationPruner(OpenIDConsumerAssociationPruner)
 
     def test_RevisionAuthorEmailLinker(self):
         LaunchpadZopelessLayer.switchDbUser('testadmin')
@@ -304,6 +364,7 @@ class TestGarbo(TestCaseWithFactory):
         transaction.commit()
         self.runDaily()
         self.assertEqual(mailing_list.getSubscription(person), None)
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

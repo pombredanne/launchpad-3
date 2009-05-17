@@ -48,10 +48,52 @@ $$;
 
 COMMENT ON FUNCTION null_count(anyarray) IS 'Return the number of NULLs in the first row of the given array.';
 
+
+CREATE OR REPLACE FUNCTION replication_lag() RETURNS interval
+LANGUAGE plpgsql STABLE SECURITY DEFINER AS
+$$
+    DECLARE
+        v_lag interval;
+    BEGIN
+        SELECT INTO v_lag max(st_lag_time) FROM _sl.sl_status;
+        RETURN v_lag;
+    -- Slony-I not installed here - non-replicated setup.
+    EXCEPTION
+        WHEN invalid_schema_name THEN
+            RETURN NULL;
+        WHEN undefined_table THEN
+            RETURN NULL;
+    END;
+$$;
+
+COMMENT ON FUNCTION replication_lag() IS
+'Returns the worst lag time known to this node in our cluster, or NULL if not a replicated installation.';
+
+
+CREATE OR REPLACE FUNCTION activity()
+RETURNS SETOF pg_catalog.pg_stat_activity
+LANGUAGE SQL VOLATILE SECURITY DEFINER AS
+$$
+    SELECT
+        datid, datname, procpid, usesysid, usename,
+        CASE
+            WHEN current_query LIKE '<IDLE>%'
+                THEN current_query
+            ELSE
+                NULL
+        END AS current_query,
+        waiting, xact_start, query_start,
+        backend_start, client_addr, client_port
+    FROM pg_catalog.pg_stat_activity;
+$$;
+
+COMMENT ON FUNCTION activity() IS
+'SECURITY DEFINER wrapper around pg_stat_activity allowing unprivileged users to access most of its information.';
+
+
 /* This is created as a function so the same definition can be used with
     many tables
 */
-
 CREATE OR REPLACE FUNCTION valid_name(text) RETURNS boolean
 LANGUAGE plpythonu IMMUTABLE RETURNS NULL ON NULL INPUT AS
 $$
@@ -346,7 +388,6 @@ CREATE OR REPLACE FUNCTION mv_pofiletranslator_translationmessage()
 RETURNS TRIGGER
 VOLATILE SECURITY DEFINER AS $$
 DECLARE
-    v_old_entry INTEGER;
     v_trash_old BOOLEAN;
 BEGIN
     -- If we are deleting a row, we need to remove the existing
@@ -366,13 +407,11 @@ BEGIN
 
     IF v_trash_old THEN
         -- Was this somebody's most-recently-changed message?
-        SELECT INTO v_old_entry id FROM POFileTranslator
+        DELETE FROM POFileTranslator
         WHERE latest_message = OLD.id;
 
-        IF v_old_entry IS NOT NULL THEN
-            -- Delete the old record.
-            DELETE FROM POFileTranslator
-            WHERE POFileTranslator.id = v_old_entry;
+        IF FOUND THEN
+            -- Delete old records.
 
             -- Insert a past record if there is one.
             INSERT INTO POFileTranslator (
@@ -856,27 +895,6 @@ $$;
 
 COMMENT ON FUNCTION set_bug_message_count() IS
 'AFTER UPDATE trigger on BugAffectsPerson maintaining the Bug.users_affected_count column';
-
-
-CREATE OR REPLACE FUNCTION replication_lag() RETURNS interval
-LANGUAGE plpgsql STABLE SECURITY DEFINER AS
-$$
-    DECLARE
-        v_lag interval;
-    BEGIN
-        SELECT INTO v_lag max(st_lag_time) FROM _sl.sl_status;
-        RETURN v_lag;
-    -- Slony-I not installed here - non-replicated setup.
-    EXCEPTION
-        WHEN invalid_schema_name THEN
-            RETURN NULL;
-        WHEN undefined_table THEN
-            RETURN NULL;
-    END;
-$$;
-
-COMMENT ON FUNCTION replication_lag() IS
-'Returns the worst lag time known to this node in our cluster, or NULL if not a replicated installation.';
 
 
 CREATE OR REPLACE FUNCTION set_bugtask_date_milestone_set() RETURNS TRIGGER

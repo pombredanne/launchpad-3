@@ -1163,15 +1163,10 @@ class BranchFormatterAPI(ObjectFormatterAPI):
     def _args(self, view_name):
         """Generate a dict of attributes for string template expansion."""
         branch = self._context
-        if branch.title is not None:
-            title = branch.title
-        else:
-            title = "(no title)"
         return {
             'bzr_identity': branch.bzr_identity,
             'display_name': cgi.escape(branch.displayname),
             'name': branch.name,
-            'title': cgi.escape(title),
             'unique_name' : branch.unique_name,
             'url': self.url(view_name),
             }
@@ -1332,11 +1327,8 @@ class CodeImportFormatterAPI(CustomizableFormatter):
 
     def _link_summary_values(self):
         """See CustomizableFormatter._link_summary_values."""
-        branch_title = self._context.branch.title
-        if branch_title is None:
-            branch_title = _('(no title)')
         return {'product': self._context.product.displayname,
-                'branch': branch_title,
+                'branch': self._context.branch.bzr_identity,
                }
 
     def url(self, view_name=None):

@@ -11,6 +11,7 @@ from zope.component import getUtility
 
 from canonical.config import config
 from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
+from canonical.launchpad.ftests.logger import MockLogger
 from canonical.launchpad.scripts.garbo import RevisionAuthorEmailLinker
 from lp.testing import TestCase
 from lp.testing.factory import LaunchpadObjectFactory
@@ -158,7 +159,7 @@ class TestNewlyValidatedEmailsLinkRevisionAuthors(MakeHarryTestCase):
 
         # After the garbo RevisionAuthorEmailLinker job runs, the link
         # is made.
-        RevisionAuthorEmailLinker().run()
+        RevisionAuthorEmailLinker(log=MockLogger()).run()
         self.assertEqual(harry, self.author.person,
                          'Harry should now be the author.')
 
