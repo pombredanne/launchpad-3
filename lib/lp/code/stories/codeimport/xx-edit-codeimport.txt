@@ -172,7 +172,7 @@ When a code import is approved, a pending job is created for it.
     >>> import_browser.getLink('Edit import source or review import').click()
     >>> import_browser.getControl('Mark Failing').click()
     >>> print_import_details(import_browser)
-    Import Status: Failing
+    Import Status: Failed
     ...
     >>> for message in get_feedback_messages(import_browser.contents):
     ...     print extract_text(message)
