@@ -21,7 +21,7 @@ import os
 from twisted.internet import defer, reactor
 from twisted.python import log
 
-from canonical.codehosting.codeimport.workermonitor import (
+from lp.codehosting.codeimport.workermonitor import (
     CodeImportWorkerMonitor)
 from lp.services.scripts.base import LaunchpadScript
 from canonical.twistedsupport.loggingsupport import set_up_oops_reporting

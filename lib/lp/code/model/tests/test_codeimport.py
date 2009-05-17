@@ -10,7 +10,7 @@ from sqlobject import SQLObjectNotFound
 from storm.store import Store
 from zope.component import getUtility
 
-from canonical.codehosting.codeimport.tests.test_workermonitor import (
+from lp.codehosting.codeimport.tests.test_workermonitor import (
     nuke_codeimport_sample_data)
 from lp.code.model.codeimport import CodeImportSet
 from lp.code.model.codeimportevent import CodeImportEvent
