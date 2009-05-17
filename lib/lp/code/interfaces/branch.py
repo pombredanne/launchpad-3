@@ -46,7 +46,7 @@ from operator import attrgetter
 import re
 
 # Ensure correct plugins are loaded. Do not delete this line.
-import canonical.codehosting
+import lp.codehosting
 from bzrlib.branch import (
     BranchReferenceFormat, BzrBranchFormat4, BzrBranchFormat5,
     BzrBranchFormat6, BzrBranchFormat7)

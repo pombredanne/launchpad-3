@@ -14,7 +14,7 @@ import _pythonpath
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.codehosting.vfs import get_scanner_server
+from lp.codehosting.vfs import get_scanner_server
 from lp.services.job.runner import JobRunner
 from lp.code.interfaces.branchmergeproposal import (
     IMergeProposalCreatedJobSource,)
