@@ -1,4 +1,5 @@
 # Copyright 2009 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211
 
 """Basic support for 'fixtures'.
 

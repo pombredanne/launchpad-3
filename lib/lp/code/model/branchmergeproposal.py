@@ -43,7 +43,7 @@ from lp.code.model.codereviewcomment import CodeReviewComment
 from lp.code.model.codereviewvote import (
     CodeReviewVoteReference)
 from canonical.launchpad.database.diff import Diff, PreviewDiff, StaticDiff
-from canonical.launchpad.database.job import Job
+from lp.services.job.model.job import Job
 from canonical.launchpad.database.message import (
     Message, MessageChunk, MessageJob, MessageJobAction)
 from lp.registry.model.person import Person

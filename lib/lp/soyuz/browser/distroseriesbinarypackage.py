@@ -9,10 +9,10 @@ __all__ = [
     'DistroSeriesBinaryPackageView',
     ]
 
-from lp.soyuz.interfaces.distroseriesbinarypackage import IDistroSeriesBinaryPackage
+from lp.soyuz.interfaces.distroseriesbinarypackage import (
+    IDistroSeriesBinaryPackage)
 from canonical.launchpad.webapp import (
-    StandardLaunchpadFacets, ApplicationMenu, Navigation
-    )
+    StandardLaunchpadFacets, ApplicationMenu, Navigation)
 from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
 
 

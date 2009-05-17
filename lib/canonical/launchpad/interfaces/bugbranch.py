@@ -19,8 +19,7 @@ from lazr.restful.fields import ReferenceChoice
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import BugField, Summary
-from canonical.launchpad.interfaces import (
-    IHasBug, IHasDateCreated, non_duplicate_branch)
+from canonical.launchpad.interfaces import IHasBug, IHasDateCreated
 from canonical.launchpad.interfaces.bugtask import IBugTask
 from lp.code.interfaces.branch import IBranch
 from lp.registry.interfaces.person import IPerson

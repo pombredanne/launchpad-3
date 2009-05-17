@@ -4,6 +4,54 @@
     xmlns:i18n="http://namespaces.zope.org/i18n"
     xmlns:xmlrpc="http://namespaces.zope.org/xmlrpc"
     i18n_domain="launchpad">
+
+<facet facet="branches">
+
+  <browser:page
+      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+      name="+project-cloud"
+      class="lp.code.browser.bazaar.BazaarProductView"
+      template="../templates/code-in-branches.pt"
+      permission="zope.Public"
+      />
+  <browser:page
+      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+      name="+recently-registered-branches"
+      class="lp.code.browser.branchlisting.RecentlyRegisteredBranchesView"
+      template="../templates/branch-listing-cross-product.pt"
+      permission="zope.Public"
+      />
+  <browser:page
+      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+      name="+recently-imported-branches"
+      class="lp.code.browser.branchlisting.RecentlyImportedBranchesView"
+      template="../templates/branch-listing-cross-product.pt"
+      permission="zope.Public"
+      />
+  <browser:page
+      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+      name="+recently-changed-branches"
+      class="lp.code.browser.branchlisting.RecentlyChangedBranchesView"
+      template="../templates/branch-listing-cross-product.pt"
+      permission="zope.Public"
+      />
+  <browser:page
+      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+      name="+code-import-list"
+      class="lp.registry.browser.productseries.ProductSeriesSourceListView"
+      template="../../../canonical/launchpad/templates/sources-list.pt"
+      permission="zope.Public"
+      />
+  <browser:page
+      for="zope.interface.Interface"
+      name="+test-webservice-js"
+      template="../../../canonical/launchpad/templates/test-webservice-js.pt"
+      permission="zope.Public"
+      />
+
+
+</facet>
+
     <browser:url
         for="lp.code.interfaces.codereviewvote.ICodeReviewVoteReference"
         path_expression="string:+review/${id}"
@@ -715,9 +763,8 @@
         template="../templates/branch-add.pt"/>
 
     <browser:menus
-        classes="
-            ProductBranchesMenu"
-        module="canonical.launchpad.browser"/>
+        classes="ProductBranchesMenu"
+        module="lp.code.browser.branchlisting"/>
 
     <browser:defaultView
         for="lp.registry.interfaces.sourcepackage.ISourcePackage"

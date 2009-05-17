@@ -5,8 +5,6 @@
 __metaclass__ = type
 __all__ = []
 
-import inspect
-
 from zope.component.zcml import handler
 from zope.configuration.fields import GlobalInterface, Path
 from zope.publisher.interfaces.browser import (

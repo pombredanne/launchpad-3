@@ -18,7 +18,8 @@ from storm.locals import Int, Reference, Store, Storm, Unicode
 from zope.interface import implements
 
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
-from canonical.launchpad.interfaces.structuralsubscription import IStructuralSubscriptionTarget
+from canonical.launchpad.interfaces.structuralsubscription import (
+    IStructuralSubscriptionTarget)
 from lp.answers.interfaces.questiontarget import IQuestionTarget
 from lp.registry.interfaces.product import IDistributionSourcePackage
 from canonical.database.sqlbase import sqlvalues

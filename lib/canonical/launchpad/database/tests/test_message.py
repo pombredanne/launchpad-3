@@ -17,7 +17,7 @@ from zope.component import getUtility
 
 from canonical.launchpad.database import (
     MessageSet, MessageJob, MessageJobAction)
-from canonical.launchpad.database.job import Job
+from lp.services.job.model.job import Job
 from canonical.launchpad.ftests import login
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.interfaces.message import IMessageJob
