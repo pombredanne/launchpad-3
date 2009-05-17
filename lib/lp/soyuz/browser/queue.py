@@ -15,7 +15,8 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.section import ISectionSet
-from canonical.launchpad.webapp.interfaces import NotFoundError, UnexpectedFormData
+from canonical.launchpad.webapp.interfaces import (
+    NotFoundError, UnexpectedFormData)
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.soyuz.interfaces.package import PackageUploadStatus
 from lp.soyuz.interfaces.publishing import PackagePublishingPriority

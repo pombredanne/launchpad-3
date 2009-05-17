@@ -13,7 +13,7 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.launchpad.interfaces import TranslationValidationStatus
 from canonical.launchpad.interfaces.translationcommonformat import (
     ITranslationFileData)
-from canonical.launchpad.testing import TestCaseWithFactory
+from lp.testing import TestCaseWithFactory
 from lp.testing.factory import LaunchpadObjectFactory
 from canonical.testing import LaunchpadZopelessLayer
 
@@ -999,6 +999,103 @@ class TestTranslationPOFilePOTMsgSetOrdering(TestCaseWithFactory):
             self.devel_potemplate.getPOTMsgSets())
         self.assertEquals(potmsgsets,
                           [self.potmsgset1, self.potmsgset2])
+
+
+
+class TestPOFileStatistics(TestCaseWithFactory):
+    """Test PO files statistics calculation."""
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        """Set up context to test in."""
+        # Create a POFile to calculate statistics on.
+        TestCaseWithFactory.setUp(self)
+        self.pofile = self.factory.makePOFile('sr')
+        self.potemplate = self.pofile.potemplate
+
+        # Create a single POTMsgSet that is used across all tests,
+        # and add it to only one of the POTemplates.
+        self.potmsgset = self.factory.makePOTMsgSet(self.potemplate,
+                                                    sequence=1)
+
+
+    def test_POFile_updateStatistics_currentCount(self):
+        # Make sure count of translations which are active both
+        # in import and in Launchpad is correct.
+        self.pofile.updateStatistics()
+        self.assertEquals(self.pofile.currentCount(), 0)
+
+        # Adding an imported translation increases currentCount().
+        imported = self.factory.makeTranslationMessage(
+            pofile=self.pofile,
+            potmsgset=self.potmsgset,
+            translations=["Imported current"],
+            is_imported=True)
+        self.pofile.updateStatistics()
+        self.assertEquals(self.pofile.currentCount(), 1)
+
+        # Adding a suggestion (i.e. unused translation)
+        # will not change the current count when there's
+        # already an imported message.
+        suggestion = self.factory.makeTranslationMessage(
+            pofile=self.pofile,
+            potmsgset=self.potmsgset,
+            translations=["A suggestion"],
+            suggestion=True)
+        self.pofile.updateStatistics()
+        self.assertEquals(self.pofile.currentCount(), 1)
+
+    def test_POFile_updateStatistics_newCount(self):
+        # Make sure count of translations which are provided
+        # only in Launchpad (and not in imports) is correct.
+        self.pofile.updateStatistics()
+        self.assertEquals(self.pofile.newCount(), 0)
+
+        # Adding a current translation for an untranslated
+        # message increases the count of new translations in LP.
+        current = self.factory.makeTranslationMessage(
+            pofile=self.pofile,
+            potmsgset=self.potmsgset,
+            translations=["Current"])
+        self.pofile.updateStatistics()
+        self.assertEquals(self.pofile.newCount(), 1)
+
+    def test_POFile_updateStatistics_newCount_reimporting(self):
+        # If we get an 'imported' translation for what
+        # we already have as 'new', it's not considered 'new'
+        # anymore since it has been synced.
+        current = self.factory.makeTranslationMessage(
+            pofile=self.pofile,
+            potmsgset=self.potmsgset,
+            translations=["Current"])
+        # Reimport it but with is_imported=True.
+        imported = self.factory.makeTranslationMessage(
+            pofile=self.pofile,
+            potmsgset=self.potmsgset,
+            translations=["Current"],
+            is_imported=True)
+
+        self.pofile.updateStatistics()
+        self.assertEquals(self.pofile.newCount(), 0)
+
+    def test_POFile_updateStatistics_newCount_changed(self):
+        # If we change an 'imported' translation through
+        # Launchpad, it's still not considered 'new',
+        # but an 'update' instead.
+        imported = self.factory.makeTranslationMessage(
+            pofile=self.pofile,
+            potmsgset=self.potmsgset,
+            translations=["Imported"],
+            is_imported=True)
+        update = self.factory.makeTranslationMessage(
+            pofile=self.pofile,
+            potmsgset=self.potmsgset,
+            translations=["Changed"])
+        self.pofile.updateStatistics()
+        self.assertEquals(self.pofile.newCount(), 0)
+        self.assertEquals(self.pofile.updatesCount(), 1)
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

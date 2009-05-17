@@ -11,7 +11,7 @@ import _pythonpath
 from canonical.config import config
 
 from canonical.launchpad.scripts import execute_zcml_for_scripts
-from canonical.launchpad.scripts.base import LaunchpadScript
+from lp.services.scripts.base import LaunchpadScript
 from lp.registry.scripts.listteammembers import process_team, NoSuchTeamError
 
 

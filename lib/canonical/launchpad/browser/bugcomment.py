@@ -6,6 +6,8 @@ __metaclass__ = type
 __all__ = [
     'BugComment',
     'BugCommentView',
+    'BugCommentBoxView',
+    'BugCommentBoxExpandedReplyView',
     'build_comments_from_chunks',
     'should_display_remote_comments',
     ]
@@ -70,11 +72,10 @@ def build_comments_from_chunks(chunks, bugtask, truncate=False):
 
     for bug_message in bugtask.bug.bug_messages:
         comment = comments.get(bug_message.messageID, None)
-        # XXX intellectronica 2009-04-22, bug=365092
-        # Currently, there are some bug messages for which no chunks exist
-        # in the DB, so we need to make sure that we skip them, since the
-        # corresponding message wont have been added to the comments dictionary
-        # in the section above.
+        # XXX intellectronica 2009-04-22, bug=365092: Currently, there are
+        # some bug messages for which no chunks exist in the DB, so we need to
+        # make sure that we skip them, since the corresponding message wont
+        # have been added to the comments dictionary in the section above.
         if comment is not None:
             comment.visible = bug_message.visible
 
@@ -214,4 +215,15 @@ class BugCommentView(LaunchpadView):
         bugtask = getUtility(ILaunchBag).bugtask
         LaunchpadView.__init__(self, bugtask, request)
         self.comment = context
-        self.expand_reply_box = True
+
+
+class BugCommentBoxView(LaunchpadView):
+    """Render a comment box with reply field collapsed."""
+
+    expand_reply_box = False
+
+
+class BugCommentBoxExpandedReplyView(LaunchpadView):
+    """Render a comment box with reply field expanded."""
+
+    expand_reply_box = True

@@ -12,7 +12,7 @@ from bzrlib.urlutils import join
 
 from zope.component import getUtility
 
-from canonical.codehosting.vfs import branch_id_to_path
+from lp.codehosting.vfs import branch_id_to_path
 from canonical.config import config
 from canonical.launchpad.interfaces.branch import BranchType
 from canonical.launchpad.interfaces.branchlookup import IBranchLookup

@@ -31,7 +31,7 @@ If a bug tracker is disabled checkwatches won't try to update it.
 
     >>> from canonical.config import config
     >>> from canonical.testing import LaunchpadZopelessLayer
-    >>> from canonical.launchpad.testing import LaunchpadObjectFactory
+    >>> from lp.testing.factory import LaunchpadObjectFactory
 
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
     >>> login('foo.bar@canonical.com')

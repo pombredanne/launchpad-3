@@ -2,12 +2,17 @@
 
 """Customized widgets used in Launchpad."""
 
+# XXX sinzui 2009-05-15 bug=377095: This module should be broken up and
+# moved into canonical.widgets.
+
+
 __metaclass__ = type
 
 __all__ = [
     'AlreadyRegisteredError',
     'BranchPopupWidget',
     'DescriptionWidget',
+    'NoneableDescriptionWidget',
     'NoProductError',
     'SummaryWidget',
     'TitleWidget',
@@ -55,6 +60,18 @@ class DescriptionWidget(TextAreaWidget):
     """A widget to capture a description."""
     width = 44
     height = 5
+
+
+class NoneableDescriptionWidget(DescriptionWidget):
+    """A widget that is None if it's value is empty or whitespace.."""
+
+    def _toFieldValue(self, input):
+        value = super(
+            NoneableDescriptionWidget, self)._toFieldValue(input.strip())
+        if value == '':
+            return None
+        else:
+            return value
 
 
 class WhiteboardWidget(TextAreaWidget):

@@ -14,10 +14,10 @@ from canonical.archivepublisher.publishing import getPublisher
 from canonical.database.sqlbase import (
     clear_current_connection_cache, flush_database_updates)
 from lp.soyuz.interfaces.archive import (
-    ArchivePurpose, MAIN_ARCHIVE_PURPOSES)
+    ArchivePurpose, IArchiveSet, MAIN_ARCHIVE_PURPOSES)
 from lp.registry.interfaces.distribution import IDistributionSet
 from canonical.launchpad.scripts import logger, logger_options
-from canonical.launchpad.scripts.base import LaunchpadScriptFailure
+from lp.services.scripts.base import LaunchpadScriptFailure
 from canonical.launchpad.webapp.interfaces import NotFoundError
 
 # XXX Julian 2008-02-07 bug=189866:
@@ -67,6 +67,11 @@ def add_options(parser):
                       dest="partner", metavar="PARTNER", default=False,
                       help="Run only over the partner archive.")
 
+    parser.add_option(
+        "--primary-debug", action="store_true", default=False,
+        dest="primary_debug", metavar="PRIMARYDEBUG",
+        help="Run only over the debug-symbols for primary archive.")
+
 
 def run_publisher(options, txn, log=None):
     if not log:
@@ -103,11 +108,14 @@ def run_publisher(options, txn, log=None):
     else:
         log.info("      Indexing: %s" % careful_msg(options.careful_apt))
 
-    exclusive_options = (options.partner, options.ppa, options.private_ppa)
+    exclusive_options = (
+        options.partner, options.ppa, options.private_ppa,
+        options.primary_debug)
     num_exclusive = [flag for flag in exclusive_options if flag]
     if len(num_exclusive) > 1:
         raise LaunchpadScriptFailure(
-            "Can only specify one of partner, ppa and private-ppa")
+            "Can only specify one of partner, ppa, private-ppa and "
+            "primary-debug.")
 
     log.debug("Finding distribution object.")
 
@@ -145,6 +153,13 @@ def run_publisher(options, txn, log=None):
         if options.distsroot is not None:
             raise LaunchpadScriptFailure(
                 "We should not define 'distsroot' in PPA mode !")
+    elif options.primary_debug:
+        debug_archive = getUtility(IArchiveSet).getByDistroPurpose(
+            distribution, ArchivePurpose.DEBUG)
+        if debug_archive is None:
+            raise LaunchpadScriptFailure(
+                "Could not find DEBUG archive for %s" % distribution.name)
+        archives = [debug_archive]
     else:
         archives = [distribution.main_archive]
 
