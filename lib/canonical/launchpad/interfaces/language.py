@@ -123,6 +123,13 @@ class ILanguage(Interface):
         required=True,
         readonly=True)
 
+    def getFullCode(variant=None):
+        """Compose full language code for this language."""
+
+    def getFullEnglishName(variant=None):
+        """Compose full English name for this language."""
+
+
 class ILanguageSet(Interface):
     """The collection of languages."""
 

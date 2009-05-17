@@ -375,6 +375,14 @@ class POFileMixIn(RosettaStats):
         return POTMsgSet.select("POTMsgSet.id IN " + all_potmsgsets_query,
                                 orderBy='sequence')
 
+    def getFullLanguageCode(self):
+        """See `IPOFile`."""
+        return self.language.getFullCode(self.variant)
+
+    def getFullLanguageName(self):
+        """See `IPOFile`."""
+        return self.language.getFullName(self.variant)
+
 
 class POFile(SQLBase, POFileMixIn):
     implements(IPOFile)
