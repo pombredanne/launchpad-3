@@ -196,7 +196,7 @@ class DummyDistroSeriesLanguage(RosettaStats):
     def updatesCount(self, language=None):
         return 0
 
-    def nonUpdatesCount(self, language=None):
+    def newCount(self, language=None):
         return 0
 
     def translatedCount(self, language=None):
@@ -217,7 +217,7 @@ class DummyDistroSeriesLanguage(RosettaStats):
     def updatesPercentage(self, language=None):
         return 0.0
 
-    def nonUpdatesPercentage(self, language=None):
+    def newPercentage(self, language=None):
         return 0.0
 
     def translatedPercentage(self, language=None):

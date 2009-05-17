@@ -10,7 +10,7 @@ from xmlrpclib import ServerProxy
 
 from lp.codehosting.codeimport.dispatcher import CodeImportDispatcher
 from canonical.config import config
-from canonical.launchpad.scripts.base import LaunchpadScript
+from lp.services.scripts.base import LaunchpadScript
 from canonical.launchpad.webapp.errorlog import globalErrorUtility
 
 

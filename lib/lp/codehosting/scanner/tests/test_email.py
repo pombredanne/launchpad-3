@@ -11,7 +11,6 @@ import unittest
 import zope.component.event
 from zope.component import getUtility
 
-from lp.codehosting.jobs import JobRunner
 from lp.codehosting.scanner.email import (
     send_removed_revision_emails, queue_tip_changed_email_jobs)
 from lp.codehosting.scanner.fixture import make_zope_event_fixture
@@ -21,6 +20,7 @@ from canonical.launchpad.interfaces import (
     CodeReviewNotificationLevel, IPersonSet)
 from lp.code.interfaces.branchjob import (
     IRevisionMailJobSource, IRevisionsAddedJobSource)
+from lp.services.job.runner import JobRunner
 from lp.services.mail import stub
 from canonical.testing import LaunchpadZopelessLayer
 

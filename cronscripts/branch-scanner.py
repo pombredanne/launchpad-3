@@ -12,7 +12,7 @@ import logging
 
 from lp.codehosting.scanner.branch_scanner import BranchScanner
 from canonical.config import config
-from canonical.launchpad.scripts.base import LaunchpadCronScript
+from lp.services.scripts.base import LaunchpadCronScript
 from canonical.launchpad.webapp.errorlog import globalErrorUtility
 
 

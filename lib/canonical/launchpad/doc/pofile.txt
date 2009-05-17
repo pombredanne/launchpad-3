@@ -799,6 +799,8 @@ Launchpad/updatesCount):
     1
     >>> print pofile_changed.updatesCount()
     1
+    >>> print pofile_changed.newCount()
+    0
 
 We make sure that submissions on untranslated strings are not considered
 'changed in Launchpad', since this method is mainly designed to help

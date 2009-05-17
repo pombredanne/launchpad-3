@@ -858,7 +858,7 @@ class BuildImageDisplayAPI(ObjectImageDisplayAPI):
         icon_map = {
             BuildStatus.NEEDSBUILD: "/@@/build-needed",
             BuildStatus.FULLYBUILT: "/@@/build-success",
-            BuildStatus.FAILEDTOBUILD: "/@@/build-failure",
+            BuildStatus.FAILEDTOBUILD: "/@@/build-failed",
             BuildStatus.MANUALDEPWAIT: "/@@/build-depwait",
             BuildStatus.CHROOTWAIT: "/@@/build-chrootwait",
             BuildStatus.SUPERSEDED: "/@@/build-superseded",

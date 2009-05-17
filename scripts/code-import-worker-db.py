@@ -23,7 +23,7 @@ from twisted.python import log
 
 from lp.codehosting.codeimport.workermonitor import (
     CodeImportWorkerMonitor)
-from canonical.launchpad.scripts.base import LaunchpadScript
+from lp.services.scripts.base import LaunchpadScript
 from canonical.twistedsupport.loggingsupport import set_up_oops_reporting
 
 

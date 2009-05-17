@@ -9,6 +9,10 @@ import unittest
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.validators import LaunchpadValidationError
+from canonical.testing import DatabaseFunctionalLayer
+
 from lp.code.model.branchnamespace import (
     PackageNamespace, PersonalNamespace, ProductNamespace)
 from lp.registry.model.sourcepackage import SourcePackage
@@ -28,8 +32,6 @@ from lp.registry.interfaces.product import NoSuchProduct
 from lp.registry.interfaces.sourcepackagename import (
     NoSuchSourcePackageName)
 from lp.testing import TestCaseWithFactory
-from canonical.launchpad.validators import LaunchpadValidationError
-from canonical.testing import DatabaseFunctionalLayer
 
 
 class NamespaceMixin:
@@ -188,14 +190,73 @@ class NamespaceMixin:
             BranchType.HOSTED, name, removeSecurityProxy(namespace).owner)
         self.assertEqual(name + '-1', branch.name)
 
+    def test_validateMove(self):
+        # If the mover is allowed to move the branch into the namespace, if
+        # there are absolutely no problems at all, then validateMove raises
+        # nothing and returns None.
+        namespace = self.getNamespace()
+        namespace_owner = removeSecurityProxy(namespace).owner
+        branch = self.factory.makeAnyBranch()
+        # Doesn't raise an exception.
+        self.assertIs(None, namespace.validateMove(branch, namespace_owner))
+
+    def test_validateMove_branch_with_name_exists(self):
+        # If a branch with the same name as the given branch already exists in
+        # the namespace, validateMove raises a BranchExists error.
+        namespace = self.getNamespace()
+        namespace_owner = removeSecurityProxy(namespace).owner
+        name = self.factory.getUniqueString()
+        namespace.createBranch(
+            BranchType.HOSTED, name, removeSecurityProxy(namespace).owner)
+        branch = self.factory.makeAnyBranch(name=name)
+        self.assertRaises(
+            BranchExists, namespace.validateMove, branch, namespace_owner)
+
+    def test_validateMove_forbidden_owner(self):
+        # If the mover isn't allowed to create branches in the namespace, then
+        # they aren't allowed to move branches in there either, so
+        # validateMove wil raise a BranchCreatorNotOwner error.
+        namespace = self.getNamespace()
+        branch = self.factory.makeAnyBranch()
+        mover = self.factory.makePerson()
+        self.assertRaises(
+            BranchCreatorNotOwner, namespace.validateMove, branch, mover)
+
+    def test_validateMove_not_team_member(self):
+        # If the mover isn't allowed to create branches in the namespace
+        # because they aren't a member of the team that owns the namespace,
+        # validateMove raises a BranchCreatorNotMemberOfOwnerTeam error.
+        team = self.factory.makeTeam()
+        namespace = self.getNamespace(person=team)
+        branch = self.factory.makeAnyBranch()
+        mover = self.factory.makePerson()
+        self.assertRaises(
+            BranchCreatorNotMemberOfOwnerTeam,
+            namespace.validateMove, branch, mover)
+
+    def test_validateMove_with_other_name(self):
+        # If you pass a name to validateMove, that'll check to see whether the
+        # branch could be safely moved given a rename.
+        namespace = self.getNamespace()
+        namespace_owner = removeSecurityProxy(namespace).owner
+        name = self.factory.getUniqueString()
+        namespace.createBranch(
+            BranchType.HOSTED, name, removeSecurityProxy(namespace).owner)
+        branch = self.factory.makeAnyBranch()
+        self.assertRaises(
+            BranchExists, namespace.validateMove, branch, namespace_owner,
+            name=name)
+
 
 class TestPersonalNamespace(TestCaseWithFactory, NamespaceMixin):
     """Tests for `PersonalNamespace`."""
 
     layer = DatabaseFunctionalLayer
 
-    def getNamespace(self):
-        return get_branch_namespace(person=self.factory.makePerson())
+    def getNamespace(self, person=None):
+        if person is None:
+            person = self.factory.makePerson()
+        return get_branch_namespace(person=person)
 
     def test_name(self):
         # A personal namespace has branches with names starting with
@@ -235,10 +296,11 @@ class TestProductNamespace(TestCaseWithFactory, NamespaceMixin):
 
     layer = DatabaseFunctionalLayer
 
-    def getNamespace(self):
+    def getNamespace(self, person=None):
+        if person is None:
+            person = self.factory.makePerson()
         return get_branch_namespace(
-            person=self.factory.makePerson(),
-            product=self.factory.makeProduct())
+            person=person, product=self.factory.makeProduct())
 
     def test_name(self):
         # A product namespace has branches with names starting with ~foo/bar.
@@ -333,9 +395,11 @@ class TestPackageNamespace(TestCaseWithFactory, NamespaceMixin):
 
     layer = DatabaseFunctionalLayer
 
-    def getNamespace(self):
+    def getNamespace(self, person=None):
+        if person is None:
+            person = self.factory.makePerson()
         return get_branch_namespace(
-            person=self.factory.makePerson(),
+            person=person,
             distroseries=self.factory.makeDistroRelease(),
             sourcepackagename=self.factory.makeSourcePackageName())
 
@@ -1080,7 +1144,7 @@ class TestProductNamespaceCanBranchesBePublic(TestCaseWithFactory):
         self.assertBranchesMustBePrivate(person)
         self.assertBranchesMustBePrivate(team)
 
-    def test_team_member_with_private_only_rule(self):
+    def test_team_member_with_private_only_rule_public_base_rule(self):
         # If a person is a member of a team that has a PRIVATE_ONLY rule, and
         # the base rule is PUBLIC, then the branches must be private in the
         # team namespace, but can be public in the personal namespace.
@@ -1137,6 +1201,14 @@ class BaseValidateNewBranchMixin:
             BranchCreatorNotMemberOfOwnerTeam,
             namespace.validateRegistrant,
             self.factory.makePerson())
+
+    def test_registrant_special_access(self):
+        # If the registrant has special access to branches, then they are
+        # valid.
+        namespace = self._getNamespace(self.factory.makePerson())
+        bazaar_experts = getUtility(ILaunchpadCelebrities).bazaar_experts
+        special_person = bazaar_experts.teamowner
+        self.assertIs(None, namespace.validateRegistrant(special_person))
 
     def test_existing_branch(self):
         # If a branch exists with the same name, then BranchExists is raised.

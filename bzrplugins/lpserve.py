@@ -11,16 +11,13 @@ __all__ = ['cmd_launchpad_server']
 
 
 import sys
-import xmlrpclib
 
 from bzrlib.commands import Command, register_command
 from bzrlib.option import Option
-from bzrlib import lockdir, urlutils, ui
+from bzrlib import lockdir, ui
 
 from bzrlib.smart import medium, server
 from bzrlib.transport import get_transport, remote
-
-from canonical.config import config
 
 
 class cmd_launchpad_server(Command):
