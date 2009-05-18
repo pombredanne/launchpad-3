@@ -969,7 +969,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
     def getTimeline(self, include_inactive=False):
         """See `IProduct`."""
-        return [series.getTimeline(include_inactive=include_inactive))
+        return [series.getTimeline(include_inactive=include_inactive)
                 for series in self.serieses]
 
 
