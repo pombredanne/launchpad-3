@@ -565,40 +565,90 @@ Same for distroseries:
     0
 
 
-For sourcepackage:
+For SourcePackages, getBuildRecords() returns all build records
+published in its context (distroseries and distribution main
+archives), independent of their corresponding source publishing
+status.
 
     >>> firefox = warty.getSourcePackage('mozilla-firefox')
 
     >>> firefox.getBuildRecords().count()
-    10
-
-    >>> firefox.getBuildRecords(build_state=BuildStatus.FULLYBUILT).count()
     8
 
     >>> firefox.getBuildRecords(
+    ...     build_state=BuildStatus.FULLYBUILT).count()
+    6
+
+    >>> firefox.getBuildRecords(
     ...     pocket=PackagePublishingPocket.RELEASE).count()
-    10
+    8
 
     >>> firefox.getBuildRecords(
     ...     pocket=PackagePublishingPocket.UPDATES).count()
     0
 
-getBuildRecords will return builds for packages that are no longer currently
-published. "pmount" is published twice in hoary, one is PUBLISHED and the
-other is SUPERSEDED.  The published package does not have any builds but
-the superseded one does.
+As mentioned above, SourcePackage.getBuildRecords() will return builds
+for packages that are no longer published. At first, there are no
+traces of the 'old-source' sourcepackage in ubuntutest/breezy-autotest
 
-    >>> from zope.security.proxy import removeSecurityProxy
+    >>> ubuntutest = getUtility(IDistributionSet).getByName('ubuntutest')
+    >>> breezy_autotest = ubuntutest.getSeries('breezy-autotest')
+    >>> print breezy_autotest.getSourcePackage('old-source')
+    None
+
+Once the SourcePackage exists and has builds, they will be returned by
+getBuildRecords() ordered by descending creation date.
+
+    # Create a DELETED and a SUPERSEDED source publication in
+    # ubuntutest/breezy-autotest.
+    >>> from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
     >>> from canonical.launchpad.interfaces import PackagePublishingStatus
-    >>> hoary_pmount = removeSecurityProxy(hoary.getSourcePackage('pmount'))
-    >>> published_hoary_pmount = hoary_pmount._getPublishingHistory(
-    ...     include_status=[PackagePublishingStatus.PUBLISHED])
-    >>> published_hoary_pmount.count()
-    1
-    >>> published_hoary_pmount[0].sourcepackagerelease.builds.count()
-    0
-    >>> hoary_pmount.getBuildRecords().count()
-    5
+    >>> login('foo.bar@canonical.com')
+    >>> test_publisher = SoyuzTestPublisher()
+    >>> test_publisher.prepareBreezyAutotest()
+    >>> old_source_pub = test_publisher.getPubSource(
+    ...     sourcename='old-source', version='1.0',
+    ...     status=PackagePublishingStatus.SUPERSEDED)
+    >>> [superseded_build] = old_source_pub.createMissingBuilds()
+    >>> deleted_source_pub = test_publisher.getPubSource(
+    ...     sourcename='old-source', version='1.1',
+    ...     status=PackagePublishingStatus.DELETED)
+    >>> [deleted_build] = deleted_source_pub.createMissingBuilds()
+    >>> login(ANONYMOUS)
+
+    >>> old_source_sp = breezy_autotest.getSourcePackage('old-source')
+    >>> old_source_builds = old_source_sp.getBuildRecords()
+    >>> [deleted_build, superseded_build] == list(old_source_builds)
+    True
+
+Builds records for the exactly the same `SourcePackageRelease`s may
+exist in a rebuild archive context, but they do not 'leak' to the
+domain of SourcePackage.
+
+    # Create a rebuild archive, copy the 'old-source' source
+    # publications to it and create builds in the rebuild archive
+    # context.
+    >>> from lp.soyuz.interfaces.archive import ArchivePurpose
+    >>> login('foo.bar@canonical.com')
+    >>> rebuild_archive = factory.makeArchive(
+    ...     ubuntutest, ubuntutest.owner, 'test-rebuild',
+    ...     ArchivePurpose.COPY)
+    >>> rebuild_old_pub = old_source_pub.copyTo(
+    ...     breezy_autotest, PackagePublishingPocket.RELEASE,
+    ...     rebuild_archive)
+    >>> [rebuild_old_build] = rebuild_old_pub.createMissingBuilds()
+    >>> rebuild_deleted_pub = deleted_source_pub.copyTo(
+    ...     breezy_autotest, PackagePublishingPocket.RELEASE,
+    ...     rebuild_archive)
+    >>> [rebuild_deleted_build] = rebuild_deleted_pub.createMissingBuilds()
+    >>> login(ANONYMOUS)
+
+    >>> rebuild_builds = rebuild_archive.getBuildRecords()
+    >>> [rebuild_deleted_build, rebuild_old_build] == list(rebuild_builds)
+    True
+
+    >>> old_source_sp.getBuildRecords().count()
+    2
 
 For a given distribution as well:
 
@@ -1043,9 +1093,6 @@ cprov's archive is private which makes its builds private.  We'll add
 an extra build that is not published anywhere but in his PPA.
 
     >>> login('foo.bar@canonical.com')
-    >>> from lp.soyuz.tests.test_publishing import (
-    ...      SoyuzTestPublisher)
-    >>> test_publisher = SoyuzTestPublisher()
     >>> test_publisher.prepareBreezyAutotest()
     >>> removeSecurityProxy(cprov).archive.private = True
     >>> private_source_pub = test_publisher.getPubSource(
