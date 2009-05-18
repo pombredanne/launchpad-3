@@ -33,6 +33,7 @@ from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp.publisher import (
     canonical_url, LaunchpadView)
 from canonical.widgets import DateWidget
+from canonical.widgets.popup import PersonPickerWidget
 
 
 def archive_subscription_ui_adapter(archive_subscription):
@@ -80,6 +81,8 @@ class ArchiveSubscribersView(LaunchpadFormView):
     field_names = ['subscriber', 'date_expires', 'description']
     custom_widget('description', TextWidget, displayWidth=40)
     custom_widget('date_expires', CustomWidgetFactory(DateWidget))
+    custom_widget('subscriber', PersonPickerWidget,
+        header="Select the subscriber")
 
     def initialize(self):
         """Ensure that we are dealing with a private archive."""
