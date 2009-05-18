@@ -25,7 +25,7 @@ permitted_database_imports = text_lines_to_set("""
     canonical.archivepublisher.domination
     canonical.archivepublisher.ftparchive
     canonical.archivepublisher.publishing
-    canonical.codehosting.inmemory
+    lp.codehosting.inmemory
     canonical.launchpad.browser.branchlisting
     lp.code.browser.branchlisting
     canonical.launchpad.feed.branch

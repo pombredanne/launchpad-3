@@ -20,7 +20,7 @@ from zope.interface.verify import verifyClass, verifyObject
 from zope.security.proxy import (
     isinstance as zope_isinstance, removeSecurityProxy)
 
-from canonical.codehosting.vfs import branch_id_to_path, get_multi_server
+from lp.codehosting.vfs import branch_id_to_path, get_multi_server
 from canonical.config import config
 # Import the login and logout functions here as it is a much better
 # place to import them from in tests.
@@ -477,7 +477,7 @@ class TestCaseWithFactory(TestCase):
         :param real_server: If true, use the "real" code hosting server,
             using an xmlrpc server, etc.
         """
-        from canonical.codehosting.scanner.tests.test_bzrsync import (
+        from lp.codehosting.scanner.tests.test_bzrsync import (
             FakeTransportServer)
         from bzrlib.transport import get_transport
         self.useTempBzrHome()

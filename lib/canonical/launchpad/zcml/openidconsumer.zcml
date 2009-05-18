@@ -1,8 +1,8 @@
 <configure xmlns="http://namespaces.zope.org/zope">
 
   <utility
-      provides="..interfaces.openidconsumer.IOpenIDConsumerStoreFactory"
-      component="..database.openidconsumer.OpenIDConsumerStore">
+      provides="..interfaces.openidconsumer.IOpenIDConsumerStore"
+      factory="..database.openidconsumer.OpenIDConsumerStore">
   </utility>
 
 </configure>

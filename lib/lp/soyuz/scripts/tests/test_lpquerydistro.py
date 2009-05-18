@@ -15,7 +15,7 @@ from canonical.database.sqlbase import flush_database_updates
 from canonical.testing import LaunchpadLayer
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.distroseries import DistroSeriesStatus
-from canonical.launchpad.scripts.base import LaunchpadScriptFailure
+from lp.services.scripts.base import LaunchpadScriptFailure
 from lp.soyuz.scripts.ftpmaster import LpQueryDistro
 from canonical.testing import LaunchpadZopelessLayer
 
