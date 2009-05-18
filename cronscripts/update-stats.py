@@ -8,7 +8,7 @@ import _pythonpath
 
 from zope.component import getUtility
 from canonical.database.sqlbase import ISOLATION_LEVEL_READ_COMMITTED
-from canonical.launchpad.scripts.base import LaunchpadCronScript
+from lp.services.scripts.base import LaunchpadCronScript
 from canonical.launchpad.interfaces import (
     IDistributionSet, ILaunchpadStatisticSet, IPersonSet
     )

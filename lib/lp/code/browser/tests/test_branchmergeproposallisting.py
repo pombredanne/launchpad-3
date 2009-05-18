@@ -12,8 +12,7 @@ from lp.code.browser.branchmergeproposallisting import (
     BranchMergeProposalListingView, ProductActiveReviewsView)
 from lp.code.interfaces.codereviewcomment import (
     CodeReviewVote)
-from canonical.launchpad.testing import (
-    ANONYMOUS, login, login_person, TestCaseWithFactory)
+from lp.testing import ANONYMOUS, login, login_person, TestCaseWithFactory
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing import DatabaseFunctionalLayer
 

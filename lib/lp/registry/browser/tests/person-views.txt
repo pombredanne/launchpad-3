@@ -172,7 +172,7 @@ This assumption is visible to the user when he views his own profile page,
 and he can set his preferred languages if he wants to make a correction.
 The list of languages is alphabetized.
 
-    >>> from canonical.launchpad.interfaces.language import ILanguageSet
+    >>> from lp.services.worlddata.interfaces.language import ILanguageSet
 
     >>> languageset = getUtility(ILanguageSet)
     >>> sample_person.addLanguage(languageset.getLanguageByCode('so'))

@@ -76,6 +76,11 @@
         factory="canonical.launchpad.components.launchpadcontainer.LaunchpadBugContainer"
         />
 
+    <adapter
+        factory="canonical.launchpad.browser.bug.bug_description_xhtml_representation"
+        name="description"
+        />
+
     <browser:menus
         module="canonical.launchpad.browser"
         classes="BugFacets"

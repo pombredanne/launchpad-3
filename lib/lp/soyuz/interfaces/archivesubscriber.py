@@ -19,7 +19,7 @@ from zope.schema import Choice, Date, Datetime, Int, Text, TextLine
 from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import PublicPersonChoice
+from canonical.launchpad.fields import ParticipatingPersonChoice
 from lp.soyuz.interfaces.archive import IArchive
 from lp.registry.interfaces.person import IPerson
 from lazr.restful.declarations import export_as_webservice_entry, exported
@@ -70,7 +70,7 @@ class IArchiveSubscriberView(Interface):
         title=_("Date Created"), required=True, readonly=True,
         description=_("The timestamp when the subscription was created.")))
 
-    subscriber = exported(PublicPersonChoice(
+    subscriber = exported(ParticipatingPersonChoice(
         title=_("Subscriber"), required=True, vocabulary='ValidPersonOrTeam',
         description=_("The person who is subscribed.")))
 
@@ -112,7 +112,7 @@ class IArchiveSubscriberEdit(Interface):
 
     def cancel(cancelled_by):
         """Cancel a subscription.
-        
+
         :param cancelled_by: An `IPerson` who is cancelling the subscription.
 
         Sets cancelled_by to the supplied person and date_cancelled to
@@ -171,7 +171,7 @@ class IArchiveSubscriberUI(Interface):
     we simply want to use a date field when users create or edit new
     subscriptions.
     """
-    subscriber = PublicPersonChoice(
+    subscriber = ParticipatingPersonChoice(
         title=_("Subscriber"), required=True, vocabulary='ValidPersonOrTeam',
         description=_("The person or team to subscribe."))
 
@@ -203,4 +203,3 @@ class IPersonalArchiveSubscription(Interface):
 
     displayname = TextLine(title=_("Subscription displayname"),
         required=False)
-

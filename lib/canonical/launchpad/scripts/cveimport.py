@@ -21,7 +21,7 @@ from zope.lifecycleevent import ObjectModifiedEvent
 from canonical.config import config
 from canonical.launchpad.interfaces.cve import CveStatus, ICveSet
 from canonical.launchpad.interfaces.looptuner import ITunableLoop
-from canonical.launchpad.scripts.base import (
+from lp.services.scripts.base import (
     LaunchpadCronScript, LaunchpadScriptFailure)
 from canonical.launchpad.utilities.looptuner import LoopTuner
 

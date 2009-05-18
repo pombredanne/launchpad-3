@@ -14,8 +14,7 @@ import transaction
 from canonical.launchpad.database.diff import Diff, StaticDiff
 from canonical.launchpad.interfaces.diff import (
     IDiff, IPreviewDiff, IStaticDiff, IStaticDiffSource)
-from canonical.launchpad.testing import (
-    login, login_person, TestCaseWithFactory)
+from lp.testing import login, login_person, TestCaseWithFactory
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.testing import verifyObject
 

@@ -1,5 +1,5 @@
 # Copyright 2008 Canonical Ltd.  All rights reserved.
-# pylint: disable-msg=W0706
+# pylint: disable-msg=E0702
 
 __metaclass__ = type
 __all__ = [
