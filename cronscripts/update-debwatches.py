@@ -13,7 +13,7 @@ import _pythonpath
 from zope.component import getUtility
 
 from canonical.launchpad.scripts import debbugs
-from canonical.launchpad.scripts.base import (LaunchpadCronScript,
+from lp.services.scripts.base import (LaunchpadCronScript,
     LaunchpadScriptFailure)
 from canonical.launchpad.interfaces import (IBugSet,
     ILaunchpadCelebrities, InvalidEmailMessage, IBugTaskSet,

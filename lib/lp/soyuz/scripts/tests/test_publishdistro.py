@@ -25,7 +25,7 @@ from lp.soyuz.interfaces.binarypackagerelease import (
     BinaryPackageFormat)
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.scripts import publishdistro
-from canonical.launchpad.scripts.base import LaunchpadScriptFailure
+from lp.services.scripts.base import LaunchpadScriptFailure
 from lp.soyuz.tests.test_publishing import TestNativePublishingBase
 
 

@@ -30,7 +30,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.autodecorate import AutoDecorate
 from canonical.config import config
-from canonical.codehosting.codeimport.worker import CodeImportSourceDetails
+from lp.codehosting.codeimport.worker import CodeImportSourceDetails
 from canonical.database.sqlbase import flush_database_updates
 from canonical.librarian.interfaces import ILibrarianClient
 from lp.soyuz.adapters.packagelocation import PackageLocation
@@ -193,8 +193,8 @@ class LaunchpadObjectFactory(ObjectFactory):
     def makeCopyArchiveLocation(self, distribution=None, owner=None,
         name=None):
         """Create and return a new arbitrary location for copy packages."""
-        copy_archive = self._makeArchive(distribution, owner, name,
-                                         ArchivePurpose.COPY)
+        copy_archive = self.makeArchive(distribution, owner, name,
+                                        ArchivePurpose.COPY)
 
         distribution = copy_archive.distribution
         distroseries = distribution.currentseries
@@ -1283,12 +1283,16 @@ class LaunchpadObjectFactory(ObjectFactory):
             architecturetag, processorfamily, official, owner,
             supports_virtualized)
 
-    def _makeArchive(self, distribution=None, owner=None, name=None,
+    def makeArchive(self, distribution=None, owner=None, name=None,
                     purpose = None):
         """Create and return a new arbitrary archive.
-
-        Note: this shouldn't generally be used except by other factory
-        methods such as makeCopyArchiveLocation.
+        
+        :param distribution: Supply IDistribution, defaults to a new one
+            made with makeDistribution().
+        :param owner: Supper IPerson, defaults to a new one made with
+            makePerson().
+        :param name: Name of the archive, defaults to a random string.
+        :param purpose: Supply ArchivePurpose, defaults to PPA.
         """
         if distribution is None:
             distribution = self.makeDistribution()
