@@ -122,7 +122,7 @@ class Language(SQLBase):
             ''' % sqlvalues(self), orderBy=['-KarmaCache.karmavalue'],
             clauseTables=[
                 'PersonLanguage', 'KarmaCache', 'KarmaCategory'])
-        
+
     def getFullCode(self, variant=None):
         """See `ILanguage`."""
         if variant:
