@@ -443,7 +443,7 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
 
     def getTimeline(self, include_inactive=False):
         landmarks = []
-        for j, milestone in enumerate(self.all_milestones):
+        for milestone in self.all_milestones:
             if milestone.product_release is None:
                 # Skip inactive milestones, but include releases,
                 # even if include_inactive is False.
@@ -452,9 +452,11 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
                 node_type = 'milestone'
             else:
                 node_type = 'release'
-            landmarks.append(dict(
-                name=milestone.name, code_name=milestone.code_name,
-                type=node_type))
+            entry = dict(
+                name=milestone.name,
+                code_name=milestone.code_name,
+                type=node_type)
+            landmarks.append(entry)
         return dict(
             name=self.name,
             is_development_focus=self.is_development_focus,
