@@ -45,8 +45,11 @@ from canonical.launchpad.validators.name import valid_name
 from lp.registry.model.distribution import Distribution
 from lp.soyuz.model.distroarchseries import DistroArchSeries
 from lp.registry.model.distroseries import DistroSeries
+from lp.registry.model.person import Person
 from lp.registry.model.teammembership import TeamParticipation
 from lp.soyuz.interfaces.distroarchseries import IDistroArchSeries
+from canonical.launchpad.database.bug import Bug, BugAffectsPerson, BugTag
+from canonical.launchpad.database.bugsubscription import BugSubscription
 from canonical.launchpad.interfaces.hwdb import (
     HWBus, HWMainClass, HWSubClass, HWSubmissionFormat,
     HWSubmissionKeyNotUnique, HWSubmissionProcessingStatus, IHWDevice,
@@ -398,6 +401,49 @@ class HWSubmissionSet:
 
         return (submitters_with_device.get_one()[0],
                 all_submitters.get_one()[0])
+
+    def deviceOwnersAffectedByBugs(
+        self, bus, vendor_id, product_id, driver_name=None, package_name=None,
+        bug_ids=None, bug_tags=None, affected_by_bug=False,
+        subscribed_to_bug=False, user=None):
+        """See `IHWSubmissionSet`."""
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        tables, clauses = make_submission_device_statistics_clause(
+                bus, vendor_id, product_id, driver_name, package_name)
+        clauses.append(HWSubmissionDevice.submission == HWSubmission.id)
+        clauses.append(HWSubmission.owner == Person.id)
+        clauses.append(self._userHasAccessStormClause(user))
+
+        if bug_ids or bug_tags:
+            bug_clause = Or(
+                In(Bug.id, bug_ids),
+                And(Bug.id == BugTag.bugID, In(BugTag.tag, bug_tags)))
+            clauses.append(bug_clause)
+        else:
+            raise ValueError(
+                'One of the parameters bug_ids or bug_tags must not be '
+                'empty.')
+        person_clauses = [
+            Bug.ownerID == HWSubmission.ownerID
+            ]
+        if subscribed_to_bug:
+            person_clauses.append(
+                And(BugSubscription.person == Person.id,
+                    BugSubscription.bug == Bug.id,
+                    HWSubmission.ownerID == Person.id))
+        if affected_by_bug:
+            person_clauses.append(
+                And(BugAffectsPerson.person == Person.id,
+                    BugAffectsPerson.bug == Bug.id,
+                    BugAffectsPerson.affected,
+                    HWSubmission.ownerID == Person.id))
+
+        clauses.append(Or(person_clauses))
+        result = store.find(
+            Person, And(*clauses))
+        result.order_by(Person.displayname)
+        result.config(distinct=True)
+        return result
 
 
 class HWSystemFingerprint(SQLBase):

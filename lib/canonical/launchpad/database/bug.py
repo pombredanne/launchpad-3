@@ -7,8 +7,10 @@ __metaclass__ = type
 
 __all__ = [
     'Bug',
+    'BugAffectsPerson',
     'BugBecameQuestionEvent',
     'BugSet',
+    'BugTag',
     'get_bug_tags',
     'get_bug_tags_open_count',
     ]
@@ -98,7 +100,6 @@ from lp.registry.model.pillar import pillar_sort_key
 from canonical.launchpad.validators import LaunchpadValidationError
 from lp.registry.interfaces.person import validate_public_person
 from canonical.launchpad.mailnotification import BugNotificationRecipients
-from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, DEFAULT_FLAVOR, MAIN_STORE, NotFoundError)
 

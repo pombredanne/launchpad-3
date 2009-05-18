@@ -2175,3 +2175,187 @@ We can specify a distro target as well as a driver or package name.
     ...     package_name='linux-image-2.6.24-19-generic',
     ...     distro_target=ubuntu['hoary']['i386'])
     (0L, 2L)
+
+
+== Relations between bugs and HWDB submissions ==
+
+We can query which owners of a device, or which people owning a device
+controlled by a given driver, are related to a set of bugs. We must
+specify a device's bus, vendor ID and product ID and one or more bugs.
+
+By default, only bug reporters are looked up. Sample Person has made
+a hardware report containing the IDE disk Seagate ST3250820NS, and
+he has filed bug 1.
+
+    >>> from canonical.launchpad.interfaces.bug import IBugSet
+    >>> bug_set = getUtility(IBugSet)
+    >>> bug_one = bug_set.get(1)
+    >>> print bug_one.owner.displayname
+    Sample Person
+    >>> for person in submission_set.deviceOwnersAffectedByBugs(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     bug_ids=[1]):
+    ...     print person.displayname
+    Sample Person
+
+If Foo Bar says that he is affected by this bug, he will be listed
+too, since he too owns the Seagate disk.
+
+    >>> foo_bar = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
+    >>> bug_one = bug_set.get(1)
+    >>> bug_one.markUserAffected(foo_bar)
+    >>> for person in submission_set.deviceOwnersAffectedByBugs(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     bug_ids=[1], affected_by_bug=True):
+    ...     print person.displayname
+    Foo Bar
+    Sample Person
+
+When he says that he is not affected by the bug, he will no longer
+be listed.
+
+    >>> bug_one.markUserAffected(foo_bar, False)
+    >>> for person in submission_set.deviceOwnersAffectedByBugs(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     bug_ids=[1], affected_by_bug=True):
+    ...     print person.displayname
+    Sample Person
+
+If he subscribes to the bug, he is listed again.
+
+    >>> bug_one.subscribe(foo_bar, subscribed_by=foo_bar)
+    <BugSubscription at ...
+    >>> for person in submission_set.deviceOwnersAffectedByBugs(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     bug_ids=[1], subscribed_to_bug=True):
+    ...     print person.displayname
+    Foo Bar
+    Sample Person
+
+    >>> bug_one.unsubscribe(foo_bar, unsubscribed_by=foo_bar)
+    >>> for person in submission_set.deviceOwnersAffectedByBugs(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     bug_ids=[1], subscribed_to_bug=True):
+    ...     print person.displayname
+    Sample Person
+
+We can specify more than one bug ID. If we specify bugs 1 and 3,
+deviceOwnersAffectedByBugs() returns again Sample Person and
+Foo Bar.
+
+    >>> bug_three = bug_set.get(3)
+    >>> print bug_three.owner.displayname
+    Foo Bar
+    >>> for person in submission_set.deviceOwnersAffectedByBugs(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     bug_ids=[1, 3]):
+    ...     print person.displayname
+    Foo Bar
+    Sample Person
+
+Instead of passing a seqence of bug IDs, we can also specify one or
+more bug tags.
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     BugTaskSearchParams, IBugTaskSet)
+    >>> bugtask_set = getUtility(IBugTaskSet)
+    >>> bugtasks = bugtask_set.search(
+    ...     BugTaskSearchParams(user=foo_bar, tag='pebcak'))
+    >>> owners = set([bugtask.bug.owner for bugtask in bugtasks])
+    >>> for owner in owners:
+    ...     print bugtask.bug.owner.displayname
+    Sample Person
+    >>> bugtasks = bugtask_set.search(
+    ...     BugTaskSearchParams(user=foo_bar, tag='crash'))
+    >>> owners = set([bugtask.bug.owner for bugtask in bugtasks])
+    >>> for owner in owners:
+    ...     print bugtask.bug.owner.displayname
+    Foo Bar
+
+    >>> for person in submission_set.deviceOwnersAffectedByBugs(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     bug_tags=['pebcak']):
+    ...     print person.displayname
+    Sample Person
+
+    >>> for person in submission_set.deviceOwnersAffectedByBugs(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     bug_tags=['pebcak', 'crash']):
+    ...     print person.displayname
+    Foo Bar
+    Sample Person
+
+    >>> submission_set.deviceOwnersAffectedByBugs(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     bug_tags=['lunch-money']).count()
+    0
+
+We can limit the result to owners who use a device with a given driver...
+
+    >>> for person in submission_set.deviceOwnersAffectedByBugs(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     driver_name='sd', bug_tags=['pebcak', 'crash']):
+    ...     print person.displayname
+    Foo Bar
+    Sample Person
+
+    >>> print submission_set.deviceOwnersAffectedByBugs(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     driver_name='nonsense', bug_tags=['pebcak', 'crash']).count()
+    0
+
+...or a given package name.
+
+    >>> for person in submission_set.deviceOwnersAffectedByBugs(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     package_name='linux-image-2.6.24-19-generic',
+    ...     bug_tags=['pebcak', 'crash']):
+    ...     print person.displayname
+    Sample Person
+
+    >>> print submission_set.deviceOwnersAffectedByBugs(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     package_name='nonsense', bug_tags=['pebcak', 'crash']).count()
+    0
+
+Owners of private submissions are only included if the optional parameter
+`user` is the owner or an admin.
+
+    >>> private_submission = factory.makeHWSubmission(
+    ...     emailaddress='no-priv@canonical.com', private=True)
+    >>> LaunchpadZopelessLayer.txn.commit()
+    >>> LaunchpadZopelessLayer.switchDbUser('hwdb-submission-processor')
+    >>> first_device = factory.makeHWSubmissionDevice(
+    ...     private_submission, ide_disk, None, None, 1)
+    >>> LaunchpadZopelessLayer.txn.commit()
+    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+    >>> no_priv = getUtility(IPersonSet).getByEmail('no-priv@canonical.com')
+    >>> bug_one.subscribe(no_priv, subscribed_by=no_priv)
+    <BugSubscription at ...
+    >>> for person in submission_set.deviceOwnersAffectedByBugs(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     bug_ids=[1], subscribed_to_bug=True, user=no_priv):
+    ...     print person.displayname
+    No Privileges Person
+    Sample Person
+
+    >>> for person in submission_set.deviceOwnersAffectedByBugs(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     bug_ids=[1], subscribed_to_bug=True, user=foo_bar):
+    ...     print person.displayname
+    No Privileges Person
+    Sample Person
+
+    >>> sample_person = getUtility(IPersonSet).getByEmail(
+    ...     'test@canonical.com')
+    >>> for person in submission_set.deviceOwnersAffectedByBugs(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     bug_ids=[1], subscribed_to_bug=True, user=sample_person):
+    ...     print person.displayname
+    Sample Person
+
+    >>> for person in submission_set.deviceOwnersAffectedByBugs(
+    ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     bug_ids=[1], subscribed_to_bug=True):
+    ...     print person.displayname
+    Sample Person

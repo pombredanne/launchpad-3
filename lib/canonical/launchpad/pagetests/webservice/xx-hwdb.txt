@@ -1067,3 +1067,83 @@ distroarchseries may be specified.
     ...
     Only one of `distribution`, `distroseries` or `distroarchseries` can
     be present.
+
+
+== Relations between bugs and HWDB submissions ==
+
+We can query which owners of a device are related to a set of bugs. We
+must specify a device's bus, vendor ID and product ID and one or more
+bugs.
+
+By default, only bug reporters are looked up.
+
+    >>> for person in webservice.named_get(
+    ...     '/+hwdb', 'deviceOwnersAffectedByBugs',
+    ...     bus='IDE', vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     bug_ids=[1]).jsonBody()['entries']:
+    ...     print person['display_name']
+    Sample Person
+
+We can additionally ask for bugsubscribers...
+
+    >>> for person in webservice.named_get(
+    ...     '/+hwdb', 'deviceOwnersAffectedByBugs',
+    ...     bus='IDE', vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     bug_ids=[9], subscribed_to_bug=True).jsonBody()['entries']:
+    ...     print person['display_name']
+    Sample Person
+
+or users affected by a bug.
+
+    >>> from canonical.launchpad.testing.pages import webservice_for_person
+    >>> from canonical.launchpad.webapp.interfaces import OAuthPermission
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> login('test@canonical.com')
+    >>> sample_person = getUtility(IPersonSet).getByEmail('test@canonical.com')
+    >>> logout()
+    >>> sample_person_webservice = webservice_for_person(
+    ...     sample_person, permission=OAuthPermission.WRITE_PUBLIC)
+    >>> bug_15 = webservice.get('/bugs/15').jsonBody()
+    >>> sample_person_webservice.named_post(
+    ...     bug_15['self_link'], 'markUserAffected',
+    ...     affected=True).jsonBody()
+    >>> for person in webservice.named_get(
+    ...     '/+hwdb', 'deviceOwnersAffectedByBugs',
+    ...     bus='IDE', vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     bug_ids=[15], affected_by_bug=True).jsonBody()['entries']:
+    ...     print person['display_name']
+    Sample Person
+
+We can limit the search to a driver...
+
+    >>> for person in webservice.named_get(
+    ...     '/+hwdb', 'deviceOwnersAffectedByBugs',
+    ...     bus='IDE', vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     bug_ids=[1], driver_name='sd').jsonBody()['entries']:
+    ...     print person['display_name']
+    Sample Person
+
+    >>> print webservice.named_get(
+    ...     '/+hwdb', 'deviceOwnersAffectedByBugs',
+    ...     bus='IDE', vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     bug_ids=[9], driver_name='nonsense', subscribed_to_bug=True
+    ...     ).jsonBody()['total_size']
+    0
+
+...or a package name.
+
+    >>> for person in webservice.named_get(
+    ...     '/+hwdb', 'deviceOwnersAffectedByBugs',
+    ...     bus='IDE', vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     bug_ids=[1], package_name='linux-image-2.6.24-19-generic'
+    ...     ).jsonBody()['entries']:
+    ...     print person['display_name']
+    Sample Person
+
+    >>> print webservice.named_get(
+    ...     '/+hwdb', 'deviceOwnersAffectedByBugs',
+    ...     bus='IDE', vendor_id='SEAGATE', product_id='ST3250820NS     ',
+    ...     bug_ids=[9], package_name='nonsense', subscribed_to_bug=True
+    ...     ).jsonBody()['total_size']
+    0
+

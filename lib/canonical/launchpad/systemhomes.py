@@ -306,6 +306,15 @@ class HWDBApplication:
                 distro_target=self.getDistroTarget(
                     distribution, distroseries, distroarchseries))
 
+    def deviceOwnersAffectedByBugs(
+        self, bus, vendor_id, product_id, driver_name=None, package_name=None,
+        bug_ids=None, bug_tags=None, affected_by_bug=False,
+        subscribed_to_bug=False, user=None):
+        """See `IHWDBApplication`."""
+        return getUtility(IHWSubmissionSet).deviceOwnersAffectedByBugs(
+            bus, vendor_id, product_id, driver_name, package_name, bug_ids,
+            bug_tags, affected_by_bug, subscribed_to_bug, user)
+
 
 class WebServiceApplication(ServiceRootResource):
     """See `IWebServiceApplication`.
