@@ -18,7 +18,7 @@ __all__ = [
 from zope.component import getUtility
 
 from canonical.archivepublisher.deathrow import getDeathRow
-from canonical.launchpad.scripts.base import LaunchpadScript
+from lp.services.scripts.base import LaunchpadScript
 from lp.registry.interfaces.distribution import IDistributionSet
 
 
