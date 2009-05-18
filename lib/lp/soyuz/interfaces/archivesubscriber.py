@@ -22,7 +22,7 @@ from canonical.launchpad import _
 from canonical.launchpad.fields import ParticipatingPersonChoice
 from lp.soyuz.interfaces.archive import IArchive
 from lp.registry.interfaces.person import IPerson
-from lazr.restful.declarations import exported
+from lazr.restful.declarations import export_as_webservice_entry, exported
 from lazr.restful.fields import Reference
 
 
@@ -122,7 +122,7 @@ class IArchiveSubscriberEdit(Interface):
 
 class IArchiveSubscriber(IArchiveSubscriberView, IArchiveSubscriberEdit):
     """An interface for archive subscribers."""
-
+    export_as_webservice_entry()
 
 class IArchiveSubscriberSet(Interface):
     """An interface for the set of all archive subscribers."""
