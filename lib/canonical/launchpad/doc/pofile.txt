@@ -92,10 +92,10 @@ We need a helper method to better display test results.
 Returns the complete code for this POFile's language, including variant
 if present.
 
-    >>> print potemplate.getPOFileByLang('sr').getFullLanguageCode()
-    sr
+    >>> print potemplate.getPOFileByLang('es').getFullLanguageCode()
+    es
 
-    >>> print potemplate.getDummyPOFile('sr', variant='Latn'
+    >>> print potemplate.getDummyPOFile('sr', variant=u'Latn'
     ...     ).getFullLanguageCode()
     sr@Latn
 
@@ -105,10 +105,10 @@ if present.
 Returns the complete English name for this POFile's language, including
 variant if present.
 
-    >>> print potemplate.getDummyPOFile('sr').getFullLanguageName()
-    Serbian
+    >>> print potemplate.getPOFileByLang('es').getFullLanguageName()
+    Spanish
 
-    >>> print potemplate.getPOFileByLang('sr', variant='Latn'
+    >>> print potemplate.getDummyPOFile('sr', variant=u'Latn'
     ...     ).getFullLanguageName()
     Serbian ("Latn" variant)
 
