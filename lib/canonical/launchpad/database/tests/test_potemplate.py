@@ -7,7 +7,7 @@ import unittest
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.interfaces.language import ILanguageSet
+from canonical.launchpad.interfaces import ILanguageSet
 from canonical.testing import DatabaseFunctionalLayer
 from lp.testing import TestCaseWithFactory
 

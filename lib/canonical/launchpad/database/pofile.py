@@ -381,7 +381,7 @@ class POFileMixIn(RosettaStats):
 
     def getFullLanguageName(self):
         """See `IPOFile`."""
-        return self.language.getFullName(self.variant)
+        return self.language.getFullEnglishName(self.variant)
 
 
 class POFile(SQLBase, POFileMixIn):
