@@ -87,6 +87,32 @@ We need a helper method to better display test results.
     ...             potmsgset.sequence, singular, plural, translation)
 
 
+== getFullLanguageCode ==
+
+Returns the complete code for this POFile's language, including variant
+if present.
+
+    >>> print potemplate.getPOFileByLang('sr').getFullLanguageCode()
+    sr
+
+    >>> print potemplate.getDummyPOFile('sr', variant='Latn'
+    ...     ).getFullLanguageCode()
+    sr@Latn
+
+
+== getFullLanguageName ==
+
+Returns the complete English name for this POFile's language, including
+variant if present.
+
+    >>> print potemplate.getDummyPOFile('sr').getFullLanguageName()
+    Serbian
+
+    >>> print potemplate.getPOFileByLang('sr', variant='Latn'
+    ...     ).getFullLanguageName()
+    Serbian ("Latn" variant)
+
+
 == findPOTMsgSetsContaining ==
 
 It is common to want to find those POTMsgSets which contain a certain
