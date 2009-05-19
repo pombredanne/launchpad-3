@@ -38,7 +38,7 @@ from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
-    ParticipatingPersonChoice, PublicPersonChoice, StrippedTextLine)
+    ParticipatingPersonChoice, StrippedTextLine)
 from canonical.launchpad.interfaces.launchpad import IHasOwner
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.registry.interfaces.gpg import IGPGKey
@@ -47,7 +47,7 @@ from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.webapp.interfaces import NameLookupFailed
 
 from lazr.restful.declarations import (
-    REQUEST_USER, call_with, export_as_webservice_entry, exported,
+    export_as_webservice_entry, exported,
     export_read_operation, export_factory_operation, export_operation_as,
     export_write_operation, operation_parameters,
     operation_returns_collection_of, rename_parameters_as, webservice_error)
@@ -818,20 +818,6 @@ class IArchiveAppend(Interface):
         :raises CannotCopy: if there is a problem copying.
         """
 
-    @call_with(registrant=REQUEST_USER)
-    @operation_parameters(
-        subscriber = PublicPersonChoice(
-            title=_("Subscriber"),
-            required=True,
-            vocabulary='ValidPersonOrTeam',
-            description=_("The person who is subscribed.")),
-        date_expires=Datetime(title=_("Date of Expiration"), required=False,
-            description=_("The timestamp when the subscription will "
-                "expire.")),
-        description=Text(title=_("Description"), required=False,
-            description=_("Free text describing this subscription.")))
-    # Really IArchiveSubscriber, set below to avoid circular import.
-    @export_factory_operation(Interface, [])
     def newSubscription(subscriber, registrant, date_expires=None,
                         description=None):
         """Create a new subscribtion to this archive.
