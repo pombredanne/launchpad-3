@@ -124,7 +124,6 @@ class IArchiveSubscriber(IArchiveSubscriberView, IArchiveSubscriberEdit):
     """An interface for archive subscribers."""
     export_as_webservice_entry()
 
-
 class IArchiveSubscriberSet(Interface):
     """An interface for the set of all archive subscribers."""
 
