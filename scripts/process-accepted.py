@@ -2,8 +2,8 @@
 """Queue/Accepted processor
 
 Given a distribution to run on, obtains all the queue items for the
-distribution and then gets on and deals with any accepted items, preparing them
-for publishing as appropriate.
+distribution and then gets on and deals with any accepted items, preparing
+them for publishing as appropriate.
 """
 
 import _pythonpath

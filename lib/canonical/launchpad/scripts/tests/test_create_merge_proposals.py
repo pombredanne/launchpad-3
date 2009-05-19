@@ -13,8 +13,8 @@ from zope.component import getUtility
 
 from canonical.testing import ZopelessAppServerLayer
 from canonical.launchpad.ftests import import_secret_test_key
-from canonical.launchpad.testing import (
-    GPGSigningContext, TestCaseWithFactory)
+from lp.testing import TestCaseWithFactory
+from lp.testing.factory import GPGSigningContext
 from canonical.launchpad.scripts.tests import run_script
 from lp.code.model.branchmergeproposal import (
     CreateMergeProposalJob)

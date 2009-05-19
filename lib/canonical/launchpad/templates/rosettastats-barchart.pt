@@ -9,11 +9,11 @@
   tal:condition="not: context/messageCount"
   src="/@@/red-bar" height="10" width="100" style="height: 1em;" />
 <img
-  tal:condition="context/nonUpdatesCount"
+  tal:condition="context/currentCount"
   tal:attributes="
-    alt string: ${context/nonUpdatesPercentage}% published, ;
-    title string:Unchanged: ${context/nonUpdatesPercentage} %;
-    width context/nonUpdatesPercentage;
+    alt string: ${context/currentPercentage}% published, ;
+    title string:Unchanged: ${context/currentPercentage} %;
+    width context/currentPercentage;
   "
   height="10" src="/@@/green-bar" style="height: 1em;"
 /><img
@@ -25,11 +25,11 @@
   "
   height="10" src="/@@/blue-bar" style="height: 1em;"
 /><img
-  tal:condition="context/rosettaCount"
+  tal:condition="context/newCount"
   tal:attributes="
-    alt string: ${context/rosettaPercentage}% new, ;
-    width context/rosettaPercentage;
-    title string: New: ${context/rosettaPercentage} %
+    alt string: ${context/newPercentage}% new, ;
+    width context/newPercentage;
+    title string: New: ${context/newPercentage} %
   "
   height="10" src="/@@/purple-bar" style="height: 1em;"
 /><img

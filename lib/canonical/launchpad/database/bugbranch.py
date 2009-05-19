@@ -11,10 +11,7 @@ __all__ = ["BugBranch",
 from sqlobject import ForeignKey, IN, StringCol
 
 from zope.component import getUtility
-from zope.event import notify
 from zope.interface import implements
-
-from lazr.lifecycle.event import ObjectCreatedEvent
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol

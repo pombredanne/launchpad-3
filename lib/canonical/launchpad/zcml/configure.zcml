@@ -28,7 +28,6 @@
     <include file="bugtrackerperson.zcml" />
     <include file="bugwatch.zcml" />
     <include file="bug.zcml" />
-    <include file="country.zcml" />
     <include file="crowd.zcml" />
     <include file="customlanguagecode.zcml" />
     <include file="cve.zcml" />
@@ -41,7 +40,6 @@
     <include file="emailaddress.zcml" />
     <include file="feeds.zcml" />
     <include file="hwdb.zcml" />
-    <include file="job.zcml" />
     <include file="language.zcml" />
     <include file="languagepack.zcml" />
     <include file="launchpad.zcml" />
@@ -52,7 +50,7 @@
     <include file="mentoringoffer.zcml" />
     <include file="message.zcml" />
     <include file="oauth.zcml" />
-    <include file="openid.zcml" />
+    <include file="openidconsumer.zcml" />
     <include file="packagebugsupervisor.zcml" />
     <include file="packagecopyrequest.zcml" />
     <include file="packagerelationship.zcml" />

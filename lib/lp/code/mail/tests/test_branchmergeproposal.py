@@ -22,8 +22,8 @@ from lp.code.mail.branchmergeproposal import (
     BMPMailer, send_merge_proposal_modified_notifications)
 from lp.testing.mail_helpers import pop_notifications
 from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.testing import (
-    LaunchpadObjectFactory, TestCaseWithFactory)
+from lp.testing import TestCaseWithFactory
+from lp.testing.factory import LaunchpadObjectFactory
 
 
 class TestMergeProposalMailing(TestCase):
