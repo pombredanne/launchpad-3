@@ -862,7 +862,7 @@ class BuildImageDisplayAPI(ObjectImageDisplayAPI):
             BuildStatus.MANUALDEPWAIT: "/@@/build-depwait",
             BuildStatus.CHROOTWAIT: "/@@/build-chrootwait",
             BuildStatus.SUPERSEDED: "/@@/build-superseded",
-            BuildStatus.BUILDING: "/@@/build-building",
+            BuildStatus.BUILDING: "/@@/processing",
             BuildStatus.FAILEDTOUPLOAD: "/@@/build-failedtoupload",
             }
 
