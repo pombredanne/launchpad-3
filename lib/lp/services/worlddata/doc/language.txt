@@ -219,6 +219,41 @@ instead a dash char. This method does it automatically:
   pt-BR
 
 
+getFullCode
+===========
+
+This convenience method returns the language's code, including an
+optional variant.  No redundant country code is added; it's not done.
+
+  >>> sr = language_set.getLanguageByCode('sr')
+  >>> print sr.getFullCode()
+  sr
+
+An omitted variant can be either None or the empty string.
+
+  >>> print sr.getFullCode('')
+  sr
+
+  >>> print sr.getFullCode('Latn')
+  sr@Latn
+
+
+getFullEnglishName
+==================
+
+Use getFullEnglishName to compose a human-readable, displayable
+English name for a language including optional variant.
+
+  >>> print sr.getFullEnglishName()
+  Serbian
+
+  >>> print sr.getFullEnglishName('')
+  Serbian
+
+  >>> print sr.getFullEnglishName('Latn')
+  Serbian ("Latn" variant)
+
+
 =========
 countries
 =========
