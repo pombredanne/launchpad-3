@@ -63,7 +63,7 @@ class IArchiveSubscriberView(Interface):
         description=_("The archive for this subscription.")))
 
     registrant = exported(Reference(
-        IPerson, title=_("Registrant"), required=True,
+        IPerson, title=_("Registrant"), required=True, readonly=True,
         description=_("The person who registered this subscription.")))
 
     date_created = exported(Datetime(
@@ -71,7 +71,8 @@ class IArchiveSubscriberView(Interface):
         description=_("The timestamp when the subscription was created.")))
 
     subscriber = exported(ParticipatingPersonChoice(
-        title=_("Subscriber"), required=True, vocabulary='ValidPersonOrTeam',
+        title=_("Subscriber"), required=True, readonly=True,
+        vocabulary='ValidPersonOrTeam',
         description=_("The person who is subscribed.")))
 
     date_expires = exported(Datetime(

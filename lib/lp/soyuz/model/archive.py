@@ -53,9 +53,10 @@ from lp.soyuz.model.queue import (
     PackageUpload, PackageUploadSource)
 from lp.registry.model.teammembership import TeamParticipation
 from lp.soyuz.interfaces.archive import (
-    ArchiveDependencyError, ArchivePurpose, DistroSeriesNotFound,
-    IArchive, IArchiveSet, IDistributionArchive, IPPA, MAIN_ARCHIVE_PURPOSES,
-    PocketNotFound, SourceNotFound, default_name_by_purpose)
+    AlreadySubscribed, ArchiveDependencyError, ArchiveNotPrivate,
+    ArchivePurpose, DistroSeriesNotFound, IArchive, IArchiveSet,
+    IDistributionArchive, IPPA, MAIN_ARCHIVE_PURPOSES, PocketNotFound,
+    SourceNotFound, default_name_by_purpose)
 from lp.soyuz.interfaces.archiveauthtoken import (
     IArchiveAuthTokenSet)
 from lp.soyuz.interfaces.archivepermission import (
@@ -1098,6 +1099,20 @@ class Archive(SQLBase):
     def newSubscription(self, subscriber, registrant, date_expires=None,
                         description=None):
         """See `IArchive`."""
+
+        # We do not currently allow subscriptions for non-private archives:
+        if self.private is False:
+            raise ArchiveNotPrivate(
+                "Only private archives can have subscriptions.")
+
+        # Ensure there is not already a current subscription for subscriber:
+        subscriptions = getUtility(IArchiveSubscriberSet).getBySubscriber(
+            subscriber, archive=self)
+        if subscriptions.count() > 0:
+            raise AlreadySubscribed(
+            "%s already has a current subscription for '%s'." % (
+                subscriber.displayname, self.displayname))
+
         subscription = ArchiveSubscriber()
         subscription.archive = self
         subscription.registrant = registrant
