@@ -14,8 +14,7 @@ from zope.app.form.utility import setUpWidget
 from zope.component import getMultiAdapter, getUtility
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 
-from canonical.launchpad.interfaces import IBranchSet, ILaunchBag
-from canonical.launchpad.helpers import shortlist
+from canonical.launchpad.interfaces import ILaunchBag
 from canonical.launchpad.webapp import canonical_url
 from canonical.widgets.itemswidgets import LaunchpadRadioWidget
 
@@ -67,18 +66,18 @@ class TargetBranchWidget(LaunchpadRadioWidget):
         branches that the user has specified before as a target for a proposed
         merge.
         """
-        assert branch.product, "A product is needed to build the vocabulary."
-        self.dev_focus = branch.product.development_focus.branch
+        self.default_target = branch.target.default_merge_target
         logged_in_user = getUtility(ILaunchBag).user
-        target_branches = shortlist(
-            getUtility(IBranchSet).getTargetBranchesForUsersMergeProposals(
-                logged_in_user, branch.product))
+        collection = branch.target.collection.targetedBy(logged_in_user)
+        collection = collection.visibleByUser(logged_in_user)
+        branches = collection.getBranches().config(distinct=True)
+        target_branches = list(branches.config(limit=5))
         # If there is a development focus branch, make sure it is always
         # shown, and as the first item.
-        if self.dev_focus is not None and branch != self.dev_focus:
-            if self.dev_focus in target_branches:
-                target_branches.remove(self.dev_focus)
-            target_branches.insert(0, self.dev_focus)
+        if self.default_target is not None:
+            if self.default_target in target_branches:
+                target_branches.remove(self.default_target)
+            target_branches.insert(0, self.default_target)
 
         # Make sure the source branch isn't in the target_branches.
         if branch in target_branches:
@@ -150,7 +149,7 @@ class TargetBranchWidget(LaunchpadRadioWidget):
         text = '%s (<a href="%s">branch details</a>)' % (
             branch.displayname, canonical_url(branch))
         # If the branch is the development focus, say so.
-        if branch == self.dev_focus:
+        if branch == self.default_target:
             text = text + "&ndash; <em>development focus</em>"
         return u'<label for="%s" style="font-weight: normal">%s</label>' % (
             option_id, text)

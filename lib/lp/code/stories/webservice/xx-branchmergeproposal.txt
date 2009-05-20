@@ -78,7 +78,7 @@ The comments on a branch merge proposal are exposed through the API.
     message_body: u'This is great work'
     resource_type_link: u'http://.../#code_review_comment'
     self_link: u'http://.../~source/fooix/fix-it/+merge/1/comments/1'
-    title: u'Comment on proposed merge of ~source/fooix/fix-it into ~target/fooix/trunk'
+    title: u'Comment on proposed merge of lp://dev/~source/fooix/fix-it into lp://dev/~target/fooix/trunk'
     vote: u'Approve'
     vote_tag: u'code'
 
@@ -90,7 +90,7 @@ The comments on a branch merge proposal are exposed through the API.
     message_body: u'This is mediocre work.'
     resource_type_link: u'http://.../#code_review_comment'
     self_link: u'http://.../~source/fooix/fix-it/+merge/1/comments/2'
-    title: u'Comment on proposed merge of ~source/fooix/fix-it into ~target/fooix/trunk'
+    title: ...
     vote: u'Abstain'
     vote_tag: None
 
@@ -162,7 +162,7 @@ Now the code review should be made.
     message_body: u'This is great work'
     resource_type_link: u'http://.../#code_review_comment'
     self_link: u'http://.../~source/fooix/fix-it/+merge/1/comments/3'
-    title: u'Comment on proposed merge of ~source/fooix/fix-it into ~target/fooix/trunk'
+    title: ...
     vote: u'Approve'
     vote_tag: u'code'
 
