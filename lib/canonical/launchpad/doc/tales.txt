@@ -114,8 +114,6 @@ And finally Copy archives.
     <img ... src="/@@/distribution" />
 
 We also have icons for builds which may have different dimensions.
-XXX: it would be nice if the formatted statted the file to get the dimensions?
-Is PIL part of server packages?
 
     >>> from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
     >>> login('foo.bar@canonical.com')
