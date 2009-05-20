@@ -289,6 +289,17 @@ class TestBranchCollectionFilters(TestCaseWithFactory):
             datetime(2008, 6, 1, tzinfo=pytz.UTC))
         self.assertEqual([new_branch], list(branches.getBranches()))
 
+    def test_targetedBy(self):
+        # Only branches that are merge targets are returned.
+        target_branch = self.factory.makeProductBranch()
+        registrant = self.factory.makePerson()
+        self.factory.makeBranchMergeProposal(
+            target_branch=target_branch, registrant=registrant)
+        # And another not registered by registrant.
+        self.factory.makeBranchMergeProposal()
+        branches = self.all_branches.targetedBy(registrant)
+        self.assertEqual([target_branch], list(branches.getBranches()))
+
 
 class TestGenericBranchCollectionVisibleFilter(TestCaseWithFactory):
 

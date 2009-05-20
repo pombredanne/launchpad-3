@@ -292,6 +292,14 @@ class GenericBranchCollection:
             join=Join(BranchSubscription,
                       BranchSubscription.branch == Branch.id))
 
+    def targetedBy(self, person):
+        """See `IBranchCollection`."""
+        return self._filterBy(
+            [BranchMergeProposal.registrant == person],
+            table=BranchMergeProposal,
+            join=Join(BranchMergeProposal,
+                      BranchMergeProposal.target_branch == Branch.id))
+
     def visibleByUser(self, person):
         """See `IBranchCollection`."""
         if (person == LAUNCHPAD_SERVICES or
