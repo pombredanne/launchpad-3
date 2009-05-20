@@ -313,11 +313,10 @@
 
   <!-- Branch -->
 
-  <class class="canonical.launchpad.database.Branch">
+  <class class="lp.code.model.branch.Branch">
     <require
         permission="launchpad.View"
-        attributes="
-                    id
+        attributes="id
                     branch_type
                     name
                     url
@@ -401,6 +400,7 @@
                     pending_writes
                     commitsForDays
                     needs_upgrading
+                    isBranchMergeable
                     "/>
     <require
         permission="launchpad.Edit"

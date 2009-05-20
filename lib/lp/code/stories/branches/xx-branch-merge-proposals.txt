@@ -116,7 +116,7 @@ merge proposal is considered a "landing target" with an optional
     ...     'http://code.launchpad.dev/~name12/gnome-terminal/klingon')
     >>> nopriv_browser.getLink('Merge Proposals').click()
     >>> printMergeProposals(nopriv_browser, 'landing-targets')
-    ~name12/gnome-terminal/main - view proposal details
+    lp://dev/~name12/gnome-terminal/main - view proposal details
     Merge proposed by No Privileges Person
     Needs review
 
@@ -138,7 +138,7 @@ shown.
     >>> sample_browser.open(
     ...     'http://code.launchpad.dev/~name12/gnome-terminal/scanned/+merges')
     >>> printMergeProposals(sample_browser, 'landing-targets')
-    ~name12/gnome-terminal/main - view proposal details
+    lp://dev/~name12/gnome-terminal/main - view proposal details
     Needs review
 
 
@@ -152,9 +152,9 @@ shown first.
     ...     'http://code.launchpad.dev/~name12/gnome-terminal/main')
     >>> browser.getLink('Merge Proposals').click()
     >>> printMergeProposals(browser, 'landing-candidates')
-    ~name12/gnome-terminal/scanned (Development) - view proposal details
+    lp://dev/~name12/gnome-terminal/scanned (Development) - view proposal details
       Needs review
-    ~name12/gnome-terminal/klingon (Experimental) - view proposal details
+    lp://dev/~name12/gnome-terminal/klingon (Experimental) - view proposal details
       Merge proposed by No Privileges Person
       Needs review
 
@@ -330,7 +330,7 @@ The source branch is still shown on the branch's merges page.
     >>> nopriv_browser.getLink('~name12/gnome-terminal/klingon').click()
     >>> nopriv_browser.getLink(url="+merges").click()
     >>> printMergeProposals(nopriv_browser, 'landing-targets')
-    ~name12/gnome-terminal/main - view proposal details
+    lp://dev/~name12/gnome-terminal/main - view proposal details
       Merge proposed by No Privileges Person
       Merged ... ago
 
@@ -339,7 +339,7 @@ Gone from the target branch.
     >>> nopriv_browser.getLink('~name12/gnome-terminal/main').click()
     >>> nopriv_browser.getLink(url="+merges").click()
     >>> printMergeProposals(nopriv_browser, 'landing-candidates')
-    ~name12/gnome-terminal/scanned (Development) - view proposal details
+    lp://dev/~name12/gnome-terminal/scanned (Development) - view proposal details
       Needs review
 
 If the user subsequently wants to set the merged revision number,
