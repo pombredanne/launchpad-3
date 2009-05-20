@@ -8,13 +8,13 @@ he is not a designated translator.
     >>> browser.addHeader('Authorization', 'Basic no-priv@canonical.com:test')
 
     >>> admin_browser.open(
-    ...     'http://translations.launchpad.dev/ubuntu/+changetranslators')
+    ...     'http://translations.launchpad.dev/ubuntu/+settings')
 
     >>> admin_browser.getControl(
     ...     'Translation Permission System').value = ['RESTRICTED']
     >>> admin_browser.getControl('Change').click()
     >>> print admin_browser.url
-    http://translations.launchpad.dev/ubuntu/+changetranslators
+    http://translations.launchpad.dev/ubuntu/+settings
 
     >>> for tag in find_tags_by_class(
     ...     admin_browser.contents, 'informational message'):

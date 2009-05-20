@@ -26,7 +26,7 @@ from lp.code.interfaces.branchsubscription import (
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
     CodeReviewNotificationLevel)
 from lp.code.interfaces.codehosting import LAUNCHPAD_SERVICES
-from canonical.launchpad.testing import TestCaseWithFactory
+from lp.testing import TestCaseWithFactory
 from canonical.launchpad.testing.databasehelpers import (
     remove_all_sample_data_branches)
 from canonical.launchpad.webapp.interfaces import (
@@ -111,7 +111,8 @@ class TestBranchCollectionFilters(TestCaseWithFactory):
         branch_c = self.factory.makePersonalBranch()
         self.assertEqual(
             [branch_a, branch_b, branch_c],
-            list(self.all_branches.getBranches().order_by(Product.name)))
+            list(self.all_branches.getBranches()
+                 .order_by(Branch.target_suffix)))
 
     def test_count_respects_visibleByUser_filter(self):
         # IBranchCollection.count() returns the number of branches that

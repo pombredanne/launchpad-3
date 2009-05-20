@@ -1,4 +1,4 @@
-# Copyright 2007-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2007-2009 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 __all__ = [
@@ -13,6 +13,7 @@ from datetime import datetime
 import pytz
 
 from sqlobject import BoolCol, ForeignKey, SQLObjectNotFound, StringCol
+from storm.locals import SQL
 from storm.store import Store
 from zope.interface import implements
 
@@ -20,7 +21,7 @@ from canonical.cachedproperty import cachedproperty
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import SQLBase, sqlvalues
+from canonical.database.sqlbase import quote, SQLBase, sqlvalues
 from canonical.launchpad.interfaces import (
     ITranslationMessage, ITranslationMessageSet, RosettaTranslationOrigin,
     TranslationConstants, TranslationValidationStatus)
@@ -364,6 +365,87 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
             return pofile[0]
         else:
             return None
+
+    def _getSharedEquivalent(self):
+        """Get shared message that otherwise exactly matches this one.
+        """
+        clauses = [
+            'potemplate IS NULL',
+            'potmsgset = %s' % sqlvalues(self.potmsgset),
+            'language = %s' % sqlvalues(self.language),
+            ]
+
+        if self.variant:
+            variant_clause = 'variant = %s' % sqlvalues(self.variant)
+        else:
+            variant_clause = 'variant IS NULL'
+        clauses.append(variant_clause)
+
+        for form in range(TranslationConstants.MAX_PLURAL_FORMS):
+            msgstr_name = 'msgstr%d' % form
+            msgstr = getattr(self, msgstr_name)
+            if msgstr is None:
+                form_clause = "%s IS NULL" % msgstr_name
+            else:
+                form_clause = "%s = %s" % (msgstr_name, quote(msgstr))
+            clauses.append(form_clause)
+
+        where_clause = SQL(' AND '.join(clauses))
+        return Store.of(self).find(TranslationMessage, where_clause).one()
+
+    def shareIfPossible(self):
+        """Make this message shared, if possible.
+
+        If there is already a similar message that is shared, this
+        message's information is merged into that of the existing one,
+        and self is deleted.
+        """
+        if self.potemplate is None:
+            # Already converged.
+            return
+
+        # Existing shared direct equivalent to this message, if any.
+        shared = self._getSharedEquivalent()
+
+        # Existing shared current translation for this POTMsgSet, if
+        # any.
+        current = self.potmsgset.getCurrentTranslationMessage(
+            potemplate=None, language=self.language, variant=self.variant)
+
+        # Existing shared imported translation for this POTMsgSet, if
+        # any.
+        imported = self.potmsgset.getImportedTranslationMessage(
+            potemplate=None, language=self.language, variant=self.variant)
+
+        if shared is None:
+            clash_with_shared_current = (
+                current is not None and self.is_current)
+            clash_with_shared_imported = (
+                imported is not None and self.is_imported)
+            if clash_with_shared_current or clash_with_shared_imported:
+                # Keep this message diverged, so it won't usurp the
+                # current or imported message that the templates share.
+                pass
+            else:
+                # No clashes; simply mark this message as shared.
+                self.potemplate = None
+        elif self.is_current or self.is_imported:
+            # Bequeathe current/imported flags to shared equivalent.
+            if self.is_current and current is None:
+                shared.is_current = True
+            if self.is_imported and imported is None:
+                shared.is_imported = True
+
+            current_diverged = (self.is_current and not shared.is_current)
+            imported_diverged = (self.is_imported and not shared.is_imported)
+            if not (current_diverged or imported_diverged):
+                # This message is now totally redundant.
+                self.destroySelf()
+        else:
+            # This is a suggestion duplicating an existing shared
+            # message.  This should not occur after migration, since
+            # suggestions will always be shared.
+            self.destroySelf()
 
 
 class TranslationMessageSet:

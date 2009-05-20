@@ -11,7 +11,6 @@ This document is about milestones in Malone.
 All Milestone creation and retrieval is done through IMilestoneSet.
 IMilestoneSet can be accessed as a utility.
 
-    >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces import IMilestoneSet
     >>> milestoneset = getUtility(IMilestoneSet)
 
@@ -30,9 +29,35 @@ method of a ProductSeries or DistroSeries:
 
     # Only owners, experts, or admins can create a milestone.
     >>> login('test@canonical.com')
-    >>> firefox_ms = ff_onedotzero.newMilestone(name="1.0rc1")
+    >>> firefox_ms = ff_onedotzero.newMilestone(
+    ...     name="1.0rc1", code_name="Candidate One",
+    ...     summary="A beta version that is feature complete.")
     >>> print firefox_ms.name
     1.0rc1
+
+Milestone's have many descriptive names. The name and code_name are
+atomic attributes. The display and and title attributes are composed.
+
+    >>> print firefox_ms.name
+    1.0rc1
+    >>> print firefox_ms.code_name
+    Candidate One
+    >>> print firefox_ms.displayname
+    Mozilla Firefox 1.0rc1
+    >>> print firefox_ms.title
+    Mozilla Firefox 1.0rc1 "Candidate One"
+
+The summary describes the intent of the milestone.
+
+    >>> print firefox_ms.summary
+    A beta version that is feature complete.
+
+A milestones can access their product and series targets.
+
+    >>> print firefox_ms.target.displayname
+    Mozilla Firefox
+    >>> print firefox_ms.series_target.name
+    1.0
 
 To retrieve a specific Milestone, use IMilestoneSet.get:
 
@@ -40,7 +65,7 @@ To retrieve a specific Milestone, use IMilestoneSet.get:
     >>> print firefox_ms_1_0.name
     1.0
     >>> print firefox_ms_1_0.displayname
-    Mozilla Firefox: 1.0
+    Mozilla Firefox 1.0
 
 Of course, you can also get them off a Product or Distribution using
 the getMilestone() method:
@@ -67,9 +92,15 @@ Now, lets test all of that for DistroSeriess too!
     >>> new_ms = krunch.newMilestone('1.3rc2')
     >>> print new_ms.name
     1.3rc2
-    >>> print new_ms.distribution.name
+    >>> print new_ms.code_name
+    None
+    >>> print new_ms.displayname
+    Kubuntu 1.3rc2
+    >>> print new_ms.title
+    Kubuntu 1.3rc2
+    >>> print new_ms.target.name
     kubuntu
-    >>> print new_ms.distroseries.name
+    >>> print new_ms.series_target.name
     krunch
     >>> print kubuntu.getMilestone('foo2.3')
     None
@@ -107,13 +138,12 @@ neither any milestones.
     ...         product.name,
     ...         [milestone.title for milestone in product.all_milestones])
     applets []
-    evolution [u'Milestone 2.1.6 for Evolution']
+    evolution [u'Evolution 2.1.6']
     gnome-terminal []
     gnomebaker []
-    netapplet [u'Milestone 1.0 for NetApplet']
+    netapplet [u'NetApplet 1.0']
     >>> print [milestone.title for milestone in gnome.all_milestones]
-    [u'Milestone 2.1.6 for GNOME', u'Milestone 1.0 for GNOME']
-
+    [u'GNOME 2.1.6', u'GNOME 1.0']
 
 When a milestone for a product is defined, this milestone is "inherited"
 by the project.
@@ -151,6 +181,24 @@ appear as separate project milestones.
     [u'1.1.', u'1.0']
     >>> print [milestone.name for milestone in gnome.all_milestones]
     [u'2.1.6', u'1.1.', u'1.1', u'1.0']
+
+A project milestone has the same attributes as product and distribution
+milestones, but most are None because project milestones are aggregations.
+The code_name and series attributes are always none.
+
+    >>> project_milestone = gnome.all_milestones[0]
+    >>> print project_milestone.name
+    2.1.6
+    >>> print project_milestone.code_name
+    None
+    >>> print project_milestone.displayname
+    GNOME 2.1.6
+    >>> print project_milestone.title
+    GNOME 2.1.6
+    >>> print project_milestone.target.name
+    gnome
+    >>> print project_milestone.series_target
+    None
 
 A project milestone is active, if at least one product milestone with the
 same name is active.
@@ -282,8 +330,8 @@ list of recipients.
         Milestone: 1.0 => 2.0
     >>> for recipient in notification.recipients:
     ...     print recipient.person.name, recipient.reason_header
-    cprov Subscriber (Mozilla Firefox: 1.0)
-    ddaa Subscriber (Mozilla Firefox: 2.0)
+    cprov Subscriber (Mozilla Firefox 1.0)
+    ddaa Subscriber (Mozilla Firefox 2.0)
     ...
 
 

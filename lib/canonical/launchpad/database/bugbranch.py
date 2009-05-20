@@ -11,10 +11,7 @@ __all__ = ["BugBranch",
 from sqlobject import ForeignKey, IN, StringCol
 
 from zope.component import getUtility
-from zope.event import notify
 from zope.interface import implements
-
-from lazr.lifecycle.event import ObjectCreatedEvent
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -62,13 +59,6 @@ class BugBranch(SQLBase):
 class BugBranchSet:
 
     implements(IBugBranchSet)
-
-    def new(self, bug, branch, status, registrant):
-        "See `IBugBranchSet`."
-        bug_branch = BugBranch(
-            bug=bug, branch=branch, status=status, registrant=registrant)
-        notify(ObjectCreatedEvent(bug_branch))
-        return bug_branch
 
     def getBugBranch(self, bug, branch):
         "See `IBugBranchSet`."

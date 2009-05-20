@@ -18,8 +18,8 @@ from zope.component import getUtility
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.codehosting.bzrutils import is_branch_stackable
-from canonical.codehosting.vfs import get_lp_server
+from lp.codehosting.bzrutils import is_branch_stackable
+from lp.codehosting.vfs import get_lp_server
 from canonical.launchpad.interfaces.diff import IStaticDiffSource
 from canonical.launchpad.interfaces.mail import (
     IMailHandler, EmailProcessingError)
@@ -29,7 +29,7 @@ from canonical.launchpad.mail.commands import (
 from canonical.launchpad.mail.helpers import (
     ensure_not_weakly_authenticated, get_error_message, get_main_body,
     get_person_or_team, IncomingEmailError, parse_commands)
-from canonical.launchpad.mail.sendmail import simple_sendmail
+from lp.services.mail.sendmail import simple_sendmail
 from canonical.launchpad.mailnotification import (
     send_process_error_notification)
 from canonical.launchpad.webapp import urlparse
@@ -109,6 +109,11 @@ class VoteEmailCommand(CodeReviewEmailCommand):
         '-1': CodeReviewVote.DISAPPROVE,
         'needsfixing': CodeReviewVote.NEEDS_FIXING,
         'needs-fixing': CodeReviewVote.NEEDS_FIXING,
+        'needsinfo': CodeReviewVote.NEEDS_INFO,
+        'needs-info': CodeReviewVote.NEEDS_INFO,
+        'needsinformation': CodeReviewVote.NEEDS_INFO,
+        'needs_information': CodeReviewVote.NEEDS_INFO,
+        'needs-information': CodeReviewVote.NEEDS_INFO,
         }
 
     def execute(self, context):
@@ -129,14 +134,17 @@ class VoteEmailCommand(CodeReviewEmailCommand):
             # If the word doesn't match, check aliases that we allow.
             context.vote = self._vote_alias.get(vote_string)
             if context.vote is None:
+                # Replace the _ with - in the names of the items.
+                # Slightly easier to type and read.
                 valid_votes = ', '.join(sorted(
-                    v.name.lower() for v in CodeReviewVote.items.items))
+                    v.name.lower().replace('_', '-')
+                    for v in CodeReviewVote.items.items))
                 raise EmailProcessingError(
                     get_error_message(
                         'dbschema-command-wrong-argument.txt',
                         command_name='review',
                         arguments=valid_votes,
-                        example_argument='needs_fixing'))
+                        example_argument='needs-fixing'))
 
         if len(vote_tag_list) > 0:
             context.vote_tags = ' '.join(vote_tag_list)
@@ -210,6 +218,7 @@ class CodeEmailCommands(EmailCommandCollection):
         'vote': VoteEmailCommand,
         'review': VoteEmailCommand,
         'status': UpdateStatusEmailCommand,
+        'merge': UpdateStatusEmailCommand,
         'reviewer': AddReviewerEmailCommand,
         }
 
@@ -520,7 +529,8 @@ class CodeHandler:
         # access to any needed but not supplied revisions.
         md.target_branch = target_url
         md.install_revisions(bzr_branch.repository)
-        bzr_branch.pull(bzr_branch, stop_revision=md.revision_id)
+        bzr_branch.pull(bzr_branch, stop_revision=md.revision_id,
+                        overwrite=True)
 
     def findMergeDirectiveAndComment(self, message):
         """Extract the comment and Merge Directive from a SignedMessage."""

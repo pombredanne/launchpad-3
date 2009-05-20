@@ -13,7 +13,7 @@ from zope.component import getUtility
 from canonical.testing.layers import DatabaseFunctionalLayer
 from canonical.launchpad.database import Person
 from canonical.launchpad.database.stormsugar import StartsWith
-from canonical.launchpad.testing import TestCaseWithFactory
+from lp.testing import TestCaseWithFactory
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
 

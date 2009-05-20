@@ -16,7 +16,7 @@ the language pack admin page.
 
     >>> admin_browser.open(
     ...     'http://translations.launchpad.dev/ubuntu/hoary')
-    >>> admin_browser.getLink('Administer language packs').click()
+    >>> admin_browser.getLink('Language packs').click()
 
 Initially, there is no package selected.
 
@@ -41,9 +41,7 @@ Let's select a base one:
     >>> print admin_browser.url
     http://translations.launchpad.dev/ubuntu/hoary/+language-packs
 
-Going back to the admin page will show us that language pack selected.
-
-    >>> admin_browser.getLink('Administer language packs').click()
+Now the admin page will show us that language pack selected.
 
     >>> base = admin_browser.getControl('Language pack base')
     >>> print base.displayValue
@@ -52,8 +50,8 @@ Going back to the admin page will show us that language pack selected.
 Also, that change is shown in the public language pack listing web page:
 
     >>> browser.open('http://translations.launchpad.dev/ubuntu/hoary')
-    >>> browser.getLink('See language packs').click()
-    >>> print extract_text(find_main_content(browser.contents))
+    >>> browser.getLink('Language packs').click()
+    >>> print extract_text(find_tag_by_id(browser.contents, "language_packs"))
     Language packs for Ubuntu 5.04
     ...
     Current language packs
@@ -72,20 +70,20 @@ Also, that change is shown in the public language pack listing web page:
 There is also an option to set/unset whether next language pack generation is
 a full export:
 
-    >>> admin_browser.open('http://translations.launchpad.dev/ubuntu/hoary')
-    >>> admin_browser.getLink('Request a full language pack export').click()
     >>> admin_browser.getControl(
     ...     'Request a full language pack export').selected
     False
     >>> admin_browser.getControl(
     ...     'Request a full language pack export').selected = True
-    >>> admin_browser.getControl('Request', index=1).click()
+    >>> admin_browser.getControl('Change').click()
     >>> print admin_browser.url
     http://translations.launchpad.dev/ubuntu/hoary/+language-packs
+    >>> print "\n".join(get_feedback_messages(admin_browser.contents))
+    Your request has been noted. Next language pack export will include
+    all available translations...
 
 Once the system accepts the submission, we can see such change applied.
 
-    >>> admin_browser.getLink('Request a full language pack export').click()
     >>> admin_browser.getControl(
     ...     'Request a full language pack export').selected
     True

@@ -116,13 +116,6 @@ class IRevisionSet(Interface):
     def newFromBazaarRevision(bzr_revision):
         """Create a new Revision from the given Bazaar Revision object."""
 
-    def checkNewVerifiedEmail(email):
-        """See if this email address has been used to commit revisions.
-
-        If it has, then associate the RevisionAuthor with the Launchpad person
-        who owns this email address.
-        """
-
     def getTipRevisionsForBranches(branches):
         """Get the tip branch revisions for the specified branches.
 
@@ -195,4 +188,21 @@ class IRevisionSet(Interface):
             project, where the revision_date is within `day_limit` number
             of days of now.  The results are ordered with the most recent
             revision_date first.
+        """
+
+    def updateRevisionCacheForBranch(branch):
+        """Update the RevisionCache table with the revisions from the branch.
+
+        Make sure that there is a reference in the RevisionCache table for all
+        revisions that are less than 30 days old that match the product or
+        source package for the branch.
+        """
+
+    def pruneRevisionCache(limit):
+        """Remove old rows from the RevisionCache.
+
+        All rows where the revision date is older than 30 days from now are
+        removed.
+
+        :param limit: Remove at most `limit` rows at once.
         """

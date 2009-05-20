@@ -281,3 +281,22 @@ the project must be reviewed again
     True
     >>> firefox.qualifies_for_free_hosting
     True
+
+
+== Adding a product series ==
+
+Drivers, which include project driver and owners can access the
++addseries view.
+
+    >>> from canonical.launchpad.webapp.authorization import check_permission
+
+    >>> login_person(firefox.owner)
+    >>> view = create_view(firefox, name='+addseries')
+    >>> check_permission('launchpad.Driver', view)
+    True
+
+    >>> firefox.driver = factory.makePerson()
+    >>> login_person(firefox.driver)
+    >>> view = create_view(firefox, name='+addseries')
+    >>> check_permission('launchpad.Driver', view)
+    True

@@ -38,6 +38,8 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.menu import structured
 from canonical.widgets import DateTimeWidget
 
+from lp.registry.browser import RegistryDeleteViewMixin
+
 
 class ProductReleaseNavigation(Navigation):
 
@@ -60,7 +62,8 @@ class ProductReleaseContextMenu(ContextMenu):
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
         text = 'Change details'
-        return Link('+edit', text, icon='edit')
+        summary = "Edit this release"
+        return Link('+edit', text, summary=summary, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def add_file(self):
@@ -348,7 +351,7 @@ class ProductReleaseView(LaunchpadView, ProductDownloadFileMixin):
         return set([self.context])
 
 
-class ProductReleaseDeleteView(LaunchpadFormView):
+class ProductReleaseDeleteView(LaunchpadFormView, RegistryDeleteViewMixin):
     """A view for deleting an `IProductRelease`."""
     schema = IProductRelease
     field_names = []
@@ -359,13 +362,13 @@ class ProductReleaseDeleteView(LaunchpadFormView):
         return 'Delete %s' % self.context.title
 
     @action('Delete this Release', name='delete')
-    def add_action(self, action, data):
-        for release_file in self.context.files:
-            release_file.destroySelf()
+    def delete_action(self, action, data):
+        series = self.context.productseries
+        version = self.context.version
+        self._deleteRelease(self.context)
         self.request.response.addInfoNotification(
-            "Release %s deleted." % self.context.version)
-        self.next_url = canonical_url(self.context.productseries)
-        self.context.destroySelf()
+            "Release %s deleted." % version)
+        self.next_url = canonical_url(series)
 
     @property
     def cancel_url(self):

@@ -182,7 +182,7 @@ class ICodeImport(Interface):
         allow_fragment=False, # Fragment makes no sense in Subversion.
         trailing_slash=False) # See http://launchpad.net/bugs/56357.
 
-    git_repo_url = URIField(title=_("Git URL"), required=False,
+    git_repo_url = URIField(title=_("Repo URL"), required=False,
         description=_(
             "The URL of the git repository.  The MASTER branch will be "
             "imported."),
@@ -229,6 +229,9 @@ class ICodeImport(Interface):
             "The current job for this import, either pending or running."))
 
     results = Attribute("The results for this code import.")
+
+    consecutive_failure_count = Attribute(
+        "How many times in a row this import has failed.")
 
     def updateFromData(data, user):
         """Modify attributes of the `CodeImport`.

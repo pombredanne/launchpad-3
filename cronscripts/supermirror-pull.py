@@ -9,7 +9,7 @@ from twisted.internet import defer, reactor
 from twisted.python import log as tplog
 from twisted.web.xmlrpc import Proxy
 
-from canonical.codehosting.puller import mirror, scheduler
+from lp.codehosting.puller import mirror, scheduler
 from canonical.config import config
 from canonical.launchpad.interfaces import BranchType
 from canonical.launchpad.scripts import logger_options

@@ -142,6 +142,13 @@ class BugTrackerType(DBEnumeratedType):
         The bug tracker developed by the PHP project.
         """)
 
+    GOOGLE_CODE = DBItem(11, """
+        Google Code
+
+        Google Code is a project hosting and issue tracking service from
+        Google.
+        """)
+
 
 # A list of the BugTrackerTypes that don't need a remote product to be
 # able to return a bug filing URL. We use a whitelist rather than a
@@ -149,6 +156,7 @@ class BugTrackerType(DBEnumeratedType):
 # a remote product is required. This saves us from presenting
 # embarrassingly useless URLs to users.
 SINGLE_PRODUCT_BUGTRACKERTYPES = [
+    BugTrackerType.GOOGLE_CODE,
     BugTrackerType.MANTIS,
     BugTrackerType.PHPPROJECT,
     BugTrackerType.ROUNDUP,

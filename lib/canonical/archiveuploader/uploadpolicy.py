@@ -1,4 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
 
 """Policy management for the upload handler."""
 
@@ -8,9 +8,11 @@ __all__ = ["findPolicyByName", "findPolicyByOptions", "UploadPolicyError"]
 
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces import (
-    ArchivePurpose, DistroSeriesStatus, IDistributionSet,
-    ILaunchpadCelebrities, PackagePublishingPocket)
+from canonical.launchpad.interfaces import ILaunchpadCelebrities
+from lp.registry.interfaces.distribution import IDistributionSet
+from lp.registry.interfaces.distroseries import DistroSeriesStatus
+from lp.soyuz.interfaces.archive import ArchivePurpose
+from lp.soyuz.interfaces.publishing import PackagePublishingPocket
 
 # Number of seconds in an hour (used later)
 HOURS = 3600
@@ -118,8 +120,14 @@ class AbstractUploadPolicy:
 
     def checkUpload(self, upload):
         """Mandatory policy checks on NascentUploads."""
-        if self.archive.is_copy and upload.sourceful:
-            upload.reject("Source uploads to copy archives are not allowed.")
+        if self.archive.is_copy:
+            if upload.sourceful:
+                upload.reject(
+                    "Source uploads to copy archives are not allowed.")
+            elif upload.binaryful:
+                # Buildd binary uploads (resulting from successful builds)
+                # to copy archives may go into *any* pocket.
+                return
         if upload.is_ppa:
             if self.pocket != PackagePublishingPocket.RELEASE:
                 upload.reject(
@@ -162,7 +170,7 @@ class AbstractUploadPolicy:
 
     def policySpecificChecks(self, upload):
         """Implement any policy-specific checks in child."""
-        raise NotImplemented(
+        raise NotImplementedError(
             "Policy specific checks must be implemented in child policies.")
 
     def autoApprove(self, upload):

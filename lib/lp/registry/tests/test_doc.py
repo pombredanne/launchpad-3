@@ -16,6 +16,7 @@ from canonical.testing import (
     LaunchpadZopelessLayer)
 
 from lp.registry.tests import mailinglists_helper
+from lp.services.testing import build_test_suite
 
 
 here = os.path.dirname(os.path.realpath(__file__))
@@ -79,6 +80,11 @@ def mailingListXMLRPCExternalSetUp(test):
 
 
 special = {
+    'distribution-mirror.txt': LayeredDocFileSuite(
+        '../doc/distribution-mirror.txt',
+        setUp=setUp, tearDown=tearDown,
+        layer=LaunchpadFunctionalLayer,
+        ),
     'person-karma.txt': LayeredDocFileSuite(
         '../doc/person-karma.txt',
         setUp=setUp, tearDown=peopleKarmaTearDown,
@@ -152,44 +158,12 @@ special = {
         '../doc/karmacache.txt',
         layer=LaunchpadZopelessLayer,
         setUp=setUp, tearDown=tearDown),
+    'sourcepackage.txt': LayeredDocFileSuite(
+        '../doc/sourcepackage.txt',
+        layer=LaunchpadFunctionalLayer,
+        setUp=setUp, tearDown=tearDown),
     }
 
 
 def test_suite():
-    suite = unittest.TestSuite()
-
-    stories_dir = os.path.join(os.path.pardir, 'stories')
-    suite.addTest(PageTestSuite(stories_dir))
-    stories_path = os.path.join(here, stories_dir)
-    for story_dir in os.listdir(stories_path):
-        full_story_dir = os.path.join(stories_path, story_dir)
-        if not os.path.isdir(full_story_dir):
-            continue
-        story_path = os.path.join(stories_dir, story_dir)
-        suite.addTest(PageTestSuite(story_path))
-
-    testsdir = os.path.abspath(
-        os.path.normpath(os.path.join(here, os.path.pardir, 'doc'))
-        )
-
-    # Add special needs tests
-    for key in sorted(special):
-        special_suite = special[key]
-        suite.addTest(special_suite)
-
-    # Add tests using default setup/teardown
-    filenames = [filename
-                 for filename in os.listdir(testsdir)
-                 if filename.endswith('.txt') and filename not in special]
-    # Sort the list to give a predictable order.
-    filenames.sort()
-    for filename in filenames:
-        path = os.path.join('../doc/', filename)
-        one_test = LayeredDocFileSuite(
-            path, setUp=setUp, tearDown=tearDown,
-            layer=DatabaseFunctionalLayer,
-            stdout_logging_level=logging.WARNING
-            )
-        suite.addTest(one_test)
-
-    return suite
+    return build_test_suite(here, special)

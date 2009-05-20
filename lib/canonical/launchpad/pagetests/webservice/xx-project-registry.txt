@@ -1,13 +1,17 @@
-= Web Service Project Groups =
+==========================
+Web Service Project Groups
+==========================
 
 
-== Project group collection ==
+Project group collection
+------------------------
 
 It is possible to get a batched list of all the project groups.
 
     >>> group_collection = webservice.get("/projectgroups").jsonBody()
     >>> group_collection['resource_type_link']
     u'http://.../#project_groups'
+
     >>> group_collection['total_size']
     7
 
@@ -16,6 +20,7 @@ It is possible to get a batched list of all the project groups.
     ...     group_collection['entries'], key=itemgetter('name'))
     >>> project_group_entries[0]['self_link']
     u'http://.../apache'
+
     >>> for project_group in project_group_entries:
     ...   print project_group['display_name']
     Apache
@@ -46,9 +51,11 @@ the project groups.
     the Mozilla Project
 
 
-== Project group entry ==
+Project group entry
+-------------------
 
-Project groups are available at their canonical URL on the API virtual host.
+Project groups are available at their canonical URL on the API virtual
+host.
 
     >>> from lazr.restful.testing.webservice import pprint_entry
 
@@ -82,8 +89,9 @@ Project groups are available at their canonical URL on the API virtual host.
     title: u'The Mozilla Project'
     wiki_url: None
 
-The milestones can be accessed through the active_milestones_collection_link
-and the all_milestones_collection_link.
+The milestones can be accessed through the
+active_milestones_collection_link and the
+all_milestones_collection_link.
 
     >>> response = webservice.get(mozilla['active_milestones_collection_link'])
     >>> active_milestones = response.jsonBody()
@@ -99,8 +107,21 @@ and the all_milestones_collection_link.
     http://.../mozilla/+milestone/0.9.2
     http://.../mozilla/+milestone/1.0.0
 
+"getMilestone" returns a milestone for the given name, or None if there
+is no milestone for the given name.
 
-== Project entry ==
+    >>> milestone_1_0 = webservice.named_get(
+    ...     mozilla['self_link'], "getMilestone", name="1.0").jsonBody()
+    >>> print milestone_1_0['self_link']
+    http://.../mozilla/+milestone/1.0
+
+    >>> print webservice.named_get(
+    ...     mozilla['self_link'], "getMilestone", name="fnord").jsonBody()
+    None
+
+
+Project entry
+-------------
 
 Projects are available at their canonical URL on the API virtual host.
 
@@ -209,8 +230,9 @@ Branches can be accessed through the branches_collection_link.
     http://.../~sabdfl/firefox/release-0.9
     http://.../~sabdfl/firefox/release-0.9.2
 
-The milestones can be accessed through the active_milestones_collection_link
-and the all_milestones_collection_link.
+The milestones can be accessed through the
+active_milestones_collection_link and the
+all_milestones_collection_link.
 
     >>> response = webservice.get(firefox['active_milestones_collection_link'])
     >>> active_milestones = response.jsonBody()
@@ -226,6 +248,18 @@ and the all_milestones_collection_link.
     http://.../firefox/+milestone/1.0
     http://.../firefox/+milestone/1.0.0
 
+"getMilestone" returns a milestone for the given name, or None if there
+is no milestone for the given name.
+
+    >>> milestone_1_0 = webservice.named_get(
+    ...     firefox['self_link'], "getMilestone", name="1.0").jsonBody()
+    >>> print milestone_1_0['self_link']
+    http://.../firefox/+milestone/1.0
+
+    >>> print webservice.named_get(
+    ...     firefox['self_link'], "getMilestone", name="fnord").jsonBody()
+    None
+
 The project group can be accessed through the project_group_link.
 
     >>> webservice.get(firefox['project_group_link']).jsonBody()['self_link']
@@ -237,9 +271,17 @@ A list of series can be accessed through the series_collection_link.
     >>> serieses = response.jsonBody()
     >>> print serieses['total_size']
     2
+
     >>> print_self_link_of_entries(serieses)
     http://.../firefox/1.0
     http://.../firefox/trunk
+
+"getSeries" returns the series for the given name.
+
+    >>> series_1_0 = webservice.named_get(
+    ...     firefox['self_link'], "getSeries", name="1.0").jsonBody()
+    >>> print series_1_0['self_link']
+    http://.../firefox/1.0
 
 A list of releases can be accessed through the releases_collection_link.
 
@@ -247,11 +289,19 @@ A list of releases can be accessed through the releases_collection_link.
     >>> releases = response.jsonBody()
     >>> print releases['total_size']
     4
+
     >>> print_self_link_of_entries(releases)
     http://.../firefox/1.0/1.0.0
     http://.../firefox/trunk/0.9
     http://.../firefox/trunk/0.9.1
     http://.../firefox/trunk/0.9.2
+
+"getRelease" returns the release for the given version.
+
+    >>> release_0_9_1 = webservice.named_get(
+    ...     firefox['self_link'], "getRelease", version="0.9.1").jsonBody()
+    >>> print release_0_9_1['self_link']
+    http://.../firefox/trunk/0.9.1
 
 The development focus series can be accessed through the
 development_focus_link.
@@ -274,16 +324,20 @@ Attributes can be edited via the webservice.patch() method.
     ...     '/firefox', 'application/json', dumps(patch))
     HTTP/1.1 209 Content Returned
     ...
+
     >>> firefox = webservice.get('/firefox').jsonBody()
     >>> firefox['driver_link']
     u'http://.../~sabdfl'
+
     >>> firefox['homepage_url']
     u'http://sf.net/firefox'
 
     >>> webservice.get(firefox['driver_link']).jsonBody()['self_link']
     u'http://.../~sabdfl'
+
     >>> webservice.get(firefox['owner_link']).jsonBody()['self_link']
     u'http://.../~name12'
+
     >>> webservice.get(firefox['bug_tracker_link']).jsonBody()['self_link']
     u'http://.../bugs/bugtrackers/mozilla.org'
 
@@ -319,23 +373,53 @@ Similarly the date_created attribute cannot be modified.
     >>> firefox['date_created'] == original_date_created
     True
 
+"get_timeline" returns a lightweight representation of the project's
+hierarchy of series, milestones, and releases.
 
-== Project collection ==
+    >>> timeline = webservice.named_get(
+    ...     firefox['self_link'], "get_timeline").jsonBody()
+    >>> print pretty(timeline)
+    [{u'is_development_focus': False,
+      u'landmarks': [{u'code_name': u'First Stable Release',
+                      u'name': u'1.0.0',
+                      u'type': u'release'}],
+      u'name': u'1.0'},
+     {u'is_development_focus': True,
+      u'landmarks': [{u'code_name': u'One (secure) Tree Hill',
+                      u'name': u'0.9.2',
+                      u'type': u'release'},
+                     {u'code_name': u'One Tree Hill (v2)',
+                      u'name': u'0.9.1',
+                      u'type': u'release'},
+                     {u'code_name': u'One Tree Hill',
+                      u'name': u'0.9',
+                      u'type': u'release'},
+                     {u'code_name': None,
+                      u'name': u'1.0',
+                      u'type': u'milestone'}],
+      u'name': u'trunk'}]
+
+
+Project collection
+------------------
 
 It is possible to get a batched list of all the projects.
 
     >>> project_collection = webservice.get("/projects").jsonBody()
     >>> project_collection['resource_type_link']
     u'http://.../#projects'
+
     >>> project_collection['total_size']
-    23
+    24
 
     >>> project_entries = sorted(
     ...     project_collection['entries'], key=itemgetter('display_name'))
     >>> len(project_entries)
     5
+
     >>> project_entries[0]['self_link']
     u'http://.../gnome-terminal'
+
     >>> for project in project_entries:
     ...   print project['display_name']
     GNOME Terminal
@@ -377,15 +461,14 @@ The latest projects registered can be retrieved.
     ...    latest['entries'], key=itemgetter('display_name'))
     >>> for project in entries:
     ...     print project['display_name']
-    Bazaar
     Derby
     Launchpad Translations
     Mega Money Maker
+    Obsolete Junk
     Redfish
 
-There is a method for doing a query about attributes related to
-project licensing.  We can find all projects with unreviewed
-licenses.
+There is a method for doing a query about attributes related to project
+licensing.  We can find all projects with unreviewed licenses.
 
     >>> unreviewed = webservice.named_get(
     ...     "/projects", "licensing_search",
@@ -412,6 +495,7 @@ Or those that are reviewed.
     >>> for project in entries:
     ...     print project['display_name']
     Launchpad Translations
+    Obsolete Junk
     alsa-utils
     python gnome2 dev
     unassigned syncs
@@ -532,19 +616,24 @@ Verify a project does not exist and then create it.
     >>> new_project = webservice.get('/my-new-project').jsonBody()
     >>> print new_project['name']
     my-new-project
+
     >>> print new_project['display_name']
     My New Project
+
     >>> print new_project['summary']
     My Shiny New Project
+
     >>> print sorted(new_project['licenses'])
     [u'GNU GPL v2', u'Zope Public License']
+
     >>> print new_project['license_reviewed']
     False
+
     >>> print new_project['homepage_url']
     None
 
-Attempting to create a project with a name that has already been used
-is an error.
+Attempting to create a project with a name that has already been used is
+an error.
 
     >>> print create_project('my-new-project', 'My New Project',
     ...     'My New Project', 'My Shiny New Project')
@@ -552,8 +641,8 @@ is an error.
     ...
     name: my-new-project is already used by another project
 
-If the fields do not validate a Bad Request error is received.  Here
-the URL is not properly formed.
+If the fields do not validate a Bad Request error is received.  Here the
+URL is not properly formed.
 
     >>> print create_project('my-new-project', 'My New Project',
     ...     'My New Project', 'My Shiny New Project',
@@ -565,7 +654,8 @@ the URL is not properly formed.
     ...
 
 
-== The pillar set ==
+The pillar set
+--------------
 
 A few features are common to projects, project groups, and
 distributions. We call all three "pillars", and publish the common
@@ -578,13 +668,14 @@ functionality at an object called the pillar set.
     self_link: u'...'
 
 The featured pillars are available as a separate collection. Because
-they're of different resource types, the best way to compare them is
-by comparing the self_link, which every resource has.
+they're of different resource types, the best way to compare them is by
+comparing the self_link, which every resource has.
 
     >>> featured_link = pillar_set['featured_pillars_collection_link']
     >>> featured_pillars = webservice.get(featured_link).jsonBody()
     >>> featured_pillars['total_size']
     9
+
     >>> featured_entries = sorted(
     ...     featured_pillars['entries'], key=itemgetter('self_link'))
     >>> for pillar in featured_entries:
@@ -611,7 +702,8 @@ by comparing the self_link, which every resource has.
     http://.../bazaar
 
 
-== Project series entry ==
+Project series entry
+--------------------
 
 The entry for a project series is available at its canonical URL on the
 virtual host.
@@ -645,11 +737,23 @@ virtual host.
     summary: u'Foobadoo support for Babadoo'
     title: u'Babadoo Series: foobadoo'
 
-= Creating a milestone on the product series =
+"get_timeline" returns a lightweight representation of the series'
+milestones and releases.
 
-The newMilstone method is called by sending "ws.op=newMilestone"
-as a request variable along with the parameters. The
-webservice.named_post() method simplifies this for us.
+    >>> timeline = webservice.named_get(
+    ...     babadoo_foobadoo['self_link'], "get_timeline").jsonBody()
+    >>> print pretty(timeline)
+    {u'is_development_focus': False,
+     u'landmarks': [],
+     u'name': u'foobadoo'}
+
+
+Creating a milestone on the product series
+==========================================
+
+The newMilstone method is called by sending "ws.op=newMilestone" as a
+request variable along with the parameters. The webservice.named_post()
+method simplifies this for us.
 
     >>> firefox_1_0 = webservice.get('/firefox/1.0').jsonBody()
     >>> response = webservice.named_post(
@@ -661,13 +765,17 @@ webservice.named_post() method simplifies this for us.
     ...
     Location: http://.../firefox/+milestone/alpha1
     ...
+
     >>> milestone = webservice.get(response.getHeader('Location')).jsonBody()
     >>> print milestone['name']
     alpha1
+
     >>> print milestone['code_name']
     Elmer
+
     >>> print milestone['date_targeted']
     2005-06-06T00:00:00
+
     >>> print milestone['summary']
     Feature complete but buggy.
 
@@ -703,9 +811,12 @@ Invalid data will return a Bad Request error.
     ...
     date_targeted: Value doesn't look like a date.
 
-= Project release =
 
-Project releases are available at their canonical URL on the API virtual host.
+Project release
+===============
+
+Project releases are available at their canonical URL on the API virtual
+host.
 
     >>> firefox_1_0_0 = webservice.get('/firefox/1.0/1.0.0').jsonBody()
     >>> pprint_entry(firefox_1_0_0)
@@ -724,9 +835,8 @@ Project releases are available at their canonical URL on the API virtual host.
     version: u'1.0.0'
 
 The createProductRelease method is called by sending
-"ws.op=createProductRelease" as a request variable along
-with the parameters.  The webservice.named_post() method
-simplifies this for us.
+"ws.op=createProductRelease" as a request variable along with the
+parameters.  The webservice.named_post() method simplifies this for us.
 
     >>> response = webservice.named_post(
     ...     milestone['self_link'], 'createProductRelease', {},
@@ -737,11 +847,14 @@ simplifies this for us.
     ...
     Location: http://.../firefox/1.0/alpha1
     ...
+
     >>> release = webservice.get(response.getHeader('Location')).jsonBody()
     >>> print release['version']
     alpha1
+
     >>> print release['release_notes']
     New stuff
+
     >>> print release['changelog']
     Added 5,000 features.
 
@@ -757,7 +870,8 @@ Only one product release can be created per milestone.
     AssertionError: A milestone can only have one Productrelease.
 
 
-== Project release entries ==
+Project release entries
+-----------------------
 
     >>> releases = webservice.get(
     ...     '/firefox/1.0/releases').jsonBody()
@@ -766,7 +880,8 @@ Only one product release can be created per milestone.
     http://.../firefox/1.0/alpha1
 
 
-== Project release file collection ==
+Project release file collection
+-------------------------------
 
     >>> pr_files = webservice.get(
     ...     '/firefox/trunk/0.9.2/files').jsonBody()
@@ -774,10 +889,11 @@ Only one product release can be created per milestone.
     http://.../firefox/trunk/0.9.2/+file/firefox-0.9.2.orig.tar.gz
 
 
-== Milestone entry ==
+Milestone entry
+---------------
 
-The entry for a milestone is available at its canonical URL on the API virtual
-host.
+The entry for a milestone is available at its canonical URL on the API
+virtual host.
 
     >>> firefox_milestone_1_0 = webservice.get(
     ...     '/firefox/+milestone/1.0').jsonBody()
@@ -787,15 +903,23 @@ host.
     is_active: True
     name: u'1.0'
     official_bug_tags: []
+    release_link: None
     resource_type_link: u'...'
     self_link: u'http://.../firefox/+milestone/1.0'
     series_target_link: u'http://.../firefox/trunk'
     summary: None
     target_link: u'http://.../firefox'
-    title: u'Milestone 1.0 for Mozilla Firefox'
+    title: u'Mozilla Firefox 1.0'
+
+The milestone entry has a link to its release if it has one.
+
+    >>> milestone = webservice.get('/firefox/+milestone/1.0.0').jsonBody()
+    >>> print milestone['release_link']
+    http://.../firefox/1.0/1.0.0
 
 
-== Project release entries ==
+Project release entries
+-----------------------
 
     >>> releases = webservice.get(
     ...     '/firefox/1.0/releases').jsonBody()
@@ -811,7 +935,8 @@ They can be deleted with the 'delete' operation.
     ...
 
 
-== Project release file entry ==
+Project release file entry
+--------------------------
 
 Project release files are available at their canonical URL on the API
 virtual host.
@@ -847,8 +972,8 @@ no signature so we get a 404.
     HTTP/1.1 404 Not Found
     ...
 
-The file and signature on a Project Release File are 'readonly'.
-Trying to put new content will result in a ForbiddenAttribute error.
+The file and signature on a Project Release File are 'readonly'. Trying
+to put new content will result in a ForbiddenAttribute error.
 
     >>> url = '/firefox/trunk/0.9.2/+file/firefox-0.9.2.orig.tar.gz/file'
     >>> response = webservice.put(url, 'application/x-tar-gz', 'fakefiledata')
@@ -865,12 +990,12 @@ Trying to put new content will result in a ForbiddenAttribute error.
     ...
 
 
-== Project release files ==
+Project release files
+---------------------
 
-Project release files can be added to a project release using the
-API 'add_file' method.
+Project release files can be added to a project release using the API
+'add_file' method.
 
-    >>> # Firefox 1.0/1.0.0 has no files associated with it.
     >>> files_url = '/firefox/1.0/1.0.0/files'
     >>> ff_100_files = webservice.get(files_url).jsonBody()
     >>> print_self_link_of_entries(ff_100_files)
@@ -950,13 +1075,12 @@ can delete files.
     http://.../firefox/1.0/1.0.0/+file/filename2.txt
 
 
-== Commercial subscriptions ==
+Commercial subscriptions
+------------------------
 
-If a project has a commercial-use subscription then it can be
-retrieved through the API.
+If a project has a commercial-use subscription then it can be retrieved
+through the API.
 
-    >>> # Do some housekeeping not using the API to setup the Mega
-    >>> # Money Maker with a commercial subscription.
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces import IProductSet
     >>> from canonical.launchpad.ftests import login, logout
@@ -971,6 +1095,7 @@ retrieved through the API.
     ...     'notes')
     >>> print mmm.commercial_subscription.product.name
     mega-money-maker
+
     >>> logout()
 
     >>> mmm = webservice.get("/mega-money-maker").jsonBody()

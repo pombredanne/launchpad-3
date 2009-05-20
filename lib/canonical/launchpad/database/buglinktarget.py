@@ -1,4 +1,4 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2006-2009 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
@@ -18,10 +18,11 @@ class BugLinkTargetMixin:
     def buglinkClass(self):
         """Subclass should override this property to return the database
         class used for IBugLink."""
-        raise NotImplemented, "missing buglinkClass() implementation"
+        raise NotImplementedError("missing buglinkClass() implementation")
 
     def createBugLink(self, bug):
-        """Subclass should override that method to create a BugLink instance."""
+        """Subclass should override that method to create a BugLink instance.
+        """
         raise NotImplementedError("missing createBugLink() implementation")
 
     # IBugLinkTarget implementation

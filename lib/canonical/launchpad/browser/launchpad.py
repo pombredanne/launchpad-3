@@ -7,12 +7,10 @@ __all__ = [
     'ApplicationButtons',
     'BrowserWindowDimensions',
     'DoesNotExistView',
-    'EdubuntuIcingFolder',
     'get_launchpad_views',
     'Hierarchy',
     'IcingContribFolder',
     'IcingFolder',
-    'KubuntuIcingFolder',
     'LaunchpadRootNavigation',
     'LaunchpadImageFolder',
     'LinkView',
@@ -25,15 +23,15 @@ __all__ = [
     'SoftTimeoutView',
     'StructuralHeaderPresentation',
     'StructuralObjectPresentation',
-    'UbuntuIcingFolder',
     ]
 
 
 import cgi
-import urllib
 import operator
 import os
+import re
 import time
+import urllib
 from datetime import timedelta, datetime
 from urlparse import urlunsplit
 
@@ -52,7 +50,7 @@ from canonical.lazr import ExportedFolder, ExportedImageFolder
 from canonical.launchpad.helpers import intOrZero
 
 from lp.registry.interfaces.announcement import IAnnouncementSet
-from canonical.launchpad.interfaces.binarypackagename import (
+from lp.soyuz.interfaces.binarypackagename import (
     IBinaryPackageNameSet)
 from canonical.launchpad.interfaces.bounty import IBountySet
 from lp.code.interfaces.branchlookup import (
@@ -60,14 +58,14 @@ from lp.code.interfaces.branchlookup import (
 from lp.code.interfaces.branchnamespace import InvalidNamespace
 from canonical.launchpad.interfaces.bug import IBugSet
 from canonical.launchpad.interfaces.bugtracker import IBugTrackerSet
-from canonical.launchpad.interfaces.builder import IBuilderSet
+from lp.soyuz.interfaces.builder import IBuilderSet
 from lp.code.interfaces.codeimport import ICodeImportSet
 from lp.registry.interfaces.codeofconduct import ICodeOfConductSet
 from canonical.launchpad.interfaces.cve import ICveSet
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.karma import IKarmaActionSet
 from canonical.launchpad.interfaces.hwdb import IHWDBApplication
-from canonical.launchpad.interfaces.language import ILanguageSet
+from lp.services.worlddata.interfaces.language import ILanguageSet
 from canonical.launchpad.interfaces.launchpad import (
     IAppFrontPageSearchForm, IBazaarApplication, ILaunchpadCelebrities,
     IRosettaApplication, IStructuralHeaderPresentation,
@@ -78,7 +76,7 @@ from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
 from lp.registry.interfaces.mailinglist import IMailingListSet
 from canonical.launchpad.interfaces.malone import IMaloneApplication
 from lp.registry.interfaces.mentoringoffer import IMentoringOfferSet
-from canonical.launchpad.interfaces.openidserver import IOpenIDRPConfigSet
+from canonical.signon.interfaces.openidserver import IOpenIDRPConfigSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.registry.interfaces.product import (
@@ -86,8 +84,8 @@ from lp.registry.interfaces.product import (
 from lp.registry.interfaces.project import IProjectSet
 from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageNameSet)
-from canonical.launchpad.interfaces.specification import ISpecificationSet
-from canonical.launchpad.interfaces.sprint import ISprintSet
+from lp.blueprints.interfaces.specification import ISpecificationSet
+from lp.blueprints.interfaces.sprint import ISprintSet
 from canonical.launchpad.interfaces.translationgroup import (
     ITranslationGroupSet)
 from canonical.launchpad.interfaces.translationimportqueue import (
@@ -729,32 +727,58 @@ class LaunchpadRootNavigation(Navigation):
         if self.request.method == 'POST':
             return None
 
-        # If no redirection host is set, don't redirect.
         mainsite_host = config.vhost.mainsite.hostname
-        redirection_host = config.launchpad.beta_testers_redirection_host
-        if redirection_host is None:
-            return None
+
         # If the hostname for our URL isn't under the main site
         # (e.g. shipit.ubuntu.com), don't redirect.
         uri = URI(self.request.getURL())
         if not uri.host.endswith(mainsite_host):
             return None
 
-        # Only redirect if the user is a member of beta testers team,
-        # don't redirect.
+        beta_host = config.launchpad.beta_testers_redirection_host
         user = getUtility(ILaunchBag).user
-        if user is None or not user.inTeam(
-            getUtility(ILaunchpadCelebrities).launchpad_beta_testers):
-            return None
+        # Test to see if the user is None before attempting to get the
+        # launchpad_beta_testers celebrity.  In the odd test where the
+        # database is empty the series of tests will work.
+        if user is None:
+            user_is_beta_tester = False
+        else:
+            beta_testers = (
+                getUtility(ILaunchpadCelebrities).launchpad_beta_testers)
+            if user.inTeam(beta_testers):
+                user_is_beta_tester = True
+            else:
+                user_is_beta_tester = False
 
-        # Alter the host name to point at the redirection target.
-        new_host = uri.host[:-len(mainsite_host)] + redirection_host
-        uri = uri.replace(host=new_host)
-        # Complete the URL from the environment.
-        uri = uri.replace(path=self.request['PATH_INFO'])
-        query_string = self.request.get('QUERY_STRING')
-        if query_string:
-            uri = uri.replace(query=query_string)
+        # If the request is for a bug then redirect straight to that bug.
+        bug_match = re.match("/bugs/(\d+)$", self.request['PATH_INFO'])
+        if bug_match:
+            bug_number = bug_match.group(1)
+            bug_set = getUtility(IBugSet)
+            try:
+                bug = bug_set.get(bug_number)
+            except NotFoundError, e:
+                raise NotFound(self.context, bug_number)
+            if not check_permission("launchpad.View", bug):
+                raise Unauthorized("Bug %s is private" % bug_number)
+            uri = URI(canonical_url(bug.default_bugtask))
+            if beta_host is not None and user_is_beta_tester:
+                # Alter the host name to point at the beta target.
+                new_host = uri.host[:-len(mainsite_host)] + beta_host
+                uri = uri.replace(host=new_host)
+        else:
+            # If no redirection host is set or the user is not a beta tester,
+            # don't redirect.
+            if beta_host is None or not user_is_beta_tester:
+                return None
+            # Alter the host name to point at the beta target.
+            new_host = uri.host[:-len(mainsite_host)] + beta_host
+            uri = uri.replace(host=new_host)
+            # Complete the URL from the environment.
+            uri = uri.replace(path=self.request['PATH_INFO'])
+            query_string = self.request.get('QUERY_STRING')
+            if query_string:
+                uri = uri.replace(query=query_string)
 
         # Empty the traversal stack, since we're redirecting.
         self.request.setTraversalStack([])
@@ -827,28 +851,6 @@ class IcingContribFolder(ExportedFolder):
 
     folder = os.path.join(
         os.path.dirname(os.path.realpath(__file__)), '../icing-contrib/')
-
-
-class UbuntuIcingFolder(ExportedFolder):
-    """Export the Ubuntu icing."""
-
-    folder = os.path.join(
-        os.path.dirname(os.path.realpath(__file__)), '../icing-ubuntu/')
-
-
-class KubuntuIcingFolder(ExportedFolder):
-    """Export the Kubuntu icing."""
-
-    folder = os.path.join(
-        os.path.dirname(os.path.realpath(__file__)), '../icing-kubuntu/')
-
-
-class EdubuntuIcingFolder(ExportedFolder):
-    """Export the Edubuntu icing."""
-
-    folder = os.path.join(
-        os.path.dirname(os.path.realpath(__file__)), '../icing-edubuntu/')
-
 
 
 class LaunchpadTourFolder(ExportedFolder):
@@ -1110,4 +1112,3 @@ class DoesNotExistView:
 
     def __call__(self):
         raise NotFound(self.context, self.__name__)
-

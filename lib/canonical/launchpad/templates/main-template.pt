@@ -88,6 +88,10 @@
         />
     <link rel="stylesheet" type="text/css"
         tal:attributes="href
+        string:${icingroot}/lazr/build/autocomplete/assets/skins/sam/autocomplete.css"
+        />
+    <link rel="stylesheet" type="text/css"
+        tal:attributes="href
         string:${icingroot}/lazr/build/overlay/assets/skins/sam/pretty-overlay.css"
         />
     <link rel="stylesheet" type="text/css"
@@ -148,6 +152,8 @@
               tal:attributes="src string:${yui}/widget/widget-stdmod.js"></script>
       <script type="text/javascript"
               tal:attributes="src string:${yui}/overlay/overlay.js"></script>
+      <script type="text/javascript"
+              tal:attributes="src string:${yui}/node-menunav/node-menunav.js"></script>
 
       <script type="text/javascript"
               tal:attributes="src string:${icingroot}/MochiKit.js"></script>
@@ -158,6 +164,8 @@
       <script type="text/javascript"
               tal:attributes="src string:${lazr_js}/inlineedit/editor.js"></script>
       <script type="text/javascript"
+              tal:attributes="src string:${lazr_js}/autocomplete/autocomplete.js"></script>
+      <script type="text/javascript"
               tal:attributes="src string:${lazr_js}/overlay/overlay.js"></script>
       <script type="text/javascript"
               tal:attributes="src string:${lazr_js}/activator/activator.js"></script>
@@ -165,6 +173,9 @@
               tal:attributes="src string:${lazr_js}/picker/picker.js"></script>
       <script type="text/javascript"
               tal:attributes="src string:${lazr_js}/formoverlay/formoverlay.js"></script>
+      <script type="text/javascript"
+              tal:attributes="src string:${lazr_js}/effects/effects.js"></script>
+
       <script type="text/javascript"
               tal:attributes="src string:${lp_js}/lp/lp.js"></script>
       <script type="text/javascript"
@@ -428,54 +439,6 @@
         <span id="help-close"></span>
       </div>
     </div>
-    <tal:datetimepicker condition="request/needs_datetimepicker_iframe">
-      <script language="Javascript" type="text/javascript">
-          function pickDateTime(field, range) {
-              e = document.getElementById(field);
-              if (e == null) {
-                  alert(field);
-              }
-              if(self.DateTimePicker) {
-                  DateTimePicker.fPopCalendar(e, range);
-                  return false;
-              }
-          }
-      </script>
-      <iframe
-          width="174" height="189"
-          name="gToday:datetimepicker:agenda.js:DateTimePicker:plugins_time.js"
-          id="gToday:datetimepicker:agenda.js:DateTimePicker:plugins_time.js"
-          src="/+popcalxp/ipopeng.htm"
-          scrolling="no"
-          frameborder="0"
-          style="visibility:visible; z-index:9999; position:absolute;
-                 top:-500px; left:-500px;">
-      </iframe>
-    </tal:datetimepicker>
-    <tal:datepicker condition="request/needs_datepicker_iframe">
-      <script language="Javascript" type="text/javascript">
-          function pickDate(field, range) {
-              e = document.getElementById(field);
-              if (e == null) {
-                  alert(field);
-              }
-              if(self.DatePicker) {
-                  DatePicker.fPopCalendar(e, range);
-                  return false;
-              }
-          }
-      </script>
-      <iframe
-          width="174" height="189"
-          name="gToday:datepicker:agenda.js:DatePicker:plugins.js"
-          id="gToday:datepicker:agenda.js:DatePicker:plugins.js"
-          src="/+popcalxp/ipopeng.htm"
-          scrolling="no"
-          frameborder="0"
-          style="visibility:visible; z-index:9999; position:absolute;
-                 top:-500px; left:-500px;">
-      </iframe>
-    </tal:datepicker>
 
     <tal:cache condition="view/user|nothing"
                define="cache request/webservicerequest:cache;

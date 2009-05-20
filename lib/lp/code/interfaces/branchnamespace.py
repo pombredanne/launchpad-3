@@ -85,6 +85,14 @@ class IBranchNamespacePolicy(Interface):
         :return: A Boolean value.
         """
 
+    def areNewBranchesPrivate():
+        """Are new branches in this namespace private?
+
+        No check is made about whether or not a user can create branches.
+
+        :return: A Boolean value.
+        """
+
     def canBranchesBePrivate():
         """Can branches by the user be private in this namespace?
 
@@ -121,6 +129,21 @@ class IBranchNamespacePolicy(Interface):
             the namespace.
         :raises LaunchpadValidationError: if the name doesn't match the
             validation constraints on IBranch.name.
+        """
+
+    def validateMove(branch, mover):
+        """Check that 'mover' can move 'branch' into this namespace.
+
+        :param branch: An `IBranch` that might be moved.
+        :param mover: The `IPerson` who would move it.
+        :raises BranchCreatorNotMemberOfOwnerTeam: if the namespace owner is
+            a team, and 'mover' is not in that team.
+        :raises BranchCreatorNotOwner: if the namespace owner is an individual
+            and 'mover' is not the owner.
+        :raises BranchCreationForbidden: if 'mover' is not allowed to create
+            a branch in this namespace due to privacy rules.
+        :raises BranchExists: if a branch with the 'name' exists already in
+            the namespace.
         """
 
 

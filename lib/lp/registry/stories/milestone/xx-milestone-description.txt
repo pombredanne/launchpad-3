@@ -22,13 +22,14 @@ We can set the summary while creating a milestone for a Distribution.
     >>> test_browser.getControl('Name').value = 'milestone1'
     >>> test_browser.getControl('Summary').value = (
     ...     "Summary of first Ubuntu milestone.")
-    >>> test_browser.getControl('Register milestone').click()
+    >>> test_browser.getControl('Register Milestone').click()
 
 The summary appears on the milestone index page.
 
     >>> test_browser.open('http://launchpad.dev/ubuntu/+milestone/milestone1')
-    >>> for tag in find_tags_by_class(test_browser.contents, 'description'):
-    ...     print extract_text(tag)
+    >>> tag = find_tag_by_id(test_browser.contents, 'description')
+    >>> print extract_text(tag)
+    Summary
     Summary of first Ubuntu milestone.
 
 We can edit the summary after creating the milestone.
@@ -42,8 +43,9 @@ We can edit the summary after creating the milestone.
 And see that it is indeed modified on the milestone page.
 
     >>> test_browser.open('http://launchpad.dev/ubuntu/+milestone/milestone1')
-    >>> for tag in find_tags_by_class(test_browser.contents, 'description'):
-    ...     print extract_text(tag)
+    >>> tag = find_tag_by_id(test_browser.contents, 'description')
+    >>> print extract_text(tag)
+    Summary
     Modified summary of first Ubuntu milestone.
 
 
@@ -56,14 +58,15 @@ We can set the summary while creating a milestone for a Product.
     >>> test_browser.getControl('Name').value = 'milestone1'
     >>> test_browser.getControl('Summary').value = (
     ...     "Summary of first alsa-utils milestone.")
-    >>> test_browser.getControl('Register milestone').click()
+    >>> test_browser.getControl('Register Milestone').click()
 
 The summary appears on the milestone index page.
 
     >>> test_browser.open(
     ...     'http://launchpad.dev/alsa-utils/+milestone/milestone1')
-    >>> for tag in find_tags_by_class(test_browser.contents, 'description'):
-    ...     print extract_text(tag)
+    >>> tag = find_tag_by_id(test_browser.contents, 'description')
+    >>> print extract_text(tag)
+    Summary
     Summary of first alsa-utils milestone.
 
 We can edit the summary after creating the milestone.
@@ -78,6 +81,7 @@ And see that it is indeed modified on the milestone page.
 
     >>> test_browser.open(
     ...     'http://launchpad.dev/alsa-utils/+milestone/milestone1')
-    >>> for tag in find_tags_by_class(test_browser.contents, 'description'):
-    ...     print extract_text(tag)
+    >>> tag = find_tag_by_id(test_browser.contents, 'description')
+    >>> print extract_text(tag)
+    Summary
     Modified summary of first alsa-utils milestone.

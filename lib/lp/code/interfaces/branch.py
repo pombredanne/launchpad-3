@@ -18,6 +18,7 @@ __all__ = [
     'BranchCreatorNotOwner',
     'BranchExists',
     'BranchFormat',
+    'BRANCH_FORMAT_UPGRADE_PATH',
     'BranchLifecycleStatus',
     'BranchLifecycleStatusFilter',
     'BranchMergeControlStatus',
@@ -36,6 +37,7 @@ __all__ = [
     'IBranchSet',
     'NoSuchBranch',
     'RepositoryFormat',
+    'REPOSITORY_FORMAT_UPGRADE_PATH',
     'UICreatableBranchType',
     'UnknownBranchTypeError',
     'user_has_special_branch_access',
@@ -46,7 +48,7 @@ from operator import attrgetter
 import re
 
 # Ensure correct plugins are loaded. Do not delete this line.
-import canonical.codehosting
+import lp.codehosting
 from bzrlib.branch import (
     BranchReferenceFormat, BzrBranchFormat4, BzrBranchFormat5,
     BzrBranchFormat6, BzrBranchFormat7)
@@ -59,6 +61,7 @@ from bzrlib.repofmt.knitrepo import (RepositoryFormatKnit1,
 from bzrlib.repofmt.pack_repo import (
     RepositoryFormatKnitPack1, RepositoryFormatKnitPack3,
     RepositoryFormatKnitPack4, RepositoryFormatKnitPack5,
+    RepositoryFormatKnitPack6, RepositoryFormatKnitPack6RichRoot
     )
 from bzrlib.repofmt.weaverepo import (
     RepositoryFormat4, RepositoryFormat5, RepositoryFormat6,
@@ -79,7 +82,8 @@ from canonical.config import config
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
-    PublicPersonChoice, Summary, Title, URIField, Whiteboard)
+    ParticipatingPersonChoice, PublicPersonChoice, Summary, Title, URIField,
+    Whiteboard)
 from canonical.launchpad.validators import LaunchpadValidationError
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.branchtarget import IHasBranchTarget
@@ -244,6 +248,18 @@ class BranchFormat(DBEnumeratedType):
         107, "Bazaar-NG Loom branch format 7\n", "Loom branch format 7")
 
 
+BRANCH_FORMAT_UPGRADE_PATH = {
+    BranchFormat.UNRECOGNIZED: None,
+    BranchFormat.BRANCH_REFERENCE: None,
+    BranchFormat.BZR_BRANCH_4: BzrBranchFormat7,
+    BranchFormat.BZR_BRANCH_5: BzrBranchFormat7,
+    BranchFormat.BZR_BRANCH_6: BzrBranchFormat7,
+    BranchFormat.BZR_BRANCH_7: None,
+    BranchFormat.BZR_LOOM_1: None,
+    BranchFormat.BZR_LOOM_2: None,
+    BranchFormat.BZR_LOOM_3: None}
+
+
 class RepositoryFormat(DBEnumeratedType):
     """Repository on-disk format.
 
@@ -346,6 +362,32 @@ class RepositoryFormat(DBEnumeratedType):
         "Development repository format - rich roots, group compression"
         " and chk inventories\n",
         )
+
+
+REPOSITORY_FORMAT_UPGRADE_PATH = {
+    RepositoryFormat.UNRECOGNIZED: None,
+    RepositoryFormat.BZR_REPOSITORY_4: RepositoryFormatKnitPack6,
+    RepositoryFormat.BZR_REPOSITORY_5: RepositoryFormatKnitPack6,
+    RepositoryFormat.BZR_REPOSITORY_6: RepositoryFormatKnitPack6,
+    RepositoryFormat.BZR_REPOSITORY_7: RepositoryFormatKnitPack6,
+    RepositoryFormat.BZR_KNIT_1: RepositoryFormatKnitPack6,
+    RepositoryFormat.BZR_KNIT_3: RepositoryFormatKnitPack3,
+    RepositoryFormat.BZR_KNIT_4: RepositoryFormatKnitPack6RichRoot,
+    RepositoryFormat.BZR_KNITPACK_1: RepositoryFormatKnitPack6,
+    RepositoryFormat.BZR_KNITPACK_3: None,
+    RepositoryFormat.BZR_KNITPACK_4: RepositoryFormatKnitPack6RichRoot,
+    RepositoryFormat.BZR_KNITPACK_5: None,
+    RepositoryFormat.BZR_KNITPACK_5_RRB: RepositoryFormatKnitPack6RichRoot,
+    RepositoryFormat.BZR_KNITPACK_5_RR: None,
+    RepositoryFormat.BZR_KNITPACK_6: None,
+    RepositoryFormat.BZR_KNITPACK_6_RR: None,
+    RepositoryFormat.BZR_PACK_DEV_0: None,
+    RepositoryFormat.BZR_PACK_DEV_0_SUBTREE: None,
+    RepositoryFormat.BZR_DEV_1: None,
+    RepositoryFormat.BZR_DEV_1_SUBTREE: None,
+    RepositoryFormat.BZR_DEV_2: None,
+    RepositoryFormat.BZR_DEV_2_SUBTREE: None,
+    RepositoryFormat.BZR_CHK1: None}
 
 
 class ControlFormat(DBEnumeratedType):
@@ -628,21 +670,6 @@ class IBranch(IHasOwner, IHasBranchTarget):
                 "be used in URLs.  "
                 "Examples: main, devel, release-1.0, gnome-vfs.")))
 
-    title = exported(
-        Title(
-            title=_('Title'), required=False,
-            description=_(
-                "Describe the branch as clearly as possible in up to 70 "
-                "characters. This title is displayed in every branch list "
-                "or report.")))
-
-    summary = exported(
-        Summary(
-            title=_('Summary'), required=False,
-            description=_(
-                "A single-paragraph description of the branch. This will be "
-                "displayed on the branch page.")))
-
     url = exported(
         BranchURIField(
             title=_('Branch URL'), required=False,
@@ -703,7 +730,7 @@ class IBranch(IHasOwner, IHasBranchTarget):
             required=True, readonly=True,
             vocabulary='ValidPersonOrTeam'))
     owner = exported(
-        PublicPersonChoice(
+        ParticipatingPersonChoice(
             title=_('Owner'),
             required=True,
             vocabulary='UserTeamsParticipationPlusSelf',
@@ -826,15 +853,23 @@ class IBranch(IHasOwner, IHasBranchTarget):
         "See doc/bazaar for more information about the branch warehouse.")
 
     # Bug attributes
-    bug_branches = Attribute(
-        "The bug-branch link objects that link this branch to bugs. ")
+    bug_branches = exported(
+        CollectionField(
+            title=_("The bug-branch link objects that link this branch "
+                    "to bugs."),
+            readonly=True,
+            value_type=Reference(schema=Interface))) # Really IBugBranch
 
     related_bugs = Attribute(
         "The bugs related to this branch, likely branches on which "
         "some work has been done to fix this bug.")
 
     # Specification attributes
-    spec_links = Attribute("Specifications linked to this branch")
+    spec_links = exported(
+        CollectionField(
+            title=_("Specification linked to this branch."),
+            readonly=True,
+            value_type=Reference(Interface))) # Really ISpecificationBranch
 
     pending_writes = Attribute(
         "Whether there is new Bazaar data for this branch.")
@@ -1170,6 +1205,8 @@ class IBranch(IHasOwner, IHasBranchTarget):
 
         :return: A list of tuples like (date, count).
         """
+
+    needs_upgrading = Attribute("Whether the branch needs to be upgraded.")
 
 
 class IBranchSet(Interface):

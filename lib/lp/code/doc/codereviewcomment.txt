@@ -18,7 +18,7 @@ about.
 CodeReviewComments are created from their BranchMergeProposals:
 
     >>> login('foo.bar@canonical.com')
-    >>> from canonical.launchpad.testing import LaunchpadObjectFactory
+    >>> from lp.testing.factory import LaunchpadObjectFactory
     >>> factory = LaunchpadObjectFactory()
     >>> merge_proposal = factory.makeBranchMergeProposal()
     >>> sender = factory.makePerson(
@@ -63,7 +63,7 @@ a notification is produced when the comment is created.
     ...     BranchSubscriptionNotificationLevel.NOEMAIL,
     ...     BranchSubscriptionDiffSize.NODIFF,
     ...     CodeReviewNotificationLevel.FULL)
-    >>> from canonical.launchpad.tests.mail_helpers import (
+    >>> from lp.testing.mail_helpers import (
     ...     pop_notifications, print_emails)
     >>> _unused = pop_notifications()
     >>> comment = merge_proposal.createComment(
@@ -78,12 +78,12 @@ a notification is produced when the comment is created.
     Review: Approve db
     This patch is very nice.
     --...
-    You are subscribed to branch lp://dev/~...
+    You are the owner of lp://dev/~...
     ----------------------------------------
     >>> print notifications[0]['X-Launchpad-Branch']
     ~person-name.../product-name.../branch...
     >>> print notifications[0]['X-Launchpad-Message-Rationale']
-    Subscriber
+    Owner
     >>> notifications[0]['Message-Id'] == comment.message.rfc822msgid
     True
     >>> (notifications[0]['In-Reply-To'] == merge_proposal.root_message_id)

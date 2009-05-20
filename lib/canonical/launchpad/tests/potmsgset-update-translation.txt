@@ -36,7 +36,7 @@ Launchpad or there is no complete translation.
 
 We can see that this is actually the case:
 
-  >>> from canonical.launchpad.database.language import LanguageSet
+  >>> from lp.services.worlddata.model.language import LanguageSet
   >>> spanish = LanguageSet().getLanguageByCode('es')
   >>> message = potmsgset.getCurrentTranslationMessage(upstream_evo, spanish)
   >>> message.msgstr0.translation

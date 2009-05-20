@@ -1,4 +1,4 @@
-# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
 """Stuff to do with logging in and logging out."""
 
 __metaclass__ = type
@@ -21,14 +21,13 @@ from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
 from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
 from lp.registry.interfaces.person import (
     IPerson, IPersonSet, PersonCreationRationale)
-from canonical.launchpad.interfaces.shipit import ShipItConstants
 from canonical.launchpad.interfaces.validation import valid_password
 from canonical.launchpad.validators.email import valid_email
-from canonical.launchpad.webapp.interfaces import (
-    ILaunchpadPrincipal, IPlacelessAuthUtility, IPlacelessLoginSource)
-from canonical.launchpad.webapp.interfaces import (
-    CookieAuthLoggedInEvent, LoggedOutEvent)
 from canonical.launchpad.webapp.error import SystemErrorView
+from canonical.launchpad.webapp.interfaces import (
+    CookieAuthLoggedInEvent, ILaunchpadPrincipal, IPlacelessAuthUtility,
+    IPlacelessLoginSource, LoggedOutEvent)
+from canonical.launchpad.webapp.metazcml import ILaunchpadPermission
 from canonical.launchpad.webapp.url import urlappend
 
 
@@ -39,9 +38,25 @@ class UnauthorizedView(SystemErrorView):
     forbidden_page = ViewPageTemplateFile(
         '../templates/launchpad-forbidden.pt')
 
+    read_only_page = ViewPageTemplateFile(
+        '../templates/launchpad-readonlyfailure.pt')
+
     notification_message = _('To continue, you must log in to Launchpad.')
 
     def __call__(self):
+        # In read only mode, Unauthorized exceptions get raised by the
+        # security policy when write permissions are requested. We need
+        # to render the read-only failure screen so the user knows their
+        # request failed for operational reasons rather than a genuine
+        # permission problem.
+        if config.launchpad.read_only:
+            # Our context is an Unauthorized exception, which acts like
+            # a tuple containing (object, attribute_requested, permission).
+            lp_permission = getUtility(ILaunchpadPermission, self.context[2])
+            if lp_permission.access_level != "read":
+                self.request.response.setStatus(503) # Service Unavailable
+                return self.read_only_page()
+
         if IUnauthenticatedPrincipal.providedBy(self.request.principal):
             if 'loggingout' in self.request.form:
                 target = '%s?loggingout=1' % self.request.URL[-2]
@@ -154,16 +169,6 @@ class LoginOrRegister:
     submitted = False
     email = None
 
-    # XXX Guilherme Salgado 2006-09-27: If you add a new origin here, you
-    # must also add a new entry on NewAccountView.urls_and_rationales in
-    # browser/logintoken.py. Ideally, we should be storing the rationale in
-    # the logintoken too, but this should do for now.
-    registered_origins = {
-        'shipit-ubuntu': ShipItConstants.ubuntu_url,
-        'shipit-edubuntu': ShipItConstants.edubuntu_url,
-        'shipit-kubuntu': ShipItConstants.kubuntu_url,
-        }
-
     def process_restricted_form(self):
         """Entry-point for the team-restricted login page.
 
@@ -189,33 +194,13 @@ class LoginOrRegister:
         elif self.request.form.get(self.submit_registration):
             self.process_registration_form()
 
-    def getApplicationURL(self):
-        # XXX Guilherme Salgado 2005-12-09: This method is needed because
-        # this view is used on shipit and we have to use an application URL
-        # different than the one we have in the request.
-        return self.request.getApplicationURL()
-
     def getRedirectionURL(self):
         """Return the URL we should redirect the user to, after finishing a
         registration or password reset process.
 
-        If the request has an 'origin' query parameter, that means the user
-        came from shipit, and thus we return the URL for it. When there's no
-        'origin' query parameter, we check the HTTP_REFERER header and if it's
-        under any URL specified in registered_origins we return it, otherwise
-        we return the current URL without the "/+login" bit.
+        IOW, the current URL without the "/+login" bit.
         """
-        request = self.request
-        origin = request.get('origin')
-        try:
-            return self.registered_origins[origin]
-        except KeyError:
-            referrer = request.getHeader('Referer')
-            if referrer:
-                for url in self.registered_origins.values():
-                    if referrer.startswith(url):
-                        return referrer
-        return request.getURL(1)
+        return self.request.getURL(1)
 
     def process_login_form(self):
         """Process the form data.

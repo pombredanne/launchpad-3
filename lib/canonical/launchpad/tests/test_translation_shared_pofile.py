@@ -13,7 +13,8 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.launchpad.interfaces import TranslationValidationStatus
 from canonical.launchpad.interfaces.translationcommonformat import (
     ITranslationFileData)
-from canonical.launchpad.testing.factory import LaunchpadObjectFactory
+from lp.testing import TestCaseWithFactory
+from lp.testing.factory import LaunchpadObjectFactory
 from canonical.testing import LaunchpadZopelessLayer
 
 
@@ -554,6 +555,28 @@ class TestTranslationSharedPOFile(unittest.TestCase):
             self.devel_sr_pofile.getPOTMsgSetWithNewSuggestions())
         self.assertEquals(found_translations, [self.potmsgset, potmsgset])
 
+    def test_getPOTMsgSetWithNewSuggestions_distinct(self):
+        # Provide two suggestions on a single message and make sure
+        # a POTMsgSet is returned only once.
+        translation1 = self.factory.makeSharedTranslationMessage(
+            pofile=self.devel_sr_pofile,
+            potmsgset=self.potmsgset,
+            translations=["A suggestion"],
+            suggestion=True)
+        translation2 = self.factory.makeSharedTranslationMessage(
+            pofile=self.devel_sr_pofile,
+            potmsgset=self.potmsgset,
+            translations=["Another suggestion"],
+            suggestion=True)
+
+        potmsgsets = list(
+            self.devel_sr_pofile.getPOTMsgSetWithNewSuggestions())
+        self.assertEquals(potmsgsets,
+                          [self.potmsgset])
+        self.assertEquals(
+            self.devel_sr_pofile.getPOTMsgSetWithNewSuggestions().count(),
+            1)
+
     def test_getPOTMsgSetChangedInLaunchpad(self):
         # Test listing of POTMsgSets which contain changes from imports.
 
@@ -771,6 +794,307 @@ class TestTranslationSharedPOFile(unittest.TestCase):
         self.assertEquals(exported_messages,
                           [(self.potmsgset.singular_text,
                             "Diverged translation")])
+
+
+class TestTranslationPOFilePOTMsgSetOrdering(TestCaseWithFactory):
+    """Test ordering of POTMsgSets as returned by PO file methods."""
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        """Set up context to test in."""
+        # Create a product with two series and a shared POTemplate
+        # in different series ('devel' and 'stable').
+        TestCaseWithFactory.setUp(self)
+        self.foo = self.factory.makeProduct()
+        self.foo_devel = self.factory.makeProductSeries(
+            name='devel', product=self.foo)
+        self.foo_stable = self.factory.makeProductSeries(
+            name='stable', product=self.foo)
+        self.foo.official_rosetta = True
+
+        # POTemplate is 'shared' if it has the same name ('messages').
+        self.devel_potemplate = self.factory.makePOTemplate(
+            productseries=self.foo_devel, name="messages")
+        self.stable_potemplate = self.factory.makePOTemplate(self.foo_stable,
+                                                             name="messages")
+
+        # We'll use two PO files, one for each series.
+        self.devel_sr_pofile = self.factory.makePOFile(
+            'sr', self.devel_potemplate)
+        self.stable_sr_pofile = self.factory.makePOFile(
+            'sr', self.stable_potemplate)
+
+        # Create two POTMsgSets that can be used to test in what order
+        # are they returned.  Add them only to devel_potemplate sequentially.
+        self.potmsgset1 = self.factory.makePOTMsgSet(self.devel_potemplate)
+        self.potmsgset1.setSequence(self.devel_potemplate, 1)
+        self.potmsgset2 = self.factory.makePOTMsgSet(self.devel_potemplate)
+        self.potmsgset2.setSequence(self.devel_potemplate, 2)
+
+    def test_getPOTMsgSetTranslated_ordering(self):
+        # Translate both POTMsgSets in devel_sr_pofile, so
+        # they are returned with getPOTMsgSetTranslated() call.
+        translation1 = self.factory.makeSharedTranslationMessage(
+            pofile=self.devel_sr_pofile,
+            potmsgset=self.potmsgset1,
+            translations=["Shared translation"])
+        translation2 = self.factory.makeSharedTranslationMessage(
+            pofile=self.devel_sr_pofile,
+            potmsgset=self.potmsgset2,
+            translations=["Another shared translation"])
+
+        translated_potmsgsets = list(
+            self.devel_sr_pofile.getPOTMsgSetTranslated())
+        self.assertEquals(translated_potmsgsets,
+                          [self.potmsgset1, self.potmsgset2])
+
+        # Insert these two POTMsgSets into self.stable_potemplate in reverse
+        # order.
+        self.potmsgset2.setSequence(self.stable_potemplate, 1)
+        self.potmsgset1.setSequence(self.stable_potemplate, 2)
+
+        # And they are returned in the new order as desired.
+        translated_potmsgsets = list(
+            self.stable_sr_pofile.getPOTMsgSetTranslated())
+        self.assertEquals(translated_potmsgsets,
+                          [self.potmsgset2, self.potmsgset1])
+
+        # Order is unchanged for the previous template.
+        translated_potmsgsets = list(
+            self.devel_sr_pofile.getPOTMsgSetTranslated())
+        self.assertEquals(translated_potmsgsets,
+                          [self.potmsgset1, self.potmsgset2])
+
+    def test_getPOTMsgSetUntranslated_ordering(self):
+        # Both POTMsgSets in devel_sr_pofile are untranslated.
+        untranslated_potmsgsets = list(
+            self.devel_sr_pofile.getPOTMsgSetUntranslated())
+        self.assertEquals(untranslated_potmsgsets,
+                          [self.potmsgset1, self.potmsgset2])
+
+        # Insert these two POTMsgSets into self.stable_potemplate in reverse
+        # order.
+        self.potmsgset2.setSequence(self.stable_potemplate, 1)
+        self.potmsgset1.setSequence(self.stable_potemplate, 2)
+
+        # And they are returned in the new order as desired.
+        untranslated_potmsgsets = list(
+            self.stable_sr_pofile.getPOTMsgSetUntranslated())
+        self.assertEquals(untranslated_potmsgsets,
+                          [self.potmsgset2, self.potmsgset1])
+
+        # Order is unchanged for the previous template.
+        untranslated_potmsgsets = list(
+            self.devel_sr_pofile.getPOTMsgSetUntranslated())
+        self.assertEquals(untranslated_potmsgsets,
+                          [self.potmsgset1, self.potmsgset2])
+
+    def test_getPOTMsgSetChangedInLaunchpad_ordering(self):
+        # Suggest a translation on both POTMsgSets in devel_sr_pofile,
+        # so they are returned with getPOTMsgSetWithNewSuggestions() call.
+        imported1 = self.factory.makeSharedTranslationMessage(
+            pofile=self.devel_sr_pofile,
+            potmsgset=self.potmsgset1,
+            translations=["Imported"],
+            is_imported=True)
+        translation1 = self.factory.makeSharedTranslationMessage(
+            pofile=self.devel_sr_pofile,
+            potmsgset=self.potmsgset1,
+            translations=["Changed"],
+            is_imported=False)
+        imported2 = self.factory.makeSharedTranslationMessage(
+            pofile=self.devel_sr_pofile,
+            potmsgset=self.potmsgset2,
+            translations=["Another imported"],
+            is_imported=True)
+        translation2 = self.factory.makeSharedTranslationMessage(
+            pofile=self.devel_sr_pofile,
+            potmsgset=self.potmsgset2,
+            translations=["Another changed"],
+            is_imported=False)
+
+        potmsgsets = list(
+            self.devel_sr_pofile.getPOTMsgSetChangedInLaunchpad())
+        self.assertEquals(potmsgsets,
+                          [self.potmsgset1, self.potmsgset2])
+
+        # Insert these two POTMsgSets into self.stable_potemplate in reverse
+        # order.
+        self.potmsgset2.setSequence(self.stable_potemplate, 1)
+        self.potmsgset1.setSequence(self.stable_potemplate, 2)
+
+        # And they are returned in the new order as desired.
+        potmsgsets = list(
+            self.stable_sr_pofile.getPOTMsgSetChangedInLaunchpad())
+        self.assertEquals(potmsgsets,
+                          [self.potmsgset2, self.potmsgset1])
+
+        # Order is unchanged for the previous template.
+        potmsgsets = list(
+            self.devel_sr_pofile.getPOTMsgSetChangedInLaunchpad())
+        self.assertEquals(potmsgsets,
+                          [self.potmsgset1, self.potmsgset2])
+
+    def test_getPOTMsgSetWithErrors_ordering(self):
+        # Suggest a translation on both POTMsgSets in devel_sr_pofile,
+        # so they are returned with getPOTMsgSetWithNewSuggestions() call.
+        imported1 = self.factory.makeSharedTranslationMessage(
+            pofile=self.devel_sr_pofile,
+            potmsgset=self.potmsgset1,
+            translations=["Imported"],
+            is_imported=True)
+        removeSecurityProxy(imported1).validation_status = (
+            TranslationValidationStatus.UNKNOWNERROR)
+        imported2 = self.factory.makeSharedTranslationMessage(
+            pofile=self.devel_sr_pofile,
+            potmsgset=self.potmsgset2,
+            translations=["Another imported"],
+            is_imported=True)
+        removeSecurityProxy(imported2).validation_status = (
+            TranslationValidationStatus.UNKNOWNERROR)
+
+        potmsgsets = list(
+            self.devel_sr_pofile.getPOTMsgSetWithErrors())
+        self.assertEquals(potmsgsets,
+                          [self.potmsgset1, self.potmsgset2])
+
+        # Insert these two POTMsgSets into self.stable_potemplate in reverse
+        # order.
+        self.potmsgset2.setSequence(self.stable_potemplate, 1)
+        self.potmsgset1.setSequence(self.stable_potemplate, 2)
+
+        # And they are returned in the new order as desired.
+        potmsgsets = list(
+            self.stable_sr_pofile.getPOTMsgSetWithErrors())
+        self.assertEquals(potmsgsets,
+                          [self.potmsgset2, self.potmsgset1])
+
+        # Order is unchanged for the previous template.
+        potmsgsets = list(
+            self.devel_sr_pofile.getPOTMsgSetWithErrors())
+        self.assertEquals(potmsgsets,
+                          [self.potmsgset1, self.potmsgset2])
+
+    def test_getPOTMsgSets_ordering(self):
+        # Both POTMsgSets in devel_potemplate are untranslated.
+        potmsgsets = list(
+            self.devel_potemplate.getPOTMsgSets())
+        self.assertEquals(potmsgsets,
+                          [self.potmsgset1, self.potmsgset2])
+
+        # Insert these two POTMsgSets into self.stable_potemplate in reverse
+        # order.
+        self.potmsgset2.setSequence(self.stable_potemplate, 1)
+        self.potmsgset1.setSequence(self.stable_potemplate, 2)
+
+        # And they are returned in the new order as desired.
+        potmsgsets = list(
+            self.stable_potemplate.getPOTMsgSets())
+        self.assertEquals(potmsgsets,
+                          [self.potmsgset2, self.potmsgset1])
+
+        # Order is unchanged for the previous template.
+        potmsgsets = list(
+            self.devel_potemplate.getPOTMsgSets())
+        self.assertEquals(potmsgsets,
+                          [self.potmsgset1, self.potmsgset2])
+
+
+
+class TestPOFileStatistics(TestCaseWithFactory):
+    """Test PO files statistics calculation."""
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        """Set up context to test in."""
+        # Create a POFile to calculate statistics on.
+        TestCaseWithFactory.setUp(self)
+        self.pofile = self.factory.makePOFile('sr')
+        self.potemplate = self.pofile.potemplate
+
+        # Create a single POTMsgSet that is used across all tests,
+        # and add it to only one of the POTemplates.
+        self.potmsgset = self.factory.makePOTMsgSet(self.potemplate,
+                                                    sequence=1)
+
+
+    def test_POFile_updateStatistics_currentCount(self):
+        # Make sure count of translations which are active both
+        # in import and in Launchpad is correct.
+        self.pofile.updateStatistics()
+        self.assertEquals(self.pofile.currentCount(), 0)
+
+        # Adding an imported translation increases currentCount().
+        imported = self.factory.makeTranslationMessage(
+            pofile=self.pofile,
+            potmsgset=self.potmsgset,
+            translations=["Imported current"],
+            is_imported=True)
+        self.pofile.updateStatistics()
+        self.assertEquals(self.pofile.currentCount(), 1)
+
+        # Adding a suggestion (i.e. unused translation)
+        # will not change the current count when there's
+        # already an imported message.
+        suggestion = self.factory.makeTranslationMessage(
+            pofile=self.pofile,
+            potmsgset=self.potmsgset,
+            translations=["A suggestion"],
+            suggestion=True)
+        self.pofile.updateStatistics()
+        self.assertEquals(self.pofile.currentCount(), 1)
+
+    def test_POFile_updateStatistics_newCount(self):
+        # Make sure count of translations which are provided
+        # only in Launchpad (and not in imports) is correct.
+        self.pofile.updateStatistics()
+        self.assertEquals(self.pofile.newCount(), 0)
+
+        # Adding a current translation for an untranslated
+        # message increases the count of new translations in LP.
+        current = self.factory.makeTranslationMessage(
+            pofile=self.pofile,
+            potmsgset=self.potmsgset,
+            translations=["Current"])
+        self.pofile.updateStatistics()
+        self.assertEquals(self.pofile.newCount(), 1)
+
+    def test_POFile_updateStatistics_newCount_reimporting(self):
+        # If we get an 'imported' translation for what
+        # we already have as 'new', it's not considered 'new'
+        # anymore since it has been synced.
+        current = self.factory.makeTranslationMessage(
+            pofile=self.pofile,
+            potmsgset=self.potmsgset,
+            translations=["Current"])
+        # Reimport it but with is_imported=True.
+        imported = self.factory.makeTranslationMessage(
+            pofile=self.pofile,
+            potmsgset=self.potmsgset,
+            translations=["Current"],
+            is_imported=True)
+
+        self.pofile.updateStatistics()
+        self.assertEquals(self.pofile.newCount(), 0)
+
+    def test_POFile_updateStatistics_newCount_changed(self):
+        # If we change an 'imported' translation through
+        # Launchpad, it's still not considered 'new',
+        # but an 'update' instead.
+        imported = self.factory.makeTranslationMessage(
+            pofile=self.pofile,
+            potmsgset=self.potmsgset,
+            translations=["Imported"],
+            is_imported=True)
+        update = self.factory.makeTranslationMessage(
+            pofile=self.pofile,
+            potmsgset=self.potmsgset,
+            translations=["Changed"])
+        self.pofile.updateStatistics()
+        self.assertEquals(self.pofile.newCount(), 0)
+        self.assertEquals(self.pofile.updatesCount(), 1)
 
 
 def test_suite():

@@ -10,21 +10,28 @@ import time
 import unittest
 
 from pytz import UTC
-from storm.locals import Min
+from storm.expr import Min
+from storm.store import Store
 import transaction
+from zope.component import getUtility
 
 from lp.code.model.codeimportresult import CodeImportResult
 from canonical.launchpad.database.oauth import OAuthNonce
 from canonical.launchpad.database.openidconsumer import OpenIDConsumerNonce
 from canonical.launchpad.interfaces import IMasterStore
+from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
 from lp.code.interfaces.codeimportresult import CodeImportResultStatus
-from canonical.launchpad.testing import TestCase
+from lp.testing import TestCase, TestCaseWithFactory
 from canonical.launchpad.scripts.garbo import (
-    DailyDatabaseGarbageCollector, HourlyDatabaseGarbageCollector)
+    DailyDatabaseGarbageCollector, HourlyDatabaseGarbageCollector,
+    OpenIDAssociationPruner, OpenIDConsumerAssociationPruner)
 from canonical.launchpad.scripts.tests import run_script
 from canonical.launchpad.scripts.logger import QuietFakeLogger
+from canonical.launchpad.webapp.interfaces import (
+    IStoreSelector, MASTER_FLAVOR)
 from canonical.testing.layers import (
     DatabaseLayer, LaunchpadScriptLayer, LaunchpadZopelessLayer)
+from lp.registry.interfaces.person import PersonCreationRationale
 
 
 class TestGarboScript(TestCase):
@@ -46,7 +53,7 @@ class TestGarboScript(TestCase):
         self.failIf(err.strip(), "Output to stderr: %s" % err)
 
 
-class TestGarbo(TestCase):
+class TestGarbo(TestCaseWithFactory):
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
@@ -56,20 +63,21 @@ class TestGarbo(TestCase):
         self.runDaily()
         self.runHourly()
 
-    def runDaily(self):
-        LaunchpadZopelessLayer.switchDbUser('garbo-daily')
+    def runDaily(self, maximum_chunk_size=2):
+        LaunchpadZopelessLayer.switchDbUser('garbo_daily')
         collector = DailyDatabaseGarbageCollector(test_args=[])
+        collector._maximum_chunk_size = maximum_chunk_size
         collector.logger = QuietFakeLogger()
         collector.main()
 
-    def runHourly(self):
-        LaunchpadZopelessLayer.switchDbUser('garbo-hourly')
+    def runHourly(self, maximum_chunk_size=2):
+        LaunchpadZopelessLayer.switchDbUser('garbo_hourly')
         collector = HourlyDatabaseGarbageCollector(test_args=[])
+        collector._maximum_chunk_size = maximum_chunk_size
         collector.logger = QuietFakeLogger()
         collector.main()
 
     def test_OAuthNoncePruner(self):
-        store = IMasterStore(OAuthNonce)
         now = datetime.utcnow().replace(tzinfo=UTC)
         timestamps = [
             now - timedelta(days=2), # Garbage
@@ -78,6 +86,7 @@ class TestGarbo(TestCase):
             now, # Not garbage
             ]
         LaunchpadZopelessLayer.switchDbUser('testadmin')
+        store = IMasterStore(OAuthNonce)
 
         # Make sure we start with 0 nonces.
         self.failUnlessEqual(store.find(OAuthNonce).count(), 0)
@@ -92,7 +101,9 @@ class TestGarbo(TestCase):
         # Make sure we have 4 nonces now.
         self.failUnlessEqual(store.find(OAuthNonce).count(), 4)
 
-        self.runHourly()
+        self.runHourly(maximum_chunk_size=60) # 1 minute maximum chunk size
+
+        store = IMasterStore(OAuthNonce)
 
         # Now back to two, having removed the two garbage entries.
         self.failUnlessEqual(store.find(OAuthNonce).count(), 2)
@@ -125,18 +136,17 @@ class TestGarbo(TestCase):
         self.failUnlessEqual(store.find(OpenIDConsumerNonce).count(), 0)
 
         for timestamp in timestamps:
-            nonce = store.add(OpenIDConsumerNonce())
-            nonce.server_url = unicode(timestamp)
-            nonce.timestamp = timestamp
-            nonce.salt = u'aa'
-            store.add(nonce)
+            store.add(OpenIDConsumerNonce(
+                    u'http://server/', timestamp, u'aa'))
         transaction.commit()
 
         # Make sure we have 4 nonces now.
         self.failUnlessEqual(store.find(OpenIDConsumerNonce).count(), 4)
 
         # Run the garbage collector.
-        self.runHourly()
+        self.runHourly(maximum_chunk_size=60) # 1 minute maximum chunks.
+
+        store = IMasterStore(OpenIDConsumerNonce)
 
         # We should now have 2 nonces.
         self.failUnlessEqual(store.find(OpenIDConsumerNonce).count(), 2)
@@ -167,16 +177,19 @@ class TestGarbo(TestCase):
         self.runDaily()
 
         # Nothing is removed, because we always keep the 4 latest.
+        store = IMasterStore(CodeImportResult)
         self.failUnlessEqual(
             store.find(CodeImportResult).count(), 4)
 
         new_code_import_result(now - timedelta(days=31))
         self.runDaily()
+        store = IMasterStore(CodeImportResult)
         self.failUnlessEqual(
             store.find(CodeImportResult).count(), 4)
 
         new_code_import_result(now - timedelta(days=29))
         self.runDaily()
+        store = IMasterStore(CodeImportResult)
         self.failUnlessEqual(
             store.find(CodeImportResult).count(), 4)
 
@@ -185,6 +198,165 @@ class TestGarbo(TestCase):
             store.find(
                 Min(CodeImportResult.date_created)).one().replace(tzinfo=UTC)
             >= now - timedelta(days=30))
+
+    def test_OpenIDAssociationPruner(self, pruner=OpenIDAssociationPruner):
+        store_name = pruner.store_name
+        table_name = pruner.table_name
+        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        store_selector = getUtility(IStoreSelector)
+        store = store_selector.get(store_name, MASTER_FLAVOR)
+        now = time.time()
+        # Create some associations in the past with lifetimes
+        for delta in range(0, 20):
+            store.execute("""
+                INSERT INTO %s (server_url, handle, issued, lifetime)
+                VALUES (%s, %s, %d, %d)
+                """ % (table_name, str(delta), str(delta), now-10, delta))
+        transaction.commit()
+
+        # Ensure that we created at least one expirable row (using the
+        # test start time as 'now').
+        num_expired = store.execute("""
+            SELECT COUNT(*) FROM %s
+            WHERE issued + lifetime < %f
+            """ % (table_name, now)).get_one()[0]
+        self.failUnless(num_expired > 0)
+
+        # Expire all those expirable rows, and possibly a few more if this
+        # test is running slow.
+        self.runHourly()
+
+        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        store = store_selector.get(store_name, MASTER_FLAVOR)
+        # Confirm all the rows we know should have been expired have
+        # been expired. These are the ones that would be expired using
+        # the test start time as 'now'.
+        num_expired = store.execute("""
+            SELECT COUNT(*) FROM %s
+            WHERE issued + lifetime < %f
+            """ % (table_name, now)).get_one()[0]
+        self.failUnlessEqual(num_expired, 0)
+
+        # Confirm that we haven't expired everything. This test will fail
+        # if it has taken 10 seconds to get this far.
+        num_unexpired = store.execute(
+            "SELECT COUNT(*) FROM %s" % table_name).get_one()[0]
+        self.failUnless(num_unexpired > 0)
+
+    def test_OpenIDConsumerAssociationPruner(self):
+        self.test_OpenIDAssociationPruner(OpenIDConsumerAssociationPruner)
+
+    def test_RevisionAuthorEmailLinker(self):
+        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        rev1 = self.factory.makeRevision('Author 1 <author-1@Example.Org>')
+        rev2 = self.factory.makeRevision('Author 2 <author-2@Example.Org>')
+        rev3 = self.factory.makeRevision('Author 3 <author-3@Example.Org>')
+
+        person1 = self.factory.makePerson(email='Author-1@example.org')
+        person2 = self.factory.makePerson(
+            email='Author-2@example.org',
+            email_address_status=EmailAddressStatus.NEW)
+        account3 = self.factory.makeAccount(
+            'Author 3', 'Author-3@example.org')
+
+        self.assertEqual(rev1.revision_author.person, None)
+        self.assertEqual(rev2.revision_author.person, None)
+        self.assertEqual(rev3.revision_author.person, None)
+
+        self.runDaily()
+
+        # Only the validated email address associated with a Person
+        # causes a linkage.
+        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        self.assertEqual(rev1.revision_author.person, person1)
+        self.assertEqual(rev2.revision_author.person, None)
+        self.assertEqual(rev3.revision_author.person, None)
+
+        # Validating an email address creates a linkage.
+        person2.validateAndEnsurePreferredEmail(person2.guessedemails[0])
+        self.assertEqual(rev2.revision_author.person, None)
+        transaction.commit()
+
+        self.runDaily()
+        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        self.assertEqual(rev2.revision_author.person, person2)
+
+        # Creating a person for an existing account creates a linkage.
+        person3 = account3.createPerson(PersonCreationRationale.UNKNOWN)
+        self.assertEqual(rev3.revision_author.person, None)
+        transaction.commit()
+
+        self.runDaily()
+        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        self.assertEqual(rev3.revision_author.person, person3)
+
+    def test_HWSubmissionEmailLinker(self):
+        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        sub1 = self.factory.makeHWSubmission(
+            emailaddress='author-1@Example.Org')
+        sub2 = self.factory.makeHWSubmission(
+            emailaddress='author-2@Example.Org')
+        sub3 = self.factory.makeHWSubmission(
+            emailaddress='author-3@Example.Org')
+
+        person1 = self.factory.makePerson(email='Author-1@example.org')
+        person2 = self.factory.makePerson(
+            email='Author-2@example.org',
+            email_address_status=EmailAddressStatus.NEW)
+        account3 = self.factory.makeAccount(
+            'Author 3', 'Author-3@example.org')
+
+        self.assertEqual(sub1.owner, None)
+        self.assertEqual(sub2.owner, None)
+        self.assertEqual(sub3.owner, None)
+
+        self.runDaily()
+
+        # Only the validated email address associated with a Person
+        # causes a linkage.
+        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        self.assertEqual(sub1.owner, person1)
+        self.assertEqual(sub2.owner, None)
+        self.assertEqual(sub3.owner, None)
+
+        # Validating an email address creates a linkage.
+        person2.validateAndEnsurePreferredEmail(person2.guessedemails[0])
+        self.assertEqual(sub2.owner, None)
+        transaction.commit()
+
+        self.runDaily()
+        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        self.assertEqual(sub2.owner, person2)
+
+        # Creating a person for an existing account creates a linkage.
+        person3 = account3.createPerson(PersonCreationRationale.UNKNOWN)
+        self.assertEqual(sub3.owner, None)
+        transaction.commit()
+
+        self.runDaily()
+        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        self.assertEqual(sub3.owner, person3)
+
+    def test_MailingListSubscriptionPruner(self):
+        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        team, mailing_list = self.factory.makeTeamAndMailingList(
+            'mlist-team', 'mlist-owner')
+        person = self.factory.makePerson(email='preferred@example.org')
+        email = self.factory.makeEmail('secondary@example.org', person)
+        transaction.commit()
+        mailing_list.subscribe(person, email)
+        transaction.commit()
+
+        # User remains subscribed if we run the garbage collector.
+        self.runDaily()
+        self.assertNotEqual(mailing_list.getSubscription(person), None)
+
+        # If we remove the email address that was subscribed, the
+        # garbage collector removes the subscription.
+        Store.of(email).remove(email)
+        transaction.commit()
+        self.runDaily()
+        self.assertEqual(mailing_list.getSubscription(person), None)
 
 
 def test_suite():

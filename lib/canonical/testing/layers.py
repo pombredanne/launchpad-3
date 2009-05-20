@@ -81,8 +81,8 @@ from canonical.database.revision import confirm_dbrevision
 from canonical.database.sqlbase import cursor, ZopelessTransactionManager
 from canonical.launchpad.interfaces import IMailBox, IOpenLaunchBag
 from canonical.launchpad.ftests import ANONYMOUS, login, logout, is_logged_in
-import canonical.launchpad.mail.stub
-from canonical.launchpad.mail.mailbox import TestMailBox
+import lp.services.mail.stub
+from lp.services.mail.mailbox import TestMailBox
 from canonical.launchpad.scripts import execute_zcml_for_scripts
 from canonical.launchpad.testing.tests.googleserviceharness import (
     GoogleServiceTestSetup)
@@ -282,7 +282,7 @@ class BaseLayer:
 
         BaseLayer.original_working_directory = None
         reset_logging()
-        del canonical.launchpad.mail.stub.test_emails[:]
+        del lp.services.mail.stub.test_emails[:]
         BaseLayer.test_name = None
         BaseLayer.check()
 
@@ -300,7 +300,7 @@ class BaseLayer:
             # threads around, apparently because of bzr. disable_thread_check
             # is a mechanism to turn off the BaseLayer behavior of causing a
             # test to fail if it leaves a thread behind. This comment is found
-            # in both canonical.codehosting.tests.test_acceptance and
+            # in both lp.codehosting.tests.test_acceptance and
             # canonical.testing.layers
             if BaseLayer.disable_thread_check:
                 print ("ERROR DISABLED: "

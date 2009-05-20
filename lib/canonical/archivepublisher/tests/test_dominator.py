@@ -14,11 +14,11 @@ from canonical.archivepublisher.domination import Dominator
 from canonical.archivepublisher.publishing import Publisher
 from canonical.database.sqlbase import flush_database_updates
 from lp.registry.interfaces.distroseries import DistroSeriesStatus
-from canonical.launchpad.interfaces.component import IComponentSet
+from lp.soyuz.interfaces.component import IComponentSet
 from lp.registry.interfaces.person import IPersonSet
-from canonical.launchpad.interfaces.publishing import (
+from lp.soyuz.interfaces.publishing import (
     PackagePublishingStatus, PackagePublishingPocket)
-from canonical.launchpad.tests.test_publishing import TestNativePublishingBase
+from lp.soyuz.tests.test_publishing import TestNativePublishingBase
 
 
 class TestDominator(TestNativePublishingBase):

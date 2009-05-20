@@ -3,7 +3,11 @@
 """Widgets related to IProduct."""
 
 __metaclass__ = type
-
+__all__ = [
+    'LicenseWidget',
+    'ProductBugTrackerWidget',
+    'ProductNameWidget',
+    ]
 
 import cgi
 
@@ -25,7 +29,8 @@ from canonical.launchpad.vocabularies.dbobjects import (
 from canonical.launchpad.webapp import canonical_url
 from canonical.widgets.itemswidgets import (
     CheckBoxMatrixWidget, LaunchpadDropdownWidget, LaunchpadRadioWidget)
-from canonical.widgets.textwidgets import StrippedTextWidget
+from canonical.widgets.textwidgets import (
+    LowerCaseTextWidget, StrippedTextWidget)
 
 
 class ProductBugTrackerWidget(LaunchpadRadioWidget):
@@ -227,3 +232,29 @@ class LicenseWidget(CheckBoxMatrixWidget):
     def __call__(self):
         self.checkbox_matrix = super(LicenseWidget, self).__call__()
         return self.template()
+
+
+class ProductNameWidget(LowerCaseTextWidget):
+    """A text input widget that looks like a url path component entry.
+
+    URL: http://launchpad.net/[____________]
+    """
+    template = ViewPageTemplateFile('templates/project-url.pt')
+
+    def __init__(self, *args):
+        self.read_only = False
+        super(ProductNameWidget, self).__init__(*args)
+
+    def __call__(self):
+        return self.template()
+
+    @property
+    def product_name(self):
+        return self.request.form.get('field.name', '').lower()
+
+    @property
+    def widget_type(self):
+        if self.read_only:
+            return 'hidden'
+        else:
+            return 'text'

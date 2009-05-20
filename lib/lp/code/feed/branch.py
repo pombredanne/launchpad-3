@@ -142,13 +142,12 @@ class BranchListingFeed(BranchFeedBase):
         Only `self.quantity` revisions are returned.
         """
         from lp.code.model.branch import Branch
-        from lp.registry.model.product import Product
         collection = self._getCollection().visibleByUser(
             None).withLifecycleStatus(*DEFAULT_BRANCH_STATUS_IN_LISTING)
         branches = collection.getBranches()
         branches.order_by(
             Desc(Branch.date_last_modified),
-            Asc(Product.name),
+            Asc(Branch.target_suffix),
             Desc(Branch.lifecycle_status),
             Asc(Branch.name))
         branches.config(limit=self.quantity)

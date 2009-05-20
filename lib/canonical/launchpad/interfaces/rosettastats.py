@@ -13,8 +13,8 @@ class IRosettaStats(Interface):
     def testStatistics():
         """Ensure that the statistics here are self-consistent.
 
-        For example, the number of nonUpdated and Updated messages
-        should add up to the currentCount.
+        For example, the number of New and Updated messages
+        should add up to the rosettaCount.
         """
 
     def updateStatistics():
@@ -38,9 +38,10 @@ class IRosettaStats(Interface):
         parsed it.
         """
 
-    def nonUpdatesCount(language=None):
-        """Return the number of msgsets translated and without an update in
-        Rosetta.
+    def newCount(language=None):
+        """Return the number of newly translated messages in Rosetta.
+
+        Doesn't include updates for imported translations.
         """
 
     def rosettaCount(language=None):
@@ -81,7 +82,7 @@ class IRosettaStats(Interface):
     def untranslatedPercentage(language=None):
         """Return the percentage of msgsets untranslated for this object."""
 
-    def nonUpdatesPercentage(language=None):
-        """Return the percentage of msgsets for this object that are
-        translated and don't have an update from Rosetta.
+    def newPercentage(language=None):
+        """Return the percentage of translations for this object that are
+        newly translated in Rosetta and not updates of imported.
         """

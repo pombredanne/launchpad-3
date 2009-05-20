@@ -3,6 +3,82 @@
 Users can directly see and edit milestones through the milestone views.
 
 
+    >>> milestone = factory.makeMilestone(name="kakapo")
+    >>> person = milestone.product.owner
+    >>> login_person(person)
+    >>> view = create_view(milestone, '+index')
+    >>> print view.context.name
+    kakapo
+
+The MilestoneView provides access to the milestone and to its release if
+it has one.
+
+    >>> print view.milestone.name
+    kakapo
+    >>> print view.release
+    None
+
+    >>> release = factory.makeProductRelease(milestone)
+    >>> view = create_view(milestone, '+index')
+    >>> print view.release.version
+    kakapo
+
+Bugs and specifications targeted to the milestone are accessible too.
+The has_bugs_or_specs boolean property can be used to verify if the
+milestone has any bugs or specifications.
+
+    >>> view.has_bugs_or_specs
+    False
+
+    >>> bug = factory.makeBug(title="kiwi")
+    >>> bugtask = factory.makeBugTask(bug=bug, target=milestone.product)
+    >>> bugtask.milestone = milestone
+    >>> spec = factory.makeSpecification(
+    ...     product=milestone.product, title='dodo')
+    >>> spec.milestone = milestone
+
+    >>> view = create_view(milestone, '+index')
+    >>> view.has_bugs_or_specs
+    True
+    >>> for bugtask in view.bugtasks:
+    ...     print bugtask.bug.title
+    kiwi
+    >>> for spec in view.specifications:
+    ...     print spec.title
+    dodo
+
+There bugtask_count_text and specification_count_text properties provide
+formatted text descriptions of the bugtasks and specifications. The text
+supports plural descriptions.
+
+    >>> print view.bugtask_count_text
+    <strong>1 bug</strong>
+    >>> print view.specification_count_text
+    <strong>1 blueprint</strong>
+
+    >>> bug = factory.makeBug(title="emo")
+    >>> bugtask = factory.makeBugTask(bug=bug, target=milestone.product)
+    >>> bugtask.milestone = milestone
+    >>> spec = factory.makeSpecification(
+    ...     product=milestone.product, title='ostrich')
+    >>> spec.milestone = milestone
+
+    >>> view = create_view(milestone, '+index')
+    >>> print view.bugtask_count_text
+    <strong>2 bugs</strong>
+    >>> print view.specification_count_text
+    <strong>2 blueprints</strong>
+
+The view uses ProductDownloadFileMixin to provide access to downloadable
+files. It implements getReleases() that always returns the view's release
+as a set.
+
+    >>> view.getReleases()
+    set([<ProductRelease ...>])
+    >>> [release.version for release in view.getReleases()]
+    [u'kakapo']
+
+
 == Editing milestones ==
 
 Persons with launchpad.Edit permissions for milestones may edit them.
@@ -21,13 +97,18 @@ the user may edit.
     >>> check_permission('launchpad.Edit', view)
     True
 
-The view allows the user to modify the mutable milestone fields.
+The view allows the user to modify the mutable milestone fields. The
+cancel_url property can be used to return to the milestone.
 
     >>> print view.label
     Modify milestone details
 
     >>> view.field_names
-    ['name', 'code_name', 'active', 'dateexpected', 'summary', 'productseries']
+    ['name', 'code_name', 'active', 'dateexpected', 'summary',
+     'productseries']
+
+    >>> print view.cancel_url
+    http://launchpad.dev/firefox/+milestone/1.0.8
 
 This milestone belongs to a product, so the productseries field is
 included in the list of field names. The user can change the field values.
@@ -63,6 +144,25 @@ included in the list of field names. The user can change the field values.
     False
     >>> print milestone.productseries.name
     trunk
+
+The milestone's name is unique to the product or series.
+
+    >>> transaction.commit()
+    >>> form = {
+    ...     'field.name': '1.0',
+    ...     'field.dateexpected': '2007-05-11',
+    ...     'field.summary': 'a summary',
+    ...     'field.active': 'True',
+    ...     'field.productseries': '1',
+    ...     'field.actions.update': 'Update',
+    ...     }
+    >>> view = create_initialized_view(milestone, '+edit', form=form)
+    >>> for error in view.errors:
+    ...     print error.errors
+    The name 1.0 is already used by a milestone in Mozilla Firefox.
+    >>> for milestone in milestone.target.milestones:
+    ...     print milestone.name, milestone.code_name
+    1.0 None
 
 The view restricts the productseries field to series that belong to the
 product. A series from another product is rejected.
@@ -132,7 +232,7 @@ that belong to the distribution.
     >>> print milestone.distroseries.name
     grumpy
 
-Users without launchpad.Edit permissions cannot access the view
+Users without launchpad.Edit permissions cannot access the view.
 
     >>> from lp.registry.interfaces.person import IPersonSet
 
@@ -143,13 +243,77 @@ Users without launchpad.Edit permissions cannot access the view
     False
 
 
+== Adding milestones ==
+
+The AddMilestoneView is used to create a new milestone.
+
+    >>> owner = firefox.owner
+    >>> login_person(owner)
+    >>> view = create_view(firefox_1_0, '+addmilestone')
+    >>> print view.label
+    Register a new milestone
+    >>> view.field_names
+    ['name', 'code_name', 'dateexpected', 'summary']
+
+The view provides an action_url and cancel_url properties that form
+submitting the form or aborting the action.
+
+    >>> print view.action_url
+    http://launchpad.dev/firefox/1.0/+addmilestone
+    >>> print view.cancel_url
+    http://launchpad.dev/firefox/1.0
+
+Only the name of the milestone is required.
+
+    >>> form = {
+    ...     'field.name': '1.1',
+    ...     'field.actions.register': 'Register Milestone',
+    ...     }
+    >>> view = create_initialized_view(
+    ...     firefox_1_0, '+addmilestone', form=form)
+    >>> for milestone in firefox_1_0.milestones:
+    ...     print milestone.name, milestone.code_name
+    1.1 None
+
+The milestone name is unique to a product or distribution. The view
+cannot create a duplicate milestone.
+
+    >>> transaction.commit()
+    >>> form = {
+    ...     'field.name': '1.1',
+    ...     'field.code_name': 'impossible',
+    ...     'field.actions.register': 'Register Milestone',
+    ...     }
+    >>> view = create_initialized_view(
+    ...     firefox_1_0, '+addmilestone', form=form)
+    >>> for error in view.errors:
+    ...     print error.errors
+    The name 1.1 is already used by a milestone in Mozilla Firefox.
+    >>> for milestone in firefox_1_0.milestones:
+    ...     print milestone.name, milestone.code_name
+    1.1 None
+
+An empty code_name or summary (submitted via AJAX) is converted to None.
+
+    >>> form = {
+    ...     'field.name': '2.1',
+    ...     'field.code_name': ' ',
+    ...     'field.summary': ' ',
+    ...     'field.actions.register': 'Register Milestone',
+    ...     }
+    >>> view = create_initialized_view(
+    ...     firefox_1_0, '+addmilestone', form=form)
+    >>> for milestone in firefox_1_0.milestones:
+    ...     print milestone.name, milestone.code_name, milestone.summary
+    2.1 None None
+    1.1 None None
+
+
 == Deleting milestones ==
 
 The DeleteMilestoneView allows users to edit permissions to delete Milestones.
 The view is restricted to owners of the project and drivers of the series.
 
-    >>> owner = firefox.owner
-    >>> login_person(owner)
     >>> milestone = firefox_1_0.newMilestone('1.0.10')
     >>> print milestone.name
     1.0.10

@@ -3,7 +3,7 @@
 
 __metaclass__ = type
 
-from datetime import datetime
+from datetime import datetime, timedelta
 import pytz
 import unittest
 
@@ -16,9 +16,9 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.launchpad.database.translationmessage import (
     DummyTranslationMessage)
 from canonical.launchpad.interfaces import (
-    ILanguageSet, POTMsgSetInIncompatibleTemplatesError,
+    ILanguageSet, IPersonSet, POTMsgSetInIncompatibleTemplatesError,
     TranslationFileFormat)
-from canonical.launchpad.testing.factory import LaunchpadObjectFactory
+from lp.testing.factory import LaunchpadObjectFactory
 from canonical.testing import LaunchpadZopelessLayer
 
 
@@ -257,43 +257,43 @@ class TestTranslationSharedPOTMsgSets(unittest.TestCase):
 
         # When there are no suggestions, empty list is returned.
         self.assertEquals(
-            list(self.potmsgset.getLocalTranslationMessages(
+            set(self.potmsgset.getLocalTranslationMessages(
                 self.devel_potemplate, serbian)),
-            [])
+            set([]))
 
         # A shared suggestion is shown in both templates.
         shared_suggestion = self.factory.makeSharedTranslationMessage(
             pofile=sr_pofile, potmsgset=self.potmsgset, suggestion=True)
         self.assertEquals(
-            list(self.potmsgset.getLocalTranslationMessages(
+            set(self.potmsgset.getLocalTranslationMessages(
                 self.devel_potemplate, serbian)),
-            [shared_suggestion])
+            set([shared_suggestion]))
         self.assertEquals(
-            list(self.potmsgset.getLocalTranslationMessages(
+            set(self.potmsgset.getLocalTranslationMessages(
                 self.stable_potemplate, serbian)),
-            [shared_suggestion])
+            set([shared_suggestion]))
 
         # A suggestion on another PO file is still shown in both templates.
         another_suggestion = self.factory.makeSharedTranslationMessage(
             pofile=sr_stable_pofile, potmsgset=self.potmsgset,
             suggestion=True)
         self.assertEquals(
-            list(self.potmsgset.getLocalTranslationMessages(
+            set(self.potmsgset.getLocalTranslationMessages(
                 self.devel_potemplate, serbian)),
-            [shared_suggestion, another_suggestion])
+            set([shared_suggestion, another_suggestion]))
         self.assertEquals(
-            list(self.potmsgset.getLocalTranslationMessages(
+            set(self.potmsgset.getLocalTranslationMessages(
                 self.stable_potemplate, serbian)),
-            [shared_suggestion, another_suggestion])
+            set([shared_suggestion, another_suggestion]))
 
         # Setting one of the suggestions as current will leave make
         # them both 'reviewed' and thus hidden.
         shared_suggestion = self.factory.makeSharedTranslationMessage(
             pofile=sr_pofile, potmsgset=self.potmsgset, suggestion=False)
         self.assertEquals(
-            list(self.potmsgset.getLocalTranslationMessages(
+            set(self.potmsgset.getLocalTranslationMessages(
                 self.devel_potemplate, serbian)),
-            [])
+            set([]))
 
     def test_getExternallyUsedTranslationMessages(self):
         """Test retrieval of externally used translations."""
@@ -520,6 +520,130 @@ class TestTranslationSharedPOTMsgSets(unittest.TestCase):
             self.devel_potemplate, serbian)
         self.assertEquals(current_translation, shared_translation)
 
+
+
+class TestPOTMsgSetTranslationMessageConstraints(unittest.TestCase):
+    """Test how translation message constraints work."""
+
+    layer = LaunchpadZopelessLayer
+
+    def gen_now(self):
+        now = datetime.now(pytz.UTC)
+        while True:
+            yield now
+            now += timedelta(milliseconds=1)
+
+    def setUp(self):
+        """Set up context to test in."""
+        # Create a product with two series and a shared POTemplate
+        # in different series ('devel' and 'stable').
+        factory = LaunchpadObjectFactory()
+        self.factory = factory
+
+        self.pofile = factory.makePOFile('sr')
+        self.potemplate = self.pofile.potemplate
+        self.uploader = getUtility(IPersonSet).getByName('carlos')
+        self.now = self.gen_now().next
+
+        # Create a single POTMsgSet that is used across all tests,
+        # and add it to only one of the POTemplates.
+        self.potmsgset = self.factory.makePOTMsgSet(self.potemplate,
+                                                    sequence=1)
+
+    def test_updateTranslation_SharedCurrentConstraint(self):
+        # Corner case for bug #373139:
+        # Adding a diverged, non-imported translation "tm1",
+        # then a shared imported translation "tm2",
+        # and finally, a shared imported translation "tm1" (matching original
+        # diverged, non-imported translation) marks "tm2" as not current,
+        # and makes "tm1" shared.
+        tm1 = self.potmsgset.updateTranslation(
+            self.pofile, self.uploader, [u"tm1"], lock_timestamp=self.now(),
+            is_imported=False, force_diverged=True)
+        tm2 = self.potmsgset.updateTranslation(
+            self.pofile, self.uploader, [u"tm2"], lock_timestamp=self.now(),
+            is_imported=True, force_shared=True)
+        self.potmsgset.updateTranslation(
+            self.pofile, self.uploader, [u"tm1"], lock_timestamp=self.now(),
+            is_imported=True)
+
+        self.assertTrue(tm1.is_current)
+        self.assertFalse(tm2.is_current)
+        self.assertTrue(tm1.potemplate is None)
+        self.assertTrue(tm2.potemplate is None)
+
+    def test_updateTranslation_SharedImportedConstraint(self):
+        # Corner case for bug #373139:
+        # Adding a diverged imported translation "tm1",
+        # then a shared imported translation "tm2",
+        # and re-uploading "tm1" as just imported
+        # makes "tm2" not is_imported, and both are shared.
+        tm1 = self.potmsgset.updateTranslation(
+            self.pofile, self.uploader, [u"tm1"], lock_timestamp=self.now(),
+            is_imported=True, force_diverged=True)
+        tm2 = self.potmsgset.updateTranslation(
+            self.pofile, self.uploader, [u"tm2"], lock_timestamp=self.now(),
+            is_imported=True, force_shared=True)
+        self.potmsgset.updateTranslation(
+            self.pofile, self.uploader, [u"tm1"], lock_timestamp=self.now(),
+            is_imported=True)
+
+        self.assertTrue(tm1.is_imported)
+        self.assertFalse(tm2.is_imported)
+        self.assertTrue(tm1.potemplate is None)
+        self.assertTrue(tm2.potemplate is None)
+
+    def test_updateTranslation_DivergedImportedConstraint(self):
+        # Corner case for bug #373139:
+        # Adding a shared imported translation "tm1",
+        # then a diverged imported translation "tm2",
+        # and re-uploading "tm1" as imported translation
+        # makes "tm2" not is_imported, and both are shared.
+        tm1 = self.potmsgset.updateTranslation(
+            self.pofile, self.uploader, [u"tm1"], lock_timestamp=self.now(),
+            is_imported=True, force_shared=True)
+        tm2 = self.potmsgset.updateTranslation(
+            self.pofile, self.uploader, [u"tm2"], lock_timestamp=self.now(),
+            is_imported=True, force_diverged=True)
+        self.potmsgset.updateTranslation(
+            self.pofile, self.uploader, [u"tm1"], lock_timestamp=self.now(),
+            is_imported=True)
+
+        self.assertTrue(tm1.is_imported)
+        self.assertFalse(tm2.is_imported)
+        self.assertTrue(tm1.potemplate is None)
+        self.assertTrue(tm2.potemplate is None)
+
+    def test_updateTranslation_DivergedCurrentConstraint(self):
+        # Corner case for bug #373139:
+        # Adding a shared non-imported translation "tm0",
+        # then a diverged non-imported translation "tm1"
+        # (both are still current), then a diverged imported
+        # translation (common pre-message-sharing-migration),
+        # and we try to activate "tm0" as a forced diverged translation.
+        # This makes "tm0" current and diverged, "tm1" non-current
+        # and shared (basically, just a regular suggestion), and
+        # "tm2" a diverged, non-current but imported translation.
+        tm0 = self.potmsgset.updateTranslation(
+            self.pofile, self.uploader, [u"tm0"], lock_timestamp=self.now(),
+            is_imported=False, force_shared=True)
+        tm1 = self.potmsgset.updateTranslation(
+            self.pofile, self.uploader, [u"tm1"], lock_timestamp=self.now(),
+            is_imported=False, force_diverged=True)
+        tm2 = self.potmsgset.updateTranslation(
+            self.pofile, self.uploader, [u"tm2"], lock_timestamp=self.now(),
+            is_imported=True, force_diverged=True)
+        self.potmsgset.updateTranslation(
+            self.pofile, self.uploader, [u"tm0"], lock_timestamp=self.now(),
+            is_imported=False, force_diverged=True)
+
+        self.assertTrue(tm0.is_current)
+        self.assertFalse(tm1.is_current)
+        self.assertFalse(tm2.is_current)
+        self.assertTrue(tm2.is_imported)
+        self.assertEquals(tm0.potemplate, self.potemplate)
+        self.assertTrue(tm1.potemplate is None)
+        self.assertEquals(tm2.potemplate, self.potemplate)
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

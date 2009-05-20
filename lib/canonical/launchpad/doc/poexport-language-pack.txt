@@ -519,7 +519,7 @@ number of command-line arguments is wrong.
     >>> print err
     Traceback (most recent call last):
      ...
-    canonical.launchpad.scripts.base.LaunchpadScriptFailure:
+    lp.services.scripts.base.LaunchpadScriptFailure:
     Wrong number of arguments: should include distribution and series name.
 
     >>> proc.returncode

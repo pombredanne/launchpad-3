@@ -3,6 +3,7 @@
   xmlns="http://namespaces.zope.org/zope"
   xmlns:browser="http://namespaces.zope.org/browser"
   xmlns:xmlrpc="http://namespaces.zope.org/xmlrpc"
+  xmlns:lp="http://namespaces.canonical.com/lp"
   i18n_domain="canonical.launchpad">
 
   <!--  XXX: Steve Alexander 2004-11-24:
@@ -386,53 +387,6 @@
 
 </facet>
 
-<facet facet="branches">
-
-  <browser:page
-      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
-      name="+project-cloud"
-      class="canonical.launchpad.browser.BazaarProductView"
-      template="../templates/code-in-branches.pt"
-      permission="zope.Public"
-      />
-  <browser:page
-      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
-      name="+recently-registered-branches"
-      class="canonical.launchpad.browser.RecentlyRegisteredBranchesView"
-      template="../templates/branch-listing-cross-product.pt"
-      permission="zope.Public"
-      />
-  <browser:page
-      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
-      name="+recently-imported-branches"
-      class="canonical.launchpad.browser.RecentlyImportedBranchesView"
-      template="../templates/branch-listing-cross-product.pt"
-      permission="zope.Public"
-      />
-  <browser:page
-      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
-      name="+recently-changed-branches"
-      class="canonical.launchpad.browser.RecentlyChangedBranchesView"
-      template="../templates/branch-listing-cross-product.pt"
-      permission="zope.Public"
-      />
-  <browser:page
-      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
-      name="+code-import-list"
-      class="canonical.launchpad.browser.ProductSeriesSourceListView"
-      template="../templates/sources-list.pt"
-      permission="zope.Public"
-      />
-
-  <browser:page
-      for="zope.interface.Interface"
-      name="+test-webservice-js"
-      template="../templates/test-webservice-js.pt"
-      permission="zope.Public"
-      />
-
-
-</facet>
 
 <adapter
   provides="canonical.lazr.interfaces.IObjectPrivacy"
@@ -491,34 +445,23 @@ these URLs in Apache.
   />
 <browser:page
   for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
-  name="+icing-ubuntu"
-  class="canonical.launchpad.browser.launchpad.UbuntuIcingFolder"
-  layer="canonical.launchpad.layers.ShipItUbuntuLayer"
-  attribute="__call__"
-  permission="zope.Public"
-  />
-<browser:page
-  for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
-  name="+icing-kubuntu"
-  class="canonical.launchpad.browser.launchpad.KubuntuIcingFolder"
-  layer="canonical.launchpad.layers.ShipItKUbuntuLayer"
-  attribute="__call__"
-  permission="zope.Public"
-  />
-<browser:page
-  for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
-  name="+icing-edubuntu"
-  class="canonical.launchpad.browser.launchpad.EdubuntuIcingFolder"
-  layer="canonical.launchpad.layers.ShipItEdUbuntuLayer"
-  attribute="__call__"
-  permission="zope.Public"
-  />
-<browser:page
-  for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
   name="+icing-contrib"
   class="canonical.launchpad.browser.launchpad.IcingContribFolder"
   attribute="__call__"
   permission="zope.Public"
+  />
+
+<!-- Help folders -->
+<lp:help-folder
+  folder="../help/bugs" type="canonical.launchpad.layers.BugsLayer"
+  />
+<lp:help-folder
+  folder="../help/blueprints" 
+  type="canonical.launchpad.layers.BlueprintsLayer"
+  />
+<lp:help-folder
+  folder="../help/translations" 
+  type="canonical.launchpad.layers.TranslationsLayer"
   />
 
 <browser:page

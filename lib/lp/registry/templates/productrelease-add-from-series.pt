@@ -11,8 +11,12 @@
 >
 <body>
 <metal:block fill-slot="head_epilogue">
+  <metal:yui-dependencies
+    use-macro="context/@@launchpad_widget_macros/yui2calendar-dependencies" />
+
   <tal:script
-    replace="structure string:&lt;script type='text/javascript'&gt;" />
+    replace="structure
+    string:&lt;script id='milestone-script' type='text/javascript'&gt;" />
     YUI().use('dom', 'node', 'io-base', 'lazr.anim', 'lazr.formoverlay',
         function (Y) {
 
@@ -67,7 +71,7 @@
         var save_new_milestone = function(data) {
 
             var parameters = {
-                name: data['field.name'][0],
+                name: data['field.name'][0].toLowerCase(),
                 code_name: data['field.code_name'][0],
                 summary: data['field.summary'][0]
             };
@@ -159,8 +163,8 @@
         Y.on('domready', function () {
             var select_menu = get_by_id('field.milestone_for_release');
             var create_milestone_link = Y.Node.create(
-                '<a href="+addmilestone" class="add">' +
-                'Create milestone</a>')
+                '<a href="+addmilestone" id="create-milestone-link" ' +
+                'class="add js-action">Create milestone</a>');
             select_menu.ancestor().appendChild(create_milestone_link);
             if (!Y.UA.ie) {
               create_milestone_link.on('click', show_milestone_form);
@@ -179,8 +183,8 @@
       <tal:series replace="context/displayname" /> series:
       <ul>
         <li tal:repeat="release context/releases">
-          <tal:link replace="structure release/fmt:link"/>
           <tal:released replace="release/datereleased/fmt:date" />
+          <tal:link replace="structure release/fmt:link"/>
         </li>
       </ul>
     </div>

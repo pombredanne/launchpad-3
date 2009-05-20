@@ -2,6 +2,7 @@
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser"
     xmlns:i18n="http://namespaces.zope.org/i18n"
+    xmlns:lp="http://namespaces.canonical.com/lp"
     xmlns:xmlrpc="http://namespaces.zope.org/xmlrpc"
     i18n_domain="launchpad">
   <include package=".browser"/>
@@ -28,7 +29,7 @@
   <subscriber
       for="lp.code.interfaces.codereviewvote.ICodeReviewVoteReference
            canonical.launchpad.event.interfaces.IReviewerNominatedEvent"
-      handler="canonical.launchpad.mailout.branchmergeproposal.send_review_requested_notifications"/>
+      handler="lp.code.mail.branchmergeproposal.send_review_requested_notifications"/>
 
   <!-- CodeImportMachine -->
 
@@ -81,6 +82,9 @@
                        __call__"/>
   </class>
   <class class="lp.code.model.branchcollection.GenericBranchCollection">
+    <allow interface="lp.code.interfaces.branchcollection.IBranchCollection"/>
+  </class>
+  <class class="lp.code.model.branchcollection.AnonymousBranchCollection">
     <allow interface="lp.code.interfaces.branchcollection.IBranchCollection"/>
   </class>
   <class class="lp.code.model.branchcollection.VisibleBranchCollection">
@@ -192,11 +196,11 @@
   <subscriber
       for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposal
            canonical.launchpad.event.interfaces.INewBranchMergeProposalEvent"
-      handler="canonical.launchpad.mailout.branchmergeproposal.send_merge_proposal_created_notifications"/>
+      handler="lp.code.mail.branchmergeproposal.send_merge_proposal_created_notifications"/>
   <subscriber
       for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposal
            lazr.lifecycle.interfaces.IObjectModifiedEvent"
-      handler="canonical.launchpad.mailout.branchmergeproposal.send_merge_proposal_modified_notifications"/>
+      handler="lp.code.mail.branchmergeproposal.send_merge_proposal_modified_notifications"/>
   <subscriber
       for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposal
            canonical.launchpad.event.interfaces.INewBranchMergeProposalEvent"
@@ -316,8 +320,6 @@
                     id
                     branch_type
                     name
-                    title
-                    summary
                     url
                     whiteboard
                     target
@@ -398,11 +400,12 @@
                     namespace
                     pending_writes
                     commitsForDays
+                    needs_upgrading
                     "/>
     <require
         permission="launchpad.Edit"
         attributes="destroySelf setPrivate"
-        set_attributes="name title summary url mirror_status_message
+        set_attributes="name url mirror_status_message
                         owner author product lifecycle_status
                         last_mirrored last_mirrored_id last_mirror_attempt
                         mirror_failures pull_disabled next_mirror_time
@@ -487,8 +490,8 @@
   <subscriber
       for="lp.code.interfaces.branch.IBranch
            lazr.lifecycle.interfaces.IObjectModifiedEvent"
-      handler="canonical.launchpad.mailout.branch.send_branch_modified_notifications"/>
-  <class class="canonical.launchpad.mailout.branch.RecipientReason">
+      handler="lp.code.model.branch.branch_modified_subscriber"/>
+  <class class="lp.code.mail.branch.RecipientReason">
     <allow attributes="
                     getReason
                     branch
@@ -562,7 +565,7 @@
   <subscriber
       for="lp.code.interfaces.codereviewcomment.ICodeReviewComment
            canonical.launchpad.event.interfaces.INewCodeReviewCommentEvent"
-      handler="canonical.launchpad.mailout.codereviewcomment.send"/>
+      handler="lp.code.mail.codereviewcomment.send"/>
   <subscriber
       for="lp.code.interfaces.codereviewcomment.ICodeReviewComment
            canonical.launchpad.event.interfaces.INewCodeReviewCommentEvent"
@@ -639,11 +642,11 @@
                     effective_update_interval
                     import_job
                     results
+                    consecutive_failure_count
                     getImportDetailsForDisplay"/>
     <require
         permission="launchpad.Edit"
-        attributes="
-                    updateFromData"/>
+        attributes="updateFromData"/>
 
     <!-- ICodeImport has no set_schema, because all modifications should be
          done through methods that create CodeImportEvent objects when
@@ -658,7 +661,7 @@
   <subscriber
       for="lp.code.interfaces.codeimport.ICodeImport
            lazr.lifecycle.interfaces.IObjectCreatedEvent"
-      handler="canonical.launchpad.mailout.codeimport.new_import"/>
+      handler="lp.code.mail.codeimport.new_import"/>
   <facet
       facet="branches"/>
 
@@ -762,4 +765,6 @@
     <allow interface="canonical.launchpad.interfaces.IRevisionSet" />
   </securedutility>
 
+  <lp:help-folder 
+      folder="help" type="canonical.launchpad.layers.CodeLayer" />
 </configure>

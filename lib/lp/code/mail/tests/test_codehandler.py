@@ -13,14 +13,15 @@ from bzrlib.bzrdir import BzrDir
 from bzrlib import errors as bzr_errors
 from bzrlib.transport import get_transport
 from bzrlib.urlutils import join as urljoin
+from bzrlib.workingtree import WorkingTree
 from zope.component import getUtility
 from zope.interface import directlyProvides, directlyProvidedBy
 from zope.security.management import setSecurityPolicy
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
-from canonical.codehosting.jobs import JobRunner
-from canonical.codehosting.vfs import get_lp_server
+from lp.codehosting.vfs import get_lp_server
+from lp.services.job.runner import JobRunner
 from canonical.launchpad.interfaces import (
     BranchSubscriptionNotificationLevel, BranchType,
     CodeReviewNotificationLevel, CodeReviewVote)
@@ -39,9 +40,8 @@ from lp.code.mail.codehandler import (
     MissingMergeDirective, NonLaunchpadTarget,
     UpdateStatusEmailCommand, VoteEmailCommand)
 from canonical.launchpad.mail.handlers import mail_handlers
-from canonical.launchpad.testing import (
-    login, login_person, TestCase, TestCaseWithFactory)
-from canonical.launchpad.tests.mail_helpers import pop_notifications
+from lp.testing import login, login_person, TestCase, TestCaseWithFactory
+from lp.testing.mail_helpers import pop_notifications
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
 from canonical.launchpad.webapp.interaction import (
@@ -76,6 +76,13 @@ class TestGetCodeEmailCommands(TestCase):
         [command] = CodeEmailCommands.getCommands(" status approved")
         self.assertIsInstance(command, UpdateStatusEmailCommand)
         self.assertEqual('status', command.name)
+        self.assertEqual(['approved'], command.string_args)
+
+    def test_merge_command(self):
+        # Merge is an alias for the status command.
+        [command] = CodeEmailCommands.getCommands(" merge approved")
+        self.assertIsInstance(command, UpdateStatusEmailCommand)
+        self.assertEqual('merge', command.name)
         self.assertEqual(['approved'], command.string_args)
 
     def test_reviewer_command(self):
@@ -187,11 +194,11 @@ class TestCodeHandler(TestCaseWithFactory):
         Error message:
 
         The 'review' command expects any of the following arguments:
-        abstain, approve, disapprove, needs_fixing, resubmit
+        abstain, approve, disapprove, needs-fixing, needs-info, resubmit
 
         For example:
 
-            review needs_fixing
+            review needs-fixing
 
 
         -- 
@@ -293,7 +300,7 @@ class TestCodeHandler(TestCaseWithFactory):
                          ' vote Abstain EBAILIWICK\n'
                          '-- \n'
                          '%s\n'
-                         'You are subscribed to branch %s.' %
+                         'You are the owner of %s.' %
                          (canonical_url(bmp), bmp.source_branch.bzr_identity))
         self.assertEqual(expected_body, notification.get_payload(decode=True))
 
@@ -835,7 +842,7 @@ class TestCodeHandlerProcessMergeDirective(TestCaseWithFactory):
         branch, source, message = self._createTargetSourceAndBundle(
             format="1.9")
         bmp, comment = self._processMergeDirective(message)
-        # The soruce branch is stacked on the target.
+        # The source branch is stacked on the target.
         source_bzr_branch = self._openBazaarBranchAsClient(bmp.source_branch)
         self.assertEqual(
             '/' + bmp.target_branch.unique_name,
@@ -847,6 +854,18 @@ class TestCodeHandlerProcessMergeDirective(TestCaseWithFactory):
         # from the target branch.
         tip_revision = source_bzr_branch.last_revision()
         self.assertEqual([tip_revision], source_branch_revisions)
+
+    def test_source_not_newer(self):
+        # The source branch is created correctly when the source is not newer
+        # than the target, instead of raising DivergedBranches.
+        self.useBzrBranches(real_server=True)
+        branch, source, message = self._createTargetSourceAndBundle(
+            format="1.9")
+        target_tree = WorkingTree.open('.')
+        target_tree.commit('rev2b')
+        bmp, comment = self._processMergeDirective(message)
+        lp_branch = self._openBazaarBranchAsClient(bmp.source_branch)
+        self.assertEqual(source.last_revision(), lp_branch.last_revision())
 
     def _createPreexistingSourceAndMessage(self, target_format,
                                            source_format, set_stacked=False):
@@ -1013,10 +1032,27 @@ class TestVoteEmailCommand(TestCase):
 
     def test_getVoteNeedsFixingAlias(self):
         """Test the needs_fixing aliases of needsfixing and needs-fixing."""
+        command = VoteEmailCommand('vote', ['needs_fixing'])
+        self.assertVoteAndTag(CodeReviewVote.NEEDS_FIXING, None, command)
         command = VoteEmailCommand('vote', ['needsfixing'])
         self.assertVoteAndTag(CodeReviewVote.NEEDS_FIXING, None, command)
         command = VoteEmailCommand('vote', ['needs-fixing'])
         self.assertVoteAndTag(CodeReviewVote.NEEDS_FIXING, None, command)
+
+    def test_getVoteNeedsInfoAlias(self):
+        """Test the needs_info review type and its aliases."""
+        command = VoteEmailCommand('vote', ['needs_info'])
+        self.assertVoteAndTag(CodeReviewVote.NEEDS_INFO, None, command)
+        command = VoteEmailCommand('vote', ['needsinfo'])
+        self.assertVoteAndTag(CodeReviewVote.NEEDS_INFO, None, command)
+        command = VoteEmailCommand('vote', ['needs-info'])
+        self.assertVoteAndTag(CodeReviewVote.NEEDS_INFO, None, command)
+        command = VoteEmailCommand('vote', ['needs_information'])
+        self.assertVoteAndTag(CodeReviewVote.NEEDS_INFO, None, command)
+        command = VoteEmailCommand('vote', ['needsinformation'])
+        self.assertVoteAndTag(CodeReviewVote.NEEDS_INFO, None, command)
+        command = VoteEmailCommand('vote', ['needs-information'])
+        self.assertVoteAndTag(CodeReviewVote.NEEDS_INFO, None, command)
 
 
 class TestUpdateStatusEmailCommand(TestCaseWithFactory):

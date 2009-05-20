@@ -23,7 +23,7 @@ distribution series.
 
     >>> pprint_entry(evolution)
     bug_reporting_guidelines: None
-    displayname: u'Ubuntu Hoary evolution'
+    displayname: u'evolution in Ubuntu Hoary'
     distribution_link: u'http://.../ubuntu'
     distroseries_link: u'http://.../ubuntu/hoary'
     name: u'evolution'
@@ -88,3 +88,17 @@ we'll get the new branch.
     ...     pocket='Release').jsonBody()
     >>> print branch['unique_name']
     ~devo/ubuntu/hoary/evolution/branch
+
+Of course, we're also allowed to change our minds. If we set the branch for
+the RELEASE pocket to 'null' (i.e. the JSON for Python' None), then there is
+no longer an official branch for that pocket.
+
+    >>> response = webservice.named_post(
+    ...     evolution['self_link'], 'setBranch', pocket='Release',
+    ...     branch='null')
+    >>> print response.jsonBody()
+    None
+    >>> branch = webservice.named_get(evolution['self_link'], 'getBranch',
+    ...     pocket='Release').jsonBody()
+    >>> print branch
+    None

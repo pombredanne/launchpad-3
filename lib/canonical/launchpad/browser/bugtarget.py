@@ -63,8 +63,9 @@ from canonical.launchpad.webapp.tales import BugTrackerFormatterAPI
 from canonical.widgets.bug import BugTagsWidget, LargeBugTagsWidget
 from canonical.widgets.launchpadtarget import LaunchpadTargetWidget
 from canonical.launchpad.validators.name import valid_name_pattern
-from canonical.launchpad.vocabularies import ValidPersonOrTeamVocabulary
 from canonical.launchpad.webapp.menu import structured
+
+from lp.registry.vocabularies import ValidPersonOrTeamVocabulary
 
 
 class FileBugDataParser:
@@ -595,19 +596,19 @@ class FileBugViewBase(LaunchpadFormView):
 
         self.request.response.redirect(canonical_url(bug.bugtasks[0]))
 
-    @action("Subscribe to This Bug Report", name="this_is_my_bug",
-            failure=handleSubmitBugFailure)
+    @action("Yes, this is the bug I'm trying to report",
+            name="this_is_my_bug", failure=handleSubmitBugFailure)
     def this_is_my_bug_action(self, action, data):
         """Subscribe to the bug suggested."""
         bug = data.get('bug_already_reported_as')
 
-        if bug.isSubscribed(self.user):
+        if bug.isUserAffected(self.user):
             self.request.response.addNotification(
-                "You are already subscribed to this bug.")
+                "This bug is already marked as affecting you.")
         else:
-            bug.subscribe(self.user, self.user)
+            bug.markUserAffected(self.user)
             self.request.response.addNotification(
-                "You have been subscribed to this bug.")
+                "This bug has been marked as affecting you.")
 
         self.next_url = canonical_url(bug.bugtasks[0])
 
@@ -922,6 +923,20 @@ class FileBugGuidedView(FilebugShowSimilarBugsView):
             return self.widgets['title'].getInputValue()
         except InputErrors:
             return None
+
+    @property
+    def show_duplicate_list(self):
+        """Return whether or not to show the duplicate list.
+
+        We only show the dupes if:
+          - The context uses Malone AND
+          - There are dupes to show AND
+          - There are no widget errors.
+        """
+        return (
+            self.contextUsesMalone and
+            len(self.similar_bugs) > 0 and
+            len(self.widget_errors) == 0)
 
     def validate_search(self, action, data):
         """Make sure some keywords are provided."""
