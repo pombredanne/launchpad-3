@@ -26,8 +26,7 @@ class ICanHasLinkedBranch(Interface):
 
 
 class CannotHaveLinkedBranch(Exception):
-    """Raised when we try to look up the linked branch for a thing that can't.
-    """
+    """Raised when we try to get the linked branch for a thing that can't."""
 
     def __init__(self, component):
         self.component = component
