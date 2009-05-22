@@ -6,6 +6,7 @@ from zope.schema import Choice
 from zope.app.form.utility import setUpWidget
 from zope.app.form.interfaces import IInputWidget
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
+
 from z3c.ptcompat import ViewPageTemplateFile
 
 from canonical.launchpad import _

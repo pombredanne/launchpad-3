@@ -38,10 +38,6 @@ time.tzset()
 # Enable Storm's C extensions
 os.environ['STORM_CEXTENSIONS'] = '1'
 
-# Enable z3c.pt
-if not 'PREFER_Z3C_PT' in os.environ:
-    os.environ['PREFER_Z3C_PT'] = 'true'
-
 here = os.path.dirname(os.path.realpath(__file__))
 sys.path.insert(0, os.path.join(here, 'lib'))
 
