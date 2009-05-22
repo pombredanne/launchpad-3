@@ -18,13 +18,6 @@ from urllib import urlencode
 
 from BeautifulSoup import BeautifulSoup
 
-from zope.app.security.interfaces import IUnauthenticatedPrincipal
-from zope.component import getUtility
-from zope.publisher.interfaces import BadRequest
-from zope.session.interfaces import ISession, IClientIdManager
-from zope.security.proxy import isinstance as zisinstance
-from z3c.ptcompat import ViewPageTemplateFile
-
 from openid.extensions import pape
 from openid.message import registerNamespaceAlias
 from openid.server.server import CheckIDRequest, ENCODE_URL, Server
@@ -32,6 +25,14 @@ from openid.server.trustroot import TrustRoot
 from openid.extensions.sreg import (
     SRegRequest, SRegResponse, data_fields as sreg_data_fields)
 from openid import oidutil
+
+from zope.app.security.interfaces import IUnauthenticatedPrincipal
+from zope.component import getUtility
+from zope.publisher.interfaces import BadRequest
+from zope.session.interfaces import ISession, IClientIdManager
+from zope.security.proxy import isinstance as zisinstance
+
+from z3c.ptcompat import ViewPageTemplateFile
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
