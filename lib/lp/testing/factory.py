@@ -83,6 +83,7 @@ from lp.code.interfaces.revision import IRevisionSet
 from lp.registry.model.distributionsourcepackage import (
     DistributionSourcePackage)
 from lp.registry.model.milestone import Milestone
+from lp.registry.model.suitesourcepackage import SuiteSourcePackage
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.distroseries import (
     DistroSeriesStatus, IDistroSeries)
@@ -1477,6 +1478,19 @@ class LaunchpadObjectFactory(ObjectFactory):
         if distroseries is None:
             distroseries = self.makeDistroRelease()
         return distroseries.getSourcePackage(sourcepackagename)
+
+    def getAnyPocket(self):
+        return PackagePublishingPocket.RELEASE
+
+    def makeSuiteSourcePackage(self, distroseries=None,
+                               sourcepackagename=None, pocket=None):
+        if distroseries is None:
+            distroseries = self.makeDistroRelease()
+        if pocket is None:
+            pocket = self.getAnyPocket()
+        if sourcepackagename is None:
+            sourcepackagename = self.makeSourcePackageName()
+        return SuiteSourcePackage(distroseries, pocket, sourcepackagename)
 
     def makeDistributionSourcePackage(self, sourcepackagename=None,
                                       distribution=None):
