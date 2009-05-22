@@ -45,8 +45,8 @@ Running ``ec2tests``
         -o '-1vp' \
         --headless \
         -b sourcecodegen=lp:sourcecodegen/trunk \
-	-b chameleon.core=lp:chameleon.core/trunk \
-	-b chameleon.zpt=lp:chameleon.zpt/trunk \
-	-b z3c.pt=lp:z3c.pt/trunk \
-	-b z3c.ptcompat=lp:z3c.ptcompat/trunk \
-	template-speedup-redux
+        -b chameleon.core=lp:chameleon.core/trunk \
+        -b chameleon.zpt=lp:chameleon.zpt/trunk \
+        -b z3c.pt=lp:z3c.pt/trunk \
+        -b z3c.ptcompat=lp:z3c.ptcompat/trunk \
+        template-speedup-redux
