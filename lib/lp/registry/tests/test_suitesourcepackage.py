@@ -6,11 +6,11 @@ __metaclass__ = type
 
 import unittest
 
-from canonical.launchpad.interfaces.publishing import PackagePublishingPocket
-from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.testing.layers import DatabaseFunctionalLayer
 
 from lp.registry.model.suitesourcepackage import SuiteSourcePackage
+from lp.soyuz.interfaces.publishing import PackagePublishingPocket
+from lp.testing import TestCaseWithFactory
 
 
 class TestSuiteSourcePackage(TestCaseWithFactory):
