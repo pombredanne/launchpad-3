@@ -105,6 +105,7 @@ from zope.schema.vocabulary import (
     SimpleTerm, SimpleVocabulary, getVocabularyRegistry)
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
+
 from z3c.ptcompat import ViewPageTemplateFile
 
 from canonical.config import config

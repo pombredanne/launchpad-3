@@ -36,6 +36,7 @@ from zope.event import notify
 from zope.formlib import form
 from zope.schema import Choice
 from zope.security.interfaces import Unauthorized
+
 from z3c.ptcompat import ViewPageTemplateFile
 
 from canonical.launchpad import _
