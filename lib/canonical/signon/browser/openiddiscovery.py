@@ -12,6 +12,7 @@ from openid.yadis.constants import YADIS_CONTENT_TYPE, YADIS_HEADER_NAME
 
 from zope.component import getUtility
 from zope.interface import implements
+
 from z3c.ptcompat import ViewPageTemplateFile
 
 from canonical.cachedproperty import cachedproperty
