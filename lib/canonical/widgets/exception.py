@@ -2,6 +2,7 @@ from zope.interface import implements
 from zope.app.form.interfaces import IWidgetInputError
 from zope.app.form.interfaces import WidgetInputError as _WidgetInputError
 from zope.app.form.browser.interfaces import IWidgetInputErrorView
+
 from z3c.ptcompat import ViewPageTemplateFile
 
 class WidgetInputError(_WidgetInputError):

@@ -15,6 +15,7 @@ from zope.component import getUtility
 from zope.formlib import form
 from zope.interface import implements
 from zope.schema import Choice, Float
+
 from z3c.ptcompat import ViewPageTemplateFile
 
 from canonical.lazr.utils import safe_js_escape

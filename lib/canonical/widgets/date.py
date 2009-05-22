@@ -27,6 +27,7 @@ from zope.app.form.browser.widget import DisplayWidget
 from zope.app.form.interfaces import InputErrors, WidgetInputError
 from zope.app.form.interfaces import ConversionError
 from zope.component import getUtility
+
 from z3c.ptcompat import ViewPageTemplateFile
 
 from canonical.launchpad.interfaces import ILaunchBag

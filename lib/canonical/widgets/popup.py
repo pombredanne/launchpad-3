@@ -19,6 +19,7 @@ from zope.app.form.browser.itemswidgets import (
 from zope.app.schema.vocabulary import IVocabularyFactory
 from zope.publisher.interfaces import NotFound
 from zope.component.interfaces import ComponentLookupError
+
 from z3c.ptcompat import ViewPageTemplateFile
 
 from canonical.launchpad.webapp import canonical_url
