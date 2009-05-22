@@ -8,11 +8,8 @@
   - lp:sourcecodegen/trunk
   - lp:chameleon.core/trunk
   - lp:chameleon.zpt/trunk
-  - lp:~sidnei/z3c.pt/tales-function-namespaces-redux
+  - lp:z3c.pt/trunk
   - lp:z3c.ptcompat/trunk
-
-- Need to manually install ``lxml`` (any specific version? tested with
-  2.1.1).
 
 - Run launchpad with ``PREFER_Z3C_PT=true make run`` to enable
   ``z3c.pt``. Omitting it or setting to false will disable ``z3c.pt``
@@ -26,67 +23,30 @@
   # disable disk-cache to prevent the compiler from caching on disk
   CHAMELEON_CACHE (default: true)
 
-  # in debug source-mode, the source code is written to disk before
-  # compilation
-  CHAMELEON_SOURCE (default: false)
+  # if eager parsing is enabled, templates are parsed upon
+  # instantiation, rather than when first called upon; this mode is
+  # useful for verifying validity of templates across a project
+  CHAMELEON_EAGER (default: false)
+
+  # in strict mode, filled macro slots must exist in the macro that's
+  # being used.
+  CHAMELEON_STRICT (default: false)
 
   # when validation is enabled, dynamically inserted content is
   # validated against the XHTML standard
   CHAMELEON_VALIDATE (default: false)
-
-Known Issues
-~~~~~~~~~~~~
-
-The page at: https://bugs.launchpad.dev/firefox/+bug/5 triggers a
-zope.pagetemplate, which then fails because it gets a macro from
-z3c.pt.
-
-See bugs #312498, #317572, #317573, #317893, #317953, #317965 and
-#317967.
 
 Running ``ec2tests``
 ~~~~~~~~~~~~~~~~~~~~
 
 - This might be useful: https://wiki.canonical.com/Launchpad/EC2Test
 
-- ``ec2tests.py`` can be found on lp:~launchpad/lp-dev-utils/trunk (I hacked
-  my own version, which doesn't run rsync since I've got no access to
-  devpad. It can be found at lp:~sidnei/lp-dev-utils/trunk).
-
 # python2.5 ~/path/to/lp-dev-utils/ec2test.py \
         -o '-1vp' \
         --headless \
-        --no-rsync --no-merge \
         -b sourcecodegen=lp:sourcecodegen/trunk \
 	-b chameleon.core=lp:chameleon.core/trunk \
 	-b chameleon.zpt=lp:chameleon.zpt/trunk \
-	-b z3c.pt=lp:~sidnei/z3c.pt/tales-function-namespaces-redux \
+	-b z3c.pt=lp:z3c.pt/trunk \
 	-b z3c.ptcompat=lp:z3c.ptcompat/trunk \
-	-b pygpgme=lp:~launchpad-pqm/pygpgme/devel/ \
-	-b functest=lp:~launchpad-pqm/functest/trunk/ \
-	-b testresources=lp:~launchpad-pqm/testresources/dev/ \
-	-b cscvs=lp:~launchpad-pqm/launchpad-cscvs/devel/ \
-	-b wsgi-jsonrpc=lp:~launchpad-pqm/wsgi-jsonrpc/trunk/ \
-	-b lazr-js=lp:~launchpad-pqm/lazr-js/toolchain/ \
-	-b wsgi-xmlrpc=lp:~launchpad-pqm/wsgi-xmlrpc/trunk/ \
-	-b zc.zservertracelog=lp:~launchpad-pqm/zc.zservertracelog/trunk/ \
-	-b lazr.config=lp:~launchpad-pqm/lazr.config/devel/ \
-	-b launchpad-loggerhead=lp:~launchpad-pqm/launchpad-loggerhead/devel/ \
-	-b lpreview=lp:~launchpad-pqm/bzr-lpreview/devel/ \
-	-b lazr.delegates=lp:~launchpad-pqm/lazr.delegates/devel/ \
-	-b simplesettings=lp:~launchpad-pqm/simplesettings/trunk/ \
-	-b wsgi-fileserver=lp:~launchpad-pqm/wsgi-fileserver/trunk/ \
-	-b windmill=lp:~launchpad-pqm/windmill/trunk/ \
-	-b mailman=lp:~launchpad-pqm/mailman/2.1/ \
-	-b twisted=lp:~launchpad-pqm/twisted/trunk/ \
-	-b wadllib=lp:~launchpad-pqm/wadllib/devel/ \
-	-b bzr-loom=lp:~launchpad-pqm/bzr-loom/trunk/ \
-	-b launchpadlib=lp:~launchpad-pqm/launchpadlib/devel/ \
-	-b openid=lp:~launchpad-pqm/python-openid/devel/ \
-	-b feedvalidator=lp:~launchpad-pqm/feedvalidator/devel/ \
-	-b loggerhead=lp:~launchpad-pqm/loggerhead/devel/ \
-	-b zope=lp:~launchpad-pqm/zope3/3.4/ \
-	-b bzr=lp:~launchpad-pqm/bzr/dev/ \
-	-b storm=lp:~launchpad-pqm/storm/devel/ \
-	-b mozrunner=lp:~launchpad-pqm/mozrunner/trunk/ \
-	template-speedup
+	template-speedup-redux
