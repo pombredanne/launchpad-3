@@ -265,9 +265,9 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
 
     @property
     def displayname(self):
-        return "%s %s %s" % (
-            self.distribution.displayname,
-            self.distroseries.displayname, self.sourcepackagename.name)
+        return "%s in %s %s" % (
+            self.sourcepackagename.name, self.distribution.displayname,
+            self.distroseries.displayname)
 
     @property
     def bugtargetdisplayname(self):

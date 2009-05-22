@@ -50,9 +50,9 @@ class ArchiveSourcePublication:
     """
     delegates(ISourcePackagePublishingHistory)
 
-    def __init__(self, context, publishedbinaries, builds, changesfile):
+    def __init__(self, context, unpublished_builds, builds, changesfile):
         self.context = context
-        self._publishedbinaries = publishedbinaries
+        self._unpublished_builds = unpublished_builds
         self._builds = builds
         self._changesfile = changesfile
 
@@ -66,9 +66,14 @@ class ArchiveSourcePublication:
         return ArchiveSourcePackageRelease(
             self.context.sourcepackagerelease, changesfile)
 
-    def getPublishedBinaries(self):
-        """See `ISourcePackagePublishingHistory`."""
-        return self._publishedbinaries
+    def getUnpublishedBuilds(self, build_state='ignored'):
+        """See `ISourcePackagePublishingHistory`.
+
+        In this cached implementation, we ignore the build_state argument
+        and simply return the unpublished builds with which we were
+        created.
+        """
+        return self._unpublished_builds
 
     def getBuilds(self):
         """See `ISourcePackagePublishingHistory`."""
@@ -122,15 +127,14 @@ class ArchiveSourcePublications:
             (source, build) for source, build, arch in build_set]
         return self.groupBySource(source_and_builds)
 
-    def getBinariesBySource(self):
-        """Binary publication for sources."""
+    def getUnpublishedBuildsBySource(self):
+        """Unpublished builds for sources."""
         publishing_set = getUtility(IPublishingSet)
-        binary_set = publishing_set.getBinaryPublicationsForSources(
+        build_set = publishing_set.getUnpublishedBuildsForSources(
             self._source_publications)
-        source_and_binaries = [
-            (source, binary)
-            for source, binary, binary_release, name, arch in binary_set]
-        return self.groupBySource(source_and_binaries)
+        source_and_builds = [
+            (source, build) for source, build, arch in build_set]
+        return self.groupBySource(source_and_builds)
 
     def getChangesFileBySource(self):
         """Map changesfiles by their corresponding source publications."""
@@ -155,16 +159,16 @@ class ArchiveSourcePublications:
 
         # Load the extra-information for all source publications.
         builds_by_source = self.getBuildsBySource()
-        binaries_by_source = self.getBinariesBySource()
+        unpublished_builds_by_source = self.getUnpublishedBuildsBySource()
         changesfiles_by_source = self.getChangesFileBySource()
 
         # Build the decorated object with the information we have.
         for pub in self._source_publications:
             builds = builds_by_source.get(pub, [])
-            binaries = binaries_by_source.get(pub, [])
+            unpublished_builds = unpublished_builds_by_source.get(pub, [])
             changesfile = changesfiles_by_source.get(pub, None)
             complete_pub = ArchiveSourcePublication(
-                pub, publishedbinaries=binaries, builds=builds,
+                pub, unpublished_builds=unpublished_builds, builds=builds,
                 changesfile=changesfile)
             results.append(complete_pub)
 

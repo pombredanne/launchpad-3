@@ -1,4 +1,6 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=W0631
+
 """Package information classes.
 
 This classes are responsable for fetch and hold the information inside
@@ -406,22 +408,6 @@ class SourcePackageData(AbstractPackageData):
                 log.warn("Changelog empty for source %s (%s)" %
                          (self.package, self.version))
 
-    def do_katie(self, kdb, keyrings):
-        # XXX kiko 2005-10-23: Disabled for the moment, untested.
-        raise AssertionError
-
-        data = kdb.getSourcePackageRelease(self.package, self.version)
-        if not data:
-            return
-
-        assert len(data) == 1
-        data = data[0]
-        # self.date_uploaded = data["install_date"]
-        #
-        #    self.dsc_signing_key = data["fingerprint"]
-        #    self.dsc_signing_key_owner = \
-        #        get_person_by_key(keyrings, self.dsc_signing_key)
-
     def ensure_complete(self, kdb):
         if self.format is None:
             # XXX kiko 2005-11-05: this is very funny. We care so much about
@@ -555,22 +541,3 @@ class BinaryPackageData(AbstractPackageData):
         if os.path.exists(shlibfile):
             self.shlibs = open(shlibfile).read().strip()
             log.debug("Grabbing shared library info from %s" % shlibfile)
-
-    def do_katie(self, kdb, keyrings):
-        # XXX kiko 2005-10-23: Disabled for the moment, untested.
-        raise AssertionError
-
-        data = kdb.getBinaryPackageRelease(self.package, self.version,
-                                           self.architecture)
-        if not data:
-            return
-
-        assert len(data) >= 1
-        data = data[0]
-
-        self.gpg_signing_key = data["fingerprint"]
-        log.debug(self.gpg_signing_key)
-        self.gpg_signing_key_owner = \
-            get_person_by_key(keyrings, self.gpg_signing_key)
-        return True
-

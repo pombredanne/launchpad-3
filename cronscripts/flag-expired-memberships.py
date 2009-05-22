@@ -15,7 +15,7 @@ from canonical.config import config
 from canonical.launchpad.interfaces import (
     DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT, ILaunchpadCelebrities,
     ITeamMembershipSet)
-from canonical.launchpad.scripts.base import (
+from lp.services.scripts.base import (
     LaunchpadCronScript, LaunchpadScriptFailure)
 
 

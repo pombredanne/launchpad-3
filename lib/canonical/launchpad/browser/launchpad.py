@@ -66,7 +66,7 @@ from canonical.launchpad.interfaces.cve import ICveSet
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.karma import IKarmaActionSet
 from canonical.launchpad.interfaces.hwdb import IHWDBApplication
-from canonical.launchpad.interfaces.language import ILanguageSet
+from lp.services.worlddata.interfaces.language import ILanguageSet
 from canonical.launchpad.interfaces.launchpad import (
     IAppFrontPageSearchForm, IBazaarApplication, ILaunchpadCelebrities,
     IRosettaApplication, IStructuralHeaderPresentation,

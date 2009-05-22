@@ -74,7 +74,7 @@ from lp.soyuz.model.distroarchseriesbinarypackage import *
 from lp.soyuz.model.distroarchseriesbinarypackagerelease\
     import *
 from lp.registry.model.person import *
-from canonical.launchpad.database.language import *
+from lp.services.worlddata.model.language import *
 from canonical.launchpad.database.languagepack import *
 from canonical.launchpad.database.translationgroup import *
 from canonical.launchpad.database.translationimportqueue import *
@@ -102,15 +102,15 @@ from canonical.launchpad.database.bountysubscription import *
 from lp.registry.model.mentoringoffer import *
 from canonical.launchpad.database.message import *
 from lp.soyuz.model.queue import *
-from canonical.launchpad.database.country import *
-from canonical.launchpad.database.scriptactivity import *
+from lp.services.worlddata.model.country import *
+from lp.services.scripts.model.scriptactivity import *
 from lp.blueprints.model.specification import *
 from lp.blueprints.model.specificationbranch import *
 from lp.blueprints.model.specificationbug import *
 from lp.blueprints.model.specificationdependency import *
 from lp.blueprints.model.specificationfeedback import *
 from lp.blueprints.model.specificationsubscription import *
-from canonical.launchpad.database.spokenin import *
+from lp.services.worlddata.model.spokenin import *
 from lp.blueprints.model.sprint import *
 from lp.blueprints.model.sprintattendance import *
 from lp.blueprints.model.sprintspecification import *

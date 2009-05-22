@@ -44,9 +44,9 @@ from lp.registry.interfaces.person import (
 from canonical.launchpad.interfaces.authtoken import (
     IAuthTokenSet, LoginTokenType)
 from canonical.signon.interfaces.openidserver import (
-    ILaunchpadOpenIDStoreFactory, ILoginServiceAuthorizeForm,
-    ILoginServiceLoginForm, IOpenIDAuthorizationSet, IOpenIDRPConfigSet,
-    IOpenIDRPSummarySet)
+    ILoginServiceAuthorizeForm, ILoginServiceLoginForm,
+    IOpenIDAuthorizationSet, IOpenIDRPConfigSet, IOpenIDRPSummarySet)
+from canonical.signon.interfaces.openidstore import IProviderOpenIDStore
 from canonical.shipit.interfaces.shipit import IShipitAccount
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.webapp import (
@@ -96,9 +96,9 @@ class OpenIDMixin:
 
     def __init__(self, context, request):
         super(OpenIDMixin, self).__init__(context, request)
-        store_factory = getUtility(ILaunchpadOpenIDStoreFactory)
+        openid_store = getUtility(IProviderOpenIDStore)
         self.server_url = CurrentOpenIDEndPoint.getServiceURL()
-        self.openid_server = Server(store_factory(), self.server_url)
+        self.openid_server = Server(openid_store, self.server_url)
 
     @property
     def user(self):
