@@ -37,11 +37,10 @@ from zope.formlib import form
 from zope.lifecycleevent import ObjectCreatedEvent
 from zope.session.interfaces import ISession
 
-from z3c.ptcompat import ViewPageTemplateFile
 from openid.consumer.consumer import CANCEL, Consumer, FAILURE, SUCCESS
+from z3c.ptcompat import ViewPageTemplateFile
 
 from canonical.lazr import ExportedFolder
-
 from canonical.config import config
 from canonical.cachedproperty import cachedproperty
 from canonical.widgets import CheckBoxMatrixWidget, LabeledMultiCheckBoxWidget
