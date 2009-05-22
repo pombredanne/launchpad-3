@@ -417,6 +417,7 @@ class ValidateGPGKeyView(BaseAuthTokenView, LaunchpadFormView):
 
         return key
 
+
 class ValidateTeamEmailView(ValidateEmailView):
     expected_token_types = (LoginTokenType.VALIDATETEAMEMAIL,)
 

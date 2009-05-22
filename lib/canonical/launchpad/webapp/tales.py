@@ -25,9 +25,9 @@ from zope.publisher.interfaces.browser import IBrowserApplicationRequest
 from zope.traversing.interfaces import ITraversable, IPathAdapter
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import isinstance as zope_isinstance
-from z3c.ptcompat import ViewPageTemplateFile
 
 import pytz
+from z3c.ptcompat import ViewPageTemplateFile
 
 from canonical.config import config
 from canonical.launchpad import _

@@ -13,6 +13,7 @@ __all__ = [
 
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
+
 from z3c.ptcompat import ViewPageTemplateFile
 
 from canonical.config import config
