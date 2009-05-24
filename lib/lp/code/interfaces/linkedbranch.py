@@ -51,7 +51,7 @@ def get_linked_branch(provided):
         doesn't.
     :return: The linked branch, an `IBranch`.
     """
-    has_linked_branch = ICanHasLinkedBranch(provided)
+    has_linked_branch = ICanHasLinkedBranch(provided, None)
     if has_linked_branch is None:
         raise CannotHaveLinkedBranch(provided)
     branch = has_linked_branch.branch

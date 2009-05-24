@@ -12,7 +12,8 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.testing.layers import DatabaseFunctionalLayer
-from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
+from lp.code.interfaces.linkedbranch import (
+    CannotHaveLinkedBranch, get_linked_branch, ICanHasLinkedBranch)
 from lp.soyuz.interfaces.publishing import PackagePublishingPocket
 from lp.testing import run_with_login, TestCaseWithFactory
 
@@ -51,6 +52,11 @@ class TestLinkedBranch(TestCaseWithFactory):
         suite_sourcepackage = sourcepackage.getSuiteSourcePackage(pocket)
         self.assertEqual(
             branch, ICanHasLinkedBranch(suite_sourcepackage).branch)
+
+    def test_project(self):
+        project = self.factory.makeProject()
+        self.assertRaises(
+            CannotHaveLinkedBranch, get_linked_branch, project)
 
 
 def test_suite():
