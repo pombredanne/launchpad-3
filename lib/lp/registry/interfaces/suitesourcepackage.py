@@ -26,6 +26,13 @@ class ISuiteSourcePackage(Interface):
 
     export_as_webservice_entry()
 
+    displayname = exported(
+        TextLine(
+            title=_("Display name"),
+            description=_(
+                "A string for this suite / source package suitable for "
+                "displaying to the user.")))
+
     distribution = exported(
         Reference(
             IDistribution, title=_("Distribution"), required=True,

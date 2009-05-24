@@ -38,6 +38,11 @@ class SuiteSourcePackage:
         return '<%s %s>' % (self.__class__.__name__, self.path)
 
     @property
+    def displayname(self):
+        """See `ISuiteSourcePackage`."""
+        return "%s in %s" % (self.sourcepackagename.name, self.suite)
+
+    @property
     def distribution(self):
         """See `ISuiteSourcePackage`."""
         return self.distroseries.distribution

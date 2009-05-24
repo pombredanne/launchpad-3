@@ -71,6 +71,13 @@ class TestSuiteSourcePackage(TestCaseWithFactory):
             ssp1.distroseries, ssp1.pocket, ssp1.sourcepackagename)
         self.assertEqual(ssp1, ssp2)
 
+    def test_displayname(self):
+        # A suite source package has a display name.
+        ssp = self.factory.makeSuiteSourcePackage()
+        self.assertEqual(
+            '%s in %s' % (ssp.sourcepackagename.name, ssp.suite),
+            ssp.displayname)
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
