@@ -830,17 +830,21 @@ class PersonSpecsMenu(ApplicationMenu):
         return Link('+specworkload', text, summary, icon='info')
 
 
-class PersonTranslationsMenu(ApplicationMenu):
+class PersonTranslationsMenu(NavigationMenu):
 
     usedfor = IPerson
     facet = 'translations'
-    links = ['imports', 'relicensing']
+    links = ('overview', 'licensing', 'imports')
+
+    def overview(self):
+        text = 'Overview'
+        return Link('', text)
 
     def imports(self):
-        text = 'See import queue'
+        text = 'Import queue'
         return Link('+imports', text)
 
-    def relicensing(self):
+    def licensing(self):
         text = 'Translations licensing'
         enabled = (self.context == self.user)
         return Link('+licensing', text, enabled=enabled)
