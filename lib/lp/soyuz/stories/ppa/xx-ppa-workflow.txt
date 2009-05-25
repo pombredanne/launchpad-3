@@ -45,6 +45,15 @@ the PPA in Launchpad UI and the later indicating that the user has
 read and accepted the conditions. The is also an optional 'description'
 text-area.
 
+There is also a message, near the form actions, in which the user is
+warned about the fact the activating this PPA will block renaming of
+the context launchpad user.
+
+    >>> print extract_text(
+    ...     first_tag_by_class(sample_browser.contents, 'actions'))
+    Activating this PPA will block future renaming of Sample Person
+    ...
+
 'Displayname' is required.
 
     >>> sample_browser.getControl("Activate").click()
@@ -134,6 +143,25 @@ user can't have an emtpy displayname on his PPA.
     There is 1 error.
     Required input is missing.
 
+Once the PPA is activated, Sample user account cannot be renamed
+anymore. Changing the account name affects the PPA repository paths
+and we don't have infrastructure in place to support that yet. See
+more information about the feature in bug #87326.
+
+    >>> sample_browser.open("http://launchpad.dev/~name12/+edit")
+    >>> sample_browser.getControl(name='field.name').value = 'el-duderino'
+    Traceback (most recent call last):
+    ...
+    LookupError: name 'field.name'
+
+    >>> print extract_text(
+    ...     first_tag_by_class(sample_browser.contents, 'form'))
+    Display Name:
+    ...
+    Name: name12
+    This user has a PPA and may not be renamed.
+    ...
+
 
 == Activating Personal Package Archives for Teams ==
 
@@ -173,6 +201,17 @@ Let's proceed with the required permissions:
     >>> sample_browser.getControl(name="field.accepted").value = True
     >>> sample_browser.getControl(
     ...    name="field.description").value = 'Hoohay for Team PPA.'
+
+The user is, again, warned about the fact that activating this PPA
+will block renaming of the context team.
+
+    >>> print extract_text(
+    ...     first_tag_by_class(sample_browser.contents, 'actions'))
+    Activating this PPA will block future renaming of Landscape Developers
+    ...
+
+That understood, the PPA gets activated.
+
     >>> sample_browser.getControl("Activate").click()
 
     >>> print sample_browser.title
@@ -218,6 +257,21 @@ page and discard the changes.
     ...     find_tag_by_id(sample_browser.contents, 'description'))
     Description
     Yay, I can change it.
+
+Similarly to users, teams with assigned PPAs cannot be renamed either.
+
+    >>> sample_browser.open(
+    ...     "http://launchpad.dev/~landscape-developers/+edit")
+    >>> sample_browser.getControl(name='field.name').value = 'duderinos'
+    Traceback (most recent call last):
+    ...
+    LookupError: name 'field.name'
+
+    >>> print extract_text(
+    ...     first_tag_by_class(sample_browser.contents, 'form'))
+    Name: landscape-developers
+    This team cannot be renamed because it has a PPA.
+    ...
 
 
 == Activating someone else's Personal Package Archives  ==
@@ -466,6 +520,15 @@ all his PPAs.
     PPA contents description: (Optional)
       A short description of this PPA. URLs are allowed and will be
       rendered as links.
+
+Note that, differently than the time when the first PPA was activated,
+this time there is no warning about the fact that the context renaming
+will be blocked. We assumed that, at this point, this is already a
+known aspect.
+
+    >>> print extract_text(
+    ...     first_tag_by_class(cprov_browser.contents, 'actions'))
+    or Cancel
 
 If Celso does not fill 'PPA name' an error is raised.
 

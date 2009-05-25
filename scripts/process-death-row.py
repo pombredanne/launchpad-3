@@ -1,10 +1,7 @@
 #!/usr/bin/python2.4
-# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
-
+# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
 # Stop lint warning about relative import:
 # pylint: disable-msg=W0403
-
-
 """Death row processor script.
 
 This script removes obsolete files from the selected archive(s) pool.
@@ -23,73 +20,10 @@ the archive tree.
 There is also a 'dry-run' mode that can be used to operate on the real
 archive tree without removing the files.
 """
-
 import _pythonpath
 
-from zope.component import getUtility
-
-from canonical.archivepublisher.deathrow import getDeathRow
 from canonical.config import config
-from canonical.launchpad.interfaces import IDistributionSet
-from lp.services.scripts.base import LaunchpadScript
-
-
-class DeathRowProcessor(LaunchpadScript):
-
-    def add_my_options(self):
-        self.parser.add_option(
-            "-n", "--dry-run", action="store_true", default=False,
-            help="Dry run: goes through the motions but commits to nothing.")
-
-        self.parser.add_option(
-            "-d", "--distribution", metavar="DISTRO", default='ubuntu',
-            help="Specified the distribution name.")
-
-        self.parser.add_option(
-            "-p", "--pool-root", metavar="PATH",
-            help="Override the path to the pool folder")
-
-        self.parser.add_option(
-            "--ppa", action="store_true", default=False,
-            help="Run only over PPA archives.")
-
-    def main(self):
-        distribution = getUtility(IDistributionSet).getByName(
-            self.options.distribution)
-
-        if self.options.ppa:
-            archives = distribution.getAllPPAs()
-        else:
-            archives = distribution.all_distro_archives
-
-        for archive in archives:
-            self.processDeathRow(archive)
-
-    def processDeathRow(self, archive):
-        """Process death-row for the given archive.
-
-        It handles the current DB transaction according with the results
-        of the operatin just executed, i.e, commits successfull runs and
-        aborts runs with errors. It also respects 'dry-run' command-line
-        option.
-        """
-        death_row = getDeathRow(
-            archive, self.logger, self.options.pool_root)
-        self.logger.debug(
-            "Unpublishing death row for %s." % archive.displayname)
-        try:
-            death_row.reap(self.options.dry_run)
-        except:
-            self.logger.exception(
-                "Unexpected exception while doing death-row unpublish")
-            self.txn.abort()
-        else:
-            if self.options.dry_run:
-                self.logger.debug("Dry run mode; rolling back.")
-                self.txn.abort()
-            else:
-                self.logger.debug("Committing")
-                self.txn.commit()
+from lp.soyuz.scripts.processdeathrow import DeathRowProcessor
 
 
 if __name__ == "__main__":
