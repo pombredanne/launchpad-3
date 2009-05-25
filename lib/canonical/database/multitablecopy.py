@@ -12,13 +12,13 @@ from zope.interface import implements
 from canonical.database import postgresql
 from canonical.database.sqlbase import (cursor, quote, quoteIdentifier)
 from canonical.launchpad.interfaces.looptuner import ITunableLoop
-from canonical.launchpad.utilities.looptuner import LoopTuner
+from canonical.launchpad.utilities.looptuner import DBLoopTuner
 
 
 class PouringLoop:
     """Loop body to pour data from holding tables back into source tables.
 
-    Used by MultiTableCopy internally to tell LoopTuner what to do.
+    Used by MultiTableCopy internally to tell DBLoopTuner what to do.
     """
     implements(ITunableLoop)
 
@@ -625,7 +625,7 @@ class MultiTableCopy:
         pourer = PouringLoop(
             holding_table, table, transaction_manager, self.logger,
             self.batch_pouring_callbacks.get(table))
-        LoopTuner(
+        DBLoopTuner(
             pourer, self.seconds_per_batch, self.minimum_batch_size).run()
 
     def _checkExtractionOrder(self, source_table):
