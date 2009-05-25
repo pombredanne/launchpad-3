@@ -2192,7 +2192,7 @@ he has filed bug 1.
     >>> bug_one = bug_set.get(1)
     >>> print bug_one.owner.displayname
     Sample Person
-    >>> for person in submission_set.deviceOwnersAffectedByBugs(
+    >>> for person in submission_set.deviceDriverOwnersAffectedByBugs(
     ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
     ...     bug_ids=[1]):
     ...     print person.displayname
@@ -2204,7 +2204,7 @@ too, since he too owns the Seagate disk.
     >>> foo_bar = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
     >>> bug_one = bug_set.get(1)
     >>> bug_one.markUserAffected(foo_bar)
-    >>> for person in submission_set.deviceOwnersAffectedByBugs(
+    >>> for person in submission_set.deviceDriverOwnersAffectedByBugs(
     ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
     ...     bug_ids=[1], affected_by_bug=True):
     ...     print person.displayname
@@ -2215,7 +2215,7 @@ When he says that he is not affected by the bug, he will no longer
 be listed.
 
     >>> bug_one.markUserAffected(foo_bar, False)
-    >>> for person in submission_set.deviceOwnersAffectedByBugs(
+    >>> for person in submission_set.deviceDriverOwnersAffectedByBugs(
     ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
     ...     bug_ids=[1], affected_by_bug=True):
     ...     print person.displayname
@@ -2225,7 +2225,7 @@ If he subscribes to the bug, he is listed again.
 
     >>> bug_one.subscribe(foo_bar, subscribed_by=foo_bar)
     <BugSubscription at ...
-    >>> for person in submission_set.deviceOwnersAffectedByBugs(
+    >>> for person in submission_set.deviceDriverOwnersAffectedByBugs(
     ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
     ...     bug_ids=[1], subscribed_to_bug=True):
     ...     print person.displayname
@@ -2233,20 +2233,20 @@ If he subscribes to the bug, he is listed again.
     Sample Person
 
     >>> bug_one.unsubscribe(foo_bar, unsubscribed_by=foo_bar)
-    >>> for person in submission_set.deviceOwnersAffectedByBugs(
+    >>> for person in submission_set.deviceDriverOwnersAffectedByBugs(
     ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
     ...     bug_ids=[1], subscribed_to_bug=True):
     ...     print person.displayname
     Sample Person
 
 We can specify more than one bug ID. If we specify bugs 1 and 3,
-deviceOwnersAffectedByBugs() returns again Sample Person and
+deviceDriverOwnersAffectedByBugs() returns again Sample Person and
 Foo Bar.
 
     >>> bug_three = bug_set.get(3)
     >>> print bug_three.owner.displayname
     Foo Bar
-    >>> for person in submission_set.deviceOwnersAffectedByBugs(
+    >>> for person in submission_set.deviceDriverOwnersAffectedByBugs(
     ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
     ...     bug_ids=[1, 3]):
     ...     print person.displayname
@@ -2272,48 +2272,48 @@ more bug tags.
     ...     print bugtask.bug.owner.displayname
     Foo Bar
 
-    >>> for person in submission_set.deviceOwnersAffectedByBugs(
+    >>> for person in submission_set.deviceDriverOwnersAffectedByBugs(
     ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
     ...     bug_tags=['pebcak']):
     ...     print person.displayname
     Sample Person
 
-    >>> for person in submission_set.deviceOwnersAffectedByBugs(
+    >>> for person in submission_set.deviceDriverOwnersAffectedByBugs(
     ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
     ...     bug_tags=['pebcak', 'crash']):
     ...     print person.displayname
     Foo Bar
     Sample Person
 
-    >>> submission_set.deviceOwnersAffectedByBugs(
+    >>> submission_set.deviceDriverOwnersAffectedByBugs(
     ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
     ...     bug_tags=['lunch-money']).count()
     0
 
 We can limit the result to owners who use a device with a given driver...
 
-    >>> for person in submission_set.deviceOwnersAffectedByBugs(
+    >>> for person in submission_set.deviceDriverOwnersAffectedByBugs(
     ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
     ...     driver_name='sd', bug_tags=['pebcak', 'crash']):
     ...     print person.displayname
     Foo Bar
     Sample Person
 
-    >>> print submission_set.deviceOwnersAffectedByBugs(
+    >>> print submission_set.deviceDriverOwnersAffectedByBugs(
     ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
     ...     driver_name='nonsense', bug_tags=['pebcak', 'crash']).count()
     0
 
 ...or a given package name.
 
-    >>> for person in submission_set.deviceOwnersAffectedByBugs(
+    >>> for person in submission_set.deviceDriverOwnersAffectedByBugs(
     ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
     ...     package_name='linux-image-2.6.24-19-generic',
     ...     bug_tags=['pebcak', 'crash']):
     ...     print person.displayname
     Sample Person
 
-    >>> print submission_set.deviceOwnersAffectedByBugs(
+    >>> print submission_set.deviceDriverOwnersAffectedByBugs(
     ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
     ...     package_name='nonsense', bug_tags=['pebcak', 'crash']).count()
     0
@@ -2332,14 +2332,14 @@ Owners of private submissions are only included if the optional parameter
     >>> no_priv = getUtility(IPersonSet).getByEmail('no-priv@canonical.com')
     >>> bug_one.subscribe(no_priv, subscribed_by=no_priv)
     <BugSubscription at ...
-    >>> for person in submission_set.deviceOwnersAffectedByBugs(
+    >>> for person in submission_set.deviceDriverOwnersAffectedByBugs(
     ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
     ...     bug_ids=[1], subscribed_to_bug=True, user=no_priv):
     ...     print person.displayname
     No Privileges Person
     Sample Person
 
-    >>> for person in submission_set.deviceOwnersAffectedByBugs(
+    >>> for person in submission_set.deviceDriverOwnersAffectedByBugs(
     ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
     ...     bug_ids=[1], subscribed_to_bug=True, user=foo_bar):
     ...     print person.displayname
@@ -2348,14 +2348,94 @@ Owners of private submissions are only included if the optional parameter
 
     >>> sample_person = getUtility(IPersonSet).getByEmail(
     ...     'test@canonical.com')
-    >>> for person in submission_set.deviceOwnersAffectedByBugs(
+    >>> for person in submission_set.deviceDriverOwnersAffectedByBugs(
     ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
     ...     bug_ids=[1], subscribed_to_bug=True, user=sample_person):
     ...     print person.displayname
     Sample Person
 
-    >>> for person in submission_set.deviceOwnersAffectedByBugs(
+    >>> for person in submission_set.deviceDriverOwnersAffectedByBugs(
     ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
     ...     bug_ids=[1], subscribed_to_bug=True):
     ...     print person.displayname
     Sample Person
+
+
+=== Searching for drivers instead of devices ===
+
+We can also look for people using a given driver and being affected by a
+bug.
+
+    >>> for person in submission_set.deviceDriverOwnersAffectedByBugs(
+    ...     driver_name='sd', bug_ids=[1]):
+    ...     print person.displayname
+    Sample Person
+
+If Foo Bar says that he is affected by this bug, he will be listed
+too, since his machine too uses the sd driver.
+
+    >>> bug_one.markUserAffected(foo_bar)
+    >>> for person in submission_set.deviceDriverOwnersAffectedByBugs(
+    ...     driver_name='sd', bug_ids=[1], affected_by_bug=True):
+    ...     print person.displayname
+    Foo Bar
+    Sample Person
+
+He is also listed, if he subscribes to bug 1.
+
+    >>> bug_one.markUserAffected(foo_bar, False)
+    >>> bug_one.subscribe(foo_bar, subscribed_by=foo_bar)
+    <BugSubscription at ...
+    >>> for person in submission_set.deviceDriverOwnersAffectedByBugs(
+    ...     driver_name='sd', bug_ids=[1], subscribed_to_bug=True):
+    ...     print person.displayname
+    Foo Bar
+    Sample Person
+
+We can specify more than one bug ID. If we specify bugs 1 and 3,
+deviceDriverOwnersAffectedByBugs() returns again Sample Person and
+Foo Bar.
+
+    >>> bug_one.unsubscribe(foo_bar, unsubscribed_by=foo_bar)
+    >>> for person in submission_set.deviceDriverOwnersAffectedByBugs(
+    ...     driver_name='sd', bug_ids=[1, 3]):
+    ...     print person.displayname
+    Foo Bar
+    Sample Person
+
+Instead of passing a seqence of bug IDs, we can also specify one or
+more bug tags.
+
+    >>> for person in submission_set.deviceDriverOwnersAffectedByBugs(
+    ...     driver_name='sd', bug_tags=['pebcak']):
+    ...     print person.displayname
+    Sample Person
+
+    >>> for person in submission_set.deviceDriverOwnersAffectedByBugs(
+    ...     driver_name='sd', bug_tags=['pebcak', 'crash']):
+    ...     print person.displayname
+    Foo Bar
+    Sample Person
+
+    >>> submission_set.deviceDriverOwnersAffectedByBugs(
+    ...     driver_name='sd', bug_tags=['lunch-money']).count()
+    0
+
+If neither a device nor a driver name is specified,
+deviceDriverOwnersAffectedByBugs() raises an error.
+
+    >>> submission_set.deviceDriverOwnersAffectedByBugs(
+    ...     bug_tags=['lunch-money'])
+    Traceback (most recent call last):
+    ...
+    ParameterError: Specify (bus, vendor_id, product_id) or driver_name.
+
+If one of the parameters bus, vendor_id, product_id is supplied, the
+others must be supplied too.
+
+    >>> submission_set.deviceDriverOwnersAffectedByBugs(
+    ...     bus=HWBus.IDE, bug_ids=[1], subscribed_to_bug=True)
+    Traceback (most recent call last):
+    ...
+    ParameterError: Either specify bus, vendor_id and product_id or none
+    of them.

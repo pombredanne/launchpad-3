@@ -353,7 +353,7 @@ class HWSubmissionSet:
 
         device_tables, device_clauses = (
             make_submission_device_statistics_clause(
-                bus, vendor_id, product_id, driver_name, package_name))
+                bus, vendor_id, product_id, driver_name, package_name, True))
         submission_ids = Select(
             columns=[HWSubmissionDevice.submissionID],
             tables=device_tables, where=And(*device_clauses))
@@ -402,14 +402,14 @@ class HWSubmissionSet:
         return (submitters_with_device.get_one()[0],
                 all_submitters.get_one()[0])
 
-    def deviceOwnersAffectedByBugs(
-        self, bus, vendor_id, product_id, driver_name=None, package_name=None,
-        bug_ids=None, bug_tags=None, affected_by_bug=False,
+    def deviceDriverOwnersAffectedByBugs(
+        self, bus=None, vendor_id=None, product_id=None, driver_name=None,
+        package_name=None, bug_ids=None, bug_tags=None, affected_by_bug=False,
         subscribed_to_bug=False, user=None):
         """See `IHWSubmissionSet`."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         tables, clauses = make_submission_device_statistics_clause(
-                bus, vendor_id, product_id, driver_name, package_name)
+                bus, vendor_id, product_id, driver_name, package_name, False)
         clauses.append(HWSubmissionDevice.submission == HWSubmission.id)
         clauses.append(HWSubmission.owner == Person.id)
         clauses.append(self._userHasAccessStormClause(user))
@@ -428,15 +428,13 @@ class HWSubmissionSet:
             ]
         if subscribed_to_bug:
             person_clauses.append(
-                And(BugSubscription.person == Person.id,
-                    BugSubscription.bug == Bug.id,
-                    HWSubmission.ownerID == Person.id))
+                And(BugSubscription.personID == HWSubmission.ownerID,
+                    BugSubscription.bug == Bug.id))
         if affected_by_bug:
             person_clauses.append(
-                And(BugAffectsPerson.person == Person.id,
+                And(BugAffectsPerson.personID == HWSubmission.ownerID,
                     BugAffectsPerson.bug == Bug.id,
-                    BugAffectsPerson.affected,
-                    HWSubmission.ownerID == Person.id))
+                    BugAffectsPerson.affected))
 
         clauses.append(Or(person_clauses))
         result = store.find(
@@ -1031,7 +1029,7 @@ class HWSubmissionDeviceSet:
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
 
         tables, where_clauses = make_submission_device_statistics_clause(
-            bus, vendor_id, product_id, driver_name, package_name)
+            bus, vendor_id, product_id, driver_name, package_name, True)
 
         distro_tables, distro_clauses = make_distro_target_clause(
             distro_target)
@@ -1068,18 +1066,39 @@ class HWSubmissionBugSet:
 
 
 def make_submission_device_statistics_clause(
-    bus, vendor_id, product_id, driver_name, package_name):
+    bus, vendor_id, product_id, driver_name, package_name,
+    device_ids_required):
     """Create a where expression and a table list for selecting devices.
     """
     tables = [HWSubmissionDevice, HWDeviceDriverLink, HWVendorID, HWDevice]
     where_clauses = [
         HWSubmissionDevice.device_driver_link == HWDeviceDriverLink.id,
-        HWVendorID.bus == bus,
-        HWVendorID.vendor_id_for_bus == vendor_id,
-        HWDevice.bus_vendor == HWVendorID.id,
-        HWDeviceDriverLink.device == HWDevice.id,
-        HWDevice.bus_product_id == product_id
         ]
+
+    if device_ids_required:
+        if bus is None or vendor_id is None or product_id is None:
+            raise ParameterError("Device IDs are required.")
+    else:
+        device_specified = [
+            param
+            for param in (bus, vendor_id, product_id)
+            if param is not None]
+
+        if len(device_specified) not in (0, 3):
+            raise ParameterError(
+                'Either specify bus, vendor_id and product_id or none of '
+                'them.')
+        if bus is None and driver_name is None:
+            raise ParameterError(
+                'Specify (bus, vendor_id, product_id) or driver_name.')
+    if bus is not None:
+        where_clauses.extend([
+            HWVendorID.bus == bus,
+            HWVendorID.vendor_id_for_bus == vendor_id,
+            HWDevice.bus_vendor == HWVendorID.id,
+            HWDeviceDriverLink.device == HWDevice.id,
+            HWDevice.bus_product_id == product_id
+            ])
 
     if driver_name is None and package_name is None:
         where_clauses.append(HWDeviceDriverLink.driver == None)

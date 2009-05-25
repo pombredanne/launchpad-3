@@ -1078,7 +1078,7 @@ bugs.
 By default, only bug reporters are looked up.
 
     >>> for person in webservice.named_get(
-    ...     '/+hwdb', 'deviceOwnersAffectedByBugs',
+    ...     '/+hwdb', 'deviceDriverOwnersAffectedByBugs',
     ...     bus='IDE', vendor_id='SEAGATE', product_id='ST3250820NS     ',
     ...     bug_ids=[1]).jsonBody()['entries']:
     ...     print person['display_name']
@@ -1087,7 +1087,7 @@ By default, only bug reporters are looked up.
 We can additionally ask for bugsubscribers...
 
     >>> for person in webservice.named_get(
-    ...     '/+hwdb', 'deviceOwnersAffectedByBugs',
+    ...     '/+hwdb', 'deviceDriverOwnersAffectedByBugs',
     ...     bus='IDE', vendor_id='SEAGATE', product_id='ST3250820NS     ',
     ...     bug_ids=[9], subscribed_to_bug=True).jsonBody()['entries']:
     ...     print person['display_name']
@@ -1108,7 +1108,7 @@ or users affected by a bug.
     ...     bug_15['self_link'], 'markUserAffected',
     ...     affected=True).jsonBody()
     >>> for person in webservice.named_get(
-    ...     '/+hwdb', 'deviceOwnersAffectedByBugs',
+    ...     '/+hwdb', 'deviceDriverOwnersAffectedByBugs',
     ...     bus='IDE', vendor_id='SEAGATE', product_id='ST3250820NS     ',
     ...     bug_ids=[15], affected_by_bug=True).jsonBody()['entries']:
     ...     print person['display_name']
@@ -1117,14 +1117,14 @@ or users affected by a bug.
 We can limit the search to a driver...
 
     >>> for person in webservice.named_get(
-    ...     '/+hwdb', 'deviceOwnersAffectedByBugs',
+    ...     '/+hwdb', 'deviceDriverOwnersAffectedByBugs',
     ...     bus='IDE', vendor_id='SEAGATE', product_id='ST3250820NS     ',
     ...     bug_ids=[1], driver_name='sd').jsonBody()['entries']:
     ...     print person['display_name']
     Sample Person
 
     >>> print webservice.named_get(
-    ...     '/+hwdb', 'deviceOwnersAffectedByBugs',
+    ...     '/+hwdb', 'deviceDriverOwnersAffectedByBugs',
     ...     bus='IDE', vendor_id='SEAGATE', product_id='ST3250820NS     ',
     ...     bug_ids=[9], driver_name='nonsense', subscribed_to_bug=True
     ...     ).jsonBody()['total_size']
@@ -1133,7 +1133,7 @@ We can limit the search to a driver...
 ...or a package name.
 
     >>> for person in webservice.named_get(
-    ...     '/+hwdb', 'deviceOwnersAffectedByBugs',
+    ...     '/+hwdb', 'deviceDriverOwnersAffectedByBugs',
     ...     bus='IDE', vendor_id='SEAGATE', product_id='ST3250820NS     ',
     ...     bug_ids=[1], package_name='linux-image-2.6.24-19-generic'
     ...     ).jsonBody()['entries']:
@@ -1141,9 +1141,41 @@ We can limit the search to a driver...
     Sample Person
 
     >>> print webservice.named_get(
-    ...     '/+hwdb', 'deviceOwnersAffectedByBugs',
+    ...     '/+hwdb', 'deviceDriverOwnersAffectedByBugs',
     ...     bus='IDE', vendor_id='SEAGATE', product_id='ST3250820NS     ',
     ...     bug_ids=[9], package_name='nonsense', subscribed_to_bug=True
     ...     ).jsonBody()['total_size']
     0
 
+And we can search for people using a given driver and being affected by
+a bug.
+
+    >>> for person in webservice.named_get(
+    ...     '/+hwdb', 'deviceDriverOwnersAffectedByBugs',
+    ...     driver_name='sd', bug_ids=[1]).jsonBody()['entries']:
+    ...     print person['display_name']
+    Sample Person
+
+    >>> print webservice.named_get(
+    ...     '/+hwdb', 'deviceDriverOwnersAffectedByBugs',
+    ...     driver_name='nonsense', bug_ids=[1]).jsonBody()['total_size']
+    0
+
+A 400 error is returned, if neither a device nor a driver name is specified.
+
+    >>> print webservice.named_get(
+    ...     '/+hwdb', 'deviceDriverOwnersAffectedByBugs', bug_ids=[1])
+    HTTP/1.1 400 Bad Request
+    ...
+    ParameterError: Specify (bus, vendor_id, product_id) or driver_name.
+
+If one of the parameters bus, vendor_id, product_id is specified, all of
+them have to be specified.
+
+    >>> print webservice.named_get(
+    ...     '/+hwdb', 'deviceDriverOwnersAffectedByBugs',
+    ...     bus='IDE', bug_ids=[1])
+    HTTP/1.1 400 Bad Request
+    ...
+    ParameterError: Either specify bus, vendor_id and product_id or none of
+    them.

@@ -316,9 +316,9 @@ class IHWSubmissionSet(Interface):
             (optional).
         """
 
-    def deviceOwnersAffectedByBugs(
-        self, bus, vendor_id, product_id, driver_name=None, package_name=None,
-        bug_ids=None, bug_tags=None, affected_by_bug=False,
+    def deviceDriverOwnersAffectedByBugs(
+        self, bus=None, vendor_id=None, product_id=None, driver_name=None,
+        package_name=None, bug_ids=None, bug_tags=None, affected_by_bug=False,
         subscribed_to_bug=False, user=None):
         """Return persons affected by given bugs and owning a given device.
 
@@ -1347,13 +1347,13 @@ class IHWDBApplication(ILaunchpadApplication, ITopLevelEntryLink):
 
     @operation_parameters(
         bus=Choice(
-            title=u'The device bus', vocabulary=HWBus, required=True),
+            title=u'The device bus', vocabulary=HWBus, required=False),
         vendor_id=TextLine(
             title=u'The vendor ID', description=VENDOR_ID_DESCRIPTION,
-             required=True),
+             required=False),
         product_id=TextLine(
             title=u'The product ID', description=PRODUCT_ID_DESCRIPTION,
-            required=True),
+            required=False),
         driver_name=TextLine(
             title=u'A driver name', required=False,
             description=u'If specified, the search is limited to devices '
@@ -1385,7 +1385,7 @@ class IHWDBApplication(ILaunchpadApplication, ITopLevelEntryLink):
     @call_with(user=REQUEST_USER)
     @operation_returns_collection_of(IPerson)
     @export_read_operation()
-    def deviceOwnersAffectedByBugs(
+    def deviceDriverOwnersAffectedByBugs(
         bus, vendor_id, product_id, driver_name=None, package_name=None,
         bug_ids=None, bug_tags=None, affected_by_bug=False,
         subscribed_to_bug=False, user=None):
