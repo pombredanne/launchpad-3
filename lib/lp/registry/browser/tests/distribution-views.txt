@@ -51,4 +51,72 @@ And then after creating a copy archive for Ubuntu:
     >>> archives.count()
     1
 
+== DistributionPackageSearchView ==
+
+The DistributionPackageSearchView adds some functionality to the base
+PackageSearchView class, specifically for making the results more useful.
+
+By default the view will be initialized as a binary-package-name search,
+and the search_by_binary_name property is used to determine the search
+type (in templates):
+
+    >>> distro_pkg_search_view = create_initialized_view(
+    ...     ubuntu, name="+search")
+    >>> distro_pkg_search_view.search_by_binary_name
+    True
+
+But users can specify that the search should be on source-package-names
+instead:
+
+    >>> distro_pkg_search_view = create_initialized_view(
+    ...     ubuntu, name="+search", form={'search_type': 'source'})
+    >>> distro_pkg_search_view.search_by_binary_name
+    False
+
+Unless the distribution being searched does not support binaries, in which
+cases it will always be on source:
+
+    >>> debian = getUtility(IDistributionSet).getByName("debian")
+
+TODO: debian.has_binary_packages -> True
+
+    >>> distro_pkg_search_view = create_initialized_view(
+    ...     debian, name="+search", form={'search_type': 'binary'})
+    >>> distro_pkg_search_view.search_by_binary_name
+    False
+
+
+=== Exact matches ===
+
+The DistributionPackageSearchView view has an exact_matches property
+and a has_exact_matches property which are used to find packages that
+match exactly on the binary/source name. In the following example, there
+are two source packages that have a binary with the exact name
+'mozilla-firefox':
+
+    >>> distro_pkg_search_view = create_initialized_view(
+    ...     ubuntu, name="+search", form={'text': 'mozilla-firefox'})
+    >>> distro_pkg_search_view.has_exact_matches
+    True
+    >>> for package in distro_pkg_search_view.exact_matches:
+    ...     print package.name
+    mozilla-firefox
+    iceweasel
+
+The DistributionPackageSearchView also has a helper property to
+help templates print the list of distroseries that an exactly-matched
+package is available in:
+
+    >>> distro_pkg_search_view.distroseries_names
+    {u'mozilla-firefox': u'warty', u'iceweasel': u'warty'}
+    >>> distro_pkg_search_view = create_initialized_view(
+    ...     ubuntu, name="+search", form={'text': 'foobar'})
+    >>> distro_pkg_search_view.distroseries_names
+
+Another helper on the DistributionPackageSearchView is the
+matching_binary_names property which can be used by templates to get
+a list of the binary names that matched the search term for each
+package:
+
+
 

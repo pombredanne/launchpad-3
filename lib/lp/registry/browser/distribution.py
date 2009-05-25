@@ -542,9 +542,81 @@ class DistributionTranslationsMenu(NavigationMenu):
 class DistributionPackageSearchView(PackageSearchViewBase):
     """Customised PackageSearchView for Distribution"""
 
+    def initialize(self):
+        """Save the search type if provided."""
+        super(DistributionPackageSearchView, self).initialize()
+
+        # TODO: waiting on Distribution.has_binary_packages
+        # If the distribution contains binary packages, then we'll
+        # default to searches on binary names, but allow the user to
+        # select.
+        # if self.context.has_binary_packages:
+        self.search_type = self.request.get("search_type", 'binary')
+        # else:
+        #self.search_type = 'source'
+
     def contextSpecificSearch(self):
         """See `AbstractPackageSearchView`."""
-        return self.context.searchSourcePackages(self.text)
+        # TODO: add condition on source/binary search...
+        # TODO: add union when both are storm resultsets...
+        # Note: the non exact matches result set is borked?? no union method,
+        # count is 7, but only 1 item...
+        non_exact_matches = self.context.searchBinaryPackages(self.text)
+        fti_search = self.context.searchBinaryPackagesFTI(self.text)
+        #import pdb;pdb.set_trace()
+        # union = non_exact_matches.union(fti_search._without_prejoins(True)._result_set)
+        #union = non_exact_matches.union(fti_search)
+        #return union
+        return fti_search
+
+    @property
+    def search_by_binary_name(self):
+        """Return whether the search is on binary names.
+
+        By default, we search by binary names, as this produces much
+        better results. But the user may decide to search by sources, or
+        in the case of other distributions, it will be the only option.
+        """
+        return self.search_type == "binary"
+
+    @cachedproperty
+    def exact_matches(self):
+        return self.context.searchBinaryPackages(self.text, exact_match=True)
+
+    @property
+    def has_exact_matches(self):
+        return self.exact_matches.count() > 0
+
+    @property
+    def has_matches(self):
+        return self.matches > 0
+
+    @cachedproperty
+    def matching_binary_names(self):
+        """Define the matching binary names for each result in the batch."""
+        names = {}
+        for package in self.batchnav.currentBatch():
+            # This will usue the DSPC's binary package names property TODO
+            binary_names_string = "blah-one firefox-one firefox-two firefox-three"
+            binary_names_list = package.binpkgnames.split(' ')
+            matching_names = [
+                name for name in binary_names_list if self.text in name]
+            names[package.name] = ", ".join(matching_names)
+
+        return names
+
+    @cachedproperty
+    def distroseries_names(self):
+        """Define the distroseries for each package name in exact matches."""
+        names = {}
+        for package_cache in self.exact_matches:
+            package = package_cache.distributionsourcepackage
+            distroseries_list = [
+                pubrec.distroseries.name
+                for pubrec in package.current_publishing_records]
+            names[package.name] = ", ".join(distroseries_list)
+
+        return names
 
 
 class DistributionView(HasAnnouncementsView, BuildRecordsView, FeedsMixin,
