@@ -4,16 +4,11 @@ from canonical.launchpad.windmill.testing import lpuser
 
 from windmill.authoring import WindmillTestClient
 
-WAIT_PAGELOAD = u'3000000'
-WAIT_ELEMENT_COMPLETE = u'3000000'
-WAIT_CHECK_CHANGE = u'3000'
+WAIT_PAGELOAD = u'20000'
+WAIT_ELEMENT_COMPLETE = u'20000'
+WAIT_CHECK_CHANGE = u'1000'
 FILEBUG_URL = 'http://launchpad.dev:8085/firefox/+filebug'
 
-DUPLICATE_BUG_DIV = u'//div[@id="details-for-bug-4"]'
-DUPLICATE_BUG_EXPANDER = u'//img[@id="bug-details-expander-bug-4"]'
-BUG_NOT_REPORTED_BUTTON = u'//input[@id="bug-not-already-reported"]'
-FILEBUG_FORM = u'//div[@id="bug_reporting_form"]'
-THIS_IS_MY_BUG_BUTTON = u'//input[@id="this-is-my-bug-4"]'
 FORM_OVERLAY = u'//div[@id="duplicate-overlay-bug-4"]/table'
 FORM_OVERLAY_CANCEL = (
     u'//div[@id="duplicate-overlay-bug-4"]'
@@ -54,66 +49,66 @@ def test_duplicate_finder():
 
     # The details div for the duplicate bug should not be shown.
     client.asserts.assertProperty(
-        xpath=DUPLICATE_BUG_DIV, validator='style.display|none')
+        id='details-for-bug-4', validator='style.display|none')
 
     # The expander for the duplicate should be collapsed.
     client.asserts.assertProperty(
-        xpath=DUPLICATE_BUG_EXPANDER, validator='src|/@@/treeCollapsed')
+        id='bug-details-expander-bug-4', validator='src|/@@/treeCollapsed')
 
     # Initially the form overlay is hidden
     client.asserts.assertElemJS(xpath=FORM_OVERLAY, js=FORM_NOT_VISIBLE)
 
     # Clicking on the expander will expand it and show the details div.
-    client.click(xpath=DUPLICATE_BUG_EXPANDER)
+    client.click(id='bug-details-expander-bug-4')
     client.waits.sleep(milliseconds=WAIT_CHECK_CHANGE)
     client.asserts.assertProperty(
-        xpath=DUPLICATE_BUG_EXPANDER, validator='src|/@@/treeExpanded')
+        id='bug-details-expander-bug-4', validator='src|/@@/treeExpanded')
     client.asserts.assertProperty(
-        xpath=DUPLICATE_BUG_DIV, validator='style.display|block')
+        id='details-for-bug-4', validator='style.display|block')
 
     # Clicking the expander again will hide the details div and collapse
     # the expander.
-    client.click(xpath=DUPLICATE_BUG_EXPANDER)
+    client.click(id='bug-details-expander-bug-4')
     client.waits.sleep(milliseconds=WAIT_CHECK_CHANGE)
     client.asserts.assertProperty(
-        xpath=DUPLICATE_BUG_EXPANDER, validator='src|/@@/treeCollapsed')
+        id='bug-details-expander-bug-4', validator='src|/@@/treeCollapsed')
     client.asserts.assertProperty(
-        xpath=DUPLICATE_BUG_DIV, validator='style.display|none')
+        id='details-for-bug-4', validator='style.display|none')
 
     # Clicking it yet again will reopen it.
-    client.click(xpath=DUPLICATE_BUG_EXPANDER)
+    client.click(id='bug-details-expander-bug-4')
     client.waits.sleep(milliseconds=WAIT_CHECK_CHANGE)
     client.asserts.assertProperty(
-        xpath=DUPLICATE_BUG_EXPANDER, validator='src|/@@/treeExpanded')
+        id='bug-details-expander-bug-4', validator='src|/@@/treeExpanded')
     client.asserts.assertProperty(
-        xpath=DUPLICATE_BUG_DIV, validator='style.display|block')
+        id='details-for-bug-4', validator='style.display|block')
 
     # Clicking "No, I need to file a new bug" will collapse the
     # duplicate details and expander and will show the filebug form.
-    client.click(xpath=BUG_NOT_REPORTED_BUTTON)
+    client.click(id='bug-not-already-reported')
     client.waits.sleep(milliseconds=WAIT_CHECK_CHANGE)
     client.asserts.assertProperty(
-        xpath=DUPLICATE_BUG_EXPANDER, validator='src|/@@/treeCollapsed')
+        id='bug-details-expander-bug-4', validator='src|/@@/treeCollapsed')
     client.asserts.assertProperty(
-        xpath=DUPLICATE_BUG_DIV, validator='style.display|none')
+        id='details-for-bug-4', validator='style.display|none')
     client.asserts.assertProperty(
-        xpath=FILEBUG_FORM, validator='style.display|block')
+        id='bug_reporting_form', validator='style.display|block')
 
     # Clicking the duplicate expander again will collapse the filebug
     # form and expand the duplicate.
-    client.click(xpath=DUPLICATE_BUG_EXPANDER)
+    client.click(id='bug-details-expander-bug-4')
     client.waits.sleep(milliseconds=WAIT_CHECK_CHANGE)
     client.asserts.assertProperty(
-        xpath=FILEBUG_FORM, validator='style.display|none')
+        id='bug_reporting_form', validator='style.display|none')
     client.asserts.assertProperty(
-        xpath=DUPLICATE_BUG_EXPANDER, validator='src|/@@/treeExpanded')
+        id='bug-details-expander-bug-4', validator='src|/@@/treeExpanded')
     client.asserts.assertProperty(
-        xpath=DUPLICATE_BUG_DIV, validator='style.display|block')
+        id='details-for-bug-4', validator='style.display|block')
 
     # Clicking on the "Yes, this is my bug button" will show a form
     # overlay, which will offer the user the option to subscribe to the
     # bug.
-    client.click(xpath=THIS_IS_MY_BUG_BUTTON)
+    client.click(id="this-is-my-bug-4")
     client.waits.sleep(milliseconds=WAIT_CHECK_CHANGE)
     client.asserts.assertElemJS(xpath=FORM_OVERLAY, js=FORM_VISIBLE)
 

@@ -123,7 +123,7 @@ This one matches, so we mark it as affecting us.
     This bug has been marked as affecting you.
 
 It's also possible to subscribe to the suggested duplicates. This is
-handled by a Javascript FormOverlay, but for the sake of integration
+handled by a JavaScript FormOverlay, but for the sake of integration
 testing we'll test it here, too.
 
     >>> user_browser.open("http://bugs.launchpad.dev/firefox/+filebug")
