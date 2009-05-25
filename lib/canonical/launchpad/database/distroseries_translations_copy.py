@@ -6,18 +6,8 @@ __metaclass__ = type
 
 __all__ = [ 'copy_active_translations' ]
 
-from psycopg2 import DatabaseError
-from zope.interface import implements
-
 from canonical.database.multitablecopy import MultiTableCopy
-from canonical.database.postgresql import allow_sequential_scans, drop_tables
-from canonical.database.sqlbase import (
-    cursor, flush_database_updates, quote, sqlvalues)
-from canonical.launchpad.interfaces.looptuner import ITunableLoop
-from canonical.launchpad.database.pofile import POFile
-from canonical.launchpad.database.translationmessage import (
-    make_plurals_sql_fragment)
-from canonical.launchpad.utilities.looptuner import LoopTuner
+from canonical.database.sqlbase import cursor, quote, sqlvalues
 
 
 def _copy_active_translations_to_new_series(
@@ -93,9 +83,9 @@ def _copy_active_translations_to_new_series(
     ''' % (copier.getHoldingTableName('POTemplate'), quote(child)))
 
 
-    # Copy each TranslationTemplateItem whose template we copied, and let MultiTableCopy
-    # replace each potemplate reference with a reference to our copy of the
-    # original POTMsgSet's potemplate.
+    # Copy each TranslationTemplateItem whose template we copied, and let
+    # MultiTableCopy replace each potemplate reference with a reference to
+    # our copy of the original POTMsgSet's potemplate.
     copier.extract('TranslationTemplateItem', ['POTemplate'], 'sequence > 0')
 
     # Copy POFiles, making them refer to the child's copied POTemplates.
