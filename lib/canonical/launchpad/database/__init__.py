@@ -23,6 +23,7 @@ from lp.registry.model.productlicense import *
 from lp.registry.model.productseries import *
 from lp.registry.model.productrelease import *
 from lp.registry.model.project import *
+from canonical.launchpad.database.productserieslanguage import *
 from canonical.launchpad.database.projectbounty import *
 from lp.registry.model.poll import *
 from lp.registry.model.announcement import *

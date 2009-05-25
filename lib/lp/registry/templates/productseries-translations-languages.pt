@@ -1,0 +1,51 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
+      <table class="sortable listing" style="width:auto;" id="languagestats">
+        <thead>
+          <tr>
+            <th>Language</th>
+            <th>Status</th>
+            <th>Untranslated</th>
+            <th>Needs review</th>
+            <th>Changed</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr tal:repeat="language_stats view/productserieslanguages">
+            <td>
+              <tal:multiple_pofile condition="not:view/single_potemplate">
+              <a tal:attributes="href language_stats/fmt:url"
+                   tal:content="language_stats/title">Serbian</a>
+              </tal:multiple_pofile>
+              <tal:single_pofile condition="view/single_potemplate">
+                <a tal:attributes="href language_stats/pofile/fmt:url/+translate"
+                     tal:content="language_stats/title">Serbian</a>
+              </tal:single_pofile>
+            </td>
+            <td style="white-space: nowrap">
+              <span class="sortkey"
+                    tal:content="language_stats/translatedCount">0</span>
+                <div tal:replace="structure language_stats/@@+barchart" />
+            </td>
+            <td>
+              <span class="sortkey"
+                    tal:content="language_stats/untranslatedCount">0</span>
+              <tal:value content="language_stats/untranslatedCount" />
+             </td>
+            <td>
+              <span class="sortkey"
+                    tal:content="language_stats/unreviewedCount">0</span>
+              <tal:value content="language_stats/unreviewedCount" />
+            </td>
+            <td>
+              <span class="sortkey"
+                    tal:content="language_stats/updatesCount">0</span>
+              <tal:value content="language_stats/updatesCount" />
+            </td>
+          </tr>
+        </tbody>
+      </table>
+</tal:root>

@@ -2063,15 +2063,17 @@
         for="lp.registry.interfaces.productseries.IProductSeries"
         class="lp.registry.browser.productseries.ProductSeriesView"
         permission="zope.Public"
-        layer="canonical.launchpad.layers.TranslationsLayer">
+        layer="canonical.launchpad.layers.TranslationsLayer" >
         <browser:page
             name="+translations"
             facet="translations"
-            template="../templates/object-translations.pt"/>
+            template="../templates/productseries-translations.pt"
+            />
         <browser:page
-            name="+potlist"
+            name="+languages"
             facet="translations"
-            template="../templates/object-pots.pt"/>
+            template="../templates/productseries-translations-languages.pt"
+            />
     </browser:pages>
     <browser:page
         for="lp.registry.interfaces.productseries.IProductSeries"

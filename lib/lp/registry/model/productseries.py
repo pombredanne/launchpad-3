@@ -26,12 +26,16 @@ from canonical.launchpad.database.bugtarget import BugTargetBase
 from canonical.launchpad.database.bug import (
     get_bug_tags, get_bug_tags_open_count)
 from canonical.launchpad.database.bugtask import BugTask
+from lp.services.worlddata.model.language import Language
 from lp.registry.model.milestone import (
     HasMilestonesMixin, Milestone)
 from canonical.launchpad.database.packaging import Packaging
 from lp.registry.interfaces.person import validate_public_person
+from canonical.launchpad.database.pofile import POFile
 from canonical.launchpad.database.potemplate import POTemplate
 from lp.registry.model.productrelease import ProductRelease
+from canonical.launchpad.database.productserieslanguage import (
+    ProductSeriesLanguage)
 from lp.blueprints.model.specification import (
     HasSpecificationsMixin, Specification)
 from canonical.launchpad.database.translationimportqueue import (
@@ -416,7 +420,7 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
                                      orderBy=['-priority','name'])
         return shortlist(result, 300)
 
-    def getCurrentTranslationTemplates(self):
+    def _getCurrentTranslationTemplates(self):
         """See `IHasTranslationTemplates`."""
         result = POTemplate.select('''
             productseries = %s AND
@@ -427,7 +431,15 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
             ''' % sqlvalues(self),
             orderBy=['-priority','name'],
             clauseTables = ['ProductSeries', 'Product'])
-        return shortlist(result, 300)
+        return result
+
+    def getCurrentTranslationTemplates(self):
+        """See `IHasTranslationTemplates`."""
+        return shortlist(self._getCurrentTranslationTemplates(), 300)
+
+    @property
+    def potemplate_count(self):
+        return self._getCurrentTranslationTemplates().count()
 
     def getObsoleteTranslationTemplates(self):
         """See `IHasTranslationTemplates`."""
@@ -440,6 +452,41 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
             orderBy=['-priority','name'],
             clauseTables = ['ProductSeries', 'Product'])
         return shortlist(result, 300)
+
+    @property
+    def productserieslanguages(self):
+        store = Store.of(self)
+
+        potemplate_count = self.potemplate_count
+        results = []
+        if potemplate_count == 1:
+            origin = [Language, POFile, POTemplate]
+            result = store.using(*origin).find(
+                (Language, POFile),
+                POFile.language==Language.id,
+                POFile.variant==None,
+                Language.visible==True,
+                POFile.potemplate==POTemplate.id,
+                POTemplate.productseries==self,
+                POTemplate.iscurrent==True)
+
+            for language, pofile in result.order_by(['Language.englishname']):
+                results.append(
+                    ProductSeriesLanguage(self, language, pofile=pofile))
+        else:
+            result = store.find(
+                Language,
+                POFile.language==Language.id,
+                POFile.variant==None,
+                Language.visible==True,
+                POFile.potemplate==POTemplate.id,
+                POTemplate.productseries==self,
+                POTemplate.iscurrent==True).config(distinct=True)
+
+            for language in result.order_by(['Language.englishname']):
+                results.append(ProductSeriesLanguage(self, language))
+
+        return results
 
     def getTimeline(self, include_inactive=False):
         landmarks = []
