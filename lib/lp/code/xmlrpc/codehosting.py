@@ -34,7 +34,7 @@ from lp.code.interfaces.codehosting import (
     LAUNCHPAD_ANONYMOUS, LAUNCHPAD_SERVICES)
 from lp.registry.interfaces.person import IPersonSet, NoSuchPerson
 from lp.registry.interfaces.product import NoSuchProduct
-from canonical.launchpad.interfaces.scriptactivity import IScriptActivitySet
+from lp.services.scripts.interfaces.scriptactivity import IScriptActivitySet
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp import LaunchpadXMLRPCView
 from canonical.launchpad.webapp.authorization import check_permission

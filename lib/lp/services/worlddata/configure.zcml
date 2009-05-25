@@ -1,0 +1,42 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:i18n="http://namespaces.zope.org/i18n"
+    i18n_domain="launchpad">
+    <include file="vocabularies.zcml"/>
+
+    <class class=".model.country.Country">
+        <allow
+            interface=".interfaces.country.ICountry" />
+    </class>
+
+    <class class=".model.country.CountrySet">
+        <allow
+            interface=".interfaces.country.ICountrySet" />
+    </class>
+
+    <securedutility
+        class=".model.country.CountrySet"
+        provides=".interfaces.country.ICountrySet">
+        <allow
+            interface=".interfaces.country.ICountrySet" />
+    </securedutility>
+
+    <class class=".model.country.Continent">
+        <allow
+            interface=".interfaces.country.IContinent" />
+    </class>
+
+    <class class=".model.language.Language">
+        <allow interface=".interfaces.language.ILanguage"/>
+        <require
+            permission="launchpad.Admin"
+            set_schema=".interfaces.language.ILanguage" />
+    </class>
+
+    <securedutility
+        class=".model.language.LanguageSet"
+        provides=".interfaces.language.ILanguageSet">
+        <allow interface=".interfaces.language.ILanguageSet" />
+    </securedutility>
+
+</configure>

@@ -5,18 +5,18 @@
     xmlns:zope="http://namespaces.zope.org/zope"
     i18n_domain="launchpad">
 
-    <class class="canonical.launchpad.utilities.SalesforceVoucherProxy">
-        <allow interface="canonical.launchpad.interfaces.ISalesforceVoucherProxy" />
+    <class class="lp.registry.utilities.salesforce.SalesforceVoucherProxy">
+        <allow interface="lp.registry.interfaces.salesforce.ISalesforceVoucherProxy" />
     </class>
 
-    <class class="canonical.launchpad.utilities.Voucher">
+    <class class="lp.registry.utilities.salesforce.Voucher">
         <allow attributes="id project status term __str__" />
     </class>
 
    <securedutility
-        class="canonical.launchpad.ftests.salesforce.TestSalesforceVoucherProxy"
-        provides="canonical.launchpad.interfaces.ISalesforceVoucherProxy">
-        <allow interface="canonical.launchpad.interfaces.ISalesforceVoucherProxy" />
+        class="lp.registry.tests.salesforce.TestSalesforceVoucherProxy"
+        provides="lp.registry.interfaces.salesforce.ISalesforceVoucherProxy">
+        <allow interface="lp.registry.interfaces.salesforce.ISalesforceVoucherProxy" />
     </securedutility>
 
 </configure>

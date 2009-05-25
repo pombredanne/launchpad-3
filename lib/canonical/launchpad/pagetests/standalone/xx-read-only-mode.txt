@@ -49,15 +49,50 @@ There is no warning when Launchpad is running normally.
     None
     >>> pop_read_only_mode()
 
+== Operations requiring write permissions fail ==
 
-== Changes fail ==
+In read-only mode, all requests for non-read permissions are denied.
+This causes edit buttons and similar to not be displayed.
 
-Attempts to make changes raises an exception, which is rendered as a
-nice 503 page for the user.
+    >>> user_browser.open('http://launchpad.dev/people/+me')
+    >>> user_browser.getLink('Change details')
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
 
+Even if the user manages to follow a link to a form, such as clicking
+on a link rendered before read-only mode was switched on or someone
+forgetting to properly protect the edit buttons, the form is replaced
+with a nice 503 error page informing the user what is going on.
+
+    >>> push_read_only_mode(False)
+    >>> user_browser.open('http://launchpad.dev/people/+me')
+    >>> edit_link = user_browser.getLink('Change details')
+    >>> edit_link is None
+    False
+    >>> pop_read_only_mode()
+    >>> # XXX StuartBishop 20090423 bug=365378: raiseHttpErrors is broken,
+    >>> # requiring the try/except dance.
+    >>> user_browser.handleErrors = True
+    >>> user_browser.raiseHttpErrors = False
+    >>> try:
+    ...     edit_link.click()
+    ... except:
+    ...     pass
+    >>> print user_browser.headers.get('Status')
+    503 Service Unavailable
+    >>> print extract_text(first_tag_by_class(
+    ...     user_browser.contents, 'exception'))
+    Sorry, you can't do this right now
+
+And even if a user manages to get a form and submit it, they get the
+same 503 error page.
+
+    >>> push_read_only_mode(False)
     >>> user_browser.handleErrors = True
     >>> user_browser.open('http://launchpad.dev/people/+me')
     >>> user_browser.getLink('Change details').click()
+    >>> pop_read_only_mode()
     >>> user_browser.getControl(name='field.displayname').value = 'Different'
     >>> user_browser.raiseHttpErrors = False
     >>> # XXX StuartBishop 20090423 bug=365378: raiseHttpErrors is broken,

@@ -18,7 +18,6 @@ __all__ = [
     'DatetimeDisplayWidget',
     ]
 
-import os
 from datetime import datetime
 import pytz
 
@@ -32,7 +31,6 @@ from zope.component import getUtility
 
 from canonical.launchpad.interfaces import ILaunchBag
 from canonical.launchpad.validators import LaunchpadValidationError
-from canonical.lazr import ExportedFolder
 
 
 class DateTimeWidget(TextWidget):

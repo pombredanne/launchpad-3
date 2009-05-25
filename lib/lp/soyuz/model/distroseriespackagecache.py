@@ -1,8 +1,10 @@
-# Copyright 2005 Canonical Ltd.  All rights reserved.
+# Copyright 2005-2009 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
-__all__ = ['DistroSeriesPackageCache', ]
+__all__ = [
+    'DistroSeriesPackageCache',
+    ]
 
 from zope.interface import implements
 
@@ -11,7 +13,10 @@ from storm.locals import RawStr
 
 from canonical.database.sqlbase import SQLBase
 
-from lp.soyuz.interfaces.distroseriespackagecache import IDistroSeriesPackageCache
+from lp.soyuz.interfaces.distroseriespackagecache import (
+    IDistroSeriesPackageCache)
+
+
 class DistroSeriesPackageCache(SQLBase):
     implements(IDistroSeriesPackageCache)
     _table = 'DistroSeriesPackageCache'

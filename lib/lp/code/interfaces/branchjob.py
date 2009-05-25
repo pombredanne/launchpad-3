@@ -24,7 +24,7 @@ from zope.schema import Bytes, Int, Object, Text, TextLine, Bool
 
 from canonical.launchpad import _
 from lp.code.interfaces.branch import IBranch
-from canonical.launchpad.interfaces.job import IJob
+from lp.services.job.interfaces.job import IJob
 
 
 
