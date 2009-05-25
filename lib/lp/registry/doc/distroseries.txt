@@ -18,8 +18,7 @@ The IDistroSeriesSet utility is accessed in the usual fashion:
 
 
     >>> from zope.component import getUtility
-    >>> from canonical.database.sqlbase import (
-    ...     flush_database_caches, flush_database_updates)
+    >>> from canonical.database.sqlbase import flush_database_updates
     >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.launchpad.interfaces import (
     ...     IDistroSeries, IDistroSeriesSet, IDistributionSet,
