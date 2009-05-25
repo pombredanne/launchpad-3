@@ -23,23 +23,26 @@
 
   <tal:no-branches condition="not: view/branch_count">
     <div id="branch-summary">
-      There are no branches for <tal:package-name replace="context/displayname"/>
+      There are no branches of <tal:package-name replace="context/displayname"/>
       in Launchpad.
     </div>
   </tal:no-branches>
 
   <div class="related" id="branch-series-links">
     <h2>Branches in other series</h2>
-    <tal:series-link repeat="link view/series_links">
-      <span class="branch-series-link">
-        <a tal:condition="link/linked"
-           tal:attributes="href link/package/fmt:url"
-           tal:content="link/series_name">
-        </a>
-        <tal:not-linked tal:condition="not: link/linked"
-                        tal:replace="link/series_name" />
-      </span>
-    </tal:series-link>
+    <ul class="sourcepackage-links">
+      <tal:series-link repeat="link view/series_links">
+        <li tal:attributes="class link/dev_focus_css">
+          <a tal:condition="link/linked"
+             tal:attributes="href link/package/fmt:url"
+             tal:content="link/series_name">
+          </a>
+          <strong tal:condition="not: link/linked"
+                  tal:content="link/series_name" />
+          (<tal:num-branches tal:content="link/num_branches"/>)
+        </li>
+      </tal:series-link>
+    </ul>
   </div>
 
 </div>

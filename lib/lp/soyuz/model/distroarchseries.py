@@ -20,7 +20,8 @@ from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet)
-from canonical.launchpad.interfaces._schema_circular_imports import IHasBuildRecords
+from canonical.launchpad.interfaces._schema_circular_imports import (
+    IHasBuildRecords)
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageName
 from lp.soyuz.interfaces.binarypackagerelease import IBinaryPackageReleaseSet
 from lp.soyuz.interfaces.build import IBuildSet

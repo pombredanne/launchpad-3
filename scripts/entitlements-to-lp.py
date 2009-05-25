@@ -8,7 +8,7 @@ import sys
 
 import _pythonpath
 
-from canonical.launchpad.scripts.base import LaunchpadScript
+from lp.services.scripts.base import LaunchpadScript
 from canonical.launchpad.scripts.entitlement import (
     EntitlementExchange,
     EntitlementImporter,

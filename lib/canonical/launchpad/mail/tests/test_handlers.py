@@ -8,7 +8,7 @@ from zope.testing.doctest import DocTestSuite
 
 from canonical.launchpad.mail.commands import BugEmailCommand
 from canonical.launchpad.mail.handlers import MaloneHandler
-from canonical.launchpad.testing import TestCaseWithFactory
+from lp.testing import TestCaseWithFactory
 from canonical.testing import LaunchpadFunctionalLayer
 
 

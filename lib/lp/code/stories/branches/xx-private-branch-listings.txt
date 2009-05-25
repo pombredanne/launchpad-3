@@ -217,7 +217,7 @@ Now link to a private branch.
     ...     '~landscape-developers/landscape/trunk')
     >>> landscape_dev_browser.getControl('Continue').click()
     >>> printBugBranchLinks(landscape_dev_browser)
-    ~landscape-developers/landscape/trunk (Development)
+    lp://dev/~landscape-developers/landscape/trunk (Development)
 
 Since the link is to a private branch, the entire section is not
 visible to a user that isn't able to see the branch itself.

@@ -374,11 +374,6 @@ special = {
             setUp=setUp, tearDown=tearDown,
             layer=FunctionalLayer
             ),
-    'script-monitoring.txt': LayeredDocFileSuite(
-            '../doc/script-monitoring.txt',
-            setUp=setUp, tearDown=tearDown,
-            layer=LaunchpadZopelessLayer
-            ),
     'bug-set-status.txt': LayeredDocFileSuite(
             '../doc/bug-set-status.txt',
             setUp=uploadQueueSetUp,
@@ -587,11 +582,6 @@ special = {
                 tearDown=tearDown,
                 layer=LaunchpadZopelessLayer
                 ),
-    'openid-fetcher.txt': LayeredDocFileSuite(
-            '../doc/openid-fetcher.txt',
-            stdout_logging=False,
-            layer=LaunchpadFunctionalLayer
-            ),
     'notification-text-escape.txt': LayeredDocFileSuite(
             '../doc/notification-text-escape.txt',
             setUp=test_notifications.setUp,

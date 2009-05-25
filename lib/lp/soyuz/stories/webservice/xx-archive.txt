@@ -643,6 +643,27 @@ the IArchive context, in this case only Celso has it.
 IArchive exposes the newSubscription() method, enabling new subscriptions
 to be created via AJAX.
 
+Archive subscriptions can only be created for private archives. If we
+try creating a subscription for sabdfl's archive (which is public), a
+bad request will result:
+
+    >>> login('foo.bar@canonical.com')
+    >>> sabdfl_db = getUtility(IPersonSet).getByName('sabdfl')
+    >>> sabdfl_webservice = webservice_for_person(
+    ...     sabdfl_db, permission=OAuthPermission.WRITE_PUBLIC)
+    >>> logout()
+    >>> sabdfl = sabdfl_webservice.get("/~sabdfl").jsonBody()
+    >>> sabdfl_archive = sabdfl_webservice.get(
+    ...     "/~sabdfl/+archive/ppa").jsonBody()
+    >>> response = sabdfl_webservice.named_post(
+    ...     sabdfl_archive['self_link'], 'newSubscription',
+    ...     subscriber=cprov_archive['owner_link'])
+    >>> print response.getOutput()
+    HTTP/1.1 400 Bad Request
+    ...
+    ArchiveNotPrivate: Only private archives can have subscriptions.
+    <BLANKLINE>
+
 First we'll subscribe sabdfl to cprov's archive:
 
     >>> sabdfl = webservice.get("/~sabdfl").jsonBody()
@@ -691,6 +712,19 @@ to use this method.
     >>> print response.getOutput()
     HTTP/1.1 401 Unauthorized
     ...
+
+A second subscription cannot be created for the same user/team when there
+is already a current subscription:
+
+    >>> response = cprov_webservice.named_post(
+    ...     cprov_archive['self_link'], 'newSubscription',
+    ...     subscriber=sabdfl['self_link'])
+    >>> print response.getOutput()
+    HTTP/1.1 400 Bad Request
+    ...
+    AlreadySubscribed: Mark Shuttleworth already has a current subscription
+    for 'PPA for Celso Providelo'.
+
 
 == Modifying privacy ==
 

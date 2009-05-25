@@ -849,28 +849,38 @@ class BuildImageDisplayAPI(ObjectImageDisplayAPI):
 
     Used for image:icon.
     """
-    icon_template = """
-        <img width="14" height="14" alt="%s" title="%s" src="%s" />
-        """
+    icon_template = (
+        '<img width="%(width)s" height="14" alt="%(alt)s" '
+        'title="%(title)s" src="%(src)s" />')
+
 
     def icon(self):
         """Return the appropriate <img> tag for the build icon."""
         icon_map = {
-            BuildStatus.NEEDSBUILD: "/@@/build-needed",
-            BuildStatus.FULLYBUILT: "/@@/build-success",
-            BuildStatus.FAILEDTOBUILD: "/@@/build-failure",
-            BuildStatus.MANUALDEPWAIT: "/@@/build-depwait",
-            BuildStatus.CHROOTWAIT: "/@@/build-chrootwait",
-            BuildStatus.SUPERSEDED: "/@@/build-superseded",
-            BuildStatus.BUILDING: "/@@/build-building",
-            BuildStatus.FAILEDTOUPLOAD: "/@@/build-failedtoupload",
+            BuildStatus.NEEDSBUILD: {'src': "/@@/build-needed"},
+            BuildStatus.FULLYBUILT: {'src': "/@@/build-success"},
+            BuildStatus.FAILEDTOBUILD: {
+                'src': "/@@/build-failed",
+                'width': '16'
+                },
+            BuildStatus.MANUALDEPWAIT: {'src': "/@@/build-depwait"},
+            BuildStatus.CHROOTWAIT: {'src': "/@@/build-chrootwait"},
+            BuildStatus.SUPERSEDED: {'src': "/@@/build-superseded"},
+            BuildStatus.BUILDING: {'src': "/@@/processing"},
+            BuildStatus.FAILEDTOUPLOAD: {'src': "/@@/build-failedtoupload"},
             }
 
         alt = '[%s]' % self._context.buildstate.name
         title = self._context.buildstate.title
-        source = icon_map[self._context.buildstate]
+        source = icon_map[self._context.buildstate].get('src')
+        width = icon_map[self._context.buildstate].get('width', '14')
 
-        return self.icon_template % (alt, title, source)
+        return self.icon_template % {
+            'alt': alt,
+            'title': title,
+            'src': source,
+            'width': width,
+            }
 
 
 class ArchiveImageDisplayAPI(ObjectImageDisplayAPI):
@@ -1172,18 +1182,16 @@ class BranchFormatterAPI(ObjectFormatterAPI):
             }
 
     def link(self, view_name):
-        """A hyperlinked branch icon with the unique name."""
+        """A hyperlinked branch icon with the displayname."""
         return (
-            '<a href="%(url)s" title="%(display_name)s">'
+            '<a href="%(url)s">'
             '<img src="/@@/branch" alt=""/>'
-            '&nbsp;%(unique_name)s</a>' % self._args(view_name))
+            '&nbsp;%(display_name)s</a>' % self._args(view_name))
 
     def bzrLink(self, view_name):
         """A hyperlinked branch icon with the bazaar identity."""
-        return (
-            '<a href="%(url)s" title="%(display_name)s">'
-            '<img src="/@@/branch" alt=""/>'
-            '&nbsp;%(bzr_identity)s</a>' % self._args(view_name))
+        # Defer to link.
+        return self.link(view_name)
 
     def projectLink(self, view_name):
         """A hyperlinked branch icon with the name and title."""

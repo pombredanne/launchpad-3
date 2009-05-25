@@ -48,7 +48,7 @@ from operator import attrgetter
 import re
 
 # Ensure correct plugins are loaded. Do not delete this line.
-import canonical.codehosting
+import lp.codehosting
 from bzrlib.branch import (
     BranchReferenceFormat, BzrBranchFormat4, BzrBranchFormat5,
     BzrBranchFormat6, BzrBranchFormat7)
@@ -948,6 +948,9 @@ class IBranch(IHasOwner, IHasBranchTarget):
             readonly=True,
             value_type=Reference(Interface)))
 
+    def isBranchMergeable(other_branch):
+        """Is the other branch mergeable into this branch (or vice versa)."""
+
     def addLandingTarget(registrant, target_branch, dependent_branch=None,
                          whiteboard=None, date_created=None,
                          needs_review=False, initial_comment=None,
@@ -1302,11 +1305,6 @@ class IBranchSet(Interface):
             and subscribers of the branch, and to LP admins.
         :type visible_by_user: `IPerson` or None
         """
-        # XXX: JonathanLange 2008-11-27 spec=package-branches: This API needs
-        # to change for source package branches.
-
-    def getTargetBranchesForUsersMergeProposals(user, product):
-        """Return a sequence of branches the user has targeted before."""
         # XXX: JonathanLange 2008-11-27 spec=package-branches: This API needs
         # to change for source package branches.
 

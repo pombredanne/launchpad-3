@@ -18,8 +18,8 @@ from zope.component import getUtility
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.codehosting.bzrutils import is_branch_stackable
-from canonical.codehosting.vfs import get_lp_server
+from lp.codehosting.bzrutils import is_branch_stackable
+from lp.codehosting.vfs import get_lp_server
 from canonical.launchpad.interfaces.diff import IStaticDiffSource
 from canonical.launchpad.interfaces.mail import (
     IMailHandler, EmailProcessingError)
@@ -529,7 +529,8 @@ class CodeHandler:
         # access to any needed but not supplied revisions.
         md.target_branch = target_url
         md.install_revisions(bzr_branch.repository)
-        bzr_branch.pull(bzr_branch, stop_revision=md.revision_id)
+        bzr_branch.pull(bzr_branch, stop_revision=md.revision_id,
+                        overwrite=True)
 
     def findMergeDirectiveAndComment(self, message):
         """Extract the comment and Merge Directive from a SignedMessage."""

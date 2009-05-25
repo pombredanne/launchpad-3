@@ -17,12 +17,14 @@ from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.soyuz.interfaces.component import (
     IComponent, IComponentSelection, IComponentSet)
+
+
 class Component(SQLBase):
     """See IComponent."""
 
     implements(IComponent)
 
-    _defaultOrder= ['id']
+    _defaultOrder = ['id']
 
     name = StringCol(notNull=True, alternateID=True)
 
@@ -32,7 +34,7 @@ class ComponentSelection(SQLBase):
 
     implements(IComponentSelection)
 
-    _defaultOrder= ['id']
+    _defaultOrder = ['id']
 
     distroseries = ForeignKey(dbName='distroseries',
                                foreignKey='DistroSeries', notNull=True)

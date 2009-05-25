@@ -10,13 +10,7 @@ from operator import attrgetter
 from zope.component import getUtility
 
 from canonical.archivepublisher.config import getPubConfig
-from canonical.config import config
-from lp.soyuz.interfaces.archive import IArchiveSet
-from lp.soyuz.interfaces.archiveauthtoken import (
-    IArchiveAuthTokenSet)
-from lp.soyuz.interfaces.archivesubscriber import (
-    ArchiveSubscriberStatus, IArchiveSubscriberSet)
-from canonical.launchpad.scripts.base import LaunchpadCronScript
+from lp.services.scripts.base import LaunchpadCronScript
 
 
 # These PPAs should never have their htaccess/pwd files touched.
@@ -94,7 +88,8 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
         :return: The filename of the htpasswd file that was generated.
         """
         # Create a temporary file that will be a new .htpasswd.
-        fd, temp_filename = tempfile.mkstemp()
+        pub_config = getPubConfig(ppa)
+        fd, temp_filename = tempfile.mkstemp(dir=pub_config.htaccessroot)
 
         # The first .htpasswd entry is the buildd_secret.
         list_of_users = [

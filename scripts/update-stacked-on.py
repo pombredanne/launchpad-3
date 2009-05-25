@@ -25,13 +25,13 @@ from bzrlib.bzrdir import BzrDir
 from bzrlib.config import TransportConfig
 from bzrlib import errors
 
-from canonical.codehosting.branchfs import LaunchpadInternalServer
-from canonical.codehosting.vfs import BlockingProxy
-from canonical.codehosting.vfs.transport import (
+from lp.codehosting.branchfs import LaunchpadInternalServer
+from lp.codehosting.vfs import BlockingProxy
+from lp.codehosting.vfs.transport import (
     get_chrooted_transport, get_readonly_transport, _MultiServer)
-from canonical.codehosting.bzrutils import get_branch_stacked_on_url
+from lp.codehosting.bzrutils import get_branch_stacked_on_url
 from canonical.config import config
-from canonical.launchpad.scripts.base import LaunchpadScript
+from lp.services.scripts.base import LaunchpadScript
 
 
 def get_server(read_only):
