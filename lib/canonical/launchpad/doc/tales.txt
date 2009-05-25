@@ -113,6 +113,34 @@ And finally Copy archives.
     >>> print test_tales("archive/image:icon", archive=copy)
     <img ... src="/@@/distribution" />
 
+We also have icons for builds which may have different dimensions.
+
+    >>> from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
+    >>> login('foo.bar@canonical.com')
+    >>> stp = SoyuzTestPublisher()
+    >>> stp.prepareBreezyAutotest()
+    >>> source = stp.getPubSource()
+    >>> build = source.createMissingBuilds()[0]
+    >>> login(ANONYMOUS)
+
+The 'Needs building' build is 14x14:
+
+    >>> print test_tales("build/image:icon", build=build)
+    <img width="14" height="14"...src="/@@/build-needed" />
+
+The 'building' build is 14x14:
+
+    >>> from lp.soyuz.interfaces.build import BuildStatus
+    >>> build.buildstate = BuildStatus.BUILDING
+    >>> print test_tales("build/image:icon", build=build)
+    <img width="14" height="14"...src="/@@/processing" />
+
+But the 'failed to build' build is 16x14:
+
+    >>> build.buildstate = BuildStatus.FAILEDTOBUILD
+    >>> print test_tales("build/image:icon", build=build)
+    <img width="16" height="14"...src="/@@/build-failed" />
+
 
 == The fmt: namespace to get strings ==
 
@@ -285,22 +313,19 @@ For branches, fmt:link links to the branch page.
     >>> branch = factory.makeProductBranch(
     ...     owner=eric, product=fooix, name='bar', title='The branch title')
     >>> print test_tales("branch/fmt:link", branch=branch)
-    <a href=".../~eric/fooix/bar"
-       title="~eric/fooix/bar"><img src="/@@/branch"
-       alt=""/>&nbsp;~eric/fooix/bar</a>
+    <a href=".../~eric/fooix/bar"><img src="/@@/branch"
+       alt=""/>&nbsp;lp://dev/~eric/fooix/bar</a>
 
 The bzr-link formatter uses the bzr identity.
 
     >>> print test_tales("branch/fmt:bzr-link", branch=branch)
-    <a href="http://code.launchpad.dev/~eric/fooix/bar"
-    title="~eric/fooix/bar"><img src="/@@/branch"
+    <a href="http://code.launchpad.dev/~eric/fooix/bar"><img src="/@@/branch"
     alt=""/>&nbsp;lp://dev/~eric/fooix/bar</a>
 
     >>> login_person(fooix.owner, LaunchpadTestRequest())
     >>> fooix.development_focus.branch = branch
     >>> print test_tales("branch/fmt:bzr-link", branch=branch)
-    <a href=".../~eric/fooix/bar"
-       title="~eric/fooix/bar"><img src="/@@/branch"
+    <a href=".../~eric/fooix/bar"><img src="/@@/branch"
        alt=""/>&nbsp;lp://dev/fooix</a>
 
 
@@ -347,14 +372,14 @@ without adequate permissions, a link is not generated.
     >>> subscription = factory.makeBranchSubscription(
     ...     branch=branch, person=person)
     >>> test_tales("subscription/fmt:link", subscription=subscription)
-    u'Subscription of My Person to ~person-name17/product-name12/branch19'
+    u'Subscription of My Person to lp://dev/~person-name17/product-name12/branch19'
 
 But if we log in as the subscriber, a link is presented.
 
     >>> from zope.security.proxy import removeSecurityProxy
     >>> login(removeSecurityProxy(subscription.person.preferredemail).email)
     >>> test_tales("subscription/fmt:link", subscription=subscription)
-    u'<a href="http://code.launchpad.dev/~person-name17/product-name12/branch19/+subscription/person-name21">Subscription of My Person to ~person-name17/product-name12/branch19</a>'
+    u'<a href="http://code.launchpad.dev/~person-name17/product-name12/branch19/+subscription/person-name21">Subscription of My Person to lp://dev/~person-name17/product-name12/branch19</a>'
 
 Merge proposals also have a link formatter, which displays branch titles:
 

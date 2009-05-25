@@ -60,8 +60,22 @@ Users cannot create their own subscriptions either.  Log in as joesmith:
     ...
     Unauthorized:...
 
-If we log in as cprov it will work:
+If we log in as cprov it will still not work because his archive is
+currently public:
 
+    >>> login("celso.providelo@canonical.com")
+    >>> new_sub = cprov.archive.newSubscription(
+    ...     joesmith, cprov, description=u"subscription for joesmith")
+    Traceback (most recent call last):
+    ...
+    ArchiveNotPrivate: Only private archives can have subscriptions.
+
+After ensuring cprov's archive is private, cprov can create a
+subscription for joesmith:
+
+    >>> login('foo.bar@canonical.com')
+    >>> cprov.archive.buildd_secret = 'really secret'
+    >>> cprov.archive.private = True
     >>> login("celso.providelo@canonical.com")
     >>> new_sub = cprov.archive.newSubscription(
     ...     joesmith, cprov, description=u"subscription for joesmith")
@@ -122,10 +136,24 @@ entry is created:
     The Launchpad team
     ----------------------------------------
 
+
+A subscription for a subscriber who already has a current subscription
+cannot be created:
+
+    >>> new_sub = cprov.archive.newSubscription(
+    ...     joesmith, cprov, description=u"subscription for joesmith")
+    Traceback (most recent call last):
+    ...
+    AlreadySubscribed: Joe Smith already has a current subscription for
+    'PPA for Celso Providelo'.
+
+
 Add another subscription for the test user, this time to sabdfl's ppa:
 
     >>> login("mark@hbd.com")
     >>> sabdfl = getUtility(IPersonSet).getByName("sabdfl")
+    >>> sabdfl.archive.buildd_secret = "really secret"
+    >>> sabdfl.archive.private = True
     >>> new_sub_to_sabdfl_ppa = sabdfl.archive.newSubscription(
     ...     joesmith, sabdfl, description=u"subscription for joesmith")
 
@@ -311,6 +339,18 @@ We can also do this as an admin.
     >>> from lp.soyuz.interfaces.archivesubscriber import (
     ...     ArchiveSubscriberStatus)
     >>> new_sub.status = ArchiveSubscriberStatus.EXPIRED
+
+The subscriber and registrant properties are not editable.
+
+    >>> new_sub.subscriber = cprov
+    Traceback (most recent call last):
+    ...
+    ForbiddenAttribute:...
+
+    >>> new_sub.registrant = joesmith
+    Traceback (most recent call last):
+    ...
+    ForbiddenAttribute:...
 
 
 == Cancelling subscriptions ==

@@ -1,4 +1,4 @@
-# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
 """Stuff to do with logging in and logging out."""
 
 __metaclass__ = type
@@ -23,11 +23,11 @@ from lp.registry.interfaces.person import (
     IPerson, IPersonSet, PersonCreationRationale)
 from canonical.launchpad.interfaces.validation import valid_password
 from canonical.launchpad.validators.email import valid_email
-from canonical.launchpad.webapp.interfaces import (
-    ILaunchpadPrincipal, IPlacelessAuthUtility, IPlacelessLoginSource)
-from canonical.launchpad.webapp.interfaces import (
-    CookieAuthLoggedInEvent, LoggedOutEvent)
 from canonical.launchpad.webapp.error import SystemErrorView
+from canonical.launchpad.webapp.interfaces import (
+    CookieAuthLoggedInEvent, ILaunchpadPrincipal, IPlacelessAuthUtility,
+    IPlacelessLoginSource, LoggedOutEvent)
+from canonical.launchpad.webapp.metazcml import ILaunchpadPermission
 from canonical.launchpad.webapp.url import urlappend
 
 
@@ -38,9 +38,25 @@ class UnauthorizedView(SystemErrorView):
     forbidden_page = ViewPageTemplateFile(
         '../templates/launchpad-forbidden.pt')
 
+    read_only_page = ViewPageTemplateFile(
+        '../templates/launchpad-readonlyfailure.pt')
+
     notification_message = _('To continue, you must log in to Launchpad.')
 
     def __call__(self):
+        # In read only mode, Unauthorized exceptions get raised by the
+        # security policy when write permissions are requested. We need
+        # to render the read-only failure screen so the user knows their
+        # request failed for operational reasons rather than a genuine
+        # permission problem.
+        if config.launchpad.read_only:
+            # Our context is an Unauthorized exception, which acts like
+            # a tuple containing (object, attribute_requested, permission).
+            lp_permission = getUtility(ILaunchpadPermission, self.context[2])
+            if lp_permission.access_level != "read":
+                self.request.response.setStatus(503) # Service Unavailable
+                return self.read_only_page()
+
         if IUnauthenticatedPrincipal.providedBy(self.request.principal):
             if 'loggingout' in self.request.form:
                 target = '%s?loggingout=1' % self.request.URL[-2]

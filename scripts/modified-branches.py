@@ -9,7 +9,7 @@ This script will be used by IS for the rsync backups.
 
 import _pythonpath
 
-from canonical.codehosting.scripts.modifiedbranches import (
+from lp.codehosting.scripts.modifiedbranches import (
     ModifiedBranchesScript)
 
 

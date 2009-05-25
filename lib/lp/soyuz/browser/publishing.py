@@ -224,7 +224,7 @@ class SourcePublishingRecordView(BasePublishingRecordView):
     def build_status_img_src(self):
         """Return the image path for the current build status summary."""
         image_map = {
-            BuildSetStatus.BUILDING: '/@@/build-building',
+            BuildSetStatus.BUILDING: '/@@/processing',
             BuildSetStatus.NEEDSBUILD: '/@@/build-needed',
             BuildSetStatus.FAILEDTOBUILD: '/@@/no',
             BuildSetStatus.FULLYBUILT_PENDING: '/@@/build-success-publishing'
