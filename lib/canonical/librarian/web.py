@@ -1,7 +1,10 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
 #
 
 __metaclass__ = type
+
+from datetime import datetime
+import time
 
 from twisted.web import resource, static, error, util, server, proxy
 from twisted.internet.threads import deferToThread
@@ -19,7 +22,7 @@ defaultResource = static.Data("""
         http://librarian.launchpad.net/ is a
         file repository used by <a href="https://launchpad.net/">Launchpad</a>.
         </p>
-        <p><small>Copyright 2004-2007 Canonical Ltd.</small></p>
+        <p><small>Copyright 2004-2009 Canonical Ltd.</small></p>
         <!-- kthxbye. -->
         </body></html>
         """, type='text/html')
@@ -83,7 +86,8 @@ class LibraryFileAliasResource(resource.Resource):
         try:
             alias = self.storage.getFileAlias(aliasID)
             alias.updateLastAccessed()
-            return alias.contentID, alias.filename, alias.mimetype
+            return (alias.contentID, alias.filename,
+                alias.mimetype, alias.date_created)
         except LookupError:
             raise NotFound
 
@@ -92,7 +96,7 @@ class LibraryFileAliasResource(resource.Resource):
         return fourOhFour
 
     def _cb_getFileAlias(
-            self, (dbcontentID, dbfilename, mimetype),
+            self, (dbcontentID, dbfilename, mimetype, date_created),
             filename, request
             ):
         # Return a 404 if the filename in the URL is incorrect. This offers
@@ -100,12 +104,17 @@ class LibraryFileAliasResource(resource.Resource):
         # unguessable names effectively using the filename as a secret).
         if dbfilename.encode('utf-8') != filename:
             return fourOhFour
+
+        # Set our caching headers. Librarian files can be cached forever.
+        request.setHeader('Cache-Control', 'max-age=31536000, public')
+
         if self.storage.hasFile(dbcontentID) or self.upstreamHost is None:
             # XXX: Brad Crittenden 2007-12-05 bug=174204: When encodings are
             # stored as part of a file's metadata this logic will be replaced.
             encoding, mimetype = guess_librarian_encoding(filename, mimetype)
-            return File(mimetype, encoding,
-                        self.storage._fileLocation(dbcontentID))
+            return File(
+                mimetype, encoding, date_created,
+                self.storage._fileLocation(dbcontentID))
         else:
             return proxy.ReverseProxyResource(self.upstreamHost,
                                               self.upstreamPort, request.path)
@@ -116,10 +125,23 @@ class LibraryFileAliasResource(resource.Resource):
 
 class File(static.File):
     isLeaf = True
-    def __init__(self, contentType, encoding=None, *args, **kwargs):
+    def __init__(
+        self, contentType, encoding, modification_time, *args, **kwargs):
+        # Have to convert the UTC datetime to POSIX timestamp (localtime)
+        offset = datetime.utcnow() - datetime.now()
+        local_modification_time = modification_time - offset
+        self._modification_time = time.mktime(
+            local_modification_time.timetuple())
         static.File.__init__(self, *args, **kwargs)
         self.type = contentType
         self.encoding = encoding
+
+    def getModificationTime(self):
+        """Override the time on disk with the time from the database.
+
+        This is used by twisted to set the Last-Modified: header.
+        """
+        return self._modification_time
 
 
 class DigestSearchResource(resource.Resource):
