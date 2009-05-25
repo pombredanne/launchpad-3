@@ -1433,12 +1433,12 @@ class BugSet:
                 "product", "status", "subscribers", "tags",
                 "subscribe_owner", "filed_by"])
 
-        bug, event = self.createBugWithoutTarget(params)
-
         if params.product and params.product.private_bugs:
             # If the private_bugs flag is set on a product, then
             # force the new bug report to be private.
             params.private = True
+
+        bug, event = self.createBugWithoutTarget(params)
 
         if params.security_related:
             assert params.private, (
