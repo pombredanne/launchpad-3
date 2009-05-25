@@ -1423,8 +1423,66 @@ class BugSet:
 
     def createBug(self, bug_params):
         """See `IBugSet`."""
-        bug, event = self.createBugWithoutTarget(bug_params)
+        # Make a copy of the parameter object, because we might modify some
+        # of its attribute values below.
+        params = Snapshot(
+            bug_params, names=[
+                "owner", "title", "comment", "description", "msg",
+                "datecreated", "security_related", "private",
+                "distribution", "sourcepackagename", "binarypackagename",
+                "product", "status", "subscribers", "tags",
+                "subscribe_owner", "filed_by"])
+
+        bug, event = self.createBugWithoutTarget(params)
+
+        if params.product and params.product.private_bugs:
+            # If the private_bugs flag is set on a product, then
+            # force the new bug report to be private.
+            params.private = True
+
+        if params.security_related:
+            assert params.private, (
+                "A security related bug should always be private by default.")
+            if params.product:
+                context = params.product
+            else:
+                context = params.distribution
+
+            if context.security_contact:
+                bug.subscribe(context.security_contact, params.owner)
+            else:
+                bug.subscribe(context.owner, params.owner)
+        # XXX: ElliotMurphy 2007-06-14: If we ever allow filing private
+        # non-security bugs, this test might be simplified to checking
+        # params.private.
+        elif params.product and params.product.private_bugs:
+            # Subscribe the bug supervisor to all bugs,
+            # because all their bugs are private by default
+            # otherwise only subscribe the bug reporter by default.
+            if params.product.bug_supervisor:
+                bug.subscribe(params.product.bug_supervisor, params.owner)
+            else:
+                bug.subscribe(params.product.owner, params.owner)
+        else:
+            # nothing to do
+            pass
+
+        # Create the task on a product if one was passed.
+        if params.product:
+            BugTaskSet().createTask(
+                bug=bug, product=params.product, owner=params.owner,
+                status=params.status)
+
+        # Create the task on a source package name if one was passed.
+        if params.distribution:
+            BugTaskSet().createTask(
+                bug=bug, distribution=params.distribution,
+                sourcepackagename=params.sourcepackagename,
+                owner=params.owner, status=params.status)
+
+        # Tell everyone.
         notify(event)
+
         return bug
 
     def createBugWithoutTarget(self, bug_params):
@@ -1441,7 +1499,7 @@ class BugSet:
 
         if not (params.comment or params.description or params.msg):
             raise AssertionError(
-                'Method createBug requires a comment, msg, or description.')
+                'Either comment, msg, or description should be specified.')
 
         if not params.datecreated:
             params.datecreated = UTC_NOW
@@ -1449,11 +1507,6 @@ class BugSet:
         # make sure we did not get TOO MUCH information
         assert params.comment is None or params.msg is None, (
             "Expected either a comment or a msg, but got both.")
-
-        if params.product and params.product.private_bugs:
-            # If the private_bugs flag is set on a product, then
-            # force the new bug report to be private.
-            params.private = True
 
         # Store binary package name in the description, because
         # storing it as a separate field was a maintenance burden to
@@ -1465,6 +1518,11 @@ class BugSet:
         # Create the bug comment if one was given.
         if params.comment:
             rfc822msgid = make_msgid('malonedeb')
+            # The distribution parameter here doesn't make much sense,
+            # seeing as this method is meant to create a bug without a
+            # target. It is being left to support createBug(), just in
+            # case, even though Message.distribution is allegedly not
+            # used.
             params.msg = Message(
                 subject=params.title, distribution=params.distribution,
                 rfc822msgid=rfc822msgid, owner=params.owner,
@@ -1497,33 +1555,6 @@ class BugSet:
         if params.tags:
             bug.tags = params.tags
 
-        if params.security_related:
-            assert params.private, (
-                "A security related bug should always be private by default.")
-            if params.product:
-                context = params.product
-            else:
-                context = params.distribution
-
-            if context.security_contact:
-                bug.subscribe(context.security_contact, params.owner)
-            else:
-                bug.subscribe(context.owner, params.owner)
-        # XXX: ElliotMurphy 2007-06-14: If we ever allow filing private
-        # non-security bugs, this test might be simplified to checking
-        # params.private.
-        elif params.product and params.product.private_bugs:
-            # Subscribe the bug supervisor to all bugs,
-            # because all their bugs are private by default
-            # otherwise only subscribe the bug reporter by default.
-            if params.product.bug_supervisor:
-                bug.subscribe(params.product.bug_supervisor, params.owner)
-            else:
-                bug.subscribe(params.product.owner, params.owner)
-        else:
-            # nothing to do
-            pass
-
         # Subscribe other users.
         for subscriber in params.subscribers:
             bug.subscribe(subscriber, params.owner)
@@ -1531,29 +1562,16 @@ class BugSet:
         # Link the bug to the message.
         BugMessage(bug=bug, message=params.msg)
 
-        # Create the task on a product if one was passed.
-        if params.product:
-            BugTaskSet().createTask(
-                bug=bug, product=params.product, owner=params.owner,
-                status=params.status)
-
-        # Create the task on a source package name if one was passed.
-        if params.distribution:
-            BugTaskSet().createTask(
-                bug=bug, distribution=params.distribution,
-                sourcepackagename=params.sourcepackagename,
-                owner=params.owner, status=params.status)
-
         # Mark the bug reporter as affected by that bug.
         bug.markUserAffected(bug.owner)
 
-        # Tell everyone.
+        # Populate the creation event.
         if params.filed_by is None:
             event = ObjectCreatedEvent(bug, user=params.owner)
         else:
             event = ObjectCreatedEvent(bug, user=params.filed_by)
 
-        return bug, event
+        return (bug, event)
 
 
 class BugAffectsPerson(SQLBase):
