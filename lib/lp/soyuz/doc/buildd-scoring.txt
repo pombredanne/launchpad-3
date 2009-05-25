@@ -225,11 +225,11 @@ up by another 1500.
     5515
 
 Builds in COPY archives have a score below zero, so they will only
-be considered when there is nothing else to build. Even laguage-packs
+be considered when there is nothing else to build. Even language-packs
 and build retries will be built before them.
 
 No other aspects are considered when scoring builds from COPY archive,
-they all have a fixed score of -1. They will get built in the order
+they all have a fixed score of -10. They will get built in the order
 they were created.
 
     >>> from canonical.launchpad.interfaces import ArchivePurpose
@@ -237,4 +237,4 @@ they were created.
     >>> bqc.build.archive.purpose = ArchivePurpose.COPY
     >>> bqc.score()
     >>> bqc.lastscore
-    -1
+    -10

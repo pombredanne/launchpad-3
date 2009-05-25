@@ -153,10 +153,10 @@ class BuildQueue(SQLBase):
         private_archive_increment = 10000
 
         # For build jobs in rebuild archives a score value of -1
-        # was chosen because their priority is lower then build retries
+        # was chosen because their priority is lower than build retries
         # or language-packs. They should be built only when there is
         # nothing else to build.
-        rebuild_archive_score = -1
+        rebuild_archive_score = -10
 
         score = 0
         msg = "%s (%d) -> " % (self.build.title, self.lastscore)
