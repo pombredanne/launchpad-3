@@ -1362,7 +1362,7 @@ class TestBugChanges(unittest.TestCase):
             product=self.product, owner=self.user, comment="ENOTOWEL")
 
         expected_activity = {
-            'person': self.admin_user,
+            'person': self.user,
             'whatchanged': 'bug',
             'message': u"added bug",
             }
