@@ -118,7 +118,7 @@ Evolution product are for this trunk series.
 The import queue is linked from the translations page for persons.
 
     >>> user_browser.open('http://translations.launchpad.dev/~name16')
-    >>> user_browser.getLink('See import queue').click()
+    >>> user_browser.getLink('Import queue').click()
 
 This time, we do have content for this product:
 

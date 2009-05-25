@@ -16,6 +16,7 @@ that this page has information about relicensing.
     >>> print browser.title
     Translations licensing
     >>> print extract_text(find_main_content(browser.contents))
+    Overview / Translations licensing / Import queue
     Sorry to interrupt...
 
 Karl is asked whether he wants to license his translations.
