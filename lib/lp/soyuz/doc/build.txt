@@ -621,6 +621,9 @@ getBuildRecords() ordered by descending creation date.
     >>> [deleted_build, superseded_build] == list(old_source_builds)
     True
 
+    >>> deleted_build.datecreated > superseded_build.datecreated
+    True
+
 Builds records for the exactly the same `SourcePackageRelease`s may
 exist in a rebuild archive context, but they do not 'leak' to the
 domain of SourcePackage.
