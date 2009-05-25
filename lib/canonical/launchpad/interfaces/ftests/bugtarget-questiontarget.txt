@@ -136,6 +136,7 @@ question and that the bugtasks are Invalid.
     ** Changed in: ...
        Status: New => Invalid
     This is a question.
+    Print is broken
 
 A bug can only be converted to a question once.
 
