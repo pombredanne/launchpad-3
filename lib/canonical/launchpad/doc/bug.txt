@@ -85,6 +85,40 @@ parameter is available to override the user recorded in the event.
               Owner: steve-harris
            Filed by: rod-smallwood
 
+However, some circumstances demand that we defer notification, most
+specifically when we do not yet have a target. A variant,
+createBugWithoutTarget(), exists to allow for this. No notifications
+are sent, but an event is returned to make explicit the contract that
+the caller is responsible for notifying other components of bug
+creation.
+
+    >>> params = CreateBugParams(
+    ...     owner=steve_harris, filed_by=rod_smallwood,
+    ...     title="Janick is making strange noises again",
+    ...     comment="But maybe it's Bruce throat warbling?")
+    >>> bug, event = bugset.createBugWithoutTarget(params)
+
+    >>> print event
+    <security proxied lazr...ObjectCreatedEvent instance at ...>
+
+Once the first bugtask has been created, the event should be sent. We
+need to log in here because the event object is security proxied.
+
+    >>> login("foo.bar@canonical.com")
+
+    >>> from canonical.launchpad.interfaces.bugtask import IBugTaskSet
+    >>> getUtility(IBugTaskSet).createTask(
+    ...     bug=bug, product=jukebox, owner=params.owner)
+    <BugTask at ...>
+
+    >>> from zope.event import notify
+    >>> notify(event)
+    New bug created: Janick is making strange noises again
+              Owner: steve-harris
+           Filed by: rod-smallwood
+
+    >>> login(ANONYMOUS)
+
 We must unregister the handler.
 
     >>> globalSiteManager.unregisterHandler(

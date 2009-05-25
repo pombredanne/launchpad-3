@@ -47,6 +47,7 @@
     <include file="launchpad.zcml" />
     <include file="launchpadstatistic.zcml" />
     <include file="librarian.zcml" />
+    <include file="lifecycle.zcml" />
     <include file="logintoken.zcml" />
     <include file="marketing.zcml" />
     <include file="mentoringoffer.zcml" />

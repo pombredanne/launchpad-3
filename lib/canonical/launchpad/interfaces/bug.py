@@ -874,6 +874,18 @@ class IBugSet(Interface):
             description
         """
 
+    def createBugWithoutTarget(bug_params):
+        """Create a bug without a bug target and return it.
+
+        This is a variant of `createBug()` that does not create the
+        first bugtask for the bug. The bug creation event is not sent,
+        and a `(bug, event)` tuple is returned instead. The caller is
+        therefore responsible for sending the event at a later point.
+
+        See `createBug()` for more information.
+        """
+
+
 class InvalidBugTargetType(Exception):
     """Bug target's type is not valid."""
     webservice_error(400)

@@ -1420,6 +1420,12 @@ class BugSet:
 
     def createBug(self, bug_params):
         """See `IBugSet`."""
+        bug, event = self.createBugWithoutTarget(bug_params)
+        notify(event)
+        return bug
+
+    def createBugWithoutTarget(self, bug_params):
+        """See `IBugSet`."""
         # Make a copy of the parameter object, because we might modify some
         # of its attribute values below.
         params = Snapshot(
@@ -1440,6 +1446,7 @@ class BugSet:
         # make sure we did not get TOO MUCH information
         assert params.comment is None or params.msg is None, (
             "Expected either a comment or a msg, but got both.")
+
         if params.product and params.product.private_bugs:
             # If the private_bugs flag is set on a product, then
             # force the new bug report to be private.
@@ -1539,11 +1546,11 @@ class BugSet:
 
         # Tell everyone.
         if params.filed_by is None:
-            notify(ObjectCreatedEvent(bug, user=params.owner))
+            event = ObjectCreatedEvent(bug, user=params.owner)
         else:
-            notify(ObjectCreatedEvent(bug, user=params.filed_by))
+            event = ObjectCreatedEvent(bug, user=params.filed_by)
 
-        return bug
+        return bug, event
 
 
 class BugAffectsPerson(SQLBase):
