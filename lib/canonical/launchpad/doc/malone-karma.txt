@@ -30,7 +30,6 @@ Create a bug:
     >>> params = CreateBugParams(
     ...     comment=u"Give me some karma!", title=u"New Bug", owner=foo_bar)
     >>> bug = debian.createBug(params)
-    >>> notify(ObjectCreatedEvent(bug))
     Karma added: action=bugcreated, distribution=debian
 
 Change the title of a bug:

@@ -104,7 +104,6 @@ class FileBugAPI(LaunchpadXMLRPCView):
             subscribers=subscriber_list)
 
         bug = target.createBug(params)
-        notify(ObjectCreatedEvent(bug))
 
         return canonical_url(bug)
 

@@ -1113,7 +1113,7 @@ series, additional sourcepackage bugtasks are automatically nominated
 to the same series. The nominations are implicitly accepted and have
 targetnamecache updated.
 
-    >>> new_bug = bugset.createBug(
+    >>> new_bug, new_bug_event = bugset.createBugWithoutTarget(
     ...     CreateBugParams(sabdfl, 'New Bug', comment='New Bug'))
 
     >>> bugtaskset.createTask(
