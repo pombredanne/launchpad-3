@@ -27,7 +27,7 @@ from lp.registry.interfaces.productseries import NoSuchProductSeries
 from lp.soyuz.interfaces.publishing import PackagePublishingPocket
 from lp.registry.interfaces.sourcepackagename import (
     NoSuchSourcePackageName)
-from canonical.launchpad.testing import run_with_login, TestCaseWithFactory
+from lp.testing import run_with_login, TestCaseWithFactory
 from canonical.testing.layers import DatabaseFunctionalLayer
 
 

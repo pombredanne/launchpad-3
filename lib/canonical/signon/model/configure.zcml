@@ -15,8 +15,8 @@
     </securedutility>
 
     <utility
-        provides="..interfaces.openidserver.ILaunchpadOpenIDStoreFactory"
-        component=".openidserver.LaunchpadOpenIDStore">
+        provides="..interfaces.openidstore.IProviderOpenIDStore"
+        factory=".openidstore.ProviderOpenIDStore">
     </utility>
 
     <class

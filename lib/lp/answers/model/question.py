@@ -53,7 +53,7 @@ from canonical.database.enumcol import EnumCol
 
 from lp.answers.model.answercontact import AnswerContact
 from canonical.launchpad.database.buglinktarget import BugLinkTargetMixin
-from canonical.launchpad.database.language import Language
+from lp.services.worlddata.model.language import Language
 from canonical.launchpad.database.message import Message, MessageChunk
 from lp.coop.answersbugs.model import QuestionBug
 from lp.answers.model.questionmessage import QuestionMessage

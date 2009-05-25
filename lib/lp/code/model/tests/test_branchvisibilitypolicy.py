@@ -9,7 +9,7 @@ import unittest
 from lp.code.interfaces.branchvisibilitypolicy import (
     BranchVisibilityRule, IHasBranchVisibilityPolicy,
     InvalidVisibilityPolicy)
-from canonical.launchpad.testing import TestCaseWithFactory
+from lp.testing import TestCaseWithFactory
 from canonical.launchpad.webapp.testing import verifyObject
 
 from canonical.testing import DatabaseFunctionalLayer

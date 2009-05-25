@@ -1,5 +1,5 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
-# pylint: disable-msg=E0211,E0213
+# pylint: disable-msg=E0211,E0213,E0602
 
 """Interfaces related to bugs."""
 
@@ -328,7 +328,9 @@ class IBug(ICanBeMentored):
         :return: an `IBugSubscription`.
         """
 
-    @call_with(person=REQUEST_USER, unsubscribed_by=REQUEST_USER)
+    @operation_parameters(
+        person=Reference(IPerson, title=_('Person'), required=False))
+    @call_with(unsubscribed_by=REQUEST_USER)
     @export_write_operation()
     def unsubscribe(person, unsubscribed_by):
         """Remove this person's subscription to this bug."""

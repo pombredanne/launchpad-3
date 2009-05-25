@@ -18,11 +18,12 @@ from lp.soyuz.interfaces.section import (
     ISection, ISectionSelection, ISectionSet)
 from canonical.launchpad.webapp.interfaces import NotFoundError
 
+
 class Section(SQLBase):
     """See ISection"""
     implements(ISection)
 
-    _defaultOrder= ['id']
+    _defaultOrder = ['id']
 
     name = StringCol(notNull=True, alternateID=True)
 
@@ -32,7 +33,7 @@ class SectionSelection(SQLBase):
 
     implements(ISectionSelection)
 
-    _defaultOrder= ['id']
+    _defaultOrder = ['id']
 
     distroseries = ForeignKey(dbName='distroseries',
         foreignKey='DistroSeries', notNull=True)

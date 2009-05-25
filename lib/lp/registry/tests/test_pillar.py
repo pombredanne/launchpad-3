@@ -8,7 +8,7 @@ from zope.component import getUtility
 
 from canonical.launchpad.ftests import login
 from lp.registry.interfaces.pillar import IPillarNameSet
-from canonical.launchpad.testing import TestCaseWithFactory
+from lp.testing import TestCaseWithFactory
 from canonical.testing import LaunchpadFunctionalLayer
 
 
