@@ -41,7 +41,6 @@ from zope.schema.vocabulary import SimpleVocabulary
 from lazr.lifecycle.event import ObjectCreatedEvent
 
 from canonical.cachedproperty import cachedproperty
-from canonical.launchpad import _
 from canonical.launchpad.browser.bugtask import BugTaskSearchListingView
 from canonical.launchpad.browser.feeds import (
     BugFeedLink, BugTargetLatestBugsFeedLink, FeedsMixin,
@@ -404,7 +403,7 @@ class FileBugViewBase(LaunchpadFormView):
         # field.
         subscribe_field = Choice(
             __name__='subscribe_to_existing_bug',
-            title=_('Updates for this bug tracker are'),
+            title=u'Subscribe to this bug',
             vocabulary=SUBSCRIBE_TO_BUG_VOCABULARY,
             required=True, default=False)
 

@@ -804,7 +804,7 @@ class IBugAddForm(IBug):
         title=_('Assign to'), required=False,
         vocabulary='ValidAssignee')
     subscribe_to_existing_bug = Bool(
-        title=_('Updates for this bug tracker are enabled'),
+        title=_(u'Subscribe to this bug'),
         required=True, default=False)
 
 
