@@ -406,7 +406,7 @@
                 <label tal:attributes="for string:bug-already-reported-as-${bug/id}"
                        style="font-weight: normal">
                   #<tal:bug-id replace="bug/id">4</tal:bug-id>
-                  <a tal:attributes="href bug/fmt:url"
+                  <a tal:attributes="href bug/fmt:url; id string:bug-${bug/id}-title"
                      tal:content="bug/title"
                      >Bug title here</a>
                 </label>
