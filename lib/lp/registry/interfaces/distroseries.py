@@ -663,7 +663,7 @@ class IDistroSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
           in the initialisation of a derivative.
         """
 
-    def copyMissingTranslationsFromParent(ztm):
+    def copyTranslationsFromParent(ztm):
         """Copy any translation done in parent that we lack.
 
         If there is another translation already added to this one, we ignore

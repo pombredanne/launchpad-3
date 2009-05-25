@@ -548,53 +548,6 @@ Supersede previous netapplet publication:
    True
 
 
-== DistroSeries Translations migration ==
-
-We have several ways to copy translations between distro series.  We bring a
-transaction manager (in this case a fake one) to make these work.
-
-    >>> class FakeTransactionManager:
-    ...     """Mock transaction manager for test."""
-    ...     def begin(self):
-    ...         pass
-    ...     def commit(self):
-    ...         pass
-    >>> transaction_stub = FakeTransactionManager()
-
-
-=== Preconditions for migrating translations between distro series ===
-
-Before we are able to migrate translations, there are a set of preconditions
-that should be met:
-
-First one is that we should keep the new distroseries's translations hidden
-from the public, so the copying procedure is not confused by concurrent
-updates:
-
-    >>> humpy.hide_all_translations = False
-    >>> humpy.copyMissingTranslationsFromParent(transaction_stub)
-    Traceback (most recent call last):
-    ...
-    AssertionError: hide_all_translations not set!...
-
-    # Set the field to TRUE so we meet this precondition for following
-    # tests.
-    >>> humpy.hide_all_translations = True
-
-The other one is that, for the same reason, the import queue should not be
-accepting uploads for this distroseries.
-
-    >>> humpy.defer_translation_imports = False
-    >>> humpy.copyMissingTranslationsFromParent(transaction_stub)
-    Traceback (most recent call last):
-    ...
-    AssertionError: defer_translation_imports not set!...
-
-    # Set the field to TRUE so we meet this precondition for following
-    # tests.
-    >>> humpy.defer_translation_imports = True
-
-
 == SourcePackagePublishingHistory ==
 
 IDistroSeries.getSourcePackagePublishing returns all the ISPPH

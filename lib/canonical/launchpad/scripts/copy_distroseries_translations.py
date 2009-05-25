@@ -90,7 +90,7 @@ def update_translations(series, txn, logger):
         # able to combine these two try blocks.  In 2.4, we can't.
         try:
             # Do the actual work.
-            series.copyMissingTranslationsFromParent(txn, logger)
+            series.copyTranslationsFromParent(txn, logger)
         except:
             copy_failed = True
             # Give us a fresh transaction for proper cleanup.
