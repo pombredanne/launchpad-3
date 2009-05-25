@@ -546,14 +546,13 @@ class DistributionPackageSearchView(PackageSearchViewBase):
         """Save the search type if provided."""
         super(DistributionPackageSearchView, self).initialize()
 
-        # TODO: waiting on Distribution.has_binary_packages
         # If the distribution contains binary packages, then we'll
         # default to searches on binary names, but allow the user to
         # select.
-        # if self.context.has_binary_packages:
-        self.search_type = self.request.get("search_type", 'binary')
-        # else:
-        #self.search_type = 'source'
+        if self.context.has_published_binaries:
+            self.search_type = self.request.get("search_type", 'binary')
+        else:
+            self.search_type = 'source'
 
     def contextSpecificSearch(self):
         """See `AbstractPackageSearchView`."""

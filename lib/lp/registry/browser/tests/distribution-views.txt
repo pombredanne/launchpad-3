@@ -76,9 +76,11 @@ instead:
 Unless the distribution being searched does not support binaries, in which
 cases it will always be on source:
 
-    >>> debian = getUtility(IDistributionSet).getByName("debian")
+    >>> debian = factory.makeDistribution(
+    ...     name='mydebian', displayname='debian-without-binaries')
 
-TODO: debian.has_binary_packages -> True
+    >>> debian.has_published_binaries
+    False
 
     >>> distro_pkg_search_view = create_initialized_view(
     ...     debian, name="+search", form={'search_type': 'binary'})
