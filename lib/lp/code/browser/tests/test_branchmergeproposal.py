@@ -157,6 +157,7 @@ class TestBranchMergeProposalVoteView(TestCaseWithFactory):
             [review.reviewer for review in view.current_reviews])
 
     def test_render_all_vote_types(self):
+        # A smoke test that the view knows how to render all types of vote.
         for vote in CodeReviewVote.items:
             self._createComment(
                 self.factory.makePerson(), vote)
@@ -165,7 +166,9 @@ class TestBranchMergeProposalVoteView(TestCaseWithFactory):
             (self.bmp, LaunchpadTestRequest()), name='+votes')
         self.failUnless(
             isinstance(view, BranchMergeProposalVoteView),
-            "")
+            "The +votes page for a BranchMergeProposal is expected to be a "
+            "BranchMergeProposalVoteView")
+        # We just test that rendering does not raise.
         view.render()
 
 
