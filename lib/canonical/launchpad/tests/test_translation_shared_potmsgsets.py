@@ -27,12 +27,6 @@ class TestTranslationSharedPOTMsgSets(unittest.TestCase):
 
     layer = LaunchpadZopelessLayer
 
-    def gen_now(self):
-        now = datetime.now(pytz.UTC)
-        while True:
-            yield now
-            now += timedelta(milliseconds=1)
-
     def setUp(self):
         """Set up context to test in."""
         # Create a product with two series and a shared POTemplate
@@ -526,67 +520,124 @@ class TestTranslationSharedPOTMsgSets(unittest.TestCase):
             self.devel_potemplate, serbian)
         self.assertEquals(current_translation, shared_translation)
 
-    def test_dismissAllSuggestions(self):
-        now = self.gen_now().next
-        pofile = self.factory.makePOFile('eo', self.devel_potemplate)
-        translation = self.factory.makeTranslationMessage(
-            pofile, self.potmsgset, translations=[u'trans1'],
-            reviewer=self.factory.makePerson(), date_updated=now())
-        suggestion = self.factory.makeTranslationMessage(
-            pofile, self.potmsgset, suggestion=True, translations=[u'sugg1'],
-            date_updated = now())
-        # There is one local suggestion now.
-        suggestions = set(
+class TestPOTMsgSetSuggestionsDismissal(unittest.TestCase):
+    """Test discovery of translation suggestions."""
+
+    layer = LaunchpadZopelessLayer
+
+    def _created(self, tm):
+        removeSecurityProxy(tm).date_created = self.now()
+
+    def _reviewed(self, tm):
+        removeSecurityProxy(tm).date_reviewed = self.now()
+
+    def gen_now(self):
+        now = datetime.now(pytz.UTC)
+        while True:
+            yield now
+            now += timedelta(milliseconds=1)
+
+    def setUp(self):
+        """Set up context to test in."""
+        # Create a product with two series and a shared POTemplate
+        # in different series ('devel' and 'stable').
+        factory = LaunchpadObjectFactory()
+        self.factory = factory
+        self.now = self.gen_now().next
+        self.foo = factory.makeProduct()
+        self.foo_main = factory.makeProductSeries(
+            name='main', product=self.foo)
+        self.foo.official_rosetta = True
+
+        self.potemplate = factory.makePOTemplate(
+            productseries=self.foo_main, name="messages")
+        self.potmsgset = self.factory.makePOTMsgSet(self.potemplate)
+        self.potmsgset.setSequence(self.potemplate, 1)
+        self.pofile = self.factory.makePOFile('eo', self.potemplate)
+        # Set up some translation messages with dummy timestamps that will be
+        # changed in the tests.
+        self.translation = self.factory.makeTranslationMessage(
+            self.pofile, self.potmsgset, translations=[u'trans1'],
+            reviewer=self.factory.makePerson(), date_updated=self.now())
+        self.suggestion1 = self.factory.makeTranslationMessage(
+            self.pofile, self.potmsgset, suggestion=True, translations=[u'sugg1'],
+            date_updated=self.now())
+        self.suggestion2 = self.factory.makeTranslationMessage(
+            self.pofile, self.potmsgset, suggestion=True, translations=[u'sugg2'],
+            date_updated=self.now())
+
+    def test_dismiss_all(self):
+        # Set order of creation and review.
+        self._reviewed(self.translation)
+        self._created(self.suggestion1)
+        self._created(self.suggestion2)
+        # There are two local suggestions now.
+        self.assertEqual(set([self.suggestion1, self.suggestion2]), set(
             self.potmsgset.getLocalTranslationMessages(
-                self.devel_potemplate, pofile.language))
-        self.assertEqual(set([suggestion]), suggestions)
+                self.potemplate, self.pofile.language)))
         # Dismiss suggestions.
         self.potmsgset.dismissAllSuggestions(
-            pofile, self.factory.makePerson(), now())
+            self.pofile, self.factory.makePerson(), self.now())
         # There is no local suggestion now.
-        suggestions = set(
+        self.assertEqual(set(), set(
             self.potmsgset.getLocalTranslationMessages(
-                self.devel_potemplate, pofile.language))
-        self.assertEqual(set(), suggestions)
+                self.potemplate, self.pofile.language)))
 
-    def test_dismissAllSuggestions_nochange(self):
-        now = self.gen_now().next
-        pofile = self.factory.makePOFile('eo', self.devel_potemplate)
-        suggestion = self.factory.makeTranslationMessage(
-            pofile, self.potmsgset, suggestion=True, translations=[u'sugg1'],
-            date_updated = now())
-        translation = self.factory.makeTranslationMessage(
-            pofile, self.potmsgset, translations=[u'trans1'],
-            reviewer=self.factory.makePerson(), date_updated=now())
+    def test_dismiss_nochange(self):
+        # Set order of creation and review.
+        self._created(self.suggestion1)
+        self._created(self.suggestion2)
+        self._reviewed(self.translation)
         # There is no local suggestion.
-        suggestions = set(
+        self.assertEqual(set(), set(
             self.potmsgset.getLocalTranslationMessages(
-                self.devel_potemplate, pofile.language))
-        self.assertEqual(set(), suggestions)
+                self.potemplate, self.pofile.language)
+            ))
         # Dismiss suggestions.
         self.potmsgset.dismissAllSuggestions(
-            pofile, self.factory.makePerson(), now())
+            self.pofile, self.factory.makePerson(), self.now())
         # There is still no local suggestion.
-        suggestions = set(
+        self.assertEqual(set(), set(
             self.potmsgset.getLocalTranslationMessages(
-                self.devel_potemplate, pofile.language))
-        self.assertEqual(set(), suggestions)
+                self.potemplate, self.pofile.language)))
 
-    def test_dismissAllSuggestions_lock_timestamp(self):
-        now = self.gen_now().next
-        pofile = self.factory.makePOFile('eo', self.devel_potemplate)
-        suggestion = self.factory.makeTranslationMessage(
-            pofile, self.potmsgset, suggestion=True, translations=[u'sugg1'],
-            date_updated = now())
-        # Save the time for later
-        old_now = now()
-        translation = self.factory.makeTranslationMessage(
-            pofile, self.potmsgset, translations=[u'trans1'],
-            reviewer=self.factory.makePerson(), date_updated=now())
-        # Dismiss suggestions but using an older time stamp.
-        self.assertRaises(TranslationConflict,
-            self.potmsgset.dismissAllSuggestions, 
-            pofile, self.factory.makePerson(), old_now)
+    def test_dismiss_conflicting_suggestion(self):
+        # Set order of creation and review.
+        self._reviewed(self.translation)
+        self._created(self.suggestion1)
+        old_now = self.now()
+        self._created(self.suggestion2)
+        # There are two local suggestions now.
+        self.assertEqual(set([self.suggestion1, self.suggestion2]), set(
+            self.potmsgset.getLocalTranslationMessages(
+                self.potemplate, self.pofile.language)))
+        # Dismiss suggestions using an older timestamp only dismisses those
+        # that were filed before that timestamp.
+        self.potmsgset.dismissAllSuggestions(
+            self.pofile, self.factory.makePerson(), old_now)
+        self.assertEqual(set([self.suggestion2]), set(
+            self.potmsgset.getLocalTranslationMessages(
+                self.potemplate, self.pofile.language)))
+
+    def test_dismiss_conflicting_translation(self):
+        # Set order of creation and review.
+        self._created(self.suggestion1)
+        old_now = self.now()
+        self._reviewed(self.translation)
+        self._created(self.suggestion2)
+        # Only the 2nd suggestion is visible.
+        self.assertEqual(set([self.suggestion2]), set(
+            self.potmsgset.getLocalTranslationMessages(
+                self.potemplate, self.pofile.language)))
+        # Dismiss suggestions using an older timestamp fails if there is
+        # a newer curent translation.
+        self.assertRaises(TranslationConflict, 
+            self.potmsgset.dismissAllSuggestions,
+            self.pofile, self.factory.makePerson(), old_now)
+        # Still only the 2nd suggestion is visible.
+        self.assertEqual(set([self.suggestion2]), set(
+            self.potmsgset.getLocalTranslationMessages(
+                self.potemplate, self.pofile.language)))
 
 
 class TestPOTMsgSetTranslationMessageConstraints(unittest.TestCase):
