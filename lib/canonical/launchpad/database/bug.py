@@ -172,6 +172,17 @@ def get_bug_tags_open_count(context_condition, user):
     return shortlist([(row[0], row[1]) for row in result.get_all()])
 
 
+def snapshot_bug_params(bug_params):
+    """Return a snapshot of a `CreateBugParams` object."""
+    return Snapshot(
+        bug_params, names=[
+            "owner", "title", "comment", "description", "msg",
+            "datecreated", "security_related", "private",
+            "distribution", "sourcepackagename", "binarypackagename",
+            "product", "status", "subscribers", "tags",
+            "subscribe_owner", "filed_by"])
+
+
 class BugTag(SQLBase):
     """A tag belonging to a bug."""
 
@@ -1425,13 +1436,7 @@ class BugSet:
         """See `IBugSet`."""
         # Make a copy of the parameter object, because we might modify some
         # of its attribute values below.
-        params = Snapshot(
-            bug_params, names=[
-                "owner", "title", "comment", "description", "msg",
-                "datecreated", "security_related", "private",
-                "distribution", "sourcepackagename", "binarypackagename",
-                "product", "status", "subscribers", "tags",
-                "subscribe_owner", "filed_by"])
+        params = snapshot_bug_params(bug_params)
 
         if params.product and params.product.private_bugs:
             # If the private_bugs flag is set on a product, then
@@ -1489,13 +1494,7 @@ class BugSet:
         """See `IBugSet`."""
         # Make a copy of the parameter object, because we might modify some
         # of its attribute values below.
-        params = Snapshot(
-            bug_params, names=[
-                "owner", "title", "comment", "description", "msg",
-                "datecreated", "security_related", "private",
-                "distribution", "sourcepackagename", "binarypackagename",
-                "product", "status", "subscribers", "tags",
-                "subscribe_owner", "filed_by"])
+        params = snapshot_bug_params(bug_params)
 
         if not (params.comment or params.description or params.msg):
             raise AssertionError(
