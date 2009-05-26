@@ -91,13 +91,13 @@
             <li class="news">
               <a href="http://blog.launchpad.net/?p=770">
                 <strong>Beta: git branch imports</strong><br />
-                Import git branches into Launchpad-hosted Bazaar branches. Try it out in our beta.
+                Work with git-hosted code using Bazaar. Try our beta to mirror your git branches using Launchpad Bazaar branches.
               </a>
            </li>
             <li class="news">
               <a href="http://blog.launchpad.net/?p=733">
                 <strong>Translation imports from Bazaar</strong><br />
-                Pull your project's translations and translation templates into Launchpad from Bazaar branches.
+                Automatically pull your project's latest translations and templates into Launchpad from Bazaar branches.
               </a>
            </li>
             <li class="news">
