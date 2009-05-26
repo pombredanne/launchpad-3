@@ -9,7 +9,7 @@ from zope.testing.doctestunit import DocTestSuite
 
 from canonical.launchpad.ftests import login, ANONYMOUS
 from canonical.launchpad.interfaces.bugtracker import BugTrackerType
-from canonical.launchpad.testing import TestCaseWithFactory
+from lp.testing import TestCaseWithFactory
 from canonical.testing import LaunchpadFunctionalLayer
 
 

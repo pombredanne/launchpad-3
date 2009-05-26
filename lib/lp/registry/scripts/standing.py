@@ -10,7 +10,7 @@ __all__ = [
 
 from zope.component import getUtility
 
-from canonical.launchpad.scripts.base import LaunchpadCronScript
+from lp.services.scripts.base import LaunchpadCronScript
 
 
 class UpdatePersonalStanding(LaunchpadCronScript):

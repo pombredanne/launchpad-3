@@ -967,6 +967,11 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
                 BugTask.bugwatch == BugWatch.id,
                 BugWatch.bugtracker == self.getExternalBugTracker()))
 
+    def getTimeline(self, include_inactive=False):
+        """See `IProduct`."""
+        return [series.getTimeline(include_inactive=include_inactive)
+                for series in self.serieses]
+
 
 class ProductSet:
     implements(IProductSet)

@@ -15,7 +15,7 @@ from canonical.launchpad.interfaces.emailaddress import (
     EmailAddressStatus)
 from lp.registry.interfaces.product import (
     IProductSet, License)
-from canonical.launchpad.testing import LaunchpadObjectFactory
+from lp.testing.factory import LaunchpadObjectFactory
 from canonical.testing import LaunchpadFunctionalLayer
 
 from lp.registry.vocabularies import CommercialProjectsVocabulary

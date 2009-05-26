@@ -7,12 +7,6 @@
 <facet facet="translations">
 
     <!-- Language -->
-    <class class="canonical.launchpad.database.Language">
-        <allow interface="canonical.launchpad.interfaces.ILanguage"/>
-        <require
-            permission="launchpad.Admin"
-            set_schema="canonical.launchpad.interfaces.ILanguage" />
-    </class>
 
     <browser:navigation
         module="canonical.launchpad.browser"
@@ -70,12 +64,6 @@
     </browser:pages>
 
     <!-- LanguageSet -->
-    <securedutility
-        class="canonical.launchpad.database.LanguageSet"
-        provides="canonical.launchpad.interfaces.ILanguageSet">
-        <allow interface="canonical.launchpad.interfaces.ILanguageSet" />
-    </securedutility>
-
     <browser:defaultView
         for="canonical.launchpad.interfaces.ILanguageSet"
         name="+index"

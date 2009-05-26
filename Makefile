@@ -263,6 +263,7 @@ clean_codehosting:
 	mkdir -p $(CODEHOSTING_ROOT)/mirrors
 	mkdir -p $(CODEHOSTING_ROOT)/push-branches
 	mkdir -p $(CODEHOSTING_ROOT)/config
+	mkdir -p /var/tmp/bzrsync
 	touch $(CODEHOSTING_ROOT)/config/launchpad-lookup.txt
 
 zcmldocs:

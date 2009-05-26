@@ -647,6 +647,11 @@ class IProductPublic(
         this Product.
         """
 
+    @export_read_operation()
+    @export_operation_as('get_timeline')
+    def getTimeline():
+        """Return basic timeline data useful for creating a diagram."""
+
 
 class IProduct(IProductEditRestricted, IProductCommercialRestricted,
                IProductDriverRestricted, IProductPublic):

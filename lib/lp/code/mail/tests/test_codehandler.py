@@ -20,8 +20,8 @@ from zope.security.management import setSecurityPolicy
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
-from canonical.codehosting.jobs import JobRunner
-from canonical.codehosting.vfs import get_lp_server
+from lp.codehosting.vfs import get_lp_server
+from lp.services.job.runner import JobRunner
 from canonical.launchpad.interfaces import (
     BranchSubscriptionNotificationLevel, BranchType,
     CodeReviewNotificationLevel, CodeReviewVote)
@@ -40,8 +40,7 @@ from lp.code.mail.codehandler import (
     MissingMergeDirective, NonLaunchpadTarget,
     UpdateStatusEmailCommand, VoteEmailCommand)
 from canonical.launchpad.mail.handlers import mail_handlers
-from canonical.launchpad.testing import (
-    login, login_person, TestCase, TestCaseWithFactory)
+from lp.testing import login, login_person, TestCase, TestCaseWithFactory
 from lp.testing.mail_helpers import pop_notifications
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy

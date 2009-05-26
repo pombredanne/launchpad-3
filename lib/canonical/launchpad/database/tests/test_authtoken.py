@@ -16,7 +16,7 @@ from canonical.launchpad.interfaces.account import AccountStatus
 from canonical.launchpad.interfaces.authtoken import (
     IAuthToken, IAuthTokenSet, LoginTokenType)
 from lp.services.mail import stub
-from canonical.launchpad.testing import TestCaseWithFactory
+from lp.testing import TestCaseWithFactory
 from canonical.launchpad.webapp.dbpolicy import SSODatabasePolicy
 from canonical.launchpad.webapp.interfaces import IStoreSelector
 from canonical.testing import DatabaseFunctionalLayer

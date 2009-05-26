@@ -16,8 +16,8 @@ class EnableActionLinksTest:
     MAX_ROW = 2
 
     def __init__(self, name=None,
-                 url='http://translations.launchpad.dev:8085/evolution/trunk/+templates',
-                 suite='translations', user=lpuser.TRANSLATIONS_ADMIN):
+                 url=None, suite='translations',
+                 user=lpuser.TRANSLATIONS_ADMIN):
         """Create a new EnableActionLinksTest.
 
         :param name: Name of the test.
@@ -25,6 +25,9 @@ class EnableActionLinksTest:
         :param suite: The suite in which this test is part of.
         :param user: The user who should be logged in.
         """
+        if url is None:
+            url = ('http://translations.launchpad.dev:8085/evolution/trunk/'
+                   '+templates')
         self.url = url
         if name is None:
             self.__name__ = 'test_%s_productseries_templates' % suite

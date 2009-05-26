@@ -40,6 +40,22 @@
         class="canonical.launchpad.browser.BugCommentView"
         permission="launchpad.View" />
 
+    <browser:page
+        for="canonical.launchpad.interfaces.IBugComment"
+        name="+box"
+        template="../templates/bugcomment-box.pt"
+        class="canonical.launchpad.browser.BugCommentBoxView"
+        permission="launchpad.View"
+        />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IBugComment"
+        name="+box-expanded-reply"
+        template="../templates/bugcomment-box.pt"
+        class="canonical.launchpad.browser.BugCommentBoxExpandedReplyView"
+        permission="launchpad.View"
+        />
+
   </facet>
 
 </configure>

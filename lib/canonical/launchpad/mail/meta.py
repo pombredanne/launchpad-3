@@ -77,7 +77,8 @@ class IStubMailerDirective(IMailerDirective):
     to_addr = ASCII(
             title=u"To Address",
             description=
-                u"All outgoing emails will be redirected to this email address",
+                (u"All outgoing emails will be redirected to this email "
+                 u"address"),
             required=True,
             )
     mailer = ASCII(
@@ -107,7 +108,8 @@ def stubMailerHandler(
            callable = handler,
            args = (
                'provideUtility',
-               IMailer, StubMailer(from_addr, [to_addr], mailer, rewrite), name,
+               IMailer, StubMailer(from_addr, [to_addr], mailer, rewrite),
+               name,
                )
            )
 
