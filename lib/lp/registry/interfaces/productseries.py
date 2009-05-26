@@ -221,11 +221,11 @@ class IProductSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
                       "source code branch."))
 
     potemplate_count = Int(
-        title=_("The set of languages in this series."),
+        title=_("The total number of POTemplates in this series."),
         readonly=True, required=True)
 
-    productserieslanguages = Attribute("The set of languages in this "
-        "series.")
+    productserieslanguages = Attribute(
+        "The set of ProductSeriesLanguages for this series.")
 
     def getRelease(version):
         """Get the release in this series that has the specified version.

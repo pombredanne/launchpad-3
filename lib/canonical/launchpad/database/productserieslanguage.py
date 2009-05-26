@@ -77,7 +77,8 @@ class ProductSeriesLanguage(RosettaStats):
         result = store.find(Sum(POTemplate.messagecount),
                             POTemplate.productseries==self.productseries,
                             POTemplate.iscurrent==True)
-        total = result[0]
+        if result is not None:
+            total = result[0]
 
         result = store.find(
             (Sum(POFile.currentcount),

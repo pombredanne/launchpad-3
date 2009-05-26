@@ -439,6 +439,7 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
 
     @property
     def potemplate_count(self):
+        """See `IProductSeries`."""
         return self._getCurrentTranslationTemplates().count()
 
     def getObsoleteTranslationTemplates(self):
@@ -455,13 +456,17 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
 
     @property
     def productserieslanguages(self):
+        """See `IProductSeries`."""
         store = Store.of(self)
 
-        potemplate_count = self.potemplate_count
         results = []
-        if potemplate_count == 1:
+        if self.potemplate_count == 1:
+            # If there is only one POTemplate in a ProductSeries, fetch
+            # Languages and corresponding POFiles with one query, along
+            # with their stats, and put them into ProductSeriesLanguage
+            # objects.
             origin = [Language, POFile, POTemplate]
-            result = store.using(*origin).find(
+            query = store.using(*origin).find(
                 (Language, POFile),
                 POFile.language==Language.id,
                 POFile.variant==None,
@@ -470,7 +475,7 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
                 POTemplate.productseries==self,
                 POTemplate.iscurrent==True)
 
-            for language, pofile in result.order_by(['Language.englishname']):
+            for language, pofile in query.order_by(['Language.englishname']):
                 psl = ProductSeriesLanguage(self, language, pofile=pofile)
                 psl.setCounts(pofile.potemplate.messageCount(),
                               pofile.currentCount(),
@@ -479,11 +484,17 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
                               pofile.unreviewedCount())
                 results.append(psl)
         else:
-            result = store.find(Sum(POTemplate.messagecount),
+            # If there is more than one template, do a single
+            # query to count total messages in all templates.
+            query = store.find(Sum(POTemplate.messagecount),
                                 POTemplate.productseries==self,
                                 POTemplate.iscurrent==True)
-            total = result[0]
-            result = store.find(
+            total, = query
+            # And another query to fetch all Languages with translations
+            # in this ProductSeries, along with their cumulative stats
+            # for imported, changed, rosetta-provided and unreviewed
+            # translations.
+            query = store.find(
                 (Language,
                  Sum(POFile.currentcount),
                  Sum(POFile.updatescount),
@@ -497,7 +508,7 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
                 POTemplate.iscurrent==True).group_by(Language)
 
             for (language, imported, changed, new, unreviewed) in (
-                result.order_by(['Language.englishname'])):
+                query.order_by(['Language.englishname'])):
                 psl = ProductSeriesLanguage(self, language)
                 psl.setCounts(total, imported, changed, new, unreviewed)
                 results.append(psl)
