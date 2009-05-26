@@ -89,9 +89,15 @@
           <h2>What&#8217;s new?</h2>
           <ul style="padding: 0; margin: auto;">
             <li class="news">
+              <a href="http://blog.launchpad.net/?p=770">
+                <strong>Beta: git branch imports</strong><br />
+                Import git branches into Launchpad-hosted Bazaar branches. Try it out in our beta.
+              </a>
+           </li>
+            <li class="news">
               <a href="http://blog.launchpad.net/?p=733">
-                <strong>Continuous translation and template imports from Bazaar</strong><br />
-                Import your project's translations and translation templates directly into Launchpad from your project's official Bazaar branches.
+                <strong>Translation imports from Bazaar</strong><br />
+                Pull your project's translations and translation templates into Launchpad from Bazaar branches.
               </a>
            </li>
             <li class="news">
@@ -102,13 +108,13 @@
            </li>
            <li class="news">
               <a href="http://blog.launchpad.net/?p=551">
-                <strong>Need Launchpad for a commercial project?</strong><br />
+                <strong>Launchpad for commercial projects</strong><br />
                 Find out more about Launchpad's privacy features for your commercial projects.
               </a>
            </li>
           </ul>
           <div class="discreet" style="text-align: right">
-            Updated 2009-04-29.
+            Updated 2009-05-26.
             <a href="http://blog.launchpad.net">Read our blog!</a>
           </div>
         </div>
