@@ -181,7 +181,7 @@
                  tal:attributes="href string:${context/target/fmt:url}/+bugs?field.tag=${tag}">tag</a>
             </span>
             <form id="tags-form" style="display: inline">
-                <input type="text" id="tag-input" style="display: none; width: 25em;" />
+                <input type="text" id="tag-input" style="display: none; width: 15em;" />
                 <img src="/@@/spinner" id="tags-edit-spinner" style="display: none" />
                 <a href="+edit" title="Edit tags" id="edit-tags-trigger"><img src="/@@/edit" /></a>
               <script type="text/javascript">
