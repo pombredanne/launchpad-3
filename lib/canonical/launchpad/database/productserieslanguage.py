@@ -39,8 +39,20 @@ class ProductSeriesLanguage(RosettaStats):
         self.pofile = pofile
         self.variant = variant
         self.id = 0
-        self._getMessageCount()
+
+        # Reset all cached counts.
+        self.setCounts()
+
+    def initialize(self):
         self._getTranslationCounts()
+
+    def setCounts(self, total=None, imported=None, changed=None, new=None,
+                  unreviewed=None):
+        self._messagecount = total
+        self._currentcount = imported
+        self._updatescount = changed
+        self._rosettacount = new
+        self._unreviewed_count = unreviewed
 
     @property
     def language(self):
@@ -59,37 +71,26 @@ class ProductSeriesLanguage(RosettaStats):
         """See `IProductSeriesLanguage`."""
         pass
 
-    def _getMessageCount(self):
-        query = """
-        SELECT SUM(messagecount)
-          FROM POTemplate
-          WHERE productseries=%s""" % sqlvalues(self.productseries)
-        cur = cursor()
-        cur.execute(query)
-        self._messagecount = cur.fetchall()[0][0]
-
     def _getTranslationCounts(self):
-        # Sets all POFile SUM counts.
-        if self.variant is None:
-            variant_query = "POFile.variant IS NULL"
-        else:
-            variant_query = "POFile.variant = %s" % sqlvalues(self.variant)
-        sum_stats_query = """
-          SELECT SUM(currentcount), SUM(updatescount),
-                 SUM(rosettacount), SUM(unreviewed_count)
-            FROM POFile
-            JOIN POTemplate ON
-              POTemplate.id = POFile.potemplate
-            WHERE
-              POFile.language = %s AND """
-        sum_stats_query += variant_query + " AND "
-        sum_stats_query += "POTemplate.productseries = %s"
-        query = sum_stats_query % sqlvalues(self.language,
-                                            self.productseries)
-        cur = cursor()
-        cur.execute(query)
-        (self._currentcount, self._updatescount, self._rosettacount,
-         self._unreviewed_count) = cur.fetchall()[0]
+        # Gets all the different message counts for all POFiles
+        # for this language.
+        result = store.find(Sum(POTemplate.messagecount),
+                            POTemplate.productseries==self.productseries,
+                            POTemplate.iscurrent==True)
+        total = result[0]
+
+        result = store.find(
+            (Sum(POFile.currentcount),
+             Sum(POFile.updatescount),
+             Sum(POFile.rosettacount),
+             Sum(POFile.unreviewed_count)),
+            POFile.potemplate==POTemplate.id,
+            POFile.language==self.language,
+            POTemplate.productseries==self.productseries,
+            POTemplate.iscurrent==True)
+        imported, changed, new, unreviewed = result
+
+        self.setCounts(total, imported, changed, new, unreviewed)
 
     def messageCount(self):
         """See `IProductSeriesLanguage`."""

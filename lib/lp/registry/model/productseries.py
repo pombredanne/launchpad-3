@@ -10,7 +10,7 @@ __all__ = [
 
 from sqlobject import (
     ForeignKey, StringCol, SQLMultipleJoin, SQLObjectNotFound)
-from storm.expr import In
+from storm.expr import In, Sum
 from warnings import warn
 from zope.component import getUtility
 from zope.interface import implements
@@ -471,20 +471,36 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
                 POTemplate.iscurrent==True)
 
             for language, pofile in result.order_by(['Language.englishname']):
-                results.append(
-                    ProductSeriesLanguage(self, language, pofile=pofile))
+                psl = ProductSeriesLanguage(self, language, pofile=pofile)
+                psl.setCounts(pofile.potemplate.messageCount(),
+                              pofile.currentCount(),
+                              pofile.updatesCount(),
+                              pofile.rosettaCount(),
+                              pofile.unreviewedCount())
+                results.append(psl)
         else:
+            result = store.find(Sum(POTemplate.messagecount),
+                                POTemplate.productseries==self,
+                                POTemplate.iscurrent==True)
+            total = result[0]
             result = store.find(
-                Language,
+                (Language,
+                 Sum(POFile.currentcount),
+                 Sum(POFile.updatescount),
+                 Sum(POFile.rosettacount),
+                 Sum(POFile.unreviewed_count)),
                 POFile.language==Language.id,
                 POFile.variant==None,
                 Language.visible==True,
                 POFile.potemplate==POTemplate.id,
                 POTemplate.productseries==self,
-                POTemplate.iscurrent==True).config(distinct=True)
+                POTemplate.iscurrent==True).group_by(Language)
 
-            for language in result.order_by(['Language.englishname']):
-                results.append(ProductSeriesLanguage(self, language))
+            for (language, imported, changed, new, unreviewed) in (
+                result.order_by(['Language.englishname'])):
+                psl = ProductSeriesLanguage(self, language)
+                psl.setCounts(total, imported, changed, new, unreviewed)
+                results.append(psl)
 
         return results
 
