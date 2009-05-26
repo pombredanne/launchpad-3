@@ -63,7 +63,7 @@ Bugs have relationships to other bugs, like "duplicate_of".
   >>> bug_six['duplicate_of_link']
   u'http://.../bugs/5'
 
-To create a new bug we use the createBug operation.  That operation
+To create a new bug we use the createBug operation. This operation
 takes a target parameter which must be a either a Product, a
 Distribution or a DistributionSourcePackage.
 
@@ -88,14 +88,47 @@ Distribution or a DistributionSourcePackage.
     Location: http://.../bugs/...
     ...
 
-    >>> print webservice.named_post(
+    >>> response = webservice.named_post(
     ...     '/bugs', 'createBug',
     ...     title='Test bug', description='Test bug',
     ...     target=webservice.getAbsoluteUrl('/ubuntu/+source/evolution'))
+    >>> print response
     HTTP/1.1 201 Created
     ...
     Location: http://.../bugs/...
     ...
+
+    >>> def extract_bug_id(response):
+    ...     from re import search
+    ...     match = search('/bugs/([0-9]+)', response.getOutput())
+    ...     return int(match.group(1))
+
+    >>> new_bug_id = extract_bug_id(response)
+
+Activity is recorded and notifications are sent for newly created
+bugs.
+
+    >>> from canonical.launchpad.database import BugNotification
+    >>> from canonical.launchpad.interfaces.bug import IBugSet
+    >>> from canonical.launchpad.ftests import ANONYMOUS, login, logout
+    >>> from zope.component import getUtility
+
+    >>> login(ANONYMOUS)
+    >>> bug = getUtility(IBugSet).get(new_bug_id)
+
+    >>> for activity in bug.activity:
+    ...     print '%s, %s, %s' % (
+    ...         activity.whatchanged, activity.message,
+    ...         activity.person.name)
+    bug, added bug, salgado
+
+    >>> for notification in BugNotification.selectBy(bug=bug, orderBy='id'):
+    ...     print '%s, %s, %s' % (
+    ...         notification.message.owner.name, notification.is_comment,
+    ...         notification.message.text_contents)
+    salgado, True, Test bug
+
+    >>> logout()
 
 A ProductSeries can't be the target of a new bug.
 
@@ -541,8 +574,6 @@ For this example, we need a member of the ubuntu-team group,
 any member will do.
 
     >>> from canonical.launchpad.interfaces import IPersonSet
-    >>> from canonical.launchpad.ftests import ANONYMOUS, login, logout
-    >>> from zope.component import getUtility
 
     >>> login(ANONYMOUS)
     >>> ubuntu_team_member = getUtility(IPersonSet).getByName(
