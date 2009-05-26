@@ -329,9 +329,9 @@ class IHWSubmissionSet(Interface):
             given driver.
         :param package_name: Limit the search to devices controlled by a
             driver from the given package.
-        :param bug_ids: A sequence of bug IDs for which affected
-            are looked up.
-        :param bug_tags: A sequence of bug tags
+        :param bug_ids: A sequence of bug IDs for which affected device
+            owners are looked up.
+        :param bug_tags: A sequence of bug tags.
         :param affected_by_bug: If True, those persons are looked up that
             have marked themselves as being affected by a one of the bugs
             matching the bug criteria.
@@ -339,11 +339,11 @@ class IHWSubmissionSet(Interface):
             are subscribed to a bug matching one of the bug criteria.
         :param user: The person making the query.
 
-        bug_ids must be a non-empty sequence of bug IDs, or bug_tags
+        `bug_ids` must be a non-empty sequence of bug IDs, or `bug_tags`
         must be a non-empty sequence of bug tags.
 
-        The parameters bus, vendor_id, product_id must not be None, or
-        driver_name must not be None.
+        The parameters `bus`, `vendor_id`, `product_id` must not be None, or
+        `driver_name` must not be None.
 
         By default, only those persons are returned which have reported a
         bug matching the given bug conditions.

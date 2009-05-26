@@ -2221,7 +2221,8 @@ be listed.
     ...     print person.displayname
     Sample Person
 
-If he subscribes to the bug, he is listed again.
+By setting the parameter subscribed_to_bug to True, we can also look
+for bug subscribers who own a given device.
 
     >>> bug_one.subscribe(foo_bar, subscribed_by=foo_bar)
     <BugSubscription at ...
@@ -2261,15 +2262,15 @@ more bug tags.
     >>> bugtask_set = getUtility(IBugTaskSet)
     >>> bugtasks = bugtask_set.search(
     ...     BugTaskSearchParams(user=foo_bar, tag='pebcak'))
-    >>> owners = set([bugtask.bug.owner for bugtask in bugtasks])
+    >>> owners = set(bugtask.bug.owner for bugtask in bugtasks)
     >>> for owner in owners:
-    ...     print bugtask.bug.owner.displayname
+    ...     print owner.displayname
     Sample Person
     >>> bugtasks = bugtask_set.search(
     ...     BugTaskSearchParams(user=foo_bar, tag='crash'))
-    >>> owners = set([bugtask.bug.owner for bugtask in bugtasks])
+    >>> owners = set(bugtask.bug.owner for bugtask in bugtasks)
     >>> for owner in owners:
-    ...     print bugtask.bug.owner.displayname
+    ...     print owner.displayname
     Foo Bar
 
     >>> for person in submission_set.deviceDriverOwnersAffectedByBugs(
@@ -2290,7 +2291,8 @@ more bug tags.
     ...     bug_tags=['lunch-money']).count()
     0
 
-We can limit the result to owners who use a device with a given driver...
+We can limit the result to owners who use a device with a given driver
+by providing a driver_name parameter...
 
     >>> for person in submission_set.deviceDriverOwnersAffectedByBugs(
     ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
@@ -2304,7 +2306,7 @@ We can limit the result to owners who use a device with a given driver...
     ...     driver_name='nonsense', bug_tags=['pebcak', 'crash']).count()
     0
 
-...or a given package name.
+...or a given package name by providing a package_name parameter.
 
     >>> for person in submission_set.deviceDriverOwnersAffectedByBugs(
     ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
@@ -2403,7 +2405,7 @@ Foo Bar.
     Foo Bar
     Sample Person
 
-Instead of passing a seqence of bug IDs, we can also specify one or
+Instead of passing a sequence of bug IDs, we can also specify one or
 more bug tags.
 
     >>> for person in submission_set.deviceDriverOwnersAffectedByBugs(
