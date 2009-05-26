@@ -15,7 +15,7 @@ from canonical.shipit.model.shipit import (
 from canonical.launchpad.layers import setFirstLayer
 from canonical.shipit.layers import ShipItKUbuntuLayer, ShipItUbuntuLayer
 from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
-from canonical.launchpad.interfaces.country import ICountrySet
+from lp.services.worlddata.interfaces.country import ICountrySet
 from canonical.shipit.interfaces.shipit import (
     IShipitAccount, ShipItArchitecture, ShipItDistroSeries, ShipItFlavour,
     ShippingRequestPriority, ShippingRequestStatus, ShippingRequestType)

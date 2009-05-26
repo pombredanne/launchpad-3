@@ -293,6 +293,21 @@ cannot create a duplicate milestone.
     ...     print milestone.name, milestone.code_name
     1.1 None
 
+An empty code_name or summary (submitted via AJAX) is converted to None.
+
+    >>> form = {
+    ...     'field.name': '2.1',
+    ...     'field.code_name': ' ',
+    ...     'field.summary': ' ',
+    ...     'field.actions.register': 'Register Milestone',
+    ...     }
+    >>> view = create_initialized_view(
+    ...     firefox_1_0, '+addmilestone', form=form)
+    >>> for milestone in firefox_1_0.milestones:
+    ...     print milestone.name, milestone.code_name, milestone.summary
+    2.1 None None
+    1.1 None None
+
 
 == Deleting milestones ==
 

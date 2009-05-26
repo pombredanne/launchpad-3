@@ -255,12 +255,7 @@ class BranchContextMenu(ContextMenu):
     @enabled_with_permission('launchpad.AnyPerson')
     def register_merge(self):
         text = 'Propose for merging into another branch'
-        # XXX: JonathanLange 2009-05-13 spec=package-branches: How about we
-        # have just one place where we decide that junk branches aren't
-        # allowed to be merged, instead of a million?
-        #
-        # It is not valid to propose a junk branch for merging.
-        enabled = self.context.product is not None
+        enabled = self.context.target.supports_merge_proposals
         return Link('+register-merge', text, icon='add', enabled=enabled)
 
     def landing_candidates(self):
@@ -492,11 +487,7 @@ class BranchView(LaunchpadView, FeedsMixin):
         Merge proposal links should not be shown if there is only one branch in
         a non-final state.
         """
-        # XXX: rockstar - Eventually, this if statement needs to be:
-        # if not self.context.target.supportsMergeProposals() and will when
-        # jml gets to it in his source package branch work.
-        # spec=package-branches
-        if not self.context.product:
+        if not self.context.target.supports_merge_proposals:
             return False
         return self.context.target.collection.getBranches().count() > 1
 
@@ -1084,7 +1075,7 @@ class RegisterProposalSchema(Interface):
     """The schema to define the form for registering a new merge proposal."""
     target_branch = Choice(
         title=_('Target Branch'),
-        vocabulary='BranchRestrictedOnProduct', required=True, readonly=True,
+        vocabulary='Branch', required=True, readonly=True,
         description=_(
             "The branch that the source branch will be merged into."))
 
@@ -1109,12 +1100,14 @@ class RegisterBranchMergeProposalView(LaunchpadFormView):
     @property
     def initial_values(self):
         """The default reviewer is the code reviewer of the target."""
-        # If there is a development focus branch for the product, then default
+        # If there is a default merge branch for the target, then default
         # the reviewer to be the review team for that branch.
         reviewer = None
-        dev_focus_branch = self.context.product.development_focus.branch
-        if dev_focus_branch is not None:
-            reviewer = dev_focus_branch.code_reviewer
+        default_target = self.context.target.default_merge_target
+        # Don't set the reviewer if the default branch is the same as the
+        # current context.
+        if default_target is not None and default_target != self.context:
+            reviewer = default_target.code_reviewer
         return {'reviewer': reviewer}
 
     @property
@@ -1122,8 +1115,8 @@ class RegisterBranchMergeProposalView(LaunchpadFormView):
         return canonical_url(self.context)
 
     def initialize(self):
-        """Show a 404 if the source branch is junk."""
-        if self.context.product is None:
+        """Show a 404 if the branch target doesn't support proposals."""
+        if not self.context.target.supports_merge_proposals:
             raise NotFound(self.context, '+register-merge')
         LaunchpadFormView.initialize(self)
 
@@ -1168,11 +1161,11 @@ class RegisterBranchMergeProposalView(LaunchpadFormView):
                 "The target branch cannot be the same as the source branch.")
         else:
             # Make sure that the target_branch is in the same project.
-            if target_branch.product != source_branch.product:
+            if not target_branch.isBranchMergeable(source_branch):
                 self.setFieldError(
                     'target_branch',
-                    "The target branch must belong to the same project "
-                    "as the source branch.")
+                    "This branch is not mergeable into %s." %
+                    target_branch.bzr_identity)
 
 
 class BranchRequestImportView(LaunchpadFormView):

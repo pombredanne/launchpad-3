@@ -6,6 +6,8 @@ __metaclass__ = type
 __all__ = [
     'BugComment',
     'BugCommentView',
+    'BugCommentBoxView',
+    'BugCommentBoxExpandedReplyView',
     'build_comments_from_chunks',
     'should_display_remote_comments',
     ]
@@ -213,4 +215,15 @@ class BugCommentView(LaunchpadView):
         bugtask = getUtility(ILaunchBag).bugtask
         LaunchpadView.__init__(self, bugtask, request)
         self.comment = context
-        self.expand_reply_box = True
+
+
+class BugCommentBoxView(LaunchpadView):
+    """Render a comment box with reply field collapsed."""
+
+    expand_reply_box = False
+
+
+class BugCommentBoxExpandedReplyView(LaunchpadView):
+    """Render a comment box with reply field expanded."""
+
+    expand_reply_box = True

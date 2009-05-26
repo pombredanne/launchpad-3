@@ -721,7 +721,7 @@ files that are published in the sample data.
 
   >>> run_publish_distro(careful=True)
   DEBUG   Initialising zopeless.
-  INFO      Distribution: ubuntutest
+  DEBUG   Distribution: ubuntutest
   ...
   DEBUG   Added /var/tmp/archive/ubuntutest/pool/universe/b/bar/bar_1.0-2_i386.deb from library
   DEBUG   Added /var/tmp/archive/ubuntutest/pool/universe/b/bar/bar_1.0-1_i386.deb from library
@@ -750,7 +750,7 @@ uploaded in the test above don't break the assumptions of this test.
 
   >>> run_publish_distro(careful_publishing=True)
   DEBUG   Initialising zopeless.
-  INFO      Distribution: ubuntutest
+  DEBUG   Distribution: ubuntutest
   ...
   DEBUG   /var/tmp/archive/ubuntutest/pool/universe/b/bar/bar_1.0-2_i386.deb is already in pool with the same content.
   ...

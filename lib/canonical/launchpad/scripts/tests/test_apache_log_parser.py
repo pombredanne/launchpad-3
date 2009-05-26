@@ -91,6 +91,12 @@ class TestRequestParsing(TestCase):
                    'mediumubuntulogo.png HTTP/1.1')
         self.assertMethodAndFileIDAreCorrect(request)
 
+    def test_return_value_for_request_missing_http_version(self):
+        # HTTP 1.0 requests might omit the HTTP version so we must cope with
+        # them.
+        request = 'GET https://launchpadlibrarian.net/8196569/foo.png'
+        self.assertMethodAndFileIDAreCorrect(request)
+
     def test_requests_for_paths_that_are_not_of_an_lfa_raise_error(self):
         request = 'GET https://launchpadlibrarian.net/ HTTP/1.1'
         self.assertRaises(

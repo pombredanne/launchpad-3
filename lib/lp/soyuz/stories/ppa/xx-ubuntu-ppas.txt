@@ -772,7 +772,7 @@ for each published source:
 
  * Completely built: green 'yes' icon only;
 
- * Build in progress: 'build-building' icon, followed by the
+ * Build in progress: 'processing' icon, followed by the
    architecture tags being built linking to the corresponding build
    page
 

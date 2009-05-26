@@ -16,7 +16,7 @@ from lp.soyuz.interfaces.archiveauthtoken import (
     IArchiveAuthTokenSet)
 from lp.soyuz.interfaces.archivesubscriber import (
     ArchiveSubscriberStatus, IArchiveSubscriberSet)
-from canonical.launchpad.scripts.base import LaunchpadCronScript
+from lp.services.scripts.base import LaunchpadCronScript
 
 
 # These PPAs should never have their htaccess/pwd files touched.

@@ -53,9 +53,10 @@ from lp.soyuz.model.queue import (
     PackageUpload, PackageUploadSource)
 from lp.registry.model.teammembership import TeamParticipation
 from lp.soyuz.interfaces.archive import (
-    ArchiveDependencyError, ArchivePurpose, DistroSeriesNotFound,
-    IArchive, IArchiveSet, IDistributionArchive, IPPA, MAIN_ARCHIVE_PURPOSES,
-    PocketNotFound, SourceNotFound, default_name_by_purpose)
+    AlreadySubscribed, ArchiveDependencyError, ArchiveNotPrivate,
+    ArchivePurpose, DistroSeriesNotFound, IArchive, IArchiveSet,
+    IDistributionArchive, IPPA, MAIN_ARCHIVE_PURPOSES, PocketNotFound,
+    SourceNotFound, default_name_by_purpose)
 from lp.soyuz.interfaces.archiveauthtoken import (
     IArchiveAuthTokenSet)
 from lp.soyuz.interfaces.archivepermission import (
@@ -67,6 +68,7 @@ from lp.soyuz.interfaces.build import (
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
+from lp.registry.interfaces.person import PersonVisibility
 from canonical.launchpad.interfaces.launchpad import (
     IHasOwner, ILaunchpadCelebrities, NotFoundError)
 from lp.soyuz.interfaces.package import PackageUploadStatus
@@ -83,7 +85,8 @@ from canonical.launchpad.webapp.interfaces import (
         IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from canonical.launchpad.webapp.url import urlappend
 from canonical.launchpad.validators.name import valid_name
-from lp.registry.interfaces.person import validate_public_person
+from lp.registry.interfaces.person import (
+    validate_person_not_private_membership)
 
 
 class Archive(SQLBase):
@@ -93,7 +96,7 @@ class Archive(SQLBase):
 
     owner = ForeignKey(
         dbName='owner', foreignKey='Person',
-        storm_validator=validate_public_person, notNull=True)
+        storm_validator=validate_person_not_private_membership, notNull=True)
 
     def _validate_archive_name(self, attr, value):
         """Only allow renaming of COPY archives.
@@ -103,6 +106,18 @@ class Archive(SQLBase):
         if not self._SO_creating:
             assert self.is_copy, "Only COPY archives can be renamed."
         assert valid_name(value), "Invalid name given to unproxied object."
+        return value
+
+    def _validate_archive_privacy(self, attr, value):
+        """Require private team owners to have private archives.
+
+        If the owner of the archive is private, then the archive cannot be
+        made public.
+        """
+        if not value:
+            # The archive is transitioning from public to private.
+            assert self.owner.visibility != PersonVisibility.PRIVATE, (
+                "Private teams may not have public PPAs.")
         return value
 
     name = StringCol(
@@ -122,7 +137,8 @@ class Archive(SQLBase):
 
     publish = BoolCol(dbName='publish', notNull=True, default=True)
 
-    private = BoolCol(dbName='private', notNull=True, default=False)
+    private = BoolCol(dbName='private', notNull=True, default=False,
+                      storm_validator=_validate_archive_privacy)
 
     require_virtualized = BoolCol(
         dbName='require_virtualized', notNull=True, default=True)
@@ -1083,6 +1099,20 @@ class Archive(SQLBase):
     def newSubscription(self, subscriber, registrant, date_expires=None,
                         description=None):
         """See `IArchive`."""
+
+        # We do not currently allow subscriptions for non-private archives:
+        if self.private is False:
+            raise ArchiveNotPrivate(
+                "Only private archives can have subscriptions.")
+
+        # Ensure there is not already a current subscription for subscriber:
+        subscriptions = getUtility(IArchiveSubscriberSet).getBySubscriber(
+            subscriber, archive=self)
+        if subscriptions.count() > 0:
+            raise AlreadySubscribed(
+            "%s already has a current subscription for '%s'." % (
+                subscriber.displayname, self.displayname))
+
         subscription = ArchiveSubscriber()
         subscription.archive = self
         subscription.registrant = registrant
@@ -1242,6 +1272,12 @@ class ArchiveSet:
             displayname=displayname, description=description,
             purpose=purpose, publish=publish, signing_key=signing_key,
             enabled=enabled, require_virtualized=require_virtualized)
+
+        # Private teams cannot have public PPAs.
+        if owner.visibility == PersonVisibility.PRIVATE:
+            new_archive.buildd_secret = create_unique_token_for_table(
+                20, Archive.buildd_secret)
+            new_archive.private = True
 
         return new_archive
 
@@ -1432,7 +1468,7 @@ class ArchiveSet:
                 # Append the extra expression to capture either public
                 # archives, or archives owned by the user, or archives
                 # owned by a team of which the user is a member:
-                # Note: 'Archive.ownerID == user.id' 
+                # Note: 'Archive.ownerID == user.id'
                 # is unnecessary below because there is a TeamParticipation
                 # entry showing that each person is a member of the "team"
                 # that consists of themselves.

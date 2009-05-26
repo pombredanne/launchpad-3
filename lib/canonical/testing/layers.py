@@ -300,7 +300,7 @@ class BaseLayer:
             # threads around, apparently because of bzr. disable_thread_check
             # is a mechanism to turn off the BaseLayer behavior of causing a
             # test to fail if it leaves a thread behind. This comment is found
-            # in both canonical.codehosting.tests.test_acceptance and
+            # in both lp.codehosting.tests.test_acceptance and
             # canonical.testing.layers
             if BaseLayer.disable_thread_check:
                 print ("ERROR DISABLED: "

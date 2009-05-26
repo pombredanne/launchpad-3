@@ -20,8 +20,8 @@ from zope.security.management import setSecurityPolicy
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
-from canonical.codehosting.jobs import JobRunner
-from canonical.codehosting.vfs import get_lp_server
+from lp.codehosting.vfs import get_lp_server
+from lp.services.job.runner import JobRunner
 from canonical.launchpad.interfaces import (
     BranchSubscriptionNotificationLevel, BranchType,
     CodeReviewNotificationLevel, CodeReviewVote)

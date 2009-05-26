@@ -27,7 +27,7 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.enumcol import EnumCol
 
-from canonical.launchpad.database.country import Country
+from lp.services.worlddata.model.country import Country
 from lp.soyuz.model.files import (
     BinaryPackageFile, SourcePackageReleaseFile)
 from lp.soyuz.model.publishing import (

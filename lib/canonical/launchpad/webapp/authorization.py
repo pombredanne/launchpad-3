@@ -1,4 +1,4 @@
-# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 
@@ -20,6 +20,7 @@ from zope.security.permission import (
     checkPermission as check_permission_is_registered)
 from zope.app.security.principalregistry import UnauthenticatedPrincipal
 
+from canonical.config import config
 from canonical.lazr.canonicalurl import nearest_adapter
 from canonical.lazr.interfaces import IObjectPrivacy
 
@@ -100,6 +101,11 @@ class LaunchpadSecurityPolicy(ParanoidSecurityPolicy):
         If the object is a view, then consider the object to be the view's
         context.
 
+        If we are running in read-only mode, all permission checks are
+        failed except for launchpad.View requests, which are checked
+        as normal. All other permissions are used to protect write
+        operations.
+
         Workflow:
         - If the principal is not None and its access level is not what is
           required by the permission, deny.
@@ -112,6 +118,15 @@ class LaunchpadSecurityPolicy(ParanoidSecurityPolicy):
           after the permission, use that to check the permission.
         - Otherwise, deny.
         """
+        # Shortcut in read-only mode. We have to do this now to avoid
+        # accidentally using cached results. This will be important when
+        # Launchpad automatically fails over to read-only mode when the
+        # master database is unavailable.
+        if config.launchpad.read_only:
+            lp_permission = getUtility(ILaunchpadPermission, permission)
+            if lp_permission.access_level != "read":
+                return False
+
         # If we have a view, get its context and use that to get an
         # authorization adapter.
         if IView.providedBy(object):

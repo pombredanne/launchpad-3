@@ -1,11 +1,10 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2006-2009 Canonical Ltd.  All rights reserved.
 
 """Functional tests for process-death-row.py script.
 
 See lib/canonical/launchpad/doc/deathrow.txt for more detailed tests
 of the module functionality; here we just aim to test that the script
 processes its arguments and handles dry-run correctly.
-
 """
 
 __metaclass__ = type
@@ -205,6 +204,7 @@ class TestProcessDeathRow(TestCase):
         self.probePublishingStatus(
             self.ppa_pubrec_ids, PackagePublishingStatus.SUPERSEDED)
         self.probeRemoved(self.ppa_pubrec_ids)
+
 
 def test_suite():
     return TestLoader().loadTestsFromName(__name__)
