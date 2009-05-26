@@ -98,12 +98,8 @@ Distribution or a DistributionSourcePackage.
     Location: http://.../bugs/...
     ...
 
-    >>> def extract_bug_id(response):
-    ...     from re import search
-    ...     match = search('/bugs/([0-9]+)', response.getOutput())
-    ...     return int(match.group(1))
-
-    >>> new_bug_id = extract_bug_id(response)
+    >>> new_bug = webservice.get(
+    ...     response.getHeader('Location')).jsonBody()
 
 Activity is recorded and notifications are sent for newly created
 bugs.
@@ -114,7 +110,7 @@ bugs.
     >>> from zope.component import getUtility
 
     >>> login(ANONYMOUS)
-    >>> bug = getUtility(IBugSet).get(new_bug_id)
+    >>> bug = getUtility(IBugSet).get(new_bug['id'])
 
     >>> for activity in bug.activity:
     ...     print '%s, %s, %s' % (

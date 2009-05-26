@@ -106,9 +106,7 @@ need to log in here because the event object is security proxied.
 
     >>> login("foo.bar@canonical.com")
 
-    >>> from canonical.launchpad.interfaces.bugtask import IBugTaskSet
-    >>> getUtility(IBugTaskSet).createTask(
-    ...     bug=bug, product=jukebox, owner=params.owner)
+    >>> bug.addTask(owner=params.owner, target=jukebox)
     <BugTask at ...>
 
     >>> from zope.event import notify
