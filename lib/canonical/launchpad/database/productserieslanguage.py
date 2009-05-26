@@ -1,5 +1,4 @@
 # Copyright 2009 Canonical Ltd.  All rights reserved.
-# pylint: disable-msg=E0611,W0212
 
 """An implementation of ProductSeriesLanguage objects."""
 
@@ -13,6 +12,7 @@ __all__ = [
 
 from zope.interface import implements
 
+from storm.expr import Sum
 from storm.store import Store
 
 from canonical.launchpad.components.rosettastats import RosettaStats
@@ -20,9 +20,6 @@ from canonical.launchpad.database.pofile import POFile
 from canonical.launchpad.database.potemplate import POTemplate
 from canonical.launchpad.interfaces import (
     IProductSeriesLanguage, IProductSeriesLanguageSet)
-
-from canonical.database.sqlbase import (
-    cursor, sqlvalues)
 
 class ProductSeriesLanguage(RosettaStats):
     """See `IProductSeriesLanguage`.
@@ -34,6 +31,7 @@ class ProductSeriesLanguage(RosettaStats):
     def __init__(self, productseries, language, variant=None, pofile=None):
         assert 'en' != language.code, (
             'English is not a translatable language.')
+        RosettaStats.__init__(self)
         self.productseries = productseries
         self._language = language
         self.pofile = pofile
@@ -42,9 +40,6 @@ class ProductSeriesLanguage(RosettaStats):
 
         # Reset all cached counts.
         self.setCounts()
-
-    def initialize(self):
-        self._getTranslationCounts()
 
     def setCounts(self, total=None, imported=None, changed=None, new=None,
                   unreviewed=None):
@@ -70,28 +65,6 @@ class ProductSeriesLanguage(RosettaStats):
     def updateStatistics(self):
         """See `IProductSeriesLanguage`."""
         pass
-
-    def _getTranslationCounts(self):
-        # Gets all the different message counts for all POFiles
-        # for this language.
-        result = store.find(Sum(POTemplate.messagecount),
-                            POTemplate.productseries==self.productseries,
-                            POTemplate.iscurrent==True)
-        if result is not None:
-            total = result[0]
-
-        result = store.find(
-            (Sum(POFile.currentcount),
-             Sum(POFile.updatescount),
-             Sum(POFile.rosettacount),
-             Sum(POFile.unreviewed_count)),
-            POFile.potemplate==POTemplate.id,
-            POFile.language==self.language,
-            POTemplate.productseries==self.productseries,
-            POTemplate.iscurrent==True)
-        imported, changed, new, unreviewed = result
-
-        self.setCounts(total, imported, changed, new, unreviewed)
 
     def messageCount(self):
         """See `IProductSeriesLanguage`."""
@@ -161,53 +134,17 @@ class DummyProductSeriesLanguage(ProductSeriesLanguage):
     implements(IProductSeriesLanguage)
 
     def __init__(self, productseries, language, variant=None, pofile=None):
-        assert 'en' != language.code, (
-            'English is not a translatable language.')
-        self.productseries = productseries
-        self._language = language
-        self.pofile = pofile
-        self.variant = variant
-        self.id = 0
-        self._getMessageCount()
-
-    def testStatistics(self):
-        """See `IProductSeriesLanguage`."""
-        pass
-
-    def updateStatistics(self):
-        """See `IProductSeriesLanguage`."""
-        pass
+        ProductSeriesLanguage.__init__(
+            self, productseries, language, variant, pofile)
+        self.setCounts(self._getMessageCount(), 0, 0, 0, 0)
 
     def _getMessageCount(self):
-        query = """
-        SELECT SUM(messagecount)
-          FROM POTemplate
-          WHERE productseries=%s""" % sqlvalues(self.productseries)
-        cur = cursor()
-        cur.execute(query)
-        self._messagecount = cur.fetchall()[0][0]
-        if self._messagecount is None:
-            self._messagecount = 0
-
-    def messageCount(self):
-        """See `IProductSeriesLanguage`."""
-        return self._messagecount
-
-    def currentCount(self, language=None):
-        """See `IProductSeriesLanguage`."""
-        return 0
-
-    def updatesCount(self, language=None):
-        """See `IProductSeriesLanguage`."""
-        return 0
-
-    def rosettaCount(self, language=None):
-        """See `IProductSeriesLanguage`."""
-        return 0
-
-    def unreviewedCount(self):
-        """See `IProductSeriesLanguage`."""
-        return 0
+        store = Store.of(self.language)
+        query = store.find(Sum(POTemplate.messagecount),
+                           POTemplate.productseries==self.productseries,
+                           POTemplate.iscurrent==True)
+        total, = query
+        return total
 
 
 class ProductSeriesLanguageSet:
@@ -220,7 +157,6 @@ class ProductSeriesLanguageSet:
     def getForProductSeriesAndLanguage(self, productseries, language,
                                        variant=None):
         """See `IProductSeriesLanguageSet`."""
-        # XXX (FIXME): return dummy if it doesn't exist for speed reasons.
         return ProductSeriesLanguage(productseries, language, variant)
 
     def getDummy(self, productseries, language, variant=None, pofile=None):
