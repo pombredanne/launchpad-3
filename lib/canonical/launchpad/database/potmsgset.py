@@ -797,6 +797,9 @@ class POTMsgSet(SQLBase):
         matching_message.sync()
         return matching_message
 
+    def dismissAllSuggestions(self, pofile, reviewer, lock_timestamp):
+        """See `IPOTMsgSet`."""
+
     def applySanityFixes(self, text):
         """See `IPOTMsgSet`."""
         if text is None:

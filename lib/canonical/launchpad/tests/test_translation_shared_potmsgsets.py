@@ -17,7 +17,7 @@ from canonical.launchpad.database.translationmessage import (
     DummyTranslationMessage)
 from canonical.launchpad.interfaces import (
     ILanguageSet, IPersonSet, POTMsgSetInIncompatibleTemplatesError,
-    TranslationFileFormat)
+    TranslationConflict, TranslationFileFormat)
 from lp.testing.factory import LaunchpadObjectFactory
 from canonical.testing import LaunchpadZopelessLayer
 
@@ -26,6 +26,12 @@ class TestTranslationSharedPOTMsgSets(unittest.TestCase):
     """Test discovery of translation suggestions."""
 
     layer = LaunchpadZopelessLayer
+
+    def gen_now(self):
+        now = datetime.now(pytz.UTC)
+        while True:
+            yield now
+            now += timedelta(milliseconds=1)
 
     def setUp(self):
         """Set up context to test in."""
@@ -520,6 +526,67 @@ class TestTranslationSharedPOTMsgSets(unittest.TestCase):
             self.devel_potemplate, serbian)
         self.assertEquals(current_translation, shared_translation)
 
+    def test_dismissAllSuggestions(self):
+        now = self.gen_now().next
+        pofile = self.factory.makePOFile('eo', self.devel_potemplate)
+        translation = self.factory.makeTranslationMessage(
+            pofile, self.potmsgset, translations=[u'trans1'],
+            reviewer=self.factory.makePerson(), date_updated=now())
+        suggestion = self.factory.makeTranslationMessage(
+            pofile, self.potmsgset, suggestion=True, translations=[u'sugg1'],
+            date_updated = now())
+        # There is one local suggestion now.
+        suggestions = set(
+            self.potmsgset.getLocalTranslationMessages(
+                self.devel_potemplate, pofile.language))
+        self.assertEqual(set([suggestion]), suggestions)
+        # Dismiss suggestions.
+        self.potmsgset.dismissAllSuggestions(
+            pofile, self.factory.makePerson(), now())
+        # There is no local suggestion now.
+        suggestions = set(
+            self.potmsgset.getLocalTranslationMessages(
+                self.devel_potemplate, pofile.language))
+        self.assertEqual(set(), suggestions)
+
+    def test_dismissAllSuggestions_nochange(self):
+        now = self.gen_now().next
+        pofile = self.factory.makePOFile('eo', self.devel_potemplate)
+        suggestion = self.factory.makeTranslationMessage(
+            pofile, self.potmsgset, suggestion=True, translations=[u'sugg1'],
+            date_updated = now())
+        translation = self.factory.makeTranslationMessage(
+            pofile, self.potmsgset, translations=[u'trans1'],
+            reviewer=self.factory.makePerson(), date_updated=now())
+        # There is no local suggestion.
+        suggestions = set(
+            self.potmsgset.getLocalTranslationMessages(
+                self.devel_potemplate, pofile.language))
+        self.assertEqual(set(), suggestions)
+        # Dismiss suggestions.
+        self.potmsgset.dismissAllSuggestions(
+            pofile, self.factory.makePerson(), now())
+        # There is still no local suggestion.
+        suggestions = set(
+            self.potmsgset.getLocalTranslationMessages(
+                self.devel_potemplate, pofile.language))
+        self.assertEqual(set(), suggestions)
+
+    def test_dismissAllSuggestions_lock_timestamp(self):
+        now = self.gen_now().next
+        pofile = self.factory.makePOFile('eo', self.devel_potemplate)
+        suggestion = self.factory.makeTranslationMessage(
+            pofile, self.potmsgset, suggestion=True, translations=[u'sugg1'],
+            date_updated = now())
+        # Save the time for later
+        old_now = now()
+        translation = self.factory.makeTranslationMessage(
+            pofile, self.potmsgset, translations=[u'trans1'],
+            reviewer=self.factory.makePerson(), date_updated=now())
+        # Dismiss suggestions but using an older time stamp.
+        self.assertRaises(TranslationConflict,
+            self.potmsgset.dismissAllSuggestions, 
+            pofile, self.factory.makePerson(), old_now)
 
 
 class TestPOTMsgSetTranslationMessageConstraints(unittest.TestCase):
