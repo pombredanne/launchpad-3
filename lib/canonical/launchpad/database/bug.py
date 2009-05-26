@@ -1517,15 +1517,9 @@ class BugSet:
         # Create the bug comment if one was given.
         if params.comment:
             rfc822msgid = make_msgid('malonedeb')
-            # The distribution parameter here doesn't make much sense,
-            # seeing as this method is meant to create a bug without a
-            # target. It is being left to support createBug(), just in
-            # case, even though Message.distribution is allegedly not
-            # used.
             params.msg = Message(
-                subject=params.title, distribution=params.distribution,
-                rfc822msgid=rfc822msgid, owner=params.owner,
-                datecreated=params.datecreated)
+                subject=params.title, rfc822msgid=rfc822msgid,
+                owner=params.owner, datecreated=params.datecreated)
             MessageChunk(
                 message=params.msg, sequence=1, content=params.comment,
                 blob=None)
