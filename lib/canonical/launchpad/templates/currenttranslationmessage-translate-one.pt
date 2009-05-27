@@ -447,19 +447,22 @@
         <th colspan="3"
           tal:attributes="rowspan python:translation_dictionary['suggestions_count']*2+1;">
             Suggestions:</th>
+        <tal:dismiss
+          define="name_id string:${view/html_id}_${language_code}_dismisssuggestions"
+          condition="view/has_local_suggestions">
         <td class="icon left right">
            <input
              type="checkbox"
              value="dismiss_suggestions"
-             tal:attributes="
-               name string:${view/html_id}_${language_code}_dismisssuggestions"
+             tal:attributes="name name_id; id name_id"
              />
            </td>
            <td>
-           <label class="fuzzy-checkbox">
+           <label class="fuzzy-checkbox" tal:attributes="for name_id">
              Dismiss all suggestions.
            </label>
          </td>
+         </tal:dismiss>
       </tr>
       </tal:suggestions-title>
       <tal:suggestion_block

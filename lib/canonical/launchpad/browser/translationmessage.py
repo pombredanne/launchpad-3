@@ -1150,6 +1150,7 @@ class CurrentTranslationMessageView(LaunchpadView):
                     language),
                 key=operator.attrgetter("date_created"),
                 reverse=True)
+            self.has_local_suggestions = len(local) > 0
             for suggestion in local:
                 suggestion.setPOFile(self.pofile)
 
