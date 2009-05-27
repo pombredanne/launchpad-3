@@ -156,6 +156,7 @@ accessed in read-only mode. Here are some examples.
     Bug #5...
     >>> print user_browser.headers['status']
     200 Ok
+    >>> pop_read_only_mode()
 
 
 == Cleanup ==
