@@ -59,6 +59,7 @@ from lp.code.interfaces.branchnamespace import InvalidNamespace
 from canonical.launchpad.interfaces.bug import IBugSet
 from canonical.launchpad.interfaces.bugtracker import IBugTrackerSet
 from lp.soyuz.interfaces.builder import IBuilderSet
+from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.code.interfaces.codeimport import ICodeImportSet
 from lp.registry.interfaces.codeofconduct import ICodeOfConductSet
 from canonical.launchpad.interfaces.cve import ICveSet
@@ -637,6 +638,7 @@ class LaunchpadRootNavigation(Navigation):
         '+languages': ILanguageSet,
         '+mailinglists': IMailingListSet,
         '+mentoring': IMentoringOfferSet,
+        'package-sets': IPackagesetSet,
         'people': IPersonSet,
         'pillars': IPillarNameSet,
         'projects': IProductSet,
