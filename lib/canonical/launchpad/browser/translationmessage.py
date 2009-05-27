@@ -534,6 +534,15 @@ class BaseTranslationView(LaunchpadView):
             # be an UnexpectedFormData.
             return None
 
+        if self.form_posted_dismiss_suggestions.get(potmsgset, False):
+            try:
+                potmsgset.dismissAllSuggestions(self.pofile,
+                                                self.user,
+                                                self.lock_timestamp)
+            except TranslationConflict, e:
+                return unicode(e)
+            return None
+
         plural_indices_to_store = (
             self.form_posted_translations_has_store_flag.get(potmsgset, []))
 
@@ -559,15 +568,6 @@ class BaseTranslationView(LaunchpadView):
         if translationmessage is None and not has_translations:
             # There is no current translation yet, neither we get any
             # translation submitted, so we don't need to store anything.
-            return None
-
-        if self.form_posted_dismiss_suggestions.get(potmsgset, False):
-            try:
-                potmsgset.dismissAllSuggestions(self.pofile,
-                                                self.user,
-                                                self.lock_timestamp)
-            except TranslationConflict, e:
-                return unicode(e)
             return None
 
         force_suggestion = self.form_posted_needsreview.get(potmsgset, False)
