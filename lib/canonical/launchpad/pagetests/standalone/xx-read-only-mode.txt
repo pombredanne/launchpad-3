@@ -143,6 +143,21 @@ behavior is the same.
     True
 
 
+== Read-only pages ==
+
+Most Launchpad pages (the ones that don't handle edit forms) can be
+accessed in read-only mode. Here are some examples.
+
+=== Bug page ===
+
+    >>> push_read_only_mode(True)
+    >>> user_browser.open('http://launchpad.dev/bugs/5')
+    >>> print user_browser.title
+    Bug #5...
+    >>> print user_browser.headers['status']
+    200 Ok
+
+
 == Cleanup ==
 
     >>> pop_read_only_mode()
