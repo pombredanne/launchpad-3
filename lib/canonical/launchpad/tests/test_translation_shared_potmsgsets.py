@@ -639,6 +639,31 @@ class TestPOTMsgSetSuggestionsDismissal(unittest.TestCase):
             self.potmsgset.getLocalTranslationMessages(
                 self.potemplate, self.pofile.language)))
 
+    def test_dismiss_empty_translation(self):
+        # Set order of creation and review.
+        self._created(self.suggestion1)
+        self._created(self.suggestion2)
+        # Make the translation a suggestion, too.
+        suggestion3 = self.translation
+        suggestion3.is_current = False
+        self._created(suggestion3)
+        # All suggestions are visible.
+        self.assertEqual(
+            set([self.suggestion1, self.suggestion2, suggestion3]),
+            set(self.potmsgset.getLocalTranslationMessages(
+                self.potemplate, self.pofile.language)))
+        # Dismiss suggestions, leaving the translation empty.
+        self.potmsgset.dismissAllSuggestions(
+            self.pofile, self.factory.makePerson(), self.now())
+        current = self.potmsgset.getCurrentTranslationMessage(
+            self.potemplate, self.pofile.language)
+        self.assertNotEqual(None, current)
+        self.assertEqual([None], current.translations)
+        # All suggestions are gone.
+        self.assertEqual(set(), set(
+            self.potmsgset.getLocalTranslationMessages(
+                self.potemplate, self.pofile.language)))
+
 
 class TestPOTMsgSetTranslationMessageConstraints(unittest.TestCase):
     """Test how translation message constraints work."""
