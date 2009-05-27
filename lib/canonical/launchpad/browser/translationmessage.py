@@ -35,6 +35,7 @@ from zope.app.form.interfaces import IInputWidget
 from zope.component import getUtility
 from zope.interface import implements
 from zope.schema.vocabulary import getVocabularyRegistry
+
 from z3c.ptcompat import ViewPageTemplateFile
 
 from canonical.cachedproperty import cachedproperty

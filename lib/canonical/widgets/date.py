@@ -204,11 +204,15 @@ class DateTimeWidget(TextWidget):
 
     @property
     def disabled_flag(self):
-        """Return a string to make the form input disabled if necessary."""
+        """Return a string to make the form input disabled if necessary.
+
+        Returns ``None`` otherwise, to omit the ``disabled`` attribute
+        completely.
+        """
         if self.disabled:
             return "disabled"
         else:
-            return ""
+            return None
 
     #@property  XXX: do as a property when we have python2.5 for tests of
     #properties

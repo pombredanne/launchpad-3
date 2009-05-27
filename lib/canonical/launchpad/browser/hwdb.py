@@ -15,6 +15,7 @@ from textwrap import dedent
 from zope.component import getUtility
 from zope.interface import implements
 from zope.publisher.interfaces.browser import IBrowserPublisher
+
 from z3c.ptcompat import ViewPageTemplateFile
 
 from lp.registry.interfaces.distribution import IDistributionSet

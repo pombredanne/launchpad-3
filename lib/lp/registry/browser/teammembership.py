@@ -104,11 +104,13 @@ class TeamMembershipEditView:
             return 'checked'
         if self.isAdmin():
             return 'checked'
+        return None
 
     def adminIsNotSelected(self):
         """Whether the not-admin radiobutton should be selected."""
         if self.adminIsSelected() != 'checked':
             return 'checked'
+        return None
 
     def expiresIsSelected(self):
         """Whether the expiration date radiobutton should be selected."""
@@ -118,9 +120,10 @@ class TeamMembershipEditView:
         if self.isExpired():
             # Never checked when expired, because there's another
             # radiobutton in that situation.
-            return
+            return None
         if self.membershipExpires():
             return 'checked'
+        return None
 
     def neverExpiresIsSelected(self):
         """Whether the never-expires radiobutton should be selected."""
@@ -130,9 +133,10 @@ class TeamMembershipEditView:
         if self.isExpired():
             # Never checked when expired, because there's another
             # radiobutton in that situation.
-            return
+            return None
         if not self.membershipExpires():
             return 'checked'
+        return None
 
     def canChangeExpirationDate(self):
         """Return True if the logged in user can change the expiration date of
