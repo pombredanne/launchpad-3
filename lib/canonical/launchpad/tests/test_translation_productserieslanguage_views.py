@@ -6,11 +6,14 @@ import unittest
 
 from zope.component import getUtility
 
+from canonical.launchpad.browser.productserieslanguage import (
+    ProductSeriesLanguageView)
+from canonical.launchpad.interfaces.translator import ITranslatorSet
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+from canonical.testing import LaunchpadZopelessLayer
 from lp.registry.browser.productseries import ProductSeriesView
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.testing import TestCaseWithFactory, login_person
-from canonical.testing import LaunchpadZopelessLayer
 
 
 class TestProductSeries(TestCaseWithFactory):
@@ -87,6 +90,53 @@ class TestProductSeries(TestCaseWithFactory):
             [psl.language.code for psl in view.productserieslanguages],
             [u'sr', u'es'])
 
+
+class TestProductSeriesLanguage(TestCaseWithFactory):
+    """Test ProductSeriesLanguage view."""
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        # Create a productseries that uses translations.
+        TestCaseWithFactory.setUp(self)
+        self.productseries = self.factory.makeProductSeries()
+        self.productseries.product.official_rosetta = True
+        self.language = getUtility(ILanguageSet).getLanguageByCode('sr')
+        potemplate = self.factory.makePOTemplate(
+            productseries=self.productseries)
+        pofile = self.factory.makePOFile('sr', potemplate)
+        self.psl = self.productseries.productserieslanguages[0]
+        self.view = ProductSeriesLanguageView(
+            self.psl, LaunchpadTestRequest())
+
+    def test_empty_view(self):
+        self.assertEquals(self.view.translation_group, None)
+        self.assertEquals(self.view.translation_team, None)
+        self.assertEquals(self.view.context, self.psl)
+
+    def test_translation_group(self):
+        group = self.factory.makeTranslationGroup(
+            self.productseries.product.owner, url=None)
+        self.productseries.product.translationgroup = group
+        self.assertEquals(self.view.translation_group, group)
+
+    def test_translation_team(self):
+        # Just having a group doesn't mean there's a translation
+        # team as well.
+        group = self.factory.makeTranslationGroup(
+            self.productseries.product.owner, url=None)
+        self.productseries.product.translationgroup = group
+        self.assertEquals(self.view.translation_team, None)
+
+        # Setting a translator for this languages makes it
+        # appear as the translation_team.
+        team = self.factory.makeTeam()
+        translator = getUtility(ITranslatorSet).new(
+            group, self.language, team)
+        # Recreate the view because we are using a cached property.
+        self.view = ProductSeriesLanguageView(
+            self.psl, LaunchpadTestRequest())
+        self.assertEquals(self.view.translation_team, translator)
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
