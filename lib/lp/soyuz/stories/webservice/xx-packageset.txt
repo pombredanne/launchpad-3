@@ -42,3 +42,47 @@ Can we access it via the webservice API as well?
     >>> umbrella = webservice.get("/package-sets/umbrella").jsonBody()
     >>> print umbrella['self_link']
     http://api.launchpad.dev/beta/package-sets/umbrella
+
+Populate the umbrella package set with source packages.
+
+    >>> from canonical.launchpad.webapp.interfaces import (
+    ...     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR, MASTER_FLAVOR)
+    >>> from lp.registry.model.sourcepackagename import SourcePackageName
+    >>> store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+    >>> all_spns = store.find(SourcePackageName)
+    >>> response = webservice.named_post(
+    ...     '/package-sets/umbrella', 'addSources', {},
+    ...     names=[spn.name for spn in all_spns])
+    >>> print response.getOutput()
+    HTTP/1.1 200 Ok
+    ...
+
+Let's see what we got.
+
+    >>> response = webservice.named_get(
+    ...     '/package-sets/umbrella', 'getSourcesIncluded', {})
+    >>> print response.getOutput()
+    HTTP/1.1 200 Ok
+    ...
+    ["a52dec", "alsa-utils", "at", "cdrkit", "cnews", "commercialpackage",
+     "evolution", "foobar", "iceweasel", "language-pack-de", "libstdc++",
+     "linux-source-2.6.15", "mozilla", "mozilla-firefox", "netapplet",
+     "pmount", "thunderbird"]
+
+Accessing the top-level package set URL will return the first 50 package sets
+sorted by name.
+
+    >>> payload = webservice.get("/package-sets/").jsonBody()
+    >>> for entry in payload['entries']:
+    ...     print entry['self_link']
+    http://api.launchpad.dev/beta/package-sets/umbrella
+
+The 'umbrella' package set has no subsets at this point.
+
+    >>> response = webservice.named_get(
+    ...     '/package-sets/umbrella', 'setsIncluded', {})
+    >>> print response.getOutput()
+    HTTP/1.1 200 Ok
+    ...
+    {"total_size": 0, "start": null, "entries": []}
+

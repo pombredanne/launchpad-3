@@ -70,6 +70,10 @@ class IPackagesetViewOnly(IHasOwner):
         :return: A (potentially empty) sequence of `IPackageset` instances.
         """
 
+    @operation_parameters(
+        direct_inclusion=Bool(required=False))
+    @operation_returns_collection_of(Interface)
+    @export_read_operation()
     def setsIncluded(direct_inclusion=False):
         """Get all package sets that are included by this one.
 
@@ -107,6 +111,9 @@ class IPackagesetViewOnly(IHasOwner):
             instances.
         """
 
+    @operation_parameters(
+        direct_inclusion=Bool(required=False))
+    @export_read_operation()
     def getSourcesIncluded(direct_inclusion=False):
         """Get all source names associated with this package set.
 

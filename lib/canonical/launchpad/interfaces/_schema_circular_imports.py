@@ -58,6 +58,7 @@ from lp.soyuz.interfaces.publishing import (
     IBinaryPackagePublishingHistory, ISecureBinaryPackagePublishingHistory,
     ISecureSourcePackagePublishingHistory, ISourcePackagePublishingHistory,
     PackagePublishingPocket, PackagePublishingStatus)
+from lp.soyuz.interfaces.packageset import IPackageset
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 
 
@@ -208,3 +209,7 @@ patch_reference_property(
 
 # IDistroArchSeries
 patch_reference_property(IDistroArchSeries, 'main_archive', IArchive)
+
+# IPackageset
+patch_collection_return_type(
+    IPackageset, 'setsIncluded', IPackageset)

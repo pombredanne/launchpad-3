@@ -144,7 +144,7 @@ class Packageset(Storm):
     def getSourcesIncluded(self, direct_inclusion=False):
         """See `IPackageset`."""
         result_set = self.sourcesIncluded(direct_inclusion)
-        return result_set.values(SourcePackageName.name)
+        return list(result_set.values(SourcePackageName.name))
 
     def setsIncludedBy(self, direct_inclusion=False):
         """See `IPackageset`."""
