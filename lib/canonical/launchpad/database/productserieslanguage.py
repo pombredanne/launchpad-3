@@ -144,6 +144,8 @@ class DummyProductSeriesLanguage(ProductSeriesLanguage):
                            POTemplate.productseries==self.productseries,
                            POTemplate.iscurrent==True)
         total, = query
+        if total is None:
+            total = 0
         return total
 
 
