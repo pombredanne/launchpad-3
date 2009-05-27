@@ -414,8 +414,8 @@ class HWSubmissionSet:
         clauses.append(HWSubmission.owner == Person.id)
         clauses.append(self._userHasAccessStormClause(user))
 
-        if (bug_ids is not None and len(bug_ids) > 0 or
-            bug_tags is not None and len(bug_tags) > 0):
+        if ((bug_ids is not None and len(bug_ids) > 0) or
+            (bug_tags is not None and len(bug_tags) > 0)):
             bug_clause = Or(
                 In(Bug.id, bug_ids),
                 And(Bug.id == BugTag.bugID, In(BugTag.tag, bug_tags)))
