@@ -608,7 +608,9 @@ class ProductSeriesView(LaunchpadView, TranslationsMixin):
 
     @property
     def productserieslanguages(self):
-        """Produces a list containing a ProductSeriesLanguage object for
+        """Get ProductSeriesLanguage objects to display.
+
+        Produces a list containing a ProductSeriesLanguage object for
         each language this product has been translated into, and for each
         of the user's preferred languages. Where the series has no
         ProductSeriesLanguage for that language, we use a
@@ -619,11 +621,10 @@ class ProductSeriesView(LaunchpadView, TranslationsMixin):
             return None
 
         # Find the existing PSLs.
-        productserieslangs = [
-            psl for psl in self.context.productserieslanguages]
+        productserieslangs = list(self.context.productserieslanguages)
 
         # Make a set of the existing languages.
-        existing_languages = set([psl.language for psl in productserieslangs])
+        existing_languages = set(psl.language for psl in productserieslangs)
 
         # Find all the preferred languages which are not in the set of
         # existing languages, and add a dummy PSL for each of them.
