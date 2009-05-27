@@ -1111,3 +1111,15 @@ We can also get the collection of users affected by a bug.
     >>> print unaffecting_bug.users_affected
     [<Person at ...>]
 
+
+== Similar bugs ==
+
+It's possible to get a list of bugs similar to the current bug by
+accessing its similar_bugs property.
+
+    >>> from operator import attrgetter
+    >>> new_ff_bug = factory.makeBug(product=firefox, title="Firefox bug")
+    >>> for similar_bug in sorted(new_ff_bug.similar_bugs, attrgetter('id')):
+    ...     print "%s: %s" % (similar_bug.id, similar_bug.title)
+    1: Firefox does not support SVG
+    2: Firefox install instructions should be complete
