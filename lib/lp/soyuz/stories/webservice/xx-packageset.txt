@@ -13,8 +13,7 @@ packages. Later they may be put to other uses as well.
     >>> name12 = webservice.get("/~name12").jsonBody()
     >>> response = webservice.named_post(
     ...     '/package-sets', 'new', {},
-    ...     name=u'umbrella',
-    ...     description=u'Contains all source packages',
+    ...     name=u'umbrella', description=u'Contains all source packages',
     ...     owner=name12['self_link'])
     >>> print response.getOutput()
     HTTP/1.1 201 Created
@@ -43,7 +42,7 @@ Can we access it via the webservice API as well?
     >>> print umbrella['self_link']
     http://api.launchpad.dev/beta/package-sets/umbrella
 
-Populate the umbrella package set with source packages.
+Populate the 'umbrella' package set with source packages.
 
     >>> from canonical.launchpad.webapp.interfaces import (
     ...     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR, MASTER_FLAVOR)
@@ -78,6 +77,16 @@ Source package associations can be severed as well.
     HTTP/1.1 200 Ok
     ...
 
+    >>> response = webservice.named_get(
+    ...     '/package-sets/umbrella', 'getSourcesIncluded', {})
+    >>> print response.getOutput()
+    HTTP/1.1 200 Ok
+    ...
+    ["a52dec", "alsa-utils", "at", "cdrkit", "cnews", "commercialpackage",
+     "evolution", "language-pack-de", "libstdc++",
+     "linux-source-2.6.15", "mozilla", "mozilla-firefox", "netapplet",
+     "pmount", "thunderbird"]
+
 Accessing the top-level package set URL will return the first 50 package sets
 sorted by name.
 
@@ -103,8 +112,7 @@ Let's create a few more package sets and set up a package set hierarchy.
 
     >>> response = webservice.named_post(
     ...     '/package-sets', 'new', {},
-    ...     name=u'gnome',
-    ...     description=u'Contains all gnome packages',
+    ...     name=u'gnome', description=u'Contains all gnome packages',
     ...     owner=name12['self_link'])
     >>> print response.getOutput()
     HTTP/1.1 201 Created
@@ -112,8 +120,7 @@ Let's create a few more package sets and set up a package set hierarchy.
 
     >>> response = webservice.named_post(
     ...     '/package-sets', 'new', {},
-    ...     name=u'mozilla',
-    ...     description=u'Contains all mozilla packages',
+    ...     name=u'mozilla', description=u'Contains all mozilla packages',
     ...     owner=name12['self_link'])
     >>> print response.getOutput()
     HTTP/1.1 201 Created
@@ -121,8 +128,7 @@ Let's create a few more package sets and set up a package set hierarchy.
 
     >>> response = webservice.named_post(
     ...     '/package-sets', 'new', {},
-    ...     name=u'firefox',
-    ...     description=u'Contains all firefox packages',
+    ...     name=u'firefox', description=u'Contains all firefox packages',
     ...     owner=name12['self_link'])
     >>> print response.getOutput()
     HTTP/1.1 201 Created
@@ -156,8 +162,7 @@ The following passage defines package set relationships.
     ...
 
     >>> response = webservice.named_post(
-    ...     '/package-sets/gnome', 'addSubsets', {},
-    ...     names=[u'languagepack'])
+    ...     '/package-sets/gnome', 'addSubsets', {}, names=[u'languagepack'])
     >>> print response.getOutput()
     HTTP/1.1 200 Ok
     ...
