@@ -405,6 +405,7 @@ class BaseTranslationView(LaunchpadView):
         self.form_posted_translations = {}
         self.form_posted_translations_has_store_flag = {}
         self.form_posted_needsreview = {}
+        self.form_posted_dismiss_suggestions = {}
 
         if not self.has_plural_form_information:
             # This POFile needs administrator setup.
@@ -558,6 +559,15 @@ class BaseTranslationView(LaunchpadView):
         if translationmessage is None and not has_translations:
             # There is no current translation yet, neither we get any
             # translation submitted, so we don't need to store anything.
+            return None
+
+        if self.form_posted_dismiss_suggestions.get(potmsgset, False):
+            try:
+                potmsgset.dismissAllSuggestions(self.pofile,
+                                                self.user,
+                                                self.lock_timestamp)
+            except TranslationConflict, e:
+                return unicode(e)
             return None
 
         force_suggestion = self.form_posted_needsreview.get(potmsgset, False)
@@ -745,6 +755,13 @@ class BaseTranslationView(LaunchpadView):
 
         self.form_posted_needsreview[potmsgset] = (
             msgset_ID_LANGCODE_needsreview in form)
+
+        msgset_ID_LANGCODE_dismiss_suggestions = (
+            'msgset_%d_%s_dismiss_suggestions' % (potmsgset_ID,
+                                                  language_code))
+
+        self.form_posted_dismiss_suggestions[potmsgset] = (
+            msgset_ID_LANGCODE_dismiss_suggestions in form)
 
         # Note the trailing underscore: we append the plural form
         # number later.

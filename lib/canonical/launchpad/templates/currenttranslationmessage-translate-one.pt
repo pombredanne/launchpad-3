@@ -448,7 +448,7 @@
           tal:attributes="rowspan python:translation_dictionary['suggestions_count']*2+1;">
             Suggestions:</th>
         <tal:dismiss
-          define="name_id string:${view/html_id}_${language_code}_dismisssuggestions"
+          define="name_id string:${view/html_id}_${language_code}_dismiss_suggestions"
           condition="view/has_local_suggestions">
         <td class="icon left right">
            <input
