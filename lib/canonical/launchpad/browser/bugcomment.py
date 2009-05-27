@@ -8,12 +8,15 @@ __all__ = [
     'BugCommentView',
     'BugCommentBoxView',
     'BugCommentBoxExpandedReplyView',
+    'BugCommentXHTMLRepresentation',
     'build_comments_from_chunks',
     'should_display_remote_comments',
     ]
 
-from zope.component import getUtility
-from zope.interface import implements
+from zope.component import adapts, getMultiAdapter, getUtility
+from zope.interface import implements, Interface
+
+from lazr.restful.interfaces import IWebServiceClientRequest
 
 from canonical.launchpad.interfaces.bugmessage import (
     IBugComment, IBugMessageSet)
@@ -227,3 +230,19 @@ class BugCommentBoxExpandedReplyView(LaunchpadView):
     """Render a comment box with reply field expanded."""
 
     expand_reply_box = True
+
+
+class BugCommentXHTMLRepresentation:
+    adapts(IBugComment, IWebServiceClientRequest)
+    implements(Interface)
+
+    def __init__(self, comment, request):
+        self.comment = comment
+        self.request = request
+
+    def __call__(self):
+        """Render `BugComment` as XHTML using the webservice."""
+        comment_view = getMultiAdapter(
+            (self.comment, self.request), name="+box")
+        return comment_view()
+

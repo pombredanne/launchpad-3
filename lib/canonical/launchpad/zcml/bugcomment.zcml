@@ -58,4 +58,9 @@
 
   </facet>
 
+  <adapter
+       factory="canonical.launchpad.browser.bugcomment.BugCommentXHTMLRepresentation"
+       name="lazr.restful.EntryResource"
+      />
+
 </configure>
