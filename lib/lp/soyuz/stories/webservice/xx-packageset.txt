@@ -1,0 +1,44 @@
+= Package sets =
+
+Package sets facilitate the grouping of packages for purposes like the
+control of upload permissions, the calculation of build and runtime package
+dependencies etc.
+
+Initially, package sets will be used to enforce upload permissions to source
+packages. Later they may be put to other uses as well.
+
+    >>> from zope.component import getUtility
+    >>> from lp.registry.interfaces.person import IPersonSet
+
+    >>> name12 = webservice.get("/~name12").jsonBody()
+    >>> response = webservice.named_post(
+    ...     '/package-sets', 'new', {},
+    ...     name=u'umbrella',
+    ...     description=u'Contains all source packages',
+    ...     owner=name12['self_link'])
+    >>> print response.getOutput()
+    HTTP/1.1 201 Created
+    ...
+
+Let's make sure the newly created package set is present.
+
+    >>> login('foo.bar@canonical.com')
+    >>> import operator
+    >>> def sort_by_id(iterable):
+    ...     return sorted(iterable, key=operator.attrgetter('id'))
+    >>> def print_data(iterable):
+    ...     for datum in sort_by_id(iterable):
+    ...          print('%3d -> %s' % (datum.id, datum.name))
+
+    >>> from lp.soyuz.interfaces.packageset import (
+    ...     IPackagesetSet)
+    >>> ps_factory = getUtility(IPackagesetSet)
+    >>> print_data((ps_factory[u'umbrella'], ))
+    1 -> umbrella
+
+Can we access it via the webservice API as well?
+
+    >>> logout()
+    >>> umbrella = webservice.get("/package-sets/umbrella").jsonBody()
+    >>> print umbrella['self_link']
+    http://api.launchpad.dev/beta/package-sets/umbrella

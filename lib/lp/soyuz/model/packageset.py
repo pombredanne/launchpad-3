@@ -302,6 +302,10 @@ class PackagesetSet:
         store.add(packageset)
         return packageset
 
+    def __getitem__(self, name):
+        """See `IPackagesetSet`."""
+        return self.getByName(name)
+
     def getByName(self, name):
         """See `IPackagesetSet`."""
         store = IStore(Packageset)
@@ -312,6 +316,12 @@ class PackagesetSet:
         store = IStore(Packageset)
         result_set = store.find(Packageset, Packageset.owner == owner)
         return _order_result_set(result_set)
+
+    def get(self, limit=50):
+        """See `IPackagesetSet`."""
+        store = IStore(Packageset)
+        result_set = store.find(Packageset)
+        return _order_result_set(result_set)[:limit]
 
     def _nameToSourcePackageName(self, source_name):
         """Helper to convert a possible string name to ISourcePackageName."""
