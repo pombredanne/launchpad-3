@@ -40,6 +40,8 @@ from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
+from canonical.launchpad.database.bug import Bug, BugAffectsPerson, BugTag
+from canonical.launchpad.database.bugsubscription import BugSubscription
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.validators.name import valid_name
 from lp.registry.model.distribution import Distribution
@@ -48,8 +50,6 @@ from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.person import Person
 from lp.registry.model.teammembership import TeamParticipation
 from lp.soyuz.interfaces.distroarchseries import IDistroArchSeries
-from canonical.launchpad.database.bug import Bug, BugAffectsPerson, BugTag
-from canonical.launchpad.database.bugsubscription import BugSubscription
 from canonical.launchpad.interfaces.hwdb import (
     HWBus, HWMainClass, HWSubClass, HWSubmissionFormat,
     HWSubmissionKeyNotUnique, HWSubmissionProcessingStatus, IHWDevice,
@@ -443,6 +443,62 @@ class HWSubmissionSet:
         result.order_by(Person.displayname)
         result.config(distinct=True)
         return result
+
+    def deviceOwnersForBug(
+        self, bug_ids=None, bug_tags=None, affected_by_bug=False,
+        subscribed_to_bug=False, user=None):
+        """See `IHWSubmissionSet`."""
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+
+        if bug_ids is None and bug_tags is None:
+            raise ParameterError('bug_ids or bug_tags must be supplied.')
+
+        tables = [
+            Person, HWSubmission, HWSubmissionDevice, HWDeviceDriverLink,
+            HWDevice, HWVendorID, Bug, BugTag,
+            ]
+
+        clauses = [
+            Person.id == HWSubmission.ownerID,
+            HWSubmissionDevice.submission == HWSubmission.id,
+            HWSubmissionDevice.device_driver_link == HWDeviceDriverLink.id,
+            HWDeviceDriverLink.device == HWDevice.id,
+            HWDevice.bus_vendor == HWVendorID.id
+            ]
+
+        clauses.append(
+            Or(In(Bug.id, bug_ids),
+               And(Bug.id == BugTag.bugID, In(BugTag.tag, bug_tags))))
+
+        clauses.append(self._userHasAccessStormClause(user))
+
+        person_clauses = [Bug.ownerID == HWSubmission.ownerID]
+        if subscribed_to_bug:
+            person_clauses.append(
+                And(BugSubscription.personID == HWSubmission.ownerID,
+                    BugSubscription.bug == Bug.id))
+            tables.append(BugSubscription)
+        if affected_by_bug:
+            person_clauses.append(
+                And(BugAffectsPerson.personID == HWSubmission.ownerID,
+                    BugAffectsPerson.bug == Bug.id,
+                    BugAffectsPerson.affected))
+            tables.append(BugAffectsPerson)
+        clauses.append(Or(person_clauses))
+
+        query = Select(
+            columns=[
+                Person.name, HWVendorID.bus,
+                HWVendorID.vendor_id_for_bus, HWDevice.bus_product_id
+                ],
+            tables=tables, where=And(*clauses), distinct=True,
+            order_by=[HWVendorID.bus, HWVendorID.vendor_id_for_bus,
+                      HWDevice.bus_product_id, Person.name])
+
+        return [
+            (person_name, HWBus.items[bus_id], vendor_id, product_id)
+             for person_name, bus_id, vendor_id, product_id
+             in store.execute(query)]
 
 
 class HWSystemFingerprint(SQLBase):

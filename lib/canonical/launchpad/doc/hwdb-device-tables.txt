@@ -2441,3 +2441,180 @@ others must be supplied too.
     ...
     ParameterError: Either specify bus, vendor_id and product_id or none
     of them.
+
+For a given bug, we can get a list of devices by device owner.
+The result is a tuple of (owner_id, bus_number, vender_id, product_id).
+
+    >>> sample_person = getUtility(IPersonSet).getByName('name12')
+
+    >>> for entry in submission_set.deviceOwnersForBug (
+    ...     bug_ids=[1]):
+    ...     print entry
+    (u'name12', <DBItem HWBus.SYSTEM, (0) System>, u'MSI', u'MS-7369')
+    (u'name12', <DBItem HWBus.SYSTEM, (0) System>, u'Tonka', u'Tuffbook 2600')
+    (u'name12', <DBItem HWBus.PCI, (1) PCI>, u'0x10de', u'0x0455')
+    (u'name12', <DBItem HWBus.PCI, (1) PCI>, u'0x10de', u'0x045d')
+    (u'name12', <DBItem HWBus.PCI, (1) PCI>, u'0x8086', u'0x27cc')
+    (u'name12', <DBItem HWBus.USB, (2) USB>, u'0x04b4', u'0x6560')
+    (u'name12', <DBItem HWBus.USB, (2) USB>, u'0x07b3', u'0x0017')
+    (u'name12', <DBItem HWBus.USB, (2) USB>, u'0x0dda', u'0x2026')
+    (u'name12', <DBItem HWBus.USB, (2) USB>, u'0x8086', u'0x1234')
+    (u'name12', <DBItem HWBus.IDE, (7) IDE>, u'Optiarc', u'DVD RW AD-7170S ')
+    (u'name12', <DBItem HWBus.IDE, (7) IDE>, u'SEAGATE', u'ST3250820NS     ')
+
+This method can also take a list of bugs.
+
+    >>> for entry in submission_set.deviceOwnersForBug (
+    ...     bug_ids=[1, 3]):
+    ...     print entry
+    (u'name12', <DBItem HWBus.SYSTEM, (0) System>, u'MSI', u'MS-7369')
+    (u'name12', <DBItem HWBus.SYSTEM, (0) System>, u'Tonka', u'Tuffbook 2600')
+    (u'name12', <DBItem HWBus.PCI, (1) PCI>, u'0x10de', u'0x0455')
+    (u'name12', <DBItem HWBus.PCI, (1) PCI>, u'0x10de', u'0x045d')
+    (u'name12', <DBItem HWBus.PCI, (1) PCI>, u'0x8086', u'0x27cc')
+    (u'name12', <DBItem HWBus.USB, (2) USB>, u'0x04b4', u'0x6560')
+    (u'name12', <DBItem HWBus.USB, (2) USB>, u'0x07b3', u'0x0017')
+    (u'name12', <DBItem HWBus.USB, (2) USB>, u'0x0dda', u'0x2026')
+    (u'name12', <DBItem HWBus.USB, (2) USB>, u'0x8086', u'0x1234')
+    (u'name12', <DBItem HWBus.IDE, (7) IDE>, u'Optiarc', u'DVD RW AD-7170S ')
+    (u'name12', <DBItem HWBus.IDE, (7) IDE>, u'SEAGATE', u'ST3250820NS     ')
+    (u'name16', <DBItem HWBus.IDE, (7) IDE>, u'SEAGATE', u'ST3250820NS     ')
+
+We can also query for bug tags instead of bug numbers.
+
+    >>> for entry in submission_set.deviceOwnersForBug (
+    ...     bug_tags=['pebcak']):
+    ...     print entry
+    (u'name12', <DBItem HWBus.SYSTEM, (0) System>, u'MSI', u'MS-7369')
+    (u'name12', <DBItem HWBus.SYSTEM, (0) System>, u'Tonka', u'Tuffbook 2600')
+    (u'name12', <DBItem HWBus.PCI, (1) PCI>, u'0x10de', u'0x0455')
+    (u'name12', <DBItem HWBus.PCI, (1) PCI>, u'0x10de', u'0x045d')
+    (u'name12', <DBItem HWBus.PCI, (1) PCI>, u'0x8086', u'0x27cc')
+    (u'name12', <DBItem HWBus.USB, (2) USB>, u'0x04b4', u'0x6560')
+    (u'name12', <DBItem HWBus.USB, (2) USB>, u'0x07b3', u'0x0017')
+    (u'name12', <DBItem HWBus.USB, (2) USB>, u'0x0dda', u'0x2026')
+    (u'name12', <DBItem HWBus.USB, (2) USB>, u'0x8086', u'0x1234')
+    (u'name12', <DBItem HWBus.IDE, (7) IDE>, u'Optiarc', u'DVD RW AD-7170S ')
+    (u'name12', <DBItem HWBus.IDE, (7) IDE>, u'SEAGATE', u'ST3250820NS     ')
+
+    >>> for entry in submission_set.deviceOwnersForBug (
+    ...     bug_tags=['pebcak', 'crash']):
+    ...     print entry
+    (u'name12', <DBItem HWBus.SYSTEM, (0) System>, u'MSI', u'MS-7369')
+    (u'name12', <DBItem HWBus.SYSTEM, (0) System>, u'Tonka', u'Tuffbook 2600')
+    (u'name12', <DBItem HWBus.PCI, (1) PCI>, u'0x10de', u'0x0455')
+    (u'name12', <DBItem HWBus.PCI, (1) PCI>, u'0x10de', u'0x045d')
+    (u'name12', <DBItem HWBus.PCI, (1) PCI>, u'0x8086', u'0x27cc')
+    (u'name12', <DBItem HWBus.USB, (2) USB>, u'0x04b4', u'0x6560')
+    (u'name12', <DBItem HWBus.USB, (2) USB>, u'0x07b3', u'0x0017')
+    (u'name12', <DBItem HWBus.USB, (2) USB>, u'0x0dda', u'0x2026')
+    (u'name12', <DBItem HWBus.USB, (2) USB>, u'0x8086', u'0x1234')
+    (u'name12', <DBItem HWBus.IDE, (7) IDE>, u'Optiarc', u'DVD RW AD-7170S ')
+    (u'name12', <DBItem HWBus.IDE, (7) IDE>, u'SEAGATE', u'ST3250820NS     ')
+    (u'name16', <DBItem HWBus.IDE, (7) IDE>, u'SEAGATE', u'ST3250820NS     ')
+
+This method can also be used to list devices where the
+device owner is affected by the bug.
+
+    >>> bug_one.markUserAffected(foo_bar)
+
+    >>> for entry in submission_set.deviceOwnersForBug (
+    ...     bug_ids=[1], affected_by_bug=True):
+    ...     print entry
+    (u'name12', <DBItem HWBus.SYSTEM, (0) System>, u'MSI', u'MS-7369')
+    (u'name12', <DBItem HWBus.SYSTEM, (0) System>, u'Tonka', u'Tuffbook 2600')
+    (u'name12', <DBItem HWBus.PCI, (1) PCI>, u'0x10de', u'0x0455')
+    (u'name12', <DBItem HWBus.PCI, (1) PCI>, u'0x10de', u'0x045d')
+    (u'name12', <DBItem HWBus.PCI, (1) PCI>, u'0x8086', u'0x27cc')
+    (u'name12', <DBItem HWBus.USB, (2) USB>, u'0x04b4', u'0x6560')
+    (u'name12', <DBItem HWBus.USB, (2) USB>, u'0x07b3', u'0x0017')
+    (u'name12', <DBItem HWBus.USB, (2) USB>, u'0x0dda', u'0x2026')
+    (u'name12', <DBItem HWBus.USB, (2) USB>, u'0x8086', u'0x1234')
+    (u'name12', <DBItem HWBus.IDE, (7) IDE>, u'Optiarc', u'DVD RW AD-7170S ')
+    (u'name12', <DBItem HWBus.IDE, (7) IDE>, u'SEAGATE', u'ST3250820NS     ')
+    (u'name16', <DBItem HWBus.IDE, (7) IDE>, u'SEAGATE', u'ST3250820NS     ')
+
+    >>> bug_one.markUserAffected(foo_bar, False)
+
+We can also check for when the user is subscribed to the bug.
+
+    >>> bug_one.subscribe(foo_bar, subscribed_by=foo_bar)
+    <BugSubscription ...
+
+    >>> for entry in submission_set.deviceOwnersForBug (
+    ...     bug_ids=[1], subscribed_to_bug=True):
+    ...     print entry
+    (u'name12', <DBItem HWBus.SYSTEM, (0) System>, u'MSI', u'MS-7369')
+    (u'name12', <DBItem HWBus.SYSTEM, (0) System>, u'Tonka', u'Tuffbook 2600')
+    (u'name12', <DBItem HWBus.PCI, (1) PCI>, u'0x10de', u'0x0455')
+    (u'name12', <DBItem HWBus.PCI, (1) PCI>, u'0x10de', u'0x045d')
+    (u'name12', <DBItem HWBus.PCI, (1) PCI>, u'0x8086', u'0x27cc')
+    (u'name12', <DBItem HWBus.USB, (2) USB>, u'0x04b4', u'0x6560')
+    (u'name12', <DBItem HWBus.USB, (2) USB>, u'0x07b3', u'0x0017')
+    (u'name12', <DBItem HWBus.USB, (2) USB>, u'0x0dda', u'0x2026')
+    (u'name12', <DBItem HWBus.USB, (2) USB>, u'0x8086', u'0x1234')
+    (u'name12', <DBItem HWBus.IDE, (7) IDE>, u'Optiarc', u'DVD RW AD-7170S ')
+    (u'name12', <DBItem HWBus.IDE, (7) IDE>, u'SEAGATE', u'ST3250820NS     ')
+    (u'name16', <DBItem HWBus.IDE, (7) IDE>, u'SEAGATE', u'ST3250820NS     ')
+
+    >>> bug_one.unsubscribe(foo_bar, unsubscribed_by=foo_bar)
+
+Data from private submissions is not included by default.
+The owner of a private submission can see his or her submission.
+
+    >>> bug_one.subscribe(no_priv, subscribed_by=no_priv)
+    <BugSubscription ...
+
+    >>> for entry in submission_set.deviceOwnersForBug (
+    ...     bug_ids=[1], subscribed_to_bug=True, user=no_priv):
+    ...     print entry
+    (u'name12', <DBItem HWBus.SYSTEM, (0) System>, u'MSI', u'MS-7369')
+    (u'name12', <DBItem HWBus.SYSTEM, (0) System>, u'Tonka', u'Tuffbook 2600')
+    (u'name12', <DBItem HWBus.PCI, (1) PCI>, u'0x10de', u'0x0455')
+    (u'name12', <DBItem HWBus.PCI, (1) PCI>, u'0x10de', u'0x045d')
+    (u'name12', <DBItem HWBus.PCI, (1) PCI>, u'0x8086', u'0x27cc')
+    (u'name12', <DBItem HWBus.USB, (2) USB>, u'0x04b4', u'0x6560')
+    (u'name12', <DBItem HWBus.USB, (2) USB>, u'0x07b3', u'0x0017')
+    (u'name12', <DBItem HWBus.USB, (2) USB>, u'0x0dda', u'0x2026')
+    (u'name12', <DBItem HWBus.USB, (2) USB>, u'0x8086', u'0x1234')
+    (u'name12', <DBItem HWBus.IDE, (7) IDE>, u'Optiarc', u'DVD RW AD-7170S ')
+    (u'name12', <DBItem HWBus.IDE, (7) IDE>, u'SEAGATE', u'ST3250820NS     ')
+    (u'no-priv', <DBItem HWBus.IDE, (7) IDE>, u'SEAGATE', u'ST3250820NS     ')
+
+An admin can also see no_priv's private entry.
+
+    >>> for entry in submission_set.deviceOwnersForBug (
+    ...     bug_ids=[1], subscribed_to_bug=True, user=foo_bar):
+    ...     print entry
+    (u'name12', <DBItem HWBus.SYSTEM, (0) System>, u'MSI', u'MS-7369')
+    (u'name12', <DBItem HWBus.SYSTEM, (0) System>, u'Tonka', u'Tuffbook 2600')
+    (u'name12', <DBItem HWBus.PCI, (1) PCI>, u'0x10de', u'0x0455')
+    (u'name12', <DBItem HWBus.PCI, (1) PCI>, u'0x10de', u'0x045d')
+    (u'name12', <DBItem HWBus.PCI, (1) PCI>, u'0x8086', u'0x27cc')
+    (u'name12', <DBItem HWBus.USB, (2) USB>, u'0x04b4', u'0x6560')
+    (u'name12', <DBItem HWBus.USB, (2) USB>, u'0x07b3', u'0x0017')
+    (u'name12', <DBItem HWBus.USB, (2) USB>, u'0x0dda', u'0x2026')
+    (u'name12', <DBItem HWBus.USB, (2) USB>, u'0x8086', u'0x1234')
+    (u'name12', <DBItem HWBus.IDE, (7) IDE>, u'Optiarc', u'DVD RW AD-7170S ')
+    (u'name12', <DBItem HWBus.IDE, (7) IDE>, u'SEAGATE', u'ST3250820NS     ')
+    (u'no-priv', <DBItem HWBus.IDE, (7) IDE>, u'SEAGATE', u'ST3250820NS     ')
+
+But sample_person cannot see the private entry because she
+is not the owner or an admin.
+
+    >>> for entry in submission_set.deviceOwnersForBug (
+    ...     bug_ids=[1], subscribed_to_bug=True, user=sample_person):
+    ...     print entry
+    (u'name12', <DBItem HWBus.SYSTEM, (0) System>, u'MSI', u'MS-7369')
+    (u'name12', <DBItem HWBus.SYSTEM, (0) System>, u'Tonka', u'Tuffbook 2600')
+    (u'name12', <DBItem HWBus.PCI, (1) PCI>, u'0x10de', u'0x0455')
+    (u'name12', <DBItem HWBus.PCI, (1) PCI>, u'0x10de', u'0x045d')
+    (u'name12', <DBItem HWBus.PCI, (1) PCI>, u'0x8086', u'0x27cc')
+    (u'name12', <DBItem HWBus.USB, (2) USB>, u'0x04b4', u'0x6560')
+    (u'name12', <DBItem HWBus.USB, (2) USB>, u'0x07b3', u'0x0017')
+    (u'name12', <DBItem HWBus.USB, (2) USB>, u'0x0dda', u'0x2026')
+    (u'name12', <DBItem HWBus.USB, (2) USB>, u'0x8086', u'0x1234')
+    (u'name12', <DBItem HWBus.IDE, (7) IDE>, u'Optiarc', u'DVD RW AD-7170S ')
+    (u'name12', <DBItem HWBus.IDE, (7) IDE>, u'SEAGATE', u'ST3250820NS     ')
+
+    >>> bug_one.unsubscribe(no_priv, unsubscribed_by=no_priv)
