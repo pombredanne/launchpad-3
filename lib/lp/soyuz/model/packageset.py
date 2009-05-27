@@ -220,7 +220,7 @@ class Packageset(Storm):
     def getSourcesSharedBy(self, other_package_set, direct_inclusion=False):
         """See `IPackageset`."""
         result_set = self.sourcesSharedBy(other_package_set, direct_inclusion)
-        return result_set.values(SourcePackageName.name)
+        return list(result_set.values(SourcePackageName.name))
 
     def sourcesNotSharedBy(self, other_package_set, direct_inclusion=False):
         """See `IPackageset`."""
@@ -258,7 +258,7 @@ class Packageset(Storm):
         """See `IPackageset`."""
         result_set = self.sourcesNotSharedBy(
             other_package_set, direct_inclusion)
-        return result_set.values(SourcePackageName.name)
+        return list(result_set.values(SourcePackageName.name))
 
     def _api_add_or_remove(self, clauses, handler):
         """Look up the data to be added/removed and call the handler."""
@@ -309,6 +309,8 @@ class PackagesetSet:
     def getByName(self, name):
         """See `IPackagesetSet`."""
         store = IStore(Packageset)
+        if not isinstance(name, unicode):
+            name = unicode(name)
         return store.find(Packageset, Packageset.name == name).one()
 
     def getByOwner(self, owner):

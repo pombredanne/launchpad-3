@@ -213,3 +213,9 @@ patch_reference_property(IDistroArchSeries, 'main_archive', IArchive)
 # IPackageset
 patch_collection_return_type(
     IPackageset, 'setsIncluded', IPackageset)
+patch_collection_return_type(
+    IPackageset, 'setsIncludedBy', IPackageset)
+patch_plain_parameter_type(
+    IPackageset, 'getSourcesSharedBy', 'other_package_set', IPackageset)
+patch_plain_parameter_type(
+    IPackageset, 'getSourcesNotSharedBy', 'other_package_set', IPackageset)

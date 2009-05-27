@@ -60,6 +60,10 @@ class IPackagesetViewOnly(IHasOwner):
             instances.
         """
 
+    @operation_parameters(
+        direct_inclusion=Bool(required=False))
+    @operation_returns_collection_of(Interface)
+    @export_read_operation()
     def setsIncludedBy(direct_inclusion=False):
         """Get all package sets that include this one.
 
@@ -132,6 +136,12 @@ class IPackagesetViewOnly(IHasOwner):
             names.
         """
 
+    @operation_parameters(
+        other_package_set=Reference(
+            Interface,
+            title=_('The package set we are comparing to.'), required=True),
+        direct_inclusion=Bool(required=False))
+    @export_read_operation()
     def getSourcesSharedBy(other_package_set, direct_inclusion=False):
         """Get source package names also included by another package set.
 
@@ -150,6 +160,12 @@ class IPackagesetViewOnly(IHasOwner):
             names.
         """
 
+    @operation_parameters(
+        other_package_set=Reference(
+            Interface,
+            title=_('The package set we are comparing to.'), required=True),
+        direct_inclusion=Bool(required=False))
+    @export_read_operation()
     def getSourcesNotSharedBy(other_package_set, direct_inclusion=False):
         """Get source package names not included by another package set.
 
