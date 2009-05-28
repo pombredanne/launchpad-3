@@ -4,6 +4,7 @@
 
 __metaclass__ = type
 
+import re
 import unittest
 
 from BeautifulSoup import BeautifulSoup
@@ -97,6 +98,18 @@ class TestBugCommentRepresentation(unittest.TestCase):
         self.webservice = LaunchpadWebServiceCaller(
             'launchpad-library', 'salgado-change-anything')
 
+    def assertRenderedCommentsEqual(self, a_comment, another_comment):
+        """Assert that two rendered comments are equal.
+
+        It replaces parts that depend of the current time with fixed
+        strings, so that two comments rendered at different times are
+        still considered equal.
+        """
+        when_regexp = re.compile(r'>\d+ .*? ago<')
+        a_comment = when_regexp.sub('>WHEN<', a_comment)
+        another_comment = when_regexp.sub('>WHEN<', another_comment)
+        self.assertEqual(a_comment, another_comment)
+
     def test_GET_xhtml_representation(self):
         # The XHTML of a BugComment is exactly the same as how it's
         # rendered in the web UI. The existing +box view is re-used to
@@ -116,7 +129,9 @@ class TestBugCommentRepresentation(unittest.TestCase):
         rendered_comment = rendered_comment.replace(
             'http://api.launchpad.dev/beta/',
             'http://launchpad.dev/')
-        self.assertEqual(rendered_comment, self.expected_comment_html)
+
+        self.assertRenderedCommentsEqual(
+            rendered_comment, self.expected_comment_html)
 
 
 def test_suite():
