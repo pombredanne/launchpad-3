@@ -15,13 +15,14 @@ from zope.schema import Bool, Datetime, Int, List, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.launchpad import IHasOwner
-from lp.registry.interfaces.person import IPerson
 from canonical.launchpad.validators.name import name_validator
+from lp.registry.interfaces.person import IPerson
 from lazr.restful.declarations import (
     collection_default_content, export_as_webservice_collection,
-    export_as_webservice_entry, exported, export_factory_operation,
-    export_read_operation, export_write_operation, operation_parameters,
-    operation_returns_collection_of, operation_returns_entry)
+    export_as_webservice_entry, export_factory_operation,
+    export_read_operation, export_write_operation, exported,
+    operation_parameters, operation_returns_collection_of,
+    operation_returns_entry)
 from lazr.restful.fields import Reference
 
 
@@ -367,5 +368,5 @@ class IPackagesetSet(Interface):
         """
 
     def __getitem__(name):
-        """Retrieve a package set by name"""
+        """Retrieve a package set by name."""
 

@@ -11,11 +11,11 @@ from storm.locals import DateTime, Int, Reference, Storm, Unicode
 from zope.component import getUtility
 from zope.interface import implements
 
+from canonical.launchpad.interfaces.lpstorm import IMasterStore, IStore
+
 from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageName, ISourcePackageNameSet)
 from lp.registry.model.sourcepackagename import SourcePackageName
-
-from canonical.launchpad.interfaces.lpstorm import IMasterStore, IStore
 from lp.soyuz.interfaces.packageset import (
     IPackageset, IPackagesetSet)
 
