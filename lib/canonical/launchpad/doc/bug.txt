@@ -1122,3 +1122,78 @@ We can also get the collection of users affected by a bug.
     >>> unaffecting_bug = factory.makeBug()
     >>> print unaffecting_bug.users_affected
     [<Person at ...>]
+
+
+== Getting the distinct set of Bugs for a set of BugTasks ==
+
+Sometimes we have a set of BugTasks for which we want to get only the
+distinct set of bugs, i.e. there are several BugTasks in our set which
+share a bug; we only want to work with a bug once.
+
+We can get the distinct set of Bugs for a set of BugTasks using
+BugTaskSet.getDistinctBugsForBugTasks(). This takes a set of BugTasks
+and a user and returns the set of Bugs for those BugTasks.
+
+    >>> from operator import attrgetter
+    >>> bug_tasks = [
+    ...     factory.makeBug(
+    ...         product=firefox, title="New bug %s" % i).bugtasks[0]
+    ...     for i in range(5)]
+
+    >>> bugs = getUtility(IBugSet).getDistinctBugsForBugTasks(
+    ...     bug_tasks, user=sample_person)
+    >>> bugs = sorted(bugs, key=attrgetter('title'))
+    >>> for bug in bugs:
+    ...     print bug.title
+    New bug 0
+    New bug 1
+    New bug 2
+    New bug 3
+    New bug 4
+
+If two BugTasks share a Bug, the Bug will only be returned once.
+
+    >>> new_bug_0 = bugs[0]
+    >>> new_bugtask = factory.makeBugTask(
+    ...     bug=new_bug_0, target=thunderbird)
+
+    >>> matching_bugs = getUtility(IBugSet).getDistinctBugsForBugTasks(
+    ...     [new_bugtask], user=sample_person)
+    >>> len(matching_bugs)
+    1
+
+    >>> print matching_bugs[0].title
+    New bug 0
+
+    >>> for task in sorted(matching_bugs[0].bugtasks,
+    ...     key=attrgetter('bugtargetname')):
+    ...     print task.bugtargetname
+    firefox
+    thunderbird
+
+If a bug that could be returned by getDistinctBugsForBugTasks() is
+private and the user wouldn't be able to see it, it won't be returned.
+
+    >>> new_bug_2 = bugs[2]
+    >>> new_bug_2.setPrivate(True, foobar)
+    True
+
+    >>> matching_bugs = getUtility(IBugSet).getDistinctBugsForBugTasks(
+    ...     bug_tasks, user=no_priv)
+
+    >>> for bug in sorted(matching_bugs, key=attrgetter('title')):
+    ...     print bug.title
+    New bug 0
+    New bug 1
+    New bug 3
+    New bug 4
+
+The number of bugs to be returned by getDistinctBugsForBugTasks() can be
+altered by setting its limit parameter, which defaults to 10.
+
+    >>> matching_bugs = getUtility(IBugSet).getDistinctBugsForBugTasks(
+    ...     bug_tasks, user=no_priv, limit=2)
+    >>> for bug in sorted(matching_bugs, key=attrgetter('title')):
+    ...     print bug.title
+    New bug 0
+    New bug 1
