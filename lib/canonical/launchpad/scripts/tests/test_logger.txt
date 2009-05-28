@@ -8,16 +8,15 @@ by our logging handler.
     ...     import subprocess
     ...     import os.path
     ...     from canonical.config import config
-    ...     env = kw.pop('env', {})
+    ...     env = dict(kw.pop('env', {'LPCONFIG': 'testrunner'}))
     ...     env['PYTHONPATH'] = os.path.pathsep.join(sys.path)
-    ...	    kw['env'] = env
     ...     test_script_path = os.path.join(
     ...         config.root, 'lib', 'canonical', 'launchpad',
     ...         'scripts', 'tests', 'loglevels.py')
     ...     cmd = [sys.executable, test_script_path] + list(args)
     ...     proc = subprocess.Popen(
     ...         cmd, stdin=subprocess.PIPE,
-    ...         stdout=subprocess.PIPE, stderr=subprocess.PIPE, **kw)
+    ...         stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env, **kw)
     ...     out, err = proc.communicate()
     ...     assert out == "", "Output to stdout"
     ...     print err
