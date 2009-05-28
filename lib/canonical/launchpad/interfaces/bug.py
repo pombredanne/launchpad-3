@@ -692,6 +692,9 @@ class IBug(ICanBeMentored):
     def setCommentVisibility(user, comment_number, visible):
         """Set the visible attribute on a bug comment."""
 
+    def isVisibleToUser(user):
+        """Return True if `user` can see this IBug, false otherwise."""
+
 
 class InvalidDuplicateValue(Exception):
     """A bug cannot be set as the duplicate of another."""

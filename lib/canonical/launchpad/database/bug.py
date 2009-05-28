@@ -1344,6 +1344,24 @@ class Bug(SQLBase):
             self, self.messages[comment_number])
         bug_message.visible = visible
 
+    def isVisibleToUser(self, user):
+        """See `IBug`."""
+        admins = getUtility(ILaunchpadCelebrities).admin
+        if not self.private:
+            # This is a public bug.
+            return True
+        elif user.inTeam(admins):
+            # Admins can view all bugs.
+            return True
+        else:
+            # This is a private bug. Only explicit subscribers may view it.
+            for subscription in self.subscriptions:
+                if user.inTeam(subscription.person):
+                    return True
+
+        return False
+
+
 
 class BugSet:
     """See BugSet."""

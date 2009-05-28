@@ -1295,6 +1295,9 @@ This also works for distributions...
     >>> for similar_bug in sorted(similar_bugs, key=attrgetter('id')):
     ...     print "%s: %s" % (similar_bug.id, similar_bug.title)
 
+Private bugs won't show up in the list of similar bugs unless the user
+is a direct subscriber.
+
 
 == Handling IntegrityError and ProgrammingError ==
 
