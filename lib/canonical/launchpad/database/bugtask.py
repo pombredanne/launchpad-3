@@ -578,7 +578,7 @@ class BugTask(SQLBase, BugTaskMixin):
                 continue
 
             bug = bugtask.bug
-            if not check_permission('launchpad.View', bug):
+            if not bug.isVisibleToUser(user):
                 continue
 
             duplicateof = bug.duplicateof
