@@ -11,9 +11,8 @@ __all__ = []
 # Fix path so imports work.
 import sys, os, os.path
 sys.path.insert(0, os.path.abspath(os.path.normpath(os.path.join(
-    os.path.dirname(__file__), os.pardir, os.pardir, os.pardir, os.pardir, os.pardir
+    os.path.dirname(__file__), os.pardir, os.pardir, os.pardir, os.pardir
     ))))
-import _pythonpath
 
 # Monkey patch time.gmtime to make our tests easier to read.
 import time

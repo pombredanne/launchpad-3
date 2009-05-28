@@ -3,10 +3,14 @@ settings. These command line options change what log levels are output
 by our logging handler.
 
     >>> def test(*args, **kw):
+    ...     import os
     ...     import sys
     ...     import subprocess
     ...     import os.path
     ...     from canonical.config import config
+    ...     env = kw.pop('env', {})
+    ...     env['PYTHONPATH'] = os.path.pathsep.join(sys.path)
+    ...	    kw['env'] = env
     ...     test_script_path = os.path.join(
     ...         config.root, 'lib', 'canonical', 'launchpad',
     ...         'scripts', 'tests', 'loglevels.py')
