@@ -1269,7 +1269,7 @@ accessing the similar_bugs property of its bug tasks.
     >>> new_ff_bug = factory.makeBug(product=firefox, title="Firefox")
     >>> ff_bugtask = new_ff_bug.bugtasks[0]
 
-    >>> similar_bugs = ff_bugtask.findSimilar(user=sample_person)
+    >>> similar_bugs = ff_bugtask.findSimilarBugs(user=sample_person)
     >>> for similar_bug in sorted(similar_bugs, key=attrgetter('id')):
     ...     print "%s: %s" % (similar_bug.id, similar_bug.title)
     1: Firefox does not support SVG
@@ -1279,7 +1279,7 @@ accessing the similar_bugs property of its bug tasks.
 This also works for distributions...
 
     >>> ubuntu_bugtask = factory.makeBugTask(bug=new_ff_bug, target=ubuntu)
-    >>> similar_bugs = ubuntu_bugtask.findSimilar(user=sample_person)
+    >>> similar_bugs = ubuntu_bugtask.findSimilarBugs(user=sample_person)
     >>> for similar_bug in sorted(similar_bugs, key=attrgetter('id')):
     ...     print "%s: %s" % (similar_bug.id, similar_bug.title)
     1: Firefox does not support SVG
@@ -1290,7 +1290,7 @@ This also works for distributions...
     >>> firefox_package_bugtask = factory.makeBugTask(
     ...     bug=new_ff_bug, target=firefox_package)
 
-    >>> similar_bugs = firefox_package_bugtask.findSimilar(
+    >>> similar_bugs = firefox_package_bugtask.findSimilarBugs(
     ...     user=sample_person)
     >>> for similar_bug in sorted(similar_bugs, key=attrgetter('id')):
     ...     print "%s: %s" % (similar_bug.id, similar_bug.title)
@@ -1302,7 +1302,7 @@ against Firefox.
 
     >>> second_ff_bug = factory.makeBug(
     ...     product=firefox, title="Yet another Firefox bug")
-    >>> similar_bugs = ff_bugtask.findSimilar(user=no_priv)
+    >>> similar_bugs = ff_bugtask.findSimilarBugs(user=no_priv)
     >>> for similar_bug in sorted(similar_bugs, key=attrgetter('id')):
     ...     print "%s: %s" % (similar_bug.id, similar_bug.title)
     1: Firefox does not support SVG
@@ -1316,7 +1316,7 @@ list for no_priv any more, since they're not a direct subscriber.
     >>> second_ff_bug.setPrivate(True, foobar)
     True
 
-    >>> similar_bugs = ff_bugtask.findSimilar(user=no_priv)
+    >>> similar_bugs = ff_bugtask.findSimilarBugs(user=no_priv)
     >>> for similar_bug in sorted(similar_bugs, key=attrgetter('id')):
     ...     print "%s: %s" % (similar_bug.id, similar_bug.title)
     1: Firefox does not support SVG

@@ -42,7 +42,7 @@
                         asEmailHeaderValue getDelta pillar
                         target_uses_malone bugtask_branches
                         conjoined_master conjoined_slave subscribe
-                        getConjoinedMaster findSimilar" />
+                        getConjoinedMaster findSimilarBugs" />
         <require
             permission="launchpad.Edit"
             attributes="setStatusFromDebbugs setImportanceFromDebbugs

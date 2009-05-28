@@ -539,7 +539,7 @@ class BugTask(SQLBase, BugTaskMixin):
         """
         return self.status in RESOLVED_BUGTASK_STATUSES
 
-    def findSimilar(self, user, limit=10):
+    def findSimilarBugs(self, user, limit=10):
         """See `IBugTask`."""
         if self.product is not None:
             context_params = {'product': self.product}
