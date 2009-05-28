@@ -173,6 +173,8 @@
       <script type="text/javascript"
               tal:attributes="src string:${lp_js}/lp/picker.js"></script>
       <script type="text/javascript"
+              tal:attributes="src string:${lp_js}/registry/timeline.js"></script>
+      <script type="text/javascript"
               tal:attributes="src string:${lp_js}/sorttable/sorttable.js"></script>
       <script type="text/javascript"
               tal:attributes="src string:${lp_js}/inlinehelp/inlinehelp.js"></script>

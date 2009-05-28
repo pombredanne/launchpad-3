@@ -21,34 +21,42 @@
     }
   </style>
 
-  <script type="text/javascript"
-          tal:define="lp_js string:${icingroot}/build"
-          tal:attributes="src string:${lp_js}/registry/series-diagram.js">
-  </script>
-
 </metal:block>
 
 
 <div metal:fill-slot="main">
 
-  <a href="javascript:zoom_graph('in', canvas_context)"
-    >Zoom in</a> | <a href="javascript:zoom_graph('out', canvas_context)"
-    >Zoom out</a>
+  <a id="zoom-in" href="javascript:void(0)">Zoom in</a>
+  | <a id="zoom-out" href="javascript:void(0)">Zoom out</a>
 
   <div id="canvas-container">
       <canvas id="supercanvas"></canvas>
   </div>
   <script type="text/javascript">
-    YUI().use('node', function(Y) {
+    YUI().use('registry.timeline', 'node', function(Y) {
         Y.on('domready', function(e) {
           if (Y.UA.ie) {
               return;
           }
 
+          var graph;
+          var zoom_in = Y.get('#zoom-in');
+          zoom_in.on('click', function() {
+              graph.zoom('in');
+          });
+
+          var zoom_out = Y.get('#zoom-out');
+          zoom_out.on('click', function() {
+              graph.zoom('out');
+          });
+
           var display_graph = function(result) {
-              timeline = result;
-              canvas = document.getElementById('supercanvas');
-              draw_graph(timeline, canvas);
+              var timeline = result;
+              var canvas = document.getElementById('supercanvas');
+              graph = new Y.registry.timeline.TimelineGraph(
+                  timeline, canvas);
+              graph.stretch_canvas();
+              graph.draw();
           }
 
           var client = new LP.client.Launchpad();
