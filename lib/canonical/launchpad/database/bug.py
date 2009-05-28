@@ -1362,7 +1362,6 @@ class Bug(SQLBase):
         return False
 
 
-
 class BugSet:
     """See BugSet."""
     implements(IBugSet)
