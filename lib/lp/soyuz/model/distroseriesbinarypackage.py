@@ -12,7 +12,6 @@ from zope.interface import implements
 
 from canonical.cachedproperty import cachedproperty
 from canonical.database.sqlbase import sqlvalues
-from lp.soyuz.model.archive import Archive
 from lp.soyuz.model.binarypackagerelease import (
     BinaryPackageRelease)
 from lp.soyuz.model.distroseriespackagecache import (

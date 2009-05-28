@@ -16,7 +16,7 @@ from canonical.buildmaster.master import BuilddMaster
 from lp.soyuz.interfaces.build import IBuildSet
 from lp.soyuz.interfaces.builder import IBuilderSet
 from canonical.launchpad.interfaces.launchpad import NotFoundError
-from canonical.launchpad.scripts.base import (
+from lp.services.scripts.base import (
     LaunchpadCronScript, LaunchpadScriptFailure)
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.distroseries import DistroSeriesStatus

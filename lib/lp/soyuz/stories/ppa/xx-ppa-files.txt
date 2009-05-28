@@ -205,8 +205,8 @@ Buildlog, upload_log and binary changesfile are served via the Build
     >>> check_urls(no_priv_browser, build_links,
     ...            'http://launchpad.dev/~no-priv/+archive/ppa/+build/31')
     test-bin_1.0_i386.changes:    OK
-    buildlog_...txt.gz:          OK
-    upload_..._log.txt:          OK
+    buildlog_...txt.gz:           OK
+    upload_..._log.txt:           OK
 
 Package-diff files, in the expandable-row area, are served via the PPA
 '+files' traversal.
@@ -348,6 +348,7 @@ proxy redirects to the public http url.
     Location: http://localhost:58000/.../test-pkg_1.0.dsc
     ...
 
+
 == Compatibility URL Redirection ==
 
 If a script or otherwise is trying to access +archive/+files, we make
@@ -381,5 +382,83 @@ The same redirection happens for +archive/+build/blah urls:
     HTTP/1.1 301 Moved Permanently
     ...
     Location: http://.../~no-priv/+archive/ppa/+build/31/+files/...
+    ...
+
+
+== Deleted library files ==
+
+Unused PPA files get expired and deleted after a configurable period,
+so Launchpad doesn't have to host them forever. They are also
+immediately deleted in case of reported ToS violation.
+
+    # Attach an existing file (the 'test-pkg_1.0.dsc') to a deleted
+    # LibraryFileContent.
+    >>> from canonical.launchpad.database import LibraryFileContent
+    >>> from canonical.launchpad.webapp.interfaces import (
+    ...     IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
+    >>> login('foo.bar@canonical.com')
+    >>> store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+    >>> deleted_content = LibraryFileContent(
+    ...     filesize=1, sha1='f00', md5='f00', deleted=True)
+    >>> ignore = store.add(deleted_content)
+    >>> store.commit()
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> removeSecurityProxy(dsc_file).content = deleted_content
+    >>> commit()
+
+The librarian URL for a deleted file is None, by convention. See
+`ILibraryFileAlias` for more information on this.
+
+    >>> print dsc_file.http_url
+    None
+
+    >>> logout()
+
+In this circumstance, when a file is deleted, the file reference
+remains in the PPA page, but it's not a link anymore.
+
+    >>> no_priv_browser.open("http://launchpad.dev/~no-priv/+archive/ppa")
+
+    >>> expander_id = find_tags_by_class(
+    ...     no_priv_browser.contents, 'expander')[1]['id']
+    >>> no_priv_browser.getLink(id=expander_id).click()
+
+    >>> check_urls(no_priv_browser, ppa_1_0_links,
+    ...            'http://launchpad.dev/~no-priv/+archive/ppa')
+    test-pkg_1.0.dsc:     NOT FOUND
+    test-pkg_1.0.tar.gz:  OK
+    test-bin_1.0_all.deb: OK
+
+If by any chance, mostly bookmarked URLs, it gets accessed via the
+LP proxy URL a proper NotFound error is raised.
+
+    >>> print file_lp_url
+    http://launchpad.dev/~no-priv/+archive/ppa/+files/test-pkg_1.0.dsc
+
+    >>> not_found_file = http(r"""
+    ... GET %s HTTP/1.1
+    ... """ % file_lp_url.replace('http://launchpad.dev', ''))
+
+It results in a 404 response with a page pointing to a OOPS report and
+users instructions about the problem.
+
+    >>> print not_found_file
+    HTTP/1.1 404 Not Found
+    ...
+
+The OOPS itself, will contain the correct filename and the context
+archive in which the error occurred based on the traceback included in
+the page.
+
+    >>> main_content = find_main_content(str(not_found_file))
+    >>> print extract_text(main_content)
+    Log in / Register
+    &gt; No Privileges Person &gt;
+    PPA for No Privileges Person
+    ...
+    Include the error ID OOPS-...
+    ...
+    DeletedProxiedLibraryFileAlias:
+    Object: u'test-pkg_1.0.dsc', name: &lt;Archive at
     ...
 

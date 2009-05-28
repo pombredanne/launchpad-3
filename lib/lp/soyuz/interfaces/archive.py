@@ -28,6 +28,8 @@ __all__ = [
     'NoSuchPPA',
     'PocketNotFound',
     'SourceNotFound',
+    'AlreadySubscribed',
+    'ArchiveNotPrivate',
     'default_name_by_purpose',
     ]
 
@@ -38,7 +40,7 @@ from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
-    PublicPersonChoice, StrippedTextLine)
+    ParticipatingPersonChoice, PublicPersonChoice, StrippedTextLine)
 from canonical.launchpad.interfaces.launchpad import IHasOwner
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.registry.interfaces.gpg import IGPGKey
@@ -88,6 +90,16 @@ class SourceNotFound(Exception):
     webservice_error(400) #Bad request.
 
 
+class AlreadySubscribed(Exception):
+    """Raised when creating a subscription for a subscribed person."""
+    webservice_error(400) # Bad request.
+
+
+class ArchiveNotPrivate(Exception):
+    """Raised when creating an archive subscription for a public archive."""
+    webservice_error(400) # Bad request.
+
+
 class ComponentNotFound(Exception):
     """Invalid source name."""
     webservice_error(400) #Bad request.
@@ -104,7 +116,7 @@ class IArchivePublic(IHasOwner):
     id = Attribute("The archive ID.")
 
     owner = exported(
-        PublicPersonChoice(
+        ParticipatingPersonChoice(
             title=_('Owner'), required=True, vocabulary='ValidOwner',
             description=_("""The archive owner.""")))
 

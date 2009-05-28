@@ -1,7 +1,7 @@
 Format: 1.8
 Date: Thu, 15 Apr 2009 15:14:09 +0100
 Source: debug
-Binary: debug-bin debug-dbg
+Binary: debug-bin
 Architecture: i386
 Version: 1.0
 Distribution: hoary
@@ -10,7 +10,6 @@ Maintainer: Launchpad team <launchpad@lists.canonical.com>
 Changed-By: Celso Providelo <cprov@canonical.com>
 Description: 
  debug-bin  - Stuff for testing
- debug-dbg  - Stuff for testing DDEBs
 Changes: 
  debug (1.0) hoary; urgency=low
  .

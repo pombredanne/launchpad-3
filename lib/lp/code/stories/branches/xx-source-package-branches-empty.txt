@@ -23,7 +23,7 @@ This takes us to the branch listing for that source package
 
     >>> browser.open(source_package_url)
     >>> print browser.title
-    Branches in distro series foo
+    Branches of foo in distro series
 
 Since there are no branches, there is no branch listing table:
 
@@ -31,4 +31,4 @@ Since there are no branches, there is no branch listing table:
     None
 
     >>> print_tag_with_id(browser.contents, 'branch-summary')
-    There are no branches for distro series foo in Launchpad.
+    There are no branches of foo in distro series in Launchpad.

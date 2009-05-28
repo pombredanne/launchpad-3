@@ -115,7 +115,7 @@ class MilestoneView(LaunchpadView, ProductDownloadFileMixin):
         :param context: `IMilestone` or `IProductRelease`.
         :param request: `ILaunchpadRequest`.
         """
-        super(LaunchpadView, self).__init__(context, request)
+        super(MilestoneView, self).__init__(context, request)
         if IMilestone.providedBy(context):
             self.milestone = context
             self.release = context.product_release

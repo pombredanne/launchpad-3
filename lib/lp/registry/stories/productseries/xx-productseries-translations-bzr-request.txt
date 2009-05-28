@@ -23,7 +23,7 @@ to request an import. The current branch is displayed on the page.
     >>> branch = find_tag_by_id(browser.contents, 'branch-display')
     >>> print extract_text(branch)
     The official Bazaar branch is:
-    ~vcs-imports/evolution/main
+    lp://dev/evolution
 
 If the product series is not configured to import translation files
 continuously, the user is reminded of that here.

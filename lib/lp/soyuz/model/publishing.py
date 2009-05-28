@@ -53,6 +53,8 @@ from lp.soyuz.interfaces.publishing import (
     PoolFileOverwriteError)
 from lp.soyuz.interfaces.build import BuildSetStatus, BuildStatus, IBuildSet
 from lp.soyuz.scripts.changeoverride import ArchiveOverriderError
+from canonical.launchpad.components.decoratedresultset import (
+    DecoratedResultSet)
 from canonical.launchpad.webapp.interfaces import (
         IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from lp.registry.interfaces.person import validate_public_person
@@ -517,6 +519,19 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         result_set = publishing_set.getBuildsForSources(self)
 
         return [build for source, build, arch in result_set]
+
+    def getUnpublishedBuilds(self, build_states=None):
+        """See `ISourcePackagePublishingHistory`."""
+        publishing_set = getUtility(IPublishingSet)
+        result_set = publishing_set.getUnpublishedBuildsForSources(
+            self, build_states)
+
+        # Create a function that will just return the second item
+        # in the result tuple (the build).
+        def result_to_build(result):
+            return result[1]
+
+        return DecoratedResultSet(result_set, result_to_build)
 
     @property
     def changes_file_url(self):
@@ -990,7 +1005,8 @@ class PublishingSet:
 
     implements(IPublishingSet)
 
-    def getBuildsForSourceIds(self, source_publication_ids, archive=None):
+    def getBuildsForSourceIds(
+        self, source_publication_ids, archive=None, build_states=None):
         """See `IPublishingSet`."""
         # Import Build and DistroArchSeries locally to avoid circular
         # imports, since that Build uses SourcePackagePublishingHistory
@@ -1005,6 +1021,12 @@ class PublishingSet:
         if archive is not None:
             extra_exprs.append(
                 SourcePackagePublishingHistory.archive == archive)
+
+        # If an optional list of build states was passed in as a parameter,
+        # ensure that the result is limited to builds in those states.
+        if build_states is not None:
+            extra_exprs.append(
+                Build.buildstate.is_in(build_states))
 
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         result_set = store.find(
@@ -1059,6 +1081,76 @@ class PublishingSet:
 
         return self.getBuildsForSourceIds(source_publication_ids)
 
+    def _getSourceBinaryJoinForSources(self, source_publication_ids):
+        """Return the join linking sources with binaries."""
+        # Import Build, BinaryPackageRelease and DistroArchSeries locally
+        # to avoid circular imports, since Build uses
+        # SourcePackagePublishingHistory, BinaryPackageRelease uses Build
+        # and DistroArchSeries uses BinaryPackagePublishingHistory.
+        from lp.soyuz.model.binarypackagerelease import (
+            BinaryPackageRelease)
+        from lp.soyuz.model.build import Build
+        from lp.soyuz.model.distroarchseries import (
+            DistroArchSeries)
+
+        return (
+            SourcePackagePublishingHistory.sourcepackagereleaseID ==
+                Build.sourcepackagereleaseID,
+            BinaryPackageRelease.build == Build.id,
+            BinaryPackageRelease.binarypackagenameID ==
+                BinaryPackageName.id,
+            SourcePackagePublishingHistory.distroseriesID ==
+                DistroArchSeries.distroseriesID,
+            BinaryPackagePublishingHistory.distroarchseriesID ==
+                DistroArchSeries.id,
+            BinaryPackagePublishingHistory.binarypackagerelease ==
+                BinaryPackageRelease.id,
+            BinaryPackagePublishingHistory.pocket ==
+               SourcePackagePublishingHistory.pocket,
+            BinaryPackagePublishingHistory.archiveID ==
+               SourcePackagePublishingHistory.archiveID,
+            In(BinaryPackagePublishingHistory.status,
+               [enum.value for enum in active_publishing_status]),
+            In(SourcePackagePublishingHistory.id, source_publication_ids))
+
+    def getUnpublishedBuildsForSources(self,
+                                       one_or_more_source_publications,
+                                       build_states=None):
+        """See `IPublishingSet`."""
+        # Import Build, BinaryPackageRelease and DistroArchSeries locally
+        # to avoid circular imports, since Build uses
+        # SourcePackagePublishingHistory and DistroArchSeries uses
+        # BinaryPackagePublishingHistory.
+        from lp.soyuz.model.build import Build
+        from lp.soyuz.model.distroarchseries import (
+            DistroArchSeries)
+
+        # The default build state that we'll search for is FULLYBUILT
+        if build_states is None:
+            build_states = [BuildStatus.FULLYBUILT]
+
+        source_publication_ids = self._extractIDs(
+            one_or_more_source_publications)
+
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        published_builds = store.find(
+            (SourcePackagePublishingHistory, Build, DistroArchSeries),
+            self._getSourceBinaryJoinForSources(source_publication_ids),
+            BinaryPackagePublishingHistory.datepublished != None,
+            Build.buildstate.is_in(build_states))
+
+        published_builds.order_by(
+            SourcePackagePublishingHistory.id,
+            DistroArchSeries.architecturetag)
+
+        # Now to return all the unpublished builds, we use the difference
+        # of all builds minus the published ones.
+        unpublished_builds = self.getBuildsForSourceIds(
+            source_publication_ids,
+            build_states=build_states).difference(published_builds)
+
+        return unpublished_builds
+
     def getFilesForSources(self, one_or_more_source_publications):
         """See `IPublishingSet`."""
         # Import Build and BinaryPackageRelease locally to avoid circular
@@ -1112,7 +1204,6 @@ class PublishingSet:
         # and DistroArchSeries uses BinaryPackagePublishingHistory.
         from lp.soyuz.model.binarypackagerelease import (
             BinaryPackageRelease)
-        from lp.soyuz.model.build import Build
         from lp.soyuz.model.distroarchseries import (
             DistroArchSeries)
 
@@ -1123,24 +1214,7 @@ class PublishingSet:
         result_set = store.find(
             (SourcePackagePublishingHistory, BinaryPackagePublishingHistory,
              BinaryPackageRelease, BinaryPackageName, DistroArchSeries),
-            SourcePackagePublishingHistory.sourcepackagereleaseID ==
-                Build.sourcepackagereleaseID,
-            BinaryPackageRelease.build == Build.id,
-            BinaryPackageRelease.binarypackagenameID ==
-                BinaryPackageName.id,
-            SourcePackagePublishingHistory.distroseriesID ==
-                DistroArchSeries.distroseriesID,
-            BinaryPackagePublishingHistory.distroarchseriesID ==
-                DistroArchSeries.id,
-            BinaryPackagePublishingHistory.binarypackagerelease ==
-                BinaryPackageRelease.id,
-            BinaryPackagePublishingHistory.pocket ==
-               SourcePackagePublishingHistory.pocket,
-            BinaryPackagePublishingHistory.archiveID ==
-               SourcePackagePublishingHistory.archiveID,
-            In(BinaryPackagePublishingHistory.status,
-               [enum.value for enum in active_publishing_status]),
-            In(SourcePackagePublishingHistory.id, source_publication_ids))
+            self._getSourceBinaryJoinForSources(source_publication_ids))
 
         result_set.order_by(
             SourcePackagePublishingHistory.id,
@@ -1250,14 +1324,8 @@ class PublishingSet:
         if (source_publication.status in active_publishing_status and
                 summary['status'] == BuildSetStatus.FULLYBUILT):
 
-            published_bins = source_publication.getPublishedBinaries()
-            published_builds = [
-                bin.binarypackagerelease.build
-                    for bin in published_bins
-                        if bin.datepublished is not None]
-
             unpublished_builds = list(
-                set(summary['builds']).difference(published_builds))
+                source_publication.getUnpublishedBuilds())
 
             if unpublished_builds:
                 augmented_summary = {

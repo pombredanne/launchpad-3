@@ -14,7 +14,7 @@ import sys
 from zope.component import getUtility
 from canonical.config import config
 from canonical.launchpad.interfaces import IDistributionSet
-from canonical.launchpad.scripts.base import LaunchpadCronScript
+from lp.services.scripts.base import LaunchpadCronScript
 from canonical.launchpad.scripts.copy_distroseries_translations import (
     update_translations)
 

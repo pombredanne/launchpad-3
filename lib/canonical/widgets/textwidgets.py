@@ -46,6 +46,17 @@ class TokensTextWidget(StrippedTextWidget):
         return super(TokensTextWidget, self)._toFieldValue(normalised_text)
 
 
+class NoneableTextWidget(StrippedTextWidget):
+    """A widget that that is None if it's value is empty or whitespace."""
+
+    def _toFieldValue(self, input):
+        value = super(NoneableTextWidget, self)._toFieldValue(input)
+        if value == '':
+            return None
+        else:
+            return value
+
+
 class LocalDateTimeWidget(TextWidget):
     """A datetime widget that uses a particular time zone."""
 

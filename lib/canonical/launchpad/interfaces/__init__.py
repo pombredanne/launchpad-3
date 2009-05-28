@@ -63,7 +63,7 @@ from lp.code.interfaces.codereviewcomment import *
 from lp.code.interfaces.codereviewvote import *
 from lp.registry.interfaces.commercialsubscription import *
 from lp.soyuz.interfaces.component import *
-from canonical.launchpad.interfaces.country import *
+from lp.services.worlddata.interfaces.country import *
 from canonical.launchpad.interfaces.customlanguagecode import *
 from canonical.launchpad.interfaces.cve import *
 from canonical.launchpad.interfaces.cvereference import *
@@ -94,7 +94,7 @@ from canonical.launchpad.interfaces.hwdb import *
 from lp.registry.interfaces.irc import *
 from lp.registry.interfaces.jabber import *
 from lp.registry.interfaces.karma import *
-from canonical.launchpad.interfaces.language import *
+from lp.services.worlddata.interfaces.language import *
 from canonical.launchpad.interfaces.languagepack import *
 from canonical.launchpad.interfaces.launchpad import *
 from canonical.launchpad.interfaces.launchpadstatistic import *
@@ -137,7 +137,7 @@ from lp.code.interfaces.revision import *
 from canonical.launchpad.interfaces.rosettastats import *
 from lp.registry.interfaces.salesforce import *
 from canonical.launchpad.interfaces.schema import *
-from canonical.launchpad.interfaces.scriptactivity import *
+from lp.services.scripts.interfaces.scriptactivity import *
 from lp.soyuz.interfaces.section import *
 from canonical.launchpad.interfaces.searchservice import *
 from lp.registry.interfaces.sourcepackage import *
@@ -149,7 +149,7 @@ from lp.blueprints.interfaces.specificationbug import *
 from lp.blueprints.interfaces.specificationdependency import *
 from lp.blueprints.interfaces.specificationfeedback import *
 from lp.blueprints.interfaces.specificationsubscription import *
-from canonical.launchpad.interfaces.spokenin import *
+from lp.services.worlddata.interfaces.spokenin import *
 from lp.blueprints.interfaces.sprint import *
 from lp.blueprints.interfaces.sprintattendance import *
 from lp.blueprints.interfaces.sprintspecification import *

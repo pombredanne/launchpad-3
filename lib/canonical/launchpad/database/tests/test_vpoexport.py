@@ -9,8 +9,7 @@ from zope.component import getUtility
 
 from canonical.launchpad.interfaces import (
     IVPOExportSet)
-from canonical.launchpad.testing import (
-    LaunchpadObjectFactory)
+from lp.testing.factory import LaunchpadObjectFactory
 from canonical.testing import LaunchpadZopelessLayer
 
 # The sequence number 0 is put at the beginning of the data to verify that

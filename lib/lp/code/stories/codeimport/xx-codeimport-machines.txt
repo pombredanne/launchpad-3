@@ -50,13 +50,13 @@ running jobs in the table.
     >>> print_table(browser)
     Machine                            Status
     apollo (2 jobs running)            Online
-        ~vcs-imports/.../...
+        lp://dev/~vcs-imports/.../...
             Started: ... ago      Last heartbeat: ... ago
-        ~vcs-imports/.../...
+        lp://dev/~vcs-imports/.../...
             Started: ... ago      Last heartbeat: ... ago
     bazaar-importer (0 jobs running)   Online
     odin (1 job running)               Online
-        ~vcs-imports/.../...
+        lp://dev/~vcs-imports/.../...
             Started: ... ago      Last heartbeat: ... ago
     saturn                             Offline
 
@@ -79,10 +79,10 @@ The page also shows the current running jobs for that machine.
 
     >>> print extract_text(find_tag_by_id(browser.contents, 'current-jobs'))
     Current jobs
-    ~vcs-imports/.../... Started: ... ago Last heartbeat: ... ago
+    lp://dev/~vcs-imports/.../... Started: ... ago Last heartbeat: ... ago
          Creating changeset 1
          Creating changeset 2
-    ~vcs-imports/.../... Started: ... ago Last heartbeat: ... ago
+    lp://dev/~vcs-imports/.../... Started: ... ago Last heartbeat: ... ago
 
 And also shows the most recent ten events for the machine, with the most
 recent event first.
@@ -92,8 +92,8 @@ recent event first.
     ...     print extract_text(recent_events)
     >>> print_events(browser)
     Related events
-    ...: Job Started ~vcs-imports/.../...
-    ...: Job Started ~vcs-imports/.../...
+    ...: Job Started lp://dev/~vcs-imports/.../...
+    ...: Job Started lp://dev/~vcs-imports/.../...
     ...: Machine Online
 
 

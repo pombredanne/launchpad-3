@@ -25,7 +25,7 @@ from zope.interface import implements
 from canonical.database.postgresql import drop_tables
 from canonical.database.sqlbase import cursor, sqlvalues
 from canonical.launchpad.interfaces.looptuner import ITunableLoop
-from canonical.launchpad.scripts.base import LaunchpadScript
+from lp.services.scripts.base import LaunchpadScript
 from canonical.launchpad.utilities.looptuner import DBLoopTuner
 
 

@@ -466,7 +466,7 @@ fi
 
 # Setup access to the local supermirror
 if [ ! -e ~/.ssh/launchpad_id_dsa ]; then
-  cp $LP_TRUNK_PATH/lib/canonical/codehosting/tests/id_dsa ~/.ssh/launchpad_id_dsa
+  cp $LP_TRUNK_PATH/lib/lp/codehosting/tests/id_dsa ~/.ssh/launchpad_id_dsa
   chmod 600 ~/.ssh/launchpad_id_dsa
   echo "Setup ssh key for local supermirror ssh access."
 fi

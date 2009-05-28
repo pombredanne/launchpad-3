@@ -28,7 +28,7 @@ from lp.code.interfaces.branch import BranchLifecycleStatus, BranchType
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
 from lp.code.interfaces.branchlookup import IBranchLookup
-from canonical.launchpad.testing import (
+from lp.testing import (
     login, login_person, logout, ANONYMOUS, TestCaseWithFactory)
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing import (

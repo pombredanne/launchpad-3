@@ -28,7 +28,7 @@ This takes us to the branch listing for that source package
 
     >>> browser.open(source_package_url)
     >>> print browser.title
-    Branches in distro series foo
+    Branches of foo in distro series
 
 Both of the branches we made appear in the listing.
 

@@ -145,12 +145,6 @@
     />
 
   <utility
-    name="TimezoneName"
-    component="canonical.launchpad.vocabularies.TimezoneNameVocabulary"
-    provides="zope.schema.interfaces.IVocabularyFactory"
-    />
-
-  <utility
     name="TranslationGroup"
     component="canonical.launchpad.vocabularies.TranslationGroupVocabulary"
     provides="zope.schema.interfaces.IVocabularyFactory"
