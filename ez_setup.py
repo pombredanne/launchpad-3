@@ -1,4 +1,8 @@
 #!python
+
+# NOTE TO LAUNCHPAD DEVELOPERS: This is a bootstrapping file from the
+# setuptools project.  It is imported by our setup.py.
+
 """Bootstrap setuptools installation
 
 If you want to use setuptools in your package's setup.py, just include this
