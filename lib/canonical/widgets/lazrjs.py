@@ -120,6 +120,7 @@ class TextLineEditorWidget:
             params['activation_script'] = self.ACTIVATION_TEMPLATE % params
         return self.WIDGET_TEMPLATE % params 
 
+
 class InlineEditPickerWidget:
     """Wrapper for the lazr-js picker widget.
 
@@ -146,8 +147,6 @@ class InlineEditPickerWidget:
         :param show_remove_button: Show remove button below search box.
         :param show_assign_me_button: Show assign-me button below search box.
         :param remove_button_text: Override default button text: "Remove"
-
-
         """
         self.context = context
         self.request = request
