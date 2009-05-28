@@ -23,6 +23,11 @@ setup(
     license='LGPL v3',
     install_requires=[
         'setuptools',
+        'sourcecodegen',
+        'chameleon.core',
+        'chameleon.zpt',
+        'z3c.pt',
+        'z3c.ptcompat',
     ],
     url='https://launchpad.net/',
     classifiers=[
