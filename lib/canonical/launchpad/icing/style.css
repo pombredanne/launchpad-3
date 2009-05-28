@@ -1617,6 +1617,7 @@ p.update-failure-message {
 .update-in-progress-message {
     background: url(/@@/spinner) center left no-repeat;
     padding-left: 18px;
+    color:#999;
 }
 
 a.update-retry {
