@@ -98,7 +98,7 @@
                 Y.lazr.anim.green_flash({node: div}).run();
             };
 
-            client = new LP.client.Launchpad();
+            var client = new LP.client.Launchpad();
             client.named_post(series_uri, 'newMilestone', {
                 parameters: parameters,
                 on: {

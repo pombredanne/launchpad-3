@@ -1089,6 +1089,8 @@ product_review_license = ContextTitle('Review licensing for %s')
 
 product_series = ContextDisplayName('%s timeline')
 
+product_timeline = ContextTitle('Timeline Diagram for %s')
+
 product_translations = ContextTitle('Translations of %s in Launchpad')
 
 product_translators = ContextTitle('Set translation group for %s')

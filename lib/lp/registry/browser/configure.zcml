@@ -1759,6 +1759,10 @@
             facet="overview"
             template="../templates/product-index.pt"/>
         <browser:page
+            name="+timeline"
+            facet="overview"
+            template="../templates/product-timeline.pt"/>
+        <browser:page
             name="+packages"
             facet="overview"
             template="../templates/product-packages.pt"/>

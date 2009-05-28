@@ -1,4 +1,4 @@
-= Web Service Project Groups =
+= Project Registry =
 
 
 == Project group collection ==
@@ -721,7 +721,7 @@ series' milestones and releases.
      u'name': u'foobadoo'}
 
 
-= Creating a milestone on the product series =
+== Creating a milestone on the product series ==
 
 The newMilstone method is called by sending "ws.op=newMilestone"
 as a request variable along with the parameters. The
@@ -779,7 +779,7 @@ Invalid data will return a Bad Request error.
     ...
     date_targeted: Value doesn't look like a date.
 
-= Project release =
+== Project release ==
 
 Project releases are available at their canonical URL on the API virtual host.
 

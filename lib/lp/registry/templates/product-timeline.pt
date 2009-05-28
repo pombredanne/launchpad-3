@@ -1,0 +1,73 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="view/macro:page/onecolumn"
+  i18n:domain="launchpad"
+>
+<body>
+
+<metal:block fill-slot="head_epilogue">
+  <style type="text/css">
+    canvas {
+      border: 1px solid #000;
+      float: left;
+      margin-right: 20px;
+      margin-bottom: 20px;
+    }
+  </style>
+
+  <script type="text/javascript"
+          tal:define="lp_js string:${icingroot}/build"
+          tal:attributes="src string:${lp_js}/registry/series-diagram.js">
+  </script>
+
+</metal:block>
+
+
+<div metal:fill-slot="main">
+
+  <a href="javascript:zoom_graph('in', canvas_context)"
+    >Zoom in</a> | <a href="javascript:zoom_graph('out', canvas_context)"
+    >Zoom out</a>
+
+  <div id="canvas-container">
+      <canvas id="supercanvas"></canvas>
+  </div>
+  <script type="text/javascript">
+    YUI().use('node', function(Y) {
+        Y.on('domready', function(e) {
+          if (Y.UA.ie) {
+              return;
+          }
+
+          var display_graph = function(result) {
+              timeline = result;
+              canvas = document.getElementById('supercanvas');
+              draw_graph(timeline, canvas);
+          }
+
+          var client = new LP.client.Launchpad();
+          var timeline = client.named_get(
+              LP.client.cache['context']['self_link'],
+              'get_timeline', {
+                  parameters: {},
+                  on: {
+                      success: display_graph,
+                      failure: function(e) {
+                          alert('failure:' + e);
+                      }
+                  }
+              });
+        });
+    });
+  </script>
+
+</div>
+
+</body>
+</html>
