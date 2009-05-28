@@ -49,6 +49,7 @@ from canonical.database.enumcol import EnumCol
 from lp.registry.model.pillar import pillar_sort_key
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces.bugnomination import BugNominationStatus
+from canonical.launchpad.interfaces.bug import IBugSet
 from canonical.launchpad.interfaces.bugtask import (
     BUG_SUPERVISOR_BUGTASK_STATUSES, BugTaskImportance, BugTaskSearchParams,
     BugTaskStatus, BugTaskStatusSearch, ConjoinedBugTaskEditError, IBugTask,
@@ -559,33 +560,15 @@ class BugTask(SQLBase, BugTaskMixin):
         # down the query significantly.
         matching_bugtasks = matching_bugtasks.prejoin([])
 
-        # XXX: Graham Binns 2009-05-28 bug=75764
-        #      We slice matching_bugtasks here to prevent this method
-        #      from timing out, since if we try to iterate over it
-        #      Transaction.iterSelect() will try to listify the results.
-        #      This can be fixed by selecting from Bugs directly, but
-        #      that's non-trivial.
-        # We select more than :limit: since if a bug affects more than
-        # one source package, it will be returned more than one time. 4
-        # is an arbitrary number that should be large enough.
-        matching_bugs = []
-        for bugtask in matching_bugtasks[:4*limit]:
-            if bugtask == self:
-                continue
+        # Make sure to exclude the current BugTask from the list of
+        # matching tasks. We use 4*limit as an arbitrary value here to
+        # make sure we select more than :limit: bugtasks.
+        matching_bugtasks = [
+            bug_task for bug_task in matching_bugtasks[:4*limit]
+            if bug_task != self]
 
-            bug = bugtask.bug
-            if not bug.userCanView(user):
-                continue
-
-            duplicateof = bug.duplicateof
-            if duplicateof is not None:
-                bug = duplicateof
-
-            if bug not in matching_bugs:
-                matching_bugs.append(bug)
-                if len(matching_bugs) >= limit:
-                    break
-
+        matching_bugs = getUtility(IBugSet).getDistinctBugsForBugTasks(
+            matching_bugtasks, user, limit)
         return matching_bugs
 
     def subscribe(self, person, subscribed_by):

@@ -878,6 +878,17 @@ class IBugSet(Interface):
             description
         """
 
+    def getDistinctBugsForBugTasks(bug_tasks, user, limit=10):
+        """Return :limit: distinct Bugs for a given set of BugTasks.
+
+        :param bug_tasks: An iterable of IBugTasks for which we should
+            return Bugs.
+        :param user: The Person getting the list of Bugs. Only Bugs
+            visible to :user: will be returned.
+        :param limit: The number of distinct Bugs to return.
+        """
+
+
 class InvalidBugTargetType(Exception):
     """Bug target's type is not valid."""
     webservice_error(400)
