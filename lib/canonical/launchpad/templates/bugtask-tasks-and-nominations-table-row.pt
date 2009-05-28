@@ -74,10 +74,32 @@
       </div>
     </td>
 
-    <td tal:attributes="class string:importance${context/importance/name}"
-        tal:define="expander_link_text context/importance/title">
-      <metal:expander metal:use-macro="template/macros/expander" />
+    <td tal:condition="view/user_can_edit_importance"
+        style="width: 15em; vertical-align: middle">
+      <div class="importance-content"
+           style="width: 100%; float: left">
+        <a href="+edit"
+           tal:attributes="class string:value importance${context/importance/name}"
+           style="float: left"
+           tal:content="context/importance/title" />
+        <div style="float: right; margin-right: 0.5em">
+          <a href="+edit">
+            <img class="editicon" src="/@@/edit-grey" />
+          </a>
+        </div>
+      </div>
     </td>
+    <td tal:condition="not: view/user_can_edit_importance"
+        style="width: 15em; vertical-align: middle">
+      <div class="importance-content"
+           style="width: 100%; float: left">
+        <span
+           tal:attributes="class string:value importance${context/importance/name}"
+           style="float: left"
+           tal:content="context/importance/title" />
+      </div>
+    </td>
+
 
     <td class="icon left right">
       <metal:expander metal:use-macro="template/macros/expander" />
@@ -134,7 +156,10 @@
                  Y.bugs.setup_bugtask_row('${row_id}',
                                           '${context/fmt:url}',
                                           ${view/status_widget_items},
-                                          '${context/status/title}');
+                                          '${context/status/title}',
+                                          ${view/importance_widget_items},
+                                          '${context/importance/title}',
+                                          ${view/user_can_edit_importance_json});
              },
              window);
     });
