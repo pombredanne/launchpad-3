@@ -330,7 +330,7 @@
                value="dismiss_suggestions"
                tal:attributes="name name_id; id name_id"
                />
-                 Confirm this translation and dismiss all local suggestions.
+                 Confirm this translation and dismiss all suggestions.
                </label>
         </td>
       </tr>
@@ -493,7 +493,7 @@
                value="dismiss_suggestions"
                tal:attributes="name name_id; id name_id"
                />
-                 Dismiss all local suggestions above.
+                 Dismiss all suggestions above.
                </label>
         </td>
       </tr>
@@ -658,7 +658,7 @@
         tal:attributes="name name_id; id name_id"
         />
       <label class="fuzzy-checkbox" tal:attributes="for name_id">
-        Dismiss all local suggestions.
+        Dismiss all suggestions.
       </label>
     </td>
   </tr>
