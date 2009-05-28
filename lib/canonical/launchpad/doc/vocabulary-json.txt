@@ -50,6 +50,7 @@ A successful search.
     {
         "entries": [
             {
+                "api_uri": "\/~guadamen",
                 "image": "\/@@\/team",
                 "title": "GuadaMen",
                 "value": "guadamen"
@@ -77,6 +78,7 @@ Size and offset parameters can be passed in to switch between batches.
     {
         "entries": [
             {
+                "api_uri": "\/~commercial-admins",
                 "image": "\/@@\/team",
                 "title": "Commercial Subscription Admins",
                 "value": "commercial-admins"
@@ -92,6 +94,7 @@ Size and offset parameters can be passed in to switch between batches.
     {
         "entries": [
             {
+                "api_uri": "\/~name16",
                 "description": "foo.bar@canonical.com",
                 "image": "\/@@\/person",
                 "title": "Foo Bar",
@@ -109,6 +112,7 @@ Long descriptions will be truncated.
     {
         "entries": [
             {
+                "api_uri": "\/apache",
                 "description": "The Apache projects are characterized by a
                                 collaborative, consensus based dev...",
                 "image": "\/@@\/project",

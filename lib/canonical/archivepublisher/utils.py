@@ -23,7 +23,7 @@ import tempfile
 from zope.interface import implements
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces.archive import (
+from lp.soyuz.interfaces.archive import (
     ArchivePurpose, default_name_by_purpose)
 from canonical.launchpad.interfaces.looptuner import ITunableLoop
 from canonical.launchpad.utilities.looptuner import LoopTuner

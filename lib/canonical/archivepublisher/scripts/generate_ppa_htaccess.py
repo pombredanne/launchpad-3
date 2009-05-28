@@ -10,13 +10,7 @@ from operator import attrgetter
 from zope.component import getUtility
 
 from canonical.archivepublisher.config import getPubConfig
-from canonical.config import config
-from canonical.launchpad.interfaces.archive import IArchiveSet
-from canonical.launchpad.interfaces.archiveauthtoken import (
-    IArchiveAuthTokenSet)
-from canonical.launchpad.interfaces.archivesubscriber import (
-    ArchiveSubscriberStatus, IArchiveSubscriberSet)
-from canonical.launchpad.scripts.base import LaunchpadCronScript
+from lp.services.scripts.base import LaunchpadCronScript
 
 
 # These PPAs should never have their htaccess/pwd files touched.
@@ -94,7 +88,8 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
         :return: The filename of the htpasswd file that was generated.
         """
         # Create a temporary file that will be a new .htpasswd.
-        fd, temp_filename = tempfile.mkstemp()
+        pub_config = getPubConfig(ppa)
+        fd, temp_filename = tempfile.mkstemp(dir=pub_config.htaccessroot)
 
         # The first .htpasswd entry is the buildd_secret.
         list_of_users = [
@@ -142,6 +137,12 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
         :param ppa: The PPA to check tokens for.
         :return: a list of valid tokens.
         """
+        # Avoid circular imports.
+        from lp.soyuz.interfaces.archiveauthtoken import (
+            IArchiveAuthTokenSet)
+        from lp.soyuz.interfaces.archivesubscriber import (
+            IArchiveSubscriberSet)
+
         tokens = getUtility(IArchiveAuthTokenSet).getByArchive(ppa)
         valid_tokens = []
         for token in tokens:
@@ -164,6 +165,10 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
 
         :param ppa: The PPA to expire subscriptons for.
         """
+        # Avoid circular imports.
+        from lp.soyuz.interfaces.archivesubscriber import (
+            ArchiveSubscriberStatus, IArchiveSubscriberSet)
+
         now = datetime.now(pytz.UTC)
         subscribers = getUtility(IArchiveSubscriberSet).getByArchive(ppa)
         for subscriber in subscribers:
@@ -175,6 +180,9 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
 
     def main(self):
         """Script entry point."""
+        # Avoid circular imports.
+        from lp.soyuz.interfaces.archive import IArchiveSet
+
         self.logger.info('Starting the PPA .htaccess generation')
         ppas = getUtility(IArchiveSet).getPrivatePPAs()
         for ppa in ppas:

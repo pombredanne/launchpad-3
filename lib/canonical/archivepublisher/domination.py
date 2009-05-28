@@ -61,11 +61,6 @@ from canonical.database.sqlbase import (
     sqlvalues, flush_database_updates, cursor,
     clear_current_connection_cache)
 
-# Importing from canonical.launchpad.database will cause a circular import
-# because we import from this file into database/distributionmirror.py
-from canonical.launchpad.database.publishing import (
-     BinaryPackagePublishingHistory, SecureSourcePackagePublishingHistory,
-     SecureBinaryPackagePublishingHistory)
 from canonical.launchpad.interfaces import PackagePublishingStatus
 
 
@@ -167,6 +162,10 @@ class Dominator:
         section and priority, this way the just-made override will be
         preserved.
         """
+        # Avoid circular imports.
+        from lp.soyuz.model.publishing import (
+             SecureBinaryPackagePublishingHistory)
+
         dominated_series = dominated.distroarchseries.distroseries
         available_architectures = [
             das.id for das in dominated_series.architectures]
@@ -313,6 +312,10 @@ class Dominator:
         'scheduled deletion date' of now plus the defined 'stay of execution'
         time provided in the configuration parameter.
         """
+        # Avoid circular imports.
+        from lp.soyuz.model.publishing import (
+            BinaryPackagePublishingHistory,
+            SecureSourcePackagePublishingHistory)
 
         self.debug("Beginning superseded processing...")
 
@@ -399,6 +402,11 @@ class Dominator:
 
         It only works across the distroseries and pocket specified.
         """
+        # Avoid circular imports.
+        from lp.soyuz.model.publishing import (
+             SecureBinaryPackagePublishingHistory,
+             SecureSourcePackagePublishingHistory)
+
         for distroarchseries in dr.architectures:
             self.debug("Performing domination across %s/%s (%s)" % (
                 dr.name, pocket.title, distroarchseries.architecturetag))

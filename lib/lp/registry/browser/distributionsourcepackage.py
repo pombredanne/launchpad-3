@@ -20,11 +20,11 @@ from zope.schema import Choice
 from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces.distributionsourcepackagerelease import (
+from lp.soyuz.interfaces.distributionsourcepackagerelease import (
     IDistributionSourcePackageRelease)
-from canonical.launchpad.interfaces.packagediff import IPackageDiffSet
+from lp.soyuz.interfaces.packagediff import IPackageDiffSet
 from canonical.launchpad.interfaces.packaging import IPackagingUtil
-from canonical.launchpad.interfaces.publishing import pocketsuffix
+from lp.soyuz.interfaces.publishing import pocketsuffix
 from lp.registry.interfaces.product import IDistributionSourcePackage
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from lp.answers.browser.questiontarget import (

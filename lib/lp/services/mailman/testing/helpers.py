@@ -35,7 +35,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.ftests import login, logout
 from canonical.launchpad.testing.browser import Browser
-from canonical.launchpad.testing.factory import LaunchpadObjectFactory
+from lp.testing.factory import LaunchpadObjectFactory
 from lp.registry.interfaces.mailinglist import IMailingListSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.tests import mailinglists_helper

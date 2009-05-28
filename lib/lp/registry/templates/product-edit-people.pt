@@ -18,72 +18,7 @@
 <body>
 
 <div metal:fill-slot="main">
-
-  <p class="error message"
-     tal:condition="view/errors"
-     tal:content="view/error_count" />
-
-  <p class="error message"
-     tal:repeat="form_wide_error view/form_wide_errors"
-     tal:content="structure form_wide_error">
-    Schema validation errors.
-  </p>
-
-  <form action="" method="POST">
-
-    <table width="100%">
-      <tr>
-        <th style="white-space: nowrap" align="right">
-          Current maintainer:
-        </th>
-        <td tal:content="structure context/owner/fmt:link" />
-      </tr>
-
-      <tr tal:repeat="widget view/widgets">
-        <tal:vars
-          tal:define="field_name widget/context/__name__;
-                      error python:view.getFieldError(field_name);
-                      error_class python:error and 'error' or None;
-                      show_optional python:view.showOptionalMarker(field_name)">
-          <th>
-            <label tal:attributes="for widget/name"
-                  tal:content="string:${widget/label}:">Label</label><br />
-            <span tal:condition="show_optional"
-                  class="fieldRequired">(Optional)</span>
-          </th>
-          <td tal:attributes="class error_class" width="100%">
-            <div>
-              <tal:XXX condition="nothing">
-                # XXX Edwin Grubbs 2008-07-22 bug=250955
-                # This custom widget layout can be removed as soon
-                # as the widget for the person or team is changed to
-                # add a popup which allows you to create a team without
-                # being redirected to another page.
-              </tal:XXX>
-              <input tal:replace="structure widget" />
-              or (<a href="/people/+newteam">Create a new team&hellip;</a>)
-            </div>
-            <div class="message" tal:condition="error"
-                tal:content="structure error">Error message</div>
-            <p class="formHelp"
-              tal:condition="widget/hint"
-              tal:content="widget/hint">Some Help Text
-            </p>
-          </td>
-        </tal:vars>
-      </tr>
-
-    </table>
-    <div class="actions">
-      <input tal:repeat="action view/actions"
-              tal:replace="structure action/render"
-        />
-      <tal:has-cancel-link condition="view/cancel_url">
-        or <a tal:attributes="href view/cancel_url">Cancel</a>
-      </tal:has-cancel-link>
-    </div>
-  </form>
-
+  <div metal:use-macro="context/@@launchpad_form/form" />
 </div>
 
 </body>

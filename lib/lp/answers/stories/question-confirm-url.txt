@@ -44,7 +44,7 @@ containing a link to confirm that answer.
     # ... and get the confirmation URL from the notification
     >>> import email
     >>> import re
-    >>> from canonical.launchpad.mail import stub
+    >>> from lp.services.mail import stub
     >>> notification = email.message_from_string(stub.test_emails[-1][2])
     >>> urls = re.findall('(http:[^\s]+)+', notification.get_payload())
     >>> confirm_url = urls[-2].decode('quoted-printable')

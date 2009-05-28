@@ -10,7 +10,7 @@ to identify files and create new ProductRelease records for them.
 import _pythonpath
 
 from canonical.config import config
-from canonical.launchpad.scripts.base import LaunchpadCronScript
+from lp.services.scripts.base import LaunchpadCronScript
 from lp.registry.scripts.productreleasefinder.finder import (
     ProductReleaseFinder)
 

@@ -1,5 +1,5 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
-# pylint: disable-msg=E0211,E0213
+# pylint: disable-msg=E0211,E0213,E0602
 
 """Interfaces related to bugs."""
 
@@ -17,12 +17,14 @@ __all__ = [
     'IProjectBugAddForm',
     'InvalidBugTargetType',
     'InvalidDuplicateValue',
+    'UserCannotUnsubscribePerson',
     ]
 
 from zope.component import getUtility
 from zope.interface import Interface, Attribute
 from zope.schema import (
     Bool, Bytes, Choice, Datetime, Int, List, Object, Text, TextLine)
+from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
@@ -325,7 +327,9 @@ class IBug(ICanBeMentored):
         :return: an `IBugSubscription`.
         """
 
-    @call_with(person=REQUEST_USER, unsubscribed_by=REQUEST_USER)
+    @operation_parameters(
+        person=Reference(IPerson, title=_('Person'), required=False))
+    @call_with(unsubscribed_by=REQUEST_USER)
     @export_write_operation()
     def unsubscribe(person, unsubscribed_by):
         """Remove this person's subscription to this bug."""
@@ -692,6 +696,11 @@ class IBug(ICanBeMentored):
 class InvalidDuplicateValue(Exception):
     """A bug cannot be set as the duplicate of another."""
     webservice_error(417)
+
+
+class UserCannotUnsubscribePerson(Unauthorized):
+    """User does not have persmisson to unsubscribe person or team."""
+    webservice_error(401)
 
 
 # We are forced to define these now to avoid circular import problems.

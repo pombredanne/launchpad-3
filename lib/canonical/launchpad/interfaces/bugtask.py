@@ -54,7 +54,7 @@ from canonical.launchpad.fields import (
     Summary, Tag)
 from canonical.launchpad.interfaces.bugwatch import (
     IBugWatch, IBugWatchSet, NoBugTrackerFound, UnrecognizedBugTrackerURL)
-from canonical.launchpad.interfaces.component import IComponent
+from lp.soyuz.interfaces.component import IComponent
 from canonical.launchpad.interfaces.launchpad import IHasDateCreated, IHasBug
 from lp.registry.interfaces.mentoringoffer import ICanBeMentored
 from lp.registry.interfaces.person import IPerson

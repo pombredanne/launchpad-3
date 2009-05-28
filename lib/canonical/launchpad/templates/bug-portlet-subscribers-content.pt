@@ -21,7 +21,6 @@
 
             <a
                tal:condition="subscription/person/name|nothing"
-               style="clear: both; float: left;"
                tal:attributes="
                  href subscription/person/fmt:url;
                  title subscription/display_subscribed_by;
@@ -32,10 +31,9 @@
             </a>
             <a tal:condition="python: subscription.canBeUnsubscribedByUser(view.user)"
                href="+subscribe"
-               style="float: right"
                tal:attributes="title string:Unsubscribe ${subscription/person/fmt:displayname};
                                id string:unsubscribe-${subscription/person/name}">
-              <img src="/@@/remove"
+              <img class="unsub-icon" src="/@@/remove"
                 tal:attributes="id string:unsubscribe-icon-${subscription/person/name}" />
             </a>
 

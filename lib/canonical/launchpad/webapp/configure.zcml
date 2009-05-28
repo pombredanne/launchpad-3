@@ -53,12 +53,12 @@
         />
     <!-- XXX StuartBishop 2009-03-04 bug=264783 Weee! Two OpenID Layers. -->
     <adapter
-        for="canonical.launchpad.layers.IdLayer"
+        for="canonical.signon.layers.IdLayer"
         provides="canonical.launchpad.webapp.interfaces.IDatabasePolicy"
         factory="canonical.launchpad.webapp.dbpolicy.SSODatabasePolicy"
         />
     <adapter
-        for="canonical.launchpad.layers.OpenIDLayer"
+        for="canonical.signon.layers.OpenIDLayer"
         provides="canonical.launchpad.webapp.interfaces.IDatabasePolicy"
         factory="canonical.launchpad.webapp.dbpolicy.SSODatabasePolicy"
         />
@@ -226,14 +226,14 @@
         />
 
     <adapter
-        for="canonical.launchpad.interfaces.IBuild"
+        for="lp.soyuz.interfaces.build.IBuild"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.BuildImageDisplayAPI"
         name="image"
         />
 
     <adapter
-        for="canonical.launchpad.interfaces.IArchive"
+        for="lp.soyuz.interfaces.archive.IArchive"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.ArchiveImageDisplayAPI"
         name="image"
@@ -408,6 +408,13 @@
         />
 
     <adapter
+        for="lp.code.interfaces.seriessourcepackagebranch.ISeriesSourcePackageBranch"
+        provides="zope.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.SeriesSourcePackageBranchFormatter"
+        name="fmt"
+        />
+
+    <adapter
         for="canonical.launchpad.interfaces.diff.IPreviewDiff"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.PreviewDiffFormatterAPI"
@@ -470,7 +477,12 @@
         factory="canonical.launchpad.webapp.tales.CodeReviewCommentFormatterAPI"
         name="fmt"
         />
-
+    <adapter
+        for="lp.registry.interfaces.sourcepackage.ISourcePackage"
+        provides="zope.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.SourcePackageFormatterAPI"
+        name="fmt"
+        />
     <adapter
         for="canonical.launchpad.interfaces.IBugTracker"
         provides="zope.traversing.interfaces.IPathAdapter"

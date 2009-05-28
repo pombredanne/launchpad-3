@@ -60,7 +60,7 @@ from canonical.archiveuploader.nascentupload import (
     NascentUpload, FatalUploadError, EarlyReturnUploadError)
 from canonical.archiveuploader.uploadpolicy import (
     findPolicyByOptions, UploadPolicyError)
-from canonical.launchpad.interfaces.archive import IArchiveSet
+from lp.soyuz.interfaces.archive import IArchiveSet, NoSuchPPA
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from canonical.launchpad.webapp.errorlog import (
@@ -544,8 +544,9 @@ def parse_upload_path(relative_path):
         else:
             distribution_and_suite = parts[2:]
 
-        archive = person.getPPAByName(ppa_name)
-        if archive is None:
+        try:
+            archive = person.getPPAByName(ppa_name)
+        except NoSuchPPA:
             raise PPAUploadPathError(
                 "Could not find PPA named '%s' for '%s'"
                 % (ppa_name, person_name))

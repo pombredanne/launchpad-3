@@ -55,3 +55,55 @@ constructor:
     <h1 id="bug-title">...
         ><img src="/@@/edit" alt="[edit]" title="Edit this summary" />...
 
+
+InlineEditPickerWidget
+----------------------
+
+The InlineEditPickerWidget can be used for any interface attribute that
+has a vocabulary defined for it.
+
+    >>> from canonical.widgets.lazrjs import InlineEditPickerWidget
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces import IBugTask, IBugTaskSet
+    >>> bugtask = getUtility(IBugTaskSet).get(2)
+    >>> def create_inline_edit_picker_widget():
+    ...     view = create_initialized_view(bugtask, '+index')
+    ...     return InlineEditPickerWidget(
+    ...         context=view.context,
+    ...         request=view.request,
+    ...         interface_attribute=IBugTask['assignee'],
+    ...         default_html='default-html',
+    ...         header='Change assignee',
+    ...         step_title='Search for people or teams',
+    ...         remove_button_text='Remove Assignee',
+    ...         null_display_value='Nobody')
+
+An unauthenticated user cannot see the activator's edit button, which
+is revealed by Y.lp.picker.addPickerPatcher.
+
+    >>> login(ANONYMOUS)
+    >>> widget = create_inline_edit_picker_widget()
+    >>> print widget.can_write
+    False
+    >>> print widget()
+    <span id="inline-picker-activator-id-...">...
+    <div class="yui-activator-message-box yui-activator-hidden" />
+    </span>
+
+The foo.bar user can see the activator's edit button.
+
+    >>> login('foo.bar@canonical.com')
+    >>> widget = create_inline_edit_picker_widget()
+    >>> print widget.can_write
+    True
+    >>> print widget()
+    <span id="inline-picker-activator-id-...">
+    ...<div class="yui-activator-message-box yui-activator-hidden" />
+    </span>
+    ...Y.lp.picker.addPickerPatcher(...
+
+The resource_uri is the canonical_url for the object in
+WebServiceClientRequests.
+
+    >>> print widget.resource_uri
+    "\/firefox\/+bug\/1"

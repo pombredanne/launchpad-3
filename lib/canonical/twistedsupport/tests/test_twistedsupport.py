@@ -9,7 +9,7 @@ import unittest
 from twisted.internet import defer
 
 from canonical.twistedsupport import extract_result
-from canonical.launchpad.testing import TestCase
+from lp.testing import TestCase
 
 class TestExtractResult(TestCase):
     """Tests for `canonical.twisted_support.extract_result`."""

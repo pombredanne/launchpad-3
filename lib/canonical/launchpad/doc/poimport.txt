@@ -321,7 +321,7 @@ The status is now IMPORTED:
 And the statistics reflect it.
 
     >>> pofile.currentCount()
-    3
+    2
 
 Here's a current message: i.e. it has a corresponding current message
 set in the PO template.
@@ -466,7 +466,7 @@ from imported files (currentCount), and none updated or added in
 Launchpad Translations.
 
     >>> pofile.currentCount()
-    3
+    2
     >>> pofile.updatesCount()
     0
     >>> pofile.rosettaCount()
@@ -492,7 +492,7 @@ files are now counted as coming from Launchpad translations
     >>> pofile.updatesCount()
     0
     >>> pofile.rosettaCount()
-    2
+    1
 
 This time, our notification email reports complete success, except
 that nothing is emailed out (subject is None) because this is a published
@@ -581,7 +581,7 @@ in this test; We don't touch entries that were in the queue previously.
 And run the import script.
 
     >>> import email
-    >>> from canonical.launchpad.mail import stub
+    >>> from lp.services.mail import stub
     >>> process = ImportProcess(transaction, FakeLogger())
     >>> process.run()
     INFO    Importing: Template "firefox" in Mozilla Firefox trunk
@@ -746,7 +746,7 @@ We've imported a new translation for "Foo %s."
     >>> foos = potemplate['Foo %s'].getLocalTranslationMessages(
     ...     potemplate, welsh)
     >>> sorted([foo.msgstr0.translation for foo in foos])
-    [u'Bar', u'Bars']
+    [u'Bar', u'Bars', u'blah %i']
 
 Since this last upload was not the upstream one, however, its credits
 message translations were ignored.

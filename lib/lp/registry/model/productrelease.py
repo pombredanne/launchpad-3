@@ -92,15 +92,13 @@ class ProductRelease(SQLBase):
 
     @property
     def displayname(self):
-        return self.productseries.product.displayname + ' ' + self.version
+        """See `IProductRelease`."""
+        return self.milestone.displayname
 
     @property
     def title(self):
         """See `IProductRelease`."""
-        thetitle = self.displayname
-        if self.codename:
-            thetitle += ' "' + self.codename + '"'
-        return thetitle
+        return self.milestone.title
 
     @staticmethod
     def normalizeFilename(filename):

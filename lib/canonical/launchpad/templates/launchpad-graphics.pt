@@ -186,17 +186,17 @@
         <td><img alt="large crowd" src="/@@/crowd-large" /></td>
       </tr>
       <tr>
-        <td>delete-icon</td>
+        <td>trash-icon</td>
         <td><img alt="delete" src="/@@/trash-icon" /></td>
         <td>Icon to delete objects permanently from the system.</td>
       </tr>
       <tr>
-        <td>delete-large</td>
+        <td>trash-large</td>
         <td><img alt="delete" src="/@@/trash-large" /></td>
         <td>Icon to delete objects permanently from the system.</td>
       </tr>
       <tr>
-        <td>delete-logo</td>
+        <td>trash-logo</td>
         <td><img alt="delete" src="/@@/trash-logo" /></td>
         <td>Icon to delete objects permanently from the system.</td>
       </tr>
@@ -555,6 +555,12 @@
         <td>Zoom out.</td>
       </tr>
       <tr>
+        <td>go to overview</td>
+        <td><img src="/@@/overview-bg-button" /></td>
+        <td>This is used as the "go to overview" background image. Can be
+            used for other answers-related actions.</td>
+      </tr>
+      <tr>
         <td>
           <h2>Bugs</h2>
         </td>
@@ -565,6 +571,12 @@
             other people using their code on the fixes for those bugs.
           </strong>
         </td>
+      </tr>
+      <tr>
+        <td>file a bug</td>
+        <td><img src="/@@/bugs-bg-button" /></td>
+        <td>This is used as the "file a bug" background image. Can be 
+            used for other bug-related actions.</td>
       </tr>
       <tr>
         <td>bug</td>
@@ -633,17 +645,8 @@
         security problems across multiple vendor's software.</td>
       </tr>
       <tr>
-        <td>
+        <td colspan="3">
           <h2>Translations</h2>
-        </td>
-        <td />
-        <td>
-          <strong>
-            Launchpad lets projects invite translators to help make their
-            software work in any written language. Translators contribute
-            new translations over the web which are then included in new
-            releases of the software.
-          </strong>
         </td>
       </tr>
       <tr>
@@ -689,16 +692,8 @@
         <td>A set of strings available for translation.</td>
       </tr>
       <tr>
-        <td>
+        <td colspan="3">
           <h2>Blueprint</h2>
-        </td>
-        <td />
-        <td>
-          <strong>
-            Blueprint is the Launchpad feature tracker. It is used to help
-            projects plan their feature development and coordinate across
-            distributed teams.
-          </strong>
         </td>
       </tr>
       <tr>
@@ -738,24 +733,15 @@
         <td></td>
       </tr>
       <tr>
-        <td>bounty</td>
-        <td><img src="/@@/bounty" /></td>
-        <td>A bounty. This image is used in blueprint listings to indicate
-        those which have bounties associated with them, and as bullets for
-        lists of bounties.</td>
-      </tr>
-      <tr>
-        <td>
+        <td colspan="3">
           <h2>Code</h2>
         </td>
-        <td />
-        <td>
-          <strong>
-            Launchpad keeps track of the Bazaar branches for a project, and
-            allows you to organise your work efficiently and easily across
-            the entire community.
-          </strong>
-        </td>
+      </tr>
+      <tr>
+        <td>see branches</td>
+        <td><img src="/@@/code-bg-button" /></td>
+        <td>This is used as the "see branches" background image. Can be
+            used for other code-related actions.</td>
       </tr>
       <tr>
         <td>branch</td>
@@ -778,23 +764,29 @@
         <td></td>
       </tr>
       <tr>
-        <td>
+        <td>branch-upgrade</td>
+        <td><img src="/@@/branch-upgrade" /></td>
+        <td>To be used when a branch is being upgraded.</td>
+      </tr>
+      <tr>
+        <td colspan="3">
           <h2>Packages</h2>
         </td>
-        <td />
+      </tr>
+      <tr>
+        <td>ppa-icon</td>
         <td>
-          <strong>
-            <p>Soyuz is the Launchpad subsystem that keeps track of the
-            packages in a distribution. It handles uploads, the checking of
-            permissions and consistency, builds, and the publishing of these
-            packages into an archive.</p>
-            <p>Soyuz is mostly not a web application, but it still is
-            responsible for presenting the state of the distribution to the
-            world through the Launchpad site. Also, more and more of the
-            administrative processes like mirror management are being
-            handled in Soyuz.</p>
-          </strong>
+          <img alt="" src="/@@/ppa-icon" />
         </td>
+        <td>Icon for PPAs</td>
+      </tr>
+      <tr>
+        <td>ppa-large</td>
+        <td><img alt="" src="/@@/ppa-large" /></td>
+      </tr>
+      <tr>
+        <td>ppa-logo</td>
+        <td><img alt="" src="/@@/ppa-logo" /></td>
       </tr>
       <tr>
         <td>architecture</td>
@@ -802,8 +794,8 @@
         <td>A system architecture, like x86 or ppc or SPARC or IA64</td>
       </tr>
       <tr>
-        <td>build-building</td>
-        <td><img src="/@@/build-building" /></td>
+        <td>processing</td>
+        <td><img src="/@@/processing" /></td>
         <td>A build that is currently in progress.</td>
       </tr>
       <tr>
@@ -822,8 +814,8 @@
         themselves not yet been built.</td>
       </tr>
       <tr>
-        <td>build-failure</td>
-        <td><img src="/@@/build-failure" /></td>
+        <td>build-failed</td>
+        <td><img src="/@@/build-failed" /></td>
         <td>A build that failed.</td>
       </tr>
       <tr>
@@ -835,6 +827,11 @@
         <td>build-success</td>
         <td><img src="/@@/build-success" /></td>
         <td>A build that succeeded.</td>
+      </tr>
+      <tr>
+        <td>build-success-publishing</td>
+        <td><img src="/@@/build-success-publishing" /></td>
+        <td>A build that succeeded and is waiting to be published.</td>
       </tr>
       <tr>
         <td>build-superseded</td>
@@ -857,17 +854,15 @@
         <td>Retry.</td>
       </tr>
       <tr>
-        <td>
+        <td colspan="3">
           <h2>Answers</h2>
         </td>
-        <td />
-        <td>
-          <strong>
-            The "Answer Tracker" is a system that allows users to request
-            help of one form or another with the software. It forms a
-            lightweight framework for community support.
-          </strong>
-        </td>
+      </tr>
+      <tr>
+        <td>file a question</td>
+        <td><img src="/@@/answers-bg-button" /></td>
+        <td>This is used as the "file a question" background image. Can be
+            used for other answers-related actions.</td>
       </tr>
       <tr>
         <td>question</td>
@@ -892,11 +887,6 @@
       </tr>
     </tbody>
   </table>
-
-  <p>
-    <i>XXX there are also some images from Shipit that need to go here.</i>
-  </p>
-
 </div>
 
 </body>

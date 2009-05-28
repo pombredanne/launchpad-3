@@ -29,5 +29,6 @@ After submitting the bug, the tags are added to the bug.
 
     >>> tags_div = find_tag_by_id(user_browser.contents, 'bug-tags')
     >>> for a_tag in tags_div('a'):
-    ...   print a_tag.renderContents()
+    ...   if a_tag['href'] != '+edit':
+    ...       print a_tag.renderContents()
     new-package

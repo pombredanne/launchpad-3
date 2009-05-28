@@ -44,7 +44,7 @@ class TestBuilddUploads(TestStagedBinaryUploadBase):
     def setupBreezy(self):
         """Extend breezy setup to enable uploads to powerpc architecture."""
         TestStagedBinaryUploadBase.setupBreezy(self)
-        from canonical.launchpad.database.processor import (
+        from lp.soyuz.model.processor import (
             Processor, ProcessorFamily)
         ppc_family = ProcessorFamily.selectOneBy(name='powerpc')
         ppc_proc = Processor(

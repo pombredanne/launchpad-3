@@ -13,7 +13,7 @@ from zope.interface import Interface
 from zope.schema import Object
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces.archive import IArchive
+from lp.soyuz.interfaces.archive import IArchive
 
 
 class IArchiveSigningKey(Interface):

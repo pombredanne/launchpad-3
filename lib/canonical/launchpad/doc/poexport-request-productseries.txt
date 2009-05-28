@@ -59,7 +59,7 @@ The user receives a confirmation email.
     ...     for line in lines:
     ...         print ">", line
 
-    >>> from canonical.launchpad.mail.stub import test_emails
+    >>> from lp.services.mail.stub import test_emails
     >>> len(test_emails)
     1
     >>> from_addr, to_addrs, body = test_emails.pop()
