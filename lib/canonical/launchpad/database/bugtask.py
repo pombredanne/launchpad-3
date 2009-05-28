@@ -538,7 +538,7 @@ class BugTask(SQLBase, BugTaskMixin):
         """
         return self.status in RESOLVED_BUGTASK_STATUSES
 
-    def findSimilar(self, user):
+    def findSimilar(self, user, limit=10):
         """See `IBugTask`."""
         if self.product is not None:
             context_params = {'product': self.product}
@@ -551,7 +551,7 @@ class BugTask(SQLBase, BugTaskMixin):
         elif self.distribution is not None:
             context_params = {'distribution': self.distribution}
         else:
-            raise AssertionError("BugTask doesn't have a searchable target.");
+            raise AssertionError("BugTask doesn't have a searchable target.")
 
         matching_bugtasks = getUtility(IBugTaskSet).findSimilar(
             user, self.bug.title, **context_params)
@@ -559,21 +559,17 @@ class BugTask(SQLBase, BugTaskMixin):
         # down the query significantly.
         matching_bugtasks = matching_bugtasks.prejoin([])
 
-        # XXX: Bjorn Tillenius 2006-12-13 bug=75764
-        #      We might end up returning less than :limit: bugs, but in
-        #      most cases we won't, and '4*limit' is here to prevent
-        #      this page from timing out in production. Later I'll fix
-        #      this properly by selecting distinct Bugs directly
-        #      If matching_bugtasks isn't sliced, it will take a long time
-        #      to iterate over it, even over only 10, because
-        #      Transaction.iterSelect() listifies the result.
-        # We select more than :self._MATCHING_BUGS_LIMIT: since if a bug
-        # affects more than one source package, it will be returned more
-        # than one time. 4 is an arbitrary number that should be large
-        # enough.
+        # XXX: Graham Binns 2009-05-28 bug=75764
+        #      We slice matching_bugtasks here to prevent this method
+        #      from timing out, since if we try to iterate over it
+        #      Transaction.iterSelect() will try to listify the results.
+        #      This can be fixed by selecting from Bugs directly, but
+        #      that's non-trivial.
+        # We select more than :limit: since if a bug affects more than
+        # one source package, it will be returned more than one time. 4
+        # is an arbitrary number that should be large enough.
         matching_bugs = []
-        matching_bugs_limit = 10
-        for bugtask in matching_bugtasks[:4*matching_bugs_limit]:
+        for bugtask in matching_bugtasks[:4*limit]:
             if bugtask == self:
                 continue
 
@@ -587,7 +583,7 @@ class BugTask(SQLBase, BugTaskMixin):
 
             if bug not in matching_bugs:
                 matching_bugs.append(bug)
-                if len(matching_bugs) >= matching_bugs_limit:
+                if len(matching_bugs) >= limit:
                     break
 
         return matching_bugs
