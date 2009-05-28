@@ -93,7 +93,7 @@ class TestBugCommentRepresentation(unittest.TestCase):
             (self.comment, LaunchpadTestRequest()), name="+box")
         self.expected_comment_html = str(comment_view())
         self.message_path = '/%s/+bug/%s/comments/1' % (
-                self.bug.bugtasks[0].product.name, self.bug.id)
+            self.bug.bugtasks[0].product.name, self.bug.id)
         self.webservice = LaunchpadWebServiceCaller(
             'launchpad-library', 'salgado-change-anything')
 
