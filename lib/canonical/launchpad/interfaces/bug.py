@@ -692,7 +692,7 @@ class IBug(ICanBeMentored):
     def setCommentVisibility(user, comment_number, visible):
         """Set the visible attribute on a bug comment."""
 
-    def isVisibleToUser(user):
+    def userCanView(user):
         """Return True if `user` can see this IBug, false otherwise."""
 
 

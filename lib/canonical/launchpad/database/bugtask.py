@@ -578,7 +578,7 @@ class BugTask(SQLBase, BugTaskMixin):
                 continue
 
             bug = bugtask.bug
-            if not bug.isVisibleToUser(user):
+            if not bug.userCanView(user):
                 continue
 
             duplicateof = bug.duplicateof

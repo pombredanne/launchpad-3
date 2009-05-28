@@ -21,7 +21,7 @@
                            getIndirectSubscribers
                            mentoring_offers canMentor isMentor
                            getNullBugTask is_complete who_made_private
-                           date_made_private isVisibleToUser"
+                           date_made_private userCanView"
                            />
         <require
             permission="launchpad.View"

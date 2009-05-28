@@ -873,7 +873,7 @@ class PublicToAllOrPrivateToExplicitSubscribersForBugTask(AuthorizationBase):
     usedfor = IHasBug
 
     def checkAuthenticated(self, user):
-        return self.obj.bug.isVisibleToUser(user)
+        return self.obj.bug.userCanView(user)
 
     def checkUnauthenticated(self):
         """Allow anonymous users to see non-private bugs only."""
@@ -917,7 +917,7 @@ class PublicToAllOrPrivateToExplicitSubscribersForBug(AuthorizationBase):
         """Allow any user to see non-private bugs, but only explicit
         subscribers to see private bugs.
         """
-        return self.obj.isVisibleToUser(user)
+        return self.obj.userCanView(user)
 
     def checkUnauthenticated(self):
         """Allow anonymous users to see non-private bugs only."""

@@ -1344,7 +1344,7 @@ class Bug(SQLBase):
             self, self.messages[comment_number])
         bug_message.visible = visible
 
-    def isVisibleToUser(self, user):
+    def userCanView(self, user):
         """See `IBug`."""
         admins = getUtility(ILaunchpadCelebrities).admin
         if not self.private:
