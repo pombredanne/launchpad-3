@@ -23,18 +23,26 @@ setup(
     license='LGPL v3',
     install_requires=[
         'setuptools',
+        'oauth',
+        'python-openid',
+        'launchpadlib',
+        'wadllib',
+        'feedvalidator',
         ],
     url='https://launchpad.net/',
     classifiers=[
         "Development Status :: 5 - Production/Stable",
         "Intended Audience :: Developers",
-        "Programming Language :: Python"],
+        "Programming Language :: Python"
+        ],
     extras_require=dict(
         docs=['Sphinx',
-              'z3c.recipe.sphinxdoc']
+              'z3c.recipe.sphinxdoc'
+            ]
     ),
     entry_points=dict(
-        console_scripts=[ # `console_scripts` is a magic name to zc.buildout
+        console_scripts=[ # `console_scripts` is a magic name to zc.recipe.egg
+            'apiindex = lp.scripts.utilities.apiindex:main',
             'killservice = lp.scripts.utilities.killservice:main',
             'run = canonical.launchpad.scripts.runlaunchpad:start_launchpad',
             'harness = canonical.database.harness:python',

@@ -24,9 +24,7 @@ CODEHOSTING_ROOT=/var/tmp/bazaar.launchpad.dev
 
 BZR_VERSION_INFO = bzr-version-info.py
 
-XSLTPROC=xsltproc
 WADL_FILE = lib/canonical/launchpad/apidoc/wadl-$(LPCONFIG).xml
-WADL_XSL = lib/launchpadlib/wadl-to-refhtml.xsl
 API_INDEX = lib/canonical/launchpad/apidoc/index.html
 
 EXTRA_JS_FILES=lib/canonical/launchpad/icing/MochiKit.js \
@@ -49,8 +47,8 @@ hosted_branches:
 $(WADL_FILE): $(BZR_VERSION_INFO)
 	LPCONFIG=$(LPCONFIG) $(PY) ./utilities/create-lp-wadl.py > $@
 
-$(API_INDEX): $(WADL_FILE) $(WADL_XSL)
-	$(XSLTPROC) $(WADL_XSL) $(WADL_FILE) > $@
+$(API_INDEX): $(WADL_FILE)
+	bin/apiindex $(WADL_FILE) > $@
 
 apidoc: compile $(API_INDEX)
 
@@ -169,7 +167,6 @@ support_files: $(WADL_FILE) $(BZR_VERSION_INFO)
 # properly. We also should really wait until services are running before
 # exiting, as running 'make stop' too soon after running 'make start'
 # will not work as expected.
-# XXX $(PY) -t
 start: inplace stop support_files
 	nohup bin/run -C $(CONFFILE) > ${LPCONFIG}-nohup.out 2>&1 &
 
@@ -179,7 +176,6 @@ start: inplace stop support_files
 # don't want to run 'make stop' because it takes unnecessary time
 # even if the service is already stopped, and bzr_version_info is not
 # needed either because it's run as part of 'make build'.
-# XXX $(PY) -t
 initscript-start:
 	nohup bin/run -C $(CONFFILE) > ${LPCONFIG}-nohup.out 2>&1 &
 
