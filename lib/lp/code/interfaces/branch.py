@@ -266,6 +266,7 @@ BRANCH_FORMAT_UPGRADE_PATH = {
     BranchFormat.BZR_BRANCH_5: BzrBranchFormat7,
     BranchFormat.BZR_BRANCH_6: BzrBranchFormat7,
     BranchFormat.BZR_BRANCH_7: None,
+    BranchFormat.BZR_BRANCH_8: None,
     BranchFormat.BZR_LOOM_1: None,
     BranchFormat.BZR_LOOM_2: None,
     BranchFormat.BZR_LOOM_3: None,
