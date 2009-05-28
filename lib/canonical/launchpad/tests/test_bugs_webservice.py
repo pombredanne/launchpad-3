@@ -14,19 +14,19 @@ from zope.component import getMultiAdapter
 
 from canonical.launchpad.browser.bugtask import get_comments_for_bugtask
 from canonical.launchpad.ftests import login
-from lp.testing.factory import LaunchpadObjectFactory
+from lp.testing import TestCaseWithFactory
 from canonical.launchpad.testing.pages import LaunchpadWebServiceCaller
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing import DatabaseFunctionalLayer
 
 
-class TestBugDescriptionRepresentation(unittest.TestCase):
+class TestBugDescriptionRepresentation(TestCaseWithFactory):
     """Test ways of interacting with Bug webservice representations."""
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
+        TestCaseWithFactory.setUp(self)
         login('foo.bar@canonical.com')
-        self.factory = LaunchpadObjectFactory()
         # Make two bugs, one whose description points to the other, so it will
         # get turned into a HTML link.
         self.bug_one = self.factory.makeBug(title="generic")
@@ -77,13 +77,13 @@ class TestBugDescriptionRepresentation(unittest.TestCase):
             self.bug_one.id, self.bug_one.id))
 
 
-class TestBugCommentRepresentation(unittest.TestCase):
+class TestBugCommentRepresentation(TestCaseWithFactory):
     """Test ways of interacting with BugComment webservice representations."""
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
+        TestCaseWithFactory.setUp(self)
         login('guilherme.salgado@canonical.com ')
-        self.factory = LaunchpadObjectFactory()
         self.bug = self.factory.makeBug()
         commenter = self.factory.makePerson()
         self.bug.newMessage(
