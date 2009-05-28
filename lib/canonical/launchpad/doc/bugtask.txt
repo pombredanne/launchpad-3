@@ -1260,6 +1260,42 @@ If a mentoring offer gets made...
      has_specification: False
 
 
+== Similar bugs ==
+
+It's possible to get a list of bugs similar to the current bug by
+accessing the similar_bugs property of its bug tasks.
+
+    >>> from operator import attrgetter
+    >>> new_ff_bug = factory.makeBug(product=firefox, title="Firefox")
+    >>> ff_bugtask = new_ff_bug.bugtasks[0]
+
+    >>> similar_bugs = ff_bugtask.findSimilar(user=sample_person)
+    >>> for similar_bug in sorted(similar_bugs, key=attrgetter('id')):
+    ...     print "%s: %s" % (similar_bug.id, similar_bug.title)
+    1: Firefox does not support SVG
+    4: Reflow problems with complex page layouts
+    5: Firefox install instructions should be complete
+
+This also works for distributions...
+
+    >>> ubuntu_bugtask = factory.makeBugTask(bug=new_ff_bug, target=ubuntu)
+    >>> similar_bugs = ubuntu_bugtask.findSimilar(user=sample_person)
+    >>> for similar_bug in sorted(similar_bugs, key=attrgetter('id')):
+    ...     print "%s: %s" % (similar_bug.id, similar_bug.title)
+    1: Firefox does not support SVG
+
+... and for SourcePackages.
+
+    >>> firefox_package = ubuntu.getSourcePackage('firefox')
+    >>> firefox_package_bugtask = factory.makeBugTask(
+    ...     bug=new_ff_bug, target=firefox_package)
+
+    >>> similar_bugs = firefox_package_bugtask.findSimilar(
+    ...     user=sample_person)
+    >>> for similar_bug in sorted(similar_bugs, key=attrgetter('id')):
+    ...     print "%s: %s" % (similar_bug.id, similar_bug.title)
+
+
 == Handling IntegrityError and ProgrammingError ==
 
 # XXX: Brad Bollenbach 2005-02-24: This bit testing the IntegrityError

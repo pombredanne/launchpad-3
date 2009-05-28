@@ -504,6 +504,9 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
                 " work required on this bug task."),
              readonly=True))
 
+    def findSimilar(user):
+        """Return the list of possible duplicates for this BugTask."""
+
     def getConjoinedMaster(bugtasks, bugtasks_by_package=None):
         """Return the conjoined master in the given bugtasks, if any.
 

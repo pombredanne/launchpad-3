@@ -56,6 +56,7 @@ from canonical.launchpad.interfaces.bugtask import (
     INullBugTask, IProductSeriesBugTask, IUpstreamBugTask, IllegalTarget,
     RESOLVED_BUGTASK_STATUSES, UNRESOLVED_BUGTASK_STATUSES,
     UserCannotEditBugTaskImportance, UserCannotEditBugTaskStatus)
+from canonical.launchpad.webapp.authorization import check_permission
 from lp.registry.interfaces.distribution import (
     IDistribution, IDistributionSet)
 from lp.registry.interfaces.distributionsourcepackage import (
@@ -536,6 +537,60 @@ class BugTask(SQLBase, BugTaskMixin):
         above.
         """
         return self.status in RESOLVED_BUGTASK_STATUSES
+
+    def findSimilar(self, user):
+        """See `IBugTask`."""
+        if self.product is not None:
+            context_params = {'product': self.product}
+        elif (self.sourcepackagename is not None and
+            self.distribution is not None):
+            context_params = {
+                'distribution': self.distribution,
+                'sourcepackagename': self.sourcepackagename,
+                }
+        elif self.distribution is not None:
+            context_params = {'distribution': self.distribution}
+        else:
+            raise AssertionError("BugTask doesn't have a searchable target.");
+
+        matching_bugtasks = getUtility(IBugTaskSet).findSimilar(
+            user, self.bug.title, **context_params)
+        # Remove all the prejoins, since we won't use them and they slow
+        # down the query significantly.
+        matching_bugtasks = matching_bugtasks.prejoin([])
+
+        # XXX: Bjorn Tillenius 2006-12-13 bug=75764
+        #      We might end up returning less than :limit: bugs, but in
+        #      most cases we won't, and '4*limit' is here to prevent
+        #      this page from timing out in production. Later I'll fix
+        #      this properly by selecting distinct Bugs directly
+        #      If matching_bugtasks isn't sliced, it will take a long time
+        #      to iterate over it, even over only 10, because
+        #      Transaction.iterSelect() listifies the result.
+        # We select more than :self._MATCHING_BUGS_LIMIT: since if a bug
+        # affects more than one source package, it will be returned more
+        # than one time. 4 is an arbitrary number that should be large
+        # enough.
+        matching_bugs = []
+        matching_bugs_limit = 10
+        for bugtask in matching_bugtasks[:4*matching_bugs_limit]:
+            if bugtask == self:
+                continue
+
+            bug = bugtask.bug
+            if not check_permission('launchpad.View', bug):
+                continue
+
+            duplicateof = bug.duplicateof
+            if duplicateof is not None:
+                bug = duplicateof
+
+            if bug not in matching_bugs:
+                matching_bugs.append(bug)
+                if len(matching_bugs) >= matching_bugs_limit:
+                    break
+
+        return matching_bugs
 
     def subscribe(self, person, subscribed_by):
         """See `IBugTask`."""
