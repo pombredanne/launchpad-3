@@ -51,7 +51,7 @@ import re
 import lp.codehosting
 from bzrlib.branch import (
     BranchReferenceFormat, BzrBranchFormat4, BzrBranchFormat5,
-    BzrBranchFormat6, BzrBranchFormat7)
+    BzrBranchFormat6, BzrBranchFormat7, BzrBranchFormat8)
 from bzrlib.bzrdir import (
     BzrDirFormat4, BzrDirFormat5, BzrDirFormat6, BzrDirMetaFormat1)
 from bzrlib.plugins.loom.branch import (
@@ -82,8 +82,7 @@ from canonical.config import config
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
-    ParticipatingPersonChoice, PublicPersonChoice, Summary, Title, URIField,
-    Whiteboard)
+    ParticipatingPersonChoice, PublicPersonChoice, URIField, Whiteboard)
 from canonical.launchpad.validators import LaunchpadValidationError
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.branchtarget import IHasBranchTarget
@@ -240,6 +239,8 @@ class BranchFormat(DBEnumeratedType):
 
     BZR_BRANCH_7 = _format_enum(7, BzrBranchFormat7)
 
+    BZR_BRANCH_8 = _format_enum(8, BzrBranchFormat8)
+
     BZR_LOOM_1 = _format_enum(101, BzrBranchLoomFormat1)
 
     BZR_LOOM_2 = _format_enum(106, BzrBranchLoomFormat6)
@@ -254,10 +255,12 @@ BRANCH_FORMAT_UPGRADE_PATH = {
     BranchFormat.BZR_BRANCH_4: BzrBranchFormat7,
     BranchFormat.BZR_BRANCH_5: BzrBranchFormat7,
     BranchFormat.BZR_BRANCH_6: BzrBranchFormat7,
-    BranchFormat.BZR_BRANCH_7: None,
+    BranchFormat.BZR_BRANCH_7: BzrBranchFormat8,
+    BranchFormat.BZR_BRANCH_8: None,
     BranchFormat.BZR_LOOM_1: None,
     BranchFormat.BZR_LOOM_2: None,
-    BranchFormat.BZR_LOOM_3: None}
+    BranchFormat.BZR_LOOM_3: None,
+    }
 
 
 class RepositoryFormat(DBEnumeratedType):
