@@ -51,7 +51,13 @@ import re
 import lp.codehosting
 from bzrlib.branch import (
     BranchReferenceFormat, BzrBranchFormat4, BzrBranchFormat5,
-    BzrBranchFormat6, BzrBranchFormat7, BzrBranchFormat8)
+    BzrBranchFormat6, BzrBranchFormat7)
+try:
+    from bzrlib.branch import BzrBranchFormat8
+    # Shut up, pyflakes.
+    BzrBranchFormat8
+except ImportError:
+    BzrBranchFormat8 = None
 from bzrlib.bzrdir import (
     BzrDirFormat4, BzrDirFormat5, BzrDirFormat6, BzrDirMetaFormat1)
 from bzrlib.plugins.loom.branch import (
@@ -239,7 +245,11 @@ class BranchFormat(DBEnumeratedType):
 
     BZR_BRANCH_7 = _format_enum(7, BzrBranchFormat7)
 
-    BZR_BRANCH_8 = _format_enum(8, BzrBranchFormat8)
+    # Format string copied from Bazaar 1.15 code. This should be replace with
+    # a line that looks like _format_enum(8, BzrBranchFormat8) when we upgrade
+    # to Bazaar 1.15.
+    BZR_BRANCH_8 = DBItem(
+        8, "Bazaar Branch Format 8 (needs bzr 1.15)\n", "Branch format 8")
 
     BZR_LOOM_1 = _format_enum(101, BzrBranchLoomFormat1)
 
@@ -255,12 +265,21 @@ BRANCH_FORMAT_UPGRADE_PATH = {
     BranchFormat.BZR_BRANCH_4: BzrBranchFormat7,
     BranchFormat.BZR_BRANCH_5: BzrBranchFormat7,
     BranchFormat.BZR_BRANCH_6: BzrBranchFormat7,
-    BranchFormat.BZR_BRANCH_7: BzrBranchFormat8,
-    BranchFormat.BZR_BRANCH_8: None,
+    BranchFormat.BZR_BRANCH_7: None,
     BranchFormat.BZR_LOOM_1: None,
     BranchFormat.BZR_LOOM_2: None,
     BranchFormat.BZR_LOOM_3: None,
     }
+
+
+# BzrBranchFormat8 was added in Bazaar 1.15. We can move this into the main
+# BranchFormat enum definition once we've upgraded to Bazaar 1.15.
+if BzrBranchFormat8 is not None:
+    BRANCH_FORMAT_UPGRADE_PATH[BranchFormat.BZR_BRANCH_4] = BzrBranchFormat8
+    BRANCH_FORMAT_UPGRADE_PATH[BranchFormat.BZR_BRANCH_5] = BzrBranchFormat8
+    BRANCH_FORMAT_UPGRADE_PATH[BranchFormat.BZR_BRANCH_6] = BzrBranchFormat8
+    BRANCH_FORMAT_UPGRADE_PATH[BranchFormat.BZR_BRANCH_7] = BzrBranchFormat8
+    BRANCH_FORMAT_UPGRADE_PATH[BranchFormat.BZR_BRANCH_8] = None
 
 
 class RepositoryFormat(DBEnumeratedType):
