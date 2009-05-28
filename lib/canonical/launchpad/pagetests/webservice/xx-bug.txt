@@ -474,11 +474,26 @@ target, we reset it in order to avoid data inconsistencies.
   ...
 
 It's possible to get a list of similar bugs for a bug task by calling
-its findSimilarBugs() method.
+its findSimilarBugs() method. As it happens, there aren't any bugs
+similar to bug 1 for Firefox.
 
-  >>> print webservice.named_post(
+  >>> print webservice.named_get(
   ...     firefox_bugtask['self_link'],
   ...     'findSimilarBugs')
+  HTTP/1.1 200 Ok...
+  {"total_size": 0, "start": null, "entries": []}
+
+If we add a new bug that's quite similar to others, findSimilarBugs()
+will return something more useful.
+
+    >>> new_bug = webservice.named_post(
+    ...     '/bugs', 'createBug',
+    ...     title='a', description='Test bug',
+    ...     target=firefox['self_link']).jsonBody()
+
+    >>> new_bug_task = webservice.get(
+    ...     webservice.getAbsoluteUrl('/firefox/+bug/' + new_bug['id'])
+    ...     ).jsonBody()
 
 
 == Bug subscriptions ==
@@ -939,7 +954,7 @@ bug tasks for the target.
     >>> pprint_collection(webservice.named_get(
     ...     '/firefox', 'searchTasks').jsonBody())
     start: 0
-    total_size: 4
+    total_size: 5
     ---
     ...
     self_link: u'http://api.launchpad.dev/beta/firefox/+bug/5'
