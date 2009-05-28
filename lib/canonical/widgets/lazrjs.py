@@ -5,6 +5,7 @@
 __metaclass__ = type
 __all__ = [
     'InlineEditPickerWidget',
+    'vocabulary_to_choice_edit_items',
     'TextLineEditorWidget',
     ]
 
@@ -117,8 +118,7 @@ class TextLineEditorWidget:
         if canWrite(self.context, self.attribute):
             params['trigger'] = self.TRIGGER_TEMPLATE % params
             params['activation_script'] = self.ACTIVATION_TEMPLATE % params
-        return self.WIDGET_TEMPLATE % params
-
+        return self.WIDGET_TEMPLATE % params 
 
 class InlineEditPickerWidget:
     """Wrapper for the lazr-js picker widget.
@@ -210,3 +210,29 @@ class InlineEditPickerWidget:
                 return canAccess(self.context, mutator.__name__)
             else:
                 return False
+
+
+def vocabulary_to_choice_edit_items(
+    vocab, css_class_prefix=None, disabled_items=[]):
+    """Convert an enumerable to JSON for a ChoiceEdit.
+    
+    :vocab: The enumeration to iterate over.
+    :css_class_prefix: If present, append this to an item's value to create
+        the css_class property for it.
+    :disabled_items: A list of items that should be displayed, but disabled.
+    """
+    items = []
+    for item in vocab:
+        new_item = {'name': item.value.title,
+            'value': item.value.title,
+            'style': '', 'help': '', 'disabled': False}
+        for disabled_item in disabled_items:
+            if disabled_item == item.value:
+                new_item['disabled'] = True
+                break
+        if css_class_prefix is not None:
+            new_item['css_class'] = css_class_prefix + item.value.name
+        items.append(new_item)
+
+    return simplejson.dumps(items)
+
