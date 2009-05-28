@@ -11,8 +11,7 @@ from zope.component import getUtility
 from zope.interface.verify import verifyObject
 from zope.schema import getFields
 
-from canonical.database.sqlbase import ZopelessTransactionManager
-from canonical.lp import initZopeless
+from canonical.config import config
 from canonical.testing import LaunchpadZopelessLayer, reset_logging
 
 from lp.registry.interfaces.product import IProductSet
@@ -155,9 +154,8 @@ class HandleReleaseTestCase(unittest.TestCase):
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
-        if ZopelessTransactionManager._installed is not None:
-            ZopelessTransactionManager.uninstall()
-        self.txn = initZopeless(dbuser='productreleasefinder')
+        LaunchpadZopelessLayer.switchDbUser(
+            config.productreleasefinder.dbuser)
         self.release_root = tempfile.mkdtemp()
         self.release_url = 'file://' + self.release_root
 
