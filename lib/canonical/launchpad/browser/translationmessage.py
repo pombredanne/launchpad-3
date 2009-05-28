@@ -1026,6 +1026,7 @@ class CurrentTranslationMessageView(LaunchpadView):
                 self.context.potmsgset.getImportedTranslationMessage(
                     self.pofile.potemplate,
                     self.pofile.language))
+        self.can_dismiss_suggestions = False
 
         # Set up alternative language variables.
         # XXX: kiko 2006-09-27:
@@ -1167,7 +1168,8 @@ class CurrentTranslationMessageView(LaunchpadView):
                     language),
                 key=operator.attrgetter("date_created"),
                 reverse=True)
-            self.has_local_suggestions = len(local) > 0
+            self.can_dismiss_suggestions = (
+                len(local) > 0 and self.user_is_official_translator)
             for suggestion in local:
                 suggestion.setPOFile(self.pofile)
 

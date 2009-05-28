@@ -51,21 +51,50 @@ translation and to dismiss all suggestions.
 
     >>> admin_browser.open('http://translations.launchpad.dev/alsa-utils'
     ...                    '/trunk/+pots/alsa-utils/de/+translate')
-    >>> user_browser.getControl(
+    >>> admin_browser.getControl(
     ...     name='msgset_198_de_dismiss_suggestions').value = (
     ...         'dismiss_suggestions')
-    >>> user_browser.getControl('Save & Continue').click()
-    >>> print user_browser.url
+    >>> admin_browser.getControl('Save & Continue').click()
+    >>> print admin_browser.url
     http://translations.../alsa-utils/trunk/+pots/alsa-utils/de/+translate
 
 The great new translation is still intact.
 
-    >>> print extract_text(find_tag_by_id(user_browser.contents,
+    >>> print extract_text(find_tag_by_id(admin_browser.contents,
     ...                                   'msgset_198_de_translation_0'))
     The great new translation.
 
 But the really bad suggestion is gone.
 
-    >>> print find_tag_by_id(user_browser.contents,
+    >>> print find_tag_by_id(admin_browser.contents,
     ...                      'msgset_198_de_suggestion_702_0')
     None
+
+== External suggestions ==
+
+External suggestions cannot be dismissed, they are staying around. Here is
+such a case.
+
+    >>> admin_browser.open('http://translations.launchpad.dev/evolution/'
+    ...                    'trunk/+pots/evolution-2.2/es/5/+translate')
+    >>> admin_browser.getControl(
+    ...     name='msgset_5_es_dismiss_suggestions').value = (
+    ...         'dismiss_suggestions')
+    >>> admin_browser.getControl('Save & Continue').click()
+    >>> print admin_browser.url
+    http://translations.../evolution/trunk/+pots/evolution-2.2/es/6/+translate
+
+There are still suggestions because they are external.
+
+    >>> admin_browser.open('http://translations.launchpad.dev/evolution/'
+    ...                    'trunk/+pots/evolution-2.2/es/5/+translate')
+    >>> print extract_text(find_tag_by_id(admin_browser.contents,
+    ...                                   'msgset_5_es_suggestion_686_0'))
+    caratas
+
+But the checkbox for dismissal is gone.
+
+    >>> print find_tag_by_id(admin_browser.contents,
+    ...                      'msgset_5_es_dismiss_suggestions')
+    None
+
