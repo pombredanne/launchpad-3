@@ -6,7 +6,7 @@
 <input size="19" type="text" class="yui2-calendar withtime"
    tal:attributes="name view/name; id view/name;
 		   value view/formvalue;
-                   disabled python:view/disabled_flag" />
+                   disabled view/disabled_flag" />
 <tal:display_zone condition="view/display_zone">
   <span> in time zone: <tal:tz replace="view/time_zone_name" />
   <a tal:condition="not: view/required_time_zone"
