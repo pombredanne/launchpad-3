@@ -328,10 +328,28 @@
         <tal:comment-list-complete
             tal:condition="not:view/visible_comments_truncated_for_display">
           <tal:logged-in condition="view/user">
-            <fieldset class="collapsible collapsed" id="add-comment-form">
-              <legend><a href="+addcomment">Add a comment/attachment</a></legend>
-              <div tal:content="structure context/@@+addcomment-form" />
-            </fieldset>
+            <div tal:define="comment_form nocall:context/@@+addcomment-form;
+                 dummy comment_form/initialize"
+                 id="add-comment-form">
+              <h2>Comment</h2>
+              <form action="+addcomment"
+                    method="post"
+                    enctype="multipart/form-data"
+                    accept-charset="UTF-8">
+                <tal:comment-input
+                  replace="structure comment_form/widgets/comment" />
+                <div class="actions"
+                  tal:content="structure
+                  comment_form/actions/field.actions.save/render" />
+              </form>
+              <script type="text/javascript">
+                var button = document.getElementById('field.actions.save');
+                button.style.display = 'none';
+              </script>
+            </div>
+            <tal:attachment-link
+                define="add_attachment_link context_menu/addcomment"
+                replace="structure add_attachment_link/render" />
           </tal:logged-in>
 
           <tal:not-logged-in condition="not: view/user">
