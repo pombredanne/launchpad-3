@@ -7,6 +7,19 @@ dependencies etc.
 Initially, package sets will be used to enforce upload permissions to source
 packages. Later they may be put to other uses as well.
 
+Please note: the purpose of the tests that follow is merely to test the
+correctness of exposing package sets on the web services API.
+
+The actual package set *functionality* is tested in much greater detail here:
+    
+    lib/lp/soyuz/doc/packageset.txt
+
+Please refer to the tests contained in the file above if you are really
+interested in package sets and the complete functionality they offer.
+
+We start off by creating an 'umbrella' package set that will include all
+source packages.
+
     >>> from zope.component import getUtility
     >>> from lp.registry.interfaces.person import IPersonSet
 
@@ -63,12 +76,27 @@ Let's see what we got.
     >>> print response.getOutput()
     HTTP/1.1 200 Ok
     ...
-    ["a52dec", "alsa-utils", "at", "cdrkit", "cnews", "commercialpackage",
-     "evolution", "foobar", "iceweasel", "language-pack-de", "libstdc++",
-     "linux-source-2.6.15", "mozilla", "mozilla-firefox", "netapplet",
-     "pmount", "thunderbird"]
+    ["a52dec",
+     "alsa-utils",
+     "at",
+     "cdrkit",
+     "cnews",
+     "commercialpackage",
+     "evolution",
+     "foobar",
+     "iceweasel",
+     "language-pack-de",
+     "libstdc++",
+     "linux-source-2.6.15",
+     "mozilla",
+     "mozilla-firefox",
+     "netapplet",
+     "pmount",
+     "thunderbird"]
 
-Source package associations can be severed as well.
+Source package associations can be severed as well. In the example below
+the 'foobar' and 'iceweasel' source package associations will be removed
+from the 'umbrella' package set.
 
     >>> response = webservice.named_post(
     ...     '/package-sets/umbrella', 'removeSources', {},
@@ -77,15 +105,29 @@ Source package associations can be severed as well.
     HTTP/1.1 200 Ok
     ...
 
+Please note that the 'foobar' and 'iceweasel' source packages are absent
+from the list below.
+
     >>> response = webservice.named_get(
     ...     '/package-sets/umbrella', 'getSourcesIncluded', {})
     >>> print response.getOutput()
     HTTP/1.1 200 Ok
     ...
-    ["a52dec", "alsa-utils", "at", "cdrkit", "cnews", "commercialpackage",
-     "evolution", "language-pack-de", "libstdc++",
-     "linux-source-2.6.15", "mozilla", "mozilla-firefox", "netapplet",
-     "pmount", "thunderbird"]
+    ["a52dec",
+     "alsa-utils",
+     "at",
+     "cdrkit",
+     "cnews",
+     "commercialpackage",
+     "evolution",
+     "language-pack-de",
+     "libstdc++",
+     "linux-source-2.6.15",
+     "mozilla",
+     "mozilla-firefox",
+     "netapplet",
+     "pmount",
+     "thunderbird"]
 
 Accessing the top-level package set URL will return the first 50 package sets
 sorted by name.
@@ -99,7 +141,8 @@ sorted by name.
     >>> print_payload(response)
     http://api.launchpad.dev/beta/package-sets/umbrella
 
-The 'umbrella' package set has no subsets at this point.
+Package sets may include other package sets (as subsets). At this point,
+however, we only have the 'umbrella' package set. It hence has no subsets.
 
     >>> response = webservice.named_get(
     ...     '/package-sets/umbrella', 'setsIncluded', {})
@@ -152,7 +195,17 @@ Let's create a few more package sets and set up a package set hierarchy.
     HTTP/1.1 201 Created
     ...
 
-The following passage defines package set relationships.
+In order to test whether methods relating to package set hierarchies were
+exposed on the Launchpad API correctly we will define the following package
+set hierarchy:
+
+    * umbrella
+      * gnome
+        * languagepack
+      * mozilla
+        * firefox
+        * thunderbird
+          * languagepack
 
     >>> response = webservice.named_post(
     ...     '/package-sets/umbrella', 'addSubsets', {},
@@ -212,7 +265,8 @@ a particular subset?
     http://api.launchpad.dev/beta/package-sets/thunderbird
     http://api.launchpad.dev/beta/package-sets/umbrella
 
-The list is of direct predecessors will be shorter:
+The list of package sets that *directly* include 'languagepack' will be
+shorter because the transitive closure is ignored.
 
     >>> response = webservice.named_get(
     ...     '/package-sets/languagepack', 'setsIncludedBy', {},
@@ -221,7 +275,8 @@ The list is of direct predecessors will be shorter:
     http://api.launchpad.dev/beta/package-sets/gnome
     http://api.launchpad.dev/beta/package-sets/thunderbird
 
-We can remove subsets as well.
+We can remove subsets as well. In the example below 'thunderbird' will
+stop including 'languagepack'.
 
     >>> response = webservice.named_post(
     ...     '/package-sets/thunderbird', 'removeSubsets', {},
@@ -230,11 +285,7 @@ We can remove subsets as well.
     HTTP/1.1 200 Ok
     ...
 
-    >>> response = webservice.named_get(
-    ...     '/package-sets/languagepack', 'setsIncludedBy', {})
-    >>> print_payload(response)
-    http://api.launchpad.dev/beta/package-sets/gnome
-    http://api.launchpad.dev/beta/package-sets/umbrella
+And, here we go, now 'languagepack' has only one direct predecessor: 'gnome'.
 
     >>> response = webservice.named_get(
     ...     '/package-sets/languagepack', 'setsIncludedBy', {},

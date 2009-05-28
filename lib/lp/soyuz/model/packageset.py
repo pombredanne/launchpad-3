@@ -310,7 +310,7 @@ class PackagesetSet:
         """See `IPackagesetSet`."""
         store = IStore(Packageset)
         if not isinstance(name, unicode):
-            name = unicode(name)
+            name = unicode(name, 'utf-8')
         return store.find(Packageset, Packageset.name == name).one()
 
     def getByOwner(self, owner):
