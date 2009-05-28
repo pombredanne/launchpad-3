@@ -428,6 +428,10 @@ class TestCaseWithFactory(TestCase):
         server might be providing lp-mirrored: urls.
         """
         base = config.codehosting.internal_branch_by_id_root
+        # XXX gary 2009-5-28 bug 381325
+        # This is a work-around for some failures on PQM, arguably caused by
+        # relying on test set-up that is happening in the Makefile rather than
+        # the actual test set-up.
         ensure_base(get_transport(base))
         return os.path.join(base, branch_id_to_path(branch.id))
 
