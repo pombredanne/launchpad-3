@@ -245,7 +245,7 @@ class BranchFormat(DBEnumeratedType):
 
     BZR_BRANCH_7 = _format_enum(7, BzrBranchFormat7)
 
-    # Format string copied from Bazaar 1.15 code. This should be replace with
+    # Format string copied from Bazaar 1.15 code. This should be replaced with
     # a line that looks like _format_enum(8, BzrBranchFormat8) when we upgrade
     # to Bazaar 1.15.
     BZR_BRANCH_8 = DBItem(
