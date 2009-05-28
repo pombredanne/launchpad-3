@@ -54,7 +54,7 @@ Now 'juergen' and 'hacker' have a package set each.
     >>> ps_factory.getByOwner(person2).count() == 1
     True
 
-We nned to define a few functions that make it easy to look at package set
+We need to define a few functions that make it easy to look at package set
 related data.
 
     >>> import operator
@@ -76,12 +76,14 @@ Package sets can be looked up by name as follows:
     1 -> umbrella
 
 In order to facilitate utilisation of package set related functionality
-via the web services API we need to have a get method that returns the
-first N (N=50) package sets sorted by name.
+via the web services API we need to have a get() method that returns the
+first N (N=50 by default) package sets sorted by name.
+Since we only have 2 package sets at this point only these will be shown.
 
-    >>> print_data(ps_factory.get())
-    1 -> umbrella
+    >>> for datum in ps_factory.get():
+    ...     print('%3d -> %s' % (datum.id, datum.name))
     2 -> kernel
+    1 -> umbrella
 
 In a next step we will associate source package names with the package sets
 just created.

@@ -10,7 +10,8 @@ packages. Later they may be put to other uses as well.
 Please note: the purpose of the tests that follow is merely to test the
 correctness of exposing package sets on the web services API.
 
-The actual package set *functionality* is tested in much greater detail here:
+The actual package set *functionality* is tested in much greater detail
+here:
     
     lib/lp/soyuz/doc/packageset.txt
 
