@@ -473,6 +473,13 @@ target, we reset it in order to avoid data inconsistencies.
   HTTP/1.1 200 Ok
   ...
 
+It's possible to get a list of similar bugs for a bug task by calling
+its findSimilarBugs() method.
+
+  >>> print webservice.named_post(
+  ...     firefox_bugtask['self_link'],
+  ...     'findSimilarBugs')
+
 
 == Bug subscriptions ==
 
