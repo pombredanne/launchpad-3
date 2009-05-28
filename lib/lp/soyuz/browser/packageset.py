@@ -9,8 +9,8 @@ __all__ = [
     ]
 
 
-from lp.soyuz.interfaces.packageset import IPackagesetSet
 from canonical.launchpad.webapp import GetitemNavigation
+from lp.soyuz.interfaces.packageset import IPackagesetSet
 
 
 class PackagesetSetNavigation(GetitemNavigation):
