@@ -30,7 +30,7 @@ from canonical.database.sqlbase import (
     SQLBase, quote, flush_database_updates, sqlvalues)
 from canonical.launchpad import helpers
 from canonical.launchpad.components.rosettastats import RosettaStats
-from canonical.launchpad.database.language import Language
+from lp.services.worlddata.model.language import Language
 from lp.registry.interfaces.person import validate_public_person
 from canonical.launchpad.database.pofile import POFile, DummyPOFile
 from canonical.launchpad.database.pomsgid import POMsgID

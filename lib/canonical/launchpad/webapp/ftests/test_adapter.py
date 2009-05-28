@@ -11,9 +11,11 @@ def test_suite():
         LayeredDocFileSuite(
             'test_adapter.txt',
             layer=LaunchpadFunctionalLayer),
-        LayeredDocFileSuite(
-            'test_adapter_timeout.txt',
-            layer=PageTestLayer),
+# XXX Julian 2009-05-13, bug=376171
+# Temporarily disabled because of intermittent failures.
+#       LayeredDocFileSuite(
+#            'test_adapter_timeout.txt',
+#            layer=PageTestLayer),
         LayeredDocFileSuite(
             'test_adapter_permissions.txt',
             layer=LaunchpadFunctionalLayer),

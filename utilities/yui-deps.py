@@ -27,7 +27,7 @@ YUI_ROOT_RE = re.compile('yui string:\${icingroot}/(.*);')
 YUI_MOD_RE = re.compile('\${yui}/(.*?)\.js')
 
 
-yui_root = None;
+yui_root = None
 template = open(MAIN_TEMPLATE, 'r')
 for line in template:
     if yui_root is None:

@@ -18,8 +18,12 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.testing.pages import PageTestSuite
 from canonical.launchpad.testing.systemdocs import (
     LayeredDocFileSuite, setUp, tearDown)
-from canonical.launchpad.tests.mail_helpers import pop_notifications
+from lp.testing.mail_helpers import pop_notifications
 from canonical.testing import DatabaseFunctionalLayer, LaunchpadZopelessLayer
+
+from lp.services.testing import build_test_suite
+
+here = os.path.dirname(os.path.realpath(__file__))
 
 
 def _createUbuntuBugTaskLinkedToQuestion():
@@ -107,14 +111,4 @@ special = {
 
 
 def test_suite():
-    suite = unittest.TestSuite()
-
-    pagetests_dir = os.path.join(os.path.pardir, 'pagetests')
-    suite.addTest(PageTestSuite(pagetests_dir))
-
-    # Add special needs tests
-    for key in sorted(special):
-        special_suite = special[key]
-        suite.addTest(special_suite)
-
-    return suite
+    return build_test_suite(here, special)

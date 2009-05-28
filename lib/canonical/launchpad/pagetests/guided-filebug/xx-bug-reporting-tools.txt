@@ -225,7 +225,7 @@ The user can of course change the tags if he wants.
 
     >>> tags = find_tag_by_id(user_browser.contents, 'bug-tags')
     >>> print extract_text(tags)
-    Tags: bar baz
+    Tags: bar baz...
 
 The normal +filebug page has a hidden tags widget, so bugs filed via
 that will get their tags set as well.
@@ -244,5 +244,5 @@ that will get their tags set as well.
 
     >>> tags = find_tag_by_id(user_browser.contents, 'bug-tags')
     >>> print extract_text(tags)
-    Tags: bar foo
+    Tags: bar foo...
 

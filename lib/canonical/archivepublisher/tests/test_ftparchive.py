@@ -19,9 +19,11 @@ from canonical.archivepublisher.diskpool import DiskPool
 from canonical.archivepublisher.tests.util import (
     FakeSourcePublishing, FakeSourceFilePublishing,
     FakeBinaryPublishing, FakeBinaryFilePublishing, FakeLogger)
-from canonical.launchpad.interfaces import (
-    ArchivePurpose, IArchiveSet, IDistributionSet, ILibraryFileAliasSet,
+from lp.registry.interfaces.distribution import IDistributionSet
+from lp.soyuz.interfaces.archive import ArchivePurpose, IArchiveSet
+from lp.soyuz.interfaces.publishing import (
     PackagePublishingPriority, PackagePublishingPocket)
+from canonical.launchpad.interfaces import ILibraryFileAliasSet
 from canonical.librarian.client import LibrarianClient
 from canonical.testing import LaunchpadZopelessLayer
 

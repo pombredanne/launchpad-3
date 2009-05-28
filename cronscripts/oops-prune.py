@@ -11,7 +11,7 @@ import os
 
 from canonical.config import config
 from canonical.database.sqlbase import ISOLATION_LEVEL_AUTOCOMMIT
-from canonical.launchpad.scripts.base import (
+from lp.services.scripts.base import (
     LaunchpadCronScript, LaunchpadScriptFailure)
 from canonical.launchpad.scripts.oops import (
     unwanted_oops_files, prune_empty_oops_directories)

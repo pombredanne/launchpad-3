@@ -1,4 +1,4 @@
-# Copyright Canonical Limited 2004-2007
+# Copyright Canonical Limited 2004-2009
 """Builder Group model.
 
 Implement methods to deal with builder and their results.
@@ -22,10 +22,11 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.config import config
 from canonical.librarian.interfaces import ILibrarianClient
 from canonical.librarian.utils import copy_and_close
-from canonical.launchpad.interfaces import (
-    ArchivePurpose, BuildDaemonError, BuildStatus, IBuildQueueSet,
-    BuildJobMismatch, IBuildSet, IBuilderSet, NotFoundError, pocketsuffix
-    )
+from lp.soyuz.interfaces.build import BuildStatus, IBuildSet
+from lp.soyuz.interfaces.builder import (
+    BuildDaemonError, BuildJobMismatch, IBuilderSet)
+from lp.soyuz.interfaces.buildqueue import IBuildQueueSet
+from canonical.launchpad.interfaces import NotFoundError, pocketsuffix
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import (
     flush_database_updates, clear_current_connection_cache, cursor)
@@ -420,8 +421,8 @@ class BuilderGroup:
                 if os.path.exists(upload_final_location):
                     log_filepath = os.path.join(
                         upload_final_location, 'uploader.log')
+                    uploader_log_file = open(log_filepath)
                     try:
-                        uploader_log_file = open(log_filepath)
                         uploader_log_content = uploader_log_file.read()
                     finally:
                         uploader_log_file.close()

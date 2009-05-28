@@ -32,7 +32,7 @@ The team owner sets the contact address to the hosted mailing list.
 The team owner sets the contact address to an external email address, and
 Launchpad sends that address a confirmation message.
 
-    >>> from canonical.launchpad.mail import stub
+    >>> from lp.services.mail import stub
     >>> stub.test_emails = []
     >>> user_browser.getControl('Another e-mail address').selected = True
     >>> user_browser.getControl(

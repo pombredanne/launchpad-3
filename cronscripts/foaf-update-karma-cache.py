@@ -9,7 +9,7 @@ from zope.component import getUtility
 from canonical.config import config
 from canonical.database.sqlbase import ISOLATION_LEVEL_AUTOCOMMIT
 from canonical.launchpad.interfaces import IKarmaCacheManager, NotFoundError
-from canonical.launchpad.scripts.base import LaunchpadCronScript
+from lp.services.scripts.base import LaunchpadCronScript
 
 
 class KarmaCacheUpdater(LaunchpadCronScript):

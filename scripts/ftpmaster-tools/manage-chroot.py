@@ -8,7 +8,7 @@
 
 import _pythonpath
 
-from canonical.launchpad.scripts.ftpmaster import ManageChrootScript
+from lp.soyuz.scripts.ftpmaster import ManageChrootScript
 
 
 if __name__ == '__main__':

@@ -72,8 +72,9 @@ They are grouped together at the beginning of the list.
 
     >>> browser.open(gfoobar_bug_url)
     >>> tags_div = find_tag_by_id(browser.contents, 'bug-tags')
-    >>> for tag_anchor in tags_div.findAll('a'):
-    ...     print tag_anchor['class'], tag_anchor.contents[0]
+    >>> for anchor in tags_div.findAll('a'):
+    ...     if anchor['href'] != '+edit':
+    ...         print anchor['class'], anchor.contents[0]
     official-tag alpha
     official-tag charlie
     unofficial-tag bravo

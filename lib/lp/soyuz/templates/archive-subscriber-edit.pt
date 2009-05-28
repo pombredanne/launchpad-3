@@ -1,0 +1,28 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="view/macro:page/onecolumn"
+  i18n:domain="launchpad"
+  >
+<body>
+  <metal:block fill-slot="head_epilogue">
+    <metal:yui-dependencies
+      use-macro="context/@@launchpad_widget_macros/yui2calendar-dependencies" />
+  </metal:block>
+
+  <div metal:fill-slot="main">
+
+    <h1 tal:content="CONTEXTS/fmt:pagetitle">
+      Edit subscription for Joe Smith
+    </h1>
+    <p>You can update the expiry or description for a subscription,
+       or cancel the subscription all-together.</p>
+    <div metal:use-macro="context/@@launchpad_form/form" />
+  </div>
+</body>
+</html>

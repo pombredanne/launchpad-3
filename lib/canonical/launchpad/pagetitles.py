@@ -848,6 +848,9 @@ openid_account_change_password = 'Change your password'
 def openid_account_edit(context, view):
     return smartquote("%s's details") % view.account.displayname
 
+def openid_account_edit_emails(context, view):
+    return smartquote("%s's e-mail addresses") % view.account.displayname
+
 openid_default = 'OpenID Endpoint'
 
 def openid_index(context, view):
@@ -1300,7 +1303,7 @@ signedcodeofconduct_activate = ContextDisplayName('Activating %s')
 
 signedcodeofconduct_deactivate = ContextDisplayName('Deactivating %s')
 
-sourcepackage_branches = ContextDisplayName('Branches in %s')
+sourcepackage_branches = ContextDisplayName('Branches of %s')
 
 sourcepackage_bugs = ContextDisplayName('Bugs in %s')
 

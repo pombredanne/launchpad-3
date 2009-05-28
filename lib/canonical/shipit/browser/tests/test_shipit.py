@@ -13,7 +13,7 @@ from canonical.shipit.model.shipit import ShipItSurvey
 from canonical.launchpad.layers import setFirstLayer
 from canonical.shipit.layers import ShipItUbuntuLayer
 from canonical.shipit.systemhome import ShipItApplication
-from canonical.launchpad.testing import login_person, TestCaseWithFactory
+from lp.testing import login_person, TestCaseWithFactory
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing import DatabaseFunctionalLayer
 

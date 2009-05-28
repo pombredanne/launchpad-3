@@ -16,7 +16,7 @@ from lp.code.interfaces.branchmergeproposal import (
     BranchMergeProposalStatus)
 from lp.code.interfaces.codereviewcomment import (
     CodeReviewVote)
-from canonical.launchpad.testing import (
+from lp.testing import (
     login_person, TestCaseWithFactory, time_counter)
 from canonical.launchpad.webapp.interfaces import IPrimaryContext
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest

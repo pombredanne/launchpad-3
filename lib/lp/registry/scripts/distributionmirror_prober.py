@@ -15,7 +15,7 @@ from twisted.web.http import HTTPClient
 from twisted.python.failure import Failure
 
 from canonical.config import config
-from canonical.launchpad.interfaces.distroarchseries import IDistroArchSeries
+from lp.soyuz.interfaces.distroarchseries import IDistroArchSeries
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.distributionmirror import (
     MirrorFreshness, UnableToFetchCDImageFileList)

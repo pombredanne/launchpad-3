@@ -43,9 +43,9 @@ atomic attributes. The display and and title attributes are composed.
     >>> print firefox_ms.code_name
     Candidate One
     >>> print firefox_ms.displayname
-    Mozilla Firefox: 1.0rc1
+    Mozilla Firefox 1.0rc1
     >>> print firefox_ms.title
-    Mozilla Firefox: 1.0rc1 "Candidate One"
+    Mozilla Firefox 1.0rc1 "Candidate One"
 
 The summary describes the intent of the milestone.
 
@@ -65,7 +65,7 @@ To retrieve a specific Milestone, use IMilestoneSet.get:
     >>> print firefox_ms_1_0.name
     1.0
     >>> print firefox_ms_1_0.displayname
-    Mozilla Firefox: 1.0
+    Mozilla Firefox 1.0
 
 Of course, you can also get them off a Product or Distribution using
 the getMilestone() method:
@@ -95,9 +95,9 @@ Now, lets test all of that for DistroSeriess too!
     >>> print new_ms.code_name
     None
     >>> print new_ms.displayname
-    Kubuntu: 1.3rc2
+    Kubuntu 1.3rc2
     >>> print new_ms.title
-    Kubuntu: 1.3rc2
+    Kubuntu 1.3rc2
     >>> print new_ms.target.name
     kubuntu
     >>> print new_ms.series_target.name
@@ -138,12 +138,12 @@ neither any milestones.
     ...         product.name,
     ...         [milestone.title for milestone in product.all_milestones])
     applets []
-    evolution [u'Evolution: 2.1.6']
+    evolution [u'Evolution 2.1.6']
     gnome-terminal []
     gnomebaker []
-    netapplet [u'NetApplet: 1.0']
+    netapplet [u'NetApplet 1.0']
     >>> print [milestone.title for milestone in gnome.all_milestones]
-    [u'GNOME: 2.1.6', u'GNOME: 1.0']
+    [u'GNOME 2.1.6', u'GNOME 1.0']
 
 When a milestone for a product is defined, this milestone is "inherited"
 by the project.
@@ -192,9 +192,9 @@ The code_name and series attributes are always none.
     >>> print project_milestone.code_name
     None
     >>> print project_milestone.displayname
-    GNOME: 2.1.6
+    GNOME 2.1.6
     >>> print project_milestone.title
-    GNOME: 2.1.6
+    GNOME 2.1.6
     >>> print project_milestone.target.name
     gnome
     >>> print project_milestone.series_target
@@ -330,8 +330,8 @@ list of recipients.
         Milestone: 1.0 => 2.0
     >>> for recipient in notification.recipients:
     ...     print recipient.person.name, recipient.reason_header
-    cprov Subscriber (Mozilla Firefox: 1.0)
-    ddaa Subscriber (Mozilla Firefox: 2.0)
+    cprov Subscriber (Mozilla Firefox 1.0)
+    ddaa Subscriber (Mozilla Firefox 2.0)
     ...
 
 

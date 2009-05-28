@@ -8,9 +8,11 @@ __all__ = ["findPolicyByName", "findPolicyByOptions", "UploadPolicyError"]
 
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces import (
-    ArchivePurpose, DistroSeriesStatus, IDistributionSet,
-    ILaunchpadCelebrities, PackagePublishingPocket)
+from canonical.launchpad.interfaces import ILaunchpadCelebrities
+from lp.registry.interfaces.distribution import IDistributionSet
+from lp.registry.interfaces.distroseries import DistroSeriesStatus
+from lp.soyuz.interfaces.archive import ArchivePurpose
+from lp.soyuz.interfaces.publishing import PackagePublishingPocket
 
 # Number of seconds in an hour (used later)
 HOURS = 3600

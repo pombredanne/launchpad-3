@@ -18,7 +18,7 @@ from canonical.launchpad.scripts import execute_zcml_for_scripts
 from canonical.lp import initZopeless
 
 from canonical.launchpad.scripts import logger, logger_options
-from canonical.launchpad.scripts.queue import (
+from lp.soyuz.scripts.queue import (
     CommandRunner, CommandRunnerError, name_queue_map)
 
 

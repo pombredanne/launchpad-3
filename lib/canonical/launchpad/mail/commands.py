@@ -22,7 +22,7 @@ from canonical.launchpad.interfaces import (
         IDistributionSourcePackage, EmailProcessingError,
         NotFoundError, CreateBugParams, IPillarNameSet,
         BugTargetNotFound, IProject, ISourcePackage, IProductSeries,
-        BugTaskStatus)
+        BugTaskStatus, UserCannotUnsubscribePerson)
 from lazr.lifecycle.event import (
     ObjectModifiedEvent, ObjectCreatedEvent)
 from lazr.lifecycle.interfaces import (
@@ -346,7 +346,13 @@ class UnsubscribeEmailCommand(EmailCommand):
                 get_error_message('unsubscribe-too-many-arguments.txt'))
 
         if bug.isSubscribed(person):
-            bug.unsubscribe(person, getUtility(ILaunchBag).user)
+            try:
+                bug.unsubscribe(person, getUtility(ILaunchBag).user)
+            except UserCannotUnsubscribePerson:
+                raise EmailProcessingError(
+                    get_error_message(
+                        'user-cannot-unsubscribe.txt',
+                        person=person.displayname))
         if bug.isSubscribedToDupes(person):
             bug.unsubscribeFromDupes(person)
 

@@ -8,7 +8,7 @@ import unittest
 from canonical.launchpad.components.bugchange import (
     BUG_CHANGE_LOOKUP, get_bug_change_class)
 from canonical.launchpad.ftests import ANONYMOUS, login, logout
-from canonical.launchpad.testing.factory import LaunchpadObjectFactory
+from lp.testing.factory import LaunchpadObjectFactory
 from canonical.testing import LaunchpadFunctionalLayer
 
 

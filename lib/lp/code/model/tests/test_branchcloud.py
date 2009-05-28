@@ -12,7 +12,7 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from lp.code.interfaces.branch import BranchType, IBranchCloud
-from canonical.launchpad.testing import TestCaseWithFactory, time_counter
+from lp.testing import TestCaseWithFactory, time_counter
 from canonical.launchpad.testing.databasehelpers import (
     remove_all_sample_data_branches)
 from canonical.launchpad.webapp.interfaces import MASTER_FLAVOR

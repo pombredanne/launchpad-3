@@ -19,7 +19,8 @@ from canonical.launchpad import _
 from canonical.launchpad.webapp import canonical_url
 
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.webapp.interfaces import ILaunchBag, UnexpectedFormData
+from canonical.launchpad.webapp.interfaces import (
+    ILaunchBag, UnexpectedFormData)
 from lp.registry.interfaces.teammembership import TeamMembershipStatus
 from canonical.widgets import DateWidget
 
@@ -241,13 +242,6 @@ class TeamMembershipEditView:
         if self._setMembershipData(TeamMembershipStatus.APPROVED):
             self.request.response.redirect(
                 '%s/+members' % canonical_url(self.context.team))
-
-    @property
-    def date_picker_trigger(self):
-        """JavaScript function call to trigger the date picker."""
-        return """pickDate('membership.expirationdate', %s);
-         document.getElementById('membership.expirationdate').disabled=false;
-         """ % (self.expiration_widget.daterange)
 
     def _setMembershipData(self, status):
         """Set all data specified on the form, for this TeamMembership.

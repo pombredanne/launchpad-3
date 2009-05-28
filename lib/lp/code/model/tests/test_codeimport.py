@@ -10,7 +10,7 @@ from sqlobject import SQLObjectNotFound
 from storm.store import Store
 from zope.component import getUtility
 
-from canonical.codehosting.codeimport.tests.test_workermonitor import (
+from lp.codehosting.codeimport.tests.test_workermonitor import (
     nuke_codeimport_sample_data)
 from lp.code.model.codeimport import CodeImportSet
 from lp.code.model.codeimportevent import CodeImportEvent
@@ -23,9 +23,9 @@ from lp.registry.interfaces.person import IPersonSet
 from lp.code.interfaces.codeimport import RevisionControlSystems
 from lp.code.interfaces.codeimportjob import ICodeImportJobWorkflow
 from lp.code.interfaces.codeimportresult import CodeImportResultStatus
-from canonical.launchpad.ftests import ANONYMOUS, login, logout
-from canonical.launchpad.testing import (
-    LaunchpadObjectFactory, TestCaseWithFactory, time_counter)
+from lp.testing import (
+    login, logout, TestCaseWithFactory, time_counter)
+from lp.testing.factory import LaunchpadObjectFactory
 from canonical.testing import (
     DatabaseFunctionalLayer, LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer)
@@ -394,8 +394,8 @@ class TestConsecutiveFailureCount(TestCaseWithFactory):
         self.assertEqual(0, code_import.consecutive_failure_count)
 
     def test_consecutive_failure_count_succeed(self):
-        # A code import that has succeeded once has a consecutive_failure_count
-        # of 1.
+        # A code import that has succeeded once has a
+        # consecutive_failure_count of 1.
         code_import = self.factory.makeCodeImport()
         self.succeedImport(code_import)
         self.assertEqual(0, code_import.consecutive_failure_count)

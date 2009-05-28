@@ -36,7 +36,7 @@ All merge proposals have to be registered by a Person.
     >>> person_set = getUtility(IPersonSet)
     >>> login('test@canonical.com')
     >>> sample_person = person_set.getByEmail('test@canonical.com')
-    >>> from canonical.launchpad.testing import time_counter
+    >>> from lp.testing import time_counter
     >>> now = time_counter()
 
 In order to register a merge proposal there has to be a source branch
@@ -382,10 +382,9 @@ In order to make it easier to propose branches to merge on similar
 branches, there is a method on the branch set that returns the branches that a
 user has previously targeted for merging.
 
-    >>> gnome_terminal = branch.product
-    >>> branch_set = getUtility(IBranchSet)
-    >>> branches = branch_set.getTargetBranchesForUsersMergeProposals(
-    ...     sample_person, gnome_terminal)
+    >>> collection = branch.target.collection.targetedBy(sample_person)
+    >>> collection = collection.visibleByUser(sample_person)
+    >>> branches = collection.getBranches().config(distinct=True)
     >>> for branch in branches:
     ...     print branch.unique_name
     ~name12/gnome-terminal/main

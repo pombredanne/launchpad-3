@@ -15,7 +15,7 @@ notification they would like to receive.
     >>> from lp.code.interfaces.branchmergeproposal import (
     ...     IMergeProposalCreatedJobSource)
     >>> from canonical.launchpad.interfaces.diff import IStaticDiffSource
-    >>> from canonical.launchpad.tests.mail_helpers import pop_notifications
+    >>> from lp.testing.mail_helpers import pop_notifications
     >>> import transaction
     >>> login('test@canonical.com')
     >>> diff = getUtility(IStaticDiffSource).acquireFromText('a', 'b', 'c')

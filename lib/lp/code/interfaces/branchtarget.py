@@ -81,6 +81,15 @@ class IBranchTarget(IPrimaryContext):
         description=_(
             'The branch that new branches will be stacked on by default.'))
 
+    default_merge_target = Attribute(
+        "The branch to merge other branches into for this target.")
+
+    supports_merge_proposals = Attribute(
+        "Does this target support merge proposals at all?")
+
+    def areBranchesMergeable(other_target):
+        """Are branches from other_target mergeable into this target."""
+
     def __eq__(other):
         """Is this target the same as another target?
 
@@ -94,8 +103,9 @@ class IBranchTarget(IPrimaryContext):
         """
 
     def getNamespace(owner):
-        """Return a `IBranchNamespace` for this target and the specified owner.
-        """
+        """Return a `IBranchNamespace` for 'owner' and this target."""
 
     collection = Attribute("An IBranchCollection for this target.")
 
+    def assignKarma(person, action_name):
+        """Assign karma to the person on the appropriate target."""

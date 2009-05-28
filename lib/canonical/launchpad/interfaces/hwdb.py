@@ -51,6 +51,7 @@ from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.product import License
+from lp.soyuz.interfaces.distroarchseries import IDistroArchSeries
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.validators.email import valid_email
@@ -1094,6 +1095,218 @@ class IHWDBApplication(ILaunchpadApplication, ITopLevelEntryLink):
              value_type=TextLine(),
              readonly=True))
 
+    @operation_parameters(
+        bus=Choice(
+            title=u'The device bus', vocabulary=HWBus, required=True),
+        vendor_id=TextLine(
+            title=u'The vendor ID', description=VENDOR_ID_DESCRIPTION,
+             required=True),
+        product_id=TextLine(
+            title=u'The product ID', description=PRODUCT_ID_DESCRIPTION,
+            required=True),
+        driver_name=TextLine(
+            title=u'A driver name', required=False,
+            description=u'If specified, the count is limited to devices '
+                        'controlled by this driver.'),
+        package_name=TextLine(
+            title=u'A package name', required=False,
+            description=u'If specified, the count is limited to devices '
+                        u'controlled by a driver from this package.'),
+        distribution=Reference(
+            IDistribution,
+            title=u'A Distribution',
+            description=(
+                u'If specified, the result set is limited to submissions '
+                u'made for this distribution.'),
+            required=False),
+        distroseries=Reference(
+            IDistroSeries,
+            title=u'A Distribution Series',
+            description=(
+                u'If specified, the result set is limited to submissions '
+                u'made for the given distribution series.'),
+            required=False),
+        distroarchseries=Reference(
+            IDistroArchSeries,
+            title=u'A Distribution Series',
+            description=(
+                u'If specified, the result set is limited to submissions '
+                u'made for the given distroarchseries.'),
+            required=False))
+    @export_read_operation()
+    def numSubmissionsWithDevice(
+        bus, vendor_id, product_id, driver_name=None, package_name=None,
+        distribution=None, distroseries=None, distroarchseries=None):
+        """Count the number of submissions mentioning a device.
+
+        Returns a dictionary {'submissions_with_device: n1,
+        'all_submissions': n2}, where submissions_with_device is the number
+        of submissions having the given device and matching the
+        distro target criterion and where all_submissions is the number of
+        submissions matching the distro target criterion.
+
+        :param bus: The `HWBus` of the device.
+        :param vendor_id: The vendor ID of the device.
+        :param product_id: The product ID of the device.
+        :param driver_name: The name of the driver used for the device
+            (optional).
+        :param package_name: The name of the package the driver is a part of.
+            (optional).
+        :param distribution: Limit the count to submissions made for the
+            given distribution, distroseries or distroarchseries.
+            (optional).
+        :param distroseries: Limit the count to submissions made for the
+            given distroseries.
+            (optional).
+        :param distroarchseries: Limit the count to submissions made for the
+            given distroarchseries.
+            (optional).
+
+        You may specify at most one of the parameters distribution,
+        distroseries or distroarchseries.
+        """
+
+    @operation_parameters(
+        bus=Choice(
+            title=u'The device bus', vocabulary=HWBus, required=True),
+        vendor_id=TextLine(
+            title=u'The vendor ID', description=VENDOR_ID_DESCRIPTION,
+             required=True),
+        product_id=TextLine(
+            title=u'The product ID', description=PRODUCT_ID_DESCRIPTION,
+            required=True),
+        driver_name=TextLine(
+            title=u'A driver name', required=False,
+            description=u'If specified, the count is limited to devices '
+                        u'controlled by this driver.'),
+        package_name=TextLine(
+            title=u'A package name', required=False,
+            description=u'If specified, the count is limited to devices '
+                        u'controlled by a driver from this package.'),
+        distribution=Reference(
+            IDistribution,
+            title=u'A Distribution',
+            description=(
+                u'If specified, the result set is limited to submissions '
+                u'made for this distribution.'),
+            required=False),
+        distroseries=Reference(
+            IDistroSeries,
+            title=u'A Distribution Series',
+            description=(
+                u'If specified, the result set is limited to submissions '
+                u'made for the given distribution series.'),
+            required=False),
+        distroarchseries=Reference(
+            IDistroArchSeries,
+            title=u'A Distribution Series',
+            description=(
+                u'If specified, the result set is limited to submissions '
+                u'made for the given distroarchseries.'),
+            required=False))
+    @export_read_operation()
+    def numOwnersOfDevice(
+        bus, vendor_id, product_id, driver_name=None, package_name=None,
+        distribution=None, distroseries=None, distroarchseries=None):
+        """Count the number who subitted hardware reports mentioning a device.
+
+        Returns a dictionary {'owners': n1, 'all_submitters': n2}
+        where owners is the number of people who made a HWDB
+        submission containing the given device, optionally limited
+        to submissions where the device is controlled by a given
+        driver from the given package, and/or limited to submissions
+        made for the given distro target.
+        all_submitters is the number of persons who made
+        a HWDB submission, optionally limited to submission made
+        on the given distro target installation.
+
+        :param bus: The `HWBus` of the device.
+        :param vendor_id: The vendor ID of the device.
+        :param product_id: The product ID of the device.
+        :param driver_name: The name of the driver used for the device
+            (optional).
+        :param package_name: The name of the package the driver is a part of.
+            (optional).
+        :param distribution: Limit the count to submissions made for the
+            given distribution, distroseries or distroarchseries.
+            (optional).
+        :param distroseries: Limit the count to submissions made for the
+            given distroseries.
+            (optional).
+        :param distroarchseries: Limit the count to submissions made for the
+            given distroarchseries.
+            (optional).
+
+        You may specify at most one of the parameters distribution,
+        distroseries or distroarchseries.
+        """
+
+    @operation_parameters(
+        bus=Choice(
+            title=u'The device bus', vocabulary=HWBus, required=True),
+        vendor_id=TextLine(
+            title=u'The vendor ID', description=VENDOR_ID_DESCRIPTION,
+             required=True),
+        product_id=TextLine(
+            title=u'The product ID', description=PRODUCT_ID_DESCRIPTION,
+            required=True),
+        driver_name=TextLine(
+            title=u'A driver name', required=False,
+            description=u'If specified, the count is limited to devices '
+                        u'controlled by this driver.'),
+        package_name=TextLine(
+            title=u'A package name', required=False,
+            description=u'If specified, the count is limited to devices '
+                        u'controlled by a driver from this package.'),
+        distribution=Reference(
+            IDistribution,
+            title=u'A Distribution',
+            description=(
+                u'If specified, the result set is limited to submissions '
+                u'made for this distribution.'),
+            required=False),
+        distroseries=Reference(
+            IDistroSeries,
+            title=u'A Distribution Series',
+            description=(
+                u'If specified, the result set is limited to submissions '
+                u'made for the given distribution series.'),
+            required=False),
+        distroarchseries=Reference(
+            IDistroArchSeries,
+            title=u'A Distribution Series',
+            description=(
+                u'If specified, the result set is limited to submissions '
+                u'made for the given distroarchseries.'),
+            required=False))
+    @export_read_operation()
+    def numDevicesInSubmissions(
+        bus, vendor_id, product_id, driver_name=None, package_name=None,
+        distribution=None, distroseries=None, distroarchseries=None):
+        """Count how often a device appears in HWDB submissions.
+
+        Returns The number how often the given device appears in HWDB
+
+        :param bus: The `HWBus` of the device.
+        :param vendor_id: The vendor ID of the device.
+        :param product_id: The product ID of the device.
+        :param driver_name: Limit the count to devices controlled by the given
+            driver (optional).
+        :param package_name: Limit the count to devices controlled by a driver
+            from the given package (optional).
+        :param distribution: Limit the count to submissions made for the
+            given distribution, distroseries or distroarchseries.
+            (optional).
+        :param distroseries: Limit the count to submissions made for the
+            given distroseries.
+            (optional).
+        :param distroarchseries: Limit the count to submissions made for the
+            given distroarchseries.
+            (optional).
+
+        You may specify at most one of the parameters distribution,
+        distroseries or distroarchseries.
+        """
 
 class IllegalQuery(Exception):
     """Exception raised when trying to run an illegal submissions query."""

@@ -134,8 +134,8 @@ result in an error, since the license is required.
     >>> view.initialize()
     >>> for error in view.errors:
     ...     print error
-    Select all licenses for this software or select Other/Proprietary
-    or Other/Open Source.
+    You must select at least one license.  If you select Other/Proprietary
+    or Other/OpenSource you must include a description of the license.
 
 When an open source license is selected, the project is created.
 
@@ -200,7 +200,7 @@ However, when a proprietary license is selected, a description is required.
     Badger
 
     >>> transaction.commit()
-    >>> from canonical.launchpad.tests.mail_helpers import print_emails
+    >>> from lp.testing.mail_helpers import print_emails
     >>> print_emails()
     From: Launchpad <noreply@launchpad.net>
     To: feedback@launchpad.net
@@ -262,7 +262,7 @@ details are required...
     Cougar
 
     >>> transaction.commit()
-    >>> from canonical.launchpad.tests.mail_helpers import print_emails
+    >>> from lp.testing.mail_helpers import print_emails
     >>> print_emails()
     From: Launchpad <noreply@launchpad.net>
     To: feedback@launchpad.net

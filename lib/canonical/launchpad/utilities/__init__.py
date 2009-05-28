@@ -3,4 +3,3 @@
 from canonical.launchpad.utilities.gpghandler import *
 from canonical.launchpad.utilities.celebrities import *
 from canonical.launchpad.utilities.searchservice import *
-from canonical.launchpad.utilities.salesforce import *

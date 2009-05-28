@@ -8,7 +8,7 @@ notification looks like:
     >>> from zope.event import notify
     >>> from lazr.lifecycle.event import ObjectCreatedEvent
     >>> from canonical.launchpad.interfaces import IDistributionSet
-    >>> from canonical.launchpad.tests.mail_helpers import pop_notifications
+    >>> from lp.testing.mail_helpers import pop_notifications
     >>> login('test@canonical.com')
     >>> sample_person = getUtility(ILaunchBag).user
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')

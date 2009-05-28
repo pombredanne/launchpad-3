@@ -15,7 +15,7 @@ from zope.interface import Attribute, Interface
 from zope.schema import Choice, Datetime, Int
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces.publishing import PackagePublishingPocket
+from lp.soyuz.interfaces.publishing import PackagePublishingPocket
 
 
 class ISeriesSourcePackageBranch(Interface):

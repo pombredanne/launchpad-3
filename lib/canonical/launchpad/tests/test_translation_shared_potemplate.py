@@ -7,7 +7,7 @@ import unittest
 
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.testing.factory import LaunchpadObjectFactory
+from lp.testing.factory import LaunchpadObjectFactory
 from canonical.testing import LaunchpadZopelessLayer
 
 

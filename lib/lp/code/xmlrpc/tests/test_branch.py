@@ -1,5 +1,4 @@
 # Copyright 2007-2009 Canonical Ltd.  All rights reserved.
-# pylint: disable-msg=W0706
 
 """Unit tests for the public codehosting API."""
 
@@ -18,8 +17,8 @@ from canonical.launchpad.ftests import login, logout
 from lp.code.interfaces.branch import BranchType
 from lp.code.interfaces.branchlookup import (
     ISourcePackagePocketFactory)
-from canonical.launchpad.interfaces.publishing import PackagePublishingPocket
-from canonical.launchpad.testing import TestCaseWithFactory
+from lp.soyuz.interfaces.publishing import PackagePublishingPocket
+from lp.testing import TestCaseWithFactory
 from lazr.uri import URI
 from lp.code.xmlrpc.branch import PublicCodehostingAPI
 from canonical.launchpad.xmlrpc import faults
