@@ -1026,7 +1026,9 @@ class CurrentTranslationMessageView(LaunchpadView):
                 self.context.potmsgset.getImportedTranslationMessage(
                     self.pofile.potemplate,
                     self.pofile.language))
-        self.can_dismiss_suggestions = False
+        self.can_confirm_and_dismiss = False
+        self.can_dismiss_on_empty = False
+        self.can_dismiss_on_plural = False
 
         # Set up alternative language variables.
         # XXX: kiko 2006-09-27:
@@ -1168,8 +1170,16 @@ class CurrentTranslationMessageView(LaunchpadView):
                     language),
                 key=operator.attrgetter("date_created"),
                 reverse=True)
-            self.can_dismiss_suggestions = (
-                len(local) > 0 and self.user_is_official_translator)
+
+            if len(local) > 0 and self.user_is_official_translator:
+                self.can_confirm_and_dismiss = (
+                    not self.is_plural and
+                    self.getCurrentTranslation(0) is not None)
+                self.can_dismiss_on_empty = (
+                    not self.is_plural and
+                    self.getCurrentTranslation(0) is None)
+                self.can_dismiss_on_plural = self.is_plural
+
             for suggestion in local:
                 suggestion.setPOFile(self.pofile)
 

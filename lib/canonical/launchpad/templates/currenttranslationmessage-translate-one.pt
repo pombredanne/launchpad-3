@@ -163,6 +163,12 @@
       </div>
   </td>
 </tr>
+<tr class="secondary">
+  <tal:comment condition="nothing">
+    Add some vertical space.
+  </tal:comment>
+  <td colspan="4" style="padding-top: 1em"></td>
+</tr>
   <tal:translation-dictionaries
        repeat="translation_dictionary view/translation_dictionaries">
   <tal:plural-form define="plural_index translation_dictionary/plural_index">
@@ -313,7 +319,21 @@
         </td>
       </tal:locked>
     </tr>
-
+      <tr class="secondary confirm_and_dismiss"
+          tal:define="name_id string:${view/html_id}_${language_code}_dismiss_suggestions"
+          tal:condition="view/can_confirm_and_dismiss">
+        <td colspan="4"></td>
+        <td>
+          <label class="fuzzy-checkbox" tal:attributes="for name_id">
+            <input
+               type="checkbox"
+               value="dismiss_suggestions"
+               tal:attributes="name name_id; id name_id"
+               />
+                 Confirm this translation and dismiss all local suggestions.
+               </label>
+        </td>
+      </tr>
     <tal:has-submitter
       define="submitter context/submitter" condition="submitter">
       <tr tal:condition=
@@ -443,28 +463,16 @@
     <tal:locked condition="not:context/potmsgset/is_translation_credit">
       <tal:suggestions-title
          condition="translation_dictionary/suggestions_count">
+    <tr class="secondary">
+       <tal:comment condition="nothing">
+       Add some vertical space.
+       </tal:comment>
+       <td colspan="4" style="padding-top: 1em"></td>
+     </tr>
       <tr class="secondary">
         <th colspan="3"
           tal:attributes="rowspan python:translation_dictionary['suggestions_count']*2+1;">
             Suggestions:</th>
-        <tal:dismiss_singular condition="not:view/is_plural">
-          <tal:dismiss
-            define="name_id string:${view/html_id}_${language_code}_dismiss_suggestions"
-            condition="view/can_dismiss_suggestions">
-            <td class="icon left right">
-               <input
-                 type="checkbox"
-                 value="dismiss_suggestions"
-                 tal:attributes="name name_id; id name_id"
-                 />
-               </td>
-               <td>
-               <label class="fuzzy-checkbox" tal:attributes="for name_id">
-                 Dismiss all suggestions.
-               </label>
-             </td>
-           </tal:dismiss>
-         </tal:dismiss_singular>
       </tr>
       </tal:suggestions-title>
       <tal:suggestion_block
@@ -474,6 +482,28 @@
                tal:replace="structure suggestions/@@+display" />
         </tal:suggestions>
       </tal:suggestion_block>
+      <tr class="secondary dismiss_on_empty"
+          tal:define="name_id string:${view/html_id}_${language_code}_dismiss_suggestions"
+          tal:condition="view/can_dismiss_on_empty">
+        <td colspan="4"></td>
+        <td>
+          <label class="fuzzy-checkbox" tal:attributes="for name_id">
+            <input
+               type="checkbox"
+               value="dismiss_suggestions"
+               tal:attributes="name name_id; id name_id"
+               />
+                 Dismiss all local suggestions above.
+               </label>
+        </td>
+      </tr>
+      <tr class="secondary"
+         tal:condition="view/form_is_writeable">
+         <tal:comment condition="nothing">
+         Add some vertical space.
+         </tal:comment>
+         <td colspan="4" style="padding-top: 1em"></td>
+     </tr>
       <tr class="secondary translation"
           tal:condition="view/form_is_writeable">
         <tal:comment condition="nothing">
@@ -616,24 +646,22 @@
       </div>
     </td>
   </tr>
-  <tal:dismiss_plural condition="view/is_plural">
-    <tr class="secondary" 
-      tal:define="name_id string:${view/html_id}_${language_code}_dismiss_suggestions"
-      tal:condition="view/can_dismiss_suggestions">
-      <td colspan="4">
-      </td>
-      <td>
-        <input
-          type="checkbox"
-          value="dismiss_suggestions"
-          tal:attributes="name name_id; id name_id"
-          />
-        <label class="fuzzy-checkbox" tal:attributes="for name_id">
-          Dismiss all suggestions.
-        </label>
-      </td>
-    </tr>
-  </tal:dismiss_plural>
+  <tr class="secondary" 
+    tal:define="name_id string:${view/html_id}_${language_code}_dismiss_suggestions"
+    tal:condition="view/can_dismiss_on_plural">
+    <td colspan="4">
+    </td>
+    <td>
+      <input
+        type="checkbox"
+        value="dismiss_suggestions"
+        tal:attributes="name name_id; id name_id"
+        />
+      <label class="fuzzy-checkbox" tal:attributes="for name_id">
+        Dismiss all local suggestions.
+      </label>
+    </td>
+  </tr>
 <tr tal:condition="view/comment" class="secondary">
   <th colspan="3"><label>Translator note:</label></th>
   <td />
