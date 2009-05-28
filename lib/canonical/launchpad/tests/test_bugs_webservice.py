@@ -4,6 +4,7 @@
 
 __metaclass__ = type
 
+import re
 import unittest
 
 from BeautifulSoup import BeautifulSoup
@@ -13,19 +14,19 @@ from zope.component import getMultiAdapter
 
 from canonical.launchpad.browser.bugtask import get_comments_for_bugtask
 from canonical.launchpad.ftests import login
-from lp.testing.factory import LaunchpadObjectFactory
+from lp.testing import TestCaseWithFactory
 from canonical.launchpad.testing.pages import LaunchpadWebServiceCaller
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing import DatabaseFunctionalLayer
 
 
-class TestBugDescriptionRepresentation(unittest.TestCase):
+class TestBugDescriptionRepresentation(TestCaseWithFactory):
     """Test ways of interacting with Bug webservice representations."""
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
+        TestCaseWithFactory.setUp(self)
         login('foo.bar@canonical.com')
-        self.factory = LaunchpadObjectFactory()
         # Make two bugs, one whose description points to the other, so it will
         # get turned into a HTML link.
         self.bug_one = self.factory.makeBug(title="generic")
@@ -76,13 +77,13 @@ class TestBugDescriptionRepresentation(unittest.TestCase):
             self.bug_one.id, self.bug_one.id))
 
 
-class TestBugCommentRepresentation(unittest.TestCase):
+class TestBugCommentRepresentation(TestCaseWithFactory):
     """Test ways of interacting with BugComment webservice representations."""
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
+        TestCaseWithFactory.setUp(self)
         login('guilherme.salgado@canonical.com ')
-        self.factory = LaunchpadObjectFactory()
         self.bug = self.factory.makeBug()
         commenter = self.factory.makePerson()
         self.bug.newMessage(
@@ -93,9 +94,21 @@ class TestBugCommentRepresentation(unittest.TestCase):
             (self.comment, LaunchpadTestRequest()), name="+box")
         self.expected_comment_html = str(comment_view())
         self.message_path = '/%s/+bug/%s/comments/1' % (
-                self.bug.bugtasks[0].product.name, self.bug.id)
+            self.bug.bugtasks[0].product.name, self.bug.id)
         self.webservice = LaunchpadWebServiceCaller(
             'launchpad-library', 'salgado-change-anything')
+
+    def assertRenderedCommentsEqual(self, a_comment, another_comment):
+        """Assert that two rendered comments are equal.
+
+        It replaces parts that depend of the current time with fixed
+        strings, so that two comments rendered at different times are
+        still considered equal.
+        """
+        when_regexp = re.compile(r'>\d+ .*? ago<')
+        a_comment = when_regexp.sub('>WHEN<', a_comment)
+        another_comment = when_regexp.sub('>WHEN<', another_comment)
+        self.assertEqual(a_comment, another_comment)
 
     def test_GET_xhtml_representation(self):
         # The XHTML of a BugComment is exactly the same as how it's
@@ -116,7 +129,9 @@ class TestBugCommentRepresentation(unittest.TestCase):
         rendered_comment = rendered_comment.replace(
             'http://api.launchpad.dev/beta/',
             'http://launchpad.dev/')
-        self.assertEqual(rendered_comment, self.expected_comment_html)
+
+        self.assertRenderedCommentsEqual(
+            rendered_comment, self.expected_comment_html)
 
 
 def test_suite():
