@@ -59,7 +59,7 @@
     </tal:conjoined-task>
 
     <tal:not-conjoined-task condition="not:is_conjoined_slave">
-    <td style="width: 15em; vertical-align: middle">
+    <td style="width: 20%; vertical-align: middle">
       <div class="status-content"
            style="width: 100%; float: left">
         <a href="+edit"
@@ -75,7 +75,7 @@
     </td>
 
     <td tal:condition="view/user_can_edit_importance"
-        style="width: 15em; vertical-align: middle">
+        style="width: 20%; vertical-align: middle">
       <div class="importance-content"
            style="width: 100%; float: left">
         <a href="+edit"
@@ -101,8 +101,9 @@
     </td>
 
 
-    <td colspan="2" style="margin: 0; padding: 0; vertical-align: middle">
-      <tal:has_watch condition="context/bugwatch">
+    <td colspan="2"
+        style="margin: 0; padding: 0; 20%; vertical-align: middle"
+        tal:condition="context/bugwatch">
         <div style="text-decoration: none; padding: 0.25em">
           <tal:bugtracker-active
               condition="context/bugwatch/bugtracker/active">
@@ -118,12 +119,32 @@
             Zilla #123
           </a>
         </div>
-      </tal:has_watch>
-      <tal:has_no_watch condition="not: context/bugwatch">
-        <span tal:replace="structure view/assignee_picker_widget">
-          Assignee Name and Edit Button
+    </td>
+    <td colspan="2"
+        style="margin: 0; padding: 0; width: 20%; vertical-align: middle"
+        tal:condition="not: context/bugwatch">
+      <div class="assignee-content"
+           style="width: 100%; float: left">
+        <span class="yui-activator-data-box">
+          <a tal:condition="context/assignee"
+             href="+edit"
+             style="float: left">
+            <tal:icon replace="structure context/assignee/image:icon" />
+            <tal:person-name replace="context/assignee/fmt:displayname" />
+          </a>
+          <tal:nobody tal:condition="not: context/assignee">
+            <span style="float: left">
+              Nobody
+            </span>
+          </tal:nobody>
         </span>
-      </tal:has_no_watch>
+        <div style="float: right; margin-right: 0.5em">
+          <a href="+edit" class="yui-activator-act">
+            <img class="editicon" src="/@@/edit-grey" />
+          </a>
+        </div>
+        <div class="yui-activator-message-box yui-activator-hidden"/>
+      </div>
     </td>
 
     <tal:milestoned condition="context/milestone">
