@@ -94,7 +94,7 @@ Size and offset parameters can be passed in to switch between batches.
     {
         "entries": [
             {
-                "api_uri": "\/~name16",
+                "api_uri": "/~name16",
                 "description": "foo.bar@canonical.com",
                 "image": "/@@/person",
                 "title": "Foo Bar",
@@ -112,7 +112,7 @@ Long descriptions will be truncated.
     {
         "entries": [
             {
-                "api_uri": "\/apache",
+                "api_uri": "/apache",
                 "description": "The Apache projects are characterized by a
                                 collaborative, consensus based dev...",
                 "image": "/@@/project",
