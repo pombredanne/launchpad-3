@@ -89,6 +89,11 @@ class TestPollingJobSource(TestCase):
         # No more calls were made.
         self.assertEqual(0, self._num_job_factory_calls)
 
+    # XXX: starting multiple times
+    # XXX: stopping multiple times
+    # XXX: calling stop before start
+    # XXX: the 'accept job' protocol
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
