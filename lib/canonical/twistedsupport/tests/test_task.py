@@ -153,8 +153,13 @@ class TestPollingTaskSource(TestCase):
         # Assert that this doesn't raise an exception.
         task_source.stop()
 
-    # XXX: stopping multiple times
-    # XXX: calling stop before start
+    def test_stop_multiple_times(self):
+        # Calling 'stop' multiple times has no effect.
+        task_source = self.makeTaskSource()
+        task_source.stop()
+        # Assert that this doesn't raise an exception.
+        task_source.stop()
+
     # XXX: should these be deferred-y tests?
 
 
