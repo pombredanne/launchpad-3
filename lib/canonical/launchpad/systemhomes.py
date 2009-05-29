@@ -315,11 +315,11 @@ class HWDBApplication:
             bus, vendor_id, product_id, driver_name, package_name, bug_ids,
             bug_tags, affected_by_bug, subscribed_to_bug, user)
 
-    def deviceOwnersForBug(
+    def hwInfoByBugRelatedUsers(
         self, bug_ids=None, bug_tags=None, affected_by_bug=False,
         subscribed_to_bug=False, user=None):
         """See `IHWDBApplication`."""
-        return getUtility(IHWSubmissionSet).deviceOwnersForBug(
+        return getUtility(IHWSubmissionSet).hwInfoByBugRelatedUsers(
             bug_ids, bug_tags, affected_by_bug, subscribed_to_bug, user)
 
 

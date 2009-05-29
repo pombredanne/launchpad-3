@@ -444,7 +444,7 @@ class HWSubmissionSet:
         result.config(distinct=True)
         return result
 
-    def deviceOwnersForBug(
+    def hwInfoByBugRelatedUsers(
         self, bug_ids=None, bug_tags=None, affected_by_bug=False,
         subscribed_to_bug=False, user=None):
         """See `IHWSubmissionSet`."""

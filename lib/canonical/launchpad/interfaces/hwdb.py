@@ -352,7 +352,7 @@ class IHWSubmissionSet(Interface):
         owner of the private submission or if user is an admin.
         """
 
-    def deviceOwnersForBug(bug_ids=None, bug_tags=None, affected_by_bug=False,
+    def hwInfoByBugRelatedUsers(bug_ids=None, bug_tags=None, affected_by_bug=False,
                            subscribed_to_bug=False, user=None):
         """Return owners of devices related to given bugs.""" 
 
@@ -1448,7 +1448,7 @@ class IHWDBApplication(ILaunchpadApplication, ITopLevelEntryLink):
             required=False))
     @call_with(user=REQUEST_USER)
     @export_read_operation()
-    def deviceOwnersForBug(
+    def hwInfoByBugRelatedUsers(
         bug_ids=None, bug_tags=None, affected_by_bug=False,
         subscribed_to_bug=False, user=None):
         """Return a list of devices and their owners for one or more bugs.

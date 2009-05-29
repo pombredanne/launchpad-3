@@ -1184,7 +1184,7 @@ For a given bug, we can get a list of devices by device owner.
 The result is a tuple of (owner_name, bus_name, vendor_id, product_id).
 
     >>> for entry in webservice.named_get(
-    ...     '/+hwdb', 'deviceOwnersForBug',
+    ...     '/+hwdb', 'hwInfoByBugRelatedUsers',
     ...     bug_ids=[1]).jsonBody():
     ...     print entry
     [u'name12', u'IDE', u'Optiarc', u'DVD RW AD-7170S ']
@@ -1199,7 +1199,7 @@ We can also get a list of devices and owners where the owner
 is subscribed to the bug.
 
     >>> for entry in webservice.named_get(
-    ...     '/+hwdb', 'deviceOwnersForBug',
+    ...     '/+hwdb', 'hwInfoByBugRelatedUsers',
     ...     bug_ids=[9], subscribed_to_bug=True).jsonBody():
     ...     print entry
     [u'name12', u'IDE', u'Optiarc', u'DVD RW AD-7170S ']
@@ -1213,7 +1213,7 @@ is subscribed to the bug.
 And the same with affected users...
 
     >>> for entry in webservice.named_get(
-    ...     '/+hwdb', 'deviceOwnersForBug',
+    ...     '/+hwdb', 'hwInfoByBugRelatedUsers',
     ...     bug_ids=[15], affected_by_bug=True).jsonBody():
     ...     print entry
     [u'name12', u'IDE', u'Optiarc', u'DVD RW AD-7170S ']
