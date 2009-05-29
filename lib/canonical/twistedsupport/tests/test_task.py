@@ -123,9 +123,7 @@ class TestPollingTaskSource(TestCase):
     # XXX: starting mulitple times with different accept_tasks
     # XXX: stopping multiple times
     # XXX: calling stop before start
-
     # XXX: should these be deferred-y tests?
-    # XXX: rename 'task' to 'task'
 
 
 def test_suite():
