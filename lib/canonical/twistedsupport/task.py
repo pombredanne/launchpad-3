@@ -7,6 +7,7 @@ __all__ = []
 
 from twisted.internet import defer
 from twisted.internet.task import LoopingCall
+from twisted.internet import reactor
 from twisted.python import log
 
 from zope.interface import implements, Interface
@@ -29,10 +30,14 @@ class PollingJobSource:
     def __init__(self, interval, get_job, clock=None):
         self.interval = interval
         self.get_job = get_job
+        if clock is None:
+            clock = reactor
         self._clock = clock
 
     def start(self, acceptJob):
-        self.get_job()
+        looping_call = LoopingCall(self.get_job)
+        looping_call.clock = self._clock
+        looping_call.start(self.interval)
 
 
 

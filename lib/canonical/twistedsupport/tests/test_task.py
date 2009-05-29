@@ -46,11 +46,12 @@ class TestPollingJobSource(TestCase):
         self._num_job_factory_calls += 1
         return None
 
-    def makeJobSource(self, clock=None):
-        # XXX: Passing a positive, non-zero, arbitrary interval.
+    def makeJobSource(self, interval=None, clock=None):
         if clock is None:
             clock = BrokenClock()
-        return PollingJobSource(5, self._job_factory, clock=clock)
+        if interval is None:
+            interval = self.factory.getUniqueInteger()
+        return PollingJobSource(interval, self._job_factory, clock=clock)
 
     def test_provides_IJobSource(self):
         # PollingJobSource instances provide IJobSource.
@@ -59,9 +60,20 @@ class TestPollingJobSource(TestCase):
     def test_start_commences_polling(self):
         # Calling `start` on a PollingJobSource begins polling the job
         # factory.
-        clock = Clock()
-        job_source = self.makeJobSource()
+        job_source = self.makeJobSource(clock=Clock())
         job_source.start(None)
+        self.assertEqual(1, self._num_job_factory_calls)
+
+    def test_start_continues_polling(self):
+        # Calling `start` on a PollingJobSource begins polling the job
+        # factory. This polling continues over time, once every 'interval'
+        # seconds.
+        clock = Clock()
+        interval = self.factory.getUniqueInteger()
+        job_source = self.makeJobSource(interval=interval, clock=clock)
+        job_source.start(None)
+        self._num_job_factory_calls = 0
+        clock.advance(interval)
         self.assertEqual(1, self._num_job_factory_calls)
 
 
