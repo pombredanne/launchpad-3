@@ -172,9 +172,26 @@ class TestPollingTaskSource(TestCase):
         deferred.callback('foo')
         self.assertEqual(['foo'], tasks_called)
 
+    def test_producer_errors_stop_polling(self):
+        # If the producer raises an error, then we stop polling.
+        #
+        # XXX: we should perhaps make this more general, which will make it
+        # easier to explain -- e.g. a job_acquisition_failed event.
+        #
+        # XXX: make sure there are no unhandled deferred errors.
+        producer_calls = []
+        def failing_producer():
+            producer_calls.append(None)
+            1/0
+        clock = Clock()
+        interval = self.factory.getUniqueInteger()
+        task_source = self.makeTaskSource(
+            interval=interval, clock=clock, task_producer=failing_producer)
+        task_source.start(self._default_task_consumer)
+        del producer_calls[:]
+        clock.advance(2 * interval)
+        self.assertEqual(0, len(producer_calls))
 
-    # XXX: should these be deferred-y tests?
-    # XXX: handle task_producer errors
     # XXX: handle task_consumer errors
 
 

@@ -86,6 +86,7 @@ class PollingTaskSource:
                 task_consumer(task)
         d = defer.maybeDeferred(self._task_producer)
         d.addCallback(got_task)
+        d.addErrback(lambda ignored: self.stop())
 
     def stop(self):
         """See `ITaskSource`."""
