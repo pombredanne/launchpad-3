@@ -1516,6 +1516,12 @@ class TranslationMessageSuggestions:
                 continue
             else:
                 seen_translations.add(this_translation)
+            # Radio buttons for suggestions are always dismissable.
+            suggestion_dismissable_class = self.potmsgset.makeHTMLID(
+                'dismissable_button')
+            if self.pofile == submission.pofile:
+                suggestion_dismissable_class += ' '+self.potmsgset.makeHTMLID(
+                    'dismissable')
             self.submissions.append({
                 'id': submission.id,
                 'translationmessage' : submission,
@@ -1537,5 +1543,6 @@ class TranslationMessageSuggestions:
                 'translation_html_id':
                     translation.makeHTMLID(
                         'translation_%s' % (plural_form)),
+                'suggestion_dismissable_class': suggestion_dismissable_class,
                 })
         self.seen_translations = seen_translations

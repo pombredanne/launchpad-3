@@ -51,8 +51,7 @@ translation and to dismiss all suggestions.
 
     >>> admin_browser.open('http://translations.launchpad.dev/alsa-utils'
     ...                    '/trunk/+pots/alsa-utils/de/+translate')
-    >>> admin_browser.getControl(
-    ...     name='msgset_198_de_dismiss_suggestions').value = (
+    >>> admin_browser.getControl(name='msgset_198_dismiss').value = (
     ...         'dismiss_suggestions')
     >>> admin_browser.getControl('Save & Continue').click()
     >>> print admin_browser.url
@@ -77,8 +76,7 @@ such a case.
 
     >>> admin_browser.open('http://translations.launchpad.dev/evolution/'
     ...                    'trunk/+pots/evolution-2.2/es/5/+translate')
-    >>> admin_browser.getControl(
-    ...     name='msgset_5_es_dismiss_suggestions').value = (
+    >>> admin_browser.getControl(name='msgset_5_dismiss').value = (
     ...         'dismiss_suggestions')
     >>> admin_browser.getControl('Save & Continue').click()
     >>> print admin_browser.url
@@ -94,7 +92,6 @@ There are still suggestions because they are external.
 
 But the checkbox for dismissal is gone.
 
-    >>> print find_tag_by_id(admin_browser.contents,
-    ...                      'msgset_5_es_dismiss_suggestions')
+    >>> print find_tag_by_id(admin_browser.contents, 'msgset_5_dismiss')
     None
 

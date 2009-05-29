@@ -10,7 +10,13 @@
   i18n:domain="launchpad"
 >
   <body>
-    <script metal:fill-slot="head_epilogue" type="text/javascript">
+    <div metal:fill-slot="head_epilogue">
+    <style>
+    .dismissed, .dismissed a {
+        color: lightgray;
+    }
+    </style>
+    <script type="text/javascript">
       registerLaunchpadFunction(insertAllExpansionButtons);
 
       YUI().use('node', 'cookie', 'anim', function(Y) {
@@ -55,9 +61,42 @@
               });
           };
 
+          var setupSuggestionDismissal = function(e) {
+              Y.all('.dismiss_action').each(function(checkbox) {
+                  var classbase = checkbox.get('id');
+                  var current_class = classbase.replace(/dismiss/, 'current')
+                  var current_radios = Y.all('.'+current_class)
+                  var dismissables = Y.all('.'+classbase+'able');
+                  var dismissable_inputs =
+                      Y.all('.'+classbase+'able_button input');
+                  var dismissable_textareas =
+                      Y.all('.'+classbase+'able_button textarea');
+                  checkbox.on('click', function(e) {
+                      if(checkbox.get('checked')) {
+                          dismissables.addClass('dismissed');
+                          dismissable_inputs.set('disabled', true);
+                          if(dismissable_textareas != null) {
+                              dismissable_textareas.set('disabled', true);
+                          }
+                          current_radios.set('checked', true);
+                      }
+                      else
+                      {
+                          dismissables.removeClass('dismissed');
+                          dismissable_inputs.set('disabled', false);
+                          if(dismissable_textareas != null) {
+                              dismissable_textareas.set('disabled', false);
+                          }
+                      }
+                  });
+              });
+          };
+
+          Y.on('domready', setupSuggestionDismissal);
           Y.on('domready', updateNotificationBox);
       });
     </script>
+    </div>
     <div metal:fill-slot="main">
       <script type="text/javascript"
             tal:condition="view/translation_group"

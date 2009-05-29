@@ -193,6 +193,7 @@
                 tal:attributes="
                   name string:${translation_dictionary/html_id_translation}_radiobutton;
                   id string:${translation_dictionary/html_id_translation}_radiobutton;
+                  class string:${view/html_id}_current;
                   value string:${translation_dictionary/html_id_translation};
                   onClick string:
                     javascript:copyInnerHTMLById(
@@ -320,15 +321,15 @@
       </tal:locked>
     </tr>
       <tr class="secondary confirm_and_dismiss"
-          tal:define="name_id string:${view/html_id}_${language_code}_dismiss_suggestions"
+          tal:define="name_id string:${view/html_id}_dismiss"
           tal:condition="view/can_confirm_and_dismiss">
         <td colspan="4"></td>
         <td>
           <label class="fuzzy-checkbox" tal:attributes="for name_id">
-            <input
+            <input class="dismiss_action"
                type="checkbox"
                value="dismiss_suggestions"
-               tal:attributes="name name_id; id name_id"
+               tal:attributes="name name_id; id name_id;"
                />
                  Confirm this translation and dismiss all suggestions.
                </label>
@@ -483,12 +484,12 @@
         </tal:suggestions>
       </tal:suggestion_block>
       <tr class="secondary dismiss_on_empty"
-          tal:define="name_id string:${view/html_id}_${language_code}_dismiss_suggestions"
+          tal:define="name_id string:${view/html_id}_dismiss"
           tal:condition="view/can_dismiss_on_empty">
         <td colspan="4"></td>
         <td>
           <label class="fuzzy-checkbox" tal:attributes="for name_id">
-            <input
+            <input class="dismiss_action"
                type="checkbox"
                value="dismiss_suggestions"
                tal:attributes="name name_id; id name_id"
@@ -504,8 +505,9 @@
          </tal:comment>
          <td colspan="4" style="padding-top: 1em"></td>
      </tr>
-      <tr class="secondary translation"
-          tal:condition="view/form_is_writeable">
+      <tr tal:condition="view/form_is_writeable"
+          tal:attributes="class string:secondary translation
+          ${view/html_id}_dismissable ${view/html_id}_dismissable_button">
         <tal:comment condition="nothing">
           Normally table cells align the baselines of their first lines of
           text. This doesn't work here because one of the cells sometimes
@@ -611,7 +613,8 @@
   </tal:locked>
   </tal:plural-form>
   </tal:translation-dictionaries>
-  <tr class="secondary">
+  <tr tal:attributes="class string:secondary
+      ${view/html_id}_dismissable ${view/html_id}_dismissable_button">
     <td colspan="4" />
     <td>
       <div tal:condition="view/user_is_official_translator">
@@ -646,13 +649,13 @@
       </div>
     </td>
   </tr>
-  <tr class="secondary" 
-    tal:define="name_id string:${view/html_id}_${language_code}_dismiss_suggestions"
+  <tr class="secondary"
+    tal:define="name_id string:${view/html_id}_dismiss"
     tal:condition="view/can_dismiss_on_plural">
     <td colspan="4">
     </td>
     <td>
-      <input
+      <input class="dismiss_action"
         type="checkbox"
         value="dismiss_suggestions"
         tal:attributes="name name_id; id name_id"
