@@ -87,8 +87,7 @@ class PollingTaskSource:
         """See `ITaskSource`."""
         # XXX: maybe interval should be passed here
         self.stop()
-        self._looping_call = LoopingCall(
-            self._poll, task_consumer)
+        self._looping_call = LoopingCall(self._poll, task_consumer)
         self._looping_call.clock = self._clock
         self._looping_call.start(self._interval)
 
