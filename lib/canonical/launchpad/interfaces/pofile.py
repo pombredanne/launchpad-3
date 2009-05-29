@@ -254,6 +254,12 @@ class IPOFile(IRosettaStats):
             to be sent to the uploader.
         """
 
+    def getFullLanguageCode():
+        """Return full language code, including variant if applicable."""
+
+    def getFullLanguageName():
+        """Return full language name, including variant if applicable."""
+
 
 class AlternativeLanguageVocabularyFactory:
     """Gets vocab for user's preferred languages, or all languages if not set.

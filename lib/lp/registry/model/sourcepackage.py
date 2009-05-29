@@ -517,7 +517,8 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         SourcePackagePublishingHistory.distroseries = %s AND
         SourcePackagePublishingHistory.archive IN %s AND
         SourcePackagePublishingHistory.sourcepackagerelease =
-        SourcePackageRelease.id
+            SourcePackageRelease.id AND
+        SourcePackagePublishingHistory.archive = Build.archive
         """ % sqlvalues(self.sourcepackagename,
                         self.distroseries,
                         self.distribution.all_distro_archive_ids)]
