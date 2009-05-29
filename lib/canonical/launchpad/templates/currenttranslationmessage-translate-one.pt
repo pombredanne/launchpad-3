@@ -246,6 +246,7 @@
                 tal:attributes="
                   name string:${translation_dictionary/html_id_translation}_radiobutton;
                   id string:${translation_dictionary/html_id_translation}_radiobutton;
+                  class string:${view/html_id}_current;
                   value string:${translation_dictionary/html_id_translation}
               " />
             </tal:user-is-official-translator>

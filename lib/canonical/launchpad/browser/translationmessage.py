@@ -526,13 +526,6 @@ class BaseTranslationView(LaunchpadView):
         Return a string with an error if one occurs, otherwise None.
         """
         self._extractFormPostedTranslations(potmsgset)
-        translations = self.form_posted_translations.get(potmsgset, {})
-        if not translations:
-            # A post with no content -- not an error, but nothing to be
-            # done.
-            # XXX: kiko 2006-09-28: I'm not sure but I suspect this could
-            # be an UnexpectedFormData.
-            return None
 
         if self.form_posted_dismiss_suggestions.get(potmsgset, False):
             try:
@@ -541,6 +534,14 @@ class BaseTranslationView(LaunchpadView):
                                                 self.lock_timestamp)
             except TranslationConflict, e:
                 return unicode(e)
+            return None
+
+        translations = self.form_posted_translations.get(potmsgset, {})
+        if not translations:
+            # A post with no content -- not an error, but nothing to be
+            # done.
+            # XXX: kiko 2006-09-28: I'm not sure but I suspect this could
+            # be an UnexpectedFormData.
             return None
 
         plural_indices_to_store = (
@@ -756,12 +757,10 @@ class BaseTranslationView(LaunchpadView):
         self.form_posted_needsreview[potmsgset] = (
             msgset_ID_LANGCODE_needsreview in form)
 
-        msgset_ID_LANGCODE_dismiss_suggestions = (
-            'msgset_%d_%s_dismiss_suggestions' % (potmsgset_ID,
-                                                  language_code))
+        msgset_ID_dismiss = 'msgset_%d_dismiss' % potmsgset_ID
 
         self.form_posted_dismiss_suggestions[potmsgset] = (
-            msgset_ID_LANGCODE_dismiss_suggestions in form)
+            msgset_ID_dismiss in form)
 
         # Note the trailing underscore: we append the plural form
         # number later.

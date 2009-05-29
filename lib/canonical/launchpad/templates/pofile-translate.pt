@@ -67,26 +67,24 @@
                   var current_class = classbase.replace(/dismiss/, 'current')
                   var current_radios = Y.all('.'+current_class)
                   var dismissables = Y.all('.'+classbase+'able');
-                  var dismissable_inputs =
-                      Y.all('.'+classbase+'able_button input');
-                  var dismissable_textareas =
-                      Y.all('.'+classbase+'able_button textarea');
+                  // The button and textarea cannot be fetched beforehand
+                  // because they are or may be created dynamically.
+                  var dismissable_inputs_class = 
+                      '.'+classbase+'able_button input, '+
+                      '.'+classbase+'able_button button, '+
+                      '.'+classbase+'able_button textarea';
                   checkbox.on('click', function(e) {
                       if(checkbox.get('checked')) {
                           dismissables.addClass('dismissed');
-                          dismissable_inputs.set('disabled', true);
-                          if(dismissable_textareas != null) {
-                              dismissable_textareas.set('disabled', true);
-                          }
+                          Y.all(dismissable_inputs_class).set(
+                              'disabled', true);
                           current_radios.set('checked', true);
                       }
                       else
                       {
                           dismissables.removeClass('dismissed');
-                          dismissable_inputs.set('disabled', false);
-                          if(dismissable_textareas != null) {
-                              dismissable_textareas.set('disabled', false);
-                          }
+                          Y.all(dismissable_inputs_class).set(
+                                  'disabled', false);
                       }
                   });
               });
