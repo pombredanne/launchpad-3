@@ -25,8 +25,8 @@ class IJobSource(Interface):
         If `start` has already been called, then this call is silently
         ignored. XXX -- still need to decide this.
 
-        :param accept_job: A single-parameter callable that is called only
-            when there is new work to do.
+        :param accept_job: A single-parameter callable that is called with
+            the job only when there is new work to do.
         """
 
     def stop():
@@ -52,8 +52,8 @@ class PollingJobSource:
         """Construct a `PollingJobSource`.
 
         Polls 'get_job' every 'interval' seconds. 'get_job' returns either
-        None if there's no work to do right now, or a callable. Both 'get_job'
-        and the callable can return Deferreds, but don't have to.
+        None if there's no work to do right now, or some representation of the
+        job which is passed to the 'accept_job' callable given to `start`.
 
         :param interval: The length of time between polls in seconds.
         :param get_job: The polling mechanism. This is a nullary callable that
