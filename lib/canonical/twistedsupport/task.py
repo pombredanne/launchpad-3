@@ -4,6 +4,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'ITaskConsumer',
     'ITaskSource',
     'PollingTaskSource',
     ]
@@ -25,18 +26,23 @@ class ITaskSource(Interface):
         If `start` has already been called, then the given 'task_consumer'
         replaces the existing task accepter.
 
-        :param task_consumer: A single-parameter callable that is called with
-            the task only when there is new work to do.
+        :param task_consumer: A provider of `ITaskConsumer`.
         """
 
     def stop():
         """Stop generating tasks.
 
-        XXX - this is not true.
-        After this is called, the task_consumer callable will not be called,
-        until `start` is called again.
-
         Any subsequent calls to `stop` are silently ignored.
+        """
+
+
+class ITaskConsumer(Interface):
+    """A consumer of tasks. Pass to ITaskSource."""
+
+    def taskStarted(task):
+        """Called when the task source generates a task.
+
+        :param task: There is no defined interface.
         """
 
 
@@ -75,7 +81,8 @@ class PollingTaskSource:
         """See `ITaskSource`."""
         # XXX: maybe interval should be passed here
         self.stop()
-        self._looping_call = LoopingCall(self._poll, task_consumer)
+        self._looping_call = LoopingCall(
+            self._poll, task_consumer.taskStarted)
         self._looping_call.clock = self._clock
         self._looping_call.start(self._interval)
 

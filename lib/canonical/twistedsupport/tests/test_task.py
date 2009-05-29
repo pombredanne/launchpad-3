@@ -12,7 +12,8 @@ from twisted.internet.task import Clock
 
 from zope.interface import implements
 
-from canonical.twistedsupport.task import ITaskSource, PollingTaskSource
+from canonical.twistedsupport.task import (
+    ITaskConsumer, ITaskSource, PollingTaskSource)
 from lp.testing import TestCase
 
 
@@ -36,16 +37,33 @@ class BrokenClock:
     getDelayedCalls = _reactor_call
 
 
+class NoopTaskConsumer:
+
+    implements(ITaskConsumer)
+
+    def taskStarted(self, task):
+        """Do nothing."""
+
+
+class AppendingTaskConsumer:
+
+    implements(ITaskConsumer)
+
+    def __init__(self, data_sink):
+        self.data_sink = data_sink
+
+    def taskStarted(self, task):
+        """Do nothing."""
+        self.data_sink.append(task)
+
+
 class TestPollingTaskSource(TestCase):
     """Tests for `PollingTaskSource`."""
 
     def setUp(self):
         TestCase.setUp(self)
         self._num_task_producer_calls = 0
-
-    def _default_task_consumer(self, task):
-        # For many tests, we can safely ignore tasks.
-        pass
+        self._default_task_consumer = NoopTaskConsumer()
 
     def _default_task_producer(self):
         self._num_task_producer_calls += 1
@@ -126,8 +144,8 @@ class TestPollingTaskSource(TestCase):
         consumer1 = []
         consumer2 = []
         task_source = self.makeTaskSource(task_producer=iter(tasks).next)
-        task_source.start(consumer1.append)
-        task_source.start(consumer2.append)
+        task_source.start(AppendingTaskConsumer(consumer1))
+        task_source.start(AppendingTaskConsumer(consumer2))
         self.assertEqual(([tasks[0]], [tasks[1]]), (consumer1, consumer2))
 
     def test_task_consumer_called_when_factory_produces_task(self):
@@ -136,7 +154,7 @@ class TestPollingTaskSource(TestCase):
         tasks = ['foo', 'bar']
         tasks_called = []
         task_source = self.makeTaskSource(task_producer=iter(tasks).next)
-        task_source.start(tasks_called.append)
+        task_source.start(AppendingTaskConsumer(tasks_called))
         self.assertEqual([tasks[0]], tasks_called)
 
     def test_task_consumer_not_called_when_factory_doesnt_produce(self):
@@ -145,7 +163,7 @@ class TestPollingTaskSource(TestCase):
         task_producer = lambda: None
         tasks_called = []
         task_source = self.makeTaskSource(task_producer=task_producer)
-        task_source.start(tasks_called.append)
+        task_source.start(AppendingTaskConsumer(tasks_called))
         self.assertEqual([], tasks_called)
 
     def test_stop_without_start(self):
@@ -167,7 +185,7 @@ class TestPollingTaskSource(TestCase):
         deferred = Deferred()
         tasks_called = []
         task_source = self.makeTaskSource(task_producer=lambda: deferred)
-        task_source.start(tasks_called.append)
+        task_source.start(AppendingTaskConsumer(tasks_called))
         self.assertEqual([], tasks_called)
         deferred.callback('foo')
         self.assertEqual(['foo'], tasks_called)
