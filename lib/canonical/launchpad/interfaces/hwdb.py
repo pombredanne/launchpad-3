@@ -355,7 +355,7 @@ class IHWSubmissionSet(Interface):
     def hwInfoByBugRelatedUsers(
         bug_ids=None, bug_tags=None, affected_by_bug=False,
         subscribed_to_bug=False, user=None):
-        """Return a list of tuples of owners and devices related to given bugs.
+        """Return a list of owners and devices related to given bugs.
 
         Actually returns a list of tuples where the tuple is of the form,
         (person name, bus name, vendor id, product id).`
@@ -1466,7 +1466,7 @@ class IHWDBApplication(ILaunchpadApplication, ITopLevelEntryLink):
     def hwInfoByBugRelatedUsers(
         bug_ids=None, bug_tags=None, affected_by_bug=False,
         subscribed_to_bug=False, user=None):
-        """Return a list of tuples of owners and devices related to given bugs.
+        """Return a list of owners and devices related to given bugs.
 
         Actually returns a list of tuples where the tuple is of the form,
         (person name, bus name, vendor id, product id).`
