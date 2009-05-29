@@ -232,6 +232,7 @@ clean:
 	$(RM) -r $(CODEHOSTING_ROOT)
 	$(RM) $(WADL_FILE) $(API_INDEX)
 	$(RM) $(BZR_VERSION_INFO)
+	$(RM) _pythonpath.py
 
 realclean: clean
 	$(RM) TAGS tags
