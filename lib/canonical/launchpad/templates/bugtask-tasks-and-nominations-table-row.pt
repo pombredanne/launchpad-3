@@ -121,24 +121,26 @@
         </div>
     </td>
     <td colspan="2"
-        style="margin: 0; padding: 0; width: 20%; vertical-align: middle"
+        style="width: 20%; vertical-align: middle"
         tal:condition="not: context/bugwatch">
       <div class="assignee-content"
            style="width: 100%; float: left">
         <span class="yui-activator-data-box">
           <a tal:condition="context/assignee"
+             class="bg-image"
              href="+edit"
-             style="float: left">
-            <tal:icon replace="structure context/assignee/image:icon" />
+             tal:attributes="
+               style string: float: left;;
+               background-image: url( ${context/assignee/fmt:icon_url} )">
             <tal:person-name replace="context/assignee/fmt:displayname" />
           </a>
           <tal:nobody tal:condition="not: context/assignee">
-            <span style="float: left">
+            <span style="float: left; margin: 5px">
               Nobody
             </span>
           </tal:nobody>
         </span>
-        <div style="float: right; margin-right: 0.5em">
+        <div style="float: right; margin-right: 0.5em; margin-top: 5px">
           <a href="+edit" class="yui-activator-act">
             <img class="editicon" src="/@@/edit-grey" />
           </a>
