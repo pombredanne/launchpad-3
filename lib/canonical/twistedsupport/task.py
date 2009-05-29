@@ -107,35 +107,6 @@ class PollingTaskSource:
             self._looping_call = None
 
 
-
-class OldPollingTaskSource:
-    """ """
-
-    implements(ITaskSource)
-
-    def __init__(self, interval, get_task):
-        self.interval = interval
-        self.get_task = get_task
-        self._looping_call = None
-
-    def start(self, acceptTask):
-        self.stop()
-        self._looping_call = LoopingCall(self._poll, acceptTask)
-        self._looping_call.start(self.interval)
-
-    def _poll(self, acceptTask):
-        def _cb(task):
-            if task is not None:
-                acceptTask(task)
-        d = defer.maybeDeferred(self.get_task)
-        d.addCallback(_cb) #.addErrback('XXX')
-
-    def stop(self):
-        if self._looping_call is not None:
-            self._looping_call.cancel()
-            self._looping_call = None
-
-
 class ParallelLimitedTaskSink:
     """ """
 
