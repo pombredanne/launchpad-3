@@ -11,7 +11,7 @@ from twisted.internet.task import Clock
 
 from zope.interface import implements
 
-from canonical.twistedsupport.task import IJobSource, PollingJobSource
+from canonical.twistedsupport.task import ITaskSource, PollingTaskSource
 from lp.testing import TestCase
 
 
@@ -35,97 +35,97 @@ class BrokenClock:
     getDelayedCalls = _reactor_call
 
 
-class TestPollingJobSource(TestCase):
-    """Tests for `PollingJobSource`."""
+class TestPollingTaskSource(TestCase):
+    """Tests for `PollingTaskSource`."""
 
     def setUp(self):
         TestCase.setUp(self)
-        self._num_job_producer_calls = 0
+        self._num_task_producer_calls = 0
 
-    def _default_job_consumer(self, job):
-        # For many tests, we can safely ignore jobs.
+    def _default_task_consumer(self, task):
+        # For many tests, we can safely ignore tasks.
         pass
 
-    def _default_job_producer(self):
-        self._num_job_producer_calls += 1
+    def _default_task_producer(self):
+        self._num_task_producer_calls += 1
         return None
 
-    def makeJobSource(self, job_producer=None, interval=None, clock=None):
-        if job_producer is None:
-            job_producer = self._default_job_producer
+    def makeTaskSource(self, task_producer=None, interval=None, clock=None):
+        if task_producer is None:
+            task_producer = self._default_task_producer
         if clock is None:
             clock = Clock()
         if interval is None:
             interval = self.factory.getUniqueInteger()
-        return PollingJobSource(interval, job_producer, clock=clock)
+        return PollingTaskSource(interval, task_producer, clock=clock)
 
-    def test_provides_IJobSource(self):
-        # PollingJobSource instances provide IJobSource.
-        self.assertProvides(self.makeJobSource(), IJobSource)
+    def test_provides_ITaskSource(self):
+        # PollingTaskSource instances provide ITaskSource.
+        self.assertProvides(self.makeTaskSource(), ITaskSource)
 
     def test_start_commences_polling(self):
-        # Calling `start` on a PollingJobSource begins polling the job
+        # Calling `start` on a PollingTaskSource begins polling the task
         # factory.
-        job_source = self.makeJobSource()
-        job_source.start(self._default_job_consumer)
-        self.assertEqual(1, self._num_job_producer_calls)
+        task_source = self.makeTaskSource()
+        task_source.start(self._default_task_consumer)
+        self.assertEqual(1, self._num_task_producer_calls)
 
     def test_start_continues_polling(self):
-        # Calling `start` on a PollingJobSource begins polling the job
+        # Calling `start` on a PollingTaskSource begins polling the task
         # factory. This polling continues over time, once every 'interval'
         # seconds.
         clock = Clock()
         interval = self.factory.getUniqueInteger()
-        job_source = self.makeJobSource(interval=interval, clock=clock)
-        job_source.start(self._default_job_consumer)
-        self._num_job_producer_calls = 0
+        task_source = self.makeTaskSource(interval=interval, clock=clock)
+        task_source.start(self._default_task_consumer)
+        self._num_task_producer_calls = 0
         clock.advance(interval)
-        self.assertEqual(1, self._num_job_producer_calls)
+        self.assertEqual(1, self._num_task_producer_calls)
 
     def test_stop_stops_polling(self):
-        # Calling `stop` after a PollingJobSource has started will stop the
+        # Calling `stop` after a PollingTaskSource has started will stop the
         # polling.
         clock = Clock()
         interval = self.factory.getUniqueInteger()
-        job_source = self.makeJobSource(interval=interval, clock=clock)
-        job_source.start(self._default_job_consumer)
-        job_source.stop()
-        self._num_job_producer_calls = 0
+        task_source = self.makeTaskSource(interval=interval, clock=clock)
+        task_source.start(self._default_task_consumer)
+        task_source.stop()
+        self._num_task_producer_calls = 0
         clock.advance(interval)
         # No more calls were made.
-        self.assertEqual(0, self._num_job_producer_calls)
+        self.assertEqual(0, self._num_task_producer_calls)
 
     def test_start_multiple_times(self):
-        # Starting a job source multiple times polls immediately and resets
+        # Starting a task source multiple times polls immediately and resets
         # the polling loop to start from now.
         pass
 
-    def test_job_consumer_called_when_factory_produces_job(self):
-        # The job_consumer passed to start is called when the factory produces
-        # a job.
-        jobs = ['foo', 'bar']
-        jobs_called = []
-        job_source = self.makeJobSource(job_producer=iter(jobs).next)
-        job_source.start(jobs_called.append)
-        self.assertEqual([jobs[0]], jobs_called)
+    def test_task_consumer_called_when_factory_produces_task(self):
+        # The task_consumer passed to start is called when the factory produces
+        # a task.
+        tasks = ['foo', 'bar']
+        tasks_called = []
+        task_source = self.makeTaskSource(task_producer=iter(tasks).next)
+        task_source.start(tasks_called.append)
+        self.assertEqual([tasks[0]], tasks_called)
 
-    def test_job_consumer_not_called_when_factory_doesnt_produce(self):
-        # The job_consumer passed to start is *not* called when the factory
-        # returns None (implying there are no jobs to do right now).
-        job_producer = lambda: None
-        jobs_called = []
-        job_source = self.makeJobSource(job_producer=job_producer)
-        job_source.start(jobs_called.append)
-        self.assertEqual([], jobs_called)
+    def test_task_consumer_not_called_when_factory_doesnt_produce(self):
+        # The task_consumer passed to start is *not* called when the factory
+        # returns None (implying there are no tasks to do right now).
+        task_producer = lambda: None
+        tasks_called = []
+        task_source = self.makeTaskSource(task_producer=task_producer)
+        task_source.start(tasks_called.append)
+        self.assertEqual([], tasks_called)
 
 
     # XXX: starting multiple times
-    # XXX: starting mulitple times with different accept_jobs
+    # XXX: starting mulitple times with different accept_tasks
     # XXX: stopping multiple times
     # XXX: calling stop before start
 
     # XXX: should these be deferred-y tests?
-    # XXX: rename 'job' to 'task'
+    # XXX: rename 'task' to 'task'
 
 
 def test_suite():

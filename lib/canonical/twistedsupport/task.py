@@ -1,11 +1,11 @@
 # Copyright 2009 Canonical Ltd.  All rights reserved.
 
-"""Tools for managing long-running or difficult jobs with Twisted."""
+"""Tools for managing long-running or difficult tasks with Twisted."""
 
 __metaclass__ = type
 __all__ = [
-    'IJobSource',
-    'PollingJobSource',
+    'ITaskSource',
+    'PollingTaskSource',
     ]
 
 from twisted.internet import defer
@@ -16,98 +16,98 @@ from twisted.python import log
 from zope.interface import implements, Interface
 
 
-class IJobSource(Interface):
-    """A source of jobs to do."""
+class ITaskSource(Interface):
+    """A source of tasks to do."""
 
-    def start(job_consumer):
-        """Start generating jobs.
+    def start(task_consumer):
+        """Start generating tasks.
 
-        If `start` has already been called, then the given 'job_consumer'
-        replaces the existing job accepter.
+        If `start` has already been called, then the given 'task_consumer'
+        replaces the existing task accepter.
 
-        :param job_consumer: A single-parameter callable that is called with
-            the job only when there is new work to do.
+        :param task_consumer: A single-parameter callable that is called with
+            the task only when there is new work to do.
         """
 
     def stop():
-        """Stop generating jobs.
+        """Stop generating tasks.
 
         XXX - this is not true.
-        After this is called, the job_consumer callable will not be called,
+        After this is called, the task_consumer callable will not be called,
         until `start` is called again.
 
         Any subsequent calls to `stop` are silently ignored.
         """
 
 
-class PollingJobSource:
-    """A job source that polls to generate jobs.
+class PollingTaskSource:
+    """A task source that polls to generate tasks.
 
     Useful for systems where we need to poll a central server in order to find
     new work to do.
     """
 
-    implements(IJobSource)
+    implements(ITaskSource)
 
-    def __init__(self, interval, job_producer, clock=None):
-        """Construct a `PollingJobSource`.
+    def __init__(self, interval, task_producer, clock=None):
+        """Construct a `PollingTaskSource`.
 
-        Polls 'job_producer' every 'interval' seconds. 'job_producer' returns
+        Polls 'task_producer' every 'interval' seconds. 'task_producer' returns
         either None if there's no work to do right now, or some representation
-        of the job which is passed to the 'job_consumer' callable given to
+        of the task which is passed to the 'task_consumer' callable given to
         `start`.
 
         :param interval: The length of time between polls in seconds.
-        :param job_producer: The polling mechanism. This is a nullary callable
+        :param task_producer: The polling mechanism. This is a nullary callable
             that can return a Deferred. See above for more details.
         :param clock: An `IReactorTime` implementation that we use to manage
             the interval-based polling. Defaults to using the reactor (i.e.
             actual time).
         """
         self._interval = interval
-        self._job_producer = job_producer
+        self._task_producer = task_producer
         if clock is None:
             clock = reactor
         self._clock = clock
 
-    def start(self, job_consumer):
-        """See `IJobSource`."""
-        self._looping_call = LoopingCall(self._poll, job_consumer)
+    def start(self, task_consumer):
+        """See `ITaskSource`."""
+        self._looping_call = LoopingCall(self._poll, task_consumer)
         self._looping_call.clock = self._clock
         self._looping_call.start(self._interval)
 
-    def _poll(self, job_consumer):
-        """Poll for jobs, passing them to 'job_consumer'."""
-        job = self._job_producer()
-        if job is not None:
-            job_consumer(job)
+    def _poll(self, task_consumer):
+        """Poll for tasks, passing them to 'task_consumer'."""
+        task = self._task_producer()
+        if task is not None:
+            task_consumer(task)
 
     def stop(self):
-        """See `IJobSource`."""
+        """See `ITaskSource`."""
         self._looping_call.stop()
 
 
 
-class OldPollingJobSource:
+class OldPollingTaskSource:
     """ """
 
-    implements(IJobSource)
+    implements(ITaskSource)
 
-    def __init__(self, interval, get_job):
+    def __init__(self, interval, get_task):
         self.interval = interval
-        self.get_job = get_job
+        self.get_task = get_task
         self._looping_call = None
 
-    def start(self, acceptJob):
+    def start(self, acceptTask):
         self.stop()
-        self._looping_call = LoopingCall(self._poll, acceptJob)
+        self._looping_call = LoopingCall(self._poll, acceptTask)
         self._looping_call.start(self.interval)
 
-    def _poll(self, acceptJob):
-        def _cb(job):
-            if job is not None:
-                acceptJob(job)
-        d = defer.maybeDeferred(self.get_job)
+    def _poll(self, acceptTask):
+        def _cb(task):
+            if task is not None:
+                acceptTask(task)
+        d = defer.maybeDeferred(self.get_task)
         d.addCallback(_cb) #.addErrback('XXX')
 
     def stop(self):
@@ -116,30 +116,30 @@ class OldPollingJobSource:
             self._looping_call = None
 
 
-class ParallelLimitedJobSink:
+class ParallelLimitedTaskSink:
     """ """
 
-    def __init__(self, worker_limit, job_source):
+    def __init__(self, worker_limit, task_source):
         self.worker_limit = worker_limit
         self.worker_count = 0
-        self.job_source = job_source
+        self.task_source = task_source
 
     def start(self):
         self._terminationDeferred = defer.Deferred()
-        self.job_source.start(self.acceptJob)
+        self.task_source.start(self.acceptTask)
         return self._terminationDeferred
 
-    def acceptJob(self, job):
+    def acceptTask(self, task):
         self.worker_count += 1
         if self.worker_count >= self.worker_limit:
             self.source.stop()
-        d = job.run()
-        # We don't expect these jobs to have interesting return values or
+        d = task.run()
+        # We don't expect these tasks to have interesting return values or
         # failure modes.
         d.addErrback(log.err)
-        d.addCallback(self.jobEnded)
+        d.addCallback(self.taskEnded)
 
-    def jobEnded(self, ignored):
+    def taskEnded(self, ignored):
         self.worker_count -= 1
         if self.worker_count == 0:
             self._terminationDeferred.callback(None)
