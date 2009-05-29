@@ -50,7 +50,7 @@ A successful search.
     {
         "entries": [
             {
-                "image": "\/@@\/team",
+                "image": "/@@/team",
                 "title": "GuadaMen",
                 "value": "guadamen"
             }
@@ -77,7 +77,7 @@ Size and offset parameters can be passed in to switch between batches.
     {
         "entries": [
             {
-                "image": "\/@@\/team",
+                "image": "/@@/team",
                 "title": "Commercial Subscription Admins",
                 "value": "commercial-admins"
             }
@@ -93,7 +93,7 @@ Size and offset parameters can be passed in to switch between batches.
         "entries": [
             {
                 "description": "foo.bar@canonical.com",
-                "image": "\/@@\/person",
+                "image": "/@@/person",
                 "title": "Foo Bar",
                 "value": "name16"
             }
@@ -111,7 +111,7 @@ Long descriptions will be truncated.
             {
                 "description": "The Apache projects are characterized by a
                                 collaborative, consensus based dev...",
-                "image": "\/@@\/project",
+                "image": "/@@/project",
                 "title": "Apache",
                 "value": "apache"
             }
