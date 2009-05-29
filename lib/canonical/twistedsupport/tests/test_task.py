@@ -6,6 +6,7 @@ __metaclass__ = type
 
 import unittest
 
+from twisted.internet.defer import Deferred
 from twisted.internet.interfaces import IReactorTime
 from twisted.internet.task import Clock
 
@@ -160,7 +161,21 @@ class TestPollingTaskSource(TestCase):
         # Assert that this doesn't raise an exception.
         task_source.stop()
 
+    def test_producer_returns_deferred(self):
+        # The task producer can return Deferreds. In this case, we only call
+        # the consumer when the Deferred fires.
+        deferred = Deferred()
+        tasks_called = []
+        task_source = self.makeTaskSource(task_producer=lambda: deferred)
+        task_source.start(tasks_called.append)
+        self.assertEqual([], tasks_called)
+        deferred.callback('foo')
+        self.assertEqual(['foo'], tasks_called)
+
+
     # XXX: should these be deferred-y tests?
+    # XXX: handle task_producer errors
+    # XXX: handle task_consumer errors
 
 
 def test_suite():

@@ -81,9 +81,11 @@ class PollingTaskSource:
 
     def _poll(self, task_consumer):
         """Poll for tasks, passing them to 'task_consumer'."""
-        task = self._task_producer()
-        if task is not None:
-            task_consumer(task)
+        def got_task(task):
+            if task is not None:
+                task_consumer(task)
+        d = defer.maybeDeferred(self._task_producer)
+        d.addCallback(got_task)
 
     def stop(self):
         """See `ITaskSource`."""
