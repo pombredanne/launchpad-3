@@ -36,7 +36,7 @@
   <tal:search_requested condition="view/search_requested">
 
         <div id="search-results" tal:condition="view/has_matches">
-          <tal:has_exact_matches condition="view/has_exact_matches">
+          <tal:has_exact_matches condition="view/display_exact_matches">
 
             <div class="search-batch" style="padding:4px;">
               <strong class="batch-navigation-index">Exact match</strong>

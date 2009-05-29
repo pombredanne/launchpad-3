@@ -107,6 +107,35 @@ with the exact name 'mozilla-firefox':
     ...     print package.name
     mozilla-firefox
 
+The view can also help the template know when to display exact matches.
+
+    >>> distro_pkg_search_view.display_exact_matches
+    True
+
+Exact matches do not need to be displayed when the user views subsequent
+batches.
+
+    >>> distro_pkg_search_view = create_initialized_view(
+    ...     ubuntu, name="+search", form={
+    ...         'text': 'mozilla-firefox',
+    ...         'batch': '2',
+    ...         'start': '2',
+    ...         })
+    >>> distro_pkg_search_view.display_exact_matches
+    False
+
+But they are displayed when returning to the first batch.
+
+    >>> distro_pkg_search_view = create_initialized_view(
+    ...     ubuntu, name="+search", form={
+    ...         'text': 'mozilla-firefox',
+    ...         'batch': '2',
+    ...         'start': '0',
+    ...         })
+    >>> distro_pkg_search_view.display_exact_matches
+    True
+
+
 The DistributionPackageSearchView also has a helper property to
 help templates print the list of distroseries that an exactly-matched
 package is available in:

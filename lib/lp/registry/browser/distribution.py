@@ -620,6 +620,13 @@ class DistributionPackageSearchView(PackageSearchViewBase):
 
         return names
 
+    @property
+    def display_exact_matches(self):
+        """Return whether exact match results should be displayed."""
+        if self.batchnav.start > 0:
+            return False
+
+        return self.has_exact_matches
 
 class DistributionView(HasAnnouncementsView, BuildRecordsView, FeedsMixin,
                        UsesLaunchpadMixin):
