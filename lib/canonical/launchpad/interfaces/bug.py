@@ -1,5 +1,5 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
-# pylint: disable-msg=E0211,E0213
+# pylint: disable-msg=E0211,E0213,E0602
 
 """Interfaces related to bugs."""
 
@@ -17,12 +17,14 @@ __all__ = [
     'IProjectBugAddForm',
     'InvalidBugTargetType',
     'InvalidDuplicateValue',
+    'UserCannotUnsubscribePerson',
     ]
 
 from zope.component import getUtility
 from zope.interface import Interface, Attribute
 from zope.schema import (
     Bool, Bytes, Choice, Datetime, Int, List, Object, Text, TextLine)
+from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
@@ -35,6 +37,7 @@ from canonical.launchpad.interfaces.bugwatch import IBugWatch
 from canonical.launchpad.interfaces.cve import ICve
 from canonical.launchpad.interfaces.launchpad import NotFoundError
 from canonical.launchpad.interfaces.message import IMessage
+from lp.code.interfaces.branch import IBranch
 from lp.registry.interfaces.mentoringoffer import ICanBeMentored
 from lp.registry.interfaces.person import IPerson
 from canonical.launchpad.validators.name import name_validator
@@ -44,8 +47,8 @@ from canonical.launchpad.validators.bugattachment import (
 from lazr.restful.declarations import (
     REQUEST_USER, call_with, export_as_webservice_entry,
     export_factory_operation, export_operation_as, export_write_operation,
-    exported, mutator_for, operation_parameters, rename_parameters_as,
-    webservice_error)
+    exported, mutator_for, operation_parameters, operation_returns_entry,
+    rename_parameters_as, webservice_error)
 from lazr.restful.fields import CollectionField, Reference
 from lazr.restful.interface import copy_field
 
@@ -282,6 +285,9 @@ class IBug(ICanBeMentored):
     # Adding related BugMessages provides a hook for getting at
     # BugMessage.visible when building bug comments.
     bug_messages = Attribute('The bug messages related to this object.')
+    comment_count = Attribute(
+        "The number of comments on this bug, not including the initial "
+        "comment.")
 
     messages = CollectionField(
             title=_("The messages related to this object, in reverse "
@@ -321,7 +327,9 @@ class IBug(ICanBeMentored):
         :return: an `IBugSubscription`.
         """
 
-    @call_with(person=REQUEST_USER, unsubscribed_by=REQUEST_USER)
+    @operation_parameters(
+        person=Reference(IPerson, title=_('Person'), required=False))
+    @call_with(unsubscribed_by=REQUEST_USER)
     @export_write_operation()
     def unsubscribe(person, unsubscribed_by):
         """Remove this person's subscription to this bug."""
@@ -432,6 +440,12 @@ class IBug(ICanBeMentored):
     def hasBranch(branch):
         """Is this branch linked to this bug?"""
 
+    @call_with(registrant=REQUEST_USER, whiteboard=None, status=None)
+    @operation_parameters(
+        branch=Reference(schema=IBranch))
+    @operation_returns_entry(Interface) # Really IBugBranch
+    @export_operation_as('linkBranch')
+    @export_write_operation()
     def addBranch(branch, registrant, whiteboard=None, status=None):
         """Associate a branch with this bug.
 
@@ -443,11 +457,16 @@ class IBug(ICanBeMentored):
         Returns an IBugBranch.
         """
 
+    @call_with(user=REQUEST_USER)
+    @operation_parameters(
+        branch=Reference(schema=IBranch))
+    @export_operation_as('unlinkBranch')
+    @export_write_operation()
     def removeBranch(branch, user):
         """Unlink a branch from this bug.
 
         :param branch: The branch being unlinked from the bug
-        :param registrant: The user unlinking the branch
+        :param user: The user unlinking the branch
         """
 
     @call_with(owner=REQUEST_USER)
@@ -677,6 +696,11 @@ class IBug(ICanBeMentored):
 class InvalidDuplicateValue(Exception):
     """A bug cannot be set as the duplicate of another."""
     webservice_error(417)
+
+
+class UserCannotUnsubscribePerson(Unauthorized):
+    """User does not have persmisson to unsubscribe person or team."""
+    webservice_error(401)
 
 
 # We are forced to define these now to avoid circular import problems.

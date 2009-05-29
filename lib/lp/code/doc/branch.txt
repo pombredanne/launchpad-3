@@ -192,7 +192,7 @@ Now we create a few branches that we pretend were updated in a
 definite order.
 
     >>> from datetime import datetime
-    >>> from canonical.launchpad.testing import time_counter
+    >>> from lp.testing import time_counter
     >>> import pytz
     >>> today = datetime.now(pytz.timezone('UTC'))
     >>> product = factory.makeProduct(name='product')
@@ -264,10 +264,10 @@ If no branch is found for the specified URL, getByUrl returns None.
 
 == Branch names ==
 
-Branches have a display name that is the unique_name otherwise.
+Branches have a display name that is the bzr_identity.
 
     >>> untitled_branch = factory.makeAnyBranch(title=None)
-    >>> untitled_branch.displayname == untitled_branch.unique_name
+    >>> untitled_branch.displayname == untitled_branch.bzr_identity
     True
 
 

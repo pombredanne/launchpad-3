@@ -54,7 +54,8 @@ def main():
     # Confirm we are connected to a Slony-I node.
     if not replication.helpers.slony_installed(source_connection):
         parser.error(
-            "Database at %s is not a Slony-I node." % source_connection_string)
+            "Database at %s is not a Slony-I node."
+            % source_connection_string)
 
     # Sanity check the given node_id.
     existing_nodes = replication.helpers.get_all_cluster_nodes(

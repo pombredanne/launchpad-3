@@ -18,7 +18,7 @@ from canonical.database.postgresql import drop_tables
 from canonical.database.sqlbase import cursor, sqlvalues
 from canonical.launchpad.interfaces import (
     IPersonSet, RosettaTranslationOrigin)
-from canonical.launchpad.scripts.base import (
+from lp.services.scripts.base import (
     LaunchpadScript, LaunchpadScriptFailure)
 
 

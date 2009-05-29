@@ -60,22 +60,26 @@ A ProductSeries can also be fetched with the IProductSeriesSet utility.
     >>> print firefox_1_0.name
     1.0
 
-New ProductSeries are created using Product.newSeries. Only the product
-owner can call Product.newSeries.
+New ProductSeries are created using Product.newSeries(). Only the product
+owner or driver can call Product.newSeries().
 
-    >>> owner = getUtility(IPersonSet).getByName('carlos')
-    >>> summary = "Experimental port of Firefox to the Emacs operating system."
-    >>> emacs = firefox.newSeries(owner, 'emacs', summary)
+    >>> series_driver = factory.makePerson(name="driver")
+    >>> summary = "Port of Firefox to the Emacs operating system."
+    >>> emacs = firefox.newSeries(series_driver , 'emacs', summary)
     Traceback (most recent call last):
     ...
-    Unauthorized: (..., 'newSeries', 'launchpad.Edit')
+    Unauthorized: (..., 'newSeries', 'launchpad.Driver')
 
-    >>> login('test@canonical.com')
-    >>> emacs = firefox.newSeries(owner, 'emacs', summary)
-    >>> login(ANONYMOUS)
+    >>> login_person(firefox.owner)
+    >>> emacs = firefox.newSeries(series_driver , 'emacs', summary)
+
+    >>> firefox.driver = series_driver
+    >>> login_person(series_driver)
+    >>> emacs2 = firefox.newSeries(series_driver , 'emacs2', summary)
 
 A newly created series is assumed to be in the development state.
 
+    >>> login(ANONYMOUS)
     >>> emacs.status.title
     'Active Development'
 

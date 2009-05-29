@@ -11,7 +11,7 @@ import sys
 import traceback
 
 from canonical.archiveuploader.uploadpolicy import findPolicyByName
-from canonical.launchpad.database.queue import PackageUploadSet
+from lp.soyuz.model.queue import PackageUploadSet
 from canonical.librarian.ftests.harness import fillLibrarianFile
 
 

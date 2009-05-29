@@ -400,6 +400,13 @@ class IBasicLaunchpadRequest(Interface):
     query_string_params = Attribute(
         'A dictionary of the query string parameters.')
 
+    def getRootURL(rootsite):
+        """Return this request's root URL.
+        
+        If rootsite is not None, then return the root URL for that rootsite,
+        looked up from our config.
+        """
+
     def getNearest(*some_interfaces):
         """Searches for the last traversed object to implement one of
         the given interfaces.
@@ -449,26 +456,6 @@ class ILaunchpadBrowserApplicationRequest(
         title=u'IBrowserFormNG object containing the submitted form data',
         schema=IBrowserFormNG)
 
-
-# XXX SteveAlexander 2005-09-14: These need making into a launchpad version
-#     rather than the zope versions for the publisher simplification work.
-# class IEndRequestEvent(Interface):
-#     """An event which gets sent when the publication is ended"""
-#
-# # called in zopepublication's endRequest method, after ending
-# # the interaction.  it is used only by local sites, to clean
-# # up per-thread state.
-# class EndRequestEvent(object):
-#     """An event which gets sent when the publication is ended"""
-#     implements(IEndRequestEvent)
-#     def __init__(self, ob, request):
-#         self.object = ob
-#         self.request = request
-
-
-#
-#
-#
 
 class IPrincipalIdentifiedEvent(Interface):
     """An event that is sent after a principal has been recovered from the

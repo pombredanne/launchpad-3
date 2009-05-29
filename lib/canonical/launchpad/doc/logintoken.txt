@@ -22,7 +22,7 @@ follows:
     >>> from canonical.launchpad.interfaces.authtoken import LoginTokenType
     >>> from canonical.launchpad.interfaces.logintoken import (
     ...     ILoginTokenSet)
-    >>> from canonical.launchpad.mail import stub
+    >>> from lp.services.mail import stub
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> import transaction
     >>> foobar = Person.byName('name16')

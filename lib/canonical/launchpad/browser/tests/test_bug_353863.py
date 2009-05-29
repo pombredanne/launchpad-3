@@ -11,7 +11,7 @@ from canonical.launchpad.browser.tests.registration import (
 from canonical.launchpad.interfaces.authtoken import (
     IAuthTokenSet, LoginTokenType)
 from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
-from canonical.launchpad.testing import TestCaseWithFactory
+from lp.testing import TestCaseWithFactory
 from canonical.launchpad.webapp.dbpolicy import SSODatabasePolicy
 from canonical.launchpad.webapp.interfaces import IStoreSelector
 from canonical.testing import DatabaseFunctionalLayer

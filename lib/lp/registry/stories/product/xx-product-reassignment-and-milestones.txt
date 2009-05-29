@@ -38,5 +38,5 @@ milestone value, if one was set.
 
     >>> for message in find_tags_by_class(browser.contents, 'message'):
     ...     print message.renderContents()
-    The Mozilla Firefox: 1.0 milestone setting has been removed
+    The Mozilla Firefox 1.0 milestone setting has been removed
     because you reassigned the bug to Evolution.

@@ -15,7 +15,7 @@ from zope.interface import implements
 from canonical.config import config
 from canonical.launchpad.interfaces.looptuner import ITunableLoop
 from canonical.launchpad.interfaces import IPOFileSet
-from canonical.launchpad.mail.sendmail import simple_sendmail
+from lp.services.mail.sendmail import simple_sendmail
 from canonical.launchpad.mailnotification import MailWrapper
 from canonical.launchpad.utilities.looptuner import LoopTuner
 

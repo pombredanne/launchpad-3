@@ -42,7 +42,7 @@ wishes:
 
 Same thing if they logged in using OpenID only to known trust roots.
 
-    >>> from canonical.launchpad.interfaces.openidserver import (
+    >>> from canonical.signon.interfaces.openidserver import (
     ...     IOpenIDRPConfigSet, IOpenIDRPSummarySet)
     >>> trust_root = getUtility(IOpenIDRPConfigSet).new(
     ...     'https://shop.canonical.com/', 'The Shop', 'For our fans')

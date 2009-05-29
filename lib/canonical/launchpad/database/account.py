@@ -22,7 +22,7 @@ from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.database.authtoken import AuthToken
 from canonical.launchpad.database.emailaddress import EmailAddress
-from canonical.launchpad.database.openidserver import OpenIDRPSummary
+from canonical.signon.model.openidserver import OpenIDRPSummary
 from canonical.launchpad.interfaces import IMasterObject, IMasterStore, IStore
 from canonical.launchpad.interfaces.account import (
     AccountCreationRationale, AccountStatus, IAccount, IAccountSet)
@@ -30,7 +30,7 @@ from canonical.launchpad.interfaces.authtoken import LoginTokenType
 from canonical.launchpad.interfaces.emailaddress import (
     EmailAddressStatus, IEmailAddress, IEmailAddressSet)
 from canonical.launchpad.interfaces.launchpad import IPasswordEncryptor
-from canonical.launchpad.interfaces.openidserver import IOpenIDRPSummarySet
+from canonical.signon.interfaces.openidserver import IOpenIDRPSummarySet
 from canonical.launchpad.webapp.vhosts import allvhosts
 
 

@@ -650,7 +650,7 @@ are returned.
 If a distroseries is specified, only submissions for that distroseries
 are returned.
 
-    >>> from canonical.launchpad.testing.factory import LaunchpadObjectFactory
+    >>> from lp.testing.factory import LaunchpadObjectFactory
     >>> factory = LaunchpadObjectFactory()
 
     >>> warty = ubuntu['warty']

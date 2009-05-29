@@ -58,7 +58,7 @@ Raises NotFoundError for following conditions:
 Packages only published in PPAs will not be found in the Ubuntu archive.
 Here, 'at' is published in sabdfl's PPA only:
 
-    >>> from canonical.launchpad.ftests.ppa import publishToPPA
+    >>> from lp.soyuz.tests.ppa import publishToPPA
     >>> ubuntutest = distroset.getByName("ubuntutest")
     >>> publishToPPA(
     ...     person_name='cprov',
@@ -112,7 +112,7 @@ It will find packages that are at the PENDING publishing state in
 addition to PUBLISHED ones:
 
     >>> login("admin@canonical.com")
-    >>> from canonical.launchpad.tests.test_publishing import (
+    >>> from lp.soyuz.tests.test_publishing import (
     ...     SoyuzTestPublisher)
     >>> test_publisher = SoyuzTestPublisher()
     >>> ignore = test_publisher.setUpDefaultDistroSeries(

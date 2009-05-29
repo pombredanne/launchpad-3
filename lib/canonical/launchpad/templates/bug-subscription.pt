@@ -11,6 +11,13 @@
 >
 
 <body>
+  <metal:block fill-slot="head_epilogue">
+    <script type='text/javascript' tal:content="string:var yui_base='${yui}';" />
+    <script type="text/javascript"
+            tal:define="lp_js string:${icingroot}/build"
+            tal:attributes="src string:${lp_js}/bugs/bugtask-index.js">
+    </script>
+  </metal:block>
 
 <div metal:fill-slot="main">
 

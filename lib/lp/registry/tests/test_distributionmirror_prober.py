@@ -21,7 +21,7 @@ from sqlobject import SQLObjectNotFound
 
 import canonical
 from canonical.config import config
-from canonical.launchpad.interfaces.publishing import PackagePublishingPocket
+from lp.soyuz.interfaces.publishing import PackagePublishingPocket
 from lazr.uri import URI
 from canonical.launchpad.daemons.tachandler import TacTestSetup
 from canonical.launchpad.database import DistributionMirror, DistroSeries

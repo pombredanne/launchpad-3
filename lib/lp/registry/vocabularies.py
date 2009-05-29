@@ -1,15 +1,15 @@
 # Copyright 2004-2009 Canonical Ltd.  All rights reserved.
 """Vocabularies for content objects.
 
-Here should vocabularies that represent a set of conent objects be placed.
-Vocabularies that are used only for providing a UI are better placed in
+Vocabularies that represent a set of content objects should be in this module.
+Those vocabularies that are only used for providing a UI are better placed in
 the browser code.
 
-Note that you probably shouldn't be importing stuff from these
-modules, as it is better to have your Schemas fields look up the vocabularies
-by name. Some of these vocabularies will only work if looked up by name,
-as they require context to calculare the available options. It also
-avoids circular import issues.
+Note that you probably shouldn't be importing stuff from these modules, as it
+is better to have your schema's fields look up the vocabularies by name. Some
+of these vocabularies will only work if looked up by name, as they require
+context to calculate the available options. Obtaining a vocabulary by name
+also avoids circular import issues.
 
 eg.
 
@@ -74,12 +74,13 @@ from canonical.launchpad.database.account import Account
 from canonical.launchpad.database.emailaddress import EmailAddress
 from canonical.launchpad.database.stormsugar import StartsWith
 from canonical.launchpad.helpers import shortlist
-from canonical.launchpad.interfaces import IStore
 from canonical.launchpad.interfaces.bugtask import (
     IBugTask, IDistroBugTask, IDistroSeriesBugTask, IProductSeriesBugTask,
     IUpstreamBugTask)
 from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
-from canonical.launchpad.interfaces.specification import ISpecification
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.lpstorm import IStore
+from lp.blueprints.interfaces.specification import ISpecification
 from canonical.launchpad.interfaces.account import AccountStatus
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import (
@@ -397,6 +398,8 @@ class ValidPersonOrTeamVocabulary(
     # Cache table to use for checking validity.
     cache_table_name = 'ValidPersonOrTeamCache'
 
+    LIMIT = 500
+
     def __contains__(self, obj):
         return obj in self._doSearch()
 
@@ -410,11 +413,20 @@ class ValidPersonOrTeamVocabulary(
         """Return query for private teams the logged in user belongs to."""
         logged_in_user = getUtility(ILaunchBag).user
         if logged_in_user is not None:
-            private_query = AND(
-                TeamParticipation.person == logged_in_user.id,
-                Not(Person.teamowner == None),
-                Person.visibility == PersonVisibility.PRIVATE
-                )
+            celebrities = getUtility(ILaunchpadCelebrities)
+            if logged_in_user.inTeam(celebrities.admin):
+                # If the user is a LP admin we allow all private teams to be
+                # visible.
+                private_query = AND(
+                    Not(Person.teamowner == None),
+                    Person.visibility == PersonVisibility.PRIVATE
+                    )
+            else:
+                private_query = AND(
+                    TeamParticipation.person == logged_in_user.id,
+                    Not(Person.teamowner == None),
+                    Person.visibility == PersonVisibility.PRIVATE
+                    )
         else:
             private_query = False
         return private_query
@@ -541,8 +553,14 @@ class ValidPersonOrTeamVocabulary(
             # option.
             subselect = Alias(combined_result._get_select(), 'Person')
             result = self.store.using(subselect).find(Person)
+        # XXX: BradCrittenden 2009-05-07 bug=373228: A bug in Storm prevents
+        # setting the 'distinct' and 'limit' options in a single call to
+        # .config().  The work-around is to split them up.  Note the limit has
+        # to be after the call to 'order_by' for this work-around to be
+        # effective.
         result.config(distinct=True)
         result.order_by(Person.displayname, Person.name)
+        result.config(limit=self.LIMIT)
         # XXX: BradCrittenden 2009-04-24 bug=217644: Wrap the results to
         # ensure the .count() method works until the Storm bug is fixed and
         # integrated.
@@ -615,8 +633,14 @@ class ValidTeamVocabulary(ValidPersonOrTeamVocabulary):
             result = self.store.using(*tables).find(
                 Person, query)
 
+        # XXX: BradCrittenden 2009-05-07 bug=373228: A bug in Storm prevents
+        # setting the 'distinct' and 'limit' options in a single call to
+        # .config().  The work-around is to split them up.  Note the limit has
+        # to be after the call to 'order_by' for this work-around to be
+        # effective.
         result.config(distinct=True)
         result.order_by(Person.displayname, Person.name)
+        result.config(limit=self.LIMIT)
         # XXX: BradCrittenden 2009-04-24 bug=217644: Wrap the results to
         # ensure the .count() method works until the Storm bug is fixed and
         # integrated.
@@ -1394,4 +1418,3 @@ class FeaturedProjectVocabulary(DistributionOrProductOrProjectVocabulary):
                    AND PillarName.name = %s""" % sqlvalues(obj.name)
         return PillarName.selectOne(
                    query, clauseTables=['FeaturedProject']) is not None
-

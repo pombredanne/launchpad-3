@@ -3,14 +3,12 @@
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   omit-tag="">
-<input size="10" type="text"
+<input size="10" type="text" class="yui2-calendar"
        tal:attributes="name view/name; id view/name; value view/formvalue;
                        disabled view/disabled_flag;" />
-<a href="javascript:void(0)"
-   tal:attributes="
-     onclick string:pickDate('${view/name}', ${view/daterange});"
-   ><span class="PopcalTrigger"
-    ><img name="popcal" align="absmiddle"
-          src="/+popcalxp/calbtn.gif"
-          width="34" height="22" border="0" alt="(choose)" /></span></a>
+<tal:daterange condition="view/daterange">
+  <span style="display:none;"
+        tal:attributes="id string:${view/name}-daterange"
+        tal:content="view/daterange" />
+</tal:daterange>
 </tal:root>

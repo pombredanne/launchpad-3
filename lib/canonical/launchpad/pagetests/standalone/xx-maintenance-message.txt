@@ -38,15 +38,6 @@ this timebombing.
       in ... minutes.
     ...
 
-Shipit has its own variation on the message.
-
-    >>> content = str(http("""GET / HTTP/1.1
-    ... Host: shipit.ubuntu.dev"""))
-    >>> maintenance_text not in content
-    True
-    >>> 'Shipit will be going offline for maintenance' in content
-    True
-
 When the time is more than 30 minutes away, no message is shown.
 
     >>> os.system(

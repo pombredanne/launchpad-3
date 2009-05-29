@@ -1,0 +1,17 @@
+= Basic tests for some shipit resources =
+
+This is just to show a few resources can be retrieved from shipit. Moved here
+from launchpad/pagetests/basics/notfound-traversals.txt.
+
+    >>> browser.open('http://shipit.ubuntu.dev/robots.txt')
+
+    >>> browser.open('http://shipit.ubuntu.dev/user.cgi')
+    >>> browser.url
+    'http://shipit.ubuntu.dev/'
+
+    >>> from canonical.launchpad.versioninfo import revno
+    >>> browser.open('http://shipit.kubuntu.dev/+icing-kubuntu/'
+    ...              'rev%s/kubuntu-masthead2.css' % revno)
+
+    >>> browser.open('http://shipit.edubuntu.dev/+icing-edubuntu/'
+    ...              'rev%s/edubuntu.css' % revno)

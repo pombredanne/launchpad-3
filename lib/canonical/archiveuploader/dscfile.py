@@ -32,10 +32,11 @@ from canonical.archiveuploader.utils import (
     prefix_multi_line_string, safe_fix_maintainer, ParseMaintError,
     re_valid_pkg_name, re_valid_version, re_issource)
 from canonical.encoding import guess as guess_encoding
+from lp.registry.interfaces.person import IPersonSet, PersonCreationRationale
+from lp.soyuz.interfaces.archive import ArchivePurpose
 from canonical.launchpad.interfaces import (
-    ArchivePurpose, GPGVerificationError, IGPGHandler, IGPGKeySet,
-    IPersonSet, ISourcePackageNameSet, NotFoundError,
-    PersonCreationRationale)
+    GPGVerificationError, IGPGHandler, IGPGKeySet,
+    ISourcePackageNameSet, NotFoundError)
 from canonical.librarian.utils import copy_and_close
 
 

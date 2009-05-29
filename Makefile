@@ -227,12 +227,26 @@ clean:
 	$(RM) .installed.cfg
 	$(RM) -r build
 	$(RM) thread*.request
-	$(RM) -r lib/mailman /var/tmp/mailman/* /var/tmp/fatsam.appserver
+	$(RM) -r lib/mailman
 	$(RM) -rf lib/canonical/launchpad/icing/build/*
 	$(RM) -r $(CODEHOSTING_ROOT)
 	$(RM) $(WADL_FILE) $(API_INDEX)
 	$(RM) $(BZR_VERSION_INFO)
 	$(RM) _pythonpath.py
+	$(RM) -rf \
+			  /var/tmp/builddmaster \
+			  /var/tmp/bzrsync \
+			  /var/tmp/codehosting.test \
+			  /var/tmp/codeimport \
+			  /var/tmp/fatsam.appserver \
+			  /var/tmp/launchpad_mailqueue \
+			  /var/tmp/lperr \
+			  /var/tmp/lperr.test \
+			  /var/tmp/mailman \
+			  /var/tmp/mailman-xmlrpc.test \
+			  /var/tmp/ppa \
+			  /var/tmp/ppa.test \
+			  /var/tmp/zeca
 
 realclean: clean
 	$(RM) TAGS tags
@@ -242,6 +256,7 @@ clean_codehosting:
 	mkdir -p $(CODEHOSTING_ROOT)/mirrors
 	mkdir -p $(CODEHOSTING_ROOT)/push-branches
 	mkdir -p $(CODEHOSTING_ROOT)/config
+	mkdir -p /var/tmp/bzrsync
 	touch $(CODEHOSTING_ROOT)/config/launchpad-lookup.txt
 
 zcmldocs:

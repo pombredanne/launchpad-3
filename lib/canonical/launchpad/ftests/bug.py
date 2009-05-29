@@ -48,13 +48,12 @@ def print_subscribers(bug_page, subscriber_list_id):
         # no indirect subscribers), so just print an empty string.
         print ""
     else:
-        for subscriber in subscriber_list.findAll('div'):
-            anchors = subscriber.findAll('a')
-            for anchor in anchors:
-                sub_display = extract_text(anchor)
-                if anchor.has_key('title'):
-                    sub_display += (' (%s)' % anchor['title'])
-                print sub_display
+        anchors = subscriber_list.findAll('a')
+        for anchor in anchors:
+            sub_display = extract_text(anchor)
+            if anchor.has_key('title'):
+                sub_display += (' (%s)' % anchor['title'])
+            print sub_display
 
 
 def print_bug_affects_table(content, highlighted_only=False):

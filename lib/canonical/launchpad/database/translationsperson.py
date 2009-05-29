@@ -17,7 +17,7 @@ from canonical.launchpad.interfaces.translationsperson import (
     ITranslationsPerson)
 from canonical.launchpad.interfaces.translator import ITranslatorSet
 
-from canonical.launchpad.database.language import Language
+from lp.services.worlddata.model.language import Language
 from canonical.launchpad.database.pofiletranslator import POFileTranslator
 from canonical.launchpad.database.translationrelicensingagreement import (
     TranslationRelicensingAgreement)

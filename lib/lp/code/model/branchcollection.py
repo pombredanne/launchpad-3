@@ -202,6 +202,12 @@ class GenericBranchCollection:
             Branch.distroseries == source_package.distroseries,
             Branch.sourcepackagename == source_package.sourcepackagename])
 
+    def isJunk(self):
+        """See `IBranchCollection`."""
+        return self._filterBy([
+            Branch.product == None,
+            Branch.sourcepackagename == None])
+
     def ownedBy(self, person):
         """See `IBranchCollection`."""
         return self._filterBy([Branch.owner == person])
@@ -285,6 +291,14 @@ class GenericBranchCollection:
             table=BranchSubscription,
             join=Join(BranchSubscription,
                       BranchSubscription.branch == Branch.id))
+
+    def targetedBy(self, person):
+        """See `IBranchCollection`."""
+        return self._filterBy(
+            [BranchMergeProposal.registrant == person],
+            table=BranchMergeProposal,
+            join=Join(BranchMergeProposal,
+                      BranchMergeProposal.target_branch == Branch.id))
 
     def visibleByUser(self, person):
         """See `IBranchCollection`."""

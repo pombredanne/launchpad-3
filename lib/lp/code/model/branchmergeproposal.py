@@ -31,7 +31,7 @@ from storm.locals import Int, Reference, Unicode
 from sqlobject import (
     ForeignKey, IntCol, StringCol, SQLMultipleJoin, SQLObjectNotFound)
 
-from canonical.codehosting.vfs import get_multi_server
+from lp.codehosting.vfs import get_multi_server
 from canonical.config import config
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -43,7 +43,7 @@ from lp.code.model.codereviewcomment import CodeReviewComment
 from lp.code.model.codereviewvote import (
     CodeReviewVoteReference)
 from canonical.launchpad.database.diff import Diff, PreviewDiff, StaticDiff
-from canonical.launchpad.database.job import Job
+from lp.services.job.model.job import Job
 from canonical.launchpad.database.message import (
     Message, MessageChunk, MessageJob, MessageJobAction)
 from lp.registry.model.person import Person
@@ -64,8 +64,8 @@ from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.message import IMessageJob
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.product import IProduct
-from canonical.launchpad.mailout.branch import RecipientReason
-from canonical.launchpad.mailout.branchmergeproposal import BMPMailer
+from lp.code.mail.branch import RecipientReason
+from lp.code.mail.branchmergeproposal import BMPMailer
 from lp.registry.interfaces.person import validate_public_person
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR, IPlacelessAuthUtility, IStoreSelector, MAIN_STORE,

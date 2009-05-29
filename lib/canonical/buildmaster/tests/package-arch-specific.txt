@@ -14,7 +14,7 @@ For testing PAS we will create a set of publications using
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> hoary = ubuntu.getSeries('hoary')
 
-    >>> from canonical.launchpad.tests.test_publishing import (
+    >>> from lp.soyuz.tests.test_publishing import (
     ...     SoyuzTestPublisher)
     >>> from canonical.testing.layers import LaunchpadZopelessLayer
 
@@ -248,7 +248,7 @@ this aspect below.
 To check binary PAS listings we'll use a source publication for which
 produces a single binary.
 
-    >>> from canonical.launchpad.interfaces.publishing import (
+    >>> from lp.soyuz.interfaces.publishing import (
     ...     PackagePublishingStatus)
 
     >>> LaunchpadZopelessLayer.switchDbUser("launchpad")

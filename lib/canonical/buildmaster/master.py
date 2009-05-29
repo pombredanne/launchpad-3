@@ -18,8 +18,9 @@ from zope.component import getUtility
 
 from canonical.librarian.interfaces import ILibrarianClient
 
-from canonical.launchpad.interfaces import (
-    ArchivePurpose, BuildStatus, IBuildQueueSet, IBuildSet)
+from lp.soyuz.interfaces.archive import ArchivePurpose
+from lp.soyuz.interfaces.build import BuildStatus, IBuildSet
+from lp.soyuz.interfaces.buildqueue import IBuildQueueSet
 
 from canonical.archivepublisher.utils import process_in_batches
 from canonical.buildd.utils import notes

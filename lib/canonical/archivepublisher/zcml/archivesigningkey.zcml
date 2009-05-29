@@ -1,0 +1,19 @@
+<configure
+  xmlns="http://namespaces.zope.org/zope"
+  xmlns:browser="http://namespaces.zope.org/browser"
+  xmlns:i18n="http://namespaces.zope.org/i18n"
+  i18n_domain="launchpad">
+
+  <!-- ArchiveSigningKey -->
+  <class class="canonical.archivepublisher.archivesigningkey.ArchiveSigningKey">
+    <allow interface="canonical.archivepublisher.interfaces.archivesigningkey.IArchiveSigningKey"/>
+  </class>
+
+  <adapter
+      for="lp.soyuz.interfaces.archive.IArchive"
+      provides="canonical.archivepublisher.interfaces.archivesigningkey.IArchiveSigningKey"
+      factory="canonical.archivepublisher.archivesigningkey.ArchiveSigningKey"
+
+      />
+
+</configure>

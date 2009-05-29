@@ -57,7 +57,7 @@ from canonical.launchpad import _
 from canonical.launchpad.fields import PillarAliases, PublicPersonChoice
 from canonical.launchpad.interfaces.bugtask import RESOLVED_BUGTASK_STATUSES
 from canonical.launchpad.interfaces.bugwatch import IBugTracker
-from canonical.launchpad.interfaces.country import ICountry
+from lp.services.worlddata.interfaces.country import ICountry
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.interfaces.translationimportqueue import (
@@ -185,8 +185,9 @@ class ProductLicenseMixin:
             # License is optional on +edit page if not already set.
             self.setFieldError(
                 'licenses',
-                'Select all licenses for this software or select '
-                'Other/Proprietary or Other/Open Source.')
+                'You must select at least one license.  If you select '
+                'Other/Proprietary or Other/OpenSource you must include a '
+                'description of the license.')
         elif License.OTHER_PROPRIETARY in licenses:
             if not data.get('license_info'):
                 self.setFieldError(
@@ -392,7 +393,7 @@ class ProductOverviewMenu(ApplicationMenu):
         text = 'Show distribution packages'
         return Link('+packages', text, icon='info')
 
-    @enabled_with_permission('launchpad.Edit')
+    @enabled_with_permission('launchpad.Driver')
     def series_add(self):
         text = 'Register a series'
         return Link('+addseries', text, icon='add')
@@ -1490,7 +1491,7 @@ class ProjectAddStepOne(StepView):
     def main_action(self, data):
         self.next_step = ProjectAddStepTwo
         self.request.form['displayname'] = data['displayname']
-        self.request.form['name'] = data['name']
+        self.request.form['name'] = data['name'].lower()
         self.request.form['summary'] = data['summary']
 
 
@@ -1629,8 +1630,10 @@ class ProductEditPeopleView(LaunchpadEditFormView):
         'driver',
         ]
 
-    custom_widget('owner', PersonPickerWidget, header="Select the maintainer")
-    custom_widget('driver', PersonPickerWidget, header="Select the driver")
+    custom_widget('owner', PersonPickerWidget, header="Select the maintainer",
+                  include_create_team_link=True)
+    custom_widget('driver', PersonPickerWidget, header="Select the driver",
+                  include_create_team_link=True)
 
     @action(_('Save changes'), name='save')
     def save_action(self, action, data):

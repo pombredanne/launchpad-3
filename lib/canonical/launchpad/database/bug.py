@@ -41,7 +41,8 @@ from canonical.launchpad.components.bugchange import (
 from canonical.launchpad.fields import DuplicateBug
 from canonical.launchpad.interfaces import IQuestionTarget
 from canonical.launchpad.interfaces.bug import (
-    IBug, IBugBecameQuestionEvent, IBugSet, InvalidDuplicateValue)
+    IBug, IBugBecameQuestionEvent, IBugSet, InvalidDuplicateValue,
+    UserCannotUnsubscribePerson)
 from canonical.launchpad.interfaces.bugactivity import IBugActivitySet
 from canonical.launchpad.interfaces.bugattachment import (
     BugAttachmentType, IBugAttachmentSet)
@@ -97,9 +98,8 @@ from lp.registry.model.pillar import pillar_sort_key
 from canonical.launchpad.validators import LaunchpadValidationError
 from lp.registry.interfaces.person import validate_public_person
 from canonical.launchpad.mailnotification import BugNotificationRecipients
-from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, DEFAULT_FLAVOR, MAIN_STORE, NotFoundError)
+    ILaunchBag, IStoreSelector, DEFAULT_FLAVOR, MAIN_STORE, NotFoundError)
 
 
 # XXX: GavinPanella 2008-07-04 bug=229040: A fix has been requested
@@ -254,6 +254,11 @@ class Bug(SQLBase):
     users_unaffected_count = IntCol(notNull=True, default=0)
 
     @property
+    def comment_count(self):
+        """See `IBug`."""
+        return self.message_count - 1
+
+    @property
     def users_affected(self):
         """See `IBug`."""
         return [bap.person for bap
@@ -398,8 +403,17 @@ class Bug(SQLBase):
 
     def unsubscribe(self, person, unsubscribed_by):
         """See `IBug`."""
+        if person is None:
+            person = getUtility(ILaunchBag).user
+
         for sub in self.subscriptions:
             if sub.person.id == person.id:
+                if not sub.canBeUnsubscribedByUser(unsubscribed_by):
+                    raise UserCannotUnsubscribePerson(
+                        '%s does not have permission to unsubscribe %s.' % (
+                            unsubscribed_by.displayname,
+                            person.displayname))
+
                 self.addChange(UnsubscribedFromBug(
                     when=UTC_NOW, person=unsubscribed_by,
                     unsubscribed_user=person))

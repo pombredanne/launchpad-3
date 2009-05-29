@@ -11,16 +11,16 @@ import transaction
 from zope.component import getUtility
 
 from canonical.launchpad.ftests import ANONYMOUS, login
-from canonical.launchpad.interfaces.archive import ArchivePurpose, IArchiveSet
+from lp.soyuz.interfaces.archive import ArchivePurpose, IArchiveSet
 from lp.registry.interfaces.distroseries import (
     IDistroSeriesSet, NoSuchDistroSeries)
-from canonical.launchpad.interfaces.distroseriessourcepackagerelease import (
+from lp.soyuz.interfaces.distroseriessourcepackagerelease import (
     IDistroSeriesSourcePackageRelease)
-from canonical.launchpad.interfaces.publishing import (
+from lp.soyuz.interfaces.publishing import (
     active_publishing_status, PackagePublishingPocket,
     PackagePublishingStatus)
-from canonical.launchpad.testing import TestCase, TestCaseWithFactory
-from canonical.launchpad.tests.test_publishing import SoyuzTestPublisher
+from lp.testing import TestCase, TestCaseWithFactory
+from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from canonical.testing import (
     DatabaseFunctionalLayer, LaunchpadFunctionalLayer)
 

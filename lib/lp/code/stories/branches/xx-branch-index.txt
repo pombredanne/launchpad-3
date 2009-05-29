@@ -50,6 +50,14 @@ We display the recent revisions of a branch if it has been scanned.
     >>> user_browser.open('http://code.launchpad.dev/~name12/+junk/junk.dev')
     >>> assert find_tag_by_id(user_browser.contents, 'merge-summary') is None
     >>> revisions = find_tag_by_id(user_browser.contents, 'recent-revisions')
+    >>> def print_merge_links(browser):
+    ...     links = find_tag_by_id(browser.contents, 'merge-links')
+    ...     if not links:
+    ...         print None
+    ...     else:
+    ...         print extract_text(links)
+    >>> print_merge_links(user_browser)
+    None
 
 
 === Heading ===
@@ -204,6 +212,14 @@ empty.
     Details
     Merge Proposals: http://code.launchpad.dev/~name12/gnome-terminal/scanned/+merges
     Source Code: http://bazaar.launchpad.dev/~name12/gnome-terminal/scanned/files
+
+Since this branch's product has more than one branch, the links to propose
+it for merging are shown.
+
+    >>> print_merge_links(browser)
+    &laquo; No branches proposed for merging into this one.
+    &raquo; This branch is not proposed for merging into any others.
+
 
 == Branch Details ==
 

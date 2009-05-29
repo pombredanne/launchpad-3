@@ -115,24 +115,27 @@ class BugNomination(SQLBase):
         if self.distroseries is not None:
             # For distributions anyone that can upload to the
             # distribution may approve nominations.
-            bug_components = set()
+            bug_packagenames_and_components = set()
             distribution = self.distroseries.distribution
             for bugtask in self.bug.bugtasks:
                 if (bugtask.distribution == distribution
                     and bugtask.sourcepackagename is not None):
                     source_package = self.distroseries.getSourcePackage(
                         bugtask.sourcepackagename)
-                    bug_components.add(
-                        source_package.latest_published_component)
-            if len(bug_components) == 0:
+                    bug_packagenames_and_components.add(
+                        bugtask.sourcepackagename)
+                    if source_package.latest_published_component is not None:
+                        bug_packagenames_and_components.add(
+                            source_package.latest_published_component)
+            if len(bug_packagenames_and_components) == 0:
                 # If the bug isn't targeted to a source package, allow
                 # any uploader to approve the nomination.
-                bug_components = set(
+                bug_packagenames_and_components = set(
                     upload_component.component
                     for upload_component in distribution.uploaders)
-            for upload_component in distribution.uploaders:
-                if (upload_component.component in bug_components and
-                    person.inTeam(upload_component.person)):
+            for packagename_or_component in bug_packagenames_and_components:
+                if distribution.main_archive.canUpload(
+                    person, packagename_or_component):
                     return True
 
         return False
