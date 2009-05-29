@@ -89,11 +89,15 @@ class TestPollingJobSource(TestCase):
         # No more calls were made.
         self.assertEqual(0, self._num_job_factory_calls)
 
+    def test_start_multiple_times(self):
+        # Starting a job source multiple times polls immediately and resets
+        # the polling loop to start from now.
+        pass
+
     # XXX: starting multiple times
     # XXX: starting mulitple times with different accept_jobs
     # XXX: stopping multiple times
     # XXX: calling stop before start
-    # XXX: the 'accept job' protocol
 
 
 def test_suite():

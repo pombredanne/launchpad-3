@@ -19,20 +19,21 @@ from zope.interface import implements, Interface
 class IJobSource(Interface):
     """A source of jobs to do."""
 
-    def start(accept_job):
+    def start(job_consumer):
         """Start generating jobs.
 
-        If `start` has already been called, then this call is silently
-        ignored. XXX -- still need to decide this.
+        If `start` has already been called, then the given 'job_consumer'
+        replaces the existing job accepter.
 
-        :param accept_job: A single-parameter callable that is called with
+        :param job_consumer: A single-parameter callable that is called with
             the job only when there is new work to do.
         """
 
     def stop():
         """Stop generating jobs.
 
-        After this is called, the accept_job callable will not be called,
+        XXX - this is not true.
+        After this is called, the job_consumer callable will not be called,
         until `start` is called again.
 
         Any subsequent calls to `stop` are silently ignored.
@@ -53,7 +54,7 @@ class PollingJobSource:
 
         Polls 'job_factory' every 'interval' seconds. 'job_factory' returns
         either None if there's no work to do right now, or some representation
-        of the job which is passed to the 'accept_job' callable given to
+        of the job which is passed to the 'job_consumer' callable given to
         `start`.
 
         :param interval: The length of time between polls in seconds.
@@ -69,7 +70,7 @@ class PollingJobSource:
             clock = reactor
         self._clock = clock
 
-    def start(self, accept_job):
+    def start(self, job_consumer):
         """See `IJobSource`."""
         self._looping_call = LoopingCall(self._job_factory)
         self._looping_call.clock = self._clock
