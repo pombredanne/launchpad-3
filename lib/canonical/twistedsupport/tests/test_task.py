@@ -147,6 +147,12 @@ class TestPollingTaskSource(TestCase):
         task_source.start(tasks_called.append)
         self.assertEqual([], tasks_called)
 
+    def test_stop_without_start(self):
+        # Calling 'stop' before 'start' is called silently succeeds.
+        task_source = self.makeTaskSource()
+        # Assert that this doesn't raise an exception.
+        task_source.stop()
+
     # XXX: stopping multiple times
     # XXX: calling stop before start
     # XXX: should these be deferred-y tests?
