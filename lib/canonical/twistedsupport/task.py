@@ -14,20 +14,24 @@ from zope.interface import implements, Interface
 
 
 class IJobSource(Interface):
+    """XXX: """
 
     def start(acceptJob):
+        """XXX: """
         pass
 
     def stop():
+        """XXX: """
         pass
 
 
 class PollingJobSource:
-    """ """
+    """XXX """
 
     implements(IJobSource)
 
     def __init__(self, interval, get_job, clock=None):
+        """XXX """
         self.interval = interval
         self.get_job = get_job
         if clock is None:
@@ -35,6 +39,7 @@ class PollingJobSource:
         self._clock = clock
 
     def start(self, acceptJob):
+        """XXX """
         looping_call = LoopingCall(self.get_job)
         looping_call.clock = self._clock
         looping_call.start(self.interval)
