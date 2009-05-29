@@ -29,6 +29,20 @@ class PollingJobSource:
     def __init__(self, interval, get_job):
         self.interval = interval
         self.get_job = get_job
+
+    def start(self, acceptJob):
+        self.get_job()
+
+
+
+class OldPollingJobSource:
+    """ """
+
+    implements(IJobSource)
+
+    def __init__(self, interval, get_job):
+        self.interval = interval
+        self.get_job = get_job
         self._looping_call = None
 
     def start(self, acceptJob):
@@ -37,13 +51,14 @@ class PollingJobSource:
         self._looping_call.start(self.interval)
 
     def _poll(self, acceptJob):
-        def _cb(self, job):
+        def _cb(job):
             if job is not None:
                 acceptJob(job)
-        self.get_job().addCallback(_cb).addErrback('XXX')
+        d = defer.maybeDeferred(self.get_job)
+        d.addCallback(_cb) #.addErrback('XXX')
 
     def stop(self):
-        if self._looping_call is None:
+        if self._looping_call is not None:
             self._looping_call.cancel()
             self._looping_call = None
 
