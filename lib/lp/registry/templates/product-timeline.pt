@@ -55,7 +55,6 @@
               var canvas = document.getElementById('supercanvas');
               graph = new Y.registry.timeline.TimelineGraph(
                   timeline, canvas);
-              graph.stretch_canvas();
               graph.draw();
           }
 
