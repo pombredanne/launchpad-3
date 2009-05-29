@@ -44,6 +44,9 @@ class NoopTaskConsumer:
     def taskStarted(self, task):
         """Do nothing."""
 
+    def taskProductionFailed(self, reason):
+        """Do nothing."""
+
 
 class AppendingTaskConsumer:
 
@@ -55,6 +58,9 @@ class AppendingTaskConsumer:
     def taskStarted(self, task):
         """Do nothing."""
         self.data_sink.append(task)
+
+    def taskProductionFailed(self, reason):
+        """Do nothing."""
 
 
 class TestPollingTaskSource(TestCase):
@@ -190,25 +196,23 @@ class TestPollingTaskSource(TestCase):
         deferred.callback('foo')
         self.assertEqual(['foo'], tasks_called)
 
-    def test_producer_errors_stop_polling(self):
-        # If the producer raises an error, then we stop polling.
-        #
-        # XXX: we should perhaps make this more general, which will make it
-        # easier to explain -- e.g. a job_acquisition_failed event.
-        #
-        # XXX: make sure there are no unhandled deferred errors.
-        producer_calls = []
-        def failing_producer():
-            producer_calls.append(None)
-            1/0
-        clock = Clock()
-        interval = self.factory.getUniqueInteger()
-        task_source = self.makeTaskSource(
-            interval=interval, clock=clock, task_producer=failing_producer)
-        task_source.start(self._default_task_consumer)
-        del producer_calls[:]
-        clock.advance(2 * interval)
-        self.assertEqual(0, len(producer_calls))
+    def test_producer_errors_call_taskProductionFailed(self):
+        # If the producer raises an error, then we call taskProductionFailed
+        # on the task consumer.
+        class LoggingConsumer:
+            def __init__(self):
+                self._task_production_failed_calls = []
+            def taskStarted(slf, task):
+                self.fail("taskStarted should not be called.")
+            def taskProductionFailed(self, reason):
+                self._task_production_failed_calls.append(reason)
+
+        task_source = self.makeTaskSource(task_producer=lambda: 1/0)
+        consumer = LoggingConsumer()
+        task_source.start(consumer)
+        self.assertEqual(1, len(consumer._task_production_failed_calls))
+        reason = consumer._task_production_failed_calls[0]
+        self.assertTrue(reason.check(ZeroDivisionError))
 
     # XXX: handle task_consumer errors
 

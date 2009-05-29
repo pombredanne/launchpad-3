@@ -45,6 +45,12 @@ class ITaskConsumer(Interface):
         :param task: There is no defined interface.
         """
 
+    def taskProductionFailed(reason):
+        """Called when the task source fails to produce a task.
+
+        :param reason: A `twisted.python.failure.Failure` object.
+        """
+
 
 class PollingTaskSource:
     """A task source that polls to generate tasks.
@@ -82,7 +88,7 @@ class PollingTaskSource:
         # XXX: maybe interval should be passed here
         self.stop()
         self._looping_call = LoopingCall(
-            self._poll, task_consumer.taskStarted)
+            self._poll, task_consumer)
         self._looping_call.clock = self._clock
         self._looping_call.start(self._interval)
 
@@ -90,10 +96,9 @@ class PollingTaskSource:
         """Poll for tasks, passing them to 'task_consumer'."""
         def got_task(task):
             if task is not None:
-                task_consumer(task)
+                task_consumer.taskStarted(task)
         d = defer.maybeDeferred(self._task_producer)
-        d.addCallback(got_task)
-        d.addErrback(lambda ignored: self.stop())
+        d.addCallbacks(got_task, task_consumer.taskProductionFailed)
 
     def stop(self):
         """See `ITaskSource`."""
