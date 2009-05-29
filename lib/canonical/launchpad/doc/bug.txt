@@ -1111,3 +1111,41 @@ We can also get the collection of users affected by a bug.
     >>> print unaffecting_bug.users_affected
     [<Person at ...>]
 
+
+== Links to HWDB submissions ==
+
+We can link a HWDB submission to a bug, indicating that the
+submission contains information that could help developers
+fix the bug.
+
+    >>> from canonical.launchpad.interfaces.hwdb import IHWSubmissionSet
+    >>> import transaction
+    >>> test_bug = factory.makeBug()
+    >>> submission = getUtility(IHWSubmissionSet).getBySubmissionKey(
+    ...     'sample-submission')
+    >>> test_bug.linkHWSubmission(submission)
+    >>> flush_database_updates()
+    >>> transaction.commit()
+
+A submission can only be linked once to a bug. When we try to link the
+submission a second time, we get an IntegrityError.
+
+    >>> test_bug.linkHWSubmission(submission)
+    >>> flush_database_updates()
+    Traceback (most recent call last):
+    IntegrityError: duplicate key value violates unique constraint
+    "hwsubmissionbug__submission__bug__key"
+
+    >>> transaction.abort()
+
+Bug.getHWSubmissions contains all HWDB submissions linked to a bug.
+
+    >>> for submission in test_bug.getHWSubmissions():
+    ...     print submission.submission_key
+    sample-submission
+
+We can also delete links between a HWDB submission and a bug.
+
+    >>> test_bug.unlinkHWSubmission(submission)
+    >>> print test_bug.getHWSubmissions().count()
+    0

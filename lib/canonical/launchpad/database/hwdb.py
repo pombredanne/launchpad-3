@@ -1011,6 +1011,7 @@ class HWSubmissionBug(SQLBase):
                               notNull=True)
     bug = ForeignKey(dbName='bug', foreignKey='Bug', notNull=True)
 
+
 class HWSubmissionBugSet:
     """See `IHWSubmissionBugSet`."""
 
@@ -1019,6 +1020,25 @@ class HWSubmissionBugSet:
     def create(self, submission, bug):
         """See `IHWSubmissionBugSet`."""
         return HWSubmissionBug(submission=submission, bug=bug)
+
+    def remove(self, submission, bug):
+        """See `IHWSubmissionBugSet`."""
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        link = store.find(
+            HWSubmissionBug,
+            And(HWSubmissionBug.bug == bug,
+                HWSubmissionBug.submission == submission.id)).one()
+        if link is not None:
+            store.remove(link)
+
+    def submissionsForBug(self, bug, user=None):
+        """See `IHWSubmissionBugSet`."""
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        result = store.find(
+            HWSubmission, And(HWSubmissionBug.bug == bug,
+                              HWSubmissionBug.submission == HWSubmission.id))
+        result.order_by(HWSubmission.submission_key)
+        return result
 
 
 def make_submission_device_statistics_clause(

@@ -692,6 +692,22 @@ class IBug(ICanBeMentored):
     def setCommentVisibility(user, comment_number, visible):
         """Set the visible attribute on a bug comment."""
 
+    def linkHWSubmission(submission):
+        """Link a `HWSubmission` to this bug."""
+
+    def unlinkHWSubmission(submission):
+        """Remove a link to a `HWSubmission`."""
+
+    def getHWSubmissions(user=None):
+        """Return the linked HWDB submissions.
+
+        :return: A sequence of HWDB submissions linked to this bug.
+        :param user: The user making the request.
+
+        Only those submissions are returned which the user can access.
+        Public submissions are always included; private submisisons only
+        if the user is the owner or an admin.
+        """
 
 class InvalidDuplicateValue(Exception):
     """A bug cannot be set as the duplicate of another."""
