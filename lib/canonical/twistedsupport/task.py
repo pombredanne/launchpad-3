@@ -48,31 +48,32 @@ class PollingJobSource:
 
     implements(IJobSource)
 
-    def __init__(self, interval, get_job, clock=None):
+    def __init__(self, interval, job_factory, clock=None):
         """Construct a `PollingJobSource`.
 
-        Polls 'get_job' every 'interval' seconds. 'get_job' returns either
-        None if there's no work to do right now, or some representation of the
-        job which is passed to the 'accept_job' callable given to `start`.
+        Polls 'job_factory' every 'interval' seconds. 'job_factory' returns
+        either None if there's no work to do right now, or some representation
+        of the job which is passed to the 'accept_job' callable given to
+        `start`.
 
         :param interval: The length of time between polls in seconds.
-        :param get_job: The polling mechanism. This is a nullary callable that
-            can return a Deferred. See above for more details.
+        :param job_factory: The polling mechanism. This is a nullary callable
+            that can return a Deferred. See above for more details.
         :param clock: An `IReactorTime` implementation that we use to manage
             the interval-based polling. Defaults to using the reactor (i.e.
             actual time).
         """
-        self.interval = interval
-        self.get_job = get_job
+        self._interval = interval
+        self._job_factory = job_factory
         if clock is None:
             clock = reactor
         self._clock = clock
 
-    def start(self, acceptJob):
+    def start(self, accept_job):
         """See `IJobSource`."""
-        self._looping_call = LoopingCall(self.get_job)
+        self._looping_call = LoopingCall(self._job_factory)
         self._looping_call.clock = self._clock
-        self._looping_call.start(self.interval)
+        self._looping_call.start(self._interval)
 
     def stop(self):
         """See `IJobSource`."""
