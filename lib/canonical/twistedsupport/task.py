@@ -1,9 +1,12 @@
 # Copyright 2009 Canonical Ltd.  All rights reserved.
 
-"""Module docstring goes here."""
+"""Tools for managing long-running or difficult jobs with Twisted."""
 
 __metaclass__ = type
-__all__ = []
+__all__ = [
+    'IJobSource',
+    'PollingJobSource',
+    ]
 
 from twisted.internet import defer
 from twisted.internet.task import LoopingCall
