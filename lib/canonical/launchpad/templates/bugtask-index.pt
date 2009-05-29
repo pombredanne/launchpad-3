@@ -342,6 +342,16 @@
                   tal:content="structure
                   comment_form/actions/field.actions.save/render" />
               </form>
+              <tal:comment condition="nothing">
+                <!-- If javascript is enabled, hide the Save Changes button.
+                It will be replaced later by an "Add comment" link,
+                which does commenting inline. The reason for hiding the
+                button is that it's kind of ugly having it transformed
+                into a link. Better to hide it and have it appear after
+                a while. At some point we should be able to hook up
+                inline commenting earlier than in the on-load handler,
+                which would make this hack not needed. -->
+              </tal:comment>
               <script type="text/javascript">
                 var button = document.getElementById('field.actions.save');
                 button.style.display = 'none';
