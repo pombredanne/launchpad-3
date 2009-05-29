@@ -466,9 +466,11 @@ class HWSubmissionSet:
             HWDevice.bus_vendor == HWVendorID.id
             ]
 
-        clauses.append(
-            Or(In(Bug.id, bug_ids),
-               And(Bug.id == BugTag.bugID, In(BugTag.tag, bug_tags))))
+        if bug_ids is not None and bug_ids is not []:
+            clauses.append(In(Bug.id, bug_ids))
+
+        if bug_tags is not None and bug_tags is not []:
+            clauses.extend([Bug.id == BugTag.bugID, In(BugTag.tag, bug_tags)])
 
         clauses.append(self._userHasAccessStormClause(user))
 

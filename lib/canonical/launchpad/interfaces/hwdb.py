@@ -352,9 +352,24 @@ class IHWSubmissionSet(Interface):
         owner of the private submission or if user is an admin.
         """
 
-    def hwInfoByBugRelatedUsers(bug_ids=None, bug_tags=None, affected_by_bug=False,
-                           subscribed_to_bug=False, user=None):
-        """Return owners of devices related to given bugs.""" 
+    def hwInfoByBugRelatedUsers(
+        bug_ids=None, bug_tags=None, affected_by_bug=False,
+        subscribed_to_bug=False, user=None):
+        """Return a list of tuples of owners and devices related to given bugs.
+
+        Actually returns a list of tuples where the tuple is of the form,
+        (person name, bus name, vendor id, product id).`
+
+        :param bug_ids: A sequence of bug IDs for which affected
+            are looked up.
+        :param bug_tags: A sequence of bug tags
+        :param affected_by_bug: If True, those persons are looked up that
+            have marked themselves as being affected by a one of the bugs
+            matching the bug criteria.
+        :param subscribed_to_bug: If True, those persons are looked up that
+            are subscribed to a bug matching one of the bug criteria.
+        :param user: The person making the query.
+        """
 
 
 class IHWSystemFingerprint(Interface):
@@ -1451,7 +1466,7 @@ class IHWDBApplication(ILaunchpadApplication, ITopLevelEntryLink):
     def hwInfoByBugRelatedUsers(
         bug_ids=None, bug_tags=None, affected_by_bug=False,
         subscribed_to_bug=False, user=None):
-        """Return a list of devices and their owners for one or more bugs.
+        """Return a list of tuples of owners and devices related to given bugs.
 
         Actually returns a list of tuples where the tuple is of the form,
         (person name, bus name, vendor id, product id).`
