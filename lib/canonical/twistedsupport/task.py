@@ -72,9 +72,15 @@ class PollingJobSource:
 
     def start(self, job_consumer):
         """See `IJobSource`."""
-        self._looping_call = LoopingCall(self._job_factory)
+        self._looping_call = LoopingCall(self._poll, job_consumer)
         self._looping_call.clock = self._clock
         self._looping_call.start(self._interval)
+
+    def _poll(self, job_consumer):
+        """Poll for jobs, passing them to 'job_consumer'."""
+        job = self._job_factory()
+        if job is not None:
+            job_consumer(job)
 
     def stop(self):
         """See `IJobSource`."""

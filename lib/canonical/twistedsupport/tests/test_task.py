@@ -42,16 +42,22 @@ class TestPollingJobSource(TestCase):
         TestCase.setUp(self)
         self._num_job_factory_calls = 0
 
-    def _job_factory(self):
+    def _default_job_consumer(self, job):
+        # For many tests, we can safely ignore jobs.
+        pass
+
+    def _default_job_factory(self):
         self._num_job_factory_calls += 1
         return None
 
-    def makeJobSource(self, interval=None, clock=None):
+    def makeJobSource(self, job_factory=None, interval=None, clock=None):
+        if job_factory is None:
+            job_factory = self._default_job_factory
         if clock is None:
-            clock = BrokenClock()
+            clock = Clock()
         if interval is None:
             interval = self.factory.getUniqueInteger()
-        return PollingJobSource(interval, self._job_factory, clock=clock)
+        return PollingJobSource(interval, job_factory, clock=clock)
 
     def test_provides_IJobSource(self):
         # PollingJobSource instances provide IJobSource.
@@ -60,8 +66,8 @@ class TestPollingJobSource(TestCase):
     def test_start_commences_polling(self):
         # Calling `start` on a PollingJobSource begins polling the job
         # factory.
-        job_source = self.makeJobSource(clock=Clock())
-        job_source.start(None)
+        job_source = self.makeJobSource()
+        job_source.start(self._default_job_consumer)
         self.assertEqual(1, self._num_job_factory_calls)
 
     def test_start_continues_polling(self):
@@ -71,7 +77,7 @@ class TestPollingJobSource(TestCase):
         clock = Clock()
         interval = self.factory.getUniqueInteger()
         job_source = self.makeJobSource(interval=interval, clock=clock)
-        job_source.start(None)
+        job_source.start(self._default_job_consumer)
         self._num_job_factory_calls = 0
         clock.advance(interval)
         self.assertEqual(1, self._num_job_factory_calls)
@@ -82,7 +88,7 @@ class TestPollingJobSource(TestCase):
         clock = Clock()
         interval = self.factory.getUniqueInteger()
         job_source = self.makeJobSource(interval=interval, clock=clock)
-        job_source.start(None)
+        job_source.start(self._default_job_consumer)
         job_source.stop()
         self._num_job_factory_calls = 0
         clock.advance(interval)
@@ -94,10 +100,33 @@ class TestPollingJobSource(TestCase):
         # the polling loop to start from now.
         pass
 
+    def test_job_consumer_called_when_factory_produces_job(self):
+        # The job_consumer passed to start is called when the factory produces
+        # a job.
+        jobs = ['foo', 'bar']
+        jobs_called = []
+        job_source = self.makeJobSource(job_factory=iter(jobs).next)
+        job_source.start(jobs_called.append)
+        self.assertEqual([jobs[0]], jobs_called)
+
+    def test_job_consumer_not_called_when_factory_doesnt_produce(self):
+        # The job_consumer passed to start is *not* called when the factory
+        # returns None (implying there are no jobs to do right now).
+        job_factory = lambda: None
+        jobs_called = []
+        job_source = self.makeJobSource(job_factory=job_factory)
+        job_source.start(jobs_called.append)
+        self.assertEqual([], jobs_called)
+
+
     # XXX: starting multiple times
     # XXX: starting mulitple times with different accept_jobs
     # XXX: stopping multiple times
     # XXX: calling stop before start
+
+    # XXX: should these be deferred-y tests?
+    # XXX: rename 'job' to 'task'
+    # XXX: rename 'factory' to 'producer'.
 
 
 def test_suite():
