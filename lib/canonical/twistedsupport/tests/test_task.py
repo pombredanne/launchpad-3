@@ -90,6 +90,7 @@ class TestPollingJobSource(TestCase):
         self.assertEqual(0, self._num_job_factory_calls)
 
     # XXX: starting multiple times
+    # XXX: starting mulitple times with different accept_jobs
     # XXX: stopping multiple times
     # XXX: calling stop before start
     # XXX: the 'accept job' protocol

@@ -17,15 +17,26 @@ from zope.interface import implements, Interface
 
 
 class IJobSource(Interface):
-    """XXX: """
+    """A source of jobs to do."""
 
-    def start(acceptJob):
-        """XXX: """
-        pass
+    def start(accept_job):
+        """Start generating jobs.
+
+        If `start` has already been called, then this call is silently
+        ignored. XXX -- still need to decide this.
+
+        :param accept_job: A single-parameter callable that is called only
+            when there is new work to do.
+        """
 
     def stop():
-        """XXX: """
-        pass
+        """Stop generating jobs.
+
+        After this is called, the accept_job callable will not be called,
+        until `start` is called again.
+
+        Any subsequent calls to `stop` are silently ignored.
+        """
 
 
 class PollingJobSource:
