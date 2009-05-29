@@ -51,11 +51,16 @@ class PollingJobSource:
     def __init__(self, interval, get_job, clock=None):
         """Construct a `PollingJobSource`.
 
+        Polls 'get_job' every 'interval' seconds. 'get_job' returns either
+        None if there's no work to do right now, or a callable. Both 'get_job'
+        and the callable can return Deferreds, but don't have to.
+
         :param interval: The length of time between polls in seconds.
         :param get_job: The polling mechanism. This is a nullary callable that
-            can return a Deferred. It doesn't have to though.
+            can return a Deferred. See above for more details.
         :param clock: An `IReactorTime` implementation that we use to manage
-            the interval-based polling.
+            the interval-based polling. Defaults to using the reactor (i.e.
+            actual time).
         """
         self.interval = interval
         self.get_job = get_job
