@@ -40,9 +40,13 @@ class PollingJobSource:
 
     def start(self, acceptJob):
         """XXX """
-        looping_call = LoopingCall(self.get_job)
-        looping_call.clock = self._clock
-        looping_call.start(self.interval)
+        self._looping_call = LoopingCall(self.get_job)
+        self._looping_call.clock = self._clock
+        self._looping_call.start(self.interval)
+
+    def stop(self):
+        """XXX """
+        self._looping_call.stop()
 
 
 

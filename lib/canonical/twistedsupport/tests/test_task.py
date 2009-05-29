@@ -76,6 +76,19 @@ class TestPollingJobSource(TestCase):
         clock.advance(interval)
         self.assertEqual(1, self._num_job_factory_calls)
 
+    def test_stop_stops_polling(self):
+        # Calling `stop` after a PollingJobSource has started will stop the
+        # polling.
+        clock = Clock()
+        interval = self.factory.getUniqueInteger()
+        job_source = self.makeJobSource(interval=interval, clock=clock)
+        job_source.start(None)
+        job_source.stop()
+        self._num_job_factory_calls = 0
+        clock.advance(interval)
+        # No more calls were made.
+        self.assertEqual(0, self._num_job_factory_calls)
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
