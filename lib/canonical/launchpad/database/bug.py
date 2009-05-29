@@ -1562,8 +1562,8 @@ class BugSet:
     def getDistinctBugsForBugTasks(self, bug_tasks, user, limit=10):
         """See `IBugSet`."""
         # XXX: Graham Binns 2009-05-28 bug=75764
-        #      We slice matching_bugtasks here to prevent this method
-        #      from timing out, since if we try to iterate over it
+        #      We slice bug_tasks here to prevent this method from
+        #      causing timeouts, since if we try to iterate over it
         #      Transaction.iterSelect() will try to listify the results.
         #      This can be fixed by selecting from Bugs directly, but
         #      that's non-trivial.
