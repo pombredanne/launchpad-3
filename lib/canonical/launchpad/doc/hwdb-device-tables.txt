@@ -2513,6 +2513,30 @@ We can also query for bug tags instead of bug numbers.
     (u'name12', <DBItem HWBus.IDE, (7) IDE>, u'SEAGATE', u'ST3250820NS     ')
     (u'name16', <DBItem HWBus.IDE, (7) IDE>, u'SEAGATE', u'ST3250820NS     ')
 
+We can also query for both bug ids and bug tags together.
+
+    >>> for entry in submission_set.hwInfoByBugRelatedUsers (
+    ...     bug_ids=[2], bug_tags=['pebcak']):
+    ...     print entry
+    (u'name12', <DBItem HWBus.SYSTEM, (0) System>, u'MSI', u'MS-7369')
+    (u'name12', <DBItem HWBus.SYSTEM, (0) System>, u'Tonka', u'Tuffbook 2600')
+    (u'name12', <DBItem HWBus.PCI, (1) PCI>, u'0x10de', u'0x0455')
+    (u'name12', <DBItem HWBus.PCI, (1) PCI>, u'0x10de', u'0x045d')
+    (u'name12', <DBItem HWBus.PCI, (1) PCI>, u'0x8086', u'0x27cc')
+    (u'name12', <DBItem HWBus.USB, (2) USB>, u'0x04b4', u'0x6560')
+    (u'name12', <DBItem HWBus.USB, (2) USB>, u'0x07b3', u'0x0017')
+    (u'name12', <DBItem HWBus.USB, (2) USB>, u'0x0dda', u'0x2026')
+    (u'name12', <DBItem HWBus.USB, (2) USB>, u'0x8086', u'0x1234')
+    (u'name12', <DBItem HWBus.IDE, (7) IDE>, u'Optiarc', u'DVD RW AD-7170S ')
+    (u'name12', <DBItem HWBus.IDE, (7) IDE>, u'SEAGATE', u'ST3250820NS     ')
+
+Also, confirm that nothing is returned where there is no matching
+tag on a given bug id.
+
+    >>> print len(submission_set.hwInfoByBugRelatedUsers (
+    ...     bug_ids=[3], bug_tags=['pebcak']))
+    0
+
 This method can also be used to list devices where the
 device owner is affected by the bug.
 
