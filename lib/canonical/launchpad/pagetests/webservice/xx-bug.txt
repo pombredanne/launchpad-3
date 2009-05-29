@@ -486,14 +486,29 @@ similar to bug 1 for Firefox.
 If we add a new bug that's quite similar to others, findSimilarBugs()
 will return something more useful.
 
-    >>> new_bug = webservice.named_post(
+    >>> print webservice.named_post(
     ...     '/bugs', 'createBug',
     ...     title='a', description='Test bug',
-    ...     target=firefox['self_link']).jsonBody()
+    ...     target=firefox['self_link'])
+    HTTP/1.1 201 Created...
+
+    >>> bugs = webservice.get("/bugs").jsonBody()
+    >>> bug_entries = sorted(bugs['entries'], key=itemgetter('id'))
+    >>> new_bug = webservice.get(bug_entries[-1]['self_link']).jsonBody()
 
     >>> new_bug_task = webservice.get(
-    ...     webservice.getAbsoluteUrl('/firefox/+bug/' + new_bug['id'])
+    ...     webservice.getAbsoluteUrl('/firefox/+bug/%s' % new_bug['id'])
     ...     ).jsonBody()
+
+    >>> print webservice.named_get(
+    ...     new_bug_task['self_link'],
+    ...     'findSimilarBugs')
+    HTTP/1.1 200 Ok...
+    {"total_size": 4, "start": 0, "entries":...
+    "id": 1... "title": "Firefox does not support SVG"...
+    "id": 4... "title": "Reflow problems with complex page layouts"...
+    "id": 5... "title": "Firefox install instructions should be complete"...
+    "id": ...  "title": "Test bug"...
 
 
 == Bug subscriptions ==
