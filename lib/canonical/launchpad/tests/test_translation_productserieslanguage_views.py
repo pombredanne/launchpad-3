@@ -86,9 +86,10 @@ class TestProductSeries(TestCaseWithFactory):
 
         login_person(user)
         view = ProductSeriesView(self.productseries, LaunchpadTestRequest())
+        # Returned languages are ordered by their name in English.
         self.assertEquals(
-            [psl.language.code for psl in view.productserieslanguages],
-            [u'sr', u'es'])
+            [psl.language.englishname for psl in view.productserieslanguages],
+            [u'Serbian', u'Spanish'])
 
 
 class TestProductSeriesLanguage(TestCaseWithFactory):

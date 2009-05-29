@@ -54,5 +54,5 @@ class IProductSeriesLanguageSet(Interface):
         productseries and language.
         """
 
-    def getForProductSeriesAndLanguage(productseries, language, variant=None):
+    def getProductSeriesLanguage(productseries, language, variant=None):
         """Return a PSL for a productseries and a language."""

@@ -13,11 +13,7 @@
 <body>
 
 <metal:heading fill-slot="pageheading">
-  <h1>
-    <tal:language replace="context/language/englishname">Serbian</tal:language>
-    translation of
-    <tal:product replace="context/productseries/product/displayname">Evolution</tal:product>
-  </h1>
+  <h1 tal:content="context/title" />
 </metal:heading>
 
 <div metal:fill-slot="main">
@@ -183,17 +179,18 @@
 
 <div metal:fill-slot="help">
   <p>
-    This page shows each of the translation templates in each of the source
-    packages in the
-    <span tal:replace="context/distroseries/displayname">hoary</span>
-    series of
-    <span tal:replace="context/distroseries/distribution/displayname">Ubuntu
-    </span>. Select a template to start translating.
+    This page shows all translations to
+    <span tal:replace="context/language/englishname">Serbian</span>
+    in
+    <span tal:replace="context/productseries/product/displayname">Evolution
+    </span>
+    <span tal:replace="context/productseries/displayname">trunk</span>.
+    Select a template to start translating.
   </p>
   <ul class="info">
     <li>
-      <a href="https://help.launchpad.net/RosettaFAQ"
-      >Frequently asked questions</a>
+      <a href="https://help.launchpad.net/Translations"
+      >Launchpad Translations help</a>
     </li>
   </ul>
 </div>

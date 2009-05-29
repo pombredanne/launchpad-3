@@ -18,11 +18,11 @@
             <td>
               <tal:multiple_pofile condition="not:view/single_potemplate">
               <a tal:attributes="href language_stats/fmt:url"
-                   tal:content="language_stats/title">Serbian</a>
+                 tal:content="language_stats/language/englishname">Serbian</a>
               </tal:multiple_pofile>
               <tal:single_pofile condition="view/single_potemplate">
                 <a tal:attributes="href language_stats/pofile/fmt:url/+translate"
-                     tal:content="language_stats/title">Serbian</a>
+                   tal:content="language_stats/title">Serbian</a>
               </tal:single_pofile>
             </td>
             <td style="white-space: nowrap">

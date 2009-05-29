@@ -1111,10 +1111,7 @@ products_index = 'Projects registered in Launchpad'
 
 products_review_licenses = 'Review licenses of projects'
 
-def productserieslanguage_index(context, view):
-    """Return the page title to edit a poll's option."""
-    return '%s translations for %s' % (
-        context.language.englishname, context.productseries.title)
+productserieslanguage_index = ContextTitle('%s')
 
 productseries_export = ContextTitle('Download translations for "%s"')
 

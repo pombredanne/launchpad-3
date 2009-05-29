@@ -101,7 +101,7 @@ class ProductSeriesNavigation(Navigation, BugTargetTraversalMixin):
     @stepthrough('+lang')
     def traverse_lang(self, langcode):
         """Retrieve the ProductSeriesLanguage or a dummy if it is None."""
-        # We do not want users to see the 'en' potemplate because
+        # We do not want users to see the 'en' pofile because
         # we store the messages we want to translate as English.
         if langcode == 'en':
             raise NotFoundError(langcode)
@@ -113,7 +113,7 @@ class ProductSeriesNavigation(Navigation, BugTargetTraversalMixin):
             # Unknown language code.
             raise NotFoundError
         psl_set = getUtility(IProductSeriesLanguageSet)
-        psl = psl_set.getForProductSeriesAndLanguage(self.context, lang)
+        psl = psl_set.getProductSeriesLanguage(self.context, lang)
 
         return psl
 
@@ -645,20 +645,19 @@ class ProductSeriesView(LaunchpadView, TranslationsMixin):
                     productserieslangs.append(
                         productserieslang)
 
-        return sorted(productserieslangs, key=lambda a: a.language.englishname)
+        return sorted(productserieslangs,
+                      key=lambda a: a.language.englishname)
 
     @property
     def has_translation_documentation(self):
-        """Return whether there are translation instructions for this product.
-        """
+        """Are there translation instructions for this product."""
         translation_group = self.context.product.translationgroup
         return (translation_group is not None and
                 translation_group.translation_guide_url is not None)
 
     @property
     def single_potemplate(self):
-        """Return whether there are translation instructions for this product.
-        """
+        """Does this ProductSeries have exactly one POTemplate."""
         return self.context.potemplate_count == 1
 
 

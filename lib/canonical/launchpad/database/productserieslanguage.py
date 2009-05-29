@@ -1,6 +1,6 @@
 # Copyright 2009 Canonical Ltd.  All rights reserved.
 
-"""An implementation of ProductSeriesLanguage objects."""
+"""Database and utility classes for IProductSeriesLanguage."""
 
 __metaclass__ = type
 
@@ -21,11 +21,9 @@ from canonical.launchpad.database.potemplate import POTemplate
 from canonical.launchpad.interfaces import (
     IProductSeriesLanguage, IProductSeriesLanguageSet)
 
-class ProductSeriesLanguage(RosettaStats):
-    """See `IProductSeriesLanguage`.
 
-    Implementation of IProductSeriesLanguage.
-    """
+class ProductSeriesLanguage(RosettaStats):
+    """See `IProductSeriesLanguage`."""
     implements(IProductSeriesLanguage)
 
     def __init__(self, productseries, language, variant=None, pofile=None):
@@ -33,9 +31,9 @@ class ProductSeriesLanguage(RosettaStats):
             'English is not a translatable language.')
         RosettaStats.__init__(self)
         self.productseries = productseries
-        self._language = language
-        self.pofile = pofile
+        self.language = language
         self.variant = variant
+        self.pofile = pofile
         self.id = 0
 
         # Reset all cached counts.
@@ -43,28 +41,21 @@ class ProductSeriesLanguage(RosettaStats):
 
     def setCounts(self, total=None, imported=None, changed=None, new=None,
                   unreviewed=None):
+        """Set aggregated message counts for ProductSeriesLanguage."""
         self._messagecount = total
+        # "currentcount" in RosettaStats conflicts our recent terminology
+        # and is closer to "imported" (except that it doesn't include
+        # "changed") translations.
         self._currentcount = imported
         self._updatescount = changed
         self._rosettacount = new
         self._unreviewed_count = unreviewed
 
     @property
-    def language(self):
-        return self._language
-
-    def testStatistics(self):
-        """See `IProductSeriesLanguage`."""
-        pass
-
-    @property
     def title(self):
         """See `IProductSeriesLanguage`."""
-        return self.language.englishname
-
-    def updateStatistics(self):
-        """See `IProductSeriesLanguage`."""
-        pass
+        return '%s translations for %s' % (
+            self.language.englishname, self.productseries.title)
 
     def messageCount(self):
         """See `IProductSeriesLanguage`."""
@@ -152,12 +143,12 @@ class DummyProductSeriesLanguage(ProductSeriesLanguage):
 class ProductSeriesLanguageSet:
     """See `IProductSeriesLanguageSet`.
 
-    Implements a means to get a DummyProductSeriesLanguage.
+    Provides a means to get a ProductSeriesLanguage or create a dummy.
     """
     implements(IProductSeriesLanguageSet)
 
-    def getForProductSeriesAndLanguage(self, productseries, language,
-                                       variant=None):
+    def getProductSeriesLanguage(self, productseries, language,
+                                 variant=None):
         """See `IProductSeriesLanguageSet`."""
         return ProductSeriesLanguage(productseries, language, variant)
 

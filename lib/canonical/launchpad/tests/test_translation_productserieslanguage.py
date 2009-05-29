@@ -134,27 +134,27 @@ class TestProductSeriesLanguageStatsCalculation(TestCaseWithFactory):
         self.psl_set = getUtility(IProductSeriesLanguageSet)
         self.language = getUtility(ILanguageSet).getLanguageByCode('sr')
 
+    def assertPSLStatistics(self, psl, stats):
+        self.assertEquals(
+            (psl.messageCount(),
+             psl.translatedCount(),
+             psl.currentCount(),
+             psl.rosettaCount(),
+             psl.updatesCount(),
+             psl.unreviewedCount()),
+            stats)
+
     def test_DummyProductSeriesLanguage(self):
         # With no templates all counts are zero.
         psl = self.psl_set.getDummy(self.productseries, self.language)
         self.failUnless(verifyObject(IProductSeriesLanguage, psl))
-        self.assertEquals(psl.messageCount(), 0)
-        self.assertEquals(psl.translatedCount(), 0)
-        self.assertEquals(psl.currentCount(), 0)
-        self.assertEquals(psl.rosettaCount(), 0)
-        self.assertEquals(psl.updatesCount(), 0)
-        self.assertEquals(psl.unreviewedCount(), 0)
+        self.assertPSLStatistics(psl, (0, 0, 0, 0, 0, 0))
 
         # Adding a single template with 10 messages makes the total
         # count of messages go up to 10.
         potemplate = self.createPOTemplateWithPOTMsgSets(10)
         psl = self.psl_set.getDummy(self.productseries, self.language)
-        self.assertEquals(psl.messageCount(), 10)
-        self.assertEquals(psl.translatedCount(), 0)
-        self.assertEquals(psl.currentCount(), 0)
-        self.assertEquals(psl.rosettaCount(), 0)
-        self.assertEquals(psl.updatesCount(), 0)
-        self.assertEquals(psl.unreviewedCount(), 0)
+        self.assertPSLStatistics(psl, (10, 0, 0, 0, 0, 0))
 
     def test_OneTemplate(self):
         # With only one template, statistics match those of the POFile.
@@ -166,19 +166,19 @@ class TestProductSeriesLanguageStatsCalculation(TestCaseWithFactory):
         self.setPOFileStatistics(pofile, 4, 2, 3, 5)
 
         # Getting PSL through PSLSet gives an uninitialized object.
-        psl = self.psl_set.getForProductSeriesAndLanguage(
+        psl = self.psl_set.getProductSeriesLanguage(
             self.productseries, self.language)
         self.assertEquals(psl.messageCount(), None)
 
         # So, we need to get it through productseries.productserieslanguages.
         psl = self.productseries.productserieslanguages[0]
-        self.assertEquals(psl.messageCount(), pofile.messageCount())
-        self.assertEquals(psl.translatedCount(), pofile.translatedCount())
-        self.assertEquals(psl.currentCount(), pofile.currentCount())
-        self.assertEquals(psl.rosettaCount(), pofile.rosettaCount())
-        self.assertEquals(psl.updatesCount(), pofile.updatesCount())
-        self.assertEquals(psl.unreviewedCount(), pofile.unreviewedCount())
-
+        self.assertPSLStatistics(psl,
+                                 (pofile.messageCount(),
+                                  pofile.translatedCount(),
+                                  pofile.currentCount(),
+                                  pofile.rosettaCount(),
+                                  pofile.updatesCount(),
+                                  pofile.unreviewedCount()))
 
     def test_TwoTemplates(self):
         # With two templates, statistics are added up.
@@ -197,37 +197,16 @@ class TestProductSeriesLanguageStatsCalculation(TestCaseWithFactory):
         psl = self.productseries.productserieslanguages[0]
 
         # Total is a sum of totals in both POTemplates (10+20).
-        self.assertEquals(
-            psl.messageCount(),
-            pofile1.messageCount() + pofile2.messageCount())
-        self.assertEquals(psl.messageCount(), 30)
-
-        self.assertEquals(
-            psl.currentCount(),
-            pofile1.currentCount() + pofile2.currentCount())
-        self.assertEquals(psl.currentCount(), 5)
-
-        self.assertEquals(
-            psl.rosettaCount(),
-            pofile1.rosettaCount() + pofile2.rosettaCount())
-        self.assertEquals(psl.rosettaCount(), 4)
-
         # Translated is a sum of imported and rosetta translations,
         # which adds up as (4+3)+(1+1).
-        self.assertEquals(
-            psl.translatedCount(),
-            pofile1.translatedCount() + pofile2.translatedCount())
-        self.assertEquals(psl.translatedCount(), 9)
-
-        self.assertEquals(
-            psl.updatesCount(),
-            pofile1.updatesCount() + pofile2.updatesCount())
-        self.assertEquals(psl.updatesCount(), 3)
-
-        self.assertEquals(
-            psl.unreviewedCount(),
-            pofile1.unreviewedCount() + pofile2.unreviewedCount())
-        self.assertEquals(psl.unreviewedCount(), 6)
+        self.assertPSLStatistics(psl, (30, 9, 5, 4, 3, 6))
+        self.assertPSLStatistics(psl, (
+            pofile1.messageCount() + pofile2.messageCount(),
+            pofile1.translatedCount() + pofile2.translatedCount(),
+            pofile1.currentCount() + pofile2.currentCount(),
+            pofile1.rosettaCount() + pofile2.rosettaCount(),
+            pofile1.updatesCount() + pofile2.updatesCount(),
+            pofile1.unreviewedCount() + pofile2.unreviewedCount()))
 
 
 def test_suite():
