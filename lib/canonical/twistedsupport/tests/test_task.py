@@ -214,8 +214,6 @@ class TestPollingTaskSource(TestCase):
         reason = consumer._task_production_failed_calls[0]
         self.assertTrue(reason.check(ZeroDivisionError))
 
-    # XXX: handle task_consumer errors
-
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

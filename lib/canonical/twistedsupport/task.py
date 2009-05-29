@@ -42,6 +42,10 @@ class ITaskConsumer(Interface):
     def taskStarted(task):
         """Called when the task source generates a task.
 
+        This is a throw-it-over-the-wall interface used by ITaskSource.
+        ITaskSource expects it to finish quickly and to not raise errors. Any
+        return value is completely ignored.
+
         :param task: There is no defined interface.
         """
 
