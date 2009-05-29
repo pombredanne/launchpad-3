@@ -47,18 +47,22 @@ milestone has any bugs or specifications.
     ...     print spec.title
     dodo
 
-The bugtasks are decorated. They are BugTaskListingItem that has cached
-information to create badges quickly. The _bug_badge_properties
-property provides the addtional information that is used by the decorator.
+The bugtasks are decorated. They are wrapped by the BugTaskListingItem that
+has cached information to create badges quickly. The _bug_badge_properties
+property provides the additional information that is used by the decorator.
 
     >>> view.bugtasks
     [<...BugTaskListingItem ...>]
 
-    >>> view._bug_badge_properties
-    {<BugTask ...>:
-        {'has_mentoring_offer': False,
-        'has_branch': False,
-        'has_specification': False}}
+    >>> for bugtask in view._bug_badge_properties:
+    ...     bugtask
+    ...     badge_dict = view._bug_badge_properties[bugtask]
+    ...     for key in sorted(badge_dict):
+    ...         print '%s: %s' % (key, badge_dict[key])
+    <BugTask ...>
+        has_branch: False
+        has_mentoring_offer: False
+        has_specification: False
 
 There bugtask_count_text and specification_count_text properties provide
 formatted text descriptions of the bugtasks and specifications. The text
