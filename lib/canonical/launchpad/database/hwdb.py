@@ -414,16 +414,17 @@ class HWSubmissionSet:
         clauses.append(HWSubmission.owner == Person.id)
         clauses.append(self._userHasAccessStormClause(user))
 
-        if (bug_ids is not None and len(bug_ids) > 0 or
-            bug_tags is not None and len(bug_tags) > 0):
-            bug_clause = Or(
-                In(Bug.id, bug_ids),
-                And(Bug.id == BugTag.bugID, In(BugTag.tag, bug_tags)))
-            clauses.append(bug_clause)
-        else:
-            raise ParameterError(
-                'One of the parameters bug_ids or bug_tags must not be '
-                'empty.')
+        if ((bug_ids is None or len(bug_ids) == 0) and
+            (bug_tags is None or len(bug_tags) == 0)):
+            raise ParameterError('bug_ids or bug_tags must be supplied.')
+
+        if bug_ids is not None and bug_ids is not []:
+            clauses.append(In(Bug.id, bug_ids))
+
+        if bug_tags is not None and bug_tags is not []:
+            clauses.extend([
+                Bug.id == BugTag.bugID, In(BugTag.tag, bug_tags)])
+
         person_clauses = [
             Bug.ownerID == HWSubmission.ownerID
             ]
@@ -450,7 +451,8 @@ class HWSubmissionSet:
         """See `IHWSubmissionSet`."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
 
-        if bug_ids is None and bug_tags is None:
+        if ((bug_ids is None or len(bug_ids) == 0) and
+            (bug_tags is None or len(bug_tags) == 0)):
             raise ParameterError('bug_ids or bug_tags must be supplied.')
 
         tables = [

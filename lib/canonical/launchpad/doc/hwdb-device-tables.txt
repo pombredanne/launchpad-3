@@ -2423,6 +2423,20 @@ more bug tags.
     ...     driver_name='sd', bug_tags=['lunch-money']).count()
     0
 
+We can also query for both bug ids and bug tags together.
+
+    >>> for person in submission_set.deviceDriverOwnersAffectedByBugs(
+    ...     driver_name='sd', bug_ids=[2], bug_tags=['pebcak']):
+    ...     print person.displayname
+    Sample Person
+
+Also, confirm that nothing is returned where there is no matching
+tag on a given bug id.
+
+    >>> print len(list(submission_set.deviceDriverOwnersAffectedByBugs(
+    ...     driver_name='sd', bug_ids=[3], bug_tags=['pebcak'])))
+    0
+
 If neither a device nor a driver name is specified,
 deviceDriverOwnersAffectedByBugs() raises an error.
 
@@ -2447,7 +2461,7 @@ The result is a tuple of (owner_id, bus_number, vender_id, product_id).
 
     >>> sample_person = getUtility(IPersonSet).getByName('name12')
 
-    >>> for entry in submission_set.hwInfoByBugRelatedUsers (
+    >>> for entry in submission_set.hwInfoByBugRelatedUsers(
     ...     bug_ids=[1]):
     ...     print entry
     (u'name12', <DBItem HWBus.SYSTEM, (0) System>, u'MSI', u'MS-7369')
@@ -2464,7 +2478,7 @@ The result is a tuple of (owner_id, bus_number, vender_id, product_id).
 
 This method can also take a list of bugs.
 
-    >>> for entry in submission_set.hwInfoByBugRelatedUsers (
+    >>> for entry in submission_set.hwInfoByBugRelatedUsers(
     ...     bug_ids=[1, 3]):
     ...     print entry
     (u'name12', <DBItem HWBus.SYSTEM, (0) System>, u'MSI', u'MS-7369')
@@ -2482,7 +2496,7 @@ This method can also take a list of bugs.
 
 We can also query for bug tags instead of bug numbers.
 
-    >>> for entry in submission_set.hwInfoByBugRelatedUsers (
+    >>> for entry in submission_set.hwInfoByBugRelatedUsers(
     ...     bug_tags=['pebcak']):
     ...     print entry
     (u'name12', <DBItem HWBus.SYSTEM, (0) System>, u'MSI', u'MS-7369')
@@ -2497,7 +2511,7 @@ We can also query for bug tags instead of bug numbers.
     (u'name12', <DBItem HWBus.IDE, (7) IDE>, u'Optiarc', u'DVD RW AD-7170S ')
     (u'name12', <DBItem HWBus.IDE, (7) IDE>, u'SEAGATE', u'ST3250820NS     ')
 
-    >>> for entry in submission_set.hwInfoByBugRelatedUsers (
+    >>> for entry in submission_set.hwInfoByBugRelatedUsers(
     ...     bug_tags=['pebcak', 'crash']):
     ...     print entry
     (u'name12', <DBItem HWBus.SYSTEM, (0) System>, u'MSI', u'MS-7369')
@@ -2515,7 +2529,7 @@ We can also query for bug tags instead of bug numbers.
 
 We can also query for both bug ids and bug tags together.
 
-    >>> for entry in submission_set.hwInfoByBugRelatedUsers (
+    >>> for entry in submission_set.hwInfoByBugRelatedUsers(
     ...     bug_ids=[2], bug_tags=['pebcak']):
     ...     print entry
     (u'name12', <DBItem HWBus.SYSTEM, (0) System>, u'MSI', u'MS-7369')
@@ -2533,7 +2547,7 @@ We can also query for both bug ids and bug tags together.
 Also, confirm that nothing is returned where there is no matching
 tag on a given bug id.
 
-    >>> print len(submission_set.hwInfoByBugRelatedUsers (
+    >>> print len(submission_set.hwInfoByBugRelatedUsers(
     ...     bug_ids=[3], bug_tags=['pebcak']))
     0
 
@@ -2542,7 +2556,7 @@ device owner is affected by the bug.
 
     >>> bug_one.markUserAffected(foo_bar)
 
-    >>> for entry in submission_set.hwInfoByBugRelatedUsers (
+    >>> for entry in submission_set.hwInfoByBugRelatedUsers(
     ...     bug_ids=[1], affected_by_bug=True):
     ...     print entry
     (u'name12', <DBItem HWBus.SYSTEM, (0) System>, u'MSI', u'MS-7369')
@@ -2565,7 +2579,7 @@ We can also check for when the user is subscribed to the bug.
     >>> bug_one.subscribe(foo_bar, subscribed_by=foo_bar)
     <BugSubscription ...
 
-    >>> for entry in submission_set.hwInfoByBugRelatedUsers (
+    >>> for entry in submission_set.hwInfoByBugRelatedUsers(
     ...     bug_ids=[1], subscribed_to_bug=True):
     ...     print entry
     (u'name12', <DBItem HWBus.SYSTEM, (0) System>, u'MSI', u'MS-7369')
@@ -2589,7 +2603,7 @@ The owner of a private submission can see his or her submission.
     >>> bug_one.subscribe(no_priv, subscribed_by=no_priv)
     <BugSubscription ...
 
-    >>> for entry in submission_set.hwInfoByBugRelatedUsers (
+    >>> for entry in submission_set.hwInfoByBugRelatedUsers(
     ...     bug_ids=[1], subscribed_to_bug=True, user=no_priv):
     ...     print entry
     (u'name12', <DBItem HWBus.SYSTEM, (0) System>, u'MSI', u'MS-7369')
@@ -2607,7 +2621,7 @@ The owner of a private submission can see his or her submission.
 
 An admin can also see no_priv's private entry.
 
-    >>> for entry in submission_set.hwInfoByBugRelatedUsers (
+    >>> for entry in submission_set.hwInfoByBugRelatedUsers(
     ...     bug_ids=[1], subscribed_to_bug=True, user=foo_bar):
     ...     print entry
     (u'name12', <DBItem HWBus.SYSTEM, (0) System>, u'MSI', u'MS-7369')
@@ -2626,7 +2640,7 @@ An admin can also see no_priv's private entry.
 But sample_person cannot see the private entry because she
 is not the owner or an admin.
 
-    >>> for entry in submission_set.hwInfoByBugRelatedUsers (
+    >>> for entry in submission_set.hwInfoByBugRelatedUsers(
     ...     bug_ids=[1], subscribed_to_bug=True, user=sample_person):
     ...     print entry
     (u'name12', <DBItem HWBus.SYSTEM, (0) System>, u'MSI', u'MS-7369')
