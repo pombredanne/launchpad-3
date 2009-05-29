@@ -22,12 +22,13 @@ setup(
                  'for software projects.'),
     license='LGPL v3',
     install_requires=[
-        'setuptools',
+        'feedvalidator',
+        'launchpadlib',
+        'lazr.uri',
         'oauth',
         'python-openid',
-        'launchpadlib',
+        'setuptools',
         'wadllib',
-        'feedvalidator',
     ],
     url='https://launchpad.net/',
     classifiers=[
