@@ -561,12 +561,17 @@ class DistributionPackageSearchView(PackageSearchViewBase):
         # Note: the non exact matches result set is borked?? no union method,
         # count is 7, but only 1 item...
         non_exact_matches = self.context.searchBinaryPackages(self.text)
-        fti_search = self.context.searchBinaryPackagesFTI(self.text)
-        #import pdb;pdb.set_trace()
-        # union = non_exact_matches.union(fti_search._without_prejoins(True)._result_set)
-        #union = non_exact_matches.union(fti_search)
-        #return union
-        return fti_search
+
+        # We're using the decorated result set here only because it
+        # includes a work-around for bug 217644 (Storm ignores distinct
+        # option for aggregates like count).
+        from canonical.launchpad.components.decoratedresultset import (
+            DecoratedResultSet)
+        def dummy_func(item):
+            return item
+        non_exact_matches = DecoratedResultSet(non_exact_matches, dummy_func)
+
+        return non_exact_matches.config(distinct=True)
 
     @property
     def search_by_binary_name(self):
@@ -595,8 +600,6 @@ class DistributionPackageSearchView(PackageSearchViewBase):
         """Define the matching binary names for each result in the batch."""
         names = {}
         for package in self.batchnav.currentBatch():
-            # This will usue the DSPC's binary package names property TODO
-            binary_names_string = "blah-one firefox-one firefox-two firefox-three"
             binary_names_list = package.binpkgnames.split(' ')
             matching_names = [
                 name for name in binary_names_list if self.text in name]

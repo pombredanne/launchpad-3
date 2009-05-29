@@ -51,7 +51,9 @@ And then after creating a copy archive for Ubuntu:
     >>> archives.count()
     1
 
-== DistributionPackageSearchView ==
+
+DistributionPackageSearchView
+=============================
 
 The DistributionPackageSearchView adds some functionality to the base
 PackageSearchView class, specifically for making the results more useful.
@@ -94,23 +96,8 @@ The DistributionPackageSearchView view has an exact_matches property
 and a has_exact_matches property which are used to find packages that
 match exactly on the binary/source name.
 
-First, we'll create a binary 'mozilla-firefox' for the source package
-'my-branded-browser':
-
-    >>> from canonical.launchpad.tests.test_publishing import (
-    ...     SoyuzTestPublisher)
-    >>> test_publisher = SoyuzTestPublisher()
-    >>> test_publisher.prepareBreezyAutotest()
-    >>> my_branded_browser = test_publisher.getPubSource(
-    ...     sourcename='my-branded-browser')
-    >>> mozilla_firefox_bins = test_publisher.getPubBinaries(
-    ...     binaryname='mozilla-firefox', pub_source=my_branded_browser)
-    >>> mozilla_firefox_bins[0].binarypackagerelease.sourcepackagename
-    u'my-branded-browser'
-
-In the following example, there
-are two source packages that have a binary with the exact name
-'mozilla-firefox':
+In the following example, there is one source package that has a binary
+with the exact name 'mozilla-firefox':
 
     >>> distro_pkg_search_view = create_initialized_view(
     ...     ubuntu, name="+search", form={'text': 'mozilla-firefox'})
@@ -119,22 +106,38 @@ are two source packages that have a binary with the exact name
     >>> for package in distro_pkg_search_view.exact_matches:
     ...     print package.name
     mozilla-firefox
-    my-branded-browser
 
 The DistributionPackageSearchView also has a helper property to
 help templates print the list of distroseries that an exactly-matched
 package is available in:
 
     >>> distro_pkg_search_view.distroseries_names
-    {u'mozilla-firefox': u'warty', u'my-branded-browser': u'breezyautotest'}
+    {u'mozilla-firefox': u'warty'}
     >>> distro_pkg_search_view = create_initialized_view(
     ...     ubuntu, name="+search", form={'text': 'foobar'})
     >>> distro_pkg_search_view.distroseries_names
+    {u'foobar': ''}
 
 Another helper on the DistributionPackageSearchView is the
 matching_binary_names property which can be used by templates to get
 a list of the binary names that matched the search term for each
 package:
 
+    >>> distro_pkg_search_view = create_initialized_view(
+    ...     ubuntu, name="+search", form={'text': 'moz'})
+    >>> distro_pkg_search_view.matching_binary_names
+    {u'mozilla-firefox': u'mozilla-firefox'}
 
 
+Substring matches
+=================
+
+The DistributionPackageSearchView includes substring matches by default.
+
+    >>> search_results = distro_pkg_search_view.search_results
+    >>> search_results.count()
+    1
+
+    >>> for pkg in search_results:
+    ...     print pkg.name
+    mozilla-firefox

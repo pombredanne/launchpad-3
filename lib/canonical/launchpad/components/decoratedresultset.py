@@ -11,6 +11,7 @@ from storm.zope.interfaces import IResultSet
 
 from lazr.delegates import delegates
 
+from zope.security.proxy import removeSecurityProxy
 
 class DecoratedResultSet(object):
     """A decorated Storm ResultSet for 'Magic' (presenter) classes.
@@ -153,8 +154,13 @@ class DecoratedResultSet(object):
         # Only override the method call if
         #  1) The result set has the distinct config set
         #  2) count was called without any args or kwargs
-        if self.result_set._distinct and len(args) == 0 and len(kwargs) == 0:
-            spec = self.result_set._find_spec
+
+        # Because the decorated resultset can be used from within views,
+        # self.result_set can be security proxied.
+        exposed_result_set = removeSecurityProxy(self.result_set)
+        if (exposed_result_set._distinct and
+            len(args) == 0 and len(kwargs) == 0):
+            spec = exposed_result_set._find_spec
             columns, tables = spec.get_columns_and_tables()
 
             # Note: The following looks a bit suspect because it will only
