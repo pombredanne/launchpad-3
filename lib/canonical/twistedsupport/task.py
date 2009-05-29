@@ -26,9 +26,10 @@ class PollingJobSource:
 
     implements(IJobSource)
 
-    def __init__(self, interval, get_job):
+    def __init__(self, interval, get_job, clock=None):
         self.interval = interval
         self.get_job = get_job
+        self._clock = clock
 
     def start(self, acceptJob):
         self.get_job()
