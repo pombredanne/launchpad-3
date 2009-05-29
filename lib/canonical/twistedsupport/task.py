@@ -69,9 +69,13 @@ class PollingTaskSource:
         if clock is None:
             clock = reactor
         self._clock = clock
+        self._looping_call = None
 
     def start(self, task_consumer):
         """See `ITaskSource`."""
+        # XXX: maybe interval should be passed here
+        if self._looping_call is not None:
+            self.stop()
         self._looping_call = LoopingCall(self._poll, task_consumer)
         self._looping_call.clock = self._clock
         self._looping_call.start(self._interval)
@@ -85,6 +89,7 @@ class PollingTaskSource:
     def stop(self):
         """See `ITaskSource`."""
         self._looping_call.stop()
+        self._looping_call = None
 
 
 

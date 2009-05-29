@@ -95,10 +95,39 @@ class TestPollingTaskSource(TestCase):
         # No more calls were made.
         self.assertEqual(0, self._num_task_producer_calls)
 
-    def test_start_multiple_times(self):
-        # Starting a task source multiple times polls immediately and resets
-        # the polling loop to start from now.
-        pass
+    def test_start_multiple_times_polls_immediately(self):
+        # Starting a task source multiple times polls immediately.
+        clock = Clock()
+        interval = self.factory.getUniqueInteger()
+        task_source = self.makeTaskSource(interval=interval, clock=clock)
+        task_source.start(self._default_task_consumer)
+        clock.advance(interval / 2.0)
+        self._num_task_producer_calls = 0
+        task_source.start(self._default_task_consumer)
+        self.assertEqual(1, self._num_task_producer_calls)
+
+    def test_start_multiple_times_resets_polling_loop(self):
+        # Starting a task source multiple times resets the polling loop to
+        # start from now.
+        clock = Clock()
+        interval = self.factory.getUniqueInteger()
+        task_source = self.makeTaskSource(interval=interval, clock=clock)
+        task_source.start(self._default_task_consumer)
+        clock.advance(interval / 2.0)
+        task_source.start(self._default_task_consumer)
+        self._num_task_producer_calls = 0
+        clock.advance(interval)
+        self.assertEqual(1, self._num_task_producer_calls)
+
+    def test_starting_again_changes_consumer(self):
+        # Starting a task source again changes the task consumer.
+        tasks = ['foo', 'bar']
+        consumer1 = []
+        consumer2 = []
+        task_source = self.makeTaskSource(task_producer=iter(tasks).next)
+        task_source.start(consumer1.append)
+        task_source.start(consumer2.append)
+        self.assertEqual(([tasks[0]], [tasks[1]]), (consumer1, consumer2))
 
     def test_task_consumer_called_when_factory_produces_task(self):
         # The task_consumer passed to start is called when the factory produces
@@ -118,9 +147,6 @@ class TestPollingTaskSource(TestCase):
         task_source.start(tasks_called.append)
         self.assertEqual([], tasks_called)
 
-
-    # XXX: starting multiple times
-    # XXX: starting mulitple times with different accept_tasks
     # XXX: stopping multiple times
     # XXX: calling stop before start
     # XXX: should these be deferred-y tests?
