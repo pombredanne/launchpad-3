@@ -26,12 +26,23 @@ class IJobSource(Interface):
 
 
 class PollingJobSource:
-    """XXX """
+    """A job source that polls to generate jobs.
+
+    Useful for systems where we need to poll a central server in order to find
+    new work to do.
+    """
 
     implements(IJobSource)
 
     def __init__(self, interval, get_job, clock=None):
-        """XXX """
+        """Construct a `PollingJobSource`.
+
+        :param interval: The length of time between polls in seconds.
+        :param get_job: The polling mechanism. This is a nullary callable that
+            can return a Deferred. It doesn't have to though.
+        :param clock: An `IReactorTime` implementation that we use to manage
+            the interval-based polling.
+        """
         self.interval = interval
         self.get_job = get_job
         if clock is None:
@@ -39,13 +50,13 @@ class PollingJobSource:
         self._clock = clock
 
     def start(self, acceptJob):
-        """XXX """
+        """See `IJobSource`."""
         self._looping_call = LoopingCall(self.get_job)
         self._looping_call.clock = self._clock
         self._looping_call.start(self.interval)
 
     def stop(self):
-        """XXX """
+        """See `IJobSource`."""
         self._looping_call.stop()
 
 
