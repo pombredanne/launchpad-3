@@ -1459,15 +1459,19 @@ class BugTaskSet:
             else:
                 # Otherwise, we just pass the value (which is either
                 # naked or wrapped in `any` for SQL construction).
-                assert len(tags_exclude) == 0, (
-                    "Cannot exclude tags in an any query.")
-                assert len(tags_include) > 0, (
-                    "No include tags specified.")
-                tags_clauses.append(
-                    "BugTag.bug = BugTask.bug AND BugTag.tag %s" % (
-                        search_value_to_where_condition(tags_include)))
+                if len(tags_exclude) > 0:
+                    tags_clauses.append(
+                        "BugTask.bug NOT IN ("
+                        "    SELECT BugTag.bug"
+                        "      FROM BugTag"
+                        "     WHERE BugTag.tag IN (%s))" % ','.join(
+                            sqlvalues(*tags_exclude)))
+                if len(tags_include) > 0:
+                    tags_clauses.append(
+                        "(BugTag.bug = BugTask.bug AND BugTag.tag %s)" % (
+                            search_value_to_where_condition(tags_include)))
+                    clauseTables.append('BugTag')
                 extra_clauses.append(' OR '.join(tags_clauses))
-                clauseTables.append('BugTag')
 
         # XXX Tom Berger 2008-02-14:
         # We use StructuralSubscription to determine
