@@ -1434,26 +1434,39 @@ class BugTaskSet:
             extra_clauses.append(upstream_clause)
 
         if params.tag:
+            tags_clauses = []
+            tags_include = [
+                tag for tag in params.tag.query_values
+                if not tag.startswith('!')]
+            tags_exclude = [
+                tag[1:] for tag in params.tag.query_values
+                if tag.startswith('!')]
             if zope_isinstance(params.tag, all):
                 # If the user chose to search for
                 # the presence of all specified bugs,
                 # we must handle the search differently.
-                tags_clauses = []
-                for tag in params.tag.query_values:
-                    tags_clauses.append("""
-                    EXISTS(
-                      SELECT *
-                      FROM BugTag
-                      WHERE BugTag.bug = BugTask.bug
-                      AND BugTag.tag = %s)
-                      """ % sqlvalues(tag))
+                tags_template = (
+                    "%s (SELECT * FROM BugTag"
+                    "     WHERE BugTag.bug = BugTask.bug"
+                    "       AND BugTag.tag = %s)")
+                tags_clauses.extend(
+                    tags_template % ("EXISTS", quote(tag))
+                    for tag in tags_include)
+                tags_clauses.extend(
+                    tags_template % ("NOT EXISTS", quote(tag))
+                    for tag in tags_exclude)
                 extra_clauses.append(' AND '.join(tags_clauses))
             else:
                 # Otherwise, we just pass the value (which is either
                 # naked or wrapped in `any` for SQL construction).
-                tags_clause = "BugTag.bug = BugTask.bug AND BugTag.tag %s" % (
-                    search_value_to_where_condition(params.tag))
-                extra_clauses.append(tags_clause)
+                assert len(tags_exclude) == 0, (
+                    "Cannot exclude tags in an any query.")
+                assert len(tags_include) > 0, (
+                    "No include tags specified.")
+                tags_clauses.append(
+                    "BugTag.bug = BugTask.bug AND BugTag.tag %s" % (
+                        search_value_to_where_condition(tags_include)))
+                extra_clauses.append(' OR '.join(tags_clauses))
                 clauseTables.append('BugTag')
 
         # XXX Tom Berger 2008-02-14:

@@ -25,12 +25,10 @@ __all__ = [
     'IURIField',
     'IWhiteboard',
     'IconImageUpload',
-    'is_private_membership',
-    'is_valid_public_person',
     'KEEP_SAME_IMAGE',
+    'LocationField',
     'LogoImageUpload',
     'MugshotImageUpload',
-    'LocationField',
     'ParticipatingPersonChoice',
     'PasswordField',
     'PillarAliases',
@@ -38,6 +36,7 @@ __all__ = [
     'ProductBugTracker',
     'ProductNameField',
     'PublicPersonChoice',
+    'SearchTag',
     'StrippedTextLine',
     'Summary',
     'Tag',
@@ -46,6 +45,8 @@ __all__ = [
     'URIField',
     'UniqueField',
     'Whiteboard',
+    'is_private_membership',
+    'is_valid_public_person',
     ]
 
 
@@ -286,6 +287,19 @@ class Tag(TextLine):
         """Make sure that the value is a valid name."""
         super_constraint = TextLine.constraint(self, value)
         return super_constraint and valid_name(value)
+
+
+class SearchTag(Tag):
+    def constraint(self, value):
+        """Make sure the value is a valid search tag.
+
+        A valid search tag is a valid name or a valid name prepended
+        with an exclamation mark, denoting "not this tag".
+        """
+        if value.startswith('!'):
+            return super(SearchTag, self).constraint(value[1:])
+        else:
+            return super(SearchTag, self).constraint(value)
 
 
 class PasswordField(Password):
