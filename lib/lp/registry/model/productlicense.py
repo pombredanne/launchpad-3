@@ -3,7 +3,10 @@
 """Database classes including and related to ProductLicense."""
 
 __metaclass__ = type
-__all__ = ['ProductLicense']
+__all__ = [
+    'ProductLicense',
+    ]
+
 
 from sqlobject import ForeignKey
 from zope.interface import implements
@@ -12,6 +15,8 @@ from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
 from lp.registry.interfaces.product import License
 from lp.registry.interfaces.productlicense import IProductLicense
+
+
 class ProductLicense(SQLBase):
     """A product's license."""
     implements(IProductLicense)
