@@ -296,7 +296,9 @@ class SearchTag(Tag):
         A valid search tag is a valid name or a valid name prepended
         with an exclamation mark, denoting "not this tag".
         """
-        if value.startswith('!'):
+        if value in ('*', '!*'):
+            return True
+        elif value.startswith('!'):
             return super(SearchTag, self).constraint(value[1:])
         else:
             return super(SearchTag, self).constraint(value)

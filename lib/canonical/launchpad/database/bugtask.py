@@ -1434,17 +1434,27 @@ class BugTaskSet:
             extra_clauses.append(upstream_clause)
 
         if params.tag:
+            tags = set(params.tag.query_values)
+            tags_wildcards = [tag for tag in tags if tag in ('*', '!*')]
+            tags.difference_update(tags_wildcards)
+            tags_include = [tag for tag in tags if not tag.startswith('!')]
+            tags_exclude = [tag[1:] for tag in tags if tag.startswith('!')]
             tags_clauses = []
-            tags_include = [
-                tag for tag in params.tag.query_values
-                if not tag.startswith('!')]
-            tags_exclude = [
-                tag[1:] for tag in params.tag.query_values
-                if tag.startswith('!')]
+
+            # Search for the *presence* of any tag.
+            if '*' in tags_wildcards:
+                tags_clauses.append(
+                    "BugTag.bug = BugTask.bug")
+                clauseTables.append('BugTag')
+
+            # Search for the *absense* of any tag.
+            if '!*' in tags_wildcards:
+                tags_clauses.append(
+                    "BugTask.bug NOT IN ("
+                    "    SELECT BugTag.bug FROM BugTag)")
+
             if zope_isinstance(params.tag, all):
-                # If the user chose to search for
-                # the presence of all specified bugs,
-                # we must handle the search differently.
+                # Search for the presence of *all* specified tags.
                 tags_template = (
                     "%s (SELECT * FROM BugTag"
                     "     WHERE BugTag.bug = BugTask.bug"
@@ -1457,8 +1467,7 @@ class BugTaskSet:
                     for tag in tags_exclude)
                 extra_clauses.append(' AND '.join(tags_clauses))
             else:
-                # Otherwise, we just pass the value (which is either
-                # naked or wrapped in `any` for SQL construction).
+                # Search for the presence of *any* specified tags.
                 if len(tags_exclude) > 0:
                     tags_clauses.append(
                         "BugTask.bug NOT IN ("
