@@ -602,7 +602,7 @@ class POTemplate(SQLBase, RosettaStats):
         # Convert query to Boolean to turn it into an existence check.
         return not bool(existing_pofiles)
 
-    def _composePOFilePath(self, language_code, variant=None):
+    def _composePOFilePath(self, language, variant=None):
         """Make up a good name for a new `POFile` for given language.
 
         The name should be unique in this `ProductSeries` or this combination
@@ -610,14 +610,9 @@ class POTemplate(SQLBase, RosettaStats):
         returned name will be unique, however, to avoid hiding obvious
         naming mistakes.
         """
-        if variant is None:
-            path_variant = ''
-        else:
-            path_variant = '@%s' % variant
-
         potemplate_dir = os.path.dirname(self.path)
-        path = '%s-%s%s.po' % (
-            self.translation_domain, language_code, path_variant)
+        path = '%s-%s.po' % (
+            self.translation_domain, language.getFullCode(variant))
 
         return os.path.join(potemplate_dir, path)
 
@@ -657,7 +652,7 @@ class POTemplate(SQLBase, RosettaStats):
         else:
             owner = getUtility(ILaunchpadCelebrities).rosetta_experts
 
-        path = self._composePOFilePath(language_code, variant)
+        path = self._composePOFilePath(language, variant)
 
         pofile = POFile(
             potemplate=self,

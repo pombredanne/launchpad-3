@@ -9,7 +9,7 @@
     <tal:product-link condition="view/show_product_link">
       - <img src="/@@/product" />
       <a tal:attributes="href string:${context/product/fmt:url}/+branches"
-	  tal:content="context/product/displayname">Project</a>
+      tal:content="context/product/displayname">Project</a>
     </tal:product-link>
   </div>
   <div>
@@ -17,10 +17,5 @@
       <span tal:replace="context/revision_count">35</span> revisions,
       <span tal:replace="view/recent_revision_count">31</span> in the past month.<br />
     </tal:revisions>
-  </div>
-  <div class="discreet"
-      tal:condition="context/summary" tal:content="context/summary">
-      This branch has a summary like this, it's a very simple description of
-      what the branch does.
   </div>
 </li>
