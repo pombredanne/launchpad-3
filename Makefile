@@ -58,12 +58,15 @@ check_loggerhead_on_merge:
 	make -C sourcecode/loggerhead check PYTHON=${PYTHON} \
 		PYTHON_VERSION=${PYTHON_VERSION} PYTHONPATH=$(PYTHONPATH)
 
-check_merge: $(PY)
+_pqm_flag:
+	touch _pqm_flag
+
+check_merge: _pqm_flag $(PY)
 	[ `PYTHONPATH= bzr status -S database/schema/ | \
 		grep -v "\(^P\|pending\|security.cfg\|Makefile\|unautovacuumable\|_pythonpath.py\)" | wc -l` -eq 0 ]
 	${PY} lib/canonical/tests/test_no_conflict_marker.py
 
-check_db_merge: $(PY)
+check_db_merge: _pqm_flag $(PY)
 	${PY} lib/canonical/tests/test_no_conflict_marker.py
 
 # This can be removed once we move to zc.buildout and we have versioned
@@ -102,10 +105,14 @@ eggs:
 	# deployment we create this ourselves.
 	mkdir eggs
 
+# We touch the _pqm_flag file when we want pqm to check out the
+# download cache sources.  Normally, we want a missing download-cache
+# to raise an error, so developers know to do the usual set-up.
 download-cache:
 	@echo "Missing buildout/download-cache."
 	@echo "Developers: please run utilities/link-external-dependencies."
-	@exit 1
+	[ -e _pqm_flag ]
+	bzr co lp:lp-source-dependencies download-cache
 
 # The download-cache dependency comes *before* eggs so that developers get the
 # warning before the eggs directory is made.  The target for the eggs directory
