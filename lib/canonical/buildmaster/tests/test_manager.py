@@ -28,7 +28,7 @@ from lp.registry.interfaces.distribution import IDistributionSet
 from canonical.launchpad.scripts.logger import BufferLogger
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from canonical.testing.layers import (
-    LaunchpadZopelessLayer, TwistedLayer)
+    LaunchpadScriptLayer, LaunchpadZopelessLayer, TwistedLayer)
 
 
 class TestRecordingSlaves(TrialTestCase):
@@ -691,7 +691,7 @@ class TestDispatchResult(unittest.TestCase):
 
 class TestBuilddManagerScript(unittest.TestCase):
 
-    layer = LaunchpadZopelessLayer
+    layer = LaunchpadScriptLayer
 
     def testBuilddManagerRuns(self):
         # Ensure `buildd-manager.tac` starts and stops correctly.
