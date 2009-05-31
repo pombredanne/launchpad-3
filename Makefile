@@ -41,7 +41,7 @@ schema: build clean_codehosting
 newsampledata:
 	$(MAKE) -C database/schema newsampledata
 
-hosted_branches:
+hosted_branches: $(PY)
 	$(PY) ./utilities/make-dummy-hosted-branches
 
 $(WADL_FILE): $(BZR_VERSION_INFO)
@@ -58,12 +58,12 @@ check_loggerhead_on_merge:
 	make -C sourcecode/loggerhead check PYTHON=${PYTHON} \
 		PYTHON_VERSION=${PYTHON_VERSION} PYTHONPATH=$(PYTHONPATH)
 
-check_merge:
+check_merge: $(PY)
 	[ `PYTHONPATH= bzr status -S database/schema/ | \
-		grep -v "\(^P\|pending\|security.cfg\|Makefile\|unautovacuumable\)" | wc -l` -eq 0 ]
+		grep -v "\(^P\|pending\|security.cfg\|Makefile\|unautovacuumable\|_pythonpath.py\)" | wc -l` -eq 0 ]
 	${PY} lib/canonical/tests/test_no_conflict_marker.py
 
-check_db_merge:
+check_db_merge: $(PY)
 	${PY} lib/canonical/tests/test_no_conflict_marker.py
 
 # This can be removed once we move to zc.buildout and we have versioned
@@ -84,10 +84,10 @@ lint:
 lint-verbose:
 	@bash ./utilities/lint.sh -v
 
-xxxreport:
+xxxreport: $(PY)
 	${PY} -t ./utilities/xxxreport.py -f csv -o xxx-report.csv ./
 
-check-configs:
+check-configs: $(PY)
 	${PY} utilities/check-configs.py
 
 pagetests: build
@@ -113,10 +113,10 @@ download-cache:
 bin/buildout: download-cache eggs
 	$(PYTHON) bootstrap.py
 
-bin/py: bin/buildout
+$(PY): bin/buildout
 	./bin/buildout configuration:instance_name=${LPCONFIG}
 
-compile: bin/py
+compile: $(PY)
 	${SHHH} $(MAKE) -C sourcecode build PYTHON=${PYTHON} \
 	    PYTHON_VERSION=${PYTHON_VERSION} LPCONFIG=${LPCONFIG}
 	${SHHH} LPCONFIG=${LPCONFIG} $(PY) -t buildmailman.py
