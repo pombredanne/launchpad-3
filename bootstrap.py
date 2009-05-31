@@ -13,7 +13,8 @@
 ##############################################################################
 
 # NOTE TO LAUNCHPAD DEVELOPERS: This is a bootstrapping file from the
-# zc.buildout project.  See the docstring below.
+# zc.buildout project, which we have hacked slightly.
+# See the docstring below for usage.
 
 """Bootstrap a buildout-based project
 
@@ -37,7 +38,10 @@ except ImportError:
     # exec urllib2.urlopen('http://peak.telecommunity.com/dist/ez_setup.py'
     #                      ).read() in ez
     exec open('ez_setup.py').read() in ez
-    ez['use_setuptools'](to_dir=tmpeggs, download_delay=0)
+    ez['use_setuptools'](
+        to_dir=tmpeggs,
+        download_base='file://%s/download-cache/dist/' % (os.getcwd(),),
+        download_delay=0)
 
     import pkg_resources
 
