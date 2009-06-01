@@ -962,17 +962,14 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             ).order_by('rank DESC')
 
         # Create a function that will decorate the results, converting
-        # them from the find_spec above into DSPs:
-        def result_to_dsp(result):
+        # them from the find_spec above into DSPCs:
+        def result_to_dspc(result):
             cache, source_package_name, rank = result
-            return DistributionSourcePackage(
-                self,
-                source_package_name
-                )
+            return cache
 
         # Return the decorated result set so the consumer of these
-        # results will only see DSPs
-        return DecoratedResultSet(dsp_caches, result_to_dsp)
+        # results will only see DSPCs
+        return DecoratedResultSet(dsp_caches, result_to_dspc)
 
     @property
     def _binaryPackageSearchClause(self):
