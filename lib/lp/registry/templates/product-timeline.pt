@@ -26,11 +26,7 @@
 
 <div metal:fill-slot="main">
 
-  <a id="zoom-in" href="javascript:void(0)">Zoom in</a>
-  | <a id="zoom-out" href="javascript:void(0)">Zoom out</a>
-
-  <div id="canvas-container">
-      <canvas id="supercanvas"></canvas>
+  <div id="timeline-container">
   </div>
   <script type="text/javascript">
     YUI().use('registry.timeline', 'node', function(Y) {
@@ -39,23 +35,14 @@
               return;
           }
 
-          var graph;
-          var zoom_in = Y.get('#zoom-in');
-          zoom_in.on('click', function() {
-              graph.zoom('in');
-          });
-
-          var zoom_out = Y.get('#zoom-out');
-          zoom_out.on('click', function() {
-              graph.zoom('out');
-          });
-
           var display_graph = function(result) {
               var timeline = result;
-              var canvas = document.getElementById('supercanvas');
-              graph = new Y.registry.timeline.TimelineGraph(
-                  timeline, canvas);
-              graph.draw();
+              var container = Y.get('#timeline-container');
+              graph = new Y.registry.timeline.TimelineGraph({
+                  timeline: timeline,
+                  boundingBox: container 
+              });
+              graph.render();
           }
 
           var client = new LP.client.Launchpad();
