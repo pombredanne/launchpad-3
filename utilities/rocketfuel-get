@@ -48,7 +48,7 @@ for branch in *; do
   if [ -d $branch/sourcecode ]
   then
     echo "Updating sourcecode dependencies for ${branch}"
-    $LP_TRUNK_NAME/utilities/link-external-sourcecode --target=$branch --parent=../$LP_SOURCEDEPS_DIR
+    $LP_TRUNK_NAME/utilities/link-external-sourcecode --target=$branch --parent=$LP_PROJECT_ROOT/$LP_SOURCEDEPS_DIR
   fi
 done
 
