@@ -10,6 +10,8 @@ import shutil
 import tempfile
 import unittest
 
+from bzrlib.transport import get_transport
+
 import pytz
 from storm.store import Store
 
@@ -20,6 +22,7 @@ from zope.interface.verify import verifyClass, verifyObject
 from zope.security.proxy import (
     isinstance as zope_isinstance, removeSecurityProxy)
 
+from lp.codehosting.bzrutils import ensure_base
 from lp.codehosting.vfs import branch_id_to_path, get_multi_server
 from canonical.config import config
 # Import the login and logout functions here as it is a much better
@@ -394,7 +397,6 @@ class TestCaseWithFactory(TestCase):
         :return: a `Branch` and a workingtree.
         """
         from bzrlib.bzrdir import BzrDir, format_registry
-        from bzrlib.transport import get_transport
         if format is not None and isinstance(format, basestring):
             format = format_registry.get(format)()
         if db_branch is None:
@@ -426,6 +428,11 @@ class TestCaseWithFactory(TestCase):
         server might be providing lp-mirrored: urls.
         """
         base = config.codehosting.internal_branch_by_id_root
+        # XXX gary 2009-5-28 bug 381325
+        # This is a work-around for some failures on PQM, arguably caused by
+        # relying on test set-up that is happening in the Makefile rather than
+        # the actual test set-up.
+        ensure_base(get_transport(base))
         return os.path.join(base, branch_id_to_path(branch.id))
 
     def createMirroredBranchAndTree(self):

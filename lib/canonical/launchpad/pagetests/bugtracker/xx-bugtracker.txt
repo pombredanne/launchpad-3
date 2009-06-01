@@ -32,6 +32,7 @@ synchronisation script requires manual set up of a bug archive mirror.
   Request Tracker (RT)
   Savane
   PHP Project Bugtracker
+  Google Code
 
 The bug tracker name is used in URLs and certain characters (like '!')
 aren't allowed.
