@@ -63,17 +63,34 @@ and the search_by_binary_name property is used to determine the search
 type (in templates):
 
     >>> distro_pkg_search_view = create_initialized_view(
-    ...     ubuntu, name="+search")
+    ...     ubuntu, name="+search", form={
+    ...         'text': 'a',
+    ...     })
     >>> distro_pkg_search_view.search_by_binary_name
     True
+    >>> for package in distro_pkg_search_view.search_results:
+    ...     print package.name
+    foobar
+    mozilla-firefox
+    commercialpackage
 
 But users can specify that the search should be on source-package-names
 instead:
 
     >>> distro_pkg_search_view = create_initialized_view(
-    ...     ubuntu, name="+search", form={'search_type': 'source'})
+    ...     ubuntu, name="+search", form={
+    ...         'text': 'a',
+    ...         'search_type': 'source'
+    ...     })
     >>> distro_pkg_search_view.search_by_binary_name
     False
+    >>> for package in distro_pkg_search_view.search_results:
+    ...     print package.name
+    netapplet
+    alsa-utils
+    foobar
+    mozilla-firefox
+    commercialpackage
 
 Unless the distribution being searched does not support binaries, in which
 cases it will always be on source:

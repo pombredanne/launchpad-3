@@ -50,6 +50,8 @@ from lp.soyuz.browser.build import BuildRecordsView
 from lp.answers.browser.faqtarget import FAQTargetNavigationMixin
 from canonical.launchpad.browser.feeds import FeedsMixin
 from canonical.launchpad.browser.packagesearch import PackageSearchViewBase
+from canonical.launchpad.components.decoratedresultset import (
+    DecoratedResultSet)
 from canonical.launchpad.components.request_country import (
     ipaddress_from_request, request_country)
 from lp.answers.browser.questiontarget import (
@@ -556,20 +558,19 @@ class DistributionPackageSearchView(PackageSearchViewBase):
 
     def contextSpecificSearch(self):
         """See `AbstractPackageSearchView`."""
-        # TODO: add condition on source/binary search...
-        # TODO: add union when both are storm resultsets...
-        # Note: the non exact matches result set is borked?? no union method,
-        # count is 7, but only 1 item...
-        non_exact_matches = self.context.searchBinaryPackages(self.text)
 
-        # We're using the decorated result set here only because it
-        # includes a work-around for bug 217644 (Storm ignores distinct
-        # option for aggregates like count).
-        from canonical.launchpad.components.decoratedresultset import (
-            DecoratedResultSet)
-        def dummy_func(item):
-            return item
-        non_exact_matches = DecoratedResultSet(non_exact_matches, dummy_func)
+        if self.search_by_binary_name:
+            non_exact_matches = self.context.searchBinaryPackages(self.text)
+
+            # We're using the decorated result set here only because it
+            # includes a work-around for bug 217644 (Storm ignores distinct
+            # option for aggregates like count).
+            def dummy_func(item):
+                return item
+            non_exact_matches = DecoratedResultSet(non_exact_matches, dummy_func)
+        else:
+            non_exact_matches = self.context.searchSourcePackages(self.text)
+
 
         return non_exact_matches.config(distinct=True)
 
