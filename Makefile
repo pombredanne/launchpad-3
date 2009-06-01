@@ -109,7 +109,7 @@ eggs:
 # download cache sources.  Normally, we want a missing download-cache
 # to raise an error, so developers know to do the usual set-up.
 download-cache:
-	@echo "Missing buildout/download-cache."
+	@echo "Missing ./download-cache."
 	@echo "Developers: please run utilities/link-external-sourcecode."
 	[ -e _pqm_flag ]
 	bzr co lp:lp-source-dependencies download-cache
