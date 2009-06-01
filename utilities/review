@@ -44,10 +44,10 @@ include the full branch url on a line by itself within the first 10 lines of
 the file.  Leading whitespace on the branch url line is ignored.
 
 This script parses the branch author's recipient email address from the branch
-url, requiring that the user portion of the path on devpad correspond directly
-to a deliverable email address @canonical.com.  E.g.:
+url, requiring that the user portion of the path on launchpad correspond
+directly to a deliverable email address @canonical.com.  E.g.:
 
-    bzr+ssh://devpad.canonical.com/code/barry/launchpad/review-script
+    bzr+ssh://bazaar.launchpad.net/~barry/launchpad/review-script
 
 For example, say you were reviewing the above branch, and you had a text file
 containing your marked up review.  Put that branch url within the first 10
@@ -98,7 +98,6 @@ def get_branch_and_user(filename):
     Return a 2-tuple of (branch, username).  If no matching branch url can be
     found within the first 10 lines of the file, (None, None) is returned.
     """
-    DEVPAD = 'devpad.canonical.com'
     LP = 'bazaar.launchpad.net'
     with open(filename) as fp:
         for i, line in enumerate(fp):
@@ -113,10 +112,6 @@ def get_branch_and_user(filename):
             if parts.netloc == LP:
                 username = path[1][1:]
                 return SLASH.join(path[1:]), username
-            elif parts.netloc == DEVPAD:
-                if path[1] <> 'code' or path[2] == 'launchpad':
-                    continue
-                return SLASH.join(path[2:]), path[2]
             else:
                 continue
         return None, None

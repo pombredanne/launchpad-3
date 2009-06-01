@@ -27,7 +27,6 @@ from zope.component import getUtility
 
 from canonical.buildd.utils import notes
 from canonical.config import config
-from lp.soyuz.interfaces.builder import IBuilderSet
 from canonical.launchpad.webapp import urlappend
 from canonical.librarian.db import write_transaction
 
@@ -153,6 +152,9 @@ class FailDispatchResult(BaseDispatchResult):
 
     @write_transaction
     def __call__(self):
+        # Avoiding circular imports.
+        from lp.soyuz.interfaces.builder import IBuilderSet
+
         builder = getUtility(IBuilderSet)[self.slave.name]
         builder.failbuilder(self.info)
         self._cleanJob(builder.currentjob)
@@ -170,6 +172,9 @@ class ResetDispatchResult(BaseDispatchResult):
 
     @write_transaction
     def __call__(self):
+        # Avoiding circular imports.
+        from lp.soyuz.interfaces.builder import IBuilderSet
+
         builder = getUtility(IBuilderSet)[self.slave.name]
         self._cleanJob(builder.currentjob)
 
@@ -302,6 +307,9 @@ class BuilddManager(service.Service):
         In a second stage (see resumeAndDispatch()) each of the latter will be
         handled in an asynchronous and parallel fashion.
         """
+        # Avoiding circular imports.
+        from lp.soyuz.interfaces.builder import IBuilderSet
+
         recording_slaves = []
         builder_set = getUtility(IBuilderSet)
 

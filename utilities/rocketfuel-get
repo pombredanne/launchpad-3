@@ -12,17 +12,29 @@ if [ "$?" != 0 ]; then
     exit 1
 fi
 
+LP_DOWNLOAD_CACHE_PATH=$LP_PROJECT_ROOT/$LP_SOURCEDEPS_DIR/download-cache
+LP_EGGS_PATH=$LP_PROJECT_ROOT/$LP_SOURCEDEPS_DIR/eggs
+LP_DOWNLOAD_CACHE_PATH=$(eval echo ${LP_DOWNLOAD_CACHE_PATH})
+LP_EGGS_PATH=$(eval echo ${LP_EGGS_PATH})
+
 # Pull launchpad devel from launchpad
 cd $LP_TRUNK_PATH
 INITIAL_REV=$(bzr revno)
 bzr pull
 FINAL_REV=$(bzr revno)
 
-# Create the source dependencies dir if this is the first time.
-if [ ! -d $LP_SOURCEDEPS_PATH ]
-then
-    mkdir -p $LP_SOURCEDEPS_PATH
+# Make sure our directories are around
+if [ ! -d $LP_SOURCEDEPS_PATH ]; then mkdir -p $LP_SOURCEDEPS_PATH; fi
+if [ ! -d $LP_EGGS_PATH ]; then mkdir -p $LP_EGGS_PATH; fi
+
+# Get/update the download cache
+if [ ! -d $LP_DOWNLOAD_CACHE_PATH ]
+    then bzr co lp:lp-source-dependencies $LP_DOWNLOAD_CACHE_PATH
 fi
+bzr up $LP_DOWNLOAD_CACHE_PATH
+
+# Create the source dependencies dir if this is the first time.
+if [ ! -d $LP_SOURCEDEPS_PATH ]; then mkdir -p $LP_SOURCEDEPS_PATH; fi
 
 # Add or update sourcepackages.
 local_deps="$here/"`dirname $0`'/sourcedeps.conf'
@@ -38,37 +50,21 @@ fi
 
 echo "Updating sourcecode dependencies in rocketfuel:"
 echo "    Sourcedeps: $LP_SOURCEDEPS_PATH"
-do_build=0
 package_pattern="s,.*/\([^/]*\)/[^/]*/,\1,;"
 for dep in $sourcedeps
 do
-    package=`echo $dep | sed -e $package_pattern`
+    package=`echo $dep | cut -d= -f1`
+    branch=`echo $dep | cut -d= -f2`
     package_path="$LP_SOURCEDEPS_PATH/$package"
     echo "    Checking $package_path"
     if [ -d $package_path ]
     then
         cd $package_path
-        start_rev=$(bzr revno)
-        bzr pull | sed -e 's,.*,        \0,'
-        finish_rev=$(bzr revno)
-        if [ $start_rev != $finish_rev ]
-        then
-            do_build=1
-        fi
+        bzr pull --remember $branch | sed -e 's,.*,        \0,'
     else
         echo "    >>> bzr branch $dep $package"
     fi
 done
-
-# If any changes were pulled, make all sourcecode.
-if [ $do_build ]
-then
-    echo "Building sourcecode dependancies"
-    cd $LP_SOURCEDEPS_PATH
-    make
-else
-    echo "Sourcecode dependancies do not need building"
-fi
 
 # Should we remove non-listed deps?
 
@@ -79,12 +75,14 @@ for branch in *; do
   if [ -d $branch/sourcecode ]
   then
     echo "    ${branch}"
-    $LP_TRUNK_NAME/utilities/link-external-sourcecode --target=$branch --parent=../$LP_SOURCEDEPS_DIR
+    $LP_TRUNK_NAME/utilities/link-external-sourcecode \
+        --target=$branch --parent=../$LP_SOURCEDEPS_DIR | \
+        sed -e 's,.*,        \0,'
   fi
 done
 
 # Build launchpad if there were changes
-if [ $FINAL_REV != $INITIAL_REV -o $do_build ];
+if [ $FINAL_REV != $INITIAL_REV ];
 then
     cd $LP_TRUNK_NAME
     make
