@@ -122,12 +122,7 @@ def export(distroseries, component, update, force_utf8, logger):
                 gc.collect()
 
         domain = potemplate.translation_domain.encode('ascii')
-        language_code = pofile.language.code.encode('ascii')
-
-        if pofile.variant is not None:
-            code = '%s@%s' % (language_code, pofile.variant.encode('UTF-8'))
-        else:
-            code = language_code
+        code = pofile.getFullLanguageCode().encode('UTF-8')
 
         if potemplate.source_file_format == TranslationFileFormat.XPI:
             xpi_templates_to_export.add(potemplate)

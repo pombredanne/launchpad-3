@@ -53,7 +53,7 @@ also sends the email to the list of recipients.
     >>> print branch_notification['From']
     foo@canonical.com
     >>> print branch_notification['Subject']
-    [Branch ~name12/firefox/main] Mozilla Firefox Mainline
+    [Branch ~name12/firefox/main]
     >>> print branch_notification['X-Launchpad-Project']
     firefox
     >>> print branch_notification['X-Launchpad-Branch']
@@ -65,7 +65,7 @@ also sends the email to the list of recipients.
     The contents.
     <BLANKLINE>
     --
-    Mozilla Firefox Mainline
+    lp://dev/~name12/firefox/main
     http://code.launchpad.dev/~name12/firefox/main
     <BLANKLINE>
     You are subscribed to branch lp://dev/~name12/firefox/main.
@@ -441,13 +441,13 @@ names just now, we'll pass them through anyway
     >>> print_email_details(notifications.pop())
     To: Sample Person <test@canonical.com>
     From: Sample Person <test@canonical.com>
-    Subject: [Branch ~name12/firefox/main] Mozilla Firefox Mainline
+    Subject: [Branch ~name12/firefox/main]
     Whiteboard changed to:
     <BLANKLINE>
     This is the new whiteboard
     <BLANKLINE>
     --
-    Mozilla Firefox Mainline
+    lp://dev/~name12/firefox/main
     http://code.launchpad.dev/~name12/firefox/main
     <BLANKLINE>
     You are subscribed to branch lp://dev/~name12/firefox/main.
@@ -473,14 +473,12 @@ something like this:
     >>> before_modification = Snapshot(branch, providing=IBranch)
 
     >>> branch.name = 'new-name'
-    >>> branch.title = 'New title'
-    >>> branch.summary = 'A new summary'
     >>> branch.url = 'http://example.com/foo'
     >>> branch.whiteboard = 'This is a multiline whiteboard\n' \
     ...  'with a really long line that should invoke the splitting ' \
     ...  'algorithm in the mail wrapper to make sure that the line ' \
     ...  'is not too long'
-    >>> from canonical.launchpad.interfaces import BranchLifecycleStatus
+    >>> from lp.code.interfaces.branch import BranchLifecycleStatus
     >>> branch.lifecycle_status = BranchLifecycleStatus.EXPERIMENTAL
     >>> updated_fields = ['name','title','summary','url','whiteboard','lifecycle_status']
     >>> notify(ObjectModifiedEvent(
@@ -492,15 +490,11 @@ something like this:
     >>> print_email_details(notifications.pop())
     To: Sample Person <test@canonical.com>
     From: Sample Person <test@canonical.com>
-    Subject: [Branch ~name12/firefox/new-name] New title
+    Subject: [Branch ~name12/firefox/new-name]
         Name: main => new-name
-        Title: Mozilla Firefox Mainline => New title
         Branch URL: http://bazaar.example.com/mozilla@arch.ubuntu.com/mozilla--MAIN--0 => http://example.com/foo
         Status: Development => Experimental
     <BLANKLINE>
-    Summary changed to:
-    <BLANKLINE>
-    A new summary
     <BLANKLINE>
     Whiteboard changed to:
     <BLANKLINE>
@@ -509,7 +503,7 @@ something like this:
     mail wrapper to make sure that the line is not too long
     <BLANKLINE>
     --
-    New title
+    lp://dev/~name12/firefox/new-name
     http://code.launchpad.dev/~name12/firefox/new-name
     <BLANKLINE>
     You are subscribed to branch lp://dev/~name12/firefox/new-name.
@@ -524,9 +518,8 @@ must also handle the unicode.
 
     >>> before_modification = Snapshot(branch, providing=IBranch)
 
-    >>> branch.title = u'New \ua000 title '
-    >>> branch.summary = u'A new \ua000 summary'
-    >>> updated_fields = ['title','summary']
+    >>> branch.whiteboard = u'A new \ua000 summary'
+    >>> updated_fields = ['whiteboard']
     >>> notify(ObjectModifiedEvent(
     ...     branch, before_modification, updated_fields))
 
@@ -536,83 +529,18 @@ must also handle the unicode.
     >>> print_email_details(notifications.pop())
     To: Sample Person <test@canonical.com>
     From: Sample Person <test@canonical.com>
-    Subject: =?utf-8?q?=5BBranch_=7Ename12/firefox/new-name=5D_New_=EA=80=80_ti?=
-      =?utf-8?q?tle_?=
-        Title: New title => New ꀀ title 
-    <BLANKLINE>
-    Summary changed to:
+    Subject: [Branch ~name12/firefox/new-name]
+    Whiteboard changed to:
     <BLANKLINE>
     A new ꀀ summary
     <BLANKLINE>
     --
-    New ꀀ title 
+    lp://dev/~name12/firefox/new-name
     http://code.launchpad.dev/~name12/firefox/new-name
     <BLANKLINE>
     You are subscribed to branch lp://dev/~name12/firefox/new-name.
     To unsubscribe from this branch go to
     http://code.launchpad.dev/~name12/firefox/new-name/+edit-subscription.
-
-
-== Blank titles ==
-
-If the title of the branch is None then the subject line just contains
-the unique name in square brackets.  This happens if the branch was created
-by pushing the branch to launchpad.
-
-    >>> branch.title = None
-    >>> before_modification = Snapshot(branch, providing=IBranch)
-
-    >>> branch.name = 'foo'
-    >>> updated_fields = ['name']
-    >>> notify(ObjectModifiedEvent(
-    ...     branch, before_modification, updated_fields))
-
-    >>> notifications = pop_notifications()
-    >>> len(notifications)
-    1
-    >>> print_email_details(notifications.pop())
-    To: Sample Person <test@canonical.com>
-    From: Sample Person <test@canonical.com>
-    Subject: [Branch ~name12/firefox/foo]
-        Name: new-name => foo
-    <BLANKLINE>
-    --
-    <BLANKLINE>
-    http://code.launchpad.dev/~name12/firefox/foo
-    <BLANKLINE>
-    You are subscribed to branch lp://dev/~name12/firefox/foo.
-    To unsubscribe from this branch go to
-    http://code.launchpad.dev/~name12/firefox/foo/+edit-subscription.
-
-
-== Overwriting Nones  ==
-
-If the branch was created by pushing, then some of the fields are None.
-We don't want to show None in the email, so we show (not set) instead.
-
-    >>> before_modification = Snapshot(branch, providing=IBranch)
-
-    >>> branch.title = 'A new title'
-    >>> updated_fields = ['title']
-    >>> notify(ObjectModifiedEvent(
-    ...     branch, before_modification, updated_fields))
-
-    >>> notifications = pop_notifications()
-    >>> len(notifications)
-    1
-    >>> print_email_details(notifications.pop())
-    To: Sample Person <test@canonical.com>
-    From: Sample Person <test@canonical.com>
-    Subject: [Branch ~name12/firefox/foo] A new title
-        Title: (not set) => A new title
-    <BLANKLINE>
-    --
-    A new title
-    http://code.launchpad.dev/~name12/firefox/foo
-    <BLANKLINE>
-    You are subscribed to branch lp://dev/~name12/firefox/foo.
-    To unsubscribe from this branch go to
-    http://code.launchpad.dev/~name12/firefox/foo/+edit-subscription.
 
 
 == Modifications by users other than the branch owner ==
@@ -633,10 +561,9 @@ Login as an admin user so we can alter the branch.
     >>> login('foo.bar@canonical.com')
     >>> before_modification = Snapshot(branch, providing=IBranch)
 
-    >>> branch.summary = 'Removed profanity'
     >>> branch.whiteboard = (
     ...     'Please refrain from bad language in a public arena.')
-    >>> updated_fields = ['summary', 'whiteboard']
+    >>> updated_fields = ['whiteboard']
     >>> notify(ObjectModifiedEvent(
     ...     branch, before_modification, updated_fields))
 
@@ -646,17 +573,14 @@ Login as an admin user so we can alter the branch.
     >>> print_email_details(notifications.pop())
     To: Sample Person <test@canonical.com>
     From: Foo Bar <foo.bar@canonical.com>
-    Subject: [Branch ~name12/gnome-terminal/main] GNOME Terminal Mainline
-    Summary changed to:
-    <BLANKLINE>
-    Removed profanity
+    Subject: [Branch ~name12/gnome-terminal/main]
     <BLANKLINE>
     Whiteboard changed to:
     <BLANKLINE>
     Please refrain from bad language in a public arena.
     <BLANKLINE>
     --
-    GNOME Terminal Mainline
+    lp://dev/~name12/gnome-terminal/main
     http://code.launchpad.dev/~name12/gnome-terminal/main
     <BLANKLINE>
     You are getting this email as you are the owner of the branch and someone
