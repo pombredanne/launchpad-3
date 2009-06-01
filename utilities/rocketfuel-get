@@ -4,46 +4,88 @@
 # sure all source dependencies are properly linked in to all the branches you
 # are working on.
 
+here=`pwd`
+
 source "$HOME/.rocketfuel-env.sh"
 if [ "$?" != 0 ]; then
     echo "Please run rocketfuel-setup first."
     exit 1
 fi
 
-DEVPAD="devpad.canonical.com"
-ROCKETFUELDEPS="/code/rocketfuel-built/launchpad/sourcecode/*"
-RSYNCOPTIONS="-avp --partial --progress --delete"
-# Note, we also add a filter when rsync is evoked.
-
-# Make sure we have an ssh key primed
-ssh-add -l
-if [ $? -gt 0 ]; then ssh-add; fi
-
-# Pull from devpad trunk
+# Pull launchpad devel from launchpad
 cd $LP_TRUNK_PATH
 INITIAL_REV=$(bzr revno)
 bzr pull
 FINAL_REV=$(bzr revno)
 
-# Update the source dependencies
-if [ ! -d $LP_SOURCEDEPS_PATH ]; then mkdir -p $LP_SOURCEDEPS_PATH; fi
+# Create the source dependencies dir if this is the first time.
+if [ ! -d $LP_SOURCEDEPS_PATH ]
+then
+    mkdir -p $LP_SOURCEDEPS_PATH
+fi
 
-# Several (*) have tried, and failed, to get the --filter to fit neatly
-# into RSYNCOPTIONS, so we put it here. Bash arrays do not count.
-#   * elmo, sabdfl
-rsync --filter=". utilities/sourcedeps.filter" $RSYNCOPTIONS $DEVPAD:$ROCKETFUELDEPS $LP_SOURCEDEPS_PATH/
+# Add or update sourcepackages.
+local_deps="$here/"`dirname $0`'/sourcedeps.conf'
+if [ -e $local_deps ]
+then
+    # Load the local deps, which the developer may be developing.
+    source $local_deps
+else
+    # Load the global deps which are stable.
+    echo could not find $local_deps
+    source $LP_TRUNK_PATH/utilities/sourcedeps.conf
+fi
 
+echo "Updating sourcecode dependencies in rocketfuel:"
+echo "    Sourcedeps: $LP_SOURCEDEPS_PATH"
+do_build=0
+package_pattern="s,.*/\([^/]*\)/[^/]*/,\1,;"
+for dep in $sourcedeps
+do
+    package=`echo $dep | sed -e $package_pattern`
+    package_path="$LP_SOURCEDEPS_PATH/$package"
+    echo "    Checking $package_path"
+    if [ -d $package_path ]
+    then
+        cd $package_path
+        start_rev=$(bzr revno)
+        bzr pull | sed -e 's,.*,        \0,'
+        finish_rev=$(bzr revno)
+        if [ $start_rev != $finish_rev ]
+        then
+            do_build=1
+        fi
+    else
+        echo "    >>> bzr branch $dep $package"
+    fi
+done
+
+# If any changes were pulled, make all sourcecode.
+if [ $do_build ]
+then
+    echo "Building sourcecode dependancies"
+    cd $LP_SOURCEDEPS_PATH
+    make
+else
+    echo "Sourcecode dependancies do not need building"
+fi
+
+# Should we remove non-listed deps?
+
+# Update the current trees in the repo.
+echo "Updating sourcecode dependencies in current local branches:"
 cd $LP_PROJECT_PATH
 for branch in *; do
   if [ -d $branch/sourcecode ]
   then
-    echo "Updating sourcecode dependencies for ${branch}"
+    echo "    ${branch}"
     $LP_TRUNK_NAME/utilities/link-external-sourcecode --target=$branch --parent=../$LP_SOURCEDEPS_DIR
   fi
 done
 
-# Exit if there are no new revisions
-if [ $FINAL_REV = $INITIAL_REV ]; then exit 0; fi
-
-cd $LP_TRUNK_NAME
-make
+# Build launchpad if there were changes
+if [ $FINAL_REV != $INITIAL_REV -o $do_build ];
+then
+    cd $LP_TRUNK_NAME
+    make
+fi
