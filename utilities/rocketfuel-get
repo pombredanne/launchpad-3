@@ -62,11 +62,10 @@ do
         cd $package_path
         bzr pull --remember $branch | sed -e 's,.*,        \0,'
     else
-        echo "    >>> bzr branch $dep $package"
+        cd $LP_SOURCEDEPS_PATH
+        bzr branch $branch $package | sed -e 's,.*,        \0,'
     fi
 done
-
-# Should we remove non-listed deps?
 
 # Update the current trees in the repo.
 echo "Updating sourcecode dependencies in current local branches:"
