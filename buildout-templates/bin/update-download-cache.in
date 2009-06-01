@@ -1,0 +1,2 @@
+bzr up ${buildout:directory}/buildout/download-cache
+
