@@ -74,6 +74,12 @@ type (in templates):
     mozilla-firefox
     commercialpackage
 
+Additionally, a helper property 'source_search_url' is included providing
+easy access to the equivalent search on sources:
+
+    >>> print distro_pkg_search_view.source_search_url
+    http://launchpad.dev/ubuntu/+search?search_type=source&text=a
+
 But users can specify that the search should be on source-package-names
 instead:
 
