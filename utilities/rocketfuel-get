@@ -76,7 +76,7 @@ for branch in *; do
   then
     echo "    ${branch}"
     $LP_TRUNK_NAME/utilities/link-external-sourcecode \
-        --target=$branch --parent=../$LP_SOURCEDEPS_DIR | \
+        --target=$branch --parent=$LP_PROJECT_ROOT/$LP_SOURCEDEPS_DIR | \
         sed -e 's,.*,        \0,'
   fi
 done
