@@ -23,13 +23,14 @@ from lp.codehosting.tests.servers import (
 from lp.codehosting import get_bzr_path, get_bzr_plugins_path
 from lp.codehosting.vfs import branch_id_to_path
 from canonical.config import config
-from canonical.database.constants import UTC_NOW
 from canonical.launchpad import database
 from canonical.launchpad.ftests import login, logout, ANONYMOUS
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
-from canonical.launchpad.interfaces import BranchLifecycleStatus, BranchType
 from canonical.testing import ZopelessAppServerLayer
 from canonical.testing.profiled import profiled
+
+from lp.code.interfaces.branch import BranchType
+from lp.code.interfaces.branchnamespace import get_branch_namespace
 
 
 class SSHServerLayer(ZopelessAppServerLayer):
@@ -211,8 +212,8 @@ class SSHTestCase(TestCaseWithTransport, LoomTestMixin):
             product = None
         else:
             product = database.Product.selectOneBy(name=productName)
-        return database.Branch.selectOneBy(
-            owner=owner, product=product, name=branchName)
+        namespace = get_branch_namespace(owner, product)
+        return namespace.getByName(branchName)
 
     def createBazaarBranch(self, user, product, branch, creator=None,
                            branch_root=None):
@@ -301,7 +302,7 @@ class AcceptanceTests(SSHTestCase):
             'Expected "Not a branch", found %r' % error_line)
 
     def makeDatabaseBranch(self, owner_name, product_name, branch_name,
-                           branch_type=BranchType.HOSTED, private=False):
+                           branch_type=BranchType.HOSTED):
         """Create a new branch in the database."""
         owner = database.Person.selectOneBy(name=owner_name)
         if product_name == '+junk':
@@ -312,13 +313,11 @@ class AcceptanceTests(SSHTestCase):
             url = 'http://example.com'
         else:
             url = None
-        return database.Branch(
-            registrant=owner,
-            name=branch_name, owner=owner, author=owner, product=product,
-            url=url, title=None,
-            lifecycle_status=BranchLifecycleStatus.DEVELOPMENT,
-            summary=None, whiteboard=None, private=private,
-            date_created=UTC_NOW, branch_type=branch_type)
+
+        namespace = get_branch_namespace(owner, product)
+        return namespace.createBranch(
+            branch_type=branch_type, name=branch_name, registrant=owner,
+            url=url)
 
     def test_push_to_new_branch(self):
         """
