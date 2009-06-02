@@ -101,7 +101,7 @@ inplace: build
 build: $(BZR_VERSION_INFO) compile apidoc
 
 eggs:
-	# Usually this is linked via link-external-dependencies, but in
+	# Usually this is linked via link-external-sourcecode, but in
 	# deployment we create this ourselves.
 	mkdir eggs
 
@@ -109,8 +109,8 @@ eggs:
 # download cache sources.  Normally, we want a missing download-cache
 # to raise an error, so developers know to do the usual set-up.
 download-cache:
-	@echo "Missing buildout/download-cache."
-	@echo "Developers: please run utilities/link-external-dependencies."
+	@echo "Missing ./download-cache."
+	@echo "Developers: please run utilities/link-external-sourcecode."
 	[ -e _pqm_flag ]
 	bzr co lp:lp-source-dependencies download-cache
 
