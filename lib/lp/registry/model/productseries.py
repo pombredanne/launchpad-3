@@ -458,7 +458,7 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
                     milestone.product_release, path_only_if_possible=True)
             landmarks.append(dict(
                 name=milestone.name, code_name=milestone.code_name,
-                type=node_type, uri=uri);
+                type=node_type, uri=uri))
         return dict(
             name=self.name,
             is_development_focus=self.is_development_focus,
