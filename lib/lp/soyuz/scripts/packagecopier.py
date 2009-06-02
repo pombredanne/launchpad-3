@@ -115,7 +115,6 @@ def check_archive_conflicts(source, archive, series, include_binaries):
     destination_archive_conflicts = archive.getPublishedSources(
         name=source.sourcepackagerelease.name,
         version=source.sourcepackagerelease.version,
-        status=active_publishing_status,
         exact_match=True)
 
     if destination_archive_conflicts.count() == 0:
@@ -149,7 +148,8 @@ def check_archive_conflicts(source, archive, series, include_binaries):
         # not going to change in terms of new builds and the resulting
         # binaries will match. See more details in
         # `ISourcePackageRelease.getBuildsByArch`.
-        if candidate.distroseries.id == series.id:
+        if (candidate.distroseries.id == series.id and
+            archive.id == source.archive.id):
             continue
 
         # Conflicting candidates building in a different series are a
@@ -171,16 +171,17 @@ def check_archive_conflicts(source, archive, series, include_binaries):
         # original ResultSet is proxied. Not a big problem here since
         # the result set is usually very small (always <= 7 records).
         unpublished_builds = list(candidate.getUnpublishedBuilds())
-        if len(unpublished_builds) > 0:
-            raise CannotCopy(
-                "same version has unpublished binaries in the destination "
-                "archive for %s, please wait for them to be published "
-                "before copying" % candidate.distroseries.displayname)
+        if (len(unpublished_builds) > 0 and
+            candidate.status in active_publishing_status):
+                raise CannotCopy(
+                    "same version has unpublished binaries in the destination "
+                    "archive for %s, please wait for them to be published "
+                    "before copying" % candidate.distroseries.displayname)
 
         # Update published binaries inventory for the conflicting candidates.
         archive_binaries = set(
             pub_binary.binarypackagerelease.id
-            for pub_binary in candidate.getPublishedBinaries())
+            for pub_binary in candidate.getBuiltBinaries())
         published_binaries.update(archive_binaries)
 
     if not include_binaries:
