@@ -9,7 +9,7 @@
   i18n:domain="launchpad"
 >
   <div id="timeline-container"
-       style="border: 1px solid #000; position: relative">
+       style="border: 1px solid #000; position: relative; display: none">
   </div>
   <script type="text/javascript">
     YUI().use('registry.timeline', 'node', function(Y) {
@@ -20,16 +20,27 @@
 
           var display_graph = function(result) {
               var timeline = result;
-              var container = Y.get('#timeline-container');
-              graph = new Y.registry.timeline.TimelineGraph({
-                  timeline: timeline,
-                  boundingBox: container
-              });
-              try {
-                  graph.render();
+              // Don't display graph if there are zero milestones or releases.
+              var found_landmark = false;
+              for (var i in timeline) {
+                  if (timeline[i].landmarks.length > 0) {
+                      found_landmark = true;
+                      break;
+                  }
               }
-              catch (e) {
-                  alert('Error rendering series graph: ' + e);
+              if (found_landmark) {
+                  var container = Y.get('#timeline-container');
+                  container.setStyle('display', 'block');
+                  graph = new Y.registry.timeline.TimelineGraph({
+                      timeline: timeline,
+                      boundingBox: container
+                  });
+                  try {
+                      graph.render();
+                  }
+                  catch (e) {
+                      alert('Error rendering series graph: ' + e);
+                  }
               }
           }
 
