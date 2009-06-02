@@ -1,4 +1,4 @@
 <configure xmlns="http://namespaces.zope.org/zope">
-    <include package="canonical.archivepublisher.zcml"
+    <include package="lp.archivepublisher.zcml"
              file="configure.zcml" />
 </configure>
