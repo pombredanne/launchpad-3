@@ -18,6 +18,7 @@ from canonical.config import config
 from lp.buildmaster.manager import (
     BaseDispatchResult, BuilddManager, FailDispatchResult, RecordingSlave,
     ResetDispatchResult, buildd_success_result_map)
+from canonical.buildmaster.tests.harness import BuilddManagerTestSetup
 from canonical.launchpad.ftests import ANONYMOUS, login
 from lp.soyuz.tests.soyuzbuilddhelpers import SaneBuildingSlave
 from lp.soyuz.interfaces.build import BuildStatus
@@ -27,7 +28,7 @@ from lp.registry.interfaces.distribution import IDistributionSet
 from canonical.launchpad.scripts.logger import BufferLogger
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from canonical.testing.layers import (
-    LaunchpadZopelessLayer, TwistedLayer)
+    LaunchpadScriptLayer, LaunchpadZopelessLayer, TwistedLayer)
 
 
 class TestRecordingSlaves(TrialTestCase):
@@ -686,6 +687,16 @@ class TestDispatchResult(unittest.TestCase):
         self.assertFalse(builder.builderok)
         self.assertEqual(None, builder.currentjob)
         self.assertEqual('does not work!', builder.failnotes)
+
+
+class TestBuilddManagerScript(unittest.TestCase):
+
+    layer = LaunchpadScriptLayer
+
+    def testBuilddManagerRuns(self):
+        # Ensure `buildd-manager.tac` starts and stops correctly.
+        BuilddManagerTestSetup().setUp()
+        BuilddManagerTestSetup().tearDown()
 
 
 def test_suite():
