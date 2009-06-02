@@ -55,6 +55,7 @@ from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from canonical.launchpad.interfaces.translations import (
     TranslationsBranchImportMode)
+from canonical.launchpad.webapp.publisher import canonical_url
 
 
 class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
@@ -450,11 +451,14 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
                 if not include_inactive and not milestone.active:
                     continue
                 node_type = 'milestone'
+                uri = canonical_url(milestone, path_only_if_possible=True)
             else:
                 node_type = 'release'
+                uri = canonical_url(
+                    milestone.product_release, path_only_if_possible=True)
             landmarks.append(dict(
                 name=milestone.name, code_name=milestone.code_name,
-                type=node_type))
+                type=node_type, uri=uri);
         return dict(
             name=self.name,
             is_development_focus=self.is_development_focus,
