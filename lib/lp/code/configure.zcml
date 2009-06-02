@@ -399,7 +399,7 @@
         permission="launchpad.Edit"
         attributes="destroySelf setPrivate"
         set_attributes="name url mirror_status_message
-                        owner author product lifecycle_status
+                        owner author description product lifecycle_status
                         last_mirrored last_mirrored_id last_mirror_attempt
                         mirror_failures pull_disabled next_mirror_time
                         last_scanned last_scanned_id revision_count branch_type

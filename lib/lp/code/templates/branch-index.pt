@@ -174,8 +174,13 @@
         <th>Stacked on:</th>
         <td tal:content="structure context/stacked_on/fmt:bzr-link" />
       </tr>
+      <tr id="branch-description">
+        <th>Description:</th>
+        <td tal:content="structure context/description" />
+      </tr>
       </tbody>
   </table>
+
   <tal:branch-errors tal:replace="structure context/@@+messages" />
 
   <tal:imported-branch tal:condition="context/branch_type/enumvalue:IMPORTED">
