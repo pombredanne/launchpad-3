@@ -1,0 +1,25 @@
+= SearchTag fields =
+
+SearchTag supports validating a superset of Tag, to support a rich set
+of options when searching for tags.
+
+    >>> from canonical.launchpad.fields import SearchTag, Tag
+
+    >>> tag = Tag()
+    >>> search_tag = SearchTag()
+
+Just as with a Tag, a plain name is fine.
+
+    >>> tag.validate(u'fred')
+    >>> search_tag.validate(u'fred')
+
+Names prefixed with an exclamation mark are allowed. This denotes that
+a search request for the absense of a tag.
+
+    >>> tag.validate(u'!fred')
+    Traceback (most recent call last):
+    ...
+    zope.schema._bootstrapinterfaces.ConstraintNotSatisfied: !fred
+
+    >>> search_tag.validate(u'!fred')
+
