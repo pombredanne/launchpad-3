@@ -16,6 +16,7 @@ __all__ = [
     'IBugField',
     'IDescription',
     'ILocationField',
+    'INoneableTextLine',
     'IPasswordField',
     'IStrippedTextLine',
     'ISummary',
@@ -29,6 +30,7 @@ __all__ = [
     'LocationField',
     'LogoImageUpload',
     'MugshotImageUpload',
+    'NoneableTextLine',
     'ParticipatingPersonChoice',
     'PasswordField',
     'PillarAliases',
@@ -83,23 +85,38 @@ KEEP_SAME_IMAGE = object()
 class IStrippedTextLine(ITextLine):
     """A field with leading and trailing whitespaces stripped."""
 
+
 class ITitle(IStrippedTextLine):
     """A Field that implements a launchpad Title"""
+
+
+class INoneableTextLine(IStrippedTextLine):
+    """A field that is None if it's value is empty or whitespace."""
+
 
 class ISummary(IText):
     """A Field that implements a Summary"""
 
+
 class IDescription(IText):
     """A Field that implements a Description"""
+
+
+class INoneableDescription(IDescription):
+    """A field that is None if it's value is empty or whitespace."""
+
 
 class IWhiteboard(IText):
     """A Field that implements a Whiteboard"""
 
+
 class ITimeInterval(ITextLine):
     """A field that captures a time interval in days, hours, minutes."""
 
+
 class IBugField(IObject):
     """A field that allows entry of a Bug number or nickname"""
+
 
 class IPasswordField(IPassword):
     """A field that ensures we only use http basic authentication safe
@@ -183,6 +200,10 @@ class StrippedTextLine(TextLine):
     implements(IStrippedTextLine)
 
 
+class NoneableTextLine(StrippedTextLine):
+    implements(INoneableTextLine)
+
+
 # Title
 # A field to capture a launchpad object title
 class Title(StrippedTextLine):
@@ -199,6 +220,10 @@ class Summary(Text):
 # A field capture a Launchpad object description
 class Description(Text):
     implements(IDescription)
+
+
+class NoneableDescription(Description):
+    implements(INoneableDescription)
 
 
 # Whiteboard

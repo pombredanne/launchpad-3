@@ -11,7 +11,7 @@ from canonical.launchpad import helpers
 from canonical.launchpad.ftests import login
 from canonical.launchpad.translationformat import LaunchpadWriteTarFile
 from canonical.launchpad.interfaces import ILanguageSet, IPerson, ILaunchBag
-from canonical.launchpad.testing import LaunchpadObjectFactory
+from lp.testing.factory import LaunchpadObjectFactory
 
 
 def make_test_tarball_1():

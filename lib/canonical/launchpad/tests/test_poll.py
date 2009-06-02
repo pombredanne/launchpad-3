@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 import pytz
 
 from canonical.launchpad.ftests import login
-from canonical.launchpad.testing import TestCaseWithFactory
+from lp.testing import TestCaseWithFactory
 from canonical.testing import LaunchpadFunctionalLayer
 
 

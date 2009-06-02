@@ -22,7 +22,7 @@ import textwrap
 import _pythonpath
 
 from canonical.config import config
-from canonical.launchpad.scripts.base import LaunchpadScript
+from lp.services.scripts.base import LaunchpadScript
 from canonical.launchpad.scripts.mlistimport import Importer
 
 

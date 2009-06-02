@@ -59,7 +59,7 @@ from canonical.lazr.utils import get_current_browser_request, safe_hasattr
 from canonical.launchpad.database.account import Account
 from canonical.launchpad.database.bugtarget import HasBugsBase
 from lp.registry.model.karma import KarmaCategory
-from canonical.launchpad.database.language import Language
+from lp.services.worlddata.model.language import Language
 from canonical.launchpad.database.oauth import (
     OAuthAccessToken, OAuthRequestToken)
 from lp.registry.model.personlocation import PersonLocation

@@ -20,7 +20,7 @@ from twisted.trial.unittest import TestCase
 
 from canonical.config import config
 from canonical.launchpad.webapp.errorlog import globalErrorUtility
-from canonical.launchpad.testing import TestCase as LaunchpadTestCase
+from lp.testing import TestCase as LaunchpadTestCase
 from canonical.testing.layers import TwistedLayer
 from canonical.twistedsupport.loggingsupport import (
     LaunchpadLogFile, OOPSLoggingObserver)

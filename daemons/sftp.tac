@@ -7,7 +7,7 @@
 from twisted.application import service
 
 from canonical.launchpad.daemons import tachandler
-from canonical.codehosting.sshserver.service import SSHService
+from lp.codehosting.sshserver.service import SSHService
 
 
 # Construct an Application that includes a supermirror SFTP service. 

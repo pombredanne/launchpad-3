@@ -35,7 +35,7 @@ associated with the source package of the used application.
     'Help and support options for ...mozilla-firefox...'
     >>> user_browser.getLink('Submit your question').click()
     >>> user_browser.title
-    'Ask a question about Ubuntu Hoary mozilla-firefox'
+    'Ask a question about mozilla-firefox in Ubuntu Hoary'
 
 
 == Searching for Similar FAQs and Questions ==

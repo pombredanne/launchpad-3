@@ -375,6 +375,7 @@ class DecoratedCodeReviewVoteReference:
         CodeReviewVote.DISAPPROVE: CodeReviewVote.DISAPPROVE.title,
         CodeReviewVote.APPROVE: CodeReviewVote.APPROVE.title,
         CodeReviewVote.ABSTAIN: CodeReviewVote.ABSTAIN.title,
+        CodeReviewVote.NEEDS_INFO: CodeReviewVote.NEEDS_INFO.title,
         CodeReviewVote.NEEDS_FIXING: CodeReviewVote.NEEDS_FIXING.title,
         CodeReviewVote.RESUBMIT: CodeReviewVote.RESUBMIT.title,
         }

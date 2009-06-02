@@ -12,8 +12,7 @@ from canonical.launchpad.interfaces import (
     IPersonSet, ITranslationImportQueue)
 from canonical.launchpad.interfaces.translationgroup import (
     TranslationPermission)
-from canonical.launchpad.testing import (
-    LaunchpadObjectFactory)
+from lp.testing.factory import LaunchpadObjectFactory
 from canonical.launchpad.translationformat.gettext_po_importer import (
     GettextPOImporter)
 from canonical.launchpad.translationformat.translation_import import (

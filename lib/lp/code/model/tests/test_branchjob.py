@@ -21,7 +21,7 @@ from canonical.launchpad.interfaces.translations import (
     TranslationsBranchImportMode)
 from canonical.launchpad.interfaces.translationimportqueue import (
     ITranslationImportQueue, RosettaImportStatus)
-from canonical.launchpad.testing import TestCaseWithFactory
+from lp.testing import TestCaseWithFactory
 from canonical.launchpad.testing.librarianhelpers import (
     get_newest_librarian_file)
 from lp.testing.mail_helpers import pop_notifications
@@ -177,7 +177,8 @@ class TestRevisionMailJob(TestCaseWithFactory):
         self.assertEqual('subject', mail['subject'])
         self.assertEqual(
             'hello\n'
-            '\n--\n\n'
+            '\n--\n'
+            '%(identity)s\n'
             '%(url)s\n'
             '\nYou are subscribed to branch %(identity)s.\n'
             'To unsubscribe from this branch go to'

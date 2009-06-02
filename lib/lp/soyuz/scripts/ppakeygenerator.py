@@ -6,10 +6,10 @@ __all__ = [
 
 from zope.component import getUtility
 from lp.soyuz.interfaces.archive import IArchiveSet
-from canonical.archivepublisher.interfaces.archivesigningkey import (
+from lp.archivepublisher.interfaces.archivesigningkey import (
     IArchiveSigningKey)
 from lp.registry.interfaces.person import IPersonSet
-from canonical.launchpad.scripts.base import (
+from lp.services.scripts.base import (
     LaunchpadCronScript, LaunchpadScriptFailure)
 
 

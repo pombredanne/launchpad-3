@@ -22,7 +22,8 @@ from canonical.launchpad.ftests import (
 from canonical.launchpad.interfaces.gpghandler import IGPGHandler
 from canonical.launchpad.interfaces.mail import IWeaklyAuthenticatedPrincipal
 from lp.registry.interfaces.person import IPersonSet
-from canonical.launchpad.testing import GPGSigningContext, TestCaseWithFactory
+from lp.testing import TestCaseWithFactory
+from lp.testing.factory import GPGSigningContext
 from canonical.testing.layers import DatabaseFunctionalLayer
 
 class TestSignedMessage(TestCaseWithFactory):

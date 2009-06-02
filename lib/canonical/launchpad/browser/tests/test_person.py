@@ -12,7 +12,7 @@ from canonical.config import config
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.browser.person import PersonView
 from canonical.launchpad.ftests import login_person
-from canonical.launchpad.testing import TestCaseWithFactory
+from lp.testing import TestCaseWithFactory
 from canonical.launchpad.testing.systemdocs import (
     LayeredDocFileSuite, setUp, tearDown)
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest

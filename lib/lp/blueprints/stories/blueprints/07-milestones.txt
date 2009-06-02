@@ -24,7 +24,7 @@ milestone targeting.
 Now, we choose a milestone from the list.
 
   >>> admin_browser.getControl('Milestone').displayOptions
-  ['(no value)', 'Mozilla Firefox: 1.0']
+  ['(no value)', 'Mozilla Firefox 1.0']
   >>> admin_browser.getControl('Milestone').value = ['1']
   >>> admin_browser.getControl('Status Whiteboard').value = 'foo'
   >>> admin_browser.getControl('Change').click()

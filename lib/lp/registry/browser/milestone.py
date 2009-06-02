@@ -18,19 +18,18 @@ from zope.component import getUtility
 from zope.formlib import form
 from zope.schema import Choice
 
-from canonical.launchpad import _
 from canonical.cachedproperty import cachedproperty
-
+from canonical.launchpad import _
+from canonical.launchpad.browser.bugtask import BugTaskListingItem
 from canonical.launchpad.interfaces.bugtask import (
     BugTaskSearchParams, IBugTaskSet)
-from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lp.registry.interfaces.milestone import (
     IMilestone, IMilestoneSet, IProjectMilestone)
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, ContextMenu, Link,
     LaunchpadEditFormView, LaunchpadFormView, LaunchpadView,
     enabled_with_permission, GetitemNavigation, Navigation, NavigationMenu)
-
+from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.widgets import DateWidget
 
 from lp.registry.browser import RegistryDeleteViewMixin
@@ -63,7 +62,9 @@ class MilestoneContextMenu(ContextMenu):
         # ProjectMilestones are virtual milestones and do not have
         # any properties which can be edited.
         enabled = not IProjectMilestone.providedBy(self.context)
-        return Link('+edit', text, icon='edit', enabled=enabled)
+        summary = "Edit this milestone"
+        return Link(
+            '+edit', text, icon='edit', summary=summary, enabled=enabled)
 
     def subscribe(self):
         enabled = not IProjectMilestone.providedBy(self.context)
@@ -102,6 +103,9 @@ class MilestoneOverviewNavigationMenu(NavigationMenu):
 
 
 class MilestoneView(LaunchpadView, ProductDownloadFileMixin):
+    """A View for listing milestones and releases."""
+    # XXX sinzui 2009-05-29 bug=381672: Extract the BugTaskListingItem rules
+    # to a mixin so that MilestoneView and others can use it.
 
     def __init__(self, context, request):
         """See `LaunchpadView`.
@@ -113,7 +117,7 @@ class MilestoneView(LaunchpadView, ProductDownloadFileMixin):
         :param context: `IMilestone` or `IProductRelease`.
         :param request: `ILaunchpadRequest`.
         """
-        super(LaunchpadView, self).__init__(context, request)
+        super(MilestoneView, self).__init__(context, request)
         if IMilestone.providedBy(context):
             self.milestone = context
             self.release = context.product_release
@@ -139,8 +143,8 @@ class MilestoneView(LaunchpadView, ProductDownloadFileMixin):
         return list(self.context.specifications)
 
     @cachedproperty
-    def bugtasks(self):
-        """The list of bugtasks targeted to this milestone."""
+    def _bugtasks(self):
+        """The list of non-conjoined bugtasks targeted to this milestone."""
         user = getUtility(ILaunchBag).user
         params = BugTaskSearchParams(user, milestone=self.context,
                     orderby=['-importance', 'datecreated', 'id'],
@@ -159,6 +163,26 @@ class MilestoneView(LaunchpadView, ProductDownloadFileMixin):
             if task.getConjoinedMaster(bugs_and_tasks[task.bug]) is None:
                 non_conjoined_slaves.append(task)
         return non_conjoined_slaves
+
+    @cachedproperty
+    def _bug_badge_properties(self):
+        """The badges for each bug associates with this milestone."""
+        return getUtility(IBugTaskSet).getBugTaskBadgeProperties(
+            self._bugtasks)
+
+    def _getListingItem(self, bugtask):
+        """Return a decorated bugtask for the bug listing."""
+        badge_property = self._bug_badge_properties[bugtask]
+        return BugTaskListingItem(
+            bugtask,
+            badge_property['has_mentoring_offer'],
+            badge_property['has_branch'],
+            badge_property['has_specification'])
+
+    @cachedproperty
+    def bugtasks(self):
+        """The list of bugtasks targeted to this milestone for listing."""
+        return [self._getListingItem(bugtask) for bugtask in self._bugtasks]
 
     @property
     def bugtask_count_text(self):
@@ -201,7 +225,7 @@ class MilestoneAddView(LaunchpadFormView):
 
     custom_widget('dateexpected', DateWidget)
 
-    @action(_('Register milestone'), name='register')
+    @action(_('Register Milestone'), name='register')
     def register_action(self, action, data):
         """Use the newMilestone method on the context to make a milestone."""
         milestone = self.context.newMilestone(

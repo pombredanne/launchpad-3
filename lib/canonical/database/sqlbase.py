@@ -5,6 +5,7 @@ __metaclass__ = type
 import warnings
 from datetime import datetime
 import re
+from textwrap import dedent
 
 import psycopg2
 from psycopg2.extensions import (
@@ -293,15 +294,27 @@ class ZopelessTransactionManager(object):
         if dbuser is None:
             dbuser = config.launchpad.dbuser
 
-        # Construct a config fragment:
-        overlay = '[database]\n'
-        overlay += 'main_master: %s\n' % connection_string
-        overlay += 'isolation_level: %s\n' % {
+        isolation_level = {
             ISOLATION_LEVEL_AUTOCOMMIT: 'autocommit',
             ISOLATION_LEVEL_READ_COMMITTED: 'read_committed',
             ISOLATION_LEVEL_SERIALIZABLE: 'serializable'}[isolation]
+
+        # Construct a config fragment:
+        overlay = dedent("""\
+            [database]
+            main_master: %(connection_string)s
+            auth_master: %(connection_string)s
+            isolation_level: %(isolation_level)s
+            """ % vars())
+
         if dbuser:
-            overlay += '\n[launchpad]\ndbuser: %s\n' % dbuser
+            # XXX 2009-05-07 stub bug=373252: Scripts should not be connecting
+            # as the launchpad_auth database user.
+            overlay += dedent("""\
+                [launchpad]
+                dbuser: %(dbuser)s
+                auth_dbuser: launchpad_auth
+                """ % vars())
 
         if cls._installed is not None:
             if cls._config_overlay != overlay:

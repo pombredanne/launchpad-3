@@ -47,6 +47,23 @@ milestone has any bugs or specifications.
     ...     print spec.title
     dodo
 
+The bugtasks are decorated. They are wrapped by the BugTaskListingItem that
+has cached information to create badges quickly. The _bug_badge_properties
+property provides the additional information that is used by the decorator.
+
+    >>> view.bugtasks
+    [<...BugTaskListingItem ...>]
+
+    >>> for bugtask in view._bug_badge_properties:
+    ...     bugtask
+    ...     badge_dict = view._bug_badge_properties[bugtask]
+    ...     for key in sorted(badge_dict):
+    ...         print '%s: %s' % (key, badge_dict[key])
+    <BugTask ...>
+        has_branch: False
+        has_mentoring_offer: False
+        has_specification: False
+
 There bugtask_count_text and specification_count_text properties provide
 formatted text descriptions of the bugtasks and specifications. The text
 supports plural descriptions.
@@ -267,7 +284,7 @@ Only the name of the milestone is required.
 
     >>> form = {
     ...     'field.name': '1.1',
-    ...     'field.actions.register': 'Register milestone',
+    ...     'field.actions.register': 'Register Milestone',
     ...     }
     >>> view = create_initialized_view(
     ...     firefox_1_0, '+addmilestone', form=form)
@@ -282,7 +299,7 @@ cannot create a duplicate milestone.
     >>> form = {
     ...     'field.name': '1.1',
     ...     'field.code_name': 'impossible',
-    ...     'field.actions.register': 'Register milestone',
+    ...     'field.actions.register': 'Register Milestone',
     ...     }
     >>> view = create_initialized_view(
     ...     firefox_1_0, '+addmilestone', form=form)
@@ -292,6 +309,21 @@ cannot create a duplicate milestone.
     >>> for milestone in firefox_1_0.milestones:
     ...     print milestone.name, milestone.code_name
     1.1 None
+
+An empty code_name or summary (submitted via AJAX) is converted to None.
+
+    >>> form = {
+    ...     'field.name': '2.1',
+    ...     'field.code_name': ' ',
+    ...     'field.summary': ' ',
+    ...     'field.actions.register': 'Register Milestone',
+    ...     }
+    >>> view = create_initialized_view(
+    ...     firefox_1_0, '+addmilestone', form=form)
+    >>> for milestone in firefox_1_0.milestones:
+    ...     print milestone.name, milestone.code_name, milestone.summary
+    2.1 None None
+    1.1 None None
 
 
 == Deleting milestones ==
