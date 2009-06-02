@@ -50,43 +50,6 @@ def is_completely_built(source):
     return True
 
 
-def has_unpublished_binaries(source):
-    """Whether or not a source publication has unpublished binaries.
-
-    Check if there are binaries built from the source in the same
-    publication context. If there are none, return False since there is
-    nothing to be published.
-
-    If there are built binaries, check if they match the ones published
-    for the source in its context.
-
-    :param source: context `ISourcePackagePublishingHistory`.
-
-    :return: True if there are unpublished binaries, False otherwise.
-    """
-    # Binaries built from this source in the publishing context.
-    built_binaries = set()
-    for build in source.getBuilds():
-        if source.pocket != build.pocket:
-            continue
-        for binarypackagerelease in build.binarypackages:
-            built_binaries.add(binarypackagerelease)
-
-    # No binaries built, thus none unpublished.
-    if len(built_binaries) == 0:
-        return False
-
-    # Binaries have been published in the same publishing context,
-    # but are some not yet published?
-    candidate_binaries = set(
-        pub_binary.binarypackagerelease
-        for pub_binary in source.getBuiltBinaries())
-    if candidate_binaries != built_binaries:
-        return True
-
-    return False
-
-
 def compare_sources(source, ancestry):
     """Compare `ISourcePackagePublishingHistory` records versions.
 
@@ -202,7 +165,13 @@ def check_archive_conflicts(source, archive, series, include_binaries):
         # next publishing cycle to happen before copying the package.
         # The copy is only allowed when all built binaries are published,
         # this way there is no chance of a conflict.
-        if has_unpublished_binaries(candidate):
+
+        # XXX cprov 20090602: SSPH.getUnpublishedBuilds() returns a
+        # DecoratedResultSet for which count() doesn't work, since its
+        # original ResultSet is proxied. Not a big problem here since
+        # the result set is usually very small (always <= 7 records).
+        unpublished_builds = list(candidate.getUnpublishedBuilds())
+        if len(unpublished_builds) > 0:
             raise CannotCopy(
                 "same version has unpublished binaries in the destination "
                 "archive for %s, please wait for them to be published "
