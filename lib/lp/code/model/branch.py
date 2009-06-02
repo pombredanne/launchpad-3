@@ -77,6 +77,7 @@ class Branch(SQLBase):
 
     name = StringCol(notNull=False)
     url = StringCol(dbName='url')
+    description = StringCol(dbName='summary')
     branch_format = EnumCol(enum=BranchFormat)
     repository_format = EnumCol(enum=RepositoryFormat)
     # XXX: Aaron Bentley 2008-06-13

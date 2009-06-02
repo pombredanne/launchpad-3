@@ -318,6 +318,7 @@
                     private
                     registrant
                     owner
+                    description
                     author
                     reviewer
                     code_reviewer
