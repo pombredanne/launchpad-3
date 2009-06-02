@@ -120,7 +120,7 @@
               <td>
                 <img alt="download icon" src="/@@/download" />
                 <strong><a
-                  tal:attributes="href python:view.fileURL(file.libraryfile)"
+                  tal:attributes="href python:view.fileURL(file.libraryfile, view.release)"
                   tal:content="file/libraryfile/filename"
                   >filename</a></strong>
                 (<a tal:attributes="href python:view.md5URL(file.libraryfile)"

@@ -173,6 +173,8 @@ easier you can use IBugWatchSet.fromText().
     ...         http://some.host/some/path
     ...     A mailto: URI:
     ...         mailto:foo.bar@canonical.com
+    ...     A Google Code URL:
+    ...         http://code.google.com/p/myproject/issues/detail?id=12345
     ... """
     >>> bug_watches = getUtility(IBugWatchSet).fromText(
     ...     text, bug_one, sample_person)
@@ -187,6 +189,7 @@ easier you can use IBugWatchSet.fromText().
     TRAC: 42
     SOURCEFORGE: 1568562
     MANTIS: 50
+    GOOGLE_CODE: 12345
 
 The bug trackers in the text above were automatically created. If the
 bugwatch points to a bug tracker that already is registered in Launchpad

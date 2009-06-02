@@ -5,41 +5,12 @@
 
 __metaclass__ = type
 __all__ = [
-    'CannotHaveLinkedBranch',
     'IBranchLookup',
-    'ICanHasLinkedBranch',
     'ILinkedBranchTraversable',
     'ILinkedBranchTraverser',
-    'ISourcePackagePocket',
-    'ISourcePackagePocketFactory',
-    'NoLinkedBranch',
     ]
 
-from zope.interface import Attribute, Interface
-
-
-class CannotHaveLinkedBranch(Exception):
-    """Raised when we try to look up the linked branch for a thing that can't.
-    """
-
-    def __init__(self, component):
-        self.component = component
-        Exception.__init__(
-            self, "%r cannot have linked branches." % (component,))
-
-
-class NoLinkedBranch(Exception):
-    """Raised when there's no linked branch for a thing."""
-
-    def __init__(self, component):
-        self.component = component
-        Exception.__init__(self, "%r has no linked branch." % (component,))
-
-
-class ICanHasLinkedBranch(Interface):
-    """Something that has a linked branch."""
-
-    branch = Attribute("The linked branch.")
+from zope.interface import Interface
 
 
 class ILinkedBranchTraversable(Interface):
@@ -150,44 +121,4 @@ class IBranchLookup(Interface):
         :return: a tuple of (`IBranch`, extra_path). 'extra_path' is used to
             make things like 'bzr cat lp:~foo/bar/baz/README' work. Trailing
             paths are not handled for shortcut paths.
-        """
-
-
-class ISourcePackagePocketFactory(Interface):
-    """Utility for constructing source package pocket wrappers."""
-
-    def new(package, pocket):
-        """Construct a new `ISourcePackagePocket`.
-
-        :param package: An `ISourcePackagePocket`.
-        :param pocket: A `DBItem` of `PackagePublishingPocket`.
-        :return: `ISourcePackagePocket`.
-        """
-
-
-class ISourcePackagePocket(ICanHasLinkedBranch):
-    """A wrapper around a source package and a pocket.
-
-    Used to provide a single object that can be used in exceptions about a
-    sourcepackage and a pocket not having an official linked branch.
-    """
-
-    # XXX: JonathanLange 2009-03-26: This ought to go away when ISourcePackage
-    # gets a pocket attribute.
-
-    displayname = Attribute("The display name")
-    pocket = Attribute("The pocket.")
-    sourcepackage = Attribute("The source package.")
-
-    def __eq__(other):
-        """Is this source package pocket equal to another?
-
-        True if and only if the package and pocket of the other are equal to
-        our package and pocket.
-        """
-
-    def __ne__(other):
-        """Is this source package pocket not equal to another?
-
-        True if and only if self and other are not equal.
         """
