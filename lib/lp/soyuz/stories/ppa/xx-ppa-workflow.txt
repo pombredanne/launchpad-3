@@ -393,9 +393,9 @@ generates an error:
     There is 1 error.
     Do not specify for non-private archives
 
-There is a maximum size allowed for authorized_size is set in
-`IArchive`, it is currently (2 ** 31 - 1) and the unit used in code
-is MiB.
+There is a maximum value allowed for `IArchive.authorized_size`, it is
+currently 2147483647 and the unit used in code is MiB, so in practice
+the size limit is 2 PiB.
 
     >>> limit = 2 ** 31 - 1
 
@@ -409,7 +409,7 @@ is MiB.
     ...     name="field.authorized_size").value
     2147483647
 
-Submitting the form with an authorized_size that is too large
+Submitting the form with an authorized_size value that is too large
 will result in an error:
 
     >>> admin_browser.getControl(
