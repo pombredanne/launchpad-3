@@ -335,11 +335,12 @@ def do_copy(sources, archive, series, pocket, include_binaries=False):
             source_copy = source.copyTo(destination_series, pocket, archive)
             close_bugs_for_sourcepublication(source_copy)
             copies.append(source_copy)
-            if not include_binaries:
-                source_copy.createMissingBuilds()
-                continue
         else:
             source_copy = source_in_destination[0]
+
+        if not include_binaries:
+            source_copy.createMissingBuilds()
+            continue
 
         # Copy missing suitable binaries.
         for binary in source.getBuiltBinaries():

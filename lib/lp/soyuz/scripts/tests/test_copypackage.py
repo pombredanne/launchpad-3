@@ -820,6 +820,18 @@ class TestCopyPackage(TestCase):
         target_archive = copy_helper.destination.archive
         self.checkCopies(copied, target_archive, 2)
 
+    def testRepeatingSourceOnlyCopies(self):
+        # Repeating source-only copies has no effects, i.e. it doesn't
+        # anything in the second time.
+
+        copy_helper = self.getCopier(include_binaries=False, to_ppa='cprov')
+        copied = copy_helper.mainTask()
+        target_archive = copy_helper.destination.archive
+        self.checkCopies(copied, target_archive, 1)
+
+        re_copied = copy_helper.mainTask()
+        self.assertEqual(len(re_copied), 0)
+
     def testSourceLookupFailure(self):
         """Check if it raises when the target source can't be found.
 
