@@ -465,6 +465,7 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
         return dict(
             name=self.name,
             is_development_focus=self.is_development_focus,
+            uri=canonical_url(self, path_only_if_possible=True),
             landmarks=landmarks)
 
 
