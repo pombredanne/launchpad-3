@@ -394,12 +394,24 @@ generates an error:
     Do not specify for non-private archives
 
 There is a maximum size allowed for authorized_size is set in
-`IArchive`, it is currently 20 * 1024 and the unit used in code is
-MiB. Submitting the form with an authorized_size that is too large
+`IArchive`, it is currently (2 ** 31 - 1) and the unit used in code
+is MiB.
+
+    >>> limit = 2 ** 31 - 1
+
+    >>> admin_browser.open("http://launchpad.dev/~jblack/+archive/ppa/+admin")
+    >>> admin_browser.getControl(
+    ...     name="field.authorized_size").value = str(limit)
+    >>> admin_browser.getControl("Save").click()
+
+    >>> admin_browser.getLink("Administer archive").click()
+    >>> print admin_browser.getControl(
+    ...     name="field.authorized_size").value
+    2147483647
+
+Submitting the form with an authorized_size that is too large
 will result in an error:
 
-    >>> limit = 20 * 1024
-    >>> admin_browser.open("http://launchpad.dev/~jblack/+archive/ppa/+admin")
     >>> admin_browser.getControl(
     ...     name="field.authorized_size").value = str(limit + 1)
     >>> admin_browser.getControl("Save").click()
