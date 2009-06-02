@@ -17,7 +17,7 @@ from sqlobject import (
 from storm.expr import Join
 from storm.store import Store
 
-from canonical.launchpad.interfaces.language import ILanguageSet
+from lp.services.worlddata.interfaces.language import ILanguageSet
 from canonical.launchpad.interfaces.translationgroup import (
     ITranslationGroup, ITranslationGroupSet)
 from lp.registry.model.product import Product

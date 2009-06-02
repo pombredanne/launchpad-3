@@ -1,4 +1,5 @@
 # Copyright 2008, 2009 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0213
 
 """Interface for the XML-RPC authentication server."""
 

@@ -10,7 +10,7 @@ from canonical.launchpad.event.interfaces import IKarmaAssignedEvent
 from canonical.launchpad.ftests import login_person
 from canonical.launchpad.ftests.event import TestEventListener
 from lp.registry.interfaces.person import IPerson
-from canonical.launchpad.testing import TestCaseWithFactory
+from lp.testing import TestCaseWithFactory
 from canonical.testing import DatabaseFunctionalLayer
 
 

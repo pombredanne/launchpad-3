@@ -13,7 +13,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.interfaces import ITranslationMessageSet
 from canonical.launchpad.helpers import validate_translation
-from canonical.launchpad.scripts.base import LaunchpadScript
+from lp.services.scripts.base import LaunchpadScript
 
 
 class GettextCheckMessages(LaunchpadScript):

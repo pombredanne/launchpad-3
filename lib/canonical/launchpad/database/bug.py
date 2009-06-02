@@ -101,7 +101,7 @@ from canonical.launchpad.validators import LaunchpadValidationError
 from lp.registry.interfaces.person import validate_public_person
 from canonical.launchpad.mailnotification import BugNotificationRecipients
 from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, DEFAULT_FLAVOR, MAIN_STORE, NotFoundError)
+    ILaunchBag, IStoreSelector, DEFAULT_FLAVOR, MAIN_STORE, NotFoundError)
 
 
 # XXX: GavinPanella 2008-07-04 bug=229040: A fix has been requested
@@ -405,6 +405,9 @@ class Bug(SQLBase):
 
     def unsubscribe(self, person, unsubscribed_by):
         """See `IBug`."""
+        if person is None:
+            person = getUtility(ILaunchBag).user
+
         for sub in self.subscriptions:
             if sub.person.id == person.id:
                 if not sub.canBeUnsubscribedByUser(unsubscribed_by):

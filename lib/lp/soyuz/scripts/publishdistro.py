@@ -17,7 +17,7 @@ from lp.soyuz.interfaces.archive import (
     ArchivePurpose, IArchiveSet, MAIN_ARCHIVE_PURPOSES)
 from lp.registry.interfaces.distribution import IDistributionSet
 from canonical.launchpad.scripts import logger, logger_options
-from canonical.launchpad.scripts.base import LaunchpadScriptFailure
+from lp.services.scripts.base import LaunchpadScriptFailure
 from canonical.launchpad.webapp.interfaces import NotFoundError
 
 # XXX Julian 2008-02-07 bug=189866:
@@ -99,15 +99,6 @@ def run_publisher(options, txn, log=None):
             txn.abort()
             raise
 
-    log.info("  Distribution: %s" % options.distribution)
-    log.info("    Publishing: %s" % careful_msg(options.careful_publishing))
-    log.info("    Domination: %s" % careful_msg(options.careful_domination))
-
-    if not options.ppa:
-        log.info("Apt-FTPArchive: %s" % careful_msg(options.careful_apt))
-    else:
-        log.info("      Indexing: %s" % careful_msg(options.careful_apt))
-
     exclusive_options = (
         options.partner, options.ppa, options.private_ppa,
         options.primary_debug)
@@ -116,6 +107,14 @@ def run_publisher(options, txn, log=None):
         raise LaunchpadScriptFailure(
             "Can only specify one of partner, ppa, private-ppa and "
             "primary-debug.")
+
+    log.debug("  Distribution: %s" % options.distribution)
+    log.debug("    Publishing: %s" % careful_msg(options.careful_publishing))
+    log.debug("    Domination: %s" % careful_msg(options.careful_domination))
+    if num_exclusive == 0 :
+        log.debug("Apt-FTPArchive: %s" % careful_msg(options.careful_apt))
+    else:
+        log.debug("      Indexing: %s" % careful_msg(options.careful_apt))
 
     log.debug("Finding distribution object.")
 

@@ -12,7 +12,7 @@ from lp.code.interfaces.branchsubscription import (
     CodeReviewNotificationLevel)
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.security import AccessBranch
-from canonical.launchpad.testing import TestCaseWithFactory
+from lp.testing import TestCaseWithFactory
 from canonical.testing import DatabaseFunctionalLayer
 
 

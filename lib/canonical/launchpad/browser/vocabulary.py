@@ -16,7 +16,6 @@ import simplejson
 from zope.interface import implementer
 from zope.component import adapter
 from zope.interface import Attribute, implements, Interface
-from zope.schema.interfaces import IVocabulary
 from zope.schema.vocabulary import getVocabularyRegistry
 from zope.app.form.interfaces import MissingInputError
 
@@ -24,8 +23,6 @@ from lazr.restful.interfaces import IWebServiceClientRequest
 
 from lp.registry.interfaces.person import IPerson
 
-from canonical.config import config
-from canonical.launchpad.interfaces.launchpad import IHasIcon
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.launchpad.webapp.tales import ObjectImageDisplayAPI

@@ -19,7 +19,7 @@ from lp.soyuz.interfaces.distroseriessourcepackagerelease import (
 from lp.soyuz.interfaces.publishing import (
     active_publishing_status, PackagePublishingPocket,
     PackagePublishingStatus)
-from canonical.launchpad.testing import TestCase, TestCaseWithFactory
+from lp.testing import TestCase, TestCaseWithFactory
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from canonical.testing import (
     DatabaseFunctionalLayer, LaunchpadFunctionalLayer)

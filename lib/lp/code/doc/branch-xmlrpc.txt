@@ -54,10 +54,6 @@ Since we didn't specify product, title or description, they are None:
 
     >>> new_branch.product is None
     True
-    >>> new_branch.title is None
-    True
-    >>> new_branch.summary is None
-    True
 
 Also, Launchpad is scheduled to mirror this branch on its next mirror run:
 
@@ -85,8 +81,6 @@ well:
 
     >>> print new_branch.name
     branch_name
-    >>> print new_branch.title
-    branch_title
     >>> print new_branch.product.displayname
     Evolution
 
@@ -212,9 +206,12 @@ We get the same error if we try to register the branch with a slash appended:
 Attempting to register a branch for a product where the branch visibility
 policy is forbidden will cause a fault result.
 
-    >>> branchset_api.register_branch(
+    >>> test_user_api = xmlrpclib.ServerProxy(
+    ...     'http://no-priv@canonical.com:test@xmlrpc.launchpad.dev/bazaar/',
+    ...     transport=XMLRPCTestTransport())
+    >>> test_user_api.register_branch(
     ...     'http://foo.com/bar', 'branch_name', 'branch_title',
-    ...     'branch description', 'test@canonical.com', 'landscape')
+    ...     'branch description', 'no-priv@canonical.com', 'landscape')
     Traceback (most recent call last):
     ...
     Fault: <Fault 110: 'You are not allowed to create a branch for project:

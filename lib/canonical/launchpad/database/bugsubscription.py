@@ -12,7 +12,7 @@ from canonical.database.sqlbase import SQLBase
 
 from canonical.launchpad.interfaces.bugsubscription import IBugSubscription
 from lp.registry.interfaces.person import (
-    validate_person_not_private_membership, validate_public_person)
+    validate_person_not_private_membership)
 
 
 class BugSubscription(SQLBase):

@@ -20,7 +20,8 @@ from zope.schema import Choice
 from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
 
 from canonical.launchpad import _
-from lp.soyuz.interfaces.distributionsourcepackagerelease import IDistributionSourcePackageRelease
+from lp.soyuz.interfaces.distributionsourcepackagerelease import (
+    IDistributionSourcePackageRelease)
 from lp.soyuz.interfaces.packagediff import IPackageDiffSet
 from canonical.launchpad.interfaces.packaging import IPackagingUtil
 from lp.soyuz.interfaces.publishing import pocketsuffix
