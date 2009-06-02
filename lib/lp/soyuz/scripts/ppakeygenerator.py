@@ -6,7 +6,8 @@ __all__ = [
 
 from zope.component import getUtility
 
-from canonical.archivepublisher.interfaces.archivesigningkey import (
+
+from lp.archivepublisher.interfaces.archivesigningkey import (
     IArchiveSigningKey)
 from lp.registry.interfaces.person import IPersonSet
 from lp.services.scripts.base import (
