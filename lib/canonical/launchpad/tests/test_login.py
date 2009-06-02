@@ -13,7 +13,7 @@ from canonical.launchpad.ftests import ANONYMOUS, login
 from canonical.launchpad.interfaces.account import (
     AccountCreationRationale, IAccountSet)
 from lp.registry.interfaces.person import IPerson
-from canonical.launchpad.testing import TestCaseWithFactory
+from lp.testing import TestCaseWithFactory
 from canonical.launchpad.webapp.authentication import LaunchpadPrincipal
 from canonical.launchpad.webapp.interfaces import (
     CookieAuthLoggedInEvent, ILaunchpadPrincipal, IPlacelessAuthUtility)

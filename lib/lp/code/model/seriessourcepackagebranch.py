@@ -1,4 +1,5 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2008-2009 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=W0231
 
 """The content classes for links from source packages to branches.."""
 

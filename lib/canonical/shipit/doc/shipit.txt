@@ -436,8 +436,8 @@ shipped, by running the shipit-exports cronscript.
     [1, 2, 3, 4, 5, 7]
 
     >>> import subprocess
-    >>> cmd = ('cronscripts/shipit-exports.py -q --priority=normal '
-    ...        '--distroseries=feisty')
+    >>> cmd = ('lib/canonical/shipit/scripts/shipit-exports.py -q '
+    ...        '--priority=normal --distroseries=feisty')
     >>> process = subprocess.Popen(
     ...     cmd, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
     ...     stderr=subprocess.PIPE)
@@ -1207,7 +1207,7 @@ All these reports are generated periodically and stored in the Librarian by
 the shipit-reports cronscript.
 
     >>> process = subprocess.Popen(
-    ...     'cronscripts/shipit-reports.py -q', shell=True,
+    ...     'lib/canonical/shipit/scripts/shipit-reports.py -q', shell=True,
     ...     stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     >>> (out, err) = process.communicate()
     >>> out, err

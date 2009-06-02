@@ -16,7 +16,7 @@ from lp.answers.model.answercontact import AnswerContact
 from lp.answers.model.question import QuestionPersonSearch
 
 from canonical.database.sqlbase import sqlvalues
-from canonical.launchpad.database.language import Language
+from lp.services.worlddata.model.language import Language
 from lp.registry.interfaces.person import IPerson
 
 

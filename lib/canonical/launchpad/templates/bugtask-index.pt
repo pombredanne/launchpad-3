@@ -19,7 +19,7 @@
       </script>
       <script type="text/javascript"
               tal:define="lp_js string:${icingroot}/build"
-              tal:attributes="src string:${lp_js}/bugs/bugtask_tags_entry.js">
+              tal:attributes="src string:${lp_js}/bugs/bug_tags_entry.js">
       </script>
       <script type="text/javascript">
         YUI().use('base', 'node', 'oop', 'event', 'bugs.bugtask_index', function(Y) {
@@ -165,10 +165,6 @@
             define="global description context/bug/description/fmt:obfuscate-email/fmt:text-to-html" />
 
         <div id="bug-description" tal:content="structure description" />
-          <script type="text/javascript"
-                  tal:define="lp_js string:${icingroot}/build"
-                  tal:attributes="src string:${lp_js}/bugs/bug_tags_entry.js">
-          </script>
           <div id="bug-tags"
                tal:attributes="class python: ('tags-container ' +
                                               (context.bug.tags and
@@ -185,7 +181,7 @@
                  tal:attributes="href string:${context/target/fmt:url}/+bugs?field.tag=${tag}">tag</a>
             </span>
             <form id="tags-form" style="display: inline">
-                <input type="text" id="tag-input" style="display: none; width: 25em;" />
+                <input type="text" id="tag-input" style="display: none; width: 15em;" />
                 <img src="/@@/spinner" id="tags-edit-spinner" style="display: none" />
                 <a href="+edit" title="Edit tags" id="edit-tags-trigger"><img src="/@@/edit" /></a>
               <script type="text/javascript">
@@ -197,9 +193,11 @@
                       // that user doesn't click the trigger and navigates to the
                       // non-JS form, we first disable the link. This is awful and
                       // must be fixed as soon as YUI3 is fixed.
-                      Y.get('#edit-tags-trigger').on('click', function(e) {
-                        e.halt();
-                      });
+                      if (LP.client.links['me'] !== undefined) {
+                          Y.get('#edit-tags-trigger').on('click', function(e) {
+                              e.halt();
+                          });
+                      }
                       Y.on('load',
                            function(e) {
                                Y.bugs.setup_tag_entry(available_official_tags);
@@ -314,9 +312,8 @@
               condition="comment">
             <tal:comment-box condition="python: comment.can_be_shown and
                                        (view.user_is_admin or
-                                       comment.visible)">
-              <metal:comment-box
-                  metal:use-macro="context/@@bugcomment-macros/comment-box" />
+                                       comment.visible)"
+                             replace="structure comment/@@+box">
             </tal:comment-box>
           </tal:is-comment>
 

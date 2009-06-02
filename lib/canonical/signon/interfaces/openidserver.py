@@ -13,7 +13,6 @@ __all__ = [
     'IOpenIDRPConfigSet',
     'IOpenIDRPSummary',
     'IOpenIDRPSummarySet',
-    'ILaunchpadOpenIDStoreFactory',
     'ILoginServiceAuthorizeForm',
     'ILoginServiceLoginForm',
     ]
@@ -74,13 +73,6 @@ class IOpenIDAuthorizationSet(Interface):
         The authorization objects will be sorted in reverse of the
         order they were created.
         """
-
-
-class ILaunchpadOpenIDStoreFactory(Interface):
-    """Factory to create LaunchpadOpenIDStore instances."""
-
-    def __call__():
-        """Create a LaunchpadOpenIDStore instance."""
 
 
 class TrustRootField(UniqueField, URIField):

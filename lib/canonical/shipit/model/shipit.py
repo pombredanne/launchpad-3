@@ -67,7 +67,7 @@ from canonical.shipit.interfaces.shipit import (
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.database.account import Account
-from canonical.launchpad.database.country import Country
+from lp.services.worlddata.model.country import Country
 from lp.registry.model.karma import Karma
 from lp.registry.model.person import Person
 

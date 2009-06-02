@@ -92,7 +92,7 @@ grab magical objects representing that package in the distribution to
 which it was uploaded:
 
    >>> print spr.sourcepackage.displayname
-   Ubuntu Hoary mozilla-firefox
+   mozilla-firefox in Ubuntu Hoary
    >>> print spr.distrosourcepackage.displayname
    mozilla-firefox in ubuntu
 

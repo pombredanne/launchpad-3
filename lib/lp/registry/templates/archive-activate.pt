@@ -23,6 +23,12 @@
     <a href="https://help.launchpad.net/Packaging/PPA">PPA help page</a>.
   </p>
 
+  <p tal:condition="view/is_private_team" id="ppa-privacy-statement">
+    <img src="/@@/info" />
+    Since '<tal:name replace="string:${context/displayname}"/>' is
+    a <strong>private</strong> team this PPA will be private.
+  </p>
+
   <div tal:condition="context/ppas" id="ppas"
        style="padding-top: .3em; padding-bottom: .3em;">
     <h2>Existing PPAs</h2>
@@ -40,6 +46,11 @@
     </div>
 
   <div class="actions" metal:fill-slot="buttons">
+    <p tal:condition="not: context/ppas">
+      <img src="/@@/warning" />
+      Activating this PPA <b>will block</b> future renaming of
+      <tal:context replace="structure context/fmt:link" />
+    </p>
     <input tal:replace="structure view/actions/field.actions.activate/render" />
     or <a tal:attributes="href context/fmt:url">Cancel</a>
   </div>

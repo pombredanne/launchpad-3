@@ -11,7 +11,7 @@ from zope.component import getUtility
 from canonical.launchpad.ftests import login, logout, ANONYMOUS
 from lp.registry.interfaces.product import IProductSet
 from lp.code.interfaces.branchlookup import IBranchLookup
-from canonical.launchpad.testing import LaunchpadObjectFactory
+from lp.testing.factory import LaunchpadObjectFactory
 from canonical.launchpad.vocabularies.dbobjects import (
     BranchRestrictedOnProductVocabulary, BranchVocabulary)
 from canonical.testing import DatabaseFunctionalLayer

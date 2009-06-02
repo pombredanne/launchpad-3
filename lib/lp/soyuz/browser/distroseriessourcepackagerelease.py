@@ -7,7 +7,8 @@ __all__ = [
     'DistroSeriesSourcePackageReleaseView',
     ]
 
-from lp.soyuz.interfaces.distroseriessourcepackagerelease import IDistroSeriesSourcePackageRelease
+from lp.soyuz.interfaces.distroseriessourcepackagerelease import (
+    IDistroSeriesSourcePackageRelease)
 from canonical.launchpad.webapp import (
     ApplicationMenu, Navigation, stepthrough)
 

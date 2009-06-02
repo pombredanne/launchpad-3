@@ -1,4 +1,4 @@
-from canonical.launchpad.windmill.testing import lpuser
+from canonical.launchpad.windmill.testing import constants, lpuser
 
 from windmill.authoring import WindmillTestClient
 
@@ -23,8 +23,8 @@ def test_mark_duplicate_form_overlay():
 
     # Open a bug page and wait for it to finish loading
     client.open(url=u'http://bugs.launchpad.dev:8085/bugs/15')
-    client.waits.forPageLoad(timeout=u'20000')
-    client.waits.forElement(xpath=MAIN_FORM_ELEMENT, timeout=u'8000')
+    client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
+    client.waits.forElement(xpath=MAIN_FORM_ELEMENT, timeout=constants.FOR_ELEMENT)
 
     # Initially the form overlay is hidden
     client.asserts.assertElemJS(xpath=MAIN_FORM_ELEMENT, js=FORM_NOT_VISIBLE)
@@ -39,7 +39,7 @@ def test_mark_duplicate_form_overlay():
     client.type(text=u'1', id=u'field.duplicateof')
     client.click(xpath=CHANGE_BUTTON)
     client.asserts.assertElemJS(xpath=MAIN_FORM_ELEMENT, js=FORM_NOT_VISIBLE)
-    client.waits.sleep(milliseconds=u'1000')
+    client.waits.sleep(milliseconds=constants.SLEEP)
 
     # The form "Add a comment" now contains a warning about adding
     # a comment for a duplicate bug.
@@ -49,7 +49,7 @@ def test_mark_duplicate_form_overlay():
     client.click(classname=u'menu-link-mark-dupe')
     client.type(text=u'', id=u'field.duplicateof')
     client.click(xpath=CHANGE_BUTTON)
-    client.waits.sleep(milliseconds=u'1000')
+    client.waits.sleep(milliseconds=constants.SLEEP)
     client.asserts.assertText(
         xpath=u"//span[@id='mark-duplicate-text']/a[1]",
         validator=u'Mark as duplicate')
@@ -61,36 +61,38 @@ def test_mark_duplicate_form_overlay():
     client.click(classname=u'menu-link-mark-dupe')
     client.type(text=u'123', id=u'field.duplicateof')
     client.click(xpath=CHANGE_BUTTON)
-    client.waits.sleep(milliseconds=u'1000')
-    client.asserts.assertNode(
-        xpath=u"//form[@id='lazr-formoverlay-form']/div[2]/ul/li")
+    client.waits.sleep(milliseconds=constants.SLEEP)
+    error_xpath = (
+        MAIN_FORM_ELEMENT +
+        "//div[contains(@class, 'yui-lazr-formoverlay-errors')]/ul/li")
+    client.asserts.assertNode(xpath=error_xpath)
 
     # Clicking change again brings back the error dialog again
     # (regression test for bug 347258)
     client.click(xpath=CHANGE_BUTTON)
-    client.waits.sleep(milliseconds=u'1000')
-    client.asserts.assertNode(
-        xpath=u"//form[@id='lazr-formoverlay-form']/div[2]/ul/li")
+    client.waits.sleep(milliseconds=constants.SLEEP)
+    client.asserts.assertNode(xpath=error_xpath)
 
     # But entering a correct bug and submitting gets us back to a normal state
     client.type(text=u'1', id=u'field.duplicateof')
     client.click(xpath=CHANGE_BUTTON)
-    client.waits.sleep(milliseconds=u'1000')
+    client.waits.sleep(milliseconds=constants.SLEEP)
     client.asserts.assertText(
         xpath=u"//span[@id='mark-duplicate-text']/a[1]",
         validator=u'bug #1')
 
     # Finally, clicking on the link to the bug takes you to the master.
     client.click(link=u'bug #1')
-    client.waits.forPageLoad(timeout=u'20000')
+    client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
     client.asserts.assertText(
         xpath=u"//h1[@id='bug-title']/span[1]",
         validator=u'Firefox does not support SVG')
 
     # When we go back to the page for the duplicate bug...
     client.open(url=u'http://bugs.launchpad.dev:8085/bugs/15')
-    client.waits.forPageLoad(timeout=u'20000')
-    client.waits.forElement(xpath=MAIN_FORM_ELEMENT, timeout=u'8000')
+    client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
+    client.waits.forElement(
+        xpath=MAIN_FORM_ELEMENT, timeout=constants.FOR_ELEMENT)
 
     # ...we see the same warning about commenting on a duplicate bug
     # as the one we saw before.
@@ -100,7 +102,7 @@ def test_mark_duplicate_form_overlay():
     client.click(id=u'change_duplicate_bug')
     client.type(text=u'', id=u'field.duplicateof')
     client.click(xpath=CHANGE_BUTTON)
-    client.waits.sleep(milliseconds=u'1000')
+    client.waits.sleep(milliseconds=constants.SLEEP)
 
     # ...the warning is gone.
     client.asserts.assertNotNode(id='warning-comment-on-duplicate')

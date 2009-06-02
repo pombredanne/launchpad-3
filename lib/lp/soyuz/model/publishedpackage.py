@@ -15,6 +15,8 @@ from canonical.database.enumcol import EnumCol
 from lp.soyuz.interfaces.publishedpackage import (
     IPublishedPackage, IPublishedPackageSet)
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+
+
 class PublishedPackage(SQLBase):
     """See IPublishedPackage for details."""
 
@@ -83,7 +85,8 @@ class PublishedPackageSet:
         if text:
             text = text.lower().strip()
             queries.append("binarypackagefti @@ ftq(%s)" % quote(text))
-        return PublishedPackage.select(" AND ".join(queries), orderBy=['-datebuilt',])
+        return PublishedPackage.select(
+            " AND ".join(queries), orderBy=['-datebuilt',])
 
     def findDepCandidate(self, name, distroarchseries):
         """See IPublishedSet."""

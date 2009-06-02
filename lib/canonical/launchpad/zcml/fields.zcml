@@ -32,6 +32,14 @@
 
     <view
         type="zope.publisher.interfaces.browser.IBrowserRequest"
+        for="canonical.launchpad.fields.INoneableDescription"
+        provides="zope.app.form.interfaces.IInputWidget"
+        factory="canonical.launchpad.browser.NoneableDescriptionWidget"
+        permission="zope.Public"
+        />
+
+    <view
+        type="zope.publisher.interfaces.browser.IBrowserRequest"
         for="canonical.launchpad.fields.IWhiteboard"
         provides="zope.app.form.interfaces.IInputWidget"
         factory="canonical.launchpad.browser.WhiteboardWidget"
@@ -51,6 +59,14 @@
         for="canonical.launchpad.fields.IStrippedTextLine"
         provides="zope.app.form.interfaces.IInputWidget"
         factory="canonical.widgets.textwidgets.StrippedTextWidget"
+        permission="zope.Public"
+        />
+
+    <view
+        type="zope.publisher.interfaces.browser.IBrowserRequest"
+        for="canonical.launchpad.fields.INoneableTextLine"
+        provides="zope.app.form.interfaces.IInputWidget"
+        factory="canonical.widgets.textwidgets.NoneableTextWidget"
         permission="zope.Public"
         />
 
