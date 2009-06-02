@@ -36,7 +36,7 @@ from lp.soyuz.interfaces.publishing import (
     PackagePublishingPocket, PackagePublishingStatus)
 from canonical.archivepublisher.interfaces.archivesigningkey import (
     IArchiveSigningKey)
-from canonical.launchpad.testing import get_lsb_information
+from lp.testing import get_lsb_information
 from lp.soyuz.tests.test_publishing import TestNativePublishingBase
 from canonical.zeca.ftests.harness import ZecaTestSetup
 

@@ -6,7 +6,7 @@ import unittest
 
 from zope.publisher.interfaces import NotFound
 
-from canonical.launchpad.testing import TestCaseWithFactory
+from lp.testing import TestCaseWithFactory
 from canonical.launchpad.webapp.servers import StepsToGo
 from canonical.testing.layers import DatabaseFunctionalLayer
 

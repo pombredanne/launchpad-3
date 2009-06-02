@@ -17,11 +17,6 @@ from canonical.archivepublisher.utils import process_in_batches
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import sqlvalues
 
-from lp.soyuz.model.publishing import (
-    BinaryPackagePublishingHistory, SourcePackagePublishingHistory,
-    SecureBinaryPackagePublishingHistory,
-    SecureSourcePackagePublishingHistory)
-
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.interfaces.publishing import (
     ISecureBinaryPackagePublishingHistory,
@@ -110,6 +105,10 @@ class DeathRow:
 
         Both sources and binaries are lists.
         """
+        # Avoid circular imports.
+        from lp.soyuz.model.publishing import (
+            BinaryPackagePublishingHistory, SourcePackagePublishingHistory)
+
         sources = SourcePackagePublishingHistory.select("""
             SourcePackagePublishingHistory.archive = %s AND
             SourcePackagePublishingHistory.scheduleddeletiondate < %s AND
@@ -264,6 +263,9 @@ class DeathRow:
 
         # Check source and binary publishing records.
         def check_source(pub_record):
+            # Avoid circular imports.
+            from lp.soyuz.model.publishing import (
+                SecureSourcePackagePublishingHistory)
             checkPubRecord(pub_record, SecureSourcePackagePublishingHistory)
 
         process_in_batches(
@@ -271,6 +273,9 @@ class DeathRow:
             minimum_chunk_size=500)
 
         def check_binary(pub_record):
+            # Avoid circular imports.
+            from lp.soyuz.model.publishing import (
+                SecureBinaryPackagePublishingHistory)
             checkPubRecord(pub_record, SecureBinaryPackagePublishingHistory)
 
         process_in_batches(

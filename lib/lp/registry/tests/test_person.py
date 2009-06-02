@@ -23,7 +23,7 @@ from lp.registry.interfaces.person import (
     PersonCreationRationale, PersonVisibility)
 from canonical.launchpad.database import (
     AnswerContact, Bug, BugTask, BugSubscription, Person, Specification)
-from canonical.launchpad.testing import TestCaseWithFactory
+from lp.testing import TestCaseWithFactory
 from canonical.launchpad.testing.systemdocs import create_initialized_view
 from lp.registry.interfaces.person import PrivatePersonLinkageError
 from canonical.testing.layers import (

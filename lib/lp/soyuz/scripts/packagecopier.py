@@ -17,18 +17,19 @@ import tempfile
 
 from zope.component import getUtility
 
-from lp.soyuz.adapters.packagelocation import (
-    build_package_location)
-from lp.soyuz.interfaces.archive import ArchivePurpose, CannotCopy
-from lp.soyuz.interfaces.build import incomplete_building_status
 from canonical.launchpad.interfaces.launchpad import NotFoundError
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+from canonical.librarian.utils import copy_and_close
+from lp.soyuz.adapters.packagelocation import (
+    build_package_location)
+from lp.soyuz.interfaces.archive import (
+    ArchivePurpose, CannotCopy)
+from lp.soyuz.interfaces.build import incomplete_building_status
 from lp.soyuz.interfaces.publishing import (
     IBinaryPackagePublishingHistory, ISourcePackagePublishingHistory,
     PackagePublishingStatus, active_publishing_status)
 from lp.soyuz.scripts.ftpmasterbase import (
     SoyuzScript, SoyuzScriptError)
-from canonical.librarian.utils import copy_and_close
 from lp.soyuz.scripts.processaccepted import (
     close_bugs_for_sourcepublication)
 

@@ -506,10 +506,17 @@ class BaseBinaryUploadFile(PackageUploadFile):
     def verifyPackage(self):
         """Check if the binary is in changesfile and its name is valid."""
         control_package = self.control.get("Package", '')
-        if control_package not in self.changes.binaries:
-            yield UploadError(
-                "%s: control file lists name as %r, which isn't in changes "
-                "file." % (self.filename, control_package))
+
+        # Since DDEBs are generated after the original DEBs are processed
+        # and considered by `dpkg-genchanges` they are only half-incorporated
+        # the the binary upload changes file. DDEBs are only listed in the
+        # Files/Checksums-Sha1/ChecksumsSha256 sections and missing from
+        # Binary/Description.
+        if not self.filename.endswith('.ddeb'):
+            if control_package not in self.changes.binaries:
+                yield UploadError(
+                    "%s: control file lists name as %r, which isn't in "
+                    "changes file." % (self.filename, control_package))
 
         if not re_valid_pkg_name.match(control_package):
             yield UploadError("%s: invalid package name %r." % (

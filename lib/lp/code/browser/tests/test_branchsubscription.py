@@ -6,7 +6,7 @@ __metaclass__ = type
 
 import unittest
 
-from canonical.launchpad.testing import TestCaseWithFactory
+from lp.testing import TestCaseWithFactory
 from canonical.launchpad.webapp.interfaces import IPrimaryContext
 from canonical.testing import DatabaseFunctionalLayer
 

@@ -7,7 +7,7 @@ import unittest
 import transaction
 
 from canonical.testing import ZopelessAppServerLayer
-from canonical.launchpad.testing import TestCaseWithFactory
+from lp.testing import TestCaseWithFactory
 from canonical.launchpad.scripts.tests import run_script
 from lp.code.interfaces.branchsubscription import (
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,

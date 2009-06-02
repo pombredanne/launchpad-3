@@ -34,7 +34,7 @@ Now, if we post to that form, we should see a success, and the page should
 redirect to the Ubuntu Hoary page showing the milestone we added.
 
     >>> name12_browser.getControl('Name').value = 'sounder01'
-    >>> name12_browser.getControl('Register milestone').click()
+    >>> name12_browser.getControl('Register Milestone').click()
     >>> name12_browser.url
     'http://launchpad.dev/ubuntu/hoary'
     >>> print milestones_in_portlet(name12_browser)

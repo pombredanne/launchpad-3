@@ -11,7 +11,7 @@ class RosettaStats(object):
 
     def testStatistics(self):
         """See IRosettaStats."""
-        if self.nonUpdatesCount()+self.updatesCount() != self.currentCount():
+        if (self.newCount() + self.updatesCount()) != self.rosettaCount():
             return False
         if self.untranslatedCount() < 0:
             return False
@@ -64,9 +64,9 @@ class RosettaStats(object):
                 self, self.id, untranslated))
         return untranslated
 
-    def nonUpdatesCount(self, language=None):
+    def newCount(self, language=None):
         """See IRosettaStats."""
-        nonupdates = self.currentCount() - self.updatesCount()
+        nonupdates = self.rosettaCount() - self.updatesCount()
         if nonupdates < 0:
             return 0
         else:
@@ -100,9 +100,9 @@ class RosettaStats(object):
         """See IRosettaStats."""
         return self.asPercentage(self.untranslatedCount(language))
 
-    def nonUpdatesPercentage(self, language=None):
+    def newPercentage(self, language=None):
         """See IRosettaStats."""
-        return self.asPercentage(self.nonUpdatesCount(language))
+        return self.asPercentage(self.newCount(language))
 
     def updatesPercentage(self, language=None):
         """See IRosettaStats."""

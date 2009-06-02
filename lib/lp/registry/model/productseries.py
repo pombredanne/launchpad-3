@@ -444,7 +444,7 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
 
     def getTimeline(self, include_inactive=False):
         landmarks = []
-        for j, milestone in enumerate(self.all_milestones):
+        for milestone in self.all_milestones:
             if milestone.product_release is None:
                 # Skip inactive milestones, but include releases,
                 # even if include_inactive is False.
@@ -456,9 +456,12 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
                 node_type = 'release'
                 uri = canonical_url(
                     milestone.product_release, path_only_if_possible=True)
-            landmarks.append(dict(
-                name=milestone.name, code_name=milestone.code_name,
-                type=node_type, uri=uri))
+            entry = dict(
+                name=milestone.name,
+                code_name=milestone.code_name,
+                type=node_type,
+                uri=uri)
+            landmarks.append(entry)
         return dict(
             name=self.name,
             is_development_focus=self.is_development_focus,

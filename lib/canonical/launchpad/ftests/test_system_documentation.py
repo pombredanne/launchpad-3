@@ -374,11 +374,6 @@ special = {
             setUp=setUp, tearDown=tearDown,
             layer=FunctionalLayer
             ),
-    'script-monitoring.txt': LayeredDocFileSuite(
-            '../doc/script-monitoring.txt',
-            setUp=setUp, tearDown=tearDown,
-            layer=LaunchpadZopelessLayer
-            ),
     'bug-set-status.txt': LayeredDocFileSuite(
             '../doc/bug-set-status.txt',
             setUp=uploadQueueSetUp,

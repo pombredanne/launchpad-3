@@ -19,14 +19,12 @@
     has_edit context/required:launchpad.Edit">
 
     <h1>
-      <tal:title tal:content="view/milestone/name"  />
-      <tal:code_name condition="view/milestone/code_name">
-        "<tal:title tal:content="view/milestone/code_name"  />"
-      </tal:code_name>
+      <tal:title tal:content="view/milestone/title"  />
       <a tal:condition="context/required:launchpad.Edit"
-        tal:attributes="href context/fmt:url/+delete"
-        title="Delete this release"
-        ><img src="/@@/trash-icon" alt="delete" /></a>
+        tal:attributes="href view/milestone/fmt:url/+delete"
+        title="Delete this milestone"
+        ><img src="/@@/trash-icon"
+           alt="Delete this milestone" title="Delete this milestone" /></a>
       <a tal:replace="structure milestone_menu/edit/fmt:icon" />
     </h1>
 
@@ -67,7 +65,8 @@
           &nbsp; <a tal:condition="view/release/required:launchpad.Edit"
             tal:attributes="href view/release/fmt:url/+delete"
             title="Delete this release"
-            ><img src="/@@/trash-icon" title="Delete this release" /></a>
+            ><img src="/@@/remove"
+               alt="Delete this release" title="Delete this release" /></a>
           <a tal:replace="structure release_menu/edit/fmt:icon" />
           </td>
       </tr>
@@ -200,8 +199,9 @@
       style="margin-bottom: 2em;">
       <thead>
         <tr>
-          <th colspan="2">Specification</th>
-          <th tal:condition="view/is_project_milestone">
+          <th colspan="2">Blueprint</th>
+          <th style="width: 14em"
+            tal:condition="view/is_project_milestone">
             Product
           </th>
           <th style="width: 9em;">Priority</th>
@@ -255,8 +255,9 @@
     <table class="listing sortable" id="milestone_bugtasks">
       <thead>
         <tr>
-          <th colspan="3">Report</th>
-          <th tal:condition="view/is_project_milestone">
+          <th colspan="4">Bug report</th>
+          <th style="width: 14em"
+            tal:condition="view/is_project_milestone">
             Product
           </th>
           <th style="width: 9em;">Importance</th>
@@ -276,6 +277,9 @@
                tal:content="bugtask/bug/title/fmt:shorten/65">
                Bug Title Here
             </a>
+          </td>
+          <td style="width: 33px; padding-right: 5px;">
+            <img src="/@@/info" tal:replace="structure bugtask/image:badges" />
           </td>
           <td tal:condition="view/is_project_milestone">
             <span class="sortkey" tal:content="bugtask/target/displayname" />

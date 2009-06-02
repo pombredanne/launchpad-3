@@ -111,6 +111,13 @@ Create a helper for printing the build status summary:
     hppa build of foo 666 in ubuntutest breezy-autotest RELEASE
     i386 build of foo 666 in ubuntutest breezy-autotest RELEASE
 
+The underlying method being used here is getUnpublishedBuilds():
+
+    >>> for build in spph.getUnpublishedBuilds():
+    ...     print build.title
+    hppa build of foo 666 in ubuntutest breezy-autotest RELEASE
+    i386 build of foo 666 in ubuntutest breezy-autotest RELEASE
+
 If one of the builds becomes published, it will not appear in the summary:
 
     >>> from lp.soyuz.interfaces.publishing import (
@@ -122,6 +129,32 @@ If one of the builds becomes published, it will not appear in the summary:
     FULLYBUILT_PENDING
     i386 build of foo 666 in ubuntutest breezy-autotest RELEASE
 
+Nor will it be included in the unpublished builds:
+
+    >>> for build in spph.getUnpublishedBuilds():
+    ...     print build.title
+    i386 build of foo 666 in ubuntutest breezy-autotest RELEASE
+
+By default, only FULLYBUILT builds are included in the returned
+unpublished builds:
+
+    >>> builds[1].buildstate = BuildStatus.SUPERSEDED
+    >>> for build in spph.getUnpublishedBuilds():
+    ...     print build.title
+
+But the returned build-states can be set explicitly:
+
+    >>> for build in spph.getUnpublishedBuilds(build_states=[
+    ...     BuildStatus.FULLYBUILT,
+    ...     BuildStatus.SUPERSEDED
+    ...     ]):
+    ...     print build.title
+    i386 build of foo 666 in ubuntutest breezy-autotest RELEASE
+
+Just switch it back to FULLYBUILT before continuing:
+
+    >>> builds[1].buildstate = BuildStatus.FULLYBUILT
+    
 After publishing the second binary, the status changes to FULLYBUILT as
 per normal:
 
@@ -132,6 +165,11 @@ per normal:
     FULLYBUILT
     hppa build of foo 666 in ubuntutest breezy-autotest RELEASE
     i386 build of foo 666 in ubuntutest breezy-autotest RELEASE
+
+There are no longer any unpublished builds for the source package:
+
+    >>> for build in spph.getUnpublishedBuilds():
+    ...     print build.title
 
 If a build is deleted, it does not cause the build status summary to change:
 
@@ -326,6 +364,7 @@ architecture-specific binaries in ubuntu/breezy-autotest.
     ...     architecturehintlist='any',
     ...     status=PackagePublishingStatus.PUBLISHED,
     ...     pocket=PackagePublishingPocket.PROPOSED)
+
     >>> binaries = test_publisher.getPubBinaries(
     ...     pub_source=source,
     ...     status=PackagePublishingStatus.PUBLISHED,
@@ -876,6 +915,7 @@ Generating respective "Packages" stanzas:
 This utility implements the following methods:
 
  * getBuildsForSources();
+ * getUnpublishedBuildsForSources();
  * getFilesForSources();
  * getBinaryPublicationsForSources();
  * getPackageDiffsForSources();
@@ -949,6 +989,38 @@ The `ResultSet` is ordered by ascending
 
     >>> print arch.displayname
     ubuntutest Breezy Badger Autotest i386
+
+Next we'll create two sources with two builds each (the SoyuzTestPublisher
+default) and show that the number of unpublished builds for these sources
+is correct:
+
+    >>> sources = []
+    >>> builds = []
+    >>> for count in range(2):
+    ...     spph = stp.getPubSource(architecturehintlist='any')
+    ...     missing_builds = spph.createMissingBuilds()
+    ...     for build in missing_builds:
+    ...         build.buildstate = BuildStatus.FULLYBUILT
+    ...         builds.append(build)
+    ...     sources.append(spph)
+    >>> len(builds)
+    4
+
+    >>> unpublished_builds = (
+    ...     publishing_set.getUnpublishedBuildsForSources(sources))
+    >>> unpublished_builds.count()
+    4
+
+If we then publish one of the builds, the number of unpublished builds
+reflects the change:
+
+    >>> bpr = stp.uploadBinaryForBuild(builds[0], 'foo-bin')
+    >>> bpph = stp.publishBinaryInArchive(bpr, sources[0].archive,
+    ...     status=PackagePublishingStatus.PUBLISHED)
+    >>> unpublished_builds = (
+    ...     publishing_set.getUnpublishedBuildsForSources(sources))
+    >>> unpublished_builds.count()
+    3
 
 Now we retrieve all binary publications for Celso's PPA sources.
 
@@ -1295,7 +1367,7 @@ internals. There are three essential methods to fetch distinct
 information to be cached in the decorated objects:
 
   * getBuildsBySource;
-  * getBinariesBySource;
+  * getUnpublishedBuildsBySource;
   * getChangesFileBySources
 
 They exclude the extra references ('prejoins') returned  from the
@@ -1313,13 +1385,14 @@ Builds by source.
     ...     real_pub.getBuilds(), builds_by_source.get(real_pub, []))
     Matches
 
-Binary publications by source.
+Unpublished builds by source.
 
-    >>> binaries_by_source = decorated_set.getBinariesBySource()
+    >>> unpublished_builds_by_source = (
+    ...     decorated_set.getUnpublishedBuildsBySource())
 
     >>> compare_ids(
-    ...     real_pub.getPublishedBinaries(),
-    ...     binaries_by_source.get(real_pub, []))
+    ...     real_pub.getUnpublishedBuilds(),
+    ...     unpublished_builds_by_source.get(real_pub, []))
     Matches
 
 getChangesFileBySources() returns a dictionary mapping each individual
@@ -1365,14 +1438,14 @@ publications.
 methods:
   * sourcepackagerelease;
   * getBuilds;
-  * getPublishedBinaries.
+  * getUnpublishedBuilds.
 
     >>> compare_ids(real_pub.getBuilds(), decorated_pub.getBuilds())
     Matches
 
     >>> compare_ids(
-    ...     real_pub.getPublishedBinaries(),
-    ...     decorated_pub.getPublishedBinaries())
+    ...     real_pub.getUnpublishedBuilds(),
+    ...     decorated_pub.getUnpublishedBuilds())
     Matches
 
 The 'sourcepackagerelease' attribute from a decorated

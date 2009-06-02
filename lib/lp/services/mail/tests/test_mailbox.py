@@ -10,7 +10,7 @@ from unittest import TestLoader
 
 from canonical.launchpad.interfaces.mailbox import IMailBox
 from lp.services.mail.mailbox import DirectoryMailBox
-from canonical.launchpad.testing import TestCase
+from lp.testing import TestCase
 from canonical.launchpad.webapp.testing import verifyObject
 
 

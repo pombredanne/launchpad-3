@@ -18,7 +18,7 @@ about.
 CodeReviewComments are created from their BranchMergeProposals:
 
     >>> login('foo.bar@canonical.com')
-    >>> from canonical.launchpad.testing import LaunchpadObjectFactory
+    >>> from lp.testing.factory import LaunchpadObjectFactory
     >>> factory = LaunchpadObjectFactory()
     >>> merge_proposal = factory.makeBranchMergeProposal()
     >>> sender = factory.makePerson(

@@ -264,9 +264,9 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
 
     @property
     def displayname(self):
-        return "%s %s %s" % (
-            self.distribution.displayname,
-            self.distroseries.displayname, self.sourcepackagename.name)
+        return "%s in %s %s" % (
+            self.sourcepackagename.name, self.distribution.displayname,
+            self.distroseries.displayname)
 
     @property
     def bugtargetdisplayname(self):
@@ -517,7 +517,8 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         SourcePackagePublishingHistory.distroseries = %s AND
         SourcePackagePublishingHistory.archive IN %s AND
         SourcePackagePublishingHistory.sourcepackagerelease =
-        SourcePackageRelease.id
+            SourcePackageRelease.id AND
+        SourcePackagePublishingHistory.archive = Build.archive
         """ % sqlvalues(self.sourcepackagename,
                         self.distroseries,
                         self.distribution.all_distro_archive_ids)]

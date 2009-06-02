@@ -64,8 +64,7 @@ from canonical.shipit.interfaces.validation import shipit_postcode_required
 from canonical.shipit.interfaces.shipit import IShipItApplication
 from canonical.launchpad.webapp.interfaces import (
     ILaunchBag, UnexpectedFormData)
-from canonical.launchpad.interfaces.openidconsumer import (
-    IOpenIDConsumerStoreFactory)
+from canonical.launchpad.interfaces.openidconsumer import IOpenIDConsumerStore
 from canonical.shipit.interfaces.shipit import (
     IShipitAccount, IShipItReportSet, IShipItSurveySet, IShippingRequestAdmin,
     IShippingRequestEdit, IShippingRequestSet, IShippingRequestUser,
@@ -152,8 +151,8 @@ class BaseLoginView(LaunchpadView):
 
     def _getConsumer(self):
         session = ISession(self.request)[self._openid_session_ns]
-        store = getUtility(IOpenIDConsumerStoreFactory)()
-        return Consumer(session, store)
+        openid_store = getUtility(IOpenIDConsumerStore)
+        return Consumer(session, openid_store)
 
     def _redirect(self):
         """Redirect the logged in user to the request page."""

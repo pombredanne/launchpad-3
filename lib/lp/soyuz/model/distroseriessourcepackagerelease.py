@@ -18,7 +18,8 @@ from lp.soyuz.model.binarypackagerelease import (
     BinaryPackageRelease)
 from lp.soyuz.model.publishing import (
     SourcePackagePublishingHistory)
-from lp.soyuz.interfaces.distroseriessourcepackagerelease import IDistroSeriesSourcePackageRelease
+from lp.soyuz.interfaces.distroseriessourcepackagerelease import (
+    IDistroSeriesSourcePackageRelease)
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
 from lazr.delegates import delegates

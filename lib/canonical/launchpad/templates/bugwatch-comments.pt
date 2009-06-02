@@ -19,8 +19,7 @@
         <h1>Imported comments</h1>
 
         <tal:comments repeat="comment view/comments">
-          <metal:comment-box
-              metal:use-macro="context/@@bugcomment-macros/comment-box" />
+          <tal:coment tal:replace="structure comment/@@+box" />
         </tal:comments>
     </div>
 

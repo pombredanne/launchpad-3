@@ -64,7 +64,7 @@ assignee, and the bug will be filed with those choices.
     >>> user_browser.getControl('Status').displayValue = ['Triaged']
     >>> user_browser.getControl('Importance').displayValue = ['High']
     >>> user_browser.getControl('Milestone').displayValue = [
-    ...     'Mozilla Firefox: 1.0']
+    ...     'Mozilla Firefox 1.0']
     >>> user_browser.getControl('Assign to').value = u"spiv"
 
     >>> user_browser.getControl('Submit Bug Report').click()

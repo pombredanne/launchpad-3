@@ -18,8 +18,8 @@ import _pythonpath
 
 from optparse import OptionParser
 
-from canonical.codehosting import load_optional_plugin
-from canonical.codehosting.codeimport.worker import (
+from lp.codehosting import load_optional_plugin
+from lp.codehosting.codeimport.worker import (
     CSCVSImportWorker, CodeImportSourceDetails, PullingImportWorker,
     get_default_bazaar_branch_store, get_default_foreign_tree_store)
 from canonical.launchpad import scripts

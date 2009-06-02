@@ -36,7 +36,7 @@ import pytz
 from canonical.config import config
 from canonical.encoding import guess as ensure_unicode
 from canonical.launchpad.helpers import get_filename_from_message_id
-from canonical.launchpad.database.job import Job
+from lp.services.job.model.job import Job
 from canonical.launchpad.interfaces import (
     ILibraryFileAliasSet, IPersonSet, NotFoundError, PersonCreationRationale,
     UnknownSender)

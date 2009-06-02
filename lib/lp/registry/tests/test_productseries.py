@@ -13,7 +13,7 @@ from canonical.launchpad.ftests import login, logout, syncUpdate
 from lp.registry.model.productseries import ProductSeriesSet
 from lp.code.interfaces.branch import BranchType
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.testing import LaunchpadObjectFactory
+from lp.testing.factory import LaunchpadObjectFactory
 from canonical.testing import LaunchpadFunctionalLayer
 
 
