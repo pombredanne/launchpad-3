@@ -96,7 +96,7 @@ Now that the infrastructure is ready, we prepare a set of useful methods.
 Firstly, we need a way to copy a test upload into the queue (but skip
 lock files, which have names starting with a dot).
 
-  >>> from canonical.archiveuploader.tests import datadir
+  >>> from lp.archiveuploader.tests import datadir
   >>> def punt_upload_into_queue(leaf, distro):
   ...     inc_dir = os.path.join(incoming_dir, leaf, distro)
   ...     os.makedirs(inc_dir)

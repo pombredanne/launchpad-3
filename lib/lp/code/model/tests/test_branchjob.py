@@ -177,7 +177,8 @@ class TestRevisionMailJob(TestCaseWithFactory):
         self.assertEqual('subject', mail['subject'])
         self.assertEqual(
             'hello\n'
-            '\n--\n\n'
+            '\n--\n'
+            '%(identity)s\n'
             '%(url)s\n'
             '\nYou are subscribed to branch %(identity)s.\n'
             'To unsubscribe from this branch go to'
