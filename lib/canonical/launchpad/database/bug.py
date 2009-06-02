@@ -7,8 +7,10 @@ __metaclass__ = type
 
 __all__ = [
     'Bug',
+    'BugAffectsPerson',
     'BugBecameQuestionEvent',
     'BugSet',
+    'BugTag',
     'get_bug_tags',
     'get_bug_tags_open_count',
     ]
