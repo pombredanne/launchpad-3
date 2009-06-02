@@ -180,32 +180,13 @@ class HWSubmissionSet:
         else:
             return ""
 
-    def _userHasAccessStormClause(self, user):
-        """Limit results of HWSubmission queries to rows the user can access.
-        """
-        submission_is_public = Not(HWSubmission.private)
-        admins = getUtility(ILaunchpadCelebrities).admin
-        janitor = getUtility(ILaunchpadCelebrities).janitor
-        if user is None:
-            return submission_is_public
-        elif user.inTeam(admins) or user == janitor:
-            return True
-        else:
-            public = Not(HWSubmission.private)
-            subselect = Select(
-                TeamParticipation.teamID,
-                And(HWSubmission.ownerID == TeamParticipation.teamID,
-                    TeamParticipation.personID == user.id))
-            has_access = HWSubmission.ownerID.is_in(subselect)
-            return Or(public, has_access)
-
     def getBySubmissionKey(self, submission_key, user=None):
         """See `IHWSubmissionSet`."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         return store.find(
             HWSubmission,
             And(HWSubmission.submission_key == submission_key,
-                self._userHasAccessStormClause(user))).one()
+                _userCanAccessSubmissionStormClause(user))).one()
 
     def getByFingerprintName(self, name, user=None):
         """See `IHWSubmissionSet`."""
@@ -250,7 +231,7 @@ class HWSubmissionSet:
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         result_set = store.find(HWSubmission,
                                 HWSubmission.status == status,
-                                self._userHasAccessStormClause(user))
+                                _userCanAccessSubmissionStormClause(user))
         # Provide a stable order. Sorting by id, to get the oldest
         # submissions first. When date_submitted has an index, we could
         # sort by that first.
@@ -297,7 +278,7 @@ class HWSubmissionSet:
 
         result_set = store.find(
             HWSubmission,
-            self._userHasAccessStormClause(user),
+            _userCanAccessSubmissionStormClause(user),
             *args)
         # Many devices are associated with more than one driver, even
         # for one submission, hence we may have more than one
@@ -1036,7 +1017,8 @@ class HWSubmissionBugSet:
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         result = store.find(
             HWSubmission, And(HWSubmissionBug.bug == bug,
-                              HWSubmissionBug.submission == HWSubmission.id))
+                              HWSubmissionBug.submission == HWSubmission.id,
+                              _userCanAccessSubmissionStormClause(user)))
         result.order_by(HWSubmission.submission_key)
         return result
 
@@ -1104,3 +1086,23 @@ def make_distro_target_clause(distro_target):
                 'Parameter distro_target must be an IDistribution, '
                 'IDistroSeries or IDistroArchSeries')
     return ([], [])
+
+def _userCanAccessSubmissionStormClause(user):
+    """Limit results of HWSubmission queries to rows the user can access.
+    """
+    submission_is_public = Not(HWSubmission.private)
+    admins = getUtility(ILaunchpadCelebrities).admin
+    janitor = getUtility(ILaunchpadCelebrities).janitor
+    if user is None:
+        return submission_is_public
+    elif user.inTeam(admins) or user == janitor:
+        return True
+    else:
+        public = Not(HWSubmission.private)
+        subselect = Select(
+            TeamParticipation.teamID,
+            And(HWSubmission.ownerID == TeamParticipation.teamID,
+                TeamParticipation.personID == user.id))
+        has_access = HWSubmission.ownerID.is_in(subselect)
+        return Or(public, has_access)
+
