@@ -174,7 +174,7 @@
         <th>Stacked on:</th>
         <td tal:content="structure context/stacked_on/fmt:bzr-link" />
       </tr>
-      <tr id="branch-description">
+      <tr id="branch-description" tal:condition="context/description">
         <th>Description:</th>
         <td tal:content="structure context/description" />
       </tr>
