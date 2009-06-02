@@ -122,6 +122,11 @@ if __name__ == '__main__':
         source = join(options.parent, folder_name)
         destination = join(options.target, folder_name)
         if not exists(destination):
-            link(source, destination)
+            if not exists(source):
+                stderr.write(
+                    '  Wanted to link %s to %s but source does not exist\n' %
+                    (source, destination))
+            else:
+                link(source, destination)
 
 # End
