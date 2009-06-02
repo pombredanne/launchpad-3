@@ -31,7 +31,7 @@
               if (found_landmark) {
                   var container = Y.get('#timeline-container');
                   container.setStyle('display', 'block');
-                  graph = new Y.registry.timeline.TimelineGraph({
+                  var graph = new Y.registry.timeline.TimelineGraph({
                       timeline: timeline,
                       boundingBox: container
                   });
