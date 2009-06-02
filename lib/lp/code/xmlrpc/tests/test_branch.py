@@ -10,12 +10,10 @@ import os
 import unittest
 import xmlrpclib
 
-from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.ftests import login, logout
 from lp.code.interfaces.branch import BranchType
-from lp.soyuz.interfaces.publishing import PackagePublishingPocket
 from lp.testing import TestCaseWithFactory
 from lazr.uri import URI
 from lp.code.xmlrpc.branch import PublicCodehostingAPI
@@ -186,7 +184,8 @@ class TestExpandURL(TestCaseWithFactory):
         # sourcepackage.
         suite_sourcepackage = self.factory.makeSuiteSourcePackage()
         self.assertFault(
-            suite_sourcepackage, faults.NoLinkedBranch(suite_sourcepackage))
+            suite_sourcepackage.path,
+            faults.NoLinkedBranch(suite_sourcepackage))
 
     def test_branch(self):
         # The unique name of a branch resolves to the unique name of the
