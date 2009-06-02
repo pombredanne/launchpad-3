@@ -539,8 +539,6 @@ class BranchEditSchema(Interface):
         'owner',
         'name',
         'url',
-        'title',
-        'summary',
         'lifecycle_status',
         'whiteboard',
         ])
