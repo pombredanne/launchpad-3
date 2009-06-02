@@ -14,7 +14,7 @@ from canonical.launchpad.ftests.bug import create_old_bug, sync_bugtasks
 from canonical.launchpad.interfaces import (
     BugTaskStatus, IBugSet, IBugTaskSet, IBugWatchSet, IDistributionSet,
     ILaunchBag, IProductSet, IProjectSet, IUpstreamBugTask)
-from canonical.launchpad.testing import LaunchpadObjectFactory
+from lp.testing.factory import LaunchpadObjectFactory
 from canonical.testing import DatabaseFunctionalLayer
 
 

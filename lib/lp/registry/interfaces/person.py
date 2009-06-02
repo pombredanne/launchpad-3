@@ -72,7 +72,7 @@ from canonical.launchpad.interfaces.account import AccountStatus, IAccount
 from canonical.launchpad.interfaces.emailaddress import IEmailAddress
 from lp.registry.interfaces.irc import IIrcID
 from lp.registry.interfaces.jabber import IJabberID
-from canonical.launchpad.interfaces.language import ILanguage
+from lp.services.worlddata.interfaces.language import ILanguage
 from canonical.launchpad.interfaces.launchpad import (
     IHasIcon, IHasLogo, IHasMugshot)
 from lp.registry.interfaces.location import (

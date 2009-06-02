@@ -40,8 +40,8 @@ from canonical.launchpad import _
 
 from lazr.restful.fields import CollectionField, Reference, ReferenceChoice
 from lazr.restful.declarations import (
-    export_as_webservice_entry, export_factory_operation, exported,
-    rename_parameters_as)
+    export_as_webservice_entry, export_factory_operation, export_operation_as,
+    export_read_operation, exported, rename_parameters_as)
 
 
 class ProductSeriesNameField(ContentNameField):
@@ -258,6 +258,11 @@ class IProductSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
 
     is_development_focus = Attribute(
         _("Is this series the development focus for the product?"))
+
+    @export_read_operation()
+    @export_operation_as('get_timeline')
+    def getTimeline():
+        """Return basic timeline data useful for creating a diagram."""
 
 
 class IProductSeries(IProductSeriesEditRestricted, IProductSeriesPublic):

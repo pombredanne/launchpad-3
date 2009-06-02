@@ -14,7 +14,7 @@ import unittest
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.archivepublisher.config import getPubConfig
+from lp.archivepublisher.config import getPubConfig
 from canonical.config import config
 from canonical.launchpad.scripts.logger import QuietFakeLogger
 from lp.soyuz.interfaces.archive import (
@@ -25,7 +25,7 @@ from lp.soyuz.interfaces.binarypackagerelease import (
     BinaryPackageFormat)
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.scripts import publishdistro
-from canonical.launchpad.scripts.base import LaunchpadScriptFailure
+from lp.services.scripts.base import LaunchpadScriptFailure
 from lp.soyuz.tests.test_publishing import TestNativePublishingBase
 
 

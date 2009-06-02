@@ -20,14 +20,14 @@ from sqlobject.sqlbuilder import AND
 
 from canonical.config import config
 
-from canonical.archivepublisher.diskpool import poolify
+from lp.archivepublisher.diskpool import poolify
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.enumcol import EnumCol
 
-from canonical.launchpad.database.country import Country
+from lp.services.worlddata.model.country import Country
 from lp.soyuz.model.files import (
     BinaryPackageFile, SourcePackageReleaseFile)
 from lp.soyuz.model.publishing import (

@@ -15,7 +15,7 @@ from lp.soyuz.interfaces.processor import (
     IProcessor, IProcessorFamily, IProcessorFamilySet)
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
-from storm.expr import And
+
 
 class Processor(SQLBase):
     implements(IProcessor)

@@ -127,7 +127,7 @@ the Answers facet.
     'http://answers.launchpad.dev/ubuntu/hoary/+source/evolution'
     >>> browser.getLink('Answers').click()
     >>> print browser.title
-    Questions for Ubuntu Hoary evolution...
+    Questions for evolution in Ubuntu Hoary...
     >>> browser.getLink('Ask a question').url
     '.../ubuntu/hoary/+source/evolution/+addquestion'
 

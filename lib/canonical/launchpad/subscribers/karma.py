@@ -149,58 +149,48 @@ def spec_modified(spec, event):
 @block_implicit_flushes
 def branch_created(branch, event):
     """Assign karma to the user who registered the branch."""
-    if branch.product is None:
-        # No karma for junk branches.
-        return
-    branch.registrant.assignKarma('branchcreated', product=branch.product)
-
+    branch.target.assignKarma(branch.registrant, 'branchcreated')
 
 @block_implicit_flushes
 def bug_branch_created(bug_branch, event):
     """Assign karma to the user who linked the bug to the branch."""
-    product = bug_branch.branch.product
-    if product is None:
-        # No karma for junk branches.
-        return
-    bug_branch.registrant.assignKarma('bugbranchcreated', product=product)
+    bug_branch.branch.target.assignKarma(
+        bug_branch.registrant, 'bugbranchcreated')
 
 
 @block_implicit_flushes
 def spec_branch_created(spec_branch, event):
     """Assign karma to the user who linked the spec to the branch."""
-    product = spec_branch.branch.product
-    if product is None:
-        # No karma for junk branches.
-        return
-    spec_branch.registrant.assignKarma('specbranchcreated', product=product)
+    spec_branch.branch.target.assignKarma(
+        spec_branch.registrant, 'specbranchcreated')
 
 
 @block_implicit_flushes
 def branch_merge_proposed(proposal, event):
     """Assign karma to the user who proposed the merge."""
-    product = proposal.source_branch.product
-    proposal.registrant.assignKarma('branchmergeproposed', product=product)
+    proposal.source_branch.target.assignKarma(
+        proposal.registrant, 'branchmergeproposed')
 
 
 @block_implicit_flushes
 def code_review_comment_added(code_review_comment, event):
     """Assign karma to the user who commented on the review."""
     proposal = code_review_comment.branch_merge_proposal
-    product = proposal.source_branch.product
+    target = proposal.source_branch.target
     # If the user is commenting on their own proposal, then they don't
     # count as a reviewer for that proposal.
     user = code_review_comment.message.owner
     reviewer = user.inTeam(proposal.target_branch.code_reviewer)
     if reviewer and user != proposal.registrant:
-        user.assignKarma('codereviewreviewercomment', product=product)
+        target.assignKarma(user, 'codereviewreviewercomment')
     else:
-        user.assignKarma('codereviewcomment', product=product)
+        target.assignKarma(user, 'codereviewcomment')
 
 
 @block_implicit_flushes
 def branch_merge_status_changed(proposal, event):
     """Assign karma to the user who approved the merge."""
-    product = proposal.source_branch.product
+    target = proposal.source_branch.target
     user = IPerson(event.user)
 
     in_progress_states = (
@@ -210,15 +200,15 @@ def branch_merge_status_changed(proposal, event):
     if ((event.to_state == BranchMergeProposalStatus.CODE_APPROVED) and
         (event.from_state in (in_progress_states))):
         if user == proposal.registrant:
-            user.assignKarma('branchmergeapprovedown', product=product)
+            target.assignKarma(user, 'branchmergeapprovedown')
         else:
-            user.assignKarma('branchmergeapproved', product=product)
+            target.assignKarma(user, 'branchmergeapproved')
     elif ((event.to_state == BranchMergeProposalStatus.REJECTED) and
           (event.from_state in (in_progress_states))):
         if user == proposal.registrant:
-            user.assignKarma('branchmergerejectedown', product=product)
+            target.assignKarma(user, 'branchmergerejectedown')
         else:
-            user.assignKarma('branchmergerejected', product=product)
+            target.assignKarma(user, 'branchmergerejected')
     else:
         # Only care about approved and rejected right now.
         pass

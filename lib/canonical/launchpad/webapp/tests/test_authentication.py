@@ -12,7 +12,7 @@ from canonical.config import config
 from canonical.testing import (
     DatabaseFunctionalLayer, LaunchpadFunctionalLayer)
 from canonical.launchpad.ftests import login
-from canonical.launchpad.testing import TestCaseWithFactory
+from lp.testing import TestCaseWithFactory
 from canonical.launchpad.webapp.authentication import LaunchpadPrincipal
 from canonical.launchpad.webapp.login import logInPrincipal
 from canonical.launchpad.webapp.publication import LaunchpadBrowserPublication

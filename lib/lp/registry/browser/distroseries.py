@@ -34,12 +34,12 @@ from lp.soyuz.browser.build import BuildRecordsView
 from canonical.launchpad.browser.packagesearch import PackageSearchViewBase
 from lp.soyuz.browser.queue import QueueItemsView
 from canonical.launchpad.browser.translations import TranslationsMixin
-from canonical.launchpad.interfaces.country import ICountry
+from lp.services.worlddata.interfaces.country import ICountry
 from lp.registry.interfaces.distroseries import (
     DistroSeriesStatus, IDistroSeries)
 from canonical.launchpad.interfaces.distroserieslanguage import (
     IDistroSeriesLanguageSet)
-from canonical.launchpad.interfaces.language import ILanguageSet
+from lp.services.worlddata.interfaces.language import ILanguageSet
 from canonical.launchpad.interfaces.launchpad import (
     ILaunchBag, ILaunchpadCelebrities, NotFoundError)
 from canonical.launchpad.interfaces.potemplate import IPOTemplateSet

@@ -88,6 +88,40 @@ keep_milestone_active option as 'on' (the value of the checkbox).
     True
 
 
+== Creating a release for a series ==
+
+It is possible to create a release directly from a series, the release's
+milestone can be created via an AJAX command.
+
+The view collects the the required release fields, and adds fields to
+to set the milestone.
+
+    >>> view = create_initialized_view(series, '+addrelease', principal=owner)
+    >>> view.field_names
+    ['datereleased', 'release_notes', 'changelog']
+    >>> [field.__name__ for field in view.form_fields]
+    ['milestone_for_release', 'keep_milestone_active', 'datereleased',
+     'release_notes', 'changelog']
+
+The rendered template includes a script that adds a js-action link to
+show a formoverlay that updates the milestone_for_release field.
+
+    >>> from canonical.launchpad.testing.pages import find_tag_by_id
+
+    >>> script = find_tag_by_id(view.render(), 'milestone-script')
+    >>> print script
+    <script id="milestone-script" type="text/javascript">
+        YUI().use(... 'lazr.formoverlay'...
+            var milestone_form_uri = '.../app/simple/+addmilestone/++form++';
+            var series_uri = '/app/simple';
+            ...
+            Y.on('domready', function () {
+                var select_menu = get_by_id('field.milestone_for_release');
+                var create_milestone_link = Y.Node.create(
+                    '<a href="+addmilestone"
+                      id="create-milestone-link">Create milestone</a>'); ...
+
+
 == Editing a a product release ==
 
 A ProductRelease can be edited using the ProductReleaseEditView.

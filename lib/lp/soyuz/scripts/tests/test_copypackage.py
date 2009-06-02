@@ -9,7 +9,7 @@ import unittest
 
 from zope.component import getUtility
 
-from canonical.archiveuploader.tests.test_uploadprocessor import (
+from lp.archiveuploader.tests.test_uploadprocessor import (
     MockLogger as TestLogger)
 from canonical.config import config
 from lp.soyuz.adapters.packagelocation import (
@@ -34,7 +34,7 @@ from canonical.launchpad.scripts import QuietFakeLogger
 from lp.soyuz.scripts.ftpmasterbase import SoyuzScriptError
 from lp.soyuz.scripts.packagecopier import (
     PackageCopier, UnembargoSecurityPackage)
-from canonical.launchpad.testing import TestCase
+from lp.testing import TestCase
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from canonical.testing import DatabaseLayer, LaunchpadZopelessLayer
 

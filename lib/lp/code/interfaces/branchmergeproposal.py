@@ -33,7 +33,7 @@ from canonical.launchpad.fields import PublicPersonChoice, Summary, Whiteboard
 from lp.code.interfaces.branch import IBranch
 from lp.registry.interfaces.person import IPerson
 from canonical.launchpad.interfaces.diff import IPreviewDiff, IStaticDiff
-from canonical.launchpad.interfaces.job import IJob
+from lp.services.job.interfaces.job import IJob
 from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
 from lazr.restful.fields import CollectionField, Reference
 from lazr.restful.declarations import (

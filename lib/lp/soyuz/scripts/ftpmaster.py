@@ -27,7 +27,7 @@ import tempfile
 
 from zope.component import getUtility
 
-from canonical.archiveuploader.utils import re_extract_src_version
+from lp.archiveuploader.utils import re_extract_src_version
 from lp.soyuz.adapters.packagelocation import (
     PackageLocationError, build_package_location)
 from canonical.launchpad.helpers import filenameToContentType
@@ -41,7 +41,7 @@ from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
 from lp.soyuz.interfaces.binarypackagerelease import IBinaryPackageReleaseSet
 from lp.soyuz.interfaces.publishing import (
     PackagePublishingPocket, PackagePublishingStatus, pocketsuffix)
-from canonical.launchpad.scripts.base import (
+from lp.services.scripts.base import (
     LaunchpadScript, LaunchpadScriptFailure)
 from lp.soyuz.scripts.ftpmasterbase import (
     SoyuzScript, SoyuzScriptError)

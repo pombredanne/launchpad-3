@@ -68,8 +68,7 @@ from lp.code.interfaces.branch import (
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.interfaces.branchmergeproposal import (
     BranchMergeProposalStatus, IBranchMergeProposalGetter)
-from lp.code.interfaces.branchnamespace import (
-    get_branch_namespace, IBranchNamespacePolicy)
+from lp.code.interfaces.branchnamespace import IBranchNamespacePolicy
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.revision import IRevisionSet
 
@@ -611,8 +610,6 @@ class BranchListingView(LaunchpadFormView, FeedsMixin):
         :param sort_by: an item from the BranchListingSort enumeration.
         """
         from lp.code.model.branch import Branch
-        from lp.registry.model.person import Owner
-        from lp.registry.model.product import Product
 
         DEFAULT_BRANCH_LISTING_SORT = [
             BranchListingSort.PRODUCT,
@@ -622,10 +619,10 @@ class BranchListingView(LaunchpadFormView, FeedsMixin):
             ]
 
         LISTING_SORT_TO_COLUMN = {
-            BranchListingSort.PRODUCT: (Asc, Product.name),
+            BranchListingSort.PRODUCT: (Asc, Branch.target_suffix),
             BranchListingSort.LIFECYCLE: (Desc, Branch.lifecycle_status),
             BranchListingSort.NAME: (Asc, Branch.name),
-            BranchListingSort.REGISTRANT: (Asc, Owner.name),
+            BranchListingSort.REGISTRANT: (Asc, Branch.owner_name),
             BranchListingSort.MOST_RECENTLY_CHANGED_FIRST: (
                 Desc, Branch.date_last_modified),
             BranchListingSort.LEAST_RECENTLY_CHANGED_FIRST: (
@@ -690,8 +687,7 @@ class NoContextBranchListingView(BranchListingView):
         if lifecycle_status is not None:
             collection = collection.withLifecycleStatus(*lifecycle_status)
         collection = collection.visibleByUser(self.user)
-        return collection.getBranches(
-            join_owner=False, join_product=False).order_by(
+        return collection.getBranches().order_by(
             self._branch_order)
 
 
@@ -1367,17 +1363,43 @@ class SourcePackageBranchesView(BranchListingView):
         """The number of total branches the user can see."""
         return self._getCollection().visibleByUser(self.user).count()
 
+    def _numBranchesInPackage(self, package):
+        branches = IBranchTarget(package).collection
+        return branches.visibleByUser(self.user).count()
+
     @property
     def series_links(self):
         """Links to other series in the same distro as the package."""
         our_series = self.context.distroseries
         our_sourcepackagename = self.context.sourcepackagename
-        # We want oldest on the left, and 'serieses' normally yields the
-        # newest first.
-        for series in reversed(self.context.distribution.serieses):
+        distribution = self.context.distribution
+        for series in distribution.serieses:
+            if not series.active:
+                continue
+            if distribution.currentseries == series:
+                dev_focus_css = 'sourcepackage-dev-focus'
+            else:
+                dev_focus_css = 'sourcepackage-not-dev-focus'
+            package = SourcePackage(our_sourcepackagename, series)
+            # XXX: JonathanLange 2009-05-13 bug=376295: This approach is
+            # inefficient. We should instead do something like:
+            #
+            #   SELECT distroseries, COUNT(id)
+            #   FROM Branch
+            #   WHERE distroseries IS NOT NULL
+            #   AND sourcepackagename = ?
+            #   GROUP BY distroseries
+            #
+            # It's not too bad though, since the number of active series is
+            # generally less than 5.
+            num_branches = self._numBranchesInPackage(package)
+            num_branches_text = get_plural_text(
+                num_branches, "branch", "branches")
             yield dict(
-                series_name=series.name,
-                package=SourcePackage(our_sourcepackagename, series),
+                series_name=series.displayname,
+                package=package,
+                num_branches='%s %s' % (num_branches, num_branches_text),
+                dev_focus_css=dev_focus_css,
                 linked=(series != our_series))
 
 
