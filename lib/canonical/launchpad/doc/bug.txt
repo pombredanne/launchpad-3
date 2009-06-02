@@ -1050,7 +1050,7 @@ Users can mark bugs as affecting or not affecting them. For each bug we
 then keep a count of the number of users affected by it, as well as the
 number of users not affected by it.
 
-    >>> test_bug = factory.makeBug()
+                   >>> test_bug = factory.makeBug()
     >>> affected_user = factory.makePerson()
     >>> unaffected_user = factory.makePerson()
 
@@ -1138,7 +1138,35 @@ submission a second time, we get an IntegrityError.
 
     >>> transaction.abort()
 
-Bug.getHWSubmissions contains all HWDB submissions linked to a bug.
+Bug.getHWSubmissions() returns the HWDB submissions linked to a bug.
+
+    >>> for submission in test_bug.getHWSubmissions():
+    ...     print submission.submission_key
+    sample-submission
+
+Private submissions are only included if the current user is an admin
+or the owner of a private submission.
+
+    >>> private_submission = factory.makeHWSubmission(
+    ...     emailaddress='test@canonical.com', private=True,
+    ...     submission_key='private-submission')
+    >>> test_bug.linkHWSubmission(private_submission)
+    >>> for submission in test_bug.getHWSubmissions(user=sample_person):
+    ...     print submission.submission_key
+    private-submission
+    sample-submission
+
+    >>> for submission in test_bug.getHWSubmissions(user=foobar):
+    ...     print submission.submission_key
+    private-submission
+    sample-submission
+
+Other persons do not see Sample Person's private submission.
+
+    >>> no_priv = personset.getByEmail('no-priv@canonical.com')
+    >>> for submission in test_bug.getHWSubmissions(user=no_priv):
+    ...     print submission.submission_key
+    sample-submission
 
     >>> for submission in test_bug.getHWSubmissions():
     ...     print submission.submission_key

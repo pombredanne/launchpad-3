@@ -598,7 +598,7 @@ Other registered persons can see only public submissions...
     unique-id-5
 
 Existing links can also be removed.
- 
+
     >>> submission_bug_set.remove(submission_no_owner, bug_one)
     >>> submission_bug_set.submissionsForBug(bug_one).count()
     0
