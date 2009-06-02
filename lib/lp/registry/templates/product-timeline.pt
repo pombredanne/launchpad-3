@@ -23,9 +23,14 @@
               var container = Y.get('#timeline-container');
               graph = new Y.registry.timeline.TimelineGraph({
                   timeline: timeline,
-                  boundingBox: container 
+                  boundingBox: container
               });
-              graph.render();
+              try {
+                  graph.render();
+              }
+              catch (e) {
+                  alert('Error rendering series graph: ' + e);
+              }
           }
 
           var client = new LP.client.Launchpad();
@@ -35,8 +40,11 @@
                   parameters: {},
                   on: {
                       success: display_graph,
-                      failure: function(e) {
-                          alert('failure:' + e);
+                      failure: function(ignore, response, args) {
+                          alert(
+                              response.status +
+                              ' Error retrieving series data.\n' +
+                              response.responseText);
                       }
                   }
               });

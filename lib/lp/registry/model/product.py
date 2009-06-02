@@ -517,8 +517,17 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
     branches = SQLMultipleJoin('Branch', joinColumn='product',
         orderBy='id')
-    serieses = SQLMultipleJoin('ProductSeries', joinColumn='product',
-        orderBy='name')
+
+    @property
+    def serieses(self):
+        store = Store.of(self)
+        result = store.using(ProductSeries, Product).find(
+            ProductSeries,
+            And(ProductSeries.product == Product.id,
+                Product.id == self.id))
+        return result.order_by(
+            '(Product.development_focus = ProductSeries.id), '
+            'ProductSeries.name DESC')
 
     @property
     def name_with_project(self):
