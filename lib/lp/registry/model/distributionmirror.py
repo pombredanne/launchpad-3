@@ -20,7 +20,7 @@ from sqlobject.sqlbuilder import AND
 
 from canonical.config import config
 
-from canonical.archivepublisher.diskpool import poolify
+from lp.archivepublisher.diskpool import poolify
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol

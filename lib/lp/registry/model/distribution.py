@@ -14,7 +14,7 @@ from sqlobject.sqlbuilder import SQLConstant
 from storm.locals import Desc, In, Join, SQL
 from storm.store import Store
 
-from canonical.archivepublisher.debversion import Version
+from lp.archivepublisher.debversion import Version
 from canonical.cachedproperty import cachedproperty
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -721,7 +721,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
 
     def getDistroSeriesAndPocket(self, distroseries_name):
         """See `IDistribution`."""
-        from canonical.archivepublisher.publishing import suffixpocket
+        from lp.archivepublisher.publishing import suffixpocket
 
         # Get the list of suffixes.
         suffixes = [suffix for suffix, ignored in suffixpocket.items()]

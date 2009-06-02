@@ -123,6 +123,20 @@ class Language(SQLBase):
             clauseTables=[
                 'PersonLanguage', 'KarmaCache', 'KarmaCategory'])
 
+    def getFullCode(self, variant=None):
+        """See `ILanguage`."""
+        if variant:
+            return '%s@%s' % (self.code, variant)
+        else:
+            return self.code
+
+    def getFullEnglishName(self, variant=None):
+        """See `ILanguage`."""
+        if variant:
+            return '%s ("%s" variant)' % (self.englishname, variant)
+        else:
+            return self.englishname
+
 
 class LanguageSet:
     implements(ILanguageSet)

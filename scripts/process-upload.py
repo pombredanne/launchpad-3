@@ -9,7 +9,7 @@ import _pythonpath
 
 # XXX: This import is not actually used, but it avoids a major circular import
 # problem. We love you too, Python.
-from canonical.archiveuploader.uploadpolicy import policy_options
+from lp.archiveuploader.uploadpolicy import policy_options
 from canonical.config import config
 from lp.soyuz.scripts.soyuz_process_upload import ProcessUpload
 

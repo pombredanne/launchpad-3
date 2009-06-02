@@ -43,8 +43,8 @@ queue. To do this we prepare an OpenPGP key, and then run the upload handler.
 
 We need some setup for the upload handler.
 
-  >>> from canonical.archiveuploader.nascentupload import NascentUpload
-  >>> from canonical.archiveuploader.tests import (
+  >>> from lp.archiveuploader.nascentupload import NascentUpload
+  >>> from lp.archiveuploader.tests import (
   ...    datadir, getPolicy, mock_logger, mock_logger_quiet)
 
 
@@ -897,7 +897,7 @@ accept or reject the item and send an email respectively.
 Let's accept something in the queue.  (We need to populate the librarian
 with fake changes files first so that emails can be generated.)
 
-  >>> from canonical.archiveuploader.tests import insertFakeChangesFile
+  >>> from lp.archiveuploader.tests import insertFakeChangesFile
   >>> insertFakeChangesFile(items[1].changesfile.id)
   >>> insertFakeChangesFile(items[3].changesfile.id)
   >>> try:
