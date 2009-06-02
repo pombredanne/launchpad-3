@@ -860,8 +860,8 @@ class TestCopyPackage(TestCase):
             binary.requestDeletion(target_archive.owner)
         self.layer.txn.commit()
 
-        # Copy refuses to copy new binaries which conflicts with the ones
-        # we just deleted. Since the deleted binaries were once published
+        # Refuse to copy new binaries which conflicts with the ones we
+        # just deleted. Since the deleted binaries were once published
         # there is a chance that someone has installed them and if we let
         # other files to be published under the same name APT client would
         # be confused.
