@@ -273,9 +273,6 @@
   <class class="lp.code.model.branchlookup.BranchLookup">
     <allow interface="lp.code.interfaces.branchlookup.IBranchLookup"/>
   </class>
-  <class class="lp.code.model.branchlookup.SourcePackagePocket">
-    <allow interface="lp.code.model.branchlookup.ISourcePackagePocket"/>
-  </class>
   <securedutility
       class="lp.code.model.branchlookup.BranchLookup"
       provides="lp.code.interfaces.branchlookup.IBranchLookup">
@@ -285,11 +282,6 @@
       class="lp.code.model.branchlookup.LinkedBranchTraverser"
       provides="lp.code.interfaces.branchlookup.ILinkedBranchTraverser">
     <allow interface="lp.code.interfaces.branchlookup.ILinkedBranchTraverser"/>
-  </securedutility>
-  <securedutility
-      component="lp.code.model.branchlookup.SourcePackagePocket"
-      provides="lp.code.interfaces.branchlookup.ISourcePackagePocketFactory">
-    <allow interface="lp.code.interfaces.branchlookup.ISourcePackagePocketFactory"/>
   </securedutility>
   <securedutility
       class="lp.code.model.branchscanner.BranchScanner"
@@ -319,8 +311,6 @@
         attributes="id
                     branch_type
                     name
-                    title
-                    summary
                     url
                     whiteboard
                     target
@@ -401,12 +391,13 @@
                     namespace
                     pending_writes
                     commitsForDays
+                    needs_upgrading
                     isBranchMergeable
                     "/>
     <require
         permission="launchpad.Edit"
         attributes="destroySelf setPrivate"
-        set_attributes="name title summary url mirror_status_message
+        set_attributes="name url mirror_status_message
                         owner author product lifecycle_status
                         last_mirrored last_mirrored_id last_mirror_attempt
                         mirror_failures pull_disabled next_mirror_time
@@ -491,7 +482,7 @@
   <subscriber
       for="lp.code.interfaces.branch.IBranch
            lazr.lifecycle.interfaces.IObjectModifiedEvent"
-      handler="lp.code.mail.branch.send_branch_modified_notifications"/>
+      handler="lp.code.model.branch.branch_modified_subscriber"/>
   <class class="lp.code.mail.branch.RecipientReason">
     <allow attributes="
                     getReason
@@ -647,8 +638,7 @@
                     getImportDetailsForDisplay"/>
     <require
         permission="launchpad.Edit"
-        attributes="
-                    updateFromData"/>
+        attributes="updateFromData"/>
 
     <!-- ICodeImport has no set_schema, because all modifications should be
          done through methods that create CodeImportEvent objects when
@@ -767,6 +757,11 @@
     <allow interface="canonical.launchpad.interfaces.IRevisionSet" />
   </securedutility>
 
-  <lp:help-folder 
+  <!-- Linked branches -->
+  <adapter factory="lp.code.model.linkedbranch.ProductSeriesLinkedBranch" />
+  <adapter factory="lp.code.model.linkedbranch.ProductLinkedBranch" />
+  <adapter factory="lp.code.model.linkedbranch.PackageLinkedBranch" />
+
+  <lp:help-folder
       folder="help" type="canonical.launchpad.layers.CodeLayer" />
 </configure>
