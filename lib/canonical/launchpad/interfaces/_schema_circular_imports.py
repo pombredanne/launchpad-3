@@ -43,8 +43,6 @@ from canonical.launchpad.interfaces.diff import IPreviewDiff
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage)
-from lp.soyuz.interfaces.distributionsourcepackagecache import (
-    IDistributionSourcePackageCache)
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import IPerson, IPersonPublic
 from canonical.launchpad.interfaces.hwdb import IHWSubmission
@@ -194,7 +192,7 @@ patch_collection_return_type(
 patch_entry_return_type(
     IDistribution, 'getSourcePackage', IDistributionSourcePackage)
 patch_collection_return_type(
-    IDistribution, 'searchSourcePackages', IDistributionSourcePackageCache)
+    IDistribution, 'searchSourcePackages', IDistributionSourcePackage)
 patch_reference_property(
     IDistribution, 'main_archive', IArchive)
 IDistribution['all_distro_archives'].value_type.schema = IArchive

@@ -376,12 +376,12 @@ class IDistributionPublic(
     @operation_parameters(
         text=TextLine(title=_("Source package name substring match"),
                       required=True))
-    # Really returns IDistributionSourcePackageCache, see below.
+    # Really returns IDistributionSourcePackage, see below.
     @operation_returns_collection_of(Interface)
     @export_read_operation()
     def searchSourcePackages(text):
         """Search for source packages that correspond to the given text.
-        Returns a list of DistributionSourcePackageCache objects, in order of
+        Returns a list of DistributionSourcePackage objects, in order of
         matching.
         """
 
