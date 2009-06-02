@@ -563,12 +563,15 @@ class DistributionPackageSearchView(PackageSearchViewBase):
         if self.search_by_binary_name:
             non_exact_matches = self.context.searchBinaryPackages(self.text)
 
-            # We're using the decorated result set here only because it
-            # includes a work-around for bug 217644 (Storm ignores distinct
-            # option for aggregates like count).
-            def dummy_func(item):
-                return item
-            non_exact_matches = DecoratedResultSet(non_exact_matches, dummy_func)
+            # The searchBinaryPackages() method returns
+            # DistributionSourcePackageCache objects so we use the
+            # DecoratedResultSet here to ensure DistributionSourcePackage
+            # objects are returned to the template.
+            def cache_to_package(source_package_cache):
+                return source_package_cache.distributionsourcepackage
+
+            non_exact_matches = DecoratedResultSet(
+                non_exact_matches, cache_to_package)
         else:
             non_exact_matches = self.context.searchSourcePackages(self.text)
 
@@ -615,12 +618,22 @@ class DistributionPackageSearchView(PackageSearchViewBase):
     def matching_binary_names(self):
         """Define the matching binary names for each result in the batch."""
         names = {}
-        for package in self.batchnav.currentBatch():
-            binary_names_list = package.binpkgnames.split(' ')
+
+        # Rather than re-querying the database, we use our knowledge that
+        # the current batch is a decorated result set, where the underlying
+        # result set contains DistributionSourcePackageCache objects (see
+        # contextSpecificSearch() above). This enables us to use the cached
+        # binary names.
+        current_batch = self.batchnav.currentBatch()
+        package_caches = [
+            current_batch[batch_index].result_set for batch_index in range(
+                0, current_batch.trueSize)]
+
+        for package_cache in package_caches:
+            binary_names_list = package_cache.binpkgnames.split(' ')
             matching_names = [
                 name for name in binary_names_list if self.text in name]
-            names[package.name] = ", ".join(matching_names)
-
+            names[package_cache.name] = ", ".join(matching_names)
         return names
 
     @cachedproperty
