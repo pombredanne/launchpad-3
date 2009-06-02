@@ -246,6 +246,7 @@
         />
         <a href="+series">Series history</a><br/>
         <a href="+milestones">Milestone history</a>
+        <div tal:replace="structure context/@@+timeline" />
       </div>
 
       <tal:contrib replace="structure context/@@+portlet-top-contributors" />
