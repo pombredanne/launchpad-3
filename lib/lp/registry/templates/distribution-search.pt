@@ -95,6 +95,15 @@
             define="batchnav view/batchnav;batch batchnav/currentBatch|nothing"
             condition="batchnav">
 
+            <h2>All packages with
+              <tal:binaries condition="view/search_by_binary_name">
+                binary names
+              </tal:binaries>
+              <tal:sources condition="not: view/search_by_binary_name">
+                sources
+              </tal:sources> matching your query
+              “<tal:query content="view/text">query text</tal:query>”:
+            </h2>
             <div class="upper-batch-nav search-batch">
               <tal:navigation
                  replace="structure batchnav/@@+navigation-links-upper"/>

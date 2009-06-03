@@ -652,6 +652,9 @@ class DistributionPackageSearchView(PackageSearchViewBase):
     @property
     def display_exact_matches(self):
         """Return whether exact match results should be displayed."""
+        if not self.search_by_binary_name:
+            return False
+
         if self.batchnav.start > 0:
             return False
 

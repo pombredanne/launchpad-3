@@ -158,6 +158,15 @@ But they are displayed when returning to the first batch.
     >>> distro_pkg_search_view.display_exact_matches
     True
 
+Searches against source packages should not display exact matches either:
+
+    >>> distro_pkg_search_view = create_initialized_view(
+    ...     ubuntu, name="+search", form={
+    ...         'text': 'mozilla-firefox',
+    ...         'search_type': 'source',
+    ...         })
+    >>> distro_pkg_search_view.display_exact_matches
+    False
 
 The DistributionPackageSearchView also has a helper property to
 help templates print the list of distroseries that an exactly-matched
