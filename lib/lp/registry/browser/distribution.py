@@ -649,6 +649,7 @@ class DistributionPackageSearchView(PackageSearchViewBase):
 
         if more_than_five:
             matching_names.append('...')
+
         return ", ".join(matching_names)
 
     @cachedproperty
@@ -657,9 +658,17 @@ class DistributionPackageSearchView(PackageSearchViewBase):
         names = {}
         for package_cache in self.exact_matches:
             package = package_cache.distributionsourcepackage
+
+            # In the absense of Python3.0's set comprehension, we
+            # create a list, convert the list to a set and back again:
             distroseries_list = [
                 pubrec.distroseries.name
-                for pubrec in package.current_publishing_records]
+                    for pubrec in package.current_publishing_records
+                        if pubrec.distroseries.active]
+            distroseries_list = list(set(distroseries_list))
+
+            # Yay for alphabetical series names.
+            distroseries_list.sort()
             names[package.name] = ", ".join(distroseries_list)
 
         return names
