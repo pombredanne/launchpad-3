@@ -83,16 +83,27 @@ class BranchScanner:
 
     def logScanFailure(self, branch, message="Failed to scan"):
         """Log diagnostic for branches that could not be scanned."""
+        def safe_getattr(obj, name, default=None):
+            """Safely get the 'name' attribute of 'obj'.
+
+            If getting the attribute raises an exception, log that exception
+            and return 'default'.
+            """
+            try:
+                return getattr(obj, name, default)
+            except:
+                self.log.exception("Couldn't get %s" % (name,))
+                return default
+        unique_name = safe_getattr(branch, 'unique_name')
         request = errorlog.ScriptRequest([
-            ('branch.id', branch.id),
-            ('branch.unique_name', branch.unique_name),
-            ('branch.url', branch.url),
-            ('branch.warehouse_url', branch.warehouse_url),
+            ('branch.id', safe_getattr(branch, 'id')),
+            ('branch.unique_name', unique_name),
+            ('branch.url', safe_getattr(branch, 'url')),
+            ('branch.warehouse_url', safe_getattr(branch, 'warehouse_url')),
             ('error-explanation', message)])
         try:
             request.URL = canonical_url(branch)
         except Exception, e:
             self.log.exception("Couldn't get canonical_url: %s" % str(e))
         errorlog.globalErrorUtility.raising(sys.exc_info(), request)
-        self.log.info('%s: %s (%s)',
-            request.oopsid, message, branch.unique_name)
+        self.log.info('%s: %s (%s)', request.oopsid, message, unique_name)
