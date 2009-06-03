@@ -5,7 +5,7 @@
     <meta content="Canonical Launchpad Tour - Sharing code means sharing bugs: issues found in free software may originate in code upstream or downstream in a distribution&rsquo;s packaging. Launchpad tracks how each bug affects different communities and helps you work across project boundaries to find a fix" name="description"/>
     <meta content="canonical, launchpad, tour" name="keywords"/>
     <meta content="en-US" name="language"/>
-    <title>Bug tracker for open source projects &mdash; Launchpad</title>
+    <title>Bug tracker for open source and other software projects &mdash; Launchpad tour</title>
     <style media="all" type="text/css">
         @import "launchpad-tour.css";
     </style>
@@ -44,6 +44,9 @@ You can even share a comment history across project boundaries and tools, and us
         </div>
         <div id="page-intro-bottom"></div>
         <ul id="secondary-navigation">
+            <li class="button-prev">
+                <a href="index">Back</a>
+            </li>
             <li class="button-next">
                 <a href="branch-hosting-tracking" accesskey="d" tabindex="2">Next</a>
             </li>

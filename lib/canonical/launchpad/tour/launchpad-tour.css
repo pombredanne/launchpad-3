@@ -127,12 +127,16 @@ padding:5px 0px 0px 10px;
 margin-right:18px;
 }
 
+li.button-prev {
+float: left;
+}
+
 li.button-prev a {
 display:block;
 width:67px;
 height:22px;
-background:url(images/btn-prev.png) no-repeat;
-padding:5px 0px 0px 35px;
+background:url(images/btn-prev_new.png) no-repeat;
+padding:7px 0px 0px 40px;
 margin-left:18px;
 }
 
@@ -314,6 +318,10 @@ margin-right:18px;
 }
 
 li.button-next a:hover {
+background-position:0px -31px;
+}
+
+li.button-prev a:hover {
 background-position:0px -31px;
 }
 

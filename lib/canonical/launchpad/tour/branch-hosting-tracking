@@ -49,6 +49,9 @@
         </div>
         <div id="page-intro-bottom"></div>
         <ul id="secondary-navigation">
+            <li class="button-prev">
+                <a href="bugs">Back</a>
+            </li>
             <li class="button-next">
                 <a href="translation" accesskey="d" tabindex="2">Next</a>
             </li>
