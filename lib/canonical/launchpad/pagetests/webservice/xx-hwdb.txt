@@ -1179,3 +1179,47 @@ them have to be specified.
     ...
     ParameterError: Either specify bus, vendor_id and product_id or none of
     them.
+
+For a given bug, we can get a list of devices by device owner.
+The result is a tuple of (owner_name, bus_name, vendor_id, product_id).
+
+    >>> for entry in webservice.named_get(
+    ...     '/+hwdb', 'hwInfoByBugRelatedUsers',
+    ...     bug_ids=[1]).jsonBody():
+    ...     print entry
+    [u'name12', u'IDE', u'Optiarc', u'DVD RW AD-7170S ']
+    [u'name12', u'IDE', u'SEAGATE', u'ST3250820NS     ']
+    [u'name12', u'PCI', u'0x10de', u'0x0455']
+    [u'name12', u'PCI', u'0x10de', u'0x045d']
+    [u'name12', u'System', u'MSI', u'MS-7369']
+    [u'name12', u'USB', u'0x04b4', u'0x6560']
+    [u'name12', u'USB', u'0x0dda', u'0x2026']
+
+We can also get a list of devices and owners where the owner
+is subscribed to the bug.
+
+    >>> for entry in webservice.named_get(
+    ...     '/+hwdb', 'hwInfoByBugRelatedUsers',
+    ...     bug_ids=[9], subscribed_to_bug=True).jsonBody():
+    ...     print entry
+    [u'name12', u'IDE', u'Optiarc', u'DVD RW AD-7170S ']
+    [u'name12', u'IDE', u'SEAGATE', u'ST3250820NS     ']
+    [u'name12', u'PCI', u'0x10de', u'0x0455']
+    [u'name12', u'PCI', u'0x10de', u'0x045d']
+    [u'name12', u'System', u'MSI', u'MS-7369']
+    [u'name12', u'USB', u'0x04b4', u'0x6560']
+    [u'name12', u'USB', u'0x0dda', u'0x2026']
+
+And the same with affected users...
+
+    >>> for entry in webservice.named_get(
+    ...     '/+hwdb', 'hwInfoByBugRelatedUsers',
+    ...     bug_ids=[15], affected_by_bug=True).jsonBody():
+    ...     print entry
+    [u'name12', u'IDE', u'Optiarc', u'DVD RW AD-7170S ']
+    [u'name12', u'IDE', u'SEAGATE', u'ST3250820NS     ']
+    [u'name12', u'PCI', u'0x10de', u'0x0455']
+    [u'name12', u'PCI', u'0x10de', u'0x045d']
+    [u'name12', u'System', u'MSI', u'MS-7369']
+    [u'name12', u'USB', u'0x04b4', u'0x6560']
+    [u'name12', u'USB', u'0x0dda', u'0x2026']

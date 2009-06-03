@@ -6,7 +6,7 @@
 import _pythonpath
 
 from canonical.config import config
-from canonical.launchpad.scripts.packagecopier import UnembargoSecurityPackage
+from lp.soyuz.scripts.packagecopier import UnembargoSecurityPackage
 
 
 if __name__ == '__main__':
