@@ -18,8 +18,7 @@ Functions to create source packages, templates and and translations.
     ...     return factory.makeDistributionSourcePackage(packagename,
     ...                                                  foobuntu)
 
-    >>> def makeTemplateAndTranslationFiles(distroseries, package,
-    ...                                     name, languages):
+    >>> def makePOTemplateAndPOFiles(distroseries, package, name, languages):
     ...     template = factory.makePOTemplate(
     ...         distroseries=distroseries,
     ...         sourcepackagename=package.sourcepackagename,
@@ -44,11 +43,11 @@ Functions to create source packages, templates and and translations.
     >>> package1 = makeSourcePackage('package1')
     >>> package2 = makeSourcePackage('package2')
 
-    >>> template1 = makeTemplateAndTranslationFiles(barty, package1,
+    >>> template1 = makePOTemplateAndPOFiles(barty, package1,
     ...                                          'template1', ['eo'])
-    >>> template2 = makeTemplateAndTranslationFiles(barty, package1,
+    >>> template2 = makePOTemplateAndPOFiles(barty, package1,
     ...                                          'template2', ['eo', 'de'])
-    >>> template3 = makeTemplateAndTranslationFiles(barty, package1,
+    >>> template3 = makePOTemplateAndPOFiles(barty, package1,
     ...                                          'template3', ['eo'])
 
     >>> msgset11 = makeTranslation(template1, 'msgid11',
@@ -233,8 +232,7 @@ sets the defer_translation_imports flag itself before copying.
     >>> print error_output
     INFO    creating lockfile
     INFO    Starting...
-    INFO    Populating blank distroseries 'darty'...
-            with translations from 'barty'...
+    INFO    Populating blank distroseries darty with translations from barty.
     INFO    Extracting from POTemplate into
             "temp_POTemplate_holding_foobuntu_darty"...
     INFO    Extracting from TranslationTemplateItem into
@@ -264,7 +262,7 @@ flag to its previous value (off).
     >>> darty.hide_all_translations
     True
 
-Once the script has finished, the new distro series has alle the active
+Once the script has finished, the new distro series has all the active
 templates of the parent series.
 
     >>> dartempls = getUtility(IPOTemplateSet).getSubset(distroseries=darty)

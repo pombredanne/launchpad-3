@@ -48,7 +48,7 @@ def copy_active_translations(child, transaction, logger):
 
     logger.info(
         "Populating blank distroseries %s with translations from %s." %
-        sqlvalues(child.name, parent.name))
+        (child.name, parent.name))
 
     # Because this function only deals with the case where "child" is a new
     # distroseries without any existing translations attached, it can afford
