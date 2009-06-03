@@ -10,7 +10,7 @@ First, we need to insert some fake changes file data in the librarian so that
 source publications can be retrieved.
 
     >>> login('foo.bar@canonical.com')
-    >>> from canonical.archiveuploader.tests import (
+    >>> from lp.archiveuploader.tests import (
     ...     insertFakeChangesFileForAllPackageUploads)
     >>> insertFakeChangesFileForAllPackageUploads()
     >>> logout()

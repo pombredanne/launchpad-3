@@ -17,7 +17,7 @@ from bzrlib.option import Option
 from bzrlib import lockdir, ui
 
 from bzrlib.smart import medium, server
-from bzrlib.transport import get_transport, remote
+from bzrlib.transport import get_transport
 
 
 class cmd_launchpad_server(Command):
@@ -57,9 +57,9 @@ class cmd_launchpad_server(Command):
             smart_server = medium.SmartServerPipeStreamMedium(
                 sys.stdin, sys.stdout, transport)
         else:
-            host = remote.BZR_DEFAULT_INTERFACE
+            host = medium.BZR_DEFAULT_INTERFACE
             if port is None:
-                port = remote.BZR_DEFAULT_PORT
+                port = medium.BZR_DEFAULT_PORT
             else:
                 if ':' in port:
                     host, port = port.split(':')
