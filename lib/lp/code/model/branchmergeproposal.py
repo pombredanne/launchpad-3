@@ -73,36 +73,6 @@ from canonical.launchpad.webapp.interfaces import (
 from canonical.launchpad.webapp.interaction import setupInteraction
 
 
-VALID_TRANSITION_GRAPH = {
-    # It is valid to transition to any state from work in progress or needs
-    # review, although additional user checks are requried.
-    BranchMergeProposalStatus.WORK_IN_PROGRESS:
-        BranchMergeProposalStatus.items,
-    BranchMergeProposalStatus.NEEDS_REVIEW:
-        BranchMergeProposalStatus.items,
-    # If the proposal has been approved, any transition is valid.
-    BranchMergeProposalStatus.CODE_APPROVED: BranchMergeProposalStatus.items,
-    # Rejected is mostly terminal, can only resubmitted.
-    BranchMergeProposalStatus.REJECTED: [
-        BranchMergeProposalStatus.SUPERSEDED,
-        ],
-    # Merged is truly terminal, so nothing is valid.
-    BranchMergeProposalStatus.MERGED: [],
-    # It is valid to transition to any state from merge failed, although
-    # additional user checks are requried.
-    BranchMergeProposalStatus.MERGE_FAILED:
-        BranchMergeProposalStatus.items,
-    # Queued can only be transitioned to merged or merge failed.
-    # Dequeing is a special case.
-    BranchMergeProposalStatus.QUEUED: [
-        BranchMergeProposalStatus.MERGED,
-        BranchMergeProposalStatus.MERGE_FAILED,
-        ],
-    # Superseded is truly terminal, so nothing is valid.
-    BranchMergeProposalStatus.SUPERSEDED: [],
-    }
-
-
 def is_valid_transition(proposal, from_state, next_state, user=None):
     """Is it valid for the proposal to move to next_state from from_state?"""
     # Trivial acceptance case.
@@ -122,8 +92,8 @@ def is_valid_transition(proposal, from_state, next_state, user=None):
           from_state in (wip, needs_review, merge_failed)
           and not valid_reviewer):
         return False
-
-    return next_state in VALID_TRANSITION_GRAPH[from_state]
+    else:
+        return True
 
 
 class BranchMergeProposal(SQLBase):

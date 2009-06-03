@@ -115,12 +115,6 @@ class TestBranchMergeProposalTransitions(TestCaseWithFactory):
         for status in BranchMergeProposalStatus.items:
             self.assertGoodTransition(from_state, status)
 
-    def assertTerminatingState(self, from_state):
-        """Assert that the proposal cannot go to any other state."""
-        for status in BranchMergeProposalStatus.items:
-            if status != from_state:
-                self.assertBadTransition(from_state, status)
-
     def test_transitions_from_wip(self):
         """We can go from work in progress to any other state."""
         self.assertAllTransitionsGood(
@@ -143,10 +137,6 @@ class TestBranchMergeProposalTransitions(TestCaseWithFactory):
          merged, merge_failed, queued, superseded
          ] = BranchMergeProposalStatus.items
 
-        for status in (wip, needs_review, code_approved,
-                       merged, queued, merge_failed):
-            # All bad, rejected is a final state.
-            self.assertBadTransition(rejected, status)
         # Rejected -> Rejected is valid.
         self.assertGoodTransition(rejected, rejected)
         # Can resubmit (supersede) a rejected proposal.
@@ -165,10 +155,6 @@ class TestBranchMergeProposalTransitions(TestCaseWithFactory):
         # A proposal should be able to go from any states to rejected if the
         # user is a reviewer, except for superseded, merged or queued.
         valid_transitions = set(BranchMergeProposalStatus.items)
-        valid_transitions -= set(
-            [BranchMergeProposalStatus.MERGED,
-             BranchMergeProposalStatus.QUEUED,
-             BranchMergeProposalStatus.SUPERSEDED])
         proposal = self.factory.makeBranchMergeProposal()
         self.assertValidTransitions(
             valid_transitions, proposal, BranchMergeProposalStatus.REJECTED,
@@ -183,26 +169,9 @@ class TestBranchMergeProposalTransitions(TestCaseWithFactory):
             proposal, BranchMergeProposalStatus.REJECTED,
             proposal.source_branch.owner)
 
-    def test_transitions_from_merged(self):
-        """Merged is a terminal state, so no transitions are valid."""
-        self.assertTerminatingState(BranchMergeProposalStatus.MERGED)
-
     def test_transitions_from_merge_failed(self):
         """We can go from merge failed to any other state."""
         self.assertAllTransitionsGood(BranchMergeProposalStatus.MERGE_FAILED)
-
-    def test_transitions_from_queued(self):
-        """Queued proposals can only be marked as merged or merge failed.
-        Queued proposals can be moved out of the queue using the `dequeue`
-        method, and no other transitions are valid.
-        """
-        queued = BranchMergeProposalStatus.QUEUED
-        for status in BranchMergeProposalStatus.items:
-            if status in (BranchMergeProposalStatus.MERGED,
-                          BranchMergeProposalStatus.MERGE_FAILED):
-                self.assertGoodTransition(queued, status)
-            else:
-                self.assertBadTransition(queued, status)
 
     def test_transitions_from_queued_dequeue(self):
         # When a proposal is dequeued it is set to code approved, and the
@@ -253,20 +222,6 @@ class TestBranchMergeProposalTransitions(TestCaseWithFactory):
         self.assertIs(None, proposal.reviewer)
         self.assertIs(None, proposal.date_reviewed)
         self.assertIs(None, proposal.reviewed_revision_id)
-
-    def test_transitions_from_superseded(self):
-        """Superseded is a terminal state, so no transitions are valid."""
-        self.assertTerminatingState(BranchMergeProposalStatus.SUPERSEDED)
-
-    def test_valid_transition_graph_is_complete(self):
-        """The valid transition graph should have a key for all possible
-        queue states."""
-        from lp.code.model.branchmergeproposal import (
-            VALID_TRANSITION_GRAPH)
-        keys = VALID_TRANSITION_GRAPH.keys()
-        all_states = BranchMergeProposalStatus.items
-        self.assertEqual(sorted(all_states), sorted(keys),
-                         "Missing possible states from the transition graph.")
 
 
 class TestBranchMergeProposalRequestReview(TestCaseWithFactory):
