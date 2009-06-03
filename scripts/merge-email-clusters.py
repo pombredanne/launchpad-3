@@ -1,3 +1,6 @@
+#!/usr/bin/python2.4
+# Copyright 2007 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=W0403
 
 import sys
 import logging
@@ -8,7 +11,8 @@ import _pythonpath
 from canonical.lp import initZopeless
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger_options, logger as logger_from_options)
-from canonical.launchpad.scripts.keyringtrustanalyser import *
+from lp.registry.scripts.keyringtrustanalyser import mergeClusters
+
 
 def readClusters(fp):
     """Read clusters of email addresses from the file (separated by blank
@@ -23,6 +27,7 @@ def readClusters(fp):
             cluster = set()
     if cluster:
         yield cluster
+
 
 def main(argv):
     parser = optparse.OptionParser(
@@ -58,6 +63,7 @@ def main(argv):
     logger.info('Done')
 
     return 0
+
 
 if __name__ == '__main__':
     sys.exit(main(sys.argv))

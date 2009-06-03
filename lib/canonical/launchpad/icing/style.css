@@ -2083,6 +2083,16 @@ li {
 }
 */
 
+#project-cloud-preview a {
+  padding-left: 0.5em;
+  padding-right: 0.5em,
+}
+
+#project-tags a {
+  padding-left: 0.5em;
+  padding-right: 0.5em,
+}
+
 /* Clouds of links. */
 .cloud-size-smallest {
   font-size: 0.8em;
