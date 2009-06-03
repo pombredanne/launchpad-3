@@ -12,8 +12,8 @@ release. Each file is linked.
     >>> anon_browser.open('http://launchpad.dev/firefox/trunk/0.9.2')
     >>> table = find_tag_by_id(anon_browser.contents, 'downloads')
     >>> print extract_text(table)
-    File                            Downloads  Last Download  Description
-    firefox-0.9.2.orig.tar.gz (md5) -          -
+    File                            Downloads  Description
+    firefox-0.9.2.orig.tar.gz (md5) -
 
     >>> print table.a
     <a href=".../firefox/trunk/0.9.2/+download/firefox-0.9.2.orig.tar.gz">...
@@ -31,5 +31,5 @@ downloaded and the date of the last download on that table as well.
 
     >>> anon_browser.reload()
     >>> print extract_text(find_tag_by_id(anon_browser.contents, 'downloads'))
-    File                            Downloads  Last Download  Description
-    firefox-0.9.2.orig.tar.gz (md5) 1          2006-05-04
+    File                            Downloads                   Description
+    firefox-0.9.2.orig.tar.gz (md5) 1 (Last downloaded ... ago)

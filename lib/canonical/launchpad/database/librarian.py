@@ -157,7 +157,7 @@ class LibraryFileAlias(SQLBase):
 
     @property
     def last_downloaded(self):
-        """See ILibraryFileAlias."""
+        """See `ILibraryFileAlias`."""
         store = Store.of(self)
         results = store.find(LibraryFileDownloadCount, libraryfilealias=self)
         results.order_by(Desc(LibraryFileDownloadCount.day))
@@ -165,7 +165,7 @@ class LibraryFileAlias(SQLBase):
         if entry is None:
             return None
         else:
-            return entry.day
+            return datetime.now(pytz.utc).date() - entry.day
 
     def updateDownloadCount(self, day, country, count):
         """See ILibraryFileAlias."""

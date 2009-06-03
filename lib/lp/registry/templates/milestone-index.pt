@@ -112,13 +112,13 @@
             <tr>
               <th>File</th>
               <th>Downloads</th>
-              <th>Last Download</th>
               <th>Description</th>
               <th tal:condition="has_edit" width="10%">Delete</th>
             </tr>
           </thead>
           <tbody>
             <tr tal:repeat="file view/release/files">
+              <tal:define-lfa define="lfa file/libraryfile">
               <td>
                 <img alt="download icon" src="/@@/download" />
                 <strong><a
@@ -130,14 +130,18 @@
                 <a tal:attributes="href python:view.fileURL(file.signature)">
                 sig</a></tal:signature>)
               </td>
-              <tal:downloaded condition="file/libraryfile/hits">
-                <td tal:content="file/libraryfile/hits/fmt:commify" />
-                <td tal:content="file/libraryfile/last_downloaded" />
-              </tal:downloaded>
-              <tal:not-downloaded condition="not:file/libraryfile/hits">
-                <td>-</td>
-                <td>-</td>
-              </tal:not-downloaded>
+              <td>
+                <tal:downloaded condition="lfa/hits">
+                  <span tal:replace="lfa/hits/fmt:commify" />
+                  <span class="lesser">
+                    (Last downloaded
+                    <strong tal:content="lfa/last_downloaded/fmt:approximateduration" />
+                    ago)
+                </tal:downloaded>
+                <tal:not-downloaded condition="not:lfa/hits">
+                  -
+                </tal:not-downloaded>
+              </td>
               <td tal:content="file/description">Installer for i386</td>
               <td tal:condition="has_edit"
                   align="center">
@@ -146,6 +150,7 @@
                        tal:attributes="value file/libraryfile/id;
                                        name string:checkbox_${cbnum}" />
               </td>
+              </tal:define-lfa>
             </tr>
           </tbody>
         </table>

@@ -266,9 +266,9 @@ an admin can also delete a release file.
     >>> table = find_tag_by_id(admin_browser.contents, 'downloads')
     >>> for tr in table.findAll('tr'):
     ...     print extract_text(tr)
-    Download            Description      Delete
-    bar.txt (md5)       Bar installer
-    foo.txt (md5, sig)  Foo installer
+    File                Downloads    Description      Delete
+    bar.txt (md5)       -            Bar installer
+    foo.txt (md5, sig)  -            Foo installer
 
     >>> checkbox_tag = table.find(attrs={'name': 'checkbox_0'})
     >>> admin_browser.getControl("Delete Files").click()
@@ -277,8 +277,8 @@ an admin can also delete a release file.
     >>> table = find_tag_by_id(admin_browser.contents, 'downloads')
     >>> for tr in table.findAll('tr'):
     ...     print extract_text(tr)
-    Download            Description      Delete
-    foo.txt (md5, sig)  Foo installer
+    File                Downloads   Description      Delete
+    foo.txt (md5, sig)  -           Foo installer
 
 Let's go back to the page where the files are listed and ensure it
 shows up now.  Just to be sure, do it as the non-owner. We also see
@@ -452,8 +452,8 @@ Non-administrators do not have the delete option.
     >>> table = find_tag_by_id(non_owner.contents, 'downloads')
     >>> for tr in table.findAll('tr'):
     ...     print extract_text(tr)
-    Download         Description
-    foo09.txt (md5)  Foo09 installer
+    File             Downloads  Description
+    foo09.txt (md5)  -          Foo09 installer
 
 And no "Delete Files" button is shown.
 
@@ -470,8 +470,8 @@ so it is not shown.
     >>> table = find_tag_by_id(firefox_owner.contents, 'downloads')
     >>> for tr in table.findAll('tr'):
     ...     print extract_text(tr)
-    Download         Description      Delete
-    foo09.txt (md5)  Foo09 installer
+    File             Downloads  Description     Delete
+    foo09.txt (md5)  -          Foo09 installer
 
 A "Delete Files" button is available.
 
