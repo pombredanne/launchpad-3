@@ -49,7 +49,15 @@ class BranchScanner:
                 # Bugs or error conditions when scanning any given branch must
                 # not prevent scanning the other branches. Log the error and
                 # keep going.
-                self.logScanFailure(branch, str(e))
+                try:
+                    self.logScanFailure(branch, str(e))
+                except (KeyboardInterrupt, SystemExit):
+                    raise
+                except:
+                    # There was an error logging the error, despite all our
+                    # best efforts!
+                    self.log.exception(
+                        "Error while trying to log %s" % str(e))
 
     def scanAllBranches(self):
         """Run Bzrsync on all branches, and intercept most exceptions."""
@@ -91,6 +99,8 @@ class BranchScanner:
             """
             try:
                 return getattr(obj, name, default)
+            except (KeyboardInterrupt, SystemExit):
+                raise
             except:
                 self.log.exception("Couldn't get %s" % (name,))
                 return default
@@ -103,7 +113,9 @@ class BranchScanner:
             ('error-explanation', message)])
         try:
             request.URL = canonical_url(branch)
-        except Exception, e:
-            self.log.exception("Couldn't get canonical_url: %s" % str(e))
+        except (KeyboardInterrupt, SystemExit):
+            raise
+        except:
+            self.log.exception("Couldn't get canonical_url")
         errorlog.globalErrorUtility.raising(sys.exc_info(), request)
         self.log.info('%s: %s (%s)', request.oopsid, message, unique_name)
