@@ -127,6 +127,7 @@
                   <tal:binary-search-only condition="view/search_by_binary_name">
                     <tal:matching-binaries
                       define="binary_names python:view.matching_binary_names[package.name]"
+                      condition="binary_names"
                       content="string:(Matching binaries: ${binary_names}.)">
                       (Matching binaries: bin-one, bin-two.)
                     </tal:matching-binaries> 

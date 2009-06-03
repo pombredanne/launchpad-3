@@ -604,7 +604,8 @@ class DistributionPackageSearchView(PackageSearchViewBase):
 
     @cachedproperty
     def exact_matches(self):
-        return self.context.searchBinaryPackages(self.text, exact_match=True)
+        return self.context.searchBinaryPackages(
+            self.text, exact_match=True).order_by('name')
 
     @property
     def has_exact_matches(self):
