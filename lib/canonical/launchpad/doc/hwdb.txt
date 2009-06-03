@@ -545,17 +545,13 @@ IHWSubmissionBugSet.create().
     >>> submission_bug.bug.id
     1
 
-Links between a bug and a submission must be unique.
+Links between a bug and a submission are unique. If we call
+IHWSubmissionBugSet.create() twice for the same bug and HWDB submission,
+the method returns the existing record.
 
-    >>> submission_bug_set.create(submission_no_owner, bug_one)
-    <HWSubmissionBug at ...>
-    >>> transaction.commit()
-    Traceback (most recent call last):
-    ...
-    IntegrityError: ... violates unique constraint
-    "hwsubmissionbug__submission__bug__key"
-
-    >>> transaction.abort()
+    >>> second_link = submission_bug_set.create(submission_no_owner, bug_one)
+    >>> second_link.id == submission_bug.id
+    True
 
 HWSubmissionBugSet.submissionsForBug() returns all submissions linked to
 a given bug.

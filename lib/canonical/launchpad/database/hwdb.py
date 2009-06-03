@@ -393,7 +393,7 @@ class HWSubmissionSet:
                 bus, vendor_id, product_id, driver_name, package_name, False)
         clauses.append(HWSubmissionDevice.submission == HWSubmission.id)
         clauses.append(HWSubmission.owner == Person.id)
-        clauses.append(self._userHasAccessStormClause(user))
+        clauses.append(_userCanAccessSubmissionStormClause(user))
 
         if ((bug_ids is not None and len(bug_ids) > 0) or
             (bug_tags is not None and len(bug_tags) > 0)):
@@ -1045,6 +1045,13 @@ class HWSubmissionBugSet:
 
     def create(self, submission, bug):
         """See `IHWSubmissionBugSet`."""
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        existing_link = store.find(
+            HWSubmissionBug,
+            And(HWSubmissionBug.submission == submission,
+                HWSubmissionBug.bug == bug)).one()
+        if existing_link is not None:
+            return existing_link
         return HWSubmissionBug(submission=submission, bug=bug)
 
     def remove(self, submission, bug):

@@ -23,6 +23,7 @@ from canonical.launchpad.components.apihelpers import (
 
 from canonical.launchpad.interfaces.bug import IBug
 from canonical.launchpad.interfaces.bugbranch import IBugBranch
+from canonical.launchpad.interfaces.hwdb import IHWSubmission
 from lp.soyuz.interfaces.build import (
     BuildStatus, IBuild)
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
@@ -45,7 +46,6 @@ from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage)
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import IPerson, IPersonPublic
-from canonical.launchpad.interfaces.hwdb import IHWSubmission
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.soyuz.interfaces.archive import IArchive
@@ -89,6 +89,10 @@ IBranchMergeProposal['votes'].value_type.schema = ICodeReviewVoteReference
 
 IBug['addBranch'].queryTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)['return_type'].schema = IBugBranch
+patch_plain_parameter_type(
+    IBug, 'linkHWSubmission', 'submission', IHWSubmission)
+patch_collection_return_type(
+    IBug, 'getHWSubmissions', IHWSubmission)
 
 IPreviewDiff['branch_merge_proposal'].schema = IBranchMergeProposal
 
