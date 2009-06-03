@@ -111,7 +111,7 @@ class MilestoneView(LaunchpadView, ProductDownloadFileMixin):
         """See `LaunchpadView`.
 
         This view may be used with a milestone or a release. The milestone
-        and release (if it exists) are accessible are attributes. The context
+        and release (if it exists) are accessible as attributes. The context
         attribute will always be the milestone.
 
         :param context: `IMilestone` or `IProductRelease`.

@@ -671,3 +671,19 @@ If the hit happened on a different day, a separate entry would be created.
     ...     country=brazil, day=november_2nd_2006).one()
     >>> brazil_entry2.count
     10
+
+
+== Day of last download ==
+
+The .last_downloaded property gives us the date in which that file was last
+downloaded, or None if it's never been downloaded. 
+
+    >>> public_file.last_downloaded
+    datetime.date(2006, 11, 2)
+
+    >>> content = 'something'
+    >>> brand_new_file = getUtility(ILibraryFileAliasSet).create(
+    ...     'new.txt', len(content), StringIO(content), 'text/plain',
+    ...     NEVER_EXPIRES, restricted=False)
+    >>> print brand_new_file.last_downloaded
+    None

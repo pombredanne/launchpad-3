@@ -110,7 +110,9 @@
         <table id="downloads" class="listing">
           <thead>
             <tr>
-              <th>Download</th>
+              <th>File</th>
+              <th>Downloads</th>
+              <th>Last Download</th>
               <th>Description</th>
               <th tal:condition="has_edit" width="10%">Delete</th>
             </tr>
@@ -128,6 +130,14 @@
                 <a tal:attributes="href python:view.fileURL(file.signature)">
                 sig</a></tal:signature>)
               </td>
+              <tal:downloaded condition="file/libraryfile/hits">
+                <td tal:content="file/libraryfile/hits/fmt:commify" />
+                <td tal:content="file/libraryfile/last_downloaded/fmt:date" />
+              </tal:downloaded>
+              <tal:not-downloaded condition="not:file/libraryfile/hits">
+                <td>-</td>
+                <td>-</td>
+              </tal:not-downloaded>
               <td tal:content="file/description">Installer for i386</td>
               <td tal:condition="has_edit"
                   align="center">

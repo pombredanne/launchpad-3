@@ -187,6 +187,15 @@ Add manual word breaks to long words in a string:
     ...     foo='<http://launchpad.net/products/launchpad>')
     '&lt;http:/<wbr></wbr>/launchpad.<wbr></wbr>net/products/<wbr></wbr>launchpad&gt;'
 
+To get a number with its thousands separated by a comma, use fmt:commify.
+
+    >>> test_tales('foo/fmt:commify', foo=1234567890)
+    '1,234,567,890'
+    >>> test_tales('foo/fmt:commify', foo=123)
+    '123'
+    >>> test_tales('foo/fmt:commify/.2', foo=1239.45)
+    '1,239.45'
+
 
 == The fmt: namespace to get URLs ==
 

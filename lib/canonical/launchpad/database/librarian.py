@@ -17,7 +17,7 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from sqlobject import StringCol, ForeignKey, IntCol, SQLRelatedJoin, BoolCol
-from storm.locals import Date, Int, Reference, Storm, Store, Unicode
+from storm.locals import Date, Desc, Int, Reference, Storm, Store, Unicode
 
 from canonical.config import config
 from canonical.launchpad.interfaces import (
@@ -154,6 +154,18 @@ class LibraryFileAlias(SQLBase):
         now = datetime.now(UTC)
         if self.last_accessed + precision < now:
             self.last_accessed = UTC_NOW
+
+    @property
+    def last_downloaded(self):
+        """See ILibraryFileAlias."""
+        store = Store.of(self)
+        results = store.find(LibraryFileDownloadCount, libraryfilealias=self)
+        results.order_by(Desc(LibraryFileDownloadCount.day))
+        entry = results.first()
+        if entry is None:
+            return None
+        else:
+            return entry.day
 
     def updateDownloadCount(self, day, country, count):
         """See ILibraryFileAlias."""
