@@ -313,4 +313,4 @@ ID: compile
 	start run ftest_build ftest_inplace test_build test_inplace pagetests\
 	check check_loggerhead_on_merge  check_merge check_sourcecode_merge \
 	schema default launchpad.pot check_merge_ui pull scan sync_branches\
-	reload-apache hosted_branches check_db_merge
+	reload-apache hosted_branches check_db_merge check_mailman
