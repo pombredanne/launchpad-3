@@ -83,7 +83,7 @@ class BranchScanner:
 
     def logScanFailure(self, branch, message="Failed to scan"):
         """Log diagnostic for branches that could not be scanned."""
-        def safe_getattr(obj, name, default=None):
+        def safe_getattr(obj, name, default='UNKNOWN'):
             """Safely get the 'name' attribute of 'obj'.
 
             If getting the attribute raises an exception, log that exception
