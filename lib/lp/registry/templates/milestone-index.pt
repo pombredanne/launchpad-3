@@ -132,7 +132,7 @@
               </td>
               <tal:downloaded condition="file/libraryfile/hits">
                 <td tal:content="file/libraryfile/hits/fmt:commify" />
-                <td tal:content="file/libraryfile/last_downloaded/fmt:date" />
+                <td tal:content="file/libraryfile/last_downloaded" />
               </tal:downloaded>
               <tal:not-downloaded condition="not:file/libraryfile/hits">
                 <td>-</td>
