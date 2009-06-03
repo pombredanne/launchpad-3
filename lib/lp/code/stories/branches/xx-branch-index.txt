@@ -278,6 +278,9 @@ Branches that have never been mirrored don't have a 'Last mirrored' field.
     Location: http://example.com/gnome-terminal/main
     Last mirrored: Not mirrored yet
     Next mirror: Disabled
+    Description: Main branch of development for GNOME Terminal.
+    Stable branches are based on that one.
+    Home page: http://example.com/gnome-terminal
 
 If next_mirror_time is NULL, then mirroring of the branch is disabled.
 
