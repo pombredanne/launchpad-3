@@ -60,10 +60,7 @@
                 </div>
                 <div class="summary">
                   <tal:project_only condition="project">
-                  <p tal:condition="project/description"
-                     tal:content="structure project/description" />
-                  <p tal:condition="not: project/description"
-                     tal:content="structure project/summary" />
+                  <p tal:content="structure project/summary" />
                   </tal:project_only>
                   <p>Available in: 
                     <tal:distroseries_list
@@ -142,11 +139,11 @@
           &ldquo;<span
             class="text"
             tal:content="view/text">some text</span>&rdquo;
-          did not return any results.
+          did not return any results. You can instead
           <tal:search_by_source condition="view/search_by_binary_name">
           <a tal:attributes="href view/source_search_url" id="source-search">
-            Re-run your search against source package names
-          </a> instead of binary names (the default).
+            re-run your search against the full text of the source
+            package</a>.
           </tal:search_by_source>
         </p>
 
