@@ -173,6 +173,14 @@ match) and the latter uses the PostgreSQL Full Text Index searches.
 Both functions return DistributionSourcePackageCache objects, which
 makes it very easy to associate the binary name with its source.
 
+Searching for an exact match on a valid binary name returns the
+exected results:
+
+    >>> results = ubuntu.searchBinaryPackages(
+    ...     "mozilla-firefox", exact_match=True)
+    >>> print [result.name for result in results]
+    [u'mozilla-firefox']
+
 An exact match search with no matches on any package name returns
 an empty result set:
 
