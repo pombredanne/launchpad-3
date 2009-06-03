@@ -74,8 +74,8 @@ class PollingTaskSource:
         `start`.
 
         :param interval: The length of time between polls in seconds.
-        :param task_producer: The polling mechanism. This is a nullary callable
-            that can return a Deferred. See above for more details.
+        :param task_producer: The polling mechanism. This is a nullary
+            callable that can return a Deferred. See above for more details.
         :param clock: An `IReactorTime` implementation that we use to manage
             the interval-based polling. Defaults to using the reactor (i.e.
             actual time).
