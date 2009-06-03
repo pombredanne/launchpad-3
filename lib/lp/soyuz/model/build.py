@@ -29,7 +29,7 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import cursor, quote_like, SQLBase, sqlvalues
 
-from canonical.archivepublisher.utils import get_ppa_reference
+from lp.archivepublisher.utils import get_ppa_reference
 from lp.soyuz.adapters.archivedependencies import (
     get_components_for_building)
 from canonical.launchpad.components.decoratedresultset import (

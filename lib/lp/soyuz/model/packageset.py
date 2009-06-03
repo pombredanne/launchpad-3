@@ -11,11 +11,11 @@ from storm.locals import DateTime, Int, Reference, Storm, Unicode
 from zope.component import getUtility
 from zope.interface import implements
 
+from canonical.launchpad.interfaces.lpstorm import IMasterStore, IStore
+
 from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageName, ISourcePackageNameSet)
 from lp.registry.model.sourcepackagename import SourcePackageName
-
-from canonical.launchpad.interfaces.lpstorm import IMasterStore, IStore
 from lp.soyuz.interfaces.packageset import (
     IPackageset, IPackagesetSet)
 
@@ -144,7 +144,7 @@ class Packageset(Storm):
     def getSourcesIncluded(self, direct_inclusion=False):
         """See `IPackageset`."""
         result_set = self.sourcesIncluded(direct_inclusion)
-        return result_set.values(SourcePackageName.name)
+        return list(result_set.values(SourcePackageName.name))
 
     def setsIncludedBy(self, direct_inclusion=False):
         """See `IPackageset`."""
@@ -220,7 +220,7 @@ class Packageset(Storm):
     def getSourcesSharedBy(self, other_package_set, direct_inclusion=False):
         """See `IPackageset`."""
         result_set = self.sourcesSharedBy(other_package_set, direct_inclusion)
-        return result_set.values(SourcePackageName.name)
+        return list(result_set.values(SourcePackageName.name))
 
     def sourcesNotSharedBy(self, other_package_set, direct_inclusion=False):
         """See `IPackageset`."""
@@ -258,7 +258,7 @@ class Packageset(Storm):
         """See `IPackageset`."""
         result_set = self.sourcesNotSharedBy(
             other_package_set, direct_inclusion)
-        return result_set.values(SourcePackageName.name)
+        return list(result_set.values(SourcePackageName.name))
 
     def _api_add_or_remove(self, clauses, handler):
         """Look up the data to be added/removed and call the handler."""
@@ -302,9 +302,15 @@ class PackagesetSet:
         store.add(packageset)
         return packageset
 
+    def __getitem__(self, name):
+        """See `IPackagesetSet`."""
+        return self.getByName(name)
+
     def getByName(self, name):
         """See `IPackagesetSet`."""
         store = IStore(Packageset)
+        if not isinstance(name, unicode):
+            name = unicode(name, 'utf-8')
         return store.find(Packageset, Packageset.name == name).one()
 
     def getByOwner(self, owner):
@@ -312,6 +318,12 @@ class PackagesetSet:
         store = IStore(Packageset)
         result_set = store.find(Packageset, Packageset.owner == owner)
         return _order_result_set(result_set)
+
+    def get(self, limit=50):
+        """See `IPackagesetSet`."""
+        store = IStore(Packageset)
+        result_set = store.find(Packageset)
+        return _order_result_set(result_set)[:limit]
 
     def _nameToSourcePackageName(self, source_name):
         """Helper to convert a possible string name to ISourcePackageName."""
