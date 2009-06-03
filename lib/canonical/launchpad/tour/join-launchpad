@@ -61,7 +61,8 @@ Launchpad is free of charge to <a href="https://help.launchpad.net/Legal/Project
                         <h4>Host your closed-source project and join our beta of additional privacy features by buying a commercial subscription.</h4>
                         <p class="screen-holder">
                             <img src="images/join/1.png" alt="Commercial subscriptions" />                        </p>
-                        <p>Get all the benefits of hosting your closed-source project on Launchpad for just $250* a year. At the same time, get an exclusive preview of our new privacy features, including:</p><br />
+                        <p>Get all the benefits of hosting your closed-source project on Launchpad for just $250* a year. Easily share bug reports, code and more across your development community and, optionally, plug into the open source projects you rely on.</p><br />
+                        <p> At the same time, get an exclusive preview of our new privacy features, including:</p><br />
 			<ul>
 				<li>private code branches</li>
 				<li>private bugs by default</li>
@@ -80,16 +81,16 @@ Launchpad is free of charge to <a href="https://help.launchpad.net/Legal/Project
                         <p class="screen-holder">
                             <img src="images/join/2.png" alt="Publishing your software"  />                       </p>
                         <p>
-                           Choose from Launchpad's applications:</p><br />
+                           Pick and choose from Launchpad's applications:</p><br />
                    			<ul>
 				                  <li><strong><a href="bugs">Bug tracking</a>:</strong> across project and tool boundaries</li>
-				                  <li><strong><a href="branch-hosting-tracking">Code hosting and review</a>:</strong> open your project to drive-by contributions with Bazaar branch hosting/mirroring and imports from git, Subversion and CVS.</li>
+				                  <li><strong><a href="branch-hosting-tracking">Code hosting and review</a>:</strong> open up to drive-by contributions with Bazaar branch hosting/mirroring and imports from git, Subversion and CVS.</li>
 				                  <li><strong><a href="translation">Web-based translation</a>:</strong> make your software available to a global audience with help from Launchpad's 35,000 translators.</li>
-				                  <li><strong><a href="ppa">Ubuntu package building and hosting</a>:</strong> use your Personal Package Archives to distribute software to Ubuntu users.</li>
+				                  <li><strong><a href="ppa">Ubuntu package building and hosting</a>:</strong> use your Personal Package Archives to distribute software, with updates, to Ubuntu users.</li>
 				                  <li><strong><a href="community">Mailing lists and teams</a>:</strong> hassle-free mailing list hosting and easy role delegation through teams.</li>				
-				                  <li><strong><a href="community-support">Support request tracking</a>:</strong> build a multi-lingual community to help people who use your software.</li>
+				                  <li><strong><a href="community-support">Support request tracking</a>:</strong> build a multi-lingual help community.</li>
 				                  <li><strong><a href="feature-tracking">Feature planning</a>:</strong> light-weight specification management and tracking.</li>
-				                  <li><strong><a href="api">Web services API</a>:</strong> build your own applications to interact with Launchpad's RESTful API.</li>
+				                  <li><strong><a href="api">Web services API</a>:</strong> build applications that interact with Launchpad.</li>
                 		  </ul><br />
                 		  <p style="float: right;"><a href="mailto:help@launchpad.net">Email us</a> with questions or <a href="https://launchpad.net/projects/+new">register your project now &gt;</a></p>
   
