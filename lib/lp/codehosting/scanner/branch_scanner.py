@@ -89,7 +89,10 @@ class BranchScanner:
             ('branch.url', branch.url),
             ('branch.warehouse_url', branch.warehouse_url),
             ('error-explanation', message)])
-        request.URL = canonical_url(branch)
+        try:
+            request.URL = canonical_url(branch)
+        except Exception, e:
+            self.log.exception("Couldn't get canonical_url: %s" % str(e))
         errorlog.globalErrorUtility.raising(sys.exc_info(), request)
         self.log.info('%s: %s (%s)',
             request.oopsid, message, branch.unique_name)
