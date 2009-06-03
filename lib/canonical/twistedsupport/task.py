@@ -115,6 +115,12 @@ class ParallelLimitedTaskConsumer:
 
     implements(ITaskSource)
 
+    def taskStarted(self, task):
+        """See `ITaskSource`."""
+
+    def taskProductionFailed(self, reason):
+        """See `ITaskSource`."""
+
 
 class OldParallelLimitedTaskSink:
     """ """
