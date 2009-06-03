@@ -4,8 +4,10 @@
 
 __metaclass__ = type
 __all__ = [
+    'AlreadyRunningError',
     'ITaskConsumer',
     'ITaskSource',
+    'ParallelLimitedTaskConsumer',
     'PollingTaskSource',
     ]
 
@@ -58,6 +60,23 @@ class ITaskConsumer(Interface):
 
         :param reason: A `twisted.python.failure.Failure` object.
         """
+
+
+class AlreadyRunningError(Exception):
+    """Raised when we try to start a consumer that's already running."""
+
+    def __init__(self, consumer, source):
+        Exception.__init__(
+            self, "%r is already consuming tasks from %r."
+            % (consumer, source))
+
+
+class NotRunningError(Exception):
+    """Raised when we try to run tasks on a consumer before it has started."""
+
+    def __init__(self, consumer):
+        Exception.__init__(
+            self, "%r has not started, cannot run tasks." % (consumer,))
 
 
 class PollingTaskSource:
@@ -119,20 +138,28 @@ class ParallelLimitedTaskConsumer:
 
     implements(ITaskSource)
 
+    def __init__(self):
+        self._task_source = None
+
     def consume(self, task_source):
-        """Start consuming tasks from 'task_source'.
+        """Start consuing tasks from 'task_source'.
 
         :param task_source: An `ITaskSource` provider.
         :return: A `Deferred` that fires when the task source is exhausted
             and we are not running any tasks.
         """
+        if self._task_source is not None:
+            raise AlreadyRunningError(self, self._task_source)
+        self._task_source = task_source
         task_source.start(self)
 
     def taskStarted(self, task):
         """See `ITaskSource`."""
+        raise NotRunningError(self)
 
     def taskProductionFailed(self, reason):
         """See `ITaskSource`."""
+        raise NotRunningError(self)
 
 
 class OldParallelLimitedTaskSink:
@@ -164,4 +191,3 @@ class OldParallelLimitedTaskSink:
             self._terminationDeferred.callback(None)
         if self.worker_count < self.worker_limit:
             self.start()
-

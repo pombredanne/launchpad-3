@@ -12,8 +12,8 @@ from twisted.internet.task import Clock
 from zope.interface import implements
 
 from canonical.twistedsupport.task import (
-    ITaskConsumer, ITaskSource, ParallelLimitedTaskConsumer,
-    PollingTaskSource)
+    AlreadyRunningError, ITaskConsumer, ITaskSource, NotRunningError,
+    ParallelLimitedTaskConsumer, PollingTaskSource)
 from lp.testing import TestCase
 
 
@@ -226,6 +226,28 @@ class TestParallelLimitedTaskConsumer(TestCase):
         source = LoggingSource(log)
         consumer.consume(source)
         self.assertEqual([('start', consumer)], log)
+
+    def test_consume_twice_raises_error(self):
+        # Calling `consume` twice always raises an error.
+        consumer = self.makeConsumer()
+        source = LoggingSource([])
+        consumer.consume(source)
+        self.assertRaises(AlreadyRunningError, consumer.consume, source)
+
+    def test_taskStarted_before_consume_raises_error(self):
+        # taskStarted can only be called after we have started consuming. This
+        # is because taskStarted might need to stop task production to avoid a
+        # work overload.
+        consumer = self.makeConsumer()
+        self.assertRaises(NotRunningError, consumer.taskStarted, None)
+
+    def test_taskProductionFailed_before_consume_raises_error(self):
+        # taskProductionFailed can only be called after we have started
+        # consuming. This is because taskProductionFailed might need to stop
+        # task production to handle errors properly.
+        consumer = self.makeConsumer()
+        self.assertRaises(
+            NotRunningError, consumer.taskProductionFailed, None)
 
 
 def test_suite():
