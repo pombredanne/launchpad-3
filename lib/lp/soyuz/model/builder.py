@@ -29,7 +29,7 @@ from storm.store import Store
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.buildd.slave import BuilderStatus
-from canonical.buildmaster.master import BuilddMaster
+from lp.buildmaster.master import BuilddMaster
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from lp.soyuz.adapters.archivedependencies import (
     get_primary_current_component, get_sources_list_for_building)
