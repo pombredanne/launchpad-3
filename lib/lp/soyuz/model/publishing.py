@@ -30,7 +30,7 @@ from sqlobject import ForeignKey, StringCol, BoolCol
 from storm.expr import Desc, In, LeftJoin
 from storm.store import Store
 
-from canonical.buildmaster.master import determineArchitecturesToBuild
+from lp.buildmaster.master import determineArchitecturesToBuild
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -64,7 +64,7 @@ from canonical.launchpad.webapp.interfaces import NotFoundError
 # XXX cprov 2006-08-18: move it away, perhaps archivepublisher/pool.py
 def makePoolPath(source_name, component_name):
     """Return the pool path for a given source name and component name."""
-    from canonical.archivepublisher.diskpool import poolify
+    from lp.archivepublisher.diskpool import poolify
     return os.path.join(
         'pool', poolify(source_name, component_name))
 
