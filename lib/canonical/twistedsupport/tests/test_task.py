@@ -12,7 +12,8 @@ from twisted.internet.task import Clock
 from zope.interface import implements
 
 from canonical.twistedsupport.task import (
-    ITaskConsumer, ITaskSource, PollingTaskSource)
+    ITaskConsumer, ITaskSource, ParallelLimitedTaskConsumer,
+    PollingTaskSource)
 from lp.testing import TestCase
 
 
@@ -192,6 +193,14 @@ class TestPollingTaskSource(TestCase):
         self.assertEqual(1, len(consumer._task_production_failed_calls))
         reason = consumer._task_production_failed_calls[0]
         self.assertTrue(reason.check(ZeroDivisionError))
+
+
+class TestParallelLimitedTaskConsumer(TestCase):
+    """Tests for `ParallelLimitedTaskConsumer`."""
+
+    def test_implements_ITaskConsumer(self):
+        # ParallelLimitedTaskConsumer instances provide ITaskConsumer.
+        self.assertProvides(ParallelLimitedTaskConsumer(), ITaskSource)
 
 
 def test_suite():

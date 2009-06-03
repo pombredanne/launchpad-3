@@ -110,7 +110,13 @@ class PollingTaskSource:
             self._looping_call = None
 
 
-class ParallelLimitedTaskSink:
+class ParallelLimitedTaskConsumer:
+    """XXX A thing."""
+
+    implements(ITaskSource)
+
+
+class OldParallelLimitedTaskSink:
     """ """
 
     def __init__(self, worker_limit, task_source):
