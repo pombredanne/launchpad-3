@@ -43,6 +43,20 @@ class AppendingTaskConsumer:
         """Do nothing."""
 
 
+class LoggingSource:
+
+    implements(ITaskSource)
+
+    def __init__(self, log):
+        self._log = log
+
+    def start(self, consumer):
+        self._log.append(('start', consumer))
+
+    def stop(self):
+        self._log.append('stop')
+
+
 class TestPollingTaskSource(TestCase):
     """Tests for `PollingTaskSource`."""
 
@@ -198,9 +212,20 @@ class TestPollingTaskSource(TestCase):
 class TestParallelLimitedTaskConsumer(TestCase):
     """Tests for `ParallelLimitedTaskConsumer`."""
 
+    def makeConsumer(self):
+        return ParallelLimitedTaskConsumer()
+
     def test_implements_ITaskConsumer(self):
         # ParallelLimitedTaskConsumer instances provide ITaskConsumer.
-        self.assertProvides(ParallelLimitedTaskConsumer(), ITaskSource)
+        self.assertProvides(self.makeConsumer(), ITaskSource)
+
+    def test_consume_starts_source(self):
+        # Calling `consume` with a task source starts that source.
+        consumer = self.makeConsumer()
+        log = []
+        source = LoggingSource(log)
+        consumer.consume(source)
+        self.assertEqual([('start', consumer)], log)
 
 
 def test_suite():

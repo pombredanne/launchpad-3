@@ -37,7 +37,11 @@ class ITaskSource(Interface):
 
 
 class ITaskConsumer(Interface):
-    """A consumer of tasks. Pass to ITaskSource."""
+    """A consumer of tasks. Pass to an `ITaskSource` provider.
+
+    Note that implementations of `ITaskConsumer` need to provide their own way
+    of getting references to ITaskSources.
+    """
 
     def taskStarted(task):
         """Called when the task source generates a task.
@@ -111,9 +115,18 @@ class PollingTaskSource:
 
 
 class ParallelLimitedTaskConsumer:
-    """XXX A thing."""
+    """A consumer that runs tasks from a source with limited parallelism."""
 
     implements(ITaskSource)
+
+    def consume(self, task_source):
+        """Start consuming tasks from 'task_source'.
+
+        :param task_source: An `ITaskSource` provider.
+        :return: A `Deferred` that fires when the task source is exhausted
+            and we are not running any tasks.
+        """
+        task_source.start(self)
 
     def taskStarted(self, task):
         """See `ITaskSource`."""
@@ -138,7 +151,7 @@ class OldParallelLimitedTaskSink:
     def acceptTask(self, task):
         self.worker_count += 1
         if self.worker_count >= self.worker_limit:
-            self.source.stop()
+            self.task_source.stop()
         d = task.run()
         # We don't expect these tasks to have interesting return values or
         # failure modes.
