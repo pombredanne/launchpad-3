@@ -1050,7 +1050,7 @@ Users can mark bugs as affecting or not affecting them. For each bug we
 then keep a count of the number of users affected by it, as well as the
 number of users not affected by it.
 
-                   >>> test_bug = factory.makeBug()
+    >>> test_bug = factory.makeBug()
     >>> affected_user = factory.makePerson()
     >>> unaffected_user = factory.makePerson()
 
@@ -1124,19 +1124,6 @@ fix the bug.
     >>> submission = getUtility(IHWSubmissionSet).getBySubmissionKey(
     ...     'sample-submission')
     >>> test_bug.linkHWSubmission(submission)
-    >>> flush_database_updates()
-    >>> transaction.commit()
-
-A submission can only be linked once to a bug. When we try to link the
-submission a second time, we get an IntegrityError.
-
-    >>> test_bug.linkHWSubmission(submission)
-    >>> flush_database_updates()
-    Traceback (most recent call last):
-    IntegrityError: duplicate key value violates unique constraint
-    "hwsubmissionbug__submission__bug__key"
-
-    >>> transaction.abort()
 
 Bug.getHWSubmissions() returns the HWDB submissions linked to a bug.
 
