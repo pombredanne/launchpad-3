@@ -31,6 +31,158 @@
 
 .demo {background-color: #fee;}
 
+
+/* == Sprites == */
+
+#subscribers-direct a, #portlet-subscribers a, #subscribers-indirect a, .bug-branch-summary {
+   display: block;
+   line-height: 1.4em;
+}
+#lp-hierarchy a.bzr-favicon, #lp-hierarchy a.person-tabs {
+    padding: 8px 18px 0 23px;
+}
+h1 .edit {
+    font-size: 50%;
+    position: relative;
+    top: -3px;
+    margin-left: 0.5em;
+}
+.offscreen {
+    position: absolute;
+    left: -999em; 
+}
+span.invisible-link {display:none;} 
+span.invisible {left:-9999em;display:block;} 
+.sprite {padding:2px 0 0 18px;}
+.sprite-left {padding:2px 18px 0 0; background-position:left;}
+
+.add {background:url(icon-sprites) 0 0 no-repeat;}
+.edit {background:url(icon-sprites) 0 -32px no-repeat;}
+.remove {background:url(icon-sprites) 0 -64px no-repeat;}
+.info {background:url(icon-sprites) 0 -96px no-repeat;}
+.question {background:url(icon-sprites) 0 -128px no-repeat;}
+.download {background:url(icon-sprites) 0 -160px no-repeat;}
+.search {background:url(icon-sprites) 0 -187px no-repeat;}
+.no {background:url(icon-sprites) 0 -224px no-repeat;}
+.yes {background:url(icon-sprites) 0 -256px no-repeat;}
+.crowd {background:url(icon-sprites) 0 -288px no-repeat;}
+.person {background:url(icon-sprites) 0 -320px no-repeat;}
+.person-tabs {background:url(icon-sprites) 5px -314px no-repeat;}
+.person-badge {background:url(icon-sprites) 0 -352px no-repeat;}
+.team {background:url(icon-sprites) 0 -384px no-repeat;}
+.team-badge {background:url(icon-sprites) 0 -416px no-repeat;}
+.arrowRight {background:url(icon-sprites) 0 -448px no-repeat;}
+.treeCollapsed {background:url(icon-sprites) 0 -480px no-repeat;}
+.treeExpanded {background:url(icon-sprites) 0 -512px no-repeat;}
+.branch, .bzr-favicon {background:url(icon-sprites) 0 -544px no-repeat;}
+.bzr-favicon {background:url(icon-sprites) 5px -538px no-repeat;}
+.distribution {background:url(icon-sprites) 0 -576px no-repeat;}
+.package-source {background:url(icon-sprites) 0 -608px no-repeat;}
+.milestone {background:url(icon-sprites) 0 -640px no-repeat;}
+.language {background:url(icon-sprites) 0 -672px no-repeat;}
+.link {background:url(icon-sprites) 0 -704px no-repeat;}
+.mail {background:url(icon-sprites) 0 -736px no-repeat;}
+.cve {background:url(icon-sprites) 0 -768px no-repeat;}
+.bug {background:url(icon-sprites) 0 -800px no-repeat;}
+.bug-critical {background:url(icon-sprites) 0 -832px no-repeat;}
+.bug-high {background:url(icon-sprites) 0 -864px no-repeat;}
+.bug-medium {background:url(icon-sprites) 0 -896px no-repeat;}
+.bug-low {background:url(icon-sprites) 0 -928px no-repeat;}
+.bug-wishlist {background:url(icon-sprites) 0 -960px no-repeat;}
+.blueprint {background:url(icon-sprites) 0 -992px no-repeat;}
+.blueprint-essential {background:url(icon-sprites) 0 -1024px no-repeat;}
+.blueprint-high {background:url(icon-sprites) 0 -1056px no-repeat;}
+.blueprint-medium {background:url(icon-sprites) 0 -1088px no-repeat;}
+.blueprint-low {background:url(icon-sprites) 0 -1120px no-repeat;}
+.blueprint-undefined {background:url(icon-sprites) 0 -1152px no-repeat;}
+.blueprint-not {background:url(icon-sprites) 0 -1184px no-repeat;}
+.rss {background:url(icon-sprites) 0 -1216px no-repeat;}
+.ubuntu-logo {background:url(icon-sprites-2) 0 0px no-repeat;}
+.person-inactive {background:url(icon-sprites-2) 0 -32px no-repeat;}
+.person-inactive-badge {background:url(icon-sprites-2) 0 -64px no-repeat;}
+.mentoring {background:url(icon-sprites-2) 0 -96px no-repeat;}
+.undecided {background:url(icon-sprites-2) 0 -128px no-repeat;}
+.error {background:url(icon-sprites-2) 0 -160px no-repeat;}
+.cancel {background:url(icon-sprites-2) 0 -192px no-repeat;}
+.confirm {background:url(icon-sprites-2) 0 -224px no-repeat;}
+.flame {background:url(icon-sprites-2) 0 -256px no-repeat;}
+.bug-undecided {background:url(icon-sprites-2) 0 -288px no-repeat;}
+.bug-remote {background:url(icon-sprites-2) 0 -320px no-repeat;}
+.bug-unknown {background:url(icon-sprites-2) 0 -352px no-repeat;}
+.bug-dupe {background:url(icon-sprites-2) 0 -384px no-repeat;}
+.bug-tracker {background:url(icon-sprites-2) 0 -416px no-repeat;}
+.package-binary {background:url(icon-sprites-2) 0 -448px no-repeat;}
+.retry {background:url(icon-sprites-2) 0 -480px no-repeat;}
+.distribution-badge {background:url(icon-sprites-2) 0 -512px no-repeat;}
+.project-badge {background:url(icon-sprites-2) 0 -544px no-repeat;}
+.project {background:url(icon-sprites-2) 0 -576px no-repeat;}
+.product-badge {background:url(icon-sprites-2) 0 -608px no-repeat;}
+.product {background:url(icon-sprites-2) 0 -640px no-repeat;}
+.read-only {background:url(icon-sprites-2) 0 -672px no-repeat;}
+.warning, .security {background:url(icon-sprites-2) 0 -704px no-repeat;}
+.private {background:url(icon-sprites-2) 0 -736px no-repeat;}
+.meeting {background:url(icon-sprites-2) 0 -768px no-repeat;}
+.translate {background:url(icon-sprites-2) 0 -800px no-repeat;}
+.translation-file {background:url(icon-sprites-2) 0 -832px no-repeat;}
+.translation-template {background:url(icon-sprites-2) 0 -864px no-repeat;}
+.trash {background:url(icon-sprites-2) 0 -896px no-repeat;}
+.stop {background:url(icon-sprites-2) 0 -928px no-repeat;}
+.bounty {background:url(icon-sprites-2) 0 -960px no-repeat;}
+.list {background:url(icon-sprites-2) 0 -992px no-repeat;}
+.bullet {background:url(icon-sprites-2) 0 -1024px no-repeat;}
+.zoom-in {background:url(icon-sprites-2) 0 -1056px no-repeat;}
+.zoom-out {background:url(icon-sprites-2) 0 -1088px no-repeat;}
+.arquitecture {background:url(icon-sprites-2) 0 -1120px no-repeat;}
+
+.bug-status-expand {background:url(icon-sprites-3) 0 -10px no-repeat;}
+.merge-proposal {background:url(icon-sprites-3) 0 -46px no-repeat;}
+.build-superseded {background:url(icon-sprites-3) 0 -80px no-repeat;}
+.build-sucess {background:url(icon-sprites-3) 0 -112px no-repeat;}
+.build-needed {background:url(icon-sprites-3) 0 -144px no-repeat;}
+.build-failure {background:url(icon-sprites-3) 0 -176px no-repeat;}
+.build-depwait {background:url(icon-sprites-3) 0 -208px no-repeat;}
+.arrowUp {background:url(icon-sprites-3) 0 -240px no-repeat;}
+.arrowDown {background:url(icon-sprites-3) 0 -256px no-repeat;}
+.arrowStart {background:url(icon-sprites-3) 0 -288px no-repeat;}
+.arrowEnd {background:url(icon-sprites-3) 0 -304px no-repeat;}
+.arrowTop {background:url(icon-sprites-3) 0 -328px no-repeat;}
+.arrowBottom {background:url(icon-sprites-3) 0 -356px no-repeat;}
+.arrowLeft {background:url(icon-sprites-3) 0 -384px no-repeat;}
+.bluebar {background:url(icon-sprites-3) 0 -416px repeat-x;}
+.redbar {background:url(icon-sprites-3) 0 -505px repeat-x;}
+.greenbar {background:url(icon-sprites-3) 0 -446px repeat-x;}
+.purplebar {background:url(icon-sprites-3) 0 -476px repeat-x;}
+.favorite-yes {background:url(icon-sprites-3) 0 -530px no-repeat;}
+
+/*large*/
+.large-branch {background:url(icon-sprites-large) 0 0 no-repeat;}
+.large-warning {background:url(icon-sprites-large) 0 -48px no-repeat;}
+.large-crowd {background:url(icon-sprites-large) 0 -96px no-repeat;}
+.large-download {background:url(icon-sprites-large) 0 -144px no-repeat;}
+.large-error {background:url(icon-sprites-large) 0 -144px no-repeat;}
+.large-flame {background:url(icon-sprites-large) 0 -192px no-repeat;}
+.large-download {background:url(icon-sprites-large) 0 -240px no-repeat;}
+.large-info {background:url(icon-sprites-large) 0 -288px no-repeat;}
+.large-launchpad {background:url(icon-sprites-large) 0 -336px no-repeat;}
+.large-mentoring {background:url(icon-sprites-large) 0 -384px no-repeat;}
+.large-proposal {background:url(icon-sprites-large) 0 -432px no-repeat;}
+.large-trash {background:url(icon-sprites-large) 0 -480px no-repeat;}
+.large-private {background:url(icon-sprites-large) 0 -528px no-repeat;}
+
+/*logo*/
+.logo-launchpad {background:url(icon-sprites-logo) 0 0 no-repeat;}
+.logo-distribution {background:url(icon-sprites-logo) 0 -80px no-repeat;}
+.logo-project {background:url(icon-sprites-logo) 0 -160px no-repeat;}
+.logo-product {background:url(icon-sprites-logo) 0 -240 no-repeat;}
+.logo-person {background:url(icon-sprites-logo) 0 -320 no-repeat;}
+.logo-inactive {background:url(icon-sprites-logo-2) 0 0 no-repeat;}
+.logo-team {background:url(icon-sprites-logo-2) 0 -80px no-repeat;}
+.logo-meeting {background:url(icon-sprites-logo-2) 0 -160px no-repeat;}
+.logo-flame {background:url(icon-sprites-logo-2) 0 -240 no-repeat;}
+.logo-trash {background:url(icon-sprites-logo-2) 0 -320 no-repeat;}
+
+
+
 /* == Things browsers should do but don't == */
 
 .clearfix:after { /* use class="clearfix" whenever floats should be enclosed */
