@@ -14,7 +14,7 @@ This page is used to search packages in a distribution context.
 
     >>> for tag in find_tags_by_class(browser.contents, 'package-matches'):
     ...     print extract_text(tag).encode('us-ascii', 'replace')
-    ?pmount? source package in Ubuntu
+    ?pmount? package in Ubuntu
     (Matching binaries: pmount.)
 
 
@@ -53,7 +53,7 @@ Now run a search for mozilla-firefox and check that it is found:
     >>> browser.getControl('Search', index=0).click()
     >>> for tag in find_tags_by_class(browser.contents, 'package-matches'):
     ...     print extract_text(tag).encode('us-ascii', 'replace')
-    ?mozilla-firefox? source package in Ubuntu
+    ?mozilla-firefox? package in Ubuntu
     The Mozilla Firefox web browser
     (Matching binaries: mozilla-firefox, mozilla-firefox-data.)
 
@@ -65,7 +65,7 @@ The search page will also present commercial packages:
     >>> field.value = 'commercialpackage'
     >>> browser.getControl('Search', index=0).click()
     >>> extract_text(find_main_content(browser.contents))
-    u'...commercialpackage... source package...'
+    u'...commercialpackage... package...'
 
 Now try searching for text that we know to be in a change log entry, to
 prove that FTI works on change logs.  The text we're looking for is
@@ -104,8 +104,8 @@ finds the fti results:
     >>> texts.sort()
     >>> for text in texts:
     ...    print text.encode('ascii', 'backslashreplace')
-    \...libstdc++... source package in Ubuntu
-    \...pmount... source package in Ubuntu
+    \...libstdc++... package in Ubuntu
+    \...pmount... package in Ubuntu
 
 
 == Distribution package change summary ==
