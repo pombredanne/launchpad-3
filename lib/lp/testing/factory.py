@@ -1471,6 +1471,16 @@ class LaunchpadObjectFactory(ObjectFactory):
             name = self.getUniqueString()
         return getUtility(ISourcePackageNameSet).new(name)
 
+    def getOrMakeSourcePackageName(self, name=None):
+        """Get an existing`ISourcePackageName` or make a new one.
+
+        This method encapsulates getOrCreateByName so that tests can be kept
+        free of the getUtility(ISourcePackageNameSet) noise.
+        """
+        if name is None:
+            return self.makeSourcePackageName()
+        return getUtility(ISourcePackageNameSet).getOrCreateByName(name)
+
     def makeSourcePackage(self, sourcepackagename=None, distroseries=None):
         """Make an `ISourcePackage`."""
         if sourcepackagename is None:

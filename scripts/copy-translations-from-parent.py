@@ -16,7 +16,7 @@ from canonical.config import config
 from canonical.launchpad.interfaces import IDistributionSet
 from lp.services.scripts.base import LaunchpadCronScript
 from canonical.launchpad.scripts.copy_distroseries_translations import (
-    update_translations)
+    copy_distroseries_translations)
 
 
 class TranslationsCopier(LaunchpadCronScript):
@@ -64,7 +64,7 @@ class TranslationsCopier(LaunchpadCronScript):
         self.logger.info('Starting...')
 
         # Actual work is done here.
-        update_translations(series, self.txn, self.logger)
+        copy_distroseries_translations(series, self.txn, self.logger)
 
         # We would like to update the DistroRelase statistics, but it takes
         # too long so this should be done after.
