@@ -78,6 +78,11 @@ check: build
 	# database.
 	${PY} -t ./test_on_merge.py $(VERBOSITY)
 
+check_mailman: build
+	# Run all tests, including the Mailman integration
+	# tests. test_on_merge.py takes care of setting up the database.
+	${PY} -t ./test_on_merge.py $(VERBOSITY) --layer=MailmanLayer
+
 lint:
 	@bash ./utilities/lint.sh
 
