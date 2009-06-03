@@ -1338,6 +1338,18 @@ class LaunchpadObjectFactory(ObjectFactory):
 
         return subset.new(name, translation_domain, path, owner)
 
+    def makePOTemplateAndPOFiles(self, language_codes, **kwargs):
+        """Create a POTemplate and associated POFiles.
+
+        Create a POTemplate for the given distroseries/sourcepackagename or
+        productseries and create a POFile for each language. Returns the
+        template.
+        """
+        template = self.makePOTemplate(**kwargs)
+        for language_code in language_codes:
+            self.makePOFile(language_code, template, template.owner)
+        return template
+
     def makePOFile(self, language_code, potemplate=None, owner=None,
                    variant=None):
         """Make a new translation file."""

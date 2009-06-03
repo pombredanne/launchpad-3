@@ -19,13 +19,10 @@ Functions to create source packages, templates and and translations.
     ...                                                  foobuntu)
 
     >>> def makePOTemplateAndPOFiles(distroseries, package, name, languages):
-    ...     template = factory.makePOTemplate(
+    ...     return factory.makePOTemplateAndPOFiles(languages,
     ...         distroseries=distroseries,
     ...         sourcepackagename=package.sourcepackagename,
     ...         name=name, translation_domain=name+'-domain')
-    ...     for language in languages:
-    ...         factory.makePOFile(language, template)
-    ...     return template
 
     >>> global_sequence = 1
     >>> def makeTranslation(template, msgid, translations, sequence=None):
