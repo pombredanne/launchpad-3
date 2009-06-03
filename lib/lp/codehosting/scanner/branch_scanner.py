@@ -49,15 +49,27 @@ class BranchScanner:
                 # Bugs or error conditions when scanning any given branch must
                 # not prevent scanning the other branches. Log the error and
                 # keep going.
+
+                # We can even get an error while loading the exception
+                # message.
                 try:
-                    self.logScanFailure(branch, str(e))
+                    exception_message = str(e)
+                except (KeyboardInterrupt, SystemExit):
+                    raise
+                except:
+                    exception_message = (
+                        'ERROR WHILE GETTING EXCEPTION MESSAGE')
+                    self.log.exception(exception_message)
+
+                try:
+                    self.logScanFailure(branch, exception_message)
                 except (KeyboardInterrupt, SystemExit):
                     raise
                 except:
                     # There was an error logging the error, despite all our
                     # best efforts!
                     self.log.exception(
-                        "Error while trying to log %s" % str(e))
+                        "Error while trying to log %s" % exception_message)
 
     def scanAllBranches(self):
         """Run Bzrsync on all branches, and intercept most exceptions."""
