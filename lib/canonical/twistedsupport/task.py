@@ -46,7 +46,7 @@ class ITaskConsumer(Interface):
         ITaskSource expects it to finish quickly and to not raise errors. Any
         return value is completely ignored.
 
-        :param task: There is no defined interface.
+        :param task: The interface for this is defined by the task source.
         """
 
     def taskProductionFailed(reason):
