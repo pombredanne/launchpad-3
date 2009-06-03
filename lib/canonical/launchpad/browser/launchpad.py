@@ -53,12 +53,14 @@ from lp.registry.interfaces.announcement import IAnnouncementSet
 from lp.soyuz.interfaces.binarypackagename import (
     IBinaryPackageNameSet)
 from canonical.launchpad.interfaces.bounty import IBountySet
-from lp.code.interfaces.branchlookup import (
-    CannotHaveLinkedBranch, IBranchLookup, NoLinkedBranch)
+from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.branchnamespace import InvalidNamespace
+from lp.code.interfaces.linkedbranch import (
+    CannotHaveLinkedBranch, NoLinkedBranch)
 from canonical.launchpad.interfaces.bug import IBugSet
 from canonical.launchpad.interfaces.bugtracker import IBugTrackerSet
 from lp.soyuz.interfaces.builder import IBuilderSet
+from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.code.interfaces.codeimport import ICodeImportSet
 from lp.registry.interfaces.codeofconduct import ICodeOfConductSet
 from canonical.launchpad.interfaces.cve import ICveSet
@@ -637,6 +639,7 @@ class LaunchpadRootNavigation(Navigation):
         '+languages': ILanguageSet,
         '+mailinglists': IMailingListSet,
         '+mentoring': IMentoringOfferSet,
+        'package-sets': IPackagesetSet,
         'people': IPersonSet,
         'pillars': IPillarNameSet,
         'projects': IProductSet,

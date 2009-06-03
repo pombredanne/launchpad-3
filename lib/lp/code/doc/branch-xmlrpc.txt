@@ -54,10 +54,6 @@ Since we didn't specify product, title or description, they are None:
 
     >>> new_branch.product is None
     True
-    >>> new_branch.title is None
-    True
-    >>> new_branch.summary is None
-    True
 
 Also, Launchpad is scheduled to mirror this branch on its next mirror run:
 
@@ -85,8 +81,6 @@ well:
 
     >>> print new_branch.name
     branch_name
-    >>> print new_branch.title
-    branch_title
     >>> print new_branch.product.displayname
     Evolution
 

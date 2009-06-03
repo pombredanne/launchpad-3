@@ -21,7 +21,8 @@ from canonical.database.constants import UTC_NOW
 from canonical.launchpad import _
 from lp.code.model.branch import (
     ClearDependentBranch, ClearOfficialPackageBranch, ClearSeriesBranch,
-    DeleteCodeImport, DeletionCallable, DeletionOperation)
+    DeleteCodeImport, DeletionCallable, DeletionOperation,
+    update_trigger_modified_fields)
 from lp.code.model.branchjob import BranchDiffJob
 from lp.code.model.branchmergeproposal import (
     BranchMergeProposal)
@@ -40,6 +41,8 @@ from lp.blueprints.interfaces.specification import (
 from lp.code.interfaces.branch import (
     BranchCannotBePrivate, BranchCannotBePublic, BranchType,
     CannotDeleteBranch)
+from lp.code.interfaces.branch import (BranchFormat, RepositoryFormat,
+    BRANCH_FORMAT_UPGRADE_PATH, REPOSITORY_FORMAT_UPGRADE_PATH)
 from lp.code.interfaces.branchmergeproposal import InvalidBranchMergeProposal
 from lp.code.interfaces.branchsubscription import (
     BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel)
@@ -197,6 +200,45 @@ class TestBranch(TestCaseWithFactory):
         branch = self.factory.makeAnyBranch(branch_type=BranchType.REMOTE)
         self.assertRaises(AssertionError, branch.getPullURL)
 
+    def test_owner_name(self):
+        # The owner_name attribute is set to be the name of the branch owner
+        # through a db trigger.
+        branch = self.factory.makeAnyBranch()
+        self.assertEqual(
+            branch.owner.name, removeSecurityProxy(branch).owner_name)
+
+    def test_owner_name_updated(self):
+        # When the owner of a branch is changed, the denormalised owner_name
+        # attribute is updated too.
+        branch = self.factory.makeAnyBranch()
+        new_owner = self.factory.makePerson()
+        login('admin@canonical.com')
+        branch.owner = new_owner
+        # Call the function that is normally called through the event system
+        # to auto reload the fields updated by the db triggers.
+        update_trigger_modified_fields(branch)
+        self.assertEqual(
+            new_owner.name, removeSecurityProxy(branch).owner_name)
+
+    def test_target_suffix_product(self):
+        # The target_suffix for a product branch is the name of the product.
+        branch = self.factory.makeProductBranch()
+        self.assertEqual(
+            branch.product.name, removeSecurityProxy(branch).target_suffix)
+
+    def test_target_suffix_junk(self):
+        # The target_suffix for a junk branch is None.
+        branch = self.factory.makePersonalBranch()
+        self.assertIs(None, removeSecurityProxy(branch).target_suffix)
+
+    def test_target_suffix_package(self):
+        # A package branch has the target_suffix set to the name of the source
+        # package.
+        branch = self.factory.makePackageBranch()
+        self.assertEqual(
+            branch.sourcepackagename.name,
+            removeSecurityProxy(branch).target_suffix)
+
     def test_unique_name_product(self):
         branch = self.factory.makeProductBranch()
         self.assertEqual(
@@ -298,6 +340,54 @@ class TestBranch(TestCaseWithFactory):
         self.assertEqual(
             SourcePackage(branch.sourcepackagename, branch.distroseries),
             branch.sourcepackage)
+
+    def test_needsUpgrading_branch_format_unrecognized(self):
+        # A branch has a needs_upgrading attribute that returns whether or not
+        # a branch needs to be upgraded or not.  If the format is unrecognized,
+        # we don't try to upgrade it.
+        branch = self.factory.makePersonalBranch(
+            branch_format=BranchFormat.UNRECOGNIZED)
+        self.assertFalse(branch.needs_upgrading)
+
+    def test_needsUpgrading_branch_format_upgrade_not_needed(self):
+        # A branch has a needs_upgrading attribute that returns whether or not
+        # a branch needs to be upgraded or not.  If a branch is up to date, it
+        # doesn't need to be upgraded.
+        branch = self.factory.makePersonalBranch(
+            branch_format=BranchFormat.BZR_BRANCH_7)
+        self.assertFalse(branch.needs_upgrading)
+
+    def test_needsUpgrading_branch_format_upgrade_needed(self):
+        # A branch has a needs_upgrading attribute that returns whether or not
+        # a branch needs to be upgraded or not.  If a branch doesn't support
+        # stacking, it needs to be upgraded.
+        branch = self.factory.makePersonalBranch(
+            branch_format=BranchFormat.BZR_BRANCH_6)
+        self.assertTrue(branch.needs_upgrading)
+
+    def test_needsUpgrading_repository_format_unrecognized(self):
+        # A branch has a needs_upgrading attribute that returns whether or not
+        # a branch needs to be upgraded or not.  In the repo format is
+        # unrecognized, we don't try to upgrade it.
+        branch = self.factory.makePersonalBranch(
+            repository_format=RepositoryFormat.UNRECOGNIZED)
+        self.assertFalse(branch.needs_upgrading)
+
+    def test_needsUpgrading_repository_format_upgrade_not_needed(self):
+        # A branch has a needs_upgrading method that returns whether or not a
+        # branch needs to be upgraded or not.  If the repo format is up to
+        # date, there's no need to upgrade it.
+        branch = self.factory.makePersonalBranch(
+            repository_format=RepositoryFormat.BZR_KNITPACK_6)
+        self.assertFalse(branch.needs_upgrading)
+
+    def test_needsUpgrading_repository_format_upgrade_needed(self):
+        # A branch has a needs_upgrading method that returns whether or not a
+        # branch needs to be upgraded or not.  If the format doesn't support
+        # stacking, it needs to be upgraded.
+        branch = self.factory.makePersonalBranch(
+            repository_format=RepositoryFormat.BZR_REPOSITORY_4)
+        self.assertTrue(branch.needs_upgrading)
 
 
 class TestBzrIdentity(TestCaseWithFactory):
