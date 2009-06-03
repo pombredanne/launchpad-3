@@ -82,14 +82,14 @@ Launchpad is free of charge to <a href="https://help.launchpad.net/Legal/Project
                         <p>
                            Choose from Launchpad's applications:</p><br />
                    			<ul>
-				                  <li><strong>Bug tracking:</strong> across project and tool boundaries</li>
-				                  <li><strong>Code hosting and review:</strong> open your project to drive-by contributions with Bazaar branch hosting/mirroring and imports from git, Subversion and CVS.</li>
-				                  <li><strong>Web-based translation:</strong> make your software available to a global audience with help from Launchpad's 35,000 translators.</li>
-				                  <li><strong>Ubuntu package building and hosting:</strong> use your Personal Package Archives to distribute software to Ubuntu users.</li>
-				                  <li><strong>Mailing lists and teams:</strong> hassle-free mailing list hosting and easy role delegation through teams.</li>				
-				                  <li><strong>Support request tracking:</strong> build a multi-lingual community to help people who use your software.</li>
-				                  <li><strong>Feature planning:</strong> light-weight specification management and tracking.</li>
-				                  <li><strong>Web services API:</strong> build your own applications to interact with Launchpad's RESTful API.</li>
+				                  <li><strong><a href="bugs">Bug tracking</a>:</strong> across project and tool boundaries</li>
+				                  <li><strong><a href="branch-hosting-tracking">Code hosting and review</a>:</strong> open your project to drive-by contributions with Bazaar branch hosting/mirroring and imports from git, Subversion and CVS.</li>
+				                  <li><strong><a href="translation">Web-based translation</a>:</strong> make your software available to a global audience with help from Launchpad's 35,000 translators.</li>
+				                  <li><strong><a href="ppa">Ubuntu package building and hosting</a>:</strong> use your Personal Package Archives to distribute software to Ubuntu users.</li>
+				                  <li><strong><a href="community">Mailing lists and teams</a>:</strong> hassle-free mailing list hosting and easy role delegation through teams.</li>				
+				                  <li><strong><a href="community-support">Support request tracking</a>:</strong> build a multi-lingual community to help people who use your software.</li>
+				                  <li><strong><a href="feature-tracking">Feature planning</a>:</strong> light-weight specification management and tracking.</li>
+				                  <li><strong><a href="api">Web services API</a>:</strong> build your own applications to interact with Launchpad's RESTful API.</li>
                 		  </ul><br />
                 		  <p style="float: right;"><a href="mailto:help@launchpad.net">Email us</a> with questions or <a href="https://launchpad.net/projects/+new">register your project now &gt;</a></p>
   
