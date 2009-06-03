@@ -2178,7 +2178,7 @@ ALTER TABLE distributionsourcepackage ENABLE TRIGGER ALL;
 ALTER TABLE distributionsourcepackagecache DISABLE TRIGGER ALL;
 
 INSERT INTO distributionsourcepackagecache (id, distribution, sourcepackagename, name, binpkgnames, binpkgsummaries, binpkgdescriptions, fti, changelog, archive) VALUES (1, 3, 19, 'alsa-utils', '', '', '', NULL, NULL, 1);
-INSERT INTO distributionsourcepackagecache (id, distribution, sourcepackagename, name, binpkgnames, binpkgsummaries, binpkgdescriptions, fti, changelog, archive) VALUES (2, 1, 1, 'mozilla-firefox', 'mozilla-firefox', 'Mozilla Firefox Web Browser', 'Mozilla Firefox Web Browser is .....', NULL, NULL, 1);
+INSERT INTO distributionsourcepackagecache (id, distribution, sourcepackagename, name, binpkgnames, binpkgsummaries, binpkgdescriptions, fti, changelog, archive) VALUES (2, 1, 1, 'mozilla-firefox', 'mozilla-firefox mozilla-firefox-data', 'Mozilla Firefox Web Browser', 'Mozilla Firefox Web Browser is .....', NULL, NULL, 1);
 INSERT INTO distributionsourcepackagecache (id, distribution, sourcepackagename, name, binpkgnames, binpkgsummaries, binpkgdescriptions, fti, changelog, archive) VALUES (3, 1, 9, 'evolution', '', '', '', NULL, NULL, 1);
 INSERT INTO distributionsourcepackagecache (id, distribution, sourcepackagename, name, binpkgnames, binpkgsummaries, binpkgdescriptions, fti, changelog, archive) VALUES (4, 1, 10, 'netapplet', '', '', '', NULL, NULL, 1);
 INSERT INTO distributionsourcepackagecache (id, distribution, sourcepackagename, name, binpkgnames, binpkgsummaries, binpkgdescriptions, fti, changelog, archive) VALUES (5, 1, 14, 'pmount', 'pmount', 'pmount shortdesc', 'pmount description', NULL, 'This is a placeholder changelog for pmount 0.1-2 pmount (0.1-1) hoary; urgency=low

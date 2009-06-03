@@ -144,7 +144,7 @@
             tal:content="view/text">some text</span>&rdquo;
           did not return any results.
           <tal:search_by_source condition="view/search_by_binary_name">
-          <a tal:attributes="href view/source_search_url">
+          <a tal:attributes="href view/source_search_url" id="source-search">
             Re-run your search against source package names
           </a> instead of binary names (the default).
           </tal:search_by_source>
