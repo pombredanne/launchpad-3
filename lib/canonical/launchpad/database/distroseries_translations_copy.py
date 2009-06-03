@@ -10,8 +10,7 @@ from canonical.database.multitablecopy import MultiTableCopy
 from canonical.database.sqlbase import cursor, quote, sqlvalues
 
 
-def _copy_active_translations_to_new_series(
-    child, transaction, copier, logger):
+def copy_active_translations(child, transaction, logger):
     """Furnish untranslated child `DistroSeries` with parent's translations.
 
     This method uses `MultiTableCopy` to copy data.
@@ -32,9 +31,24 @@ def _copy_active_translations_to_new_series(
     sensible thing to do is probably to continue pouring it.
     """
     parent = child.parent_series
+    if parent is None:
+        # We don't have a parent from where we could copy translations.
+        return
+
+    translation_tables = [
+        'POTemplate', 'TranslationTemplateItem', 'POFile', 'POFileTranslator'
+        ]
+
+    full_name = "%s_%s" % (child.distribution.name, child.name)
+    copier = MultiTableCopy(full_name, translation_tables, logger=logger)
+
+    # Incremental copy of updates is no longer supported
+    assert len(child.getTranslationTemplates()) == 0, (
+           "The child series must not yet have any translation templates.")
+
     logger.info(
         "Populating blank distroseries %s with translations from %s." %
-        sqlvalues(child, parent))
+        sqlvalues(child.name, parent.name))
 
     # Because this function only deals with the case where "child" is a new
     # distroseries without any existing translations attached, it can afford
@@ -91,49 +105,9 @@ def _copy_active_translations_to_new_series(
     # Copy POFiles, making them refer to the child's copied POTemplates.
     copier.extract('POFile', ['POTemplate'])
 
-    # Same for POFileTranslator
+    # Copy POFileTranslators, making them refer to the child's copied POFile.
     copier.extract('POFileTranslator', ['POFile'])
 
     # Finally, pour the holding tables back into the originals.
     copier.pour(transaction)
-
-
-def copy_active_translations(child_series, transaction, logger):
-    """Copy active translations from the parent into this one.
-
-    This function is used in two scenarios: when a new distribution series is
-    opened for translation, and during periodic updates as new translations
-    from the parent series are ported to newer series that haven't provided
-    translations of their own for the same strings yet.  In the former
-    scenario a full copy is drawn from the parent series.
-
-    If the distroseries doesn't have any translatable resources, th function
-    will clone all of the parent's current translatable resources; otherwise,
-    only the translations that are in the parent but lacking in this one will
-    be copied.
-
-    If there is a status change but no translation is changed for a given
-    message, we don't have a way to figure whether the change was originally
-    made in the parent or the child distroseries, so we don't migrate that.
-    """
-    if child_series.parent_series is None:
-        # We don't have a parent from where we could copy translations.
-        return
-
-    translation_tables = [
-        'POTemplate', 'TranslationTemplateItem', 'POFile', 'POFileTranslator'
-        ]
-
-    full_name = "%s_%s" % (child_series.distribution.name, child_series.name)
-    copier = MultiTableCopy(full_name, translation_tables, logger=logger)
-
-    # Incremental copy of updates is no longer supported
-    assert len(child_series.getTranslationTemplates()) == 0, (
-           "The child series must not yet have any translation templates.")
-
-    _copy_active_translations_to_new_series(
-        child_series, transaction, copier, logger)
-
-    # XXX: JeroenVermeulen 2007-07-16 bug=124410: Fix up date_changed and
-    # lasttranslator for POFiles that had TranslationMessages copied in.
 

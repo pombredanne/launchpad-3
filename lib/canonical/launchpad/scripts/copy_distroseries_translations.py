@@ -1,9 +1,9 @@
 # Copyright 2008 Canonical Ltd.  All rights reserved.
 
-"""Update `DistroSeries` translations from its parent series."""
+"""Copy `DistroSeries` translations from its parent series."""
 
 __metaclass__ = type
-__all__ = ['update_translations']
+__all__ = ['copy_distroseries_translations']
 
 
 from zope.component import getUtility
@@ -70,16 +70,16 @@ class SeriesStateKeeper:
         series.defer_translation_imports = self.defer_translation_imports
 
 
-def update_translations(series, txn, logger):
-    """Update `series` translations from its parents.
+def copy_distroseries_translations(distroseries, txn, logger):
+    """Copy `distroseries` translations from its parents.
 
     Wraps around `DistroSeries.copyMissingTranslationsFromParent`, but also
     ensures that the `hide_all_translations` and `defer_translation_imports`
     flags are set.  After copying they are restored to their previous state.
     """
     statekeeper = SeriesStateKeeper()
-    statekeeper.prepare(series)
-    name = series.name
+    statekeeper.prepare(distroseries)
+    name = distroseries.name
     txn.commit()
     txn.begin()
 
@@ -90,7 +90,7 @@ def update_translations(series, txn, logger):
         # able to combine these two try blocks.  In 2.4, we can't.
         try:
             # Do the actual work.
-            series.copyTranslationsFromParent(txn, logger)
+            distroseries.copyTranslationsFromParent(txn, logger)
         except:
             copy_failed = True
             # Give us a fresh transaction for proper cleanup.
