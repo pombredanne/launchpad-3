@@ -630,11 +630,26 @@ class DistributionPackageSearchView(PackageSearchViewBase):
                 0, current_batch.trueSize)]
 
         for package_cache in package_caches:
-            binary_names_list = package_cache.binpkgnames.split(' ')
-            matching_names = [
-                name for name in binary_names_list if self.text in name]
-            names[package_cache.name] = ", ".join(matching_names)
+            names[package_cache.name] = self.listFirstFiveMatchingNames(
+                self.text, package_cache.binpkgnames)
+
         return names
+
+    def listFirstFiveMatchingNames(self, match_text, space_separated_list):
+        """Returns a comma-separated list of the first five matching items"""
+        name_list = space_separated_list.split(' ')
+
+        more_than_five = False
+        if len(name_list) > 5:
+            more_than_five = True
+            name_list = name_list[:5]
+
+        matching_names = [
+            name for name in name_list if match_text in name]
+
+        if more_than_five:
+            matching_names.append('...')
+        return ", ".join(matching_names)
 
     @cachedproperty
     def distroseries_names(self):

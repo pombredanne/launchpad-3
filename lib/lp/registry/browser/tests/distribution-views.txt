@@ -189,6 +189,16 @@ package:
     >>> distro_pkg_search_view.matching_binary_names
     {u'mozilla-firefox': u'mozilla-firefox'}
 
+The matching_binary_names property uses a helper method
+'listFirstFiveMatchingNames' which ensures only the first five matching
+names are returned. An ellipse is used to indicate when more than five
+names match:
+
+    >>> print distro_pkg_search_view.listFirstFiveMatchingNames(
+    ...     'moz', 
+    ...     'mozilla-firefox mozilla-data moziki '
+    ...     'limozine moza lamoz') # doctest: -ELLIPSIS
+    mozilla-firefox, mozilla-data, moziki, limozine, moza, ...
 
 Substring matches
 =================
