@@ -7,7 +7,7 @@ __all__ = ['ProcessUpload']
 
 import os
 
-from canonical.archiveuploader.uploadprocessor import UploadProcessor
+from lp.archiveuploader.uploadprocessor import UploadProcessor
 from lp.services.scripts.base import (
     LaunchpadScript, LaunchpadScriptFailure)
 

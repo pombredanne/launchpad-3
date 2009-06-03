@@ -19,8 +19,8 @@ import time
 
 from zope.component import getUtility
 
-from canonical.archiveuploader.nascentupload import NascentUpload
-from canonical.archiveuploader.uploadpolicy import findPolicyByName
+from lp.archiveuploader.nascentupload import NascentUpload
+from lp.archiveuploader.uploadpolicy import findPolicyByName
 from canonical.launchpad.ftests.keys_for_tests import import_secret_test_key
 from canonical.launchpad.interfaces import IGPGHandler
 from canonical.launchpad.interfaces import (

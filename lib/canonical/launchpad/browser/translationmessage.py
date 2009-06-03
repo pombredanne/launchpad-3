@@ -405,6 +405,7 @@ class BaseTranslationView(LaunchpadView):
         self.form_posted_translations = {}
         self.form_posted_translations_has_store_flag = {}
         self.form_posted_needsreview = {}
+        self.form_posted_dismiss_suggestions = {}
 
         if not self.has_plural_form_information:
             # This POFile needs administrator setup.
@@ -525,6 +526,16 @@ class BaseTranslationView(LaunchpadView):
         Return a string with an error if one occurs, otherwise None.
         """
         self._extractFormPostedTranslations(potmsgset)
+
+        if self.form_posted_dismiss_suggestions.get(potmsgset, False):
+            try:
+                potmsgset.dismissAllSuggestions(self.pofile,
+                                                self.user,
+                                                self.lock_timestamp)
+            except TranslationConflict, e:
+                return unicode(e)
+            return None
+
         translations = self.form_posted_translations.get(potmsgset, {})
         if not translations:
             # A post with no content -- not an error, but nothing to be
@@ -745,6 +756,11 @@ class BaseTranslationView(LaunchpadView):
 
         self.form_posted_needsreview[potmsgset] = (
             msgset_ID_LANGCODE_needsreview in form)
+
+        msgset_ID_dismiss = 'msgset_%d_dismiss' % potmsgset_ID
+
+        self.form_posted_dismiss_suggestions[potmsgset] = (
+            msgset_ID_dismiss in form)
 
         # Note the trailing underscore: we append the plural form
         # number later.
@@ -1009,6 +1025,9 @@ class CurrentTranslationMessageView(LaunchpadView):
                 self.context.potmsgset.getImportedTranslationMessage(
                     self.pofile.potemplate,
                     self.pofile.language))
+        self.can_confirm_and_dismiss = False
+        self.can_dismiss_on_empty = False
+        self.can_dismiss_on_plural = False
 
         # Set up alternative language variables.
         # XXX: kiko 2006-09-27:
@@ -1150,6 +1169,16 @@ class CurrentTranslationMessageView(LaunchpadView):
                     language),
                 key=operator.attrgetter("date_created"),
                 reverse=True)
+
+            if len(local) > 0 and self.user_is_official_translator:
+                self.can_confirm_and_dismiss = (
+                    not self.is_plural and
+                    self.getCurrentTranslation(0) is not None)
+                self.can_dismiss_on_empty = (
+                    not self.is_plural and
+                    self.getCurrentTranslation(0) is None)
+                self.can_dismiss_on_plural = self.is_plural
+
             for suggestion in local:
                 suggestion.setPOFile(self.pofile)
 
@@ -1486,6 +1515,12 @@ class TranslationMessageSuggestions:
                 continue
             else:
                 seen_translations.add(this_translation)
+            # Radio buttons for suggestions are always dismissable.
+            suggestion_dismissable_class = self.potmsgset.makeHTMLID(
+                'dismissable_button')
+            if self.pofile == submission.pofile:
+                suggestion_dismissable_class += ' '+self.potmsgset.makeHTMLID(
+                    'dismissable')
             self.submissions.append({
                 'id': submission.id,
                 'translationmessage' : submission,
@@ -1507,5 +1542,6 @@ class TranslationMessageSuggestions:
                 'translation_html_id':
                     translation.makeHTMLID(
                         'translation_%s' % (plural_form)),
+                'suggestion_dismissable_class': suggestion_dismissable_class,
                 })
         self.seen_translations = seen_translations

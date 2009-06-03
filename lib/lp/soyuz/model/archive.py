@@ -21,7 +21,7 @@ from zope.event import notify
 from zope.interface import alsoProvides, implements
 from zope.security.interfaces import Unauthorized
 
-from canonical.archiveuploader.utils import re_issource, re_isadeb
+from lp.archiveuploader.utils import re_issource, re_isadeb
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
