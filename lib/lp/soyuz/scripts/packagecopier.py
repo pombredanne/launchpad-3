@@ -173,10 +173,10 @@ def check_archive_conflicts(source, archive, series, include_binaries):
         unpublished_builds = list(candidate.getUnpublishedBuilds())
         if (len(unpublished_builds) > 0 and
             candidate.status in active_publishing_status):
-                raise CannotCopy(
-                    "same version has unpublished binaries in the destination "
-                    "archive for %s, please wait for them to be published "
-                    "before copying" % candidate.distroseries.displayname)
+            raise CannotCopy(
+                "same version has unpublished binaries in the destination "
+                "archive for %s, please wait for them to be published "
+                "before copying" % candidate.distroseries.displayname)
 
         # Update published binaries inventory for the conflicting candidates.
         archive_binaries = set(
