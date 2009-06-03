@@ -1119,8 +1119,6 @@ submission contains information that could help developers
 fix the bug.
 
     >>> from canonical.launchpad.interfaces.hwdb import IHWSubmissionSet
-    >>> import transaction
-    >>> test_bug = factory.makeBug()
     >>> submission = getUtility(IHWSubmissionSet).getBySubmissionKey(
     ...     'sample-submission')
     >>> test_bug.linkHWSubmission(submission)

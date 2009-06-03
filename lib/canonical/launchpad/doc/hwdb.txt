@@ -561,7 +561,7 @@ a given bug.
     unique-id-5
 
 Private submissions are only returned if the current user is an admin
-or the owner of the rivate submission.
+or the owner of the private submission.
 
     >>> submission = hw_submission_set.getBySubmissionKey(
     ...     u'private-submission', sample_person)

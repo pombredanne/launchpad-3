@@ -35,6 +35,7 @@ from zope.interface import implements
 
 from sqlobject import BoolCol, ForeignKey, IntCol, StringCol
 from storm.expr import Alias, And, Count, In, Not, Or, Select
+from storm.store import Store
 
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -1105,7 +1106,7 @@ class HWSubmissionBugSet:
 
     def create(self, submission, bug):
         """See `IHWSubmissionBugSet`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        store = Store.of(bug)
         existing_link = store.find(
             HWSubmissionBug,
             And(HWSubmissionBug.submission == submission,
@@ -1116,7 +1117,7 @@ class HWSubmissionBugSet:
 
     def remove(self, submission, bug):
         """See `IHWSubmissionBugSet`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        store = Store.of(bug)
         link = store.find(
             HWSubmissionBug,
             And(HWSubmissionBug.bug == bug,
@@ -1126,7 +1127,7 @@ class HWSubmissionBugSet:
 
     def submissionsForBug(self, bug, user=None):
         """See `IHWSubmissionBugSet`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        store = Store.of(bug)
         result = store.find(
             HWSubmission, And(HWSubmissionBug.bug == bug,
                               HWSubmissionBug.submission == HWSubmission.id,
