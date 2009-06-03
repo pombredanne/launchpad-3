@@ -122,6 +122,9 @@ class PollingTaskSource:
         """Poll for tasks, passing them to 'task_consumer'."""
         def got_task(task):
             if task is not None:
+                # Note that we deliberately throw away the return value. The
+                # task and the consumer need to figure out how to get output
+                # back to the end user.
                 task_consumer.taskStarted(task)
         d = defer.maybeDeferred(self._task_producer)
         d.addCallbacks(got_task, task_consumer.taskProductionFailed)
