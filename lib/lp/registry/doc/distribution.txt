@@ -174,7 +174,7 @@ Both functions return DistributionSourcePackageCache objects, which
 makes it very easy to associate the binary name with its source.
 
 Searching for an exact match on a valid binary name returns the
-exected results:
+expected results:
 
     >>> results = ubuntu.searchBinaryPackages(
     ...     "mozilla-firefox", exact_match=True)
