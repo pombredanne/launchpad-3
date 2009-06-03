@@ -187,7 +187,7 @@ package:
     >>> distro_pkg_search_view = create_initialized_view(
     ...     ubuntu, name="+search", form={'text': 'moz'})
     >>> distro_pkg_search_view.matching_binary_names
-    {u'mozilla-firefox': u'mozilla-firefox'}
+    {u'mozilla-firefox': u'mozilla-firefox, mozilla-firefox-data'}
 
 The matching_binary_names property uses a helper method
 'listFirstFiveMatchingNames' which ensures only the first five matching
@@ -199,6 +199,7 @@ names match:
     ...     'mozilla-firefox mozilla-data moziki '
     ...     'limozine moza lamoz') # doctest: -ELLIPSIS
     mozilla-firefox, mozilla-data, moziki, limozine, moza, ...
+
 
 Substring matches
 =================

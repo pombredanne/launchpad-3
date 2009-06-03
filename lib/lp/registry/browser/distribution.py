@@ -639,15 +639,12 @@ class DistributionPackageSearchView(PackageSearchViewBase):
         """Returns a comma-separated list of the first five matching items"""
         name_list = space_separated_list.split(' ')
 
-        more_than_five = False
-        if len(name_list) > 5:
-            more_than_five = True
-            name_list = name_list[:5]
-
         matching_names = [
             name for name in name_list if match_text in name]
 
-        if more_than_five:
+        if len(matching_names) > 5:
+            more_than_five = True
+            matching_names = matching_names[:5]
             matching_names.append('...')
 
         return ", ".join(matching_names)
