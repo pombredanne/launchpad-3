@@ -22,7 +22,7 @@
             <li><a href="bugs" accesskey="3">Cross-project bug tracking</a></li>
             <li><a href="branch-hosting-tracking" accesskey="4">Code hosting and review</a></li>
             <li><a href="translation" accesskey="5">Web-based translation</a></li>
-            <li><a href="community" accesskey="6">Community building</a></li>
+            <li><a href="community" accesskey="6">Mailing lists and teams</a></li>
             <li><a href="ppa" accesskey="7">Software distribution</a></li>
             <li><a href="community-support" accesskey="8">Community support</a></li>
             <li><a href="api" accesskey="9">Beta: web services API</a></li>
