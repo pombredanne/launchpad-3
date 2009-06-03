@@ -5,7 +5,7 @@
     <meta content="Launchpad is a supermarket of free software projects. As a project owner, you can tell the world everything they need to know about your work: where you track bugs, where you host your code, who&rsquo;s involved, the details of your release plans and more. Free software community members and other projects can use Launchpad to either directly learn information about your project or use Launchpad&rsquo;s extensive search to discover your work." name="description"/>
     <meta content="canonical, launchpad, tour" name="keywords"/>
     <meta content="en-US" name="language"/>
-    <title>Launchpad tour</title>
+    <title>Commercial subscriptions and joining Launchpad &mdash; Launchpad tour</title>
     <style media="all" type="text/css">
         @import "launchpad-tour.css";
     </style>
@@ -14,6 +14,10 @@
     <script type="text/javascript" src="selector.js"></script>
 </head>
 <body>
+
+    
+
+
     <div id="container">
         <p class="page-number">11 of 11</p>
         <ul id="navigation-drop-down">

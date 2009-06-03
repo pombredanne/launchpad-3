@@ -49,7 +49,7 @@
             </ul>
 
             <div class="clear"></div>
-            <div id="left-link-holder"><strong>Need Launchpad for a commercial project?</strong><br /><a href="mailto:feedback@launchpad.net">Talk to us about our commercial services &gt;</a></div>
+            <div id="left-link-holder"><strong>Need Launchpad for a commercial project?</strong><br /><a href="join-launchpad#commercial">Read about commercial subscriptions &gt;</a></div>
             <div id="link-holder"><a href="https://launchpad.net/+login">Create your Launchpad account &gt;</a><br /><a href="https://launchpad.net/projects/+new">Add your project to Launchpad &gt;</a></div>
             
         </div>
@@ -75,9 +75,7 @@
                          
                          There's also everything else you need in a bug tracker: web, email and API interfaces, links between bugs and fixes, team-based delegation and more.
                         </p>
-                        <ul class="further-links">
-                            <li><a href="bugs" accesskey="e" tabindex="3">More about bug tracking</a></li>
-                        </ul>
+                        <p style="float: right;"><a href="bugs" accesskey="e" tabindex="3">More about bug tracking &gt;</a></p>
                     </div>
                     <div class="block odd">
                         <h3>Code hosting and review</h3>
@@ -87,15 +85,13 @@
                         </p>
                         <p>
                             
-                         Launchpad and the <a href="http://bazaar-vcs.org/">Bazaar</a> distributed versional control system strip away the barriers to contributing to your project. In just a few key strokes anyone can create their own local branch of your trunk with full version control.<br /><br />
+                         Launchpad and <a href="http://bazaar-vcs.org/">Bazaar</a> distributed versional control strip away the barriers to contributing to your project. In just a few key strokes anyone can create their own local branch of your trunk with full version control.<br /><br />
                          
                          When they're ready, they can upload their branch to Launchpad and propose it for merging back into your trunk. Code review &mdash; by web and email &mdash; gives you a public forum to discuss and approve or reject the merge.<br /><br />
                          
-                         You can even use Launchpad to import CVS and Subversion repositories into Bazaar branches.
+                         You can even use Launchpad to import git, CVS and Subversion repositories into Bazaar branches.
                         </p>
-                        <ul class="further-links">
-                            <li><a href="branch-hosting-tracking" accesskey="f" tabindex="4">More about code hosting and tracking</a></li>
-                            <li><a href="code-review" accesskey="g" tabindex="5">More about code review</a></li>
+                        <p style="float: right;"><a href="branch-hosting-tracking" accesskey="f" tabindex="4">More about code hosting and review &gt;</a></p>
                         </ul>
                     </div>
                     <div class="clear"></div>
@@ -112,16 +108,14 @@
                             <img src="images/home/screens/translations.jpg" alt="Translations" />
                         </p>
                         <p>
-                            See your software translated by a community of over 40,000 working in 272 languages.<br /><br />
+                            See your software translated by a community of over 35,000 working in 272 languages.<br /><br />
                             
                             Launchpad makes translation easy for everyone. Translators get a simple web interface, with automatic suggestions from a library of more than 16 million strings.<br /><br />
                             You, as project owner, decide the balance between openness and quality. And you get standard GNU GetText files for integration with your software.<br /><br />
                             
 
-                        </p>
-                        <ul class="further-links">
-                            <li><a href="translation" accesskey="h" tabindex="6">More about translations</a></li>
-                        </ul>
+                        </p><br />
+                        <p style="float: right;"><a href="translation" accesskey="h" tabindex="5">More about translations &gt;</a></p>
                     </div>
                     <div class="block odd">
                         <h3>Ubuntu package building and hosting</h3>
@@ -134,9 +128,7 @@
                             
                             Whether you're publishing experimental builds, backports or betas, your Personal Package Archive lets end-users install your packages using the tools they already know and with automatic updates.
                         </p>
-                        <ul class="further-links">
-                            <li><a href="ppa" accesskey="i" tabindex="7">More about package hosting</a></li>
-                        </ul>
+                        <p style="float: right;"><a href="ppa" accesskey="i" tabindex="6">More about package hosting &gt;</a></p>
                     </div>
                     <div class="clear"></div>
                 </div>
@@ -156,9 +148,7 @@
                             
                             Target chunks of work to forthcoming releases, see who&rsquo;s working on them and track their progress.
                         </p>
-                        <ul class="further-links">
-                            <li><a href="feature-tracking" accesskey="j" tabindex="8">More about specification tracking</a></li>
-                        </ul>
+                        <p style="float: right;"><a href="feature-tracking" accesskey="j" tabindex="7">More about specification tracking &gt;</a></p>
                     </div>
                     <div class="block odd">
                         <h3>Answers &ndash; community support</h3>
@@ -171,9 +161,7 @@
                             
                             When you come across common questions add them to your FAQ library and you get a searchable knowledge base for free. If a support request is actually a bug, no problem: one click and it becomes a bug report.
                         </p>
-                        <ul class="further-links">
-                            <li><a href="community-support" accesskey="k" tabindex="9">More about community support</a></li>
-                        </ul>
+                       <p style="float: right;"><a href="community-support" accesskey="k" tabindex="9">More about community support &gt;</a></p>
                     </div>
                     <div class="clear"></div>
                 </div>

@@ -50,7 +50,7 @@
         <div id="page-intro-bottom"></div>
         <ul id="secondary-navigation">
             <li class="button-next">
-                <a href="code-review" accesskey="d" tabindex="2">Next</a>
+                <a href="translation" accesskey="d" tabindex="2">Next</a>
             </li>
         </ul>
         <div id="further-information">
@@ -116,7 +116,7 @@ Thanks to Bazaar&rsquo;s workflow flexibility, all team members can commit to a 
         </div>
         <ul id="footer-navigation">
             <li class="button-next">
-                <a href="code-review" accesskey="e" tabindex="3">Next</a>
+                <a href="translation" accesskey="e" tabindex="3">Next</a>
             </li>
             <li class="copyright">
                 &copy; 2004-2009 Canonical Ltd. <a href="https://help.launchpad.net/Legal" accesskey="i" tabindex="7">Terms of Use</a> &#124; <a href="https://help.launchpad.net/Feedback" accesskey="j" tabindex="8">Feedback</a> &#124; <a href="https://answers.launchpad.net/launchpad-project/+faqs" accesskey="k" tabindex="9">FAQ</a>
