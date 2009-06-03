@@ -7,7 +7,6 @@ __metaclass__ = type
 import unittest
 
 from twisted.internet.defer import Deferred
-from twisted.internet.interfaces import IReactorTime
 from twisted.internet.task import Clock
 
 from zope.interface import implements
@@ -15,26 +14,6 @@ from zope.interface import implements
 from canonical.twistedsupport.task import (
     ITaskConsumer, ITaskSource, PollingTaskSource)
 from lp.testing import TestCase
-
-
-class BrokenClock:
-    """A deliberately broken clock to ensure tests do not invoke the reactor.
-
-    We don't want tests to invoke the reactor, because that is changing global
-    state.
-    """
-
-    implements(IReactorTime)
-
-    def _reactor_call(self, *args, **kwargs):
-        raise AssertionError(
-            'Test should not use the reactor: (args=%s, kwargs=%s)'
-            % (args, kwargs))
-
-    callLater = _reactor_call
-    seconds = _reactor_call
-    cancelCallLater = _reactor_call
-    getDelayedCalls = _reactor_call
 
 
 class NoopTaskConsumer:
