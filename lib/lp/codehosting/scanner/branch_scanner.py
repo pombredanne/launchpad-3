@@ -98,13 +98,19 @@ class BranchScanner:
             bzrsync = BzrSync(self.ztm, branch, self.log)
         except NotBranchError:
             # The branch is not present in the Warehouse
-            self.logScanFailure(branch, "No branch found")
+            self._failsafe(
+                'Error while logging "No branch found"', None,
+                self.logScanFailure, branch, "No branch found")
             return
         try:
             bzrsync.syncBranchAndClose()
         except ConnectionError, e:
             # A network glitch occured. Yes, that does happen.
-            self.logScanFailure(branch, "Internal network failure: %s" % e)
+            exception_message = self._safe_str(e, "Unknown connection error")
+            self._failsafe(
+                ('Error while logging: %s' % exception_message), None,
+                self.logScanFailure, branch,
+                "Internal network failure: %s" % e)
 
     def logScanFailure(self, branch, message="Failed to scan"):
         """Log diagnostic for branches that could not be scanned."""
