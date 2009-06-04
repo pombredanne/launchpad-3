@@ -674,7 +674,7 @@ class POFileImporter(FileImporter):
         # we take the importer as the last translator then.
         if upload_header is not None:
             name, email = upload_header.getLastTranslator()
-            self.last_translator = (self._getPersonByEmail(email, name))
+            self.last_translator = self._getPersonByEmail(email, name)
         if self.last_translator is None:
             self.last_translator = (
                 self.translation_import_queue_entry.importer)
