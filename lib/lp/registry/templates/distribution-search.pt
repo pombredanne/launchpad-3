@@ -47,8 +47,8 @@
                 <tal:project define="package package_cache/distributionsourcepackage;
                                      project package/upstream_product">
                 <div>
-                  <a tal:attributes="href package/fmt:url">
-                    <tal:project-icon content="structure project/image:icon" 
+                  <a tal:attributes="href package/fmt:url" class="search-result-link">
+                    <tal:project-icon content="structure project/image:icon"
                          condition="project"/>
                     <tal:package-title content="structure package/title" />
                   </a>
@@ -104,7 +104,7 @@
               </tal:sources> matching your query
               “<tal:query content="view/text">query text</tal:query>”:
             </h2>
-            <div class="upper-batch-nav search-batch">
+            <div style="margin-top:0" class="upper-batch-nav search-batch">
               <tal:navigation
                  replace="structure batchnav/@@+navigation-links-upper"/>
             </div>
@@ -112,17 +112,22 @@
             <ul class="package-matches" tal:condition="batch">
               <li class="pagematch"
                   tal:repeat="package batch">
+                <tal:project define="project package/upstream_product">
                 <div>
+                  <tal:project-icon content="structure project/image:icon"
+                                    condition="project"/>
+
                   <a
                     tal:attributes="href package/fmt:url"
-                    tal:content="structure package/title">Package title</a>
+                    tal:content="structure package/title"
+                    class="search-result-link">Package title</a>
                 </div>
                 <div class="summary">
+                  <p>
                   <tal:summary
-                    tal:define="project package/upstream_product"
-                     tal:condition="project"
+                    tal:condition="project"
                     tal:content="structure project/summary">
-                    A snippet of search result summary text.
+                      A snippet of search result summary text.
                   </tal:summary>
                   <tal:binary-search-only condition="view/search_by_binary_name">
                     <tal:matching-binaries
@@ -132,7 +137,9 @@
                       (Matching binaries: bin-one, bin-two.)
                     </tal:matching-binaries> 
                   </tal:binary-search-only>
+                  </p>
                 </div>
+                </tal:project>
               </li>
             </ul>
 
