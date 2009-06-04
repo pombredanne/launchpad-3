@@ -631,17 +631,6 @@ class POFileImporter(FileImporter):
         self.potemplate = self.pofile.potemplate
 
         upload_header = self.translation_file.header
-        # Get last translator that touched this translation file.
-        # We may not be able to guess it from the translation file, so
-        # we take the importer as the last translator then.
-        if upload_header is not None:
-            name, email = self.translation_file.header.getLastTranslator()
-            self.last_translator = (self._getPersonByEmail(email, name))
-        if self.last_translator is None:
-            self.last_translator = (
-                self.translation_import_queue_entry.importer)
-
-
         if upload_header is not None:
             # Check whether we are importing a new version.
             if self.pofile.isTranslationRevisionDateOlder(upload_header):
@@ -663,8 +652,8 @@ class POFileImporter(FileImporter):
                         'dated %s; the timestamp in the file you uploaded '
                         'is %s.' % (pofile_timestamp, upload_timestamp))
             # Get the timestamp when this file was exported from
-            # Launchpad. If it was not exported from Launchpad, it
-            # will be None.
+            # Launchpad. If it was not exported from Launchpad, it will be
+            # None.
             self.lock_timestamp = (
                 upload_header.launchpad_export_date)
 
@@ -679,6 +668,16 @@ class POFileImporter(FileImporter):
         # Update the header with the new one. If this is an old published
         # file, the new header has been set to None and no update will occur.
         self.pofile.updateHeader(self.translation_file.header)
+
+        # Get last translator that touched this translation file.
+        # We may not be able to guess it from the translation file, so
+        # we take the importer as the last translator then.
+        if upload_header is not None:
+            name, email = upload_header.getLastTranslator()
+            self.last_translator = (self._getPersonByEmail(email, name))
+        if self.last_translator is None:
+            self.last_translator = (
+                self.translation_import_queue_entry.importer)
 
         if self.translation_import_queue_entry.is_published:
             # An unprivileged user wouldn't have been able to upload a
