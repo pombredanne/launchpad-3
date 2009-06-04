@@ -35,6 +35,33 @@ class BranchScanner:
         self.ztm = ztm
         self.log = log
 
+    def _failsafe(self, log_message, default, function, *args, **kwargs):
+        """Run 'function', making sure it doesn't raise an exception.
+
+        :param log_message: The message to log if 'function' raises.
+        :param default: The value to return if 'function' raises.
+        :param function: The function to call, followed by args and kwargs.
+        :return: The return value of 'function', or 'default' if 'function'
+            raises.
+        """
+        try:
+            return function(*args, **kwargs)
+        except (KeyboardInterrupt, SystemExit):
+            raise
+        except:
+            self.log.exception(log_message)
+            return default
+
+    def _safe_str(self, obj, unknown='Error while getting str()'):
+        """Safely get str(obj), logging any exceptions."""
+        try:
+            return str(obj)
+        except (KeyboardInterrupt, SystemExit):
+            raise
+        except:
+            self.log.exception(unknown)
+            return unknown
+
     def scanBranches(self, branches):
         """Scan 'branches'."""
         for branch in branches:
@@ -49,18 +76,9 @@ class BranchScanner:
                 # Bugs or error conditions when scanning any given branch must
                 # not prevent scanning the other branches. Log the error and
                 # keep going.
-                self.logScanFailure(branch, str(e))
-
-                # # We can even get an error while loading the exception
-                # # message.
-                # try:
-                #     exception_message = str(e)
-                # except (KeyboardInterrupt, SystemExit):
-                #     raise
-                # except:
-                #     exception_message = (
-                #         'ERROR WHILE GETTING EXCEPTION MESSAGE')
-                #     self.log.exception(exception_message)
+                self.logScanFailure(
+                    branch, self._safe_str(
+                        e, 'ERROR WHILE GETTING EXCEPTION MESSAGE'))
 
                 # try:
                 #     self.logScanFailure(branch, exception_message)
