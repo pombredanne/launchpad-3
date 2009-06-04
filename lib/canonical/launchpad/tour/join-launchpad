@@ -49,10 +49,10 @@ Launchpad is free of charge to <a href="https://help.launchpad.net/Legal/Project
         <div id="page-intro-bottom"></div>
         <ul id="secondary-navigation">
             <li class="button-prev">
-                <a title="Back to the release management page" href="release-management">Back</a>
+                <a title="Back to the release management page" href="release-management" accesskey="d" tabindex="2">Back</a>
             </li>          
             <li class="button-next">
-                <a href="index" title="Return to the start of the Launchpad tour" accesskey="d" tabindex="2">Start</a>
+                <a href="index" title="Return to the start of the Launchpad tour" accesskey="3" tabindex="3">Start</a>
             </li>
         </ul>
         <div id="further-information">
@@ -107,13 +107,13 @@ Launchpad is free of charge to <a href="https://help.launchpad.net/Legal/Project
         </div>
         <ul id="footer-navigation">
             <li class="button-prev">
-                <a title="Back to the release management page" href="release-management">Back</a>
+                <a title="Back to the release management page" href="release-management" accesskey="f" tabindex="4">Back</a>
             </li>         
             <li class="button-next">
-                <a href="index" title="Return to the start of the Launchpad tour" accesskey="e" tabindex="3">Start</a>
+                <a href="index" title="Return to the start of the Launchpad tour" accesskey="g" tabindex="5">Start</a>
             </li>
              <li class="copyright">
-                &copy; 2004-2009 Canonical Ltd. <a href="https://help.launchpad.net/Legal" accesskey="f" tabindex="4">Terms of Use</a> &#58; <a href="https://help.launchpad.net/Feedback" accesskey="g" tabindex="5">Feedback</a> &#58; <a href="https://answers.launchpad.net/launchpad-project/+faqs" accesskey="h" tabindex="6">FAQ</a>
+                &copy; 2004-2009 Canonical Ltd. <a href="https://help.launchpad.net/Legal" accesskey="h" tabindex="6">Terms of Use</a> &#58; <a href="https://help.launchpad.net/Feedback" accesskey="i" tabindex="7">Feedback</a> &#58; <a href="https://answers.launchpad.net/launchpad-project/+faqs" accesskey="j" tabindex="8">FAQ</a>
             </li>
         </ul>
     </div>

@@ -44,10 +44,10 @@
         <div id="page-intro-bottom"></div>
         <ul id="secondary-navigation">
             <li class="button-prev">
-                <a title="Back to the API page" href="api">Back</a>
+                <a title="Back to the API page" href="api" accesskey="d" tabindex="2">Back</a>
             </li>        
             <li class="button-next">
-                <a href="release-management" accesskey="d" tabindex="2" title="Read about managing software releases">Next</a>
+                <a href="release-management" accesskey="e" tabindex="3" title="Read about managing software releases">Next</a>
             </li>
         </ul>
         <div id="further-information">
@@ -98,13 +98,13 @@
         </div>
         <ul id="footer-navigation">
             <li class="button-prev">
-                <a title="Back to the API page" href="api">Back</a>
+                <a title="Back to the API page" href="api" accesskey="f" tabindex="4">Back</a>
             </li>
             <li class="button-next">
-                <a href="release-management" accesskey="e" tabindex="3" title="Read about managing software releases">Next</a>
+                <a href="release-management" accesskey="g" tabindex="5" title="Read about managing software releases">Next</a>
             </li>
             <li class="copyright">
-                &copy; 2004-2009 Canonical Ltd. <a href="https://help.launchpad.net/Legal" tabindex="4" accesskey="f">Terms of Use</a> &#58; <a href="https://help.launchpad.net/Feedback" tabindex="5" accesskey="g">Feedback</a> &#58; <a href="https://answers.launchpad.net/launchpad-project/+faqs" tabindex="6" accesskey="h">FAQ</a>
+                &copy; 2004-2009 Canonical Ltd. <a href="https://help.launchpad.net/Legal" accesskey="h" tabindex="6">Terms of Use</a> &#58; <a href="https://help.launchpad.net/Feedback" accesskey="i" tabindex="7">Feedback</a> &#58; <a href="https://answers.launchpad.net/launchpad-project/+faqs" accesskey="j" tabindex="8">FAQ</a>
             </li>
         </ul>
     </div>

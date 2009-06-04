@@ -51,10 +51,10 @@ Launchpad&rsquo;s extensive search to discover your work.
         <div id="page-intro-bottom"></div>
         <ul id="secondary-navigation">
             <li class="button-prev">
-                <a title="Back to the spec tracking page" href="feature-tracking">Back</a>
+                <a title="Back to the spec tracking page" href="feature-tracking" accesskey="d" tabindex="2">Back</a>
             </li>        
             <li class="button-next">
-                <a href="join-launchpad" title="Read about commercial subscriptions and free access to Launchpad" accesskey="d" tabindex="2">Next</a>
+                <a href="join-launchpad" title="Read about commercial subscriptions and free access to Launchpad" accesskey="e" tabindex="3">Next</a>
             </li>
         </ul>
         <div id="further-information">
@@ -90,13 +90,13 @@ Launchpad calls these <em>series</em> and helps you to organise your work &mdash
         </div>
         <ul id="footer-navigation">
             <li class="button-prev">
-                <a title="Back to the spec tracking page" href="feature-tracking">Back</a>
+                <a title="Back to the spec tracking page" href="feature-tracking" accesskey="f" tabindex="4">Back</a>
             </li> 
             <li class="button-next">
-                <a href="join-launchpad" title="Read about commercial subscriptions and free access to Launchpad" accesskey="e" tabindex="3" title="Read about commercial subscriptions and free access to Launchpad">Next</a>
+                <a href="join-launchpad" title="Read about commercial subscriptions and free access to Launchpad" accesskey="g" tabindex="5" title="Read about commercial subscriptions and free access to Launchpad">Next</a>
             </li>
              <li class="copyright">
-                &copy; 2004-2009 Canonical Ltd. <a href="https://help.launchpad.net/Legal" accesskey="f" tabindex="4">Terms of Use</a> &#58; <a href="https://help.launchpad.net/Feedback" accesskey="g" tabindex="5">Feedback</a> &#58; <a href="https://answers.launchpad.net/launchpad-project/+faqs" accesskey="h" tabindex="6">FAQ</a>
+                &copy; 2004-2009 Canonical Ltd. <a href="https://help.launchpad.net/Legal" accesskey="h" tabindex="6">Terms of Use</a> &#58; <a href="https://help.launchpad.net/Feedback" accesskey="i" tabindex="7">Feedback</a> &#58; <a href="https://answers.launchpad.net/launchpad-project/+faqs" accesskey="j" tabindex="8">FAQ</a>
             </li>
         </ul>
     </div>

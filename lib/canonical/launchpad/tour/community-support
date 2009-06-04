@@ -46,10 +46,10 @@
         <div id="page-intro-bottom"></div>
         <ul id="secondary-navigation">
             <li class="button-prev">
-                <a href="ppa" title="Back to the user support tracking page">Back</a>
+                <a href="ppa" title="Back to the user support tracking page" tabindex="2" accesskey="d">Back</a>
             </li>        
             <li class="button-next" title="Read about Launchpad's web services API">
-                <a href="api" tabindex="2" accesskey="d">Next</a>
+                <a href="api" tabindex="3" accesskey="e">Next</a>
             </li>
         </ul>
         <div id="further-information">
@@ -99,13 +99,13 @@
         </div>
         <ul id="footer-navigation">
           <li class="button-prev">
-                <a href="ppa" title="Back to the user support tracking page">Back</a>
+                <a href="ppa" title="Back to the user support tracking page" tabindex="4" accesskey="f">Back</a>
             </li> 
             <li class="button-next" title="Read about Launchpad's web services API">
-                <a href="api" tabindex="3" accesskey="e">Next</a>
+                <a href="api" tabindex="5" accesskey="g">Next</a>
             </li>
             <li class="copyright">
-                &copy; 2004-2009 Canonical Ltd. <a href="https://help.launchpad.net/Legal" tabindex="4" accesskey="f">Terms of Use</a> &#124; <a href="https://help.launchpad.net/Feedback" tabindex="5" accesskey="g">Feedback</a> &#124; <a href="https://answers.launchpad.net/launchpad-project/+faqs" tabindex="6" accesskey="h">FAQ</a>
+                &copy; 2004-2009 Canonical Ltd. <a href="https://help.launchpad.net/Legal" accesskey="h" tabindex="6">Terms of Use</a> &#58; <a href="https://help.launchpad.net/Feedback" accesskey="i" tabindex="7">Feedback</a> &#58; <a href="https://answers.launchpad.net/launchpad-project/+faqs" accesskey="j" tabindex="8">FAQ</a>
             </li>
         </ul>
     </div>
