@@ -275,6 +275,35 @@ class TestParallelLimitedTaskConsumer(TestCase):
             consumer.taskStarted(lambda: None)
         self.assertEqual(['stop'], log)
 
+    def test_passing_working_limit_stops_source(self):
+        # If we have already reached the worker limit, and taskStarted is
+        # called, we tell the source (again, presumably), to stop generating
+        # work.
+        worker_limit = 1
+        consumer = self.makeConsumer(worker_limit=worker_limit)
+        log = []
+        source = LoggingSource(log)
+        consumer.consume(source)
+        del log[:]
+        consumer.taskStarted(lambda: None)
+        # Reached the limit.
+        self.assertEqual(['stop'], log)
+        del log[:]
+        # Passed the limit.
+        consumer.taskStarted(lambda: None)
+        self.assertEqual(['stop'], log)
+
+    def test_run_task_even_though_passed_limit(self):
+        # If the source sends us work to do even though we've passed our
+        # concurrency limit, we'll do the work anyway. We cannot rely on the
+        # source sending us the work again.
+        log = []
+        consumer = self.makeConsumer(worker_limit=1)
+        consumer.consume(LoggingSource([]))
+        consumer.taskStarted(lambda: log.append('task1'))
+        consumer.taskStarted(lambda: log.append('task2'))
+        self.assertEqual(['task1', 'task2'], log)
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
