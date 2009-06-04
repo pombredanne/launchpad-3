@@ -123,7 +123,9 @@
       <script type="text/javascript"
               tal:attributes="src string:${yui}/node/node.js"></script>
       <script type="text/javascript"
-              tal:attributes="src string:${yui}/dump/dump.js"></script>
+              tal:attributes="src string:${yui}/io/io.js"></script>
+      <script type="text/javascript"
+              tal:attributes="src string:${yui}/io/io-base.js"></script>
       <script type="text/javascript"
               tal:attributes="src string:${yui}/io/io.js"></script>
       <script type="text/javascript"

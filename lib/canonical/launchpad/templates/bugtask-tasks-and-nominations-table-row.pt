@@ -59,7 +59,7 @@
     </tal:conjoined-task>
 
     <tal:not-conjoined-task condition="not:is_conjoined_slave">
-    <td style="width: 15em; vertical-align: middle">
+    <td style="width: 20%; vertical-align: middle">
       <div class="status-content"
            style="width: 100%; float: left">
         <a href="+edit"
@@ -75,7 +75,7 @@
     </td>
 
     <td tal:condition="view/user_can_edit_importance"
-        style="width: 15em; vertical-align: middle">
+        style="width: 20%; vertical-align: middle">
       <div class="importance-content"
            style="width: 100%; float: left">
         <a href="+edit"
@@ -101,12 +101,9 @@
     </td>
 
 
-    <td class="icon left right">
-      <metal:expander metal:use-macro="template/macros/expander" />
-    </td>
-
-    <td style="margin: 0; padding: 0; vertical-align: middle">
-      <tal:has_watch condition="context/bugwatch">
+    <td colspan="2"
+        style="margin: 0; padding: 0; 20%; vertical-align: middle"
+        tal:condition="context/bugwatch">
         <div style="text-decoration: none; padding: 0.25em">
           <tal:bugtracker-active
               condition="context/bugwatch/bugtracker/active">
@@ -122,21 +119,34 @@
             Zilla #123
           </a>
         </div>
-      </tal:has_watch>
-      <tal:has_no_watch condition="not: context/bugwatch">
-
-        <tal:has_assignee condition="context/assignee">
-          <a
-            style="display: block; padding: 0.25em; text-decoration: none;"
-            tal:attributes="href context/assignee/fmt:url/+assignedbugs"
-          >
-            <img tal:attributes="src context/assignee/fmt:icon_url" />
-            <tal:name replace="context/assignee/fmt:displayname">
-              assignee.displayname
-            </tal:name>
+    </td>
+    <td colspan="2"
+        style="width: 20%; vertical-align: middle"
+        tal:condition="not: context/bugwatch">
+      <div class="assignee-content"
+           style="width: 100%; float: left">
+        <span class="yui-activator-data-box">
+          <a tal:condition="context/assignee"
+             class="bg-image"
+             href="+edit"
+             tal:attributes="
+               style string: float: left;;
+               background-image: url( ${context/assignee/fmt:icon_url} )">
+            <tal:person-name replace="context/assignee/fmt:displayname" />
           </a>
-        </tal:has_assignee>
-      </tal:has_no_watch>
+          <tal:nobody tal:condition="not: context/assignee">
+            <span style="float: left; margin: 5px">
+              Nobody
+            </span>
+          </tal:nobody>
+        </span>
+        <div style="float: right; margin-right: 0.5em; margin-top: 5px">
+          <a href="+edit" class="yui-activator-act">
+            <img class="editicon" src="/@@/edit-grey" />
+          </a>
+        </div>
+        <div class="yui-activator-message-box yui-activator-hidden"/>
+      </div>
     </td>
 
     <tal:milestoned condition="context/milestone">
