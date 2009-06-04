@@ -137,7 +137,11 @@ class PollingTaskSource:
 
 
 class ParallelLimitedTaskConsumer:
-    """A consumer that runs tasks from a source with limited parallelism."""
+    """A consumer that runs tasks with limited parallelism.
+
+    Assumes that the task source generates tasks that are nullary callables
+    that might return `Deferred`s.
+    """
 
     implements(ITaskSource)
 
