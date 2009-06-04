@@ -24,6 +24,20 @@ class AppendingHandler(logging.Handler):
         self._record_list.append(record)
 
 
+class AttributeFailureWrapper:
+
+    exception_factory = RuntimeError
+
+    def __init__(self, wrapped, failing_attribute):
+        self._wrapped = wrapped
+        self._failing_attribute = failing_attribute
+
+    def __getattr__(self, name):
+        if name == self._failing_attribute:
+            raise self.exception_factory(name)
+        return getattr(self._wrapped, name)
+
+
 class TestErrorHandling(TestCaseWithFactory):
     """Test the error handling in the BranchScanner class.
 
@@ -171,6 +185,19 @@ class TestErrorHandling(TestCaseWithFactory):
         self.scanWithError(
             [self.factory.makeAnyBranch()], 'OOPS', Exception, 'foo')
         self.assertLogged([(logging.ERROR, 'Error while trying to log: foo')])
+
+    def test_branch_id_fail(self):
+        # If an error is raised when we try to get the branch id (it's
+        # possible!) then we still log the error successfully along with an
+        # added note about the failed attribute. The attributes value is
+        # recorded as "UNKNOWN" in the error message.
+        self._oopsid = 'OOPS-FOO'
+        branch = self.factory.makeAnyBranch()
+        failing_branch = AttributeFailureWrapper(branch, 'id')
+        self.scanner.logScanFailure(failing_branch, 'message')
+        self.assertLogged(
+            [(logging.ERROR, "Couldn't get id"),
+             (logging.INFO, 'OOPS-FOO: message (%s)' % branch.unique_name)])
 
 
 def test_suite():
