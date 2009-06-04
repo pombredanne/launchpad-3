@@ -1454,7 +1454,8 @@ class BugTaskSet:
                     "    SELECT BugTag.bug FROM BugTag)")
 
             if zope_isinstance(params.tag, all):
-                # Search for the presence of *all* specified tags.
+                # Search for the presence/absense of *all* specified
+                # tags.
                 tags_template = (
                     "%s (SELECT * FROM BugTag"
                     "     WHERE BugTag.bug = BugTask.bug"
@@ -1467,18 +1468,18 @@ class BugTaskSet:
                     for tag in tags_exclude)
                 extra_clauses.append(' AND '.join(tags_clauses))
             else:
-                # Search for the presence of *any* specified tags.
+                # Search for the presence/absense of *any* specified
+                # tags.
                 if len(tags_exclude) > 0:
                     tags_clauses.append(
                         "BugTask.bug NOT IN ("
-                        "    SELECT BugTag.bug"
-                        "      FROM BugTag"
-                        "     WHERE BugTag.tag IN (%s))" % ','.join(
-                            sqlvalues(*tags_exclude)))
+                        "    SELECT BugTag.bug FROM BugTag"
+                        "     WHERE BugTag.tag IN (%s))" % (
+                            ','.join(quote(tag) for tag in tags_exclude)))
                 if len(tags_include) > 0:
                     tags_clauses.append(
-                        "(BugTag.bug = BugTask.bug AND BugTag.tag %s)" % (
-                            search_value_to_where_condition(tags_include)))
+                        "(BugTag.bug = BugTask.bug AND BugTag.tag IN (%s))" % (
+                            ','.join(quote(tag) for tag in tags_include)))
                     clauseTables.append('BugTag')
                 extra_clauses.append(' OR '.join(tags_clauses))
 
