@@ -150,7 +150,10 @@ class ProductSeriesOverviewMenu(ApplicationMenu):
 
     @enabled_with_permission('launchpad.Edit')
     def link_branch(self):
-        text = 'Link to branch'
+        if self.context.branch is None:
+            text = 'Link to branch'
+        else:
+            text = "Change branch"
         summary = 'The code branch that for this series.'
         return Link('+linkbranch', text, summary, icon='add')
 
