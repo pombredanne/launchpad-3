@@ -162,7 +162,9 @@ class ParallelLimitedTaskConsumer:
 
     def taskStarted(self, task):
         """See `ITaskSource`."""
-        raise NotRunningError(self)
+        if self._task_source is None:
+            raise NotRunningError(self)
+        task()
 
     def taskProductionFailed(self, reason):
         """See `ITaskSource`."""

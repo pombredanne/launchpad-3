@@ -249,6 +249,14 @@ class TestParallelLimitedTaskConsumer(TestCase):
         self.assertRaises(
             NotRunningError, consumer.taskProductionFailed, None)
 
+    def test_taskStarted_runs_task(self):
+        # Calling taskStarted with a task runs that task.
+        log = []
+        consumer = self.makeConsumer()
+        consumer.consume(LoggingSource([]))
+        consumer.taskStarted(lambda: log.append('task'))
+        self.assertEqual(['task'], log)
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
