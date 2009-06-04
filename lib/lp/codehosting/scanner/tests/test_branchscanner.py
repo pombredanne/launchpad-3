@@ -86,7 +86,6 @@ class TestErrorHandling(TestCaseWithFactory):
         self._oopsid = oopsid
         self.scanner.scanBranches(branches)
 
-
     def test_log_unexpected_exception(self):
         # If scanOneBranch raises an unexpected exception, `logScanFailure`
         # will generate an OOPS, and log the error.
@@ -164,6 +163,14 @@ class TestErrorHandling(TestCaseWithFactory):
         # _failsafe logs an error if the given callable raises an error.
         self.scanner._failsafe('log message', 'default', lambda: 1/0)
         self.assertLogged([(logging.ERROR, 'log message')])
+
+    def test_logScanFailure_raises(self):
+        # If logScanFailure raises for whatever reason, we log the error and
+        # keep going.
+        self.scanner.logScanFailure = lambda *args: 1/0
+        self.scanWithError(
+            [self.factory.makeAnyBranch()], 'OOPS', Exception, 'foo')
+        self.assertLogged([(logging.ERROR, 'Error while trying to log: foo')])
 
 
 def test_suite():
