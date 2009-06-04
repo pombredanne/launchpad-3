@@ -65,7 +65,7 @@
                 <div class="furthur-information-block-top"></div>
                 <div class="furthur-information-block-mid">
                     <div class="block">
-                        <h3>Bug tracking</h3>
+                        <h3><a href="bugs">Bug tracking</a></h3>
                         <h4>Sharing code means sharing bugs.</h4>
                         <p class="screen-holder">
                             <img src="images/home/screens/bugs.jpg" alt="Bug tracking" />
@@ -79,7 +79,7 @@
                         <p style="float: right;"><a href="bugs" accesskey="e" tabindex="3">More about bug tracking &gt;</a></p>
                     </div>
                     <div class="block odd">
-                        <h3>Code hosting and review</h3>
+                        <h3><a href="branch-hosting-tracking">Code hosting and review</a></h3>
                         <h4>Democratise your code using Bazaar with Launchpad.</h4>
                         <p class="screen-holder">
                             <img src="images/home/screens/tracking.jpg" alt="Code hosting and tracking" />
@@ -103,7 +103,7 @@
                 <div class="furthur-information-block-top"></div>
                 <div class="furthur-information-block-mid">
                     <div class="block">
-                        <h3>Translations</h3>
+                        <h3><a href="translation">Translations</a></h3>
                         <h4>Translators shouldn&rsquo;t have to be software engineers.</h4>
                         <p class="screen-holder">
                             <img src="images/home/screens/translations.jpg" alt="Translations" />
@@ -119,7 +119,7 @@
                         <p style="float: right;"><a href="translation" accesskey="h" tabindex="5">More about translations &gt;</a></p>
                     </div>
                     <div class="block odd">
-                        <h3>Ubuntu package building and hosting</h3>
+                        <h3><a href="ppa">Ubuntu package building and hosting</a></h3>
                         <h4>Distribute software to Ubuntu users.</h4>
                         <p class="screen-holder">
                             <img src="images/home/screens/hosting.jpg" alt="Package building and hosting" />
@@ -139,7 +139,7 @@
                 <div class="furthur-information-block-top"></div>
                 <div class="furthur-information-block-mid">
                     <div class="block">
-                        <h3>Blueprint &ndash; specification tracking</h3>
+                        <h3><a href="feature-tracking">Blueprint &ndash; specification tracking</a></h3>
                         <h4>Track new features from idea to implementation.</h4>
                         <p class="screen-holder">
                             <img src="images/home/screens/blueprints.jpg" alt="Blueprint - specification tracking" />
@@ -152,7 +152,7 @@
                         <p style="float: right;"><a href="feature-tracking" accesskey="j" tabindex="7">More about specification tracking &gt;</a></p>
                     </div>
                     <div class="block odd">
-                        <h3>Answers &ndash; community support</h3>
+                        <h3><a href="community-support">Answers &ndash; community support</a></h3>
                         <h4>Help your users to help themselves.</h4>
                         <p class="screen-holder">
                             <img src="images/home/screens/answers.jpg" alt="Answers - community support" />
