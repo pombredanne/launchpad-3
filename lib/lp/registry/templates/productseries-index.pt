@@ -84,7 +84,7 @@
       This series is packaged in the following places:
     </p>
 
-    <ul>
+    <ul id="distribution-packaging">
       <li tal:repeat="package context/sourcepackages">
          <tal:distro tal:content="package/distroseries/distribution/displayname">
            Ubuntu
@@ -104,7 +104,7 @@
 
     <h2 style="margin-top: 2em;">Related series</h2>
 
-    <ul>
+    <ul id="releated-series">
       <li>
         <a tal:attributes="href context/product/fmt:url/+series">All
           series for the
