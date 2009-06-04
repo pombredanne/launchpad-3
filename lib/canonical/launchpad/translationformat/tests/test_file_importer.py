@@ -9,7 +9,7 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.interfaces import (
-    IPersonSet, ITranslationImportQueue)
+    IPersonSet, ITranslationImportQueue, OutdatedTranslationError)
 from canonical.launchpad.interfaces.translationgroup import (
     TranslationPermission)
 from lp.testing.factory import LaunchpadObjectFactory
@@ -458,7 +458,43 @@ class FileImporterTestCase(unittest.TestCase):
             po_importer.translation_import_queue_entry.importer)
 
 
+class CreateFileImporterTestCase(unittest.TestCase):
+    """Class test for translation importer creation."""
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        self.factory = LaunchpadObjectFactory()
+        self.translation_import_queue = getUtility(ITranslationImportQueue)
+        self.importer_person = self.factory.makePerson()
+
+    def _make_queue_entry(self, is_imported):
+        pofile = self.factory.makePOFile('eo')
+        # Create a header with a newer date than what is found in
+        # TEST_TRANSLATION_FILE.
+        pofile.header = ("PO-Revision-Date: 2009-01-05 13:22+0000\n"
+                         "Content-Type: text/plain; charset=UTF-8\n")
+        po_content = TEST_TRANSLATION_FILE % ("", "foo", "bar")
+        queue_entry = self.translation_import_queue.addOrUpdateEntry(
+            pofile.path, po_content, is_imported, self.importer_person,
+            productseries=pofile.potemplate.productseries, pofile=pofile)
+        transaction.commit()
+        return queue_entry
+
+    def test_raises_OutdatedTranslationError_on_user_uploads(self):
+        queue_entry = self._make_queue_entry(False)
+        self.assertRaises(OutdatedTranslationError, POFileImporter,
+            queue_entry, GettextPOImporter(), None )
+
+    def test_not_raises_OutdatedTranslationError_on_imported_uploads(self):
+        queue_entry = self._make_queue_entry(True)
+        try:
+            POFileImporter(queue_entry, GettextPOImporter(), None )
+        except OutdatedTranslationError:
+            self.fail("OutdatedTranslationError raised on imported upload.")
+
+
 def test_suite():
     suite = unittest.TestSuite()
     suite.addTest(unittest.makeSuite(FileImporterTestCase))
+    suite.addTest(unittest.makeSuite(CreateFileImporterTestCase))
     return suite
