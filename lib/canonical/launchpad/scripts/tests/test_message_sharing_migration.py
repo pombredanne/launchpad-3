@@ -739,7 +739,7 @@ class TestTranslationMessageMerging(TestCaseWithFactory,
         self.assertEqual(contented_message.submitter, translator)
         poft = poftset.getForPersonPOFile(translator, self.trunk_pofile)
         self.assertEqual(poft.latest_message, contented_message)
-        
+
         # Then there's the pair of POTMsgSets that are identical between
         # trunk and stable.  This one is translated only in stable.
         # Merging will transfer that TranslationMessage from
