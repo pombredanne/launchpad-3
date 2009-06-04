@@ -12,7 +12,7 @@ from canonical.launchpad.interfaces import (
     IPersonSet, ITranslationImportQueue, OutdatedTranslationError)
 from canonical.launchpad.interfaces.translationgroup import (
     TranslationPermission)
-from lp.testing.factory import LaunchpadObjectFactory
+from lp.testing import TestCaseWithFactory
 from canonical.launchpad.translationformat.gettext_po_importer import (
     GettextPOImporter)
 from canonical.launchpad.translationformat.translation_import import (
@@ -87,7 +87,7 @@ msgid "%s"
 msgstr "format specifier changes %%s"
 '''  % (TEST_MSGID_ERROR)
 
-class FileImporterTestCase(unittest.TestCase):
+class FileImporterTestCase(TestCaseWithFactory):
     """Class test for translation importer component"""
     layer = LaunchpadZopelessLayer
 
@@ -159,7 +159,7 @@ class FileImporterTestCase(unittest.TestCase):
             template_entry, GettextPOImporter(), None )
 
     def setUp(self):
-        self.factory = LaunchpadObjectFactory()
+        super(FileImporterTestCase, self).setUp()
         self.translation_import_queue = getUtility(ITranslationImportQueue)
         self.importer_person = self.factory.makePerson()
 
@@ -458,12 +458,12 @@ class FileImporterTestCase(unittest.TestCase):
             po_importer.translation_import_queue_entry.importer)
 
 
-class CreateFileImporterTestCase(unittest.TestCase):
+class CreateFileImporterTestCase(TestCaseWithFactory):
     """Class test for translation importer creation."""
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
-        self.factory = LaunchpadObjectFactory()
+        super(CreateFileImporterTestCase, self).setUp()
         self.translation_import_queue = getUtility(ITranslationImportQueue)
         self.importer_person = self.factory.makePerson()
 
@@ -488,13 +488,16 @@ class CreateFileImporterTestCase(unittest.TestCase):
     def test_not_raises_OutdatedTranslationError_on_imported_uploads(self):
         queue_entry = self._make_queue_entry(True)
         try:
-            POFileImporter(queue_entry, GettextPOImporter(), None )
+            importer = POFileImporter(queue_entry, GettextPOImporter(), None )
         except OutdatedTranslationError:
             self.fail("OutdatedTranslationError raised on imported upload.")
 
+    def test_old_published_upload_not_changes_header(self):
+        queue_entry = self._make_queue_entry(True)
+        pofile = queue_entry.pofile
+        old_raw_header = pofile.header
+        importer = POFileImporter(queue_entry, GettextPOImporter(), None )
+        self.assertEqual(old_raw_header, pofile.header)
 
 def test_suite():
-    suite = unittest.TestSuite()
-    suite.addTest(unittest.makeSuite(FileImporterTestCase))
-    suite.addTest(unittest.makeSuite(CreateFileImporterTestCase))
-    return suite
+    return unittest.TestLoader().loadTestsFromName(__name__)
