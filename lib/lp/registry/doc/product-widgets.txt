@@ -233,9 +233,9 @@ license policy.
     >>> html = license_widget()
     >>> soup = BeautifulSoup(html)
     >>> len(License)
-    25
+    26
     >>> len(soup.table('input'))
-    25
+    26
     >>> print soup.a['href']
     https://help.launchpad.net/Legal/ProjectLicensing
 
@@ -330,4 +330,18 @@ The BSD License can be selected.
     ( ) Academic Free License
     ...
     (*) Simplified BSD License
+    ...
+
+There's also a placeholder for when a user knows they want an open source
+license but hasn't yet decided on one.  In this case, the user should not be
+blocked from creating their project.
+
+    >>> form['field.licenses'] = ['DONT_KNOW']
+    >>> request = LaunchpadTestRequest(form=form)
+    >>> license_widget = LicenseWidget(licenses_field, vtype, request)
+
+    >>> print_checked_items(license_widget())
+    ( ) Academic Free License
+    ...
+    (*) I don't know yet
     ...
