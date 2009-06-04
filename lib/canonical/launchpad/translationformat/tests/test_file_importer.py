@@ -467,7 +467,7 @@ class CreateFileImporterTestCase(TestCaseWithFactory):
         self.translation_import_queue = getUtility(ITranslationImportQueue)
         self.importer_person = self.factory.makePerson()
 
-    def _make_queue_entry(self, is_imported):
+    def _make_queue_entry(self, is_published):
         pofile = self.factory.makePOFile('eo')
         # Create a header with a newer date than what is found in
         # TEST_TRANSLATION_FILE.
@@ -475,7 +475,7 @@ class CreateFileImporterTestCase(TestCaseWithFactory):
                          "Content-Type: text/plain; charset=UTF-8\n")
         po_content = TEST_TRANSLATION_FILE % ("", "foo", "bar")
         queue_entry = self.translation_import_queue.addOrUpdateEntry(
-            pofile.path, po_content, is_imported, self.importer_person,
+            pofile.path, po_content, is_published, self.importer_person,
             productseries=pofile.potemplate.productseries, pofile=pofile)
         transaction.commit()
         return queue_entry
@@ -485,12 +485,12 @@ class CreateFileImporterTestCase(TestCaseWithFactory):
         self.assertRaises(OutdatedTranslationError, POFileImporter,
             queue_entry, GettextPOImporter(), None )
 
-    def test_not_raises_OutdatedTranslationError_on_imported_uploads(self):
+    def test_not_raises_OutdatedTranslationError_on_published_uploads(self):
         queue_entry = self._make_queue_entry(True)
         try:
             importer = POFileImporter(queue_entry, GettextPOImporter(), None )
         except OutdatedTranslationError:
-            self.fail("OutdatedTranslationError raised on imported upload.")
+            self.fail("OutdatedTranslationError raised.")
 
     def test_old_published_upload_not_changes_header(self):
         queue_entry = self._make_queue_entry(True)
@@ -498,6 +498,7 @@ class CreateFileImporterTestCase(TestCaseWithFactory):
         old_raw_header = pofile.header
         importer = POFileImporter(queue_entry, GettextPOImporter(), None )
         self.assertEqual(old_raw_header, pofile.header)
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
