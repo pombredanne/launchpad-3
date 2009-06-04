@@ -1466,22 +1466,23 @@ class BugTaskSet:
                 tags_clauses.extend(
                     tags_template % ("NOT EXISTS", quote(tag))
                     for tag in tags_exclude)
-                extra_clauses.append(' AND '.join(tags_clauses))
+                extra_clauses.append(
+                    '(%s)' % ' AND '.join(tags_clauses))
             else:
                 # Search for the presence/absense of *any* specified
                 # tags.
-                if len(tags_exclude) > 0:
+                for tag in tags_exclude:
                     tags_clauses.append(
                         "BugTask.bug NOT IN ("
                         "    SELECT BugTag.bug FROM BugTag"
-                        "     WHERE BugTag.tag IN (%s))" % (
-                            ','.join(quote(tag) for tag in tags_exclude)))
+                        "     WHERE BugTag.tag = %s)" % quote(tag))
                 if len(tags_include) > 0:
                     tags_clauses.append(
                         "(BugTag.bug = BugTask.bug AND BugTag.tag IN (%s))" % (
                             ','.join(quote(tag) for tag in tags_include)))
                     clauseTables.append('BugTag')
-                extra_clauses.append(' OR '.join(tags_clauses))
+                extra_clauses.append(
+                    '(%s)' % ' OR '.join(tags_clauses))
 
         # XXX Tom Berger 2008-02-14:
         # We use StructuralSubscription to determine

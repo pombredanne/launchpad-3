@@ -616,7 +616,7 @@ with an exclamation mark.
     test bug b [test-tag-1]
 
 The any() and all() search combinators are taken into consideration
-when searching for the absense of tags too. The following search says
+when searching for the absence of tags too. The following search says
 "give me bugs that don't have the test-tag-2 tag set *OR* that don't
 have the layout-test tag set".
 
@@ -627,6 +627,7 @@ have the layout-test tag set".
     Firefox install instructions should be complete [doc]
     Firefox crashes when Save As dialog for a nonexistent window is closed []
     Some bug []
+    test bug a [test-tag-1, test-tag-2]
     test bug b [test-tag-1]
 
 Whereas the following search says "give me bugs that don't have the
@@ -639,6 +640,21 @@ test-tag-2 tag set *AND* that don't have the layout-test tag set".
     Firefox crashes when Save As dialog for a nonexistent window is closed []
     Some bug []
     test bug b [test-tag-1]
+
+Searching for the presence of any tags at all is also possible using a
+wildcard. If prefixed with an exclamation mark it searches for the
+absence of tags.
+
+    >>> search_tasks_and_print_bugs(tag=all('*'))
+    Reflow problems with complex page layouts [layout-test]
+    Firefox install instructions should be complete [doc]
+    test bug a [test-tag-1, test-tag-2]
+    test bug b [test-tag-1]
+
+    >>> search_tasks_and_print_bugs(tag=all('!*'))
+    Firefox does not support SVG []
+    Firefox crashes when Save As dialog for a nonexistent window is closed []
+    Some bug []
 
 
 == Searching by date_closed ==
