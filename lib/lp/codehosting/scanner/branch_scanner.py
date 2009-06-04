@@ -54,13 +54,7 @@ class BranchScanner:
 
     def _safe_str(self, obj, unknown='Error while getting str()'):
         """Safely get str(obj), logging any exceptions."""
-        try:
-            return str(obj)
-        except (KeyboardInterrupt, SystemExit):
-            raise
-        except:
-            self.log.exception(unknown)
-            return unknown
+        return self._failsafe(unknown, unknown, str, obj)
 
     def scanBranches(self, branches):
         """Scan 'branches'."""
