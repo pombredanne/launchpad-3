@@ -82,7 +82,7 @@ class MilestoneContextMenu(ContextMenu):
         enabled = (not IProjectMilestone.providedBy(self.context)
                    and self.context.product_release is None)
         return Link(
-            '+addrelease', text, icon='add', summary=summary, enabled=enabled)
+            '+addrelease', text, summary, icon='add', enabled=enabled)
 
     def view_release(self):
         text = 'View release'
@@ -107,7 +107,7 @@ class MilestoneOverviewNavigationMenu(NavigationMenu):
 
 
 class StatusCount:
-    """A helper that stores the count of status for a list of items
+    """A helper that stores the count of status for a list of items.
 
     Items such as `IBugTask` and `ISpecification` can be summarised by
     their status.

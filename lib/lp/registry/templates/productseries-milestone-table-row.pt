@@ -54,7 +54,8 @@
       </tal:no-release>
     </td>
     <td>
-      <tal:summary content="structure milestone/summary/fmt:shorten/80/fmt:text-to-html" />
+      <tal:summary
+        content="structure milestone/summary/fmt:shorten/80/fmt:text-to-html" />
       <tal:bugtasks condition="view/bugtasks">
         <br tal:omit-tag="not: view/milestone/summary" />
         Bugs:
