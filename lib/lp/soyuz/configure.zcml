@@ -802,6 +802,8 @@
         provides="lp.soyuz.interfaces.packageset.IPackagesetSet">
         <allow
             attributes="
+                __getitem__
+                get
                 getByName
                 getByOwner
                 setsIncludingSource"/>

@@ -29,6 +29,11 @@ setup(
         'python-openid',
         'setuptools',
         'wadllib',
+        # Loggerhead dependencies. These should be removed once
+        # bug 383360 is fixed and we include it as a source dist.
+        'Paste',
+        'PasteDeploy',
+        'SimpleTal'
     ],
     url='https://launchpad.net/',
     classifiers=[

@@ -5,8 +5,10 @@ __metaclass__ = type
 
 from datetime import datetime, timedelta
 from pprint import pformat
+import copy
 import os
 import shutil
+import subprocess
 import tempfile
 import unittest
 
@@ -593,3 +595,22 @@ def time_counter(origin=None, delta=timedelta(seconds=5)):
     while True:
         yield now
         now += delta
+
+
+def run_script(cmd_line):
+    """Run the given command line as a subprocess.
+
+    Return a 3-tuple containing stdout, stderr and the process' return code.
+
+    The environment given to the subprocess is the same as the one in the
+    parent process except for the PYTHONPATH, which is removed so that the
+    script, passed as the `cmd_line` parameter, will fail if it doesn't set it
+    up properly.
+    """
+    env = copy.copy(os.environ)
+    env.pop('PYTHONPATH', None)
+    process = subprocess.Popen(
+        cmd_line, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE, env=env)
+    (out, err) = process.communicate()
+    return out, err, process.returncode

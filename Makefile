@@ -58,15 +58,12 @@ check_loggerhead_on_merge:
 	make -C sourcecode/loggerhead check PYTHON=${PYTHON} \
 		PYTHON_VERSION=${PYTHON_VERSION} PYTHONPATH=$(PYTHONPATH)
 
-_pqm_flag:
-	touch _pqm_flag
-
-check_merge: _pqm_flag $(PY)
+check_merge: $(PY)
 	[ `PYTHONPATH= bzr status -S database/schema/ | \
 		grep -v "\(^P\|pending\|security.cfg\|Makefile\|unautovacuumable\|_pythonpath.py\)" | wc -l` -eq 0 ]
 	${PY} lib/canonical/tests/test_no_conflict_marker.py
 
-check_db_merge: _pqm_flag $(PY)
+check_db_merge: $(PY)
 	${PY} lib/canonical/tests/test_no_conflict_marker.py
 
 # This can be removed once we move to zc.buildout and we have versioned
@@ -80,6 +77,11 @@ check: build
 	# Run all tests. test_on_merge.py takes care of setting up the
 	# database.
 	${PY} -t ./test_on_merge.py $(VERBOSITY)
+
+check_mailman: build
+	# Run all tests, including the Mailman integration
+	# tests. test_on_merge.py takes care of setting up the database.
+	${PY} -t ./test_on_merge.py $(VERBOSITY) --layer=MailmanLayer
 
 lint:
 	@bash ./utilities/lint.sh
@@ -105,14 +107,10 @@ eggs:
 	# deployment we create this ourselves.
 	mkdir eggs
 
-# We touch the _pqm_flag file when we want pqm to check out the
-# download cache sources.  Normally, we want a missing download-cache
-# to raise an error, so developers know to do the usual set-up.
 download-cache:
 	@echo "Missing ./download-cache."
 	@echo "Developers: please run utilities/link-external-sourcecode."
-	[ -e _pqm_flag ]
-	bzr co lp:lp-source-dependencies download-cache
+	@exit 1
 
 # The download-cache dependency comes *before* eggs so that developers get the
 # warning before the eggs directory is made.  The target for the eggs directory
@@ -315,4 +313,4 @@ ID: compile
 	start run ftest_build ftest_inplace test_build test_inplace pagetests\
 	check check_loggerhead_on_merge  check_merge check_sourcecode_merge \
 	schema default launchpad.pot check_merge_ui pull scan sync_branches\
-	reload-apache hosted_branches check_db_merge
+	reload-apache hosted_branches check_db_merge check_mailman
