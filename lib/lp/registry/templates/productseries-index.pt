@@ -39,7 +39,8 @@
         <th>Drivers:</th>
         <td>
         <tal:per_driver repeat="driver context/drivers">
-          <a tal:replace="structure driver/fmt:link">driver</a>
+          <a tal:replace="structure driver/fmt:link">driver</a><tal:comma
+            condition="not: repeat/driver/end">,</tal:comma>
         </tal:per_driver>
         <a tal:replace="structure overview_menu/driver/fmt:icon" />
         </td>

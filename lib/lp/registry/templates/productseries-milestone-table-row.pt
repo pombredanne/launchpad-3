@@ -58,7 +58,7 @@
       <tal:bugtasks condition="view/bugtasks">
         <br tal:omit-tag="not: view/milestone/summary" />
         Bugs:
-        <tal:statuses repeat="count_status view/bugtask_status_count_text">
+        <tal:statuses repeat="count_status view/bugtask_status_counts">
           <span tal:attributes="class string:status${count_status/status/name}">
             <strong tal:content="count_status/count">2</strong>
             <tal:status replace="count_status/status/title" /><tal:comma
@@ -69,7 +69,7 @@
       <tal:blueprints condition="view/specifications">
         <br tal:omit-tag="not: view/bugtasks" />
         Blueprints:
-        <tal:statuses repeat="count_status view/specification_status_count_text">
+        <tal:statuses repeat="count_status view/specification_status_counts">
           <span tal:attributes="class string:specdelivery${count_status/status/name}">
             <strong tal:content="count_status/count">2</strong>
             <tal:status replace="count_status/status/title" /><tal:comma
