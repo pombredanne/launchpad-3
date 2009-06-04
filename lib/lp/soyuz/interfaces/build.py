@@ -31,7 +31,7 @@ from lp.soyuz.interfaces.sourcepackagerelease import (
     ISourcePackageRelease)
 from lazr.restful.fields import Reference
 from lazr.restful.declarations import (
-    export_as_webservice_entry, exported)
+    export_as_webservice_entry, exported, export_write_operation)
 
 
 class BuildStatus(DBEnumeratedType):
@@ -120,10 +120,8 @@ incomplete_building_status = (
     )
 
 
-class IBuild(Interface):
-    """A Build interface"""
-    export_as_webservice_entry()
-
+class IBuildView(Interface):
+    """A Build interface for items requiring launchpad.View."""
     id = Int(title=_('ID'), required=True, readonly=True)
 
     datecreated = exported(
@@ -269,13 +267,6 @@ class IBuild(Interface):
         "The PackageUpload for this build, or None if there is "
         "no build.")
 
-    def retry():
-        """Restore the build record to its initial state.
-
-        Build record loses its history, is moved to NEEDSBUILD and a new
-        non-scored BuildQueue entry is created for it.
-        """
-
     def updateDependencies():
         """Update the build-dependencies line within the targeted context."""
 
@@ -356,6 +347,27 @@ class IBuild(Interface):
 
         :return the corresponding `ILibraryFileAlias` if the file was found.
         """
+
+
+class IBuildEdit(Interface):
+    """A Build interface for items requiring launchpad.Edit."""
+
+    @export_write_operation()
+    def retry():
+        """Restore the build record to its initial state.
+
+        Build record loses its history, is moved to NEEDSBUILD and a new
+        non-scored BuildQueue entry is created for it.
+        """
+
+
+class IBuildAdmin(Interface):
+    """A Build interface for items requiring launchpad.Admin."""
+
+
+class IBuild(IBuildView, IBuildEdit, IBuildAdmin):
+    """A Build interface"""
+    export_as_webservice_entry()
 
 
 class BuildSetStatus(EnumeratedType):
