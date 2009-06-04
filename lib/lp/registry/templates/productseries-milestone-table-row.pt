@@ -45,7 +45,7 @@
         </tal:cannot-edit>
         <tal:can-edit condition="milestone_menu/create_release/enabled">
           <a tal:replace="structure milestone_menu/create_release/fmt:icon" />
-          <a 
+          <a
             tal:attributes="href milestone_menu/create_release/fmt:url;
                             title  milestone_menu/create_release/summary"
             >Release now</a>
