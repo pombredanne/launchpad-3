@@ -486,23 +486,23 @@ class ObjectImageDisplayAPI:
         # This should be refactored.  We shouldn't have to do type-checking
         # using interfaces.
         if IProduct.providedBy(context):
-            return 'product'
+            return 'sprite product'
         elif IProject.providedBy(context):
-            return 'project'
+            return 'sprite project'
         elif IPerson.providedBy(context):
             if context.isTeam():
-                return 'team'
+                return 'sprite team'
             else:
                 if context.is_valid_person:
-                    return 'person'
+                    return 'sprite person'
                 else:
-                    return 'person-inactive'
+                    return 'sprite person-inactive'
         elif IDistribution.providedBy(context):
-            return 'distribution'
+            return 'sprite distribution'
         elif ISprint.providedBy(context):
-            return 'meeting'
+            return 'sprite meeting'
         elif IBug.providedBy(context):
-            return 'bug'
+            return 'sprite bug'
         return None
 
     def default_logo_resource(self, context):
@@ -558,6 +558,10 @@ class ObjectImageDisplayAPI:
             icon = '<img alt="" width="14" height="14" src="%s" />' % icon_url
         else:
             return None
+
+    #XXX: Remove me!
+    def icon(self):
+        return None
 
     def logo(self):
         """Return the appropriate <img> tag for this object's logo.
@@ -946,7 +950,7 @@ class PersonFormatterAPI(ObjectFormatterAPI):
         #image_url = ObjectImageDisplayAPI(person).icon_url(rootsite=rootsite)
         custom_icon = ObjectImageDisplayAPI(person)._get_custom_icon()
         if(custom_icon is None):
-            return (u'<a href="%s" class="bg-image person">%s</a>') % (
+            return (u'<a href="%s" class="sprite person">%s</a>') % (
                 url, cgi.escape(person.browsername))
         else:
             return (u'<a href="%s" class="bg-image" '
@@ -2609,8 +2613,8 @@ class FormattersAPI:
             # their email addresses.
             if person is not None and not person.hide_email_addresses:
                 person_formatter = PersonFormatterAPI(person)
-                image_html = ObjectImageDisplayAPI(person).icon()
-                text = text.replace(address, '<a href="%s">%s&nbsp;%s</a>' % (
+                css_sprite = ObjectImageDisplayAPI(person).sprites()
+                text = text.replace(address, '<a href="%s" class="%s">&nbsp;%s</a>' % (
                     canonical_url(person), image_html, address))
         return text
 
