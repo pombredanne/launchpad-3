@@ -165,13 +165,8 @@ def check_archive_conflicts(source, archive, series, include_binaries):
         # next publishing cycle to happen before copying the package.
         # The copy is only allowed when all built binaries are published,
         # this way there is no chance of a conflict.
-
-        # XXX cprov 20090602: SSPH.getUnpublishedBuilds() returns a
-        # DecoratedResultSet for which count() doesn't work, since its
-        # original ResultSet is proxied. Not a big problem here since
-        # the result set is usually very small (always <= 7 records).
-        unpublished_builds = list(candidate.getUnpublishedBuilds())
-        if (len(unpublished_builds) > 0 and
+        unpublished_builds = candidate.getUnpublishedBuilds()
+        if (unpublished_builds.count() > 0 and
             candidate.status in active_publishing_status):
             raise CannotCopy(
                 "same version has unpublished binaries in the destination "
