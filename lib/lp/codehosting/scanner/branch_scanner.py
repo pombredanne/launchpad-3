@@ -49,27 +49,28 @@ class BranchScanner:
                 # Bugs or error conditions when scanning any given branch must
                 # not prevent scanning the other branches. Log the error and
                 # keep going.
+                self.logScanFailure(branch, str(e))
 
-                # We can even get an error while loading the exception
-                # message.
-                try:
-                    exception_message = str(e)
-                except (KeyboardInterrupt, SystemExit):
-                    raise
-                except:
-                    exception_message = (
-                        'ERROR WHILE GETTING EXCEPTION MESSAGE')
-                    self.log.exception(exception_message)
+                # # We can even get an error while loading the exception
+                # # message.
+                # try:
+                #     exception_message = str(e)
+                # except (KeyboardInterrupt, SystemExit):
+                #     raise
+                # except:
+                #     exception_message = (
+                #         'ERROR WHILE GETTING EXCEPTION MESSAGE')
+                #     self.log.exception(exception_message)
 
-                try:
-                    self.logScanFailure(branch, exception_message)
-                except (KeyboardInterrupt, SystemExit):
-                    raise
-                except:
-                    # There was an error logging the error, despite all our
-                    # best efforts!
-                    self.log.exception(
-                        "Error while trying to log %s" % exception_message)
+                # try:
+                #     self.logScanFailure(branch, exception_message)
+                # except (KeyboardInterrupt, SystemExit):
+                #     raise
+                # except:
+                #     # There was an error logging the error, despite all our
+                #     # best efforts!
+                #     self.log.exception(
+                #         "Error while trying to log %s" % exception_message)
 
     def scanAllBranches(self):
         """Run Bzrsync on all branches, and intercept most exceptions."""
@@ -103,31 +104,44 @@ class BranchScanner:
 
     def logScanFailure(self, branch, message="Failed to scan"):
         """Log diagnostic for branches that could not be scanned."""
-        def safe_getattr(obj, name, default='UNKNOWN'):
-            """Safely get the 'name' attribute of 'obj'.
-
-            If getting the attribute raises an exception, log that exception
-            and return 'default'.
-            """
-            try:
-                return getattr(obj, name, default)
-            except (KeyboardInterrupt, SystemExit):
-                raise
-            except:
-                self.log.exception("Couldn't get %s" % (name,))
-                return default
-        unique_name = safe_getattr(branch, 'unique_name')
         request = errorlog.ScriptRequest([
-            ('branch.id', safe_getattr(branch, 'id')),
-            ('branch.unique_name', unique_name),
-            ('branch.url', safe_getattr(branch, 'url')),
-            ('branch.warehouse_url', safe_getattr(branch, 'warehouse_url')),
+            ('branch.id', branch.id),
+            ('branch.unique_name', branch.unique_name),
+            ('branch.url', branch.url),
+            ('branch.warehouse_url', branch.warehouse_url),
             ('error-explanation', message)])
-        try:
-            request.URL = canonical_url(branch)
-        except (KeyboardInterrupt, SystemExit):
-            raise
-        except:
-            self.log.exception("Couldn't get canonical_url")
+        request.URL = canonical_url(branch)
         errorlog.globalErrorUtility.raising(sys.exc_info(), request)
-        self.log.info('%s: %s (%s)', request.oopsid, message, unique_name)
+        self.log.info('%s: %s (%s)',
+            request.oopsid, message, branch.unique_name)
+
+    # def logScanFailure(self, branch, message="Failed to scan"):
+    #     """Log diagnostic for branches that could not be scanned."""
+    #     def safe_getattr(obj, name, default='UNKNOWN'):
+    #         """Safely get the 'name' attribute of 'obj'.
+
+    #         If getting the attribute raises an exception, log that exception
+    #         and return 'default'.
+    #         """
+    #         try:
+    #             return getattr(obj, name, default)
+    #         except (KeyboardInterrupt, SystemExit):
+    #             raise
+    #         except:
+    #             self.log.exception("Couldn't get %s" % (name,))
+    #             return default
+    #     unique_name = safe_getattr(branch, 'unique_name')
+    #     request = errorlog.ScriptRequest([
+    #         ('branch.id', safe_getattr(branch, 'id')),
+    #         ('branch.unique_name', unique_name),
+    #         ('branch.url', safe_getattr(branch, 'url')),
+    #         ('branch.warehouse_url', safe_getattr(branch, 'warehouse_url')),
+    #         ('error-explanation', message)])
+    #     try:
+    #         request.URL = canonical_url(branch)
+    #     except (KeyboardInterrupt, SystemExit):
+    #         raise
+    #     except:
+    #         self.log.exception("Couldn't get canonical_url")
+    #     errorlog.globalErrorUtility.raising(sys.exc_info(), request)
+    #     self.log.info('%s: %s (%s)', request.oopsid, message, unique_name)
