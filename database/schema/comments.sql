@@ -45,6 +45,7 @@ COMMENT ON COLUMN Branch.metadir_format IS 'The bzr metadir format';
 COMMENT ON COLUMN Branch.stacked_on IS 'The Launchpad branch that this branch is stacked on (if any).';
 COMMENT ON COLUMN Branch.distroseries IS 'The distribution series that the branch belongs to.';
 COMMENT ON COLUMN Branch.sourcepackagename IS 'The source package this is a branch of.';
+COMMENT ON COLUMN Branch.size_on_disk IS 'The size in kilobytes of this branch in the mirrored area.';
 
 -- BranchJob
 
