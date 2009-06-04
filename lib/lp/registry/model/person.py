@@ -41,7 +41,7 @@ from sqlobject import (
     SQLRelatedJoin, StringCol)
 from sqlobject.sqlbuilder import AND, OR, SQLConstant
 from storm.store import EmptyResultSet, Store
-from storm.expr import And, Join, Lower
+from storm.expr import And, Join, Lower, Or, SQL
 from storm.info import ClassAlias
 
 from canonical.config import config
@@ -2493,40 +2493,51 @@ class PersonSet:
         """
         logged_in_user = getUtility(ILaunchBag).user
         if logged_in_user is not None:
-            private_query = """
-                TeamParticipation.person = %s
+            private_query = SQL("""
+                TeamParticipation.person = ?
                 AND Person.teamowner IS NOT NULL
-                AND Person.visibility != %s
-                """ % (sqlvalues(logged_in_user, PersonVisibility.PUBLIC))
+                AND Person.visibility != ?
+                """, (logged_in_user, PersonVisibility.PUBLIC.value),
+                tables=['Person', 'TeamParticipation'])
         else:
-            private_query = "1 = 0"
-        base_query = """
-            (Person.visibility = %s OR
-            (%s))""" % (quote(PersonVisibility.PUBLIC), private_query)
-        return base_query
+            private_query = None
 
-    def _teamEmailQuery(self, text, privacy_query):
+        base_query = SQL("Person.visibility = ?",
+                         (PersonVisibility.PUBLIC.value,),
+                         tables=['Person'])
+
+        if private_query is None:
+            query = base_query
+        else:
+            query = Or(base_query, private_query)
+
+        return query
+
+    def _teamEmailQuery(self, text):
         """Product the query for team email addresses."""
-        team_email_query = """
-            %s
-            AND TeamParticipation.team = Person.id
+        privacy_query = self._teamPrivacyQuery()
+        team_email_query = SQL("""
+            TeamParticipation.team = Person.id
             AND Person.teamowner IS NOT NULL
             AND Person.merged IS NULL
             AND EmailAddress.person = Person.id
-            AND lower(EmailAddress.email) LIKE %s || '%%'
-            """ % (privacy_query, quote_like(text),)
-        return team_email_query
+            AND lower(EmailAddress.email) LIKE ? || '%%'
+            """, (quote_like(text),),
+                  tables=[#'Person',
+                          'EmailAddress',
+                          'TeamParticipation'])
+        return And(privacy_query, team_email_query)
 
-    def _teamNameQuery(self, text, privacy_query):
+    def _teamNameQuery(self, text):
         """Produce the query for team names."""
-        team_name_query = """
-            %s
-            AND TeamParticipation.team = Person.id
+        privacy_query = self._teamPrivacyQuery()
+        team_name_query = SQL("""
+            TeamParticipation.team = Person.id
             AND Person.teamowner IS NOT NULL
             AND Person.merged IS NULL
-            AND Person.fti @@ ftq(%s)
-            """ % (privacy_query, quote(text),)
-        return team_name_query
+            AND Person.fti @@ ftq(?)
+            """, (text,), tables=['TeamParticipation'])
+        return And(privacy_query, team_name_query)
 
     def find(self, text):
         """See `IPersonSet`."""
@@ -2536,49 +2547,48 @@ class PersonSet:
 
         orderBy = Person._sortingColumnsForSetOperations
         text = text.lower()
+        #text = text.encode('ascii', 'strict')
 
         # Teams may not have email addresses, so we need to either use a LEFT
         # OUTER JOIN or do a UNION between four queries. Using a UNION makes
         # it a lot faster than with a LEFT OUTER JOIN.
-        args = (quote_like(text),) + sqlvalues(INACTIVE_ACCOUNT_STATUSES)
-        person_email_query = """
+        #args = (quote_like(text),) + sqlvalues(INACTIVE_ACCOUNT_STATUSES)
+        #args = (text,) + sqlvalues(INACTIVE_ACCOUNT_STATUSES)
+        person_email_query = SQL("""
             Person.teamowner IS NULL
             AND Person.merged IS NULL
             AND EmailAddress.person = Person.id
-            AND lower(EmailAddress.email) LIKE %s || '%%'
+            AND lower(EmailAddress.email) LIKE ? || '%%'
             AND Person.account = Account.id
-            AND Account.status NOT IN %s
-            """ % args
+            AND Account.status NOT IN ?
+            """, (quote_like(text), tuple(status.value for status in INACTIVE_ACCOUNT_STATUSES)),
+            tables=['EmailAddress', 'Account'])
 
-        results = Person.select(
-            person_email_query, clauseTables=['EmailAddress', 'Account'])
+        store = IStore(Person)
 
-        person_name_query = """
+        results = store.find(
+            Person, person_email_query).order_by()
+
+        person_name_query = SQL("""
             Person.teamowner IS NULL
             AND Person.merged is NULL
-            AND Person.fti @@ ftq(%s)
+            AND Person.fti @@ ftq(?)
             AND Person.account = Account.id
             AND Account.status NOT IN %s
-            """ % sqlvalues(text, INACTIVE_ACCOUNT_STATUSES)
+            """, (text, tuple(status.value for status in INACTIVE_ACCOUNT_STATUSES)),
+            tables=['Account'])
 
-        results = results.union(Person.select(
-            person_name_query, clauseTables=['Account']))
+        results = results.union(store.find(
+            Person, person_name_query)).order_by()
 
-        privacy_query = self._teamPrivacyQuery()
+        team_email_query = self._teamEmailQuery(text)
+        results = results.union(store.find(Person, team_email_query)).order_by()
 
-        team_email_query = self._teamEmailQuery(text, privacy_query)
+##         team_name_query = self._teamNameQuery(text)
 
-        results = results.union(Person.select(
-            team_email_query, clauseTables=['EmailAddress',
-                                            'TeamParticipation']))
+##         results = results.union(store.find(Person, team_name_query))
 
-        team_name_query = self._teamNameQuery(text, privacy_query)
-
-        results = results.union(
-                Person.select(team_name_query,
-                              clauseTables=['TeamParticipation']),
-                orderBy=orderBy)
-        return results
+        return results.order_by(orderBy)
 
     def findPerson(
             self, text="", exclude_inactive_accounts=True,
@@ -2633,14 +2643,12 @@ class PersonSet:
         # Teams may not have email addresses, so we need to either use a LEFT
         # OUTER JOIN or do a UNION between two queries. Using a UNION makes
         # it a lot faster than with a LEFT OUTER JOIN.
-        privacy_query = self._teamPrivacyQuery()
-
-        email_query = self._teamEmailQuery(text, privacy_query)
+        email_query = self._teamEmailQuery(text)
 
         email_results = Person.select(email_query,
                                       clauseTables=['EmailAddress',
                                                     'TeamParticipation'])
-        name_query = self._teamNameQuery(text, privacy_query)
+        name_query = self._teamNameQuery(text)
 
         name_results = Person.select(name_query,
                                      clauseTables=['TeamParticipation'])
