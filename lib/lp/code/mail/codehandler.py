@@ -109,6 +109,11 @@ class VoteEmailCommand(CodeReviewEmailCommand):
         '-1': CodeReviewVote.DISAPPROVE,
         'needsfixing': CodeReviewVote.NEEDS_FIXING,
         'needs-fixing': CodeReviewVote.NEEDS_FIXING,
+        'needsinfo': CodeReviewVote.NEEDS_INFO,
+        'needs-info': CodeReviewVote.NEEDS_INFO,
+        'needsinformation': CodeReviewVote.NEEDS_INFO,
+        'needs_information': CodeReviewVote.NEEDS_INFO,
+        'needs-information': CodeReviewVote.NEEDS_INFO,
         }
 
     def execute(self, context):
@@ -129,14 +134,17 @@ class VoteEmailCommand(CodeReviewEmailCommand):
             # If the word doesn't match, check aliases that we allow.
             context.vote = self._vote_alias.get(vote_string)
             if context.vote is None:
+                # Replace the _ with - in the names of the items.
+                # Slightly easier to type and read.
                 valid_votes = ', '.join(sorted(
-                    v.name.lower() for v in CodeReviewVote.items.items))
+                    v.name.lower().replace('_', '-')
+                    for v in CodeReviewVote.items.items))
                 raise EmailProcessingError(
                     get_error_message(
                         'dbschema-command-wrong-argument.txt',
                         command_name='review',
                         arguments=valid_votes,
-                        example_argument='needs_fixing'))
+                        example_argument='needs-fixing'))
 
         if len(vote_tag_list) > 0:
             context.vote_tags = ' '.join(vote_tag_list)
@@ -210,6 +218,7 @@ class CodeEmailCommands(EmailCommandCollection):
         'vote': VoteEmailCommand,
         'review': VoteEmailCommand,
         'status': UpdateStatusEmailCommand,
+        'merge': UpdateStatusEmailCommand,
         'reviewer': AddReviewerEmailCommand,
         }
 

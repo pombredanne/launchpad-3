@@ -5,3 +5,15 @@ Check that we can view the productrelease.
   ... """)
   HTTP/1.1 200 Ok
   ...
+
+Any user can see a table describing the files that are associated with the
+release. Each file is linked.
+
+    >>> anon_browser.open('http://launchpad.dev/firefox/trunk/0.9.2')
+    >>> table = find_tag_by_id(anon_browser.contents, 'downloads')
+    >>> print extract_text(table)
+    Download                         Description
+    firefox-0.9.2.orig.tar.gz (md5)
+
+    >>> print table.a
+    <a href=".../firefox/trunk/0.9.2/+download/firefox-0.9.2.orig.tar.gz">...

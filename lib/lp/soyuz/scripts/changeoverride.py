@@ -13,7 +13,6 @@ from zope.component import getUtility
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.section import ISectionSet
 from canonical.launchpad.webapp.interfaces import NotFoundError
-from lp.soyuz.interfaces.publishing import PackagePublishingPriority
 from lp.soyuz.scripts.ftpmasterbase import (
     SoyuzScript, SoyuzScriptError)
 
@@ -68,6 +67,9 @@ class ChangeOverride(SoyuzScript):
          * 'section': ISection or None;
          * 'priority': PackagePublishingPriority or None.
         """
+        # Avoiding circular imports.
+        from lp.soyuz.interfaces.publishing import PackagePublishingPriority
+
         if self.options.component is not None:
             try:
                 self.component = getUtility(IComponentSet)[
