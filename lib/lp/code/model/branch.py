@@ -1,5 +1,5 @@
 # Copyright 2004-2009 Canonical Ltd.  All rights reserved.
-# pylint: disable-msg=E0611,W0212,W0141
+# pylint: disable-msg=E0611,W0212,W0141,F0401
 
 __metaclass__ = type
 __all__ = [
@@ -39,8 +39,6 @@ from canonical.launchpad.webapp import urlappend
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, SLAVE_FLAVOR)
 
-from lp.code.interfaces.branch import (BranchFormat, RepositoryFormat,
-    BRANCH_FORMAT_UPGRADE_PATH, REPOSITORY_FORMAT_UPGRADE_PATH)
 from lp.code.mail.branch import send_branch_modified_notifications
 from lp.code.model.branchmergeproposal import (
      BranchMergeProposal, BranchMergeProposalGetter)
@@ -50,10 +48,11 @@ from lp.code.model.revision import Revision
 from lp.code.event.branchmergeproposal import NewBranchMergeProposalEvent
 from lp.code.interfaces.branch import (
     bazaar_identity, BranchCannotBePrivate, BranchCannotBePublic,
-    BranchFormat, BranchLifecycleStatus, BranchMergeControlStatus,
-    BranchType, BranchTypeError, CannotDeleteBranch,
+    BranchFormat, BRANCH_FORMAT_UPGRADE_PATH, BranchLifecycleStatus,
+    BranchMergeControlStatus, BranchType, BranchTypeError, CannotDeleteBranch,
     ControlFormat, DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch,
-    IBranchNavigationMenu, IBranchSet, RepositoryFormat)
+    IBranchNavigationMenu, IBranchSet, RepositoryFormat,
+    REPOSITORY_FORMAT_UPGRADE_PATH)
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.interfaces.branchmergeproposal import (
      BRANCH_MERGE_PROPOSAL_FINAL_STATES, BranchMergeProposalExists,
@@ -822,8 +821,8 @@ class Branch(SQLBase):
     @property
     def needs_upgrading(self):
         """See `IBranch`."""
-        if (REPOSITORY_FORMAT_UPGRADE_PATH.get(self.repository_format, None) or
-                BRANCH_FORMAT_UPGRADE_PATH.get(self.branch_format, None)):
+        if (REPOSITORY_FORMAT_UPGRADE_PATH.get(self.repository_format, None)
+            or BRANCH_FORMAT_UPGRADE_PATH.get(self.branch_format, None)):
             return True
         return False
 
