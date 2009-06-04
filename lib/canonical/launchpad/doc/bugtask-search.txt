@@ -598,7 +598,7 @@ Searching for bugs with any of the tags returns both of them.
     test bug a [test-tag-1, test-tag-2]
     test bug b [test-tag-1]
 
-Searching for bugs with any of the tags returns only test bug a.
+Searching for bugs with all of the tags returns only test bug a.
 
     >>> search_tasks_and_print_bugs(
     ...     tag=all('test-tag-1', 'test-tag-2'))

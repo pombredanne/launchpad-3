@@ -1454,22 +1454,36 @@ class BugTaskSet:
                     "    SELECT BugTag.bug FROM BugTag)")
 
             if zope_isinstance(params.tag, all):
-                # Search for the presence/absense of *all* specified
+                # Search for the presence/absence of *all* specified
                 # tags.
-                tags_template = (
-                    "%s (SELECT * FROM BugTag"
-                    "     WHERE BugTag.bug = BugTask.bug"
-                    "       AND BugTag.tag = %s)")
-                tags_clauses.extend(
-                    tags_template % ("EXISTS", quote(tag))
+                tags_include_clause = " INTERSECT ".join(
+                    "SELECT BugTag.bug FROM BugTag"
+                    " WHERE BugTag.tag = %s" % quote(tag)
                     for tag in tags_include)
-                tags_clauses.extend(
-                    tags_template % ("NOT EXISTS", quote(tag))
+                tags_exclude_clause = " UNION ".join(
+                    "SELECT BugTag.bug FROM BugTag"
+                    " WHERE BugTag.tag = %s" % quote(tag)
                     for tag in tags_exclude)
-                extra_clauses.append(
-                    '(%s)' % ' AND '.join(tags_clauses))
+
+                if len(tags_include) > 0 and len(tags_exclude) > 0:
+                    tags_clauses.append(
+                        "BugTask.bug IN ((%s) EXCEPT (%s))" % (
+                            tags_include_clause, tags_exclude_clause))
+                elif len(tags_include) > 0:
+                    tags_clauses.append(
+                        "BugTask.bug IN (%s)" % tags_include_clause)
+                elif len(tags_exclude) > 0:
+                    tags_clauses.append(
+                        "BugTask.bug NOT IN (%s)" % tags_exclude_clause)
+                else:
+                    # This is fine.
+                    pass
+
+                if len(tags_clauses) > 0:
+                    extra_clauses.append(
+                        '(%s)' % ' AND '.join(tags_clauses))
             else:
-                # Search for the presence/absense of *any* specified
+                # Search for the presence/absence of *any* specified
                 # tags.
                 for tag in tags_exclude:
                     tags_clauses.append(
