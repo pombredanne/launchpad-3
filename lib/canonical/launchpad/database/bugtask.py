@@ -1447,56 +1447,66 @@ class BugTaskSet:
                     "BugTag.bug = BugTask.bug")
                 clauseTables.append('BugTag')
 
-            # Search for the *absense* of any tag.
+            # Search for the *absence* of any tag.
             if '!*' in tags_wildcards:
                 tags_clauses.append(
                     "BugTask.bug NOT IN ("
                     "    SELECT BugTag.bug FROM BugTag)")
 
             if zope_isinstance(params.tag, all):
-                # Search for the presence/absence of *all* specified
-                # tags.
-                tags_include_clause = " INTERSECT ".join(
+                # The set of bugs that have *all* of the tags
+                # requested for *inclusion*.
+                tags_include_clause = "(%s)" % " INTERSECT ".join(
                     "SELECT BugTag.bug FROM BugTag"
                     " WHERE BugTag.tag = %s" % quote(tag)
                     for tag in tags_include)
-                tags_exclude_clause = " UNION ".join(
+                # The set of bugs that have *any* of the tags
+                # requested for *exclusion*.
+                tags_exclude_clause = "(%s)" % " UNION ".join(
                     "SELECT BugTag.bug FROM BugTag"
                     " WHERE BugTag.tag = %s" % quote(tag)
                     for tag in tags_exclude)
-
+                # Combine the include and exclude sets.
                 if len(tags_include) > 0 and len(tags_exclude) > 0:
                     tags_clauses.append(
-                        "BugTask.bug IN ((%s) EXCEPT (%s))" % (
+                        "BugTask.bug IN (%s EXCEPT %s)" % (
                             tags_include_clause, tags_exclude_clause))
                 elif len(tags_include) > 0:
                     tags_clauses.append(
-                        "BugTask.bug IN (%s)" % tags_include_clause)
+                        "BugTask.bug IN %s" % tags_include_clause)
                 elif len(tags_exclude) > 0:
                     tags_clauses.append(
-                        "BugTask.bug NOT IN (%s)" % tags_exclude_clause)
+                        "BugTask.bug NOT IN %s" % tags_exclude_clause)
                 else:
-                    # This is fine.
+                    # This means that the query was only wildcards.
                     pass
-
+                # Add any generated tag clauses to the main query.
                 if len(tags_clauses) > 0:
                     extra_clauses.append(
                         '(%s)' % ' AND '.join(tags_clauses))
             else:
-                # Search for the presence/absence of *any* specified
-                # tags.
-                for tag in tags_exclude:
-                    tags_clauses.append(
-                        "BugTask.bug NOT IN ("
-                        "    SELECT BugTag.bug FROM BugTag"
-                        "     WHERE BugTag.tag = %s)" % quote(tag))
+                # Identify bugs to include using a simple join. This
+                # might be more efficient than using an IN or NOT IN
+                # clause.
                 if len(tags_include) > 0:
                     tags_clauses.append(
                         "(BugTag.bug = BugTask.bug AND BugTag.tag IN (%s))" % (
                             ','.join(quote(tag) for tag in tags_include)))
                     clauseTables.append('BugTag')
-                extra_clauses.append(
-                    '(%s)' % ' OR '.join(tags_clauses))
+                # Identify bugs to exclude.
+                if len(tags_exclude) > 0:
+                    # The set of bugs that have *all* of the tags
+                    # requested for exclusion.
+                    tags_exclude_clause = "(%s)" % " INTERSECT ".join(
+                        "SELECT BugTag.bug FROM BugTag"
+                        " WHERE BugTag.tag = %s" % quote(tag)
+                        for tag in tags_exclude)
+                    tags_clauses.append(
+                        "BugTask.bug NOT IN %s" % tags_exclude_clause)
+                # Add any generated tag clauses to the main query.
+                if len(tags_clauses) > 0:
+                    extra_clauses.append(
+                        '(%s)' % ' OR '.join(tags_clauses))
 
         # XXX Tom Berger 2008-02-14:
         # We use StructuralSubscription to determine
