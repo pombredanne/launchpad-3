@@ -1,4 +1,5 @@
 # Copyright 2008 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=F0401
 
 """Tests for BranchMergeProposals."""
 
@@ -118,7 +119,8 @@ class TestBranchMergeProposalTransitions(TestCaseWithFactory):
         if from_state == BranchMergeProposalStatus.SUPERSEDED:
             # Setting a proposal SUPERSEDED has the side effect of creating
             # an active duplicate proposal, so make it inactive.
-            proposal.superseded_by.rejectBranch(self.target_branch.owner, None)
+            proposal.superseded_by.rejectBranch(self.target_branch.owner,
+                                                None)
         self.assertProposalState(proposal, from_state)
         dupe = self.factory.makeBranchMergeProposal(
             target_branch=proposal.target_branch,
