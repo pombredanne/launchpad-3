@@ -40,3 +40,36 @@ searches.
     ConstraintNotSatisfied: !*
 
     >>> search_tag.validate(u'*')
+
+Apart from that, SearchTag behaves the same as Tag.
+
+    >>> from zope.schema.interfaces import ConstraintNotSatisfied
+
+    >>> tag_names = [
+    ...     u'Capitalised',
+    ...     u'l33tt&g',
+    ...     u'this-is-a-long-but-valid-name',
+    ...     u'whitespace not allowed',
+    ...     ]
+
+    >>> for tag_name in tag_names:
+    ...     try:
+    ...         tag.validate(tag_name)
+    ...     except ConstraintNotSatisfied:
+    ...         print "      Tag.validate(%r) FAILED" % tag_name
+    ...     else:
+    ...         print "      Tag.validate(%r) okay" % tag_name
+    ...     try:
+    ...         search_tag.validate(tag_name)
+    ...     except ConstraintNotSatisfied:
+    ...         print "SearchTag.validate(%r) FAILED" % tag_name
+    ...     else:
+    ...         print "SearchTag.validate(%r) okay" % tag_name
+          Tag.validate(u'Capitalised') FAILED
+    SearchTag.validate(u'Capitalised') FAILED
+          Tag.validate(u'l33tt&g') FAILED
+    SearchTag.validate(u'l33tt&g') FAILED
+          Tag.validate(u'this-is-a-long-but-valid-name') okay
+    SearchTag.validate(u'this-is-a-long-but-valid-name') okay
+          Tag.validate(u'whitespace not allowed') FAILED
+    SearchTag.validate(u'whitespace not allowed') FAILED
