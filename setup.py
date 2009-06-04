@@ -53,6 +53,7 @@ setup(
             'killservice = lp.scripts.utilities.killservice:main',
             'run = canonical.launchpad.scripts.runlaunchpad:start_launchpad',
             'harness = canonical.database.harness:python',
+            'twistd = twisted.scripts.twistd:run',
         ]
     ),
 )
