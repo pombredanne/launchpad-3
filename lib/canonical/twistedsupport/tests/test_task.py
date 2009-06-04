@@ -212,8 +212,11 @@ class TestPollingTaskSource(TestCase):
 class TestParallelLimitedTaskConsumer(TestCase):
     """Tests for `ParallelLimitedTaskConsumer`."""
 
-    def makeConsumer(self):
-        return ParallelLimitedTaskConsumer()
+    def makeConsumer(self, worker_limit=None):
+        if worker_limit is None:
+            # Unreasonably large number.
+            worker_limit = 9999999
+        return ParallelLimitedTaskConsumer(worker_limit=worker_limit)
 
     def test_implements_ITaskConsumer(self):
         # ParallelLimitedTaskConsumer instances provide ITaskConsumer.
@@ -256,6 +259,21 @@ class TestParallelLimitedTaskConsumer(TestCase):
         consumer.consume(LoggingSource([]))
         consumer.taskStarted(lambda: log.append('task'))
         self.assertEqual(['task'], log)
+
+    def test_reaching_working_limit_stops_source(self):
+        # Each time taskStarted is called, we start a worker. When we reach
+        # the worker limit, we tell the source to stop generating work.
+        worker_limit = 3
+        consumer = self.makeConsumer(worker_limit=worker_limit)
+        log = []
+        source = LoggingSource(log)
+        consumer.consume(source)
+        del log[:]
+        consumer.taskStarted(lambda: None)
+        self.assertEqual([], log)
+        for i in range(worker_limit - 1):
+            consumer.taskStarted(lambda: None)
+        self.assertEqual(['stop'], log)
 
 
 def test_suite():

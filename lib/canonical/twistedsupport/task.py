@@ -145,8 +145,10 @@ class ParallelLimitedTaskConsumer:
 
     implements(ITaskSource)
 
-    def __init__(self):
+    def __init__(self, worker_limit):
         self._task_source = None
+        self._worker_limit = worker_limit
+        self._worker_count = 0
 
     def consume(self, task_source):
         """Start consuing tasks from 'task_source'.
@@ -164,6 +166,9 @@ class ParallelLimitedTaskConsumer:
         """See `ITaskSource`."""
         if self._task_source is None:
             raise NotRunningError(self)
+        self._worker_count += 1
+        if self._worker_count >= self._worker_limit:
+            self._task_source.stop()
         task()
 
     def taskProductionFailed(self, reason):
