@@ -206,14 +206,49 @@ class TestErrorHandling(TestCaseWithFactory):
     def test_branch_id_fail(self):
         # If an error is raised when we try to get the branch id (it's
         # possible!) then we still log the error successfully along with an
-        # added note about the failed attribute. The attributes value is
-        # recorded as "UNKNOWN" in the error message.
+        # added note about the failed attribute.
         self._oopsid = 'OOPS-FOO'
         branch = self.factory.makeAnyBranch()
         failing_branch = AttributeFailureWrapper(branch, 'id')
         self.scanner.logScanFailure(failing_branch, 'message')
         self.assertLogged(
             [(logging.ERROR, "Couldn't get id"),
+             (logging.INFO, 'OOPS-FOO: message (%s)' % branch.unique_name)])
+
+    def test_branch_unique_name_fail(self):
+        # If an error is raised when we try to get the branch unique name then
+        # we still log the error successfully along with an added note about
+        # the failed attribute.
+        self._oopsid = 'OOPS-FOO'
+        branch = self.factory.makeAnyBranch()
+        failing_branch = AttributeFailureWrapper(branch, 'unique_name')
+        self.scanner.logScanFailure(failing_branch, 'message')
+        self.assertLogged(
+            [(logging.ERROR, "Couldn't get unique_name"),
+             (logging.INFO, 'OOPS-FOO: message (UNKNOWN)')])
+
+    def test_branch_url_fail(self):
+        # If an error is raised when we try to get the branch url then we
+        # still log the error successfully along with an added note about the
+        # failed attribute.
+        self._oopsid = 'OOPS-FOO'
+        branch = self.factory.makeAnyBranch()
+        failing_branch = AttributeFailureWrapper(branch, 'url')
+        self.scanner.logScanFailure(failing_branch, 'message')
+        self.assertLogged(
+            [(logging.ERROR, "Couldn't get url"),
+             (logging.INFO, 'OOPS-FOO: message (%s)' % branch.unique_name)])
+
+    def test_branch_warehouse_url_fail(self):
+        # If an error is raised when we try to get the branch warehouse url
+        # then we still log the error successfully along with an added note
+        # about the failed attribute.
+        self._oopsid = 'OOPS-FOO'
+        branch = self.factory.makeAnyBranch()
+        failing_branch = AttributeFailureWrapper(branch, 'warehouse_url')
+        self.scanner.logScanFailure(failing_branch, 'message')
+        self.assertLogged(
+            [(logging.ERROR, "Couldn't get warehouse_url"),
              (logging.INFO, 'OOPS-FOO: message (%s)' % branch.unique_name)])
 
 
