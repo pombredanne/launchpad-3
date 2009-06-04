@@ -16,4 +16,4 @@ CREATE UNIQUE INDEX
     ON RevisionCache(distroseries, sourcepackagename, revision, private)
     WHERE distroseries IS NOT NULL;
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2109, 95, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (2109, 55, 1);
