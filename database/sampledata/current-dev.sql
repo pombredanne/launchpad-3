@@ -3765,7 +3765,7 @@ ALTER TABLE libraryfilecontent ENABLE TRIGGER ALL;
 
 ALTER TABLE libraryfiledownloadcount DISABLE TRIGGER ALL;
 
-
+INSERT INTO libraryfiledownloadcount (id, libraryfilealias, day, country, count) VALUES (1, 3, '2008-02-01', NULL, 9);
 
 ALTER TABLE libraryfiledownloadcount ENABLE TRIGGER ALL;
 

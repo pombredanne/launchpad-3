@@ -33,3 +33,4 @@ downloaded and the date of the last download on that table as well.
     >>> print extract_text(find_tag_by_id(anon_browser.contents, 'downloads'))
     File                            Downloads                   Description
     firefox-0.9.2.orig.tar.gz (md5) 1 (Last downloaded ... ago)
+    Total:                          1

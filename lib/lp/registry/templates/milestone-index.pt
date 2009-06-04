@@ -135,8 +135,9 @@
                   <span tal:replace="lfa/hits/fmt:intcomma" />
                   <span class="lesser">
                     (Last downloaded
-                    <strong tal:content="lfa/last_downloaded/fmt:approximateduration" />
-                    ago)
+                    <strong>
+                      <span tal:replace="lfa/last_downloaded/fmt:approximateduration" />
+                      ago</strong>)
                 </tal:downloaded>
                 <tal:not-downloaded condition="not:lfa/hits">
                   -
@@ -153,6 +154,14 @@
               </tal:define-lfa>
             </tr>
           </tbody>
+          <tfoot tal:condition="view/total_downloads">
+            <tr>
+              <th style="padding-top: 1em;">Total:</th>
+              <td colspan="3">
+                <span tal:replace="view/total_downloads" />
+              </td>
+            </tr>
+          </tfoot>
         </table>
 
         <div style="margin-top: .4em;" tal:condition="has_edit">
