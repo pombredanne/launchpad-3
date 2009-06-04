@@ -49,12 +49,12 @@
     <div id="description">
       <fieldset>
         <legend>Summary</legend>
-        <p class="documentDescription"
+        <div class="documentDescription"
           tal:content="structure context/summary/fmt:text-to-html">
           $ProductSeries.summary goes here. This should be quite short,
           just a single paragraph of text really, giving the status of
           this series of releases.
-        </p>
+        </div>
       </fieldset>
     </div>
 
