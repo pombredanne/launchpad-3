@@ -31,7 +31,8 @@ from canonical.launchpad.ftests import (
     ANONYMOUS, import_secret_test_key, login, logout, syncUpdate)
 from lp.code.interfaces.branch import BranchType
 from lp.code.interfaces.branchmergeproposal import (
-    BadStateTransition, BranchMergeProposalStatus, IBranchMergeProposalGetter,
+    BadStateTransition, BranchMergeProposalStatus,
+    BRANCH_MERGE_PROPOSAL_FINAL_STATES, IBranchMergeProposalGetter,
     IBranchMergeProposalJob, ICreateMergeProposalJob,
     ICreateMergeProposalJobSource, IMergeProposalCreatedJob,
     WrongBranchMergeProposal)
@@ -110,6 +111,34 @@ class TestBranchMergeProposalTransitions(TestCaseWithFactory):
                           self._attemptTransition,
                           proposal, to_state)
 
+    def prepareDupeTransition(self, from_state):
+        proposal = self.factory.makeBranchMergeProposal(
+            target_branch=self.target_branch,
+            set_state=from_state)
+        if from_state == BranchMergeProposalStatus.SUPERSEDED:
+            # Setting a proposal SUPERSEDED has the side effect of creating
+            # an active duplicate proposal, so make it inactive.
+            proposal.superseded_by.rejectBranch(self.target_branch.owner, None)
+        self.assertProposalState(proposal, from_state)
+        dupe = self.factory.makeBranchMergeProposal(
+            target_branch=proposal.target_branch,
+            source_branch=proposal.source_branch)
+        return proposal
+
+    def assertBadDupeTransition(self, from_state, to_state):
+        """Assert that trying to go from `from_state` to `to_state` fails."""
+        proposal = self.prepareDupeTransition(from_state)
+        self.assertRaises(BadStateTransition,
+                          self._attemptTransition,
+                          proposal, to_state)
+
+
+    def assertGoodDupeTransition(self, from_state, to_state):
+        """Trying to go from `from_state` to `to_state` succeeds."""
+        proposal = self.prepareDupeTransition(from_state)
+        self._attemptTransition(proposal, to_state)
+        self.assertProposalState(proposal, to_state)
+
     def assertAllTransitionsGood(self, from_state):
         """Assert that we can go from `from_state` to any state."""
         for status in BranchMergeProposalStatus.items:
@@ -133,14 +162,17 @@ class TestBranchMergeProposalTransitions(TestCaseWithFactory):
     def test_transitions_from_rejected(self):
         """Rejected proposals can only be resubmitted."""
         # Test the transitions from rejected.
-        [wip, needs_review, code_approved, rejected,
-         merged, merge_failed, queued, superseded
-         ] = BranchMergeProposalStatus.items
+        self.assertAllTransitionsGood(BranchMergeProposalStatus.REJECTED)
 
-        # Rejected -> Rejected is valid.
-        self.assertGoodTransition(rejected, rejected)
-        # Can resubmit (supersede) a rejected proposal.
-        self.assertGoodTransition(rejected, superseded)
+    def test_transition_from_final_with_dupes(self):
+        for from_status in BRANCH_MERGE_PROPOSAL_FINAL_STATES:
+            for to_status in BranchMergeProposalStatus.items:
+                if to_status == BranchMergeProposalStatus.SUPERSEDED:
+                    continue
+                if to_status in BRANCH_MERGE_PROPOSAL_FINAL_STATES:
+                    self.assertGoodDupeTransition(from_status, to_status)
+                else:
+                    self.assertBadDupeTransition(from_status, to_status)
 
     def assertValidTransitions(self, expected, proposal, to_state, by_user):
         # Check the valid transitions for the merge proposal by the specified
@@ -153,7 +185,7 @@ class TestBranchMergeProposalTransitions(TestCaseWithFactory):
 
     def test_transition_to_rejected_by_reviewer(self):
         # A proposal should be able to go from any states to rejected if the
-        # user is a reviewer, except for superseded, merged or queued.
+        # user is a reviewer.
         valid_transitions = set(BranchMergeProposalStatus.items)
         proposal = self.factory.makeBranchMergeProposal()
         self.assertValidTransitions(

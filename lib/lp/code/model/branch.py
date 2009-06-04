@@ -43,7 +43,7 @@ from lp.code.interfaces.branch import (BranchFormat, RepositoryFormat,
     BRANCH_FORMAT_UPGRADE_PATH, REPOSITORY_FORMAT_UPGRADE_PATH)
 from lp.code.mail.branch import send_branch_modified_notifications
 from lp.code.model.branchmergeproposal import (
-     BranchMergeProposal)
+     BranchMergeProposal, BranchMergeProposalGetter)
 from lp.code.model.branchrevision import BranchRevision
 from lp.code.model.branchsubscription import BranchSubscription
 from lp.code.model.revision import Revision
@@ -253,12 +253,8 @@ class Branch(SQLBase):
                 raise InvalidBranchMergeProposal(
                     'Target and dependent branches must be different.')
 
-        target = BranchMergeProposal.select("""
-            BranchMergeProposal.source_branch = %s AND
-            BranchMergeProposal.target_branch = %s AND
-            BranchMergeProposal.queue_status NOT IN %s
-            """ % sqlvalues(self, target_branch,
-                            BRANCH_MERGE_PROPOSAL_FINAL_STATES))
+        target = BranchMergeProposalGetter.activeProposalsForBranches(
+            self, target_branch)
         if target.count() > 0:
             raise BranchMergeProposalExists(
                 'There is already a branch merge proposal registered for '

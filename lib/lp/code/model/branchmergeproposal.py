@@ -78,6 +78,12 @@ def is_valid_transition(proposal, from_state, next_state, user=None):
     # Trivial acceptance case.
     if from_state == next_state:
         return True
+    FINAL_STATES = BRANCH_MERGE_PROPOSAL_FINAL_STATES
+    if from_state in FINAL_STATES and next_state not in FINAL_STATES:
+        dupes = BranchMergeProposalGetter.activeProposalsForBranches(
+            proposal.source_branch, proposal.target_branch)
+        if dupes.count() > 0:
+            return False
 
     [wip, needs_review, code_approved, rejected,
      merged, merge_failed, queued, superseded
@@ -739,6 +745,15 @@ class BranchMergeProposalGetter:
                 comment_counts.get(proposal.id, 0))
             summary.update(vote_counts.get(proposal.id, {}))
         return result
+
+    @staticmethod
+    def activeProposalsForBranches(source_branch, target_branch):
+        return BranchMergeProposal.select("""
+            BranchMergeProposal.source_branch = %s AND
+            BranchMergeProposal.target_branch = %s AND
+            BranchMergeProposal.queue_status NOT IN %s
+                """ % sqlvalues(source_branch, target_branch,
+                                BRANCH_MERGE_PROPOSAL_FINAL_STATES))
 
 
 class BranchMergeProposalJobType(DBEnumeratedType):
