@@ -30,7 +30,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.autodecorate import AutoDecorate
 from canonical.config import config
-from canonical.codehosting.codeimport.worker import CodeImportSourceDetails
+from lp.codehosting.codeimport.worker import CodeImportSourceDetails
 from canonical.database.sqlbase import flush_database_updates
 from canonical.librarian.interfaces import ILibrarianClient
 from lp.soyuz.adapters.packagelocation import PackageLocation
@@ -83,6 +83,7 @@ from lp.code.interfaces.revision import IRevisionSet
 from lp.registry.model.distributionsourcepackage import (
     DistributionSourcePackage)
 from lp.registry.model.milestone import Milestone
+from lp.registry.model.suitesourcepackage import SuiteSourcePackage
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.distroseries import (
     DistroSeriesStatus, IDistroSeries)
@@ -1337,6 +1338,18 @@ class LaunchpadObjectFactory(ObjectFactory):
 
         return subset.new(name, translation_domain, path, owner)
 
+    def makePOTemplateAndPOFiles(self, language_codes, **kwargs):
+        """Create a POTemplate and associated POFiles.
+
+        Create a POTemplate for the given distroseries/sourcepackagename or
+        productseries and create a POFile for each language. Returns the
+        template.
+        """
+        template = self.makePOTemplate(**kwargs)
+        for language_code in language_codes:
+            self.makePOFile(language_code, template, template.owner)
+        return template
+
     def makePOFile(self, language_code, potemplate=None, owner=None,
                    variant=None):
         """Make a new translation file."""
@@ -1470,6 +1483,16 @@ class LaunchpadObjectFactory(ObjectFactory):
             name = self.getUniqueString()
         return getUtility(ISourcePackageNameSet).new(name)
 
+    def getOrMakeSourcePackageName(self, name=None):
+        """Get an existing`ISourcePackageName` or make a new one.
+
+        This method encapsulates getOrCreateByName so that tests can be kept
+        free of the getUtility(ISourcePackageNameSet) noise.
+        """
+        if name is None:
+            return self.makeSourcePackageName()
+        return getUtility(ISourcePackageNameSet).getOrCreateByName(name)
+
     def makeSourcePackage(self, sourcepackagename=None, distroseries=None):
         """Make an `ISourcePackage`."""
         if sourcepackagename is None:
@@ -1477,6 +1500,19 @@ class LaunchpadObjectFactory(ObjectFactory):
         if distroseries is None:
             distroseries = self.makeDistroRelease()
         return distroseries.getSourcePackage(sourcepackagename)
+
+    def getAnyPocket(self):
+        return PackagePublishingPocket.RELEASE
+
+    def makeSuiteSourcePackage(self, distroseries=None,
+                               sourcepackagename=None, pocket=None):
+        if distroseries is None:
+            distroseries = self.makeDistroRelease()
+        if pocket is None:
+            pocket = self.getAnyPocket()
+        if sourcepackagename is None:
+            sourcepackagename = self.makeSourcePackageName()
+        return SuiteSourcePackage(distroseries, pocket, sourcepackagename)
 
     def makeDistributionSourcePackage(self, sourcepackagename=None,
                                       distribution=None):

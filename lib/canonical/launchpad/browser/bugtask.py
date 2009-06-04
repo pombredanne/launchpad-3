@@ -1735,6 +1735,8 @@ class BugTaskListingItem:
 
 class BugListingBatchNavigator(TableBatchNavigator):
     """A specialised batch navigator to load smartly extra bug information."""
+    # XXX sinzui 2009-05-29 bug=381672: Extract the BugTaskListingItem rules
+    # to a mixin so that MilestoneView and others can use it.
 
     def __init__(self, tasks, request, columns_to_show, size):
         TableBatchNavigator.__init__(

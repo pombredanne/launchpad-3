@@ -100,7 +100,22 @@ warnings.filterwarnings(
 warnings.filterwarnings(
     'ignore', 'bzrlib.*was deprecated', DeprecationWarning
 )
-
+# The next one is caused by a lamosity in python-openid.  The following change
+# to openid/server/server.py would make the warning filter unnecessary:
+# 978c974,974
+# >         try:
+# >             namespace = request.message.getOpenIDNamespace()
+# >         except AttributeError:
+# >             namespace = request.namespace
+# >         self.fields = Message(namespace)
+# ---
+# <         self.fields = Message(request.namespace)
+warnings.filterwarnings(
+    'ignore',
+    (r'The \"namespace\" attribute of CheckIDRequest objects is deprecated.\s+'
+     r'Use \"message.getOpenIDNamespace\(\)\" instead'),
+    DeprecationWarning
+)
 # This warning will be triggered if the beforeTraversal hook fails. We
 # want to ensure it is not raised as an error, as this will mask the real
 # problem.
@@ -128,6 +143,7 @@ defaults = [
     '--test-path=${buildout:directory}/lib',
     '--package=canonical',
     '--package=lp',
+    '--layer=!MailmanLayer',
     ]
 
 # Monkey-patch os.listdir to randomise the results

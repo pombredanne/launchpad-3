@@ -1,7 +1,7 @@
-# Copyright 2005-2006 Canonical Ltd.  All rights reserved.
+# Copyright 2005-2009 Canonical Ltd.  All rights reserved.
 
 from cStringIO import StringIO
-import datetime
+from datetime import datetime, timedelta
 import unittest
 from urllib2 import urlopen, HTTPError
 
@@ -11,13 +11,12 @@ import transaction
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.database.sqlbase import commit, flush_database_updates, cursor
+from canonical.database.sqlbase import flush_database_updates, cursor
 from canonical.librarian.client import LibrarianClient
 from canonical.librarian.interfaces import DownloadFailed
 from canonical.launchpad.database import LibraryFileAlias
-from canonical.launchpad.interfaces import ILibraryFileAliasSet
-from canonical.config import config
-from canonical.database.sqlbase import commit
+from canonical.launchpad.interfaces import IMasterStore
+from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.testing import LaunchpadZopelessLayer, LaunchpadFunctionalLayer
 
 
@@ -80,7 +79,6 @@ class LibrarianWebTestCase(unittest.TestCase):
         # displaying Ubuntu build logs in the browser.  The mimetype should be
         # "text/plain" for these files.
         client = LibrarianClient()
-        from cStringIO import StringIO
         contents = 'Build log...'
         build_log = StringIO(contents)
         alias_id = client.addFile(name="build_log.txt.gz",
@@ -102,7 +100,6 @@ class LibrarianWebTestCase(unittest.TestCase):
     def test_checkNoEncoding(self):
         # Other files should have no encoding.
         client = LibrarianClient()
-        from cStringIO import StringIO
         contents = 'Build log...'
         build_log = StringIO(contents)
         alias_id = client.addFile(name="build_log.tgz",
@@ -204,6 +201,39 @@ class LibrarianWebTestCase(unittest.TestCase):
         f = urlopen(url)
         self.failUnless('Disallow: /' in f.read())
 
+    def test_headers(self):
+        client = LibrarianClient()
+
+        # Upload a file so we can retrieve it.
+        sample_data = 'blah'
+        file_alias_id = client.addFile(
+            'sample', len(sample_data), StringIO(sample_data),
+            contentType='text/plain')
+        url = client.getURLForAlias(file_alias_id)
+
+        # Change the date_created to a known value that doesn't match
+        # the disk timestamp. The timestamp on disk cannot be trusted.
+        file_alias = IMasterStore(LibraryFileAlias).get(
+            LibraryFileAlias, file_alias_id)
+        file_alias.date_created = datetime(
+            2001, 01, 30, 13, 45, 59, tzinfo=pytz.utc)
+
+        # Commit so the file is available from the Librarian.
+        self.commit()
+
+        # Fetch the file via HTTP, recording the interesting headers
+        result = urlopen(url)
+        last_modified_header = result.info()['Last-Modified']
+        cache_control_header = result.info()['Cache-Control']
+
+        # URLs point to the same content for ever, so we have a hardcoded
+        # 1 year max-age cache policy.
+        self.failUnlessEqual(cache_control_header, 'max-age=31536000, public')
+
+        # And we should have a correct Last-Modified header too.
+        self.failUnlessEqual(
+            last_modified_header, 'Tue, 30 Jan 2001 13:45:59 GMT')
+
 
 class LibrarianZopelessWebTestCase(LibrarianWebTestCase):
     layer = LaunchpadZopelessLayer
@@ -234,7 +264,7 @@ class LibrarianZopelessWebTestCase(LibrarianWebTestCase):
         # that it'll be very clear if it's updated or not (otherwise, depending
         # on the resolution of clocks and things, an immediate access might not
         # look any newer).
-        LibraryFileAlias.get(id1).last_accessed = datetime.datetime(
+        LibraryFileAlias.get(id1).last_accessed = datetime(
             2004,1,1,12,0,0, tzinfo=pytz.timezone('Australia/Sydney'))
         self.commit()
 

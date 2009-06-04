@@ -8,13 +8,6 @@ Used by test_logger.txt.
 __metaclass__ = type
 __all__ = []
 
-# Fix path so imports work.
-import sys, os, os.path
-sys.path.insert(0, os.path.join(
-    os.path.dirname(__file__), os.pardir, os.pardir, os.pardir, os.pardir
-    ))
-
-
 # Monkey patch time.gmtime to make our tests easier to read.
 import time
 def fake_gmtime(ignored_seconds):

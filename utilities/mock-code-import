@@ -25,7 +25,7 @@ from subprocess import PIPE, Popen
 import tempfile
 import transaction
 
-from canonical.codehosting.codeimport.tests.test_foreigntree import (
+from lp.codehosting.codeimport.tests.test_foreigntree import (
     SubversionServer)
 from canonical.launchpad.scripts import execute_zcml_for_scripts
 from lp.testing.factory import LaunchpadObjectFactory

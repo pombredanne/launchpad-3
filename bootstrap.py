@@ -13,7 +13,8 @@
 ##############################################################################
 
 # NOTE TO LAUNCHPAD DEVELOPERS: This is a bootstrapping file from the
-# zc.buildout project.  See the docstring below.
+# zc.buildout project, which we have hacked slightly: look for the string
+# "HACK" below.   See the docstring below for usage.
 
 """Bootstrap a buildout-based project
 
@@ -34,9 +35,17 @@ try:
     import pkg_resources
 except ImportError:
     ez = {}
-    exec urllib2.urlopen('http://peak.telecommunity.com/dist/ez_setup.py'
-                         ).read() in ez
-    ez['use_setuptools'](to_dir=tmpeggs, download_delay=0)
+    # HACK: the next two logical lines have been hacked for Launchpad to make
+    # bootstrapping not get any files over the network.  This is useful for
+    # development because it speeds up the build and makes it possible to
+    # make a new branch when you don't have network access.  It is essential
+    # for deployment because we currently do not allow network access on PQM
+    # or our deployment boxes.
+    exec open('ez_setup.py').read() in ez
+    ez['use_setuptools'](
+        to_dir=tmpeggs,
+        download_base='file://%s/download-cache/dist/' % (os.getcwd(),),
+        download_delay=0)
 
     import pkg_resources
 

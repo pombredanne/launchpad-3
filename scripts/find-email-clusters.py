@@ -1,3 +1,6 @@
+#!/usr/bin/python2.4
+# Copyright 2007 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=W0403
 
 import sys
 import logging
@@ -9,7 +12,9 @@ import gpgme
 
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger_options, logger as logger_from_options)
-from canonical.launchpad.scripts.keyringtrustanalyser import *
+from lp.registry.scripts.keyringtrustanalyser import (
+    addOtherKeyring, addTrustedKeyring, findEmailClusters)
+
 
 validity_map = {
     'UNDEFINED': gpgme.VALIDITY_UNDEFINED,
@@ -18,6 +23,7 @@ validity_map = {
     'FULL':      gpgme.VALIDITY_FULL,
     'ULTIMATE':  gpgme.VALIDITY_ULTIMATE,
     }
+
 
 def main(argv):
     parser = optparse.OptionParser(
@@ -87,6 +93,7 @@ def main(argv):
     logger.info('Done')
 
     return 0
+
 
 if __name__ == '__main__':
     sys.exit(main(sys.argv))

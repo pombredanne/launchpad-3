@@ -24,9 +24,7 @@ CODEHOSTING_ROOT=/var/tmp/bazaar.launchpad.dev
 
 BZR_VERSION_INFO = bzr-version-info.py
 
-XSLTPROC=xsltproc
 WADL_FILE = lib/canonical/launchpad/apidoc/wadl-$(LPCONFIG).xml
-WADL_XSL = lib/launchpadlib/wadl-to-refhtml.xsl
 API_INDEX = lib/canonical/launchpad/apidoc/index.html
 
 EXTRA_JS_FILES=lib/canonical/launchpad/icing/MochiKit.js \
@@ -43,14 +41,14 @@ schema: build clean_codehosting
 newsampledata:
 	$(MAKE) -C database/schema newsampledata
 
-hosted_branches:
+hosted_branches: $(PY)
 	$(PY) ./utilities/make-dummy-hosted-branches
 
 $(WADL_FILE): $(BZR_VERSION_INFO)
 	LPCONFIG=$(LPCONFIG) $(PY) ./utilities/create-lp-wadl.py > $@
 
-$(API_INDEX): $(WADL_FILE) $(WADL_XSL)
-	$(XSLTPROC) $(WADL_XSL) $(WADL_FILE) > $@
+$(API_INDEX): $(WADL_FILE)
+	bin/apiindex $(WADL_FILE) > $@
 
 apidoc: compile $(API_INDEX)
 
@@ -60,12 +58,12 @@ check_loggerhead_on_merge:
 	make -C sourcecode/loggerhead check PYTHON=${PYTHON} \
 		PYTHON_VERSION=${PYTHON_VERSION} PYTHONPATH=$(PYTHONPATH)
 
-check_merge:
+check_merge: $(PY)
 	[ `PYTHONPATH= bzr status -S database/schema/ | \
-		grep -v "\(^P\|pending\|security.cfg\|Makefile\|unautovacuumable\)" | wc -l` -eq 0 ]
+		grep -v "\(^P\|pending\|security.cfg\|Makefile\|unautovacuumable\|_pythonpath.py\)" | wc -l` -eq 0 ]
 	${PY} lib/canonical/tests/test_no_conflict_marker.py
 
-check_db_merge:
+check_db_merge: $(PY)
 	${PY} lib/canonical/tests/test_no_conflict_marker.py
 
 # This can be removed once we move to zc.buildout and we have versioned
@@ -80,16 +78,21 @@ check: build
 	# database.
 	${PY} -t ./test_on_merge.py $(VERBOSITY)
 
+check_mailman: build
+	# Run all tests, including the Mailman integration
+	# tests. test_on_merge.py takes care of setting up the database.
+	${PY} -t ./test_on_merge.py $(VERBOSITY) --layer=MailmanLayer
+
 lint:
 	@bash ./utilities/lint.sh
 
 lint-verbose:
 	@bash ./utilities/lint.sh -v
 
-xxxreport:
+xxxreport: $(PY)
 	${PY} -t ./utilities/xxxreport.py -f csv -o xxx-report.csv ./
 
-check-configs:
+check-configs: $(PY)
 	${PY} utilities/check-configs.py
 
 pagetests: build
@@ -100,13 +103,13 @@ inplace: build
 build: $(BZR_VERSION_INFO) compile apidoc
 
 eggs:
-	# Usually this is linked via link-external-dependencies, but in
+	# Usually this is linked via link-external-sourcecode, but in
 	# deployment we create this ourselves.
 	mkdir eggs
 
 download-cache:
-	@echo "Missing buildout/download-cache."
-	@echo "Developers: please run utilities/link-external-dependencies."
+	@echo "Missing ./download-cache."
+	@echo "Developers: please run utilities/link-external-sourcecode."
 	@exit 1
 
 # The download-cache dependency comes *before* eggs so that developers get the
@@ -115,10 +118,10 @@ download-cache:
 bin/buildout: download-cache eggs
 	$(PYTHON) bootstrap.py
 
-bin/py: bin/buildout
+$(PY): bin/buildout versions.cfg
 	./bin/buildout configuration:instance_name=${LPCONFIG}
 
-compile: bin/py
+compile: $(PY)
 	${SHHH} $(MAKE) -C sourcecode build PYTHON=${PYTHON} \
 	    PYTHON_VERSION=${PYTHON_VERSION} LPCONFIG=${LPCONFIG}
 	${SHHH} LPCONFIG=${LPCONFIG} $(PY) -t buildmailman.py
@@ -182,7 +185,6 @@ support_files: $(WADL_FILE) $(BZR_VERSION_INFO)
 # properly. We also should really wait until services are running before
 # exiting, as running 'make stop' too soon after running 'make start'
 # will not work as expected.
-# XXX $(PY) -t
 start: inplace stop support_files
 	nohup bin/run -C $(CONFFILE) > ${LPCONFIG}-nohup.out 2>&1 &
 
@@ -192,7 +194,6 @@ start: inplace stop support_files
 # don't want to run 'make stop' because it takes unnecessary time
 # even if the service is already stopped, and bzr_version_info is not
 # needed either because it's run as part of 'make build'.
-# XXX $(PY) -t
 initscript-start:
 	nohup bin/run -C $(CONFFILE) > ${LPCONFIG}-nohup.out 2>&1 &
 
@@ -236,6 +237,7 @@ clean:
 	$(RM) -r $(CODEHOSTING_ROOT)
 	$(RM) $(WADL_FILE) $(API_INDEX)
 	$(RM) $(BZR_VERSION_INFO)
+	$(RM) _pythonpath.py
 	$(RM) -rf \
 			  /var/tmp/builddmaster \
 			  /var/tmp/bzrsync \
@@ -259,6 +261,7 @@ clean_codehosting:
 	mkdir -p $(CODEHOSTING_ROOT)/mirrors
 	mkdir -p $(CODEHOSTING_ROOT)/push-branches
 	mkdir -p $(CODEHOSTING_ROOT)/config
+	mkdir -p /var/tmp/bzrsync
 	touch $(CODEHOSTING_ROOT)/config/launchpad-lookup.txt
 
 zcmldocs:
@@ -310,4 +313,4 @@ ID: compile
 	start run ftest_build ftest_inplace test_build test_inplace pagetests\
 	check check_loggerhead_on_merge  check_merge check_sourcecode_merge \
 	schema default launchpad.pot check_merge_ui pull scan sync_branches\
-	reload-apache hosted_branches check_db_merge
+	reload-apache hosted_branches check_db_merge check_mailman

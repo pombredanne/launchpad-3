@@ -4,6 +4,8 @@
 # sure all source dependencies are properly linked in to all the branches you
 # are working on.
 
+here=`pwd`
+
 source "$HOME/.rocketfuel-env.sh"
 if [ "$?" != 0 ]; then
     echo "Please run rocketfuel-setup first."
@@ -15,16 +17,7 @@ LP_EGGS_PATH=$LP_PROJECT_ROOT/$LP_SOURCEDEPS_DIR/eggs
 LP_DOWNLOAD_CACHE_PATH=$(eval echo ${LP_DOWNLOAD_CACHE_PATH})
 LP_EGGS_PATH=$(eval echo ${LP_EGGS_PATH})
 
-DEVPAD="devpad.canonical.com"
-ROCKETFUELDEPS="/code/rocketfuel-built/launchpad/sourcecode/*"
-RSYNCOPTIONS="-avp --partial --progress --delete"
-# Note, we also add a filter when rsync is evoked.
-
-# Make sure we have an ssh key primed
-ssh-add -l
-if [ $? -gt 0 ]; then ssh-add; fi
-
-# Pull from devpad trunk
+# Pull launchpad devel from launchpad
 cd $LP_TRUNK_PATH
 INITIAL_REV=$(bzr revno)
 bzr pull
@@ -35,25 +28,61 @@ if [ ! -d $LP_SOURCEDEPS_PATH ]; then mkdir -p $LP_SOURCEDEPS_PATH; fi
 if [ ! -d $LP_EGGS_PATH ]; then mkdir -p $LP_EGGS_PATH; fi
 
 # Get/update the download cache
-if [ ! -d $LP_DOWNLOAD_CACHE_PATH ]; then bzr co lp:lp-source-dependencies $LP_DOWNLOAD_CACHE_PATH; fi
+if [ ! -d $LP_DOWNLOAD_CACHE_PATH ]
+    then bzr co lp:lp-source-dependencies $LP_DOWNLOAD_CACHE_PATH
+fi
 bzr up $LP_DOWNLOAD_CACHE_PATH
 
-# Several (*) have tried, and failed, to get the --filter to fit neatly
-# into RSYNCOPTIONS, so we put it here. Bash arrays do not count.
-#   * elmo, sabdfl
-rsync --filter=". utilities/sourcedeps.filter" $RSYNCOPTIONS $DEVPAD:$ROCKETFUELDEPS $LP_SOURCEDEPS_PATH/
+# Create the source dependencies dir if this is the first time.
+if [ ! -d $LP_SOURCEDEPS_PATH ]; then mkdir -p $LP_SOURCEDEPS_PATH; fi
 
+# Add or update sourcepackages.
+local_deps="$here/"`dirname $0`'/sourcedeps.conf'
+if [ -e $local_deps ]
+then
+    # Load the local deps, which the developer may be developing.
+    source $local_deps
+else
+    # Load the global deps which are stable.
+    echo could not find $local_deps
+    source $LP_TRUNK_PATH/utilities/sourcedeps.conf
+fi
+
+echo "Updating sourcecode dependencies in rocketfuel:"
+echo "    Sourcedeps: $LP_SOURCEDEPS_PATH"
+package_pattern="s,.*/\([^/]*\)/[^/]*/,\1,;"
+for dep in $sourcedeps
+do
+    package=`echo $dep | cut -d= -f1`
+    branch=`echo $dep | cut -d= -f2`
+    package_path="$LP_SOURCEDEPS_PATH/$package"
+    echo "    Checking $package_path"
+    if [ -d $package_path ]
+    then
+        cd $package_path
+        bzr pull --remember $branch | sed -e 's,.*,        \0,'
+    else
+        cd $LP_SOURCEDEPS_PATH
+        bzr branch $branch $package | sed -e 's,.*,        \0,'
+    fi
+done
+
+# Update the current trees in the repo.
+echo "Updating sourcecode dependencies in current local branches:"
 cd $LP_PROJECT_PATH
 for branch in *; do
   if [ -d $branch/sourcecode ]
   then
-    echo "Updating sourcecode dependencies for ${branch}"
-    $LP_TRUNK_NAME/utilities/link-external-sourcecode --target=$branch --parent=../$LP_SOURCEDEPS_DIR
+    echo "    ${branch}"
+    $LP_TRUNK_NAME/utilities/link-external-sourcecode \
+        --target=$branch --parent=$LP_PROJECT_ROOT/$LP_SOURCEDEPS_DIR | \
+        sed -e 's,.*,        \0,'
   fi
 done
 
-# Exit if there are no new revisions
-if [ $FINAL_REV = $INITIAL_REV ]; then exit 0; fi
-
-cd $LP_TRUNK_NAME
-make
+# Build launchpad if there were changes
+if [ $FINAL_REV != $INITIAL_REV ];
+then
+    cd $LP_TRUNK_NAME
+    make
+fi

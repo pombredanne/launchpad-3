@@ -31,7 +31,7 @@ from storm.locals import Int, Reference, Unicode
 from sqlobject import (
     ForeignKey, IntCol, StringCol, SQLMultipleJoin, SQLObjectNotFound)
 
-from canonical.codehosting.vfs import get_multi_server
+from lp.codehosting.vfs import get_multi_server
 from canonical.config import config
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol

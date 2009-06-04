@@ -441,6 +441,27 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
             clauseTables = ['ProductSeries', 'Product'])
         return shortlist(result, 300)
 
+    def getTimeline(self, include_inactive=False):
+        landmarks = []
+        for milestone in self.all_milestones:
+            if milestone.product_release is None:
+                # Skip inactive milestones, but include releases,
+                # even if include_inactive is False.
+                if not include_inactive and not milestone.active:
+                    continue
+                node_type = 'milestone'
+            else:
+                node_type = 'release'
+            entry = dict(
+                name=milestone.name,
+                code_name=milestone.code_name,
+                type=node_type)
+            landmarks.append(entry)
+        return dict(
+            name=self.name,
+            is_development_focus=self.is_development_focus,
+            landmarks=landmarks)
+
 
 class ProductSeriesSet:
     """See IProductSeriesSet."""
