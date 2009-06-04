@@ -12,7 +12,7 @@
   <body>
 
 <div metal:fill-slot="main">
-  <h1>Search results</h1>
+  <h1>Search packages in <span tal:replace="context/title" /></h1>
 
   <form name="search" method="GET">
     <div>
@@ -54,8 +54,8 @@
                   </a>
                   <tal:source-name-different
                     condition="python: package.name != view.text">
-                    (<strong tal:content="view/text" /> is part of
-                    <tal:source-name content="package/name" />)
+                    (The binary '<strong tal:content="view/text" />' is part of
+                    the <tal:source-name content="package/name" /> package)
                   </tal:source-name-different>
                 </div>
                 <div class="summary">
@@ -95,13 +95,13 @@
             define="batchnav view/batchnav;batch batchnav/currentBatch|nothing"
             condition="batchnav">
 
-            <h2>All packages with
+            <h2>All packages
               <tal:binaries condition="view/search_by_binary_name">
-                binary names
+                with binaries whose name includes
               </tal:binaries>
               <tal:sources condition="not: view/search_by_binary_name">
-                sources
-              </tal:sources> matching your query
+                with sources matching your query
+              </tal:sources>
               “<tal:query content="view/text">query text</tal:query>”:
             </h2>
             <div style="margin-top:0" class="upper-batch-nav search-batch">
