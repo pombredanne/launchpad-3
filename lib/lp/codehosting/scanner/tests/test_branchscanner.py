@@ -25,10 +25,27 @@ class AppendingHandler(logging.Handler):
 
 
 class AttributeFailureWrapper:
+    """Wraps attribute access to an object, except for one that fails.
+
+    Used for testing error handling when access to a branch attribute fails.
+    On production systems, this mostly happens when the database transaction
+    is invalidated.
+
+    Do not try to set or delete attributes on this. Don't use this outside of
+    this module.
+    """
 
     exception_factory = RuntimeError
 
     def __init__(self, wrapped, failing_attribute):
+        """Construct an `AttributeFailureWrapper` around 'wrapped'.
+
+        :param wrapped: The object to be wrapped. In the tests, usually an
+            `IBranch`.
+        :param failing_attribute: The name of the attribute for which getattr
+            will fail. When you try to get this attribute, an instance of
+            `AttributeFailureWrapper.exception_factory` will be raised.
+        """
         self._wrapped = wrapped
         self._failing_attribute = failing_attribute
 
