@@ -17,7 +17,7 @@
     <div id="container">
         <p class="page-number">5 of 11</p>
         <ul id="navigation-drop-down">
-            <li class="button-next"><a id="btnNext" href="ppa" tabindex="1" accesskey="1">Next</a></li>
+            <li class="button-next"><a id="btnNext" href="ppa" tabindex="1" accesskey="1" title="Read about building and distributing Ubuntu packages">Next</a></li>
             <li class="home"><a href="index" accesskey="2">Launchpad tour home</a></li>
             <li><a href="bugs" accesskey="3">Cross-project bug tracking</a></li>
             <li><a href="branch-hosting-tracking" accesskey="4">Code hosting and review</a></li>
@@ -45,8 +45,11 @@ Launchpad also helps you organise the social structure of your community with a 
         </div>
         <div id="page-intro-bottom"></div>
         <ul id="secondary-navigation">
+            <li class="button-prev">
+                <a href="translation" title="Back to the translations page">Back</a>
+            </li>
             <li class="button-next">
-                <a href="ppa" accesskey="d" tabindex="2">Next</a>
+                <a href="ppa" accesskey="d" tabindex="2" title="Read about building and distributing Ubuntu packages">Next</a>
             </li>
         </ul>
         <div id="further-information">
@@ -121,8 +124,11 @@ Karma gives you a quick way to separate the heavy contributors from the newcomer
             </div>
         </div>
         <ul id="footer-navigation">
+            <li class="button-prev">
+                <a href="translation" title="Back to the translations page">Back</a>
+            </li>
             <li class="button-next">
-                <a href="ppa" accesskey="d" tabindex="3">Next</a>
+                <a href="ppa" accesskey="d" tabindex="3" title="Read about building and distributing Ubuntu packages">Next</a>
             </li>
             <li class="copyright">
                 &copy; 2004-2009 Canonical Ltd. <a href="https://help.launchpad.net/Legal" accesskey="f" tabindex="4">Terms of Use</a> &#58; <a href="https://help.launchpad.net/Feedback" accesskey="g" tabindex="5">Feedback</a> &#58; <a href="https://answers.launchpad.net/launchpad-project/+faqs" accesskey="h" tabindex="6">FAQ</a>

@@ -17,7 +17,7 @@
     <div id="container">
         <p class="page-number">9 of 11</p>
         <ul id="navigation-drop-down">
-            <li class="button-next"><a id="btnNext" href="release-management" accesskey="1" tabindex="1">Next</a></li>
+            <li class="button-next"><a id="btnNext" href="release-management" accesskey="1" tabindex="1" title="Read about managing software releases">Next</a></li>
             <li class="home"><a href="index" accesskey="2">Launchpad tour home</a></li>
             <li><a href="bugs" accesskey="3">Cross-project bug tracking</a></li>
             <li><a href="branch-hosting-tracking" accesskey="4">Code hosting and review</a></li>
@@ -43,8 +43,11 @@
         </div>
         <div id="page-intro-bottom"></div>
         <ul id="secondary-navigation">
+            <li class="button-prev">
+                <a title="Back to the API page" href="api">Back</a>
+            </li>        
             <li class="button-next">
-                <a href="release-management" accesskey="d" tabindex="2">Next</a>
+                <a href="release-management" accesskey="d" tabindex="2" title="Read about managing software releases">Next</a>
             </li>
         </ul>
         <div id="further-information">
@@ -94,8 +97,11 @@
             </div>
         </div>
         <ul id="footer-navigation">
+            <li class="button-prev">
+                <a title="Back to the API page" href="api">Back</a>
+            </li>
             <li class="button-next">
-                <a href="release-management" accesskey="e" tabindex="3">Next</a>
+                <a href="release-management" accesskey="e" tabindex="3" title="Read about managing software releases">Next</a>
             </li>
             <li class="copyright">
                 &copy; 2004-2009 Canonical Ltd. <a href="https://help.launchpad.net/Legal" tabindex="4" accesskey="f">Terms of Use</a> &#58; <a href="https://help.launchpad.net/Feedback" tabindex="5" accesskey="g">Feedback</a> &#58; <a href="https://answers.launchpad.net/launchpad-project/+faqs" tabindex="6" accesskey="h">FAQ</a>
