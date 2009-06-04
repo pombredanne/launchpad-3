@@ -456,7 +456,7 @@ class HWSubmissionSet:
         if bug_tags is not None and bug_tags is not []:
             clauses.extend([Bug.id == BugTag.bugID, In(BugTag.tag, bug_tags)])
 
-        clauses.append(self._userHasAccessStormClause(user))
+        clauses.append(_userCanAccessSubmissionStormClause(user))
 
         person_clauses = [Bug.ownerID == HWSubmission.ownerID]
         if subscribed_to_bug:
