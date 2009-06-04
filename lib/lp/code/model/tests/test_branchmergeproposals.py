@@ -167,6 +167,12 @@ class TestBranchMergeProposalTransitions(TestCaseWithFactory):
         self.assertAllTransitionsGood(BranchMergeProposalStatus.REJECTED)
 
     def test_transition_from_final_with_dupes(self):
+        """Proposals cannot be set active if there are similar active ones.
+
+        So transitioning from a final state to an active one should cause
+        an exception, but transitioning from a final state to a different
+        final state should be fine.
+        """
         for from_status in FINAL_STATES:
             for to_status in BranchMergeProposalStatus.items:
                 if to_status == BranchMergeProposalStatus.SUPERSEDED:
@@ -777,6 +783,7 @@ class TestBranchMergeProposalGetter(TestCaseWithFactory):
                 [mp_with_reviews, mp_no_reviews]))
 
     def test_activeProposalsForBranches_different_branches(self):
+        """Only proposals for the correct branches are returned."""
         mp = self.factory.makeBranchMergeProposal()
         mp2 = self.factory.makeBranchMergeProposal()
         active = BranchMergeProposalGetter.activeProposalsForBranches(
@@ -787,10 +794,13 @@ class TestBranchMergeProposalGetter(TestCaseWithFactory):
         self.assertEqual([mp2], list(active2))
 
     def test_activeProposalsForBranches_different_states(self):
+        """Only proposals for active states are returned."""
         for state in BranchMergeProposalStatus.items:
             mp = self.factory.makeBranchMergeProposal(set_state=state)
             active = BranchMergeProposalGetter.activeProposalsForBranches(
                 mp.source_branch, mp.target_branch)
+            # If a proposal is superseded, there is an active proposal which
+            # supersedes it.
             if state == BranchMergeProposalStatus.SUPERSEDED:
                 self.assertEqual([mp.superseded_by], list(active))
             elif state in FINAL_STATES:
