@@ -8,7 +8,6 @@ __metaclass__ = type
 import bisect
 import cgi
 from email.Utils import formatdate
-import locale
 import math
 import os.path
 import re
@@ -1579,27 +1578,25 @@ class NumberFormatterAPI:
             return self.float(float(format))
         elif name == 'bytes':
             return self.bytes()
-        elif name == 'commify':
-            format = ''
-            if len(furtherPath) != 0:
-                format = furtherPath.pop()
-            return self.commify(format)
+        elif name == 'intcomma':
+            return self.intcomma()
         else:
             raise TraversalError(name)
 
-    def commify(self, format=''):
-        """Return this number with its thousands separated by comma."""
-        if isinstance(self._number, int):
+    def intcomma(self):
+        """Return this number with its thousands separated by comma.
+
+        This can only be used for integers.
+        """
+        if not isinstance(self._number, int):
+            raise AssertionError("This can't be used with non-integers")
             format = "%d"
-        elif isinstance(self._number, float):
-            format = "%" + format + "f"
-        else:
-            raise AssertionError()
-        orig_locale = locale.getlocale(locale.LC_NUMERIC)
-        locale.setlocale(locale.LC_NUMERIC, '')
-        formatted = locale.format(format, self._number, grouping=True)
-        locale.setlocale(locale.LC_NUMERIC, orig_locale)
-        return formatted
+        L = []
+        for index, char in enumerate(reversed(str(self._number))):
+            if index != 0 and (index % 3) == 0:
+                L.insert(0, ',')
+            L.insert(0, char)
+        return ''.join(L)
 
     def bytes(self):
         """Render number as byte contractions according to IEC60027-2."""

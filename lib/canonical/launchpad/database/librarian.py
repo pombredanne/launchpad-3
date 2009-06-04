@@ -17,7 +17,7 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from sqlobject import StringCol, ForeignKey, IntCol, SQLRelatedJoin, BoolCol
-from storm.locals import Date, Desc, Int, Reference, Storm, Store, Unicode
+from storm.locals import Date, Desc, Int, Reference, Store, Storm, Unicode
 
 from canonical.config import config
 from canonical.launchpad.interfaces import (

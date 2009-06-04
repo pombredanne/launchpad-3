@@ -132,7 +132,7 @@
               </td>
               <td>
                 <tal:downloaded condition="lfa/hits">
-                  <span tal:replace="lfa/hits/fmt:commify" />
+                  <span tal:replace="lfa/hits/fmt:intcomma" />
                   <span class="lesser">
                     (Last downloaded
                     <strong tal:content="lfa/last_downloaded/fmt:approximateduration" />
