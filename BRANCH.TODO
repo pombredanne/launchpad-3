@@ -2,31 +2,3 @@
 # landing. There is a test to ensure it is empty in trunk. If there is
 # stuff still here when you are ready to land, the items should probably
 # be converted to bugs so they can be scheduled.
-
-On https://edge.launchpad.net/plone/3.2/3.2.2, add a 'Downloads: N' line to
-the table at the top, containing the sum of downloads of every file on that
-release.
-
-Add another column to the table listing the files to download, probably in
-between the two existing ones, showing the total number of downloads for each
-of the files.
-
-Should all this information be shown to all users or just to the ones somehow
-involved with the project?
-
-Try to use the pt_BR locale to format the numbers using commas (on the
-thousands) so that it's easier for humans to parse big numbers.
-
-Rename first column to 'File' and add a 'Download' column containing the
-number of times the file has been downloaded plus the last time it was
-downloaded.
-
-On the line showing the total number of downloads for that release, add a link
-('See detailed stats') which takes the user to a new page showing a break down
-of downloads by file, day and country. Or would it be more interesting to have
-this new page under the product series, showing the detailed stats for each
-release?  Maybe even have that page under the project itself, showing detailed
-stats for each series?
-
-An overall cache of downloads for the project, on the project's overview page.
-Probably a separate section above 'Series and milestones'. Should also state the day when any file was last downloaded.
