@@ -656,6 +656,26 @@ absence of tags.
     Firefox crashes when Save As dialog for a nonexistent window is closed []
     Some bug []
 
+Searching for the presence and absence of tags finds no
+matches. Unsurprisingly.
+
+    >>> search_tasks_and_print_bugs(tag=all('*', '!*'))
+
+Wildcards can be combined with non-wildcard tags. The following finds
+all bugs with tags, but without test-tag-1:
+
+    >>> search_tasks_and_print_bugs(tag=all('*', '!test-tag-1'))
+    Reflow problems with complex page layouts [layout-test]
+    Firefox install instructions should be complete [doc]
+
+The following finds all untagged bugs and bugs with the doc tag.
+
+    >>> search_tasks_and_print_bugs(tag=any('!*', 'doc'))
+    Firefox does not support SVG []
+    Firefox install instructions should be complete [doc]
+    Firefox crashes when Save As dialog for a nonexistent window is closed []
+    Some bug []
+
 
 == Searching by date_closed ==
 
