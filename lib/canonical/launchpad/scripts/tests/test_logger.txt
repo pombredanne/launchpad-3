@@ -20,7 +20,7 @@ by our logging handler.
     ...     cmd = [sys.executable, test_script_path] + list(args)
     ...     proc = subprocess.Popen(
     ...         cmd, stdin=subprocess.PIPE,
-    ...         stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env, **kw)
+    ...         stdout=subprocess.PIPE, stderr=subprocess.PIPE, **kw)
     ...     out, err = proc.communicate()
     ...     assert out == "", "Output to stdout"
     ...     print err
