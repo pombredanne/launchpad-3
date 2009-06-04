@@ -13,13 +13,30 @@ Just as with a Tag, a plain name is fine.
     >>> tag.validate(u'fred')
     >>> search_tag.validate(u'fred')
 
-Names prefixed with an exclamation mark are allowed. This denotes that
-a search request for the absense of a tag.
+Names prefixed with an exclamation mark are allowed. This denotes a
+search request for the absense of a tag.
 
     >>> tag.validate(u'!fred')
     Traceback (most recent call last):
     ...
-    zope.schema._bootstrapinterfaces.ConstraintNotSatisfied: !fred
+    ConstraintNotSatisfied: !fred
 
     >>> search_tag.validate(u'!fred')
 
+Wildcards are also allowed. At the moment, only testing for the
+presence or absense of tags is allowed, rather than substring
+searches.
+
+    >>> tag.validate(u'*')
+    Traceback (most recent call last):
+    ...
+    ConstraintNotSatisfied: *
+
+    >>> search_tag.validate(u'*')
+
+    >>> tag.validate(u'!*')
+    Traceback (most recent call last):
+    ...
+    ConstraintNotSatisfied: !*
+
+    >>> search_tag.validate(u'*')
