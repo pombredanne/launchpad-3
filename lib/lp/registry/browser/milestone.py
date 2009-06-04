@@ -14,6 +14,8 @@ __all__ = [
     'MilestoneSetNavigation',
     ]
 
+from operator import attrgetter
+
 from zope.component import getUtility
 from zope.formlib import form
 from zope.schema import Choice
@@ -74,11 +76,13 @@ class MilestoneContextMenu(ContextMenu):
     @enabled_with_permission('launchpad.Edit')
     def create_release(self):
         text = 'Create release'
+        summary = 'Create a release from this milestone'
         # Releases only exist for products.
         # A milestone can only have a single product release.
         enabled = (not IProjectMilestone.providedBy(self.context)
                    and self.context.product_release is None)
-        return Link('+addrelease', text, icon='add', enabled=enabled)
+        return Link(
+            '+addrelease', text, icon='add', summary=summary, enabled=enabled)
 
     def view_release(self):
         text = 'View release'
@@ -100,6 +104,19 @@ class MilestoneOverviewNavigationMenu(NavigationMenu):
     usedfor = IMilestone
     facet = 'overview'
     links = ()
+
+
+class StatusCount:
+    """A helper that stores the count of status for a list of items
+
+    Items such as `IBugTask` and `ISpecification` can be summarised by
+    their status.
+    """
+
+    def __init__(self, status, count):
+        """Set the status and count."""
+        self.status = status
+        self.count = count
 
 
 class MilestoneView(LaunchpadView, ProductDownloadFileMixin):
@@ -194,6 +211,11 @@ class MilestoneView(LaunchpadView, ProductDownloadFileMixin):
             return '<strong>%d bugs</strong>' % count
 
     @property
+    def bugtask_status_counts(self):
+        """A list StatusCounts summarising the targeted bugtasks."""
+        return self._status_counts(self.bugtasks, 'status')
+
+    @property
     def specification_count_text(self):
         """The formatted count of specifications for this milestone."""
         count = len(self.specifications)
@@ -201,6 +223,24 @@ class MilestoneView(LaunchpadView, ProductDownloadFileMixin):
             return '<strong>1 blueprint</strong>'
         else:
             return '<strong>%d blueprints</strong>' % count
+
+    @property
+    def specification_status_counts(self):
+        """A list StatusCounts summarising the targeted specification."""
+        return self._status_counts(
+            self.specifications, 'implementation_status')
+
+    def _status_counts(self, workitems, status_attr):
+        """Return a list StatusCounts summarising the workitem."""
+        statuses = {}
+        for workitem in workitems:
+            status = getattr(workitem, status_attr)
+            if status not in statuses:
+                statuses[status] = 0
+            statuses[status] += 1
+        return [
+            StatusCount(status, statuses[status])
+            for status in sorted(statuses, key=attrgetter('name'))]
 
     @property
     def is_project_milestone(self):

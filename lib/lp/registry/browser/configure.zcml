@@ -1610,6 +1610,9 @@
             name="+index"
             template="../templates/milestone-index.pt"/>
         <browser:page
+            name="+productseries-table-row"
+            template="../templates/productseries-milestone-table-row.pt"/>
+        <browser:page
             name="+portlet-details"
             template="../templates/milestone-portlet-details.pt"/>
     </browser:pages>
