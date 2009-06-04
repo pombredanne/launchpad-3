@@ -54,7 +54,8 @@ from lp.code.interfaces.branch import IBranchNavigationMenu
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.interfaces.branchmergeproposal import (
     BadBranchMergeProposalSearchContext, BadStateTransition,
-    BranchMergeProposalStatus, BRANCH_MERGE_PROPOSAL_FINAL_STATES,
+    BranchMergeProposalStatus,
+    BRANCH_MERGE_PROPOSAL_FINAL_STATES as FINAL_STATES,
     IBranchMergeProposal, IBranchMergeProposalGetter, IBranchMergeProposalJob,
     ICreateMergeProposalJob, ICreateMergeProposalJobSource,
     IMergeProposalCreatedJob, UserNotBranchReviewer, WrongBranchMergeProposal)
@@ -78,7 +79,6 @@ def is_valid_transition(proposal, from_state, next_state, user=None):
     # Trivial acceptance case.
     if from_state == next_state:
         return True
-    FINAL_STATES = BRANCH_MERGE_PROPOSAL_FINAL_STATES
     if from_state in FINAL_STATES and next_state not in FINAL_STATES:
         dupes = BranchMergeProposalGetter.activeProposalsForBranches(
             proposal.source_branch, proposal.target_branch)
@@ -326,8 +326,7 @@ class BranchMergeProposal(SQLBase):
         """See `IBranchMergeProposal`."""
         # As long as the source branch has not been merged, rejected
         # or superseded, then it is valid to be merged.
-        return (self.queue_status not in
-                BRANCH_MERGE_PROPOSAL_FINAL_STATES)
+        return (self.queue_status not in FINAL_STATES)
 
     def _reviewProposal(self, reviewer, next_state, revision_id):
         """Set the proposal to one of the two review statuses."""
@@ -752,8 +751,7 @@ class BranchMergeProposalGetter:
             BranchMergeProposal.source_branch = %s AND
             BranchMergeProposal.target_branch = %s AND
             BranchMergeProposal.queue_status NOT IN %s
-                """ % sqlvalues(source_branch, target_branch,
-                                BRANCH_MERGE_PROPOSAL_FINAL_STATES))
+                """ % sqlvalues(source_branch, target_branch, FINAL_STATES))
 
 
 class BranchMergeProposalJobType(DBEnumeratedType):

@@ -32,10 +32,10 @@ from canonical.launchpad.ftests import (
 from lp.code.interfaces.branch import BranchType
 from lp.code.interfaces.branchmergeproposal import (
     BadStateTransition, BranchMergeProposalStatus,
-    BRANCH_MERGE_PROPOSAL_FINAL_STATES, IBranchMergeProposalGetter,
-    IBranchMergeProposalJob, ICreateMergeProposalJob,
-    ICreateMergeProposalJobSource, IMergeProposalCreatedJob,
-    WrongBranchMergeProposal)
+    BRANCH_MERGE_PROPOSAL_FINAL_STATES as FINAL_STATES,
+    IBranchMergeProposalGetter, IBranchMergeProposalJob,
+    ICreateMergeProposalJob, ICreateMergeProposalJobSource,
+    IMergeProposalCreatedJob, WrongBranchMergeProposal)
 from lp.code.interfaces.branchsubscription import (
     BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel)
 from canonical.launchpad.interfaces.message import IMessageJob
@@ -165,11 +165,11 @@ class TestBranchMergeProposalTransitions(TestCaseWithFactory):
         self.assertAllTransitionsGood(BranchMergeProposalStatus.REJECTED)
 
     def test_transition_from_final_with_dupes(self):
-        for from_status in BRANCH_MERGE_PROPOSAL_FINAL_STATES:
+        for from_status in FINAL_STATES:
             for to_status in BranchMergeProposalStatus.items:
                 if to_status == BranchMergeProposalStatus.SUPERSEDED:
                     continue
-                if to_status in BRANCH_MERGE_PROPOSAL_FINAL_STATES:
+                if to_status in FINAL_STATES:
                     self.assertGoodDupeTransition(from_status, to_status)
                 else:
                     self.assertBadDupeTransition(from_status, to_status)
@@ -774,6 +774,27 @@ class TestBranchMergeProposalGetter(TestCaseWithFactory):
             getUtility(IBranchMergeProposalGetter).getVotesForProposals(
                 [mp_with_reviews, mp_no_reviews]))
 
+    def test_activeProposalsForBranches_different_branches(self):
+        mp = self.factory.makeBranchMergeProposal()
+        mp2 = self.factory.makeBranchMergeProposal()
+        active = BranchMergeProposalGetter.activeProposalsForBranches(
+            mp.source_branch, mp.target_branch)
+        self.assertEqual([mp], list(active))
+        active2 = BranchMergeProposalGetter.activeProposalsForBranches(
+            mp2.source_branch, mp2.target_branch)
+        self.assertEqual([mp2], list(active2))
+
+    def test_activeProposalsForBranches_different_states(self):
+        for state in BranchMergeProposalStatus.items:
+            mp = self.factory.makeBranchMergeProposal(set_state=state)
+            active = BranchMergeProposalGetter.activeProposalsForBranches(
+                mp.source_branch, mp.target_branch)
+            if state == BranchMergeProposalStatus.SUPERSEDED:
+                self.assertEqual([mp.superseded_by], list(active))
+            elif state in FINAL_STATES:
+                self.assertEqual([], list(active))
+            else:
+                self.assertEqual([mp], list(active))
 
 class TestBranchMergeProposalGetterGetProposals(TestCaseWithFactory):
     """Test the getProposalsForContext method."""
