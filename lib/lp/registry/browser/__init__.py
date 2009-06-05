@@ -9,7 +9,7 @@ __all__ = [
 
 
 from zope.component import getUtility
-from canonical.launchpad.interfaces.bugtask import (
+from lp.bugs.interfaces.bugtask import (
     BugTaskSearchParams, IBugTaskSet)
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp import canonical_url

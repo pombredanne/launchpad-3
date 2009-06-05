@@ -57,13 +57,13 @@ from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.branchnamespace import InvalidNamespace
 from lp.code.interfaces.linkedbranch import (
     CannotHaveLinkedBranch, NoLinkedBranch)
-from canonical.launchpad.interfaces.bug import IBugSet
-from canonical.launchpad.interfaces.bugtracker import IBugTrackerSet
+from lp.bugs.interfaces.bug import IBugSet
+from lp.bugs.interfaces.bugtracker import IBugTrackerSet
 from lp.soyuz.interfaces.builder import IBuilderSet
 from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.code.interfaces.codeimport import ICodeImportSet
 from lp.registry.interfaces.codeofconduct import ICodeOfConductSet
-from canonical.launchpad.interfaces.cve import ICveSet
+from lp.bugs.interfaces.cve import ICveSet
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.karma import IKarmaActionSet
 from canonical.launchpad.interfaces.hwdb import IHWDBApplication
@@ -76,7 +76,7 @@ from canonical.launchpad.interfaces.launchpadstatistic import (
     ILaunchpadStatisticSet)
 from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
 from lp.registry.interfaces.mailinglist import IMailingListSet
-from canonical.launchpad.interfaces.malone import IMaloneApplication
+from lp.bugs.interfaces.malone import IMaloneApplication
 from lp.registry.interfaces.mentoringoffer import IMentoringOfferSet
 from canonical.signon.interfaces.openidserver import IOpenIDRPConfigSet
 from lp.registry.interfaces.person import IPersonSet

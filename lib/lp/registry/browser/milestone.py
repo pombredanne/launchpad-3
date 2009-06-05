@@ -20,8 +20,8 @@ from zope.schema import Choice
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
-from canonical.launchpad.browser.bugtask import BugTaskListingItem
-from canonical.launchpad.interfaces.bugtask import (
+from lp.bugs.browser.bugtask import BugTaskListingItem
+from lp.bugs.interfaces.bugtask import (
     BugTaskSearchParams, IBugTaskSet)
 from lp.registry.interfaces.milestone import (
     IMilestone, IMilestoneSet, IProjectMilestone)

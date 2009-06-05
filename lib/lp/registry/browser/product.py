@@ -55,8 +55,8 @@ from canonical.config import config
 from lazr.delegates import delegates
 from canonical.launchpad import _
 from canonical.launchpad.fields import PillarAliases, PublicPersonChoice
-from canonical.launchpad.interfaces.bugtask import RESOLVED_BUGTASK_STATUSES
-from canonical.launchpad.interfaces.bugwatch import IBugTracker
+from lp.bugs.interfaces.bugtask import RESOLVED_BUGTASK_STATUSES
+from lp.bugs.interfaces.bugwatch import IBugTracker
 from lp.services.worlddata.interfaces.country import ICountry
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
@@ -76,7 +76,7 @@ from canonical.launchpad import helpers
 from lp.registry.browser.announcement import HasAnnouncementsView
 from canonical.launchpad.browser.branding import BrandingChangeView
 from lp.code.browser.branchref import BranchRef
-from canonical.launchpad.browser.bugtask import (
+from lp.bugs.browser.bugtask import (
     BugTargetTraversalMixin, get_buglisting_search_filter_url)
 from lp.registry.browser.distribution import UsesLaunchpadMixin
 from lp.answers.browser.faqtarget import FAQTargetNavigationMixin

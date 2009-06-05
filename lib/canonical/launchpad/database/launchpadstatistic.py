@@ -17,8 +17,8 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 
 from canonical.database.sqlbase import SQLBase, cursor, sqlvalues
-from canonical.launchpad.database.bug import Bug
-from canonical.launchpad.database.bugtask import BugTask
+from lp.bugs.model.bug import Bug
+from lp.bugs.model.bugtask import BugTask
 from lp.services.worlddata.model.language import Language
 from canonical.launchpad.database.potemplate import POTemplate
 from canonical.launchpad.database.pofile import POFile

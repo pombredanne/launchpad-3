@@ -11,28 +11,8 @@
     <include file="binaryandsourcepackagename.zcml" />
     <include file="bountysubscription.zcml" />
     <include file="bounty.zcml" />
-    <include file="bugactivity.zcml" />
-    <include file="bugattachment.zcml" />
-    <include file="bugbranch.zcml" />
-    <include file="bugcomment.zcml" />
-    <include file="bugcve.zcml" />
-    <include file="buglinktarget.zcml" />
-    <include file="bugmessage.zcml" />
-    <include file="bugnomination.zcml" />
-    <include file="bugnotification.zcml" />
-    <include file="bugsubscription.zcml" />
-    <include file="bugsupervisor.zcml" />
-    <include file="bugtask.zcml" />
-    <include file="bugtarget.zcml" />
-    <include file="bugtracker.zcml" />
-    <include file="bugtrackerperson.zcml" />
-    <include file="bugwatch.zcml" />
-    <include file="bug.zcml" />
     <include file="crowd.zcml" />
     <include file="customlanguagecode.zcml" />
-    <include file="cve.zcml" />
-    <include file="cve-events.zcml" />
-    <include file="cvereference.zcml" />
     <include file="diff.zcml" />
     <include file="datetime.zcml" />
     <include file="decoratedresultset.zcml" />
@@ -47,11 +27,9 @@
     <include file="librarian.zcml" />
     <include file="logintoken.zcml" />
     <include file="marketing.zcml" />
-    <include file="mentoringoffer.zcml" />
     <include file="message.zcml" />
     <include file="oauth.zcml" />
     <include file="openidconsumer.zcml" />
-    <include file="packagebugsupervisor.zcml" />
     <include file="packagecopyrequest.zcml" />
     <include file="packagerelationship.zcml" />
     <include file="packaging.zcml" />
@@ -84,12 +62,8 @@
 
     <!-- System homepages -->
     <include file="translations.zcml" />
-    <include file="malone.zcml" />
 
     <!-- Event configuration -->
-    <include file="bug-events.zcml" />
-    <include file="bugtask-events.zcml" />
-    <include file="bugactivity-subscriptions.zcml" />
 
     <!-- Special Utilities -->
     <include file="geoip.zcml" />

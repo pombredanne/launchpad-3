@@ -3,7 +3,7 @@
 
 """Code for Launchpad's RESTful web services."""
 
-from canonical.launchpad.rest.bug import *
+from lp.bugs.adapters.bug_0 import *
 from canonical.launchpad.rest.bytestorage import *
 from canonical.launchpad.rest.me import *
 from canonical.launchpad.rest.pillarset import *

@@ -22,7 +22,7 @@ from canonical.launchpad.components.externalbugtracker import (
     BugWatchUpdateWarning, InvalidBugId, PrivateRemoteBug,
     UnknownBugTrackerTypeError, UnknownRemoteStatusError, UnparseableBugData,
     UnparseableBugTrackerVersion, UnsupportedBugTrackerVersion)
-from canonical.launchpad.components.externalbugtracker.bugzilla import (
+from lp.bugs.externalbugtracker.bugzilla import (
     BugzillaLPPlugin)
 from lazr.lifecycle.event import ObjectCreatedEvent
 from canonical.launchpad.helpers import get_email_template
@@ -31,8 +31,8 @@ from canonical.launchpad.interfaces import (
     IBugTrackerSet, IBugWatchSet, IDistribution, ILaunchpadCelebrities,
     IPersonSet, ISupportsCommentImport, ISupportsCommentPushing,
     PersonCreationRationale, UNKNOWN_REMOTE_STATUS)
-from canonical.launchpad.interfaces.bug import IBugSet
-from canonical.launchpad.interfaces.externalbugtracker import (
+from lp.bugs.interfaces.bug import IBugSet
+from lp.bugs.interfaces.externalbugtracker import (
     ISupportsBackLinking)
 from canonical.launchpad.interfaces.launchpad import NotFoundError
 from canonical.launchpad.interfaces.message import IMessageSet

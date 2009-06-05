@@ -6,7 +6,7 @@ it implements the same API that Trac instances having the LP plugin
 installed implement.
 
     >>> import xmlrpclib
-    >>> from canonical.launchpad.ftests.externalbugtracker import (
+    >>> from lp.bugs.tests.externalbugtracker import (
     ...     TestTracXMLRPCTransport)
     >>> trac_transport = TestTracXMLRPCTransport('http://example.com/xmlrpc')
     >>> server = xmlrpclib.ServerProxy(
@@ -66,7 +66,7 @@ select the bugs to return.
 We'll add some bugs to our trac transport to demonstrate this.
 
     >>> from datetime import datetime
-    >>> from canonical.launchpad.ftests.externalbugtracker import (
+    >>> from lp.bugs.tests.externalbugtracker import (
     ...     MockTracRemoteBug)
 
     >>> remote_bugs = {

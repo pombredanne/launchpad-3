@@ -9,7 +9,7 @@ from zope.component import getUtility
 
 from canonical.launchpad.components.externalbugtracker import (
     BugWatchUpdateError, BugWatchUpdateWarning, get_external_bugtracker)
-from canonical.launchpad.interfaces.bugtracker import (
+from lp.bugs.interfaces.bugtracker import (
     BugTrackerType, SINGLE_PRODUCT_BUGTRACKERTYPES)
 from lp.registry.interfaces.product import IProductSet
 

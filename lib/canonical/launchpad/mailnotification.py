@@ -25,8 +25,8 @@ from zope.interface import implements
 
 from canonical.config import config
 from canonical.database.sqlbase import block_implicit_flushes
-from canonical.launchpad.components.bug import BugDelta
-from canonical.launchpad.components.bugchange import get_bug_changes
+from lp.bugs.adapters.bug import BugDelta
+from lp.bugs.adapters.bugchange import get_bug_changes
 from canonical.launchpad.helpers import (
     get_contact_email_addresses, get_email_template, shortlist)
 from canonical.launchpad.interfaces import (
@@ -34,7 +34,7 @@ from canonical.launchpad.interfaces import (
     INotificationRecipientSet, IPerson, IPersonSet, ISpecification,
     IStructuralSubscriptionTarget, ITeamMembershipSet, IUpstreamBugTask,
     TeamMembershipStatus)
-from canonical.launchpad.interfaces.bugchange import IBugChange
+from lp.bugs.interfaces.bugchange import IBugChange
 from canonical.launchpad.interfaces.message import (
     IDirectEmailAuthorization, QuotaReachedError)
 from canonical.launchpad.interfaces.structuralsubscription import (

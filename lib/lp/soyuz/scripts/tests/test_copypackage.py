@@ -18,9 +18,9 @@ from lp.soyuz.model.processor import ProcessorFamily
 from lp.soyuz.model.publishing import (
     SecureSourcePackagePublishingHistory,
     SecureBinaryPackagePublishingHistory)
-from canonical.launchpad.interfaces.bug import (
+from lp.bugs.interfaces.bug import (
     CreateBugParams, IBugSet)
-from canonical.launchpad.interfaces.bugtask import BugTaskStatus
+from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.soyuz.interfaces.build import BuildStatus
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.registry.interfaces.distribution import IDistributionSet
