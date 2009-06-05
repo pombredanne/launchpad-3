@@ -6,7 +6,8 @@
 <tal:block condition="context/submissions">
   <tal:submission repeat="submission context/submissions">
 
-  <tr class="secondary">
+  <tr tal:attributes="
+        class string:secondary ${submission/suggestion_dismissable_class}">
     <td class="icon left right">
       <tal:form-writeable condition="context/form_is_writeable">
       <tal:user-is-official-translator
@@ -59,8 +60,9 @@
       </label>
     </td>
   </tr>
-  <tr class="discreet secondary"
-    tal:attributes="id string:msgset_${context/potmsgset/id}_${submission/language/code}_suggestion_${submission/id}_${submission/plural_index}_origin">
+  <tr
+    tal:attributes="id string:msgset_${context/potmsgset/id}_${submission/language/code}_suggestion_${submission/id}_${submission/plural_index}_origin;
+                    class string:discreet secondary ${submission/suggestion_dismissable_class}">
     <td class="icon left right">
       <tal:legal-warning condition="submission/legal_warning">
         <a href="http://help.launchpad.net/Translations/ReusingPackagedTranslations"
