@@ -28,7 +28,7 @@
             <li><a href="api" accesskey="9">Beta: web services API</a></li>
             <li class="current"><a href="feature-tracking" accesskey="a">Light-weight specifications</a></li>
             <li><a href="release-management" accesskey="b">Release management</a></li>
-            <li><a href="join-launchpad" accesskey="c">Join Launchpad!</a></li>                        
+            <li><a href="join-launchpad" accesskey="c">Join Launchpad!</a></li>
         </ul>
         <div id="page-intro-top"></div>
         <div id="page-intro">
@@ -45,7 +45,7 @@
         <ul id="secondary-navigation">
             <li class="button-prev">
                 <a title="Back to the API page" href="api" accesskey="d" tabindex="2">Back</a>
-            </li>        
+            </li>
             <li class="button-next">
                 <a href="release-management" accesskey="e" tabindex="3" title="Read about managing software releases">Next</a>
             </li>
@@ -61,7 +61,7 @@
                             <img src="images/blueprints/1.png" alt="People, status and priority" />
                         </p>
                         <p>
-                            Each blueprint has three roles&#58; drafter, assignee and approver. They form an ad-hoc team to ensure the blueprint is well drafted and implemented. They can also set the blueprint&rsquo;s priority to reflect its importance to the wider project. The outside world can watch the blueprint&rsquo;s progress through its &ldquo;drafting&rdquo; and &ldquo;implementation&rdquo; statuses. 
+                            Each blueprint has three roles&#58; drafter, assignee and approver. They form an ad-hoc team to ensure the blueprint is well drafted and implemented. They can also set the blueprint&rsquo;s priority to reflect its importance to the wider project. The outside world can watch the blueprint&rsquo;s progress through its &ldquo;drafting&rdquo; and &ldquo;implementation&rdquo; statuses.
                         </p>
                     </div>
                     <div class="block odd">

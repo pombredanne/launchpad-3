@@ -28,7 +28,7 @@
             <li><a href="api" accesskey="9">Beta: web services API</a></li>
             <li><a href="feature-tracking" accesskey="a">Lightweight specifications</a></li>
             <li><a href="release-management" accesskey="b">Release management</a></li>
-            <li><a href="join-launchpad" accesskey="c">Join Launchpad!</a></li>                      
+            <li><a href="join-launchpad" accesskey="c">Join Launchpad!</a></li>
         </ul>
         <div id="page-intro-top"></div>
         <div id="page-intro">
@@ -109,9 +109,7 @@ Launchpad also helps you organise the social structure of your community with a 
                 <div class="furthur-information-block-mid">
                     <div class="block">
                         <h3>Karma</h3>
-                        <h4>
-
-Karma gives you a quick way to separate the heavy contributors from the newcomers!</h4>
+                        <h4>Karma gives you a quick way to separate the heavy contributors from the newcomers!</h4>
                         <p class="screen-holder">
                             <img src="images/community/5.png" alt="Karma"  />                        </p>
                         <p>

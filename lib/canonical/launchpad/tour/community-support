@@ -28,7 +28,7 @@
             <li><a href="api" accesskey="9">Beta: web services API</a></li>
             <li><a href="feature-tracking" accesskey="a">Lightweight specifications</a></li>
             <li><a href="release-management" accesskey="b">Release management</a></li>
-            <li><a href="join-launchpad" accesskey="c">Join Launchpad!</a></li>                        
+            <li><a href="join-launchpad" accesskey="c">Join Launchpad!</a></li>
         </ul>
         <div id="page-intro-top"></div>
         <div id="page-intro">
@@ -47,7 +47,7 @@
         <ul id="secondary-navigation">
             <li class="button-prev">
                 <a href="ppa" title="Back to the user support tracking page" tabindex="2" accesskey="d">Back</a>
-            </li>        
+            </li>
             <li class="button-next" title="Read about Launchpad's web services API">
                 <a href="api" tabindex="3" accesskey="e">Next</a>
             </li>
@@ -84,7 +84,8 @@
                         <h3>Knowledge-base and FAQs</h3>
                         <h4>All projects have their frequently asked questions.</h4>
                         <p class="screen-holder">
-                            <img src="images/answers/3.png" alt="Knowledge-base and FAQs"  />                        </p>
+                            <img src="images/answers/3.png" alt="Knowledge-base and FAQs"  />
+                        </p>
                         <p>
                             Launchpad provides a repository for your community&rsquo;s knowledge, which builds organically as people ask and answer questions.
                         </p>
@@ -100,7 +101,7 @@
         <ul id="footer-navigation">
           <li class="button-prev">
                 <a href="ppa" title="Back to the user support tracking page" tabindex="4" accesskey="f">Back</a>
-            </li> 
+            </li>
             <li class="button-next" title="Read about Launchpad's web services API">
                 <a href="api" tabindex="5" accesskey="g">Next</a>
             </li>

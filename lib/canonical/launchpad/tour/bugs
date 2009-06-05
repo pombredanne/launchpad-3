@@ -29,10 +29,9 @@
             <li><a href="api" accesskey="9">Beta: web services API</a></li>
             <li><a href="feature-tracking" accesskey="a">Lightweight specifications</a></li>
             <li><a href="release-management" accesskey="b">Release management</a></li>
-            <li><a href="join-launchpad" accesskey="c">Join Launchpad!</a></li>                        
+            <li><a href="join-launchpad" accesskey="c">Join Launchpad!</a></li>
         </ul>
 
-        
         <div id="page-intro-top"></div>
         <div id="page-intro">
             <h1>One place to track bugs<br />across project boundaries and tools</h1>
@@ -123,7 +122,7 @@ And to help find low-hanging fruit, there&rsquo;s a &ldquo;Bugs fixed elsewhere&
                 </div>
                 <div class="furthur-information-block-bot"></div>
             </div>
-            
+
         </div>
         <ul id="footer-navigation">
             <li class="button-prev">

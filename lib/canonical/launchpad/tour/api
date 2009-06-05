@@ -28,7 +28,7 @@
             <li class="current"><a href="api" accesskey="9">Beta: web services API</a></li>
             <li><a href="feature-tracking" accesskey="a">Lightweight specifications</a></li>
             <li><a href="release-management" accesskey="b">Release management</a></li>
-            <li><a href="join-launchpad" accesskey="c">Join Launchpad!</a></li>                        
+            <li><a href="join-launchpad" accesskey="c">Join Launchpad!</a></li>
         </ul>
         <div id="page-intro-top"></div>
         <div id="page-intro">
@@ -47,8 +47,8 @@ We've even done the hard work for you: use our LGPL Python library &mdash; <a hr
         <div id="page-intro-bottom"></div>
         <ul id="secondary-navigation">
             <li class="button-prev">
-                <a href="community-support" title="Back to the user support tracking page" accesskey="d" tabindex="2>Back</a>
-            </li>        
+                <a href="community-support" title="Back to the user support tracking page" accesskey="d" tabindex="2">Back</a>
+            </li>
             <li class="button-next">
                 <a href="feature-tracking" accesskey="e" tabindex="3" title="Read about spec tracking in Launchpad">Next</a>
             </li>
@@ -67,13 +67,13 @@ We've even done the hard work for you: use our LGPL Python library &mdash; <a hr
 
                         </p>
                         <p>
-                          <ul>   
+                          <ul>
                             <li><strong>bugs:</strong> report, access and manage</li>
                             <li><strong>people, teams and projects:</strong> create, search and edit</li>
                             <li><strong>code</strong>: access branch information.</li>
                           </ul>
                         </p>
-                        
+
                         <p>We're adding more every month. See the Launchpad <a href="http://news.launchpad.net/category/api">blog's API category</a> for regular updates.</p>
 
 
@@ -87,7 +87,7 @@ We've even done the hard work for you: use our LGPL Python library &mdash; <a hr
                             <img src="images/api/3.png" alt="Using launchpadlib"  />                        </p>
                         <p>
                            If you're a Python developer, you can access and manipulate data in Launchpad as though it were any other Python object.<p>
-                        
+
                         <p><br />
                                 <code>
                                 people = launchpad.people<br />
@@ -99,7 +99,7 @@ We've even done the hard work for you: use our LGPL Python library &mdash; <a hr
                         </p>
 
                         <p>You can be up and running in minutes, without having to make any API calls directly. <a href="https://help.launchpad.net/API/launchpadlib">Read more about launchpadlib &gt;</a>.
-                        </p>  
+                        </p>
                     </div>
                     <div class="clear"></div>
                 </div>
@@ -113,7 +113,8 @@ We've even done the hard work for you: use our LGPL Python library &mdash; <a hr
                         <h4>
                         Your application's users log into their own Launchpad account.</h4>
                         <p class="screen-holder">
-                            <img src="images/api/2.png" alt="The API's authentication page" />                        </p>
+                            <img src="images/api/2.png" alt="The API's authentication page" />
+                        </p>
                         <p>
                           Before the API will give your software access to Launchpad data, your user needs to log into their Launchpad account. Launchpad handles that for you, using <a href="http://oauth.net/">OAuth</a>, by opening an authentication page in your user's web browser. They can then choose what access to grant your software, from reading only public data through to full read-write access.</p>
                     </div>
@@ -125,7 +126,7 @@ We've even done the hard work for you: use our LGPL Python library &mdash; <a hr
         <ul id="footer-navigation">
             <li class="button-prev">
                 <a href="community-support" title="Back to the user support tracking page" accesskey="f" tabindex="4">Back</a>
-            </li>        
+            </li>
             <li class="button-next" title="Read about spec tracking in Launchpad">
                 <a href="feature-tracking" accesskey="g" tabindex="5">Next</a>
             </li>

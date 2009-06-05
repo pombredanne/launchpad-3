@@ -28,7 +28,7 @@
             <li><a href="api" accesskey="9">Beta: web services API</a></li>
             <li><a href="feature-tracking" accesskey="a">Lightweight specifications</a></li>
             <li><a href="release-management" accesskey="b">Release management</a></li>
-            <li><a href="join-launchpad" accesskey="c">Join Launchpad!</a></li>            
+            <li><a href="join-launchpad" accesskey="c">Join Launchpad!</a></li>
         </ul>
         <div id="page-intro-top"></div>
         <div id="page-intro">
@@ -45,17 +45,17 @@
                 <li>Develop, promote and <br />publish your software.</li>
                 <li>Encourage contributions to <br />your project.</li>
                 <li>Improve collaboration with <br />other projects and developers.</li>
-                <li>Build communities using <br />teams and mailing lists.</li>            
+                <li>Build communities using <br />teams and mailing lists.</li>
             </ul>
 
             <div class="clear"></div>
             <div id="left-link-holder"><strong>Need Launchpad for a commercial project?</strong><br /><a href="join-launchpad#commercial">Read about commercial subscriptions &gt;</a></div>
             <div id="link-holder"><a href="https://launchpad.net/+login">Create your Launchpad account &gt;</a><br /><a href="https://launchpad.net/projects/+new">Add your project to Launchpad &gt;</a></div>
-            
+
         </div>
         <div id="page-intro-bottom"></div>
         <ul id="secondary-navigation">
-        
+
             <li class="button-next">
                 <a href="bugs" accesskey="d" tabindex="2"  title="Read about bug tracking in Launchpad">Next</a>
             </li>
@@ -71,9 +71,9 @@
                             <img src="images/home/screens/bugs.jpg" alt="Bug tracking" />
                         </p>
                         <p>Free software communities often share code, meaning the same bugs can crop up in different contexts.<br /><br />
-                        
+
                          With Launchpad, you can share bug reports, statuses, patches and comments across project boundaries. You can even share bug data with other trackers, such as Bugzilla and Trac.<br /><br />
-                         
+
                          There's also everything else you need in a bug tracker: web, email and API interfaces, links between bugs and fixes, team-based delegation and more.
                         </p>
                         <p style="float: right;"><a href="bugs" accesskey="e" tabindex="3">More about bug tracking &gt;</a></p>
@@ -85,11 +85,11 @@
                             <img src="images/home/screens/tracking.jpg" alt="Code hosting and tracking" />
                         </p>
                         <p>
-                            
+
                          Launchpad and <a href="http://bazaar-vcs.org/">Bazaar</a> distributed versional control strip away the barriers to contributing to your project. In just a few key strokes anyone can create their own local branch of your trunk with full version control.<br /><br />
-                         
+
                          When they're ready, they can upload their branch to Launchpad and propose it for merging back into your trunk. Code review &mdash; by web and email &mdash; gives you a public forum to discuss and approve or reject the merge.<br /><br />
-                         
+
                          You can even use Launchpad to import git, CVS and Subversion repositories into Bazaar branches.
                         </p>
                         <p style="float: right;"><a href="branch-hosting-tracking" accesskey="f" tabindex="4">More about code hosting and review &gt;</a></p>
@@ -110,10 +110,10 @@
                         </p>
                         <p>
                             See your software translated by a community of over 35,000 working in 272 languages.<br /><br />
-                            
+
                             Launchpad makes translation easy for everyone. Translators get a simple web interface, with automatic suggestions from a library of more than 16 million strings.<br /><br />
                             You, as project owner, decide the balance between openness and quality. And you get standard GNU GetText files for integration with your software.<br /><br />
-                            
+
 
                         </p><br />
                         <p style="float: right;"><a href="translation" accesskey="h" tabindex="5">More about translations &gt;</a></p>
@@ -126,7 +126,7 @@
                         </p>
                         <p>
                             Build and distribute Ubuntu packages using your own personal APT repository, hosted by Launchpad.<br /><br />
-                            
+
                             Whether you're publishing experimental builds, backports or betas, your Personal Package Archive lets end-users install your packages using the tools they already know and with automatic updates.
                         </p>
                         <p style="float: right;"><a href="ppa" accesskey="i" tabindex="6">More about package hosting &gt;</a></p>
@@ -146,7 +146,7 @@
                         </p>
                         <p>
                             Community planning for your project's road map. Anyone can use Launchpad to register a blueprint for your project, while you decide the priority and time-scales.<br /><br />
-                            
+
                             Target chunks of work to forthcoming releases, see who&rsquo;s working on them and track their progress.
                         </p>
                         <p style="float: right;"><a href="feature-tracking" accesskey="j" tabindex="7">More about specification tracking &gt;</a></p>
@@ -159,7 +159,7 @@
                         </p>
                         <p>
                             Track help requests just like bug reports, with community support contacts, statuses and email notifications.<br /><br />
-                            
+
                             When you come across common questions add them to your FAQ library and you get a searchable knowledge base for free. If a support request is actually a bug, no problem: one click and it becomes a bug report.
                         </p>
                        <p style="float: right;"><a href="community-support" accesskey="k" tabindex="9">More about community support &gt;</a></p>
