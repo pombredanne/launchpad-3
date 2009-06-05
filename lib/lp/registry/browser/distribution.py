@@ -577,9 +577,8 @@ class DistributionPackageSearchView(PackageSearchViewBase):
             non_exact_matches = self.context.searchSourcePackageCaches(
                 self.text)
 
-            # The searchBinaryPackageCaches() method returns
-            # tuples, so we use the
-            # DecoratedResultSet here to just get the
+            # The searchBinaryPackageCaches() method returns tuples, so we
+            # use the DecoratedResultSet here to just get the
             # DistributionSourcePackag objects for the template.
             def tuple_to_package_cache(cache_name_tuple):
                 return cache_name_tuple[0]
