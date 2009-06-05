@@ -11,7 +11,7 @@ import urllib2
 
 
 from canonical.cachedproperty import cachedproperty
-from canonical.launchpad.components.externalbugtracker import (
+from lp.bugs.externalbugtracker import (
     BugNotFound, BugTrackerConnectError, ExternalBugTracker, InvalidBugId,
     LookupTree, UnknownRemoteStatusError)
 from lp.bugs.interfaces.bugtask import BugTaskStatus

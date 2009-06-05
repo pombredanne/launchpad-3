@@ -9,7 +9,7 @@ import csv
 
 from urllib import quote_plus
 
-from canonical.launchpad.components.externalbugtracker import (
+from lp.bugs.externalbugtracker import (
     BugNotFound, ExternalBugTracker, InvalidBugId, LookupTree,
     UnknownRemoteStatusError, UnparseableBugData)
 from lp.bugs.interfaces.bugtask import BugTaskImportance, BugTaskStatus

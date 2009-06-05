@@ -21,7 +21,7 @@ import pytz
 
 from canonical.config import config
 from canonical.database.sqlbase import commit
-from canonical.launchpad.components.externalbugtracker import (
+from lp.bugs.externalbugtracker import (
     BugNotFound, BugTrackerConnectError, ExternalBugTracker,
     InvalidBugId, UnknownRemoteStatusError)
 from canonical.launchpad.interfaces.message import IMessageSet

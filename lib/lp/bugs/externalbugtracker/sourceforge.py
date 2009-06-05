@@ -10,7 +10,7 @@ import urllib
 
 from BeautifulSoup import BeautifulSoup
 
-from canonical.launchpad.components.externalbugtracker import (
+from lp.bugs.externalbugtracker import (
     BugNotFound, ExternalBugTracker, InvalidBugId, LookupTree,
     PrivateRemoteBug, UnknownRemoteStatusError, UnparseableBugData)
 from lp.bugs.interfaces.bugtask import BugTaskImportance, BugTaskStatus

@@ -14,7 +14,7 @@ from BeautifulSoup import BeautifulSoup, Comment, SoupStrainer
 from urlparse import urlunparse
 
 from canonical.cachedproperty import cachedproperty
-from canonical.launchpad.components.externalbugtracker import (
+from lp.bugs.externalbugtracker import (
     BugNotFound, BugWatchUpdateError, BugWatchUpdateWarning,
     ExternalBugTracker, InvalidBugId, LookupTree, UnknownRemoteStatusError,
     UnparseableBugData)
