@@ -15,8 +15,8 @@ __all__ = [
     ]
 
 from zope.interface import Interface, Attribute
-from zope.schema import (Choice, Datetime, Int, Object, TextLine, Timedelta,
-    Text)
+from zope.schema import (
+    Bool, Choice, Datetime, Int, Object, TextLine, Timedelta, Text)
 from lazr.enum import DBEnumeratedType, DBItem, EnumeratedType, Item
 
 from canonical.launchpad import _
@@ -253,8 +253,11 @@ class IBuildView(Interface):
     can_be_rescored = Attribute(
         "Whether or not this build record can be rescored manually.")
 
-    can_be_retried = Attribute(
-        "Whether or not this build record can be retried.")
+    can_be_retried = exported(
+        Bool(
+            title=_("Can Be Retried"), required=False, readonly=True,
+            description=_(
+                "Whether or not this build record can be retried.")))
 
     calculated_buildstart = Attribute(
         "Emulates a buildstart timestamp by calculating it from "
