@@ -104,7 +104,7 @@
 
     <h2 style="margin-top: 2em;">Related series</h2>
 
-    <ul id="releated-series">
+    <ul id="related-series">
       <li>
         <a tal:attributes="href context/product/fmt:url/+series">All
           series for the
