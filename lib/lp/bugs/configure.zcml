@@ -690,7 +690,7 @@
         <!-- BugDelta -->
         
         <class
-            class="lp.bugs.adapters.bug.BugDelta">
+            class="lp.bugs.adapters.bugdelta.BugDelta">
             <allow
                 interface="lp.bugs.interfaces.bug.IBugDelta"/>
         </class>

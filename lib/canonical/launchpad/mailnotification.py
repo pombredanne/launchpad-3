@@ -25,7 +25,7 @@ from zope.interface import implements
 
 from canonical.config import config
 from canonical.database.sqlbase import block_implicit_flushes
-from lp.bugs.adapters.bug import BugDelta
+from lp.bugs.adapters.bugdelta import BugDelta
 from lp.bugs.adapters.bugchange import get_bug_changes
 from canonical.launchpad.helpers import (
     get_contact_email_addresses, get_email_template, shortlist)
