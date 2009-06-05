@@ -111,6 +111,16 @@ class TestErrorHandling(TestCaseWithFactory):
         request.oopsid = self._oopsid
 
     def scanWithError(self, branches, oopsid, exception_factory, *args, **kw):
+        """Scan 'branches', generating an error while doing so.
+
+        Each branch to be scanned will raise an error, constructed from
+        'exception_factory'. Anything logged to the scanner's logger will be
+        recorded in self._log_records.
+
+        :param branches: A list of `IBranch`es to scan.
+        :param oopsid: The oopsid to use while logging the error.
+        :param exception_factory: A callable that returns an exception.
+        """
         def scanOneBranch(branch):
             raise exception_factory(*args, **kw)
         self.scanner.scanOneBranch = scanOneBranch
