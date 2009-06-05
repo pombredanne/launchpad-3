@@ -62,6 +62,11 @@ By default the view will be initialized as a binary-package-name search,
 and the search_by_binary_name property is used to determine the search
 type (in templates):
 
+Note: The substring search for binary names now uses the cached binary
+names on the DistributionSourcePackageCache, which unfortunately are
+not up-to-date in the test data. Hence only seeing mozilla-firefox returned
+here.
+
     >>> distro_pkg_search_view = create_initialized_view(
     ...     ubuntu, name="+search", form={
     ...         'text': 'a',
@@ -70,9 +75,7 @@ type (in templates):
     True
     >>> for package in distro_pkg_search_view.search_results:
     ...     print package.name
-    foobar
     mozilla-firefox
-    commercialpackage
 
 Additionally, a helper property 'source_search_url' is included providing
 easy access to the equivalent search on sources:
