@@ -8,6 +8,7 @@ __metaclass__ = type
 __all__ = [
     'BuildStatus',
     'BuildSetStatus',
+    'CannotBeRescored',
     'IBuild',
     'IBuildRescoreForm',
     'IBuildSet',
@@ -31,7 +32,14 @@ from lp.soyuz.interfaces.sourcepackagerelease import (
     ISourcePackageRelease)
 from lazr.restful.fields import Reference
 from lazr.restful.declarations import (
-    export_as_webservice_entry, exported, export_write_operation)
+    export_as_webservice_entry, exported, export_write_operation,
+    operation_parameters, webservice_error)
+
+
+class CannotBeRescored(Exception):
+    """Raised when rescoring a build that cannot be rescored."""
+    webservice_error(400) # Bad request.
+    _message_prefix = "Cannot rescore build"
 
 
 class BuildStatus(DBEnumeratedType):
@@ -370,6 +378,11 @@ class IBuildEdit(Interface):
 
 class IBuildAdmin(Interface):
     """A Build interface for items requiring launchpad.Admin."""
+
+    @operation_parameters(score=Int(title=_("Score"), required=True))
+    @export_write_operation()
+    def rescore(score):
+        """Change the build's score."""
 
 
 class IBuild(IBuildView, IBuildEdit, IBuildAdmin):

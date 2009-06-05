@@ -195,7 +195,7 @@ class BuildRescoringView(LaunchpadFormView):
     def action_rescore(self, action, data):
         """Set the given score value."""
         score = data.get('priority')
-        self.context.buildqueue_record.manualScore(score)
+        self.context.rescore(score)
         self.request.response.addNotification(
             "Build rescored to %s." % score)
 

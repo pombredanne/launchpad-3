@@ -246,8 +246,18 @@ change the start time if it was set already.
     >>> active_build.date_first_dispatched == time_now
     True
 
-Retry Build record in question:
+Re-trying builds requires the user to be logged in as an admin (including
+buildd admin) to gain launchpad.Edit on the build record.  As an anonymous
+user, retrying will fail:
 
+    >>> active_build.retry()
+    Traceback (most recent call last):
+    ...
+    Unauthorized:...
+
+Login as an admin and retry the Build record in question:
+
+    >>> login('foo.bar@canonical.com')
     >>> active_build.retry()
 
 The build was retried but its start time remains the same.
@@ -888,10 +898,13 @@ All those conditions are controlled by IBuild.can_be_retried() property
 
 Attempt to retry this build record will fail with an AssertionError:
 
+    >>> login('foo.bar@canonical.com')
     >>> failed_build.retry()
     Traceback (most recent call last):
     ...
     AssertionError: Build 6 cannot be retried
+
+    >>> login(ANONYMOUS)
 
 Partner archive builds are an exception to this rule; they can be retried
 in the release pocket for a released distro.  Let's turn build 9 into a
@@ -932,7 +945,9 @@ storeUploadLog() refuses to override any previously stored
 It's only possible to store another 'upload_log' content once the
 build is retried.
 
+    >>> login('foo.bar@canonical.com')
     >>> failedtoupload_build.retry()
+    >>> login(ANONYMOUS)
     >>> print failedtoupload_build.upload_log
     None
 
@@ -1085,6 +1100,28 @@ The 'retryDepWaiting' task is performed periodically via cronjob by
 cronscript/buildd-retry-depwait.py. It can be run in parallel with
 other buildd tasks because the procedure is 'atomic' enough, i.e.,
 after the commit the retried jobs are ready to be dispatched.
+
+
+== Build rescoring ==
+
+Some builds can be rescored, to determine if it's possible check the
+can_be_rescored property:
+
+    >>> depwait_build.can_be_rescored
+    True
+
+We need to be at least a buildd-admin to rescore:
+
+    >>> depwait_build.rescore(1000)
+    Traceback (most recent call last):
+    ...
+    Unauthorized:...
+
+    >>> login('celso.providelo@canonical.com')
+    >>> depwait_build.rescore(1000)
+    >>> login(ANONYMOUS)
+    >>> print depwait_build.buildqueue_record.lastscore
+    1000
 
 
 == Build record security ==
