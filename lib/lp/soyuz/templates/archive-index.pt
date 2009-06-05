@@ -165,6 +165,7 @@ div#package_counters p {
         <div tal:condition="archive_active" >
 
           <h2>apt sources.list entries</h2>
+          <p>Copy the lines below and add them to your system's software sources (<a href="/+help/ppa-sources-list.html" target="help">How do I do that?</a>)</p>
           <tal:entries replace="structure view/sources_list_entries" />
 
         </div>
@@ -173,14 +174,12 @@ div#package_counters p {
       <div id="signing-key"
            tal:define="signing_key context/signing_key"
            tal:condition="signing_key">
-        <p>This repository is signed with
+        <p>This repository is signed with the OpenPGP key
           <a tal:attributes="href signing_key/keyserverURL">
             <code tal:content="signing_key/displayname">
               1024R/23456789
-            </code></a> OpenPGP key.
-          <a href="https://help.launchpad.net/Packaging/PPA#Adding%20a%20PPA%20to%20your%20Ubuntu%20repositories"
-          >Follow these instructions</a>
-          for installing packages from this PPA.</p>
+            </code></a>
+          <a href="/+help/ppa-sources-list.html" target="help">Help on installing software from this PPA</a>.</p>
       </div> <!-- signing-key -->
 
       <div id="archive-dependencies" tal:condition="context/dependencies">
