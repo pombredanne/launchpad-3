@@ -40,7 +40,7 @@ getPosterForComment() and getMessageForComment().
 In order to test the importing of comments we will create a new
 ExternalBugTracker class which implements these three methods.
 
-    >>> from canonical.launchpad.components.externalbugtracker import (
+    >>> from lp.bugs.externalbugtracker import (
     ...     ExternalBugTracker)
     >>> from canonical.launchpad.interfaces import (
     ...     ISupportsCommentImport)

@@ -49,7 +49,7 @@ ISupportsCommentPushing interface.
 
     >>> from canonical.launchpad.interfaces import (
     ...     ISupportsCommentPushing)
-    >>> from canonical.launchpad.components.externalbugtracker import (
+    >>> from lp.bugs.externalbugtracker import (
     ...     ExternalBugTracker)
 
     >>> class CommentPushingExternalBugTracker(ExternalBugTracker):

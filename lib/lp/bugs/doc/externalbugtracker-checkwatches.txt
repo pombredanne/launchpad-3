@@ -17,7 +17,7 @@ framework.
 get_external_bugtracker is used to get an ExternalBugTracker suitable
 for a particular bugtracker.
 
-    >>> from canonical.launchpad.components.externalbugtracker import (
+    >>> from lp.bugs.externalbugtracker import (
     ...     get_external_bugtracker)
     >>> from canonical.launchpad.scripts import log
     >>> from canonical.launchpad.interfaces import BugTrackerType

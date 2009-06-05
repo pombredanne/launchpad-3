@@ -13,7 +13,7 @@ test:
 
 You can specify the db_location explicitly:
 
-    >>> from canonical.launchpad.components.externalbugtracker import (
+    >>> from lp.bugs.externalbugtracker import (
     ...     DebBugs)
     >>> from canonical.testing import LaunchpadZopelessLayer
     >>> txn = LaunchpadZopelessLayer.txn
@@ -323,7 +323,7 @@ Along with importing debian bug reports, comments on those bug reports
 can also be imported. The DebBugs class implements the
 ISupportsCommentImport interface.
 
-    >>> from canonical.launchpad.components.externalbugtracker import (
+    >>> from lp.bugs.externalbugtracker import (
     ...     get_external_bugtracker)
     >>> from canonical.launchpad.interfaces import (
     ...     BugTrackerType, ISupportsCommentImport)

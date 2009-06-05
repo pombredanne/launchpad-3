@@ -10,7 +10,7 @@ The ExternalBugTracker descendant class which implements methods for
 updating bug watches on SourceForge bug trackers is
 externalbugtracker.SourceForge, which implements IExternalBugTracker.
 
-    >>> from canonical.launchpad.components.externalbugtracker import (
+    >>> from lp.bugs.externalbugtracker import (
     ...     SourceForge)
     >>> from canonical.launchpad.interfaces import (
     ...     BugTrackerType, IExternalBugTracker)

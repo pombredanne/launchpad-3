@@ -6,7 +6,7 @@ neatly in a urllib2-style handler.
 
 == MantisLoginHandler ==
 
-    >>> from canonical.launchpad.components.externalbugtracker import (
+    >>> from lp.bugs.externalbugtracker import (
     ...     MantisLoginHandler)
     >>> handler = MantisLoginHandler()
 

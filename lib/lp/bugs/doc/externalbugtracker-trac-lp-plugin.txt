@@ -6,7 +6,7 @@ instances having the LP XML-RPC plugin installed.
 For testing purposes, a custom XML-RPC transport can be passed to it,
 so that we can avoid network traffic in tests.
 
-    >>> from canonical.launchpad.components.externalbugtracker import (
+    >>> from lp.bugs.externalbugtracker import (
     ...     TracLPPlugin)
     >>> from lp.bugs.tests.externalbugtracker import (
     ...     TestTracXMLRPCTransport)

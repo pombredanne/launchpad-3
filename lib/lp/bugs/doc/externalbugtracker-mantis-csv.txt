@@ -15,7 +15,7 @@ surprisingly, Mantis! It doesn't do any version probing and simply
 stores a base URL which it will use to construct URLs to pull a CSV
 export from.
 
-    >>> from canonical.launchpad.components.externalbugtracker import Mantis
+    >>> from lp.bugs.externalbugtracker import Mantis
     >>> alsa_mantis = Mantis('http://example.com')
 
 As with all ExternalBugTrackers, Mantis contains a function for converting one

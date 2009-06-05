@@ -17,7 +17,7 @@ Since email addresses are not external bug trackers in the classic
 sense there is no ExternalBugTracker descendant for them. Trying to
 create a new ExternalBugTracker for an email address will fail.
 
-    >>> from canonical.launchpad.components.externalbugtracker import (
+    >>> from lp.bugs.externalbugtracker import (
     ...     get_external_bugtracker)
     >>> from lp.bugs.tests.externalbugtracker import (
     ...     new_bugtracker)

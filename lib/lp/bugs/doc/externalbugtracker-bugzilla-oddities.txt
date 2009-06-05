@@ -13,7 +13,6 @@ slightly different names. We pretend Mozilla's Bugzilla is an Issuezilla
 instance here:
 
     >>> from canonical.launchpad.interfaces import IBugTrackerSet
-    >>> from canonical.launchpad.components.externalbugtracker import Bugzilla
 
     >>> from lp.bugs.tests.externalbugtracker import TestIssuezilla
     >>> from canonical.launchpad.scripts.checkwatches import BugWatchUpdater

@@ -20,7 +20,7 @@ Because Python bugtracker statuses are entirely numeric, we use the
 convert_python_status() helper function, which accepts parameters for
 status and resolution, to make the test more readable.
 
-    >>> from canonical.launchpad.components.externalbugtracker import (
+    >>> from lp.bugs.externalbugtracker import (
     ...     Roundup)
     >>> from lp.bugs.tests.externalbugtracker import (
     ...     convert_python_status)

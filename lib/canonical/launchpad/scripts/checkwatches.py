@@ -17,7 +17,7 @@ from zope.event import notify
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.components import externalbugtracker
-from canonical.launchpad.components.externalbugtracker import (
+from lp.bugs.externalbugtracker import (
     BugNotFound, BugTrackerConnectError, BugWatchUpdateError,
     BugWatchUpdateWarning, InvalidBugId, PrivateRemoteBug,
     UnknownBugTrackerTypeError, UnknownRemoteStatusError, UnparseableBugData,

@@ -10,7 +10,7 @@ The ExternalBugTracker descendant class which implements methods for updating
 bug watches on Trac bug trackers is externalbugtracker.Trac, which implements
 IExternalBugTracker.
 
-    >>> from canonical.launchpad.components.externalbugtracker import Trac
+    >>> from lp.bugs.externalbugtracker import Trac
     >>> from lp.bugs.tests.externalbugtracker import (
     ...     new_bugtracker)
     >>> from canonical.launchpad.interfaces import (
@@ -41,7 +41,7 @@ to validate the token.
     >>> chosen_trac = trac.getExternalBugTrackerToUse()
     http://example.com/launchpad-auth/check
 
-    >>> from canonical.launchpad.components.externalbugtracker import (
+    >>> from lp.bugs.externalbugtracker import (
     ...     TracLPPlugin)
     >>> isinstance(chosen_trac, TracLPPlugin)
     True

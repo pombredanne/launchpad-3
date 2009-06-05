@@ -11,7 +11,7 @@ from lp.bugs.interfaces.bugtask import IBugTaskSet
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.scripts.checkwatches import BugWatchUpdater
 from canonical.launchpad.scripts.logger import log
-from canonical.launchpad.components.externalbugtracker import (
+from lp.bugs.externalbugtracker import (
     get_external_bugtracker)
 
 

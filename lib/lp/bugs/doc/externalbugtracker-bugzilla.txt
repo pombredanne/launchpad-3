@@ -9,7 +9,7 @@ ExternalBugTracker works.
 
 The class that implements ExternalBugTracker is called Bugzilla.
 
-    >>> from canonical.launchpad.components.externalbugtracker import Bugzilla
+    >>> from lp.bugs.externalbugtracker import Bugzilla
     >>> from lp.bugs.interfaces.externalbugtracker import (
     ...     IExternalBugTracker)
     >>> from canonical.launchpad.webapp.testing import verifyObject
@@ -102,7 +102,7 @@ When getExternalBugTrackerToUse() receives a Fault of type 'Client' from
 the remote server in response to its check, it will return a standard
 Bugzilla instance.
 
-    >>> from canonical.launchpad.components.externalbugtracker import (
+    >>> from lp.bugs.externalbugtracker import (
     ...     BugzillaLPPlugin)
     >>> bugzilla_to_use = bugzilla.getExternalBugTrackerToUse()
 

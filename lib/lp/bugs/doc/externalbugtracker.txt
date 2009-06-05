@@ -54,7 +54,7 @@ with the getExternalBugTrackerToUse() method, which returns the correct
 instance.  Usually there is only one version, so the default for the
 original instance is to return itself.
 
-    >>> from canonical.launchpad.components.externalbugtracker import (
+    >>> from lp.bugs.externalbugtracker import (
     ...     ExternalBugTracker)
     >>> external_bugtracker = ExternalBugTracker('http://example.com/')
     >>> chosen_bugtracker = external_bugtracker.getExternalBugTrackerToUse()
@@ -67,7 +67,7 @@ correct ExternalBugTracker for a given BugTracker. It does this via the
 private _getExternalBugTrackersAndWatches() method, which returns a set of
 (ExternalBugTracker, bug_watches) tuples.
 
-    >>> from canonical.launchpad.components.externalbugtracker import (
+    >>> from lp.bugs.externalbugtracker import (
     ...     Bugzilla, BugzillaLPPlugin, BUG_TRACKER_CLASSES)
     >>> from lp.bugs.interfaces.bugtracker import (
     ...     BugTrackerType)
@@ -657,7 +657,7 @@ ExternalBugTracker.convertRemoteStatus() will either return a
 BugTaskStatus or will raise an UnknownRemoteStatusError.
 
     >>> from canonical.launchpad.interfaces import BugTaskStatus
-    >>> from canonical.launchpad.components.externalbugtracker import (
+    >>> from lp.bugs.externalbugtracker import (
     ...     UnknownRemoteStatusError)
     >>> class StatusConvertingExternalBugTracker(TestExternalBugTracker):
     ...
@@ -730,7 +730,7 @@ another.
     >>> example_bugwatch = example_bug.addWatch(
     ...     example_bug_tracker, '1', sample_person)
 
-    >>> from canonical.launchpad.components.externalbugtracker import (
+    >>> from lp.bugs.externalbugtracker import (
     ...     BugNotFound, BugTrackerConnectError, InvalidBugId,
     ...     UnparseableBugData, UnparseableBugTrackerVersion)
 
@@ -800,7 +800,7 @@ updated.
 Most of the status conversions are assisted by a customized LookupTree
 class.
 
-  >>> from canonical.launchpad.components.externalbugtracker import (
+  >>> from lp.bugs.externalbugtracker import (
   ...     LookupTree)
 
 This is flexible enough to cover all current mapping scenarios with

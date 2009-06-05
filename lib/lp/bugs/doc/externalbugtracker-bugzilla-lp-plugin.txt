@@ -6,7 +6,7 @@ Bugzilla instances that have the Launchpad plugin installed.
 For testing purposes, a custom XML-RPC transport can be passed to it,
 so that we can avoid network traffic in tests.
 
-    >>> from canonical.launchpad.components.externalbugtracker import (
+    >>> from lp.bugs.externalbugtracker import (
     ...     BugzillaLPPlugin)
     >>> from lp.bugs.tests.externalbugtracker import (
     ...     TestBugzillaXMLRPCTransport)

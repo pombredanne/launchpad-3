@@ -14,7 +14,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.database.sqlbase import cursor
-from canonical.launchpad.components.externalbugtracker import (
+from lp.bugs.externalbugtracker import (
     ExternalBugTracker)
 from canonical.launchpad.database import BugNotification
 from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet

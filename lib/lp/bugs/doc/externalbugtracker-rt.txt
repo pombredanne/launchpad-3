@@ -9,7 +9,7 @@ instances.
 When importing bugs from remote RT instances, we use an RT-specific
 implementation of ExternalBugTracker, RequestTracker.
 
-    >>> from canonical.launchpad.components.externalbugtracker import (
+    >>> from lp.bugs.externalbugtracker import (
     ...     RequestTracker)
     >>> from canonical.launchpad.interfaces import (
     ...     BugTrackerType, IExternalBugTracker)
