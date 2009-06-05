@@ -244,10 +244,12 @@
            class="actions"
            tal:content="structure overview_menu/series_add/render"
         />
-        <a href="+series">Series history</a><br/>
-        <a href="+milestones">Milestone history</a>
         <iframe tal:attributes="src string:+timeline"
                 width="100%" height="170px"></iframe>
+        <div style="float: right">
+          <a href="+series">&#x00BB; Series history</a>
+          <a href="+milestones">&#x00BB; Milestone history</a>
+        </div>
       </div>
 
       <tal:contrib replace="structure context/@@+portlet-top-contributors" />
