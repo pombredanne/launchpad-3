@@ -18,6 +18,7 @@ here = os.path.dirname(os.path.realpath(__file__))
 import atexit
 import signal
 import subprocess
+from canonical.config import config
 from canonical.testing.layers import (
     BaseLayer,
     DatabaseLayer,
@@ -28,9 +29,9 @@ from canonical.testing.layers import (
 def setUpLaunchpad():
     """Set-up the Launchpad app-server against which windmill tests are run.
     """
+    config.setInstance('testrunner-appserver')
     # Hard-code the app-server configuration, since that's what can
     # work with windmill.
-    os.environ['LPCONFIG'] = 'testrunner-appserver'
     sys.stderr.write('Starting up Launchpad... ')
     BaseLayer.setUp()
     DatabaseLayer.setUp()
