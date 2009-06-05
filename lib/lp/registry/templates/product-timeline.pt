@@ -12,10 +12,22 @@
   revno modules/canonical.launchpad.versioninfo/revno | string:unknown;
   rooturl modules/canonical.launchpad.webapp.vhosts/allvhosts/configs/mainsite/rooturl;
   icingroot string:${rooturl}+icing/rev${revno};
+  devmode modules/canonical.config/config/devmode;
   yui string:${icingroot}/yui/3.0.0pr2/build;
   lazr_js string:${icingroot}/lazr/build;
   lp_js string:${icingroot}/build"
 >
+  <!-- Launchpad style sheet -->
+  <style
+    type="text/css"
+    media="screen, print"
+    tal:condition="not: devmode"
+    tal:content="string:@import url(${icingroot}/+style-slimmer.css);"/>
+  <style
+    type="text/css"
+    media="screen, print"
+    tal:condition="devmode"
+    tal:content="string:@import url(${icingroot}/style.css);"/>
   <script type="text/javascript"
           tal:attributes="src string:${icingroot}/build/launchpad.js"></script>
   <tal:cache condition="view/user|nothing"
@@ -36,9 +48,8 @@
       ${context/webservice:json};">
   </script>
 </head>
-<body style="cursor: move">
-  <div id="timeline-container"
-       style="border: 1px solid #000; position: relative; display: none">
+<body style="cursor: move; margin: 0; padding: 0">
+  <div id="timeline-container">
   </div>
   <script type="text/javascript">
     // Disable MochiKit event handlers for help pane, which doesn't
@@ -113,6 +124,7 @@ window.addEventListener("load",function() {
 
     document.addEventListener("mousedown", startDragScroll, false);
     document.addEventListener("mouseup", stopDragScroll, false);
+    document.addEventListener("mouseout", stopDragScroll, false);
     document.addEventListener("mousemove", dragScroll, false);
 
     function startDragScroll(e){
