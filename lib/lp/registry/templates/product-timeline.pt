@@ -80,6 +80,9 @@
                       boundingBox: container
                   });
                   graph.render();
+                  // Scroll to the most recent milestones or
+                  // releases on the development focus series.
+                  window.scrollBy(window.scrollMaxX, 0);
               }
           }
 
