@@ -227,7 +227,7 @@
             <tal:editdescription
                 define="link context_menu/editdescription"
                 condition="link/enabled"
-                replace="structure link/render" />
+                replace="structure link/@@+inline-suffix" />
             <span tal:condition="view/wasDescriptionModified" class="discreet"
             >(see <a href="comments/0">original description</a>)</span>
           </div>

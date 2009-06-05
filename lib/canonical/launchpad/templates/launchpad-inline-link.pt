@@ -4,12 +4,9 @@
 ><a
   tal:condition="context/icon"
   tal:attributes="
-    class string:menu-link-${context/name};
+    class string:menu-link-${context/name} sprite ${context/icon};
     href context/url;
     style string:
-      background: url(${context/icon_url}) center left no-repeat;;
-      line-height: 20px;;
-      padding-left: 18px;
     title context/summary;
   "
   tal:content="structure context/escapedtext"

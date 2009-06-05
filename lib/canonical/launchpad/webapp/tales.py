@@ -480,11 +480,12 @@ class ObjectImageDisplayAPI:
         self._context = context
 
     #def default_icon_resource(self, context):
-    def sprites(self, context):
+    def sprite_css(self):
         """Return the CSS class for the sprite"""
         # XXX: mars 2008-08-22 bug=260468
         # This should be refactored.  We shouldn't have to do type-checking
         # using interfaces.
+        context = self._context
         if IProduct.providedBy(context):
             return 'sprite product'
         elif IProject.providedBy(context):
@@ -639,9 +640,6 @@ class BugTaskImageDisplayAPI(ObjectImageDisplayAPI):
         """Special-case traversal for icons with an optional rootsite."""
         if name in self.allowed_names:
             return getattr(self, name)()
-        elif name.startswith('icon:'):
-            rootsite = name.split(':', 1)[1]
-            return self.icon(rootsite=rootsite)
         else:
             raise TraversalError, name
 
@@ -2613,7 +2611,7 @@ class FormattersAPI:
             # their email addresses.
             if person is not None and not person.hide_email_addresses:
                 person_formatter = PersonFormatterAPI(person)
-                css_sprite = ObjectImageDisplayAPI(person).sprites()
+                css_sprite = ObjectImageDisplayAPI(person).sprite_css()
                 text = text.replace(address, '<a href="%s" class="%s">&nbsp;%s</a>' % (
                     canonical_url(person), image_html, address))
         return text
