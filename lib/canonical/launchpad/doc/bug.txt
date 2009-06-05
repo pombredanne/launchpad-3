@@ -1188,12 +1188,41 @@ private and the user wouldn't be able to see it, it won't be returned.
     New bug 3
     New bug 4
 
-The number of bugs to be returned by getDistinctBugsForBugTasks() can be
-altered by setting its limit parameter, which defaults to 10.
+If one of the bug tasks passed to getDistinctBugsForBugTasks() is on a
+bug that is a duplicate of another bug the duplicated bug will be
+returned rather than the duplicate.
 
+    >>> new_bug_3 = bugs[3]
+    >>> new_bug_4 = bugs[4]
+    >>> new_bug_3.duplicateof = new_bug_4
     >>> matching_bugs = getUtility(IBugSet).getDistinctBugsForBugTasks(
-    ...     bug_tasks, user=no_priv, limit=2)
+    ...     bug_tasks, user=no_priv)
+
     >>> for bug in sorted(matching_bugs, key=attrgetter('title')):
     ...     print bug.title
     New bug 0
     New bug 1
+    New bug 4
+
+If the duplicated bug isn't visible to the user neither it nor its
+duplicates will be returned by getDistinctBugsForBugTasks().
+
+    >>> new_bug_4.setPrivate(True, foobar)
+    True
+
+    >>> matching_bugs = getUtility(IBugSet).getDistinctBugsForBugTasks(
+    ...     bug_tasks, user=no_priv)
+
+    >>> for bug in sorted(matching_bugs, key=attrgetter('title')):
+    ...     print bug.title
+    New bug 0
+    New bug 1
+
+The number of bugs to be returned by getDistinctBugsForBugTasks() can be
+altered by setting its limit parameter, which defaults to 10.
+
+    >>> matching_bugs = getUtility(IBugSet).getDistinctBugsForBugTasks(
+    ...     bug_tasks, user=no_priv, limit=1)
+    >>> for bug in sorted(matching_bugs, key=attrgetter('title')):
+    ...     print bug.title
+    New bug 0

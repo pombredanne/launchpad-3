@@ -1575,12 +1575,12 @@ class BugSet:
         bugs = []
         for bug_task in bug_tasks[:4*limit]:
             bug = bug_task.bug
-            if not bug.userCanView(user):
-                continue
-
             duplicateof = bug.duplicateof
             if duplicateof is not None:
                 bug = duplicateof
+
+            if not bug.userCanView(user):
+                continue
 
             if bug not in bugs:
                 bugs.append(bug)
