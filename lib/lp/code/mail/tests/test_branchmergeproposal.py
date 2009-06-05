@@ -10,7 +10,6 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.testing import (
     DatabaseFunctionalLayer, LaunchpadFunctionalLayer)
 
-from lp.code.adapters.branch import BranchMergeProposalDelta
 from canonical.launchpad.database import CodeReviewVoteReference
 from canonical.launchpad.database.diff import StaticDiff
 from lazr.lifecycle.event import ObjectModifiedEvent
@@ -24,6 +23,9 @@ from lp.testing.mail_helpers import pop_notifications
 from canonical.launchpad.webapp import canonical_url
 from lp.testing import TestCaseWithFactory
 from lp.testing.factory import LaunchpadObjectFactory
+
+from lp.code.adapters.branch import BranchMergeProposalDelta
+from lp.code.model.branch import update_trigger_modified_fields
 
 
 class TestMergeProposalMailing(TestCase):
@@ -61,6 +63,10 @@ class TestMergeProposalMailing(TestCase):
         bmp.source_branch.name = 'fix-foo-for-bar'
         bmp.target_branch.owner.name = 'mary'
         bmp.target_branch.name = 'bar'
+        # Call the function that is normally called through the event system
+        # to auto reload the fields updated by the db triggers.
+        update_trigger_modified_fields(bmp.source_branch)
+        update_trigger_modified_fields(bmp.target_branch)
         return bmp, subscriber
 
     def test_generateCreationEmail(self):

@@ -4,14 +4,14 @@ When the uploader is invoked, it is given a policy to work in. This
 governs such things as what tests get run at what stages of the
 upload, and whether or not there is a build to be created, or one in
 existence to be used. These policies are in the
-canonical.archiveuploader package, in the uploadpolicy module. They
+lp.archiveuploader package, in the uploadpolicy module. They
 are accessed by calling findPolicyByName which will either return a
 policy instance or else raise a KeyError.
 
 XXX: dsilvers: 20051019: Get rid of this registration/lookup system
 when we've fixed bug 3137
 
-  >>> from canonical.archiveuploader.uploadpolicy import findPolicyByName
+  >>> from lp.archiveuploader.uploadpolicy import findPolicyByName
 
 There are two policies defined so far. They are the insecure and
 buildd policies.
