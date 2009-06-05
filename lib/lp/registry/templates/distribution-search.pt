@@ -50,7 +50,7 @@
                   <a tal:attributes="href package/fmt:url" class="search-result-link">
                     <tal:project-icon content="structure project/image:icon"
                          condition="project"/>
-                    <tal:package-title content="structure package/title" />
+                    <tal:package-title content="structure package/name" />
                   </a>
                   <tal:source-name-different
                     condition="python: package.name != view.text">
@@ -122,8 +122,8 @@
 
                   <a
                     tal:attributes="href package/fmt:url"
-                    tal:content="structure package/title"
-                    class="search-result-link">Package title</a>
+                    tal:content="structure package/name"
+                    class="search-result-link">Package name</a>
                 </div>
                 <div class="summary">
                   <p>

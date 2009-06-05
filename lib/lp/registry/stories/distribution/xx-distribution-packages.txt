@@ -14,7 +14,7 @@ This page is used to search packages in a distribution context.
 
     >>> for tag in find_tags_by_class(browser.contents, 'package-matches'):
     ...     print extract_text(tag).encode('us-ascii', 'replace')
-    ?pmount? package in Ubuntu
+    pmount
     (Matching binaries: pmount.)
 
 
@@ -53,7 +53,7 @@ Now run a search for mozilla-firefox and check that it is found:
     >>> browser.getControl('Search', index=0).click()
     >>> for tag in find_tags_by_class(browser.contents, 'package-matches'):
     ...     print extract_text(tag).encode('us-ascii', 'replace')
-    ?mozilla-firefox? package in Ubuntu
+    mozilla-firefox
     The Mozilla Firefox web browser
     (Matching binaries: mozilla-firefox, mozilla-firefox-data.)
 
@@ -105,8 +105,8 @@ finds the fti results:
     >>> texts.sort()
     >>> for text in texts:
     ...    print text.encode('ascii', 'backslashreplace')
-    \...libstdc++... package in Ubuntu
-    \...pmount... package in Ubuntu
+    libstdc++
+    pmount
 
 
 == Distribution package change summary ==
