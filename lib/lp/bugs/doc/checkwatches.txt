@@ -182,7 +182,7 @@ for a bugtracker which Launchpad doesn't support.
 We can demonstrate this by altering the get_external_bugtracker method
 of the externalbugtracker module to ensure that it raises this error.
 
-    >>> from canonical.launchpad.components import externalbugtracker
+    >>> from lp.bugs import externalbugtracker
     >>> real_get_external_bugtracker = (
     ...     externalbugtracker.get_external_bugtracker)
 
@@ -239,7 +239,7 @@ monkey-patch the Roundup ExternalBugTrackerClass in order to set its
 batch size. We will also monkey-patch urllib2.urlopen again so that no
 requests are actually made.
 
-    >>> from canonical.launchpad.components import externalbugtracker
+    >>> from lp.bugs import externalbugtracker
     >>> from canonical.launchpad.scripts import FakeLogger
     >>> updater = BugWatchUpdater(transaction)
     >>> original_log = updater.log

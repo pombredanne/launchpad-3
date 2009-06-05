@@ -47,11 +47,11 @@ get_external_bugtracker supports five external bug tracker types:
     ...         log.setLevel(log.level - 100)
     ...     print "%s --> %s" % (bugtracker_type.title,
     ...         external_bugtracker)
-    Bugzilla --> <canonical...bugzilla.Bugzilla ...>
-    Debbugs --> <canonical...debbugs.DebBugs ...>
-    Mantis --> <canonical...mantis.Mantis object at ...>
-    Roundup --> <canonical...roundup.Roundup ...>
-    Request Tracker (RT) --> <canonical...rt.RequestTracker ...>
+    Bugzilla --> <lp.bugs...bugzilla.Bugzilla ...>
+    Debbugs --> <lp.bugs...debbugs.DebBugs ...>
+    Mantis --> <lp.bugs...mantis.Mantis object at ...>
+    Roundup --> <lp.bugs...roundup.Roundup ...>
+    Request Tracker (RT) --> <lp.bugs...rt.RequestTracker ...>
     SourceForge or SourceForge derivative -->
-        <canonical...sourceforge.SourceForge ...>
-    Trac --> <canonical...trac.Trac ...>
+        <lp.bugs...sourceforge.SourceForge ...>
+    Trac --> <lp.bugs...trac.Trac ...>
