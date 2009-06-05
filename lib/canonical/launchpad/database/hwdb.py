@@ -410,39 +410,63 @@ class HWSubmissionSet:
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         tables, clauses = make_submission_device_statistics_clause(
                 bus, vendor_id, product_id, driver_name, package_name, False)
+        tables.append(HWSubmission)
         clauses.append(HWSubmissionDevice.submission == HWSubmission.id)
-        clauses.append(HWSubmission.owner == Person.id)
         clauses.append(self._userHasAccessStormClause(user))
 
         if ((bug_ids is None or len(bug_ids) == 0) and
             (bug_tags is None or len(bug_tags) == 0)):
             raise ParameterError('bug_ids or bug_tags must be supplied.')
 
+        tables.append(Bug)
         if bug_ids is not None and bug_ids is not []:
             clauses.append(In(Bug.id, bug_ids))
 
         if bug_tags is not None and bug_tags is not []:
             clauses.extend([
                 Bug.id == BugTag.bugID, In(BugTag.tag, bug_tags)])
+            tables.append(BugTag)
 
-        person_clauses = [
-            Bug.ownerID == HWSubmission.ownerID
-            ]
+        # If we OR-combine the search for bug owners, subscribers
+        # and affected people on SQL level, the query runs very slow.
+        # So let's run the queries separately and join the results
+        # on Python level.
+
+        owner_query = Select(
+            columns=[HWSubmission.ownerID], tables=tables,
+            where=And(*(clauses + [Bug.ownerID == HWSubmission.ownerID])))
+        user_ids = set(store.execute(owner_query))
+
         if subscribed_to_bug:
-            person_clauses.append(
-                And(BugSubscription.personID == HWSubmission.ownerID,
-                    BugSubscription.bug == Bug.id))
-        if affected_by_bug:
-            person_clauses.append(
-                And(BugAffectsPerson.personID == HWSubmission.ownerID,
-                    BugAffectsPerson.bug == Bug.id,
-                    BugAffectsPerson.affected))
+            subscriber_clauses = [
+                BugSubscription.personID == HWSubmission.ownerID,
+                BugSubscription.bug == Bug.id,
+                ]
+            subscriber_query = Select(
+                columns=[HWSubmission.ownerID],
+                tables=tables + [BugSubscription],
+                where=And(*(clauses + subscriber_clauses)))
+            user_ids.update(store.execute(subscriber_query))
 
-        clauses.append(Or(person_clauses))
-        result = store.find(
-            Person, And(*clauses))
+        if affected_by_bug:
+            affected_clauses = [
+                BugAffectsPerson.personID == HWSubmission.ownerID,
+                BugAffectsPerson.bug == Bug.id,
+                BugAffectsPerson.affected,
+                ]
+            affected_query = Select(
+                columns=[HWSubmission.ownerID],
+                tables=tables + [BugAffectsPerson],
+                where=And(*(clauses + affected_clauses)))
+            user_ids.update(store.execute(affected_query))
+
+        # A "WHERE x IN (y, z...)" query needs at least one element
+        # on the right side of IN.
+        if len(user_ids) == 0:
+            result = store.find(Person, False)
+        else:
+            result = store.find(Person, In(Person.id, list(user_ids)))
         result.order_by(Person.displayname)
-        result.config(distinct=True)
         return result
 
     def hwInfoByBugRelatedUsers(
