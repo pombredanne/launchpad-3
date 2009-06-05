@@ -256,6 +256,17 @@ A file can be uploaded without a GPG signature.
     >>> get_feedback_messages(firefox_owner.contents)
     [u"Your file 'bar.txt' has been uploaded."]
 
+Uploaded file is also displayed on the project's downloads page for any
+user to see.
+
+    >>> anon_browser.open('http://launchpad.dev/firefox/+download')
+    >>> content = find_main_content(anon_browser.contents)
+    >>> for tr in  content.findAll('table')[1].findAll('tr'):
+    ...     print extract_text(tr)
+    Download             Release   Description
+    bar.txt (md5)        1.0.0     Bar installer
+    foo.txt (md5, sig)   1.0.0     Foo installer
+
 In addition to the product owner and product series owner,
 an admin can also delete a release file.
 
