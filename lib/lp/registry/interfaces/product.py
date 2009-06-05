@@ -185,7 +185,7 @@ class License(DBEnumeratedType):
     AFFERO = DBItem(20, "GNU Affero GPL v3")
     APACHE = DBItem(30, "Apache License")
     ARTISTIC = DBItem(40, "Artistic License")
-    BSD = DBItem(50, "BSD License (revised)")
+    BSD = DBItem(50, "Simplified BSD License")
     COMMON_PUBLIC = DBItem(80, "Common Public License")
     ECLIPSE = DBItem(90, "Eclipse Public License")
     EDUCATIONAL_COMMUNITY = DBItem(100, "Educational Community License")
