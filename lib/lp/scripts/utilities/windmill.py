@@ -53,7 +53,7 @@ def runWindmill():
     windmill_cmdline = [
         os.path.join(
             here, os.pardir, os.pardir, os.pardir, os.pardir, 
-            'bin', 'windmill.py'),
+            'bin', 'windmill'),
         ]
     windmill_cmdline.extend(sys.argv[1:])
     windmill = subprocess.Popen(windmill_cmdline, close_fds=True)
