@@ -56,6 +56,16 @@ class BranchScanner:
         """Safely get str(obj), logging any exceptions."""
         return self._failsafe(unknown, unknown, str, obj)
 
+    def _safe_getattr(self, obj, name, default='UNKNOWN'):
+        """Safely get the 'name' attribute of 'obj'.
+
+        If getting the attribute raises an exception, log that exception
+        and return 'default'.
+        """
+        return self._failsafe(
+            "Couldn't get %s" % name,
+            default, getattr, obj, name, default)
+
     def scanBranches(self, branches):
         """Scan 'branches'."""
         for branch in branches:
@@ -111,17 +121,6 @@ class BranchScanner:
                 ('Error while logging: %s' % exception_message), None,
                 self.logScanFailure, branch,
                 "Internal network failure: %s" % e)
-
-
-    def _safe_getattr(self, obj, name, default='UNKNOWN'):
-        """Safely get the 'name' attribute of 'obj'.
-
-        If getting the attribute raises an exception, log that exception
-        and return 'default'.
-        """
-        return self._failsafe(
-            "Couldn't get %s" % name,
-            default, getattr, obj, name, default)
 
     def logScanFailure(self, branch, message="Failed to scan"):
         """Log diagnostic for branches that could not be scanned."""
