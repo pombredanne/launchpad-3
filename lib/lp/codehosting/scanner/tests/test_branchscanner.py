@@ -63,7 +63,7 @@ class TestErrorHandling(TestCaseWithFactory):
     affecting the scanning of the next branch.
 
     In particular, this means we need to guard against errors being raised in
-    our error handling code.
+    our error reporting code.
     """
 
     layer = DatabaseFunctionalLayer
