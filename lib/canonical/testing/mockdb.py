@@ -24,7 +24,7 @@ import os.path
 import urllib
 
 import psycopg2
-from zope.testing.testrunner import RetryTest
+# from zope.testing.testrunner import RetryTest
 
 from canonical.config import config
 
@@ -385,7 +385,8 @@ class ScriptPlayer:
         if os.path.exists(self.script_filename):
             os.unlink(self.script_filename)
         self.invalid = True
-        raise RetryTest(reason)
+        raise RetryTest(reason) # Leaving this as a name error: this should
+        # not be called unless we reinstate the retry behavior in zope.testing.
 
 
 class MockDbConnection:
