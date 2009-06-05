@@ -47,8 +47,8 @@
       </p>
       <div class="object identifier">
 
-          <a tal:attributes="href context/bug/fmt:url">
-            <tal:icon replace="structure context/image:icon" />
+          <a tal:attributes="href context/bug/fmt:url;
+                             class string: ${context/image:sprite_css}">
             Bug #<span tal:content="context/bug/id"
             >12345</span><tal:nickname
                           condition="context/bug/name">

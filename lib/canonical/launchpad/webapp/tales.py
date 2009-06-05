@@ -627,6 +627,7 @@ class BugTaskImageDisplayAPI(ObjectImageDisplayAPI):
         'logo',
         'mugshot',
         'badges',
+        'sprite_css',
         ])
 
     icon_template = (
@@ -642,6 +643,14 @@ class BugTaskImageDisplayAPI(ObjectImageDisplayAPI):
             return getattr(self, name)()
         else:
             raise TraversalError, name
+
+    def sprite_css(self):
+        """Return the CSS class for the sprite"""
+        if self._context.importance:
+            importance = self._context.importance.title.lower()
+            return "sprite bug-%s" % importance
+        else:
+            return "sprite bug"
 
     def icon(self, rootsite=None):
         """Display the icon dependent on the IBugTask.importance."""
