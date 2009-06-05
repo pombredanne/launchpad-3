@@ -1,4 +1,3 @@
-#!/usr/bin/python2.4
 # Copyright 2008 Canonical Ltd.  All rights reserved.
 """Windmill test integration wrapper for Launchpad.
 
@@ -14,18 +13,7 @@ import os
 import sys
 import time
 
-# Fix-up our path so that we can find all the modules.
 here = os.path.dirname(os.path.realpath(__file__))
-sys.path.insert(0, os.path.join(here, 'lib'))
-sys.path.insert(0, os.path.join(here, 'lib', 'mailman'))
-
-original_environ = dict(os.environ)
-# Set the path for spawned process.
-os.environ['PYTHONPATH'] = ":".join(sys.path)
-
-# Hard-code the app-server configuration, since that's what can
-# work with windmill.
-os.environ['LPCONFIG'] = 'testrunner-appserver'
 
 import atexit
 import signal
@@ -40,6 +28,9 @@ from canonical.testing.layers import (
 def setUpLaunchpad():
     """Set-up the Launchpad app-server against which windmill tests are run.
     """
+    # Hard-code the app-server configuration, since that's what can
+    # work with windmill.
+    os.environ['LPCONFIG'] = 'testrunner-appserver'
     sys.stderr.write('Starting up Launchpad... ')
     BaseLayer.setUp()
     DatabaseLayer.setUp()
@@ -59,11 +50,12 @@ def runWindmill():
     This function exits once windmill has terminated.
     """
     windmill_cmdline = [
-        os.path.join(here, 'utilities', 'windmill.py'),
+        os.path.join(
+            here, os.pardir, os.pardir, os.pardir, os.pardir, 
+            'bin', 'windmill.py'),
         ]
     windmill_cmdline.extend(sys.argv[1:])
-    windmill = subprocess.Popen(
-        windmill_cmdline, close_fds=True, env=original_environ)
+    windmill = subprocess.Popen(windmill_cmdline, close_fds=True)
     try:
         windmill.wait()
     except KeyboardInterrupt:
@@ -80,7 +72,7 @@ def waitForInterrupt():
         pass
 
 
-if __name__ == '__main__':
+def main():
     setUpLaunchpad()
     if sys.argv[1] == '--server-only':
         waitForInterrupt()
