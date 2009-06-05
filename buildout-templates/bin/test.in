@@ -143,6 +143,7 @@ defaults = [
     '--test-path=${buildout:directory}/lib',
     '--package=canonical',
     '--package=lp',
+    '--layer=!MailmanLayer',
     ]
 
 # Monkey-patch os.listdir to randomise the results
