@@ -168,11 +168,14 @@ class LicenseStatus(DBEnumeratedType):
         40, "Unspecified",
         u"This project&rsquo;s license has not been specified.")
 
+
 class License(DBEnumeratedType):
     """Licenses under which a project's code can be released."""
 
+    # Sort licenses alphabetically by their description.
     sort_order = (
-        'ACADEMIC', 'APACHE', 'ARTISTIC', 'BSD', 'COMMON_PUBLIC', 'ECLIPSE',
+        'ACADEMIC', 'APACHE', 'ARTISTIC', 'BSD', 'COMMON_PUBLIC',
+        'CC_BY', 'CC_BY_SA', 'CC_0', 'ECLIPSE',
         'EDUCATIONAL_COMMUNITY', 'AFFERO', 'GNU_GPL_V2','GNU_GPL_V3',
         'GNU_LGPL_V2_1','GNU_LGPL_V3', 'MIT', 'MPL', 'OPEN_SOFTWARE', 'PERL',
         'PHP', 'PUBLIC_DOMAIN', 'PYTHON', 'ZPL',
@@ -198,6 +201,11 @@ class License(DBEnumeratedType):
     PUBLIC_DOMAIN = DBItem(220, "Public Domain")
     PYTHON = DBItem(230, "Python License")
     ZPL = DBItem(280, "Zope Public License")
+    # http://creativecommons.org/about/licenses
+    CC_BY = DBItem(300, 'Creative Commons - Attribution')
+    CC_BY_SA = DBItem(310, 'Creative Commons - Attribution Share Alike')
+    # http://creativecommons.org/about/cc0
+    CC_0 = DBItem(320, 'Creative Commons - No Rights Reserved')
 
     OTHER_PROPRIETARY = DBItem(1000, "Other/Proprietary")
     OTHER_OPEN_SOURCE = DBItem(1010, "Other/Open Source")
@@ -646,6 +654,11 @@ class IProductPublic(
         as this Product is using, is linked to a bug task targeted to
         this Product.
         """
+
+    @export_read_operation()
+    @export_operation_as('get_timeline')
+    def getTimeline():
+        """Return basic timeline data useful for creating a diagram."""
 
 
 class IProduct(IProductEditRestricted, IProductCommercialRestricted,

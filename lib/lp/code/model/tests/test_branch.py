@@ -1046,23 +1046,11 @@ class BranchAddLandingTarget(TestCaseWithFactory):
             InvalidBranchMergeProposal, self.source.addLandingTarget,
             self.user, self.target)
 
-    def test_targetIsABranch(self):
-        """The target of must be a branch."""
-        self.assertRaises(
-            InvalidBranchMergeProposal, self.source.addLandingTarget,
-            self.user, self.product)
-
     def test_targetMustNotBeTheSource(self):
         """The target and source branch cannot be the same."""
         self.assertRaises(
             InvalidBranchMergeProposal, self.source.addLandingTarget,
             self.user, self.source)
-
-    def test_dependentIsABranch(self):
-        """The dependent branch, if it is there, must be a branch."""
-        self.assertRaises(
-            InvalidBranchMergeProposal, self.source.addLandingTarget,
-            self.user, self.target, dependent_branch=self.product)
 
     def test_dependentBranchSameProduct(self):
         """The dependent branch, if it is there, must be for the same product.
