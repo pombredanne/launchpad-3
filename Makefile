@@ -78,6 +78,11 @@ check: build
 	# database.
 	${PY} -t ./test_on_merge.py $(VERBOSITY)
 
+check_mailman: build
+	# Run all tests, including the Mailman integration
+	# tests. test_on_merge.py takes care of setting up the database.
+	${PY} -t ./test_on_merge.py $(VERBOSITY) --layer=MailmanLayer
+
 lint:
 	@bash ./utilities/lint.sh
 
@@ -113,7 +118,7 @@ download-cache:
 bin/buildout: download-cache eggs
 	$(PYTHON) bootstrap.py
 
-$(PY): bin/buildout
+$(PY): bin/buildout versions.cfg
 	./bin/buildout configuration:instance_name=${LPCONFIG}
 
 compile: $(PY)
@@ -308,4 +313,4 @@ ID: compile
 	start run ftest_build ftest_inplace test_build test_inplace pagetests\
 	check check_loggerhead_on_merge  check_merge check_sourcecode_merge \
 	schema default launchpad.pot check_merge_ui pull scan sync_branches\
-	reload-apache hosted_branches check_db_merge
+	reload-apache hosted_branches check_db_merge check_mailman
