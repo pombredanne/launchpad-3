@@ -133,7 +133,8 @@
               <td tal:content="file/description">Installer for i386</td>
               <td style="text-align: center;">
                 <tal:downloaded condition="lfa/hits">
-                  <span tal:replace="lfa/hits/fmt:intcomma" /><br />
+                  <span tal:replace="lfa/hits/fmt:intcomma">10</span>
+                  <br />
                   <span style="font-size: 75%; color: grey;">
                     <strong tal:content="lfa/last_downloaded/fmt:approximateduration" />
                     since last download
