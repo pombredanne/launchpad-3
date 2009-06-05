@@ -14,6 +14,7 @@ import logging
 import sys
 from urlparse import urlparse, urlunparse
 
+import pkg_resources
 import ZConfig
 
 from lazr.config import ImplicitTypeSchema
@@ -162,8 +163,8 @@ class CanonicalConfig:
         self.root = os.path.abspath(os.path.join(
             here, os.pardir, os.pardir, os.pardir))
 
-        schemafile = os.path.join(
-            self.root, 'lib/zope/app/server/schema.xml')
+        schemafile = pkg_resources.resource_filename(
+            'zope.app.server', 'schema.xml')
         configfile = os.path.join(config_dir, 'launchpad.conf')
         schema = ZConfig.loadSchema(schemafile)
         root_options, handlers = ZConfig.loadConfig(schema, configfile)
