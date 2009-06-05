@@ -631,12 +631,12 @@ class DistributionPackageSearchView(PackageSearchViewBase):
         names = {}
 
         for package_cache in self.batchnav.currentBatch():
-            names[package_cache.name] = self.listFirstFiveMatchingNames(
+            names[package_cache.name] = self._listFirstFiveMatchingNames(
                 self.text, package_cache.binpkgnames)
 
         return names
 
-    def listFirstFiveMatchingNames(self, match_text, space_separated_list):
+    def _listFirstFiveMatchingNames(self, match_text, space_separated_list):
         """Returns a comma-separated list of the first five matching items"""
         name_list = space_separated_list.split(' ')
 

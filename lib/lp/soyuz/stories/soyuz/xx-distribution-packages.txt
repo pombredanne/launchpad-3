@@ -93,6 +93,7 @@ finds the fti results:
     >>> for tag in find_tags_by_class(
     ...     browser.contents, 'batch-navigation-index'):
     ...     print extract_text(tag)
+    All packages with sources matching your query &ldquo;placeholder&rdquo;
     1...2 of 2 results
 
     >>> soup = find_main_content(browser.contents)
