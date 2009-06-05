@@ -319,7 +319,9 @@ class SearchTag(Tag):
         """Make sure the value is a valid search tag.
 
         A valid search tag is a valid name or a valid name prepended
-        with an exclamation mark, denoting "not this tag".
+        with an exclamation mark, denoting "not this tag". A simple
+        wildcard - an asterisk - is also valid, with or without a
+        leading exclamation mark.
         """
         if value in ('*', '!*'):
             return True
