@@ -174,7 +174,8 @@ class License(DBEnumeratedType):
 
     # Sort licenses alphabetically by their description.
     sort_order = (
-        'ACADEMIC', 'APACHE', 'ARTISTIC', 'BSD', 'COMMON_PUBLIC',
+        'ACADEMIC', 'APACHE', 'ARTISTIC', 'ARTISTIC_2_0',
+        'BSD', 'COMMON_PUBLIC',
         'CC_BY', 'CC_BY_SA', 'CC_0', 'ECLIPSE',
         'EDUCATIONAL_COMMUNITY', 'AFFERO', 'GNU_GPL_V2','GNU_GPL_V3',
         'GNU_LGPL_V2_1','GNU_LGPL_V3', 'MIT', 'MPL', 'OPEN_SOFTWARE', 'PERL',
@@ -184,7 +185,10 @@ class License(DBEnumeratedType):
     ACADEMIC = DBItem(10, "Academic Free License")
     AFFERO = DBItem(20, "GNU Affero GPL v3")
     APACHE = DBItem(30, "Apache License")
-    ARTISTIC = DBItem(40, "Artistic License")
+    # http://www.perlfoundation.org/artistic_license_1_0
+    ARTISTIC = DBItem(40, "Artistic License 1.0")
+    # http://www.opensource.org/licenses/artistic-license-2.0.php
+    ARTISTIC_2_0 = DBItem(45, 'Artistic License 2.0')
     BSD = DBItem(50, "Simplified BSD License")
     COMMON_PUBLIC = DBItem(80, "Common Public License")
     ECLIPSE = DBItem(90, "Eclipse Public License")
