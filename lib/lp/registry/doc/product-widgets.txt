@@ -233,9 +233,9 @@ license policy.
     >>> html = license_widget()
     >>> soup = BeautifulSoup(html)
     >>> len(License)
-    26
+    27
     >>> len(soup.table('input'))
-    26
+    27
     >>> print soup.a['href']
     https://help.launchpad.net/Legal/ProjectLicensing
 
@@ -344,4 +344,19 @@ blocked from creating their project.
     ( ) Academic Free License
     ...
     (*) I don't know yet
+    ...
+
+There are two Perl-inspired Artistic licenses.  The first is the original 1.0
+license which most of Perl-land is licensed by, and there's the 2.0 version
+that is used by newer project such as Parrot.
+
+    >>> form['field.licenses'] = ['ARTISTIC', 'ARTISTIC_2_0']
+    >>> request = LaunchpadTestRequest(form=form)
+    >>> license_widget = LicenseWidget(licenses_field, vtype, request)
+
+    >>> print_checked_items(license_widget())
+    ( ) Academic Free License
+    ...
+    (*) Artistic License 1.0
+    (*) Artistic License 2.0
     ...
