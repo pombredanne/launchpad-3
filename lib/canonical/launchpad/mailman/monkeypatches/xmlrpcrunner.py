@@ -307,9 +307,13 @@ class XMLRPCRunner(Runner):
                 return
             for list_name in info:
                 subscription_info = info[list_name]
-                if subscription_info is None:
-                    log_exception('No subscribers/posters: %s', list_name)
-                else:
+                # The subscription info for a mailing list can be None,
+                # meaning that there are no subscribers or allowed posters.
+                # The latter can only happen if there are no active team
+                # members, and that can only happen when the owner has been
+                # specifically deactivate for some reason.  This is not an
+                # error condition.
+                if subscription_info is not None:
                     self._update_list_subscriptions(
                         list_name, subscription_info)
 
