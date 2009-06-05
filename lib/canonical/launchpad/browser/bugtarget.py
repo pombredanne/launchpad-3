@@ -28,12 +28,12 @@ import urllib
 
 from zope.app.form.browser import TextWidget
 from zope.app.form.interfaces import InputErrors
-from zope.app.pagetemplate import ViewPageTemplateFile
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements
 from zope.publisher.interfaces import NotFound
 from zope.publisher.interfaces.browser import IBrowserPublisher
+from z3c.ptcompat import ViewPageTemplateFile
 
 from lazr.lifecycle.event import ObjectCreatedEvent
 
