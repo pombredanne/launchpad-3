@@ -8,6 +8,8 @@ __all__ = [
     'ProductSeriesSet',
     ]
 
+import datetime
+
 from sqlobject import (
     ForeignKey, StringCol, SQLMultipleJoin, SQLObjectNotFound)
 from storm.expr import In
@@ -451,17 +453,27 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
                 if not include_inactive and not milestone.active:
                     continue
                 node_type = 'milestone'
+                date = milestone.dateexpected
                 uri = canonical_url(milestone, path_only_if_possible=True)
             else:
                 node_type = 'release'
+                date = milestone.product_release.datereleased
                 uri = canonical_url(
                     milestone.product_release, path_only_if_possible=True)
+
+            if isinstance(date, datetime.datetime):
+                date = date.date().isoformat()
+            elif isinstance(date, datetime.date):
+                date = date.isoformat()
+
             entry = dict(
                 name=milestone.name,
                 code_name=milestone.code_name,
                 type=node_type,
+                date=date,
                 uri=uri)
             landmarks.append(entry)
+
         return dict(
             name=self.name,
             is_development_focus=self.is_development_focus,
