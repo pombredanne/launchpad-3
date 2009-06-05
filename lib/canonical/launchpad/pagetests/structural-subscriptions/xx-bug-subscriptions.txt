@@ -41,7 +41,7 @@ Sample Person and the Landscape team are now subscribed.
     ...     browser.contents, 'Bug subscriptions')).encode(
     ...     'ascii', 'backslashreplace')
     Bug subscriptions
-      For...mozilla-firefox...source package in Ubuntu:
+      For...mozilla-firefox...package in Ubuntu:
         Foo Bar
         Landscape Developers
         Sample Person
@@ -58,7 +58,7 @@ Sample Person can also unsubscribe himself and the Landscape team.
     >>> browser.getControl('Save these changes').click()
     >>> print extract_text(find_portlet(browser.contents, 'Bug subscriptions'))
     Bug subscriptions
-      For...mozilla-firefox...source package in Ubuntu:
+      For...mozilla-firefox...package in Ubuntu:
         Foo Bar
       For Ubuntu Linux:
         Landscape Developers
@@ -101,7 +101,7 @@ No Privileges Person is now subscribed...
 
     >>> print extract_text(find_portlet(browser.contents, 'Bug subscriptions'))
     Bug subscriptions
-      For...mozilla-firefox...source package in Ubuntu:
+      For...mozilla-firefox...package in Ubuntu:
         Foo Bar
         No Privileges Person
       For Ubuntu Linux:
@@ -120,7 +120,7 @@ No Privileges Person is now subscribed...
     No Privileges Person will no longer automatically receive e-mail about public bugs in "mozilla-firefox in ubuntu".
     >>> print extract_text(find_portlet(browser.contents, 'Bug subscriptions'))
     Bug subscriptions
-      For...mozilla-firefox...source package in Ubuntu:
+      For...mozilla-firefox...package in Ubuntu:
         Foo Bar
       For Ubuntu Linux:
         Landscape Developers
@@ -146,7 +146,7 @@ purges the submitted form data from now unexpected values.
 
     >>> print extract_text(find_portlet(browser.contents, 'Bug subscriptions'))
     Bug subscriptions
-      For...mozilla-firefox...source package in Ubuntu:
+      For...mozilla-firefox...package in Ubuntu:
         Foo Bar
       For Ubuntu Linux:
         Landscape Developers
@@ -158,7 +158,7 @@ purges the submitted form data from now unexpected values.
     >>> browser.getControl('Save these changes').click()
     >>> print extract_text(find_portlet(browser.contents, 'Bug subscriptions'))
     Bug subscriptions
-      For...mozilla-firefox...source package in Ubuntu:
+      For...mozilla-firefox...package in Ubuntu:
         Foo Bar
       For Ubuntu Linux:
         Landscape Developers
