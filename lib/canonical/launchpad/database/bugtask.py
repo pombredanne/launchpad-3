@@ -1466,18 +1466,22 @@ class BugTaskSet:
                 tags_combinator = ' AND '
                 # The set of bugs that have *all* of the tags
                 # requested for *inclusion*.
-                tags_include_clause = tags_set_query("INTERSECT", tags_include)
+                tags_include_clause = tags_set_query(
+                    "INTERSECT", tags_include)
                 # The set of bugs that have *any* of the tags
                 # requested for *exclusion*.
-                tags_exclude_clause = tags_set_query("UNION", tags_exclude)
+                tags_exclude_clause = tags_set_query(
+                    "UNION", tags_exclude)
             else:
                 tags_combinator = ' OR '
                 # The set of bugs that have *any* of the tags
                 # requested for inclusion.
-                tags_include_clause = tags_set_query("UNION", tags_include)
+                tags_include_clause = tags_set_query(
+                    "UNION", tags_include)
                 # The set of bugs that have *all* of the tags
                 # requested for exclusion.
-                tags_exclude_clause = tags_set_query("INTERSECT", tags_exclude)
+                tags_exclude_clause = tags_set_query(
+                    "INTERSECT", tags_exclude)
 
             # Combine the include and exclude sets.
             if len(tags_include) > 0 and len(tags_exclude) > 0:
