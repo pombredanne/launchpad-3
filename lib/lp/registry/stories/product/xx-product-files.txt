@@ -256,7 +256,7 @@ A file can be uploaded without a GPG signature.
     >>> get_feedback_messages(firefox_owner.contents)
     [u"Your file 'bar.txt' has been uploaded."]
 
-Uploaded file is also displayed on the project's downloads page for any
+The uploaded file is also displayed on the project's downloads page for any
 user to see.
 
     >>> anon_browser.open('http://launchpad.dev/firefox/+download')
