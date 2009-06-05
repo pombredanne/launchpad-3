@@ -111,8 +111,10 @@
 
             <ul class="package-matches" tal:condition="batch">
               <li class="pagematch"
-                  tal:repeat="package batch">
-                <tal:project define="project package/upstream_product">
+                  tal:repeat="package_cache batch">
+                <tal:project
+                  define="package package_cache/distributionsourcepackage;
+                          project package/upstream_product">
                 <div>
                   <tal:project-icon content="structure project/image:icon"
                                     condition="project"/>

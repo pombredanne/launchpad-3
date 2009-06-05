@@ -563,18 +563,29 @@ class DistributionPackageSearchView(PackageSearchViewBase):
         if self.search_by_binary_name:
             non_exact_matches = self.context.searchBinaryPackages(self.text)
 
-            # The searchBinaryPackages() method returns
-            # DistributionSourcePackageCache objects so we use the
-            # DecoratedResultSet here to ensure DistributionSourcePackage
-            # objects are returned to the template.
-            def cache_to_package(source_package_cache):
-                return source_package_cache.distributionsourcepackage
+            # XXX Michael Nelson 20090605 bug=217644
+            # We are only using a decorated resultset here to conveniently
+            # get around the storm bug whereby count returns the count
+            # of non-distinct results, even though this result set
+            # is configured for distinct results.
+            def dummy_func(result):
+                return result
+            non_exact_matches = DecoratedResultSet(
+                non_exact_matches, dummy_func)
+
+        else:
+            non_exact_matches = self.context.searchSourcePackageCaches(
+                self.text)
+
+            # The searchBinaryPackageCaches() method returns
+            # tuples, so we use the
+            # DecoratedResultSet here to just get the
+            # DistributionSourcePackag objects for the template.
+            def tuple_to_package_cache(cache_name_tuple):
+                return cache_name_tuple[0]
 
             non_exact_matches = DecoratedResultSet(
-                non_exact_matches, cache_to_package)
-        else:
-            non_exact_matches = self.context.searchSourcePackages(self.text)
-
+                non_exact_matches, tuple_to_package_cache)
 
         return non_exact_matches.config(distinct=True)
 
@@ -620,17 +631,7 @@ class DistributionPackageSearchView(PackageSearchViewBase):
         """Define the matching binary names for each result in the batch."""
         names = {}
 
-        # Rather than re-querying the database, we use our knowledge that
-        # the current batch is a decorated result set, where the underlying
-        # result set contains DistributionSourcePackageCache objects (see
-        # contextSpecificSearch() above). This enables us to use the cached
-        # binary names.
-        current_batch = self.batchnav.currentBatch()
-        package_caches = [
-            current_batch[batch_index].result_set for batch_index in range(
-                0, current_batch.trueSize)]
-
-        for package_cache in package_caches:
+        for package_cache in self.batchnav.currentBatch():
             names[package_cache.name] = self.listFirstFiveMatchingNames(
                 self.text, package_cache.binpkgnames)
 
