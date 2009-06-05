@@ -26,9 +26,8 @@ from zope.component import getUtility
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.section import ISectionSet
 from canonical.launchpad.webapp.interfaces import NotFoundError
-from lp.soyuz.interfaces.package import PackageUploadStatus
 from lp.soyuz.interfaces.queue import (
-    IPackageUploadSet, QueueInconsistentStateError)
+    IPackageUploadSet, PackageUploadStatus, QueueInconsistentStateError)
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad.webapp.tales import DurationFormatterAPI
