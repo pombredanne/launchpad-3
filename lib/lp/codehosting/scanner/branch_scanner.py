@@ -38,6 +38,8 @@ class BranchScanner:
     def _failsafe(self, log_message, default, function, *args, **kwargs):
         """Run 'function', making sure it doesn't raise an exception.
 
+        If 'function' does raise an exception, we log it.
+
         :param log_message: The message to log if 'function' raises.
         :param default: The value to return if 'function' raises.
         :param function: The function to call, followed by args and kwargs.
