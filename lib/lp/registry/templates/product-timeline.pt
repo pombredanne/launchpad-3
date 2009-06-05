@@ -8,54 +8,19 @@
   dir="ltr"
   i18n:domain="launchpad"
 >
-<head tal:define="
-  revno modules/canonical.launchpad.versioninfo/revno | string:unknown;
-  rooturl modules/canonical.launchpad.webapp.vhosts/allvhosts/configs/mainsite/rooturl;
-  icingroot string:${rooturl}+icing/rev${revno};
-  devmode modules/canonical.config/config/devmode;
-  yui string:${icingroot}/yui/3.0.0pr2/build;
-  lazr_js string:${icingroot}/lazr/build;
-  lp_js string:${icingroot}/build"
->
-  <!-- Launchpad style sheet -->
-  <style
-    type="text/css"
-    media="screen, print"
-    tal:condition="not: devmode"
-    tal:content="string:@import url(${icingroot}/+style-slimmer.css);"/>
-  <style
-    type="text/css"
-    media="screen, print"
-    tal:condition="devmode"
-    tal:content="string:@import url(${icingroot}/style.css);"/>
-  <script type="text/javascript"
-          tal:attributes="src string:${icingroot}/build/launchpad.js"></script>
-  <tal:cache condition="view/user|nothing"
-              define="cache request/webservicerequest:cache;
-                      links cache/links;
-                      objects cache/objects;">
-    <script tal:repeat="key links"
-            tal:content="structure string:LP.client.links['${key}'] =
-                         '${links/?key/fmt:api_url}';">
-    </script>
-    <script tal:repeat="key objects"
-            tal:content="structure string:LP.client.cache['${key}'] =
-                         ${objects/?key/webservice:json};">
-    </script>
-  </tal:cache>
-  <script tal:condition="context/webservice:is_entry"
-    tal:content="structure string:LP.client.cache['context'] =
-      ${context/webservice:json};">
-  </script>
+<head>
+  <metal:launchpad-stylesheet
+    use-macro="context/@@+main-template-macros/launchpad-stylesheet" />
+  <metal:load-javascript
+    use-macro="context/@@+main-template-macros/load-javascript" />
+  <metal:lp-client-cache
+    use-macro="context/@@+main-template-macros/lp-client-cache" />
 </head>
+
 <body style="cursor: move; margin: 0; padding: 0">
   <div id="timeline-container">
   </div>
   <script type="text/javascript">
-    // Disable MochiKit event handlers for help pane, which doesn't
-    // exist on this page.
-    disconnectAll(window);
-
     YUI().use('registry.timeline', 'node', function(Y) {
         Y.on('domready', function(e) {
           if (Y.UA.ie) {
