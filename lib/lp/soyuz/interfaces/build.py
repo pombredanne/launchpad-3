@@ -250,8 +250,12 @@ class IBuildView(Interface):
         "A list of distroarchseriesbinarypackages that resulted from this"
         "build, ordered by name.")
 
-    can_be_rescored = Attribute(
-        "Whether or not this build record can be rescored manually.")
+    can_be_rescored = exported(
+        Bool(
+            title=_("Can Be Rescored"), required=False, readonly=True,
+            description=_(
+                "Whether or not this build record can be rescored "
+                "manually.")))
 
     can_be_retried = exported(
         Bool(
