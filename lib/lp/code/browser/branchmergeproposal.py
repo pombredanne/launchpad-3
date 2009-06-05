@@ -156,10 +156,7 @@ class BranchMergeProposalContextMenu(ContextMenu):
     def edit_status(self):
         text = 'Change status'
         status = self.context.queue_status
-        # Can't change the status if Merged or Superseded.
-        enabled = status not in (BranchMergeProposalStatus.SUPERSEDED,
-                                 BranchMergeProposalStatus.MERGED)
-        return Link('+edit-status', text, icon='edit', enabled=enabled)
+        return Link('+edit-status', text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def delete(self):
@@ -969,11 +966,6 @@ class BranchMergeProposalChangeStatusView(MergeProposalEditView):
         """Update the status."""
 
         curr_status = self.context.queue_status
-        # If the status has been updated elsewhere to set the proposal to
-        # merged or superseded, then return.
-        if curr_status in (BranchMergeProposalStatus.SUPERSEDED,
-                           BranchMergeProposalStatus.MERGED):
-            return
         # Assume for now that the queue_status in the data is a valid
         # transition from where we are.
         rev_id = self.request.form['revno']
