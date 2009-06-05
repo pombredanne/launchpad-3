@@ -327,30 +327,32 @@ class ProcessMailLayer(LaunchpadZopelessLayer):
         setSecurityPolicy(cls._old_policy)
 
     doctests_without_logging = [
-        # XXX gary 2008-12-06 bug=305856: Spurious test failure discovered on
-        # buildbot, build 40.  Note that, to completely disable the test from
-        # running, the filename has been changed to
-        # answer-tracker-emailinterface.txt.disabled, so when this test is
+        # XXX gary 2008-12-06 bug=305856: Spurious test failure
+        # discovered on buildbot, build 40.  Note that, to completely
+        # disable the test from running, the filename has been changed
+        # to emailinterface.txt.disabled, so when this test is
         # reinstated it will be need to be changed back.
-        # 'answer-tracker-emailinterface.txt',
-        'bugs-emailinterface.txt',
-        'bugs-email-affects-path.txt',
-        'emailauthentication.txt',
+        # '../../../lp/answers/doc/emailinterface.txt',
+        '../../../lp/bugs/doc/bugs-emailinterface.txt',
+        '../../../lp/bugs/doc/bugs-email-affects-path.txt',
+        '../doc/emailauthentication.txt',
         ]
 
     doctests_with_logging = [
-        'incomingmail.txt',
+        '../doc/incomingmail.txt',
         ]
 
     @classmethod
     def addTestsToSpecial(cls):
         """Adds all the tests related to process-mail.py to special"""
-        for filename in cls.doctests_without_logging:
-            special[filename] = cls.createLayeredDocFileSuite(filename)
+        for filepath in cls.doctests_without_logging:
+            filename = os.path.basename(filepath)
+            special[filename] = cls.createLayeredDocFileSuite(filepath)
 
         for filename in cls.doctests_with_logging:
+            filename = os.path.basename(filepath)
             special[filename] = cls.createLayeredDocFileSuite(
-                filename, stdout_logging=True)
+                filepath, stdout_logging=True)
 
         # Adds a copy of some bug doctests that will be run with
         # the processmail user.
@@ -359,7 +361,7 @@ class ProcessMailLayer(LaunchpadZopelessLayer):
             test.globs['test_dbuser'] = config.processmail.dbuser
 
         special['bug-set-status.txt-processmail'] = LayeredDocFileSuite(
-                '../doc/bug-set-status.txt',
+                '../../../lp/bugs/doc/bug-set-status.txt',
                 setUp=bugSetStatusSetUp, tearDown=tearDown,
                 layer=cls,
                 stdout_logging=False)
@@ -369,7 +371,7 @@ class ProcessMailLayer(LaunchpadZopelessLayer):
             login('no-priv@canonical.com')
 
         special['bugmessage.txt-processmail'] = LayeredDocFileSuite(
-                '../doc/bugmessage.txt',
+                '../../../lp/bugs/doc/bugmessage.txt',
                 setUp=bugmessageSetUp, tearDown=tearDown,
                 layer=cls,
                 stdout_logging=False)
@@ -378,7 +380,7 @@ class ProcessMailLayer(LaunchpadZopelessLayer):
     def createLayeredDocFileSuite(cls, filename, stdout_logging=False):
         """Helper to create a doctest using this layer."""
         return LayeredDocFileSuite(
-            "../doc/%s" % filename,
+            filename,
             setUp=setUp, tearDown=tearDown,
             layer=cls,
             stdout_logging=stdout_logging,
