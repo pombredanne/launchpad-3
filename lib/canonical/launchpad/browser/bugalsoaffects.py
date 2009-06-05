@@ -10,14 +10,14 @@ from textwrap import dedent
 
 from zope.app.form.browser import DropdownWidget
 from zope.app.form.interfaces import MissingInputError, WidgetsError
-from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.component import getUtility
 from zope.event import notify
 from zope.formlib import form
 from zope.schema import Choice
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
-from lazr.enum import EnumeratedType, Item
 
+from z3c.ptcompat import ViewPageTemplateFile
+from lazr.enum import EnumeratedType, Item
 from lazr.lifecycle.event import ObjectCreatedEvent
 
 from canonical.cachedproperty import cachedproperty

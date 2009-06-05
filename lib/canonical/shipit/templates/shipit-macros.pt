@@ -180,11 +180,12 @@
 
 
 <metal:meta-master define-macro="meta-master">
-<metal:doctype define-slot="doctype"><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"></metal:doctype>
+<metal:doctype define-slot="doctype"><tal:doctype tal:replace="structure string:&lt;!DOCTYPE html PUBLIC &quot;-//W3C//DTD XHTML 1.0 Transitional//EN&quot; &quot;http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd&quot;&gt;" /></metal:doctype>
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en"
       tal:attributes="
         lang default_language|default;
         xml:lang default_language|default;"
+      tal:define="CONTEXTS python:{'template':template, 'context': context, 'view':view};"
     >
 
 <head>
