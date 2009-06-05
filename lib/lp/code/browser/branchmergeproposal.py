@@ -940,10 +940,15 @@ class BranchMergeProposalChangeStatusView(MergeProposalEditView):
             BranchMergeProposalStatus.MERGED,
             BranchMergeProposalStatus.SUPERSEDED,
             )
-        terms = [
-            SimpleTerm(status, status.name, status.title)
-            for status in possible_next_states
-            if self.context.isValidTransition(status, self.user)]
+        terms = []
+        for status in possible_next_states:
+            if not self.context.isValidTransition(status, self.user):
+                continue
+            if status == BranchMergeProposalStatus.SUPERSEDED:
+                title = 'Resubmit'
+            else:
+                title = status.title
+            terms.append(SimpleTerm(status, status.name, title))
         return SimpleVocabulary(terms)
 
     def setUpFields(self):
