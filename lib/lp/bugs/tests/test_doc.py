@@ -7,14 +7,17 @@ import logging
 import os
 import unittest
 
-from canonical.database.sqlbase import flush_database_updates
+from canonical.config import config
+from canonical.database.sqlbase import commit
+from canonical.launchpad.ftests import login, logout
+from canonical.launchpad.ftests.test_system_documentation import (
+    branchscannerSetUp, lobotomize_stevea, uploadQueueSetUp, uploaderSetUp,
+    uploaderTearDown)
 from canonical.launchpad.testing.pages import PageTestSuite
 from canonical.launchpad.testing.systemdocs import (
     LayeredDocFileSuite, setUp, tearDown)
 from canonical.testing import (
-    DatabaseFunctionalLayer, DatabaseLayer, LaunchpadFunctionalLayer,
-    LaunchpadZopelessLayer)
-from lp.registry.tests import mailinglists_helper
+    LaunchpadFunctionalLayer, LaunchpadZopelessLayer)
 
 
 here = os.path.dirname(os.path.realpath(__file__))
@@ -25,29 +28,15 @@ def lobotomizeSteveASetUp(test):
     lobotomize_stevea()
     setUp(test)
 
-
 def checkwatchesSetUp(test):
     """Setup the check watches script tests."""
     setUp(test)
     LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
 
-def uploaderSetUp(test):
-    """setup the package uploader script tests."""
-    setUp(test)
-    LaunchpadZopelessLayer.switchDbUser('uploader')
-
-def uploaderTearDown(test):
-    """Tear down the package uploader script tests."""
-    # XXX sinzui 2007-11-14:
-    # This function is not needed. The test should be switched to tearDown.
-    tearDown(test)
-
-
 def branchscannerBugsSetUp(test):
     """Setup the user for the branch scanner tests."""
     lobotomize_stevea()
     branchscannerSetUp(test)
-
 
 def bugNotificationSendingSetUp(test):
     lobotomize_stevea()
@@ -61,13 +50,6 @@ def cveSetUp(test):
     lobotomize_stevea()
     LaunchpadZopelessLayer.switchDbUser(config.cveupdater.dbuser)
     setUp(test)
-
-def uploadQueueSetUp(test):
-    lobotomize_stevea()
-    test_dbuser = config.uploadqueue.dbuser
-    LaunchpadZopelessLayer.switchDbUser(test_dbuser)
-    setUp(test)
-    test.globs['test_dbuser'] = test_dbuser
 
 def uploaderBugsSetUp(test):
     """Set up a test suite using the 'uploader' db user.
@@ -216,6 +198,21 @@ special = {
         LayeredDocFileSuite(
         '../doc/bugwatch.txt',
         setUp=setUp, tearDown=tearDown,
+        layer=LaunchpadZopelessLayer
+        ),
+    'checkwatches.txt':
+        LayeredDocFileSuite(
+        '../doc/checkwatches.txt',
+        setUp=checkwatchesSetUp,
+        tearDown=tearDown,
+        stdout_logging_level=logging.WARNING,
+        layer=LaunchpadZopelessLayer
+        ),
+    'checkwatches-cli-switches.txt':
+        LayeredDocFileSuite(
+        '../doc/checkwatches-cli-switches.txt',
+        setUp=checkwatchesSetUp,
+        tearDown=tearDown,
         layer=LaunchpadZopelessLayer
         ),
     'externalbugtracker.txt':

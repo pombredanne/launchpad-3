@@ -15,10 +15,11 @@ from zope.testing.cleanup import cleanUp
 
 from canonical.config import config
 from canonical.database.sqlbase import commit
-from canonical.launchpad.ftests import ANONYMOUS, login, logout
+from canonical.launchpad.ftests import ANONYMOUS, login
 from canonical.launchpad.interfaces import (
-    CreateBugParams, IBugTaskSet, IDistributionSet, ILanguageSet,
-    IPersonSet)
+    IDistributionSet, ILanguageSet, IPersonSet)
+from lp.bugs.interfaces.bug import CreateBugParams
+from lp.bugs.interfaces.bugtask import IBugTaskSet
 from canonical.launchpad.testing import browser
 from canonical.launchpad.testing.systemdocs import (
     LayeredDocFileSuite, setUp, setGlobs, tearDown)
@@ -65,6 +66,18 @@ def poExportTearDown(test):
     # This function is not needed. The test should be switched to tearDown.
     tearDown(test)
 
+def uploaderSetUp(test):
+    """setup the package uploader script tests."""
+    setUp(test)
+    LaunchpadZopelessLayer.switchDbUser('uploader')
+
+def uploaderTearDown(test):
+    """Tear down the package uploader script tests."""
+    # XXX sinzui 2007-11-14:
+    # This function is not needed. The test should be switched to tearDown.
+    tearDown(test)
+
+
 def archivepublisherSetUp(test):
     """Setup the archive publisher script tests."""
     setUp(test)
@@ -82,6 +95,13 @@ def branchscannerTearDown(test):
     # XXX sinzui 2007-11-14:
     # This function is not needed. The test should be switched to tearDown.
     tearDown(test)
+
+def uploadQueueSetUp(test):
+    lobotomize_stevea()
+    test_dbuser = config.uploadqueue.dbuser
+    LaunchpadZopelessLayer.switchDbUser(test_dbuser)
+    setUp(test)
+    test.globs['test_dbuser'] = test_dbuser
 
 
 def layerlessTearDown(test):
@@ -126,7 +146,6 @@ def bugLinkedToQuestionSetUp(test):
     # Log in here, since we don't want to set up an non-anonymous
     # interaction in the test.
     login('no-priv@canonical.com')
-
 
 def uploaderBugLinkedToQuestionSetUp(test):
     LaunchpadZopelessLayer.switchDbUser('launchpad')
@@ -236,21 +255,6 @@ special = {
             setUp=setUp, tearDown=tearDown,
             layer=FunctionalLayer
             ),
-    'checkwatches.txt':
-            LayeredDocFileSuite(
-                '../doc/checkwatches.txt',
-                setUp=checkwatchesSetUp,
-                tearDown=tearDown,
-                stdout_logging_level=logging.WARNING,
-                layer=LaunchpadZopelessLayer
-                ),
-    'checkwatches-cli-switches.txt':
-            LayeredDocFileSuite(
-                '../doc/checkwatches-cli-switches.txt',
-                setUp=checkwatchesSetUp,
-                tearDown=tearDown,
-                layer=LaunchpadZopelessLayer
-                ),
     'notification-text-escape.txt': LayeredDocFileSuite(
             '../doc/notification-text-escape.txt',
             setUp=test_notifications.setUp,
