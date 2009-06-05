@@ -145,6 +145,7 @@ class MilestoneView(LaunchpadView, ProductDownloadFileMixin):
 
     @cachedproperty
     def product_release_files(self):
+        """Files associated with this milestone."""
         return list(self.release.files)
 
     @cachedproperty
@@ -209,6 +210,7 @@ class MilestoneView(LaunchpadView, ProductDownloadFileMixin):
 
     @cachedproperty
     def total_downloads(self):
+        """Total downloads of files associated with this milestone."""
         return sum(
             file.libraryfile.hits for file in self.product_release_files)
 
