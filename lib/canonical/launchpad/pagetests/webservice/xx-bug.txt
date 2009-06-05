@@ -614,6 +614,22 @@ this, the group must first be re-subscribed.
     ...     person=webservice.getAbsoluteUrl('/~ubuntu-team'))
     HTTP/1.1 401 Unauthorized...
 
+To determine if a user can unsubscribe a person or team,
+use the bug subscription's canBeUnsubscribedByUser method.
+This method checks that the requesting user can unsubscribe
+the person of the subscription.
+
+This example uses a subscription of SteveA.
+
+    >>> print subscription['person_link']
+    http://.../~stevea
+
+Salgado is the webservice user and cannot unsubscribe SteveA.
+
+    >>> print webservice.named_get(
+    ...     subscription['self_link'], 'canBeUnsubscribedByUser').jsonBody()
+    False
+
 
 == Bug Watches ==
 

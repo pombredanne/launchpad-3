@@ -148,8 +148,8 @@ NascentUpload class instead of calling the script:
 
   >>> login('foo.bar@canonical.com')
 
-  >>> from canonical.archiveuploader.nascentupload import NascentUpload
-  >>> from canonical.archiveuploader.tests import (
+  >>> from lp.archiveuploader.nascentupload import NascentUpload
+  >>> from lp.archiveuploader.tests import (
   ...    datadir, getPolicy, mock_logger_quiet)
 
 The policy contains the right arguments to reprocess the build for the
