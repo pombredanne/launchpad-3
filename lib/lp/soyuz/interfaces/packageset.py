@@ -11,35 +11,42 @@ __all__ = [
     ]
 
 from zope.interface import Interface
-from zope.schema import Datetime, Int, TextLine
+from zope.schema import Bool, Datetime, Int, List, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.launchpad import IHasOwner
-from lp.registry.interfaces.person import IPerson
 from canonical.launchpad.validators.name import name_validator
+from lp.registry.interfaces.person import IPerson
+from lazr.restful.declarations import (
+    collection_default_content, export_as_webservice_collection,
+    export_as_webservice_entry, export_factory_operation,
+    export_read_operation, export_write_operation, exported,
+    operation_parameters, operation_returns_collection_of,
+    operation_returns_entry)
 from lazr.restful.fields import Reference
 
 
 class IPackagesetViewOnly(IHasOwner):
     """A read-only interface for package sets."""
+    export_as_webservice_entry()
 
     id = Int(title=_('ID'), required=True, readonly=True)
 
-    date_created = Datetime(
+    date_created = exported(Datetime(
         title=_("Date Created"), required=True, readonly=True,
-        description=_("The creation date/time for the package set at hand."))
+        description=_("The creation date/time for the package set at hand.")))
 
-    owner = Reference(
+    owner = exported(Reference(
         IPerson, title=_("Person"), required=True, readonly=True,
-        description=_("The person who owns the package set at hand."))
+        description=_("The person who owns the package set at hand.")))
 
-    name = TextLine(
+    name = exported(TextLine(
         title=_('Valid package set name'),
-        required=True, constraint=name_validator)
+        required=True, constraint=name_validator))
 
-    description = TextLine(
+    description = exported(TextLine(
         title=_("Description"), required=True, readonly=True,
-        description=_("The description for the package set at hand."))
+        description=_("The description for the package set at hand.")))
 
     def sourcesIncluded(direct_inclusion=False):
         """Get all source names associated with this package set.
@@ -54,6 +61,10 @@ class IPackagesetViewOnly(IHasOwner):
             instances.
         """
 
+    @operation_parameters(
+        direct_inclusion=Bool(required=False))
+    @operation_returns_collection_of(Interface)
+    @export_read_operation()
     def setsIncludedBy(direct_inclusion=False):
         """Get all package sets that include this one.
 
@@ -64,6 +75,10 @@ class IPackagesetViewOnly(IHasOwner):
         :return: A (potentially empty) sequence of `IPackageset` instances.
         """
 
+    @operation_parameters(
+        direct_inclusion=Bool(required=False))
+    @operation_returns_collection_of(Interface)
+    @export_read_operation()
     def setsIncluded(direct_inclusion=False):
         """Get all package sets that are included by this one.
 
@@ -101,6 +116,9 @@ class IPackagesetViewOnly(IHasOwner):
             instances.
         """
 
+    @operation_parameters(
+        direct_inclusion=Bool(required=False))
+    @export_read_operation()
     def getSourcesIncluded(direct_inclusion=False):
         """Get all source names associated with this package set.
 
@@ -119,6 +137,12 @@ class IPackagesetViewOnly(IHasOwner):
             names.
         """
 
+    @operation_parameters(
+        other_package_set=Reference(
+            Interface,
+            title=_('The package set we are comparing to.'), required=True),
+        direct_inclusion=Bool(required=False))
+    @export_read_operation()
     def getSourcesSharedBy(other_package_set, direct_inclusion=False):
         """Get source package names also included by another package set.
 
@@ -137,6 +161,12 @@ class IPackagesetViewOnly(IHasOwner):
             names.
         """
 
+    @operation_parameters(
+        other_package_set=Reference(
+            Interface,
+            title=_('The package set we are comparing to.'), required=True),
+        direct_inclusion=Bool(required=False))
+    @export_read_operation()
     def getSourcesNotSharedBy(other_package_set, direct_inclusion=False):
         """Get source package names not included by another package set.
 
@@ -158,6 +188,7 @@ class IPackagesetViewOnly(IHasOwner):
 
 class IPackagesetEdit(Interface):
     """A writeable interface for package sets."""
+    export_as_webservice_entry()
 
     def add(data):
         """Add source package names or other package sets to this one.
@@ -182,6 +213,10 @@ class IPackagesetEdit(Interface):
             instances
         """
 
+    @operation_parameters(
+        names=List(
+        title=_("A list of source package names."), value_type=TextLine()))
+    @export_write_operation()
     def addSources(names):
         """Add the named source packages to this package set.
 
@@ -199,6 +234,10 @@ class IPackagesetEdit(Interface):
         :param names: an iterable with string source package names
         """
 
+    @operation_parameters(
+        names=List(
+        title=_("A list of source package names."), value_type=TextLine()))
+    @export_write_operation()
     def removeSources(names):
         """Remove the named source packages from this package set.
 
@@ -212,6 +251,10 @@ class IPackagesetEdit(Interface):
         :param names: an iterable with string source package names
         """
 
+    @operation_parameters(
+        names=List(
+        title=_("A list of package set names."), value_type=TextLine()))
+    @export_write_operation()
     def addSubsets(names):
         """Add the named package sets as subsets to this package set.
 
@@ -229,6 +272,10 @@ class IPackagesetEdit(Interface):
         :param names: an iterable with string package set names
         """
 
+    @operation_parameters(
+        names=List(
+        title=_("A list of package set names."), value_type=TextLine()))
+    @export_write_operation()
     def removeSubsets(names):
         """Remove the named package subsets from this package set.
 
@@ -245,11 +292,21 @@ class IPackagesetEdit(Interface):
 
 class IPackageset(IPackagesetViewOnly, IPackagesetEdit):
     """An interface for package sets."""
+    export_as_webservice_entry()
 
 
 class IPackagesetSet(Interface):
     """An interface for multiple package sets."""
+    export_as_webservice_collection(IPackageset)
 
+    @operation_parameters(
+        name=TextLine(title=_('Valid package set name'), required=True),
+        description=TextLine(
+            title=_('Package set description'), required=True),
+        owner=Reference(
+            IPerson, title=_("Person"), required=True, readonly=True,
+            description=_("The person who owns the package set at hand.")))
+    @export_factory_operation(IPackageset, [])
     def new(name, description, owner):
         """Create a new package set.
 
@@ -260,12 +317,23 @@ class IPackagesetSet(Interface):
         :return: a newly created `IPackageset`.
         """
 
+    @operation_parameters(
+        name=TextLine(title=_('Package set name'), required=True))
+    @operation_returns_entry(IPackageset)
+    @export_read_operation()
     def getByName(name):
         """Return the single package set with the given name (if any).
 
         :param name: the name of the package set sought.
 
         :return: An `IPackageset` instance or None.
+        """
+
+    @collection_default_content()
+    def get(limit=50):
+        """Return the first `limit` package sets in Launchpad.
+
+        :return: A (potentially empty) sequence of `IPackageset` instances.
         """
 
     def getByOwner(owner):
@@ -276,6 +344,12 @@ class IPackagesetSet(Interface):
         :return: A (potentially empty) sequence of `IPackageset` instances.
         """
 
+    @operation_parameters(
+        sourcepackagename=TextLine(
+            title=_('Source package name'), required=True),
+        direct_inclusion=Bool(required=False))
+    @operation_returns_collection_of(IPackageset)
+    @export_read_operation()
     def setsIncludingSource(sourcepackagename, direct_inclusion=False):
         """Get the package sets that include this source package.
 
@@ -292,3 +366,7 @@ class IPackagesetSet(Interface):
             name cannot be found.
         :return: A (potentially empty) sequence of `IPackageset` instances.
         """
+
+    def __getitem__(name):
+        """Retrieve a package set by name."""
+

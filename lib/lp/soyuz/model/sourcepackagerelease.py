@@ -34,7 +34,7 @@ from lp.soyuz.interfaces.build import BuildStatus
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from lp.soyuz.interfaces.packagediff import (
     PackageDiffAlreadyRequested)
-from lp.soyuz.interfaces.package import PackageUploadStatus
+from lp.soyuz.interfaces.queue import PackageUploadStatus
 from lp.soyuz.interfaces.publishing import (
     PackagePublishingStatus)
 from lp.registry.interfaces.sourcepackage import (

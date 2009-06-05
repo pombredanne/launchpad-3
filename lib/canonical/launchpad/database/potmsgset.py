@@ -797,6 +797,30 @@ class POTMsgSet(SQLBase):
         matching_message.sync()
         return matching_message
 
+    def dismissAllSuggestions(self, pofile, reviewer, lock_timestamp):
+        """See `IPOTMsgSet`."""
+        assert(lock_timestamp is not None)
+        current = self.getCurrentTranslationMessage(
+            self.potemplate, pofile.language, pofile.variant)
+        if current is None:
+            # Create an empty translation message.
+            current = self.updateTranslation(
+                pofile, reviewer, [], False, lock_timestamp)
+        else:
+            if current.date_reviewed is not None:
+                use_date = current.date_reviewed
+            else:
+                use_date = current.date_created
+            if use_date >= lock_timestamp:
+                raise TranslationConflict(
+                    'While you were reviewing these suggestions, somebody '
+                    'else changed the actual translation. This is not an '
+                    'error but you might want to re-review the strings '
+                    'concerned.')
+            else:
+                current.reviewer = reviewer
+                current.date_reviewed = lock_timestamp
+
     def applySanityFixes(self, text):
         """See `IPOTMsgSet`."""
         if text is None:

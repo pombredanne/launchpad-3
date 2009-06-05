@@ -14,10 +14,10 @@ from sha import sha
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.archiveuploader.tests import (
+from lp.archiveuploader.tests import (
     datadir, getPolicy, insertFakeChangesFileForAllPackageUploads,
     mock_logger_quiet)
-from canonical.archiveuploader.nascentupload import NascentUpload
+from lp.archiveuploader.nascentupload import NascentUpload
 from canonical.config import config
 from canonical.database.sqlbase import ISOLATION_LEVEL_READ_COMMITTED
 from canonical.launchpad.database import (
@@ -29,7 +29,7 @@ from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.distroseries import DistroSeriesStatus
 from lp.registry.interfaces.person import IPersonSet
 from lp.soyuz.interfaces.archive import ArchivePurpose, IArchiveSet
-from lp.soyuz.interfaces.package import PackageUploadStatus
+from lp.soyuz.interfaces.queue import PackageUploadStatus
 from lp.soyuz.interfaces.publishing import (
     PackagePublishingPocket, PackagePublishingStatus)
 from lp.soyuz.interfaces.queue import IPackageUploadSet

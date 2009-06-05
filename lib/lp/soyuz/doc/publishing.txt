@@ -69,7 +69,7 @@ There is also a property that returns the changesfile URL.  This is proxied
 through the webapp rather than being a librarian URL because the changesfile
 could be private and thus in the restricted librarian.
 
-    >>> from canonical.archiveuploader.tests import (
+    >>> from lp.archiveuploader.tests import (
     ...     insertFakeChangesFileForAllPackageUploads)
     >>> insertFakeChangesFileForAllPackageUploads()
 

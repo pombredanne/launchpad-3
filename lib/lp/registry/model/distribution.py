@@ -14,7 +14,7 @@ from sqlobject.sqlbuilder import SQLConstant
 from storm.locals import Desc, In, Join, SQL
 from storm.store import Store
 
-from canonical.archivepublisher.debversion import Version
+from lp.archivepublisher.debversion import Version
 from canonical.cachedproperty import cachedproperty
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -86,7 +86,7 @@ from lp.registry.interfaces.distroseries import (
     DistroSeriesStatus, NoSuchDistroSeries)
 from canonical.launchpad.interfaces.launchpad import (
     IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities, ILaunchpadUsage)
-from lp.soyuz.interfaces.package import PackageUploadStatus
+from lp.soyuz.interfaces.queue import PackageUploadStatus
 from canonical.launchpad.interfaces.packaging import PackagingType
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.soyuz.interfaces.publishing import (
@@ -721,7 +721,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
 
     def getDistroSeriesAndPocket(self, distroseries_name):
         """See `IDistribution`."""
-        from canonical.archivepublisher.publishing import suffixpocket
+        from lp.archivepublisher.publishing import suffixpocket
 
         # Get the list of suffixes.
         suffixes = [suffix for suffix, ignored in suffixpocket.items()]
@@ -985,31 +985,37 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             DistroSeries.status != DistroSeriesStatus.OBSOLETE,
             BinaryPackageRelease.binarypackagename == BinaryPackageName.id,
             DistroArchSeries.distroseries == DistroSeries.id,
-            BinaryPackagePublishingHistory.distroarchseries ==
-                DistroArchSeries.id,
-            BinaryPackagePublishingHistory.binarypackagerelease ==
-                BinaryPackageRelease.id,
+            Build.distroarchseries == DistroArchSeries.id,
             BinaryPackageRelease.build == Build.id,
             Build.sourcepackagerelease == SourcePackageRelease.id,
             SourcePackageRelease.sourcepackagename == SourcePackageName.id,
             DistributionSourcePackageCache.sourcepackagename ==
                 SourcePackageName.id,
             In(
-                DistroSeriesPackageCache.archiveID,
+                DistributionSourcePackageCache.archiveID,
                 self.all_distro_archive_ids))
 
     def searchBinaryPackages(self, package_name, exact_match=False):
         """See `IDistribution`."""
         store = Store.of(self)
 
-        find_spec = self._binaryPackageSearchClause
         select_spec = (DistributionSourcePackageCache,)
 
         if exact_match:
+            find_spec = self._binaryPackageSearchClause
             match_clause = (BinaryPackageName.name == package_name,)
         else:
+            # In this case we can use a simplified find-spec as the
+            # binary package names are present on the
+            # DistributionSourcePackageCache records.
+            find_spec = (
+                DistributionSourcePackageCache.distribution == self,
+                In(
+                    DistributionSourcePackageCache.archiveID,
+                    self.all_distro_archive_ids))
             match_clause = (
-                BinaryPackageName.name.like("%%%s%%" % package_name.lower()),)
+                DistributionSourcePackageCache.binpkgnames.like(
+                    "%%%s%%" % package_name.lower()),)
 
         result_set = store.find(
             *(select_spec + find_spec + match_clause)).config(distinct=True)
