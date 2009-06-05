@@ -135,6 +135,14 @@ class MilestoneView(LaunchpadView, ProductDownloadFileMixin):
         """See `ProductDownloadFileMixin`."""
         return set([self.release])
 
+    @cachedproperty
+    def download_files(self):
+        """The release's files as DownloadFiles."""
+        if self.release is None or self.release.files.count() == 0:
+            return None
+        return [self.getDownloadFile(file_, self.release)
+                for file_ in self.release.files]
+
     # Listify and cache the specifications and bugtasks to avoid making
     # the same query over and over again when evaluating in the template.
     @cachedproperty

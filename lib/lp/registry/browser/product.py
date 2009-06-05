@@ -70,7 +70,7 @@ from lp.registry.interfaces.distroseries import DistroSeriesStatus
 from lp.registry.interfaces.product import (
     IProduct, IProductSet, LicenseStatus)
 from lp.registry.interfaces.productrelease import (
-    IProductRelease, IProductReleaseSet)
+    IProductRelease, IProductReleaseFile, IProductReleaseSet)
 from lp.registry.interfaces.productseries import IProductSeries
 from canonical.launchpad import helpers
 from lp.registry.browser.announcement import HasAnnouncementsView
@@ -729,6 +729,19 @@ class ReleaseWithFiles:
         self.files.append(file)
 
 
+class DownloadFile:
+    """A decorated `IProductReleaseFile` with URLs."""
+
+    delegates(IProductReleaseFile, 'file')
+
+    def __init__(self, file_, url, md5_url, signature_url=None):
+        """Decorate the file with urls."""
+        self.file = file_
+        self.url = url
+        self.md5_url = md5_url
+        self.signature_url = signature_url
+
+
 class ProductDownloadFileMixin:
     """Provides methods for managing download files."""
 
@@ -772,9 +785,19 @@ class ProductDownloadFileMixin:
         files = release_set.getFilesForReleases(releases)
         for file in files:
             release = release_by_id[file.productrelease.id]
-            release.addFile(file)
+            release.addFile(self.getDownloadFile(file, release))
 
         return product
+
+    def getDownloadFile(self, file_, release):
+        """Return a DownloadFile for the file."""
+        url = self.fileURL(file_.libraryfile, release)
+        md5_url = self.md5URL(file_.libraryfile, release)
+        if file_.signature:
+            signature_url = self.fileURL(file_.signature, release)
+        else:
+            signature_url = None
+        return DownloadFile(file_, url, md5_url, signature_url)
 
     def deleteFiles(self, releases):
         """Delete the selected files from the set of releases.
