@@ -1,4 +1,4 @@
-<div
+<html
   xmlns="http://www.w3.org/1999/xhtml"
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
@@ -8,10 +8,43 @@
   dir="ltr"
   i18n:domain="launchpad"
 >
+<head tal:define="
+  revno modules/canonical.launchpad.versioninfo/revno | string:unknown;
+  rooturl modules/canonical.launchpad.webapp.vhosts/allvhosts/configs/mainsite/rooturl;
+  icingroot string:${rooturl}+icing/rev${revno};
+  yui string:${icingroot}/yui/3.0.0pr2/build;
+  lazr_js string:${icingroot}/lazr/build;
+  lp_js string:${icingroot}/build"
+>
+  <script type="text/javascript"
+          tal:attributes="src string:${icingroot}/build/launchpad.js"></script>
+  <tal:cache condition="view/user|nothing"
+              define="cache request/webservicerequest:cache;
+                      links cache/links;
+                      objects cache/objects;">
+    <script tal:repeat="key links"
+            tal:content="structure string:LP.client.links['${key}'] =
+                         '${links/?key/fmt:api_url}';">
+    </script>
+    <script tal:repeat="key objects"
+            tal:content="structure string:LP.client.cache['${key}'] =
+                         ${objects/?key/webservice:json};">
+    </script>
+  </tal:cache>
+  <script tal:condition="context/webservice:is_entry"
+    tal:content="structure string:LP.client.cache['context'] =
+      ${context/webservice:json};">
+  </script>
+</head>
+<body style="cursor: move">
   <div id="timeline-container"
        style="border: 1px solid #000; position: relative; display: none">
   </div>
   <script type="text/javascript">
+    // Disable MochiKit event handlers for help pane, which doesn't
+    // exist on this page.
+    disconnectAll(window);
+
     YUI().use('registry.timeline', 'node', function(Y) {
         Y.on('domready', function(e) {
           if (Y.UA.ie) {
@@ -58,4 +91,58 @@
     });
   </script>
 
-</div>
+  <script>
+<!--
+// ==UserScript==
+// @name Drag scroll
+// @author Nicolas Mendoza <nicolasm@opera.com>
+// @namespace http://people.opera.com/nicolasm/
+// @version 1.0
+// @license Poetic license: http://genaud.net/2005/10/poetic-license/
+// @description Let's you drag a page around with mouse
+// @ujs:category general: enhancements
+// @ujs:published 2005-05-24 12:30
+// @ujs:modified 2007-05-24 14:17
+// @ujs:documentation http://people.opera.com/nicolasm/userjs/dragscroll
+// @ujs:download http://people.opera.com/nicolasm/userjs/dragscroll.js
+// ==/UserScript==
+
+window.addEventListener("load",function() {
+    var dragging = false;
+    var last_position = null;
+
+    document.addEventListener("mousedown", startDragScroll, false);
+    document.addEventListener("mouseup", stopDragScroll, false);
+    document.addEventListener("mousemove", dragScroll, false);
+
+    function startDragScroll(e){
+        if (e.button == 0) {
+            dragging = true;
+            last_position = e;
+        }
+        e.preventDefault();
+        e.stopPropagation();
+    }
+
+    function stopDragScroll(e){
+        dragging = false;
+        e.preventDefault();
+        e.stopPropagation();
+    }
+
+    function dragScroll(e) {
+        if (dragging) {
+            window.scrollBy(
+                last_position.clientX-e.clientX,
+                last_position.clientY-e.clientY);
+            last_position = e;
+            e.preventDefault();
+            e.stopPropagation();
+        }
+    }
+},false);
+-->
+  </script>
+
+</body>
+</html>

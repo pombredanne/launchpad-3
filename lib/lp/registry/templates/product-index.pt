@@ -246,7 +246,8 @@
         />
         <a href="+series">Series history</a><br/>
         <a href="+milestones">Milestone history</a>
-        <div tal:replace="structure context/@@+timeline" />
+        <iframe tal:attributes="src string:+timeline"
+                width="100%" height="300px"/>
       </div>
 
       <tal:contrib replace="structure context/@@+portlet-top-contributors" />
