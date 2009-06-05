@@ -111,8 +111,8 @@
           <thead>
             <tr>
               <th>File</th>
-              <th>Downloads</th>
               <th>Description</th>
+              <th>Downloads</th>
               <th tal:condition="has_edit" width="10%">Delete</th>
             </tr>
           </thead>
@@ -130,20 +130,18 @@
                 <a tal:attributes="href python:view.fileURL(file.signature)">
                 sig</a></tal:signature>)
               </td>
-              <td>
+              <td tal:content="file/description">Installer for i386</td>
+              <td style="text-align: center;">
                 <tal:downloaded condition="lfa/hits">
-                  <span tal:replace="lfa/hits/fmt:intcomma" />
-                  <span class="lesser">
-                    (Last downloaded
-                    <strong>
-                      <span tal:replace="lfa/last_downloaded/fmt:approximateduration" />
-                      ago</strong>)
+                  <span tal:replace="lfa/hits/fmt:intcomma" /><br />
+                  <span style="font-size: 75%; color: grey;">
+                    <strong tal:content="lfa/last_downloaded/fmt:approximateduration" />
+                    since last download
                 </tal:downloaded>
                 <tal:not-downloaded condition="not:lfa/hits">
                   -
                 </tal:not-downloaded>
               </td>
-              <td tal:content="file/description">Installer for i386</td>
               <td tal:condition="has_edit"
                   align="center">
                 <input type="checkbox"
@@ -156,8 +154,10 @@
           </tbody>
           <tfoot tal:condition="view/total_downloads">
             <tr>
-              <th style="padding-top: 1em;">Total:</th>
-              <td colspan="3">
+              <th colspan="2" style="padding-top: 1em; text-align: right;">
+                Total:
+              </th>
+              <td style="border: none; text-align: center;">
                 <span tal:replace="view/total_downloads" />
               </td>
             </tr>
