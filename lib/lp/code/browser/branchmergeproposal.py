@@ -937,21 +937,13 @@ class BranchMergeProposalChangeStatusView(MergeProposalEditView):
             BranchMergeProposalStatus.CODE_APPROVED,
             BranchMergeProposalStatus.REJECTED,
             # BranchMergeProposalStatus.QUEUED,
-            BranchMergeProposalStatus.MERGED)
+            BranchMergeProposalStatus.MERGED,
+            BranchMergeProposalStatus.SUPERSEDED,
+            )
         terms = [
             SimpleTerm(status, status.name, status.title)
             for status in possible_next_states
-            if (self.context.isValidTransition(status, self.user)
-                # Edge case here for removing a queued proposal, we do this by
-                # setting the next state to code approved.
-                or (status == BranchMergeProposalStatus.CODE_APPROVED and
-                    curr_status == BranchMergeProposalStatus.QUEUED))
-            ]
-        # Resubmit edge case.
-        if curr_status != BranchMergeProposalStatus.QUEUED:
-            terms.append(SimpleTerm(
-                    BranchMergeProposalStatus.SUPERSEDED, 'SUPERSEDED',
-                    'Resubmit'))
+            if self.context.isValidTransition(status, self.user)]
         return SimpleVocabulary(terms)
 
     def setUpFields(self):

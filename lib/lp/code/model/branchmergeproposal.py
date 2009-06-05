@@ -75,7 +75,13 @@ from canonical.launchpad.webapp.interaction import setupInteraction
 
 
 def is_valid_transition(proposal, from_state, next_state, user=None):
-    """Is it valid for the proposal to move to next_state from from_state?"""
+    """Is it valid for this user to move this proposal to to next_state?
+
+    :param proposal: The merge proposal.
+    :param from_state: The previous state
+    :param to_state: The new state to change to
+    :param user: The user who may change the state
+    """
     # Trivial acceptance case.
     if from_state == next_state:
         return True
@@ -94,8 +100,10 @@ def is_valid_transition(proposal, from_state, next_state, user=None):
     valid_reviewer = proposal.isPersonValidReviewer(user)
     if (next_state == rejected and not valid_reviewer):
         return False
+    # Non-reviewers can toggle between code_approved and queued, but not
+    # make anything else approved or queued.
     elif (next_state in (code_approved, queued) and
-          from_state in (wip, needs_review, merge_failed)
+          from_state not in (code_approved, queued)
           and not valid_reviewer):
         return False
     else:
