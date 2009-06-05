@@ -2987,11 +2987,11 @@ class BugTaskTableRowView(LaunchpadView):
         """Which icon should be shown for the task, if any?"""
         if IDistroBugTask.providedBy(self.context):
             if self.context.sourcepackagename:
-                return "/@@/package-source"
+                return "sprite package-source"
             else:
-                return "/@@/distribution"
+                return "sprite distribution"
         elif IUpstreamBugTask.providedBy(self.context):
-            return "/@@/product"
+            return "sprite product"
         else:
             return None
 

@@ -15,8 +15,9 @@
         <a tal:condition="expandable"
            tal:attributes="
             href tasklink;
-            onclick string:return toggleFormVisibility('${form_row_id}')">
-          <img src="/@@/bug-status-expand" alt="[edit]" />
+            onclick string:return toggleFormVisibility('${form_row_id}')"
+            class="sprite bug-status-expand">
+          <span class="invisible-link">edit</span>
           <tal:link_text tal:replace="expander_link_text" />
         </a>
         <tal:no_expander tal:condition="not: expandable"
@@ -26,7 +27,7 @@
     <td style="padding: 0.3em 0em 0.3em 1.5em"
         tal:condition="indent_task"
         tal:define="series_targetname view/getSeriesTargetName">
-      <img src="/@@/milestone" alt="Targeted to" />
+      <span class="sprite milestone">
       <tal:not-conjoined-task condition="not: is_conjoined_slave">
         <a
           tal:attributes="href context/target/fmt:url"
@@ -35,14 +36,10 @@
       </tal:not-conjoined-task>
     </td>
     <td tal:condition="not:indent_task">
-      <img
-        tal:condition="view/bugtask_icon"
-        alt=""
-        tal:attributes="src view/bugtask_icon"
-      />
       <a tal:attributes="
             href context/target/fmt:url;
-            title view/target_link_title"
+            title view/target_link_title;
+            class view/bugtask_icon"
         tal:content="context/bugtargetdisplayname"
       />
     </td>
