@@ -137,3 +137,11 @@ The decorated count() simply mimics the underlying result set.
 
     >>> decorated_result_set.count()
     7
+
+== splicing ==
+
+Splicing a decorated resultset returns another decorated resultset:
+
+    >>> isinstance(decorated_result_set[0:3], DecoratedResultSet)
+    True
+
