@@ -41,7 +41,7 @@ from lp.soyuz.interfaces.build import (
     BuildStatus, IBuildSet)
 from lp.soyuz.interfaces.component import IComponentSet
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from lp.soyuz.interfaces.package import (
+from lp.soyuz.interfaces.queue import (
     PackageUploadCustomFormat, PackageUploadStatus)
 from lp.soyuz.interfaces.publishing import (
     PackagePublishingPriority)

@@ -24,6 +24,8 @@ setup(
     # this list should only contain direct dependencies--things imported or
     # used in zcml.
     install_requires=[
+        'chameleon.core',
+        'chameleon.zpt',
         'feedvalidator',
         'launchpadlib',
         'lazr.uri',
@@ -31,9 +33,12 @@ setup(
         'oauth',
         'python-openid',
         'setuptools',
+        'sourcecodegen',
         'transaction',
         'Twisted',
         'wadllib',
+        'z3c.pt',
+        'z3c.ptcompat',
         'zc.zservertracelog',
         'zope.app.appsetup',
         'zope.app.component',
