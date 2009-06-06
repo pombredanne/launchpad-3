@@ -18,7 +18,7 @@ from lp.soyuz.interfaces.section import ISectionSet
 from canonical.launchpad.webapp.interfaces import (
     NotFoundError, UnexpectedFormData)
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
-from lp.soyuz.interfaces.package import PackageUploadStatus
+from lp.soyuz.interfaces.queue import PackageUploadStatus
 from lp.soyuz.interfaces.publishing import PackagePublishingPriority
 from lp.soyuz.interfaces.queue import (
     IHasQueueItems, IPackageUpload, IPackageUploadSet,
