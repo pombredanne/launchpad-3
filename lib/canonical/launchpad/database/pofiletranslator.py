@@ -10,8 +10,12 @@ __all__ = [
 from sqlobject import ForeignKey
 from zope.interface import implements
 
+from storm.expr import And
+from storm.store import Store
+
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
+from canonical.launchpad.database.translationmessage import TranslationMessage
 from canonical.launchpad.interfaces import (
     IPOFileTranslator, IPOFileTranslatorSet)
 from lp.registry.interfaces.person import validate_public_person
@@ -58,3 +62,17 @@ class POFileTranslatorSet:
                 'latest_message.potmsgset.msgid_singular',
                 'latest_message.msgstr0',
                 ]))
+
+    def getForPersonPOFile(self, person, pofile):
+        """See `IPOFileTranslatorSet`."""
+        return Store.of(pofile).find(POFileTranslator, And(
+            POFileTranslator.person == person.id,
+            POFileTranslator.pofile == pofile.id)).one()
+
+    def getForPOTMsgSet(self, potmsgset):
+        """See `IPOFileTranslatorSet`."""
+        store = Store.of(potmsgset)
+        match = And(
+            POFileTranslator.latest_message == TranslationMessage.id,
+            TranslationMessage.potmsgset == potmsgset)
+        return store.find(POFileTranslator, match).config(distinct=True)

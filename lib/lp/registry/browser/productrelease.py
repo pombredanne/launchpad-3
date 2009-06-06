@@ -20,10 +20,12 @@ import mimetypes
 from zope.event import notify
 from zope.lifecycleevent import ObjectCreatedEvent
 from zope.app.form.browser import TextAreaWidget, TextWidget
-from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
+
 from zope.formlib.form import FormFields
 from zope.schema import Bool
 from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
+
+from z3c.ptcompat import ViewPageTemplateFile
 
 from lp.registry.interfaces.productrelease import (
     IProductRelease, IProductReleaseFileAddForm)
