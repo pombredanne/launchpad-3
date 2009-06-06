@@ -55,10 +55,10 @@
     </td>
     <td>
       <tal:summary
-        content="structure milestone/summary/fmt:shorten/80/fmt:text-to-html" />
+        content="structure milestone/summary/fmt:shorten/80" />
       <tal:bugtasks condition="view/bugtasks">
         <br tal:omit-tag="not: view/milestone/summary" />
-        Bugs:
+        Bugs targeted:
         <tal:statuses repeat="count_status view/bugtask_status_counts">
           <span tal:attributes="class string:status${count_status/status/name}">
             <strong tal:content="count_status/count">2</strong>
@@ -69,7 +69,7 @@
       </tal:bugtasks>
       <tal:blueprints condition="view/specifications">
         <br tal:omit-tag="not: view/bugtasks" />
-        Blueprints:
+        Blueprints targeted:
         <tal:statuses repeat="count_status view/specification_status_counts">
           <span tal:attributes="class string:specdelivery${count_status/status/name}">
             <strong tal:content="count_status/count">2</strong>
