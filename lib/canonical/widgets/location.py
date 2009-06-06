@@ -11,11 +11,12 @@ from zope.app.form import InputWidget
 from zope.app.form.browser.interfaces import IBrowserWidget
 from zope.app.form.browser.widget import BrowserWidget
 from zope.app.form.interfaces import IInputWidget, WidgetInputError
-from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.component import getUtility
 from zope.formlib import form
 from zope.interface import implements
 from zope.schema import Choice, Float
+
+from z3c.ptcompat import ViewPageTemplateFile
 
 from canonical.lazr.utils import safe_js_escape
 

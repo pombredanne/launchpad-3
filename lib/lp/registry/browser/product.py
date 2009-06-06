@@ -45,9 +45,10 @@ from zope.component import getUtility
 from zope.event import notify
 from zope.app.form.browser import TextAreaWidget, TextWidget
 from zope.lifecycleevent import ObjectCreatedEvent
-from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.interface import implements, Interface
 from zope.formlib import form
+
+from z3c.ptcompat import ViewPageTemplateFile
 
 from canonical.cachedproperty import cachedproperty
 
@@ -744,7 +745,6 @@ class DownloadFile:
 
 class ProductDownloadFileMixin:
     """Provides methods for managing download files."""
-
 
     @cachedproperty
     def product(self):

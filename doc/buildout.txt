@@ -439,7 +439,7 @@ Let's suppose that we want to add the "lazr.foo" package as a dependency.
     
     In our example, other than the spurious ``ipython`` listing, this means
     that these packages have also been added to your ``download-cache/dist``
-    directory. You also need to add those versions to the ``versions.conf``
+    directory. You also need to add those versions to the ``versions.cfg``
     file::
     
         lazr.foom = 1.4

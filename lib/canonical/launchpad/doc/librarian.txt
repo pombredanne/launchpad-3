@@ -207,7 +207,7 @@ If we abort the transaction, it is still in there
 
 You can also set the expiry date on the file this way too:
 
-    >>> from datetime import datetime
+    >>> from datetime import date, datetime
     >>> from pytz import utc
     >>> url = client.remoteAddFile(
     ...     'text.txt', len(data), StringIO(data), 'text/plain',
@@ -631,7 +631,7 @@ care of creating/updating the necessary LibraryFileDownloadCount entries.
 
     >>> from lp.services.worlddata.interfaces.country import ICountrySet
     >>> country_set = getUtility(ICountrySet)
-    >>> november_1st_2006 = datetime(2006, 11, 1)
+    >>> november_1st_2006 = date(2006, 11, 1)
     >>> brazil = country_set['BR']
     >>> public_file.updateDownloadCount(november_1st_2006, brazil, count=1)
     >>> public_file.hits
@@ -675,7 +675,7 @@ updated.
 
 If the hit happened on a different day, a separate entry would be created.
 
-    >>> november_2nd_2006 = datetime(2006, 11, 2)
+    >>> november_2nd_2006 = date(2006, 11, 2)
     >>> public_file.updateDownloadCount(november_2nd_2006, brazil, count=10)
     >>> public_file.hits
     16
@@ -684,3 +684,21 @@ If the hit happened on a different day, a separate entry would be created.
     ...     country=brazil, day=november_2nd_2006).one()
     >>> brazil_entry2.count
     10
+    >>> last_downloaded_date = november_2nd_2006
+
+
+== Time to last download ==
+
+The .last_downloaded property gives us the time delta from today to the day 
+that file was last downloaded, or None if it's never been downloaded. 
+
+    >>> today = datetime.now(utc).date()
+    >>> public_file.last_downloaded == today - last_downloaded_date
+    True
+
+    >>> content = 'something'
+    >>> brand_new_file = getUtility(ILibraryFileAliasSet).create(
+    ...     'new.txt', len(content), StringIO(content), 'text/plain',
+    ...     NEVER_EXPIRES, restricted=False)
+    >>> print brand_new_file.last_downloaded
+    None
