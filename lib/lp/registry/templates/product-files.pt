@@ -12,10 +12,6 @@
 
 <body>
 
-<metal:portlets fill-slot="portlets">
-  <div tal:replace="structure context/@@+portlet-top-contributors" />
-</metal:portlets>
-
 <div metal:fill-slot="main"
      tal:define="has_edit context/required:launchpad.Edit">
   <h1>Download project files</h1>
@@ -29,17 +25,14 @@
 
     <tal:series repeat="series view/sorted_series_list">
 
-      <h2 tal:condition="python: has_edit and series.releases">
-        Release series &#8220;<tal:name
-                               replace="series/name">main</tal:name>&#8221;
+      <h2 tal:condition="python: has_edit or series.releases">
+        &#8220;<tal:name replace="series/name">main</tal:name>&#8221; series
       </h2>
 
-      <tal:seriesfilesexist
-          condition="series/has_release_files">
-        <h2 tal:condition="not: has_edit">
-          Release series &#8220;<tal:name
-                                 replace="series/name">main</tal:name>&#8221;
-        </h2>
+      <tal:seriesfilesexist condition="series/has_release_files">
+        <div
+          tal:condition="series/summary"
+          tal:content="structure series/summary/fmt:shorten/80/fmt:text-to-html" />
 
         <table class="listing">
           <thead>

@@ -163,12 +163,6 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
     def title(self):
         return self.product.displayname + ' Series: ' + self.displayname
 
-    def shortdesc(self):
-        warn('ProductSeries.shortdesc should be ProductSeries.summary',
-             DeprecationWarning)
-        return self.summary
-    shortdesc = property(shortdesc)
-
     @property
     def bug_reporting_guidelines(self):
         """See `IBugTarget`."""
