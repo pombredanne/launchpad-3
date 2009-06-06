@@ -117,7 +117,7 @@
             </tr>
           </thead>
           <tbody>
-            <tr tal:repeat="fileview/download_files">
+            <tr tal:repeat="file view/download_files">
               <tal:define-lfa define="lfa file/libraryfile">
               <td>
                 <img alt="download icon" src="/@@/download" />
