@@ -1119,9 +1119,19 @@ We need to be at least a buildd-admin to rescore:
 
     >>> login('celso.providelo@canonical.com')
     >>> depwait_build.rescore(1000)
-    >>> login(ANONYMOUS)
     >>> print depwait_build.buildqueue_record.lastscore
     1000
+
+If a callsite tries to rescore a build that is not in the NEEDSBUILD state,
+a CannotBeRescored exception is raised.
+
+    >>> depwait_build.buildstate = BuildStatus.FAILEDTOUPLOAD
+    >>> depwait_build.rescore(1000)
+    Traceback (most recent call last):
+    ...
+    CannotBeRescored: Build cannot be rescored.
+
+    >>> login(ANONYMOUS)
 
 
 == Build record security ==
