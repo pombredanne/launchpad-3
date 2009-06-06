@@ -14,7 +14,6 @@ __all__ = [
     'MilestoneSetNavigation',
     ]
 
-from operator import attrgetter
 
 from zope.component import getUtility
 from zope.formlib import form
@@ -34,7 +33,7 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.widgets import DateWidget
 
-from lp.registry.browser import RegistryDeleteViewMixin
+from lp.registry.browser import get_status_counts, RegistryDeleteViewMixin
 from lp.registry.browser.product import ProductDownloadFileMixin
 
 
@@ -104,19 +103,6 @@ class MilestoneOverviewNavigationMenu(NavigationMenu):
     usedfor = IMilestone
     facet = 'overview'
     links = ()
-
-
-class StatusCount:
-    """A helper that stores the count of status for a list of items.
-
-    Items such as `IBugTask` and `ISpecification` can be summarised by
-    their status.
-    """
-
-    def __init__(self, status, count):
-        """Set the status and count."""
-        self.status = status
-        self.count = count
 
 
 class MilestoneView(LaunchpadView, ProductDownloadFileMixin):
@@ -213,7 +199,7 @@ class MilestoneView(LaunchpadView, ProductDownloadFileMixin):
     @property
     def bugtask_status_counts(self):
         """A list StatusCounts summarising the targeted bugtasks."""
-        return self._status_counts(self.bugtasks, 'status')
+        return get_status_counts(self.bugtasks, 'status')
 
     @property
     def specification_count_text(self):
@@ -227,20 +213,7 @@ class MilestoneView(LaunchpadView, ProductDownloadFileMixin):
     @property
     def specification_status_counts(self):
         """A list StatusCounts summarising the targeted specification."""
-        return self._status_counts(
-            self.specifications, 'implementation_status')
-
-    def _status_counts(self, workitems, status_attr):
-        """Return a list StatusCounts summarising the workitem."""
-        statuses = {}
-        for workitem in workitems:
-            status = getattr(workitem, status_attr)
-            if status not in statuses:
-                statuses[status] = 0
-            statuses[status] += 1
-        return [
-            StatusCount(status, statuses[status])
-            for status in sorted(statuses, key=attrgetter('name'))]
+        return get_status_counts(self.specifications, 'implementation_status')
 
     @property
     def is_project_milestone(self):
