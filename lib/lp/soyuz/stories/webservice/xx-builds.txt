@@ -130,3 +130,46 @@ can_be_retried property:
     ...     source_pub['self_link'], 'getBuilds').jsonBody()
     >>> print builds['entries'][0]['can_be_retried']
     False
+
+
+Rescoring builds
+================
+
+When a build is in NEEDSBUILD state, it may be rescored using the 'rescore'
+custom operation.  However, the caller must be a member of the buildd admins
+team.
+
+    >>> print user_webservice.named_post(
+    ...     a_build['self_link'], 'rescore', score=1000)
+    HTTP/1.1 401 Unauthorized
+    ...
+
+The user cprov is a buildd admin.
+
+    >>> login('foo.bar@canonical.com')
+    >>> buildd_admins = getUtility(
+    ...     IPersonSet).getByName('launchpad-buildd-admins')
+    >>> logout()
+
+    >>> cprov.inTeam(buildd_admins)
+    True
+
+    >>> print cprov_webservice.named_post(
+    ...     a_build['self_link'], 'rescore', score=1000)
+    HTTP/1.1 200 Ok
+    ...
+
+If the build cannot be retried, then a 400 code is returned.  Let's
+alter the buildstate to one that cannot be retried:
+
+    >>> login('foo.bar@canonical.com')
+    >>> from lp.soyuz.interfaces.build import BuildStatus
+    >>> build.buildstate = BuildStatus.FAILEDTOUPLOAD
+    >>> logout()
+
+    >>> print cprov_webservice.named_post(
+    ...     a_build['self_link'], 'rescore', score=1000)
+    HTTP/1.1 400 Bad Request
+    ...
+    CannotBeRescored: Build cannot be rescored.
+    <BLANKLINE>
