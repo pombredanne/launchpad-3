@@ -17,8 +17,8 @@ uploaded into the system.
   >>> from lp.registry.interfaces.sourcepackagename import (
   ...     ISourcePackageNameSet)
 
-  >>> from canonical.archiveuploader.nascentupload import NascentUpload
-  >>> from canonical.archiveuploader.tests import (
+  >>> from lp.archiveuploader.nascentupload import NascentUpload
+  >>> from lp.archiveuploader.tests import (
   ...    datadir, getPolicy, mock_logger)
 
   >>> from canonical.launchpad.ftests import import_public_test_keys
@@ -128,7 +128,7 @@ queue:
 
 An upload to the RELEASE pocket will add items to the import queue:
 
-  >>> from lp.soyuz.interfaces.package import PackageUploadStatus
+  >>> from lp.soyuz.interfaces.queue import PackageUploadStatus
   >>> queue_item = dapper.getQueueItems(
   ...     status=PackageUploadStatus.NEW)[0]
   >>> queue_item.customfiles[0].publish()
@@ -295,7 +295,7 @@ different interpretations of "importer" in attachTranslationFiles.
   >>> from lp.soyuz.model.queue import PackageUploadCustom
   >>> from lp.soyuz.interfaces.queue import (
   ...     IPackageUpload, IPackageUploadCustom)
-  >>> from lp.soyuz.interfaces.package import PackageUploadCustomFormat
+  >>> from lp.soyuz.interfaces.queue import PackageUploadCustomFormat
   >>> from lp.soyuz.interfaces.component import IComponentSet
   >>> from lp.registry.interfaces.person import IPerson
   >>> from lp.soyuz.interfaces.sourcepackagerelease import (

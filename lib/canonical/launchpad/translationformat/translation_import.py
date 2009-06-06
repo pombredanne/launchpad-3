@@ -630,27 +630,32 @@ class POFileImporter(FileImporter):
         self.pofile = translation_import_queue_entry.pofile
         self.potemplate = self.pofile.potemplate
 
-        if self.translation_file.header is not None:
+        upload_header = self.translation_file.header
+        if upload_header is not None:
             # Check whether we are importing a new version.
-            if self.pofile.isTranslationRevisionDateOlder(
-                self.translation_file.header):
-                # The new imported file is older than latest one imported,
-                # we don't import it, just ignore it as it could be a
-                # mistake and it would make us lose translations.
-                pofile_timestamp = (
-                    self.pofile.getHeader().translation_revision_date)
-                upload_timestamp = (
-                    self.translation_file.header.translation_revision_date)
-                raise OutdatedTranslationError(
-                    'The last imported version of this file was dated %s; '
-                    'the timestamp in the file you uploaded is %s.' % (
-                        pofile_timestamp, upload_timestamp))
-
+            if self.pofile.isTranslationRevisionDateOlder(upload_header):
+                if translation_import_queue_entry.is_published:
+                    # Published files can be older than the last import
+                    # and still be imported. They don't update header
+                    # information, though, so this is deleted here.
+                    self.translation_file.header = None
+                else:
+                    # The new imported file is older than latest one imported,
+                    # we don't import it, just ignore it as it could be a
+                    # mistake and it would make us lose translations.
+                    pofile_timestamp = (
+                        self.pofile.getHeader().translation_revision_date)
+                    upload_timestamp = (
+                        upload_header.translation_revision_date)
+                    raise OutdatedTranslationError(
+                        'The last imported version of this file was '
+                        'dated %s; the timestamp in the file you uploaded '
+                        'is %s.' % (pofile_timestamp, upload_timestamp))
             # Get the timestamp when this file was exported from
             # Launchpad. If it was not exported from Launchpad, it will be
             # None.
             self.lock_timestamp = (
-                self.translation_file.header.launchpad_export_date)
+                upload_header.launchpad_export_date)
 
         if (not self.translation_import_queue_entry.is_published and
             self.lock_timestamp is None):
@@ -660,13 +665,16 @@ class POFileImporter(FileImporter):
             # while the offline work was done.
             raise NotExportedFromLaunchpad
 
-        # Update the header with the new one.
+        # Update the header with the new one. If this is an old published
+        # file, the new header has been set to None and no update will occur.
         self.pofile.updateHeader(self.translation_file.header)
+
         # Get last translator that touched this translation file.
         # We may not be able to guess it from the translation file, so
         # we take the importer as the last translator then.
-        name, email = self.translation_file.header.getLastTranslator()
-        self.last_translator = (self._getPersonByEmail(email, name))
+        if upload_header is not None:
+            name, email = upload_header.getLastTranslator()
+            self.last_translator = self._getPersonByEmail(email, name)
         if self.last_translator is None:
             self.last_translator = (
                 self.translation_import_queue_entry.importer)

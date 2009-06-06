@@ -12,8 +12,8 @@ import unittest
 import pytz
 from zope.component import getUtility
 
-from canonical.archivepublisher.config import Config
-from canonical.archivepublisher.diskpool import DiskPool
+from lp.archivepublisher.config import Config
+from lp.archivepublisher.diskpool import DiskPool
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from lp.soyuz.model.publishing import (

@@ -8,7 +8,7 @@
 import _pythonpath
 
 from canonical.config import config
-from canonical.archivepublisher.scripts.generate_ppa_htaccess import (
+from lp.archivepublisher.scripts.generate_ppa_htaccess import (
     HtaccessTokenGenerator)
 
 

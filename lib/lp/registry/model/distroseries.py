@@ -86,7 +86,7 @@ from lp.registry.interfaces.distroseries import (
     DistroSeriesStatus, IDistroSeries, IDistroSeriesSet)
 from canonical.launchpad.interfaces.languagepack import LanguagePackType
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from lp.soyuz.interfaces.package import PackageUploadStatus
+from lp.soyuz.interfaces.queue import PackageUploadStatus
 from canonical.launchpad.interfaces.potemplate import IHasTranslationTemplates
 from lp.soyuz.interfaces.publishedpackage import (
     IPublishedPackageSet)
@@ -1531,7 +1531,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             FROM SectionSelection AS ss WHERE ss.distroseries = %s
             ''' % sqlvalues(self.id, self.parent_series.id))
 
-    def copyMissingTranslationsFromParent(self, transaction, logger=None):
+    def copyTranslationsFromParent(self, transaction, logger=None):
         """See `IDistroSeries`."""
         if logger is None:
             logger = logging
@@ -1540,6 +1540,11 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             "defer_translation_imports not set!"
             " That would corrupt translation data mixing new imports"
             " with the information being copied.")
+
+        assert self.hide_all_translations, (
+            "hide_all_translations not set!"
+            " That would allow users to see and modify incomplete"
+            " translation state.")
 
         flush_database_updates()
         flush_database_caches()
