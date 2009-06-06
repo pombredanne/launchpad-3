@@ -6,7 +6,6 @@ __all__ = [
     'DecoratedResultSet',
     ]
 
-from zope.interface import providedBy
 from zope.security.proxy import removeSecurityProxy
 
 from storm.expr import Column
@@ -96,7 +95,7 @@ class DecoratedResultSet(object):
         # Can be a value or result set...
         value = self.result_set.__getitem__(*args, **kwargs)
         naked_value = removeSecurityProxy(value)
-        if IResultSet in providedBy(naked_value):
+        if IResultSet.providedBy(naked_value):
             return DecoratedResultSet(
                 value, self.result_decorator, self.pre_iter_hook)
         else:
