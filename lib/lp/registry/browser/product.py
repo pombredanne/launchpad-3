@@ -733,7 +733,6 @@ class ReleaseWithFiles:
 class ProductDownloadFileMixin:
     """Provides methods for managing download files."""
 
-
     @cachedproperty
     def product(self):
         """Product with all series, release and file data cached.
