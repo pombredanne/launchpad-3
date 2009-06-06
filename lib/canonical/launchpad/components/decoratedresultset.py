@@ -13,8 +13,6 @@ from storm.zope.interfaces import IResultSet
 
 from lazr.delegates import delegates
 
-from zope.security.proxy import removeSecurityProxy
-
 class DecoratedResultSet(object):
     """A decorated Storm ResultSet for 'Magic' (presenter) classes.
 
