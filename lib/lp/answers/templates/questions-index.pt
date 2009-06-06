@@ -2,12 +2,10 @@
   xmlns="http://www.w3.org/1999/xhtml"
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
-  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   xml:lang="en"
   lang="en"
   dir="ltr"
-  metal:use-macro="view/macro:page/applicationhome"
-  i18n:domain="launchpad">
+  metal:use-macro="view/macro:page/applicationhome">
   <body>
     <h1 metal:fill-slot="heading">Questions and answers</h1>
     <div metal:fill-slot="main">
@@ -77,7 +75,7 @@
 
       <div class="columns">
         <div id="most-active-projects" class="three column left">
-          <h2 i18n:translate="">Most active projects</h2>
+          <h2>Most active projects</h2>
 
           <ul tal:define="projects view/most_active_projects"
               tal:condition="projects"
@@ -93,7 +91,7 @@
         </div>
 
         <div id="latest-questions-asked" class="three column middle">
-          <h2 i18n:translate="">Latest questions asked</h2>
+          <h2>Latest questions asked</h2>
           <table>
             <tal:question
               repeat="question view/latest_questions_asked"
@@ -103,7 +101,7 @@
         </div>
       
         <div id="latest-questions-solved" class="three column right">
-          <h2 i18n:translate="">Latest questions solved</h2>
+          <h2>Latest questions solved</h2>
           <table>
             <tal:question
               repeat="question view/latest_questions_solved"
@@ -112,27 +110,23 @@
           </table>
         </div>
       </div>
-                        <div id="application-footer" i18n:translate="">
+                        <div id="application-footer">
                           <div>
                             <strong
-                              i18n:name="answered_question_count"
                               tal:content="view/answered_question_count"
                             >52</strong>
                             questions answered and
                             <strong
-                              i18n:name="solved_question_count"
                               tal:content="view/solved_question_count"
                             >52</strong>
                             questions solved out of
                           </div>
                           <div>
                             <strong
-                              i18n:name="question_count"
                               tal:content="view/question_count"
                             >318</strong>
                             questions asked across
                             <strong
-                              i18n:name="projects_with_questions_count"
                               tal:content="view/projects_with_questions_count"
                             >28</strong>
                             projects

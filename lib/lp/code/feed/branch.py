@@ -16,7 +16,6 @@ __all__ = [
 
 from storm.locals import Asc, Desc
 
-from zope.app.pagetemplate import ViewPageTemplateFile
 from zope.component import getUtility
 from zope.interface import implements
 from zope.security.interfaces import Unauthorized
@@ -27,6 +26,8 @@ from canonical.launchpad.webapp import canonical_url, LaunchpadView, urlparse
 from canonical.lazr.feed import (
     FeedBase, FeedEntry, FeedPerson, FeedTypedData, MINUTES)
 from canonical.lazr.interfaces import IFeedPerson
+
+from z3c.ptcompat import ViewPageTemplateFile
 
 from lp.code.browser.branch import BranchView
 from lp.code.interfaces.branch import (
