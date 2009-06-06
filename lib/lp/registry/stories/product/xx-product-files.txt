@@ -1,10 +1,9 @@
 = Downloadable Files =
 
-Launchpad can show you a product's downloadable files, by series, with
+Launchpad can show a product's downloadable files, by series, with
 links to each.
 
-Look at a project with no releases and ensure the download page does
-not show any files.
+Any user can see that a project with no releases has no downloads.
 
     >>> anon_browser.open('http://launchpad.dev/aptoncd')
     >>> anon_browser.getLink('Downloads').click()
@@ -12,24 +11,33 @@ not show any files.
     'http://launchpad.dev/aptoncd/+download'
     >>> anon_browser.title
     'APTonCD project files'
-    >>> content = find_main_content(anon_browser.contents)
-    >>> form = content('form')[0]
-    >>> para = form('p')[0]
-    >>> print para.string.strip()
+    >>> content = find_tag_by_id(anon_browser.contents, 'project-downloads')
+    >>> print extract_text(content)
     No download files exist for this project.
 
-Look at a project with a release but no download files.  Ensure the
-download page does not show any files.
+Any user can see a project with a release without files has no downlaod files.
 
     >>> anon_browser.open('http://launchpad.dev/thunderbird')
     >>> anon_browser.getLink('Downloads').click()
     >>> anon_browser.url
     'http://launchpad.dev/thunderbird/+download'
-    >>> content = find_main_content(anon_browser.contents)
-    >>> form = content('form')[0]
-    >>> para = form('p')[0]
-    >>> print para.string.strip()
+    >>> content = find_tag_by_id(anon_browser.contents, 'project-downloads')
+    >>> print extract_text(content)
     No download files exist for this project.
+    &#8220;trunk&#8221; series
+
+Any user can see a projects download files organised by series. For each
+series, the owner sees a heading, summary, table of files, and links to each
+release to add download files.
+
+    >>> anon_browser.open('http://launchpad.dev/firefox/+download')
+    >>> print extract_text(
+    ...     find_tag_by_id(anon_browser.contents, 'project-downloads'))
+    &#8220;trunk&#8221; series
+    The "trunk" series represents the primary line of development rather ...
+    Download   Release   Description
+    firefox-0.9.2.orig.tar.gz (md5)   0.9.2
+    &#8220;1.0&#8221; series
 
 
 == Deletion is only for the privileged ==
@@ -91,13 +99,16 @@ A project owner should not see the delete button when there are no files.
     No download files exist for this project.
     >>> h2 = form('h2')[0]
     >>> print h2.string.strip()
-    Release series &#8220;trunk&#8221;
+    &#8220;trunk&#8221; series
     >>> print para[1].contents[0].string.strip()
     Add download file for release:...
     >>> tbird_owner.getControl('Delete Files')
     Traceback (most recent call last):
     ...
     LookupError: label 'Delete Files'
+
+
+== The download file layout ==
 
 When a project has a series with one or more releases, an option to
 add download files for each release in that series is presented.
@@ -117,12 +128,12 @@ release output.
     >>> firefox_owner.open('http://launchpad.dev/firefox/+download')
     >>> extract_series_release(firefox_owner.contents,
     ...                        firefox_owner.url)
-    Release series &#8220;trunk&#8221;
+    &#8220;trunk&#8221; series
     Add download file for release:
     0.9.2
     0.9.1
     0.9
-    Release series &#8220;1.0&#8221;
+    &#8220;1.0&#8221; series
     Add download file for release:
     1.0.0
 
@@ -139,12 +150,14 @@ series should not show up in the list.
     >>> firefox_owner.open('http://launchpad.dev/firefox/+download')
     >>> extract_series_release(firefox_owner.contents,
     ...                        firefox_owner.url)
-    Release series &#8220;trunk&#8221;
+    &#8220;trunk&#8221; series
     Add download file for release:
     0.9.2
     0.9.1
     0.9
-    Release series &#8220;1.0&#8221;
+    &#8220;3.0&#8221; series
+    <BLANKLINE>
+    &#8220;1.0&#8221; series
     Add download file for release:
     1.0.0
 
@@ -167,17 +180,18 @@ the list.
     >>> firefox_owner.open('http://launchpad.dev/firefox/+download')
     >>> extract_series_release(firefox_owner.contents,
     ...                        firefox_owner.url)
-    Release series &#8220;trunk&#8221;
+    &#8220;trunk&#8221; series
     Add download file for release:
     0.9.2
     0.9.1
     0.9
-    Release series &#8220;3.0&#8221;
+    &#8220;3.0&#8221; series
     Add download file for release:
     3.14159
-    Release series &#8220;1.0&#8221;
+    &#8220;1.0&#8221; series
     Add download file for release:
     1.0.0
+
 
 == Adding new files ==
 
