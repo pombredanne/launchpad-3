@@ -597,6 +597,19 @@ appropriate AssertionError when it gets traversed.
     operate on deleted librarian files, since their URL is undefined.
 
 
+== LibraryFileAliasMD5View ==
+
+The MD5 summary for a file can be downloaded. The text file contains the
+hash and file name.
+
+    >>> view = create_view(public_file, '+md5')
+    >>> print view.render()
+    cd0c6092d6a6874f379fe4827ed1db8b public.txt
+
+    >>> print view.request.response.getHeader('Content-type')
+    text/plain
+
+
 == Download counts ==
 
 The download counts for librarian files are stored in the
