@@ -18,9 +18,9 @@
     <div tal:repeat="series view/sorted_series_list">
       <div style="margin-top: 1em;
                   border-bottom: 1px solid #ccc; max-width: 60em;"
-        tal:define="is_focus series/is_development_focus;
-                    focus python:is_focus and 'highlighted' or 'unhighlighted'"
-        tal:attributes="class focus">
+        tal:define="is_focus series/is_development_focus"
+        tal:attributes="class series/css_class;
+                        id string:series_${series/name};">
         <tal:status replace="structure series/series/@@+status" />
       </div>
     </div>

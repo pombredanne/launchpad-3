@@ -147,7 +147,7 @@ class IProductSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
                            'For example: "The 2.0 series of Apache '
                            'represents the current stable series, '
                            'and is recommended for all new deployments".'),
-             required=False))
+             required=True))
 
     releases = exported(
         CollectionField(

@@ -12,7 +12,7 @@
   <metal:series use-macro="series/@@+macros/detailed_display">
     <div metal:fill-slot="extra">
       <div>
-        Bugs
+        Bugs targeted:
         <tal:statuses repeat="count_status bug_count_status">
           <span tal:attributes="class string:status${count_status/status/name}">
             <strong tal:content="count_status/count">2</strong>
@@ -24,7 +24,7 @@
           None
         </tal:no-statuses>
         <br />
-        Blueprints
+        Blueprints targeted:
         <tal:statuses repeat="count_status spec_count_status">
           <span tal:attributes="class string:specdelivery${count_status/status/name}">
             <strong tal:content="count_status/count">2</strong>

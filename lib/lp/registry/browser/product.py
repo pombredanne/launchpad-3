@@ -708,6 +708,16 @@ class SeriesWithReleases:
                 return True
         return False
 
+    @property
+    def css_class(self):
+        """The highlighted, unhighlighted, or dimmed CSS class."""
+        if self.is_development_focus:
+            return 'highlighted'
+        elif self.status == DistroSeriesStatus.OBSOLETE:
+            return 'dimmed'
+        else:
+            return 'unhighlighted'
+
 
 class ReleaseWithFiles:
     """A decorated release that includes product release files.
