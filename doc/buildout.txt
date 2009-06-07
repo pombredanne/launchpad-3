@@ -428,18 +428,18 @@ Let's suppose that we want to add the "lazr.foo" package as a dependency.
     some of which may be indirect dependencies. Here's an imaginary example
     output::
 
-        Picked: setuptools 0.6c9    
+        Picked: ipython = 0.9.1
         Picked: lazr.foom = 1.4
         Picked: zope.bar = 3.6.1
         Picked: z3c.shazam = 2.0.1
 
     At this time, note that the output will include at least one, and possibly
-    more, spurious "Picked:" listings.  setuptools, in particular, shows up
+    more, spurious "Picked:" listings.  ipython, in particular, shows up
     repeatedly.
     
-    In our example, other than the spurious ``setuptools`` listing, this means
+    In our example, other than the spurious ``ipython`` listing, this means
     that these packages have also been added to your ``download-cache/dist``
-    directory. You also need to add those versions to the ``versions.conf``
+    directory. You also need to add those versions to the ``versions.cfg``
     file::
     
         lazr.foom = 1.4

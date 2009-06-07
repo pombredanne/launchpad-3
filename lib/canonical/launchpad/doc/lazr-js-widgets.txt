@@ -106,4 +106,4 @@ The resource_uri is the canonical_url for the object in
 WebServiceClientRequests.
 
     >>> print widget.resource_uri
-    "\/firefox\/+bug\/1"
+    "/firefox/+bug/1"

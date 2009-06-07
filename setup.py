@@ -28,7 +28,17 @@ setup(
         'oauth',
         'python-openid',
         'setuptools',
+        'sourcecodegen',
+        'chameleon.core',
+        'chameleon.zpt',
+        'z3c.pt',
+        'z3c.ptcompat',
         'wadllib',
+        # Loggerhead dependencies. These should be removed once
+        # bug 383360 is fixed and we include it as a source dist.
+        'Paste',
+        'PasteDeploy',
+        'SimpleTal'
     ],
     url='https://launchpad.net/',
     classifiers=[
@@ -48,6 +58,7 @@ setup(
             'killservice = lp.scripts.utilities.killservice:main',
             'run = canonical.launchpad.scripts.runlaunchpad:start_launchpad',
             'harness = canonical.database.harness:python',
+            'twistd = twisted.scripts.twistd:run',
         ]
     ),
 )

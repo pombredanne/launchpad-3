@@ -54,6 +54,37 @@ Now 'juergen' and 'hacker' have a package set each.
     >>> ps_factory.getByOwner(person2).count() == 1
     True
 
+We need to define a few functions that make it easy to look at package set
+related data.
+
+    >>> import operator
+    >>> def sort_by_id(iterable):
+    ...     return sorted(iterable, key=operator.attrgetter('id'))
+    >>> def print_data(iterable):
+    ...     for datum in sort_by_id(iterable):
+    ...          print('%3d -> %s' % (datum.id, datum.name))
+    >>> def resultsets_are_equal(rs1, rs2):
+    ...     rs1 = list(rs1.order_by('name'))
+    ...     rs2 = list(rs2.order_by('name'))
+    ...     return rs1 == rs2
+
+
+Package sets can be looked up by name as follows:
+
+    >>> umbrella = ps_factory['umbrella']
+    >>> print_data((umbrella,))
+    1 -> umbrella
+
+In order to facilitate utilisation of package set related functionality
+via the web services API we need to have a get() method that returns the
+first N (N=50 by default) package sets sorted by name.
+Since we only have 2 package sets at this point only these will be shown.
+
+    >>> for datum in ps_factory.get():
+    ...     print('%3d -> %s' % (datum.id, datum.name))
+    2 -> kernel
+    1 -> umbrella
+
 In a next step we will associate source package names with the package sets
 just created.
 
@@ -68,17 +99,6 @@ First associate *all* source package names with the umbrella package set.
     >>> umbrella_ps.add(all_spns)
 
 Let's see what we got:
-
-    >>> import operator
-    >>> def sort_by_id(iterable):
-    ...     return sorted(iterable, key=operator.attrgetter('id'))
-    >>> def print_data(iterable):
-    ...     for datum in sort_by_id(iterable):
-    ...          print('%3d -> %s' % (datum.id, datum.name))
-    >>> def resultsets_are_equal(rs1, rs2):
-    ...     rs1 = list(rs1.order_by('name'))
-    ...     rs2 = list(rs2.order_by('name'))
-    ...     return rs1 == rs2
 
     >>> umbrella_spns = umbrella_ps.sourcesIncluded(direct_inclusion=True)
     >>> umbrella_src_names = sorted(spn.name for spn in umbrella_spns)

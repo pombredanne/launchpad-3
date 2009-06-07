@@ -174,18 +174,22 @@ class License(DBEnumeratedType):
 
     # Sort licenses alphabetically by their description.
     sort_order = (
-        'ACADEMIC', 'APACHE', 'ARTISTIC', 'BSD', 'COMMON_PUBLIC',
+        'ACADEMIC', 'APACHE', 'ARTISTIC', 'ARTISTIC_2_0',
+        'BSD', 'COMMON_PUBLIC',
         'CC_BY', 'CC_BY_SA', 'CC_0', 'ECLIPSE',
         'EDUCATIONAL_COMMUNITY', 'AFFERO', 'GNU_GPL_V2','GNU_GPL_V3',
         'GNU_LGPL_V2_1','GNU_LGPL_V3', 'MIT', 'MPL', 'OPEN_SOFTWARE', 'PERL',
         'PHP', 'PUBLIC_DOMAIN', 'PYTHON', 'ZPL',
-        'OTHER_PROPRIETARY', 'OTHER_OPEN_SOURCE')
+        'DONT_KNOW', 'OTHER_PROPRIETARY', 'OTHER_OPEN_SOURCE')
 
     ACADEMIC = DBItem(10, "Academic Free License")
     AFFERO = DBItem(20, "GNU Affero GPL v3")
     APACHE = DBItem(30, "Apache License")
-    ARTISTIC = DBItem(40, "Artistic License")
-    BSD = DBItem(50, "BSD License (revised)")
+    # http://www.perlfoundation.org/artistic_license_1_0
+    ARTISTIC = DBItem(40, "Artistic License 1.0")
+    # http://www.opensource.org/licenses/artistic-license-2.0.php
+    ARTISTIC_2_0 = DBItem(45, 'Artistic License 2.0')
+    BSD = DBItem(50, "Simplified BSD License")
     COMMON_PUBLIC = DBItem(80, "Common Public License")
     ECLIPSE = DBItem(90, "Eclipse Public License")
     EDUCATIONAL_COMMUNITY = DBItem(100, "Educational Community License")
@@ -206,6 +210,11 @@ class License(DBEnumeratedType):
     CC_BY_SA = DBItem(310, 'Creative Commons - Attribution Share Alike')
     # http://creativecommons.org/about/cc0
     CC_0 = DBItem(320, 'Creative Commons - No Rights Reserved')
+    # This is a placeholder "license" for users who know they want something
+    # open source but haven't yet chosen a license for their project.  We do
+    # not want to block them from registering their project, but this choice
+    # will allow us to nag them later.
+    DONT_KNOW = DBItem(3000, "I don't know yet")
 
     OTHER_PROPRIETARY = DBItem(1000, "Other/Proprietary")
     OTHER_OPEN_SOURCE = DBItem(1010, "Other/Open Source")

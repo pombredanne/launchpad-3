@@ -233,9 +233,9 @@ license policy.
     >>> html = license_widget()
     >>> soup = BeautifulSoup(html)
     >>> len(License)
-    25
+    27
     >>> len(soup.table('input'))
-    25
+    27
     >>> print soup.a['href']
     https://help.launchpad.net/Legal/ProjectLicensing
 
@@ -254,23 +254,23 @@ One license, the GNU GPL v2, is selected.
 
     >>> def print_checked_items(html):
     ...     soup = BeautifulSoup(html)
-    ...     inputs = soup('input')
-    ...     for input in inputs:
-    ...         if input.get('checked'):
-    ...             print '(*)', input.get('value')
+    ...     labels = soup('label')
+    ...     for label in labels:
+    ...         if label.next.get('checked'):
+    ...             print '(*)', extract_text(label)
     ...         else:
-    ...             print '( )', input.get('value')
+    ...             print '( )', extract_text(label)
 
     >>> license_widget.getInputValue()
     Set([<DBItem License.GNU_GPL_V2, (130) ...>])
 
     >>> print_checked_items(license_widget())
-    ( ) ACADEMIC
+    ( ) Academic Free License
     ...
-    (*) GNU_GPL_V2
-    ( ) GNU_GPL_V3
-    ( ) GNU_LGPL_V2_1
-    ( ) GNU_LGPL_V3
+    (*) GNU GPL v2
+    ( ) GNU GPL v3
+    ( ) GNU LGPL v2.1
+    ( ) GNU LGPL v3
     ...
 
 A second license is selected.
@@ -284,12 +284,12 @@ A second license is selected.
      <DBItem License.GNU_LGPL_V2_1, (150) GNU LGPL v2.1>]
 
     >>> print_checked_items(license_widget())
-    ( ) ACADEMIC
+    ( ) Academic Free License
     ...
-    (*) GNU_GPL_V2
-    ( ) GNU_GPL_V3
-    (*) GNU_LGPL_V2_1
-    ( ) GNU_LGPL_V3
+    (*) GNU GPL v2
+    ( ) GNU GPL v3
+    (*) GNU LGPL v2.1
+    ( ) GNU LGPL v3
     ...
 
 There are three Creative Commons licenses.
@@ -299,11 +299,11 @@ There are three Creative Commons licenses.
     >>> license_widget = LicenseWidget(licenses_field, vtype, request)
 
     >>> print_checked_items(license_widget())
-    ( ) ACADEMIC
+    ( ) Academic Free License
     ...
-    ( ) CC_BY
-    ( ) CC_BY_SA
-    ( ) CC_0
+    ( ) Creative Commons - Attribution
+    ( ) Creative Commons - Attribution Share Alike
+    ( ) Creative Commons - No Rights Reserved
     ...
 
 Any of the three Creative Commons licenses can be selected.
@@ -313,9 +313,50 @@ Any of the three Creative Commons licenses can be selected.
     >>> license_widget = LicenseWidget(licenses_field, vtype, request)
 
     >>> print_checked_items(license_widget())
-    ( ) ACADEMIC
+    ( ) Academic Free License
     ...
-    (*) CC_BY
-    (*) CC_BY_SA
-    (*) CC_0
+    (*) Creative Commons - Attribution
+    (*) Creative Commons - Attribution Share Alike
+    (*) Creative Commons - No Rights Reserved
+    ...
+
+The BSD License can be selected.
+
+    >>> form['field.licenses'] = ['BSD']
+    >>> request = LaunchpadTestRequest(form=form)
+    >>> license_widget = LicenseWidget(licenses_field, vtype, request)
+
+    >>> print_checked_items(license_widget())
+    ( ) Academic Free License
+    ...
+    (*) Simplified BSD License
+    ...
+
+There's also a placeholder for when a user knows they want an open source
+license but hasn't yet decided on one.  In this case, the user should not be
+blocked from creating their project.
+
+    >>> form['field.licenses'] = ['DONT_KNOW']
+    >>> request = LaunchpadTestRequest(form=form)
+    >>> license_widget = LicenseWidget(licenses_field, vtype, request)
+
+    >>> print_checked_items(license_widget())
+    ( ) Academic Free License
+    ...
+    (*) I don't know yet
+    ...
+
+There are two Perl-inspired Artistic licenses.  The first is the original 1.0
+license which most of Perl-land is licensed by, and there's the 2.0 version
+that is used by newer project such as Parrot.
+
+    >>> form['field.licenses'] = ['ARTISTIC', 'ARTISTIC_2_0']
+    >>> request = LaunchpadTestRequest(form=form)
+    >>> license_widget = LicenseWidget(licenses_field, vtype, request)
+
+    >>> print_checked_items(license_widget())
+    ( ) Academic Free License
+    ...
+    (*) Artistic License 1.0
+    (*) Artistic License 2.0
     ...

@@ -111,7 +111,7 @@ class MilestoneView(LaunchpadView, ProductDownloadFileMixin):
         """See `LaunchpadView`.
 
         This view may be used with a milestone or a release. The milestone
-        and release (if it exists) are accessible are attributes. The context
+        and release (if it exists) are accessible as attributes. The context
         attribute will always be the milestone.
 
         :param context: `IMilestone` or `IProductRelease`.
@@ -135,12 +135,18 @@ class MilestoneView(LaunchpadView, ProductDownloadFileMixin):
         """See `ProductDownloadFileMixin`."""
         return set([self.release])
 
-    # Listify and cache the specifications and bugtasks to avoid making
-    # the same query over and over again when evaluating in the template.
+    # Listify and cache the specifications, ProductReleaseFiles and bugtasks
+    # to avoid making the same query over and over again when evaluating in
+    # the template.
     @cachedproperty
     def specifications(self):
         """The list of specifications targeted to this milestone."""
         return list(self.context.specifications)
+
+    @cachedproperty
+    def product_release_files(self):
+        """Files associated with this milestone."""
+        return list(self.release.files)
 
     @cachedproperty
     def _bugtasks(self):
@@ -201,6 +207,12 @@ class MilestoneView(LaunchpadView, ProductDownloadFileMixin):
             return '<strong>1 blueprint</strong>'
         else:
             return '<strong>%d blueprints</strong>' % count
+
+    @cachedproperty
+    def total_downloads(self):
+        """Total downloads of files associated with this milestone."""
+        return sum(
+            file.libraryfile.hits for file in self.product_release_files)
 
     @property
     def is_project_milestone(self):
