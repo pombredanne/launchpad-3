@@ -10,17 +10,15 @@ __all__ = [
     ]
 
 from datetime import datetime
-import weakref
 
 from zope.component import getUtility
-from zope.security.proxy import removeSecurityProxy
 
 import bzrlib
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad.webapp.authorization import (
-    LAUNCHPAD_SECURITY_POLICY_CACHE_KEY)
+    precache_permission_for_objects)
 
 from lp.code.interfaces.branch import IBranchCloud, IBranchSet
 from lp.code.interfaces.branchcollection import IAllBranches
@@ -72,14 +70,8 @@ class BazaarApplicationView(LaunchpadView):
         # XXX: TimPenhey 2009-06-08 bug=324546
         # Until there is an API to do this nicely, shove the launchpad.view
         # permission into the request cache directly.
-        permission_cache = self.request.annotations.setdefault(
-            LAUNCHPAD_SECURITY_POLICY_CACHE_KEY,
-            weakref.WeakKeyDictionary())
-        for branch in branches:
-            naked_branch = removeSecurityProxy(branch)
-            branch_permission_cache = permission_cache.setdefault(
-                naked_branch, {})
-            branch_permission_cache['launchpad.View'] = True
+        precache_permission_for_objects(
+            self.request, 'launchpad.View', branches)
         return branches
 
     @cachedproperty

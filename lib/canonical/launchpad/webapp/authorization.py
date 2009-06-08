@@ -219,7 +219,7 @@ def precache_permission_for_objects(participation, permission_name, objects):
     for obj in objects:
         naked_obj = removeSecurityProxy(obj)
         obj_permission_cache = permission_cache.setdefault(naked_obj, {})
-        obj_permission_cache['launchpad.View'] = True
+        obj_permission_cache[permission_name] = True
 
 
 def check_permission(permission_name, context):
