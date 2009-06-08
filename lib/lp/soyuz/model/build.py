@@ -137,7 +137,7 @@ class Build(SQLBase):
         # This assertion works fine in production, since all build records
         # are legitimate and have a corresponding source publishing record
         # (which triggered their creation, in first place). However our
-        # sampledata is severily broken in this area and depends heavily
+        # sampledata is severely broken in this area and depends heavily
         # on the fallback to the source package original component.
         #assert latest_publication is not None, (
         #    'Build %d lacks a corresponding source publication.' % self.id)
