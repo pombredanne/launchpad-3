@@ -122,7 +122,7 @@ class TestSourcesListComment(TestCaseWithFactory):
             self.entries, LaunchpadTestRequest(), comment=my_comment)
         view.initialize()
 
-        html = view.plain_series_widget
+        html = view.__call__()
         self.assertTrue('# ' + my_comment in html,
             "The comment was not included in the sources.list snippet.")
 
