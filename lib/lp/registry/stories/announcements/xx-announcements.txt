@@ -216,6 +216,20 @@ published:
    >>> print anon_browser.title
    Derby announcement
 
+The page shows the announcement and it has a link back to the announcements
+page that any user can navigate.
+
+    >>> content = find_main_content(anon_browser.contents)
+    >>> print extract_text(content.h1)
+    Derby announcement headline
+
+    >>> print extract_text(content.p)
+    Derby announcement summary
+
+    >>> anon_browser.getLink("More announcements").click()
+    >>> print anon_browser.title
+    Derby news and announcements
+
 
 == Listings ==
 
