@@ -753,8 +753,8 @@ class SpecificationImageDisplayAPI(ObjectImageDisplayAPI):
     Used for image:icon.
     """
 
-    icon_template = """
-        <img height="14" width="14" alt="%s" title="%s" src="%s" />"""
+    icon_template = (
+        '<span alt="%s" title="%s" class="%s" />')
 
     def icon(self):
         # The icon displayed is dependent on the IBugTask.importance.
@@ -782,16 +782,16 @@ class SpecificationImageDisplayAPI(ObjectImageDisplayAPI):
         badges = ''
         if self._context.mentoring_offers.count() > 0:
             badges += self.icon_template % (
-                "mentoring", "Mentoring offered", "/@@/mentoring")
+                "mentoring", "Mentoring offered", "sprite mentoring")
 
         if self._context.branch_links.count() > 0:
             badges += self.icon_template % (
-                "branch", "Branch is available", "/@@/branch")
+                "branch", "Branch is available", "sprite branch")
 
         if self._context.informational:
             badges += self.icon_template % (
                 "informational", "Blueprint is purely informational",
-                "/@@/info")
+                "sprite info")
 
         return badges
 
