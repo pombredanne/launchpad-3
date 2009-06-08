@@ -150,8 +150,8 @@ PackageBugReportData, which sublcassess BugReportData. We'll create a
 BugReportData instance using some made up figures to demonstrate the
 properties offered by BugReportData.
 
-    >>> import canonical.launchpad.browser as browser
-    >>> bug_data = browser.distribution_upstream_bug_report.BugReportData(
+    >>> from lp.bugs.browser import distribution_upstream_bug_report
+    >>> bug_data = distribution_upstream_bug_report.BugReportData(
     ...     open_bugs=90, triaged_bugs=50, upstream_bugs=70,
     ...     watched_bugs=60)
 
