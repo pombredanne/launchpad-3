@@ -419,25 +419,22 @@ class TestBranchProposalsVisible(TestCaseWithFactory):
         self.assertTrue(view.no_merges)
         self.assertEqual([], view.landing_candidates)
 
-    def test_public_dependent(self):
-        # If the user can see the dependent branch, then there are merges, and
-        # the dependent count is available for the template rendering.
-        dependent = self.factory.makeProductBranch()
-        bmp = self.factory.makeBranchMergeProposal(dependent_branch=dependent)
-        branch = bmp.source_branch
+    def test_dependent_public(self):
+        # If the branch is a dependent branch for a public proposals, then
+        # there are merges.
+        branch = self.factory.makeProductBranch()
+        bmp = self.factory.makeBranchMergeProposal(dependent_branch=branch)
         view = BranchView(branch, LaunchpadTestRequest())
         self.assertFalse(view.no_merges)
-        [view_branch] = view.dependent_branches
-        # The dependent branches are branches not proposals.
-        self.assertEqual(dependent, view_branch)
+        [proposal] = view.dependent_branches
+        self.assertEqual(bmp, proposal)
 
-    def test_private_dependent(self):
-        # If the dependent is private and not visible to the user, it is not
-        # shown.
-        dependent = self.factory.makeProductBranch()
-        bmp = self.factory.makeBranchMergeProposal(dependent_branch=dependent)
-        branch = bmp.source_branch
-        removeSecurityProxy(dependent).private = True
+    def test_dependent_private(self):
+        # If the branch is a dependent branch where either the source or the
+        # target is private, then the dependent_branches are not shown.
+        branch = self.factory.makeProductBranch()
+        bmp = self.factory.makeBranchMergeProposal(dependent_branch=branch)
+        removeSecurityProxy(bmp.source_branch).private = True
         view = BranchView(branch, LaunchpadTestRequest())
         self.assertTrue(view.no_merges)
         self.assertEqual([], view.dependent_branches)
