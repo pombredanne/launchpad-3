@@ -34,26 +34,17 @@
           var display_graph = function(result) {
               var timeline = result;
               // Don't display graph if there are zero milestones or releases.
-              var found_landmark = false;
-              for (var i in timeline) {
-                  if (timeline[i].landmarks.length > 0) {
-                      found_landmark = true;
-                      break;
-                  }
-              }
-              if (found_landmark) {
-                  var container = Y.get('#timeline-container');
-                  container.setStyle('display', 'block');
-                  var graph = new Y.registry.timeline.TimelineGraph({
-                      timeline: timeline,
-                      boundingBox: container
-                  });
-                  graph.render();
-                  Y.get('#spinner').setStyle('display', 'none');
-                  // Scroll to the most recent milestones or
-                  // releases on the development focus series.
-                  graph.scroll_to_last_development_focus_landmark();
-              }
+              var container = Y.get('#timeline-container');
+              container.setStyle('display', 'block');
+              var graph = new Y.registry.timeline.TimelineGraph({
+                  timeline: timeline,
+                  boundingBox: container
+              });
+              graph.render();
+              Y.get('#spinner').setStyle('display', 'none');
+              // Scroll to the most recent milestones or
+              // releases on the development focus series.
+              graph.scroll_to_last_development_focus_landmark();
           }
 
           var client = new LP.client.Launchpad();
