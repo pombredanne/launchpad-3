@@ -8,7 +8,6 @@ from xml.sax.saxutils import escape
 
 from zope.component import getUtility
 from zope.interface import implements, Interface
-from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.app.form.browser.itemswidgets import RadioWidget
 from zope.app.form.browser.widget import BrowserWidget, renderElement
 from zope.app.form.interfaces import (
@@ -17,7 +16,8 @@ from zope.app.form.interfaces import (
 from zope.schema.interfaces import ValidationError, InvalidValue
 from zope.app.form import Widget, CustomWidgetFactory
 from zope.app.form.utility import setUpWidget
-from zope.security.interfaces import Unauthorized
+
+from z3c.ptcompat import ViewPageTemplateFile
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import URIField

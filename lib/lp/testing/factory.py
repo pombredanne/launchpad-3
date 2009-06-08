@@ -454,12 +454,16 @@ class LaunchpadObjectFactory(ObjectFactory):
         return getUtility(ITranslationGroupSet).new(
             name, title, summary, url, owner)
 
-    def makeMilestone(self, product=None, distribution=None, name=None):
-        if product is None and distribution is None:
+    def makeMilestone(
+        self, product=None, distribution=None, productseries=None, name=None):
+        if product is None and distribution is None and productseries is None:
             product = self.makeProduct()
+        if productseries is not None:
+            product = productseries.product
         if name is None:
             name = self.getUniqueString()
         return Milestone(product=product, distribution=distribution,
+                         productseries=productseries,
                          name=name)
 
     def makeProductRelease(self, milestone=None):

@@ -26,9 +26,10 @@ from urlparse import urljoin
 from xml.sax.saxutils import escape as xml_escape
 
 from zope.datetime import rfc1123_date
-from zope.app.pagetemplate import ViewPageTemplateFile
 from zope.component import getUtility
 from zope.interface import implements
+
+from z3c.ptcompat import ViewPageTemplateFile
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config

@@ -17,9 +17,8 @@
       <div metal:use-macro="context/@@launchpad_form/form">
 
         <metal:other_input fill-slot="extra_bottom">
-          <tal:hidden 
-            replace="structure
-              view/i_know_this_is_an_openid_security_issue_input|nothing" />
+          <tal:hidden
+            replace="structure view/i_know_this_is_an_openid_security_issue_input|nothing" />
         </metal:other_input>
       </div>
 

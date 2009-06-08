@@ -22,6 +22,7 @@ special_test_layer = {
     'milestone-views.txt': LaunchpadFunctionalLayer,
     'person-views.txt': LaunchpadFunctionalLayer,
     'user-to-user-views.txt': LaunchpadFunctionalLayer,
+    'distribution-views.txt': LaunchpadFunctionalLayer,
 }
 
 

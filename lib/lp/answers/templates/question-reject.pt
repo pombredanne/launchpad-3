@@ -2,12 +2,10 @@
   xmlns="http://www.w3.org/1999/xhtml"
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
-  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   xml:lang="en"
   lang="en"
   dir="ltr"
   metal:use-macro="context/@@main_template/master"
-  i18n:domain="launchpad"
 >
 
 <body>
@@ -30,8 +28,7 @@
 
   <div metal:use-macro="context/@@launchpad_form/form">
 
-    <h1 metal:fill-slot="heading"
-        i18n:translate="">Reject question</h1>
+    <h1 metal:fill-slot="heading">Reject question</h1>
 
     <p metal:fill-slot="extra_info" class="documentDescription">
       If this question is a hoax, spam, a test, or sample data, it should
