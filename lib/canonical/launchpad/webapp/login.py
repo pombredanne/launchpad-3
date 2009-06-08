@@ -11,7 +11,8 @@ from zope.component import getUtility
 from zope.session.interfaces import ISession, IClientIdManager
 from zope.event import notify
 from zope.app.security.interfaces import IUnauthenticatedPrincipal
-from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
+
+from z3c.ptcompat import ViewPageTemplateFile
 
 from canonical.config import config
 from canonical.launchpad import _
