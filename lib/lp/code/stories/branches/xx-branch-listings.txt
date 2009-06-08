@@ -192,7 +192,7 @@ interesting" and should default to sort by project name.
     >>> filter_control
     <ListControl name='field.sort_by' type='select'>
     >>> filter_control.displayValue
-    ['by project name']
+    ['most recently changed first']
     >>> filter_control.displayOptions
     ['by project name', 'by status', 'by branch name',
     'by registrant name', 'most recently changed first',
@@ -263,14 +263,13 @@ Aside from the implicitly sorted listings of recently registered,
 imported and changed branches, all branch listings have a widget that
 allows changing the sort order.
 
-On a listing that can have branches from more than one product (such
-as the listing of branches owned by a person), the default ordering is
-by product name (which is of course called "project name" in the UI).
+On branch listings for a person, the default ordering is by most recently
+changed first.
 
     >>> browser.open('http://code.launchpad.dev/~name12')
     >>> sort_by_control = browser.getControl(name='field.sort_by')
     >>> sort_by_control.value
-    ['by project name']
+    ['most recently changed first']
     >>> for option in sort_by_control.options:
     ...     print option
     by project name
