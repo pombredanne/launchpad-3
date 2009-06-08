@@ -120,7 +120,7 @@ redirect responses. This is a subclass of urllib2's HTTPRedirectHandler.
     >>> from urllib2 import HTTPRedirectHandler, Request
 
     >>> transport.opener.handlers
-    [... <canonical...XMLRPCRedirectHandler instance ...]
+    [... <lp.bugs...XMLRPCRedirectHandler instance ...]
 
     >>> issubclass(XMLRPCRedirectHandler, HTTPRedirectHandler)
     True
