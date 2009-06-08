@@ -902,12 +902,8 @@ include them as well.
 
 Searching only for Teams based on their names or email addresses:
 
-    >>> from storm.tracer import debug
-    >>> import sys
-    >>> #debug(True)
     >>> print_people(personset.findTeam('support'))
     Ubuntu Team (ubuntu-team): [u'support@ubuntu.com']
-    >>> #debug(False)
 
     >>> print_people(personset.findTeam('translators'))
     Ubuntu Translators (ubuntu-translators): []

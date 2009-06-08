@@ -40,7 +40,6 @@ from sqlobject import (
     BoolCol, ForeignKey, IntCol, SQLMultipleJoin, SQLObjectNotFound,
     SQLRelatedJoin, StringCol)
 from sqlobject.sqlbuilder import AND, OR, SQLConstant
-from storm import Undef
 from storm.store import EmptyResultSet, Store
 from storm.expr import And, In, Join, Lower, Not, Or, SQL
 from storm.info import ClassAlias
@@ -2583,13 +2582,12 @@ class PersonSet:
 
         results = results.union(store.find(
             Person, person_name_query)).order_by()
-
         team_email_query = self._teamEmailQuery(text)
-        results = results.union(store.find(Person, team_email_query)).order_by()
-
+        results = results.union(
+            store.find(Person, team_email_query)).order_by()
         team_name_query = self._teamNameQuery(text)
-
-        results = results.union(store.find(Person, team_name_query)).order_by()
+        results = results.union(
+            store.find(Person, team_name_query)).order_by()
 
         return results.order_by(orderBy)
 

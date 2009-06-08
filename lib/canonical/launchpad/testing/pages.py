@@ -256,7 +256,7 @@ def print_table(content, columns=None, skip_rows=None, sep="\t"):
         if skip_rows is not None and row_num in skip_rows:
             continue
         row_content = []
-        for col_num,item in enumerate(row.findAll('td')):
+        for col_num, item in enumerate(row.findAll('td')):
             if columns is None or col_num in columns:
                 row_content.append(extract_text(item))
         print sep.join(row_content)
