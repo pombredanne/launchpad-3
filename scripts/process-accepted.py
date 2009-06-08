@@ -15,7 +15,7 @@ from zope.component import getUtility
 
 from canonical.config import config
 from canonical.database.sqlbase import ISOLATION_LEVEL_READ_COMMITTED
-from lp.soyuz.interfaces.package import PackageUploadStatus
+from lp.soyuz.interfaces.queue import PackageUploadStatus
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger, logger_options)
 from lp.soyuz.scripts.processaccepted import close_bugs

@@ -24,7 +24,7 @@ from lp.soyuz.interfaces.build import (
 from lp.soyuz.interfaces.buildqueue import IBuildQueueSet
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from canonical.launchpad.interfaces.launchpad import UnexpectedFormData
-from lp.soyuz.interfaces.package import PackageUploadStatus
+from lp.soyuz.interfaces.queue import PackageUploadStatus
 from canonical.launchpad.webapp import (
     action, canonical_url, enabled_with_permission, ContextMenu,
     GetitemNavigation, Link, LaunchpadFormView, LaunchpadView,
@@ -334,9 +334,9 @@ class BuildRecordsView(LaunchpadView):
                 name = 'All states'
 
             if state == self.state:
-                selected = True
+                selected = 'selected'
             else:
-                selected = False
+                selected = None
 
             self.available_states.append(
                 dict(name=name, value=tag, selected=selected)

@@ -9,7 +9,7 @@
       <td>
         <tal:has_drivers condition="context/drivers">
           <tal:per_driver repeat="driver context/drivers">
-            <a tal:replace=" structure driver/fmt:link">Carlos
+            <a tal:replace="structure driver/fmt:link">Carlos
             Perello</a><br />
           </tal:per_driver>
         </tal:has_drivers>
@@ -27,7 +27,7 @@
           <td tal:content="context/sourcecount" />
         </tal:sources>
         <tal:no_sources condition="not: sourcecount">
-          <td colspan=2>
+          <td colspan="2">
             No sources imported or published.
           </td>
         </tal:no_sources>
@@ -40,7 +40,7 @@
           <td tal:content="context/binarycount" />
         </tal:binaries>
         <tal:no_binaries condition="not: binarycount">
-          <td colspan=2>
+          <td colspan="2">
             No binaries imported or published.
           </td>
         </tal:no_binaries>
