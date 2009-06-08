@@ -10,13 +10,17 @@ __all__ = [
     ]
 
 from datetime import datetime
+import weakref
 
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 import bzrlib
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
+from canonical.launchpad.webapp.authorization import (
+    LAUNCHPAD_SECURITY_POLICY_CACHE_KEY)
 
 from lp.code.interfaces.branch import IBranchCloud, IBranchSet
 from lp.code.interfaces.branchcollection import IAllBranches
@@ -64,23 +68,42 @@ class BazaarApplicationView(LaunchpadView):
     def bzr_version(self):
         return bzrlib.__version__
 
+    def _precacheViewPermissions(self, branches):
+        """Precache the launchpad.View permissions on the branches."""
+        # XXX: TimPenhey 2009-06-08 bug=324546
+        # Until there is an API to do this nicely, shove the launchpad.view
+        # permission into the request cache directly.
+        request = self.view.request
+        permission_cache = request.annotations.setdefault(
+            LAUNCHPAD_SECURITY_POLICY_CACHE_KEY,
+            weakref.WeakKeyDictionary())
+        for branch in branches:
+            naked_branch = removeSecurityProxy(branch)
+            branch_permission_cache = permission_cache.setdefault(
+                naked_branch, {})
+            branch_permission_cache['launchpad.View'] = True
+        return branches
+
     @cachedproperty
     def recently_changed_branches(self):
         """Return the five most recently changed branches."""
-        return list(getUtility(IBranchSet).getRecentlyChangedBranches(
-            5, visible_by_user=self.user))
+        return self._precacheViewPermissions(
+            list(getUtility(IBranchSet).getRecentlyChangedBranches(
+                    5, visible_by_user=self.user)))
 
     @cachedproperty
     def recently_imported_branches(self):
         """Return the five most recently imported branches."""
-        return list(getUtility(IBranchSet).getRecentlyImportedBranches(
-            5, visible_by_user=self.user))
+        return self._precacheViewPermissions(
+            list(getUtility(IBranchSet).getRecentlyImportedBranches(
+                    5, visible_by_user=self.user)))
 
     @cachedproperty
     def recently_registered_branches(self):
         """Return the five most recently registered branches."""
-        return list(getUtility(IBranchSet).getRecentlyRegisteredBranches(
-            5, visible_by_user=self.user))
+        return self._precacheViewPermissions(
+            list(getUtility(IBranchSet).getRecentlyRegisteredBranches(
+                    5, visible_by_user=self.user)))
 
     @cachedproperty
     def short_product_tag_cloud(self):
