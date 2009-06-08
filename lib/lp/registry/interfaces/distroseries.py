@@ -348,7 +348,7 @@ class IDistroSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
         "All architectures in this series where PPA is supported.")
 
     enabled_architectures = Attribute(
-        "All architectures in this series with available chroot.")
+        "All architectures in this series with available chroot tarball.")
 
     def __getitem__(archtag):
         """Return the distroarchseries for this distroseries with the

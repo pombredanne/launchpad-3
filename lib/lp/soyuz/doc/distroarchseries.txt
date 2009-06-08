@@ -325,17 +325,18 @@ Let's activate ppa support for hoary/hppa and check if
     The Hoary Hedgehog Release for hppa (hppa) (ppa)
     The Hoary Hedgehog Release for i386 (x86) (official, ppa)
 
-There is also `DistroSeries.enabled_architectures` which retuns a
-`ResultSet` containing only the `DistroArchSeries` with existing
-chroots (the one for which we can build packages).
+There is also `DistroSeries.enabled_architectures` which returns a
+`ResultSet` containing only the `DistroArchSeries` with available
+chroots tarballs (the ones for which we can build packages).
 
-In the sampledata, none of the hoary architectures have chroots. Once
-chroot is available the corresponding architecture is returned.
+In the sampledata, none of the hoary architectures have chroot
+tarballs. Once it is available the corresponding architecture is
+returned.
 
     >>> hoary.enabled_architectures.count()
     0
 
-    # Create a chroot for hoary/hppa.
+    # Create a chroot tarball for hoary/hppa.
     >>> chroot = factory.makeLibraryFileAlias()
     >>> unused = hoary.getDistroArchSeries('hppa').addOrUpdateChroot(chroot)
 
@@ -345,7 +346,7 @@ chroot is available the corresponding architecture is returned.
 `DistroSeries.enabled_architectures` results are ordered
 alphabetically by 'architecturetag'.
 
-    # Create a chroot for hoary/i386.
+    # Create a chroot tarball for hoary/i386.
     >>> unused = hoary.getDistroArchSeries('i386').addOrUpdateChroot(chroot)
 
     >>> print_architectures(hoary.enabled_architectures)
