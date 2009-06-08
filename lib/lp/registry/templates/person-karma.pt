@@ -17,7 +17,8 @@
 <metal:rightportlets fill-slot="portlets_two">
 </metal:rightportlets>
 
-<div metal:fill-slot="main">
+<div metal:fill-slot="main"
+  tal:define="latestkarma context/latestKarma">
 
   <h1>Launchpad karma</h1>
 
@@ -27,13 +28,17 @@
     type.
   </p>
 
-  <p
+  <p id="no-karma"
     tal:condition="not: context/karma_category_caches"
-    class="informational message"
   >
-    No karma has yet been assigned to
-    <span tal:replace="context/browsername" />.
-    Karma is updated daily.
+    <tal:expired condition="latestkarma">
+        <tal:name replace="context/displayname" />'s karma has expired.
+    </tal:expired>
+    <tal:never condition="not: latestkarma">
+        No karma has yet been assigned to
+       <tal:name replace="context/displayname" />.
+        Karma is updated daily.
+    </tal:never>
   </p>
 
   <table class="listing sortable" id="karmapoints"
