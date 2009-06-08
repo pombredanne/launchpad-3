@@ -1,5 +1,5 @@
 # Copyright 2007 Canonical Ltd.  All rights reserved.
-# pylint: disable-msg=C0322
+# pylint: disable-msg=C0322,F0401
 
 """Views, navigation and actions for BranchMergeProposals."""
 
@@ -150,7 +150,8 @@ class BranchMergeProposalContextMenu(ContextMenu):
     def edit_commit_message(self):
         text = 'Edit commit message'
         enabled = self.context.isMergable()
-        return Link('+edit-commit-message', text, icon='edit', enabled=enabled)
+        return Link('+edit-commit-message', text, icon='edit',
+                    enabled=enabled)
 
     @enabled_with_permission('launchpad.Edit')
     def edit_status(self):
