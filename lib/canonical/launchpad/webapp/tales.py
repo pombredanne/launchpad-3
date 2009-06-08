@@ -631,7 +631,7 @@ class BugTaskImageDisplayAPI(ObjectImageDisplayAPI):
         ])
 
     icon_template = (
-        '<img height="14" width="14" alt="%s" title="%s" src="%s" />')
+        '<span alt="%s" title="%s" class="%s" />')
 
     linked_icon_template = (
         '<a href="%s"><img height="14" width="14"'
@@ -691,26 +691,26 @@ class BugTaskImageDisplayAPI(ObjectImageDisplayAPI):
         badges = []
         if self._context.bug.private:
             badges.append(self.icon_template % (
-                "private", "Private","/@@/private"))
+                "private", "Private","sprite private"))
 
         if self._hasMentoringOffer():
             badges.append(self.icon_template % (
-                "mentoring", "Mentoring offered", "/@@/mentoring"))
+                "mentoring", "Mentoring offered", "sprite mentoring"))
 
         if self._hasBugBranch():
             badges.append(self.icon_template % (
-                "branch", "Branch exists", "/@@/branch"))
+                "branch", "Branch exists", "sprite branch"))
 
         if self._hasSpecification():
             badges.append(self.icon_template % (
-                "blueprint", "Related to a blueprint", "/@@/blueprint"))
+                "blueprint", "Related to a blueprint", "sprite blueprint"))
 
         if self._context.milestone:
             milestone_text = "milestone %s" % self._context.milestone.name
             badges.append(self.linked_icon_template % (
                 canonical_url(self._context.milestone),
                 milestone_text , "Linked to %s" % milestone_text,
-                "/@@/milestone"))
+                "sprite milestone"))
 
         # Join with spaces to avoid the icons smashing into each other
         # when multiple ones are presented.
