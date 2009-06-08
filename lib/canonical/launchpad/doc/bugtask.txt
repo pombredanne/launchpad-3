@@ -1260,6 +1260,70 @@ If a mentoring offer gets made...
      has_specification: False
 
 
+== Similar bugs ==
+
+It's possible to get a list of bugs similar to the current bug by
+accessing the similar_bugs property of its bug tasks.
+
+    >>> from operator import attrgetter
+    >>> new_ff_bug = factory.makeBug(product=firefox, title="Firefox")
+    >>> ff_bugtask = new_ff_bug.bugtasks[0]
+
+    >>> similar_bugs = ff_bugtask.findSimilarBugs(user=sample_person)
+    >>> for similar_bug in sorted(similar_bugs, key=attrgetter('id')):
+    ...     print "%s: %s" % (similar_bug.id, similar_bug.title)
+    1: Firefox does not support SVG
+    4: Reflow problems with complex page layouts
+    5: Firefox install instructions should be complete
+
+This also works for distributions...
+
+    >>> ubuntu_bugtask = factory.makeBugTask(bug=new_ff_bug, target=ubuntu)
+    >>> similar_bugs = ubuntu_bugtask.findSimilarBugs(user=sample_person)
+    >>> for similar_bug in sorted(similar_bugs, key=attrgetter('id')):
+    ...     print "%s: %s" % (similar_bug.id, similar_bug.title)
+    1: Firefox does not support SVG
+
+... and for SourcePackages.
+
+    >>> firefox_package = ubuntu.getSourcePackage('mozilla-firefox')
+    >>> firefox_package_bugtask = factory.makeBugTask(
+    ...     bug=new_ff_bug, target=firefox_package)
+
+    >>> similar_bugs = firefox_package_bugtask.findSimilarBugs(
+    ...     user=sample_person)
+    >>> for similar_bug in sorted(similar_bugs, key=attrgetter('id')):
+    ...     print "%s: %s" % (similar_bug.id, similar_bug.title)
+    1: Firefox does not support SVG
+
+Private bugs won't show up in the list of similar bugs unless the user
+is a direct subscriber. We'll demonstrate this by creating a new bug
+against Firefox.
+
+    >>> second_ff_bug = factory.makeBug(
+    ...     product=firefox, title="Yet another Firefox bug")
+    >>> similar_bugs = ff_bugtask.findSimilarBugs(user=no_priv)
+    >>> for similar_bug in sorted(similar_bugs, key=attrgetter('id')):
+    ...     print "%s: %s" % (similar_bug.id, similar_bug.title)
+    1: Firefox does not support SVG
+    4: Reflow problems with complex page layouts
+    5: Firefox install instructions should be complete
+    ...Yet another Firefox bug
+
+If we mark the new bug as private, it won't appear in the similar bugs
+list for no_priv any more, since they're not a direct subscriber.
+
+    >>> second_ff_bug.setPrivate(True, foobar)
+    True
+
+    >>> similar_bugs = ff_bugtask.findSimilarBugs(user=no_priv)
+    >>> for similar_bug in sorted(similar_bugs, key=attrgetter('id')):
+    ...     print "%s: %s" % (similar_bug.id, similar_bug.title)
+    1: Firefox does not support SVG
+    4: Reflow problems with complex page layouts
+    5: Firefox install instructions should be complete
+
+
 == Handling IntegrityError and ProgrammingError ==
 
 # XXX: Brad Bollenbach 2005-02-24: This bit testing the IntegrityError

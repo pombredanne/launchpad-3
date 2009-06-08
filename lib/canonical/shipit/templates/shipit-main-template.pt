@@ -1,7 +1,7 @@
 <metal:page
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:tal="http://xml.zope.org/namespaces/tal"
-  define-macro="master"><metal:doctype define-slot="doctype"><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"></metal:doctype>
+  define-macro="master"><metal:doctype define-slot="doctype"><tal:doctype tal:replace="structure string:&lt;!DOCTYPE html PUBLIC &quot;-//W3C//DTD XHTML 1.0 Transitional//EN&quot; &quot;http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd&quot;&gt;" /></metal:doctype>
 <metal:block define-slot="top_slot" />
 <html
   xmlns="http://www.w3.org/1999/xhtml"
@@ -13,7 +13,8 @@
   dir="ltr"
   tal:attributes="lang view/lang|default_language|default;
                   xml:lang view/lang|default_language|default;
-                  dir view/dir|string:ltr">
+                  dir view/dir|string:ltr"
+  tal:define="CONTEXTS python:{'template':template, 'context': context, 'view':view};">
 
   <head>
     <title tal:content="CONTEXTS/fmt:pagetitle">Launchpad</title>

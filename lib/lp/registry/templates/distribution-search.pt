@@ -6,13 +6,13 @@
   xml:lang="en"
   lang="en"
   dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/search"
   i18n:domain="launchpad"
 >
   <body>
 
 <div metal:fill-slot="main">
-  <h1>Search results</h1>
+  <h1>Search packages in <span tal:replace="context/title" /></h1>
 
   <form name="search" method="GET">
     <div>
@@ -35,61 +35,137 @@
 
   <tal:search_requested condition="view/search_requested">
 
-    <tal:batch define="batchnav view/batchnav;batch batchnav/currentBatch">
+        <div id="search-results" tal:condition="view/has_matches">
+          <tal:has_exact_matches condition="view/display_exact_matches">
 
-      <tal:navigation replace="structure batchnav/@@+navigation-links-upper" />
+            <div class="search-batch" style="padding:4px;">
+              <strong class="batch-navigation-index">Exact match</strong>
+            </div>
 
-      <ul class="sources" tal:condition="batch">
-        <li tal:repeat="dsp batch">
-          <a tal:attributes="href dsp/fmt:url;
-                             title dsp/title"
-             class="packagetitle"
-             tal:content="dsp/title"/>
-          <ul tal:condition="view/detailed">
-            <li tal:repeat="pubrec dsp/current_publishing_records">
-              <a tal:content="pubrec/distroseries/name"
-                 tal:attributes="href pubrec/meta_sourcepackage/fmt:url;
-                                 title pubrec/meta_sourcepackage/title" />
-              (<span tal:replace="pubrec/section/name"/>):
-              <a tal:content="pubrec/meta_sourcepackagerelease/version"
-                 tal:attributes="href pubrec/meta_sourcepackagerelease/fmt:url;
-                                 title pubrec/meta_sourcepackagerelease/title" />
+            <ul class="exact-matches">
+              <li tal:repeat="package_cache view/exact_matches">
+                <tal:project define="package package_cache/distributionsourcepackage;
+                                     project package/upstream_product">
+                <div>
+                  <a tal:attributes="href package/fmt:url" class="search-result-link">
+                    <tal:project-icon content="structure project/image:icon"
+                         condition="project"/>
+                    <tal:package-title content="structure package/name" />
+                  </a>
+                  <tal:source-name-different
+                    condition="python: package.name != view.text">
+                    (The binary '<strong tal:content="view/text" />' is part of
+                    the <tal:source-name content="package/name" /> package)
+                  </tal:source-name-different>
+                </div>
+                <div class="summary">
+                  <tal:project_only condition="project">
+                  <p tal:content="structure project/summary" />
+                  </tal:project_only>
+                  <p>Available in: 
+                    <tal:distroseries_list
+                      content="python: view.distroseries_names[package.name]" />
+                  </p>
+                  <div class="actions"
+                    tal:define="distribution package/distribution">
+                    <a
+                      tal:define="link package/menu:bugs/filebug"
+                      tal:condition="distribution/official_malone"
+                      tal:attributes="href link/url">
+                      <img
+                        tal:attributes="alt link/text"
+                        src="/+icing/but-sml-reportabug.gif" />
+                    </a>
+                    <a
+                      tal:define="link package/menu:answers/new"
+                      tal:condition="distribution/official_answers"
+                      tal:attributes="href link/url">
+                    <img
+                      tal:attributes="alt link/text"
+                      src="/+icing/but-sml-askaquestion.gif" />
+                  </a>
+                </div>
+                </div>
+                </tal:project>
+              </li>
+            </ul>
+          </tal:has_exact_matches>
 
-              <div style="font-size: 80%;"
-                   tal:define="meta_binaries 
-                               pubrec/meta_distroseriessourcepackagerelease/meta_binaries">
+          <tal:batch
+            define="batchnav view/batchnav;batch batchnav/currentBatch|nothing"
+            condition="batchnav">
 
-                <tal:has_bin condition="meta_binaries">
-                   Binary Packages:
-                   <div id="binaries">
-                     <tal:binaries repeat="bin meta_binaries">
-                      <a id="binlink" tal:content="bin/name"
-                         tal:attributes="href bin/fmt:url; title bin/title" />
-                     </tal:binaries>
-                   </div>
-                </tal:has_bin>
+            <div style="margin-top:0" class="upper-batch-nav search-batch">
+              <strong class="batch-navigation-index">
+                All packages
+                  <tal:binaries condition="view/search_by_binary_name">
+                    with binaries whose name includes
+                  </tal:binaries>
+                  <tal:sources condition="not: view/search_by_binary_name">
+                    with sources matching your query
+                  </tal:sources>
+                  &ldquo;<tal:query content="view/text">query text</tal:query>&rdquo;
+              </strong>
+              <tal:navigation
+                 replace="structure batchnav/@@+navigation-links-upper"/>
+            </div>
 
-                <tal:has_no_bin condition="not:meta_binaries">
-                  <i>This package has no binaries</i>
-                </tal:has_no_bin>
+            <ul class="package-matches" tal:condition="batch">
+              <li class="pagematch"
+                  tal:repeat="package_cache batch">
+                <tal:project
+                  define="package package_cache/distributionsourcepackage;
+                          project package/upstream_product">
+                <div>
+                  <tal:project-icon content="structure project/image:icon"
+                                    condition="project"/>
 
-              </div>
-            </li>
-          </ul>
-        </li>
-      </ul>
+                  <a
+                    tal:attributes="href package/fmt:url"
+                    tal:content="structure package/name"
+                    class="search-result-link">Package name</a>
+                </div>
+                <div class="summary">
+                  <p>
+                  <tal:summary
+                    tal:condition="project"
+                    tal:content="structure project/summary">
+                      A snippet of search result summary text.
+                  </tal:summary>
+                  <tal:binary-search-only condition="view/search_by_binary_name">
+                    <tal:matching-binaries
+                      define="binary_names python:view.matching_binary_names[package.name]"
+                      condition="binary_names"
+                      content="string:(Matching binaries: ${binary_names}.)">
+                      (Matching binaries: bin-one, bin-two.)
+                    </tal:matching-binaries> 
+                  </tal:binary-search-only>
+                  </p>
+                </div>
+                </tal:project>
+              </li>
+            </ul>
 
-      <tal:navigation replace="structure batchnav/@@+navigation-links-lower" />
+            <div class="lower-batch-nav search-batch">
+              <tal:navigation
+                 replace="structure batchnav/@@+navigation-links-lower" />
+            </div>
 
-      <tal:no_matches condition="not: view/matches">
+          </tal:batch>
+        </div>
 
-        No packages matching '<span tal:replace="view/text">amarok</span>'
-        are published in
-        <span tal:replace="context/displayname">ubuntu</span>.
-
-      </tal:no_matches>
-
-    </tal:batch>
+        <p id="no-results" tal:condition="not:view/has_matches">
+          Your search for
+          &ldquo;<span
+            class="text"
+            tal:content="view/text">some text</span>&rdquo;
+          did not return any results.
+          <tal:search_by_source condition="view/search_by_binary_name">
+            You can
+            <a tal:attributes="href view/source_search_url" id="source-search">
+              search again including package descriptions</a>.
+          </tal:search_by_source>
+        </p>
 
   </tal:search_requested>
 
