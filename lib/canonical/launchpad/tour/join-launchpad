@@ -15,7 +15,7 @@
 </head>
 <body>
 
-    
+
 
 
     <div id="container">
@@ -32,7 +32,7 @@
             <li><a href="api" accesskey="9">Beta: web services API</a></li>
             <li><a href="feature-tracking" accesskey="a">Light-weight specifications</a></li>
             <li><a href="release-management" accesskey="b">Release management</a></li>
-            <li class="current"><a href="join-launchpad" accesskey="c">Join Launchpad!</a></li>                        
+            <li class="current"><a href="join-launchpad" accesskey="c">Join Launchpad!</a></li>
         </ul>
         <div id="page-intro-top"></div>
         <div id="page-intro">
@@ -50,7 +50,7 @@ Launchpad is free of charge to <a href="https://help.launchpad.net/Legal/Project
         <ul id="secondary-navigation">
             <li class="button-prev">
                 <a title="Back to the release management page" href="release-management" accesskey="d" tabindex="2">Back</a>
-            </li>          
+            </li>
             <li class="button-next">
                 <a href="index" title="Return to the start of the Launchpad tour" accesskey="3" tabindex="3">Start</a>
             </li>
@@ -60,7 +60,7 @@ Launchpad is free of charge to <a href="https://help.launchpad.net/Legal/Project
                 <div class="furthur-information-block-top"></div>
                 <div class="furthur-information-block-mid">
                     <div class="block">
-                        <h3><a name="commercial"></a>Commercial subscriptions</h3>
+                        <h3><a name="commercial"></a>Commercial subscriptions for private projects</h3>
                         <h4>Host your closed-source project and join our beta of additional privacy features by buying a commercial subscription.</h4>
                         <p class="screen-holder">
                             <img src="images/join/1.png" alt="Commercial subscriptions" />                        </p>
@@ -75,11 +75,11 @@ Launchpad is free of charge to <a href="https://help.launchpad.net/Legal/Project
 			<p>Want to know more? <a href="mailto:commercial@launchpad.net">Get in touch</a>!</p><br />
 			<p><small>* US Dollars. Add VAT at 15% if you're in the European Union. Subscription is per project. Privacy features may incur additional charges after the beta.</small></p>
 			<p style="float: right;"><a href="">Buy a subscription for your project &gt;</a></p><br />
-                          
+
                         </p>
                     </div>
                     <div class="block odd">
-                        <h3>What you get with Launchpad</h3>
+                        <h3>What Launchpad offers your project</h3>
                         <h4>Whether you're starting out or moving from elsewhere, Launchpad offers a tightly integrated hosting and collaboration platform for community-driven software development.</h4>
                         <p class="screen-holder">
                             <img src="images/join/2.png" alt="Publishing your software"  />                       </p>
@@ -90,25 +90,25 @@ Launchpad is free of charge to <a href="https://help.launchpad.net/Legal/Project
 				                  <li><strong><a href="branch-hosting-tracking">Code hosting and review</a>:</strong> open up to drive-by contributions with Bazaar branch hosting/mirroring and imports from git, Subversion and CVS.</li>
 				                  <li><strong><a href="translation">Web-based translation</a>:</strong> make your software available to a global audience with help from Launchpad's 35,000 translators.</li>
 				                  <li><strong><a href="ppa">Ubuntu package building and hosting</a>:</strong> use your Personal Package Archives to distribute software, with updates, to Ubuntu users.</li>
-				                  <li><strong><a href="community">Mailing lists and teams</a>:</strong> hassle-free mailing list hosting and easy role delegation through teams.</li>				
+				                  <li><strong><a href="community">Mailing lists and teams</a>:</strong> hassle-free mailing list hosting and easy role delegation through teams.</li>
 				                  <li><strong><a href="community-support">Support request tracking</a>:</strong> build a multi-lingual help community.</li>
 				                  <li><strong><a href="feature-tracking">Feature planning</a>:</strong> light-weight specification management and tracking.</li>
 				                  <li><strong><a href="api">Web services API</a>:</strong> build applications that interact with Launchpad.</li>
                 		  </ul><br />
                 		  <p style="float: right;"><a href="mailto:help@launchpad.net">Email us</a> with questions or <a href="https://launchpad.net/projects/+new">register your project now &gt;</a></p>
-  
+
                     </div>
-                    
+
                     <div class="clear"></div>
                 </div>
                 <div class="furthur-information-block-bot"></div>
             </div>
-            
+
         </div>
         <ul id="footer-navigation">
             <li class="button-prev">
                 <a title="Back to the release management page" href="release-management" accesskey="f" tabindex="4">Back</a>
-            </li>         
+            </li>
             <li class="button-next">
                 <a href="index" title="Return to the start of the Launchpad tour" accesskey="g" tabindex="5">Start</a>
             </li>
