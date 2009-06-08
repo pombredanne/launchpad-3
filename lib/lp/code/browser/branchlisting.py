@@ -880,10 +880,9 @@ class PersonBaseBranchListingView(BranchListingView, PersonBranchCountMixin):
 
     @property
     def initial_values(self):
-        return {
-            'lifecycle': BranchLifecycleStatusFilter.CURRENT,
-            'sort_by': BranchListingSort.MOST_RECENTLY_CHANGED_FIRST,
-            }
+        values = super(PersonBaseBranchListingView, self).initial_values
+        values['sort_by'] = BranchListingSort.MOST_RECENTLY_CHANGED_FIRST
+        return values
 
     @property
     def user_in_context_team(self):

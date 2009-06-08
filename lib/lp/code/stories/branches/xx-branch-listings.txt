@@ -179,7 +179,8 @@ helpful message supplied.
     There are branches related to Launchpad Developers...
 
 Subscribed branch listings shouldn't show an option for sorting by "most
-interesting" and should default to sort by project name.
+interesting" and should default to sort the most recently changed branches
+first.
 
     >>> browser.open('http://code.launchpad.dev/~name12/+subscribedbranches')
     >>> table = find_tag_by_id(browser.contents, 'branchtable')
