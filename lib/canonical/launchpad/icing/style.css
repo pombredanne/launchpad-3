@@ -300,7 +300,11 @@ h3, h4, h5, h6 {font-size: 1em;}
    of the displayed object. It must have zero margin-top. */
 h2, h3, h4, h5, h6 { margin-top: 1em; }
 /* Browsers indent lists inconsistently, so we override them completely: */
-ul {margin-left: 0; padding-left: 22px; /* works for 14px icons */}
+ul {
+  margin-left: 0; 
+  padding-left: 22px;
+  list-style-type: none;
+}
 
 .exception {color: #cc0000;}
 .discreet, .lesser, .duplicate-details {font-size: 90%;}

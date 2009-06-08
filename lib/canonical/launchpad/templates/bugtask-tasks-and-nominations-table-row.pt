@@ -75,17 +75,14 @@
         <div style="text-decoration: none; padding: 0.25em">
           <tal:bugtracker-active
               condition="context/bugwatch/bugtracker/active">
-            <img tal:condition="not:context/bugwatch/last_error_type"
-                 alt="Linked to " src="/@@/bug-remote" />
-            <img tal:condition="context/bugwatch/last_error_type"
-              alt="Error updating bug watch" src="/@@/warning" />
+            <span tal:condition="not:context/bugwatch/last_error_type"
+                  class="sprite bug-remote" />
+            <span tal:condition="context/bugwatch/last_error_type"
+                  src="sprite warning" />
           </tal:bugtracker-active>
-          <img tal:condition="not:context/bugwatch/bugtracker/active"
-              tal:attributes="alt string:Bug watch updates for ${context/bugwatch/bugtracker/title} are disabled.; title string:Bug watch updates for ${context/bugwatch/bugtracker/title} are disabled."
-              src="/@@/warning" />
-          <a tal:replace="structure context/bugwatch/fmt:external-link">
-            Zilla #123
-          </a>
+          <span tal:condition="not:context/bugwatch/bugtracker/active"
+                class="sprite warning" />
+          <a tal:replace="structure context/bugwatch/fmt:external-link" />
         </div>
       </tal:has_watch>
       <tal:has_no_watch condition="not: context/bugwatch">
