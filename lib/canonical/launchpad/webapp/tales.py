@@ -917,7 +917,7 @@ class PersonFormatterAPI(ObjectFormatterAPI):
     """Adapter for `IPerson` objects to a formatted string."""
 
     traversable_names = {'link': 'link', 'url': 'url', 'api_url': 'api_url',
-                         'icon_url': 'icon_url',
+                         'icon': 'icon',
                          'displayname': 'displayname',
                          'unique_displayname': 'unique_displayname',
                          }
@@ -974,10 +974,15 @@ class PersonFormatterAPI(ObjectFormatterAPI):
         person = self._context
         return person.unique_displayname
 
-    def icon_url(self, view_name, rootsite=None):
+    def icon(self, view_name):
         """Return the URL for the person's icon."""
-        return ObjectImageDisplayAPI(self._context).icon_url(
-            rootsite=rootsite)
+        custom_icon = ObjectImageDisplayAPI(self._context)._get_custom_icon()
+        if custom_icon is None:
+            css_class = ObjectImageDisplayAPI(self._context).sprite_css()
+            return '<span class="' + css_class + '"></span>'
+        else:
+            return custom_icon
+
 
 class TeamFormatterAPI(PersonFormatterAPI):
     """Adapter for `ITeam` objects to a formatted string."""
