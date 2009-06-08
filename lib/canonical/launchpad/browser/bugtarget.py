@@ -45,6 +45,7 @@ from canonical.launchpad.browser.feeds import (
 from canonical.launchpad.interfaces.bugsupervisor import IHasBugSupervisor
 from canonical.launchpad.interfaces.bugtarget import (
     IBugTarget, IOfficialBugTagTargetPublic, IOfficialBugTagTargetRestricted)
+from canonical.launchpad.interfaces.bug import IBugSet
 from canonical.launchpad.interfaces.bugtask import (
     BugTaskStatus, IBugTaskSet, UNRESOLVED_BUGTASK_STATUSES)
 from canonical.launchpad.interfaces.launchpad import (
@@ -828,31 +829,8 @@ class FilebugShowSimilarBugsView(FileBugViewBase):
         # down the query significantly.
         matching_bugtasks = matching_bugtasks.prejoin([])
 
-        # XXX: Bjorn Tillenius 2006-12-13 bug=75764
-        #      We might end up returning less than :limit: bugs, but in
-        #      most cases we won't, and '4*limit' is here to prevent
-        #      this page from timing out in production. Later I'll fix
-        #      this properly by selecting distinct Bugs directly
-        #      If matching_bugtasks isn't sliced, it will take a long time
-        #      to iterate over it, even over only 10, because
-        #      Transaction.iterSelect() listifies the result.
-        # We select more than :self._MATCHING_BUGS_LIMIT: since if a bug
-        # affects more than one source package, it will be returned more
-        # than one time. 4 is an arbitrary number that should be large
-        # enough.
-        matching_bugs = []
-        matching_bugs_limit = self._MATCHING_BUGS_LIMIT
-        for bugtask in matching_bugtasks[:4*matching_bugs_limit]:
-            bug = bugtask.bug
-            duplicateof = bug.duplicateof
-            if duplicateof is not None:
-                bug = duplicateof
-            if not check_permission('launchpad.View', bug):
-                continue
-            if bug not in matching_bugs:
-                matching_bugs.append(bug)
-                if len(matching_bugs) >= matching_bugs_limit:
-                    break
+        matching_bugs = getUtility(IBugSet).getDistinctBugsForBugTasks(
+            matching_bugtasks, self.user, self._MATCHING_BUGS_LIMIT)
 
         return matching_bugs
 
