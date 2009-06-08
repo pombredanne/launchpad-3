@@ -32,7 +32,7 @@ class IBranchJob(Interface):
     """A job related to a branch."""
 
     branch = Object(
-        title=_('Branch to use for this diff'), required=True,
+        title=_('Branch to use for this job.'), required=False,
         schema=IBranch)
 
     job = Object(schema=IJob, required=True)
