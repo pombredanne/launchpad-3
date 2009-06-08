@@ -12,14 +12,11 @@ from storm.store import Store
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.launchpad.database.archive import Archive
-from canonical.launchpad.database.publishing import (
-    SourcePackagePublishingHistory)
 from canonical.launchpad.helpers import emailPeople
-from canonical.launchpad.interfaces.archive import ArchivePurpose
-from canonical.launchpad.interfaces.distribution import IDistributionSet
-from canonical.launchpad.scripts.base import LaunchpadScript
 from canonical.launchpad.webapp import canonical_url
+from lp.services.scripts.base import LaunchpadScript
+from lp.soyuz.interfaces.archive import ArchivePurpose
+from lp.registry.interfaces.distribution import IDistributionSet
 
 
 class PPAHelperScript(LaunchpadScript):
@@ -43,6 +40,10 @@ class PPAHelperScript(LaunchpadScript):
 
 
     def getActivePPAs(self):
+        # Avoiding circular imports.
+        from lp.soyuz.model.archive import Archive
+        from lp.soyuz.model.publishing import SourcePackagePublishingHistory
+
         ubuntu = getUtility(IDistributionSet)['ubuntu']
         store = Store.of(ubuntu)
         origin = (
