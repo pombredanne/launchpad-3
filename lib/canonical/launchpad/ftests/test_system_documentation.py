@@ -333,7 +333,7 @@ class ProcessMailLayer(LaunchpadZopelessLayer):
         # to emailinterface.txt.disabled, so when this test is
         # reinstated it will be need to be changed back.
         # '../../../lp/answers/doc/emailinterface.txt',
-        '../../../lp/bugs/doc/bugs-emailinterface.txt',
+        '../../../lp/bugs/tests/bugs-emailinterface.txt',
         '../../../lp/bugs/doc/bugs-email-affects-path.txt',
         '../doc/emailauthentication.txt',
         ]
