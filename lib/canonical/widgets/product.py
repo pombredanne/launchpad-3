@@ -235,7 +235,11 @@ class LicenseWidget(CheckBoxMatrixWidget):
         # in the URL to the license, which is stored in the DBItem's
         # description.
         value = super(LicenseWidget, self).textForValue(term)
-        return '<a href="%s">%s</a>' % (term.value.description, value)
+        if term.value.url is None:
+            # There's no link.
+            return value
+        else:
+            return '<a href="%s">%s</a>' % (term.value.url, value)
 
     def __call__(self):
         self.checkbox_matrix = super(LicenseWidget, self).__call__()

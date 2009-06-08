@@ -236,7 +236,7 @@ license policy.
     27
     >>> len(soup.table('input'))
     27
-    >>> print soup.a['href']
+    >>> print soup.p.a['href']
     https://help.launchpad.net/Legal/ProjectLicensing
 
 No licenses are selected.
@@ -252,14 +252,19 @@ One license, the GNU GPL v2, is selected.
     >>> request = LaunchpadTestRequest(form=form)
     >>> license_widget = LicenseWidget(licenses_field, vtype, request)
 
-    >>> def print_checked_items(html):
+    >>> def print_checked_items(html, links=False):
     ...     soup = BeautifulSoup(html)
     ...     labels = soup('label')
     ...     for label in labels:
     ...         if label.next.get('checked'):
-    ...             print '(*)', extract_text(label)
+    ...             print '(*)',
     ...         else:
-    ...             print '( )', extract_text(label)
+    ...             print '( )',
+    ...         print extract_text(label),
+    ...         if links and label.a is not None:
+    ...             print '<%s>' % label.a.get('href')
+    ...         else:
+    ...             print
 
     >>> license_widget.getInputValue()
     Set([<DBItem License.GNU_GPL_V2, (130) ...>])
@@ -359,4 +364,23 @@ that is used by newer project such as Parrot.
     ...
     (*) Artistic License 1.0
     (*) Artistic License 2.0
+    ...
+
+Many licenses have links to the official pages describing their licenses.
+
+    >>> print_checked_items(license_widget(), links=True)
+    ( ) Academic Free License <http://www.opensource.org/licenses/afl-3.0.php>
+    ...
+    (*) Artistic License 1.0
+        <http://opensource.org/licenses/artistic-license-1.0.php>
+    (*) Artistic License 2.0
+        <http://www.opensource.org/licenses/artistic-license-2.0.php>
+    ...
+
+But not all of them.
+
+    >>> print_checked_items(license_widget(), links=True)
+    ( ) Academic Free License <http://www.opensource.org/licenses/afl-3.0.php>
+    ...
+    ( ) Perl License
     ...

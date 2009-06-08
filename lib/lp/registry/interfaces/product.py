@@ -183,61 +183,64 @@ class License(DBEnumeratedType):
         'DONT_KNOW', 'OTHER_PROPRIETARY', 'OTHER_OPEN_SOURCE')
 
     ACADEMIC = DBItem(10, "Academic Free License",
-                      'http://www.opensource.org/licenses/afl-3.0.php')
+                      url='http://www.opensource.org/licenses/afl-3.0.php')
     AFFERO = DBItem(20, "GNU Affero GPL v3",
-                    'http://www.opensource.org/licenses/agpl-v3.html')
+                    url='http://www.opensource.org/licenses/agpl-v3.html')
     APACHE = DBItem(30, "Apache License",
-                    'http://www.opensource.org/licenses/apache2.0.php')
+                    url='http://www.opensource.org/licenses/apache2.0.php')
     ARTISTIC = DBItem(
         40, "Artistic License 1.0",
-        'http://opensource.org/licenses/artistic-license-1.0.php')
+        url='http://opensource.org/licenses/artistic-license-1.0.php')
     ARTISTIC_2_0 = DBItem(
         45, 'Artistic License 2.0',
-        'http://www.opensource.org/licenses/artistic-license-2.0.php')
+        url='http://www.opensource.org/licenses/artistic-license-2.0.php')
     BSD = DBItem(50, "Simplified BSD License",
-                 'http://www.opensource.org/licenses/bsd-license.php')
+                 url='http://www.opensource.org/licenses/bsd-license.php')
     COMMON_PUBLIC = DBItem(80, "Common Public License",
-                           'http://www.opensource.org/licenses/cpl1.0.php')
+                           url='http://www.opensource.org/licenses/cpl1.0.php')
     ECLIPSE = DBItem(90, "Eclipse Public License",
-                     'http://www.opensource.org/licenses/eclipse-1.0.php')
+                     url='http://www.opensource.org/licenses/eclipse-1.0.php')
     EDUCATIONAL_COMMUNITY = DBItem(
         100, "Educational Community License",
-        'http://www.opensource.org/licenses/ecl2.php')
+        url='http://www.opensource.org/licenses/ecl2.php')
     GNU_GPL_V2 = DBItem(130, "GNU GPL v2",
-                        'http://www.opensource.org/licenses/gpl-2.0.php')
+                        url='http://www.opensource.org/licenses/gpl-2.0.php')
     GNU_GPL_V3 = DBItem(135, "GNU GPL v3",
-                        'http://www.opensource.org/licenses/gpl-3.0.html')
-    GNU_LGPL_V2_1 = DBItem(150, "GNU LGPL v2.1",
-                           'http://www.opensource.org/licenses/lgpl-2.1.php')
-    GNU_LGPL_V3 = DBItem(155, "GNU LGPL v3",
-                         'http://www.opensource.org/licenses/lgpl-3.0.html')
+                        url='http://www.opensource.org/licenses/gpl-3.0.html')
+    GNU_LGPL_V2_1 = DBItem(
+        150, "GNU LGPL v2.1",
+        url='http://www.opensource.org/licenses/lgpl-2.1.php')
+    GNU_LGPL_V3 = DBItem(
+        155, "GNU LGPL v3",
+        url='http://www.opensource.org/licenses/lgpl-3.0.html')
     MIT = DBItem(160, "MIT / X / Expat License",
-                 'http://www.opensource.org/licenses/mit-license.php')
+                 url='http://www.opensource.org/licenses/mit-license.php')
     MPL = DBItem(170, "Mozilla Public License",
-                 'http://www.opensource.org/licenses/mozilla1.1.php')
-    OPEN_SOFTWARE = DBItem(190, "Open Software License v 3.0",
-                           'http://www.opensource.org/licenses/osl-3.0.php')
+                 url='http://www.opensource.org/licenses/mozilla1.1.php')
+    OPEN_SOFTWARE = DBItem(
+        190, "Open Software License v 3.0",
+        url='http://www.opensource.org/licenses/osl-3.0.php')
     # XXX BarryWarsaw 08-Jun-2009 There is really no such thing as the "Perl
     # License".  See bug 326308 for details.  We can't remove this option
     # because of the existing data in production, however the plan is to hide
     # this choice from users during project creation as part of bug 333932.
-    PERL = DBItem(200, "Perl License", 'n/a')
+    PERL = DBItem(200, "Perl License")
     PHP = DBItem(210, "PHP License",
-                 'http://www.opensource.org/licenses/php.php')
+                 url='http://www.opensource.org/licenses/php.php')
     PUBLIC_DOMAIN = DBItem(
         220, "Public Domain",
-        'https://answers.launchpad.net/launchpad/+question/73644')
+        url='https://answers.launchpad.net/launchpad/+faq/564')
     PYTHON = DBItem(
         230, "Python License",
-        'http://www.opensource.org/licenses/PythonSoftFoundation.php')
+        url='http://www.opensource.org/licenses/PythonSoftFoundation.php')
     ZPL = DBItem(280, "Zope Public License",
-                 'http://www.opensource.org/licenses/zpl.php')
+                 url='http://www.opensource.org/licenses/zpl.php')
     CC_BY = DBItem(300, 'Creative Commons - Attribution',
-                   'http://creativecommons.org/about/licenses')
+                   url='http://creativecommons.org/about/licenses')
     CC_BY_SA = DBItem(310, 'Creative Commons - Attribution Share Alike',
-                      'http://creativecommons.org/about/licenses')
+                      url='http://creativecommons.org/about/licenses')
     CC_0 = DBItem(320, 'Creative Commons - No Rights Reserved',
-                  'http://creativecommons.org/about/cc0')
+                  url='http://creativecommons.org/about/cc0')
     # This is a placeholder "license" for users who know they want something
     # open source but haven't yet chosen a license for their project.  We do
     # not want to block them from registering their project, but this choice
