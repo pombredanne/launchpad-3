@@ -134,7 +134,7 @@
 
       <tal:upstreamtask
           condition="python:context.product"
-          define="omit_required default;
+          define="omit_required python:True;
                   error python:view.getFieldError('product')">
         <tr>
           <td colspan="2">
@@ -253,7 +253,7 @@
       <textarea
         cols="62"
         rows="4"
-        tal:content="request/comment_on_change|nothing"
+        tal:content="request/comment_on_change|default"
         tal:attributes="id string:${view/prefix}.comment_on_change;
                         name string:${view/prefix}.comment_on_change"
       ></textarea>

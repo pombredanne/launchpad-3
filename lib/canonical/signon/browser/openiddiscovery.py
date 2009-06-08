@@ -10,9 +10,10 @@ __all__ = [
 from openid.yadis.accept import getAcceptable
 from openid.yadis.constants import YADIS_CONTENT_TYPE, YADIS_HEADER_NAME
 
-from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.component import getUtility
 from zope.interface import implements
+
+from z3c.ptcompat import ViewPageTemplateFile
 
 from canonical.cachedproperty import cachedproperty
 from canonical.signon.adapters.openidserver import CurrentOpenIDEndPoint

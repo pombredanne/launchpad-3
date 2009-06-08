@@ -35,6 +35,39 @@ class BranchScanner:
         self.ztm = ztm
         self.log = log
 
+    def _failsafe(self, log_message, default, function, *args, **kwargs):
+        """Run 'function', making sure it doesn't raise an exception.
+
+        If 'function' does raise an exception, we log it.
+
+        :param log_message: The message to log if 'function' raises.
+        :param default: The value to return if 'function' raises.
+        :param function: The function to call, followed by args and kwargs.
+        :return: The return value of 'function', or 'default' if 'function'
+            raises.
+        """
+        try:
+            return function(*args, **kwargs)
+        except (KeyboardInterrupt, SystemExit):
+            raise
+        except:
+            self.log.exception(log_message)
+            return default
+
+    def _safe_str(self, obj, unknown='Error while getting str()'):
+        """Safely get str(obj), logging any exceptions."""
+        return self._failsafe(unknown, unknown, str, obj)
+
+    def _safe_getattr(self, obj, name, default='UNKNOWN'):
+        """Safely get the 'name' attribute of 'obj'.
+
+        If getting the attribute raises an exception, log that exception
+        and return 'default'.
+        """
+        return self._failsafe(
+            "Couldn't get %s" % name,
+            default, getattr, obj, name, default)
+
     def scanBranches(self, branches):
         """Scan 'branches'."""
         for branch in branches:
@@ -49,7 +82,11 @@ class BranchScanner:
                 # Bugs or error conditions when scanning any given branch must
                 # not prevent scanning the other branches. Log the error and
                 # keep going.
-                self.logScanFailure(branch, str(e))
+                exception_message = self._safe_str(
+                    e, 'ERROR WHILE GETTING EXCEPTION MESSAGE')
+                self._failsafe(
+                    'Error while trying to log: %s' % exception_message,
+                    None, self.logScanFailure, branch, exception_message)
 
     def scanAllBranches(self):
         """Run Bzrsync on all branches, and intercept most exceptions."""
@@ -73,23 +110,33 @@ class BranchScanner:
             bzrsync = BzrSync(self.ztm, branch, self.log)
         except NotBranchError:
             # The branch is not present in the Warehouse
-            self.logScanFailure(branch, "No branch found")
+            self._failsafe(
+                'Error while logging "No branch found"', None,
+                self.logScanFailure, branch, "No branch found")
             return
         try:
             bzrsync.syncBranchAndClose()
         except ConnectionError, e:
             # A network glitch occured. Yes, that does happen.
-            self.logScanFailure(branch, "Internal network failure: %s" % e)
+            exception_message = self._safe_str(e, "Unknown connection error")
+            self._failsafe(
+                ('Error while logging: %s' % exception_message), None,
+                self.logScanFailure, branch,
+                "Internal network failure: %s" % e)
 
     def logScanFailure(self, branch, message="Failed to scan"):
         """Log diagnostic for branches that could not be scanned."""
+        # I will buy a bottle of whisky for the first person to observe this
+        # method raising an error in production, jml 2009-06-04.
+        unique_name = self._safe_getattr(branch, 'unique_name')
         request = errorlog.ScriptRequest([
-            ('branch.id', branch.id),
-            ('branch.unique_name', branch.unique_name),
-            ('branch.url', branch.url),
-            ('branch.warehouse_url', branch.warehouse_url),
+            ('branch.id', self._safe_getattr(branch, 'id')),
+            ('branch.unique_name', unique_name),
+            ('branch.url', self._safe_getattr(branch, 'url')),
+            ('branch.warehouse_url',
+             self._safe_getattr(branch, 'warehouse_url')),
             ('error-explanation', message)])
-        request.URL = canonical_url(branch)
+        request.URL = self._failsafe(
+            "Couldn't get canonical_url", "UNKNOWN", canonical_url, branch)
         errorlog.globalErrorUtility.raising(sys.exc_info(), request)
-        self.log.info('%s: %s (%s)',
-            request.oopsid, message, branch.unique_name)
+        self.log.info('%s: %s (%s)', request.oopsid, message, unique_name)
