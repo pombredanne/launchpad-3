@@ -52,7 +52,7 @@
                   Y.get('#spinner').setStyle('display', 'none');
                   // Scroll to the most recent milestones or
                   // releases on the development focus series.
-                  window.scrollBy(window.scrollMaxX, 0);
+                  graph.scroll_to_last_development_focus_landmark();
               }
           }
 
