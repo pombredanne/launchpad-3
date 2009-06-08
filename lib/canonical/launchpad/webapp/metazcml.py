@@ -4,7 +4,6 @@ __metaclass__ = type
 
 import inspect
 
-import zope.app.form.browser.metaconfigure
 import zope.app.form.browser.metadirectives
 import zope.app.publisher.browser.metadirectives
 import zope.configuration.config
@@ -12,8 +11,6 @@ from zope.app.component.metaconfigure import (
     handler, PublicPermission, utility, view)
 from zope.app.file.image import Image
 from zope.app.pagetemplate.engine import TrustedEngine
-from zope.app.publisher.browser.viewmeta import (
-    page as original_page, pages as original_pages)
 from zope.component import getUtility
 from zope.component.zcml import adapter
 from zope.configuration.fields import (
@@ -31,6 +28,10 @@ from zope.security.proxy import ProxyFactory
 from zope.app.component.contentdirective import ClassDirective
 
 from zope.security.zcml import IPermissionDirective
+
+import z3c.ptcompat.zcml
+from z3c.ptcompat.zcml import page_directive as original_page
+from z3c.ptcompat.zcml import pages_directive as original_pages
 
 from canonical.launchpad.layers import FeedsLayer
 from canonical.launchpad.webapp.interfaces import (
@@ -542,7 +543,7 @@ class IEditFormDirective(
 
 
 class EditFormDirective(
-    zope.app.form.browser.metaconfigure.EditFormDirective):
+    z3c.ptcompat.zcml.EditFormDirective):
 
     # This makes 'facet' a valid attribute for the directive.
     facet = None
@@ -556,7 +557,7 @@ class EditFormDirective(
             new_class = type('SimpleLaunchpadViewClass', (), cdict)
             self.bases += (new_class, )
 
-        zope.app.form.browser.metaconfigure.EditFormDirective.__call__(self)
+        z3c.ptcompat.zcml.EditFormDirective.__call__(self)
 
 
 class IAddFormDirective(
@@ -567,7 +568,7 @@ class IAddFormDirective(
 
 
 class AddFormDirective(
-    zope.app.form.browser.metaconfigure.AddFormDirective):
+    z3c.ptcompat.zcml.AddFormDirective):
 
     # This makes 'facet' a valid attribute for the directive.
     facet = None
@@ -581,7 +582,7 @@ class AddFormDirective(
             new_class = type('SimpleLaunchpadViewClass', (), cdict)
             self.bases += (new_class, )
 
-        zope.app.form.browser.metaconfigure.AddFormDirective.__call__(self)
+        z3c.ptcompat.zcml.AddFormDirective.__call__(self)
 
 
 class IGroupingFacet(IAssociatedWithAFacet):
@@ -599,7 +600,7 @@ class ISchemaDisplayDirective(
 
 
 class SchemaDisplayDirective(
-    zope.app.form.browser.metaconfigure.SchemaDisplayDirective):
+    z3c.ptcompat.zcml.SchemaDisplayDirective):
 
     # This makes 'facet' a valid attribute for the directive.
     facet = None
@@ -613,7 +614,7 @@ class SchemaDisplayDirective(
             new_class = type('SimpleLaunchpadViewClass', (), cdict)
             self.bases += (new_class, )
 
-        zope.app.form.browser.metaconfigure.SchemaDisplayDirective.__call__(
+        z3c.ptcompat.zcml.SchemaDisplayDirective.__call__(
             self)
 
 

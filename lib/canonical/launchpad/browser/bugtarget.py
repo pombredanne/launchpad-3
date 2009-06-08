@@ -26,9 +26,9 @@ from simplejson import dumps
 import tempfile
 import urllib
 
+from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.form.browser import TextWidget
 from zope.app.form.interfaces import InputErrors
-from zope.app.pagetemplate import ViewPageTemplateFile
 from zope.component import getUtility
 from zope.event import notify
 from zope import formlib
