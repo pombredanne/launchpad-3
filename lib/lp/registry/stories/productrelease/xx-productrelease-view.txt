@@ -39,7 +39,8 @@ When a file has been downloaded on the present day, all we can say is that
 it's been downloaded "today".  That's because we don't have the time it was
 downloaded, so we can't say it was downloaded a few minutes/hours ago.
 
-    >>> lfa.updateDownloadCount(datetime.today(), None, 4356)
+    >>> import pytz
+    >>> lfa.updateDownloadCount(datetime.now(pytz.utc).date(), None, 4356)
     >>> anon_browser.reload()
     >>> print extract_text(find_tag_by_id(anon_browser.contents, 'downloads'))
     File                            Description  Downloads
