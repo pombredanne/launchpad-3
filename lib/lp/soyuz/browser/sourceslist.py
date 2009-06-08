@@ -58,17 +58,36 @@ class SourcesListEntriesView(LaunchpadView):
 
     @property
     def default_series_name(self):
-        """Return the name of the default series.
-
-        If sources.list entries should be not have any distro series selected,
-        returns a generic text (YOUR_DISTRO_SERIES_HERE) to note that the user
-        should edit the text before it's useful. If it's shown and there are
-        packages in this PPA, return the latest series in which packages are
-        published. If not, return the name of the current series.
-        """
+        """Return the name of the default series for this view."""
+        # If we have not been provided with any valid distroseries, then
+        # we return the currentseries of the distribution.
         if len(self.terms) == 0:
             return self.context.distribution.currentseries.name
+
+        # If the caller has indicated that there should not be a default
+        # distroseries selected then we return a generic text
+        # to note that the user should select one.
         elif self._initially_without_selection:
             # There are no distro series entries shown.
             return 'YOUR_DISTRO_SERIES_HERE'
+
+        # Otherwise, if the request's user-agent includes the Ubuntu version
+        # number, we check for a corresponding valid distroseries and, if one
+        # is found, return it's name.
+        user_agent = self.request.getHeader('HTTP_USER_AGENT')
+        ubuntu_index = user_agent.find('Ubuntu/')
+        if ubuntu_index > 0:
+            # Great, the browser is telling us the platform is Ubuntu.
+            # Now grab the Ubuntu series/version number:
+            version_index_start = ubuntu_index + 7
+            version_index_end = user_agent.find(' ', version_index_start)
+            version_number = user_agent[
+                version_index_start:version_index_end]
+
+            # Finally, check if this version is one of the available
+            # distroseries for this archive:
+            for term in self.terms:
+                if term.value.version == version_number:
+                    return term.value.name
+
         return self.terms[0].value.name
