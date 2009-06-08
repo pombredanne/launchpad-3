@@ -117,18 +117,17 @@
             </tr>
           </thead>
           <tbody>
-            <tr tal:repeat="file view/product_release_files">
+            <tr tal:repeat="file view/download_files">
               <tal:define-lfa define="lfa file/libraryfile">
               <td>
                 <img alt="download icon" src="/@@/download" />
                 <strong><a
-                  tal:attributes="href python:view.fileURL(file.libraryfile, view.release)"
+                  tal:attributes="href file/url"
                   tal:content="file/libraryfile/filename"
                   >filename</a></strong>
-                (<a tal:attributes="href python:view.md5URL(file.libraryfile)"
+                (<a tal:attributes="href file/md5_url"
                 >md5</a><tal:signature condition="file/signature">,
-                <a tal:attributes="href python:view.fileURL(file.signature)">
-                sig</a></tal:signature>)
+                <a tal:attributes="href file/signature_url">sig</a></tal:signature>)
               </td>
               <td tal:content="file/description">Installer for i386</td>
               <td style="text-align: center;">
