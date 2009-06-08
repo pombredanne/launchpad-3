@@ -1560,7 +1560,9 @@ class ITeamPublic(Interface):
 
     teamdescription = exported(
         Text(title=_('Team Description'), required=False, readonly=False,
-             description=_('Use plain text; URLs will be linkified')),
+             description=_(
+                "Include information on how to get involved with "
+                "development. Use plain text; URLs will be linkified.")),
         exported_as='team_description')
 
     subscriptionpolicy = exported(
