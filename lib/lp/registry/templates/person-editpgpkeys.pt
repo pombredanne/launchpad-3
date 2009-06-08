@@ -28,13 +28,12 @@
       >Informational message.</p>
 
     <div tal:condition="view/invalid_fingerprint" class="error message">
-      A malformed fingerprint was submitted. Did you enter your complete
-      fingerprint correctly? A fingerprint is a long sequence of numbers
-      and letters.  You should use the output produced by the command:
+      There seems to be a problem with the fingerprint you submitted. You can get your gpg fingerprint by opening
+      a terminal and typing:
         <blockquote>
         <kbd>gpg --fingerprint</kbd>
         </blockquote>
-      Please verify and try again.
+      Please try again.
     </div>
 
     <div tal:condition="view/key_already_imported" class="error message">
@@ -106,19 +105,18 @@
     </tal:has_key>
 
     <p>
-      You can register your OpenPGP keys, which are
-      created by software such as GnuPG.
-      These are used to sign <a href="/codeofconduct">codes of conduct</a>,
-      modify bugs through <a
-      href="https://help.launchpad.net/BugTrackerEmailInterface">the email interface</a>,
-      and to build and upload packages using <abbr>Soyuz</abbr>.
-    </p>
+      Sometimes, such as when you're using the bug tracker's email interface, it's not possible to identify
+      yourself to Launchpad with your username and password. Or you might want to sign a
+      <a href="/codeofconduct">code of conduct</a>.</p>
+
+    <p>In both cases, you need to use your OpenPGP key. Here you can tell Launchpad which keys you want to use.
+       (<a href="+help/openpgp-keys.html" target="help">Learn more about OpenPGP keys</a>)</p>
 
     <form tal:condition="context/gpgkeys/count"
           name="gpg_actions" action="" method="POST">
       <input type="hidden" name="action" value="deactivate_gpg" />
 
-      <h2>Active keys</h2>
+      <h2>Your active keys</h2>
 
       <div tal:repeat="key context/gpgkeys">
         <label>
@@ -130,11 +128,8 @@
       </div>
       <div><input type="submit" value="Deactivate Key" /></div>
 
-      <p><dfn>Deactivating</dfn> a key <em>applies only to Launchpad</em>
-      and not anywhere else. If you deactivate a key, it
-      will automatically deactivate any feature that uses that key, such
-      as a signed code of conduct, or the ability to comment on a bug
-      report by e-mail.</p>
+      <p><strong>Note:</strong> If you deactivate a key here, Launchpad will automatically disable any features that
+      use that key, such as a signed code of conduct. Also, the key will be deactivated on Launchpad only.</p>
 
     </form>
 
@@ -161,8 +156,7 @@
 
       <h2>Deactivated keys</h2>
 
-      <p>If you changed your mind about deactivating a key, you can
-      <dfn>reactivate</dfn> it.</p>
+      <p>You can reactivate any of these keys for use in Launchpad whenever you choose.</p>
 
       <div tal:repeat="key context/inactivegpgkeys">
         <label>
@@ -177,21 +171,10 @@
 
     <form name="gpg_actions" action="" method="POST">
       <input type="hidden" name="action" value="claim_gpg" />
-      <h2>Importing an OpenPGP key</h2>
-      <ol>
-        <li>
-          Ensure you already have a key. In a terminal window, enter:
-          <pre>gpg --list-keys <var>your@e-mail.address</var></pre>
-          If you have no key, create one:
-          <pre>gpg --gen-key</pre>
-        </li>
-        <li>
-          Ensure the key has been uploaded to a keyserver. To do this:
-          <pre>gpg --send-key <var>key-id</var></pre>
-        </li>
-        <li>
-          Enter your key fingerprint. Use:
-          <pre>gpg --fingerprint <var>key-id</var></pre>
+      <h2>Import an OpenPGP key</h2>
+
+      <p>To start using an OpenPGP key with your Launchpad account, simply paste its fingerprint below. (<a href="+help/openpgp-key-import-help.html" target="help">How to get the fingerprint</a>)
+
           <table>
             <tbody>
               <tr>
@@ -207,13 +190,12 @@
             </tbody>
           </table>
           <p>
-            Launchpad will e-mail
+            Next, Launchpad will e-mail you using
             <code tal:content="context/preferredemail/email"/> with instructions
             on finishing the process.
           </p>
           <div><input type="submit" name="import" value="Import Key"/></div>
-        </li>
-        </ol>
+
       </form>
     </div>
   </body>
