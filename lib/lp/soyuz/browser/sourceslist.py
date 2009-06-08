@@ -49,7 +49,7 @@ class SourcesListEntriesView(LaunchpadView):
     @property
     def plain_series_widget(self):
         """Render a <select> control with no <div>s around it."""
-        return self.series_widget.renderValue(None)
+        return self.series_widget.renderValue(self.default_series)
 
     @property
     def sources_in_more_than_one_series(self):
@@ -57,19 +57,17 @@ class SourcesListEntriesView(LaunchpadView):
         return len(self.terms) > 1
 
     @property
-    def default_series_name(self):
-        """Return the name of the default series for this view."""
+    def default_series(self):
+        """Return the default series for this view."""
         # If we have not been provided with any valid distroseries, then
         # we return the currentseries of the distribution.
         if len(self.terms) == 0:
-            return self.context.distribution.currentseries.name
+            return self.context.distribution.currentseries
 
         # If the caller has indicated that there should not be a default
-        # distroseries selected then we return a generic text
-        # to note that the user should select one.
+        # distroseries selected then we return None.
         elif self._initially_without_selection:
-            # There are no distro series entries shown.
-            return 'YOUR_DISTRO_SERIES_HERE'
+            return None
 
         # Otherwise, if the request's user-agent includes the Ubuntu version
         # number, we check for a corresponding valid distroseries and, if one
@@ -88,6 +86,21 @@ class SourcesListEntriesView(LaunchpadView):
             # distroseries for this archive:
             for term in self.terms:
                 if term.value.version == version_number:
-                    return term.value.name
+                    return term.value
 
-        return self.terms[0].value.name
+        # Otherwise, simply return the first distroseries. The callsite
+        # is repsonsible for ensuring this is the most recent release
+        # with published sources if desired.
+        return self.terms[0].value
+
+    @property
+    def default_series_name(self):
+        """Return the name of the default series for this view."""
+        series = self.default_series
+        if series:
+            return series.name
+        else:
+            # Return the select value for the generic text noting to the
+            # user that they should select a distroseries.
+            return 'YOUR_DISTRO_SERIES_HERE'
+
