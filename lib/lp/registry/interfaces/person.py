@@ -1914,7 +1914,9 @@ class IRequestPeopleMerge(Interface):
     dupeaccount = Choice(
         title=_('Duplicated Account'), required=True,
         vocabulary='PersonAccountToMerge',
-        description=_("The duplicated account you found in Launchpad"))
+        description=_(
+            "The e-mail address or Launchpad ID of the account you want to "
+            "merge into yours."))
 
 
 class IAdminPeopleMergeSchema(Interface):
