@@ -349,7 +349,7 @@ class ProcessMailLayer(LaunchpadZopelessLayer):
             filename = os.path.basename(filepath)
             special[filename] = cls.createLayeredDocFileSuite(filepath)
 
-        for filename in cls.doctests_with_logging:
+        for filepath in cls.doctests_with_logging:
             filename = os.path.basename(filepath)
             special[filename] = cls.createLayeredDocFileSuite(
                 filepath, stdout_logging=True)
