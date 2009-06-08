@@ -40,8 +40,9 @@ from sqlobject import (
     BoolCol, ForeignKey, IntCol, SQLMultipleJoin, SQLObjectNotFound,
     SQLRelatedJoin, StringCol)
 from sqlobject.sqlbuilder import AND, OR, SQLConstant
+from storm import Undef
 from storm.store import EmptyResultSet, Store
-from storm.expr import And, Join, Lower, Or, SQL
+from storm.expr import And, In, Join, Lower, Not, Or, SQL
 from storm.info import ClassAlias
 
 from canonical.config import config
@@ -58,6 +59,7 @@ from canonical.lazr.utils import get_current_browser_request, safe_hasattr
 
 from canonical.launchpad.database.account import Account
 from canonical.launchpad.database.bugtarget import HasBugsBase
+from canonical.launchpad.database.stormsugar import StartsWith
 from lp.registry.model.karma import KarmaCategory
 from lp.services.worlddata.model.language import Language
 from canonical.launchpad.database.oauth import (
@@ -2497,8 +2499,7 @@ class PersonSet:
                 TeamParticipation.person = ?
                 AND Person.teamowner IS NOT NULL
                 AND Person.visibility != ?
-                """, (logged_in_user, PersonVisibility.PUBLIC.value),
-                tables=['Person', 'TeamParticipation'])
+                """, (logged_in_user.id, PersonVisibility.PUBLIC.value))
         else:
             private_query = None
 
@@ -2516,28 +2517,31 @@ class PersonSet:
     def _teamEmailQuery(self, text):
         """Product the query for team email addresses."""
         privacy_query = self._teamPrivacyQuery()
-        team_email_query = SQL("""
-            TeamParticipation.team = Person.id
-            AND Person.teamowner IS NOT NULL
-            AND Person.merged IS NULL
-            AND EmailAddress.person = Person.id
-            AND lower(EmailAddress.email) LIKE ? || '%%'
-            """, (quote_like(text),),
-                  tables=[#'Person',
-                          'EmailAddress',
-                          'TeamParticipation'])
-        return And(privacy_query, team_email_query)
+        # XXX: BradCrittenden 2009-06-08 bug=244768:  Use Not(Bar.foo == None)
+        # instead of Bar.foo != None.
+        team_email_query = And(
+            privacy_query,
+            TeamParticipation.team == Person.id,
+            Not(Person.teamowner == None),
+            Person.merged == None,
+            EmailAddress.person == Person.id,
+            StartsWith(Lower(EmailAddress.email), text)
+            )
+        return team_email_query
 
     def _teamNameQuery(self, text):
         """Produce the query for team names."""
         privacy_query = self._teamPrivacyQuery()
-        team_name_query = SQL("""
-            TeamParticipation.team = Person.id
-            AND Person.teamowner IS NOT NULL
-            AND Person.merged IS NULL
-            AND Person.fti @@ ftq(?)
-            """, (text,), tables=['TeamParticipation'])
-        return And(privacy_query, team_name_query)
+        # XXX: BradCrittenden 2009-06-08 bug=244768:  Use Not(Bar.foo == None)
+        # instead of Bar.foo != None.
+        team_name_query = And(
+            privacy_query,
+            TeamParticipation.team == Person.id,
+            Not(Person.teamowner == None),
+            Person.merged == None,
+            SQL("Person.fti @@ ftq(?)", (text,))
+            )
+        return team_name_query
 
     def find(self, text):
         """See `IPersonSet`."""
@@ -2547,36 +2551,35 @@ class PersonSet:
 
         orderBy = Person._sortingColumnsForSetOperations
         text = text.lower()
-        #text = text.encode('ascii', 'strict')
-
+        inactive_statuses = tuple(
+            status.value for status in INACTIVE_ACCOUNT_STATUSES)
         # Teams may not have email addresses, so we need to either use a LEFT
         # OUTER JOIN or do a UNION between four queries. Using a UNION makes
         # it a lot faster than with a LEFT OUTER JOIN.
-        #args = (quote_like(text),) + sqlvalues(INACTIVE_ACCOUNT_STATUSES)
-        #args = (text,) + sqlvalues(INACTIVE_ACCOUNT_STATUSES)
-        person_email_query = SQL("""
-            Person.teamowner IS NULL
-            AND Person.merged IS NULL
-            AND EmailAddress.person = Person.id
-            AND lower(EmailAddress.email) LIKE ? || '%%'
-            AND Person.account = Account.id
-            AND Account.status NOT IN ?
-            """, (quote_like(text), tuple(status.value for status in INACTIVE_ACCOUNT_STATUSES)),
-            tables=['EmailAddress', 'Account'])
+        person_email_query = And(
+            Person.teamowner == None,
+            Person.merged == None,
+            EmailAddress.person == Person.id,
+            Person.account == Account.id,
+            Not(In(Account.status, inactive_statuses)),
+            StartsWith(Lower(EmailAddress.email), text)
+            )
 
         store = IStore(Person)
 
+        # The call to order_by() is necessary to avoid having the default
+        # ordering applied.  The final result set will have the appropriate
+        # order by set.
         results = store.find(
             Person, person_email_query).order_by()
 
-        person_name_query = SQL("""
-            Person.teamowner IS NULL
-            AND Person.merged is NULL
-            AND Person.fti @@ ftq(?)
-            AND Person.account = Account.id
-            AND Account.status NOT IN %s
-            """, (text, tuple(status.value for status in INACTIVE_ACCOUNT_STATUSES)),
-            tables=['Account'])
+        person_name_query = And(
+            Person.teamowner == None,
+            Person.merged == None,
+            Person.account == Account.id,
+            Not(In(Account.status, inactive_statuses)),
+            SQL("Person.fti @@ ftq(?)", (text, ))
+            )
 
         results = results.union(store.find(
             Person, person_name_query)).order_by()
@@ -2584,9 +2587,9 @@ class PersonSet:
         team_email_query = self._teamEmailQuery(text)
         results = results.union(store.find(Person, team_email_query)).order_by()
 
-##         team_name_query = self._teamNameQuery(text)
+        team_name_query = self._teamNameQuery(text)
 
-##         results = results.union(store.find(Person, team_name_query))
+        results = results.union(store.find(Person, team_name_query)).order_by()
 
         return results.order_by(orderBy)
 
@@ -2596,45 +2599,54 @@ class PersonSet:
         """See `IPersonSet`."""
         orderBy = Person._sortingColumnsForSetOperations
         text = text.lower()
-        base_query = [
-                'Person.teamowner IS NULL',
-                'Person.merged IS NULL',
-                ]
+        store = IStore(Person)
+        inactive_statuses = tuple(
+            status.value for status in INACTIVE_ACCOUNT_STATUSES)
+        base_query = And(
+            Person.teamowner == None,
+            Person.merged == None
+            )
+
         clause_tables = []
 
         if exclude_inactive_accounts:
             clause_tables.append('Account')
-            base_query.append('Person.account = Account.id')
-            base_query.append(
-                'Account.status NOT IN (%s)'
-                % ','.join(sqlvalues(*INACTIVE_ACCOUNT_STATUSES)))
-
+            base_query = And(
+                base_query,
+                Person.account == Account.id,
+                Not(In(Account.status, inactive_statuses))
+                )
         email_clause_tables = clause_tables + ['EmailAddress']
         if must_have_email:
             clause_tables = email_clause_tables
-            base_query.append('EmailAddress.person = Person.id')
+            base_query = And(
+                base_query,
+                EmailAddress.person == Person.id
+                )
 
         # Short circuit for returning all users in order
         if not text:
-            return Person.select(
-                    ' AND '.join(base_query), clauseTables=clause_tables)
+            #query = SQL(' AND '.join(base_query), tables=clause_tables)
+            results = store.find(Person, base_query).order_by(orderBy)
+            return results
 
         # We use a UNION here because this makes things *a lot* faster
         # than if we did a single SELECT with the two following clauses
         # ORed.
-        email_query = base_query + [
-                'EmailAddress.person = Person.id',
-                "lower(EmailAddress.email) LIKE %s || '%%'" % quote_like(text)
-                ]
-        name_query = base_query + ["Person.fti @@ ftq(%s)" % quote(text)]
+        email_query = And(
+            base_query,
+            EmailAddress.person == Person.id,
+            StartsWith(Lower(EmailAddress.email), text)
+            )
 
-        results = Person.select(
-                ' AND '.join(email_query), clauseTables=email_clause_tables)
-        results = results.union(
-                Person.select(
-                    ' AND '.join(name_query), clauseTables=clause_tables))
-
-        return results.orderBy(orderBy)
+        name_query = And(
+            base_query,
+            SQL("Person.fti @@ ftq(?)", (text,))
+            )
+        email_results = store.find(Person, email_query).order_by()
+        name_results = store.find(Person, name_query).order_by()
+        combined_results = email_results.union(name_results)
+        return combined_results.order_by(orderBy)
 
     def findTeam(self, text=""):
         """See `IPersonSet`."""
@@ -2644,16 +2656,12 @@ class PersonSet:
         # OUTER JOIN or do a UNION between two queries. Using a UNION makes
         # it a lot faster than with a LEFT OUTER JOIN.
         email_query = self._teamEmailQuery(text)
-
-        email_results = Person.select(email_query,
-                                      clauseTables=['EmailAddress',
-                                                    'TeamParticipation'])
+        store = IStore(Person)
+        email_results = store.find(Person, email_query).order_by()
         name_query = self._teamNameQuery(text)
-
-        name_results = Person.select(name_query,
-                                     clauseTables=['TeamParticipation'])
-        combined_results = email_results.union(name_results, orderBy=orderBy)
-        return combined_results
+        name_results = store.find(Person, name_query).order_by()
+        combined_results = email_results.union(name_results)
+        return combined_results.order_by(orderBy)
 
     def get(self, personid):
         """See `IPersonSet`."""

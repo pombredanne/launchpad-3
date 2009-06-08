@@ -242,6 +242,24 @@ def print_feedback_messages(content):
     for message in get_feedback_messages(content):
         print message
 
+def print_table(content, columns=None, skip_rows=None, sep="\t"):
+    """Given a <table> print the content of each row.
+
+    The table is printed using `sep` as the separator.
+    :param columns   a list of the column numbers (zero-based) to be included
+                     in the output.  If None all columns are printed.
+    :param skip_rows a list of row numbers (zero-based) to be skipped.  If
+                     None no rows are skipped.
+    :param sep       the separator to be used between output items.
+    """
+    for row_num, row in enumerate(content.findAll('tr')):
+        if skip_rows is not None and row_num in skip_rows:
+            continue
+        row_content = []
+        for col_num,item in enumerate(row.findAll('td')):
+            if columns is None or col_num in columns:
+                row_content.append(extract_text(item))
+        print sep.join(row_content)
 
 def print_radio_button_field(content, name):
     """Find the input called field.name, and print a friendly representation.
@@ -633,6 +651,7 @@ def setUpGlobs(test):
     test.globs['find_main_content'] = find_main_content
     test.globs['get_feedback_messages'] = get_feedback_messages
     test.globs['print_feedback_messages'] = print_feedback_messages
+    test.globs['print_table'] = print_table
     test.globs['extract_link_from_tag'] = extract_link_from_tag
     test.globs['extract_text'] = extract_text
     test.globs['login'] = login

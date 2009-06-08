@@ -902,8 +902,12 @@ include them as well.
 
 Searching only for Teams based on their names or email addresses:
 
+    >>> from storm.tracer import debug
+    >>> import sys
+    >>> #debug(True)
     >>> print_people(personset.findTeam('support'))
     Ubuntu Team (ubuntu-team): [u'support@ubuntu.com']
+    >>> #debug(False)
 
     >>> print_people(personset.findTeam('translators'))
     Ubuntu Translators (ubuntu-translators): []
@@ -937,6 +941,16 @@ the previous search will include myteam in the results.
     Ubuntu Team (ubuntu-team): [u'support@ubuntu.com']
     Warty Gnome Team (warty-gnome): []
     Warty Security Team (name20): []
+
+Searching for users with non-ASCII characters in their name works.
+
+    >>> print_people(personset.find(u'P\xf6ll\xe4'))
+    Matti Pöllä (mpo): [u'mpo@iki.fi']
+
+    >>> bjorns_team = factory.makeTeam(salgado, name='bjorn-team',
+    ...     displayname=u'Team Bj\xf6rn')
+    >>> print_people(personset.findTeam(u'Bj\xf6rn'))
+    Team Bj... (bjorn-team): []
 
 You can get the top overall contributors, that is, the people with the
 most karma.
