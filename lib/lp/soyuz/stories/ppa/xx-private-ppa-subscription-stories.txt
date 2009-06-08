@@ -216,8 +216,10 @@ snippet is displayed.as well as a notification message.
     Custom sources.list entries
     ...
     # Personal subscription of Joe Smith to PPA for Celso Providelo
-    deb http://joesmith:...@private-ppa.launchpad.dev/cprov/ppa/ubuntu hoary main
-    deb-src http://joesmith:...@private-ppa.launchpad.dev/cprov/ppa/ubuntu hoary main
+    deb http://joesmith:...@private-ppa.launchpad.dev/cprov/ppa/ubuntu
+        breezy-autotest main
+    deb-src http://joesmith:...@private-ppa.launchpad.dev/cprov/ppa/ubuntu
+        breezy-autotest main
     ...
 
     >>> for msg in get_feedback_messages(joe_browser.contents):
@@ -314,8 +316,10 @@ snippet is displayed.as well as a notification message.
     Custom sources.list entries
     ...
     # Personal subscription of Mark Shuttleworth to PPA for Celso Providelo
-    deb http://sabdfl:...@private-ppa.launchpad.dev/cprov/ppa/ubuntu hoary main
-    deb-src http://sabdfl:...@private-ppa.launchpad.dev/cprov/ppa/ubuntu hoary main
+    deb http://sabdfl:...@private-ppa.launchpad.dev/cprov/ppa/ubuntu
+        breezy-autotest main
+    deb-src http://sabdfl:...@private-ppa.launchpad.dev/cprov/ppa/ubuntu
+        breezy-autotest main
     ...
 
     >>> for msg in get_feedback_messages(mark_browser.contents):
