@@ -26,11 +26,10 @@ from lp.code.interfaces.branch import IBranchCloud, IBranchSet
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.interfaces.codeimport import ICodeImportSet
 from canonical.launchpad.interfaces.launchpad import IBazaarApplication
-from lp.registry.interfaces.product import IProduct, IProductSet
+from lp.registry.interfaces.product import IProductSet
 from canonical.launchpad.webapp import (
     ApplicationMenu, enabled_with_permission, LaunchpadView, Link)
 
-from lazr.delegates import delegates
 
 class BazaarBranchesMenu(ApplicationMenu):
     usedfor = IBazaarApplication
@@ -73,8 +72,7 @@ class BazaarApplicationView(LaunchpadView):
         # XXX: TimPenhey 2009-06-08 bug=324546
         # Until there is an API to do this nicely, shove the launchpad.view
         # permission into the request cache directly.
-        request = self.view.request
-        permission_cache = request.annotations.setdefault(
+        permission_cache = self.request.annotations.setdefault(
             LAUNCHPAD_SECURITY_POLICY_CACHE_KEY,
             weakref.WeakKeyDictionary())
         for branch in branches:
