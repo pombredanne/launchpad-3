@@ -1,4 +1,5 @@
 # Copyright 2009 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=F0401
 
 """Unit tests for SourceListEntriesView."""
 

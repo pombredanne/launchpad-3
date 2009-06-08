@@ -1,4 +1,5 @@
 # Copyright 2007 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=F0401
 
 """Browser views for sources list entries."""
 
@@ -103,7 +104,7 @@ class SourcesListEntriesView(LaunchpadView):
     def default_series_name(self):
         """Return the name of the default series for this view."""
         series = self.default_series
-        if series:
+        if series is not None:
             return series.name
         else:
             # Return the select value for the generic text noting to the
