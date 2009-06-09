@@ -319,13 +319,12 @@ class SearchTag(Tag):
         """Make sure the value is a valid search tag.
 
         A valid search tag is a valid name or a valid name prepended
-        with an exclamation mark, denoting "not this tag". A simple
-        wildcard - an asterisk - is also valid, with or without a
-        leading exclamation mark.
+        with a hypehn, denoting "not this tag". A simple wildcard - an
+        asterisk - is also valid, with or without a leading hyphen.
         """
-        if value in ('*', '!*'):
+        if value in ('*', '-*'):
             return True
-        elif value.startswith('!'):
+        elif value.startswith('-'):
             return super(SearchTag, self).constraint(value[1:])
         else:
             return super(SearchTag, self).constraint(value)
