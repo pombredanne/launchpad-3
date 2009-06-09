@@ -123,12 +123,15 @@ class ISourcePackageRelease(Interface):
         "source package is published in.")
     upload_archive = Attribute(
         "The archive for which this package was first uploaded in Launchpad")
-    upload_changesfile = Attribute(
-        "The LibraryFileAlias for the changesfile this package was uploaded "
-        "with.")
 
-    def getQueueRecord(distroseries=None):
-        """Return the `PackageUpload` record for this source package."""
+    upload_changesfile = Attribute(
+        "The `LibraryFileAlias` object containing the changesfile which "
+        "was originally uploaded with this source package release. It's "
+        "'None' if it is a gina-inserted record.")
+
+    package_upload = Attribute(
+        "The `PackageUpload` record corresponding to original upload of "
+        "this source package release.")
 
     def addFile(file):
         """Add the provided library file alias (file) to the list of files
