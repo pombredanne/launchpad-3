@@ -1,0 +1,114 @@
+= Distributions =
+
+At the top level we provide the collection of all distributions, with
+Ubuntu and its flavours being the first on the list.
+
+    >>> distros = webservice.get("/distros").jsonBody()
+    >>> for entry in distros['entries']:
+    ...     print entry['self_link']
+    http://.../ubuntu
+    http://.../kubuntu
+    http://.../ubuntutest
+    http://.../debian
+    http://.../gentoo
+
+And for every distribution we publish most of its attributes.
+
+    >>> from lazr.restful.testing.webservice import pprint_entry
+    >>> distro = distros['entries'][0]
+    >>> ubuntu = webservice.get(distro['self_link']).jsonBody()
+    >>> pprint_entry(ubuntu)
+    active: True
+    active_milestones_collection_link: u'http://.../ubuntu/active_milestones'
+    all_milestones_collection_link: u'http://.../ubuntu/all_milestones'
+    archives_collection_link: u'http://.../ubuntu/archives'
+    bug_reporting_guidelines: None
+    current_series_link: u'http://.../ubuntu/hoary'
+    date_created: u'2006-10-16T18:31:43.415195+00:00'
+    description: u'Ubuntu is a new approach...'
+    display_name: u'Ubuntu'
+    domain_name: u'ubuntulinux.org'
+    driver_link: None
+    homepage_content: None
+    icon_link: u'http://.../ubuntu/icon'
+    logo_link: u'http://.../ubuntu/logo'
+    main_archive_link: u'http://.../ubuntu/+archive/primary'
+    mugshot_link: u'http://.../ubuntu/mugshot'
+    name: u'ubuntu'
+    official_bug_tags: []
+    owner_link: u'http://.../~ubuntu-team'
+    resource_type_link: u'http://.../#distribution'
+    self_link: u'http://.../ubuntu'
+    series_collection_link: u'http://.../ubuntu/series'
+    summary: u'Ubuntu is a new approach to Linux Distribution...'
+    title: u'Ubuntu Linux'
+
+
+== Distribution Custom Operations ==
+
+Distribution has some custom operations.
+
+"getSeries" returns the named distribution series for the distribution.
+
+    >>> series = webservice.named_get(
+    ...     ubuntu['self_link'], 'getSeries',
+    ...     name_or_version='hoary').jsonBody()
+    >>> print series['self_link']
+    http://.../ubuntu/hoary
+
+Requesting a series that does not exist is a bad request.
+
+    >>> print webservice.named_get(
+    ...     ubuntu['self_link'], 'getSeries',
+    ...     name_or_version='fnord')
+    HTTP/1.1 400 Bad Request
+    ...
+    NoSuchDistroSeries: No such distribution series: 'fnord'.
+
+"getDevelopmentSeries" returns all the distribution series for the
+distribution that are marked as in development.
+
+    >>> dev_series = webservice.named_get(
+    ...     ubuntu['self_link'], 'getDevelopmentSeries').jsonBody()
+    >>> for entry in sorted(dev_series['entries']):
+    ...     print entry['self_link']
+    http://.../ubuntu/hoary
+
+"getMilestone" returns a milestone for the given name, or None if there
+is no milestone for the given name.
+
+    >>> distro = distros['entries'][3]
+    >>> debian = webservice.get(distro['self_link']).jsonBody()
+
+    >>> milestone_3_1 = webservice.named_get(
+    ...     debian['self_link'], "getMilestone", name="3.1").jsonBody()
+    >>> print milestone_3_1['self_link']
+    http://.../debian/+milestone/3.1
+
+    >>> print webservice.named_get(
+    ...     debian['self_link'], "getMilestone", name="fnord").jsonBody()
+    None
+
+"getSourcePackage" returns a distribution source package for the given
+name.
+
+    >>> alsa_utils = webservice.named_get(
+    ...     ubuntu['self_link'], 'getSourcePackage',
+    ...     name='alsa-utils').jsonBody()
+    >>> print alsa_utils['self_link']
+    http://.../ubuntu/+source/alsa-utils
+
+"searchSourcePackages" returns a collection of distribution source
+packages matching (substring) the given text.
+
+    >>> alsa_results = webservice.named_get(
+    ...     ubuntu['self_link'], 'searchSourcePackages',
+    ...     source_match='a').jsonBody()
+
+    >>> for entry in alsa_results['entries']:
+    ...     print entry['self_link']
+    http://.../ubuntu/+source/mozilla-firefox
+    http://.../ubuntu/+source/netapplet
+    http://.../ubuntu/+source/alsa-utils
+    http://.../ubuntu/+source/foobar
+    http://.../ubuntu/+source/commercialpackage

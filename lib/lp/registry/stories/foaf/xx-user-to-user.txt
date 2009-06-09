@@ -4,7 +4,7 @@ A Launchpad user can contact another Launchpad user via a form accessible from
 the recipient's user page.  Let's say for example, that No Privileges Person
 wants to contact Salgado.
 
-    >>> from canonical.launchpad.mail import stub
+    >>> from lp.services.mail import stub
     >>> del stub.test_emails[:]
 
     >>> user_browser.open('http://launchpad.dev/~salgado')
@@ -207,7 +207,6 @@ Foo Bar registers an explicit contact address for Guadamen...
     ...     name='field.contact_address').value = 'foo@example.com'
     >>> admin_browser.getControl('Change').click()
 
-    >>> from canonical.launchpad.mail import stub
     >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
 
     # Extract the link (from the email we just sent) the user will have to

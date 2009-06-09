@@ -23,7 +23,8 @@ from canonical.launchpad.interfaces import (
     CodeImportJobState, CodeImportReviewStatus)
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.codeimportresult import CodeImportResultStatus
-from canonical.launchpad.testing import LaunchpadObjectFactory, time_counter
+from lp.testing import time_counter
+from lp.testing.factory import LaunchpadObjectFactory
 
 
 def get_import_for_branch_name(branch_unique_name):

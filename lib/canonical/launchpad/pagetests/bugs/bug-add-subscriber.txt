@@ -83,7 +83,7 @@ The subscribers portlet now contains the new subscriber's name.
 
 David got a notification, saying that he was subscribed to the bug.
 
-    >>> from canonical.launchpad.mail import stub
+    >>> from lp.services.mail import stub
     >>> len(stub.test_emails)
     1
     >>> print stub.test_emails[0][2]

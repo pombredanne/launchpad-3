@@ -31,14 +31,14 @@ from zope.testing.loggingsupport import Handler
 from canonical.chunkydiff import elided_source
 from canonical.config import config
 from canonical.database.sqlbase import flush_database_updates
-from canonical.launchpad.ftests import ANONYMOUS, login, login_person, logout
 from canonical.launchpad.interfaces import ILaunchBag
 from canonical.launchpad.layers import setFirstLayer
-from canonical.launchpad.testing import LaunchpadObjectFactory
 from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing import reset_logging
+from lp.testing import ANONYMOUS, login, login_person, logout
+from lp.testing.factory import LaunchpadObjectFactory
 
 
 default_optionflags = (doctest.REPORT_NDIFF |

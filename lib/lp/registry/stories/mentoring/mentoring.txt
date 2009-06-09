@@ -596,5 +596,6 @@ And now 'One Membership' is a subscriber:
 
     >>> browser.open('http://launchpad.dev/bugs/10/+bug-portlet-subscribers-content')
     >>> print_direct_subscribers(browser.contents)
+    One Membership (Subscribed themselves) (Unsubscribe One Membership)
     Foo Bar (Subscribed by Launchpad Janitor)
-    One Membership (Subscribed themselves)
+

@@ -28,7 +28,7 @@ he registered for.
     ...     anon_browser.contents, "direct-answer-contacts-for-list")
     >>> print extract_text(content).encode('ascii', 'backslashreplace')
     Gnome Baker
-    ...mozilla-firefox... source package in Ubuntu
+    ...mozilla-firefox... package in Ubuntu
 
     >>> content = find_tag_by_id(
     ...     anon_browser.contents, "team-answer-contacts-for-list")
@@ -74,4 +74,4 @@ see the link for other users
     >>> content = find_tag_by_id(browser.contents, "direct-answer-contacts-for-list")
     >>> print extract_text(content).encode('ascii', 'backslashreplace')
     Gnome Baker
-    ...mozilla-firefox... source package in Ubuntu
+    ...mozilla-firefox... package in Ubuntu

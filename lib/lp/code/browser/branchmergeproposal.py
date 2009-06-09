@@ -375,6 +375,7 @@ class DecoratedCodeReviewVoteReference:
         CodeReviewVote.DISAPPROVE: CodeReviewVote.DISAPPROVE.title,
         CodeReviewVote.APPROVE: CodeReviewVote.APPROVE.title,
         CodeReviewVote.ABSTAIN: CodeReviewVote.ABSTAIN.title,
+        CodeReviewVote.NEEDS_INFO: CodeReviewVote.NEEDS_INFO.title,
         CodeReviewVote.NEEDS_FIXING: CodeReviewVote.NEEDS_FIXING.title,
         CodeReviewVote.RESUBMIT: CodeReviewVote.RESUBMIT.title,
         }
@@ -936,21 +937,18 @@ class BranchMergeProposalChangeStatusView(MergeProposalEditView):
             BranchMergeProposalStatus.CODE_APPROVED,
             BranchMergeProposalStatus.REJECTED,
             # BranchMergeProposalStatus.QUEUED,
-            BranchMergeProposalStatus.MERGED)
-        terms = [
-            SimpleTerm(status, status.name, status.title)
-            for status in possible_next_states
-            if (self.context.isValidTransition(status, self.user)
-                # Edge case here for removing a queued proposal, we do this by
-                # setting the next state to code approved.
-                or (status == BranchMergeProposalStatus.CODE_APPROVED and
-                    curr_status == BranchMergeProposalStatus.QUEUED))
-            ]
-        # Resubmit edge case.
-        if curr_status != BranchMergeProposalStatus.QUEUED:
-            terms.append(SimpleTerm(
-                    BranchMergeProposalStatus.SUPERSEDED, 'SUPERSEDED',
-                    'Resubmit'))
+            BranchMergeProposalStatus.MERGED,
+            BranchMergeProposalStatus.SUPERSEDED,
+            )
+        terms = []
+        for status in possible_next_states:
+            if not self.context.isValidTransition(status, self.user):
+                continue
+            if status == BranchMergeProposalStatus.SUPERSEDED:
+                title = 'Resubmit'
+            else:
+                title = status.title
+            terms.append(SimpleTerm(status, status.name, title))
         return SimpleVocabulary(terms)
 
     def setUpFields(self):

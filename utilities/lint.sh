@@ -269,8 +269,8 @@ if [ ! -z "$pyflakes_notices" ]; then
     group_lines_by_file "$pyflakes_notices"
 fi
 
-
-export PYTHONPATH="/usr/share/pycentral/pylint/site-packages:lib:$PYTHONPATH"
+extra_path="/usr/share/pyshared:/usr/share/pycentral/pylint/site-packages"
+export PYTHONPATH="$extra_path:lib:$PYTHONPATH"
 pylint="python2.4 -Wi::DeprecationWarning `which pylint`"
 
 # XXX sinzui 2007-10-18 bug=154140:
@@ -287,6 +287,7 @@ sed_deletes="$sed_deletes /Undefined variable.*valida/d; "
 sed_deletes="$sed_deletes s,^/.*lib/canonical/,lib/canonical,; "
 sed_deletes="$sed_deletes /ENABLED/d; "
 sed_deletes="$sed_deletes /BYUSER/d; "
+sed_deletes="$sed_deletes /zope.*No module/d;"
 
 # Note that you can disable specific tests by placing pylint
 # instruction in a comment:

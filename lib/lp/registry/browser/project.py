@@ -31,12 +31,13 @@ __all__ = [
 
 from zope.lifecycleevent import ObjectCreatedEvent
 from zope.app.form.browser import TextWidget
-from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.component import getUtility
 from zope.event import notify
 from zope.formlib import form
 from zope.schema import Choice
 from zope.security.interfaces import Unauthorized
+
+from z3c.ptcompat import ViewPageTemplateFile
 
 from canonical.launchpad import _
 from canonical.launchpad.webapp.interfaces import NotFoundError

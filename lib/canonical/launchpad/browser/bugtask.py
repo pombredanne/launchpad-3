@@ -5,6 +5,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'assignee_renderer',
     'BugListingBatchNavigator',
     'BugListingPortletView',
     'BugNominationsView',
@@ -45,28 +46,31 @@ from simplejson import dumps
 import urllib
 from operator import attrgetter, itemgetter
 
+from zope import component
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser.itemswidgets import RadioWidget
 from zope.app.form.interfaces import (
     IInputWidget, IDisplayWidget, InputErrors, WidgetsError)
 from zope.app.form.utility import setUpWidget, setUpWidgets
-from zope.app.pagetemplate import ViewPageTemplateFile
 from zope.component import getUtility, getMultiAdapter
 from zope.event import notify
 from zope import formlib
-from zope.interface import implements, providedBy
+from zope.interface import implementer, implements, providedBy
 from zope.schema import Choice
 from zope.schema.interfaces import IContextSourceBinder, IList
-
 from zope.schema.vocabulary import (
     getVocabularyRegistry, SimpleVocabulary, SimpleTerm)
 from zope.security.proxy import (
     isinstance as zope_isinstance, removeSecurityProxy)
+
+from z3c.ptcompat import ViewPageTemplateFile
 from lazr.delegates import delegates
 from lazr.enum import EnumeratedType, Item
 
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
+from lazr.restful.interfaces import (
+    IFieldHTMLRenderer, IReferenceChoice, IWebServiceClientRequest)
 
 from canonical.config import config
 from canonical.database.sqlbase import cursor
@@ -138,11 +142,20 @@ from canonical.widgets.bugtask import (
     BugTaskSourcePackageNameWidget, DBItemDisplayWidget,
     NewLineToSpacesWidget, NominationReviewActionWidget)
 from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
-from canonical.widgets.lazrjs import TextLineEditorWidget
+from canonical.widgets.lazrjs import (
+    InlineEditPickerWidget, TextLineEditorWidget)
 from canonical.widgets.project import ProjectScopeWidget
 
 from lp.registry.vocabularies import MilestoneVocabulary
 
+
+@component.adapter(IBugTask, IReferenceChoice, IWebServiceClientRequest)
+@implementer(IFieldHTMLRenderer)
+def assignee_renderer(context, field, request):
+    """Render a bugtask assignee as a link."""
+    def render(value):
+        return PersonFormatterAPI(context.assignee).link('+assignedbugs')
+    return render
 
 def unique_title(title):
     """Canonicalise a message title to help identify messages with new
@@ -154,7 +167,6 @@ def unique_title(title):
     if title.startswith('re:'):
         title = title[3:]
     return title.strip()
-
 
 def get_comments_for_bugtask(bugtask, truncate=False):
     """Return BugComments related to a bugtask.
@@ -460,8 +472,6 @@ class BugTaskView(LaunchpadView, CanBeMentoredView, FeedsMixin):
             self.context = getUtility(ILaunchBag).bugtask
         else:
             self.context = context
-
-        self.expand_reply_box = False
 
     def initialize(self):
         """Set up the needed widgets."""
@@ -1725,6 +1735,8 @@ class BugTaskListingItem:
 
 class BugListingBatchNavigator(TableBatchNavigator):
     """A specialised batch navigator to load smartly extra bug information."""
+    # XXX sinzui 2009-05-29 bug=381672: Extract the BugTaskListingItem rules
+    # to a mixin so that MilestoneView and others can use it.
 
     def __init__(self, tasks, request, columns_to_show, size):
         TableBatchNavigator.__init__(
@@ -2987,6 +2999,32 @@ class BugTaskTableRowView(LaunchpadView):
         """Return true if the BugTask edit form should be shown."""
         # Hide the edit form when the bug is viewed in a CVE context
         return self.request.getNearest(ICveSet) == (None, None)
+
+    @property
+    def bugtask_canonical_url(self):
+        """Return the canonical url for the bugtask."""
+        return canonical_url(self.context)
+
+    @property
+    def assignee_picker_widget(self):
+        assignee_content_id = 'assignee-content-box-%s' % self.context.id
+        null_display_value = 'Nobody'
+        if self.context.assignee is None:
+            assignee_html = null_display_value
+        else:
+            assignee_html = PersonFormatterAPI(self.context.assignee).link(
+                '+assignedbugs')
+
+        return InlineEditPickerWidget(
+            context=self.context,
+            request=self.request,
+            interface_attribute=IBugTask['assignee'],
+            default_html=assignee_html,
+            id=assignee_content_id,
+            header='Change assignee',
+            step_title='Search for people or teams',
+            remove_button_text='Remove Assignee',
+            null_display_value=null_display_value)
 
 
 class BugsBugTaskSearchListingView(BugTaskSearchListingView):

@@ -19,6 +19,7 @@ __all__ = [
     'ProductSeriesReviewView',
     'ProductSeriesSourceListView',
     'ProductSeriesSpecificationsMenu',
+    'ProductSeriesTemplatesView',
     'ProductSeriesTranslationsBzrImportView',
     'ProductSeriesTranslationsExportView',
     'ProductSeriesTranslationsMenu',
@@ -30,10 +31,12 @@ import cgi
 import os.path
 
 from bzrlib.revision import NULL_REVISION
+
 from zope.component import getUtility
 from zope.app.form.browser import TextAreaWidget, TextWidget
-from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.publisher.browser import FileUpload
+
+from z3c.ptcompat import ViewPageTemplateFile
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
@@ -45,7 +48,7 @@ from canonical.launchpad.helpers import browserLanguages, is_tar_filename
 from lp.code.interfaces.codeimport import (
     ICodeImportSet)
 from lp.code.interfaces.branchjob import IRosettaUploadJobSource
-from canonical.launchpad.interfaces.country import ICountry
+from lp.services.worlddata.interfaces.country import ICountry
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.potemplate import IPOTemplateSet
 from canonical.launchpad.interfaces.translations import (
@@ -248,31 +251,29 @@ class ProductSeriesTranslationsMenuMixIn:
     """Translation menu for ProductSeries.
     """
     def overview(self):
-        text = 'Overview'
-        return Link('', text)
+        return Link('', 'Overview')
+
+    @enabled_with_permission('launchpad.Edit')
+    def templates(self):
+        return Link('+templates', 'Templates')
 
     @enabled_with_permission('launchpad.Edit')
     def settings(self):
-        text = 'Settings'
-        return Link('+translations-settings', text, icon='edit')
+        return Link('+translations-settings', 'Settings')
 
     @enabled_with_permission('launchpad.Edit')
     def requestbzrimport(self):
-        text = 'Request Bazaar import'
-        return Link('+request-bzr-import', text)
+        return Link('+request-bzr-import', 'Request Bazaar import')
 
     @enabled_with_permission('launchpad.Edit')
     def translationupload(self):
-        text = 'Upload'
-        return Link('+translations-upload', text, icon='add')
+        return Link('+translations-upload', 'Upload')
 
     def translationdownload(self):
-        text = 'Download'
-        return Link('+export', text, icon='download')
+        return Link('+export', 'Download')
 
     def imports(self):
-        text = 'Import queue'
-        return Link('+imports', text)
+        return Link('+imports', 'Import queue')
 
 
 class ProductSeriesOverviewNavigationMenu(NavigationMenu):
@@ -289,9 +290,8 @@ class ProductSeriesTranslationsMenu(NavigationMenu,
     """Translations navigation menus for `IProductSeries` objects."""
     usedfor = IProductSeries
     facet = 'translations'
-    links = ('overview', 'settings', 'requestbzrimport',
-             'translationupload', 'translationdownload',
-             'imports')
+    links = ('overview', 'templates', 'settings', 'requestbzrimport',
+             'translationupload', 'translationdownload', 'imports')
 
 
 class ProductSeriesTranslationsExportView(BaseExportView):
@@ -880,3 +880,15 @@ class ProductSeriesTranslationsBzrImportView(LaunchpadFormView,
             self.request.response.addInfoNotification(
                 _("The import has been requested."))
 
+
+class ProductSeriesTemplatesView(LaunchpadView):
+    """Show a list of all templates for the ProductSeries."""
+
+    is_distroseries = False
+
+    def iter_templates(self):
+        potemplateset = getUtility(IPOTemplateSet)
+        return potemplateset.getSubset(productseries=self.context)
+
+    def can_administer(self, template):
+        return check_permission('launchpad.Admin', template)

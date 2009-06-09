@@ -11,7 +11,7 @@ import _pythonpath
 
 from zope.component import getUtility
 
-from canonical.launchpad.scripts.base import (
+from lp.services.scripts.base import (
     LaunchpadScript, LaunchpadScriptFailure)
 from canonical.launchpad.interfaces import AccountStatus, IPersonSet
 

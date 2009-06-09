@@ -8,6 +8,7 @@ __all__ = [
     'TranslationImportQueue'
     ]
 
+import logging
 import tarfile
 import os.path
 import posixpath
@@ -359,6 +360,20 @@ class TranslationImportQueueEntry(SQLBase):
             if potemplate is None:
                 # No way to guess anything...
                 return None
+
+            existing_entry = TranslationImportQueueEntry.selectOneBy(
+                importer=self.importer, path=self.path, potemplate=potemplate,
+                distroseries=self.distroseries,
+                sourcepackagename=self.sourcepackagename,
+                productseries=self.productseries)
+            if existing_entry is not None:
+                logging.warn(
+                    "%s: can't approve entry %d ('%s') "
+                    "because entry %d is in the way." % (
+                        potemplate.title, self.id, self.path,
+                        existing_entry.id))
+                return None
+
             # We got the potemplate, try to guess the language from
             # the info we have.
             self.potemplate = potemplate

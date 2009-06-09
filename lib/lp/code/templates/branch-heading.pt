@@ -7,13 +7,17 @@
   <div style="float:right; text-align: right">
     Created by
     <tal:registrant tal:replace="structure context/registrant/fmt:link"/>
-    on
     <span
        tal:attributes="title context/date_created/fmt:datetime"
-       tal:content="context/date_created/fmt:approximatedate">
+       tal:content="context/date_created/fmt:displaydate">
       2005-10-18
     </span>
-    and last modified <tal:modified replace="context/date_last_modified/fmt:displaydate" />
+    and last modified
+    <span
+       tal:attributes="title context/date_last_modified/fmt:datetime"
+       tal:content="context/date_last_modified/fmt:displaydate">
+      2005-10-18
+    </span>
   </div>
   <img src="/@@/branch" alt="" /> Branch
   <tt tal:content="context/bzr_identity" />

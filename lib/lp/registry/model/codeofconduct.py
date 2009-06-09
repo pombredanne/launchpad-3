@@ -22,10 +22,11 @@ from canonical.config import config
 from canonical.database.sqlbase import SQLBase, quote, flush_database_updates
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.launchpad.mail.sendmail import simple_sendmail, format_address
+from lp.services.mail.sendmail import simple_sendmail, format_address
 from canonical.launchpad.webapp import canonical_url
 
-from canonical.launchpad.interfaces.gpghandler import GPGVerificationError, IGPGHandler
+from canonical.launchpad.interfaces.gpghandler import (
+    GPGVerificationError, IGPGHandler)
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.registry.interfaces.codeofconduct import (
     ICodeOfConduct, ICodeOfConductConf, ICodeOfConductSet,

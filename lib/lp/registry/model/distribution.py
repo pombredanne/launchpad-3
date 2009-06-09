@@ -14,7 +14,7 @@ from sqlobject.sqlbuilder import SQLConstant
 from storm.locals import Desc, In, Join, SQL
 from storm.store import Store
 
-from canonical.archivepublisher.debversion import Version
+from lp.archivepublisher.debversion import Version
 from canonical.cachedproperty import cachedproperty
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -25,28 +25,28 @@ from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet)
 from canonical.launchpad.components.storm_operators import FTQ, Match, RANK
 from lp.registry.model.announcement import MakesAnnouncements
-from canonical.launchpad.database.archive import Archive
-from canonical.launchpad.database.binarypackagename import BinaryPackageName
-from canonical.launchpad.database.binarypackagerelease import (
+from lp.soyuz.model.archive import Archive
+from lp.soyuz.model.binarypackagename import BinaryPackageName
+from lp.soyuz.model.binarypackagerelease import (
     BinaryPackageRelease)
 from canonical.launchpad.database.bug import (
     BugSet, get_bug_tags, get_bug_tags_open_count)
 from canonical.launchpad.database.bugtarget import (
     BugTargetBase, OfficialBugTagTargetMixin)
 from canonical.launchpad.database.bugtask import BugTask
-from canonical.launchpad.database.build import Build
+from lp.soyuz.model.build import Build
 from canonical.launchpad.database.customlanguagecode import CustomLanguageCode
 from canonical.launchpad.database.distributionbounty import DistributionBounty
-from canonical.launchpad.database.distributionmirror import DistributionMirror
+from lp.registry.model.distributionmirror import DistributionMirror
 from lp.registry.model.distributionsourcepackage import (
     DistributionSourcePackage)
 from lp.registry.model.distributionsourcepackagecache import (
     DistributionSourcePackageCache)
-from canonical.launchpad.database.distributionsourcepackagerelease import (
+from lp.soyuz.model.distributionsourcepackagerelease import (
     DistributionSourcePackageRelease)
-from canonical.launchpad.database.distroarchseries import DistroArchSeries
+from lp.soyuz.model.distroarchseries import DistroArchSeries
 from lp.registry.model.distroseries import DistroSeries
-from canonical.launchpad.database.distroseriespackagecache import (
+from lp.soyuz.model.distroseriespackagecache import (
     DistroSeriesPackageCache)
 from lp.answers.model.faq import FAQ, FAQSearch
 from lp.registry.model.karma import KarmaContextMixin
@@ -54,46 +54,46 @@ from lp.registry.model.mentoringoffer import MentoringOffer
 from lp.registry.model.milestone import (
     HasMilestonesMixin, Milestone)
 from lp.registry.model.pillar import HasAliasMixin
-from canonical.launchpad.database.publishedpackage import PublishedPackage
-from canonical.launchpad.database.publishing import (
+from lp.soyuz.model.publishedpackage import PublishedPackage
+from lp.soyuz.model.publishing import (
     BinaryPackageFilePublishing, BinaryPackagePublishingHistory,
     SourcePackageFilePublishing, SourcePackagePublishingHistory)
-from canonical.launchpad.database.specification import (
+from lp.blueprints.model.specification import (
     HasSpecificationsMixin, Specification)
-from canonical.launchpad.database.sprint import HasSprintsMixin
+from lp.blueprints.model.sprint import HasSprintsMixin
 from lp.registry.model.sourcepackagename import SourcePackageName
-from canonical.launchpad.database.sourcepackagerelease import (
+from lp.soyuz.model.sourcepackagerelease import (
     SourcePackageRelease)
 from canonical.launchpad.database.structuralsubscription import (
     StructuralSubscriptionTargetMixin)
 from canonical.launchpad.database.translationimportqueue import (
     HasTranslationImportsMixin)
 from canonical.launchpad.helpers import shortlist
-from canonical.launchpad.interfaces.archive import (
+from lp.soyuz.interfaces.archive import (
     ArchivePurpose, IArchiveSet, MAIN_ARCHIVE_PURPOSES)
-from canonical.launchpad.interfaces.archivepermission import (
+from lp.soyuz.interfaces.archivepermission import (
     IArchivePermissionSet)
 from canonical.launchpad.interfaces.bugsupervisor import IHasBugSupervisor
 from canonical.launchpad.interfaces.bugtask import (
     BugTaskStatus, UNRESOLVED_BUGTASK_STATUSES)
-from canonical.launchpad.interfaces.build import IBuildSet
-from canonical.launchpad.interfaces.buildrecords import IHasBuildRecords
+from lp.soyuz.interfaces.build import IBuildSet
+from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.registry.interfaces.distribution import (
     IDistribution, IDistributionSet)
-from canonical.launchpad.interfaces.distributionmirror import (
+from lp.registry.interfaces.distributionmirror import (
     IDistributionMirror, MirrorContent, MirrorStatus)
 from lp.registry.interfaces.distroseries import (
     DistroSeriesStatus, NoSuchDistroSeries)
 from canonical.launchpad.interfaces.launchpad import (
     IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities, ILaunchpadUsage)
-from canonical.launchpad.interfaces.package import PackageUploadStatus
+from lp.soyuz.interfaces.queue import PackageUploadStatus
 from canonical.launchpad.interfaces.packaging import PackagingType
 from lp.registry.interfaces.pillar import IPillarNameSet
-from canonical.launchpad.interfaces.publishing import (
+from lp.soyuz.interfaces.publishing import (
     active_publishing_status, PackagePublishingStatus)
 from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageName)
-from canonical.launchpad.interfaces.specification import (
+from lp.blueprints.interfaces.specification import (
     SpecificationDefinitionStatus, SpecificationFilter,
     SpecificationImplementationStatus, SpecificationSort)
 from canonical.launchpad.interfaces.structuralsubscription import (
@@ -721,7 +721,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
 
     def getDistroSeriesAndPocket(self, distroseries_name):
         """See `IDistribution`."""
-        from canonical.archivepublisher.publishing import suffixpocket
+        from lp.archivepublisher.publishing import suffixpocket
 
         # Get the list of suffixes.
         suffixes = [suffix for suffix, ignored in suffixpocket.items()]
@@ -927,7 +927,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         cache.binpkgdescriptions = ' '.join(sorted(binpkgdescriptions))
         cache.changelog = ' '.join(sorted(sprchangelog))
 
-    def searchSourcePackages(self, text):
+    def searchSourcePackageCaches(self, text):
         """See `IDistribution`."""
         # The query below tries exact matching on the source package
         # name as well; this is because source package names are
@@ -951,7 +951,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         # Note: When attempting to convert the query below into straight
         # Storm expressions, a 'tuple index out-of-range' error was always
         # raised.
-        dsp_caches = store.using(*origin).find(
+        dsp_caches_with_ranks = store.using(*origin).find(
             find_spec,
             """distribution = %s AND
             archive IN %s AND
@@ -961,7 +961,15 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                    quote(text), quote_like(text))
             ).order_by('rank DESC')
 
-        # Create a function that will decorate the results, converting
+        return dsp_caches_with_ranks
+
+    def searchSourcePackages(self, text):
+        """See `IDistribution`."""
+
+        dsp_caches_with_ranks = self.searchSourcePackageCaches(text)
+
+        # Create a function that will decorate the resulting
+        # DistributionSourcePackageCaches, converting
         # them from the find_spec above into DSPs:
         def result_to_dsp(result):
             cache, source_package_name, rank = result
@@ -972,7 +980,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
 
         # Return the decorated result set so the consumer of these
         # results will only see DSPs
-        return DecoratedResultSet(dsp_caches, result_to_dsp)
+        return DecoratedResultSet(dsp_caches_with_ranks, result_to_dsp)
 
     @property
     def _binaryPackageSearchClause(self):
@@ -985,31 +993,37 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             DistroSeries.status != DistroSeriesStatus.OBSOLETE,
             BinaryPackageRelease.binarypackagename == BinaryPackageName.id,
             DistroArchSeries.distroseries == DistroSeries.id,
-            BinaryPackagePublishingHistory.distroarchseries ==
-                DistroArchSeries.id,
-            BinaryPackagePublishingHistory.binarypackagerelease ==
-                BinaryPackageRelease.id,
+            Build.distroarchseries == DistroArchSeries.id,
             BinaryPackageRelease.build == Build.id,
             Build.sourcepackagerelease == SourcePackageRelease.id,
             SourcePackageRelease.sourcepackagename == SourcePackageName.id,
             DistributionSourcePackageCache.sourcepackagename ==
                 SourcePackageName.id,
             In(
-                DistroSeriesPackageCache.archiveID,
+                DistributionSourcePackageCache.archiveID,
                 self.all_distro_archive_ids))
 
     def searchBinaryPackages(self, package_name, exact_match=False):
         """See `IDistribution`."""
         store = Store.of(self)
 
-        find_spec = self._binaryPackageSearchClause
         select_spec = (DistributionSourcePackageCache,)
 
         if exact_match:
+            find_spec = self._binaryPackageSearchClause
             match_clause = (BinaryPackageName.name == package_name,)
         else:
+            # In this case we can use a simplified find-spec as the
+            # binary package names are present on the
+            # DistributionSourcePackageCache records.
+            find_spec = (
+                DistributionSourcePackageCache.distribution == self,
+                In(
+                    DistributionSourcePackageCache.archiveID,
+                    self.all_distro_archive_ids))
             match_clause = (
-                BinaryPackageName.name.like("%%%s%%" % package_name.lower()),)
+                DistributionSourcePackageCache.binpkgnames.like(
+                    "%%%s%%" % package_name.lower()),)
 
         result_set = store.find(
             *(select_spec + find_spec + match_clause)).config(distinct=True)

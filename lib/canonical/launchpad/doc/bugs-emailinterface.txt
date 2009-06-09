@@ -77,7 +77,7 @@ bug got submitted correctly:
     >>> from canonical.database.sqlbase import commit
     >>> from canonical.launchpad.ftests import sync
     >>> from canonical.launchpad.interfaces import IBugSet
-    >>> from canonical.launchpad.mail import stub
+    >>> from lp.services.mail import stub
     >>> bugset = getUtility(IBugSet)
     >>> from canonical.launchpad.database import BugNotification
     >>> def get_latest_added_bug():
@@ -694,18 +694,28 @@ Unsubscribes yourself or someone else from the bug.  If you don't
 specify a name or email, the sender of the email will be
 unsubscribed. Examples:
 
-    >>> submit_commands(bug_four, 'unsubscribe sabdfl')
-    >>> 'Mark Shuttleworth' in [subscription.person.displayname
-    ...                         for subscription in bug_four.subscriptions]
-    False
+    >>> login('foo.bar@canonical.com')
     >>> submit_commands(bug_four, 'unsubscribe foo.bar@canonical.com')
     >>> 'Foo Bar' in [subscription.person.displayname
     ...               for subscription in bug_four.subscriptions]
     False
+    >>> login('test@canonical.com')
     >>> submit_commands(bug_four, 'unsubscribe')
     >>> 'Sample Person' in [subscription.person.displayname
     ...                     for subscription in bug_four.subscriptions]
     False
+
+If the user sending the email does not have permission to perform
+the unsubscribe request, an error message wil be sent.
+
+    >>> submit_commands(bug_four, 'unsubscribe sabdfl')
+    >>> print_latest_email()
+    Subject: Submit Request Failure
+    To: test@canonical.com
+    <BLANKLINE>
+    ...
+    You do not have permission to unsubcribe Mark Shuttleworth.
+    ...
 
 Unsubscribing from a bug also unsubscribes you from its duplicates. To
 demonstrate, let's first make no_privs an indirect subscriber from bug

@@ -577,6 +577,62 @@ the user was unsubscribed.
     >>> bug_six.isSubscribed(sample_person)
     False
 
+
+=== Determining whether a user can unsubscribe someone ===
+
+As user can't unsubscribe just anyone from a bug. To check whether
+someone can be unusubscribed, the canBeUnsubscribedByUser() method on
+the BugSubscription object is used.
+
+The user can of course unsubscribe himself, even if someone else
+subscribed him.
+
+    >>> bug = factory.makeBug()
+    >>> subscriber = factory.makePerson()
+    >>> subscribed_by = factory.makePerson()
+    >>> subscription = bug.subscribe(subscriber, subscribed_by)
+    >>> subscription.canBeUnsubscribedByUser(subscriber)
+    True
+
+The one who subscribed the subscriber doesn't have permission to
+unsubscribe him.
+
+    >>> subscription.canBeUnsubscribedByUser(subscribed_by)
+    False
+
+The anonymous user (represented by None) also can't unsubscribe him.
+
+    >>> subscription.canBeUnsubscribedByUser(None)
+    False
+
+A user can unsubscribe a team he's a member of.
+
+    >>> team = factory.makeTeam()
+    >>> member = factory.makePerson()
+    >>> member.join(team)
+    >>> subscription = bug.subscribe(team, subscribed_by)
+    >>> subscription.canBeUnsubscribedByUser(member)
+    True
+
+    >>> non_member = factory.makePerson()
+    >>> subscription.canBeUnsubscribedByUser(non_member)
+    False
+
+The anonymous user (represented by None) also can't unsubscribe the team.
+
+    >>> subscription.canBeUnsubscribedByUser(None)
+    False
+
+A bug's unsubscribe method uses canBeUnsubscribedByUser to check
+that the unsubscribing user has the appropriate permissions.  unsubscribe
+will raise an exception if the user does not have permission.
+
+    >>> bug.unsubscribe(team, non_member)
+    Traceback (most recent call last):
+    ...
+    UserCannotUnsubscribePerson: ...
+
+
 == Automatic Subscriptions on Bug Creation ==
 
 When a new bug is opened, only the bug reporter is automatically, explicitly
@@ -618,7 +674,7 @@ there is no security contact:
     >>> ubuntu.security_contact is None
     True
 
-    >>> from canonical.launchpad.mail import stub
+    >>> from lp.services.mail import stub
     >>> transaction.commit()
     >>> stub.test_emails = []
 
@@ -831,10 +887,9 @@ an ObjectCreatedEvent is issued, since subscribe() is used in places
 where no notification should be sent.
 
     >>> from lazr.lifecycle.event import ObjectCreatedEvent
-    >>> from canonical.launchpad.mail import stub
     >>> transaction.commit()
     >>> stub.test_emails = []
-    >>> bug_subscription = bug.subscribe(sabdfl, lifeless)
+    >>> bug_subscription = bug_six.subscribe(sabdfl, lifeless)
     >>> notify(ObjectCreatedEvent(bug_subscription))
     >>> transaction.commit()
     >>> len(stub.test_emails)

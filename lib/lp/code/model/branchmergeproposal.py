@@ -1,5 +1,5 @@
 # Copyright 2007 Canonical Ltd.  All rights reserved.
-# pylint: disable-msg=E0611,W0212
+# pylint: disable-msg=E0611,W0212,F0401
 
 """Database class for branch merge prosals."""
 
@@ -31,7 +31,7 @@ from storm.locals import Int, Reference, Unicode
 from sqlobject import (
     ForeignKey, IntCol, StringCol, SQLMultipleJoin, SQLObjectNotFound)
 
-from canonical.codehosting.vfs import get_multi_server
+from lp.codehosting.vfs import get_multi_server
 from canonical.config import config
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -43,7 +43,7 @@ from lp.code.model.codereviewcomment import CodeReviewComment
 from lp.code.model.codereviewvote import (
     CodeReviewVoteReference)
 from canonical.launchpad.database.diff import Diff, PreviewDiff, StaticDiff
-from canonical.launchpad.database.job import Job
+from lp.services.job.model.job import Job
 from canonical.launchpad.database.message import (
     Message, MessageChunk, MessageJob, MessageJobAction)
 from lp.registry.model.person import Person
@@ -54,7 +54,8 @@ from lp.code.interfaces.branch import IBranchNavigationMenu
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.interfaces.branchmergeproposal import (
     BadBranchMergeProposalSearchContext, BadStateTransition,
-    BranchMergeProposalStatus, BRANCH_MERGE_PROPOSAL_FINAL_STATES,
+    BranchMergeProposalStatus,
+    BRANCH_MERGE_PROPOSAL_FINAL_STATES as FINAL_STATES,
     IBranchMergeProposal, IBranchMergeProposalGetter, IBranchMergeProposalJob,
     ICreateMergeProposalJob, ICreateMergeProposalJobSource,
     IMergeProposalCreatedJob, UserNotBranchReviewer, WrongBranchMergeProposal)
@@ -64,8 +65,8 @@ from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.message import IMessageJob
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.product import IProduct
-from canonical.launchpad.mailout.branch import RecipientReason
-from canonical.launchpad.mailout.branchmergeproposal import BMPMailer
+from lp.code.mail.branch import RecipientReason
+from lp.code.mail.branchmergeproposal import BMPMailer
 from lp.registry.interfaces.person import validate_public_person
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR, IPlacelessAuthUtility, IStoreSelector, MAIN_STORE,
@@ -73,41 +74,22 @@ from canonical.launchpad.webapp.interfaces import (
 from canonical.launchpad.webapp.interaction import setupInteraction
 
 
-VALID_TRANSITION_GRAPH = {
-    # It is valid to transition to any state from work in progress or needs
-    # review, although additional user checks are requried.
-    BranchMergeProposalStatus.WORK_IN_PROGRESS:
-        BranchMergeProposalStatus.items,
-    BranchMergeProposalStatus.NEEDS_REVIEW:
-        BranchMergeProposalStatus.items,
-    # If the proposal has been approved, any transition is valid.
-    BranchMergeProposalStatus.CODE_APPROVED: BranchMergeProposalStatus.items,
-    # Rejected is mostly terminal, can only resubmitted.
-    BranchMergeProposalStatus.REJECTED: [
-        BranchMergeProposalStatus.SUPERSEDED,
-        ],
-    # Merged is truly terminal, so nothing is valid.
-    BranchMergeProposalStatus.MERGED: [],
-    # It is valid to transition to any state from merge failed, although
-    # additional user checks are requried.
-    BranchMergeProposalStatus.MERGE_FAILED:
-        BranchMergeProposalStatus.items,
-    # Queued can only be transitioned to merged or merge failed.
-    # Dequeing is a special case.
-    BranchMergeProposalStatus.QUEUED: [
-        BranchMergeProposalStatus.MERGED,
-        BranchMergeProposalStatus.MERGE_FAILED,
-        ],
-    # Superseded is truly terminal, so nothing is valid.
-    BranchMergeProposalStatus.SUPERSEDED: [],
-    }
-
-
 def is_valid_transition(proposal, from_state, next_state, user=None):
-    """Is it valid for the proposal to move to next_state from from_state?"""
+    """Is it valid for this user to move this proposal to to next_state?
+
+    :param proposal: The merge proposal.
+    :param from_state: The previous state
+    :param to_state: The new state to change to
+    :param user: The user who may change the state
+    """
     # Trivial acceptance case.
     if from_state == next_state:
         return True
+    if from_state in FINAL_STATES and next_state not in FINAL_STATES:
+        dupes = BranchMergeProposalGetter.activeProposalsForBranches(
+            proposal.source_branch, proposal.target_branch)
+        if dupes.count() > 0:
+            return False
 
     [wip, needs_review, code_approved, rejected,
      merged, merge_failed, queued, superseded
@@ -118,12 +100,14 @@ def is_valid_transition(proposal, from_state, next_state, user=None):
     valid_reviewer = proposal.isPersonValidReviewer(user)
     if (next_state == rejected and not valid_reviewer):
         return False
+    # Non-reviewers can toggle between code_approved and queued, but not
+    # make anything else approved or queued.
     elif (next_state in (code_approved, queued) and
-          from_state in (wip, needs_review, merge_failed)
+          from_state not in (code_approved, queued)
           and not valid_reviewer):
         return False
-
-    return next_state in VALID_TRANSITION_GRAPH[from_state]
+    else:
+        return True
 
 
 class BranchMergeProposal(SQLBase):
@@ -350,8 +334,7 @@ class BranchMergeProposal(SQLBase):
         """See `IBranchMergeProposal`."""
         # As long as the source branch has not been merged, rejected
         # or superseded, then it is valid to be merged.
-        return (self.queue_status not in
-                BRANCH_MERGE_PROPOSAL_FINAL_STATES)
+        return (self.queue_status not in FINAL_STATES)
 
     def _reviewProposal(self, reviewer, next_state, revision_id):
         """Set the proposal to one of the two review statuses."""
@@ -769,6 +752,14 @@ class BranchMergeProposalGetter:
                 comment_counts.get(proposal.id, 0))
             summary.update(vote_counts.get(proposal.id, {}))
         return result
+
+    @staticmethod
+    def activeProposalsForBranches(source_branch, target_branch):
+        return BranchMergeProposal.select("""
+            BranchMergeProposal.source_branch = %s AND
+            BranchMergeProposal.target_branch = %s AND
+            BranchMergeProposal.queue_status NOT IN %s
+                """ % sqlvalues(source_branch, target_branch, FINAL_STATES))
 
 
 class BranchMergeProposalJobType(DBEnumeratedType):

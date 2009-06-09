@@ -15,7 +15,7 @@ from lp.code.model.tests.test_codeimportjob import (
 from lp.code.interfaces.codeimportjob import ICodeImportJobWorkflow
 from lp.code.interfaces.codeimportmachine import (
     CodeImportMachineOfflineReason, CodeImportMachineState)
-from canonical.launchpad.testing import TestCaseWithFactory
+from lp.testing import TestCaseWithFactory
 from canonical.testing import DatabaseFunctionalLayer
 
 

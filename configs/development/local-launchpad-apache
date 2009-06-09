@@ -27,10 +27,11 @@ RewriteLock /var/tmp/rewrite-lock
 
   RewriteEngine On
   RewriteMap branch-rewrite prg:%BRANCH_REWRITE%
+  RewriteMap escape int:escape
 
   RewriteRule ^/$ http://launchpad.dev [L]
 
-  RewriteRule ^(/.*)$ ${branch-rewrite:$1} [L,P]
+  RewriteRule ^(/.*)$ ${branch-rewrite:${escape:$1}} [L,P,NE]
 
   DocumentRoot /var/tmp/bazaar.launchpad.dev/static/
   <Directory /var/tmp/bazaar.launchpad.dev/static/>

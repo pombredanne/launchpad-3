@@ -13,10 +13,10 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.launchpad.ftests import login_person, logout
 from lp.registry.interfaces.distroseries import DistroSeriesStatus
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.interfaces.publishing import PackagePublishingPocket
+from lp.soyuz.interfaces.publishing import PackagePublishingPocket
 from lp.code.interfaces.seriessourcepackagebranch import (
     IMakeOfficialBranchLinks)
-from canonical.launchpad.testing import TestCaseWithFactory
+from lp.testing import TestCaseWithFactory
 from canonical.testing.layers import DatabaseFunctionalLayer
 
 
@@ -104,6 +104,15 @@ class TestSourcePackage(TestCaseWithFactory):
         sourcepackage.setBranch(pocket, branch, registrant)
         self.assertEqual(
             [(pocket, branch)], list(sourcepackage.linked_branches))
+
+    def test_getSuiteSourcePackage(self):
+        # ISourcePackage.getSuiteSourcePackage returns the suite source
+        # package object for the given pocket.
+        sourcepackage = self.factory.makeSourcePackage()
+        pocket = PackagePublishingPocket.RELEASE
+        ssp = sourcepackage.getSuiteSourcePackage(pocket)
+        self.assertEqual(sourcepackage, ssp.sourcepackage)
+        self.assertEqual(pocket, ssp.pocket)
 
     def test_path_to_release_pocket(self):
         # ISourcePackage.getPocketPath returns the path to a pocket. For the

@@ -50,7 +50,7 @@ A notification has a send() method which creates an email message and
 sends it to the recipient.
 
     >>> notification.send()
-    >>> from canonical.launchpad.tests.mail_helpers import print_emails
+    >>> from lp.testing.mail_helpers import print_emails
     >>> print_emails()
     From: bounces@canonical.com
     To: Mark Shuttleworth <mark@hbd.com>

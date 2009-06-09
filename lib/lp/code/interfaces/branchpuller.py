@@ -1,4 +1,5 @@
 # Copyright 2009 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211,E0213
 
 """The public interface to the model of the branch puller."""
 
@@ -24,4 +25,11 @@ class IBranchPuller(Interface):
         """Return a queue of branches to mirror using the puller.
 
         :param branch_type: A value from the `BranchType` enum.
+        """
+
+    def acquireBranchToPull():
+        """Return a Branch to pull and mark it as mirror-started.
+
+        :return: The branch object to pull next, or ``None`` if there is no
+            branch to pull.
         """

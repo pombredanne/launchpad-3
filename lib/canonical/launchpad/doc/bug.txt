@@ -279,6 +279,19 @@ And, as you might have guessed, is once again invisible in searches
     >>> [bug.id for bug in all_bugs]
     [1, 3, 4, 5, 7, 8, 9, 10, 11, 12, 13, 15]
 
+IBug.userCanView() offers a quick means by which to verify that a
+given user can see a given bug.
+
+    >>> no_priv = personset.getByEmail('no-priv@canonical.com')
+    >>> bug_6 = getUtility(IBugSet).get(6)
+    >>> bug_6.userCanView(no_priv)
+    False
+
+    >>> foobar = personset.getByEmail('foo.bar@canonical.com')
+    >>> bug_6.userCanView(foobar)
+    True
+
+
 === Filing Public vs. Private Bugs ===
 
 Let's log back in as Foo Bar to continue our examples:
@@ -293,7 +306,6 @@ When a public bug is filed:
     >>> bugset = getUtility(IBugSet)
 
     >>> firefox = productset.get(4)
-    >>> foobar = personset.get(16)
     >>> params = CreateBugParams(
     ...     title="test firefox bug", comment="blah blah blah", owner=foobar)
     >>> params.setBugTarget(product=firefox)
@@ -874,7 +886,7 @@ You can get the set of bugtasks for at bug with the 'bugtasks' attribute:
     Ubuntu
     Hoary
     mozilla-firefox in debian
-    Debian Woody mozilla-firefox
+    mozilla-firefox in Debian Woody
 
 You can also get a list of the "LP pillars" affected by a particular bug.
 
@@ -914,7 +926,7 @@ use getBugTask() to get it.
     >>> mozilla_in_woody = debian_woody.getSourcePackage('mozilla-firefox')
     >>> mozilla_in_woody_task = bug_two.getBugTask(mozilla_in_woody)
     >>> mozilla_in_woody_task.target.displayname
-    u'Debian Woody mozilla-firefox'
+    u'mozilla-firefox in Debian Woody'
 
 If the bug isn't targeted to the target, None is returned.
 
@@ -1106,3 +1118,106 @@ We can also get the collection of users affected by a bug.
     >>> print unaffecting_bug.users_affected
     [<Person at ...>]
 
+
+== Getting the distinct set of Bugs for a set of BugTasks ==
+
+Sometimes we have a set of BugTasks for which we want to get only the
+distinct set of bugs, i.e. there are several BugTasks in our set which
+share a bug; we only want to work with a bug once.
+
+We can get the distinct set of Bugs for a set of BugTasks using
+BugTaskSet.getDistinctBugsForBugTasks(). This takes a set of BugTasks
+and a user and returns the set of Bugs for those BugTasks.
+
+    >>> from operator import attrgetter
+    >>> bug_tasks = [
+    ...     factory.makeBug(
+    ...         product=firefox, title="New bug %s" % i).bugtasks[0]
+    ...     for i in range(5)]
+
+    >>> bugs = getUtility(IBugSet).getDistinctBugsForBugTasks(
+    ...     bug_tasks, user=sample_person)
+    >>> bugs = sorted(bugs, key=attrgetter('title'))
+    >>> for bug in bugs:
+    ...     print bug.title
+    New bug 0
+    New bug 1
+    New bug 2
+    New bug 3
+    New bug 4
+
+If two BugTasks share a Bug, the Bug will only be returned once.
+
+    >>> new_bug_0 = bugs[0]
+    >>> new_bugtask = factory.makeBugTask(
+    ...     bug=new_bug_0, target=thunderbird)
+
+    >>> matching_bugs = getUtility(IBugSet).getDistinctBugsForBugTasks(
+    ...     [new_bugtask], user=sample_person)
+    >>> len(matching_bugs)
+    1
+
+    >>> print matching_bugs[0].title
+    New bug 0
+
+    >>> for task in sorted(matching_bugs[0].bugtasks,
+    ...     key=attrgetter('bugtargetname')):
+    ...     print task.bugtargetname
+    firefox
+    thunderbird
+
+If a bug that could be returned by getDistinctBugsForBugTasks() is
+private and the user wouldn't be able to see it, it won't be returned.
+
+    >>> new_bug_2 = bugs[2]
+    >>> new_bug_2.setPrivate(True, foobar)
+    True
+
+    >>> matching_bugs = getUtility(IBugSet).getDistinctBugsForBugTasks(
+    ...     bug_tasks, user=no_priv)
+
+    >>> for bug in sorted(matching_bugs, key=attrgetter('title')):
+    ...     print bug.title
+    New bug 0
+    New bug 1
+    New bug 3
+    New bug 4
+
+If one of the bug tasks passed to getDistinctBugsForBugTasks() is on a
+bug that is a duplicate of another bug the duplicated bug will be
+returned rather than the duplicate.
+
+    >>> new_bug_3 = bugs[3]
+    >>> new_bug_4 = bugs[4]
+    >>> new_bug_3.duplicateof = new_bug_4
+    >>> matching_bugs = getUtility(IBugSet).getDistinctBugsForBugTasks(
+    ...     bug_tasks, user=no_priv)
+
+    >>> for bug in sorted(matching_bugs, key=attrgetter('title')):
+    ...     print bug.title
+    New bug 0
+    New bug 1
+    New bug 4
+
+If the duplicated bug isn't visible to the user neither it nor its
+duplicates will be returned by getDistinctBugsForBugTasks().
+
+    >>> new_bug_4.setPrivate(True, foobar)
+    True
+
+    >>> matching_bugs = getUtility(IBugSet).getDistinctBugsForBugTasks(
+    ...     bug_tasks, user=no_priv)
+
+    >>> for bug in sorted(matching_bugs, key=attrgetter('title')):
+    ...     print bug.title
+    New bug 0
+    New bug 1
+
+The number of bugs to be returned by getDistinctBugsForBugTasks() can be
+altered by setting its limit parameter, which defaults to 10.
+
+    >>> matching_bugs = getUtility(IBugSet).getDistinctBugsForBugTasks(
+    ...     bug_tasks, user=no_priv, limit=1)
+    >>> for bug in sorted(matching_bugs, key=attrgetter('title')):
+    ...     print bug.title
+    New bug 0

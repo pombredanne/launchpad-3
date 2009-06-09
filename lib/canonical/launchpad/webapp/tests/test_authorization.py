@@ -18,7 +18,7 @@ from canonical.lazr.interfaces import IObjectPrivacy
 
 from canonical.launchpad.interfaces.account import IAccount
 from canonical.launchpad.security import AuthorizationBase
-from canonical.launchpad.testing import ObjectFactory
+from lp.testing.factory import ObjectFactory
 from canonical.launchpad.webapp.authentication import LaunchpadPrincipal
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
 from canonical.launchpad.webapp.interfaces import (

@@ -10,17 +10,17 @@ from zope.component import getMultiAdapter, getUtility
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.ftests import ANONYMOUS, login, login_person, logout
 from canonical.shipit.systemhome import ShipItApplication
-from canonical.launchpad.database import (
+from canonical.shipit.model.shipit import (
     ShippingRequest, ShippingRequestSet, StandardShipItRequest)
 from canonical.launchpad.layers import setFirstLayer
 from canonical.shipit.layers import ShipItKUbuntuLayer, ShipItUbuntuLayer
 from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
-from canonical.launchpad.interfaces.country import ICountrySet
+from lp.services.worlddata.interfaces.country import ICountrySet
 from canonical.shipit.interfaces.shipit import (
     IShipitAccount, ShipItArchitecture, ShipItDistroSeries, ShipItFlavour,
     ShippingRequestPriority, ShippingRequestStatus, ShippingRequestType)
 from lp.registry.interfaces.person import IPersonSet
-from canonical.launchpad.testing import TestCaseWithFactory
+from lp.testing import TestCaseWithFactory
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing import LaunchpadFunctionalLayer
 

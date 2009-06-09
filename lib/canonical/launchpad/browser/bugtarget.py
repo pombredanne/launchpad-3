@@ -28,12 +28,12 @@ import urllib
 
 from zope.app.form.browser import TextWidget
 from zope.app.form.interfaces import InputErrors
-from zope.app.pagetemplate import ViewPageTemplateFile
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements
 from zope.publisher.interfaces import NotFound
 from zope.publisher.interfaces.browser import IBrowserPublisher
+from z3c.ptcompat import ViewPageTemplateFile
 
 from lazr.lifecycle.event import ObjectCreatedEvent
 
@@ -45,6 +45,7 @@ from canonical.launchpad.browser.feeds import (
 from canonical.launchpad.interfaces.bugsupervisor import IHasBugSupervisor
 from canonical.launchpad.interfaces.bugtarget import (
     IBugTarget, IOfficialBugTagTargetPublic, IOfficialBugTagTargetRestricted)
+from canonical.launchpad.interfaces.bug import IBugSet
 from canonical.launchpad.interfaces.bugtask import (
     BugTaskStatus, IBugTaskSet, UNRESOLVED_BUGTASK_STATUSES)
 from canonical.launchpad.interfaces.launchpad import (
@@ -596,19 +597,19 @@ class FileBugViewBase(LaunchpadFormView):
 
         self.request.response.redirect(canonical_url(bug.bugtasks[0]))
 
-    @action("Subscribe to This Bug Report", name="this_is_my_bug",
-            failure=handleSubmitBugFailure)
+    @action("Yes, this is the bug I'm trying to report",
+            name="this_is_my_bug", failure=handleSubmitBugFailure)
     def this_is_my_bug_action(self, action, data):
         """Subscribe to the bug suggested."""
         bug = data.get('bug_already_reported_as')
 
-        if bug.isSubscribed(self.user):
+        if bug.isUserAffected(self.user):
             self.request.response.addNotification(
-                "You are already subscribed to this bug.")
+                "This bug is already marked as affecting you.")
         else:
-            bug.subscribe(self.user, self.user)
+            bug.markUserAffected(self.user)
             self.request.response.addNotification(
-                "You have been subscribed to this bug.")
+                "This bug has been marked as affecting you.")
 
         self.next_url = canonical_url(bug.bugtasks[0])
 
@@ -828,31 +829,8 @@ class FilebugShowSimilarBugsView(FileBugViewBase):
         # down the query significantly.
         matching_bugtasks = matching_bugtasks.prejoin([])
 
-        # XXX: Bjorn Tillenius 2006-12-13 bug=75764
-        #      We might end up returning less than :limit: bugs, but in
-        #      most cases we won't, and '4*limit' is here to prevent
-        #      this page from timing out in production. Later I'll fix
-        #      this properly by selecting distinct Bugs directly
-        #      If matching_bugtasks isn't sliced, it will take a long time
-        #      to iterate over it, even over only 10, because
-        #      Transaction.iterSelect() listifies the result.
-        # We select more than :self._MATCHING_BUGS_LIMIT: since if a bug
-        # affects more than one source package, it will be returned more
-        # than one time. 4 is an arbitrary number that should be large
-        # enough.
-        matching_bugs = []
-        matching_bugs_limit = self._MATCHING_BUGS_LIMIT
-        for bugtask in matching_bugtasks[:4*matching_bugs_limit]:
-            bug = bugtask.bug
-            duplicateof = bug.duplicateof
-            if duplicateof is not None:
-                bug = duplicateof
-            if not check_permission('launchpad.View', bug):
-                continue
-            if bug not in matching_bugs:
-                matching_bugs.append(bug)
-                if len(matching_bugs) >= matching_bugs_limit:
-                    break
+        matching_bugs = getUtility(IBugSet).getDistinctBugsForBugTasks(
+            matching_bugtasks, self.user, self._MATCHING_BUGS_LIMIT)
 
         return matching_bugs
 
@@ -923,6 +901,20 @@ class FileBugGuidedView(FilebugShowSimilarBugsView):
             return self.widgets['title'].getInputValue()
         except InputErrors:
             return None
+
+    @property
+    def show_duplicate_list(self):
+        """Return whether or not to show the duplicate list.
+
+        We only show the dupes if:
+          - The context uses Malone AND
+          - There are dupes to show AND
+          - There are no widget errors.
+        """
+        return (
+            self.contextUsesMalone and
+            len(self.similar_bugs) > 0 and
+            len(self.widget_errors) == 0)
 
     def validate_search(self, action, data):
         """Make sure some keywords are provided."""

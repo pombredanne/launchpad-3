@@ -7,7 +7,7 @@ given distribution.
 We can reach it from the main distribution page:
 
     >>> browser.open('http://launchpad.dev/ubuntu')
-    >>> browser.getLink('Help translate').click()
+    >>> browser.getLink('Overview').click()
     >>> print browser.title
     Translating Ubuntu
 

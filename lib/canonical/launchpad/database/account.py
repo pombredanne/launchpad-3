@@ -22,7 +22,7 @@ from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.database.authtoken import AuthToken
 from canonical.launchpad.database.emailaddress import EmailAddress
-from canonical.launchpad.database.openidserver import OpenIDRPSummary
+from canonical.signon.model.openidserver import OpenIDRPSummary
 from canonical.launchpad.interfaces import IMasterObject, IMasterStore, IStore
 from canonical.launchpad.interfaces.account import (
     AccountCreationRationale, AccountStatus, IAccount, IAccountSet)
@@ -30,7 +30,7 @@ from canonical.launchpad.interfaces.authtoken import LoginTokenType
 from canonical.launchpad.interfaces.emailaddress import (
     EmailAddressStatus, IEmailAddress, IEmailAddressSet)
 from canonical.launchpad.interfaces.launchpad import IPasswordEncryptor
-from canonical.launchpad.interfaces.openidserver import IOpenIDRPSummarySet
+from canonical.signon.interfaces.openidserver import IOpenIDRPSummarySet
 from canonical.launchpad.webapp.vhosts import allvhosts
 
 
@@ -122,10 +122,6 @@ class Account(SQLBase):
 
         email.status = EmailAddressStatus.PREFERRED
 
-        # XXX 2009-03-30 jamesh bug=356092: SSO server can't write to
-        # HWDB tables
-        # getUtility(IHWSubmissionSet).setOwnership(email)
-
     def validateAndEnsurePreferredEmail(self, email):
         """See `IAccount`."""
         if not IEmailAddress.providedBy(email):
@@ -150,16 +146,6 @@ class Account(SQLBase):
             self.setPreferredEmail(email)
         else:
             email.status = EmailAddressStatus.VALIDATED
-
-            # XXX 2009-03-30 jamesh bug=356092: SSO server can't write
-            # to HWDB tables
-            # getUtility(IHWSubmissionSet).setOwnership(email)
-
-        # Now that we have validated the email, see if this can be
-        # matched to an existing RevisionAuthor.
-        # XXX 2009-03-30 jamesh bug=356092: SSO server can't write to
-        # revision tables
-        # getUtility(IRevisionSet).checkNewVerifiedEmail(email)
 
     @property
     def recently_authenticated_rps(self):

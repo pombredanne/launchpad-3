@@ -10,7 +10,7 @@
 import _pythonpath
 
 from canonical.config import config
-from canonical.launchpad.scripts.expire_ppa_binaries import PPABinaryExpirer
+from lp.soyuz.scripts.expire_ppa_binaries import PPABinaryExpirer
 
 
 if __name__ == '__main__':

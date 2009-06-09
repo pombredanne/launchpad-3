@@ -75,15 +75,14 @@ bugs we filed recently.
     >>> from canonical.launchpad.ftests.bug import print_bugs_list
     >>> print_bugs_list(user_browser.contents, "similar-bugs")
     #... Evolution crashes
-    New, last updated ...
+    New (0 comments) last updated ...
     #... Evolution crashes lots
-    New, last updated ...
+    New (0 comments) last updated ...
 
 This one matches, so we subscribe.
 
     >>> user_browser.getControl(
-    ...     label='Evolution crashes lots').selected = True
-    >>> user_browser.getControl('Subscribe to This Bug Report').click()
+    ...     "Yes, this is the bug I'm trying to report", index=1).click()
 
     >>> print user_browser.url
     http://bugs.launchpad.dev/evolution/+bug/...
@@ -92,7 +91,7 @@ But, of course, we're already subscribed because we created it.
 
     >>> for message in get_feedback_messages(user_browser.contents):
     ...     print message
-    You are already subscribed to this bug.
+    This bug is already marked as affecting you.
 
 
 == Filing a bug when there are none similar ==

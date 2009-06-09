@@ -21,7 +21,8 @@ class BugLinkTargetMixin:
         raise NotImplementedError("missing buglinkClass() implementation")
 
     def createBugLink(self, bug):
-        """Subclass should override that method to create a BugLink instance."""
+        """Subclass should override that method to create a BugLink instance.
+        """
         raise NotImplementedError("missing createBugLink() implementation")
 
     # IBugLinkTarget implementation

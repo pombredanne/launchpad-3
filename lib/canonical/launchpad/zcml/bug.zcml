@@ -21,7 +21,7 @@
                            getIndirectSubscribers
                            mentoring_offers canMentor isMentor
                            getNullBugTask is_complete who_made_private
-                           date_made_private"
+                           date_made_private userCanView"
                            />
         <require
             permission="launchpad.View"
@@ -38,10 +38,11 @@
                         getAlsoNotifiedSubscribers getBugWatch getBugTask
                         canBeNominatedFor getNominationFor getNominations
                         date_last_message number_of_duplicates
-                        message_count getQuestionCreatedFromBug
+                        message_count comment_count getQuestionCreatedFromBug
                         canBeAQuestion getBugTasksByPackageName
                         users_affected_count users_unaffected_count
-                        readonly_duplicateof users_affected bug_messages"
+                        readonly_duplicateof users_affected bug_messages
+                        isUserAffected"
             />
         <require
             permission="launchpad.Edit"
@@ -52,7 +53,7 @@
                         addAttachment
                         unsubscribeFromDupes subscribe unsubscribe addNomination
                         expireNotifications setStatus setPrivate
-                        convertToQuestion isUserAffected
+                        convertToQuestion
                         markUserAffected addTask addChange markAsDuplicate"
             set_attributes="datecreated date_last_updated name title description
                             ownerID owner duplicateof communityscore
@@ -74,6 +75,11 @@
         for="canonical.launchpad.interfaces.IBug"
         provides="canonical.launchpad.webapp.interfaces.ILaunchpadContainer"
         factory="canonical.launchpad.components.launchpadcontainer.LaunchpadBugContainer"
+        />
+
+    <adapter
+        factory="canonical.launchpad.browser.bug.bug_description_xhtml_representation"
+        name="description"
         />
 
     <browser:menus
@@ -164,6 +170,7 @@
     <browser:page
         for="canonical.launchpad.interfaces.IBug"
         name="+bug-portlet-subscribers-content"
+        class="canonical.launchpad.browser.bugsubscription.BugPortletSubcribersContents"
         template="../templates/bug-portlet-subscribers-content.pt" 
         permission="zope.Public" />
 

@@ -8,8 +8,9 @@ __metaclass__ = type
 __all__ = [
     'InvalidProductName',
     'IProduct',
-    'IProductEditRestricted',
     'IProductCommercialRestricted',
+    'IProductDriverRestricted',
+    'IProductEditRestricted',
     'IProductPublic',
     'IProductReviewSearch',
     'IProductSet',
@@ -58,9 +59,9 @@ from lp.registry.interfaces.pillar import IPillar
 from lp.registry.interfaces.productrelease import IProductRelease
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.project import IProject
-from canonical.launchpad.interfaces.specificationtarget import (
+from lp.blueprints.interfaces.specificationtarget import (
     ISpecificationTarget)
-from canonical.launchpad.interfaces.sprint import IHasSprints
+from lp.blueprints.interfaces.sprint import IHasSprints
 from canonical.launchpad.interfaces.translationgroup import (
     IHasTranslationGroup)
 from canonical.launchpad.validators import LaunchpadValidationError
@@ -72,8 +73,8 @@ from lazr.restful.declarations import (
     REQUEST_USER, call_with, collection_default_content,
     export_as_webservice_collection, export_as_webservice_entry,
     export_factory_operation, export_operation_as, export_read_operation,
-    exported, operation_parameters, operation_returns_collection_of,
-    rename_parameters_as)
+    exported, operation_parameters, operation_returns_entry,
+    operation_returns_collection_of, rename_parameters_as)
 
 
 # This is based on the definition of <label> in RFC 1035, section
@@ -167,21 +168,28 @@ class LicenseStatus(DBEnumeratedType):
         40, "Unspecified",
         u"This project&rsquo;s license has not been specified.")
 
+
 class License(DBEnumeratedType):
     """Licenses under which a project's code can be released."""
 
+    # Sort licenses alphabetically by their description.
     sort_order = (
-        'ACADEMIC', 'APACHE', 'ARTISTIC', 'BSD', 'COMMON_PUBLIC', 'ECLIPSE',
+        'ACADEMIC', 'APACHE', 'ARTISTIC', 'ARTISTIC_2_0',
+        'BSD', 'COMMON_PUBLIC',
+        'CC_BY', 'CC_BY_SA', 'CC_0', 'ECLIPSE',
         'EDUCATIONAL_COMMUNITY', 'AFFERO', 'GNU_GPL_V2','GNU_GPL_V3',
         'GNU_LGPL_V2_1','GNU_LGPL_V3', 'MIT', 'MPL', 'OPEN_SOFTWARE', 'PERL',
         'PHP', 'PUBLIC_DOMAIN', 'PYTHON', 'ZPL',
-        'OTHER_PROPRIETARY', 'OTHER_OPEN_SOURCE')
+        'DONT_KNOW', 'OTHER_PROPRIETARY', 'OTHER_OPEN_SOURCE')
 
     ACADEMIC = DBItem(10, "Academic Free License")
     AFFERO = DBItem(20, "GNU Affero GPL v3")
     APACHE = DBItem(30, "Apache License")
-    ARTISTIC = DBItem(40, "Artistic License")
-    BSD = DBItem(50, "BSD License (revised)")
+    # http://www.perlfoundation.org/artistic_license_1_0
+    ARTISTIC = DBItem(40, "Artistic License 1.0")
+    # http://www.opensource.org/licenses/artistic-license-2.0.php
+    ARTISTIC_2_0 = DBItem(45, 'Artistic License 2.0')
+    BSD = DBItem(50, "Simplified BSD License")
     COMMON_PUBLIC = DBItem(80, "Common Public License")
     ECLIPSE = DBItem(90, "Eclipse Public License")
     EDUCATIONAL_COMMUNITY = DBItem(100, "Educational Community License")
@@ -197,17 +205,30 @@ class License(DBEnumeratedType):
     PUBLIC_DOMAIN = DBItem(220, "Public Domain")
     PYTHON = DBItem(230, "Python License")
     ZPL = DBItem(280, "Zope Public License")
+    # http://creativecommons.org/about/licenses
+    CC_BY = DBItem(300, 'Creative Commons - Attribution')
+    CC_BY_SA = DBItem(310, 'Creative Commons - Attribution Share Alike')
+    # http://creativecommons.org/about/cc0
+    CC_0 = DBItem(320, 'Creative Commons - No Rights Reserved')
+    # This is a placeholder "license" for users who know they want something
+    # open source but haven't yet chosen a license for their project.  We do
+    # not want to block them from registering their project, but this choice
+    # will allow us to nag them later.
+    DONT_KNOW = DBItem(3000, "I don't know yet")
 
     OTHER_PROPRIETARY = DBItem(1000, "Other/Proprietary")
     OTHER_OPEN_SOURCE = DBItem(1010, "Other/Open Source")
 
 
-class IProductEditRestricted(IOfficialBugTagTargetRestricted):
-    """`IProduct` properties which require launchpad.Edit permission."""
+class IProductDriverRestricted(Interface):
+    """`IProduct` properties which require launchpad.Driver permission."""
 
     def newSeries(owner, name, summary, branch=None):
         """Creates a new ProductSeries for this product."""
 
+
+class IProductEditRestricted(IOfficialBugTagTargetRestricted,):
+    """`IProduct` properties which require launchpad.Edit permission."""
 
 
 class IProductCommercialRestricted(Interface):
@@ -324,9 +345,9 @@ class IProductPublic(
             constraint=name_validator,
             description=_(
                 "At least one lowercase letter or number, followed by "
-                "letters, dots, hyphens or pluses. "
-                "Keep this name short; it is used in URLs as the example "
-                "illustrates.")))
+                "letters, numbers, dots, hyphens or pluses. "
+                "Keep this name short; it is used in URLs as shown above."
+                )))
 
     displayname = exported(
         TextLine(
@@ -589,13 +610,19 @@ class IProductPublic(
     def getPackage(distroseries):
         """Return a package in that distroseries for this product."""
 
+    @operation_parameters(
+        name=TextLine(title=_("Name"), required=True))
+    @operation_returns_entry(IProductSeries)
+    @export_read_operation()
     def getSeries(name):
-        """Returns the series for this product that has the name given, or
-        None."""
+        """Return the series for this product for the given name, or None."""
 
+    @operation_parameters(
+        version=TextLine(title=_("Version"), required=True))
+    @operation_returns_entry(IProductRelease)
+    @export_read_operation()
     def getRelease(version):
-        """Returns the release for this product that has the version
-        given."""
+        """Return the release for this product that has the version given."""
 
     def packagedInDistros():
         """Returns the distributions this product has been packaged in."""
@@ -637,9 +664,14 @@ class IProductPublic(
         this Product.
         """
 
+    @export_read_operation()
+    @export_operation_as('get_timeline')
+    def getTimeline():
+        """Return basic timeline data useful for creating a diagram."""
+
 
 class IProduct(IProductEditRestricted, IProductCommercialRestricted,
-               IProductPublic):
+               IProductDriverRestricted, IProductPublic):
     """A Product.
 
     The Launchpad Registry describes the open source world as Projects and
