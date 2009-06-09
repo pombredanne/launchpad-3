@@ -14,6 +14,8 @@ __all__ = [
 import datetime
 import logging
 import os
+import re
+
 from psycopg2.extensions import TransactionRollbackError
 from sqlobject import (
     BoolCol, ForeignKey, IntCol, SQLMultipleJoin, SQLObjectNotFound,
@@ -1105,6 +1107,108 @@ class POTemplateSet:
             raise AssertionError(
                 'Either productseries or sourcepackagename arguments must be'
                 ' not None.')
+
+    @staticmethod
+    def getPOTemplatePrecedence(left, right):
+        """See IPOTemplateSet."""
+        if left == right:
+            return 0
+
+        # Current templates always have precedence over non-current ones.
+        if left.iscurrent != right.iscurrent:
+            if left.iscurrent:
+                return -1
+            else:
+                return 1
+
+        if left.productseries:
+            left_series = left.productseries
+            right_series = right.productseries
+            assert left_series.product == right_series.product
+            focus = left_series.product.primary_translatable
+        else:
+            left_series = left.distroseries
+            right_series = right.distroseries
+            assert left_series.distribution == right_series.distribution
+            focus = left_series.distribution.translation_focus
+
+        # Translation focus has precedence.  In case of a tie, newest
+        # template wins.
+        if left_series == focus:
+            return -1
+        elif right_series == focus:
+            return 1
+        elif left.id > right.id:
+            return -1
+        else:
+            assert left.id < right.id, "Got unordered ids."
+            return 1
+
+
+    def _get_potemplate_equivalence_class(self, template):
+        """Return whatever we group `POTemplate`s by for sharing purposes."""
+        if template.sourcepackagename is None:
+            package = None
+        else:
+            package = template.sourcepackagename.name
+        return (template.name, package)
+
+
+    def _iterate_potemplates(self, product=None, distribution=None,
+                             name_pattern=None, sourcepackagename=None):
+        """Yield all templates matching the provided arguments.
+
+        This is much like a `IPOTemplateSubset`, except it operates on
+        `Product`s and `Distribution`s rather than `ProductSeries` and
+        `DistroSeries`.
+        """
+        if product:
+            subsets = [
+                self.getSubset(productseries=series)
+                for series in product.serieses
+                ]
+        else:
+            subsets = [
+                self.getSubset(
+                    distroseries=series, sourcepackagename=sourcepackagename)
+                for series in distribution.serieses
+                ]
+        for subset in subsets:
+            for template in subset:
+                if name_pattern is None or re.match(name_pattern,
+                                                    template.name):
+                    yield template
+
+    def findPOTemplateEquivalenceClassesFor(self,
+                                            product=None, distribution=None,
+                                            name_pattern=None,
+                                            sourcepackagename=None):
+        """See IPOTemplateSet."""
+        assert product or distribution, "Pick a product or distribution!"
+        assert not (product and distribution), (
+            "Pick a product or distribution, not both!")
+        assert distribution or not sourcepackagename, (
+            "Picking a source package only makes sense with a distribution.")
+
+        equivalents = {}
+
+        templates = self._iterate_potemplates(
+            product=product, distribution=distribution,
+            name_pattern=name_pattern,
+            sourcepackagename=sourcepackagename)
+
+        for template in templates:
+            key = self._get_potemplate_equivalence_class(template)
+            if key not in equivalents:
+                equivalents[key] = []
+            equivalents[key].append(template)
+
+        for equivalence_list in equivalents.itervalues():
+            # Sort potemplates from "most representative" to "least
+            # representative."
+            equivalence_list.sort(cmp=self.getPOTemplatePrecedence)
+
+        return equivalents
 
 
 class POTemplateToTranslationFileDataAdapter:

@@ -579,6 +579,38 @@ class IPOTemplateSet(Interface):
         Return None if there is no such `IPOTemplate`.
         """
 
+    def getPOTemplatePrecedence(left, right):
+        """Sort comparison: order sharing templates by precedence.
+
+        Sort using this function to order sharing templates from most
+        representative to least representative, as per the message-sharing
+        migration spec.
+        """
+
+    def findPOTemplateEquivalenceClassesFor(product=None, distribution=None,
+                                            name_pattern=None,
+                                            sourcepackagename=None):
+        """Within given IProduct or IDistribution, find equivalent templates.
+
+        Partitions all templates in the given context into equivalence
+        classes.
+
+        :param product: an optional `Product` to operate on.  The
+            alternative is to pass `distribution`.
+        :param distribution: an optional `Distribution` to operate on.  The
+            alternative is to pass `product`.  If you're going to operate on
+            a distribution, you may want to pass a `name_pattern` as well to
+            avoid doing too much in one go.
+        :param name_pattern: an optional regex pattern indicating which
+            template names are to be merged.
+        :param sourcepackagename: an optional source package name to operate
+            on.  Leaving this out means "all packages in the distribution."
+            This option only makes sense when combined with `distribution`.
+        :return: a dict mapping each equivalence class to a list of
+            `POTemplate`s in that class, each sorted from most to least
+            representative.
+        """
+
 
 class IPOTemplateWithContent(IPOTemplate):
     """Interface for an `IPOTemplate` used to create the new POTemplate form.
