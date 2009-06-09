@@ -1128,19 +1128,16 @@ class TestCopyPackage(TestCase):
                 self.assertFalse(published_file.libraryfilealias.restricted)
             # Also check the sources' changesfiles.
             if ISourcePackagePublishingHistory.providedBy(published):
-                queue = published.sourcepackagerelease.getQueueRecord(
-                    distroseries=published.distroseries)
-                self.assertFalse(queue.changesfile.restricted)
+                source = published.sourcepackagerelease
+                self.assertFalse(source.upload_changesfile.restricted)
                 # Check the source's package diff.
-                [diff] = published.sourcepackagerelease.package_diffs
+                [diff] = source.package_diffs
                 self.assertFalse(diff.diff_content.restricted)
             # Check the binary changesfile and the buildlog.
             if IBinaryPackagePublishingHistory.providedBy(published):
-                package = published.binarypackagerelease
-                changesfile = package.build.changesfile
-                self.assertFalse(changesfile.restricted)
-                buildlog = package.build.buildlog
-                self.assertFalse(buildlog.restricted)
+                build = published.binarypackagerelease.build
+                self.assertFalse(build.upload_changesfile.restricted)
+                self.assertFalse(build.buildlog.restricted)
             # Check that the pocket is -security as specified in the
             # script parameters.
             self.assertEqual(

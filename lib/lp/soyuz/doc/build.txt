@@ -22,26 +22,37 @@ launchpad build daemon.
 
 First up, can we get the builds out of the sample data?
 
-    >>> firefox_build = getUtility(IBuildSet).getByBuildID(18)
+    # Create a 'mozilla-firefox' build in ubuntutest/breezy-autotest/i386.
+    >>> from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
+    >>> login('foo.bar@canonical.com')
+    >>> test_publisher = SoyuzTestPublisher()
+    >>> test_publisher.prepareBreezyAutotest()
+    >>> source = test_publisher.getPubSource(
+    ...     sourcename='mozilla-firefox', version='0.9')
+    >>> binaries = test_publisher.getPubBinaries(
+    ...     binaryname='firefox', pub_source=source)
+    >>> [firefox_build] = source.getBuilds()
+    >>> login(ANONYMOUS)
+
     >>> pmount_build = getUtility(IBuildSet).getByBuildID(19)
     >>> pending_build = getUtility(IBuildSet).getByBuildID(11)
 
 Let's check the complex properties of a build object.
 
-    >>> firefox_build.distroseries.name
-    u'breezy-autotest'
+    >>> print firefox_build.distroseries.name
+    breezy-autotest
 
-    >>> firefox_build.title
-    u'i386 build of mozilla-firefox 0.9 in ubuntu breezy-autotest RELEASE'
+    >>> print firefox_build.title
+    i386 build of mozilla-firefox 0.9 in ubuntutest breezy-autotest RELEASE
 
     >>> firefox_build.was_built
     True
 
     >>> firefox_build.buildlog = 34
     >>> print firefox_build.build_log_url
-    http://launchpad.dev/ubuntu/+source/mozilla-firefox/0.9/+build/18/+files/evolution-2.2-test.pot
+    http://launchpad.dev/ubuntutest/+source/mozilla-firefox/0.9/+build/.../+files/evolution-2.2-test.pot
 
-    >>> firefox_build.changesfile
+    >>> firefox_build.upload_changesfile
     <LibraryFileAlias ...>
 
     >>> firefox_build.calculated_buildstart
@@ -50,8 +61,8 @@ Let's check the complex properties of a build object.
     >>> firefox_build.is_virtualized
     False
 
-    >>> firefox_build.arch_tag
-    u'i386'
+    >>> print firefox_build.arch_tag
+    i386
 
 The 'firefox_build' is already finished and requesting the estimated build
 start time makes no sense. Hence an exception is raised.
@@ -89,12 +100,8 @@ property:
     >>> firefox_build.package_upload
     <PackageUpload ...>
 
-    Zope proxied package uploads do not give permission to see them if you
-    are not logged in, except for the status attribute.  Firefox's build
-    upload is in the NEW state:
-
     >>> firefox_build.package_upload.status
-    <DBItem PackageUploadStatus.NEW, (0) New>
+    <DBItem PackageUploadStatus.DONE, (3) Done>
 
 If the build does not have any uploads, None is returned:
 
@@ -601,11 +608,8 @@ getBuildRecords() ordered by descending creation date.
 
     # Create a DELETED and a SUPERSEDED source publication in
     # ubuntutest/breezy-autotest.
-    >>> from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
     >>> from canonical.launchpad.interfaces import PackagePublishingStatus
     >>> login('foo.bar@canonical.com')
-    >>> test_publisher = SoyuzTestPublisher()
-    >>> test_publisher.prepareBreezyAutotest()
     >>> old_source_pub = test_publisher.getPubSource(
     ...     sourcename='old-source', version='1.0',
     ...     status=PackagePublishingStatus.SUPERSEDED)
