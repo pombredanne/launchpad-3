@@ -149,6 +149,7 @@ class ParallelLimitedTaskConsumer:
         self._task_source = None
         self._worker_limit = worker_limit
         self._worker_count = 0
+        self._terminationDeferred = None
 
     def consume(self, task_source):
         """Start consuing tasks from 'task_source'.
@@ -160,7 +161,9 @@ class ParallelLimitedTaskConsumer:
         if self._task_source is not None:
             raise AlreadyRunningError(self, self._task_source)
         self._task_source = task_source
+        self._terminationDeferred = defer.Deferred()
         task_source.start(self)
+        return self._terminationDeferred
 
     def taskStarted(self, task):
         """See `ITaskSource`."""
@@ -170,10 +173,16 @@ class ParallelLimitedTaskConsumer:
         if self._worker_count >= self._worker_limit:
             self._task_source.stop()
         task()
+        self._taskEnded()
 
     def taskProductionFailed(self, reason):
         """See `ITaskSource`."""
         raise NotRunningError(self)
+
+    def _taskEnded(self):
+        self._worker_count -= 1
+        if self._worker_count == 0:
+            self._terminationDeferred.callback(None)
 
 
 class OldParallelLimitedTaskSink:

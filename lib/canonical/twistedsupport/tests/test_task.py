@@ -237,6 +237,25 @@ class TestParallelLimitedTaskConsumer(TestCase):
         consumer.consume(source)
         self.assertRaises(AlreadyRunningError, consumer.consume, source)
 
+    def test_consume_returns_deferred_doesnt_fire_until_tasks(self):
+        # `consume` returns a Deferred that fires when no more tasks are
+        # running, but only after we've actually done something.
+        consumer = self.makeConsumer()
+        log = []
+        d = consumer.consume(LoggingSource([]))
+        d.addCallback(log.append)
+        self.assertEqual([], log)
+
+    def test_consume_returns_deferred_fires_when_tasks_done(self):
+        # `consume` returns a Deferred that fires when no more tasks are
+        # running.
+        consumer = self.makeConsumer()
+        log = []
+        d = consumer.consume(LoggingSource([]))
+        d.addCallback(log.append)
+        consumer.taskStarted(lambda: None)
+        self.assertEqual([None], log)
+
     def test_taskStarted_before_consume_raises_error(self):
         # taskStarted can only be called after we have started consuming. This
         # is because taskStarted might need to stop task production to avoid a
