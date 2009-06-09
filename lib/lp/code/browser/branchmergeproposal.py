@@ -352,10 +352,13 @@ class BranchMergeProposalView(LaunchpadView, UnmergedRevisionsMixin,
     @property
     def review_diff(self):
         """Return a (hopefully) intelligently encoded review diff."""
+        if self.context.review_diff is None:
+            return None
         try:
             diff = self.context.review_diff.diff.text.decode('utf-8')
         except UnicodeDecodeError:
-            diff = self.context.review_diff.diff.text.decode('windows-1252')
+            diff = self.context.review_diff.diff.text.decode('windows-1252',
+                                                             'replace')
         return diff
 
     @property
