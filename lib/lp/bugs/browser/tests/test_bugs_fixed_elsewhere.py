@@ -58,7 +58,8 @@ def test_suite():
         ]
 
     for setUpMethod in setUpMethods:
-        test = LayeredDocFileSuite('bugs-fixed-elsewhere.txt',
+        test = LayeredDocFileSuite(
+            'special/bugs-fixed-elsewhere.txt',
             setUp=setUpMethod, tearDown=tearDown,
             layer=LaunchpadFunctionalLayer)
         suite.addTest(test)

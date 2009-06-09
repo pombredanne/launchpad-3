@@ -35,7 +35,8 @@ def test_suite():
         ]
 
     for setUpMethod in setUpMethods:
-        test = LayeredDocFileSuite('bugtarget-recently-touched-bugs.txt',
+        test = LayeredDocFileSuite(
+            'special/bugtarget-recently-touched-bugs.txt',
             setUp=setUpMethod, tearDown=tearDown,
             layer=LaunchpadFunctionalLayer)
         suite.addTest(test)
