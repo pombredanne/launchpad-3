@@ -35,6 +35,7 @@ from lp.soyuz.scripts.packagecopier import (
 from lp.testing import TestCase
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from canonical.testing import DatabaseLayer, LaunchpadZopelessLayer
+from canonical.librarian.ftests.harness import fillLibrarianFile
 
 
 class TestCopyPackageScript(unittest.TestCase):
@@ -73,6 +74,10 @@ class TestCopyPackageScript(unittest.TestCase):
             "True").count()
         num_bin_pub = SecureBinaryPackagePublishingHistory.select(
             "True").count()
+
+        # Fill the source package changelog so it can be processed
+        # for closing bugs.
+        fillLibrarianFile(52, content='Format: 1.7\n')
 
         returncode, out, err = self.runCopyPackage(
             extra_args=['-s', 'warty', 'mozilla-firefox',
@@ -204,6 +209,10 @@ class TestCopyPackage(TestCase):
 
     def testCopyBetweenDistroSeries(self):
         """Check the copy operation between distroseries."""
+        # Fill the source changesfiles, so it can be properly processed
+        # for closing bugs.
+        fillLibrarianFile(52, content='Format: 1.7\n')
+
         copy_helper = self.getCopier()
         copied = copy_helper.mainTask()
 
@@ -225,6 +234,10 @@ class TestCopyPackage(TestCase):
         That's normally how SECURITY publications get propagated to UPDATES
         in order to reduce the burden on ubuntu servers.
         """
+        # Fill the source changesfiles, so it can be properly processed
+        # for closing bugs.
+        fillLibrarianFile(52, content='Format: 1.7\n')
+
         copy_helper = self.getCopier(
             from_suite='warty', to_suite='warty-updates')
         copied = copy_helper.mainTask()
