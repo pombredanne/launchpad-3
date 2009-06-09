@@ -2,8 +2,9 @@
 
 Users can directly see and edit milestones through the milestone views.
 
-
-    >>> milestone = factory.makeMilestone(name="kakapo")
+    >>> product = factory.makeProduct(name="puffin")
+    >>> series = factory.makeProductSeries(product=product, name="awk")
+    >>> milestone = factory.makeMilestone(productseries=series, name="kakapo")
     >>> person = milestone.product.owner
     >>> login_person(person)
     >>> view = create_view(milestone, '+index')
@@ -94,6 +95,30 @@ as a set.
     set([<ProductRelease ...>])
     >>> [release.version for release in view.getReleases()]
     [u'kakapo']
+
+The download_files property returns a decorated list of IProductRelease
+files. If there is no release, or no files, None is returned.
+
+    >>> print view.download_files
+    None
+
+If there are files, each file has a url, md5_url and signatue_url for
+downloading.
+
+    >>> release_file = release.addReleaseFile(
+    ...     'test.txt', 'test', 'text/plain', person,
+    ...     signature_filename='test.txt.asc', signature_content='123',
+    ...     description="test file")
+    >>> view = create_view(milestone, '+index')
+    >>> download_file = view.download_files[0]
+    >>> print download_file.url
+    http://launchpad.dev/puffin/awk/kakapo/+download/test.txt
+
+    >>> print download_file.md5_url
+    http://launchpad.dev/puffin/awk/kakapo/+download/test.txt/+md5
+
+    >>> print download_file.signature_url
+    http://launchpad.dev/puffin/awk/kakapo/+download/test.txt.asc
 
 
 == Editing milestones ==

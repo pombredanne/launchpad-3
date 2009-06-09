@@ -86,7 +86,7 @@ from lp.registry.interfaces.distroseries import (
     DistroSeriesStatus, NoSuchDistroSeries)
 from canonical.launchpad.interfaces.launchpad import (
     IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities, ILaunchpadUsage)
-from lp.soyuz.interfaces.package import PackageUploadStatus
+from lp.soyuz.interfaces.queue import PackageUploadStatus
 from canonical.launchpad.interfaces.packaging import PackagingType
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.soyuz.interfaces.publishing import (
@@ -927,7 +927,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         cache.binpkgdescriptions = ' '.join(sorted(binpkgdescriptions))
         cache.changelog = ' '.join(sorted(sprchangelog))
 
-    def searchSourcePackages(self, text):
+    def searchSourcePackageCaches(self, text):
         """See `IDistribution`."""
         # The query below tries exact matching on the source package
         # name as well; this is because source package names are
@@ -951,7 +951,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         # Note: When attempting to convert the query below into straight
         # Storm expressions, a 'tuple index out-of-range' error was always
         # raised.
-        dsp_caches = store.using(*origin).find(
+        dsp_caches_with_ranks = store.using(*origin).find(
             find_spec,
             """distribution = %s AND
             archive IN %s AND
@@ -961,7 +961,15 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                    quote(text), quote_like(text))
             ).order_by('rank DESC')
 
-        # Create a function that will decorate the results, converting
+        return dsp_caches_with_ranks
+
+    def searchSourcePackages(self, text):
+        """See `IDistribution`."""
+
+        dsp_caches_with_ranks = self.searchSourcePackageCaches(text)
+
+        # Create a function that will decorate the resulting
+        # DistributionSourcePackageCaches, converting
         # them from the find_spec above into DSPs:
         def result_to_dsp(result):
             cache, source_package_name, rank = result
@@ -972,7 +980,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
 
         # Return the decorated result set so the consumer of these
         # results will only see DSPs
-        return DecoratedResultSet(dsp_caches, result_to_dsp)
+        return DecoratedResultSet(dsp_caches_with_ranks, result_to_dsp)
 
     @property
     def _binaryPackageSearchClause(self):
@@ -985,31 +993,37 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             DistroSeries.status != DistroSeriesStatus.OBSOLETE,
             BinaryPackageRelease.binarypackagename == BinaryPackageName.id,
             DistroArchSeries.distroseries == DistroSeries.id,
-            BinaryPackagePublishingHistory.distroarchseries ==
-                DistroArchSeries.id,
-            BinaryPackagePublishingHistory.binarypackagerelease ==
-                BinaryPackageRelease.id,
+            Build.distroarchseries == DistroArchSeries.id,
             BinaryPackageRelease.build == Build.id,
             Build.sourcepackagerelease == SourcePackageRelease.id,
             SourcePackageRelease.sourcepackagename == SourcePackageName.id,
             DistributionSourcePackageCache.sourcepackagename ==
                 SourcePackageName.id,
             In(
-                DistroSeriesPackageCache.archiveID,
+                DistributionSourcePackageCache.archiveID,
                 self.all_distro_archive_ids))
 
     def searchBinaryPackages(self, package_name, exact_match=False):
         """See `IDistribution`."""
         store = Store.of(self)
 
-        find_spec = self._binaryPackageSearchClause
         select_spec = (DistributionSourcePackageCache,)
 
         if exact_match:
+            find_spec = self._binaryPackageSearchClause
             match_clause = (BinaryPackageName.name == package_name,)
         else:
+            # In this case we can use a simplified find-spec as the
+            # binary package names are present on the
+            # DistributionSourcePackageCache records.
+            find_spec = (
+                DistributionSourcePackageCache.distribution == self,
+                In(
+                    DistributionSourcePackageCache.archiveID,
+                    self.all_distro_archive_ids))
             match_clause = (
-                BinaryPackageName.name.like("%%%s%%" % package_name.lower()),)
+                DistributionSourcePackageCache.binpkgnames.like(
+                    "%%%s%%" % package_name.lower()),)
 
         result_set = store.find(
             *(select_spec + find_spec + match_clause)).config(distinct=True)

@@ -454,12 +454,16 @@ class LaunchpadObjectFactory(ObjectFactory):
         return getUtility(ITranslationGroupSet).new(
             name, title, summary, url, owner)
 
-    def makeMilestone(self, product=None, distribution=None, name=None):
-        if product is None and distribution is None:
+    def makeMilestone(
+        self, product=None, distribution=None, productseries=None, name=None):
+        if product is None and distribution is None and productseries is None:
             product = self.makeProduct()
+        if productseries is not None:
+            product = productseries.product
         if name is None:
             name = self.getUniqueString()
         return Milestone(product=product, distribution=distribution,
+                         productseries=productseries,
                          name=name)
 
     def makeProductRelease(self, milestone=None):
@@ -1338,6 +1342,18 @@ class LaunchpadObjectFactory(ObjectFactory):
 
         return subset.new(name, translation_domain, path, owner)
 
+    def makePOTemplateAndPOFiles(self, language_codes, **kwargs):
+        """Create a POTemplate and associated POFiles.
+
+        Create a POTemplate for the given distroseries/sourcepackagename or
+        productseries and create a POFile for each language. Returns the
+        template.
+        """
+        template = self.makePOTemplate(**kwargs)
+        for language_code in language_codes:
+            self.makePOFile(language_code, template, template.owner)
+        return template
+
     def makePOFile(self, language_code, potemplate=None, owner=None,
                    variant=None):
         """Make a new translation file."""
@@ -1470,6 +1486,16 @@ class LaunchpadObjectFactory(ObjectFactory):
         if name is None:
             name = self.getUniqueString()
         return getUtility(ISourcePackageNameSet).new(name)
+
+    def getOrMakeSourcePackageName(self, name=None):
+        """Get an existing`ISourcePackageName` or make a new one.
+
+        This method encapsulates getOrCreateByName so that tests can be kept
+        free of the getUtility(ISourcePackageNameSet) noise.
+        """
+        if name is None:
+            return self.makeSourcePackageName()
+        return getUtility(ISourcePackageNameSet).getOrCreateByName(name)
 
     def makeSourcePackage(self, sourcepackagename=None, distroseries=None):
         """Make an `ISourcePackage`."""
