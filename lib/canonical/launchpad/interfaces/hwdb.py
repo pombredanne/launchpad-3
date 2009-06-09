@@ -22,6 +22,10 @@ __all__ = [
     'IHWDeviceNameVariantSet',
     'IHWDeviceSet',
     'IHWDriver',
+    'IHWDriverName',
+    'IHWDriverNameSet',
+    'IHWDriverPackageName',
+    'IHWDriverPackageNameSet',
     'IHWDriverSet',
     'IHWSubmission',
     'IHWSubmissionBug',
@@ -516,6 +520,52 @@ class IHWDriverSet(Interface):
             u'All known distinct package names appearing in HWDriver.',
         value_type=TextLine(),
         readonly=True)
+
+
+class IHWDriverName(Interface):
+    """A driver name as appearing in `IHWDriver`.
+    """
+    export_as_webservice_entry()
+
+    name = exported(
+        TextLine(
+            title=u'Driver Name', required=True, readonly=True,
+            description=_("The name of a driver as it appears in "
+                          "IHWDriver.")))
+
+
+class IHWDriverNameSet(Interface):
+    """The set of `IHWDriverNames`.
+
+    A driver name can appear more than once in HWDriver; this set
+    provides a list of distinct driver names.
+    """
+
+    def all():
+        """Return the sequence of all package names."""
+
+
+class IHWDriverPackageName(Interface):
+    """A driver name as appearing in `IHWDriver`.
+    """
+    export_as_webservice_entry()
+
+    package_name = exported(
+        TextLine(
+            title=u'Package Name', required=True, readonly=True,
+            description=_("The name of a package as it appears in "
+                          "IHWDriver.")))
+
+
+class IHWDriverPackageNameSet(Interface):
+    """The set of `IHWDriverPackageNames`.
+
+    A package name can appear more than once in HWDriver; this set
+    provides a list of distinct package names.
+    """
+
+    def all():
+        """Return the sequence of all package names."""
 
 
 # Identification of a hardware device.
@@ -1144,12 +1194,21 @@ class IHWDBApplication(ILaunchpadApplication, ITopLevelEntryLink):
         :return: A list of strings with vendor IDs fr this bus,
         """
 
+    driver_names = exported(
+        CollectionField(
+            title=u'Driver Names',
+            description=
+                u'All known distinct driver names appearing in HWDriver',
+            value_type=Reference(schema=IHWDriverName),
+            readonly=True))
+
     package_names = exported(
-        List(title=u'Package Names',
-             description=
-                 u'All known distinct package names appearing in HWDriver.',
-             value_type=TextLine(),
-             readonly=True))
+        CollectionField(
+            title=u'Package Names',
+            description=
+                u'All known distinct package names appearing in HWDriver.',
+            value_type=Reference(schema=IHWDriverPackageName),
+            readonly=True))
 
     @operation_parameters(
         bus=Choice(

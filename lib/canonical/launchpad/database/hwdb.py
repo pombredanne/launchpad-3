@@ -13,6 +13,10 @@ __all__ = [
     'HWDeviceNameVariant',
     'HWDeviceNameVariantSet',
     'HWDriver',
+    'HWDriverName',
+    'HWDriverNameSet',
+    'HWDriverPackageName',
+    'HWDriverPackageNameSet',
     'HWDriverSet',
     'HWSubmission',
     'HWSubmissionBug',
@@ -55,11 +59,12 @@ from canonical.launchpad.interfaces.hwdb import (
     HWSubmissionKeyNotUnique, HWSubmissionProcessingStatus, IHWDevice,
     IHWDeviceClass, IHWDeviceClassSet, IHWDeviceDriverLink,
     IHWDeviceDriverLinkSet, IHWDeviceNameVariant, IHWDeviceNameVariantSet,
-    IHWDeviceSet, IHWDriver, IHWDriverSet, IHWSubmission, IHWSubmissionBug,
-    IHWSubmissionBugSet, IHWSubmissionDevice, IHWSubmissionDeviceSet,
-    IHWSubmissionSet, IHWSystemFingerprint, IHWSystemFingerprintSet,
-    IHWVendorID, IHWVendorIDSet, IHWVendorName, IHWVendorNameSet,
-    IllegalQuery, ParameterError)
+    IHWDeviceSet, IHWDriver, IHWDriverName, IHWDriverNameSet,
+    IHWDriverPackageName, IHWDriverPackageNameSet, IHWDriverSet,
+    IHWSubmission, IHWSubmissionBug, IHWSubmissionBugSet, IHWSubmissionDevice,
+    IHWSubmissionDeviceSet, IHWSubmissionSet, IHWSystemFingerprint,
+    IHWSystemFingerprintSet, IHWVendorID, IHWVendorIDSet, IHWVendorName,
+    IHWVendorNameSet, IllegalQuery, ParameterError)
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from lp.registry.interfaces.distribution import IDistribution
@@ -963,6 +968,50 @@ class HWDriverSet:
         # names, which is reasonably small.
         return shortlist([record[0] for record in result_set],
                          longest_expected=1000)
+
+
+class HWDriverName(SQLBase):
+    """See `IHWDriverName`."""
+
+    implements(IHWDriverName)
+    _table = 'HWDriverNames'
+
+    name = StringCol(notNull=True)
+
+
+class HWDriverNameSet:
+    """See `IHWDriverNameSet`."""
+
+    implements(IHWDriverNameSet)
+
+    def all(self):
+        """See `IHWDriverNameSet`."""
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        result = store.find(HWDriverName)
+        result.order_by(HWDriverName.name)
+        return result
+
+
+class HWDriverPackageName(SQLBase):
+    """See `IHWDriverPackageName`."""
+
+    implements(IHWDriverPackageName)
+    _table = 'HWDriverPackageNames'
+
+    package_name = StringCol(notNull=True)
+
+
+class HWDriverPackageNameSet:
+    """See `IHWDriverPackageNameSet`."""
+
+    implements(IHWDriverPackageNameSet)
+
+    def all(self):
+        """See `IHWDriverPackageNameSet`."""
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        result = store.find(HWDriverPackageName)
+        result.order_by(HWDriverPackageName.package_name)
+        return result
 
 
 class HWDeviceDriverLink(SQLBase):

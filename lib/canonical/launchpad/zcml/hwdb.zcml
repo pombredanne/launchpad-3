@@ -172,6 +172,42 @@
             interface="canonical.launchpad.interfaces.IHWDriverSet" />
     </securedutility>
 
+    <class class="canonical.launchpad.database.HWDriverName">
+        <allow
+            interface="canonical.launchpad.interfaces.IHWDriverName" />
+    </class>
+
+    <browser:url
+        for="canonical.launchpad.interfaces.IHWDriverName"
+        path_expression="string:+drivername/${name}"
+        parent_utility="canonical.launchpad.interfaces.IHWDBApplication"
+        />
+
+    <securedutility
+        class="canonical.launchpad.database.HWDriverNameSet"
+        provides="canonical.launchpad.interfaces.IHWDriverNameSet">
+        <allow
+            interface="canonical.launchpad.interfaces.IHWDriverNameSet" />
+    </securedutility>
+
+    <class class="canonical.launchpad.database.HWDriverPackageName">
+        <allow
+            interface="canonical.launchpad.interfaces.IHWDriverPackageName" />
+    </class>
+
+    <browser:url
+        for="canonical.launchpad.interfaces.IHWDriverPackageName"
+        path_expression="string:+driverpackagename/${package_name}"
+        parent_utility="canonical.launchpad.interfaces.IHWDBApplication"
+        />
+
+    <securedutility
+        class="canonical.launchpad.database.HWDriverPackageNameSet"
+        provides="canonical.launchpad.interfaces.IHWDriverPackageNameSet">
+        <allow
+            interface="canonical.launchpad.interfaces.IHWDriverPackageNameSet" />
+    </securedutility>
+
     <class class="canonical.launchpad.database.HWDeviceDriverLink">
         <allow
             interface="canonical.launchpad.interfaces.IHWDeviceDriverLink" />
