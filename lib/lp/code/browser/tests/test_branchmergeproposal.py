@@ -1,4 +1,5 @@
 # Copyright 2007-2008 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=F0401
 
 """Unit tests for BranchMergeProposals."""
 
@@ -410,18 +411,21 @@ class TestBranchMergeProposalChangeStatusOptions(TestCaseWithFactory):
         # the proposal is currently approved.
         self.proposal.approveBranch(
             self.proposal.target_branch.owner, 'some-revision')
-        self.assertAllStatusesAvailable(user=self.proposal.target_branch.owner)
+        self.assertAllStatusesAvailable(
+            user=self.proposal.target_branch.owner)
 
     def test_createStatusVocabulary_rejected(self):
         # Only reviewers can change rejected proposals to approved.  All other
         # options for rejected proposals are the same regardless of user.
         self.proposal.rejectBranch(
             self.proposal.target_branch.owner, 'some-revision')
-        self.assertAllStatusesAvailable(user=self.proposal.source_branch.owner,
+        self.assertAllStatusesAvailable(
+            user=self.proposal.source_branch.owner,
             except_for=['CODE_APPROVED', 'QUEUED'])
         self.assertAllStatusesAvailable(user=self.proposal.registrant,
             except_for=['CODE_APPROVED', 'QUEUED'])
-        self.assertAllStatusesAvailable(user=self.proposal.target_branch.owner)
+        self.assertAllStatusesAvailable(
+            user=self.proposal.target_branch.owner)
 
     def test_createStatusVocabulary_queued(self):
         # Queued proposals can go to any status, but only reviewers can set
@@ -429,11 +433,12 @@ class TestBranchMergeProposalChangeStatusOptions(TestCaseWithFactory):
         self.proposal.enqueue(
             self.proposal.target_branch.owner, 'some-revision')
 
-        self.assertAllStatusesAvailable(user=self.proposal.source_branch.owner,
-                                        except_for=['REJECTED'])
+        self.assertAllStatusesAvailable(
+            user=self.proposal.source_branch.owner, except_for=['REJECTED'])
         self.assertAllStatusesAvailable(user=self.proposal.registrant,
                                         except_for=['REJECTED'])
-        self.assertAllStatusesAvailable(user=self.proposal.target_branch.owner)
+        self.assertAllStatusesAvailable(
+            user=self.proposal.target_branch.owner)
 
 
 def test_suite():
