@@ -472,6 +472,20 @@ class LaunchpadObjectFactory(ObjectFactory):
         return milestone.createProductRelease(
             milestone.product.owner, datetime.now(pytz.UTC))
 
+    def makeProductReleaseFile(self, signed=True):
+        signature_filename = None
+        signature_content = None
+        if signed:
+            signature_filename = 'test.txt.asc'
+            signature_content = '123'
+        release = self.makeProductRelease()
+        return release.addReleaseFile(
+            'test.txt', 'test', 'text/plain',
+            uploader=release.milestone.product.owner,
+            signature_filename=signature_filename,
+            signature_content=signature_content,
+            description="test file")
+
     def makeProduct(self, *args, **kwargs):
         """As makeProductNoCommit with an implicit transaction commit.
 

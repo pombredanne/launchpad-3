@@ -127,8 +127,7 @@ class MilestoneView(LaunchpadView, ProductDownloadFileMixin):
         """The release's files as DownloadFiles."""
         if self.release is None or self.release.files.count() == 0:
             return None
-        return [self.getDownloadFile(file_, self.release)
-                for file_ in self.release.files]
+        return list(self.release.files)
 
     # Listify and cache the specifications, ProductReleaseFiles and bugtasks
     # to avoid making the same query over and over again when evaluating in

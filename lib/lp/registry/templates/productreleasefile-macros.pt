@@ -14,14 +14,7 @@
 
   <tal:define-lfa define="lfa file/libraryfile">
     <td>
-      <img alt="download icon" src="/@@/download" />
-      <strong>
-        <a tal:attributes="href file/url"
-           tal:content="lfa/filename">filename</a>
-      </strong>
-      (<a tal:attributes="href file/md5_url">md5</a
-        ><tal:signature condition="file/signature">,
-      <a tal:attributes="href file/signature_url">sig</a></tal:signature>)
+      <tal:link replace="structure file/fmt:link" />
     </td>
     <td tal:condition="show_release|nothing">
       <tal:version content="release/version">version</tal:version>
