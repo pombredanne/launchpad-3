@@ -9,7 +9,8 @@ import os.path
 from unittest import TestLoader
 
 from bzrlib import errors as bzr_errors
-from bzrlib.branch import Branch, BzrBranchFormat5, BzrBranchFormat7
+from bzrlib.branch import (Branch, BzrBranchFormat5, BzrBranchFormat7,
+    BzrBranchFormat8)
 from bzrlib.bzrdir import BzrDirMetaFormat1
 from bzrlib.repofmt.knitrepo import RepositoryFormatKnit1
 from bzrlib.repofmt.pack_repo import RepositoryFormatKnitPack6
@@ -230,7 +231,7 @@ class TestBranchUpgradeJob(TestCaseWithFactory):
         format = job.upgrade_format
         self.assertIs(
             type(format.get_branch_format()),
-            BzrBranchFormat7)
+            BzrBranchFormat8)
         self.assertIs(
             type(format._repository_format),
             REPOSITORY_FORMAT_UPGRADE_PATH.get(RepositoryFormat.BZR_KNIT_1))
