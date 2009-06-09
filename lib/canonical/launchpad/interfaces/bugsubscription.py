@@ -16,7 +16,8 @@ from canonical.launchpad.fields import ParticipatingPersonChoice
 from canonical.launchpad.interfaces.bug import IBug
 
 from lazr.restful.declarations import (
-    export_as_webservice_entry, exported)
+    REQUEST_USER, call_with, export_as_webservice_entry,
+    export_read_operation, exported)
 from lazr.restful.fields import Reference
 
 class IBugSubscription(Interface):
@@ -40,5 +41,7 @@ class IBugSubscription(Interface):
     display_subscribed_by = Attribute(
         "`subscribed_by` formatted for display.")
 
+    @call_with(user=REQUEST_USER)
+    @export_read_operation()
     def canBeUnsubscribedByUser(user):
         """Can the user unsubscribe the subscriber form the bug?"""

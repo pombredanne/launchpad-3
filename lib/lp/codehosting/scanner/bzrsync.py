@@ -136,6 +136,10 @@ class BzrSync:
         self.deleteBranchRevisions(branchrevisions_to_delete)
         self.insertBranchRevisions(bzr_branch, revids_to_insert)
         self.trans_manager.commit()
+        # Synchronize the RevisionCache for this branch.
+        self.trans_manager.begin()
+        getUtility(IRevisionSet).updateRevisionCacheForBranch(self.db_branch)
+        self.trans_manager.commit()
 
         # Notify any listeners that the tip of the branch has changed, but
         # before we've actually updated the database branch.

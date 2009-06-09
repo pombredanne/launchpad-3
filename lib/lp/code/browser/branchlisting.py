@@ -601,7 +601,8 @@ class BranchListingView(LaunchpadFormView, FeedsMixin):
         if widget.hasValidInput():
             return widget.getInputValue()
         else:
-            return None
+            # If a derived view has specified a default sort_by, use that.
+            return self.initial_values.get('sort_by')
 
     @staticmethod
     def _listingSortToOrderBy(sort_by):
@@ -610,8 +611,6 @@ class BranchListingView(LaunchpadFormView, FeedsMixin):
         :param sort_by: an item from the BranchListingSort enumeration.
         """
         from lp.code.model.branch import Branch
-        from lp.registry.model.person import Owner
-        from lp.registry.model.product import Product
 
         DEFAULT_BRANCH_LISTING_SORT = [
             BranchListingSort.PRODUCT,
@@ -621,10 +620,10 @@ class BranchListingView(LaunchpadFormView, FeedsMixin):
             ]
 
         LISTING_SORT_TO_COLUMN = {
-            BranchListingSort.PRODUCT: (Asc, Product.name),
+            BranchListingSort.PRODUCT: (Asc, Branch.target_suffix),
             BranchListingSort.LIFECYCLE: (Desc, Branch.lifecycle_status),
             BranchListingSort.NAME: (Asc, Branch.name),
-            BranchListingSort.REGISTRANT: (Asc, Owner.name),
+            BranchListingSort.REGISTRANT: (Asc, Branch.owner_name),
             BranchListingSort.MOST_RECENTLY_CHANGED_FIRST: (
                 Desc, Branch.date_last_modified),
             BranchListingSort.LEAST_RECENTLY_CHANGED_FIRST: (
@@ -636,7 +635,7 @@ class BranchListingView(LaunchpadFormView, FeedsMixin):
         order_by = map(
             LISTING_SORT_TO_COLUMN.get, DEFAULT_BRANCH_LISTING_SORT)
 
-        if sort_by is not None:
+        if sort_by is not None and sort_by != BranchListingSort.DEFAULT:
             direction, column = LISTING_SORT_TO_COLUMN[sort_by]
             order_by = (
                 [(direction, column)] +
@@ -689,8 +688,7 @@ class NoContextBranchListingView(BranchListingView):
         if lifecycle_status is not None:
             collection = collection.withLifecycleStatus(*lifecycle_status)
         collection = collection.visibleByUser(self.user)
-        return collection.getBranches(
-            join_owner=False, join_product=False).order_by(
+        return collection.getBranches().order_by(
             self._branch_order)
 
 
@@ -879,6 +877,12 @@ class PersonBranchesMenu(ApplicationMenu, PersonBranchCountMixin):
 
 class PersonBaseBranchListingView(BranchListingView, PersonBranchCountMixin):
     """Base class used for different person listing views."""
+
+    @property
+    def initial_values(self):
+        values = super(PersonBaseBranchListingView, self).initial_values
+        values['sort_by'] = BranchListingSort.MOST_RECENTLY_CHANGED_FIRST
+        return values
 
     @property
     def user_in_context_team(self):

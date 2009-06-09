@@ -6,7 +6,13 @@ notify the user that they should update that field or we assume that
 such file is an old version that should not be imported. That way, they
 have a chance to fix it.
 
-In this test, we are going to check that we detect and notify it.
+We have to make an exception for published files, though, because the user
+may not be able to get the file fixed upstream or the file is older because
+a user upload occured before the published file made it to Launchpad. In
+either case we assume that the published file is OK and accept it for upload.
+
+In this test, we are going to check that we detect these situations and
+notify the user about them.
 
 Here are some imports we need to get this test running.
 
@@ -17,10 +23,6 @@ Here are some imports we need to get this test running.
     >>> import pytz
     >>> UTC = pytz.timezone('UTC')
     >>> translation_import_queue = getUtility(ITranslationImportQueue)
-
-We need this for the Librarian to work properly.
-
-    >>> import transaction
 
 And also, the DBSchema to change the imports status
 
@@ -35,7 +37,7 @@ Here's the person who'll be doing the import.
     >>> person_set = getUtility(IPersonSet)
     >>> person = person_set.getByName('sabdfl')
 
-Now, is time to create the new potemplate
+Now it's time to create the new potemplate
 
     >>> from canonical.launchpad.database import ProductRelease
     >>> release = ProductRelease.get(3)
@@ -92,7 +94,7 @@ The status is now IMPORTED:
 (The procedure also generates a confirmation email, but that is tested
 in `poimport.txt`.)
 
-We can see that the header has the same 'PO-Revision-Date' than the
+We can see that the header has the same 'PO-Revision-Date' as the
 file we just imported.
 
     >>> print pofile.header
@@ -116,7 +118,7 @@ field with a date older than a previous .po import.
     ... msgid "foo"
     ... msgstr "blah"
     ... ''' % datetime.datetime.now(UTC).isoformat()
-    >>> published = True
+    >>> published = False
     >>> entry = translation_import_queue.addOrUpdateEntry(
     ...     pofile.path, pofile_contents, published, person,
     ...     productseries=series, potemplate=potemplate, pofile=pofile)
@@ -175,3 +177,32 @@ The code also generated an email about the error we produced.
     <BLANKLINE>
     The Launchpad team
     <BLANKLINE>
+
+Finally we are going to import the same po file with the old
+'PO-Revision-Date' field but not it is marked as a 'published' file.
+
+    >>> published = True
+    >>> entry = translation_import_queue.addOrUpdateEntry(
+    ...     pofile.path, pofile_contents, published, person,
+    ...     productseries=series, potemplate=potemplate, pofile=pofile)
+    >>> transaction.commit()
+
+We approve the entry and import it.
+
+    >>> entry.setStatus(RosettaImportStatus.APPROVED)
+    >>> (subject, message) = pofile.importFromQueue(entry)
+
+This succeeds although the file's timestamp is older than that of the
+previous import.
+
+    >>> entry.status == RosettaImportStatus.IMPORTED
+    True
+    >>> print entry.error_output
+    None
+
+But the header remains unchanged, so that the older date is not recorded.
+
+    >>> print pofile.header
+    Project-Id-Version:...
+    PO-Revision-Date: 2005-05-03 20:41+0100
+    ...

@@ -2,13 +2,11 @@
   xmlns="http://www.w3.org/1999/xhtml"
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
-  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   xml:lang="en"
   lang="en"
   dir="ltr"
   metal:define-macro="master"
-  metal:extend-macro="context/@@main_template/master"
-  i18n:domain="launchpad">
+  metal:extend-macro="context/@@main_template/master">
 
 <body>
 
@@ -20,16 +18,14 @@
 
 <div metal:fill-slot="main">
   <tal:nobugs condition="not:context/bugs">
-    <p class="informational message"
-      i18n:translate="">
+    <p class="informational message">
       There are no links to bug reports to remove.
     </p>
   </tal:nobugs>
 
   <tal:somebugs condition="context/bugs">
     <tal:nopermission condition="not:view/bugsWithPermission">
-      <p class="informational message"
-         i18n:translate="">
+      <p class="informational message">
         There are no links that you are allowed to remove.
       </p>
     </tal:nopermission>

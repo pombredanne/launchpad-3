@@ -32,7 +32,7 @@ without, mapped members.
 
     >>> anon_browser.open('http://launchpad.dev/~guadamen/+mapdata')
     >>> print anon_browser.contents
-    <?xml version="1.0"?><!--*- mode: nxml -*-->
+    <?xml version="1.0"...
     <participants>
       <!--
         This collection of team location data is (c) Canonical Ltd and
@@ -51,7 +51,7 @@ without, mapped members.
 
     >>> anon_browser.open('http://launchpad.dev/~name21/+mapdata')
     >>> print anon_browser.contents
-    <?xml version="1.0"?><!--*- mode: nxml -*-->
+    <?xml version="1.0"...
     <participants>
       <!--
         This collection of team location data is (c) Canonical Ltd and
@@ -99,6 +99,6 @@ XSS attacks on any callsite of +mapdata.
 
     >>> anon_browser.open('http://launchpad.dev/~guadamen/+mapdata')
     >>> print anon_browser.contents
-    <?xml version="1.0"?><!--*- mode: nxml -*-->
+    <?xml version="1.0"...
     ...displayname="&amp;lt;script&amp;gt;alert('John &amp;quot;nasty&amp;quot;');&amp;lt;/script&amp;gt;"
     ...

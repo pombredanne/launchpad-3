@@ -18,19 +18,18 @@ from zope.component import getUtility
 from zope.formlib import form
 from zope.schema import Choice
 
-from canonical.launchpad import _
 from canonical.cachedproperty import cachedproperty
-
+from canonical.launchpad import _
+from canonical.launchpad.browser.bugtask import BugTaskListingItem
 from canonical.launchpad.interfaces.bugtask import (
     BugTaskSearchParams, IBugTaskSet)
-from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lp.registry.interfaces.milestone import (
     IMilestone, IMilestoneSet, IProjectMilestone)
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, ContextMenu, Link,
     LaunchpadEditFormView, LaunchpadFormView, LaunchpadView,
     enabled_with_permission, GetitemNavigation, Navigation, NavigationMenu)
-
+from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.widgets import DateWidget
 
 from lp.registry.browser import RegistryDeleteViewMixin
@@ -38,27 +37,24 @@ from lp.registry.browser.product import ProductDownloadFileMixin
 
 
 class MilestoneSetNavigation(GetitemNavigation):
-
+    """The navigation to traverse to milestones."""
     usedfor = IMilestoneSet
 
 
-# XXX: jamesh 2005-12-14:
-# This class is required in order to make use of a side effect of
-# Navigation.publishTraverse: adding context objects to
-# request.traversed_objects.
 class MilestoneNavigation(Navigation):
-
+    """The navigation to traverse to a milestone."""
     usedfor = IMilestone
 
 
 class MilestoneContextMenu(ContextMenu):
-
+    """The menu for this milestone."""
     usedfor = IMilestone
 
-    links = ['edit', 'subscribe', 'create_release', 'view_release']
+    links = ['edit', 'subscribe', 'create_release']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
+        """The link to edit this milestone."""
         text = 'Change details'
         # ProjectMilestones are virtual milestones and do not have
         # any properties which can be edited.
@@ -68,30 +64,20 @@ class MilestoneContextMenu(ContextMenu):
             '+edit', text, icon='edit', summary=summary, enabled=enabled)
 
     def subscribe(self):
+        """The link to subscribe to bug mail."""
         enabled = not IProjectMilestone.providedBy(self.context)
         return Link('+subscribe', 'Subscribe to bug mail',
                     icon='edit', enabled=enabled)
 
     @enabled_with_permission('launchpad.Edit')
     def create_release(self):
+        """The link to create a release for this milestone."""
         text = 'Create release'
         # Releases only exist for products.
         # A milestone can only have a single product release.
         enabled = (not IProjectMilestone.providedBy(self.context)
                    and self.context.product_release is None)
         return Link('+addrelease', text, icon='add', enabled=enabled)
-
-    def view_release(self):
-        text = 'View release'
-        # Releases only exist for products.
-        if (not IProjectMilestone.providedBy(self.context)
-            and self.context.product_release is not None):
-            enabled = True
-            url = canonical_url(self.context.product_release)
-        else:
-            enabled = False
-            url = '.'
-        return Link(url, text, enabled=enabled)
 
 
 class MilestoneOverviewNavigationMenu(NavigationMenu):
@@ -104,12 +90,15 @@ class MilestoneOverviewNavigationMenu(NavigationMenu):
 
 
 class MilestoneView(LaunchpadView, ProductDownloadFileMixin):
+    """A View for listing milestones and releases."""
+    # XXX sinzui 2009-05-29 bug=381672: Extract the BugTaskListingItem rules
+    # to a mixin so that MilestoneView and others can use it.
 
     def __init__(self, context, request):
         """See `LaunchpadView`.
 
         This view may be used with a milestone or a release. The milestone
-        and release (if it exists) are accessible are attributes. The context
+        and release (if it exists) are accessible as attributes. The context
         attribute will always be the milestone.
 
         :param context: `IMilestone` or `IProductRelease`.
@@ -133,16 +122,30 @@ class MilestoneView(LaunchpadView, ProductDownloadFileMixin):
         """See `ProductDownloadFileMixin`."""
         return set([self.release])
 
-    # Listify and cache the specifications and bugtasks to avoid making
-    # the same query over and over again when evaluating in the template.
+    @cachedproperty
+    def download_files(self):
+        """The release's files as DownloadFiles."""
+        if self.release is None or self.release.files.count() == 0:
+            return None
+        return [self.getDownloadFile(file_, self.release)
+                for file_ in self.release.files]
+
+    # Listify and cache the specifications, ProductReleaseFiles and bugtasks
+    # to avoid making the same query over and over again when evaluating in
+    # the template.
     @cachedproperty
     def specifications(self):
         """The list of specifications targeted to this milestone."""
         return list(self.context.specifications)
 
     @cachedproperty
-    def bugtasks(self):
-        """The list of bugtasks targeted to this milestone."""
+    def product_release_files(self):
+        """Files associated with this milestone."""
+        return list(self.release.files)
+
+    @cachedproperty
+    def _bugtasks(self):
+        """The list of non-conjoined bugtasks targeted to this milestone."""
         user = getUtility(ILaunchBag).user
         params = BugTaskSearchParams(user, milestone=self.context,
                     orderby=['-importance', 'datecreated', 'id'],
@@ -162,6 +165,26 @@ class MilestoneView(LaunchpadView, ProductDownloadFileMixin):
                 non_conjoined_slaves.append(task)
         return non_conjoined_slaves
 
+    @cachedproperty
+    def _bug_badge_properties(self):
+        """The badges for each bug associates with this milestone."""
+        return getUtility(IBugTaskSet).getBugTaskBadgeProperties(
+            self._bugtasks)
+
+    def _getListingItem(self, bugtask):
+        """Return a decorated bugtask for the bug listing."""
+        badge_property = self._bug_badge_properties[bugtask]
+        return BugTaskListingItem(
+            bugtask,
+            badge_property['has_mentoring_offer'],
+            badge_property['has_branch'],
+            badge_property['has_specification'])
+
+    @cachedproperty
+    def bugtasks(self):
+        """The list of bugtasks targeted to this milestone for listing."""
+        return [self._getListingItem(bugtask) for bugtask in self._bugtasks]
+
     @property
     def bugtask_count_text(self):
         """The formatted count of bugs for this milestone."""
@@ -179,6 +202,12 @@ class MilestoneView(LaunchpadView, ProductDownloadFileMixin):
             return '<strong>1 blueprint</strong>'
         else:
             return '<strong>%d blueprints</strong>' % count
+
+    @cachedproperty
+    def total_downloads(self):
+        """Total downloads of files associated with this milestone."""
+        return sum(
+            file.libraryfile.hits for file in self.product_release_files)
 
     @property
     def is_project_milestone(self):
@@ -206,7 +235,7 @@ class MilestoneAddView(LaunchpadFormView):
     @action(_('Register Milestone'), name='register')
     def register_action(self, action, data):
         """Use the newMilestone method on the context to make a milestone."""
-        milestone = self.context.newMilestone(
+        self.context.newMilestone(
             name=data.get('name'),
             code_name=data.get('code_name'),
             dateexpected=data.get('dateexpected'),
@@ -215,10 +244,12 @@ class MilestoneAddView(LaunchpadFormView):
 
     @property
     def action_url(self):
+        """See `LaunchpadFormView`."""
         return "%s/+addmilestone" % canonical_url(self.context)
 
     @property
     def cancel_url(self):
+        """See `LaunchpadFormView`."""
         return canonical_url(self.context)
 
 
@@ -280,6 +311,7 @@ class MilestoneEditView(LaunchpadEditFormView):
 
     @action(_('Update'), name='update')
     def update_action(self, action, data):
+        """Update the milestone."""
         self.updateContextFromData(data)
         self.next_url = canonical_url(self.context)
 
@@ -316,6 +348,7 @@ class MilestoneDeleteView(LaunchpadFormView, RegistryDeleteViewMixin):
 
     @action('Delete this Milestone', name='delete')
     def delete_action(self, action, data):
+        """Delete the milestone anddelete or unlink subordinate objects."""
         # Any associated bugtasks and specifications are untargeted.
         series = self.context.productseries
         name = self.context.name

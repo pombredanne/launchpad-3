@@ -10,7 +10,7 @@ import gc
 
 from zope.component import getUtility
 
-from canonical.archivepublisher.publishing import getPublisher
+from lp.archivepublisher.publishing import getPublisher
 from canonical.database.sqlbase import (
     clear_current_connection_cache, flush_database_updates)
 from lp.soyuz.interfaces.archive import (

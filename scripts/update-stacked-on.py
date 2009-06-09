@@ -25,7 +25,7 @@ from bzrlib.bzrdir import BzrDir
 from bzrlib.config import TransportConfig
 from bzrlib import errors
 
-from lp.codehosting.branchfs import LaunchpadInternalServer
+from lp.codehosting.vfs.branchfs import LaunchpadInternalServer
 from lp.codehosting.vfs import BlockingProxy
 from lp.codehosting.vfs.transport import (
     get_chrooted_transport, get_readonly_transport, _MultiServer)

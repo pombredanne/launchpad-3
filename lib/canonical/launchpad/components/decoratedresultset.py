@@ -6,11 +6,12 @@ __all__ = [
     'DecoratedResultSet',
     ]
 
+from zope.security.proxy import removeSecurityProxy
+
 from storm.expr import Column
 from storm.zope.interfaces import IResultSet
 
 from lazr.delegates import delegates
-
 
 class DecoratedResultSet(object):
     """A decorated Storm ResultSet for 'Magic' (presenter) classes.
@@ -93,7 +94,8 @@ class DecoratedResultSet(object):
         """
         # Can be a value or result set...
         value = self.result_set.__getitem__(*args, **kwargs)
-        if isinstance(value, type(self.result_set)):
+        naked_value = removeSecurityProxy(value)
+        if IResultSet.providedBy(naked_value):
             return DecoratedResultSet(
                 value, self.result_decorator, self.pre_iter_hook)
         else:
@@ -153,8 +155,11 @@ class DecoratedResultSet(object):
         # Only override the method call if
         #  1) The result set has the distinct config set
         #  2) count was called without any args or kwargs
-        if self.result_set._distinct and len(args) == 0 and len(kwargs) == 0:
-            spec = self.result_set._find_spec
+        naked_result_set = removeSecurityProxy(self.result_set)
+        if (naked_result_set._distinct and
+            len(args) == 0 and
+            len(kwargs) == 0):
+            spec = naked_result_set._find_spec
             columns, tables = spec.get_columns_and_tables()
 
             # Note: The following looks a bit suspect because it will only

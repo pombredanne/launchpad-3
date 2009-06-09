@@ -1,5 +1,5 @@
 # Copyright 2004-2009 Canonical Ltd.  All rights reserved.
-# pylint: disable-msg=E0611,W0212,W0141
+# pylint: disable-msg=E0611,W0212,W0141,F0401
 
 __metaclass__ = type
 __all__ = [
@@ -17,8 +17,10 @@ import pytz
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements
+from zope.security.proxy import removeSecurityProxy
 
 from storm.expr import And, Count, Desc, Max, NamedFunc, Or, Select
+from storm.locals import AutoReload
 from storm.store import Store
 from sqlobject import (
     ForeignKey, IntCol, StringCol, BoolCol, SQLMultipleJoin, SQLRelatedJoin)
@@ -37,18 +39,20 @@ from canonical.launchpad.webapp import urlappend
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, SLAVE_FLAVOR)
 
+from lp.code.mail.branch import send_branch_modified_notifications
 from lp.code.model.branchmergeproposal import (
-     BranchMergeProposal)
+     BranchMergeProposal, BranchMergeProposalGetter)
 from lp.code.model.branchrevision import BranchRevision
 from lp.code.model.branchsubscription import BranchSubscription
 from lp.code.model.revision import Revision
 from lp.code.event.branchmergeproposal import NewBranchMergeProposalEvent
 from lp.code.interfaces.branch import (
     bazaar_identity, BranchCannotBePrivate, BranchCannotBePublic,
-    BranchFormat, BranchLifecycleStatus, BranchMergeControlStatus,
-    BranchType, BranchTypeError, CannotDeleteBranch,
+    BranchFormat, BRANCH_FORMAT_UPGRADE_PATH, BranchLifecycleStatus,
+    BranchMergeControlStatus, BranchType, BranchTypeError, CannotDeleteBranch,
     ControlFormat, DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch,
-    IBranchNavigationMenu, IBranchSet, RepositoryFormat)
+    IBranchNavigationMenu, IBranchSet, RepositoryFormat,
+    REPOSITORY_FORMAT_UPGRADE_PATH)
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.interfaces.branchmergeproposal import (
      BRANCH_MERGE_PROPOSAL_FINAL_STATES, BranchMergeProposalExists,
@@ -71,8 +75,6 @@ class Branch(SQLBase):
     branch_type = EnumCol(enum=BranchType, notNull=True)
 
     name = StringCol(notNull=False)
-    title = StringCol(notNull=False)
-    summary = StringCol(notNull=False)
     url = StringCol(dbName='url')
     branch_format = EnumCol(enum=BranchFormat)
     repository_format = EnumCol(enum=RepositoryFormat)
@@ -129,6 +131,12 @@ class Branch(SQLBase):
     revision_count = IntCol(default=DEFAULT, notNull=True)
     stacked_on = ForeignKey(
         dbName='stacked_on', foreignKey='Branch', default=None)
+
+    # The unique_name is maintined by a SQL trigger.
+    unique_name = StringCol()
+    # Denormalised colums used primarily for sorting.
+    owner_name = StringCol()
+    target_suffix = StringCol()
 
     def __repr__(self):
         return '<Branch %r (%d)>' % (self.unique_name, self.id)
@@ -244,12 +252,8 @@ class Branch(SQLBase):
                 raise InvalidBranchMergeProposal(
                     'Target and dependent branches must be different.')
 
-        target = BranchMergeProposal.select("""
-            BranchMergeProposal.source_branch = %s AND
-            BranchMergeProposal.target_branch = %s AND
-            BranchMergeProposal.queue_status NOT IN %s
-            """ % sqlvalues(self, target_branch,
-                            BRANCH_MERGE_PROPOSAL_FINAL_STATES))
+        target = BranchMergeProposalGetter.activeProposalsForBranches(
+            self, target_branch)
         if target.count() > 0:
             raise BranchMergeProposalExists(
                 'There is already a branch merge proposal registered for '
@@ -371,12 +375,6 @@ class Branch(SQLBase):
         This provides the mirrored copy of the branch.
         """
         return BzrBranch.open(self.warehouse_url)
-
-    @property
-    def unique_name(self):
-        """See `IBranch`."""
-        return u'~%s/%s/%s' % (
-            self.owner.name, self.target.name, self.name)
 
     @property
     def displayname(self):
@@ -820,6 +818,14 @@ class Branch(SQLBase):
             DateTrunc('day', Revision.revision_date))
         return sorted(results)
 
+    @property
+    def needs_upgrading(self):
+        """See `IBranch`."""
+        if (REPOSITORY_FORMAT_UPGRADE_PATH.get(self.repository_format, None)
+            or BRANCH_FORMAT_UPGRADE_PATH.get(self.branch_format, None)):
+            return True
+        return False
+
 
 class DeletionOperation:
     """Represent an operation to perform as part of branch deletion."""
@@ -915,8 +921,7 @@ class BranchSet:
         branches = all_branches.visibleByUser(
             visible_by_user).withLifecycleStatus(*lifecycle_statuses)
         branches = branches.withBranchType(
-            BranchType.HOSTED, BranchType.MIRRORED).scanned().getBranches(
-            join_owner=False, join_product=False)
+            BranchType.HOSTED, BranchType.MIRRORED).scanned().getBranches()
         branches.order_by(
             Desc(Branch.date_last_modified), Desc(Branch.id))
         if branch_count is not None:
@@ -932,8 +937,7 @@ class BranchSet:
         branches = all_branches.visibleByUser(
             visible_by_user).withLifecycleStatus(*lifecycle_statuses)
         branches = branches.withBranchType(
-            BranchType.IMPORTED).scanned().getBranches(
-            join_owner=False, join_product=False)
+            BranchType.IMPORTED).scanned().getBranches()
         branches.order_by(
             Desc(Branch.date_last_modified), Desc(Branch.id))
         if branch_count is not None:
@@ -947,8 +951,7 @@ class BranchSet:
         """See `IBranchSet`."""
         all_branches = getUtility(IAllBranches)
         branches = all_branches.withLifecycleStatus(
-            *lifecycle_statuses).visibleByUser(visible_by_user).getBranches(
-            join_owner=False, join_product=False)
+            *lifecycle_statuses).visibleByUser(visible_by_user).getBranches()
         branches.order_by(
             Desc(Branch.date_created), Desc(Branch.id))
         if branch_count is not None:
@@ -997,3 +1000,23 @@ class BranchCloud:
         # isn't timezone-aware. Not sure why this is. Doesn't matter too much
         # for the purposes of cloud calculation though.
         return result
+
+
+def update_trigger_modified_fields(branch):
+    """Make the trigger updated fields reload when next accessed."""
+    # Not all the fields are exposed through the interface, and some are read
+    # only, so remove the security proxy.
+    naked_branch = removeSecurityProxy(branch)
+    naked_branch.unique_name = AutoReload
+    naked_branch.owner_name = AutoReload
+    naked_branch.target_suffix = AutoReload
+
+
+def branch_modified_subscriber(branch, event):
+    """This method is subscribed to IObjectModifiedEvents for branches.
+
+    We have a single subscriber registered and dispatch from here to ensure
+    that the database fields are updated first before other subscribers.
+    """
+    update_trigger_modified_fields(branch)
+    send_branch_modified_notifications(branch, event)
