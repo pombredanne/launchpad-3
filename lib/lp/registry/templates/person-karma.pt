@@ -24,17 +24,15 @@
 
   <p>
     This is a summary of the Launchpad karma earned by
-    <span tal:replace="context/browsername" />, organized by activity
+    <span tal:replace="context/displayname" />, organized by activity
     type.
   </p>
 
-  <p id="no-karma"
-    tal:condition="not: context/karma_category_caches"
-  >
-    <tal:expired condition="latestkarma">
+  <p id="no-karma" tal:condition="not: view/has_karma">
+    <tal:expired condition="view/has_expired_karma">
         <tal:name replace="context/displayname" />'s karma has expired.
     </tal:expired>
-    <tal:never condition="not: latestkarma">
+    <tal:never condition="not: view/has_expired_karma">
         No karma has yet been assigned to
        <tal:name replace="context/displayname" />.
         Karma is updated daily.
@@ -63,7 +61,7 @@
     </tr>
   </table>
 
-  <tal:latest_events condition="context/latestKarma">
+  <tal:latest_events condition="latestkarma">
 
     <h2>Latest actions</h2>
 
@@ -75,7 +73,7 @@
         </tr>
       </thead>
       <tbody>
-        <tr tal:repeat="karma context/latestKarma">
+        <tr tal:repeat="karma latestkarma">
           <td tal:content="karma/action/title">Bug Filed</td>
           <td>
             <span class="sortkey"
