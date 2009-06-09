@@ -71,7 +71,7 @@ from lp.registry.interfaces.distroseries import DistroSeriesStatus
 from lp.registry.interfaces.product import (
     IProduct, IProductSet, LicenseStatus)
 from lp.registry.interfaces.productrelease import (
-    IProductRelease, IProductReleaseSet)
+    IProductRelease, IProductReleaseFile, IProductReleaseSet)
 from lp.registry.interfaces.productseries import IProductSeries
 from canonical.launchpad import helpers
 from lp.registry.browser.announcement import HasAnnouncementsView
@@ -730,9 +730,21 @@ class ReleaseWithFiles:
         self.files.append(file)
 
 
+class DownloadFile:
+    """A decorated `IProductReleaseFile` with URLs."""
+
+    delegates(IProductReleaseFile, 'file')
+
+    def __init__(self, file_, url, md5_url, signature_url=None):
+        """Decorate the file with urls."""
+        self.file = file_
+        self.url = url
+        self.md5_url = md5_url
+        self.signature_url = signature_url
+
+
 class ProductDownloadFileMixin:
     """Provides methods for managing download files."""
-
 
     @cachedproperty
     def product(self):
@@ -773,9 +785,19 @@ class ProductDownloadFileMixin:
         files = release_set.getFilesForReleases(releases)
         for file in files:
             release = release_by_id[file.productrelease.id]
-            release.addFile(file)
+            release.addFile(self.getDownloadFile(file, release))
 
         return product
+
+    def getDownloadFile(self, file_, release):
+        """Return a DownloadFile for the file."""
+        url = self.fileURL(file_.libraryfile, release)
+        md5_url = self.md5URL(file_.libraryfile, release)
+        if file_.signature:
+            signature_url = self.fileURL(file_.signature, release)
+        else:
+            signature_url = None
+        return DownloadFile(file_, url, md5_url, signature_url)
 
     def deleteFiles(self, releases):
         """Delete the selected files from the set of releases.
@@ -1029,6 +1051,7 @@ class ProductDownloadFilesView(LaunchpadView,
     __used_for__ = IProduct
 
     def initialize(self):
+        """See `LaunchpadFormView`."""
         self.form = self.request.form
         # Manually process action for the 'Delete' button.
         self.processDeleteFiles()
@@ -1050,8 +1073,7 @@ class ProductDownloadFilesView(LaunchpadView,
 
     @cachedproperty
     def any_download_files_with_signatures(self):
-        """Across series and releases do any download files have signatures?
-        """
+        """Do any series or release download files have signatures?"""
         for series in self.product.serieses:
             for release in series.releases:
                 for file in release.files:
@@ -1122,6 +1144,7 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
     custom_widget('bugtracker', ProductBugTrackerWidget)
 
     def setUpWidgets(self):
+        """See `LaunchpadFormView`."""
         super(ProductEditView, self).setUpWidgets()
         # Licenses are optional on +edit page if they have not already
         # been set. Subclasses may not have 'licenses' widget.
@@ -1154,10 +1177,16 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
 
     @property
     def next_url(self):
+        """See `LaunchpadFormView`."""
         if self.context.active:
             return canonical_url(self.context)
         else:
             return canonical_url(getUtility(IProductSet))
+
+    @property
+    def cancel_url(self):
+        """See `LaunchpadFormView`."""
+        return self.next_url
 
 
 class ProductChangeTranslatorsView(TranslationsMixin, ProductEditView):
@@ -1214,6 +1243,7 @@ class ProductAdminView(ProductEditView):
             )
 
     def validate(self, data):
+        """See `LaunchpadFormView`."""
         if data.get('private_bugs') and self.context.bug_supervisor is None:
             self.setFieldError('private_bugs',
                 structured(
@@ -1223,6 +1253,7 @@ class ProductAdminView(ProductEditView):
 
     @property
     def cancel_url(self):
+        """See `LaunchpadFormView`."""
         return canonical_url(self.context)
 
 
@@ -1237,7 +1268,7 @@ class ProductReviewLicenseView(ProductEditView):
         ]
 
     def validate(self, data):
-        """Validate approval.
+        """See `LaunchpadFormView`.
 
         A project can only be approved if it has OTHER_OPEN_SOURCE as one of
         its licenses and not OTHER_PROPRIETARY.
@@ -1259,7 +1290,7 @@ class ProductReviewLicenseView(ProductEditView):
 
     @property
     def next_url(self):
-        """Successful form submission should send to this URL."""
+        """See `LaunchpadFormView`."""
         # The referer header we want is only available before the view's
         # form submits to itself. This field is a hidden input in the form.
         referrer = self.request.form.get('next_url')
@@ -1274,6 +1305,7 @@ class ProductReviewLicenseView(ProductEditView):
 
     @property
     def cancel_url(self):
+        """See `LaunchpadFormView`."""
         return self.next_url
 
 
@@ -1288,6 +1320,7 @@ class ProductAddSeriesView(LaunchpadFormView):
     series = None
 
     def validate(self, data):
+        """See `LaunchpadFormView`."""
         branch = data.get('branch')
         if branch is not None:
             message = get_series_branch_error(self.context, branch)
@@ -1304,8 +1337,14 @@ class ProductAddSeriesView(LaunchpadFormView):
 
     @property
     def next_url(self):
+        """See `LaunchpadFormView`."""
         assert self.series is not None, 'No series has been created'
         return canonical_url(self.series)
+
+    @property
+    def cancel_url(self):
+        """See `LaunchpadFormView`."""
+        return canonical_url(self.context)
 
 
 class ProductRdfView:
@@ -1354,6 +1393,7 @@ class ProductSetView(LaunchpadView):
     searchrequested = False
 
     def initialize(self):
+        """See `LaunchpadFormView`."""
         form = self.request.form_ng
         self.search_string = form.getOne('text')
         if self.search_string is not None:
@@ -1419,19 +1459,23 @@ class ProductSetReviewLicensesView(LaunchpadFormView):
 
     @property
     def left_side_widgets(self):
+        """Return the widgets for the left column."""
         return (self.widgets.get(left)
                 for left, right in self.side_by_side_field_names)
 
     @property
     def right_side_widgets(self):
+        """Return the widgets for the right column."""
         return (self.widgets.get(right)
                 for left, right in self.side_by_side_field_names)
 
     @property
     def full_row_widgets(self):
+        """Return all widgets that span all columns."""
         return (self.widgets[name] for name in self.full_row_field_names)
 
     def forReviewBatched(self):
+        """Return a `BatchNavigator` to review the matching projects."""
         # Calling _validate populates the data dictionary as a side-effect
         # of validation.
         data = {}
@@ -1470,6 +1514,7 @@ class ProductAddViewBase(ProductLicenseMixin, LaunchpadFormView):
 
     @property
     def next_url(self):
+        """See `LaunchpadFormView`."""
         assert self.product is not None, 'No product has been created'
         return canonical_url(self.product)
 
@@ -1490,6 +1535,7 @@ class ProjectAddStepOne(StepView):
     search_results_count = 0
 
     def main_action(self, data):
+        """See `MultiStepView`."""
         self.next_step = ProjectAddStepTwo
         self.request.form['displayname'] = data['displayname']
         self.request.form['name'] = data['name'].lower()
@@ -1518,17 +1564,20 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin):
 
     @property
     def step_description(self):
+        """See `MultiStepView`."""
         if self.search_results_count > 0:
             return 'Check for duplicate projects'
         return 'Registration details'
 
     def isVCSImport(self):
+        """Is the the user vcs-imports."""
         if self.user is None:
             return False
         vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
         return self.user.inTeam(vcs_imports)
 
     def setUpFields(self):
+        """See `LaunchpadFormView`."""
         super(ProjectAddStepTwo, self).setUpFields()
         if not self.isVCSImport():
             # vcs-imports members get it easy and are able to change
@@ -1539,6 +1588,7 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin):
                 'owner', 'license_reviewed')
 
     def setUpWidgets(self):
+        """See `LaunchpadFormView`."""
         super(ProjectAddStepTwo, self).setUpWidgets()
         self.widgets['name'].read_only = True
         # The "hint" is really more of an explanation at this point, but the
@@ -1549,6 +1599,7 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin):
 
     @cachedproperty
     def _search_string(self):
+        """Return the ORed terms to match."""
         search_text = SPACE.join((self.request.form['name'],
                                   self.request.form['displayname'],
                                   self.request.form['summary']))
@@ -1569,6 +1620,7 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin):
 
     @cachedproperty
     def search_results_count(self):
+        """Return the count of matching `IPillar`s."""
         pillar_set = getUtility(IPillarNameSet)
         return pillar_set.count_search_matches(self._search_string)
 
@@ -1577,17 +1629,21 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin):
     # validation code.
 
     def validate(self, data):
+        """See `MultiStepView`."""
         StepView.validate(self, data)
 
     def validateStep(self, data):
+        """See `MultiStepView`."""
         ProductLicenseMixin.validate(self, data)
 
     @property
     def label(self):
+        """See `LaunchpadFormView`."""
         return 'Register %s (%s) in Launchpad' % (
             self.request.form['displayname'], self.request.form['name'])
 
     def main_action(self, data):
+        """See `MultiStepView`."""
         if not self.isVCSImport():
             # Zope makes sure these are never set, since they are not in
             # self.form_fields
@@ -1617,6 +1673,7 @@ class ProductAddView(MultiStepView):
 
     @property
     def first_step(self):
+        """See `MultiStepView`."""
         return ProjectAddStepOne
 
 
@@ -1638,6 +1695,7 @@ class ProductEditPeopleView(LaunchpadEditFormView):
 
     @action(_('Save changes'), name='save')
     def save_action(self, action, data):
+        """Save the changes to the associated people."""
         old_owner = self.context.owner
         old_driver = self.context.driver
         self.updateContextFromData(data)
@@ -1658,6 +1716,12 @@ class ProductEditPeopleView(LaunchpadEditFormView):
 
     @property
     def next_url(self):
+        """See `LaunchpadFormView`."""
+        return canonical_url(self.context)
+
+    @property
+    def cancel_url(self):
+        """See `LaunchpadFormView`."""
         return canonical_url(self.context)
 
     def _reassignProductDependencies(self, product, oldOwner, newOwner):

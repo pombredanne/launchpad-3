@@ -8,6 +8,7 @@ __metaclass__ = type
 __all__ = [
     'BuildStatus',
     'BuildSetStatus',
+    'CannotBeRescored',
     'IBuild',
     'IBuildRescoreForm',
     'IBuildSet',
@@ -15,8 +16,8 @@ __all__ = [
     ]
 
 from zope.interface import Interface, Attribute
-from zope.schema import (Choice, Datetime, Int, Object, TextLine, Timedelta,
-    Text)
+from zope.schema import (
+    Bool, Choice, Datetime, Int, Object, TextLine, Timedelta, Text)
 from lazr.enum import DBEnumeratedType, DBItem, EnumeratedType, Item
 
 from canonical.launchpad import _
@@ -31,7 +32,14 @@ from lp.soyuz.interfaces.sourcepackagerelease import (
     ISourcePackageRelease)
 from lazr.restful.fields import Reference
 from lazr.restful.declarations import (
-    export_as_webservice_entry, exported)
+    export_as_webservice_entry, exported, export_write_operation,
+    operation_parameters, webservice_error)
+
+
+class CannotBeRescored(Exception):
+    """Raised when rescoring a build that cannot be rescored."""
+    webservice_error(400) # Bad request.
+    _message_prefix = "Cannot rescore build"
 
 
 class BuildStatus(DBEnumeratedType):
@@ -120,10 +128,8 @@ incomplete_building_status = (
     )
 
 
-class IBuild(Interface):
-    """A Build interface"""
-    export_as_webservice_entry()
-
+class IBuildView(Interface):
+    """A Build interface for items requiring launchpad.View."""
     id = Int(title=_('ID'), required=True, readonly=True)
 
     datecreated = exported(
@@ -228,8 +234,8 @@ class IBuild(Interface):
             description=_("The current source publication for this build.")))
 
     current_component = Attribute(
-        "Component where the ISourcePackageRelease related to "
-        "this build was published.")
+        "Component where the source related to this build was last "
+        "published.")
     title = exported(Text(title=_("Build Title"), required=False))
     changesfile = Attribute("The Build Changesfile object, returns None if "
                             "it is a gina-inserted record.")
@@ -252,11 +258,18 @@ class IBuild(Interface):
         "A list of distroarchseriesbinarypackages that resulted from this"
         "build, ordered by name.")
 
-    can_be_rescored = Attribute(
-        "Whether or not this build record can be rescored manually.")
+    can_be_rescored = exported(
+        Bool(
+            title=_("Can Be Rescored"), required=False, readonly=True,
+            description=_(
+                "Whether or not this build record can be rescored "
+                "manually.")))
 
-    can_be_retried = Attribute(
-        "Whether or not this build record can be retried.")
+    can_be_retried = exported(
+        Bool(
+            title=_("Can Be Retried"), required=False, readonly=True,
+            description=_(
+                "Whether or not this build record can be retried.")))
 
     calculated_buildstart = Attribute(
         "Emulates a buildstart timestamp by calculating it from "
@@ -268,13 +281,6 @@ class IBuild(Interface):
     package_upload = Attribute(
         "The PackageUpload for this build, or None if there is "
         "no build.")
-
-    def retry():
-        """Restore the build record to its initial state.
-
-        Build record loses its history, is moved to NEEDSBUILD and a new
-        non-scored BuildQueue entry is created for it.
-        """
 
     def updateDependencies():
         """Update the build-dependencies line within the targeted context."""
@@ -356,6 +362,32 @@ class IBuild(Interface):
 
         :return the corresponding `ILibraryFileAlias` if the file was found.
         """
+
+
+class IBuildEdit(Interface):
+    """A Build interface for items requiring launchpad.Edit."""
+
+    @export_write_operation()
+    def retry():
+        """Restore the build record to its initial state.
+
+        Build record loses its history, is moved to NEEDSBUILD and a new
+        non-scored BuildQueue entry is created for it.
+        """
+
+
+class IBuildAdmin(Interface):
+    """A Build interface for items requiring launchpad.Admin."""
+
+    @operation_parameters(score=Int(title=_("Score"), required=True))
+    @export_write_operation()
+    def rescore(score):
+        """Change the build's score."""
+
+
+class IBuild(IBuildView, IBuildEdit, IBuildAdmin):
+    """A Build interface"""
+    export_as_webservice_entry()
 
 
 class BuildSetStatus(EnumeratedType):

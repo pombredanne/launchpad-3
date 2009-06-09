@@ -323,11 +323,14 @@ class TestBranchMergeProposalChangeStatusOptions(TestCaseWithFactory):
         self.assertEqual(
             sorted(tokens), vocab_tokens)
 
-    def assertAllStatusesAvailable(self, user):
+    def assertAllStatusesAvailable(self, user, except_for=None):
         # All options should be available to the user.
-        self.assertStatusVocabTokens(
-            ['WORK_IN_PROGRESS', 'NEEDS_REVIEW', 'MERGED', 'CODE_APPROVED',
-             'REJECTED', 'SUPERSEDED'], user)
+        desired_statuses = set([
+            'WORK_IN_PROGRESS', 'NEEDS_REVIEW', 'MERGED', 'CODE_APPROVED',
+            'REJECTED', 'SUPERSEDED'])
+        if except_for is not None:
+            desired_statuses -= set(except_for)
+        self.assertStatusVocabTokens(desired_statuses, user)
 
     def test_createStatusVocabulary_non_reviewer(self):
         # Neither the source branch owner nor the registrant should be
@@ -367,32 +370,27 @@ class TestBranchMergeProposalChangeStatusOptions(TestCaseWithFactory):
         self.assertAllStatusesAvailable(user=self.proposal.target_branch.owner)
 
     def test_createStatusVocabulary_rejected(self):
-        # Options for rejected proposals are the same regardless of user.
+        # Only reviewers can change rejected proposals to approved.  All other
+        # options for rejected proposals are the same regardless of user.
         self.proposal.rejectBranch(
             self.proposal.target_branch.owner, 'some-revision')
-        status_options = ['REJECTED', 'SUPERSEDED']
-
-        self.assertStatusVocabTokens(
-            status_options, user=self.proposal.source_branch.owner)
-        self.assertStatusVocabTokens(
-            status_options, user=self.proposal.registrant)
-        self.assertStatusVocabTokens(
-            status_options, user=self.proposal.target_branch.owner)
+        self.assertAllStatusesAvailable(user=self.proposal.source_branch.owner,
+            except_for=['CODE_APPROVED', 'QUEUED'])
+        self.assertAllStatusesAvailable(user=self.proposal.registrant,
+            except_for=['CODE_APPROVED', 'QUEUED'])
+        self.assertAllStatusesAvailable(user=self.proposal.target_branch.owner)
 
     def test_createStatusVocabulary_queued(self):
-        # Queued proposals can either be marked as merged, or set back to code
-        # approved.
+        # Queued proposals can go to any status, but only reviewers can set
+        # them to REJECTED.
         self.proposal.enqueue(
             self.proposal.target_branch.owner, 'some-revision')
-        status_options = ['CODE_APPROVED', 'MERGED']
 
-        self.assertStatusVocabTokens(
-            status_options, user=self.proposal.source_branch.owner)
-        self.assertStatusVocabTokens(
-            status_options, user=self.proposal.registrant)
-        self.assertStatusVocabTokens(
-            status_options, user=self.proposal.target_branch.owner)
-
+        self.assertAllStatusesAvailable(user=self.proposal.source_branch.owner,
+                                        except_for=['REJECTED'])
+        self.assertAllStatusesAvailable(user=self.proposal.registrant,
+                                        except_for=['REJECTED'])
+        self.assertAllStatusesAvailable(user=self.proposal.target_branch.owner)
 
 
 def test_suite():

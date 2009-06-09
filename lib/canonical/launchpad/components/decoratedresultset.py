@@ -13,7 +13,6 @@ from storm.zope.interfaces import IResultSet
 
 from lazr.delegates import delegates
 
-
 class DecoratedResultSet(object):
     """A decorated Storm ResultSet for 'Magic' (presenter) classes.
 
@@ -96,7 +95,7 @@ class DecoratedResultSet(object):
         # Can be a value or result set...
         value = self.result_set.__getitem__(*args, **kwargs)
         naked_value = removeSecurityProxy(value)
-        if isinstance(naked_value, type(self.result_set)):
+        if IResultSet.providedBy(naked_value):
             return DecoratedResultSet(
                 value, self.result_decorator, self.pre_iter_hook)
         else:

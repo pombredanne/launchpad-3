@@ -1578,8 +1578,25 @@ class NumberFormatterAPI:
             return self.float(float(format))
         elif name == 'bytes':
             return self.bytes()
+        elif name == 'intcomma':
+            return self.intcomma()
         else:
             raise TraversalError(name)
+
+    def intcomma(self):
+        """Return this number with its thousands separated by comma.
+
+        This can only be used for integers.
+        """
+        if not isinstance(self._number, int):
+            raise AssertionError("This can't be used with non-integers")
+            format = "%d"
+        L = []
+        for index, char in enumerate(reversed(str(self._number))):
+            if index != 0 and (index % 3) == 0:
+                L.insert(0, ',')
+            L.insert(0, char)
+        return ''.join(L)
 
     def bytes(self):
         """Render number as byte contractions according to IEC60027-2."""

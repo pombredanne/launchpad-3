@@ -119,7 +119,7 @@ Link 1. Open bugs (2)
 
     >>> browser.open(open_url)
     >>> browser.title
-    'Bugs in ...linux-source-2.6.15... source package in Ubuntu'
+    'Bugs in ...linux-source-2.6.15... package in Ubuntu'
     >>> table = find_tag_by_id(browser.contents, 'buglisting')
     >>> print extract_text(table)
     Summary             Importance  Status
@@ -130,7 +130,7 @@ Link 2. Triaged bugs (2)
 
     >>> browser.open(triaged_url)
     >>> browser.title
-    'Bugs in ...linux-source-2.6.15... source package in Ubuntu'
+    'Bugs in ...linux-source-2.6.15... package in Ubuntu'
     >>> table = find_tag_by_id(browser.contents, 'buglisting')
     >>> print extract_text(table)
     Summary             Importance  Status
@@ -141,7 +141,7 @@ Link 3: Open bugs that aren't triaged  (0)
 
     >>> browser.open(triaged_delta)
     >>> browser.title
-    'Bugs in ...linux-source-2.6.15... source package in Ubuntu'
+    'Bugs in ...linux-source-2.6.15... package in Ubuntu'
     >>> table = find_tag_by_id(browser.contents, 'buglisting')
     >>> print table
     None
@@ -150,7 +150,7 @@ Link 4: Triaged bugs that are upstream issues (2)
 
     >>> browser.open(upstream_url)
     >>> browser.title
-    'Bugs in ...linux-source-2.6.15... source package in Ubuntu'
+    'Bugs in ...linux-source-2.6.15... package in Ubuntu'
     >>> table = find_tag_by_id(browser.contents, 'buglisting')
     >>> print extract_text(table)
     Summary             Importance  Status
@@ -161,7 +161,7 @@ Link 5: Triaged bugs that haven't been marked upstream (0)
 
     >>> browser.open(upstream_delta_url)
     >>> browser.title
-    'Bugs in ...linux-source-2.6.15... source package in Ubuntu'
+    'Bugs in ...linux-source-2.6.15... package in Ubuntu'
     >>> table = find_tag_by_id(browser.contents, 'buglisting')
     >>> print table
     None
@@ -170,7 +170,7 @@ Link 6: Triaged bugs marked upstream lacking a watch (1)
 
     >>> browser.open(watch_delta_url)
     >>> browser.title
-    'Bugs in ...linux-source-2.6.15... source package in Ubuntu'
+    'Bugs in ...linux-source-2.6.15... package in Ubuntu'
     >>> table = find_tag_by_id(browser.contents, 'buglisting')
     >>> print extract_text(table)
     Summary             Importance  Status
