@@ -142,6 +142,7 @@
                       <strong tal:content="lfa/last_downloaded/fmt:approximateduration" />
                       since last download
                     </tal:not-downloaded-today>
+                  </span>
                 </tal:downloaded>
                 <tal:not-downloaded condition="not:lfa/hits">
                   -
