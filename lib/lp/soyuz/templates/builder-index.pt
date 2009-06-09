@@ -53,7 +53,8 @@
                 Started
                 <span
                   tal:attributes="title job/buildstart/fmt:datetime"
-                  tal:content="job/buildstart/fmt:displaydate" />
+                  tal:content="view/current_build_duration/fmt:exactduration" />
+                  ago
               </td>
             </tr>
           </tbody>
