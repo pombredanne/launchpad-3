@@ -65,8 +65,9 @@ from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
 from lazr.restful.interface import copy_field
 from lazr.restful.declarations import (
     REQUEST_USER, call_with, export_as_webservice_entry,
-    export_write_operation, exported, operation_parameters,
-    mutator_for, rename_parameters_as, webservice_error)
+    export_read_operation, export_write_operation, exported,
+    operation_returns_collection_of, operation_parameters, mutator_for,
+    rename_parameters_as, webservice_error)
 from lazr.restful.fields import CollectionField, Reference, ReferenceChoice
 
 
@@ -503,6 +504,12 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
                 "True or False depending on whether or not there is more "
                 " work required on this bug task."),
              readonly=True))
+
+    @operation_returns_collection_of(Interface) # Actually IBug.
+    @call_with(user=REQUEST_USER, limit=10)
+    @export_read_operation()
+    def findSimilarBugs(user, limit=10):
+        """Return the list of possible duplicates for this BugTask."""
 
     def getConjoinedMaster(bugtasks, bugtasks_by_package=None):
         """Return the conjoined master in the given bugtasks, if any.

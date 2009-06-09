@@ -381,8 +381,18 @@ class IDistributionPublic(
     @export_read_operation()
     def searchSourcePackages(text):
         """Search for source packages that correspond to the given text.
-        Returns a list of DistributionSourcePackage objects, in order of
-        matching.
+ 
+        This method just decorates the result of searchSourcePackageCaches()
+        to return DistributionSourcePackages.
+        """
+
+    def searchSourcePackageCaches(text):
+        """Search for source packages that correspond to the given text.
+
+        :param text: The text that will be matched.
+        :return: A result set containing
+            (DistributionSourcePackageCache, SourcePackageName, rank) tuples
+            ordered by rank.
         """
 
     def searchBinaryPackages(package_name, exact_match=False):

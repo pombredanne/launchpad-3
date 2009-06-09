@@ -56,8 +56,7 @@ class ImportantInfo:
         return '\n'.join(L)
 
 # PageTemplateFile has .filename.
-from zope.pagetemplate.pagetemplatefile import PageTemplateFile
-from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
+from z3c.ptcompat import PageTemplateFile, ViewPageTemplateFile
 
 # PythonExpr has .text, the text of the expression.
 from zope.tales.pythonexpr import PythonExpr

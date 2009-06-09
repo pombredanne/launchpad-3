@@ -11,9 +11,10 @@ __all__ = [
     'SearchBugsFeed',
     ]
 
-from zope.app.pagetemplate import ViewPageTemplateFile
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
+
+from z3c.ptcompat import ViewPageTemplateFile
 
 from canonical.config import config
 from canonical.launchpad.webapp import canonical_url, urlparse

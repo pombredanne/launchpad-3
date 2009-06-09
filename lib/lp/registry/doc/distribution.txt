@@ -143,16 +143,30 @@ DistributionSet also defines __iter__ as a shortcut to getDistros().
 The distribution also allows you to look for source packages that match
 a certain string through the magic of fti. For instance:
 
-    >>> packages = ubuntu.searchSourcePackages("mozilla")
+    >>> packages = ubuntu.searchSourcePackageCaches("mozilla")
     >>> print packages.count()
     1
 
 The search also matches on exact package names which fti doesn't like,
 and even on substrings:
 
-    >>> packages = ubuntu.searchSourcePackages("linux-source-2.6.15")
+    >>> packages = ubuntu.searchSourcePackageCaches("linux-source-2.6.15")
     >>> print packages.count()
     1
+    >>> packages = ubuntu.searchSourcePackageCaches('a')
+    >>> for distro_source_package_cache, source_name, rank in packages:
+    ...     print "%s: %s" % (
+    ...         distro_source_package_cache.__class__.__name__,
+    ...         distro_source_package_cache.name)
+    DistributionSourcePackageCache: mozilla-firefox
+    DistributionSourcePackageCache: netapplet
+    DistributionSourcePackageCache: alsa-utils
+    DistributionSourcePackageCache: foobar
+    DistributionSourcePackageCache: commercialpackage
+
+The searchSourcePackages() method just returns a decorated version
+of the results from searchSourcePackageCaches():
+
     >>> packages = ubuntu.searchSourcePackages('a')
     >>> for dsp in packages:
     ...     print "%s: %s" % (dsp.__class__.__name__, dsp.name)
@@ -197,7 +211,7 @@ Loosening to substring matches gives another result:
     >>> print [result.name for result in results]
     [u'mozilla-firefox']
     >>> print [result.binpkgnames for result in results]
-    [u'mozilla-firefox']
+    [u'mozilla-firefox mozilla-firefox-data']
 
 We can do an FTI search:
 

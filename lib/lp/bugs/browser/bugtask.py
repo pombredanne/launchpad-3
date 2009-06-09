@@ -52,18 +52,18 @@ from zope.app.form.browser.itemswidgets import RadioWidget
 from zope.app.form.interfaces import (
     IInputWidget, IDisplayWidget, InputErrors, WidgetsError)
 from zope.app.form.utility import setUpWidget, setUpWidgets
-from zope.app.pagetemplate import ViewPageTemplateFile
 from zope.component import getUtility, getMultiAdapter
 from zope.event import notify
 from zope import formlib
 from zope.interface import implementer, implements, providedBy
 from zope.schema import Choice
 from zope.schema.interfaces import IContextSourceBinder, IList
-
 from zope.schema.vocabulary import (
     getVocabularyRegistry, SimpleVocabulary, SimpleTerm)
 from zope.security.proxy import (
     isinstance as zope_isinstance, removeSecurityProxy)
+
+from z3c.ptcompat import ViewPageTemplateFile
 from lazr.delegates import delegates
 from lazr.enum import EnumeratedType, Item
 

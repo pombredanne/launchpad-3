@@ -214,7 +214,8 @@
                     conjoined_master
                     conjoined_slave
                     subscribe
-                    getConjoinedMaster"/>
+                    getConjoinedMaster
+                    findSimilarBugs"/>
             <require
                 permission="launchpad.Edit"
                 attributes="
@@ -567,7 +568,8 @@
                     getNullBugTask
                     is_complete
                     who_made_private
-                    date_made_private"/>
+                    date_made_private
+                    userCanView"/>
             <require
                 permission="launchpad.View"
                 attributes="

@@ -80,7 +80,11 @@ class DistributionSourcePackageBugsMenu(
 
     usedfor = IDistributionSourcePackage
     facet = 'bugs'
-    links = ['subscribe']
+    links = ['filebug', 'subscribe']
+
+    def filebug(self):
+        text = 'Report a bug'
+        return Link('+filebug', text, icon='bug')
 
 
 class DistributionSourcePackageNavigation(GetitemNavigation,

@@ -82,7 +82,7 @@ class DistributionSourcePackage(BugTargetBase,
     @property
     def title(self):
         """See `IDistributionSourcePackage`."""
-        return smartquote('"%s" source package in %s') % (
+        return smartquote('"%s" package in %s') % (
             self.sourcepackagename.name, self.distribution.displayname)
 
     @property

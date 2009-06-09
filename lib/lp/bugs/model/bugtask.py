@@ -48,6 +48,7 @@ from canonical.database.enumcol import EnumCol
 
 from lp.registry.model.pillar import pillar_sort_key
 from canonical.launchpad.helpers import shortlist
+from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugnomination import BugNominationStatus
 from lp.bugs.interfaces.bugtask import (
     BUG_SUPERVISOR_BUGTASK_STATUSES, BugTaskImportance, BugTaskSearchParams,
@@ -536,6 +537,38 @@ class BugTask(SQLBase, BugTaskMixin):
         above.
         """
         return self.status in RESOLVED_BUGTASK_STATUSES
+
+    def findSimilarBugs(self, user, limit=10):
+        """See `IBugTask`."""
+        if self.product is not None:
+            context_params = {'product': self.product}
+        elif (self.sourcepackagename is not None and
+            self.distribution is not None):
+            context_params = {
+                'distribution': self.distribution,
+                'sourcepackagename': self.sourcepackagename,
+                }
+        elif self.distribution is not None:
+            context_params = {'distribution': self.distribution}
+        else:
+            raise AssertionError("BugTask doesn't have a searchable target.")
+
+        matching_bugtasks = getUtility(IBugTaskSet).findSimilar(
+            user, self.bug.title, **context_params)
+        # Remove all the prejoins, since we won't use them and they slow
+        # down the query significantly.
+        matching_bugtasks = matching_bugtasks.prejoin([])
+
+        # Make sure to exclude the current BugTask from the list of
+        # matching tasks. We use 4*limit as an arbitrary value here to
+        # make sure we select more than :limit: bugtasks.
+        matching_bugtasks = [
+            bug_task for bug_task in matching_bugtasks[:4*limit]
+            if bug_task != self]
+
+        matching_bugs = getUtility(IBugSet).getDistinctBugsForBugTasks(
+            matching_bugtasks, user, limit)
+        return matching_bugs
 
     def subscribe(self, person, subscribed_by):
         """See `IBugTask`."""

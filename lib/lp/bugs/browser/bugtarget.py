@@ -26,14 +26,17 @@ from simplejson import dumps
 import tempfile
 import urllib
 
+from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.form.browser import TextWidget
 from zope.app.form.interfaces import InputErrors
-from zope.app.pagetemplate import ViewPageTemplateFile
 from zope.component import getUtility
 from zope.event import notify
+from zope import formlib
 from zope.interface import implements
 from zope.publisher.interfaces import NotFound
 from zope.publisher.interfaces.browser import IBrowserPublisher
+from zope.schema import Choice
+from zope.schema.vocabulary import SimpleVocabulary
 
 from lazr.lifecycle.event import ObjectCreatedEvent
 
@@ -45,18 +48,22 @@ from canonical.launchpad.browser.feeds import (
 from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
 from lp.bugs.interfaces.bugtarget import (
     IBugTarget, IOfficialBugTagTargetPublic, IOfficialBugTagTargetRestricted)
+from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugtask import (
     BugTaskStatus, IBugTaskSet, UNRESOLVED_BUGTASK_STATUSES)
 from canonical.launchpad.interfaces.launchpad import (
     IHasExternalBugTracker, ILaunchpadUsage)
-from canonical.launchpad.interfaces._schema_circular_imports import IBug, IDistribution
+from canonical.launchpad.interfaces._schema_circular_imports import (
+    IBug, IDistribution)
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.interfaces.temporaryblobstorage import ITemporaryStorageManager
+from canonical.launchpad.interfaces.temporaryblobstorage import (
+    ITemporaryStorageManager)
 from canonical.launchpad.webapp.interfaces import ILaunchBag, NotFoundError
 from lp.bugs.interfaces.bug import (
     CreateBugParams, IBugAddForm, IFrontPageBugAddForm, IProjectBugAddForm)
 from lp.bugs.interfaces.malone import IMaloneApplication
-from lp.registry.interfaces.distributionsourcepackage import IDistributionSourcePackage
+from lp.registry.interfaces.distributionsourcepackage import (
+    IDistributionSourcePackage)
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.product import IProduct, IProject
 from lp.registry.interfaces.productseries import IProductSeries
@@ -237,6 +244,11 @@ class FileBugData:
         self.attachments = []
 
 
+# A simple vocabulary for the subscribe_to_existing_bug form field.
+SUBSCRIBE_TO_BUG_VOCABULARY = SimpleVocabulary.fromItems(
+    [('yes', True), ('no', False)])
+
+
 class FileBugViewBase(LaunchpadFormView):
     """Base class for views related to filing a bug."""
 
@@ -274,7 +286,7 @@ class FileBugViewBase(LaunchpadFormView):
         context = self.context
         field_names = ['title', 'comment', 'tags', 'security_related',
                        'bug_already_reported_as', 'filecontent', 'patch',
-                       'attachment_description']
+                       'attachment_description', 'subscribe_to_existing_bug']
         if (IDistribution.providedBy(context) or
             IDistributionSourcePackage.providedBy(context)):
             field_names.append('packagename')
@@ -391,6 +403,21 @@ class FileBugViewBase(LaunchpadFormView):
         if "packagename" in self.field_names:
             self.widgets["packagename"].onKeyPress = (
                 "selectWidget('choose', event)")
+
+    def setUpFields(self):
+        """Set up the form fields. See `LaunchpadFormView`."""
+        super(FileBugViewBase, self).setUpFields()
+
+        # Override the vocabulary for the subscribe_to_existing_bug
+        # field.
+        subscribe_field = Choice(
+            __name__='subscribe_to_existing_bug',
+            title=u'Subscribe to this bug',
+            vocabulary=SUBSCRIBE_TO_BUG_VOCABULARY,
+            required=True, default=False)
+
+        self.form_fields = self.form_fields.omit('subscribe_to_existing_bug')
+        self.form_fields += formlib.form.Fields(subscribe_field)
 
     def contextUsesMalone(self):
         """Does the context use Malone as its official bugtracker?"""
@@ -606,6 +633,7 @@ class FileBugViewBase(LaunchpadFormView):
     def this_is_my_bug_action(self, action, data):
         """Subscribe to the bug suggested."""
         bug = data.get('bug_already_reported_as')
+        subscribe = data.get('subscribe_to_existing_bug')
 
         if bug.isUserAffected(self.user):
             self.request.response.addNotification(
@@ -614,6 +642,17 @@ class FileBugViewBase(LaunchpadFormView):
             bug.markUserAffected(self.user)
             self.request.response.addNotification(
                 "This bug has been marked as affecting you.")
+
+        # If the user wants to be subscribed, subscribe them, unless
+        # they're already subscribed.
+        if subscribe:
+            if bug.isSubscribed(self.user):
+                self.request.response.addNotification(
+                    "You are already subscribed to this bug.")
+            else:
+                bug.subscribe(self.user, self.user)
+                self.request.response.addNotification(
+                    "You have been subscribed to this bug.")
 
         self.next_url = canonical_url(bug.bugtasks[0])
 
@@ -833,31 +872,8 @@ class FilebugShowSimilarBugsView(FileBugViewBase):
         # down the query significantly.
         matching_bugtasks = matching_bugtasks.prejoin([])
 
-        # XXX: Bjorn Tillenius 2006-12-13 bug=75764
-        #      We might end up returning less than :limit: bugs, but in
-        #      most cases we won't, and '4*limit' is here to prevent
-        #      this page from timing out in production. Later I'll fix
-        #      this properly by selecting distinct Bugs directly
-        #      If matching_bugtasks isn't sliced, it will take a long time
-        #      to iterate over it, even over only 10, because
-        #      Transaction.iterSelect() listifies the result.
-        # We select more than :self._MATCHING_BUGS_LIMIT: since if a bug
-        # affects more than one source package, it will be returned more
-        # than one time. 4 is an arbitrary number that should be large
-        # enough.
-        matching_bugs = []
-        matching_bugs_limit = self._MATCHING_BUGS_LIMIT
-        for bugtask in matching_bugtasks[:4*matching_bugs_limit]:
-            bug = bugtask.bug
-            duplicateof = bug.duplicateof
-            if duplicateof is not None:
-                bug = duplicateof
-            if not check_permission('launchpad.View', bug):
-                continue
-            if bug not in matching_bugs:
-                matching_bugs.append(bug)
-                if len(matching_bugs) >= matching_bugs_limit:
-                    break
+        matching_bugs = getUtility(IBugSet).getDistinctBugsForBugTasks(
+            matching_bugtasks, self.user, self._MATCHING_BUGS_LIMIT)
 
         return matching_bugs
 
