@@ -215,9 +215,8 @@ all the 'private' information is exposed.
 
     >>> import datetime
     >>> import pytz
-    >>> UTC = pytz.timezone('UTC')
     >>> private_job.buildstart = (
-    ...     datetime.datetime.now(UTC) - datetime.timedelta(10))
+    ...     datetime.datetime.now(pytz.UTC) - datetime.timedelta(10))
     >>> print admin_view.current_build_duration
     10 days...
 

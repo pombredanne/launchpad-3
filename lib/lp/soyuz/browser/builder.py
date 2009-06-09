@@ -141,8 +141,8 @@ class CommonBuilderView:
 
     def now(self):
         """Offers the timestamp for page rendering."""
-        UTC = pytz.timezone('UTC')
-        return DateTimeFormatterAPI(datetime.datetime.now(UTC)).datetime()
+        return DateTimeFormatterAPI(
+            datetime.datetime.now(pytz.UTC)).datetime()
 
     def overrideHiddenBuilder(self, builder):
         """Override the builder to HiddenBuilder as necessary.
