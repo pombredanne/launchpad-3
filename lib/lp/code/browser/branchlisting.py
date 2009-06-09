@@ -601,7 +601,8 @@ class BranchListingView(LaunchpadFormView, FeedsMixin):
         if widget.hasValidInput():
             return widget.getInputValue()
         else:
-            return None
+            # If a derived view has specified a default sort_by, use that.
+            return self.initial_values.get('sort_by')
 
     @staticmethod
     def _listingSortToOrderBy(sort_by):
@@ -634,7 +635,7 @@ class BranchListingView(LaunchpadFormView, FeedsMixin):
         order_by = map(
             LISTING_SORT_TO_COLUMN.get, DEFAULT_BRANCH_LISTING_SORT)
 
-        if sort_by is not None:
+        if sort_by is not None and sort_by != BranchListingSort.DEFAULT:
             direction, column = LISTING_SORT_TO_COLUMN[sort_by]
             order_by = (
                 [(direction, column)] +
@@ -876,6 +877,12 @@ class PersonBranchesMenu(ApplicationMenu, PersonBranchCountMixin):
 
 class PersonBaseBranchListingView(BranchListingView, PersonBranchCountMixin):
     """Base class used for different person listing views."""
+
+    @property
+    def initial_values(self):
+        values = super(PersonBaseBranchListingView, self).initial_values
+        values['sort_by'] = BranchListingSort.MOST_RECENTLY_CHANGED_FIRST
+        return values
 
     @property
     def user_in_context_team(self):
