@@ -110,7 +110,7 @@
       <a href="/codeofconduct">code of conduct</a>.</p>
 
     <p>In both cases, you need to use your OpenPGP key. Here you can tell Launchpad which keys you want to use.
-       (<a href="+help/openpgp-keys.html" target="help">Learn more about OpenPGP keys</a>)</p>
+       (<a href="/+help/openpgp-keys.html" target="help">Learn more about OpenPGP keys</a>)</p>
 
     <form tal:condition="context/gpgkeys/count"
           name="gpg_actions" action="" method="POST">
@@ -173,7 +173,7 @@
       <input type="hidden" name="action" value="claim_gpg" />
       <h2>Import an OpenPGP key</h2>
 
-      <p>To start using an OpenPGP key with your Launchpad account, simply paste its fingerprint below. (<a href="+help/openpgp-key-import-help.html" target="help">How to get the fingerprint</a>)
+      <p>To start using an OpenPGP key with your Launchpad account, simply paste its fingerprint below. (<a href="/+help/import-pgp-key.html" target="help">How to get the fingerprint</a>)
 
           <table>
             <tbody>
