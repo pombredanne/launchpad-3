@@ -152,7 +152,7 @@ class IArchivePublic(IHasOwner):
 
     authorized_size = Int(
         title=_("Authorized PPA size "), required=False,
-        max=(20 * 1024),
+        max=2 ** 31 - 1,
         description=_("Maximum size, in MiB, allowed for this PPA."))
 
     purpose = Int(

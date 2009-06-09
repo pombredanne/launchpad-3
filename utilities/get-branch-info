@@ -12,12 +12,11 @@ from bzrlib.urlutils import join
 
 from zope.component import getUtility
 
-from lp.codehosting.vfs import branch_id_to_path
 from canonical.config import config
-from canonical.launchpad.interfaces.branch import BranchType
-from canonical.launchpad.interfaces.branchlookup import IBranchLookup
 from canonical.launchpad.scripts import execute_zcml_for_scripts
 from canonical.launchpad.webapp.publisher import canonical_url
+from lp.code.interfaces.branchlookup import IBranchLookup
+from lp.codehosting.vfs import branch_id_to_path
 
 
 def main(args):
@@ -38,6 +37,8 @@ def main(args):
     if branch.url is not None:
         print 'External URL:', branch.url
     branch_path = branch_id_to_path(branch.id)
+    # Avoid circular imports. branch imports c.l.i.bug via c.l.i.__init__.
+    from lp.code.interfaces.branch import BranchType
     if branch.branch_type == BranchType.HOSTED:
         hosted_path = join(
             config.codehosting.hosted_branches_root, branch_path)

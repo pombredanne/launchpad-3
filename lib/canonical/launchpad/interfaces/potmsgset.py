@@ -176,6 +176,17 @@ class IPOTMsgSet(Interface):
             translation credits message without the is_imported parameter set.
         """
 
+    def dismissAllSuggestions(pofile, reviewer, lock_timestamp):
+        """Dismiss all suggestions for the given pofile.
+
+        :param pofile: a `POFile` to dismiss suggestions from.
+        :param reviewer: the person that is doing the dismissal.
+        :param lock_timestamp: the timestamp when we checked the values we
+            want to update.
+
+        If a translation conflict is detected, TranslationConflict is raised.
+        """
+
     def applySanityFixes(unicode_text):
         """Return 'unicode_text' or None after doing some sanitization.
 

@@ -58,8 +58,11 @@
         }
 
         function updateCurrentFileType(file_type) {
-            for (ftype in nodes) {
-                if (ftype != file_type && nodes[ftype] != null) {
+	for (ftype in nodes) {
+	        // Logic has been inverted in the next line to avoid
+	        // breaking XHTML compliance of the template due to
+	        // ampersand usage.
+                if (!(ftype != file_type || nodes[ftype] != null)) {
                     nodes[ftype].addClass('dont_show_fields');
                 }
             }

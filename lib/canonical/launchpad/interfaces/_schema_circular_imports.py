@@ -23,6 +23,7 @@ from canonical.launchpad.components.apihelpers import (
 
 from canonical.launchpad.interfaces.bug import IBug
 from canonical.launchpad.interfaces.bugbranch import IBugBranch
+from canonical.launchpad.interfaces.bugtask import IBugTask
 from lp.soyuz.interfaces.build import (
     BuildStatus, IBuild)
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
@@ -58,6 +59,7 @@ from lp.soyuz.interfaces.publishing import (
     IBinaryPackagePublishingHistory, ISecureBinaryPackagePublishingHistory,
     ISecureSourcePackagePublishingHistory, ISourcePackagePublishingHistory,
     PackagePublishingPocket, PackagePublishingStatus)
+from lp.soyuz.interfaces.packageset import IPackageset
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 
 
@@ -87,8 +89,15 @@ IBranchMergeProposal['createComment'].queryTaggedValue(
 IBranchMergeProposal['all_comments'].value_type.schema = ICodeReviewComment
 IBranchMergeProposal['votes'].value_type.schema = ICodeReviewVoteReference
 
+# IBug
+
 IBug['addBranch'].queryTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)['return_type'].schema = IBugBranch
+
+# IBugTask
+
+IBugTask['findSimilarBugs'].queryTaggedValue(
+    LAZR_WEBSERVICE_EXPORTED)['return_type'].value_type.schema = IBug
 
 IPreviewDiff['branch_merge_proposal'].schema = IBranchMergeProposal
 
@@ -208,3 +217,13 @@ patch_reference_property(
 
 # IDistroArchSeries
 patch_reference_property(IDistroArchSeries, 'main_archive', IArchive)
+
+# IPackageset
+patch_collection_return_type(
+    IPackageset, 'setsIncluded', IPackageset)
+patch_collection_return_type(
+    IPackageset, 'setsIncludedBy', IPackageset)
+patch_plain_parameter_type(
+    IPackageset, 'getSourcesSharedBy', 'other_package_set', IPackageset)
+patch_plain_parameter_type(
+    IPackageset, 'getSourcesNotSharedBy', 'other_package_set', IPackageset)

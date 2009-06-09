@@ -31,10 +31,12 @@ import cgi
 import os.path
 
 from bzrlib.revision import NULL_REVISION
+
 from zope.component import getUtility
 from zope.app.form.browser import TextAreaWidget, TextWidget
-from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.publisher.browser import FileUpload
+
+from z3c.ptcompat import ViewPageTemplateFile
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _

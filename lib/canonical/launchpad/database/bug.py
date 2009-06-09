@@ -7,8 +7,10 @@ __metaclass__ = type
 
 __all__ = [
     'Bug',
+    'BugAffectsPerson',
     'BugBecameQuestionEvent',
     'BugSet',
+    'BugTag',
     'get_bug_tags',
     'get_bug_tags_open_count',
     ]
@@ -1344,6 +1346,23 @@ class Bug(SQLBase):
             self, self.messages[comment_number])
         bug_message.visible = visible
 
+    def userCanView(self, user):
+        """See `IBug`."""
+        admins = getUtility(ILaunchpadCelebrities).admin
+        if not self.private:
+            # This is a public bug.
+            return True
+        elif user.inTeam(admins):
+            # Admins can view all bugs.
+            return True
+        else:
+            # This is a private bug. Only explicit subscribers may view it.
+            for subscription in self.subscriptions:
+                if user.inTeam(subscription.person):
+                    return True
+
+        return False
+
 
 class BugSet:
     """See BugSet."""
@@ -1541,6 +1560,34 @@ class BugSet:
         bug.markUserAffected(bug.owner)
 
         return bug
+
+    def getDistinctBugsForBugTasks(self, bug_tasks, user, limit=10):
+        """See `IBugSet`."""
+        # XXX: Graham Binns 2009-05-28 bug=75764
+        #      We slice bug_tasks here to prevent this method from
+        #      causing timeouts, since if we try to iterate over it
+        #      Transaction.iterSelect() will try to listify the results.
+        #      This can be fixed by selecting from Bugs directly, but
+        #      that's non-trivial.
+        # We select more than :limit: since if a bug affects more than
+        # one source package, it will be returned more than one time. 4
+        # is an arbitrary number that should be large enough.
+        bugs = []
+        for bug_task in bug_tasks[:4*limit]:
+            bug = bug_task.bug
+            duplicateof = bug.duplicateof
+            if duplicateof is not None:
+                bug = duplicateof
+
+            if not bug.userCanView(user):
+                continue
+
+            if bug not in bugs:
+                bugs.append(bug)
+                if len(bugs) >= limit:
+                    break
+
+        return bugs
 
 
 class BugAffectsPerson(SQLBase):

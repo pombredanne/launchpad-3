@@ -54,6 +54,9 @@ class ILibraryFileAlias(Interface):
     hits = Int(
         title=_('Number of times this file has been downloaded'),
         required=False, readonly=True)
+    last_downloaded = Datetime(
+        title=_('When this file was last downloaded'),
+        required=False, readonly=True)
     restricted = Bool(
         title=_('Is this file alias restricted.'),
         required=True, readonly=True,
