@@ -606,8 +606,8 @@ help wiki are presented in the PPA index page.
     ...     anon_browser.contents, 'signing-key')
 
     >>> print extract_text(signing_key_section)
-    This repository is signed with 1024D/12345678 OpenPGP key.
-    Follow these instructions for installing packages from this PPA.
+    This repository is signed with the OpenPGP key 1024D/12345678
+    Help on installing software from this PPA.
 
 The key fingerprint links to the actual key available in the ubuntu
 keyserver.

@@ -1560,7 +1560,9 @@ class ITeamPublic(Interface):
 
     teamdescription = exported(
         Text(title=_('Team Description'), required=False, readonly=False,
-             description=_('Use plain text; URLs will be linkified')),
+             description=_(
+                "Include information on how to get involved with "
+                "development. Use plain text; URLs will be linkified.")),
         exported_as='team_description')
 
     subscriptionpolicy = exported(
@@ -1912,7 +1914,9 @@ class IRequestPeopleMerge(Interface):
     dupeaccount = Choice(
         title=_('Duplicated Account'), required=True,
         vocabulary='PersonAccountToMerge',
-        description=_("The duplicated account you found in Launchpad"))
+        description=_(
+            "The e-mail address or Launchpad ID of the account you want to "
+            "merge into yours."))
 
 
 class IAdminPeopleMergeSchema(Interface):
