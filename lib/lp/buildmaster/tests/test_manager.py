@@ -12,6 +12,7 @@ from twisted.python.failure import Failure
 from twisted.trial.unittest import TestCase as TrialTestCase
 
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.buildd.tests import BuilddSlaveTestSetup
 from canonical.config import config
@@ -534,6 +535,45 @@ class TestBuilddManagerScan(TrialTestCase):
         manager = self._getManager()
         d = defer.maybeDeferred(manager.scan)
         d.addCallback(self._checkDispatch, builder)
+        return d
+
+    def _checkNoDispatch(self, recording_slaves, builder):
+        """Assert that no dispatch has occurred.
+
+        'recording_slaves' is empty, so no interations would be passed
+        to the asynchonous dispatcher and the builder remained active
+        and IDLE.
+        """
+        self.assertEqual(
+            len(recording_slaves), 0, "Unexpected recording_slaves.")
+
+        builder = getUtility(IBuilderSet).get(builder.id)
+        self.assertTrue(builder.builderok)
+        self.assertTrue(builder.currentjob is None)
+
+    def testNoDispatchForMissingChroots(self):
+        # When a required chroot is not present the `scan` method
+        # should not return any `RecordingSlaves` to be processed
+        # and the builder used should remain active and IDLE.
+
+        # Reset sampledata builder.
+        builder = getUtility(IBuilderSet)['bob']
+        self._resetBuilder(builder)
+
+        # Remove hoary/i386 chroot.
+        login('foo.bar@canonical.com')
+        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+        hoary = ubuntu.getSeries('hoary')
+        pocket_chroot = hoary.getDistroArchSeries('i386').getPocketChroot()
+        removeSecurityProxy(pocket_chroot).chroot = None
+        transaction.commit()
+        login(ANONYMOUS)
+
+        # Run 'scan' and check its result.
+        LaunchpadZopelessLayer.switchDbUser(config.builddmaster.dbuser)
+        manager = self._getManager()
+        d = defer.maybeDeferred(manager.scan)
+        d.addCallback(self._checkNoDispatch, builder)
         return d
 
     def _checkJobRescued(self, recording_slaves, builder, job):
