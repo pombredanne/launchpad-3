@@ -489,11 +489,13 @@ has unpublished binaries.
 We will build and publish the architecture independent binary for
 pmount ('pmount-bin') and publish it in hoary/i386 and hoary/hppa.
 
+    >>> from lp.soyuz.interfaces.publishing import PackagePublishingStatus
     >>> login('foo.bar@canonical.com')
     >>> jblack = person_set.getByName('jblack')
     >>> pmount_build = jblack.archive.getBuildRecords()[0]
     >>> pmount_binaries = test_publisher.publishBinaryInArchive(
-    ...     pmount_binary, jblack.archive)
+    ...     pmount_binary, jblack.archive,
+    ...     status=PackagePublishingStatus.PUBLISHED)
     >>> flush_database_updates()
     >>> logout()
 
@@ -526,16 +528,11 @@ package copied in the available sources.
 Note that only the i386 binary got copied to grumpy since it lacks
 hppa support.
 
-XXX: michael.nelson 2009-04-24 bug=365980:
-Copying a package including binaries should not result in a build for the
-new package, as shown here. This is apparently due to relying on the sample
-data, so these copy-tests need to use SoyuzTestPublisher instead.
-
     >>> print_ppa_packages(jblack_browser.contents)
     Source          Published   Status     Series           Section  Build
         Status
     pmount - 0.1-1              Pending    Grumpy           Editors
-    pmount - 0.1-1              Pending    Hoary            Editors  i386
+    pmount - 0.1-1              Pending    Hoary            Editors
 
 After the binary package go from PENDING->PUBLISHED, the page reflects the
 changes:

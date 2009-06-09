@@ -2,20 +2,18 @@
   xmlns="http://www.w3.org/1999/xhtml"
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
-  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   xml:lang="en"
   lang="en"
   dir="ltr"
   metal:use-macro="context/@@main_template/master"
-  i18n:domain="launchpad"
 >
 <body>
 
 <metal:heading fill-slot="pageheading">
-  <h1 i18n:translate="">
+  <h1>
     Projects for which 
-    <span i18n:name="person_name" 
-      tal:replace="context/browsername">Person Name</span> is an answer contact
+    <span tal:replace="context/browsername">Person Name</span> 
+    is an answer contact
   </h1>
 </metal:heading>
 
@@ -58,10 +56,9 @@
     </ul>
   </div>
     
-  <p tal:condition="not: view/team_question_targets | view/direct_question_targets" i18n:translate="">
-    <span i18n:name="person_name" 
-      tal:replace="context/browsername">Person Name</span> is not an answer 
-      contact for any project.
+  <p tal:condition="not: view/team_question_targets | view/direct_question_targets">
+    <span tal:replace="context/browsername">Person Name</span> 
+    is not an answer contact for any project.
   </p>
 </div>
 

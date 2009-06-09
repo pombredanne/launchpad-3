@@ -103,5 +103,5 @@ We should see some changelog information on the main package page.
 
   >>> user_browser.open("http://launchpad.dev/ubuntu/+source/pmount/")
   >>> user_browser.title
-  '...pmount... source package in Ubuntu'
+  '...pmount... package in Ubuntu'
 
