@@ -245,4 +245,4 @@ class ProductReleaseSet(object):
             """ProductReleaseFile.productrelease IN %s""" % (
             sqlvalues([release.id for release in releases])),
             orderBy='-date_uploaded',
-            prejoins=['libraryfile', 'productrelease'])
+            prejoins=['libraryfile', 'libraryfile.content', 'productrelease'])
