@@ -290,7 +290,7 @@
   </dt>
   <dd class="revision-comment">
     <tal:commit-message
-        replace="structure rev_no/revision/log_body/fmt:text-to-html">
+        replace="structure rev_no/revision/log_body/fmt:obfuscate-email/fmt:text-to-html">
       The revision commit message.
     </tal:commit-message>
   </dd>

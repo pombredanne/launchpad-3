@@ -60,14 +60,6 @@ We display the recent revisions of a branch if it has been scanned.
     None
 
 
-=== Heading ===
-
-There's a "Recent revisions" heading:
-
-    >>> print revisions.h2.renderContents()
-    Recent revisions
-
-
 === Revision information ===
 
 Underneath that heading we see the ten most-recent revisions of the branch in
