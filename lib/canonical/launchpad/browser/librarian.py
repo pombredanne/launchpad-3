@@ -68,7 +68,7 @@ class LibraryFileAliasMD5View(LaunchpadView):
     def render(self):
         """Return the plain text MD5 signature"""
         self.request.response.setHeader('Content-type', 'text/plain')
-        return self.context.content.md5
+        return '%s %s' % (self.context.content.md5, self.context.filename)
 
 
 class StreamOrRedirectLibraryFileAliasView(LaunchpadView):
