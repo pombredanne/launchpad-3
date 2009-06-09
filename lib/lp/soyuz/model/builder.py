@@ -414,16 +414,13 @@ class Builder(SQLBase):
             return 'Idle'
 
         msg = 'Building %s' % currentjob.build.title
-        if currentjob.build.archive.is_ppa:
+        archive = currentjob.build.archive
+        if archive.is_ppa or archive.is_copy:
             return '%s [%s/%s]' % (
                 msg,
                 currentjob.build.archive.owner.name,
                 currentjob.build.archive.name,
                 )
-        if currentjob.build.archive.is_copy:
-            return ('%s [%s/%s]' %
-                    (msg, currentjob.build.archive.owner.name,
-                     currentjob.build.archive.name))
         else:
             return msg
 
