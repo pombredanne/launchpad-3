@@ -68,7 +68,8 @@ We can reply to a comment.
 
     >>> eric_browser.getControl(name='field.comment').value = ('I like this.\n'
     ... 'I wish I had time to review it properly\n\n'
-    ... 'This is a longer\nmessage with several\nlines')
+    ... 'This is a longer\nmessage with several\nlines\n'
+    ... 'Email me at eric@vikings-r-us.example.com for more details')
     >>> eric_browser.getControl(name='field.actions.add').click()
 
 After this, we are taken to the main page for the merge proposal
@@ -77,6 +78,16 @@ After this, we are taken to the main page for the merge proposal
     I like this.
     I wish I had time to review it properly
     This is a longer message with several lines
+    Email me at eric@vikings-r-us.example.com for more details
+
+Email addresses in code review comments are hidden for users not logged in.
+
+    >>> anon_browser.open(merge_proposal_url)
+    >>> print_comments('boardCommentBody', anon_browser, index=1)
+    I like this.
+    I wish I had time to review it properly
+    This is a longer message with several lines
+    Email me at &lt;email address hidden&gt; for more details
 
 
 == Reviewing ==

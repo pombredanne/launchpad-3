@@ -36,4 +36,3 @@ revision author and the commit message.
     Testing the email address in revisions
     email Bob (&lt;email address hidden&gt;) for details.
     ...
-    
